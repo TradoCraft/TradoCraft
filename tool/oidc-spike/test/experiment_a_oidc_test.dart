@@ -47,16 +47,26 @@ OidcUserManager newManager({
 }
 
 /// Launch hook that drives [b]: login for auth URLs, visit for logout.
-Future<bool> Function(Uri) browserDriver(FakeBrowser b, {List<Uri>? seen}) =>
-    (u) async {
-      seen?.add(u);
-      unawaited(
-        (u.path.endsWith('/logout') ? b.visit(u) : b.login(u)).catchError(
-          (Object e) => 'browser error: $e',
-        ),
-      );
-      return true;
-    };
+/// Browser failures are collected in [errors] (never silently dropped).
+Future<bool> Function(Uri) browserDriver(
+  FakeBrowser b, {
+  List<Uri>? seen,
+  List<Object>? errors,
+  String user = 'alice',
+  String password = 'alice-pass',
+}) => (u) async {
+  seen?.add(u);
+  unawaited(
+    (u.path.endsWith('/logout')
+            ? b.visit(u)
+            : b.login(u, user: user, password: password))
+        .catchError((Object e) {
+          errors?.add(e);
+          return '';
+        }),
+  );
+  return true;
+};
 
 Stream<OidcTokenRefreshFailedEvent> failedEvents(OidcUserManager m) => m
     .events()
@@ -142,7 +152,11 @@ void main() {
   test('A2b administrator revokes the offline token -> invalid_grant', () async {
     final browser = FakeBrowser();
     final admin = KeycloakAdmin();
-    final m = newManager(onUrl: browserDriver(browser));
+    // bob is used only here (and in experiment B3), so the revocation cannot
+    // disturb the concurrent tests that sign in as alice.
+    final m = newManager(
+      onUrl: browserDriver(browser, user: 'bob', password: 'bob-pass'),
+    );
     await m.init();
     final failures = <OidcTokenRefreshFailedEvent>[];
     final sub = failedEvents(m).listen(failures.add);
@@ -151,7 +165,7 @@ void main() {
       (u) => userStream.add(u == null ? 'null' : 'user'),
     );
     await m.loginAuthorizationCodeFlow();
-    await admin.revokeOfflineTokens(await admin.userId('alice'));
+    await admin.revokeOfflineTokens(await admin.userId('bob'));
     Object? err;
     try {
       await m.refreshToken();
@@ -159,7 +173,9 @@ void main() {
       err = e;
     }
     print('manual refresh after revoke -> ${err.runtimeType}');
-    if (err is OidcException) {
+    expect(err, isA<OidcException>());
+    expect((err as OidcException).errorResponse?.error, 'invalid_grant');
+    {
       print(
         '  errorResponse=${err.errorResponse?.error} desc=${err.errorResponse?.errorDescription}',
       );
@@ -171,6 +187,9 @@ void main() {
         'source=${f.source} willRetry=${f.willRetry}',
       );
     }
+    expect(failures, isNotEmpty);
+    expect(failures.first.kind, OidcTokenRefreshFailureKind.terminal);
+    expect(failures.first.oauthErrorCode, 'invalid_grant');
     print('userChanges stream: $userStream');
     print(
       'currentUser after terminal failure: '
@@ -187,6 +206,8 @@ void main() {
       'getAccessToken on dead session -> token=${at == null ? null : 'returned'} '
       'error=${err2.runtimeType}: $err2',
     );
+    expect(at, isNull);
+    expect(err2, isA<OidcInteractionRequiredException>());
     await us.cancel();
     await sub.cancel();
     await m.dispose();
@@ -255,6 +276,9 @@ void main() {
       '8 concurrent getAccessToken(minValidity 120s): '
       'distinct tokens=${results.toSet().length}, token endpoint calls=$tokenCalls',
     );
+    expect(tokenCalls, 1);
+    expect(results.toSet().length, 1);
+    expect(results.first, m.currentUser!.token.accessToken);
     await m.dispose();
   });
 
@@ -269,15 +293,28 @@ void main() {
     final logoutUrl = seen.firstWhere((u) => u.path.endsWith('/logout'));
     print('logout URL params: ${logoutUrl.queryParameters.keys.toList()}');
     print('after logout: currentUser=${m.currentUser}');
+    expect(m.currentUser, isNull);
+    // Parameters observed on the wire (see ADR 0053): id_token_hint,
+    // client_id, post_logout_redirect_uri and state.
+    expect(
+      logoutUrl.queryParameters.keys,
+      containsAll([
+        'id_token_hint',
+        'client_id',
+        'post_logout_redirect_uri',
+        'state',
+      ]),
+    );
+    expect(logoutUrl.queryParameters['client_id'], kClientId);
     Object? err;
     try {
       await m.refreshToken(overrideRefreshToken: rt);
     } catch (e) {
       err = e;
     }
-    print(
-      'refresh with pre-logout RT -> ${err == null ? 'ACCEPTED' : err.runtimeType}: $err',
-    );
+    print('refresh with pre-logout RT -> ${err.runtimeType}: $err');
+    expect(err, isA<OidcException>());
+    expect((err as OidcException).errorResponse?.error, 'invalid_grant');
     await m.dispose();
   });
 
@@ -299,20 +336,36 @@ void main() {
 
   test('A5b a redirect host the client does not allow is rejected', () async {
     final b = FakeBrowser();
+    final browserErrors = <Object>[];
     final m = newManager(
-      onUrl: browserDriver(b),
+      onUrl: browserDriver(b, errors: browserErrors),
       redirect: 'http://localhost:0/callback',
       timeoutSeconds: 5,
     );
     await m.init();
+    OidcUser? user;
     Object? err;
     try {
-      await m.loginAuthorizationCodeFlow();
+      user = await m.loginAuthorizationCodeFlow();
     } catch (e) {
       err = e;
     }
+    // A successful callback would mean the OP accepted the redirect: fail.
+    expect(user, isNull, reason: 'localhost redirect must not succeed');
+    expect(b.callbackUris, isEmpty, reason: 'no redirect to a listener');
+    // The package only sees a timeout; the rejection itself is visible in the
+    // page the "browser" got from the provider.
+    expect(err, isA<OidcException>());
+    expect(err.toString(), contains('timed out'));
+    expect(browserErrors, hasLength(1));
+    expect(
+      browserErrors.single.toString(),
+      contains('Invalid parameter: redirect_uri'),
+      reason: 'confirmed provider rejection (not a listener/browser timeout)',
+    );
     print(
-      'redirect_uri http://localhost:<port>/callback -> ${err.runtimeType}: $err',
+      'redirect_uri http://localhost:<port>/callback -> provider rejected; '
+      'package reports ${err.runtimeType}',
     );
     await m.dispose();
   });
@@ -382,13 +435,17 @@ void main() {
       'rt differ=${u1!.token.refreshToken != u2!.token.refreshToken}, '
       'both signed in=${m1.currentUser != null && m2.currentUser != null}',
     );
+    await m1.dispose(); // the "restart": old manager gone before the new one
     final m1b = newManager(onUrl: (_) => false, store: store, id: 'env-live');
     await m1b.init();
     print(
       'restored session for env-live after "restart": '
       '${m1b.currentUser?.claims['sub'] == u1.claims['sub']}',
     );
-    await m1.dispose();
+    expect(m1b.currentUser, isNotNull);
+    expect(m1b.currentUser!.token.refreshToken, u1.token.refreshToken);
+    expect(m1b.currentUser!.token.refreshToken, isNot(u2.token.refreshToken));
+    expect(u1.token.refreshToken, isNot(u2.token.refreshToken));
     await m2.dispose();
     await m1b.dispose();
   });

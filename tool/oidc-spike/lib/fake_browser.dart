@@ -35,7 +35,7 @@ class FakeBrowser {
         RegExp(r'action="([^"]+)"[^>]*id="kc-form-login"')
             .firstMatch(page.body);
     if (action == null) {
-      throw StateError('no login form in page: ${page.body.substring(0, 300)}');
+      throw StateError('no login form in page: ${page.body}');
     }
     final url = Uri.parse(action.group(1)!.replaceAll('&amp;', '&'));
     final after = await _walk(

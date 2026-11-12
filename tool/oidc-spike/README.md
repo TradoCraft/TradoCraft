@@ -33,8 +33,9 @@ docker compose -p oidcspike down -v        # remove container, network and volum
 
 The realm (`realm-tradocraft.json`): public client `tradocraft-app` (no client authentication,
 standard flow only, PKCE S256, redirect `http://127.0.0.1/*`, web origins `+`), an audience
-mapper adding `tradocraft-app` to access tokens, `offline_access` as an optional scope, user
-`alice` / `alice-pass` (`alice@example.test`, e-mail verified, realm role `offline_access`),
+mapper adding `tradocraft-app` to access tokens, `offline_access` as an optional scope, users
+`alice` / `alice-pass`, `bob` / `bob-pass` and `carol` / `carol-pass` (bob and carol are the
+ones whose offline tokens the revocation tests revoke, so the test files can run in parallel) (`alice@example.test`, e-mail verified, realm role `offline_access`),
 access token lifespan 60 s, refresh token rotation (`revokeRefreshToken`, reuse 0). Admin
 console: `admin` / `admin`. Keycloak 26.4.7.
 
