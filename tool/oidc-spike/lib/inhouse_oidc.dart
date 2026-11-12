@@ -200,20 +200,54 @@ class InHouseOidcClient {
   Map<String, dynamic>? _meta;
   Future<Tokens>? _refreshing;
   LoopbackListener? _pending;
+  bool _signInActive = false;
+
+  /// Incremented by [signOut]; operations started before it must not write.
+  int _generation = 0;
+
+  /// Refresh tokens whose revocation failed (observable; see [retryRevocations]).
+  final List<String> unrevokedRefreshTokens = [];
+  String? lastRevocationFailure;
+
+  /// HTTPS only; plain HTTP just for loopback issuers (development, tests).
+  static Uri checkedUrl(String url, String what) {
+    final u = Uri.tryParse(url);
+    if (u == null || !u.hasAuthority)
+      throw SignInException('$what is not a URL');
+    final loopback =
+        u.host == '127.0.0.1' ||
+        u.host == 'localhost' ||
+        u.host == '[::1]' ||
+        u.host == '::1';
+    if (u.scheme != 'https' && !(u.scheme == 'http' && loopback)) {
+      throw SignInException('$what must be https: $url');
+    }
+    return u;
+  }
 
   Future<Map<String, dynamic>> _discovery() async {
     if (_meta != null) return _meta!;
+    checkedUrl(config.issuer, 'issuer');
     final res = await _get('${config.issuer}/.well-known/openid-configuration');
     final meta = res as Map<String, dynamic>;
     if (meta['issuer'] != config.issuer) {
       throw SignInException('discovery issuer mismatch: ${meta['issuer']}');
+    }
+    for (final k in ['authorization_endpoint', 'token_endpoint']) {
+      checkedUrl(meta[k] as String? ?? '', k);
+    }
+    for (final k in ['revocation_endpoint', 'end_session_endpoint']) {
+      if (meta[k] != null) checkedUrl(meta[k] as String, k);
     }
     return _meta = meta;
   }
 
   Future<Object?> _get(String url) async {
     try {
-      final r = await _dio.get<Object?>(url);
+      final r = await _dio.get<Object?>(
+        url,
+        options: Options(validateStatus: (_) => true),
+      );
       if ((r.statusCode ?? 500) >= 400)
         throw TransientAuthException('GET $url -> ${r.statusCode}');
       return r.data;
@@ -229,12 +263,25 @@ class InHouseOidcClient {
   Future<Tokens> signIn({
     required FutureOr<void> Function(Uri url) present,
   }) async {
-    final meta = await _discovery();
-    final pkce = Pkce.generate();
-    final state = randomToken();
-    final nonce = randomToken();
-    final listener = _pending = await LoopbackListener.start();
+    if (_signInActive)
+      throw SignInException('a sign-in is already in progress');
+    _signInActive = true;
+    LoopbackListener? listener;
     try {
+      final gen = _generation;
+      final meta = await _discovery();
+      final pkce = Pkce.generate();
+      final state = randomToken();
+      final nonce = randomToken();
+      listener = _pending = await LoopbackListener.start();
+      // Deadline and cancellation are observed from here on, also while
+      // [present] is still running (or never returns).
+      final callback = listener.result.timeout(
+        config.signInTimeout,
+        onTimeout: () =>
+            throw SignInException('timed out waiting for the browser'),
+      );
+      callback.ignore();
       final url = Uri.parse(meta['authorization_endpoint'] as String).replace(
         queryParameters: {
           'response_type': 'code',
@@ -247,12 +294,10 @@ class InHouseOidcClient {
           'code_challenge_method': 'S256',
         },
       );
-      await present(url);
-      final cb = await listener.result.timeout(
-        config.signInTimeout,
-        onTimeout: () =>
-            throw SignInException('timed out waiting for the browser'),
-      );
+      final presented = Future<void>.sync(() => present(url));
+      presented.ignore();
+      await Future.any<void>([presented, callback.then((_) {})]);
+      final cb = await callback;
       final q = cb.queryParameters;
       if (q['state'] != state) throw SignInException('state mismatch');
       if (q['error'] != null)
@@ -270,11 +315,13 @@ class InHouseOidcClient {
         'redirect_uri': listener.redirectUri.toString(),
         'code_verifier': pkce.verifier,
       }, expectedNonce: nonce);
+      if (gen != _generation) throw SignInException('invalidated by sign-out');
       await store.write(tokens);
       return tokens;
     } finally {
-      _pending = null;
-      await listener.close();
+      if (identical(_pending, listener)) _pending = null;
+      _signInActive = false;
+      await listener?.close();
     }
   }
 
@@ -294,6 +341,7 @@ class InHouseOidcClient {
       _refreshing ??= _doRefresh().whenComplete(() => _refreshing = null);
 
   Future<Tokens> _doRefresh() async {
+    final gen = _generation;
     final current = await store.read();
     final rt =
         current?.refreshToken ?? (throw SignedOutException('no_refresh_token'));
@@ -309,10 +357,11 @@ class InHouseOidcClient {
         refreshToken: t.refreshToken ?? rt,
         idToken: t.idToken ?? current!.idToken,
       );
+      if (gen != _generation) throw SignedOutException('signed_out');
       await store.write(next);
       return next;
     } on SignedOutException {
-      await store.clear();
+      if (gen == _generation) await store.clear();
       rethrow;
     }
   }
@@ -322,15 +371,24 @@ class InHouseOidcClient {
     String? expectedNonce,
   }) async {
     final meta = await _discovery();
-    final Response<Object?> res;
+    final endpoint = checkedUrl(
+      meta['token_endpoint'] as String,
+      'token_endpoint',
+    );
+    Response<Object?>? res;
     try {
       res = await _dio.post<Object?>(
-        meta['token_endpoint'] as String,
+        endpoint.toString(),
         data: {...form, 'client_id': config.clientId},
-        options: Options(contentType: Headers.formUrlEncodedContentType),
+        options: Options(
+          contentType: Headers.formUrlEncodedContentType,
+          validateStatus: (_) => true,
+        ),
       );
     } on DioException catch (e) {
-      throw TransientAuthException(e);
+      // An injected Dio may still throw for HTTP errors: classify those too.
+      res = e.response;
+      if (res == null) throw TransientAuthException(e);
     }
     final status = res.statusCode ?? 500;
     final body = res.data is Map
@@ -352,6 +410,9 @@ class InHouseOidcClient {
       throw SignInException('$code: ${body['error_description']}');
     }
     final idToken = body['id_token'] as String?;
+    if (expectedNonce != null && idToken == null) {
+      throw SignInException('initial sign-in returned no id_token');
+    }
     if (idToken != null) _checkIdToken(idToken, expectedNonce);
     final expiresIn = (body['expires_in'] as num?)?.toInt() ?? 300;
     return Tokens(
@@ -387,24 +448,16 @@ class InHouseOidcClient {
   /// revoked (RFC 7009) and the end-session URL is built for the browser.
   /// Returns the end-session URL (or null if the provider has none).
   Future<Uri?> signOut() async {
+    _generation++; // pending sign-in/refresh results are discarded
+    cancelSignIn();
     final t = await store.read();
     await store.clear();
     if (t == null) return null;
     final meta = await _discovery();
     final rev = meta['revocation_endpoint'] as String?;
     if (rev != null && t.refreshToken != null) {
-      try {
-        await _dio.post<Object?>(
-          rev,
-          data: {
-            'token': t.refreshToken,
-            'token_type_hint': 'refresh_token',
-            'client_id': config.clientId,
-          },
-          options: Options(contentType: Headers.formUrlEncodedContentType),
-        );
-      } on DioException {
-        // best effort
+      if (!await _revoke(rev, t.refreshToken!)) {
+        unrevokedRefreshTokens.add(t.refreshToken!);
       }
     }
     final end = meta['end_session_endpoint'] as String?;
@@ -415,5 +468,40 @@ class InHouseOidcClient {
         'client_id': config.clientId,
       },
     );
+  }
+
+  Future<bool> _revoke(String endpoint, String token) async {
+    try {
+      final r = await _dio.post<Object?>(
+        endpoint,
+        data: {
+          'token': token,
+          'token_type_hint': 'refresh_token',
+          'client_id': config.clientId,
+        },
+        options: Options(
+          contentType: Headers.formUrlEncodedContentType,
+          validateStatus: (_) => true,
+        ),
+      );
+      final ok = (r.statusCode ?? 500) >= 200 && (r.statusCode ?? 500) < 300;
+      lastRevocationFailure = ok
+          ? null
+          : 'revocation endpoint answered ${r.statusCode}';
+      return ok;
+    } on DioException catch (e) {
+      lastRevocationFailure = 'revocation failed: ${e.type.name}';
+      return false;
+    }
+  }
+
+  /// Retry revocations that failed at sign-out; returns how many are still open.
+  Future<int> retryRevocations() async {
+    final rev = (await _discovery())['revocation_endpoint'] as String?;
+    if (rev == null) return unrevokedRefreshTokens.length;
+    for (final t in List<String>.of(unrevokedRefreshTokens)) {
+      if (await _revoke(rev, t)) unrevokedRefreshTokens.remove(t);
+    }
+    return unrevokedRefreshTokens.length;
   }
 }
