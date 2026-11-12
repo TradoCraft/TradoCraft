@@ -238,6 +238,7 @@ class FakeApi implements HttpClientAdapter {
             'country_code': 'BE',
             'currency': 'EUR',
             'default_language': 'nl',
+            'is_primary': true,
           },
         };
       default:
