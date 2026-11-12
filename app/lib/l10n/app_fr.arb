@@ -890,6 +890,7 @@
   "stockNewVan": "Nouvelle camionnette de service",
   "stockNewWarehouse": "Nouvel entrepôt",
   "stockNoMoves": "Aucun mouvement",
+  "stockNoLocationsHint": "Aucun emplacement pour l'instant. Un administrateur crée un entrepôt et un emplacement sous Stock > Entrepôts.",
   "stockNoWarehouses": "Aucun entrepôt. Un administrateur les crée ici.",
   "stockNote": "Remarque",
   "stockNothingInStock": "Rien en stock",

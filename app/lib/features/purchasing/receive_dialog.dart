@@ -192,6 +192,9 @@ class _ReceiveGoodsDialogState extends ConsumerState<ReceiveGoodsDialog> {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
+    // With a single active location there is nothing to choose: preselect it.
+    final choices = locationChoices(ref.watch(warehousesProvider).value ?? []);
+    if (_location == null && choices.length == 1) _location = choices.single.$1;
     return AlertDialog(
       title: Text(l.purchReceiveTitle(widget.po.number)),
       content: SizedBox(
