@@ -5,6 +5,7 @@ use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::TraceLayer;
 use tradocraft_core::companies::BootstrapConfig;
 use tradocraft_core::environment::EnvironmentConfig;
+use tradocraft_core::identity::IdpSettings;
 use tradocraft_core::AppState;
 use utoipa::openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme};
 use utoipa::openapi::OpenApi as OpenApiDoc;
@@ -24,6 +25,7 @@ pub const DEV_SEED_SQL: &str = include_str!("../../../seed/dev_seed.sql");
     security(("bearer" = [])),
     tags(
         (name = "core", description = "Users and companies"),
+        (name = "admin", description = "Installation administration: identity providers and who may sign in"),
         (name = "crm", description = "Customers and opportunities"),
         (name = "products", description = "Products, price zones and price lists"),
         (name = "sales", description = "Quotations, pricing and orders"),
@@ -67,6 +69,7 @@ fn api() -> (Router<AppState>, OpenApiDoc) {
         .merge(tradocraft_core::company::router())
         .merge(tradocraft_core::environment::router())
         .merge(tradocraft_core::companies::router())
+        .merge(tradocraft_core::identity_admin::router())
         .merge(tradocraft_crm::router())
         .merge(tradocraft_products::router())
         .merge(tradocraft_sales::router())
@@ -109,6 +112,17 @@ pub fn app_with_options(
     environment: EnvironmentConfig,
     bootstrap: BootstrapConfig,
 ) -> Router {
+    app_with_identity(state, environment, bootstrap, IdpSettings::default())
+}
+
+/// The application with the identity provider settings (ADR 0051) the admin API validates and
+/// tests providers with; the same settings the registry in `state.auth` runs with.
+pub fn app_with_identity(
+    state: AppState,
+    environment: EnvironmentConfig,
+    bootstrap: BootstrapConfig,
+    identity: IdpSettings,
+) -> Router {
     let (router, doc) = api();
     router
         .route("/health", axum::routing::get(|| async { "ok" }))
@@ -119,6 +133,7 @@ pub fn app_with_options(
         )
         .layer(axum::Extension(environment))
         .layer(axum::Extension(bootstrap))
+        .layer(axum::Extension(identity))
         .layer(TraceLayer::new_for_http())
         .layer(
             CorsLayer::new()

@@ -5,7 +5,8 @@ use std::sync::Arc;
 use anyhow::Context;
 use sqlx::postgres::PgPoolOptions;
 use tracing_subscriber::EnvFilter;
-use tradocraft_core::auth::{AuthConfig, OidcVerifier};
+use tradocraft_core::auth::AuthConfig;
+use tradocraft_core::identity::{IdentityProviders, IdpSettings, ProviderConfig};
 use tradocraft_core::{AppState, DocumentConfig};
 
 fn env(name: &str) -> Option<String> {
@@ -103,6 +104,18 @@ async fn main() -> anyhow::Result<()> {
         }
     }
 
+    // Plain-http and internal identity provider URLs are for local development and tests only.
+    let allow_insecure_idp = env("ALLOW_INSECURE_IDP_URLS").as_deref() == Some("true");
+    if allow_insecure_idp && auth_mode != "dev" && !addr.ip().is_loopback() {
+        anyhow::bail!(
+            "ALLOW_INSECURE_IDP_URLS=true is only honoured with AUTH_MODE=dev or a loopback BIND_ADDR"
+        );
+    }
+    let idp_settings = IdpSettings {
+        allow_insecure_urls: allow_insecure_idp,
+        ..IdpSettings::default()
+    };
+
     let auth = match auth_mode.as_str() {
         "dev" => {
             tracing::warn!("AUTH_MODE=dev: X-Dev-User header is trusted. Never use this on a reachable server.");
@@ -110,10 +123,27 @@ async fn main() -> anyhow::Result<()> {
                 default_email: env("DEV_DEFAULT_USER"),
             }
         }
-        "oidc" => AuthConfig::Oidc(OidcVerifier::new(
-            env("OIDC_ISSUER").context("OIDC_ISSUER is required when AUTH_MODE=oidc")?,
-            env("OIDC_AUDIENCE").context("OIDC_AUDIENCE is required when AUTH_MODE=oidc")?,
-        )),
+        "oidc" => {
+            // OIDC_ISSUER/OIDC_AUDIENCE are the optional read-only fallback provider (ADR 0051);
+            // more providers come from the database.
+            let env_provider = match (env("OIDC_ISSUER"), env("OIDC_AUDIENCE")) {
+                (Some(i), Some(a)) => Some(ProviderConfig::from_env(&i, &a)),
+                (None, None) => None,
+                _ => anyhow::bail!("OIDC_ISSUER and OIDC_AUDIENCE must be set together"),
+            };
+            let providers = IdentityProviders::new(idp_settings.clone(), env_provider);
+            providers
+                .reload(&db)
+                .await
+                .context("loading identity providers")?;
+            if providers.enabled().is_empty() {
+                tracing::warn!(
+                    "no identity provider is configured: every request answers 401 \
+                     (bootstrap still works with BOOTSTRAP_TOKEN)"
+                );
+            }
+            AuthConfig::Oidc(providers)
+        }
         other => anyhow::bail!("unknown AUTH_MODE {other} (expected oidc or dev)"),
     };
 
@@ -122,9 +152,16 @@ async fn main() -> anyhow::Result<()> {
         template_dir: PathBuf::from(env("TEMPLATE_DIR").unwrap_or_else(|| "templates".into())),
     };
 
+    let auth = Arc::new(auth);
+    // Other instances follow admin changes of the identity providers within a minute.
+    tradocraft_core::identity::spawn_reload(
+        auth.clone(),
+        db.clone(),
+        std::time::Duration::from_secs(60),
+    );
     let state = AppState {
         db,
-        auth: Arc::new(auth),
+        auth,
         documents: Arc::new(documents),
     };
     let listener = tokio::net::TcpListener::bind(addr).await?;
@@ -136,10 +173,11 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!("listening on http://{addr} (API docs at /docs)");
     axum::serve(
         listener,
-        tradocraft_api::app_with_options(
+        tradocraft_api::app_with_identity(
             state,
             environment,
             tradocraft_core::companies::BootstrapConfig::from_env(),
+            idp_settings,
         ),
     )
     .with_graceful_shutdown(async {
