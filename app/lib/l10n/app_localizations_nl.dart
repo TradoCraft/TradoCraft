@@ -2704,6 +2704,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get stockNoMoves => 'Nog geen bewegingen';
 
   @override
+  String get stockNoLocationsHint =>
+      'Nog geen locaties. Een beheerder maakt onder Voorraad > Magazijnen een magazijn en een locatie aan.';
+
+  @override
   String get stockNoWarehouses =>
       'Nog geen magazijnen. Een beheerder maakt ze hier aan.';
 

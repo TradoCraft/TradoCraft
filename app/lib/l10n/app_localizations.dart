@@ -5072,6 +5072,12 @@ abstract class AppLocalizations {
   /// **'No movements yet'**
   String get stockNoMoves;
 
+  /// No description provided for @stockNoLocationsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'No locations yet. An administrator creates a warehouse and a location under Stock > Warehouses.'**
+  String get stockNoLocationsHint;
+
   /// No description provided for @stockNoWarehouses.
   ///
   /// In en, this message translates to:

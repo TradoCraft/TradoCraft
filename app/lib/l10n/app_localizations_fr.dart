@@ -2706,6 +2706,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get stockNoMoves => 'Aucun mouvement';
 
   @override
+  String get stockNoLocationsHint =>
+      'Aucun emplacement pour l\'instant. Un administrateur crée un entrepôt et un emplacement sous Stock > Entrepôts.';
+
+  @override
   String get stockNoWarehouses =>
       'Aucun entrepôt. Un administrateur les crée ici.';
 

@@ -890,6 +890,7 @@
   "stockNewVan": "Nieuwe servicewagen",
   "stockNewWarehouse": "Nieuw magazijn",
   "stockNoMoves": "Nog geen bewegingen",
+  "stockNoLocationsHint": "Nog geen locaties. Een beheerder maakt onder Voorraad > Magazijnen een magazijn en een locatie aan.",
   "stockNoWarehouses": "Nog geen magazijnen. Een beheerder maakt ze hier aan.",
   "stockNote": "Opmerking",
   "stockNothingInStock": "Niets op voorraad",

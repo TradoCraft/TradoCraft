@@ -890,6 +890,7 @@
   "stockNewVan": "Neues Servicefahrzeug",
   "stockNewWarehouse": "Neues Lager",
   "stockNoMoves": "Noch keine Bewegungen",
+  "stockNoLocationsHint": "Noch keine Lagerorte. Ein Administrator legt unter Lager > Lager und Fahrzeuge ein Lager und einen Lagerort an.",
   "stockNoWarehouses": "Noch keine Lager. Ein Administrator legt sie hier an.",
   "stockNote": "Bemerkung",
   "stockNothingInStock": "Kein Bestand",
