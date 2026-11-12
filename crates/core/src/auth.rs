@@ -23,6 +23,7 @@ use crate::{AppError, AppState};
 pub const DEV_USER_HEADER: &str = "x-dev-user";
 pub const COMPANY_HEADER: &str = "x-company-id";
 
+#[allow(clippy::large_enum_variant)]
 pub enum AuthConfig {
     Dev {
         default_email: Option<String>,
@@ -860,7 +861,7 @@ async fn decide(
     };
     if !cfg.allowed_email_domains.is_empty() {
         let domain = email.rsplit_once('@').map(|(_, d)| d.to_lowercase());
-        if !domain.is_some_and(|d| cfg.allowed_email_domains.iter().any(|a| *a == d)) {
+        if !domain.is_some_and(|d| cfg.allowed_email_domains.contains(&d)) {
             return Ok(refused("the e-mail domain is not allowed", subject));
         }
     }

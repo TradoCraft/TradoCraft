@@ -762,7 +762,7 @@ impl IdentityProviders {
                 }
                 Err(e) => {
                     tracing::warn!(issuer = %rt.cfg.issuer, error = %e, "fetching signing keys failed");
-                    if expired || c.keys.get(kid).is_none() {
+                    if expired || !c.keys.contains_key(kid) {
                         return Err(AppError::Internal(anyhow::anyhow!(
                             "identity provider unreachable"
                         )));
