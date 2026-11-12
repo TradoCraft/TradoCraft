@@ -337,6 +337,9 @@ class _AddDialogState extends ConsumerState<_AddDialog> {
   String? _error;
   bool _busy = false;
 
+  /// True while [_add] runs (setup-status request and setup offer included): one submission only.
+  bool _submitting = false;
+
   @override
   void dispose() {
     _name.dispose();
@@ -388,6 +391,18 @@ class _AddDialogState extends ConsumerState<_AddDialog> {
   }
 
   Future<void> _add() async {
+    if (_submitting) return;
+    setState(() => _submitting = true);
+    try {
+      await _addChecked();
+    } finally {
+      // Still open (duplicate, cancelled question, error): Add works again.
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  /// The checks and questions of [_add]; pops the dialog with an [_AddRequest] when all is agreed.
+  Future<void> _addChecked() async {
     final probe = _probe;
     final url = _checkedUrl;
     if (probe == null || url == null) return;
@@ -525,12 +540,12 @@ class _AddDialogState extends ConsumerState<_AddDialog> {
         ),
         OutlinedButton(
           key: const ValueKey('env-check'),
-          onPressed: _busy ? null : _check,
+          onPressed: _busy || _submitting ? null : _check,
           child: Text(l.envCheck),
         ),
         FilledButton(
           key: const ValueKey('env-add-confirm'),
-          onPressed: probe == null || _busy ? null : _add,
+          onPressed: probe == null || _busy || _submitting ? null : _add,
           child: Text(l.envAdd),
         ),
       ],

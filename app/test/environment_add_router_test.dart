@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -29,6 +31,7 @@ Future<({ProviderContainer c, GoRouter router})> _open(
   WidgetTester tester, {
   required bool signedIn,
   bool needsSetup = false,
+  Future<SetupStatusInfo> Function(String)? setupStatus,
 }) async {
   final env = AppEnvironment(
     id: 'env-1',
@@ -46,11 +49,12 @@ Future<({ProviderContainer c, GoRouter router})> _open(
       initialSessionProvider.overrideWithValue(env.session),
       environmentProbeProvider.overrideWithValue((url) async => _probeInfo),
       setupStatusProvider.overrideWithValue(
-        (_) async => SetupStatusInfo(
-          needsSetup: needsSetup,
-          tokenRequired: false,
-          authMode: 'dev',
-        ),
+        setupStatus ??
+            (_) async => SetupStatusInfo(
+              needsSetup: needsSetup,
+              tokenRequired: false,
+              authMode: 'dev',
+            ),
       ),
     ],
   );
@@ -80,7 +84,19 @@ Future<({ProviderContainer c, GoRouter router})> _open(
             children: [const EnvironmentBanner(), Expanded(child: child)],
           ),
         ),
-        routes: [GoRoute(path: '/home', builder: (_, _) => const Text('HOME'))],
+        routes: [
+          GoRoute(
+            path: '/home',
+            builder: (_, _) => Builder(
+              // The direct entry point, as the tutorial chapter map uses it.
+              builder: (context) => TextButton(
+                key: const ValueKey('open-add'),
+                onPressed: () => showAddEnvironmentDialog(context),
+                child: const Text('HOME'),
+              ),
+            ),
+          ),
+        ],
       ),
     ],
   );
@@ -110,7 +126,13 @@ Future<({ProviderContainer c, GoRouter router})> _open(
 Future<void> _openAddDialog(
   WidgetTester tester, {
   required bool fromLogin,
+  bool direct = false,
 }) async {
+  if (direct) {
+    await tester.tap(find.byKey(const ValueKey('open-add')));
+    await tester.pumpAndSettle();
+    return;
+  }
   await tester.tap(
     fromLogin
         ? find.byKey(const ValueKey('login-environments'))
@@ -133,13 +155,19 @@ String _location(GoRouter r) =>
     r.routerDelegate.currentConfiguration.uri.toString();
 
 void main() {
-  for (final fromLogin in [false, true]) {
-    final where = fromLogin ? 'the login page' : 'the switcher in the shell';
+  for (final entry in ['switcher', 'login', 'direct']) {
+    final fromLogin = entry == 'login';
+    final direct = entry == 'direct';
+    final where = fromLogin
+        ? 'the login page'
+        : direct
+        ? 'showAddEnvironmentDialog'
+        : 'the switcher in the shell';
     testWidgets('adding from $where closes the dialogs without a crash', (
       tester,
     ) async {
       final t = await _open(tester, signedIn: !fromLogin);
-      await _openAddDialog(tester, fromLogin: fromLogin);
+      await _openAddDialog(tester, fromLogin: fromLogin, direct: direct);
       await _checkAndAdd(tester, _url2);
 
       expect(tester.takeException(), isNull);
@@ -153,14 +181,14 @@ void main() {
       expect(find.byType(LoginPage), findsOneWidget);
     });
   }
-
+  for (final direct in [false, true]) {
   for (final accept in [true, false]) {
-    final what = accept
+    final what = '${direct ? 'direct entry, ' : ''}${accept
         ? 'accepting opens the wizard'
-        : 'declining ends on the login page';
+        : 'declining ends on the login page'}';
     testWidgets('a server that needs setup: $what', (tester) async {
       final t = await _open(tester, signedIn: true, needsSetup: true);
-      await _openAddDialog(tester, fromLogin: false);
+      await _openAddDialog(tester, fromLogin: false, direct: direct);
       await _checkAndAdd(tester, _url2);
       expect(find.text('Set up this server?'), findsOneWidget);
       await tester.tap(
@@ -186,6 +214,7 @@ void main() {
       }
     });
   }
+  }
 
   testWidgets('an address that is already listed keeps the dialog open', (
     tester,
@@ -199,5 +228,131 @@ void main() {
     expect(find.text('This server is already in the list.'), findsOneWidget);
     expect(t.c.read(environmentsProvider).items, hasLength(1));
     expect(_location(t.router), '/home');
+  });
+
+  group('single submission', () {
+    Finder addButton() => find.byKey(const ValueKey('env-add-confirm'));
+    bool enabled(WidgetTester tester) =>
+        tester.widget<FilledButton>(addButton()).onPressed != null;
+
+    testWidgets('a double tap asks for the setup status once and adds once', (
+      tester,
+    ) async {
+      final gate = Completer<SetupStatusInfo>();
+      var calls = 0;
+      final t = await _open(
+        tester,
+        signedIn: true,
+        setupStatus: (_) {
+          calls++;
+          return gate.future;
+        },
+      );
+      await _openAddDialog(tester, fromLogin: false);
+      await tester.enterText(find.byKey(const ValueKey('env-url')), _url2);
+      await tester.tap(find.byKey(const ValueKey('env-check')));
+      await tester.pumpAndSettle();
+      await tester.tap(addButton());
+      await tester.pump();
+      expect(enabled(tester), isFalse);
+      await tester.tap(addButton(), warnIfMissed: false);
+      await tester.pump();
+      // Only the dialog asked so far (the login page asks too once the app lands on it).
+      expect(calls, 1);
+      gate.complete(
+        const SetupStatusInfo(
+          needsSetup: false,
+          tokenRequired: false,
+          authMode: 'dev',
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(t.c.read(environmentsProvider).items, hasLength(2));
+      expect(addButton(), findsNothing);
+    });
+
+    testWidgets('Add works again after a duplicate found at the last moment', (
+      tester,
+    ) async {
+      final t = await _open(tester, signedIn: true);
+      await _openAddDialog(tester, fromLogin: false);
+      await tester.enterText(find.byKey(const ValueKey('env-url')), _url2);
+      await tester.tap(find.byKey(const ValueKey('env-check')));
+      await tester.pumpAndSettle();
+      // The same address is stored by another way while the dialog is open.
+      t.c.read(environmentsProvider.notifier).state = t.c
+          .read(environmentsProvider)
+          .copyWith(
+            items: [
+              ...t.c.read(environmentsProvider).items,
+              const AppEnvironment(
+                id: 'env-9',
+                name: 'Same',
+                kind: EnvironmentKind.test,
+                serverUrl: _url2,
+              ),
+            ],
+          );
+      await tester.tap(addButton());
+      await tester.pumpAndSettle();
+      expect(find.text('This server is already in the list.'), findsOneWidget);
+      expect(enabled(tester), isTrue);
+    });
+
+    testWidgets('the setup offer blocks a second submission and later still adds', (
+      tester,
+    ) async {
+      final t = await _open(tester, signedIn: true, needsSetup: true);
+      await _openAddDialog(tester, fromLogin: false);
+      await tester.enterText(find.byKey(const ValueKey('env-url')), _url2);
+      await tester.tap(find.byKey(const ValueKey('env-check')));
+      await tester.pumpAndSettle();
+      await tester.tap(addButton());
+      await tester.pumpAndSettle();
+      // The offer is open: the dialog behind it cannot be submitted again.
+      expect(find.byKey(const ValueKey('setup-offer-later')), findsOneWidget);
+      expect(enabled(tester), isFalse);
+      // The offer's own buttons close only the offer; adding goes on to a closed dialog.
+      await tester.tap(find.byKey(const ValueKey('setup-offer-later')));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(addButton(), findsNothing);
+      expect(t.c.read(environmentsProvider).items, hasLength(2));
+    });
+
+    testWidgets('a setup status that arrives after Cancel adds and pops nothing', (
+      tester,
+    ) async {
+      final gate = Completer<SetupStatusInfo>();
+      final t = await _open(
+        tester,
+        signedIn: true,
+        setupStatus: (_) => gate.future,
+      );
+      await _openAddDialog(tester, fromLogin: false);
+      await tester.enterText(find.byKey(const ValueKey('env-url')), _url2);
+      await tester.tap(find.byKey(const ValueKey('env-check')));
+      await tester.pumpAndSettle();
+      await tester.tap(addButton());
+      await tester.pump();
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      expect(addButton(), findsNothing);
+      // The switcher behind the add dialog is still there.
+      expect(find.byKey(const ValueKey('env-add')), findsOneWidget);
+      gate.complete(
+        const SetupStatusInfo(
+          needsSetup: true,
+          tokenRequired: false,
+          authMode: 'dev',
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.byKey(const ValueKey('env-add')), findsOneWidget);
+      expect(find.text('Set up this server?'), findsNothing);
+      expect(t.c.read(environmentsProvider).items, hasLength(1));
+    });
   });
 }
