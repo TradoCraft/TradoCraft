@@ -28,8 +28,15 @@ only that port to the test machine, and remove it afterwards (`down -v`). Keyclo
 issuer from `KC_HOSTNAME` (behind a reverse proxy it would also need `KC_PROXY_HEADERS`), so the
 issuer is `http://<LAN-IP>:18080/realms/tradocraft`; enter exactly that issuer in tradocraft. The
 redirect URI stays the loopback `http://127.0.0.1:<port>/callback` (it is opened by the browser
-on the test machine itself). The Android emulator reaches the host as `10.0.2.2`: use that as
-`<LAN-IP>` there and in the issuer.
+on the test machine itself). For the Android emulator do not use the LAN override at all.
+`10.0.2.2` is the emulator's name for the host's loopback: it works only as the issuer host the
+app sees and as `KC_HOSTNAME`, never in the Compose `ports` entry (that entry names a host
+address to bind, and `10.0.2.2` is not one). Combination that works: keep the default compose
+file (bound to `127.0.0.1:18080` on the host) and run `adb reverse tcp:18080 tcp:18080`, so the
+emulator's `127.0.0.1:18080` is the host's Keycloak and the issuer is the same
+`http://127.0.0.1:18080/realms/tradocraft` for the app and the API server. Using `10.0.2.2` as
+the issuer would work for the app (host loopback bind plus `KC_HOSTNAME=http://10.0.2.2:18080`)
+but the API server on the host could not fetch the keys from `10.0.2.2`, so avoid it.
 
 ## 1. Linux
 
@@ -54,9 +61,10 @@ rotation, libsecret store with an unlocked keyring. Repeat them through the real
    be stored, the session works until the app closes, nothing readable is written to disk
    (search for the real token values without printing them: put the access and refresh token of
    the session in a file readable only by you (`$TOKENS`, one per line, copied from a debug
-   build), then run `for d in ~/.local/share ~/.config <app data dir>; do grep -rqFf "$TOKENS" "$d"
-   && echo "FOUND in $d" || echo "not found in $d"; done`; expected: not found everywhere; delete
-   `$TOKENS` afterwards), next start
+   build), then run
+   `rc=0; for d in ~/.local/share ~/.config <app data dir>; do [ -d "$d" ] && [ -r "$d" ] || { echo "FAIL: $d missing or unreadable"; rc=1; continue; }; grep -rqFf "$TOKENS" "$d"; case $? in 0) echo "FOUND in $d"; rc=1;; 1) echo "no tokens in $d";; *) echo "FAIL: grep error in $d"; rc=1;; esac; done; echo rc=$rc`;
+   expected: `rc=0` (every directory exists, is readable, and grep exits with status 1, no match;
+   anything else fails the test); delete `$TOKENS` afterwards), next start
    asks for sign-in.
 5. Locked keyring without a prompter (the spike hung here for more than 100 s): start with a
    keyring that is locked and no keyring prompt available. Expected: after about 3 s the app falls
@@ -95,7 +103,7 @@ Not verified at all by the spike.
 
 1. Register the redirect `com.tradocraft.app:/oauth2redirect` (the real reverse-DNS id) in the
    provider, add the intent filter or manifest placeholder for that scheme. Emulator Android 13+
-   with Chrome, the Keycloak reachable from the emulator (`10.0.2.2:18080` for the host).
+   with Chrome, the Keycloak reachable from the emulator (`adb reverse`, see the common setup).
 2. Sign in. Expected: an Auth Tab or custom tab opens, after login it closes itself and the app is
    signed in without the user tapping anything.
 3. Cancel by pressing Back in the tab. Expected: the app shows "sign-in cancelled" and can retry;
@@ -132,7 +140,7 @@ portal differs from the text.
 2. E-mail: `email` present for a member and for a guest user; `xms_edov` present as `true` and
    accepted by the server's `require_verified_claim` policy; a user without `email` falls back as
    configured.
-3. Loopback redirect with the manifest entry `http://127.0.0.1` of type `InstalledClient` on
+3. Loopback redirect with the manifest entry `http://127.0.0.1/callback` of type `InstalledClient` on
    Linux and Windows with a random port. Expected: accepted; with `http://localhost` rejected
    (`AADSTS50011`).
 4. Consent: pre-authorised client, a non-admin user signs in without a consent dialog. Remove the

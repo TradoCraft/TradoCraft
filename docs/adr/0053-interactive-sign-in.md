@@ -139,9 +139,15 @@ the timeout, or after sign-out) must neither persist nor restore tokens. This is
 `TokenStore.write` boundary: every session holds a generation number, incremented by sign-out,
 by a terminal refresh failure and by switching to the memory fallback; each write captures the
 generation when it starts and re-checks it, under the session's lock, immediately before the
-platform call and again before it reports success; a stale write is dropped (and, if the platform
-call was already issued, followed by a delete of the key). Reads on start-up apply the same
-check. Sign-out clears the store **and** increments the generation, so pending writes die.
+platform call and again before it reports success; a stale write is dropped. The stored record
+carries the generation it was written under (`{generation, tokens}`), and the store keeps the
+highest generation it has accepted: a write with a lower generation is refused at the store, and a
+delete is conditional ("delete only if the stored generation is at most G", where G is the
+generation being cleaned up). So a late write of an older attempt can neither overwrite nor
+delete the tokens of a newer sign-in, and a stale write that already reached the platform is
+removed only by a conditional delete for its own generation, which cannot touch newer records.
+Reads on start-up apply the same check. Sign-out clears the store **and** increments the
+generation, so pending writes die.
 
 *Logout.* Delete the local tokens first (the user is signed out even if the network is down),
 then revoke the refresh token where the provider has a `revocation_endpoint`, then open the
