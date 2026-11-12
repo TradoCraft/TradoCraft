@@ -390,14 +390,18 @@ class TutorialController extends Notifier<TutorialState> {
 
   void _begin(String id, int at, {bool probe = true}) {
     _gen++;
-    _retained.clear();
+    final samePending = _actionKey == '$id/$at';
+    if (!samePending) {
+      _actionKey = null;
+      _retained.clear();
+    }
     _set(
       state.copyWith(
         activeId: id,
         stepIndex: at,
         paused: false,
-        actionBusy: false,
-        actionError: null,
+        actionBusy: samePending ? state.actionBusy : false,
+        actionError: samePending ? state.actionError : null,
       ),
     );
     _enterStep(probe: probe);
@@ -444,15 +448,21 @@ class TutorialController extends Notifier<TutorialState> {
       final ctx = state.context;
       Object? data = res.data;
       if (p.expand != null) {
+        // At most 20 records, read in batches of 5 until one of the batches settles the probe.
         final details = <Object?>[];
-        for (final path in p.expand!(data, ctx).take(5)) {
-          final d = await ref
-              .read(dioProvider)
-              .get<Object?>(
-                path,
-                options: Options(extra: {tutorialProbeExtra: true}),
-              );
-          details.add(d.data);
+        final paths = p.expand!(data, ctx).take(20).toList();
+        for (var i = 0; i < paths.length; i += 5) {
+          for (final path in paths.skip(i).take(5)) {
+            final d = await ref
+                .read(dioProvider)
+                .get<Object?>(
+                  path,
+                  options: Options(extra: {tutorialProbeExtra: true}),
+                );
+            details.add(d.data);
+          }
+          if (!ref.mounted || gen != _gen || step != s || !state.running) return;
+          if (p.done(details, ctx)) break;
         }
         if (!ref.mounted || gen != _gen || step != s || !state.running) return;
         data = details;
@@ -496,9 +506,13 @@ class TutorialController extends Notifier<TutorialState> {
     if (captured.isNotEmpty) values = {...values, ...captured};
     final next = state.stepIndex + 1;
     _gen++;
+    _actionKey = null;
+    _retained.clear();
     if (next >= m.steps.length) {
       _set(
         state.copyWith(
+          actionBusy: false,
+          actionError: null,
           values: values,
           completed: {...state.completed, m.id},
           progress: {...state.progress, m.id: 0},
@@ -511,6 +525,8 @@ class TutorialController extends Notifier<TutorialState> {
     }
     _set(
       state.copyWith(
+        actionBusy: false,
+        actionError: null,
         values: values,
         stepIndex: next,
         progress: {...state.progress, m.id: next},
@@ -533,9 +549,16 @@ class TutorialController extends Notifier<TutorialState> {
     final m = mission;
     if (m == null || !state.running || state.stepIndex == 0) return;
     _gen++;
+    _actionKey = null;
+    _retained.clear();
     final at = state.stepIndex - 1;
     _set(
-      state.copyWith(stepIndex: at, progress: {...state.progress, m.id: at}),
+      state.copyWith(
+        stepIndex: at,
+        progress: {...state.progress, m.id: at},
+        actionBusy: false,
+        actionError: null,
+      ),
     );
   }
 
@@ -546,8 +569,13 @@ class TutorialController extends Notifier<TutorialState> {
     final target = id ?? state.activeId;
     if (target == null) return;
     _gen++;
+    if (target == state.activeId) {
+      _actionKey = null;
+      _retained.clear();
+    }
     _set(
       state.copyWith(
+        actionBusy: target == state.activeId ? false : state.actionBusy,
         skipped: {...state.skipped, target},
         activeId: target == state.activeId ? null : state.activeId,
         stepIndex: target == state.activeId ? 0 : state.stepIndex,
@@ -572,6 +600,13 @@ class TutorialController extends Notifier<TutorialState> {
   /// Message ids of the simulated e-mails of the running step, kept so that a retry after an
   /// uncertain answer sends the same Message-ID (the server then drops the duplicate).
   final _retained = <String, String>{};
+
+  /// The step (`chapter/index`) whose action request is in flight, or null. It survives pause and
+  /// resume of that step, so the pending request keeps its busy flag and its Message-ID; any other
+  /// step change forgets it.
+  String? _actionKey;
+
+  String get _stepKey => '${state.activeId}/${state.stepIndex}';
   final _random = Random();
 
   String _retainedId(String kind) => _retained.putIfAbsent(
@@ -587,6 +622,8 @@ class TutorialController extends Notifier<TutorialState> {
     if (s == null || c is! ActionCompletion || !state.running) return;
     if (state.actionBusy) return;
     final gen = _gen;
+    final key = _stepKey;
+    _actionKey = key;
     _set(state.copyWith(actionBusy: true, actionError: null));
     Map<String, String>? captured;
     try {
@@ -602,20 +639,30 @@ class TutorialController extends Notifier<TutorialState> {
         ),
       );
     } catch (e) {
-      if (ref.mounted && gen == _gen && step == s) {
-        _set(
-          state.copyWith(
-            actionBusy: false,
-            actionError: TutorialActionError(
-              e is DioException ? e.response?.statusCode : null,
-              errorMessage(e),
-            ),
-          ),
-        );
-      }
+      // Another step (or a restarted chapter) owns the flags now: leave them alone.
+      if (!ref.mounted || _actionKey != key) return;
+      _actionKey = null;
+      _set(
+        state.copyWith(
+          actionBusy: false,
+          actionError: gen == _gen
+              ? TutorialActionError(
+                  e is DioException ? e.response?.statusCode : null,
+                  errorMessage(e),
+                )
+              : null,
+        ),
+      );
       return;
     }
-    if (!ref.mounted || gen != _gen || step != s) return;
+    if (!ref.mounted || _actionKey != key) return;
+    _actionKey = null;
+    if (gen != _gen || step != s) {
+      // Paused and resumed meanwhile: the answer is not used, the button is free again and a
+      // new press sends the same Message-ID (kept in _retained), so the server drops a duplicate.
+      _set(state.copyWith(actionBusy: false));
+      return;
+    }
     _retained.clear();
     _set(state.copyWith(actionBusy: false, actionError: null));
     _complete({...?captured});
