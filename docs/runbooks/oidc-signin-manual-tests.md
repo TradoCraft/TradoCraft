@@ -9,8 +9,27 @@ Common setup: a Keycloak (`docker compose -p oidcspike up -d` in `tool/oidc-spik
 user `alice` / `alice-pass`) registered as a provider on a test API instance with `client_id`
 `tradocraft-app`, `token_use` `id_token`, and `ALLOW_INSECURE_IDP_URLS=true` (development only,
 ADR 0052). Admin console `http://127.0.0.1:18080` (`admin` / `admin`) for revoking sessions.
-Windows and Android need the Keycloak reachable from that machine: use the host's LAN address
-instead of `127.0.0.1` for the issuer and keep the loopback `127.0.0.1` for the redirect.
+Windows and Android need the Keycloak reachable from that machine. The default compose file
+binds `127.0.0.1` only and stays unchanged; use an override file kept outside the repository
+(for example `/tmp/oidc-lan.yml`), with `<LAN-IP>` the host's address on the test network:
+
+```yaml
+services:
+  keycloak:
+    ports: !override
+      - "<LAN-IP>:18080:8080"
+    environment:
+      KC_HOSTNAME: http://<LAN-IP>:18080
+      KC_HOSTNAME_STRICT: "true"
+```
+
+Start it with `docker compose -p oidcspike -f docker-compose.yml -f /tmp/oidc-lan.yml up -d`, open
+only that port to the test machine, and remove it afterwards (`down -v`). Keycloak builds the
+issuer from `KC_HOSTNAME` (behind a reverse proxy it would also need `KC_PROXY_HEADERS`), so the
+issuer is `http://<LAN-IP>:18080/realms/tradocraft`; enter exactly that issuer in tradocraft. The
+redirect URI stays the loopback `http://127.0.0.1:<port>/callback` (it is opened by the browser
+on the test machine itself). The Android emulator reaches the host as `10.0.2.2`: use that as
+`<LAN-IP>` there and in the issuer.
 
 ## 1. Linux
 
@@ -33,7 +52,11 @@ rotation, libsecret store with an unlocked keyring. Repeat them through the real
 4. Without a keyring (no Secret Service running, for example a minimal window manager or
    `dbus-run-session` without keyring): sign in. Expected: the app tells once that tokens cannot
    be stored, the session works until the app closes, nothing readable is written to disk
-   (`grep -r alice ~/.local/share ~/.config` and the app data directory find no token), next start
+   (search for the real token values without printing them: put the access and refresh token of
+   the session in a file readable only by you (`$TOKENS`, one per line, copied from a debug
+   build), then run `for d in ~/.local/share ~/.config <app data dir>; do grep -rqFf "$TOKENS" "$d"
+   && echo "FOUND in $d" || echo "not found in $d"; done`; expected: not found everywhere; delete
+   `$TOKENS` afterwards), next start
    asks for sign-in.
 5. Locked keyring without a prompter (the spike hung here for more than 100 s): start with a
    keyring that is locked and no keyring prompt available. Expected: after about 3 s the app falls

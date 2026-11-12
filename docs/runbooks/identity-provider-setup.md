@@ -28,10 +28,11 @@ Authentication
 4. Authentication, Add a platform, **Mobile and desktop applications**. Add the Android custom
    scheme redirect `com.tradocraft.app:/oauth2redirect` (replace with the real reverse-DNS
    application id) and save.
-5. The portal rejects `http://127.0.0.1` in that box. Add it through the manifest instead:
+5. The portal rejects `http://127.0.0.1/callback` in that box. Add it through the manifest instead:
    App registration, Manifest, find `replyUrlsWithType` and add
-   `{ "url": "http://127.0.0.1", "type": "InstalledClient" }`, save. (Entra ignores the port of a
-   loopback redirect, so the random port of the app matches.) Use `127.0.0.1`, not `localhost`.
+   `{ "url": "http://127.0.0.1/callback", "type": "InstalledClient" }`, save. The path must be the
+   one the app uses (`/callback`); Entra ignores the port of a loopback redirect, so the random
+   port of the app matches. Use `127.0.0.1`, not `localhost`.
 6. Authentication, Advanced settings: **Allow public client flows** = **Yes**. Save.
 7. Web, later: add the platform **Single-page application** with the web app's `auth.html` URL.
    Do not put the web redirect under "Web".
@@ -66,6 +67,13 @@ Settings to enter in tradocraft (Administration, Identity providers)
       the Test button on a real token and copy the `aud` it shows.
     - Scopes: `openid profile email offline_access api://<client-id>/access_as_user`.
     - `token_use`: `access_token`.
+    - Caution: Entra may not return `xms_edov` for every user (accounts without a verified
+      domain, guests, some tenants), and `require_verified_claim` then refuses their first
+      sign-in. For such accounts choose one: (a) add the optional claim and check in a real token
+      that it is populated; (b) keep the policy and have an administrator link the subject
+      (`PUT /admin/users/{id}/oidc-subject`) with the `subject_only` rule ("only existing
+      subjects"); (c) `trust_provider_email` only for a single-tenant directory the company
+      fully controls, together with `allowed_email_domains`.
     - E-mail claim `email` (or `preferred_username` if `email` is empty for some accounts) and
       verification claim `xms_edov`; or e-mail policy `trust_provider_email` for a single-tenant
       directory your company fully controls (ADR 0052).
