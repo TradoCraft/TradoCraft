@@ -183,8 +183,9 @@ catalogue). It works once, only while no company exists
   `openid profile email`) before signing in: they define a read-only fallback provider
   ([ADR 0052](docs/adr/0052-configurable-identity-providers.md)). Once signed in, an administrator
   of the primary company (the first company created; another one can be made primary with
-  `POST /api/v1/admin/companies/{id}/make-primary`) adds database providers through the
-  authenticated admin API `/api/v1/admin/identity-providers` (permission `identity.admin`). The API
+  `POST /api/v1/admin/companies/{id}/make-primary`) adds database providers in the app
+  (Admin > Identity providers) or through the authenticated admin API
+  `/api/v1/admin/identity-providers` (permission `identity.admin`). The API
   may start without the variables when the database has providers; with neither, every request
   answers 401 and the bootstrap still works with `BOOTSTRAP_TOKEN`.
 
