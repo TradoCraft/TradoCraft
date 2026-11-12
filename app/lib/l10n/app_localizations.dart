@@ -11430,6 +11430,36 @@ abstract class AppLocalizations {
   /// **'Replay'**
   String get tutReplay;
 
+  /// No description provided for @tutFinishedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chapter {name} complete'**
+  String tutFinishedTitle(String name);
+
+  /// No description provided for @tutFinishedNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Well done. Next up: {name}. Start it now, or pick it later from the chapter map.'**
+  String tutFinishedNext(String name);
+
+  /// No description provided for @tutFinishedLast.
+  ///
+  /// In en, this message translates to:
+  /// **'That was the last chapter. Well done. You can replay any chapter from the chapter map.'**
+  String get tutFinishedLast;
+
+  /// No description provided for @tutStartNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Start next chapter'**
+  String get tutStartNext;
+
+  /// No description provided for @tutBackToMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to chapter map'**
+  String get tutBackToMap;
+
   /// No description provided for @tutSkipChapter.
   ///
   /// In en, this message translates to:

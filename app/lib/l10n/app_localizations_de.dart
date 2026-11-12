@@ -6353,6 +6353,26 @@ class AppLocalizationsDe extends AppLocalizations {
   String get tutReplay => 'Wiederholen';
 
   @override
+  String tutFinishedTitle(String name) {
+    return 'Kapitel $name abgeschlossen';
+  }
+
+  @override
+  String tutFinishedNext(String name) {
+    return 'Gut gemacht. Als Nächstes: $name. Starte es jetzt oder wähle es später in der Kapitelübersicht.';
+  }
+
+  @override
+  String get tutFinishedLast =>
+      'Das war das letzte Kapitel. Gut gemacht. Jedes Kapitel lässt sich in der Kapitelübersicht wiederholen.';
+
+  @override
+  String get tutStartNext => 'Nächstes Kapitel starten';
+
+  @override
+  String get tutBackToMap => 'Zurück zur Kapitelübersicht';
+
+  @override
   String get tutSkipChapter => 'Kapitel überspringen';
 
   @override

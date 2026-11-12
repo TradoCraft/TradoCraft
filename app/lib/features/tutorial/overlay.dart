@@ -142,6 +142,8 @@ class _TutorialHostState extends ConsumerState<TutorialHost> {
     if (s.loaded && signedIn) {
       if (s.activeId != null && !s.paused && !onMap) {
         layer = _RunningLayer(contentBox: _contentBox, router: widget.router);
+      } else if (s.activeId == null && s.finishedId != null && !onMap) {
+        layer = _FinishedCard(router: widget.router);
       } else if (s.activeId != null && s.paused && !onMap) {
         layer = const _PausedPill();
       } else if (s.activeId == null &&
@@ -434,6 +436,94 @@ class NarratorCard extends ConsumerWidget {
                           key: const ValueKey('tutorial-pause'),
                           onPressed: c.pause,
                           child: Text(l.tutPause),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The card shown when a chapter has just been finished: what comes next, never a dead end.
+class _FinishedCard extends ConsumerWidget {
+  const _FinishedCard({required this.router});
+
+  final GoRouter? router;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    final c = ref.read(tutorialProvider.notifier);
+    final done = c.finishedChapter;
+    if (done == null) return const SizedBox.shrink();
+    final next = c.nextChapter;
+    final name = tutorialText(l, missionKey(done, 'Title'));
+    final narrow = MediaQuery.sizeOf(context).width < 800;
+    return Align(
+      alignment: Alignment.bottomRight,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(16, 16, 16, narrow ? 92 : 16),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: Semantics(
+            container: true,
+            explicitChildNodes: true,
+            child: Material(
+              key: const ValueKey('tutorial-finished'),
+              elevation: 8,
+              color: theme.colorScheme.surface,
+              surfaceTintColor: theme.colorScheme.surfaceTint,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+                side: BorderSide(color: theme.colorScheme.outlineVariant),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Semantics(
+                      header: true,
+                      liveRegion: true,
+                      child: Text(
+                        l.tutFinishedTitle(name),
+                        style: theme.textTheme.titleMedium,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      next == null
+                          ? l.tutFinishedLast
+                          : l.tutFinishedNext(
+                              tutorialText(l, missionKey(next, 'Title')),
+                            ),
+                    ),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      children: [
+                        if (next != null)
+                          FilledButton(
+                            key: const ValueKey('tutorial-finished-next'),
+                            onPressed: () => c.start(next.id),
+                            child: Text(l.tutStartNext),
+                          ),
+                        OutlinedButton(
+                          key: const ValueKey('tutorial-finished-map'),
+                          onPressed: () {
+                            c.dismissFinished();
+                            router?.go(tutorialRoute);
+                          },
+                          child: Text(l.tutBackToMap),
                         ),
                       ],
                     ),
