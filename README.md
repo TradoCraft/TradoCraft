@@ -86,6 +86,12 @@ IMAP unless `ALLOW_INBOUND_MAIL_IN_NON_LIVE=1`
 ([ADR 0048](docs/adr/0048-environment-clones-and-outbound-safety.md),
 [runbook](docs/runbooks/test-environments.md)).
 
+Story-mission tutorial. `scripts/tutorial-env up` creates a clean, throwaway environment of kind
+`tutorial` with the demo data and prints its address; add that address in the app (login page >
+Environments), sign in as `admin@example.com` and start it from the account menu > Tutorial.
+`scripts/tutorial-env reset` replays it from chapter 0
+([runbook](docs/runbooks/test-environments.md#do-the-tutorial-in-three-commands)).
+
 Worker (helpdesk e-mail). By default outgoing mail is written to `./outbox` as `.eml` files;
 set `MAIL_TRANSPORT=smtp` and `SMTP_*`, and `IMAP_*` to fetch incoming mail (see `.env.example`):
 

@@ -11,6 +11,36 @@ The user must be able to create and drop databases. Optional: `AUTH_MODE`, `DEV_
 `OIDC_*`, `ENVCTL_DIR`, `ENVCTL_PORT_MIN`/`ENVCTL_PORT_MAX`, `ENVCTL_API_BIN`. Protect the live
 database from `drop`: `scripts/envctl register live_main --database tradocraft --kind live`.
 
+## Do the tutorial in three commands
+
+`scripts/tutorial-env` is a thin wrapper over `envctl` that gives you a clean environment of kind
+`tutorial` with the demo data, to do the story-mission tutorial ([ADR 0045](../adr/0045-story-mission-tutorial.md)) in.
+
+```bash
+scripts/tutorial-env up       # create (first time), start, print the address and the steps
+# in the app: login page > Environments > add the printed address; sign in as
+# admin@example.com; account menu > Tutorial > Start chapter 0
+scripts/tutorial-env reset    # replay from chapter 0 (drops and recreates; asks first, --yes skips)
+scripts/tutorial-env down     # stop the instance, keep the data (`up` starts it again)
+```
+
+Also `status` (address, kind, state, migration and app version) and `address` (only the URL, for
+scripts). `--name NAME` replaces the default name `tutorial`; `--config`, `--dir` and
+`--database-url` are passed to `envctl` unchanged. `reset` refuses any environment that is not
+registered as kind tutorial or test.
+
+- Demo data: the demo company with the development users (for example `admin@example.com`). It
+  needs `AUTH_MODE=dev` (the `envctl` default), so there is no password.
+- Mail goes to files only (`ENVCTL_DIR/envs/<name>/outbox`) and mailbox polling is off, as in every
+  non-live environment.
+- The database is new and separate, so the tutorial `TUT-` records never mix with real data.
+- Needs a running PostgreSQL reachable through `DATABASE_URL` and the API binary or cargo (see
+  Set up). Set `TYPST_BIN` if `typst` is not on `PATH`: chapters 8 and 9 create quotation and order
+  PDFs (`up` warns when it is missing).
+- Run the Flutter app from an up-to-date checkout, add the environment with the printed address.
+- `scripts/tutorial-env-smoke-test.sh` verifies the wrapper end to end (throwaway PostgreSQL in
+  Docker on port 55470, or `SMOKE_DATABASE_URL`).
+
 ## Clone, start, connect
 
 ```bash

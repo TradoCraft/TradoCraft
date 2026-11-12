@@ -1,0 +1,188 @@
+#!/usr/bin/env bash
+# tutorial-env: a clean, throwaway environment of kind "tutorial" with the demo data, to do the
+# story-mission tutorial in (ADR 0045). A thin wrapper over scripts/envctl (ADR 0048).
+#
+# Usage: scripts/tutorial-env help
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ENVCTL="$SCRIPT_DIR/envctl"
+DEFAULT_NAME=tutorial
+
+die() { echo "tutorial-env: $*" >&2; exit 1; }
+info() { echo "tutorial-env: $*"; }
+
+usage() {
+  cat <<'EOF2'
+tutorial-env: a clean environment with the demo data for the story-mission tutorial
+
+Usage: tutorial-env [--name NAME] [--yes] [--config FILE] [--dir DIR] [--database-url URL] <command>
+
+Commands:
+  up        Create the environment (kind tutorial, demo data) if needed, start it, print how to
+            connect the app. Does nothing when it already runs.
+  reset     Stop, drop and recreate it with the demo data, to replay from chapter 0 (asks first;
+            --yes skips the question). Only environments of kind tutorial or test.
+  down      Stop the instance (the data is kept; `up` starts it again).
+  status    Address, kind, running state, migration and app version.
+  address   Print only the URL (nothing and exit 1 when it is not running).
+  help      This text.
+
+Default NAME: tutorial. The connection settings (DATABASE_URL, .env, --config, --dir,
+--database-url) are the ones of scripts/envctl and are passed through unchanged. Needs a running
+PostgreSQL and the API binary (or cargo). Set TYPST_BIN when typst is not on PATH.
+EOF2
+}
+
+usage_error() { echo "tutorial-env: $*" >&2; usage >&2; exit 2; }
+
+NAME="$DEFAULT_NAME"
+YES=no
+CMD=""
+FLAGS=()
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --name) [[ $# -ge 2 ]] || usage_error "--name needs a value"; NAME="$2"; shift 2 ;;
+    --yes|-y) YES=yes; shift ;;
+    --config|--dir|--database-url)
+      [[ $# -ge 2 ]] || usage_error "$1 needs a value"
+      FLAGS+=("$1" "$2"); shift 2 ;;
+    -h|--help|help) usage; exit 0 ;;
+    -*) usage_error "unknown option $1" ;;
+    *) [[ -z "$CMD" ]] || usage_error "unexpected argument $1"; CMD="$1"; shift ;;
+  esac
+done
+[[ -n "$CMD" ]] || usage_error "a command is required"
+case "$CMD" in up|reset|down|status|address) ;; *) usage_error "unknown command $CMD" ;; esac
+
+# Same rules as envctl (which validates again).
+[[ "$NAME" =~ ^[a-z][a-z0-9_]{0,39}$ ]] || die "unsafe name '$NAME': lower-case letters, digits and underscores, starting with a letter (max 40)"
+case "$NAME" in postgres|template0|template1|live|default|all) die "name '$NAME' is reserved" ;; esac
+[[ -x "$ENVCTL" ]] || die "cannot find $ENVCTL"
+
+ectl() { "$ENVCTL" "${FLAGS[@]+"${FLAGS[@]}"}" "$@"; }
+
+# State of the named environment, read from envctl status: REG=yes|no, KIND, RUNNING=yes|no, URL.
+REG=no KIND="" RUNNING=no URL=""
+load_state() {
+  local out err_file rc=0
+  REG=no KIND="" RUNNING=no URL=""
+  err_file="$(mktemp)"
+  out="$(ectl status "$NAME" 2>"$err_file")" || rc=$?
+  if ((rc != 0)); then
+    if grep -q "unknown environment" "$err_file"; then rm -f "$err_file"; return 0; fi
+    cat "$err_file" >&2; rm -f "$err_file"; exit 1
+  fi
+  rm -f "$err_file"
+  REG=yes
+  KIND="$(sed -n 's/.* kind=\([^ ]*\).*/\1/p' <<<"$out")"
+  [[ "$(sed -n 's/.* api=\([^ ]*\).*/\1/p' <<<"$out")" == running ]] && RUNNING=yes
+  URL="$(sed -n 's/.* url=\([^ ]*\).*/\1/p' <<<"$out")"
+  return 0
+}
+
+# A running API answers its environment document; this is the real check, not just the pid.
+answers() { [[ -n "$URL" ]] && curl -fsS -m 3 "$URL/api/v1/meta/environment" >/dev/null 2>&1; }
+
+check_kind() {
+  case "$KIND" in
+    tutorial|test) ;;
+    *) die "'$NAME' is registered as kind '$KIND': only tutorial or test environments are handled here" ;;
+  esac
+}
+
+print_howto() {
+  echo
+  echo "Tutorial environment '$NAME' is ready."
+  echo "  Address:  $URL"
+  echo "  Sign in:  admin@example.com (dev authentication, no password)"
+  echo
+  echo "In the app:"
+  echo "  1. Login page > Environments > add the address above."
+  echo "  2. Sign in as admin@example.com."
+  echo "  3. Account menu > Tutorial > Start chapter 0."
+  echo
+  echo "Replay from the start: scripts/tutorial-env reset.  Stop: scripts/tutorial-env down."
+  if ! command -v "${TYPST_BIN:-typst}" >/dev/null 2>&1; then
+    echo "Warning: typst not found (set TYPST_BIN): chapters 8 and 9 create quotation and order PDFs." >&2
+  fi
+  return 0
+}
+
+# create-empty --seed also starts the instance.
+create_env() { ectl create-empty "$NAME" --kind tutorial --seed; }
+
+cmd_up() {
+  load_state
+  if [[ "$REG" == no ]]; then
+    create_env
+  else
+    check_kind
+    if [[ "$RUNNING" == yes ]]; then
+      info "'$NAME' is already running"
+    else
+      ectl start "$NAME"
+    fi
+  fi
+  load_state
+  if [[ "$RUNNING" != yes ]] || ! answers; then
+    echo "Warning: '$NAME' is not running after the start attempt; see api.log under ENVCTL_DIR/envs/$NAME." >&2
+  fi
+  print_howto
+}
+
+cmd_reset() {
+  local answer
+  load_state
+  [[ "$REG" == yes ]] || die "unknown environment '$NAME': nothing to reset (use 'up' first)"
+  check_kind
+  if [[ "$YES" != yes ]]; then
+    [[ -t 0 ]] || die "not interactive: pass --yes to confirm"
+    read -r -p "Reset '$NAME': drop its database and recreate it with the demo data? Type the name to confirm: " answer
+    [[ "$answer" == "$NAME" ]] || die "not confirmed"
+  fi
+  ectl drop "$NAME" --yes
+  create_env
+  load_state
+  print_howto
+}
+
+cmd_down() {
+  load_state
+  [[ "$REG" == yes ]] || die "unknown environment '$NAME'"
+  check_kind
+  ectl stop "$NAME"
+}
+
+cmd_status() {
+  local doc="" mig="" app="-" state=stopped
+  load_state
+  [[ "$REG" == yes ]] || die "unknown environment '$NAME' (create it with: scripts/tutorial-env up)"
+  [[ "$RUNNING" == yes ]] && state=running
+  if [[ "$RUNNING" == yes && -n "$URL" ]]; then
+    doc="$(curl -fsS -m 3 "$URL/api/v1/meta/environment" 2>/dev/null || true)"
+    [[ -z "$doc" ]] || app="$(jq -r '.version // "-"' <<<"$doc" 2>/dev/null || echo "-")"
+  fi
+  mig="$(ectl versions 2>/dev/null | awk -v n="$NAME" '$1 == n { print $4 }')" || true
+  [[ -n "$mig" ]] || mig="-"
+  echo "name:      $NAME"
+  echo "kind:      $KIND"
+  echo "state:     $state"
+  echo "address:   ${URL:--}"
+  echo "app:       $app"
+  echo "migration: $mig"
+}
+
+cmd_address() {
+  load_state
+  [[ "$REG" == yes && "$RUNNING" == yes && -n "$URL" ]] || exit 1
+  echo "$URL"
+}
+
+case "$CMD" in
+  up) cmd_up ;;
+  reset) cmd_reset ;;
+  down) cmd_down ;;
+  status) cmd_status ;;
+  address) cmd_address ;;
+esac
