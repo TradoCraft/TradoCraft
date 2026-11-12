@@ -381,7 +381,16 @@ void main() {
           ),
         ),
       );
-      await expectLater(loginVia(c2, FakeBrowser()), throwsA(anything));
+      await expectLater(
+        loginVia(c2, FakeBrowser()),
+        throwsA(
+          isA<SignInException>().having(
+            (e) => e.message,
+            'message',
+            contains('invalidated by sign-out'),
+          ),
+        ),
+      );
       expect(store.value, isNull, reason: 'late result must not be stored');
 
       // Non-https, non-loopback issuer is refused before any request.
@@ -425,4 +434,112 @@ void main() {
       );
     },
   );
+
+  test('B9 sign-out during discovery: no listener, no waiting', () async {
+    late InHouseOidcClient c;
+    c = InHouseOidcClient(
+      cfg,
+      MemoryTokenStore(),
+      dio: testDio(
+        InterceptorsWrapper(
+          onResponse: (r, h) async {
+            if (r.requestOptions.uri.path.endsWith('openid-configuration')) {
+              await c.signOut();
+            }
+            h.next(r);
+          },
+        ),
+      ),
+    );
+    var presented = false;
+    final sw = Stopwatch()..start();
+    await expectLater(
+      c.signIn(
+        present: (_) {
+          presented = true;
+        },
+      ),
+      throwsA(
+        isA<SignInException>().having(
+          (e) => e.message,
+          'message',
+          contains('invalidated by sign-out'),
+        ),
+      ),
+    );
+    expect(presented, isFalse, reason: 'URL must not be presented');
+    expect(sw.elapsed, lessThan(const Duration(seconds: 5)));
+    // The client is usable again (no stuck "sign-in active" flag).
+    final c2 = InHouseOidcClient(cfg, MemoryTokenStore());
+    await loginVia(c2, FakeBrowser());
+  });
+
+  test('B10 discovery redirected to plain HTTP is rejected', () async {
+    final c = InHouseOidcClient(
+      cfg,
+      MemoryTokenStore(),
+      dio: testDio(
+        InterceptorsWrapper(
+          onRequest: (o, h) {
+            if (o.uri.path.endsWith('openid-configuration')) {
+              return h.resolve(
+                Response(
+                  requestOptions: o,
+                  statusCode: 200,
+                  data: {'issuer': kIssuer},
+                  redirects: [
+                    RedirectRecord(
+                      302,
+                      'GET',
+                      Uri.parse('http://idp.example.test/.well-known/x'),
+                    ),
+                  ],
+                ),
+              );
+            }
+            h.next(o);
+          },
+        ),
+      ),
+    );
+    await expectLater(
+      c.signIn(present: (_) {}),
+      throwsA(
+        isA<SignInException>().having(
+          (e) => e.message,
+          'message',
+          contains('must be https'),
+        ),
+      ),
+    );
+  });
+
+  test('B11 unauthorized_client on refresh keeps the session', () async {
+    final store = MemoryTokenStore();
+    await loginVia(InHouseOidcClient(cfg, store), FakeBrowser());
+    final before = store.value!.refreshToken;
+    final c = InHouseOidcClient(
+      cfg,
+      store,
+      dio: testDio(
+        InterceptorsWrapper(
+          onRequest: (o, h) {
+            if (o.uri.path.endsWith('/token')) {
+              return h.resolve(
+                Response(
+                  requestOptions: o,
+                  statusCode: 400,
+                  data: {'error': 'unauthorized_client'},
+                ),
+              );
+            }
+            h.next(o);
+          },
+        ),
+      ),
+    );
+    await expectLater(c.refresh(), throwsA(isA<SignInException>()));
+    expect(store.value, isNotNull);
+    expect(store.value!.refreshToken, before);
+  });
 }

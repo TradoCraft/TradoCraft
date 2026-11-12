@@ -250,6 +250,8 @@ class InHouseOidcClient {
       );
       if ((r.statusCode ?? 500) >= 400)
         throw TransientAuthException('GET $url -> ${r.statusCode}');
+      // A redirect must not downgrade to plain HTTP: check where we ended up.
+      checkedUrl(r.realUri.toString(), 'final URL of $url');
       return r.data;
     } on DioException catch (e) {
       throw TransientAuthException(e);
@@ -270,10 +272,12 @@ class InHouseOidcClient {
     try {
       final gen = _generation;
       final meta = await _discovery();
+      if (gen != _generation) throw SignInException('invalidated by sign-out');
       final pkce = Pkce.generate();
       final state = randomToken();
       final nonce = randomToken();
       listener = _pending = await LoopbackListener.start();
+      if (gen != _generation) throw SignInException('invalidated by sign-out');
       // Deadline and cancellation are observed from here on, also while
       // [present] is still running (or never returns).
       final callback = listener.result.timeout(
@@ -402,7 +406,6 @@ class InHouseOidcClient {
         'interaction_required',
         'login_required',
         'consent_required',
-        'unauthorized_client',
       };
       if (dead.contains(code) && form['grant_type'] == 'refresh_token') {
         throw SignedOutException(code, body['error_description'] as String?);
