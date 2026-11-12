@@ -31,10 +31,13 @@ async fn stop_for(db: &PgPool, minutes: i32) {
     .unwrap();
 }
 
+// Sort by byte order ("C"), not by the database's collation: under en_US (the postgres Docker
+// image's default) punctuation is ignored, so "admin@example.com" sorts before
+// "admin.nl@example.com", and the other way round under "C".
 async fn outage_mails(db: &PgPool) -> Vec<(String, String)> {
     sqlx::query_as(
         "SELECT to_address, body FROM core.mail_outbox
-         WHERE subject = 'The background worker was down' ORDER BY to_address",
+         WHERE subject = 'The background worker was down' ORDER BY to_address COLLATE \"C\"",
     )
     .fetch_all(db)
     .await
@@ -111,7 +114,7 @@ async fn coming_back_after_a_gap_records_it_and_mails_the_administrators(db: PgP
     let mails: Vec<(String, String)> = sqlx::query_as(
         "SELECT to_address, subject FROM core.mail_outbox
          WHERE subject IN ('The background worker was down', 'De achtergrondverwerking lag stil')
-         ORDER BY to_address",
+         ORDER BY to_address COLLATE \"C\"",
     )
     .fetch_all(&db)
     .await
