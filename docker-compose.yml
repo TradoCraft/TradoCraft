@@ -37,7 +37,7 @@ services:
       # creates the company (ADR 0047). Outside AUTH_MODE=dev the endpoint is disabled unless this
       # secret is set (e.g. `openssl rand -hex 24`); in dev mode it is optional.
       # BOOTSTRAP_TOKEN: change-me
-      # Identity providers are configured in the app (ADR 0051). OIDC_ISSUER and OIDC_AUDIENCE
+      # Identity providers are configured in the app (ADR 0052). OIDC_ISSUER and OIDC_AUDIENCE
       # (AUTH_MODE=oidc) are only the optional read-only fallback provider.
       # OIDC_ISSUER: https://login.example.com/realms/acme
       # OIDC_AUDIENCE: tradocraft

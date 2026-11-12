@@ -115,7 +115,7 @@ pub fn app_with_options(
     app_with_identity(state, environment, bootstrap, IdpSettings::default())
 }
 
-/// The application with the identity provider settings (ADR 0051) the admin API validates and
+/// The application with the identity provider settings (ADR 0052) the admin API validates and
 /// tests providers with; the same settings the registry in `state.auth` runs with.
 pub fn app_with_identity(
     state: AppState,

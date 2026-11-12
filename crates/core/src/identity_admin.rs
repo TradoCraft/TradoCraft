@@ -1,4 +1,4 @@
-//! Administration of the identity providers (ADR 0051) and the public provider list for the
+//! Administration of the identity providers (ADR 0052) and the public provider list for the
 //! sign-in page. Changing providers is changing who may sign in to the whole installation, so it
 //! needs `identity.admin` and the admin role in the oldest company.
 

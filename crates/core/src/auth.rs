@@ -28,7 +28,7 @@ pub enum AuthConfig {
     Dev {
         default_email: Option<String>,
     },
-    /// OpenID Connect against the configured identity providers (ADR 0051).
+    /// OpenID Connect against the configured identity providers (ADR 0052).
     Oidc(IdentityProviders),
 }
 
@@ -161,7 +161,7 @@ pub enum Permission {
     ReportsRead,
     /// Create, change and delete one's own reports and share them with the company.
     ReportsWrite,
-    /// Configure the identity providers of the installation (ADR 0051). Also requires the admin
+    /// Configure the identity providers of the installation (ADR 0052). Also requires the admin
     /// role in the installation's oldest company.
     IdentityAdmin,
 }
@@ -784,7 +784,7 @@ struct Decision {
 
 /// The value stored in `core.users.oidc_subject`: issuer-qualified (`<issuer>|<sub>`) for database
 /// providers, because the same `sub` can repeat across issuers; legacy unqualified for the
-/// environment provider (ADR 0051).
+/// environment provider (ADR 0052).
 pub fn stored_subject(cfg: &ProviderConfig, sub: &str) -> String {
     match cfg.source {
         ProviderSource::Env => sub.to_string(),

@@ -124,7 +124,7 @@ async fn main() -> anyhow::Result<()> {
             }
         }
         "oidc" => {
-            // OIDC_ISSUER/OIDC_AUDIENCE are the optional read-only fallback provider (ADR 0051);
+            // OIDC_ISSUER/OIDC_AUDIENCE are the optional read-only fallback provider (ADR 0052);
             // more providers come from the database.
             let env_provider = match (env("OIDC_ISSUER"), env("OIDC_AUDIENCE")) {
                 (Some(i), Some(a)) => Some(ProviderConfig::from_env(&i, &a)),
