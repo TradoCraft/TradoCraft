@@ -106,7 +106,7 @@ default `id_token`, returned by `GET /api/v1/auth/providers` next to `client_id`
 The server already verifies `aud`, so what the app sends must carry the audience the
 administrator configured. `token_use` only tells the client which token to send; the server
 verifies an ID token and an access token identically and does not read the setting when
-authenticating (phase 1 stores and exposes it, the admin form edits it, the Entra preset selects
+authenticating, so it does not reject a token because it is of the other kind (phase 1 stores and exposes it, the admin form edits it, the Entra preset selects
 `access_token`):
 - Keycloak and generic OIDC: `id_token` works out of the box (`aud` = client id). `access_token`
   works when the client has an audience mapper (verified in the spike: `aud` contains

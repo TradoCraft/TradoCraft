@@ -7973,7 +7973,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get idpFieldScopes => 'Scopes';
 
   @override
-  String get idpFieldTokenUse => 'Jeton à envoyer';
+  String get idpFieldTokenUse =>
+      'Jeton à envoyer (pas encore utilisé pour la connexion)';
 
   @override
   String get idpTokenUseIdTitle => 'Jeton d\'identité';

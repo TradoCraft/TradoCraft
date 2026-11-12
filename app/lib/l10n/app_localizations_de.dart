@@ -7981,7 +7981,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get idpFieldScopes => 'Scopes';
 
   @override
-  String get idpFieldTokenUse => 'Zu sendendes Token';
+  String get idpFieldTokenUse =>
+      'Zu sendendes Token (noch nicht für die Anmeldung verwendet)';
 
   @override
   String get idpTokenUseIdTitle => 'ID-Token';

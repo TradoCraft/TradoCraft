@@ -67,9 +67,11 @@ Settings to enter in tradocraft (Administration, Identity providers)
       the Test button on a real token and copy the `aud` it shows.
     - Scopes: `openid profile email offline_access api://<client-id>/access_as_user`.
     - Token to send (`token_use`): **Access token** (`access_token`), the access token of our own
-      API. The preset selects it. The server verifies both token kinds the same way (signature,
-      issuer, audience), so a wrong choice shows up as a refused sign-in (audience), not as a
-      different check.
+      API. The preset selects it. The setting is stored and returned to the app for the future
+      interactive sign-in; the server does **not** enforce the token kind. It verifies any token
+      the same way (signature, issuer, audience) and refuses it on a mismatch (for example an
+      `aud` that is not the configured audience), whichever kind it is. An ID token whose `aud`
+      matches the audience would therefore still be accepted.
     - Caution: Entra may not return `xms_edov` for every user (accounts without a verified
       domain, guests, some tenants), and `require_verified_claim` then refuses their first
       sign-in. For such accounts choose one: (a) add the optional claim and check in a real token
@@ -114,7 +116,8 @@ Settings to enter in tradocraft
    - Scopes: `openid profile email offline_access`.
    - Token to send (`token_use`): **ID token** (`id_token`, the default; `aud` = client id) or
      `access_token` with the audience mapper from step 5. Keycloak and generic providers: keep the
-     default unless you need the access token.
+     default unless you need the access token. The server does not enforce this choice either:
+     it only checks the token it receives (signature, issuer, audience).
    - E-mail claim `email`, verification claim `email_verified`, e-mail policy `require_verified_claim`.
 9. Test button with a real token: accepted, `aud` shown, e-mail resolves to a user.
 

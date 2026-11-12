@@ -2526,7 +2526,7 @@
   "idpFieldAudience": "Audience",
   "idpFieldClientId": "Identifiant client (client public, sans secret)",
   "idpFieldScopes": "Scopes",
-  "idpFieldTokenUse": "Jeton à envoyer",
+  "idpFieldTokenUse": "Jeton à envoyer (pas encore utilisé pour la connexion)",
   "idpTokenUseIdTitle": "Jeton d'identité",
   "idpTokenUseIdBody": "Par défaut. Fonctionne avec Keycloak et la plupart des fournisseurs OpenID Connect : l'audience est l'identifiant client.",
   "idpTokenUseAccessTitle": "Jeton d'accès",

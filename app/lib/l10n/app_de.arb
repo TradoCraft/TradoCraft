@@ -2526,7 +2526,7 @@
   "idpFieldAudience": "Audience",
   "idpFieldClientId": "Client-ID (öffentlicher Client, kein Secret)",
   "idpFieldScopes": "Scopes",
-  "idpFieldTokenUse": "Zu sendendes Token",
+  "idpFieldTokenUse": "Zu sendendes Token (noch nicht für die Anmeldung verwendet)",
   "idpTokenUseIdTitle": "ID-Token",
   "idpTokenUseIdBody": "Standard. Funktioniert mit Keycloak und den meisten OpenID-Connect-Anbietern: Die Audience ist die Client-ID.",
   "idpTokenUseAccessTitle": "Zugriffstoken",

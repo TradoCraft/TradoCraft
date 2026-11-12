@@ -14259,7 +14259,7 @@ abstract class AppLocalizations {
   /// No description provided for @idpFieldTokenUse.
   ///
   /// In en, this message translates to:
-  /// **'Token to send'**
+  /// **'Token to send (not used for sign-in yet)'**
   String get idpFieldTokenUse;
 
   /// No description provided for @idpTokenUseIdTitle.

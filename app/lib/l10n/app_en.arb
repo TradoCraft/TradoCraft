@@ -3833,7 +3833,7 @@
   "idpFieldAudience": "Audience",
   "idpFieldClientId": "Client id (public client, no secret)",
   "idpFieldScopes": "Scopes",
-  "idpFieldTokenUse": "Token to send",
+  "idpFieldTokenUse": "Token to send (not used for sign-in yet)",
   "idpTokenUseIdTitle": "ID token",
   "idpTokenUseIdBody": "Default. Works with Keycloak and most OpenID Connect providers: the audience is the client id.",
   "idpTokenUseAccessTitle": "Access token",
