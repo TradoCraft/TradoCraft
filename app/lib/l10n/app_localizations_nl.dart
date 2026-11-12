@@ -7862,6 +7862,315 @@ class AppLocalizationsNl extends AppLocalizations {
       'Open factuur TUT-INV-002, die je net registreerde, vanuit de lijst in Financiën.';
 
   @override
+  String get adminIdentityProviders => 'Identiteitsproviders';
+
+  @override
+  String get idpIntro =>
+      'Identiteitsproviders bepalen wie zich kan aanmelden bij TradoCraft. Mensen worden nog steeds in de ERP aangemaakt; de provider bewijst alleen wie iemand is.';
+
+  @override
+  String idpPrimaryCompany(String name) {
+    return 'Primair bedrijf: $name';
+  }
+
+  @override
+  String get idpPrimaryNote =>
+      'Alleen beheerders van het primaire bedrijf van de installatie kunnen deze instellingen wijzigen.';
+
+  @override
+  String get idpReadOnlyNotice =>
+      'Je bent geen beheerder van het primaire bedrijf van de installatie, dus deze instellingen zijn niet beschikbaar voor jou. Vraag het aan een beheerder van dat bedrijf.';
+
+  @override
+  String get idpAdd => 'Provider toevoegen';
+
+  @override
+  String get idpNone => 'Nog geen identiteitsproviders ingesteld.';
+
+  @override
+  String get idpEnabled => 'Actief';
+
+  @override
+  String get idpDisabled => 'Uitgeschakeld';
+
+  @override
+  String get idpSourceEnv => 'Serveromgeving';
+
+  @override
+  String get idpSourceDatabase => 'Opgeslagen in de app';
+
+  @override
+  String get idpEnvExplain =>
+      'Ingesteld door OIDC_ISSUER / OIDC_AUDIENCE van de server. Kan hier niet gewijzigd worden; blijft beschikbaar als noodoplossing.';
+
+  @override
+  String idpRuleVerified(String claim) {
+    return 'Koppelt mensen via e-mail als de claim $claim waar is';
+  }
+
+  @override
+  String get idpRuleTrust =>
+      'Koppelt mensen via e-mail en vertrouwt het adres van de provider';
+
+  @override
+  String get idpRuleSubject =>
+      'Alleen bestaande subjects: geen koppeling via e-mail';
+
+  @override
+  String idpRuleDomains(String domains) {
+    return 'alleen voor $domains';
+  }
+
+  @override
+  String get idpAddTitle => 'Identiteitsprovider toevoegen';
+
+  @override
+  String get idpEditTitle => 'Identiteitsprovider bewerken';
+
+  @override
+  String get idpPreset => 'Begin met';
+
+  @override
+  String get idpPresetEntra => 'Microsoft Entra ID';
+
+  @override
+  String get idpPresetGoogle => 'Google';
+
+  @override
+  String get idpPresetGeneric => 'Generieke OpenID Connect';
+
+  @override
+  String get idpTenantId => 'Tenant-id (directory-id)';
+
+  @override
+  String get idpAudienceEntraHint =>
+      'De toepassings-id (client-id) van je Entra-appregistratie';
+
+  @override
+  String get idpFieldName => 'Naam';
+
+  @override
+  String get idpFieldIssuer => 'Issuer-URL';
+
+  @override
+  String get idpFieldAudience => 'Audience';
+
+  @override
+  String get idpFieldClientId => 'Client-id (publieke client, geen secret)';
+
+  @override
+  String get idpFieldScopes => 'Scopes';
+
+  @override
+  String get idpFieldEmailClaim => 'E-mailclaim';
+
+  @override
+  String get idpFieldVerifiedClaim => 'Verificatieclaim';
+
+  @override
+  String get idpFieldDomains => 'Toegelaten e-maildomeinen';
+
+  @override
+  String get idpDomainsHint =>
+      'Typ een domein en druk op Enter, bijvoorbeeld example.com';
+
+  @override
+  String get idpAdvanced => 'Geavanceerd';
+
+  @override
+  String get idpAlgorithms => 'Aanvaarde handtekeningalgoritmes';
+
+  @override
+  String get idpEmailRuleTitle =>
+      'Hoe mag een e-mailadres gebruikt worden om iemand te koppelen?';
+
+  @override
+  String get idpRuleVerifiedTitle =>
+      'Een geverifieerde claim eisen (aanbevolen)';
+
+  @override
+  String get idpRuleVerifiedBody =>
+      'De eerste aanmelding wordt pas gekoppeld aan de ERP-gebruiker met hetzelfde e-mailadres als het token een claim bevat, zoals email_verified, die zegt dat de provider dat adres gecontroleerd heeft. Risico: controleert de provider adressen niet echt, dan is de claim waardeloos en kan een vreemde een gebruiker overnemen.';
+
+  @override
+  String get idpRuleTrustTitle => 'Het e-mailadres van de provider vertrouwen';
+
+  @override
+  String get idpRuleTrustBody =>
+      'Het adres in het token wordt aanvaard zonder verificatieclaim. Gebruik dit alleen voor een directory waar je bedrijf elk adres beheert, zoals één Entra-tenant, en voeg toegelaten domeinen toe. Risico: kunnen mensen hun adres zelf instellen bij de provider, dan kunnen ze zich als eender welke gebruiker aanmelden.';
+
+  @override
+  String get idpRuleSubjectTitle => 'Alleen bestaande subjects';
+
+  @override
+  String get idpRuleSubjectBody =>
+      'Niemand wordt via e-mail gekoppeld. Een beheerder koppelt elke gebruiker aan een identiteit bij de provider (Gebruikers, Identiteit koppelen). Het veiligst, maar meer werk.';
+
+  @override
+  String get idpEntraAdvice =>
+      'Entra ID: vertrouw ofwel het e-mailadres van de provider en geef je toegelaten domeinen op (een tenant bevat enkel je eigen mensen), of eis de claim xms_edov, die Entra alleen meestuurt als je hem als optionele claim in de appregistratie toevoegt.';
+
+  @override
+  String get idpErrName => 'Een naam is verplicht.';
+
+  @override
+  String get idpErrIssuer => 'De issuer moet een https://-URL zijn.';
+
+  @override
+  String get idpErrAudience => 'De audience is verplicht.';
+
+  @override
+  String idpErrDomain(String domain) {
+    return '$domain lijkt geen domein.';
+  }
+
+  @override
+  String get idpErrAlgorithms => 'Kies minstens één algoritme.';
+
+  @override
+  String idpSaveRefused(String reason) {
+    return 'De server weigerde deze instellingen: $reason';
+  }
+
+  @override
+  String get idpSaved => 'Identiteitsprovider opgeslagen';
+
+  @override
+  String get idpDeleted => 'Identiteitsprovider verwijderd';
+
+  @override
+  String idpDeleteConfirm(String name) {
+    return 'Identiteitsprovider $name verwijderen? Mensen die er via aanmelden kunnen dat dan niet meer.';
+  }
+
+  @override
+  String get idpLockoutTitle => 'Dit kan mensen buitensluiten';
+
+  @override
+  String get idpLockoutLast =>
+      'Dit is de laatste actieve identiteitsprovider en de server heeft geen OIDC_ISSUER-noodoplossing. Als je doorgaat, kan niemand zich aanmelden tot de serverconfiguratie hersteld is.';
+
+  @override
+  String get idpLockoutOwn =>
+      'Je bent via deze provider aangemeld. Als je doorgaat, word je afgemeld en kun je pas opnieuw aanmelden als een andere provider je aanvaardt.';
+
+  @override
+  String get idpLockoutContinue => 'Toch doorgaan';
+
+  @override
+  String get idpTest => 'Testen';
+
+  @override
+  String get idpTestSampleToken => 'Voorbeeldtoken (optioneel)';
+
+  @override
+  String get idpTestSampleHint =>
+      'Plak een toegangstoken van iemand bij deze provider om te zien hoe het behandeld zou worden.';
+
+  @override
+  String get idpTestNothing =>
+      'Testen leest alleen de provider en controleert het token. Er wordt niets gekoppeld of opgeslagen.';
+
+  @override
+  String idpTestFailed(String error) {
+    return 'De provider kon niet gelezen worden: $error';
+  }
+
+  @override
+  String get idpTestDiscovery => 'Discovery-document bereikbaar';
+
+  @override
+  String get idpTestIssuerMatch =>
+      'Issuer komt overeen met het discovery-document';
+
+  @override
+  String idpTestKeys(int count, String algorithms) {
+    return '$count ondertekeningssleutels, algoritmes: $algorithms';
+  }
+
+  @override
+  String idpTestClaims(String claims) {
+    return 'Claims die de provider zegt te ondersteunen: $claims';
+  }
+
+  @override
+  String get idpTestToken => 'Voorbeeldtoken';
+
+  @override
+  String get idpTestSignature => 'Handtekening';
+
+  @override
+  String get idpTestAudience => 'Audience';
+
+  @override
+  String get idpTestExpiry => 'Niet verlopen';
+
+  @override
+  String get idpTestOk => 'OK';
+
+  @override
+  String get idpTestNotOk => 'Mislukt';
+
+  @override
+  String idpTestEmail(String email) {
+    return 'Gevonden e-mailadres: $email';
+  }
+
+  @override
+  String get idpTestNoEmail => 'Geen e-mailadres gevonden in het token';
+
+  @override
+  String get idpTestVerified =>
+      'De provider markeert het adres als geverifieerd';
+
+  @override
+  String get idpTestNotVerified =>
+      'Het adres is niet als geverifieerd gemarkeerd';
+
+  @override
+  String idpBindWould(String email) {
+    return 'Zou aanmelden als $email';
+  }
+
+  @override
+  String idpBindExisting(String email) {
+    return 'Al gekoppeld aan $email';
+  }
+
+  @override
+  String idpBindRefused(String reason) {
+    return 'Zou geweigerd worden: $reason';
+  }
+
+  @override
+  String get idpLinkIdentity => 'Identiteit koppelen';
+
+  @override
+  String idpLinkTitle(String name) {
+    return 'Identiteit koppelen van $name';
+  }
+
+  @override
+  String get idpLinkExplain =>
+      'Alleen nodig voor providers met de regel \'Alleen bestaande subjects\'. Kies de provider en geef het subject (de sub-claim) van deze persoon daar op. Laat leeg om de koppeling te verwijderen.';
+
+  @override
+  String get idpLinkProvider => 'Provider';
+
+  @override
+  String get idpLinkSubject => 'Subject (sub)';
+
+  @override
+  String get idpLinkNoProviders =>
+      'Er zijn nog geen identiteitsproviders in de app opgeslagen.';
+
+  @override
+  String get idpLinkSaved => 'Identiteitskoppeling opgeslagen';
+
+  @override
+  String get idpLinkCleared => 'Identiteitskoppeling verwijderd';
+
+  @override
   String tutActionFailed(String reason) {
     return 'Het gesimuleerde e-mailbericht kon niet verstuurd worden: $reason. Probeer het opnieuw.';
   }

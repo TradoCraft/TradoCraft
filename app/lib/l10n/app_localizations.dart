@@ -14082,6 +14082,522 @@ abstract class AppLocalizations {
   /// **'Open invoice TUT-INV-002, the one you just registered, from the list in Finance.'**
   String get tutInvoicesOpenSecondBody;
 
+  /// No description provided for @adminIdentityProviders.
+  ///
+  /// In en, this message translates to:
+  /// **'Identity providers'**
+  String get adminIdentityProviders;
+
+  /// No description provided for @idpIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Identity providers decide who can sign in to TradoCraft. People are still created in the ERP; the provider only proves who someone is.'**
+  String get idpIntro;
+
+  /// No description provided for @idpPrimaryCompany.
+  ///
+  /// In en, this message translates to:
+  /// **'Primary company: {name}'**
+  String idpPrimaryCompany(String name);
+
+  /// No description provided for @idpPrimaryNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Only administrators of the installation\'s primary company can change these settings.'**
+  String get idpPrimaryNote;
+
+  /// No description provided for @idpReadOnlyNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'You are not an administrator of the installation\'s primary company, so these settings are not available to you. Ask an administrator of that company.'**
+  String get idpReadOnlyNotice;
+
+  /// No description provided for @idpAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add provider'**
+  String get idpAdd;
+
+  /// No description provided for @idpNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No identity providers configured yet.'**
+  String get idpNone;
+
+  /// No description provided for @idpEnabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Enabled'**
+  String get idpEnabled;
+
+  /// No description provided for @idpDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Disabled'**
+  String get idpDisabled;
+
+  /// No description provided for @idpSourceEnv.
+  ///
+  /// In en, this message translates to:
+  /// **'Server environment'**
+  String get idpSourceEnv;
+
+  /// No description provided for @idpSourceDatabase.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved in the app'**
+  String get idpSourceDatabase;
+
+  /// No description provided for @idpEnvExplain.
+  ///
+  /// In en, this message translates to:
+  /// **'Set by the server\'s OIDC_ISSUER / OIDC_AUDIENCE. It cannot be changed here; it stays available as an emergency fallback.'**
+  String get idpEnvExplain;
+
+  /// No description provided for @idpRuleVerified.
+  ///
+  /// In en, this message translates to:
+  /// **'Links people by e-mail when the claim {claim} is true'**
+  String idpRuleVerified(String claim);
+
+  /// No description provided for @idpRuleTrust.
+  ///
+  /// In en, this message translates to:
+  /// **'Links people by e-mail and trusts the provider\'s address'**
+  String get idpRuleTrust;
+
+  /// No description provided for @idpRuleSubject.
+  ///
+  /// In en, this message translates to:
+  /// **'Only existing subjects: no linking by e-mail'**
+  String get idpRuleSubject;
+
+  /// No description provided for @idpRuleDomains.
+  ///
+  /// In en, this message translates to:
+  /// **'only for {domains}'**
+  String idpRuleDomains(String domains);
+
+  /// No description provided for @idpAddTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add identity provider'**
+  String get idpAddTitle;
+
+  /// No description provided for @idpEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit identity provider'**
+  String get idpEditTitle;
+
+  /// No description provided for @idpPreset.
+  ///
+  /// In en, this message translates to:
+  /// **'Start from'**
+  String get idpPreset;
+
+  /// No description provided for @idpPresetEntra.
+  ///
+  /// In en, this message translates to:
+  /// **'Microsoft Entra ID'**
+  String get idpPresetEntra;
+
+  /// No description provided for @idpPresetGoogle.
+  ///
+  /// In en, this message translates to:
+  /// **'Google'**
+  String get idpPresetGoogle;
+
+  /// No description provided for @idpPresetGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Generic OpenID Connect'**
+  String get idpPresetGeneric;
+
+  /// No description provided for @idpTenantId.
+  ///
+  /// In en, this message translates to:
+  /// **'Tenant id (directory id)'**
+  String get idpTenantId;
+
+  /// No description provided for @idpAudienceEntraHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The application (client) id of your Entra app registration'**
+  String get idpAudienceEntraHint;
+
+  /// No description provided for @idpFieldName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get idpFieldName;
+
+  /// No description provided for @idpFieldIssuer.
+  ///
+  /// In en, this message translates to:
+  /// **'Issuer URL'**
+  String get idpFieldIssuer;
+
+  /// No description provided for @idpFieldAudience.
+  ///
+  /// In en, this message translates to:
+  /// **'Audience'**
+  String get idpFieldAudience;
+
+  /// No description provided for @idpFieldClientId.
+  ///
+  /// In en, this message translates to:
+  /// **'Client id (public client, no secret)'**
+  String get idpFieldClientId;
+
+  /// No description provided for @idpFieldScopes.
+  ///
+  /// In en, this message translates to:
+  /// **'Scopes'**
+  String get idpFieldScopes;
+
+  /// No description provided for @idpFieldEmailClaim.
+  ///
+  /// In en, this message translates to:
+  /// **'E-mail claim'**
+  String get idpFieldEmailClaim;
+
+  /// No description provided for @idpFieldVerifiedClaim.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified claim'**
+  String get idpFieldVerifiedClaim;
+
+  /// No description provided for @idpFieldDomains.
+  ///
+  /// In en, this message translates to:
+  /// **'Allowed e-mail domains'**
+  String get idpFieldDomains;
+
+  /// No description provided for @idpDomainsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Type a domain and press Enter, for example example.com'**
+  String get idpDomainsHint;
+
+  /// No description provided for @idpAdvanced.
+  ///
+  /// In en, this message translates to:
+  /// **'Advanced'**
+  String get idpAdvanced;
+
+  /// No description provided for @idpAlgorithms.
+  ///
+  /// In en, this message translates to:
+  /// **'Accepted signature algorithms'**
+  String get idpAlgorithms;
+
+  /// No description provided for @idpEmailRuleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How may an e-mail address be used to link a person?'**
+  String get idpEmailRuleTitle;
+
+  /// No description provided for @idpRuleVerifiedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Require a verified claim (recommended)'**
+  String get idpRuleVerifiedTitle;
+
+  /// No description provided for @idpRuleVerifiedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The first sign-in is linked to the ERP user with the same e-mail address only when the token carries a claim, such as email_verified, saying the provider checked that address. Risk: if the provider does not really check addresses, the claim is worthless and a stranger could take over a user.'**
+  String get idpRuleVerifiedBody;
+
+  /// No description provided for @idpRuleTrustTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Trust the provider\'s e-mail address'**
+  String get idpRuleTrustTitle;
+
+  /// No description provided for @idpRuleTrustBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The address in the token is accepted without any verification claim. Only use this for a directory where your company controls every address, such as a single Entra tenant, and add allowed domains. Risk: if people can set their own address at the provider, they can sign in as any user.'**
+  String get idpRuleTrustBody;
+
+  /// No description provided for @idpRuleSubjectTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Only existing subjects'**
+  String get idpRuleSubjectTitle;
+
+  /// No description provided for @idpRuleSubjectBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Nobody is linked by e-mail. An administrator links each user to an identity at the provider (Users, Link identity). Safest, but more work.'**
+  String get idpRuleSubjectBody;
+
+  /// No description provided for @idpEntraAdvice.
+  ///
+  /// In en, this message translates to:
+  /// **'Entra ID: either trust the provider\'s e-mail and list your allowed domains (a tenant only holds your own people), or require the claim xms_edov, which Entra only sends when you add it as an optional claim in the app registration.'**
+  String get idpEntraAdvice;
+
+  /// No description provided for @idpErrName.
+  ///
+  /// In en, this message translates to:
+  /// **'A name is required.'**
+  String get idpErrName;
+
+  /// No description provided for @idpErrIssuer.
+  ///
+  /// In en, this message translates to:
+  /// **'The issuer must be an https:// URL.'**
+  String get idpErrIssuer;
+
+  /// No description provided for @idpErrAudience.
+  ///
+  /// In en, this message translates to:
+  /// **'The audience is required.'**
+  String get idpErrAudience;
+
+  /// No description provided for @idpErrDomain.
+  ///
+  /// In en, this message translates to:
+  /// **'{domain} does not look like a domain.'**
+  String idpErrDomain(String domain);
+
+  /// No description provided for @idpErrAlgorithms.
+  ///
+  /// In en, this message translates to:
+  /// **'Select at least one algorithm.'**
+  String get idpErrAlgorithms;
+
+  /// No description provided for @idpSaveRefused.
+  ///
+  /// In en, this message translates to:
+  /// **'The server refused these settings: {reason}'**
+  String idpSaveRefused(String reason);
+
+  /// No description provided for @idpSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Identity provider saved'**
+  String get idpSaved;
+
+  /// No description provided for @idpDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Identity provider deleted'**
+  String get idpDeleted;
+
+  /// No description provided for @idpDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete identity provider {name}? People who sign in through it can no longer do so.'**
+  String idpDeleteConfirm(String name);
+
+  /// No description provided for @idpLockoutTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'This can lock people out'**
+  String get idpLockoutTitle;
+
+  /// No description provided for @idpLockoutLast.
+  ///
+  /// In en, this message translates to:
+  /// **'This is the last enabled identity provider and the server has no OIDC_ISSUER fallback. If you continue, nobody can sign in until the server\'s configuration is fixed.'**
+  String get idpLockoutLast;
+
+  /// No description provided for @idpLockoutOwn.
+  ///
+  /// In en, this message translates to:
+  /// **'You are signed in through this provider. If you continue, you will be signed out and cannot sign in again unless another provider accepts you.'**
+  String get idpLockoutOwn;
+
+  /// No description provided for @idpLockoutContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue anyway'**
+  String get idpLockoutContinue;
+
+  /// No description provided for @idpTest.
+  ///
+  /// In en, this message translates to:
+  /// **'Test'**
+  String get idpTest;
+
+  /// No description provided for @idpTestSampleToken.
+  ///
+  /// In en, this message translates to:
+  /// **'Sample token (optional)'**
+  String get idpTestSampleToken;
+
+  /// No description provided for @idpTestSampleHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste an access token of a person from this provider to see how it would be handled.'**
+  String get idpTestSampleHint;
+
+  /// No description provided for @idpTestNothing.
+  ///
+  /// In en, this message translates to:
+  /// **'Testing reads the provider and checks the token only. Nothing is linked or stored.'**
+  String get idpTestNothing;
+
+  /// No description provided for @idpTestFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not read the provider: {error}'**
+  String idpTestFailed(String error);
+
+  /// No description provided for @idpTestDiscovery.
+  ///
+  /// In en, this message translates to:
+  /// **'Discovery document reachable'**
+  String get idpTestDiscovery;
+
+  /// No description provided for @idpTestIssuerMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Issuer matches the discovery document'**
+  String get idpTestIssuerMatch;
+
+  /// No description provided for @idpTestKeys.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} signing keys, algorithms: {algorithms}'**
+  String idpTestKeys(int count, String algorithms);
+
+  /// No description provided for @idpTestClaims.
+  ///
+  /// In en, this message translates to:
+  /// **'Claims the provider says it supports: {claims}'**
+  String idpTestClaims(String claims);
+
+  /// No description provided for @idpTestToken.
+  ///
+  /// In en, this message translates to:
+  /// **'Sample token'**
+  String get idpTestToken;
+
+  /// No description provided for @idpTestSignature.
+  ///
+  /// In en, this message translates to:
+  /// **'Signature'**
+  String get idpTestSignature;
+
+  /// No description provided for @idpTestAudience.
+  ///
+  /// In en, this message translates to:
+  /// **'Audience'**
+  String get idpTestAudience;
+
+  /// No description provided for @idpTestExpiry.
+  ///
+  /// In en, this message translates to:
+  /// **'Not expired'**
+  String get idpTestExpiry;
+
+  /// No description provided for @idpTestOk.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get idpTestOk;
+
+  /// No description provided for @idpTestNotOk.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get idpTestNotOk;
+
+  /// No description provided for @idpTestEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'E-mail found: {email}'**
+  String idpTestEmail(String email);
+
+  /// No description provided for @idpTestNoEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'No e-mail address found in the token'**
+  String get idpTestNoEmail;
+
+  /// No description provided for @idpTestVerified.
+  ///
+  /// In en, this message translates to:
+  /// **'The provider marks the address as verified'**
+  String get idpTestVerified;
+
+  /// No description provided for @idpTestNotVerified.
+  ///
+  /// In en, this message translates to:
+  /// **'The address is not marked as verified'**
+  String get idpTestNotVerified;
+
+  /// No description provided for @idpBindWould.
+  ///
+  /// In en, this message translates to:
+  /// **'Would sign in as {email}'**
+  String idpBindWould(String email);
+
+  /// No description provided for @idpBindExisting.
+  ///
+  /// In en, this message translates to:
+  /// **'Already linked to {email}'**
+  String idpBindExisting(String email);
+
+  /// No description provided for @idpBindRefused.
+  ///
+  /// In en, this message translates to:
+  /// **'Would be refused: {reason}'**
+  String idpBindRefused(String reason);
+
+  /// No description provided for @idpLinkIdentity.
+  ///
+  /// In en, this message translates to:
+  /// **'Link identity'**
+  String get idpLinkIdentity;
+
+  /// No description provided for @idpLinkTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Link identity of {name}'**
+  String idpLinkTitle(String name);
+
+  /// No description provided for @idpLinkExplain.
+  ///
+  /// In en, this message translates to:
+  /// **'Only needed for providers that use the rule \'Only existing subjects\'. Choose the provider and enter the subject (the sub claim) this person has there. Leave it empty to remove the link.'**
+  String get idpLinkExplain;
+
+  /// No description provided for @idpLinkProvider.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider'**
+  String get idpLinkProvider;
+
+  /// No description provided for @idpLinkSubject.
+  ///
+  /// In en, this message translates to:
+  /// **'Subject (sub)'**
+  String get idpLinkSubject;
+
+  /// No description provided for @idpLinkNoProviders.
+  ///
+  /// In en, this message translates to:
+  /// **'No identity providers are saved in the app yet.'**
+  String get idpLinkNoProviders;
+
+  /// No description provided for @idpLinkSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Identity link saved'**
+  String get idpLinkSaved;
+
+  /// No description provided for @idpLinkCleared.
+  ///
+  /// In en, this message translates to:
+  /// **'Identity link removed'**
+  String get idpLinkCleared;
+
   /// No description provided for @tutActionFailed.
   ///
   /// In en, this message translates to:

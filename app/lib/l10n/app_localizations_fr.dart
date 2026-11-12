@@ -7872,6 +7872,317 @@ class AppLocalizationsFr extends AppLocalizations {
       'Ouvrez la facture TUT-INV-002, celle que vous venez d\'enregistrer, depuis la liste de Finance.';
 
   @override
+  String get adminIdentityProviders => 'Fournisseurs d\'identité';
+
+  @override
+  String get idpIntro =>
+      'Les fournisseurs d\'identité décident qui peut se connecter à TradoCraft. Les personnes sont toujours créées dans l\'ERP ; le fournisseur prouve seulement qui elles sont.';
+
+  @override
+  String idpPrimaryCompany(String name) {
+    return 'Société principale : $name';
+  }
+
+  @override
+  String get idpPrimaryNote =>
+      'Seuls les administrateurs de la société principale de l\'installation peuvent modifier ces paramètres.';
+
+  @override
+  String get idpReadOnlyNotice =>
+      'Vous n\'êtes pas administrateur de la société principale de l\'installation : ces paramètres ne sont pas disponibles pour vous. Demandez à un administrateur de cette société.';
+
+  @override
+  String get idpAdd => 'Ajouter un fournisseur';
+
+  @override
+  String get idpNone => 'Aucun fournisseur d\'identité configuré.';
+
+  @override
+  String get idpEnabled => 'Activé';
+
+  @override
+  String get idpDisabled => 'Désactivé';
+
+  @override
+  String get idpSourceEnv => 'Environnement du serveur';
+
+  @override
+  String get idpSourceDatabase => 'Enregistré dans l\'application';
+
+  @override
+  String get idpEnvExplain =>
+      'Défini par OIDC_ISSUER / OIDC_AUDIENCE du serveur. Non modifiable ici ; reste disponible comme solution de secours.';
+
+  @override
+  String idpRuleVerified(String claim) {
+    return 'Associe par e-mail quand la déclaration $claim est vraie';
+  }
+
+  @override
+  String get idpRuleTrust =>
+      'Associe par e-mail et fait confiance à l\'adresse du fournisseur';
+
+  @override
+  String get idpRuleSubject =>
+      'Seulement les sujets existants : pas d\'association par e-mail';
+
+  @override
+  String idpRuleDomains(String domains) {
+    return 'seulement pour $domains';
+  }
+
+  @override
+  String get idpAddTitle => 'Ajouter un fournisseur d\'identité';
+
+  @override
+  String get idpEditTitle => 'Modifier le fournisseur d\'identité';
+
+  @override
+  String get idpPreset => 'Partir de';
+
+  @override
+  String get idpPresetEntra => 'Microsoft Entra ID';
+
+  @override
+  String get idpPresetGoogle => 'Google';
+
+  @override
+  String get idpPresetGeneric => 'OpenID Connect générique';
+
+  @override
+  String get idpTenantId => 'Identifiant du tenant (annuaire)';
+
+  @override
+  String get idpAudienceEntraHint =>
+      'L\'identifiant d\'application (client) de votre inscription Entra';
+
+  @override
+  String get idpFieldName => 'Nom';
+
+  @override
+  String get idpFieldIssuer => 'URL de l\'émetteur';
+
+  @override
+  String get idpFieldAudience => 'Audience';
+
+  @override
+  String get idpFieldClientId =>
+      'Identifiant client (client public, sans secret)';
+
+  @override
+  String get idpFieldScopes => 'Scopes';
+
+  @override
+  String get idpFieldEmailClaim => 'Déclaration de l\'e-mail';
+
+  @override
+  String get idpFieldVerifiedClaim => 'Déclaration de vérification';
+
+  @override
+  String get idpFieldDomains => 'Domaines e-mail autorisés';
+
+  @override
+  String get idpDomainsHint =>
+      'Saisissez un domaine puis Entrée, par exemple example.com';
+
+  @override
+  String get idpAdvanced => 'Avancé';
+
+  @override
+  String get idpAlgorithms => 'Algorithmes de signature acceptés';
+
+  @override
+  String get idpEmailRuleTitle =>
+      'Comment une adresse e-mail peut-elle servir à associer une personne ?';
+
+  @override
+  String get idpRuleVerifiedTitle =>
+      'Exiger une déclaration vérifiée (recommandé)';
+
+  @override
+  String get idpRuleVerifiedBody =>
+      'La première connexion n\'est associée à l\'utilisateur ERP ayant la même adresse e-mail que si le jeton contient une déclaration, comme email_verified, indiquant que le fournisseur a vérifié cette adresse. Risque : si le fournisseur ne vérifie pas vraiment les adresses, la déclaration ne vaut rien et un inconnu pourrait prendre la place d\'un utilisateur.';
+
+  @override
+  String get idpRuleTrustTitle =>
+      'Faire confiance à l\'adresse e-mail du fournisseur';
+
+  @override
+  String get idpRuleTrustBody =>
+      'L\'adresse du jeton est acceptée sans déclaration de vérification. À réserver à un annuaire dont votre société contrôle toutes les adresses, comme un tenant Entra unique, avec des domaines autorisés. Risque : si les personnes peuvent définir leur propre adresse chez le fournisseur, elles peuvent se connecter comme n\'importe quel utilisateur.';
+
+  @override
+  String get idpRuleSubjectTitle => 'Seulement les sujets existants';
+
+  @override
+  String get idpRuleSubjectBody =>
+      'Personne n\'est associé par e-mail. Un administrateur associe chaque utilisateur à une identité chez le fournisseur (Utilisateurs, Lier l\'identité). Le plus sûr, mais plus de travail.';
+
+  @override
+  String get idpEntraAdvice =>
+      'Entra ID : soit faire confiance à l\'adresse du fournisseur et lister vos domaines autorisés (un tenant ne contient que vos propres personnes), soit exiger la déclaration xms_edov, qu\'Entra n\'envoie que si vous l\'ajoutez comme déclaration facultative dans l\'inscription de l\'application.';
+
+  @override
+  String get idpErrName => 'Un nom est obligatoire.';
+
+  @override
+  String get idpErrIssuer => 'L\'émetteur doit être une URL https://.';
+
+  @override
+  String get idpErrAudience => 'L\'audience est obligatoire.';
+
+  @override
+  String idpErrDomain(String domain) {
+    return '$domain ne ressemble pas à un domaine.';
+  }
+
+  @override
+  String get idpErrAlgorithms => 'Sélectionnez au moins un algorithme.';
+
+  @override
+  String idpSaveRefused(String reason) {
+    return 'Le serveur a refusé ces paramètres : $reason';
+  }
+
+  @override
+  String get idpSaved => 'Fournisseur d\'identité enregistré';
+
+  @override
+  String get idpDeleted => 'Fournisseur d\'identité supprimé';
+
+  @override
+  String idpDeleteConfirm(String name) {
+    return 'Supprimer le fournisseur d\'identité $name ? Les personnes qui s\'y connectent ne le pourront plus.';
+  }
+
+  @override
+  String get idpLockoutTitle => 'Cela peut bloquer des personnes';
+
+  @override
+  String get idpLockoutLast =>
+      'C\'est le dernier fournisseur d\'identité activé et le serveur n\'a pas de solution de secours OIDC_ISSUER. Si vous continuez, personne ne pourra se connecter tant que la configuration du serveur n\'est pas corrigée.';
+
+  @override
+  String get idpLockoutOwn =>
+      'Vous êtes connecté via ce fournisseur. Si vous continuez, vous serez déconnecté et ne pourrez vous reconnecter que si un autre fournisseur vous accepte.';
+
+  @override
+  String get idpLockoutContinue => 'Continuer quand même';
+
+  @override
+  String get idpTest => 'Tester';
+
+  @override
+  String get idpTestSampleToken => 'Jeton d\'exemple (facultatif)';
+
+  @override
+  String get idpTestSampleHint =>
+      'Collez un jeton d\'accès d\'une personne de ce fournisseur pour voir comment il serait traité.';
+
+  @override
+  String get idpTestNothing =>
+      'Le test lit seulement le fournisseur et vérifie le jeton. Rien n\'est associé ni enregistré.';
+
+  @override
+  String idpTestFailed(String error) {
+    return 'Impossible de lire le fournisseur : $error';
+  }
+
+  @override
+  String get idpTestDiscovery => 'Document de découverte joignable';
+
+  @override
+  String get idpTestIssuerMatch =>
+      'L\'émetteur correspond au document de découverte';
+
+  @override
+  String idpTestKeys(int count, String algorithms) {
+    return '$count clés de signature, algorithmes : $algorithms';
+  }
+
+  @override
+  String idpTestClaims(String claims) {
+    return 'Déclarations que le fournisseur dit prendre en charge : $claims';
+  }
+
+  @override
+  String get idpTestToken => 'Jeton d\'exemple';
+
+  @override
+  String get idpTestSignature => 'Signature';
+
+  @override
+  String get idpTestAudience => 'Audience';
+
+  @override
+  String get idpTestExpiry => 'Non expiré';
+
+  @override
+  String get idpTestOk => 'OK';
+
+  @override
+  String get idpTestNotOk => 'Échec';
+
+  @override
+  String idpTestEmail(String email) {
+    return 'E-mail trouvé : $email';
+  }
+
+  @override
+  String get idpTestNoEmail => 'Aucune adresse e-mail trouvée dans le jeton';
+
+  @override
+  String get idpTestVerified =>
+      'Le fournisseur marque l\'adresse comme vérifiée';
+
+  @override
+  String get idpTestNotVerified =>
+      'L\'adresse n\'est pas marquée comme vérifiée';
+
+  @override
+  String idpBindWould(String email) {
+    return 'Se connecterait en tant que $email';
+  }
+
+  @override
+  String idpBindExisting(String email) {
+    return 'Déjà associé à $email';
+  }
+
+  @override
+  String idpBindRefused(String reason) {
+    return 'Serait refusé : $reason';
+  }
+
+  @override
+  String get idpLinkIdentity => 'Lier l\'identité';
+
+  @override
+  String idpLinkTitle(String name) {
+    return 'Lier l\'identité de $name';
+  }
+
+  @override
+  String get idpLinkExplain =>
+      'Nécessaire seulement pour les fournisseurs avec la règle « Seulement les sujets existants ». Choisissez le fournisseur et saisissez le sujet (la déclaration sub) de cette personne chez lui. Laissez vide pour supprimer l\'association.';
+
+  @override
+  String get idpLinkProvider => 'Fournisseur';
+
+  @override
+  String get idpLinkSubject => 'Sujet (sub)';
+
+  @override
+  String get idpLinkNoProviders =>
+      'Aucun fournisseur d\'identité n\'est encore enregistré dans l\'application.';
+
+  @override
+  String get idpLinkSaved => 'Association d\'identité enregistrée';
+
+  @override
+  String get idpLinkCleared => 'Association d\'identité supprimée';
+
+  @override
   String tutActionFailed(String reason) {
     return 'Impossible d\'envoyer l\'e-mail simulé : $reason. Réessayez.';
   }
