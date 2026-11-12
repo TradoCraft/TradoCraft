@@ -86,6 +86,7 @@ async fn bootstraps_an_empty_database_once(db: PgPool) {
     assert_eq!(res["company"]["name"], "Fresh Co");
     assert_eq!(res["company"]["vat_number"], "BE0123456749");
     assert_eq!(res["company"]["default_language"], "en");
+    assert_eq!(res["company"]["is_primary"], true);
     assert_eq!(res["admin"]["email"], "boss@fresh.example");
     assert_eq!(res["admin"]["roles"], json!(["admin"]));
     assert!(!res.to_string().contains("token"));
@@ -329,4 +330,25 @@ async fn provision_refuses_a_name_clash(db: PgPool) {
         matches!(err, tradocraft_core::AppError::Conflict(_)),
         "{err}"
     );
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn the_first_company_is_primary_and_later_ones_are_not(db: PgPool) {
+    let spec: tradocraft_core::companies::ProvisionSpec =
+        serde_json::from_value(body(None)).unwrap();
+    let mut tx = db.begin().await.unwrap();
+    let first = tradocraft_core::companies::provision(&mut tx, &spec)
+        .await
+        .unwrap();
+    let mut other = spec.clone();
+    other.name = "Second Co".into();
+    other.admin_email = "other@fresh.example".into();
+    let second = tradocraft_core::companies::provision(&mut tx, &other)
+        .await
+        .unwrap();
+    tx.commit().await.unwrap();
+    assert!(first.company.is_primary);
+    assert!(!second.company.is_primary);
+    let n = count(&db, "SELECT count(*) FROM core.companies WHERE is_primary").await;
+    assert_eq!(n, 1);
 }

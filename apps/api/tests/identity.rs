@@ -705,7 +705,8 @@ async fn admin_api_hot_reload_test_endpoint_and_lockout_guards(db: PgPool) {
     assert_eq!(st, StatusCode::OK);
     let mut keys: Vec<&String> = p[0].as_object().unwrap().keys().collect();
     keys.sort();
-    assert_eq!(keys, ["client_id", "issuer", "name", "scopes"]);
+    assert_eq!(keys, ["client_id", "issuer", "name", "scopes", "source"]);
+    assert_eq!(p[0]["source"], "database");
     assert_eq!(p[0]["client_id"], "cid-a");
 
     // A token for a provider that does not exist yet is refused; create it through the API.
@@ -864,4 +865,159 @@ async fn admin_api_hot_reload_test_endpoint_and_lockout_guards(db: PgPool) {
         names,
         ["created", "updated", "updated", "updated", "updated", "deleted"]
     );
+}
+
+async fn add_company_with_admin(db: &PgPool, name: &str, email: &str) -> (uuid::Uuid, uuid::Uuid) {
+    let (co, boss) = (uuid::Uuid::now_v7(), uuid::Uuid::now_v7());
+    sqlx::query("INSERT INTO core.companies (id, name) VALUES ($1, $2)")
+        .bind(co)
+        .bind(name)
+        .execute(db)
+        .await
+        .unwrap();
+    sqlx::query("INSERT INTO core.users (id, email, display_name) VALUES ($1, $2, 'Boss')")
+        .bind(boss)
+        .bind(email)
+        .execute(db)
+        .await
+        .unwrap();
+    sqlx::query("INSERT INTO core.user_companies (user_id, company_id, roles, is_default) VALUES ($1, $2, '{admin}', true)")
+        .bind(boss).bind(co).execute(db).await.unwrap();
+    (co, boss)
+}
+
+async fn primary_ids(db: &PgPool) -> Vec<uuid::Uuid> {
+    sqlx::query_scalar("SELECT id FROM core.companies WHERE is_primary")
+        .fetch_all(db)
+        .await
+        .unwrap()
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn the_migration_backfill_flags_the_oldest_company(db: PgPool) {
+    // Re-run the backfill on data as an older installation would have it: two companies, none flagged.
+    sqlx::query("DROP INDEX core.companies_one_primary")
+        .execute(&db)
+        .await
+        .unwrap();
+    let (old, new) = (uuid::Uuid::now_v7(), uuid::Uuid::now_v7());
+    for (id, name, ts) in [(new, "Newer", "2026-02-01"), (old, "Older", "2026-01-01")] {
+        sqlx::query(
+            "INSERT INTO core.companies (id, name, created_at) VALUES ($1, $2, $3::timestamptz)",
+        )
+        .bind(id)
+        .bind(name)
+        .bind(ts)
+        .execute(&db)
+        .await
+        .unwrap();
+    }
+    let sql = std::fs::read_to_string(
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../migrations/20270127000001_primary_company.sql"),
+    )
+    .unwrap();
+    let backfill = sql.split("-- Existing installations").nth(1).unwrap();
+    let update = &backfill[backfill.find("UPDATE").unwrap()..];
+    sqlx::raw_sql(update).execute(&db).await.unwrap();
+    assert_eq!(primary_ids(&db).await, vec![old]);
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn only_an_admin_of_the_primary_company_uses_the_identity_api(db: PgPool) {
+    let app = common::setup(db.clone()).await;
+    add_company_with_admin(&db, "Second BV", "boss2@example.com").await;
+    // The seed company is primary: its admin may, the other company's admin may not.
+    let (st, _) = call(&app, "admin@example.com", Method::GET, BASE, None).await;
+    assert_eq!(st, StatusCode::OK);
+    let (st, body) = call(&app, "boss2@example.com", Method::GET, BASE, None).await;
+    assert_eq!(st, StatusCode::FORBIDDEN);
+    assert!(body.to_string().contains("primary company"), "{body}");
+    // If no company is flagged the oldest one is used.
+    sqlx::query("UPDATE core.companies SET is_primary = false")
+        .execute(&db)
+        .await
+        .unwrap();
+    let (st, _) = call(&app, "admin@example.com", Method::GET, BASE, None).await;
+    assert_eq!(st, StatusCode::OK);
+    let (st, _) = call(&app, "boss2@example.com", Method::GET, BASE, None).await;
+    assert_eq!(st, StatusCode::FORBIDDEN);
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn make_primary_swaps_the_flag_and_is_guarded(db: PgPool) {
+    let app = common::setup(db.clone()).await;
+    let seed: uuid::Uuid = "00000000-0000-7000-8000-000000000001".parse().unwrap();
+    let (second, _) = add_company_with_admin(&db, "Second BV", "boss2@example.com").await;
+    let url = |id: uuid::Uuid| format!("/api/v1/admin/companies/{id}/make-primary");
+    let (_, me) = call(&app, "admin@example.com", Method::GET, "/api/v1/me", None).await;
+    assert_eq!(me["company"]["is_primary"], true);
+
+    // Not an administrator of the primary company, or not an administrator at all.
+    for u in ["boss2@example.com", "sales@example.com"] {
+        let (st, _) = call(&app, u, Method::POST, &url(second), None).await;
+        assert_eq!(st, StatusCode::FORBIDDEN, "{u}");
+    }
+    assert_eq!(primary_ids(&db).await, vec![seed]);
+    // Unknown target is 404; the current primary company is 409.
+    let (st, _) = call(
+        &app,
+        "admin@example.com",
+        Method::POST,
+        &url(uuid::Uuid::now_v7()),
+        None,
+    )
+    .await;
+    assert_eq!(st, StatusCode::NOT_FOUND);
+    let (st, _) = call(&app, "admin@example.com", Method::POST, &url(seed), None).await;
+    assert_eq!(st, StatusCode::CONFLICT);
+
+    let (st, res) = call(&app, "admin@example.com", Method::POST, &url(second), None).await;
+    assert_eq!(st, StatusCode::OK, "{res}");
+    assert_eq!(res["name"], "Second BV");
+    assert_eq!(primary_ids(&db).await, vec![second]);
+    let audited: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM audit.events WHERE entity = 'company' AND action = 'made_primary' AND entity_id = $1",
+    )
+    .bind(second)
+    .fetch_one(&db)
+    .await
+    .unwrap();
+    assert_eq!(audited, 1);
+
+    // The roles swapped: the former admin is refused, the new primary admin works.
+    let (st, _) = call(&app, "admin@example.com", Method::GET, BASE, None).await;
+    assert_eq!(st, StatusCode::FORBIDDEN);
+    let (st, _) = call(&app, "boss2@example.com", Method::GET, BASE, None).await;
+    assert_eq!(st, StatusCode::OK);
+    let (st, _) = call(&app, "admin@example.com", Method::POST, &url(seed), None).await;
+    assert_eq!(st, StatusCode::FORBIDDEN);
+
+    // The database refuses a second primary company.
+    let err = sqlx::query("UPDATE core.companies SET is_primary = true WHERE id = $1")
+        .bind(seed)
+        .execute(&db)
+        .await
+        .unwrap_err();
+    assert!(err.to_string().contains("companies_one_primary"), "{err}");
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn the_public_list_shows_the_env_provider_with_client_settings(db: PgPool) {
+    let env = ProviderConfig::from_env("https://env.example/", "aud-env")
+        .with_client(Some(" env-client "), Some("openid email offline_access"));
+    let (app, _state) = oidc_app(db.clone(), settings(), Some(env)).await;
+    let (st, p) = bcall(&app, None, Method::GET, "/api/v1/auth/providers", None).await;
+    assert_eq!(st, StatusCode::OK);
+    assert_eq!(p.as_array().unwrap().len(), 1);
+    assert_eq!(p[0]["source"], "env");
+    assert_eq!(p[0]["client_id"], "env-client");
+    assert_eq!(p[0]["scopes"], "openid email offline_access");
+    assert_eq!(p[0]["issuer"], "https://env.example");
+
+    // Blank settings keep the defaults.
+    let blank =
+        ProviderConfig::from_env("https://env.example", "a").with_client(Some(" "), Some(""));
+    assert_eq!(blank.client_id, None);
+    assert_eq!(blank.scopes, "openid profile email");
 }
