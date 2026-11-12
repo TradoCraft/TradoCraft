@@ -128,7 +128,10 @@ async fn main() -> anyhow::Result<()> {
             // OIDC_ISSUER/OIDC_AUDIENCE are the optional read-only fallback provider (ADR 0052);
             // more providers come from the database.
             let env_provider = match (env("OIDC_ISSUER"), env("OIDC_AUDIENCE")) {
-                (Some(i), Some(a)) => Some(ProviderConfig::from_env(&i, &a)),
+                (Some(i), Some(a)) => Some(ProviderConfig::from_env(&i, &a).with_client(
+                    env("OIDC_CLIENT_ID").as_deref(),
+                    env("OIDC_SCOPES").as_deref(),
+                )),
                 (None, None) => None,
                 _ => anyhow::bail!("OIDC_ISSUER and OIDC_AUDIENCE must be set together"),
             };

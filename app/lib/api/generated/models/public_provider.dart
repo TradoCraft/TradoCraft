@@ -13,6 +13,7 @@ class PublicProvider {
     required this.issuer,
     required this.name,
     required this.scopes,
+    required this.source,
     this.clientId,
   });
   
@@ -30,6 +31,9 @@ class PublicProvider {
 
   /// Scopes to ask for.
   final String scopes;
+
+  /// `database` or `env` (the read-only fallback from `OIDC_ISSUER`), so the page can label it.
+  final String source;
 
   Map<String, Object?> toJson() => _$PublicProviderToJson(this);
 }

@@ -64,7 +64,7 @@ abstract class CoreClient {
     @Path('id') required String id,
   });
 
-  /// The enabled identity providers, for the sign-in page. No sign-in needed; only these four.
+  /// The enabled identity providers, for the sign-in page. No sign-in needed; only these five.
   /// fields are exposed. Empty in dev mode.
   @GET('/api/v1/auth/providers')
   Future<List<PublicProvider>> publicProviders();

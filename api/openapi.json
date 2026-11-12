@@ -10,6 +10,68 @@
     "version": "0.1.0"
   },
   "paths": {
+    "/api/v1/admin/companies/{id}/make-primary": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Makes a company the installation's primary company (the one whose administrators manage the\nidentity providers). Only an active administrator of the current primary company may do this;\nthe flag moves in one transaction, so there is always exactly one primary company.",
+        "operationId": "make_primary",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MakePrimaryResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/identity-providers": {
       "get": {
         "tags": [
@@ -707,7 +769,7 @@
         "tags": [
           "core"
         ],
-        "summary": "The enabled identity providers, for the sign-in page. No sign-in needed; only these four\nfields are exposed. Empty in dev mode.",
+        "summary": "The enabled identity providers, for the sign-in page. No sign-in needed; only these five\nfields are exposed. Empty in dev mode.",
         "operationId": "public_providers",
         "responses": {
           "200": {
@@ -25978,7 +26040,8 @@
           "city",
           "country_code",
           "currency",
-          "default_language"
+          "default_language",
+          "is_primary"
         ],
         "properties": {
           "city": {
@@ -26008,6 +26071,10 @@
           "id": {
             "type": "string",
             "format": "uuid"
+          },
+          "is_primary": {
+            "type": "boolean",
+            "description": "True for the installation's primary company, whose administrators change the\ninstallation-wide settings (identity providers, ADR 0052)."
           },
           "name": {
             "type": "string"
@@ -31627,6 +31694,25 @@
           }
         }
       },
+      "MakePrimaryResult": {
+        "type": "object",
+        "description": "The company that was made primary.",
+        "required": [
+          "company_id",
+          "name"
+        ],
+        "properties": {
+          "company_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The new primary company."
+          },
+          "name": {
+            "type": "string",
+            "description": "Its name."
+          }
+        }
+      },
       "MarkPaidInput": {
         "type": "object",
         "description": "Payload to record a payment.",
@@ -36323,7 +36409,8 @@
         "required": [
           "name",
           "issuer",
-          "scopes"
+          "scopes",
+          "source"
         ],
         "properties": {
           "client_id": {
@@ -36344,6 +36431,10 @@
           "scopes": {
             "type": "string",
             "description": "Scopes to ask for."
+          },
+          "source": {
+            "type": "string",
+            "description": "`database` or `env` (the read-only fallback from `OIDC_ISSUER`), so the page can label it."
           }
         }
       },

@@ -159,6 +159,20 @@ impl ProviderConfig {
             enabled: true,
         }
     }
+
+    /// Sets the public client id and the scopes the interactive sign-in uses for this provider
+    /// (`OIDC_CLIENT_ID`, `OIDC_SCOPES` of the environment provider). Blank values keep the
+    /// defaults (no client id, `openid profile email`).
+    pub fn with_client(mut self, client_id: Option<&str>, scopes: Option<&str>) -> Self {
+        self.client_id = client_id
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .map(String::from);
+        if let Some(s) = scopes.map(str::trim).filter(|s| !s.is_empty()) {
+            self.scopes = s.to_string();
+        }
+        self
+    }
 }
 
 #[derive(sqlx::FromRow)]
