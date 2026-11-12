@@ -1021,3 +1021,34 @@ async fn the_public_list_shows_the_env_provider_with_client_settings(db: PgPool)
     assert_eq!(blank.client_id, None);
     assert_eq!(blank.scopes, "openid profile email");
 }
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn concurrent_make_primary_calls_cannot_both_win(db: PgPool) {
+    let app = common::setup(db.clone()).await;
+    let seed: uuid::Uuid = "00000000-0000-7000-8000-000000000001".parse().unwrap();
+    let (b, _) = add_company_with_admin(&db, "B BV", "boss-b@example.com").await;
+    let (c, _) = add_company_with_admin(&db, "C BV", "boss-c@example.com").await;
+    let url = |id: uuid::Uuid| format!("/api/v1/admin/companies/{id}/make-primary");
+    let (ub, uc) = (url(b), url(c));
+    // The primary admin moves the flag to B while the admin of C (not primary) tries too, and
+    // the seed admin races to move it to C.
+    let (r1, r2, r3) = tokio::join!(
+        call(&app, "admin@example.com", Method::POST, &ub, None),
+        call(&app, "admin@example.com", Method::POST, &uc, None),
+        call(&app, "boss-c@example.com", Method::POST, &uc, None),
+    );
+    assert_eq!(r3.0, StatusCode::FORBIDDEN);
+    let ok = [r1.0, r2.0]
+        .iter()
+        .filter(|s| **s == StatusCode::OK)
+        .count();
+    assert_eq!(ok, 1, "{r1:?} {r2:?}");
+    let loser = if r1.0 == StatusCode::OK { r2.0 } else { r1.0 };
+    assert!(
+        loser == StatusCode::FORBIDDEN || loser == StatusCode::CONFLICT,
+        "{loser}"
+    );
+    let primaries = primary_ids(&db).await;
+    assert_eq!(primaries.len(), 1);
+    assert_ne!(primaries[0], seed);
+}
