@@ -86,6 +86,12 @@ IMAP unless `ALLOW_INBOUND_MAIL_IN_NON_LIVE=1`
 ([ADR 0048](docs/adr/0048-environment-clones-and-outbound-safety.md),
 [runbook](docs/runbooks/test-environments.md)).
 
+Backups. `scripts/backupctl backup` takes a physical backup of the whole PostgreSQL server
+(attachments included) and keeps 7 daily, 4 weekly and 6 monthly ones; `scripts/backupctl verify`
+restores the latest into a throwaway server and checks it
+([ADR 0053](docs/adr/0053-backup-and-restore.md),
+[runbook](docs/runbooks/backup-and-restore.md)).
+
 Story-mission tutorial. `scripts/tutorial-env up` creates a clean, throwaway environment of kind
 `tutorial` with the demo data and prints its address; add that address in the app (login page >
 Environments), sign in as `admin@example.com` and start it from the account menu > Tutorial.
