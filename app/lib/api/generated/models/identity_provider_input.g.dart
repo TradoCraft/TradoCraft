@@ -24,6 +24,7 @@ IdentityProviderInput _$IdentityProviderInputFromJson(
   emailPolicy: json['email_policy'] as String?,
   enabled: json['enabled'] as bool?,
   scopes: json['scopes'] as String?,
+  tokenUse: json['token_use'] as String?,
   verifiedClaim: json['verified_claim'] as String?,
 );
 
@@ -41,5 +42,6 @@ Map<String, dynamic> _$IdentityProviderInputToJson(
   'issuer': instance.issuer,
   'name': instance.name,
   'scopes': ?instance.scopes,
+  'token_use': ?instance.tokenUse,
   'verified_claim': ?instance.verifiedClaim,
 };

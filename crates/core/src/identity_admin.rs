@@ -15,8 +15,8 @@ use uuid::Uuid;
 use crate::auth::{preview_binding, CallerIssuer};
 use crate::identity::{
     accepted_algorithm, check_token, fetch_provider, normalize_issuer, now_secs, validate_idp_url,
-    EmailPolicy, IdpSettings, ProviderConfig, ProviderRow, ProviderSource, ALLOWED_ALGORITHMS,
-    PROVIDER_COLUMNS,
+    EmailPolicy, IdpSettings, ProviderConfig, ProviderRow, ProviderSource, TokenUse,
+    ALLOWED_ALGORITHMS, PROVIDER_COLUMNS,
 };
 use crate::{audit, new_id, AppError, AppResult, AppState, CurrentUser, Permission};
 
@@ -41,6 +41,8 @@ pub struct IdentityProviderInfo {
     pub client_id: Option<String>,
     /// Scopes the interactive sign-in asks for.
     pub scopes: String,
+    /// Token the interactive sign-in sends: `id_token` or `access_token`.
+    pub token_use: String,
     /// Accepted JWS algorithms.
     pub algorithms: Vec<String>,
     /// Claim holding the e-mail address.
@@ -69,6 +71,7 @@ fn info(cfg: &ProviderConfig, at: Option<(DateTime<Utc>, DateTime<Utc>)>) -> Ide
         audience: cfg.audience.clone(),
         client_id: cfg.client_id.clone(),
         scopes: cfg.scopes.clone(),
+        token_use: cfg.token_use.as_str().into(),
         algorithms: cfg.algorithms.clone(),
         email_claim: cfg.email_claim.clone(),
         email_policy: cfg.email_policy.as_str().into(),
@@ -100,6 +103,9 @@ pub struct IdentityProviderInput {
     /// Default `openid profile email`.
     #[serde(default)]
     pub scopes: Option<String>,
+    /// `id_token` (default) or `access_token`: the token the interactive sign-in sends.
+    #[serde(default)]
+    pub token_use: Option<String>,
     /// Subset of RS256, RS384, RS512, ES256, ES384, PS256, PS384, PS512; default all of them.
     #[serde(default)]
     pub algorithms: Option<Vec<String>>,
@@ -170,6 +176,13 @@ fn normalise_input(settings: &IdpSettings, i: &IdentityProviderInput) -> AppResu
             EmailPolicy::ALL.join(", ")
         ))
     })?;
+    let token_use = clean(&i.token_use, "id_token");
+    let token_use = TokenUse::parse(&token_use).ok_or_else(|| {
+        bad(format!(
+            "token_use must be one of {}",
+            TokenUse::ALL.join(", ")
+        ))
+    })?;
     let mut domains: Vec<String> = vec![];
     for d in i.allowed_email_domains.iter().flatten() {
         let d = d.trim().trim_start_matches('@').to_lowercase();
@@ -193,6 +206,7 @@ fn normalise_input(settings: &IdpSettings, i: &IdentityProviderInput) -> AppResu
             .filter(|s| !s.is_empty())
             .map(str::to_string),
         scopes: clean(&i.scopes, "openid profile email"),
+        token_use,
         algorithms,
         email_claim: clean(&i.email_claim, "email"),
         email_policy,
@@ -339,9 +353,9 @@ async fn create_provider(
     let id = new_id();
     let mut tx = state.db.begin().await?;
     let row: ProviderRow = sqlx::query_as(&format!(
-        "INSERT INTO core.identity_providers (id, name, issuer, audience, client_id, scopes, algorithms,
-             email_claim, email_policy, verified_claim, allowed_email_domains, enabled, created_by)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING {PROVIDER_COLUMNS}"
+        "INSERT INTO core.identity_providers (id, name, issuer, audience, client_id, scopes, token_use,
+             algorithms, email_claim, email_policy, verified_claim, allowed_email_domains, enabled, created_by)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING {PROVIDER_COLUMNS}"
     ))
     .bind(id)
     .bind(&cfg.name)
@@ -349,6 +363,7 @@ async fn create_provider(
     .bind(&cfg.audience)
     .bind(&cfg.client_id)
     .bind(&cfg.scopes)
+    .bind(cfg.token_use.as_str())
     .bind(&cfg.algorithms)
     .bind(&cfg.email_claim)
     .bind(cfg.email_policy.as_str())
@@ -485,7 +500,7 @@ async fn update_provider(
     .await?;
     let row: ProviderRow = sqlx::query_as(&format!(
         "UPDATE core.identity_providers SET name=$2, issuer=$3, audience=$4, client_id=$5, scopes=$6,
-             algorithms=$7, email_claim=$8, email_policy=$9, verified_claim=$10,
+             token_use=$13, algorithms=$7, email_claim=$8, email_policy=$9, verified_claim=$10,
              allowed_email_domains=$11, enabled=$12, updated_at=now()
          WHERE id=$1 RETURNING {PROVIDER_COLUMNS}"
     ))
@@ -501,6 +516,7 @@ async fn update_provider(
     .bind(&cfg.verified_claim)
     .bind(&cfg.allowed_email_domains)
     .bind(cfg.enabled)
+    .bind(cfg.token_use.as_str())
     .fetch_one(&mut *tx)
     .await?;
     audit::record(
@@ -858,11 +874,13 @@ pub struct PublicProvider {
     pub client_id: Option<String>,
     /// Scopes to ask for.
     pub scopes: String,
+    /// Token to send as the bearer token: `id_token` or `access_token`.
+    pub token_use: String,
     /// `database` or `env` (the read-only fallback from `OIDC_ISSUER`), so the page can label it.
     pub source: String,
 }
 
-/// The enabled identity providers, for the sign-in page. No sign-in needed; only these five
+/// The enabled identity providers, for the sign-in page. No sign-in needed; only these six
 /// fields are exposed. Empty in dev mode.
 #[utoipa::path(get, path = "/auth/providers", tag = "core", security(()),
     responses((status = 200, body = Vec<PublicProvider>)))]
@@ -876,6 +894,7 @@ async fn public_providers(State(state): State<AppState>) -> Json<Vec<PublicProvi
                 issuer: c.issuer.clone(),
                 client_id: c.client_id.clone(),
                 scopes: c.scopes.clone(),
+                token_use: c.token_use.as_str().to_string(),
                 source: c.source.as_str().to_string(),
             })
             .collect(),

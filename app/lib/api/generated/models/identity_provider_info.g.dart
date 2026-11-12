@@ -24,6 +24,7 @@ IdentityProviderInfo _$IdentityProviderInfoFromJson(
   readOnly: json['read_only'] as bool,
   scopes: json['scopes'] as String,
   source: json['source'] as String,
+  tokenUse: json['token_use'] as String,
   verifiedClaim: json['verified_claim'] as String,
   clientId: json['client_id'] as String?,
   createdAt: json['created_at'] == null
@@ -52,6 +53,7 @@ Map<String, dynamic> _$IdentityProviderInfoToJson(
   'read_only': instance.readOnly,
   'scopes': instance.scopes,
   'source': instance.source,
+  'token_use': instance.tokenUse,
   'updated_at': ?instance.updatedAt?.toIso8601String(),
   'verified_claim': instance.verifiedClaim,
 };

@@ -1,6 +1,6 @@
 # 0053 — Interactive sign-in (OIDC authorization code with PKCE in the app)
 
-**Status:** Proposed
+**Status:** Proposed (phase 1, the `token_use` server setting and admin form, is implemented)
 
 **Context.** The API verifies bearer tokens against the identity providers an administrator
 configures (ADR 0004, ADR 0055). Today the app gets a token by pasting it, which is fine for
@@ -104,7 +104,10 @@ platforms; that decides it. The recommendation is `oidc`, behind our interface a
 *Token to send.* New per-provider server setting `token_use` = `id_token` | `access_token`,
 default `id_token`, returned by `GET /api/v1/auth/providers` next to `client_id` and `scopes`.
 The server already verifies `aud`, so what the app sends must carry the audience the
-administrator configured:
+administrator configured. `token_use` only tells the client which token to send; the server
+verifies an ID token and an access token identically and does not read the setting when
+authenticating (phase 1 stores and exposes it, the admin form edits it, the Entra preset selects
+`access_token`):
 - Keycloak and generic OIDC: `id_token` works out of the box (`aud` = client id). `access_token`
   works when the client has an audience mapper (verified in the spike: `aud` contains
   `tradocraft-app`).

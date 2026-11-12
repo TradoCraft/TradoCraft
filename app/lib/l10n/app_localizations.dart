@@ -14256,6 +14256,36 @@ abstract class AppLocalizations {
   /// **'Scopes'**
   String get idpFieldScopes;
 
+  /// No description provided for @idpFieldTokenUse.
+  ///
+  /// In en, this message translates to:
+  /// **'Token to send'**
+  String get idpFieldTokenUse;
+
+  /// No description provided for @idpTokenUseIdTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'ID token'**
+  String get idpTokenUseIdTitle;
+
+  /// No description provided for @idpTokenUseIdBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Default. Works with Keycloak and most OpenID Connect providers: the audience is the client id.'**
+  String get idpTokenUseIdBody;
+
+  /// No description provided for @idpTokenUseAccessTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Access token'**
+  String get idpTokenUseAccessTitle;
+
+  /// No description provided for @idpTokenUseAccessBody.
+  ///
+  /// In en, this message translates to:
+  /// **'For Microsoft Entra ID: the access token of your own API (scope api://<client-id>/access_as_user).'**
+  String get idpTokenUseAccessBody;
+
   /// No description provided for @idpFieldEmailClaim.
   ///
   /// In en, this message translates to:

@@ -21,6 +21,7 @@ class IdentityProviderInfo {
     required this.readOnly,
     required this.scopes,
     required this.source,
+    required this.tokenUse,
     required this.verifiedClaim,
     this.clientId,
     this.createdAt,
@@ -78,6 +79,10 @@ class IdentityProviderInfo {
 
   /// `database` or `env` (read-only emergency fallback from `OIDC_ISSUER`).
   final String source;
+
+  /// Token the interactive sign-in sends: `id_token` or `access_token`.
+  @JsonKey(name: 'token_use')
+  final String tokenUse;
 
   /// When it was last changed.
   @JsonKey(includeIfNull: false,name: 'updated_at')

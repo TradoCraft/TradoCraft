@@ -7981,6 +7981,23 @@ class AppLocalizationsDe extends AppLocalizations {
   String get idpFieldScopes => 'Scopes';
 
   @override
+  String get idpFieldTokenUse => 'Zu sendendes Token';
+
+  @override
+  String get idpTokenUseIdTitle => 'ID-Token';
+
+  @override
+  String get idpTokenUseIdBody =>
+      'Standard. Funktioniert mit Keycloak und den meisten OpenID-Connect-Anbietern: Die Audience ist die Client-ID.';
+
+  @override
+  String get idpTokenUseAccessTitle => 'Zugriffstoken';
+
+  @override
+  String get idpTokenUseAccessBody =>
+      'Für Microsoft Entra ID: das Zugriffstoken der eigenen API (Scope api://<client-id>/access_as_user).';
+
+  @override
   String get idpFieldEmailClaim => 'E-Mail-Claim';
 
   @override

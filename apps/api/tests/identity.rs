@@ -304,6 +304,93 @@ async fn cached_keys_expire_after_the_ttl(db: PgPool) {
     assert_eq!(me(&app, &t).await.0, StatusCode::UNAUTHORIZED);
 }
 
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn token_use_default_validation_persistence_and_public_list(db: PgPool) {
+    let a = MockIdp::start("a", "ka", 0).await;
+    let b = MockIdp::start("b", "kb", 1).await;
+    let (app, state) = oidc_app(db.clone(), settings(), None).await;
+    insert_provider(&db, &a, "A", "aud-a").await;
+    reload(&state).await;
+    let admin = a.token(
+        "ka",
+        0,
+        &user_claims(&a, "aud-a", "root", "admin@example.com"),
+    );
+    // Existing rows (and the model's default) are id_token.
+    let stored: String = sqlx::query_scalar("SELECT token_use FROM core.identity_providers")
+        .fetch_one(&db)
+        .await
+        .unwrap();
+    assert_eq!(stored, "id_token");
+    // The database refuses other values.
+    assert!(
+        sqlx::query("UPDATE core.identity_providers SET token_use = 'refresh_token'")
+            .execute(&db)
+            .await
+            .is_err()
+    );
+
+    // Create: default, then invalid, then explicit access_token.
+    let mut draft = json!({"name": "B", "issuer": b.issuer, "audience": "aud-b"});
+    let (st, created) = bcall(&app, Some(&admin), Method::POST, BASE, Some(draft.clone())).await;
+    assert_eq!(st, StatusCode::CREATED, "{created}");
+    assert_eq!(created["token_use"], "id_token");
+    let b_id = created["id"].as_str().unwrap().to_string();
+    let put = format!("{BASE}/{b_id}");
+
+    draft["token_use"] = json!("bearer");
+    let (st, r) = bcall(&app, Some(&admin), Method::PUT, &put, Some(draft.clone())).await;
+    assert_eq!(st, StatusCode::UNPROCESSABLE_ENTITY, "{r}");
+    assert!(r.to_string().contains("token_use"), "{r}");
+    let (st, _) = bcall(&app, Some(&admin), Method::POST, BASE, Some(draft.clone())).await;
+    assert_eq!(st, StatusCode::UNPROCESSABLE_ENTITY);
+    let still: String =
+        sqlx::query_scalar("SELECT token_use FROM core.identity_providers WHERE id = $1")
+            .bind(uuid::Uuid::parse_str(&b_id).unwrap())
+            .fetch_one(&db)
+            .await
+            .unwrap();
+    assert_eq!(still, "id_token", "a rejected update changes nothing");
+
+    // Update persists, shows in the admin read model and in the public list.
+    draft["token_use"] = json!("access_token");
+    let (st, r) = bcall(&app, Some(&admin), Method::PUT, &put, Some(draft.clone())).await;
+    assert_eq!(st, StatusCode::OK, "{r}");
+    assert_eq!(r["token_use"], "access_token");
+    let (_, got) = bcall(&app, Some(&admin), Method::GET, BASE, None).await;
+    let b_row = got
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|x| x["id"] == b_id.as_str())
+        .unwrap();
+    assert_eq!(b_row["token_use"], "access_token");
+    let (st, p) = bcall(&app, None, Method::GET, "/api/v1/auth/providers", None).await;
+    assert_eq!(st, StatusCode::OK);
+    let uses: Vec<(String, String)> = p
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|x| {
+            (
+                x["name"].as_str().unwrap().to_string(),
+                x["token_use"].as_str().unwrap().to_string(),
+            )
+        })
+        .collect();
+    assert!(uses.contains(&("A".into(), "id_token".into())), "{uses:?}");
+    assert!(
+        uses.contains(&("B".into(), "access_token".into())),
+        "{uses:?}"
+    );
+
+    // Omitting the field on update resets it to the default (like the other optional fields).
+    draft.as_object_mut().unwrap().remove("token_use");
+    let (st, r) = bcall(&app, Some(&admin), Method::PUT, &put, Some(draft)).await;
+    assert_eq!(st, StatusCode::OK, "{r}");
+    assert_eq!(r["token_use"], "id_token");
+}
+
 fn provider(policy: EmailPolicy) -> ProviderConfig {
     let mut p = ProviderConfig::from_env("https://idp.example", "aud");
     p.source = ProviderSource::Database;
@@ -705,7 +792,18 @@ async fn admin_api_hot_reload_test_endpoint_and_lockout_guards(db: PgPool) {
     assert_eq!(st, StatusCode::OK);
     let mut keys: Vec<&String> = p[0].as_object().unwrap().keys().collect();
     keys.sort();
-    assert_eq!(keys, ["client_id", "issuer", "name", "scopes", "source"]);
+    assert_eq!(
+        keys,
+        [
+            "client_id",
+            "issuer",
+            "name",
+            "scopes",
+            "source",
+            "token_use"
+        ]
+    );
+    assert_eq!(p[0]["token_use"], "id_token", "default");
     assert_eq!(p[0]["source"], "database");
     assert_eq!(p[0]["client_id"], "cid-a");
 
