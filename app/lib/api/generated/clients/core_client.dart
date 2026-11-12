@@ -15,6 +15,7 @@ import '../models/environment_info.dart';
 import '../models/me.dart';
 import '../models/module_info.dart';
 import '../models/modules_input.dart';
+import '../models/public_provider.dart';
 import '../models/role_info.dart';
 import '../models/setup_status.dart';
 
@@ -62,6 +63,11 @@ abstract class CoreClient {
   Future<void> inviteAdminUser({
     @Path('id') required String id,
   });
+
+  /// The enabled identity providers, for the sign-in page. No sign-in needed; only these four.
+  /// fields are exposed. Empty in dev mode.
+  @GET('/api/v1/auth/providers')
+  Future<List<PublicProvider>> publicProviders();
 
   @GET('/api/v1/me')
   Future<Me> me();
