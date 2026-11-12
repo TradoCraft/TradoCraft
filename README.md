@@ -99,7 +99,11 @@ Environments), sign in as `admin@example.com` and start it from the account menu
 ([runbook](docs/runbooks/test-environments.md#do-the-tutorial-in-three-commands)).
 
 Worker (helpdesk e-mail). By default outgoing mail is written to `./outbox` as `.eml` files;
-set `MAIL_TRANSPORT=smtp` and `SMTP_*`, and `IMAP_*` to fetch incoming mail (see `.env.example`):
+set `MAIL_TRANSPORT=smtp` and `SMTP_*`, and `IMAP_*` to fetch incoming mail (see `.env.example`).
+For several mailboxes, or a Microsoft 365 mailbox (Exchange Online, through Microsoft Graph), add
+them in the app under Helpdesk > Settings > Mailboxes and give the worker each secret as
+`MAILBOX_SECRET_<NAME>` ([ADR 0054](docs/adr/0054-helpdesk-mailboxes.md),
+[runbook](docs/runbooks/helpdesk-mailboxes.md)):
 
 ```bash
 cargo run -p tradocraft-worker

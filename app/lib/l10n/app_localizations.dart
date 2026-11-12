@@ -14081,6 +14081,192 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Background worker'**
   String get workerBannerSemantics;
+
+  /// No description provided for @mailboxes.
+  ///
+  /// In en, this message translates to:
+  /// **'Mailboxes'**
+  String get mailboxes;
+
+  /// No description provided for @newMailbox.
+  ///
+  /// In en, this message translates to:
+  /// **'New mailbox'**
+  String get newMailbox;
+
+  /// No description provided for @mailboxesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No mailboxes yet. E-mail is fetched and sent with the settings of the background worker.'**
+  String get mailboxesEmpty;
+
+  /// No description provided for @mailboxRefresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh the status'**
+  String get mailboxRefresh;
+
+  /// No description provided for @mailboxAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'E-mail address'**
+  String get mailboxAddress;
+
+  /// No description provided for @mailboxKind.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection'**
+  String get mailboxKind;
+
+  /// No description provided for @mailboxKindGraph.
+  ///
+  /// In en, this message translates to:
+  /// **'Microsoft 365 (Exchange Online)'**
+  String get mailboxKindGraph;
+
+  /// No description provided for @mailboxKindImap.
+  ///
+  /// In en, this message translates to:
+  /// **'IMAP and SMTP'**
+  String get mailboxKindImap;
+
+  /// No description provided for @mailboxTenantId.
+  ///
+  /// In en, this message translates to:
+  /// **'Tenant ID'**
+  String get mailboxTenantId;
+
+  /// No description provided for @mailboxClientId.
+  ///
+  /// In en, this message translates to:
+  /// **'Application (client) ID'**
+  String get mailboxClientId;
+
+  /// No description provided for @mailboxUsername.
+  ///
+  /// In en, this message translates to:
+  /// **'User name'**
+  String get mailboxUsername;
+
+  /// No description provided for @mailboxImapHost.
+  ///
+  /// In en, this message translates to:
+  /// **'IMAP server'**
+  String get mailboxImapHost;
+
+  /// No description provided for @mailboxImapPort.
+  ///
+  /// In en, this message translates to:
+  /// **'IMAP port'**
+  String get mailboxImapPort;
+
+  /// No description provided for @mailboxImapFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Folder'**
+  String get mailboxImapFolder;
+
+  /// No description provided for @mailboxImapTls.
+  ///
+  /// In en, this message translates to:
+  /// **'Encrypted IMAP connection (TLS)'**
+  String get mailboxImapTls;
+
+  /// No description provided for @mailboxSmtpHost.
+  ///
+  /// In en, this message translates to:
+  /// **'SMTP server'**
+  String get mailboxSmtpHost;
+
+  /// No description provided for @mailboxSmtpPort.
+  ///
+  /// In en, this message translates to:
+  /// **'SMTP port'**
+  String get mailboxSmtpPort;
+
+  /// No description provided for @mailboxSmtpSecurity.
+  ///
+  /// In en, this message translates to:
+  /// **'SMTP encryption'**
+  String get mailboxSmtpSecurity;
+
+  /// No description provided for @mailboxSmtpNone.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get mailboxSmtpNone;
+
+  /// No description provided for @mailboxSecretRef.
+  ///
+  /// In en, this message translates to:
+  /// **'Name of the secret'**
+  String get mailboxSecretRef;
+
+  /// No description provided for @mailboxSecretHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'The password or client secret is not stored here. Set it on the server as the worker variable {variable}.'**
+  String mailboxSecretHelp(String variable);
+
+  /// No description provided for @mailboxTeam.
+  ///
+  /// In en, this message translates to:
+  /// **'Team for new tickets'**
+  String get mailboxTeam;
+
+  /// No description provided for @mailboxTeamDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'The default team'**
+  String get mailboxTeamDefault;
+
+  /// No description provided for @mailboxInbound.
+  ///
+  /// In en, this message translates to:
+  /// **'Fetch incoming e-mail'**
+  String get mailboxInbound;
+
+  /// No description provided for @mailboxDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Default mailbox: for system e-mail and tickets without a mailbox'**
+  String get mailboxDefault;
+
+  /// No description provided for @mailboxDefaultBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'default'**
+  String get mailboxDefaultBadge;
+
+  /// No description provided for @mailboxSendOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Sends only'**
+  String get mailboxSendOnly;
+
+  /// No description provided for @mailboxNeverPolled.
+  ///
+  /// In en, this message translates to:
+  /// **'No e-mail fetched yet'**
+  String get mailboxNeverPolled;
+
+  /// No description provided for @mailboxLastOk.
+  ///
+  /// In en, this message translates to:
+  /// **'E-mail last fetched on {when}'**
+  String mailboxLastOk(String when);
+
+  /// No description provided for @mailboxError.
+  ///
+  /// In en, this message translates to:
+  /// **'Fetching e-mail failed: {error}'**
+  String mailboxError(String error);
+
+  /// No description provided for @mailboxDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove the mailbox {name}? Its tickets stay. Replies on them then leave through the default mailbox.'**
+  String mailboxDeleteConfirm(String name);
 }
 
 class _AppLocalizationsDelegate

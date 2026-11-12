@@ -152,7 +152,28 @@ async fn find_quotation(
     Ok(None)
 }
 
+/// The helpdesk mailbox an e-mail was fetched from (ADR 0054).
+#[derive(Debug, Clone, Copy)]
+pub struct Source {
+    pub mailbox_id: Uuid,
+    /// New tickets from this mailbox start in this team.
+    pub team_id: Option<Uuid>,
+}
+
+/// Ingests an e-mail that did not come from a helpdesk mailbox (an imported file, or the
+/// worker's single mailbox from the `IMAP_*` variables).
 pub async fn ingest(db: &PgPool, company_id: Uuid, raw: &[u8]) -> anyhow::Result<IngestResult> {
+    ingest_from(db, company_id, raw, None).await
+}
+
+/// Turns a raw e-mail into a new ticket or an article on an existing one. With a `source`, a new
+/// ticket remembers the mailbox (replies leave through it) and starts in the mailbox's team.
+pub async fn ingest_from(
+    db: &PgPool,
+    company_id: Uuid,
+    raw: &[u8],
+    source: Option<Source>,
+) -> anyhow::Result<IngestResult> {
     let mail = parse(raw).ok_or_else(|| anyhow::anyhow!("not a valid e-mail message"))?;
     let mut tx = db.begin().await?;
 
@@ -215,6 +236,7 @@ pub async fn ingest(db: &PgPool, company_id: Uuid, raw: &[u8]) -> anyhow::Result
                     quotation_id = coalesce(quotation_id, $2),
                     customer_id = coalesce(customer_id, $3),
                     contact_id = coalesce(contact_id, $5),
+                    mailbox_id = coalesce(mailbox_id, $6),
                     suggested_category = $4,
                     updated_at = now()
                  WHERE id = $1",
@@ -224,6 +246,7 @@ pub async fn ingest(db: &PgPool, company_id: Uuid, raw: &[u8]) -> anyhow::Result
             .bind(customer.as_ref().map(|c| c.id))
             .bind(suggestion)
             .bind(contact.as_ref().map(|c| c.id))
+            .bind(source.map(|s| s.mailbox_id))
             .execute(&mut *tx)
             .await?;
             crate::sla::sync(&mut tx, t.id).await?;
@@ -257,8 +280,10 @@ pub async fn ingest(db: &PgPool, company_id: Uuid, raw: &[u8]) -> anyhow::Result
             let id = tradocraft_core::new_id();
             sqlx::query(
                 "INSERT INTO helpdesk.tickets (id, company_id, number, subject, category, suggested_category, language,
-                                               customer_id, contact_name, contact_email, owner_user_id, quotation_id, contact_id, channel)
-                 VALUES ($1, $2, $3, $4, $5, $5, $6, $7, $8, $9, $10, $11, $12, 'email')",
+                                               customer_id, contact_name, contact_email, owner_user_id, quotation_id, contact_id, channel,
+                                               mailbox_id, team_id)
+                 VALUES ($1, $2, $3, $4, $5, $5, $6, $7, $8, $9, $10, $11, $12, 'email', $13,
+                         (SELECT id FROM helpdesk.teams WHERE id = $14 AND company_id = $2 AND active))",
             )
             .bind(id)
             .bind(company_id)
@@ -278,6 +303,8 @@ pub async fn ingest(db: &PgPool, company_id: Uuid, raw: &[u8]) -> anyhow::Result
             .bind(quotation.as_ref().map(|q| q.created_by))
             .bind(quotation.as_ref().map(|q| q.id))
             .bind(contact.as_ref().map(|c| c.id))
+            .bind(source.map(|s| s.mailbox_id))
+            .bind(source.and_then(|s| s.team_id))
             .execute(&mut *tx)
             .await?;
             crate::teams::assign_default_team(&mut tx, company_id, id).await?;
@@ -298,8 +325,8 @@ pub async fn ingest(db: &PgPool, company_id: Uuid, raw: &[u8]) -> anyhow::Result
     let article_id = tradocraft_core::new_id();
     sqlx::query(
         "INSERT INTO helpdesk.articles (id, ticket_id, kind, from_address, from_name, to_addresses, cc_addresses,
-                                        subject, body, raw_message, language, message_id, in_reply_to, contact_id)
-         VALUES ($1, $2, 'email_in', $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)",
+                                        subject, body, raw_message, language, message_id, in_reply_to, contact_id, mailbox_id)
+         VALUES ($1, $2, 'email_in', $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)",
     )
     .bind(article_id)
     .bind(ticket_id)
@@ -314,6 +341,7 @@ pub async fn ingest(db: &PgPool, company_id: Uuid, raw: &[u8]) -> anyhow::Result
     .bind(&mail.message_id)
     .bind(mail.references.last())
     .bind(contact.as_ref().map(|c| c.id))
+    .bind(source.map(|s| s.mailbox_id))
     .execute(&mut *tx)
     .await?;
     store_attachments(&mut tx, company_id, ticket_id, article_id, &mail).await?;

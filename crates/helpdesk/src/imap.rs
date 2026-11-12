@@ -24,6 +24,8 @@ pub struct ImapConfig {
     pub tls: bool,
     /// The company whose helpdesk receives the mails.
     pub company_id: Uuid,
+    /// The helpdesk mailbox this is (ADR 0054); empty for the worker's `IMAP_*` variables.
+    pub source: Option<ingest::Source>,
 }
 
 /// Fetches unread messages, ingests each one and marks it as read. Returns the number processed.
@@ -79,7 +81,7 @@ where
             .await?;
         for f in &fetched {
             let Some(raw) = f.body() else { continue };
-            match ingest::ingest(db, cfg.company_id, raw).await {
+            match ingest::ingest_from(db, cfg.company_id, raw, cfg.source).await {
                 Ok(r) => {
                     tracing::info!(ticket = %r.ticket_number, new = r.new_ticket, "e-mail ingested")
                 }

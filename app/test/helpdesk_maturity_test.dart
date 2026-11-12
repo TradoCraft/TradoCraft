@@ -403,6 +403,7 @@ void main() {
       'GET /api/v1/me': (_) => meJson([..._helpdeskPerms, 'helpdesk.admin']),
       'GET /api/v1/users': (_) => [_user()],
       'GET /api/v1/helpdesk/teams': (_) => [_team()],
+      'GET /api/v1/helpdesk/mailboxes': (_) => <Object?>[],
       'GET /api/v1/helpdesk/settings': (_) => {
         'default_team_id': null,
         'csat_enabled': false,

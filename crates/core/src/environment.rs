@@ -119,8 +119,8 @@ pub struct OutboundPolicy {
     pub kind: EnvKind,
     /// The mail transport to use: what was requested for live, always `files` otherwise.
     pub mail_transport: String,
-    /// Whether the worker may poll a mailbox over IMAP.
-    pub imap_allowed: bool,
+    /// Whether the worker may fetch mail from a mailbox (IMAP or Microsoft Graph).
+    pub inbound_allowed: bool,
 }
 
 impl OutboundPolicy {
@@ -135,7 +135,7 @@ impl OutboundPolicy {
             } else {
                 "files".to_string()
             },
-            imap_allowed: live || allow_inbound,
+            inbound_allowed: live || allow_inbound,
         }
     }
 
@@ -169,7 +169,7 @@ impl OutboundPolicy {
                 "OUTBOUND SAFETY: MAIL_TRANSPORT={requested_transport} overridden to files: e-mail is never sent"
             )
         });
-        w.push(if self.imap_allowed {
+        w.push(if self.inbound_allowed {
             format!(
                 "OUTBOUND SAFETY: {ALLOW_INBOUND_MAIL_VAR} is set: the mailbox WILL be polled and fetched mail is marked read there"
             )
@@ -294,7 +294,7 @@ mod tests {
     fn live_keeps_the_requested_transport_and_imap() {
         let p = OutboundPolicy::resolve(EnvKind::Live, "smtp", false);
         assert_eq!(p.mail_transport, "smtp");
-        assert!(p.imap_allowed && p.is_unrestricted());
+        assert!(p.inbound_allowed && p.is_unrestricted());
         assert!(p.warnings("smtp").is_empty());
     }
 
@@ -303,7 +303,7 @@ mod tests {
         for kind in [EnvKind::Test, EnvKind::Tutorial] {
             let p = OutboundPolicy::resolve(kind, "smtp", false);
             assert_eq!(p.mail_transport, "files");
-            assert!(!p.imap_allowed);
+            assert!(!p.inbound_allowed);
             let w = p.warnings("smtp").join("\n");
             assert!(w.contains("overridden to files") && w.contains("IMAP polling is disabled"));
         }
@@ -312,7 +312,7 @@ mod tests {
     #[test]
     fn imap_needs_the_explicit_opt_in_in_non_live() {
         let p = OutboundPolicy::resolve(EnvKind::Test, "files", true);
-        assert!(p.imap_allowed);
+        assert!(p.inbound_allowed);
         assert_eq!(p.mail_transport, "files");
         assert!(p.warnings("files").join("\n").contains("WILL be polled"));
         assert!(OutboundPolicy::parse_opt_in(Some(" TRUE ")));

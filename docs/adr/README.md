@@ -56,3 +56,4 @@ accepted one; mark superseded records as such.
 | [0051](0051-material-and-cupertino-as-packages.md) | Material and Cupertino as packages: `material_ui`/`cupertino_ui` replace `package:flutter/material.dart`; Flutter pinned to 3.50.0 | Accepted |
 | [0052](0052-worker-heartbeat.md) | Worker heartbeat: one beat row, `GET /admin/worker`, an in-app warning and a "worker was down" mail to administrators | Accepted |
 | [0053](0053-backup-and-restore.md) | Backup and restore: physical base backups with `scripts/backupctl`, grandfather-father-son retention, verify by restoring, restore drill through a clone | Accepted |
+| [0054](0054-helpdesk-mailboxes.md) | Helpdesk mailboxes: several per company, Microsoft Graph (Exchange Online) or IMAP/SMTP, secrets only in the worker environment, replies through the ticket's mailbox | Accepted |
