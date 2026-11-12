@@ -849,6 +849,20 @@ async fn make_primary(
         sqlx::query_scalar("SELECT id FROM core.companies WHERE is_primary FOR UPDATE")
             .fetch_optional(&mut *tx)
             .await?;
+    // The guard above read the flag before the lock; a concurrent swap may have committed since.
+    // This statement runs after the lock and reads the committed flag through the transaction.
+    let still: bool = sqlx::query_scalar(
+        "SELECT EXISTS (
+            SELECT 1 FROM core.user_companies uc
+            JOIN core.companies c ON c.id = uc.company_id
+            WHERE uc.user_id = $1 AND uc.active AND 'admin' = ANY(uc.roles) AND c.is_primary)",
+    )
+    .bind(user.user_id)
+    .fetch_one(&mut *tx)
+    .await?;
+    if !still {
+        return Err(AppError::Forbidden(NOT_PRIMARY_ADMIN.into()));
+    }
     let target: Option<(Uuid, String)> =
         sqlx::query_as("SELECT id, name FROM core.companies WHERE id = $1 FOR UPDATE")
             .bind(id)
