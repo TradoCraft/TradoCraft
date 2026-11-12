@@ -66,16 +66,24 @@ lock someone out or attach an identity to the wrong person). Moving a user to a 
 means setting the new subject with the endpoint above or letting the next sign-in bind by e-mail
 after clearing the old one.
 
-*Environment fallback.* `OIDC_ISSUER` and `OIDC_AUDIENCE` become an optional, read-only provider
-(source `env`): listed in the admin screen, never editable or deletable there, available when the
+*Environment fallback.* `OIDC_ISSUER` and `OIDC_AUDIENCE` (plus the optional `OIDC_CLIENT_ID` and
+`OIDC_SCOPES`, default `openid profile email`, which make interactive sign-in possible for it) become
+an optional, read-only provider (source `env`): listed in the admin screen, never editable or deletable there, available when the
 database providers are wrong or gone. `AUTH_MODE=oidc` may start without them when the database
 has providers; with neither, every request answers 401 and the bootstrap with `BOOTSTRAP_TOKEN`
 still works.
 
 *Who may edit.* New permission `identity.admin`, always on (like `users.admin`) and granted to the
 `admin` role only. Because roles are per company but providers decide who can sign in to the whole
-installation, the caller must in addition hold the admin role in the oldest company (smallest
-`created_at`) of the installation; an administrator of a later company cannot change them.
+installation, the caller must in addition hold the admin role in the installation's *primary
+company*, an explicit flag (`core.companies.is_primary`, at most one company, enforced by a unique
+partial index). A migration flags the oldest company on existing installations and the bootstrap
+flags the first company of an empty database; if no company were primary the oldest is used. An
+administrator of another company cannot change the providers. `POST /admin/companies/{id}/make-primary`
+moves the flag in one transaction (audited, `company` / `made_primary`); only an administrator of the
+current primary company may call it, an unknown company is 404 and the current primary one 409.
+This replaces the earlier rule "the oldest company", which a later deletion or import could change
+silently.
 
 *Lock-out safeguards.* Create and update read discovery and keys and are rejected (422 with the
 reason) when they cannot be read or the issuer does not match (a disabled provider is not probed on
@@ -90,5 +98,5 @@ provider the caller's own token came from. Every change is audited (`identity_pr
 reloaded right after every admin change, and every 60 s so other API instances follow. Key caches
 survive a reload for providers whose settings did not change.
 
-*Public list.* `GET /api/v1/auth/providers` (no sign-in) returns `name`, `issuer`, `client_id` and
-`scopes` of the enabled providers for the sign-in page; nothing else. Empty in dev mode.
+*Public list.* `GET /api/v1/auth/providers` (no sign-in) returns `name`, `issuer`, `client_id`,
+`scopes` and `source` (`database` or `env`, so the page can label the fallback) of the enabled providers for the sign-in page; nothing else. Empty in dev mode.
