@@ -240,7 +240,9 @@ pub async fn process_outbox_with(
                 sent += 1;
             }
             Err(e) => {
-                let failed = q.attempts + 1 >= MAX_ATTEMPTS;
+                // A send whose outcome is unknown is never repeated: it could reach the customer twice.
+                let failed = q.attempts + 1 >= MAX_ATTEMPTS
+                    || e.downcast_ref::<crate::graph::SendUnknown>().is_some();
                 tracing::warn!(article = %q.id, error = %e, failed, "sending e-mail failed");
                 sqlx::query(
                     "UPDATE helpdesk.articles SET attempts = attempts + 1, delivery_error = $2,
@@ -248,7 +250,7 @@ pub async fn process_outbox_with(
                      WHERE id = $1",
                 )
                 .bind(q.id)
-                .bind(e.to_string())
+                .bind(format!("{e:#}"))
                 .bind(failed)
                 .execute(&mut *tx)
                 .await?;
@@ -371,7 +373,9 @@ pub async fn process_system_mail_with(
                 sent += 1;
             }
             Err(e) => {
-                let failed = q.attempts + 1 >= MAX_ATTEMPTS;
+                // A send whose outcome is unknown is never repeated: it could reach the customer twice.
+                let failed = q.attempts + 1 >= MAX_ATTEMPTS
+                    || e.downcast_ref::<crate::graph::SendUnknown>().is_some();
                 tracing::warn!(mail = %q.id, error = %e, failed, "sending system e-mail failed");
                 sqlx::query(
                     "UPDATE core.mail_outbox SET attempts = attempts + 1, delivery_error = $2,
@@ -379,7 +383,7 @@ pub async fn process_system_mail_with(
                      WHERE id = $1",
                 )
                 .bind(q.id)
-                .bind(e.to_string())
+                .bind(format!("{e:#}"))
                 .bind(failed)
                 .execute(&mut *tx)
                 .await?;

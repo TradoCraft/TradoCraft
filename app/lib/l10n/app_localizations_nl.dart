@@ -7957,7 +7957,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String mailboxError(String error) {
-    return 'E-mail ophalen mislukt: $error';
+    return 'Probleem bij het ophalen van e-mail: $error';
   }
 
   @override

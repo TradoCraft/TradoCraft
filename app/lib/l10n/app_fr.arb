@@ -2524,6 +2524,6 @@
   "mailboxSendOnly": "Envoi uniquement",
   "mailboxNeverPolled": "Aucun e-mail relevé pour l'instant",
   "mailboxLastOk": "E-mails relevés pour la dernière fois le {when}",
-  "mailboxError": "Échec de la relève des e-mails : {error}",
+  "mailboxError": "Problème lors de la relève des e-mails : {error}",
   "mailboxDeleteConfirm": "Supprimer la boîte aux lettres {name} ? Ses tickets sont conservés. Les réponses partent alors par la boîte par défaut."
 }

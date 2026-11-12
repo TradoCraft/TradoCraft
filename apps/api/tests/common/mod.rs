@@ -2,6 +2,7 @@
 #![allow(dead_code)]
 
 pub mod e2e;
+pub mod graph;
 
 use std::path::PathBuf;
 use std::sync::Arc;

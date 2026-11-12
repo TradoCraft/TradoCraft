@@ -3838,7 +3838,7 @@
   "mailboxNeverPolled": "No e-mail fetched yet",
   "mailboxLastOk": "E-mail last fetched on {when}",
   "@mailboxLastOk": {"placeholders": {"when": {"type": "String"}}},
-  "mailboxError": "Fetching e-mail failed: {error}",
+  "mailboxError": "Problem fetching e-mail: {error}",
   "@mailboxError": {"placeholders": {"error": {"type": "String"}}},
   "mailboxDeleteConfirm": "Remove the mailbox {name}? Its tickets stay. Replies on them then leave through the default mailbox.",
   "@mailboxDeleteConfirm": {"placeholders": {"name": {"type": "String"}}}

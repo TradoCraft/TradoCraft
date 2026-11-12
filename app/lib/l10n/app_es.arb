@@ -2524,6 +2524,6 @@
   "mailboxSendOnly": "Solo envía",
   "mailboxNeverPolled": "Todavía no se ha recibido correo",
   "mailboxLastOk": "Correo recibido por última vez el {when}",
-  "mailboxError": "Error al recibir el correo: {error}",
+  "mailboxError": "Problema al recibir el correo: {error}",
   "mailboxDeleteConfirm": "¿Eliminar el buzón {name}? Sus tickets se conservan. Las respuestas salen entonces por el buzón predeterminado."
 }

@@ -85,6 +85,11 @@ The wording of Microsoft's own messages can differ; the HTTP status is the relia
 | listing unread mail: HTTP 403 ... Access is denied | permissions or admin consent missing, or the access policy excludes this mailbox | steps 2 and 3 |
 | listing unread mail: HTTP 404 | the address is not a mailbox of this tenant | correct the address |
 | HTTP 429 (retry after N s) | Microsoft throttles the application | wait; the next pass tries again |
+| an e-mail could not be downloaded (... HTTP 404 ...) | the e-mail was moved or deleted while it was being fetched | nothing: it is not fetched again once gone; if it stays, open it in Outlook |
+| an e-mail is larger than 35 MB and was left unread | too large to turn into a ticket | read it in Outlook and handle it by hand; it stays unread, so this line stays until it is read |
+| an e-mail could not be turned into a ticket (see the worker log) | the message is not a valid e-mail | read it in Outlook; see the worker log for the reason |
+| Microsoft Graph named another address for the next page; it was not followed | an unexpected answer from the service | report it; the first page was still taken |
+| Microsoft 365 did not say whether the e-mail was sent (shown on the message in the ticket) | a timeout that could not be settled afterwards | look in the mailbox's Sent Items; send it again by hand only if it is not there |
 | IMAP login / connecting to IMAP server | wrong user, password, server or port, or IMAP is off | step 1 of the IMAP section |
 
 A reply that could not be sent shows its reason on the message in the ticket and is tried five
@@ -111,14 +116,47 @@ mail as read in that mailbox. Sending stays off in every non-live environment.
 
 ## Check once after setting up a Microsoft 365 mailbox
 
-The Graph connection is tested in the code against a stand-in, not against Microsoft. Do this
-once with a test mailbox before pointing customers at it:
+The Graph connection is tested in the code against a stand-in, not against Microsoft. Run this
+once with the mailbox before pointing customers at it (as the worker, so it has the secret):
 
-1. Send an e-mail with an attachment (PDF or picture) to the mailbox. Within a pass it is a ticket
-   in the right team, the attachment is on it, and the e-mail is marked read in Outlook.
-2. Reply from the ticket with an attachment. It arrives, from the mailbox's address, and is in
-   the mailbox's Sent Items.
-3. Answer that reply from the customer's side. It lands on the same ticket, not a new one.
-4. Change the subject of a further answer so the ticket number is gone. It still lands on the
-   same ticket (threading by Message-ID).
-5. Request a portal login link. It arrives from the default mailbox.
+```bash
+docker compose exec worker tradocraft-worker check-mailbox "Support"
+```
+
+`Support` is the name of the mailbox in the app. It refuses to run outside a live environment and
+for an IMAP/SMTP mailbox. It sends **one message to the mailbox itself**, never to anyone else, and
+moves it to Deleted Items afterwards. Each step is one line; every line says `ok` or `FAIL` with
+the HTTP status and Graph's own message (never the secret or a token):
+
+```
+ok   sign in: a token was issued
+ok   the query the worker uses for unread mail: 3 unread message(s) in the inbox
+ok   make a draft from MIME: the message says <check-...@contoso.com>, Exchange says the draft is <...>
+ok   send the draft: Exchange accepted it (202)
+ok   find the delivered copy in the inbox: <...>
+ok   find the copy in Sent Items: <...>
+ok   download the delivered message: its Message-ID header is <...>
+ok   Message-ID: kept: Exchange leaves the Message-ID of the message as it was made; ...
+ok   remove the test mail: moved to Deleted Items
+all steps worked
+```
+
+The exit status is not zero when a step failed. The `Message-ID` line is the one nobody could
+check without a tenant:
+
+| Verdict | Meaning | Do |
+|---|---|---|
+| `kept` | Exchange leaves the Message-ID alone | nothing |
+| `replaced when the draft is made, and the same in every copy` | Exchange assigns its own; the helpdesk stores that one | nothing |
+| `WARNING: changed when the message is sent` | the Message-ID the helpdesk stores is not the one customers' replies cite; replies still thread by the ticket number in the subject, but a reply that loses it starts a new ticket | tell the developers: the output of this command is what they need |
+
+Two things the command cannot do, so do them by hand once:
+
+1. Reply from a ticket **with an attachment** and check it arrives, from the mailbox's address, and
+   is in the mailbox's Sent Items. Send an e-mail with an attachment to the mailbox and check the
+   ticket has it.
+2. Answer that reply from the customer's side: it lands on the same ticket, not a new one. Then
+   answer again with the ticket number removed from the subject, and see what happens (with
+   `kept` or `replaced when the draft is made` it still lands on the same ticket).
+
+Request a portal login link at the end: it arrives from the default mailbox.

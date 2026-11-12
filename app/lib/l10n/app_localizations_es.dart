@@ -7957,7 +7957,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String mailboxError(String error) {
-    return 'Error al recibir el correo: $error';
+    return 'Problema al recibir el correo: $error';
   }
 
   @override
