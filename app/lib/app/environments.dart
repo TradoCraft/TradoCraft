@@ -288,7 +288,7 @@ class EnvironmentsNotifier extends Notifier<EnvironmentsState> {
       return;
     }
     final known = state.items
-        .where((e) => _sameServer(e.serverUrl, s.serverUrl))
+        .where((e) => sameServer(e.serverUrl, s.serverUrl))
         .firstOrNull;
     if (known != null) {
       state = EnvironmentsState(
@@ -362,7 +362,7 @@ class EnvironmentsNotifier extends Notifier<EnvironmentsState> {
     required EnvironmentKind kind,
   }) async {
     final url = normalizeServerUrl(serverUrl) ?? serverUrl;
-    if (state.items.any((e) => _sameServer(e.serverUrl, url))) {
+    if (state.items.any((e) => sameServer(e.serverUrl, url))) {
       return EnvChange.rejected;
     }
     final env = AppEnvironment(
@@ -417,7 +417,7 @@ class EnvironmentsNotifier extends Notifier<EnvironmentsState> {
 }
 
 /// Whether two server addresses are the same once written in canonical form.
-bool _sameServer(String a, String b) =>
+bool sameServer(String a, String b) =>
     (normalizeServerUrl(a) ?? a) == (normalizeServerUrl(b) ?? b);
 
 /// The list of environments and the one in use; follows the session.
