@@ -70,8 +70,8 @@ class PoLineDraft {
     label: '${line.productCode} · ${line.productName}',
     supplierCode: line.supplierProductCode,
     description: line.description,
-    quantity: _trim(line.quantity),
-    unitPrice: _trim(line.unitPrice),
+    quantity: trimDecimal(line.quantity),
+    unitPrice: trimDecimal(line.unitPrice),
   );
 
   /// The chosen product, null until one is picked.
@@ -99,7 +99,8 @@ class PoLineDraft {
   }
 }
 
-String _trim(String v) =>
+/// Drops trailing zeros of a decimal string (`12.5000` -> `12.5`).
+String trimDecimal(String v) =>
     v.contains('.') ? v.replaceFirst(RegExp(r'\.?0+$'), '') : v;
 
 /// Validates [lines] like the backend does and returns the API lines or a message.
@@ -172,7 +173,7 @@ class _PoLinesEditorState extends ConsumerState<PoLinesEditor> {
     d.label = '${p.code} · ${p.name}';
     final entry = widget.prices[p.id];
     if (entry != null) {
-      d.price.text = _trim(entry.unitPrice);
+      d.price.text = trimDecimal(entry.unitPrice);
       d.supplierCode = entry.supplierProductCode;
       widget.onPriceDefaults?.call(entry);
     }

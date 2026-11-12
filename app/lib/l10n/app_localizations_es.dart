@@ -6640,6 +6640,42 @@ class AppLocalizationsEs extends AppLocalizations {
   String get purchAddLine => 'Añadir línea';
 
   @override
+  String get purchGoodsPickSupplier =>
+      'Elija un proveedor para ver sus artículos.';
+
+  @override
+  String get purchGoodsEmpty =>
+      'Este proveedor aún no tiene productos. Añádalos primero a su lista de precios y vuelva.';
+
+  @override
+  String get purchGoodsNoMatch => 'Ningún artículo coincide con el filtro.';
+
+  @override
+  String get purchGoodsFilter => 'Filtrar artículos';
+
+  @override
+  String get purchGoodsHeader =>
+      'Artículos de este proveedor: marque lo que quiera pedir';
+
+  @override
+  String purchGoodsBelowMoq(String qty) {
+    return 'Por debajo de la cantidad mínima de pedido ($qty)';
+  }
+
+  @override
+  String get purchGoodsCleared =>
+      'Se borraron los artículos elegidos porque cambió el proveedor.';
+
+  @override
+  String get purchGoodsOther =>
+      'Otros productos (fuera de la lista de precios)';
+
+  @override
+  String purchGoodsSummary(int count, String total) {
+    return '$count líneas, total $total';
+  }
+
+  @override
   String get purchPickSupplier => 'Elija un proveedor.';
 
   @override
@@ -7242,11 +7278,11 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get tutBuyingOrderBody =>
-      'Cree un pedido de compra a Voltaic Drives Ltd con tres líneas: TUT-MOTOR, TUT-FRAME y TUT-CTRL, 30 unidades de cada una. Los precios salen de la lista de precios.';
+      'Cree un pedido de compra a Voltaic Drives Ltd. Al elegir el proveedor se listan sus artículos: marque TUT-MOTOR, TUT-FRAME y TUT-CTRL, ponga la cantidad 30 en cada uno y guarde. Los precios salen de la lista de precios.';
 
   @override
   String get tutBuyingOrderHint =>
-      'Elija primero el proveedor: los precios de las líneas se rellenan cuando carga su lista. Use Añadir línea para el segundo y el tercer componente.';
+      'Elija primero el proveedor. Al marcar una casilla se rellena la cantidad mínima de pedido (o 1); escriba 30 en el campo de cantidad. Use el filtro para encontrar un producto rápido.';
 
   @override
   String get tutBuyingOpenOrderTitle => 'La pantalla del pedido';

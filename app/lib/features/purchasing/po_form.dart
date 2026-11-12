@@ -6,6 +6,7 @@ import '../../l10n/l10n.dart';
 import '../../shared/app_icons.dart';
 import '../../shared/format.dart';
 import '../../shared/search_picker.dart';
+import 'goods_picker.dart';
 import 'po_lines.dart';
 import '../tutorial/targets.dart';
 
@@ -69,26 +70,49 @@ class _NewPoDialog extends ConsumerStatefulWidget {
 
 class _NewPoDialogState extends ConsumerState<_NewPoDialog> {
   Supplier? _supplier;
-  Map<String, SupplierProduct> _prices = {};
+  List<SupplierProduct> _entries = const [];
+  bool _loadingGoods = false;
+  bool _clearedNotice = false;
+  final _selection = GoodsSelection();
   DateTime? _expected;
   final _notes = TextEditingController();
-  final _lines = <PoLineDraft>[PoLineDraft()];
+
+  // Products that are not on the supplier's price list, added through the line editor.
+  final _extra = <PoLineDraft>[];
   String? _error;
   bool _busy = false;
 
   @override
   void dispose() {
     _notes.dispose();
-    for (final d in _lines) {
+    _selection.dispose();
+    for (final d in _extra) {
       d.dispose();
     }
     super.dispose();
   }
 
+  Map<String, SupplierProduct> get _prices => {
+    for (final e in _entries) e.productId: e,
+  };
+
   Future<void> _pickSupplier(Supplier s) async {
+    final changed = _supplier != null && _supplier!.id != s.id;
+    final hadChoice =
+        _selection.hasAny || _extra.any((d) => d.productId != null);
+    if (changed) {
+      // A different supplier has a different price list: start the selection over.
+      _selection.clear();
+      for (final d in _extra) {
+        d.dispose();
+      }
+      _extra.clear();
+    }
     setState(() {
       _supplier = s;
-      _prices = {};
+      _entries = const [];
+      _loadingGoods = true;
+      _clearedNotice = changed && hadChoice;
     });
     try {
       final list = await ref
@@ -96,11 +120,58 @@ class _NewPoDialogState extends ConsumerState<_NewPoDialog> {
           .purchasing
           .listSupplierProducts(id: s.id);
       if (mounted && _supplier?.id == s.id) {
-        setState(() => _prices = {for (final p in list) p.productId: p});
+        setState(() {
+          _entries = list;
+          _loadingGoods = false;
+        });
       }
     } catch (_) {
-      // Without a price list the lines are simply not pre-filled.
+      if (mounted && _supplier?.id == s.id) {
+        setState(() => _loadingGoods = false);
+      }
     }
+  }
+
+  void _goodsChanged() {
+    setState(() {
+      _error = null;
+      _clearedNotice = false;
+      // The supplier's lead time defaults the expected date when none is set.
+      if (_expected == null) {
+        for (final e in _entries) {
+          if (_selection.isChosen(e.productId) && e.leadTimeDays > 0) {
+            _expected = DateTime.now().add(Duration(days: e.leadTimeDays));
+            break;
+          }
+        }
+      }
+    });
+  }
+
+  String _summary(AppLocalizations l) {
+    var count = 0;
+    var total = 0.0;
+    var currency = _supplier?.currency ?? 'EUR';
+    for (final e in _entries) {
+      if (!_selection.isChosen(e.productId)) continue;
+      count++;
+      currency = e.currency;
+      final q = double.parse(
+        parseDecimalInput(_selection.qty(e.productId).text)!,
+      );
+      total += q * (double.tryParse(e.unitPrice) ?? 0);
+    }
+    for (final d in _extra) {
+      final q = double.tryParse(parseDecimalInput(d.qty.text) ?? '');
+      final p = double.tryParse(parseDecimalInput(d.price.text) ?? '');
+      if (d.productId == null || q == null) continue;
+      count++;
+      total += q * (p ?? 0);
+    }
+    return l.purchGoodsSummary(
+      count,
+      money(total.toStringAsFixed(2), currency: currency),
+    );
   }
 
   Future<void> _save() async {
@@ -109,7 +180,11 @@ class _NewPoDialogState extends ConsumerState<_NewPoDialog> {
       setState(() => _error = l.purchPickSupplier);
       return;
     }
-    final (lines, problem) = buildPoLines(l, _lines);
+    final picked = selectedGoodsLines(_entries, _selection);
+    final (lines, problem) = buildPoLines(l, [...picked, ..._extra]);
+    for (final d in picked) {
+      d.dispose();
+    }
     if (lines == null) {
       setState(() => _error = problem);
       return;
@@ -189,21 +264,47 @@ class _NewPoDialogState extends ConsumerState<_NewPoDialog> {
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 8),
-              PoLinesEditor(
-                lines: _lines,
-                prices: _prices,
-                onChanged: () => setState(() => _error = null),
-                onPriceDefaults: (e) {
-                  // The supplier's lead time defaults the expected date when none is set.
-                  if (_expected == null && e.leadTimeDays > 0) {
-                    setState(
-                      () => _expected = DateTime.now().add(
-                        Duration(days: e.leadTimeDays),
-                      ),
-                    );
-                  }
-                },
-              ),
+              if (_supplier == null)
+                Text(
+                  l.purchGoodsPickSupplier,
+                  key: const ValueKey('po-goods-pick-supplier'),
+                )
+              else if (_loadingGoods)
+                const Center(child: CircularProgressIndicator())
+              else ...[
+                if (_clearedNotice)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Text(
+                      l.purchGoodsCleared,
+                      key: const ValueKey('po-goods-cleared'),
+                    ),
+                  ),
+                if (_entries.isNotEmpty) Text(l.purchGoodsHeader),
+                SupplierGoodsPicker(
+                  key: ValueKey('po-goods-${_supplier!.id}'),
+                  entries: _entries,
+                  selection: _selection,
+                  onChanged: _goodsChanged,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  l.purchGoodsOther,
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                const SizedBox(height: 4),
+                PoLinesEditor(
+                  lines: _extra,
+                  prices: _prices,
+                  onChanged: () => setState(() => _error = null),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _summary(l),
+                  key: const ValueKey('po-goods-summary'),
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+              ],
               if (_error != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
@@ -224,11 +325,14 @@ class _NewPoDialogState extends ConsumerState<_NewPoDialog> {
           onPressed: _busy ? null : () => Navigator.pop(context),
           child: Text(l.cancel),
         ),
-        TutorialTarget(id: 'po-form-save', child: FilledButton(
-          key: const ValueKey('po-save'),
-          onPressed: _busy ? null : _save,
-          child: Text(l.save),
-        )),
+        TutorialTarget(
+          id: 'po-form-save',
+          child: FilledButton(
+            key: const ValueKey('po-save'),
+            onPressed: _busy ? null : _save,
+            child: Text(l.save),
+          ),
+        ),
       ],
     );
   }

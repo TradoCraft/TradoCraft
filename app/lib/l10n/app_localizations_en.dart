@@ -6620,6 +6620,41 @@ class AppLocalizationsEn extends AppLocalizations {
   String get purchAddLine => 'Add line';
 
   @override
+  String get purchGoodsPickSupplier =>
+      'Choose a supplier to see the goods it offers.';
+
+  @override
+  String get purchGoodsEmpty =>
+      'This supplier has no products yet. Add them to the supplier\'s price list first, then come back.';
+
+  @override
+  String get purchGoodsNoMatch => 'No goods match the filter.';
+
+  @override
+  String get purchGoodsFilter => 'Filter goods';
+
+  @override
+  String get purchGoodsHeader =>
+      'Goods of this supplier: tick what you want to order';
+
+  @override
+  String purchGoodsBelowMoq(String qty) {
+    return 'Below the minimum order quantity ($qty)';
+  }
+
+  @override
+  String get purchGoodsCleared =>
+      'The selected goods were cleared because the supplier changed.';
+
+  @override
+  String get purchGoodsOther => 'Other products (not on the price list)';
+
+  @override
+  String purchGoodsSummary(int count, String total) {
+    return '$count lines, total $total';
+  }
+
+  @override
   String get purchPickSupplier => 'Choose a supplier.';
 
   @override
@@ -7217,11 +7252,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tutBuyingOrderBody =>
-      'Create a purchase order for Voltaic Drives Ltd with three lines: TUT-MOTOR, TUT-FRAME and TUT-CTRL, 30 pieces each. The prices come from the price list.';
+      'Create a purchase order for Voltaic Drives Ltd. After choosing the supplier its goods are listed: tick TUT-MOTOR, TUT-FRAME and TUT-CTRL and set the quantity to 30 for each, then save. The prices come from the price list.';
 
   @override
   String get tutBuyingOrderHint =>
-      'Choose the supplier first: the line prices fill in once its price list has loaded. Use Add line for the second and third component.';
+      'Choose the supplier first. Ticking a box fills in the minimum order quantity (or 1); type 30 in the quantity box instead. Use the filter box to find a product quickly.';
 
   @override
   String get tutBuyingOpenOrderTitle => 'The order screen';

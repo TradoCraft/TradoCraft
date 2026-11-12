@@ -6650,6 +6650,41 @@ class AppLocalizationsFr extends AppLocalizations {
   String get purchAddLine => 'Ajouter une ligne';
 
   @override
+  String get purchGoodsPickSupplier =>
+      'Choisissez un fournisseur pour voir ses articles.';
+
+  @override
+  String get purchGoodsEmpty =>
+      'Ce fournisseur n\'a pas encore de produits. Ajoutez-les d\'abord à son tarif, puis revenez.';
+
+  @override
+  String get purchGoodsNoMatch => 'Aucun article ne correspond au filtre.';
+
+  @override
+  String get purchGoodsFilter => 'Filtrer les articles';
+
+  @override
+  String get purchGoodsHeader =>
+      'Articles de ce fournisseur : cochez ce que vous voulez commander';
+
+  @override
+  String purchGoodsBelowMoq(String qty) {
+    return 'Inférieur à la quantité minimale de commande ($qty)';
+  }
+
+  @override
+  String get purchGoodsCleared =>
+      'Les articles choisis ont été effacés car le fournisseur a changé.';
+
+  @override
+  String get purchGoodsOther => 'Autres produits (hors tarif)';
+
+  @override
+  String purchGoodsSummary(int count, String total) {
+    return '$count lignes, total $total';
+  }
+
+  @override
   String get purchPickSupplier => 'Choisissez un fournisseur.';
 
   @override
@@ -7252,11 +7287,11 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get tutBuyingOrderBody =>
-      'Créez une commande d\'achat pour Voltaic Drives Ltd avec trois lignes : TUT-MOTOR, TUT-FRAME et TUT-CTRL, 30 pièces chacune. Les prix viennent du tarif.';
+      'Créez une commande d\'achat pour Voltaic Drives Ltd. Après le choix du fournisseur, ses articles sont listés : cochez TUT-MOTOR, TUT-FRAME et TUT-CTRL, mettez la quantité à 30 pour chacun, puis enregistrez. Les prix viennent du tarif.';
 
   @override
   String get tutBuyingOrderHint =>
-      'Choisissez d\'abord le fournisseur : les prix des lignes se remplissent une fois son tarif chargé. Utilisez Ajouter une ligne pour le deuxième et le troisième composant.';
+      'Choisissez d\'abord le fournisseur. Cocher une case remplit la quantité minimale de commande (ou 1) ; saisissez plutôt 30 dans le champ quantité. Le champ de filtre aide à trouver un produit.';
 
   @override
   String get tutBuyingOpenOrderTitle => 'L\'écran de la commande';
