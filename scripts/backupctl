@@ -1,0 +1,550 @@
+#!/usr/bin/env bash
+# backupctl: physical backups of the tradocraft PostgreSQL server, retention, verification and
+# restore (ADR 0056, roadmap D2).
+#
+# A backup is a pg_basebackup of the whole server (every database, including the attachments and
+# photos stored as bytea) in tar format with the WAL it needs, compressed, with a SHA-256 checksum
+# and a small key=value description. `verify` restores a backup into a throwaway directory, starts
+# PostgreSQL on it without network access, and checks it; `restore` unpacks a backup into a new
+# data directory. Passwords are never printed or put on a command line.
+#
+# Usage: scripts/backupctl help
+set -Eeuo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+die() { echo "backupctl: $*" >&2; exit 1; }
+info() { echo "backupctl: $*"; }
+
+usage() {
+  cat <<'EOF'
+backupctl: physical backups of the tradocraft PostgreSQL server (ADR 0056)
+
+Usage: backupctl [--config FILE] [--dir DIR] [--database-url URL] <command> [args]
+
+Commands:
+  backup [--no-prune]          Take a backup of the whole server, then apply the retention rule
+  list                         Backups, newest first: size, migration, last verification
+  prune [--dry-run]            Apply the retention rule (also run after every backup)
+  verify [ID|latest] [--amcheck]
+                               Restore into a throwaway directory, start it without network
+                               access, check checksums, manifest, migrations and that every row
+                               can be read; records the result in the backup
+  restore ID|latest TARGET_DIR [--start [--port PORT]]
+                               Unpack into a new, empty data directory and check the manifest.
+                               --start runs it on 127.0.0.1:PORT (default 55432) for a drill,
+                               with WAL archiving off
+  help                         This text
+
+Connection: DATABASE_URL (environment, --database-url or the config file) names the server, the
+user and the application database (for the migration check). The user needs the REPLICATION
+attribute (a superuser has it) and pg_hba.conf must allow it a replication connection.
+Config file: --config FILE, $BACKUPCTL_CONFIG, ./.env or the repository .env (only known keys are
+read; the file is never sourced).
+Settings:
+  BACKUP_DIR            Where backups are kept (required; or --dir)
+  BACKUP_KEEP_DAILY     Newest backup of each of the last N days with a backup (default 7)
+  BACKUP_KEEP_WEEKLY    Newest backup of each of the last N ISO weeks with a backup (default 4)
+  BACKUP_KEEP_MONTHLY   Newest backup of each of the last N months with a backup (default 6)
+  BACKUP_EXEC           Command prefix that runs pg_basebackup and psql next to the server,
+                        e.g. "docker compose exec -T db" (then the local socket is used)
+  BACKUP_PG_BIN         Directory with the PostgreSQL server programs (pg_ctl, postgres,
+                        pg_verifybackup) for verify and restore; default: PATH, then
+                        /usr/lib/postgresql/<major>/bin
+EOF
+}
+
+# --- configuration -----------------------------------------------------------------------------
+
+CONFIG_KEYS=" DATABASE_URL BACKUP_DIR BACKUP_KEEP_DAILY BACKUP_KEEP_WEEKLY BACKUP_KEEP_MONTHLY BACKUP_EXEC BACKUP_PG_BIN "
+
+# Reads KEY=VALUE lines of a .env-style file for the known keys; values already set in the
+# environment win. The file is parsed, never executed.
+load_config() {
+  local file="$1" line key value
+  [[ -r "$file" ]] || return 0
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    line="${line#"${line%%[![:space:]]*}"}"
+    [[ -z "$line" || "$line" == \#* ]] && continue
+    line="${line#export }"
+    [[ "$line" == *=* ]] || continue
+    key="${line%%=*}"
+    value="${line#*=}"
+    [[ "$CONFIG_KEYS" == *" $key "* ]] || continue
+    value="${value%\"}"; value="${value#\"}"; value="${value%\'}"; value="${value#\'}"
+    if [[ -z "${!key:-}" && -n "$value" ]]; then
+      export "$key=$value"
+    fi
+  done <"$file"
+}
+
+CONFIG_FILE="${BACKUPCTL_CONFIG:-}"
+ARGS=()
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --config) CONFIG_FILE="${2:-}"; shift 2 ;;
+    --dir) export BACKUP_DIR="${2:-}"; shift 2 ;;
+    --database-url) export DATABASE_URL="${2:-}"; shift 2 ;;
+    *) ARGS+=("$1"); shift ;;
+  esac
+done
+set -- "${ARGS[@]+"${ARGS[@]}"}"
+
+if [[ -n "$CONFIG_FILE" ]]; then
+  [[ -r "$CONFIG_FILE" ]] || die "cannot read config file $CONFIG_FILE"
+  load_config "$CONFIG_FILE"
+elif [[ -r ./.env ]]; then
+  load_config ./.env
+elif [[ -r "$REPO_ROOT/.env" ]]; then
+  load_config "$REPO_ROOT/.env"
+fi
+
+KEEP_DAILY="${BACKUP_KEEP_DAILY:-7}"
+KEEP_WEEKLY="${BACKUP_KEEP_WEEKLY:-4}"
+KEEP_MONTHLY="${BACKUP_KEEP_MONTHLY:-6}"
+for v in "$KEEP_DAILY" "$KEEP_WEEKLY" "$KEEP_MONTHLY"; do
+  [[ "$v" =~ ^[0-9]+$ ]] || die "BACKUP_KEEP_* must be whole numbers"
+done
+EXEC=()
+if [[ -n "${BACKUP_EXEC:-}" ]]; then read -r -a EXEC <<<"$BACKUP_EXEC"; fi
+
+require_dir() {
+  [[ -n "${BACKUP_DIR:-}" ]] || die "BACKUP_DIR is required (environment, --dir or config file)"
+}
+
+# --- PostgreSQL connection ---------------------------------------------------------------------
+
+DB_NAME="" DB_USER=""
+
+# Splits DATABASE_URL. Without BACKUP_EXEC the libpq variables are exported, so the password never
+# appears on a command line; with BACKUP_EXEC only the user and database are used (local socket).
+parse_pg_url() {
+  [[ -n "${DATABASE_URL:-}" ]] || die "DATABASE_URL is required (environment, --database-url or config file)"
+  local url="$DATABASE_URL" rest query="" userinfo="" hostpart hostport user pass="" host port=""
+  [[ "$url" == postgres://* || "$url" == postgresql://* ]] || die "DATABASE_URL must start with postgresql://"
+  rest="${url#*://}"
+  if [[ "$rest" == *\?* ]]; then query="${rest#*\?}"; rest="${rest%%\?*}"; fi
+  if [[ "$rest" == *@* ]]; then userinfo="${rest%@*}"; hostpart="${rest##*@}"; else hostpart="$rest"; fi
+  hostport="${hostpart%%/*}"
+  DB_NAME=""
+  [[ "$hostpart" == */* ]] && DB_NAME="${hostpart#*/}"
+  DB_NAME="${DB_NAME:-tradocraft}"
+  decode() { printf '%b' "${1//%/\\x}"; }
+  user="${userinfo%%:*}"
+  [[ "$userinfo" == *:* ]] && pass="${userinfo#*:}"
+  host="${hostport%%:*}"
+  [[ "$hostport" == *:* ]] && port="${hostport#*:}"
+  DB_USER="$(decode "${user:-}")"
+  [[ -n "$DB_USER" ]] || DB_USER="$(id -un)"
+  export PGUSER="$DB_USER"
+  if ((${#EXEC[@]} == 0)); then
+    [[ -n "$host" ]] && export PGHOST="$host"
+    [[ -n "$port" ]] && export PGPORT="$port"
+    [[ -n "$pass" ]] && PGPASSWORD="$(decode "$pass")" && export PGPASSWORD
+    if [[ "$query" == *sslmode=* ]]; then
+      local ssl="${query##*sslmode=}"
+      export PGSSLMODE="${ssl%%&*}"
+    fi
+  fi
+  return 0
+}
+
+# Runs a PostgreSQL client program next to the source server (through BACKUP_EXEC when set).
+pgx() { if ((${#EXEC[@]})); then "${EXEC[@]}" "$@"; else "$@"; fi; }
+src_value() { pgx psql -X -q -t -A -v ON_ERROR_STOP=1 -U "$DB_USER" -d "$1" -c "$2"; }
+
+# --- backups on disk ---------------------------------------------------------------------------
+
+ID_RE='^[0-9]{8}T[0-9]{6}Z$'
+
+info_get() { grep -m1 "^$2=" "$BACKUP_DIR/$1/backup.info" 2>/dev/null | cut -d= -f2- || true; }
+
+# info_set id key value: add or replace one line, atomically.
+info_set() {
+  local f="$BACKUP_DIR/$1/backup.info" tmp
+  tmp="$(mktemp "$BACKUP_DIR/$1/.info.XXXXXX")"
+  { grep -v "^$2=" "$f" || true; echo "$2=$3"; } >"$tmp"
+  mv "$tmp" "$f"
+}
+
+# Complete backups, newest first.
+backup_ids() {
+  local d n
+  [[ -d "$BACKUP_DIR" ]] || return 0
+  for d in "$BACKUP_DIR"/*/; do
+    n="$(basename "$d")"
+    [[ "$n" =~ $ID_RE && -f "$d/backup.info" && -f "$d/base.tar.gz" ]] && echo "$n"
+  done | sort -r
+}
+
+resolve_id() {
+  local id="${1:-latest}"
+  if [[ "$id" == latest ]]; then
+    id="$(backup_ids | head -n1)"
+    [[ -n "$id" ]] || die "no backups in $BACKUP_DIR"
+  fi
+  [[ "$id" =~ $ID_RE ]] || die "'$id' is not a backup id (YYYYMMDDTHHMMSSZ or latest)"
+  [[ -f "$BACKUP_DIR/$id/backup.info" && -f "$BACKUP_DIR/$id/base.tar.gz" ]] || die "no complete backup $id in $BACKUP_DIR"
+  echo "$id"
+}
+
+# One lock for backup and prune, so they never overlap (a prune must not delete a backup that is
+# being written, and two backups at once would double the load on the server).
+take_lock() {
+  mkdir -p "$BACKUP_DIR"
+  chmod 700 "$BACKUP_DIR"
+  command -v flock >/dev/null || return 0
+  exec 8>"$BACKUP_DIR/.lock"
+  flock -n 8 || die "another backupctl backup or prune is running on $BACKUP_DIR"
+}
+
+human() { numfmt --to=iec --suffix=B "$1" 2>/dev/null || echo "${1}B"; }
+
+# --- backup ------------------------------------------------------------------------------------
+
+PARTIAL=""
+cleanup_partial() { [[ -n "$PARTIAL" && -d "$PARTIAL" ]] && rm -rf "$PARTIAL"; return 0; }
+
+cmd_backup() {
+  local prune=1
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --no-prune) prune=0; shift ;;
+      *) die "backup: unknown argument '$1'" ;;
+    esac
+  done
+  require_dir
+  parse_pg_url
+  take_lock
+  local id version_num version migration databases started
+  id="$(date -u +%Y%m%dT%H%M%SZ)"
+  [[ ! -e "$BACKUP_DIR/$id" ]] || die "backup $id already exists"
+  version_num="$(src_value "$DB_NAME" "SHOW server_version_num")" \
+    || die "cannot connect to database '$DB_NAME' as '$DB_USER'"
+  version="$(src_value "$DB_NAME" "SHOW server_version")"
+  migration="$(src_value "$DB_NAME" "SELECT coalesce(max(version)::text, '') FROM _sqlx_migrations" 2>/dev/null || true)"
+  databases="$(src_value "$DB_NAME" "SELECT string_agg(datname, ',' ORDER BY datname) FROM pg_database WHERE datallowconn AND NOT datistemplate")"
+
+  PARTIAL="$BACKUP_DIR/.$id.partial"
+  trap cleanup_partial EXIT
+  mkdir -m 700 "$PARTIAL"
+  started="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  info "backup $id of $(server_label) (PostgreSQL $version) to $BACKUP_DIR"
+  # Tar to stdout: one stream that holds the data directory, the WAL needed to make it consistent
+  # (-X fetch) and the backup manifest. The same command works on the host and through BACKUP_EXEC.
+  set +e
+  pgx pg_basebackup -U "$DB_USER" -D - -F tar -X fetch -c fast --manifest-checksums=SHA256 \
+    -l "tradocraft $id" | gzip -6 >"$PARTIAL/base.tar.gz"
+  local -a st=("${PIPESTATUS[@]}")
+  set -e
+  ((st[0] == 0)) || die "pg_basebackup failed (exit ${st[0]}); nothing was kept"
+  ((st[1] == 0)) || die "compressing the backup failed (exit ${st[1]}); nothing was kept"
+  tar -tzf "$PARTIAL/base.tar.gz" backup_manifest >/dev/null 2>&1 \
+    || die "the backup has no backup_manifest (PostgreSQL 13 or newer is needed); nothing was kept"
+
+  local sha size
+  sha="$(sha256sum "$PARTIAL/base.tar.gz" | cut -d' ' -f1)"
+  size="$(stat -c %s "$PARTIAL/base.tar.gz")"
+  {
+    echo "id=$id"
+    echo "started_at=$started"
+    echo "finished_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    echo "server=$(server_label)"
+    echo "server_version=$version"
+    echo "server_version_num=$version_num"
+    echo "user=$DB_USER"
+    echo "database=$DB_NAME"
+    echo "databases=$databases"
+    echo "migration=$migration"
+    echo "size=$size"
+    echo "sha256=$sha"
+  } >"$PARTIAL/backup.info"
+  chmod 600 "$PARTIAL/base.tar.gz" "$PARTIAL/backup.info"
+  mv "$PARTIAL" "$BACKUP_DIR/$id"
+  PARTIAL=""
+  info "done: $BACKUP_DIR/$id ($(human "$size"), migration ${migration:-none})"
+  if ((prune)); then prune_backups 0; fi
+}
+
+server_label() {
+  if ((${#EXEC[@]})); then printf '%s' "${EXEC[*]}"; else printf '%s:%s' "${PGHOST:-local}" "${PGPORT:-5432}"; fi
+}
+
+# --- retention ---------------------------------------------------------------------------------
+
+# Prints the ids to keep. Rule: the newest backup always; per day, ISO week and month the newest
+# backup of that period, for the KEEP_DAILY / KEEP_WEEKLY / KEEP_MONTHLY newest periods that have a
+# backup. Periods are counted from the backups themselves, so a gap (no backups while the server
+# was down) never makes older backups expire early.
+keep_set() {
+  local id day week month nd=0 nw=0 nm=0 first=1
+  local seen_d=" " seen_w=" " seen_m=" "
+  for id in $(backup_ids); do
+    day="${id:0:8}"
+    week="$(date -u -d "${day:0:4}-${day:4:2}-${day:6:2}" +%G-W%V)"
+    month="${day:0:6}"
+    local keep=$first
+    first=0
+    if [[ "$seen_d" != *" $day "* ]]; then
+      seen_d+="$day "
+      if ((nd < KEEP_DAILY)); then keep=1; nd=$((nd + 1)); fi
+    fi
+    if [[ "$seen_w" != *" $week "* ]]; then
+      seen_w+="$week "
+      if ((nw < KEEP_WEEKLY)); then keep=1; nw=$((nw + 1)); fi
+    fi
+    if [[ "$seen_m" != *" $month "* ]]; then
+      seen_m+="$month "
+      if ((nm < KEEP_MONTHLY)); then keep=1; nm=$((nm + 1)); fi
+    fi
+    ((keep)) && echo "$id"
+  done
+  return 0
+}
+
+prune_backups() {
+  local dry="$1" keep id p removed=0
+  keep=" $(keep_set | tr '\n' ' ') "
+  for id in $(backup_ids); do
+    [[ "$keep" == *" $id "* ]] && continue
+    if ((dry)); then
+      info "would remove $id"
+    else
+      rm -rf "${BACKUP_DIR:?}/$id"
+      info "removed $id (retention)"
+    fi
+    removed=$((removed + 1))
+  done
+  # Leftovers of a backup that crashed (the lock is held, so none is being written now).
+  if ((!dry)); then
+    for p in "$BACKUP_DIR"/.*.partial; do
+      [[ -d "$p" ]] || continue
+      rm -rf "$p"
+      info "removed unfinished $(basename "$p")"
+    done
+  fi
+  info "retention: keep $KEEP_DAILY daily, $KEEP_WEEKLY weekly, $KEEP_MONTHLY monthly; $removed removed$( ((dry)) && echo ' (dry run)')"
+}
+
+cmd_prune() {
+  local dry=0
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --dry-run) dry=1; shift ;;
+      *) die "prune: unknown argument '$1'" ;;
+    esac
+  done
+  require_dir
+  if ((dry)); then [[ -d "$BACKUP_DIR" ]] || die "$BACKUP_DIR does not exist"; else take_lock; fi
+  prune_backups "$dry"
+}
+
+cmd_list() {
+  require_dir
+  local id keep
+  keep=" $(keep_set | tr '\n' ' ') "
+  printf '%-18s %9s  %-16s %-34s %s\n' ID SIZE MIGRATION VERIFIED RETENTION
+  for id in $(backup_ids); do
+    local v
+    v="$(info_get "$id" verify_result)"
+    [[ -n "$v" ]] && v="$v $(info_get "$id" verified_at)"
+    printf '%-18s %9s  %-16s %-34s %s\n' "$id" "$(human "$(info_get "$id" size)")" \
+      "$(info_get "$id" migration)" "${v:-never}" "$([[ "$keep" == *" $id "* ]] && echo kept || echo 'expires at next prune')"
+  done
+}
+
+# --- restore and verify ------------------------------------------------------------------------
+
+PG_BIN=""
+
+find_pg_bin() {
+  local major="$1" d
+  for d in "${BACKUP_PG_BIN:-}" "$(dirname "$(command -v pg_ctl 2>/dev/null || echo /nonexistent/x)")" \
+    "/usr/lib/postgresql/$major/bin" "/usr/pgsql-$major/bin" "/usr/local/pgsql/bin"; do
+    [[ -n "$d" && -x "$d/pg_ctl" && -x "$d/postgres" && -x "$d/pg_verifybackup" ]] || continue
+    if [[ "$("$d/postgres" --version | grep -oE '[0-9]+' | head -n1)" == "$major" ]]; then
+      PG_BIN="$d"
+      return 0
+    fi
+  done
+  die "no PostgreSQL $major server programs (pg_ctl, postgres, pg_verifybackup) found: set BACKUP_PG_BIN"
+}
+
+not_root() {
+  [[ "$(id -u)" != 0 ]] || die "PostgreSQL refuses to run as root: run this as the postgres user (e.g. sudo -u postgres)"
+}
+
+# Checks the archive checksum, unpacks it into an empty directory and checks it against its manifest.
+unpack() {
+  local id="$1" target="$2" sha
+  info "checking the checksum of $id"
+  sha="$(sha256sum "$BACKUP_DIR/$id/base.tar.gz" | cut -d' ' -f1)"
+  [[ "$sha" == "$(info_get "$id" sha256)" ]] || { info "checksum mismatch: the archive is damaged"; return 1; }
+  mkdir -p "$target"
+  chmod 700 "$target"
+  tar -xzf "$BACKUP_DIR/$id/base.tar.gz" -C "$target" || { info "unpacking failed"; return 1; }
+  info "checking the files against the backup manifest"
+  "$PG_BIN/pg_verifybackup" -q "$target" || { info "pg_verifybackup reports a damaged backup"; return 1; }
+}
+
+# Configuration files that a packaged server (Debian, RHEL) keeps outside the data directory.
+ensure_conf() {
+  local data="$1"
+  [[ -f "$data/postgresql.conf" ]] || : >"$data/postgresql.conf"
+  if [[ ! -f "$data/pg_hba.conf" ]]; then
+    printf '%s\n' "local all all peer" "host all all 127.0.0.1/32 scram-sha-256" >"$data/pg_hba.conf"
+    info "no pg_hba.conf in the backup (packaged server): wrote one for local use"
+  fi
+}
+
+cmd_verify() {
+  local id="" amcheck=0
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --amcheck) amcheck=1; shift ;;
+      -*) die "verify: unknown argument '$1'" ;;
+      *) [[ -z "$id" ]] || die "verify: one backup at a time"; id="$1"; shift ;;
+    esac
+  done
+  require_dir
+  id="$(resolve_id "${id:-latest}")"
+  not_root
+  find_pg_bin "$(( $(info_get "$id" server_version_num) / 10000 ))"
+  local work data sock user db ok=1 started=0
+  work="$(mktemp -d "${TMPDIR:-/tmp}/backupctl.XXXXXX")"
+  data="$work/data"
+  sock="$work"
+  user="$(info_get "$id" user)"
+  db="$(info_get "$id" database)"
+  # shellcheck disable=SC2064  # expand now: the paths are fixed for this run
+  trap "[[ -f '$data/postmaster.pid' ]] && '$PG_BIN/pg_ctl' -D '$data' -m immediate stop >/dev/null 2>&1; rm -rf '$work'" EXIT
+  info "verifying $id (PostgreSQL $(info_get "$id" server_version), migration $(info_get "$id" migration))"
+  unpack "$id" "$data" || ok=0
+
+  if ((ok)); then
+    ensure_conf "$data"
+    # Only this run can connect: no TCP listener, a socket in the private work directory, and an
+    # hba file of its own. WAL archiving is off so the copy never writes into the live archive.
+    printf 'local all all trust\n' >"$work/pg_hba.conf"
+    info "starting PostgreSQL on the restored copy (crash recovery replays the backup's WAL)"
+    if "$PG_BIN/pg_ctl" -D "$data" -l "$work/postgres.log" -w -t 600 -o \
+      "-c listen_addresses='' -c port=5432 -c unix_socket_directories='$sock' -c hba_file='$work/pg_hba.conf' -c archive_mode=off" \
+      start >/dev/null; then
+      started=1
+    else
+      info "PostgreSQL did not start on the restored copy; last log lines:"
+      tail -n 20 "$work/postgres.log" >&2 || true
+      ok=0
+    fi
+  fi
+
+  if ((ok)); then
+    local -a conn=(-h "$sock" -p 5432 -U "$user")
+    q() { "$PG_BIN/psql" "${conn[@]}" -X -q -t -A -v ON_ERROR_STOP=1 -d "$1" -c "$2"; }
+    if [[ "$(q postgres "SELECT count(*) FROM pg_database WHERE datname = '$db'")" != 1 ]]; then
+      info "database '$db' is missing in the backup"; ok=0
+    fi
+    if ((ok)); then
+      local migration failed
+      migration="$(q "$db" "SELECT coalesce(max(version)::text, '') FROM _sqlx_migrations" 2>/dev/null || true)"
+      failed="$(q "$db" "SELECT count(*) FROM _sqlx_migrations WHERE NOT success" 2>/dev/null || echo 0)"
+      if [[ "$migration" != "$(info_get "$id" migration)" ]]; then
+        info "migration $migration differs from the one recorded at backup time ($(info_get "$id" migration))"; ok=0
+      fi
+      [[ "$failed" == 0 ]] || { info "$failed failed migration(s) in the backup"; ok=0; }
+    fi
+    if ((ok)); then
+      # Reading every row of every database proves that the data, including the large bytea
+      # values stored out of line, can be read back (a damaged page or TOAST chunk fails here).
+      local d
+      for d in $(q postgres "SELECT datname FROM pg_database WHERE datallowconn AND NOT datistemplate ORDER BY 1"); do
+        info "reading every row of database $d"
+        "$PG_BIN/pg_dump" "${conn[@]}" -d "$d" -F custom -Z 0 --no-sync -f /dev/null || { info "reading database $d failed"; ok=0; }
+      done
+    fi
+    if ((ok && amcheck)); then
+      info "checking tables and indexes with pg_amcheck"
+      "$PG_BIN/pg_amcheck" "${conn[@]}" --all --install-missing --heapallindexed || { info "pg_amcheck reports damage"; ok=0; }
+    fi
+    if ((ok)); then
+      local summary
+      summary="$(q "$db" "SELECT 'companies ' || (SELECT count(*) FROM core.companies) || ', users ' || (SELECT count(*) FROM core.users)" 2>/dev/null || true)"
+      [[ -n "$summary" ]] && info "contents: $summary"
+      local beat
+      beat="$(q "$db" "SELECT last_beat_at FROM core.worker_heartbeat" 2>/dev/null || true)"
+      [[ -n "$beat" ]] && info "last worker heartbeat in the backup: $beat"
+    fi
+  fi
+
+  if ((started)); then "$PG_BIN/pg_ctl" -D "$data" -m fast stop >/dev/null || true; fi
+  local result
+  if ((ok)); then result=ok; else result=failed; fi
+  info_set "$id" verified_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  info_set "$id" verify_result "$result"
+  if ((ok)); then info "backup $id verified: ok"; else die "backup $id FAILED verification"; fi
+}
+
+cmd_restore() {
+  local id="" target="" start=0 port=55432
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --start) start=1; shift ;;
+      --port) port="${2:-}"; shift 2 ;;
+      -*) die "restore: unknown argument '$1'" ;;
+      *)
+        if [[ -z "$id" ]]; then id="$1"; elif [[ -z "$target" ]]; then target="$1"; else die "restore: too many arguments"; fi
+        shift ;;
+    esac
+  done
+  [[ -n "$id" && -n "$target" ]] || die "usage: backupctl restore ID|latest TARGET_DIR [--start [--port PORT]]"
+  [[ "$port" =~ ^[0-9]+$ ]] || die "--port must be a number"
+  require_dir
+  id="$(resolve_id "$id")"
+  if [[ -e "$target" ]]; then
+    [[ -d "$target" && -z "$(ls -A "$target")" ]] || die "$target exists and is not empty: restore only into a new or empty directory"
+  fi
+  ((start)) && not_root
+  find_pg_bin "$(( $(info_get "$id" server_version_num) / 10000 ))"
+  if ! unpack "$id" "$target"; then
+    die "restore of $id failed; $target holds a partial copy, remove it before trying again"
+  fi
+  rm -f "$target/backup_manifest"
+  info "restored $id into $target (PostgreSQL $(info_get "$id" server_version), migration $(info_get "$id" migration))"
+  if ((!start)); then
+    cat <<EOF
+backupctl: next steps for a server restore (docs/runbooks/backup-and-restore.md):
+  - the directory must belong to the user PostgreSQL runs as (chown -R postgres: $target), mode 700;
+  - point the server's data directory at it (or move it into place) and start PostgreSQL;
+    it replays the backup's WAL and opens for connections;
+  - start the API, which applies newer migrations, then the worker.
+EOF
+    return 0
+  fi
+  ensure_conf "$target"
+  # A drill copy: loopback only, its own socket directory, and never archiving WAL.
+  "$PG_BIN/pg_ctl" -D "$target" -l "$target/restore-drill.log" -w -t 600 -o \
+    "-c listen_addresses='127.0.0.1' -c port=$port -c unix_socket_directories='$target' -c archive_mode=off" \
+    start >/dev/null || { tail -n 20 "$target/restore-drill.log" >&2 || true; die "PostgreSQL did not start on $target"; }
+  cat <<EOF
+backupctl: the restored copy runs on 127.0.0.1:$port (same users and passwords as the source).
+  Clone it into a test environment (outbound mail off, credentials scrubbed):
+    scripts/envctl --database-url postgresql://$(info_get "$id" user):PASSWORD@127.0.0.1:$port/postgres \\
+      clone $(info_get "$id" database) restore_drill --kind test
+  Stop it:  $PG_BIN/pg_ctl -D $target stop
+EOF
+}
+
+# --- main --------------------------------------------------------------------------------------
+
+cmd="${1:-help}"
+[[ $# -gt 0 ]] && shift
+case "$cmd" in
+  backup) cmd_backup "$@" ;;
+  list) cmd_list "$@" ;;
+  prune) cmd_prune "$@" ;;
+  verify) cmd_verify "$@" ;;
+  restore) cmd_restore "$@" ;;
+  help|-h|--help) usage ;;
+  *) usage >&2; exit 2 ;;
+esac
