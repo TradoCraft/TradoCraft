@@ -26,7 +26,7 @@ audited, with a section in the helpdesk settings of the app.
 underscores). The worker reads the password or client secret from its environment variable
 `MAILBOX_SECRET_<secret_ref>`. The API cannot store, return or test a secret. This keeps the
 guarantee of ADR 0048 (a clone cannot carry mail credentials) and keeps secrets out of backups
-(ADR 0053). The price: adding a mailbox needs someone with access to the server, once.
+(ADR 0056). The price: adding a mailbox needs someone with access to the server, once.
 
 *Microsoft Graph (Exchange Online).* The worker signs in as an application (client credentials,
 scope `https://graph.microsoft.com/.default`); the token is cached per tenant and application
