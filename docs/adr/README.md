@@ -55,3 +55,4 @@ accepted one; mark superseded records as such.
 | [0050](0050-portal-surface.md) | Portal surface: a separate customer-facing server with only the portal routes, rate limits, and CORS from configuration | Accepted |
 | [0051](0051-material-and-cupertino-as-packages.md) | Material and Cupertino as packages: `material_ui`/`cupertino_ui` replace `package:flutter/material.dart`; Flutter pinned to 3.50.0 | Accepted |
 | [0052](0052-worker-heartbeat.md) | Worker heartbeat: one beat row, `GET /admin/worker`, an in-app warning and a "worker was down" mail to administrators | Accepted |
+| [0053](0053-interactive-sign-in.md) | Interactive sign-in: OIDC code + PKCE in the app with the `oidc` package behind our own interface, loopback redirect on desktop, `token_use` per provider, Dio interceptor, secure storage | Proposed |

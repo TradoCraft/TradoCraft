@@ -127,8 +127,50 @@ Future<void> showEnvironmentSwitcher(BuildContext context) =>
     showDialog<void>(context: context, builder: (_) => const _SwitcherDialog());
 
 /// Opens the dialog that adds an environment (the server tells its kind). True when one was added.
-Future<bool?> showAddEnvironmentDialog(BuildContext context) =>
-    showDialog<bool>(context: context, builder: (_) => const _AddDialog());
+/// The dialog only collects and checks; it is closed before the environment is added, because
+/// adding switches the session and the router then rebuilds the page stack.
+Future<bool?> showAddEnvironmentDialog(BuildContext context) async {
+  final request = await showDialog<_AddRequest>(
+    context: context,
+    builder: (_) => const _AddDialog(),
+  );
+  return request == null ? false : request.run();
+}
+
+/// Everything the add dialog decided, with the objects needed once the dialog is gone (the
+/// dialog's own `ref` and `context` are dead by then).
+class _AddRequest {
+  const _AddRequest({
+    required this.notifier,
+    required this.messenger,
+    required this.router,
+    required this.notSavedText,
+    required this.name,
+    required this.url,
+    required this.kind,
+    required this.openWizard,
+  });
+
+  final EnvironmentsNotifier notifier;
+  final ScaffoldMessengerState messenger;
+  final GoRouter? router;
+  final String notSavedText;
+  final String name;
+  final String url;
+  final EnvironmentKind kind;
+  final bool openWizard;
+
+  /// Adds the environment (which switches to it) and then says where to go. True when added.
+  Future<bool> run() async {
+    final r = await notifier.add(name: name, serverUrl: url, kind: kind);
+    if (r == EnvChange.rejected) return false;
+    if (r == EnvChange.notSaved) {
+      messenger.showSnackBar(SnackBar(content: Text(notSavedText)));
+    }
+    if (openWizard) router?.go('/setup?server=${Uri.encodeQueryComponent(url)}');
+    return true;
+  }
+}
 
 /// The dialog behind [showEnvironmentSwitcher]: one tile per environment plus "add".
 class _SwitcherDialog extends ConsumerWidget {
@@ -197,11 +239,14 @@ class _SwitcherDialog extends ConsumerWidget {
                 icon: const Icon(Icons.add),
                 label: Text(l.envAdd),
                 onPressed: () async {
-                  final added = await showDialog<bool>(
+                  final request = await showDialog<_AddRequest>(
                     context: context,
                     builder: (_) => const _AddDialog(),
                   );
-                  if (added == true && context.mounted) Navigator.pop(context);
+                  if (request == null || !context.mounted) return;
+                  // Close the switcher too before the environment changes the router state.
+                  Navigator.pop(context);
+                  await request.run();
                 },
               ),
             ),
@@ -292,6 +337,9 @@ class _AddDialogState extends ConsumerState<_AddDialog> {
   String? _error;
   bool _busy = false;
 
+  /// True while [_add] runs (setup-status request and setup offer included): one submission only.
+  bool _submitting = false;
+
   @override
   void dispose() {
     _name.dispose();
@@ -312,7 +360,7 @@ class _AddDialogState extends ConsumerState<_AddDialog> {
     if (ref
         .read(environmentsProvider)
         .items
-        .any((e) => (normalizeServerUrl(e.serverUrl) ?? e.serverUrl) == url)) {
+        .any((e) => sameServer(e.serverUrl, url))) {
       setState(() {
         _probe = null;
         _error = l.envAlreadyListed;
@@ -343,26 +391,31 @@ class _AddDialogState extends ConsumerState<_AddDialog> {
   }
 
   Future<void> _add() async {
+    if (_submitting) return;
+    setState(() => _submitting = true);
+    try {
+      await _addChecked();
+    } finally {
+      // Still open (duplicate, cancelled question, error): Add works again.
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  /// The checks and questions of [_add]; pops the dialog with an [_AddRequest] when all is agreed.
+  Future<void> _addChecked() async {
     final probe = _probe;
     final url = _checkedUrl;
     if (probe == null || url == null) return;
     final name = _name.text.trim().isEmpty ? probe.name : _name.text.trim();
     // Adding switches at once, so it asks about unsaved tabs like a switch does.
     if (!await confirmLeavingTabs(context, ref)) return;
-    // The kind is the server's word, never the user's.
     if (!mounted) return;
-    final messenger = ScaffoldMessenger.of(context);
-    final note = context.l10n.envNotSaved;
-    final r = await ref
-        .read(environmentsProvider.notifier)
-        .add(name: name, serverUrl: url, kind: probe.kind);
-    if (!mounted) return;
-    if (r == EnvChange.rejected) {
+    if (ref
+        .read(environmentsProvider)
+        .items
+        .any((e) => sameServer(e.serverUrl, url))) {
       setState(() => _error = context.l10n.envAlreadyListed);
       return;
-    }
-    if (r == EnvChange.notSaved) {
-      messenger.showSnackBar(SnackBar(content: Text(note)));
     }
     // A server without a company: offer the setup wizard (ADR 0047). Best effort.
     var needsSetup = false;
@@ -396,10 +449,19 @@ class _AddDialogState extends ConsumerState<_AddDialog> {
           false;
       if (!mounted) return;
     }
-    Navigator.pop(context, true);
-    if (openWizard) {
-      router!.go('/setup?server=${Uri.encodeQueryComponent(url)}');
-    }
+    // Capture what is needed once the dialog is gone, then close it before anything changes
+    // the router state. The kind is the server's word, never the user's.
+    final request = _AddRequest(
+      notifier: ref.read(environmentsProvider.notifier),
+      messenger: ScaffoldMessenger.of(context),
+      router: router,
+      notSavedText: context.l10n.envNotSaved,
+      name: name,
+      url: url,
+      kind: probe.kind,
+      openWizard: openWizard,
+    );
+    Navigator.pop(context, request);
   }
 
   @override
@@ -473,17 +535,17 @@ class _AddDialogState extends ConsumerState<_AddDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.pop(context, false),
+          onPressed: () => Navigator.pop(context),
           child: Text(l.cancel),
         ),
         OutlinedButton(
           key: const ValueKey('env-check'),
-          onPressed: _busy ? null : _check,
+          onPressed: _busy || _submitting ? null : _check,
           child: Text(l.envCheck),
         ),
         FilledButton(
           key: const ValueKey('env-add-confirm'),
-          onPressed: probe == null || _busy ? null : _add,
+          onPressed: probe == null || _busy || _submitting ? null : _add,
           child: Text(l.envAdd),
         ),
       ],
