@@ -450,6 +450,17 @@ class NarratorCard extends ConsumerWidget {
   }
 }
 
+/// Tallest a bottom-right card may be: what is left of the viewport after its padding.
+double _cardMaxHeight(BuildContext context, bool narrow) {
+  final h =
+      MediaQuery.sizeOf(context).height - 16 - _cardBottomGap(context, narrow);
+  return h < 120 ? 120 : h;
+}
+
+/// Space under a card: clears the bottom navigation, unless the viewport is too short for it.
+double _cardBottomGap(BuildContext context, bool narrow) =>
+    narrow && MediaQuery.sizeOf(context).height >= 480 ? 92 : 16;
+
 /// The card shown when a chapter has just been finished: what comes next, never a dead end.
 class _FinishedCard extends ConsumerWidget {
   const _FinishedCard({required this.router});
@@ -469,9 +480,17 @@ class _FinishedCard extends ConsumerWidget {
     return Align(
       alignment: Alignment.bottomRight,
       child: Padding(
-        padding: EdgeInsets.fromLTRB(16, 16, 16, narrow ? 92 : 16),
+        padding: EdgeInsets.fromLTRB(
+          16,
+          16,
+          16,
+          _cardBottomGap(context, narrow),
+        ),
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 420),
+          constraints: BoxConstraints(
+            maxWidth: 420,
+            maxHeight: _cardMaxHeight(context, narrow),
+          ),
           child: Semantics(
             container: true,
             explicitChildNodes: true,
@@ -490,21 +509,33 @@ class _FinishedCard extends ConsumerWidget {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Semantics(
-                      header: true,
-                      liveRegion: true,
-                      child: Text(
-                        l.tutFinishedTitle(name),
-                        style: theme.textTheme.titleMedium,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      next == null
-                          ? l.tutFinishedLast
-                          : l.tutFinishedNext(
-                              tutorialText(l, missionKey(next, 'Title')),
+                    Flexible(
+                      child: SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Semantics(
+                              header: true,
+                              liveRegion: true,
+                              child: Text(
+                                l.tutFinishedTitle(name),
+                                style: theme.textTheme.titleMedium,
+                              ),
                             ),
+                            const SizedBox(height: 6),
+                            Text(
+                              next == null
+                                  ? l.tutFinishedLast
+                                  : l.tutFinishedNext(
+                                      tutorialText(
+                                        l,
+                                        missionKey(next, 'Title'),
+                                      ),
+                                    ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 10),
                     Wrap(
@@ -550,28 +581,39 @@ class _PausedPill extends ConsumerWidget {
     return Align(
       alignment: Alignment.bottomRight,
       child: Padding(
-        padding: EdgeInsets.fromLTRB(16, 16, 16, narrow ? 92 : 16),
-        child: Material(
-          elevation: 6,
-          color: theme.colorScheme.secondaryContainer,
-          borderRadius: BorderRadius.circular(24),
-          child: Padding(
-            padding: const EdgeInsets.only(left: 16, right: 4),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  l.tutPaused,
-                  style: TextStyle(
-                    color: theme.colorScheme.onSecondaryContainer,
+        padding: EdgeInsets.fromLTRB(
+          16,
+          16,
+          16,
+          _cardBottomGap(context, narrow),
+        ),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: Material(
+            elevation: 6,
+            color: theme.colorScheme.secondaryContainer,
+            borderRadius: BorderRadius.circular(24),
+            child: Padding(
+              padding: const EdgeInsets.only(left: 16, right: 4),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: Text(
+                      l.tutPaused,
+                      style: TextStyle(
+                        color: theme.colorScheme.onSecondaryContainer,
+                      ),
+                    ),
                   ),
-                ),
-                TextButton(
-                  key: const ValueKey('tutorial-resume'),
-                  onPressed: () => ref.read(tutorialProvider.notifier).resume(),
-                  child: Text(l.tutResume),
-                ),
-              ],
+                  TextButton(
+                    key: const ValueKey('tutorial-resume'),
+                    onPressed: () =>
+                        ref.read(tutorialProvider.notifier).resume(),
+                    child: Text(l.tutResume),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -595,9 +637,17 @@ class _OfferCard extends ConsumerWidget {
     return Align(
       alignment: Alignment.bottomRight,
       child: Padding(
-        padding: EdgeInsets.fromLTRB(16, 16, 16, narrow ? 92 : 16),
+        padding: EdgeInsets.fromLTRB(
+          16,
+          16,
+          16,
+          _cardBottomGap(context, narrow),
+        ),
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 420),
+          constraints: BoxConstraints(
+            maxWidth: 420,
+            maxHeight: _cardMaxHeight(context, narrow),
+          ),
           child: Semantics(
             container: true,
             explicitChildNodes: true,
@@ -616,15 +666,24 @@ class _OfferCard extends ConsumerWidget {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Semantics(
-                      header: true,
-                      child: Text(
-                        l.tutOfferTitle,
-                        style: theme.textTheme.titleMedium,
+                    Flexible(
+                      child: SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Semantics(
+                              header: true,
+                              child: Text(
+                                l.tutOfferTitle,
+                                style: theme.textTheme.titleMedium,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(l.tutOfferBody),
+                          ],
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 6),
-                    Text(l.tutOfferBody),
                     const SizedBox(height: 10),
                     Wrap(
                       spacing: 8,

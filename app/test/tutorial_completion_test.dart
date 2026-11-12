@@ -19,7 +19,10 @@ import 'fake_http.dart';
 /// Chapter one: two read-only steps, the last one is the closing step.
 const _one = Mission(
   id: 'one',
-  steps: [MissionStep(id: 'a'), MissionStep(id: 'done')],
+  steps: [
+    MissionStep(id: 'a'),
+    MissionStep(id: 'done'),
+  ],
 );
 
 /// Chapter two: starts with a "needs" step that probes the server, then a closing step.
@@ -83,7 +86,10 @@ Widget _app(ProviderContainer c, GoRouter router) => UncontrolledProviderScope(
 
 GoRouter _router() => GoRouter(
   routes: [
-    GoRoute(path: '/', builder: (_, _) => const Scaffold(body: Text('home'))),
+    GoRoute(
+      path: '/',
+      builder: (_, _) => const Scaffold(body: Text('home')),
+    ),
     GoRoute(
       path: '/tutorial',
       builder: (_, _) => const Scaffold(body: Text('chapter map')),
@@ -125,83 +131,127 @@ bool _enabled(WidgetTester tester, Finder f) {
 
 void main() {
   group('chapter completion card', () {
-    testWidgets('Next on the last step completes the chapter and shows the card', (
-      tester,
-    ) async {
-      final c = _boot(FakeHttp({}));
-      await tester.pumpWidget(_app(c, _router()));
-      await _startIn(tester, c, 'one');
-      await tester.tap(find.byKey(const ValueKey('tutorial-next')));
-      await _settle(tester);
-      expect(find.byKey(const ValueKey('tutorial-next')), findsOneWidget);
-      expect(c.read(tutorialProvider).completed, isEmpty);
-
-      await tester.tap(find.byKey(const ValueKey('tutorial-next')));
-      await _settle(tester);
-
-      expect(c.read(tutorialProvider).completed, {'one'});
-      expect(c.read(tutorialProvider).activeId, isNull);
-      expect(_card, findsNothing);
-      expect(_finished, findsOneWidget);
-      // The title carries the chapter's name (the test chapter has no text: its key shows).
-      expect(find.textContaining('Chapter tutOneTitle complete'), findsOneWidget);
-      expect(_enabled(tester, _toNext), isTrue);
-      expect(_enabled(tester, _toMap), isTrue);
-      await tester.pumpWidget(const SizedBox());
-    });
-
-    testWidgets('Start next chapter starts chapter two at its first step and probes', (
-      tester,
-    ) async {
-      final http = FakeHttp({
-        'GET /api/v1/things': (_) => {'items': []},
-      });
-      final c = _boot(http);
-      await tester.pumpWidget(_app(c, _router()));
-      final t = await _startIn(tester, c, 'one');
-      t.next();
-      t.next();
-      await _settle(tester);
-      expect(http.requests, isEmpty);
-
-      await tester.tap(_toNext);
-      await tester.runAsync(() => Future<void>.delayed(Duration.zero));
-      await _settle(tester);
-
-      final s = c.read(tutorialProvider);
-      expect(s.activeId, 'two');
-      expect(s.stepIndex, 0);
-      expect(s.finishedId, isNull);
-      expect(_finished, findsNothing);
-      expect(_card, findsOneWidget);
-      expect(http.requests, contains('GET /api/v1/things'));
-      await tester.pumpWidget(const SizedBox());
-    });
-
-    testWidgets('a satisfied needs probe lets chapter two skip its first step', (
-      tester,
-    ) async {
-      final http = FakeHttp({
-        'GET /api/v1/things': (_) => {
-          'items': [
-            {'id': 1},
-          ],
+    for (final last in [false, true]) {
+      testWidgets(
+        'on a 400x300 window at text scale 2.0 the ${last ? 'last' : 'first'} chapter card has no overflow and tappable buttons',
+        (tester) async {
+          tester.view.physicalSize = const Size(400, 300);
+          tester.view.devicePixelRatio = 1;
+          addTearDown(tester.view.reset);
+          tester.platformDispatcher.textScaleFactorTestValue = 2.0;
+          addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+          final c = _boot(FakeHttp({}));
+          await tester.pumpWidget(_app(c, _router()));
+          final t = await _startIn(tester, c, 'one');
+          t.next();
+          t.next();
+          await _settle(tester);
+          if (last) {
+            await tester.tap(_toNext);
+            await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+            await _settle(tester);
+            t.next();
+            t.next();
+            t.next();
+            await _settle(tester);
+          }
+          expect(_finished, findsOneWidget);
+          expect(tester.takeException(), isNull);
+          expect(_toNext, last ? findsNothing : findsOneWidget);
+          expect(_toMap.hitTestable(), findsOneWidget);
+          if (!last) expect(_toNext.hitTestable(), findsOneWidget);
+          await tester.tap(_toMap);
+          await _settle(tester);
+          expect(_finished, findsNothing);
+          expect(tester.takeException(), isNull);
+          await tester.pumpWidget(const SizedBox());
         },
-      });
-      final c = _boot(http);
-      await tester.pumpWidget(_app(c, _router()));
-      final t = await _startIn(tester, c, 'one');
-      t.next();
-      t.next();
-      await _settle(tester);
-      await tester.tap(_toNext);
-      await tester.runAsync(() => Future<void>.delayed(Duration.zero));
-      await tester.runAsync(() => Future<void>.delayed(Duration.zero));
-      await _settle(tester);
-      expect(c.read(tutorialProvider).activeId, 'two');
-      expect(c.read(tutorialProvider).stepIndex, 1);
-      await tester.pumpWidget(const SizedBox());
-    });
+      );
+    }
+
+    testWidgets(
+      'Next on the last step completes the chapter and shows the card',
+      (tester) async {
+        final c = _boot(FakeHttp({}));
+        await tester.pumpWidget(_app(c, _router()));
+        await _startIn(tester, c, 'one');
+        await tester.tap(find.byKey(const ValueKey('tutorial-next')));
+        await _settle(tester);
+        expect(find.byKey(const ValueKey('tutorial-next')), findsOneWidget);
+        expect(c.read(tutorialProvider).completed, isEmpty);
+
+        await tester.tap(find.byKey(const ValueKey('tutorial-next')));
+        await _settle(tester);
+
+        expect(c.read(tutorialProvider).completed, {'one'});
+        expect(c.read(tutorialProvider).activeId, isNull);
+        expect(_card, findsNothing);
+        expect(_finished, findsOneWidget);
+        // The title carries the chapter's name (the test chapter has no text: its key shows).
+        expect(
+          find.textContaining('Chapter tutOneTitle complete'),
+          findsOneWidget,
+        );
+        expect(_enabled(tester, _toNext), isTrue);
+        expect(_enabled(tester, _toMap), isTrue);
+        await tester.pumpWidget(const SizedBox());
+      },
+    );
+
+    testWidgets(
+      'Start next chapter starts chapter two at its first step and probes',
+      (tester) async {
+        final http = FakeHttp({
+          'GET /api/v1/things': (_) => {'items': []},
+        });
+        final c = _boot(http);
+        await tester.pumpWidget(_app(c, _router()));
+        final t = await _startIn(tester, c, 'one');
+        t.next();
+        t.next();
+        await _settle(tester);
+        expect(http.requests, isEmpty);
+
+        await tester.tap(_toNext);
+        await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+        await _settle(tester);
+
+        final s = c.read(tutorialProvider);
+        expect(s.activeId, 'two');
+        expect(s.stepIndex, 0);
+        expect(s.finishedId, isNull);
+        expect(_finished, findsNothing);
+        expect(_card, findsOneWidget);
+        expect(http.requests, contains('GET /api/v1/things'));
+        await tester.pumpWidget(const SizedBox());
+      },
+    );
+
+    testWidgets(
+      'a satisfied needs probe lets chapter two skip its first step',
+      (tester) async {
+        final http = FakeHttp({
+          'GET /api/v1/things': (_) => {
+            'items': [
+              {'id': 1},
+            ],
+          },
+        });
+        final c = _boot(http);
+        await tester.pumpWidget(_app(c, _router()));
+        final t = await _startIn(tester, c, 'one');
+        t.next();
+        t.next();
+        await _settle(tester);
+        await tester.tap(_toNext);
+        await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+        await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+        await _settle(tester);
+        expect(c.read(tutorialProvider).activeId, 'two');
+        expect(c.read(tutorialProvider).stepIndex, 1);
+        await tester.pumpWidget(const SizedBox());
+      },
+    );
 
     testWidgets('Back to chapter map goes to /tutorial and keeps progress', (
       tester,
@@ -218,10 +268,7 @@ void main() {
       await _settle(tester);
 
       expect(find.text('chapter map'), findsOneWidget);
-      expect(
-        router.routeInformationProvider.value.uri.toString(),
-        '/tutorial',
-      );
+      expect(router.routeInformationProvider.value.uri.toString(), '/tutorial');
       final s = c.read(tutorialProvider);
       expect(s.completed, {'one'});
       expect(s.activeId, isNull);
@@ -286,86 +333,90 @@ void main() {
       expect(c2.read(tutorialProvider).running, isTrue);
     });
 
-    test('a stored place past the end of a chapter is clamped, not a dead card', () async {
-      final kv = MemoryKvStore();
-      await kv.set(
-        _loc.storageKey,
-        jsonEncode({
-          'completed': <String>[],
-          'active': 'one',
-          'step': 7,
-          'progress': {'one': 7},
-        }),
-      );
-      final c = _boot(FakeHttp({}), kv: kv);
-      final t = c.read(tutorialProvider.notifier);
-      await t.ready;
-      expect(t.step, isNotNull);
-      expect(c.read(tutorialProvider).stepIndex, 1);
-      expect(c.read(tutorialProvider).paused, isTrue);
-    });
-
-    testWidgets('every state of the card offers an enabled action (all real chapters)', (
-      tester,
-    ) async {
-      final c = _boot(FakeHttp({}), missions: allMissions);
-      await tester.pumpWidget(_app(c, _router()));
-      final t = c.read(tutorialProvider.notifier);
-      await tester.runAsync(() => t.ready);
-      for (var i = 0; i < allMissions.length; i++) {
-        final m = allMissions[i];
-        await tester.runAsync(() => t.start(m.id));
-        await _settle(tester);
-        for (var k = 0; k < m.steps.length; k++) {
-          final where = '${m.id}/${m.steps[k].id}';
-          expect(c.read(tutorialProvider).stepIndex, k, reason: where);
-          expect(_card, findsOneWidget, reason: where);
-          final actions = [
-            'tutorial-next',
-            'tutorial-action',
-            'tutorial-skip',
-            'tutorial-pause',
-          ];
-          expect(
-            actions.any((k) => _enabled(tester, find.byKey(ValueKey(k)))),
-            isTrue,
-            reason: 'no way forward on $where',
-          );
-          expect(
-            _enabled(tester, find.byKey(const ValueKey('tutorial-pause'))),
-            isTrue,
-            reason: where,
-          );
-          t.next();
-          await _settle(tester);
-        }
-        expect(c.read(tutorialProvider).completed, contains(m.id));
-        expect(_finished, findsOneWidget, reason: m.id);
-        expect(_enabled(tester, _toMap), isTrue, reason: m.id);
-        expect(
-          _enabled(tester, _toNext),
-          i < allMissions.length - 1,
-          reason: m.id,
+    test(
+      'a stored place past the end of a chapter is clamped, not a dead card',
+      () async {
+        final kv = MemoryKvStore();
+        await kv.set(
+          _loc.storageKey,
+          jsonEncode({
+            'completed': <String>[],
+            'active': 'one',
+            'step': 7,
+            'progress': {'one': 7},
+          }),
         );
-        // Paused is a state too: the pill resumes.
-        if (i == 0) {
+        final c = _boot(FakeHttp({}), kv: kv);
+        final t = c.read(tutorialProvider.notifier);
+        await t.ready;
+        expect(t.step, isNotNull);
+        expect(c.read(tutorialProvider).stepIndex, 1);
+        expect(c.read(tutorialProvider).paused, isTrue);
+      },
+    );
+
+    testWidgets(
+      'every state of the card offers an enabled action (all real chapters)',
+      (tester) async {
+        final c = _boot(FakeHttp({}), missions: allMissions);
+        await tester.pumpWidget(_app(c, _router()));
+        final t = c.read(tutorialProvider.notifier);
+        await tester.runAsync(() => t.ready);
+        for (var i = 0; i < allMissions.length; i++) {
+          final m = allMissions[i];
           await tester.runAsync(() => t.start(m.id));
           await _settle(tester);
-          t.pause();
-          await _settle(tester);
-          expect(
-            _enabled(tester, find.byKey(const ValueKey('tutorial-resume'))),
-            isTrue,
-          );
-          await tester.runAsync(() => t.resume());
-          await _settle(tester);
-          while (c.read(tutorialProvider).activeId != null) {
+          for (var k = 0; k < m.steps.length; k++) {
+            final where = '${m.id}/${m.steps[k].id}';
+            expect(c.read(tutorialProvider).stepIndex, k, reason: where);
+            expect(_card, findsOneWidget, reason: where);
+            final actions = [
+              'tutorial-next',
+              'tutorial-action',
+              'tutorial-skip',
+              'tutorial-pause',
+            ];
+            expect(
+              actions.any((k) => _enabled(tester, find.byKey(ValueKey(k)))),
+              isTrue,
+              reason: 'no way forward on $where',
+            );
+            expect(
+              _enabled(tester, find.byKey(const ValueKey('tutorial-pause'))),
+              isTrue,
+              reason: where,
+            );
             t.next();
+            await _settle(tester);
           }
-          await _settle(tester);
+          expect(c.read(tutorialProvider).completed, contains(m.id));
+          expect(_finished, findsOneWidget, reason: m.id);
+          expect(_enabled(tester, _toMap), isTrue, reason: m.id);
+          expect(
+            _enabled(tester, _toNext),
+            i < allMissions.length - 1,
+            reason: m.id,
+          );
+          // Paused is a state too: the pill resumes.
+          if (i == 0) {
+            await tester.runAsync(() => t.start(m.id));
+            await _settle(tester);
+            t.pause();
+            await _settle(tester);
+            expect(
+              _enabled(tester, find.byKey(const ValueKey('tutorial-resume'))),
+              isTrue,
+            );
+            await tester.runAsync(() => t.resume());
+            await _settle(tester);
+            while (c.read(tutorialProvider).activeId != null) {
+              t.next();
+            }
+            await _settle(tester);
+          }
         }
-      }
-      await tester.pumpWidget(const SizedBox());
-    });
+        await tester.pumpWidget(const SizedBox());
+      },
+    );
   });
 }
