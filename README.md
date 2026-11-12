@@ -155,6 +155,11 @@ catalogue). It works once, only while no company exists
 * `AUTH_MODE=oidc`: set `BOOTSTRAP_TOKEN` (a long random string) before starting, or the setup
   endpoint answers 404. The wizard asks for it. Afterwards the administrator signs in through the
   identity provider with the same e-mail address; remove the token from the environment.
+  Identity providers are configured in the app by the administrator of the first company
+  ([ADR 0051](docs/adr/0051-configurable-identity-providers.md)); `OIDC_ISSUER`/`OIDC_AUDIENCE`
+  are only an optional read-only fallback provider. The API may start without them when the
+  database has providers; with neither, every request answers 401 and the bootstrap still works
+  with `BOOTSTRAP_TOKEN`.
 
 Without the app: `curl -X POST localhost:8080/api/v1/setup/bootstrap -H 'content-type:
 application/json' -d '{"name": "Acme", "country_code": "BE", "currency": "EUR",
