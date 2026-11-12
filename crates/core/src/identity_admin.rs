@@ -202,19 +202,38 @@ fn normalise_input(settings: &IdpSettings, i: &IdentityProviderInput) -> AppResu
     })
 }
 
+const PRIMARY_COMPANY: &str = "SELECT id FROM core.companies
+                               ORDER BY is_primary DESC, created_at, id LIMIT 1";
+
 /// Whether the user is an active administrator of the installation's primary company (the one
-/// flagged `is_primary`; the oldest company when none is, which a migration prevents).
-async fn is_primary_admin(state: &AppState, user: &CurrentUser) -> AppResult<bool> {
-    Ok(sqlx::query_scalar(
-        "SELECT EXISTS (
-            SELECT 1 FROM core.user_companies uc
-            WHERE uc.user_id = $1 AND uc.active AND 'admin' = ANY(uc.roles)
-              AND uc.company_id = (SELECT id FROM core.companies
-                                   ORDER BY is_primary DESC, created_at, id LIMIT 1))",
-    )
-    .bind(user.user_id)
-    .fetch_one(&state.db)
-    .await?)
+/// flagged `is_primary`; the oldest company when none is, which a migration prevents). Runs on the
+/// given connection and takes `FOR SHARE` on the primary company row, so inside a transaction the
+/// answer holds until it ends: [`make_primary`] locks that row `FOR UPDATE` and cannot swap the
+/// flag meanwhile. If a swap committed while waiting for the lock, the lock is taken again on the
+/// new primary row.
+async fn is_primary_admin(conn: &mut sqlx::PgConnection, user: &CurrentUser) -> AppResult<bool> {
+    loop {
+        let locked: Option<Uuid> = sqlx::query_scalar(&format!("{PRIMARY_COMPANY} FOR SHARE"))
+            .fetch_optional(&mut *conn)
+            .await?;
+        let Some(locked) = locked else {
+            return Ok(false);
+        };
+        // A new statement reads the committed state after any wait for the lock.
+        let (current, admin): (Option<Uuid>, bool) = sqlx::query_as(&format!(
+            "SELECT ({PRIMARY_COMPANY}),
+                    EXISTS (SELECT 1 FROM core.user_companies uc
+                            WHERE uc.user_id = $1 AND uc.active AND 'admin' = ANY(uc.roles)
+                              AND uc.company_id = $2)"
+        ))
+        .bind(user.user_id)
+        .bind(locked)
+        .fetch_one(&mut *conn)
+        .await?;
+        if current == Some(locked) {
+            return Ok(admin);
+        }
+    }
 }
 
 const NOT_PRIMARY_ADMIN: &str =
@@ -224,7 +243,18 @@ const NOT_PRIMARY_ADMIN: &str =
 /// would otherwise be a global administrator of the installation.
 async fn guard(state: &AppState, user: &CurrentUser) -> AppResult<()> {
     user.require(Permission::IdentityAdmin)?;
-    if is_primary_admin(state, user).await? {
+    let mut conn = state.db.acquire().await?;
+    if is_primary_admin(&mut conn, user).await? {
+        Ok(())
+    } else {
+        Err(AppError::Forbidden(NOT_PRIMARY_ADMIN.into()))
+    }
+}
+
+/// Re-checks the primary-company authority on the transaction connection (after
+/// [`lock_providers`], before any write): the early [`guard`] ran on another connection.
+async fn recheck_primary_admin(conn: &mut sqlx::PgConnection, user: &CurrentUser) -> AppResult<()> {
+    if is_primary_admin(conn, user).await? {
         Ok(())
     } else {
         Err(AppError::Forbidden(NOT_PRIMARY_ADMIN.into()))
@@ -434,6 +464,7 @@ async fn update_provider(
     }
     let mut tx = state.db.begin().await?;
     lock_providers(&mut tx).await?;
+    recheck_primary_admin(&mut tx, &user).await?;
     // Re-read under the lock: the guard must see the committed state.
     let existing: ProviderRow = sqlx::query_as(&format!(
         "SELECT {PROVIDER_COLUMNS} FROM core.identity_providers WHERE id = $1"
@@ -515,6 +546,7 @@ async fn delete_provider(
     guard(&state, &user).await?;
     let mut tx = state.db.begin().await?;
     lock_providers(&mut tx).await?;
+    recheck_primary_admin(&mut tx, &user).await?;
     let existing: ProviderRow = sqlx::query_as(&format!(
         "SELECT {PROVIDER_COLUMNS} FROM core.identity_providers WHERE id = $1"
     ))

@@ -118,15 +118,35 @@ unqualified subject is deliberately never accepted for a database provider (a wr
 attach an identity to the wrong person), so those users cannot sign in through it until their
 subject is qualified or cleared (ADR 0052).
 
-Do this while `OIDC_ISSUER` is still set, so nobody is locked out in between:
+The database provider and the `OIDC_ISSUER` fallback cannot share an issuer. Creating or updating
+a database provider whose issuer equals `OIDC_ISSUER` is refused with 409 ("this issuer is already
+configured through OIDC_ISSUER"), enabled or not, and `PUT /admin/users/{id}/oidc-subject` only
+accepts an issuer that already has a database provider row. So for the **same** issuer the
+`OIDC_ISSUER` setting has to be removed before the database provider is added, and nothing in the
+admin API can qualify subjects earlier. Clearing subjects first does not help either: while the
+fallback is active, a cleared user signing in through it is bound again by e-mail with an
+unqualified subject.
 
-1. Add and test the database provider (Admin > Identity providers, or
-   `/api/v1/admin/identity-providers`).
-2. For each affected user, either set the new subject with
+Supported order, when an administrator can sign in through a **different** identity provider
+(a database provider with another issuer, which stays active throughout):
+
+1. Remove `OIDC_ISSUER`/`OIDC_AUDIENCE` and restart the API. From now on tokens of that issuer
+   are refused until step 2; users of that issuer cannot sign in meanwhile.
+2. As the administrator of the other provider, add and test the database provider for the issuer
+   (Admin > Identity providers, or `/api/v1/admin/identity-providers`).
+3. For each affected user, either set the new subject with
    `PUT /api/v1/admin/users/{id}/oidc-subject` (body `{"issuer": "<issuer>", "subject": "<sub>"}`,
    or "Link identity" on the users page), or clear it (empty subject). A cleared user is bound by
    e-mail at the next sign-in, as the provider's e-mail rule allows.
-3. Only then remove `OIDC_ISSUER`/`OIDC_AUDIENCE` from the environment.
+
+If the issuer is the installation's only provider, no administrator can call the admin API after
+step 1, so this order cannot be completed through the product: it needs a code change (for
+example letting a database provider be staged, disabled, for the issuer that `OIDC_ISSUER` still
+serves, then enabled when the fallback is removed). Until that exists, use the SQL recovery below
+only as a deliberate break-glass step, and do not rely on an untested sequence.
+
+Moving to a database provider with a **different** issuer has no such conflict: add it while
+`OIDC_ISSUER` is set, fix the users as in step 3, and remove `OIDC_ISSUER`/`OIDC_AUDIENCE` last.
 
 If the step was missed: users with an old subject are refused by the database provider. An
 administrator who can still sign in fixes them with the same endpoint. If nobody can sign in,

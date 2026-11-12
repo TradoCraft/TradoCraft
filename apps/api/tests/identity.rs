@@ -1137,3 +1137,45 @@ async fn a_lost_binding_race_does_not_authenticate_the_second_identity(db: PgPoo
     let winner = if r1.is_ok() { "sub-1" } else { "sub-2" };
     assert!(stored.ends_with(winner), "{stored}");
 }
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn provider_writes_recheck_primary_authority_under_the_lock(db: PgPool) {
+    let app = common::setup(db.clone()).await;
+    let provider = uuid::Uuid::now_v7();
+    sqlx::query("INSERT INTO core.identity_providers (id, name, issuer, audience, enabled) VALUES ($1,'P','https://p.example','aud',false)")
+        .bind(provider).execute(&db).await.unwrap();
+    let url = format!("{BASE}/{provider}");
+    let put = json!({"name": "Renamed", "issuer": "https://p.example", "audience": "aud", "enabled": false});
+    for (method, body) in [(Method::PUT, Some(put)), (Method::DELETE, None)] {
+        // Hold the provider lock so the request passes its early guard and then waits; strip the
+        // caller's admin role meanwhile. The recheck on the transaction connection must refuse.
+        let mut holder = db.begin().await.unwrap();
+        sqlx::query("SELECT pg_advisory_xact_lock($1)")
+            .bind(0x1D3_0052_i64)
+            .execute(&mut *holder)
+            .await
+            .unwrap();
+        let (res, _) = tokio::join!(
+            call(&app, "admin@example.com", method.clone(), &url, body),
+            async {
+                tokio::time::sleep(Duration::from_millis(500)).await;
+                sqlx::query("UPDATE core.user_companies SET roles = '{}' WHERE user_id = (SELECT id FROM core.users WHERE email = 'admin@example.com')")
+                    .execute(&db).await.unwrap();
+                holder.commit().await.unwrap();
+            }
+        );
+        assert_eq!(res.0, StatusCode::FORBIDDEN, "{method}: {res:?}");
+        assert!(res.1.to_string().contains("primary company"), "{res:?}");
+        let (name, n): (String, i64) = sqlx::query_as(
+            "SELECT (SELECT name FROM core.identity_providers WHERE id = $1), 0::bigint",
+        )
+        .bind(provider)
+        .fetch_one(&db)
+        .await
+        .unwrap();
+        assert_eq!((name.as_str(), n), ("P", 0), "{method}");
+        // Restore the role for the next round.
+        sqlx::query("UPDATE core.user_companies SET roles = '{admin}' WHERE user_id = (SELECT id FROM core.users WHERE email = 'admin@example.com')")
+            .execute(&db).await.unwrap();
+    }
+}
