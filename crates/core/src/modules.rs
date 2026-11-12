@@ -29,7 +29,7 @@ pub enum Module {
 }
 
 /// Permissions that belong to no module: they cannot be switched off.
-pub const ALWAYS_ON: [Permission; 1] = [Permission::UsersAdmin];
+pub const ALWAYS_ON: [Permission; 2] = [Permission::UsersAdmin, Permission::IdentityAdmin];
 
 impl Module {
     pub const ALL: [Module; 15] = [

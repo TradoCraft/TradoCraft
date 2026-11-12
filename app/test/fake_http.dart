@@ -133,7 +133,7 @@ Map<String, Object?> contactJson({
   'updated_at': '2026-11-05T10:00:00Z',
 };
 
-Map<String, Object?> meJson(List<String> permissions) => {
+Map<String, Object?> meJson(List<String> permissions, {bool primary = true}) => {
   'user_id': 'u1',
   'email': 'support@example.com',
   'display_name': 'Support Agent',
@@ -150,6 +150,7 @@ Map<String, Object?> meJson(List<String> permissions) => {
     'country_code': 'BE',
     'currency': 'EUR',
     'default_language': 'nl',
+    'is_primary': primary,
   },
 };
 

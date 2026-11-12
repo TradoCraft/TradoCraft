@@ -142,6 +142,7 @@ class TutorialState {
     this.location = '',
     this.actionBusy = false,
     this.actionError,
+    this.finishedId,
   });
 
   /// Whether the stored progress has been read.
@@ -180,6 +181,10 @@ class TutorialState {
   /// Why the last run of the action button failed (not stored); null when it did not.
   final TutorialActionError? actionError;
 
+  /// The chapter that was just finished and whose completion card is shown (not stored, so a
+  /// restart never brings the card back); null when none is.
+  final String? finishedId;
+
   /// A chapter is on and not paused.
   bool get running => activeId != null && !paused;
 
@@ -203,6 +208,7 @@ class TutorialState {
     String? location,
     bool? actionBusy,
     Object? actionError = _keep,
+    Object? finishedId = _keep,
   }) => TutorialState(
     loaded: loaded ?? this.loaded,
     completed: completed ?? this.completed,
@@ -218,6 +224,9 @@ class TutorialState {
     actionError: identical(actionError, _keep)
         ? this.actionError
         : actionError as TutorialActionError?,
+    finishedId: identical(finishedId, _keep)
+        ? this.finishedId
+        : finishedId as String?,
   );
 
   static const Object _keep = Object();
@@ -290,9 +299,15 @@ class TutorialController extends Notifier<TutorialState> {
     }
     if (!ref.mounted || scope != _scope) return;
     // A restart comes back paused, and never on live data.
+    final active = scope.canRun ? loaded.activeId : null;
+    var at = loaded.stepIndex;
+    final stored = _missions.where((m) => m.id == active).firstOrNull;
+    // A stored place outside the chapter would give a card without a step: clamp it.
+    if (stored != null) at = at.clamp(0, stored.steps.length - 1);
     state = loaded.copyWith(
-      paused: loaded.activeId != null,
-      activeId: scope.canRun ? loaded.activeId : null,
+      paused: active != null,
+      activeId: active,
+      stepIndex: active == null ? 0 : at,
       location: state.location,
     );
   }
@@ -390,14 +405,20 @@ class TutorialController extends Notifier<TutorialState> {
 
   void _begin(String id, int at, {bool probe = true}) {
     _gen++;
-    _retained.clear();
+    final samePending = _actionKey == '$id/$at';
+    if (!samePending) {
+      _actionKey = null;
+      _actionOwner = null;
+      _retained.clear();
+    }
     _set(
       state.copyWith(
         activeId: id,
         stepIndex: at,
         paused: false,
-        actionBusy: false,
-        actionError: null,
+        finishedId: null,
+        actionBusy: samePending ? state.actionBusy : false,
+        actionError: samePending ? state.actionError : null,
       ),
     );
     _enterStep(probe: probe);
@@ -444,15 +465,21 @@ class TutorialController extends Notifier<TutorialState> {
       final ctx = state.context;
       Object? data = res.data;
       if (p.expand != null) {
+        // At most 20 records, read in batches of 5 until one of the batches settles the probe.
         final details = <Object?>[];
-        for (final path in p.expand!(data, ctx).take(5)) {
-          final d = await ref
-              .read(dioProvider)
-              .get<Object?>(
-                path,
-                options: Options(extra: {tutorialProbeExtra: true}),
-              );
-          details.add(d.data);
+        final paths = p.expand!(data, ctx).take(20).toList();
+        for (var i = 0; i < paths.length; i += 5) {
+          for (final path in paths.skip(i).take(5)) {
+            final d = await ref
+                .read(dioProvider)
+                .get<Object?>(
+                  path,
+                  options: Options(extra: {tutorialProbeExtra: true}),
+                );
+            details.add(d.data);
+          }
+          if (!ref.mounted || gen != _gen || step != s || !state.running) return;
+          if (p.done(details, ctx)) break;
         }
         if (!ref.mounted || gen != _gen || step != s || !state.running) return;
         data = details;
@@ -482,7 +509,11 @@ class TutorialController extends Notifier<TutorialState> {
   /// Tells the tutorial which location the app shows (completes route steps).
   void routeChanged(String location) {
     if (location == state.location) return;
-    state = state.copyWith(location: location);
+    // On the chapter map the completion card has done its job.
+    state = state.copyWith(
+      location: location,
+      finishedId: location.startsWith('/tutorial') ? null : state.finishedId,
+    );
     final s = step;
     if (s == null || !state.running) return;
     final c = s.completion;
@@ -496,27 +527,50 @@ class TutorialController extends Notifier<TutorialState> {
     if (captured.isNotEmpty) values = {...values, ...captured};
     final next = state.stepIndex + 1;
     _gen++;
+    _actionKey = null;
+    _actionOwner = null;
+    _retained.clear();
     if (next >= m.steps.length) {
       _set(
         state.copyWith(
+          actionBusy: false,
+          actionError: null,
           values: values,
           completed: {...state.completed, m.id},
           progress: {...state.progress, m.id: 0},
           activeId: null,
           stepIndex: 0,
           paused: false,
+          finishedId: m.id,
         ),
       );
       return;
     }
     _set(
       state.copyWith(
+        actionBusy: false,
+        actionError: null,
         values: values,
         stepIndex: next,
         progress: {...state.progress, m.id: next},
       ),
     );
     _enterStep();
+  }
+
+  /// The chapter whose completion card is shown, if any.
+  Mission? get finishedChapter =>
+      _missions.where((m) => m.id == state.finishedId).firstOrNull;
+
+  /// The chapter after the finished one, if there is one.
+  Mission? get nextChapter {
+    final i = _missions.indexWhere((m) => m.id == state.finishedId);
+    return i < 0 || i + 1 >= _missions.length ? null : _missions[i + 1];
+  }
+
+  /// Closes the completion card (progress is kept).
+  void dismissFinished() {
+    if (state.finishedId != null) _set(state.copyWith(finishedId: null));
   }
 
   /// Finishes a manual step (Next).
@@ -533,9 +587,17 @@ class TutorialController extends Notifier<TutorialState> {
     final m = mission;
     if (m == null || !state.running || state.stepIndex == 0) return;
     _gen++;
+    _actionKey = null;
+    _actionOwner = null;
+    _retained.clear();
     final at = state.stepIndex - 1;
     _set(
-      state.copyWith(stepIndex: at, progress: {...state.progress, m.id: at}),
+      state.copyWith(
+        stepIndex: at,
+        progress: {...state.progress, m.id: at},
+        actionBusy: false,
+        actionError: null,
+      ),
     );
   }
 
@@ -545,10 +607,18 @@ class TutorialController extends Notifier<TutorialState> {
     if (!ref.mounted) return;
     final target = id ?? state.activeId;
     if (target == null) return;
-    _gen++;
+    // Skipping another chapter leaves the active step as it is, so a pending action stays valid.
+    if (target == state.activeId) {
+      _gen++;
+      _actionKey = null;
+      _actionOwner = null;
+      _retained.clear();
+    }
     _set(
       state.copyWith(
+        actionBusy: target == state.activeId ? false : state.actionBusy,
         skipped: {...state.skipped, target},
+        finishedId: null,
         activeId: target == state.activeId ? null : state.activeId,
         stepIndex: target == state.activeId ? 0 : state.stepIndex,
         paused: target == state.activeId ? false : state.paused,
@@ -572,6 +642,17 @@ class TutorialController extends Notifier<TutorialState> {
   /// Message ids of the simulated e-mails of the running step, kept so that a retry after an
   /// uncertain answer sends the same Message-ID (the server then drops the duplicate).
   final _retained = <String, String>{};
+
+  /// The step (`chapter/index`) whose action request is in flight, or null. It survives pause and
+  /// resume of that step, so the pending request keeps its busy flag and its Message-ID; any other
+  /// step change forgets it.
+  String? _actionKey;
+
+  /// Identifies the one request that owns the action flags; a request that no longer is the
+  /// owner (its step was left or restarted meanwhile) must not touch them.
+  Object? _actionOwner;
+
+  String get _stepKey => '${state.activeId}/${state.stepIndex}';
   final _random = Random();
 
   String _retainedId(String kind) => _retained.putIfAbsent(
@@ -587,6 +668,9 @@ class TutorialController extends Notifier<TutorialState> {
     if (s == null || c is! ActionCompletion || !state.running) return;
     if (state.actionBusy) return;
     final gen = _gen;
+    final owner = Object();
+    _actionOwner = owner;
+    _actionKey = _stepKey;
     _set(state.copyWith(actionBusy: true, actionError: null));
     Map<String, String>? captured;
     try {
@@ -602,20 +686,32 @@ class TutorialController extends Notifier<TutorialState> {
         ),
       );
     } catch (e) {
-      if (ref.mounted && gen == _gen && step == s) {
-        _set(
-          state.copyWith(
-            actionBusy: false,
-            actionError: TutorialActionError(
-              e is DioException ? e.response?.statusCode : null,
-              errorMessage(e),
-            ),
-          ),
-        );
-      }
+      // Another step (or a restarted chapter) owns the flags now: leave them alone.
+      if (!ref.mounted || _actionOwner != owner) return;
+      _actionKey = null;
+      _actionOwner = null;
+      _set(
+        state.copyWith(
+          actionBusy: false,
+          actionError: gen == _gen
+              ? TutorialActionError(
+                  e is DioException ? e.response?.statusCode : null,
+                  errorMessage(e),
+                )
+              : null,
+        ),
+      );
       return;
     }
-    if (!ref.mounted || gen != _gen || step != s) return;
+    if (!ref.mounted || _actionOwner != owner) return;
+    _actionKey = null;
+    _actionOwner = null;
+    if (gen != _gen || step != s) {
+      // Paused and resumed meanwhile: the answer is not used, the button is free again and a
+      // new press sends the same Message-ID (kept in _retained), so the server drops a duplicate.
+      _set(state.copyWith(actionBusy: false));
+      return;
+    }
     _retained.clear();
     _set(state.copyWith(actionBusy: false, actionError: null));
     _complete({...?captured});

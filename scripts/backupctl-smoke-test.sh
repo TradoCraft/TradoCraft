@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Smoke test for scripts/backupctl (ADR 0053): back up a throwaway server holding large bytea
+# Smoke test for scripts/backupctl (ADR 0056): back up a throwaway server holding large bytea
 # values, verify the backup (point in time, every row readable), detect a damaged archive, apply
 # the retention rule, and restore and start a drill copy.
 #

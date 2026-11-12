@@ -1,6 +1,6 @@
 # Runbook: backup and restore (backupctl)
 
-See [ADR 0053](../adr/0053-backup-and-restore.md). `scripts/backupctl` takes physical backups of
+See [ADR 0056](../adr/0056-backup-and-restore.md). `scripts/backupctl` takes physical backups of
 the whole PostgreSQL server (every database, roles and passwords, and all attachments and photos,
 which are stored in the database). It keeps them by a retention rule, verifies them by restoring
 them, and restores them.

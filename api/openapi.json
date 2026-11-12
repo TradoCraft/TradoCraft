@@ -10,6 +10,369 @@
     "version": "0.1.0"
   },
   "paths": {
+    "/api/v1/admin/companies/{id}/make-primary": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Makes a company the installation's primary company (the one whose administrators manage the\nidentity providers). Only an active administrator of the current primary company may do this;\nthe flag moves in one transaction, so there is always exactly one primary company.",
+        "operationId": "make_primary",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MakePrimaryResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/identity-providers": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "The identity providers: the database ones and, read-only, the one from the environment.",
+        "operationId": "list_providers",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/IdentityProviderInfo"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Adds an identity provider. Discovery and signing keys must be readable and the discovery\nissuer must match, or the answer is 422 with the reason.",
+        "operationId": "create_provider",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IdentityProviderInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdentityProviderInfo"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/identity-providers/test": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Tries a configuration without saving anything: reads discovery and keys and, with a sample\ntoken, checks it and shows how its claims map to a user, without binding or storing anything.",
+        "operationId": "test_provider",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IdentityProviderTest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdentityProviderTestResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/identity-providers/{id}": {
+      "put": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Replaces the settings of an identity provider. Enabled providers are probed like on create.\nDisabling it or changing its issuer is refused (409) when it is the last provider or the\ncaller's own, unless `confirm_lockout` is true.",
+        "operationId": "update_provider",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IdentityProviderInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdentityProviderInfo"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Deletes an identity provider; refused (409) for the last provider without an environment\nfallback and for the caller's own provider, unless `confirm_lockout=true`. The environment\nprovider cannot be deleted (it is not a database row: 404).",
+        "operationId": "delete_provider",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "confirm_lockout",
+            "in": "query",
+            "description": "Acknowledge that deleting can lock people out.",
+            "required": false,
+            "schema": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/modules": {
       "get": {
         "tags": [
@@ -326,6 +689,81 @@
         }
       }
     },
+    "/api/v1/admin/users/{id}/oidc-subject": {
+      "put": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Sets or clears the identity a user signs in with, for providers with the `subject_only`\npolicy. The value stored is `<issuer>|<subject>`.",
+        "operationId": "set_oidc_subject",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OidcSubjectInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/worker": {
       "get": {
         "tags": [
@@ -355,6 +793,33 @@
             }
           }
         }
+      }
+    },
+    "/api/v1/auth/providers": {
+      "get": {
+        "tags": [
+          "core"
+        ],
+        "summary": "The enabled identity providers, for the sign-in page. No sign-in needed; only these five\nfields are exposed. Empty in dev mode.",
+        "operationId": "public_providers",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PublicProvider"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {}
+        ]
       }
     },
     "/api/v1/boms/{id}": {
@@ -24632,6 +25097,41 @@
           }
         }
       },
+      "BindingResult": {
+        "type": "object",
+        "description": "What signing in with the sample token would do.",
+        "required": [
+          "outcome"
+        ],
+        "properties": {
+          "outcome": {
+            "type": "string",
+            "description": "`existing_subject`, `would_bind` or `refused`."
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Why it is refused."
+          },
+          "user_email": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "That user's e-mail address."
+          },
+          "user_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "The user it resolves to."
+          }
+        }
+      },
       "Board": {
         "type": "object",
         "required": [
@@ -25571,7 +26071,8 @@
           "city",
           "country_code",
           "currency",
-          "default_language"
+          "default_language",
+          "is_primary"
         ],
         "properties": {
           "city": {
@@ -25601,6 +26102,10 @@
           "id": {
             "type": "string",
             "format": "uuid"
+          },
+          "is_primary": {
+            "type": "boolean",
+            "description": "True for the installation's primary company, whose administrators change the\ninstallation-wide settings (identity providers, ADR 0055)."
           },
           "name": {
             "type": "string"
@@ -29282,6 +29787,302 @@
           }
         }
       },
+      "IdentityProviderInfo": {
+        "type": "object",
+        "description": "An identity provider as the admin screen shows it.",
+        "required": [
+          "source",
+          "read_only",
+          "name",
+          "issuer",
+          "audience",
+          "scopes",
+          "algorithms",
+          "email_claim",
+          "email_policy",
+          "verified_claim",
+          "allowed_email_domains",
+          "enabled"
+        ],
+        "properties": {
+          "algorithms": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Accepted JWS algorithms."
+          },
+          "allowed_email_domains": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "When not empty, only these e-mail domains can be bound by e-mail."
+          },
+          "audience": {
+            "type": "string",
+            "description": "The audience tokens must carry."
+          },
+          "client_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Public client id for the interactive sign-in."
+          },
+          "created_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When the provider was created."
+          },
+          "email_claim": {
+            "type": "string",
+            "description": "Claim holding the e-mail address."
+          },
+          "email_policy": {
+            "type": "string",
+            "description": "`require_verified_claim`, `trust_provider_email` or `subject_only`."
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "Whether tokens of this provider are accepted."
+          },
+          "id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "Database id; absent for the environment provider."
+          },
+          "issuer": {
+            "type": "string",
+            "description": "Issuer URL (no trailing slash); the token's `iss` selects the provider."
+          },
+          "name": {
+            "type": "string",
+            "description": "Display name."
+          },
+          "read_only": {
+            "type": "boolean",
+            "description": "True for the environment provider: it cannot be changed or deleted here."
+          },
+          "scopes": {
+            "type": "string",
+            "description": "Scopes the interactive sign-in asks for."
+          },
+          "source": {
+            "type": "string",
+            "description": "`database` or `env` (read-only emergency fallback from `OIDC_ISSUER`)."
+          },
+          "updated_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When it was last changed."
+          },
+          "verified_claim": {
+            "type": "string",
+            "description": "Boolean claim used by `require_verified_claim`."
+          }
+        }
+      },
+      "IdentityProviderInput": {
+        "type": "object",
+        "description": "The settings of an identity provider. Optional fields take the defaults of the table.",
+        "required": [
+          "name",
+          "issuer",
+          "audience"
+        ],
+        "properties": {
+          "algorithms": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "Subset of RS256, RS384, RS512, ES256, ES384, PS256, PS384, PS512; default all of them."
+          },
+          "allowed_email_domains": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "When not empty, only these e-mail domains can be bound by e-mail."
+          },
+          "audience": {
+            "type": "string",
+            "description": "The audience tokens must carry (usually the API's application id)."
+          },
+          "client_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Public client id for the interactive sign-in; none for a provider used with bearer\ntokens only."
+          },
+          "confirm_lockout": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Acknowledge that this change can lock people out (see the 409 answers)."
+          },
+          "email_claim": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Default `email`."
+          },
+          "email_policy": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Default `require_verified_claim`."
+          },
+          "enabled": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Default true."
+          },
+          "issuer": {
+            "type": "string",
+            "description": "`https://` issuer URL; must serve `/.well-known/openid-configuration`."
+          },
+          "name": {
+            "type": "string",
+            "description": "Display name."
+          },
+          "scopes": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Default `openid profile email`."
+          },
+          "verified_claim": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Default `email_verified` (Microsoft Entra ID: `xms_edov`)."
+          }
+        }
+      },
+      "IdentityProviderTest": {
+        "type": "object",
+        "description": "A draft configuration (or an existing provider) and optionally a token to try it with.",
+        "properties": {
+          "config": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/IdentityProviderInput",
+                "description": "A draft configuration to test."
+              }
+            ]
+          },
+          "id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "An existing provider to test; ignored when `config` is given."
+          },
+          "sample_token": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "An access token of this provider. It is checked and discarded: never stored or logged."
+          }
+        }
+      },
+      "IdentityProviderTestResult": {
+        "type": "object",
+        "description": "The outcome of testing a provider configuration.",
+        "required": [
+          "discovery_reachable",
+          "issuer_match",
+          "key_count",
+          "key_algorithms"
+        ],
+        "properties": {
+          "claims_supported": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "`claims_supported` if the provider advertises it."
+          },
+          "discovery_issuer": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The issuer the discovery document names."
+          },
+          "discovery_reachable": {
+            "type": "boolean",
+            "description": "Discovery document and keys could be read."
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Why the provider could not be read."
+          },
+          "issuer_match": {
+            "type": "boolean",
+            "description": "The discovery `issuer` equals the configured issuer."
+          },
+          "key_algorithms": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Algorithms (or key types) of the published keys."
+          },
+          "key_count": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Number of keys in the JWKS."
+          },
+          "token": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TokenTestResult",
+                "description": "The result for the sample token, if one was given."
+              }
+            ]
+          }
+        }
+      },
       "ImportReport": {
         "type": "object",
         "description": "Outcome of an import (or of its dry run). `errors` is empty on success; with errors nothing was\nwritten and the counts are 0.",
@@ -30924,6 +31725,25 @@
           }
         }
       },
+      "MakePrimaryResult": {
+        "type": "object",
+        "description": "The company that was made primary.",
+        "required": [
+          "company_id",
+          "name"
+        ],
+        "properties": {
+          "company_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The new primary company."
+          },
+          "name": {
+            "type": "string",
+            "description": "Its name."
+          }
+        }
+      },
       "MarkPaidInput": {
         "type": "object",
         "description": "Payload to record a payment.",
@@ -31845,6 +32665,26 @@
               "null"
             ],
             "description": "New ticket status; unchanged when omitted."
+          }
+        }
+      },
+      "OidcSubjectInput": {
+        "type": "object",
+        "description": "The settings of the user's identity: the issuer-qualified subject to set, or none to clear it.",
+        "properties": {
+          "issuer": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Issuer of a configured database provider."
+          },
+          "subject": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The `sub` the provider uses for this person; none clears the binding."
           }
         }
       },
@@ -35609,6 +36449,41 @@
               "null"
             ],
             "description": "VAT number, for example `BE0123456749`."
+          }
+        }
+      },
+      "PublicProvider": {
+        "type": "object",
+        "description": "What the sign-in page needs to know about an enabled provider.",
+        "required": [
+          "name",
+          "issuer",
+          "scopes",
+          "source"
+        ],
+        "properties": {
+          "client_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Public client id of the interactive sign-in."
+          },
+          "issuer": {
+            "type": "string",
+            "description": "Issuer URL."
+          },
+          "name": {
+            "type": "string",
+            "description": "Display name."
+          },
+          "scopes": {
+            "type": "string",
+            "description": "Scopes to ask for."
+          },
+          "source": {
+            "type": "string",
+            "description": "`database` or `env` (the read-only fallback from `OIDC_ISSUER`), so the page can label it."
           }
         }
       },
@@ -41465,6 +42340,91 @@
           }
         }
       },
+      "TokenTestResult": {
+        "type": "object",
+        "description": "The result of checking a sample token.",
+        "required": [
+          "valid",
+          "signature_ok"
+        ],
+        "properties": {
+          "audience_ok": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "`aud` contains the configured audience."
+          },
+          "binding": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BindingResult",
+                "description": "What a sign-in would do; only for a valid token."
+              }
+            ]
+          },
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The e-mail address found in the configured e-mail claim."
+          },
+          "email_verified": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "The value of the configured verification claim, read as a boolean."
+          },
+          "expiry_ok": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "`exp` is in the future."
+          },
+          "issuer_ok": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "`iss` equals the configured issuer."
+          },
+          "not_before_ok": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "`nbf` is not in the future."
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Why the token is not valid."
+          },
+          "signature_ok": {
+            "type": "boolean",
+            "description": "The signature verified with a published key."
+          },
+          "subject": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The token's subject."
+          },
+          "valid": {
+            "type": "boolean",
+            "description": "All checks passed."
+          }
+        }
+      },
       "Trace": {
         "type": "object",
         "required": [
@@ -42597,6 +43557,10 @@
     {
       "name": "core",
       "description": "Users and companies"
+    },
+    {
+      "name": "admin",
+      "description": "Installation administration: identity providers and who may sign in"
     },
     {
       "name": "crm",

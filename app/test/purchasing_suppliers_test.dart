@@ -148,6 +148,21 @@ void main() {
     expect(find.text('Retry'), findsOneWidget);
   });
 
+  testWidgets('the create dialog shows the code before the name', (
+    tester,
+  ) async {
+    final http = FakeHttp({
+      'GET /api/v1/me': (_) => meJson(['purchasing.read', 'purchasing.write']),
+      'GET /api/v1/suppliers': (_) => <Object?>[],
+    });
+    await _app(tester, http, initial: '/purchasing');
+    await tester.tap(find.text('New supplier'));
+    await tester.pumpAndSettle();
+    final code = tester.getTopLeft(find.byKey(const ValueKey('supplier-code')));
+    final name = tester.getTopLeft(find.byKey(const ValueKey('supplier-name')));
+    expect(code.dy == name.dy ? code.dx < name.dx : code.dy < name.dy, isTrue);
+  });
+
   testWidgets('creates a supplier and opens it', (tester) async {
     final http = FakeHttp({
       'GET /api/v1/me': (_) => meJson(['purchasing.read', 'purchasing.write']),
