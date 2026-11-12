@@ -2709,6 +2709,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get stockNoMoves => 'Noch keine Bewegungen';
 
   @override
+  String get stockNoLocationsHint =>
+      'Noch keine Lagerorte. Ein Administrator legt unter Lager > Lager und Fahrzeuge ein Lager und einen Lagerort an.';
+
+  @override
   String get stockNoWarehouses =>
       'Noch keine Lager. Ein Administrator legt sie hier an.';
 

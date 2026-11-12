@@ -2699,6 +2699,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get stockNoMoves => 'No movements yet';
 
   @override
+  String get stockNoLocationsHint =>
+      'No locations yet. An administrator creates a warehouse and a location under Stock > Warehouses.';
+
+  @override
   String get stockNoWarehouses =>
       'No warehouses yet. An administrator creates them here.';
 

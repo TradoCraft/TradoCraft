@@ -890,6 +890,7 @@
   "stockNewVan": "Nueva furgoneta de servicio",
   "stockNewWarehouse": "Nuevo almacén",
   "stockNoMoves": "Aún no hay movimientos",
+  "stockNoLocationsHint": "Aún no hay ubicaciones. Un administrador crea un almacén y una ubicación en Existencias > Almacenes.",
   "stockNoWarehouses": "Aún no hay almacenes. Un administrador los crea aquí.",
   "stockNote": "Nota",
   "stockNothingInStock": "Sin existencias",

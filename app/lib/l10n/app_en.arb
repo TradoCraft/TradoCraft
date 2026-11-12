@@ -1387,6 +1387,7 @@
   "stockNewVan": "New service van",
   "stockNewWarehouse": "New warehouse",
   "stockNoMoves": "No movements yet",
+  "stockNoLocationsHint": "No locations yet. An administrator creates a warehouse and a location under Stock > Warehouses.",
   "stockNoWarehouses": "No warehouses yet. An administrator creates them here.",
   "stockNote": "Note",
   "stockNothingInStock": "Nothing in stock",

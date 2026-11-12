@@ -2707,6 +2707,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get stockNoMoves => 'Aún no hay movimientos';
 
   @override
+  String get stockNoLocationsHint =>
+      'Aún no hay ubicaciones. Un administrador crea un almacén y una ubicación en Existencias > Almacenes.';
+
+  @override
   String get stockNoWarehouses =>
       'Aún no hay almacenes. Un administrador los crea aquí.';
 
