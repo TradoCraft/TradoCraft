@@ -7082,4 +7082,276 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get setupErrRedirect =>
       'The server redirected the request, so the setup token was not sent on. Check the server address (use the final https:// address).';
+
+  @override
+  String get tutSuppliersTitle => 'Suppliers';
+
+  @override
+  String get tutSuppliersSummary =>
+      'Hat: purchaser. Create two suppliers and give them a price list for your components.';
+
+  @override
+  String get tutSuppliersNeedsTitle => 'Chapter 1 first';
+
+  @override
+  String get tutSuppliersNeedsBody =>
+      'This chapter needs the four products from chapter 1 (TUT-MOTOR, TUT-FRAME, TUT-CTRL and TUT-CART) and could not find them. Go back to the chapter map and finish chapter 1 first, then come back here.';
+
+  @override
+  String get tutSuppliersOpenTitle => 'Put on the purchaser hat';
+
+  @override
+  String get tutSuppliersOpenBody =>
+      'Your components have to come from somewhere. Open Purchasing in the menu: the Suppliers list is the first segment.';
+
+  @override
+  String get tutSuppliersSupplierATitle => 'The first supplier';
+
+  @override
+  String get tutSuppliersSupplierABody =>
+      'Create a supplier with code TUT-SUP-A and name Voltaic Drives Ltd. Code and name are the only required fields; payment terms, tax id and contact details can follow later.';
+
+  @override
+  String get tutSuppliersSupplierBTitle => 'A second supplier';
+
+  @override
+  String get tutSuppliersSupplierBBody =>
+      'A purchaser likes to compare. Create a second supplier with code TUT-SUP-B and name Ironbridge Frames.';
+
+  @override
+  String get tutSuppliersOpenATitle => 'Open the first supplier';
+
+  @override
+  String get tutSuppliersOpenABody =>
+      'Open Voltaic Drives Ltd from the list. Its price list is at the bottom of the supplier screen.';
+
+  @override
+  String get tutSuppliersPriceMotorTitle => 'A price for the motor';
+
+  @override
+  String get tutSuppliersPriceMotorBody =>
+      'Add TUT-MOTOR to the price list: unit price 120, lead time 14 days, minimum order quantity 5. Purchase orders use these values to pre-fill their lines.';
+
+  @override
+  String get tutSuppliersPriceMotorHint =>
+      'Pick the product with the search box in the dialog; type TUT-MOTOR.';
+
+  @override
+  String get tutSuppliersPriceFrameTitle => 'A price for the frame';
+
+  @override
+  String get tutSuppliersPriceFrameBody =>
+      'Same again for TUT-FRAME: unit price 45, lead time 10 days, minimum order quantity 5.';
+
+  @override
+  String get tutSuppliersPriceControllerTitle => 'A price for the controller';
+
+  @override
+  String get tutSuppliersPriceControllerBody =>
+      'And TUT-CTRL: unit price 30, lead time 7 days, minimum order quantity 5. This supplier now covers all three components.';
+
+  @override
+  String get tutSuppliersOpenBTitle => 'Open the second supplier';
+
+  @override
+  String get tutSuppliersOpenBBody =>
+      'Go back to the list and open Ironbridge Frames.';
+
+  @override
+  String get tutSuppliersPriceMotorBTitle => 'A competing price';
+
+  @override
+  String get tutSuppliersPriceMotorBBody =>
+      'Give this supplier a price for TUT-MOTOR too: unit price 135, lead time 5 days, minimum order quantity 1. It is dearer but faster; that is the kind of choice a price list helps with.';
+
+  @override
+  String get tutSuppliersDoneTitle => 'What you learned';
+
+  @override
+  String get tutSuppliersDoneBody =>
+      'A supplier is a record with payment terms and contacts, and its price list links it to products with a price, a lead time and a minimum order quantity. Next: ordering the goods.';
+
+  @override
+  String get tutBuyingTitle => 'Buying and receiving';
+
+  @override
+  String get tutBuyingSummary =>
+      'Hats: purchaser and goods-in. Order the components, send the order and receive the goods in two deliveries.';
+
+  @override
+  String get tutBuyingNeedsTitle => 'Chapters 1 and 2 first';
+
+  @override
+  String get tutBuyingNeedsBody =>
+      'This chapter needs the products of chapter 1 and the supplier Voltaic Drives Ltd with its price list from chapter 2, and could not find the products. Finish those chapters first.';
+
+  @override
+  String get tutBuyingOpenTitle => 'The orders list';
+
+  @override
+  String get tutBuyingOpenBody =>
+      'Open Purchasing. Next to Suppliers there is a segment for purchase orders; open it.';
+
+  @override
+  String get tutBuyingOrderTitle => 'Order the components';
+
+  @override
+  String get tutBuyingOrderBody =>
+      'Create a purchase order for Voltaic Drives Ltd with three lines: TUT-MOTOR, TUT-FRAME and TUT-CTRL, 30 pieces each. The prices come from the price list.';
+
+  @override
+  String get tutBuyingOrderHint =>
+      'Choose the supplier first: the line prices fill in once its price list has loaded. Use Add line for the second and third component.';
+
+  @override
+  String get tutBuyingOpenOrderTitle => 'The order screen';
+
+  @override
+  String get tutBuyingOpenOrderBody =>
+      'Open the order you just made. A purchase order is a draft first; the buttons at the top follow its life: approve, send, receive.';
+
+  @override
+  String get tutBuyingApproveTitle => 'Approve the order';
+
+  @override
+  String get tutBuyingApproveBody =>
+      'Approving is a separate permission, so a purchaser can prepare orders that a manager releases. As admin you wear both hats: press Approve.';
+
+  @override
+  String get tutBuyingSendTitle => 'Send it to the supplier';
+
+  @override
+  String get tutBuyingSendBody =>
+      'Press Send. The order is marked as sent and the supplier gets it. In test and tutorial environments outgoing mail is only written to files on the server, nothing leaves the building.';
+
+  @override
+  String get tutBuyingReceivePartTitle => 'The first delivery arrives';
+
+  @override
+  String get tutBuyingReceivePartBody =>
+      'Put on the goods-in hat. Press Receive goods, choose the warehouse location MAIN and book 10 pieces of each component, fewer than ordered. The order becomes partially received.';
+
+  @override
+  String get tutBuyingReceivePartHint =>
+      'Change the quantity of each line in the dialog; the remaining quantity is shown next to it. A delivery note number is optional.';
+
+  @override
+  String get tutBuyingReceiveRestTitle => 'The rest arrives';
+
+  @override
+  String get tutBuyingReceiveRestBody =>
+      'Receive the remaining 20 pieces of each component the same way. When everything is in, the order is fully received; each delivery keeps its own goods receipt.';
+
+  @override
+  String get tutBuyingStockTitle => 'Look at the stock';
+
+  @override
+  String get tutBuyingStockBody =>
+      'Open Stock. The 30 motors, frames and controllers are on hand in warehouse MAIN. Every receipt created a stock movement, so the quantity can always be traced back.';
+
+  @override
+  String get tutBuyingDoneTitle => 'What you learned';
+
+  @override
+  String get tutBuyingDoneBody =>
+      'A purchase order goes draft, approved, sent, received. Goods can arrive in several deliveries and every delivery adds to stock. The supplier\'s invoice comes next.';
+
+  @override
+  String get tutInvoicesTitle => 'Checking the invoices';
+
+  @override
+  String get tutInvoicesSummary =>
+      'Hat: accountant. Register supplier invoices, read the three-way match, approve, dispute and pay.';
+
+  @override
+  String get tutInvoicesNeedsTitle => 'Chapter 3 first';
+
+  @override
+  String get tutInvoicesNeedsBody =>
+      'This chapter needs the purchase order from chapter 3, fully received, and it is not (yet). Finish chapter 3 first.';
+
+  @override
+  String get tutInvoicesOpenOrderTitle => 'Back to the order';
+
+  @override
+  String get tutInvoicesOpenOrderBody =>
+      'The supplier\'s invoice arrives. Open the purchase order from chapter 3 again: once goods are received it offers a shortcut to register the invoice.';
+
+  @override
+  String get tutInvoicesCreateTitle => 'Register the invoice';
+
+  @override
+  String get tutInvoicesCreateBody =>
+      'Press Create supplier invoice. Type the supplier\'s own invoice number, for example TUT-INV-001, and save. The lines are filled in from what was ordered and received, so there is nothing to type.';
+
+  @override
+  String get tutInvoicesCreateHint =>
+      'The invoice date and due date default to today and to the payment terms of the supplier.';
+
+  @override
+  String get tutInvoicesMatchTitle => 'The three-way match';
+
+  @override
+  String get tutInvoicesMatchBody =>
+      'The banner compares three documents: what was ordered, what was received and what is invoiced, line by line. Green means they agree within the tolerances; the tolerances are shown in the banner. Press Next when you have looked.';
+
+  @override
+  String get tutInvoicesApproveTitle => 'Approve the invoice';
+
+  @override
+  String get tutInvoicesApproveBody =>
+      'The match is green, so press Approve. An approved invoice is ready for payment.';
+
+  @override
+  String get tutInvoicesSecondTitle => 'A suspicious invoice';
+
+  @override
+  String get tutInvoicesSecondBody =>
+      'Now a second invoice arrives from Voltaic Drives Ltd, this time without a purchase order: in Finance, create a supplier invoice for that supplier, number TUT-INV-002, leave the order empty and add one line with description Motors, quantity 10, unit price 150.';
+
+  @override
+  String get tutInvoicesSecondHint =>
+      'The real motor price is 120 and this line has no order line to compare with. The app cannot change prices of an order-based invoice, so a free-text invoice is how a mismatch shows up here.';
+
+  @override
+  String get tutInvoicesMismatchTitle => 'The match fails';
+
+  @override
+  String get tutInvoicesMismatchBody =>
+      'The banner is orange: a free-text line has nothing it can be matched against, so it cannot be checked against an order or a receipt. The line shows why. Press Next when you have looked.';
+
+  @override
+  String get tutInvoicesDisputeTitle => 'Dispute the invoice';
+
+  @override
+  String get tutInvoicesDisputeBody =>
+      'Press Dispute and give a reason, for example price does not match the agreement. A disputed invoice cannot be paid until it is reopened. (An approver can also approve a failed match with an override reason, which is kept on the invoice.)';
+
+  @override
+  String get tutInvoicesTolerancesTitle => 'The tolerances';
+
+  @override
+  String get tutInvoicesTolerancesBody =>
+      'How far an invoice may differ is a setting: open the Settings segment of Finance to see the quantity and price tolerances in percent. Look, then press Next; changing them is up to you.';
+
+  @override
+  String get tutInvoicesPayTitle => 'Pay the good invoice';
+
+  @override
+  String get tutInvoicesPayBody =>
+      'Open the first supplier invoice you registered (the one that matched and was approved) and press Mark as paid. Enter a payment reference such as TUT-PAY-001. The app records the payment; the bank transfer itself happens elsewhere.';
+
+  @override
+  String get tutInvoicesDoneTitle => 'What you learned';
+
+  @override
+  String get tutInvoicesDoneBody =>
+      'The three-way match compares order, receipt and invoice before money moves. Matching invoices are approved and paid, doubtful ones are disputed. Next: building the carts yourself.';
+
+  @override
+  String get tutInvoicesOpenSecondTitle => 'Open the suspicious invoice';
+
+  @override
+  String get tutInvoicesOpenSecondBody =>
+      'Open invoice TUT-INV-002, the one you just registered, from the list in Finance.';
 }

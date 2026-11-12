@@ -33,7 +33,7 @@ Module overview: [ARCHITECTURE.md](ARCHITECTURE.md).
 | D4 VAT number validation, registry lookup and duplicate warning | Open |
 | D5 Accent-insensitive search | Open |
 | D6 Audit log viewer | Open |
-| D7 Restrict CORS to configured origins | Open |
+| D7 Restrict CORS to configured origins | Done, [ADR 0050](adr/0050-portal-surface.md) |
 
 ## Sequencing
 
@@ -143,9 +143,9 @@ production.
   filters for administrators.
 
 **D7 Restrict CORS to configured origins** (small)
-- The API answers any origin (`CorsLayer` with `allow_origin(Any)` in `apps/api/src/lib.rs`).
-- Read the allowed origins (the web app and the customer portal) from configuration, per
-  environment; keep the permissive setting for local development only.
+- Done ([ADR 0050](adr/0050-portal-surface.md)): the API reads `CORS_ALLOWED_ORIGINS` (any origin
+  only with `AUTH_MODE=dev`); the customer portal server answers the companies' `portal_url`
+  origins or `PORTAL_ALLOWED_ORIGINS`.
 
 ## Working in parallel
 

@@ -30,6 +30,7 @@ crates/portal/       customer portal: passwordless login for contacts, their tic
 crates/repairs/      repairs customers send in, workshop departments, routing workflow, photos
 crates/fieldservice/ jobs at customer sites for technicians: tasks, work logs, photos
 apps/worker/         background worker: IMAP polling and sending the e-mail outbox
+apps/portal-api/     customer-facing HTTP server: only the portal, public knowledge base and survey routes
 crates/documents/    Typst PDF rendering, Belgian number formatting
 migrations/          SQLx migrations (one PostgreSQL schema per module)
 templates/           Typst document templates (nl / fr / en)
@@ -130,6 +131,23 @@ flutter run -d chrome --web-port 8081 -t lib/portal/portal_main.dart \
   --dart-define=PORTAL_API_URL=http://localhost:8080 \
   --dart-define=PORTAL_COMPANY_ID=00000000-0000-7000-8000-000000000001
 ```
+
+Putting the portal on the internet ([ADR 0050](docs/adr/0050-portal-surface.md),
+[runbook](docs/runbooks/customer-portal.md)). Do not publish the API for it. Customers talk to a
+second, small server built from the same code, `tradocraft-portal-api`, which has the portal,
+public knowledge base and survey routes and nothing else: no staff routes, no `/docs`, no setup
+wizard. It limits requests per client address, answers only the portal's own browser origin and
+has its own small database pool. The API stays on the internal network. Locally it listens on
+`http://localhost:8090` (`docker compose up` starts it too); point the portal build at it with
+`--dart-define=PORTAL_API_URL=http://localhost:8090`:
+
+```bash
+cargo run -p tradocraft-portal-api    # after the API has started once (it migrates the database)
+```
+
+The API itself answers browsers only from `CORS_ALLOWED_ORIGINS` (any origin with
+`AUTH_MODE=dev`, none by default with `AUTH_MODE=oidc`); the Windows and mobile apps are not
+affected.
 
 Repairs and field service (seed users, all in development authentication): `support@example.com`
 registers and routes repairs; `electronics@example.com` and `mechanic@example.com` work in their

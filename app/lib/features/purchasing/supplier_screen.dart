@@ -9,6 +9,7 @@ import '../../shared/app_icons.dart';
 import '../../shared/format.dart';
 import 'supplier_form.dart';
 import 'supplier_price_dialog.dart';
+import '../tutorial/targets.dart';
 
 /// A supplier in a workspace tab: its details (editable with the write right) and its price list.
 class SupplierScreen extends ConsumerStatefulWidget {
@@ -246,12 +247,12 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
             ),
             const Spacer(),
             if (canWrite)
-              FilledButton.icon(
+              TutorialTarget(id: 'supplier-price-add', child: FilledButton.icon(
                 key: const ValueKey('price-add'),
                 onPressed: () => _addOrEdit(),
                 icon: const Icon(AppIcons.add),
                 label: Text(l.purchAddProduct),
-              ),
+              )),
           ],
         ),
         const SizedBox(height: 8),

@@ -48,7 +48,7 @@ EOF
 
 # --- configuration -----------------------------------------------------------------------------
 
-CONFIG_KEYS=" DATABASE_URL AUTH_MODE DEV_DEFAULT_USER OIDC_ISSUER OIDC_AUDIENCE TYPST_BIN TEMPLATE_DIR ENVCTL_DIR ENVCTL_PORT_MIN ENVCTL_PORT_MAX ENVCTL_BIND_HOST ENVCTL_API_BIN ENVCTL_WORKER_BIN ENVCTL_START_TIMEOUT ENVCTL_MAINTENANCE_DB ENVCTL_SOURCE_DB "
+CONFIG_KEYS=" DATABASE_URL AUTH_MODE DEV_DEFAULT_USER OIDC_ISSUER OIDC_AUDIENCE CORS_ALLOWED_ORIGINS TYPST_BIN TEMPLATE_DIR ENVCTL_DIR ENVCTL_PORT_MIN ENVCTL_PORT_MAX ENVCTL_BIND_HOST ENVCTL_API_BIN ENVCTL_WORKER_BIN ENVCTL_START_TIMEOUT ENVCTL_MAINTENANCE_DB ENVCTL_SOURCE_DB "
 
 # Reads KEY=VALUE lines of a .env-style file for the known keys; values already set in the
 # environment win. The file is parsed, never executed.
@@ -275,6 +275,7 @@ start_process() {
   [[ -n "${DEV_DEFAULT_USER:-}" ]] && envs+=("DEV_DEFAULT_USER=$DEV_DEFAULT_USER")
   [[ -n "${OIDC_ISSUER:-}" ]] && envs+=("OIDC_ISSUER=$OIDC_ISSUER")
   [[ -n "${OIDC_AUDIENCE:-}" ]] && envs+=("OIDC_AUDIENCE=$OIDC_AUDIENCE")
+  [[ -n "${CORS_ALLOWED_ORIGINS:-}" ]] && envs+=("CORS_ALLOWED_ORIGINS=$CORS_ALLOWED_ORIGINS")
   [[ -n "${TYPST_BIN:-}" ]] && envs+=("TYPST_BIN=$TYPST_BIN")
   [[ -n "${TEMPLATE_DIR:-}" ]] && envs+=("TEMPLATE_DIR=$TEMPLATE_DIR")
   # A clone never inherits a mailbox or SMTP server from the shell (the worker policy would

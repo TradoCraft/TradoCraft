@@ -7106,4 +7106,277 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get setupErrRedirect =>
       'El servidor redirigió la solicitud, por lo que el token de configuración no se reenvió. Compruebe la dirección del servidor (use la dirección https:// definitiva).';
+
+  @override
+  String get tutSuppliersTitle => 'Proveedores';
+
+  @override
+  String get tutSuppliersSummary =>
+      'Sombrero: comprador. Cree dos proveedores y dé a cada uno una lista de precios para sus componentes.';
+
+  @override
+  String get tutSuppliersNeedsTitle => 'Primero el capítulo 1';
+
+  @override
+  String get tutSuppliersNeedsBody =>
+      'Este capítulo necesita los cuatro productos del capítulo 1 (TUT-MOTOR, TUT-FRAME, TUT-CTRL y TUT-CART) y no los ha encontrado. Vuelva al mapa de capítulos y termine primero el capítulo 1.';
+
+  @override
+  String get tutSuppliersOpenTitle => 'Póngase el sombrero de comprador';
+
+  @override
+  String get tutSuppliersOpenBody =>
+      'Sus componentes tienen que venir de algún sitio. Abra Compras en el menú: la lista de proveedores es el primer segmento.';
+
+  @override
+  String get tutSuppliersSupplierATitle => 'El primer proveedor';
+
+  @override
+  String get tutSuppliersSupplierABody =>
+      'Cree un proveedor con código TUT-SUP-A y nombre Voltaic Drives Ltd. Código y nombre son los únicos campos obligatorios; las condiciones de pago, el NIF y los contactos pueden venir después.';
+
+  @override
+  String get tutSuppliersSupplierBTitle => 'Un segundo proveedor';
+
+  @override
+  String get tutSuppliersSupplierBBody =>
+      'A un comprador le gusta comparar. Cree un segundo proveedor con código TUT-SUP-B y nombre Ironbridge Frames.';
+
+  @override
+  String get tutSuppliersOpenATitle => 'Abra el primer proveedor';
+
+  @override
+  String get tutSuppliersOpenABody =>
+      'Abra Voltaic Drives Ltd desde la lista. Su lista de precios está al final de la pantalla del proveedor.';
+
+  @override
+  String get tutSuppliersPriceMotorTitle => 'Un precio para el motor';
+
+  @override
+  String get tutSuppliersPriceMotorBody =>
+      'Añada TUT-MOTOR a la lista de precios: precio unitario 120, plazo 14 días, cantidad mínima de pedido 5. Los pedidos de compra la usan para rellenar sus líneas.';
+
+  @override
+  String get tutSuppliersPriceMotorHint =>
+      'Elija el producto con el cuadro de búsqueda del diálogo; escriba TUT-MOTOR.';
+
+  @override
+  String get tutSuppliersPriceFrameTitle => 'Un precio para el bastidor';
+
+  @override
+  String get tutSuppliersPriceFrameBody =>
+      'Lo mismo para TUT-FRAME: precio unitario 45, plazo 10 días, cantidad mínima 5.';
+
+  @override
+  String get tutSuppliersPriceControllerTitle =>
+      'Un precio para el controlador';
+
+  @override
+  String get tutSuppliersPriceControllerBody =>
+      'Y TUT-CTRL: precio unitario 30, plazo 7 días, cantidad mínima 5. Este proveedor ya cubre los tres componentes.';
+
+  @override
+  String get tutSuppliersOpenBTitle => 'Abra el segundo proveedor';
+
+  @override
+  String get tutSuppliersOpenBBody =>
+      'Vuelva a la lista y abra Ironbridge Frames.';
+
+  @override
+  String get tutSuppliersPriceMotorBTitle => 'Un precio competidor';
+
+  @override
+  String get tutSuppliersPriceMotorBBody =>
+      'Dé también a este proveedor un precio para TUT-MOTOR: precio unitario 135, plazo 5 días, cantidad mínima 1. Más caro pero más rápido: una lista de precios ayuda a elegir así.';
+
+  @override
+  String get tutSuppliersDoneTitle => 'Lo que ha aprendido';
+
+  @override
+  String get tutSuppliersDoneBody =>
+      'Un proveedor es una ficha con condiciones de pago y contactos; su lista de precios lo une a productos con precio, plazo y cantidad mínima. Siguiente: pedir la mercancía.';
+
+  @override
+  String get tutBuyingTitle => 'Comprar y recibir';
+
+  @override
+  String get tutBuyingSummary =>
+      'Sombreros: comprador y recepción. Pida los componentes, envíe el pedido y reciba la mercancía en dos entregas.';
+
+  @override
+  String get tutBuyingNeedsTitle => 'Primero los capítulos 1 y 2';
+
+  @override
+  String get tutBuyingNeedsBody =>
+      'Este capítulo necesita los productos del capítulo 1 y el proveedor Voltaic Drives Ltd con su lista de precios del capítulo 2, y no ha encontrado los productos. Termine antes esos capítulos.';
+
+  @override
+  String get tutBuyingOpenTitle => 'La lista de pedidos';
+
+  @override
+  String get tutBuyingOpenBody =>
+      'Abra Compras. Junto a Proveedores hay un segmento de pedidos de compra; ábralo.';
+
+  @override
+  String get tutBuyingOrderTitle => 'Pida los componentes';
+
+  @override
+  String get tutBuyingOrderBody =>
+      'Cree un pedido de compra a Voltaic Drives Ltd con tres líneas: TUT-MOTOR, TUT-FRAME y TUT-CTRL, 30 unidades de cada una. Los precios salen de la lista de precios.';
+
+  @override
+  String get tutBuyingOrderHint =>
+      'Elija primero el proveedor: los precios de las líneas se rellenan cuando carga su lista. Use Añadir línea para el segundo y el tercer componente.';
+
+  @override
+  String get tutBuyingOpenOrderTitle => 'La pantalla del pedido';
+
+  @override
+  String get tutBuyingOpenOrderBody =>
+      'Abra el pedido que acaba de crear. Un pedido de compra empieza como borrador; los botones de arriba siguen su vida: aprobar, enviar, recibir.';
+
+  @override
+  String get tutBuyingApproveTitle => 'Apruebe el pedido';
+
+  @override
+  String get tutBuyingApproveBody =>
+      'Aprobar es un permiso aparte: un comprador prepara pedidos que un responsable libera. Como admin lleva ambos sombreros: pulse Aprobar.';
+
+  @override
+  String get tutBuyingSendTitle => 'Envíelo al proveedor';
+
+  @override
+  String get tutBuyingSendBody =>
+      'Pulse Enviar. El pedido se marca como enviado y el proveedor lo recibe. En entornos de prueba y tutorial el correo saliente solo se escribe en archivos del servidor: nada sale del edificio.';
+
+  @override
+  String get tutBuyingReceivePartTitle => 'Llega la primera entrega';
+
+  @override
+  String get tutBuyingReceivePartBody =>
+      'Póngase el sombrero de recepción. Pulse Recibir mercancía, elija la ubicación MAIN del almacén y registre 10 unidades de cada componente, menos de lo pedido. El pedido pasa a recibido parcialmente.';
+
+  @override
+  String get tutBuyingReceivePartHint =>
+      'Cambie la cantidad de cada línea en el diálogo; la cantidad restante aparece al lado. El número de albarán es opcional.';
+
+  @override
+  String get tutBuyingReceiveRestTitle => 'Llega el resto';
+
+  @override
+  String get tutBuyingReceiveRestBody =>
+      'Reciba del mismo modo las 20 unidades restantes de cada componente. Cuando todo ha llegado, el pedido queda recibido por completo; cada entrega conserva su propio albarán de recepción.';
+
+  @override
+  String get tutBuyingStockTitle => 'Mire el stock';
+
+  @override
+  String get tutBuyingStockBody =>
+      'Abra Stock. Los 30 motores, bastidores y controladores están en el almacén MAIN. Cada recepción creó un movimiento de stock, así que la cantidad siempre se puede rastrear.';
+
+  @override
+  String get tutBuyingDoneTitle => 'Lo que ha aprendido';
+
+  @override
+  String get tutBuyingDoneBody =>
+      'Un pedido de compra pasa de borrador a aprobado, enviado, recibido. La mercancía puede llegar en varias entregas y cada una aumenta el stock. Sigue la factura del proveedor.';
+
+  @override
+  String get tutInvoicesTitle => 'Revisar las facturas';
+
+  @override
+  String get tutInvoicesSummary =>
+      'Sombrero: contable. Registre facturas de proveedor, lea la conciliación a tres bandas, apruebe, dispute y pague.';
+
+  @override
+  String get tutInvoicesNeedsTitle => 'Primero el capítulo 3';
+
+  @override
+  String get tutInvoicesNeedsBody =>
+      'Este capítulo necesita el pedido de compra del capítulo 3, recibido por completo, y (todavía) no lo está. Termine antes el capítulo 3.';
+
+  @override
+  String get tutInvoicesOpenOrderTitle => 'De vuelta al pedido';
+
+  @override
+  String get tutInvoicesOpenOrderBody =>
+      'Llega la factura del proveedor. Abra de nuevo el pedido del capítulo 3: en cuanto hay mercancía recibida ofrece un atajo para registrar la factura.';
+
+  @override
+  String get tutInvoicesCreateTitle => 'Registre la factura';
+
+  @override
+  String get tutInvoicesCreateBody =>
+      'Pulse Crear factura de proveedor. Escriba el número de factura del proveedor, por ejemplo TUT-INV-001, y guarde. Las líneas se rellenan según lo pedido y recibido.';
+
+  @override
+  String get tutInvoicesCreateHint =>
+      'La fecha de factura y el vencimiento son por defecto hoy y las condiciones de pago del proveedor.';
+
+  @override
+  String get tutInvoicesMatchTitle => 'La conciliación a tres bandas';
+
+  @override
+  String get tutInvoicesMatchBody =>
+      'El banner compara tres documentos: lo pedido, lo recibido y lo facturado, línea por línea. Verde significa que coinciden dentro de las tolerancias, que se muestran en el banner. Pulse Siguiente cuando lo haya mirado.';
+
+  @override
+  String get tutInvoicesApproveTitle => 'Apruebe la factura';
+
+  @override
+  String get tutInvoicesApproveBody =>
+      'La conciliación está en verde, así que pulse Aprobar. Una factura aprobada queda lista para pagar.';
+
+  @override
+  String get tutInvoicesSecondTitle => 'Una factura sospechosa';
+
+  @override
+  String get tutInvoicesSecondBody =>
+      'Llega una segunda factura de Voltaic Drives Ltd, esta vez sin pedido de compra: en Finanzas cree una factura de proveedor para ese proveedor, número TUT-INV-002, deje el pedido vacío y añada una línea con descripción Motores, cantidad 10, precio unitario 150.';
+
+  @override
+  String get tutInvoicesSecondHint =>
+      'El precio real del motor es 120 y esta línea no tiene línea de pedido con la que comparar. La app no permite cambiar precios de una factura con pedido, así que una factura de texto libre sirve aquí para ver una discrepancia.';
+
+  @override
+  String get tutInvoicesMismatchTitle => 'La conciliación falla';
+
+  @override
+  String get tutInvoicesMismatchBody =>
+      'El banner está en naranja: una línea de texto libre no tiene nada con qué conciliarse, así que no se puede comprobar con un pedido ni con una recepción. La línea muestra el motivo. Pulse Siguiente cuando lo haya mirado.';
+
+  @override
+  String get tutInvoicesDisputeTitle => 'Dispute la factura';
+
+  @override
+  String get tutInvoicesDisputeBody =>
+      'Pulse Disputar e indique un motivo, por ejemplo el precio no coincide con el acuerdo. Una factura disputada no se puede pagar hasta reabrirla. (Un aprobador también puede aprobar una conciliación fallida con un motivo de excepción, que queda en la factura.)';
+
+  @override
+  String get tutInvoicesTolerancesTitle => 'Las tolerancias';
+
+  @override
+  String get tutInvoicesTolerancesBody =>
+      'Cuánto puede diferir una factura es un ajuste: abra el segmento Ajustes de Finanzas para ver las tolerancias de cantidad y precio en porcentaje. Mire y pulse Siguiente; cambiarlas queda a su criterio.';
+
+  @override
+  String get tutInvoicesPayTitle => 'Pague la factura correcta';
+
+  @override
+  String get tutInvoicesPayBody =>
+      'Abra la primera factura de proveedor que registró (la que coincidió y se aprobó) y pulse Marcar como pagada. Introduzca una referencia de pago como TUT-PAY-001. La app registra el pago; la transferencia se hace en otro sitio.';
+
+  @override
+  String get tutInvoicesDoneTitle => 'Lo que ha aprendido';
+
+  @override
+  String get tutInvoicesDoneBody =>
+      'La conciliación a tres bandas compara pedido, recepción y factura antes de mover dinero. Las facturas correctas se aprueban y pagan, las dudosas se disputan. Siguiente: fabricar los carritos.';
+
+  @override
+  String get tutInvoicesOpenSecondTitle => 'Abra la factura sospechosa';
+
+  @override
+  String get tutInvoicesOpenSecondBody =>
+      'Abra la factura TUT-INV-002, la que acaba de registrar, desde la lista de Finanzas.';
 }

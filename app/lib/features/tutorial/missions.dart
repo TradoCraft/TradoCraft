@@ -1,9 +1,16 @@
+import 'missions_purchasing.dart';
 import 'model.dart';
 
 /// The chapters of the tutorial, in order. To add a chapter: append a [Mission] here, add its
 /// strings (see `strings.dart`, the five ARB files) and, where a step points at a widget, wrap
 /// that widget in a `TutorialTarget` with the step's `targetId`.
-final List<Mission> allMissions = [welcomeMission, productMission];
+final List<Mission> allMissions = [
+  welcomeMission,
+  productMission,
+  suppliersMission,
+  buyingMission,
+  invoicesMission,
+];
 
 /// Chapter 0: what the banner means, how tabs and the tutorial controls work.
 const welcomeMission = Mission(

@@ -30,6 +30,9 @@ pub enum AuthConfig {
     },
     /// OpenID Connect against the configured identity providers (ADR 0052).
     Oidc(IdentityProviders),
+    /// No staff sign-in at all: every staff route answers 401. Used by the customer-facing
+    /// portal server, which serves no staff routes (ADR 0050).
+    Disabled,
 }
 
 /// Permissions are checked in code; roles are granted per company and map to permissions.
@@ -702,6 +705,7 @@ impl FromRequestParts<AppState> for CurrentUser {
                 let verified = verifier.verify(token).await?;
                 resolve_oidc_user(state, &verified.provider, &verified.claims).await?
             }
+            AuthConfig::Disabled => return Err(AppError::Unauthorized),
         };
 
         let requested_company = match header(parts, COMPANY_HEADER) {
@@ -941,7 +945,7 @@ impl FromRequestParts<AppState> for CallerIssuer {
         state: &AppState,
     ) -> Result<Self, Self::Rejection> {
         Ok(CallerIssuer(match state.auth.as_ref() {
-            AuthConfig::Dev { .. } => None,
+            AuthConfig::Dev { .. } | AuthConfig::Disabled => None,
             AuthConfig::Oidc(_) => header(parts, "authorization")
                 .and_then(|h| h.strip_prefix("Bearer "))
                 .and_then(peek_issuer)

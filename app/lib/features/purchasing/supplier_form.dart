@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/api.dart';
 import '../../l10n/l10n.dart';
+import '../tutorial/targets.dart';
 
 /// The editable fields of a supplier: the controllers behind the create dialog and the edit mode
 /// of the detail screen.
@@ -299,11 +300,11 @@ class _NewSupplierDialogState extends ConsumerState<_NewSupplierDialog> {
           onPressed: _busy ? null : () => Navigator.pop(context),
           child: Text(l.cancel),
         ),
-        FilledButton(
+        TutorialTarget(id: 'supplier-form-save', child: FilledButton(
           key: const ValueKey('supplier-save'),
           onPressed: _busy ? null : _save,
           child: Text(l.save),
-        ),
+        )),
       ],
     );
   }

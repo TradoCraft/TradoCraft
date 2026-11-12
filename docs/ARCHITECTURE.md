@@ -23,6 +23,9 @@ Rust API (Axum) — modular monolith
 PostgreSQL — one database, one schema per module
   + object storage (documents, photos)
   + worker (apps/worker): IMAP polling, e-mail outbox; later PDF, Peppol, accounting sync
+
+Customers (portal web build)  ──HTTPS──▶  portal server (apps/portal-api): the same crates,
+  only the portal, public knowledge base and survey routes; the one server that faces the internet
 ```
 
 * **Modular monolith** ([ADR 0001](adr/0001-modular-monolith.md)): one deployable, modules as crates.
@@ -31,6 +34,9 @@ PostgreSQL — one database, one schema per module
   and accepting a quotation calls `crm::opportunities::mark_won` in the same transaction.
   Read-only joins to another module's tables for display (names, codes) are allowed;
   writes and business rules always go through the owning module.
+* **Two servers from one codebase** ([ADR 0050](adr/0050-portal-surface.md)): the staff API stays
+  on the internal network; customers reach `apps/portal-api`, which mounts only the customer-facing
+  routers and has no staff route, API documentation or setup endpoint in the process at all.
 * **Pricing is authoritative on the server** ([ADR 0002](adr/0002-money-and-pricing.md)).
   The app calls `POST /pricing/preview` while editing; it never calculates prices.
 * **Multi-company from day one** ([ADR 0003](adr/0003-multi-company.md)).

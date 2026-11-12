@@ -2976,6 +2976,7 @@ dependencies = [
  "sqlx",
  "thiserror 2.0.21",
  "tokio",
+ "tower-http",
  "tracing",
  "url",
  "utoipa",
@@ -3198,6 +3199,27 @@ dependencies = [
  "utoipa",
  "utoipa-axum",
  "uuid",
+]
+
+[[package]]
+name = "tradocraft-portal-api"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "axum",
+ "http-body-util",
+ "serde_json",
+ "sqlx",
+ "tokio",
+ "tower",
+ "tower-http",
+ "tracing",
+ "tracing-subscriber",
+ "tradocraft-core",
+ "tradocraft-helpdesk",
+ "tradocraft-kb",
+ "tradocraft-portal",
+ "utoipa-axum",
 ]
 
 [[package]]

@@ -6,6 +6,7 @@ use anyhow::Context;
 use sqlx::postgres::PgPoolOptions;
 use tracing_subscriber::EnvFilter;
 use tradocraft_core::auth::AuthConfig;
+use tradocraft_core::cors::CorsConfig;
 use tradocraft_core::identity::{IdentityProviders, IdpSettings, ProviderConfig};
 use tradocraft_core::{AppState, DocumentConfig};
 
@@ -147,6 +148,23 @@ async fn main() -> anyhow::Result<()> {
         other => anyhow::bail!("unknown AUTH_MODE {other} (expected oidc or dev)"),
     };
 
+    // Browser origins that may call the API (ADR 0050). Development answers any origin; with
+    // real sign-in only the listed ones are answered. Native clients send no Origin header.
+    let cors = match env("CORS_ALLOWED_ORIGINS") {
+        Some(list) => {
+            CorsConfig::parse(&list).map_err(|e| anyhow::anyhow!("CORS_ALLOWED_ORIGINS: {e}"))?
+        }
+        None if auth_mode == "dev" => CorsConfig::Any,
+        None => CorsConfig::Origins(Vec::new()),
+    };
+    match &cors {
+        CorsConfig::Any => tracing::warn!("CORS: any browser origin is answered"),
+        CorsConfig::Origins(o) if o.is_empty() => tracing::info!(
+            "CORS: no browser origin is answered; set CORS_ALLOWED_ORIGINS for the web app"
+        ),
+        CorsConfig::Origins(o) => tracing::info!(origins = ?o, "CORS: allowed browser origins"),
+    }
+
     let documents = DocumentConfig {
         typst_bin: PathBuf::from(env("TYPST_BIN").unwrap_or_else(|| "typst".into())),
         template_dir: PathBuf::from(env("TEMPLATE_DIR").unwrap_or_else(|| "templates".into())),
@@ -177,6 +195,7 @@ async fn main() -> anyhow::Result<()> {
             state,
             environment,
             tradocraft_core::companies::BootstrapConfig::from_env(),
+            &cors,
             idp_settings,
         ),
     )

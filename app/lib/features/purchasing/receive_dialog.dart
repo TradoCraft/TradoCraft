@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/api.dart';
 import '../../l10n/l10n.dart';
 import '../inventory/inventory_common.dart';
+import '../tutorial/targets.dart';
 
 /// Parses a decimal typed by the user (comma or dot); null when it is not a number.
 double? parseQuantity(String text) =>
@@ -283,11 +284,11 @@ class _ReceiveGoodsDialogState extends ConsumerState<ReceiveGoodsDialog> {
           onPressed: _busy ? null : () => Navigator.pop(context),
           child: Text(l.cancel),
         ),
-        FilledButton(
+        TutorialTarget(id: 'po-receive-submit', child: FilledButton(
           key: const ValueKey('receive-submit'),
           onPressed: _busy ? null : _submit,
           child: Text(l.purchReceiveGoods),
-        ),
+        )),
       ],
     );
   }

@@ -135,6 +135,7 @@ class _PurchaseOrdersListState extends ConsumerState<PurchaseOrdersList> {
           _reload();
         },
       ),
+      createTargetId: 'po-create',
       createLabel: l.purchNewOrder,
       onCreate: canWrite
           ? () async {

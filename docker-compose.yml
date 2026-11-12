@@ -45,6 +45,27 @@ services:
     ports:
       - "127.0.0.1:8080:8080"   # loopback only: dev auth trusts X-Dev-User
 
+  # The customer-facing server (ADR 0050): only the customer portal, the public knowledge base
+  # and satisfaction surveys. On a real server this is the only one published to the internet
+  # (behind a TLS reverse proxy); the API above stays on the internal network.
+  portal-api:
+    build: .
+    command: ["tradocraft-portal-api"]
+    depends_on:
+      - api                     # the API migrates the database; this server never does
+    restart: on-failure         # until the API has migrated and seeded an empty database
+    environment:
+      DATABASE_URL: postgresql://tradocraft:tradocraft@db/tradocraft
+      PORTAL_BIND_ADDR: 0.0.0.0:8090
+      # Browser origins that are answered. Left out: the companies' portal_url (the demo
+      # company's is http://localhost:8081).
+      # PORTAL_ALLOWED_ORIGINS: https://portal.example.com
+      # The reverse proxy in front, so limits count per customer instead of per proxy:
+      # PORTAL_TRUSTED_PROXIES: 172.16.0.0/12
+      RUST_LOG: info
+    ports:
+      - "127.0.0.1:8090:8090"
+
   worker:
     build: .
     command: ["tradocraft-worker"]

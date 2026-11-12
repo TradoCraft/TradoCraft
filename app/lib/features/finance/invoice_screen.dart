@@ -10,6 +10,7 @@ import '../../shared/app_icons.dart';
 import '../../shared/format.dart';
 import 'invoice_form.dart';
 import 'invoice_widgets.dart';
+import '../tutorial/targets.dart';
 
 /// A supplier invoice in a workspace tab: header, lines with the three-way match report per
 /// line, an overall match banner, and the actions the status and the user's rights allow.
@@ -278,23 +279,23 @@ class _SupplierInvoiceScreenState extends ConsumerState<SupplierInvoiceScreen> {
           child: Text(l.finSubmitMatch),
         ),
       if (open && canApprove)
-        FilledButton(
+        TutorialTarget(id: 'inv-approve', child: FilledButton(
           key: const ValueKey('inv-approve'),
           onPressed: _busy ? null : _approve,
           child: Text(l.finApprove),
-        ),
+        )),
       if (st == 'approved' && canApprove)
-        FilledButton(
+        TutorialTarget(id: 'inv-mark-paid', child: FilledButton(
           key: const ValueKey('inv-mark-paid'),
           onPressed: _busy ? null : _markPaid,
           child: Text(l.finMarkPaid),
-        ),
+        )),
       if ((open || st == 'approved') && canWrite)
-        TextButton(
+        TutorialTarget(id: 'inv-dispute', child: TextButton(
           key: const ValueKey('inv-dispute'),
           onPressed: _busy ? null : _dispute,
           child: Text(l.finDispute),
-        ),
+        )),
       if ((st == 'disputed' || st == 'matched') && canWrite)
         TextButton(
           key: const ValueKey('inv-reopen'),
@@ -475,7 +476,7 @@ class _MatchBanner extends StatelessWidget {
     final l = context.l10n;
     final ok = report.matched;
     final color = ok ? Colors.green : Colors.orange;
-    return Container(
+    return TutorialTarget(id: 'inv-match-banner', child: Container(
       key: const ValueKey('inv-match-banner'),
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
@@ -514,7 +515,7 @@ class _MatchBanner extends StatelessWidget {
           ),
         ],
       ),
-    );
+    ));
   }
 }
 

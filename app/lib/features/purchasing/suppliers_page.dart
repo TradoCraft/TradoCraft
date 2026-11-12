@@ -72,6 +72,7 @@ class _SuppliersListState extends ConsumerState<SuppliersList> {
           );
         },
       ),
+      createTargetId: 'suppliers-create',
       createLabel: l.purchNewSupplier,
       onCreate: canWrite
           ? () async {

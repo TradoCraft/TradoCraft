@@ -12,6 +12,7 @@ import '../finance/invoice_form.dart';
 import 'po_form.dart';
 import 'po_lines.dart';
 import 'receive_dialog.dart';
+import '../tutorial/targets.dart';
 
 /// A purchase order in a workspace tab: header, lines with received quantities, and the actions
 /// the status and the user's rights allow. Drafts are editable.
@@ -250,35 +251,35 @@ class _PurchaseOrderScreenState extends ConsumerState<PurchaseOrderScreen> {
           label: Text(l.edit),
         ),
       if (s.status == 'draft' && canApprove)
-        FilledButton(
+        TutorialTarget(id: 'po-approve', child: FilledButton(
           key: const ValueKey('po-approve'),
           onPressed: _busy
               ? null
               : () => _transition(() => _api.approveOrder(id: widget.id)),
           child: Text(l.purchApprove),
-        ),
+        )),
       if (s.status == 'approved' && canWrite)
-        FilledButton(
+        TutorialTarget(id: 'po-send', child: FilledButton(
           key: const ValueKey('po-send'),
           onPressed: _busy
               ? null
               : () => _transition(() => _api.sendOrder(id: widget.id)),
           child: Text(l.send),
-        ),
+        )),
       if (const {'approved', 'sent', 'partially_received'}.contains(s.status) &&
           can(ref, 'purchasing.receipt'))
-        FilledButton(
+        TutorialTarget(id: 'po-receive', child: FilledButton(
           key: const ValueKey('po-receive'),
           onPressed: _busy ? null : _receive,
           child: Text(l.purchReceiveGoods),
-        ),
+        )),
       if (const {'partially_received', 'received'}.contains(s.status) &&
           can(ref, 'finance.write'))
-        OutlinedButton(
+        TutorialTarget(id: 'po-create-invoice', child: OutlinedButton(
           key: const ValueKey('po-create-invoice'),
           onPressed: _busy ? null : _createInvoice,
           child: Text(l.finCreateInvoice),
-        ),
+        )),
       if (const {'draft', 'approved', 'sent'}.contains(s.status) && canWrite)
         TextButton(
           key: const ValueKey('po-cancel'),

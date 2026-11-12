@@ -7,6 +7,7 @@ import '../../shared/app_icons.dart';
 import '../../shared/format.dart';
 import '../../shared/search_picker.dart';
 import 'po_lines.dart';
+import '../tutorial/targets.dart';
 
 /// A date button with a clear action, used for the expected delivery date.
 class PoDateField extends StatelessWidget {
@@ -223,11 +224,11 @@ class _NewPoDialogState extends ConsumerState<_NewPoDialog> {
           onPressed: _busy ? null : () => Navigator.pop(context),
           child: Text(l.cancel),
         ),
-        FilledButton(
+        TutorialTarget(id: 'po-form-save', child: FilledButton(
           key: const ValueKey('po-save'),
           onPressed: _busy ? null : _save,
           child: Text(l.save),
-        ),
+        )),
       ],
     );
   }

@@ -5,6 +5,7 @@ import '../../app/api.dart';
 import '../../l10n/l10n.dart';
 import '../../shared/format.dart';
 import '../../shared/search_picker.dart';
+import '../tutorial/targets.dart';
 
 /// Shows the dialog that adds a product to the price list of [supplier], or updates [existing].
 /// Returns true when saved.
@@ -199,11 +200,11 @@ class _PriceDialogState extends ConsumerState<_PriceDialog> {
           onPressed: _busy ? null : () => Navigator.pop(context),
           child: Text(l.cancel),
         ),
-        FilledButton(
+        TutorialTarget(id: 'supplier-price-save', child: FilledButton(
           key: const ValueKey('price-save'),
           onPressed: _busy ? null : _save,
           child: Text(l.save),
-        ),
+        )),
       ],
     );
   }

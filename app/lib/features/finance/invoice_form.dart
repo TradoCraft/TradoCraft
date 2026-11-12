@@ -7,6 +7,7 @@ import '../../shared/app_icons.dart';
 import '../../shared/format.dart';
 import '../../shared/search_picker.dart';
 import 'invoice_widgets.dart';
+import '../tutorial/targets.dart';
 
 /// A date button with an optional clear action.
 class InvoiceDateField extends StatelessWidget {
@@ -339,11 +340,11 @@ class _NewInvoiceDialogState extends ConsumerState<_NewInvoiceDialog> {
           onPressed: _busy ? null : () => Navigator.pop(context),
           child: Text(l.cancel),
         ),
-        FilledButton(
+        TutorialTarget(id: 'inv-form-save', child: FilledButton(
           key: const ValueKey('inv-save'),
           onPressed: _busy ? null : _save,
           child: Text(l.save),
-        ),
+        )),
       ],
     );
   }

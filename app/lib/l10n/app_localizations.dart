@@ -12809,6 +12809,468 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The server redirected the request, so the setup token was not sent on. Check the server address (use the final https:// address).'**
   String get setupErrRedirect;
+
+  /// No description provided for @tutSuppliersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Suppliers'**
+  String get tutSuppliersTitle;
+
+  /// No description provided for @tutSuppliersSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Hat: purchaser. Create two suppliers and give them a price list for your components.'**
+  String get tutSuppliersSummary;
+
+  /// No description provided for @tutSuppliersNeedsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chapter 1 first'**
+  String get tutSuppliersNeedsTitle;
+
+  /// No description provided for @tutSuppliersNeedsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This chapter needs the four products from chapter 1 (TUT-MOTOR, TUT-FRAME, TUT-CTRL and TUT-CART) and could not find them. Go back to the chapter map and finish chapter 1 first, then come back here.'**
+  String get tutSuppliersNeedsBody;
+
+  /// No description provided for @tutSuppliersOpenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Put on the purchaser hat'**
+  String get tutSuppliersOpenTitle;
+
+  /// No description provided for @tutSuppliersOpenBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your components have to come from somewhere. Open Purchasing in the menu: the Suppliers list is the first segment.'**
+  String get tutSuppliersOpenBody;
+
+  /// No description provided for @tutSuppliersSupplierATitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The first supplier'**
+  String get tutSuppliersSupplierATitle;
+
+  /// No description provided for @tutSuppliersSupplierABody.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a supplier with code TUT-SUP-A and name Voltaic Drives Ltd. Code and name are the only required fields; payment terms, tax id and contact details can follow later.'**
+  String get tutSuppliersSupplierABody;
+
+  /// No description provided for @tutSuppliersSupplierBTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A second supplier'**
+  String get tutSuppliersSupplierBTitle;
+
+  /// No description provided for @tutSuppliersSupplierBBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A purchaser likes to compare. Create a second supplier with code TUT-SUP-B and name Ironbridge Frames.'**
+  String get tutSuppliersSupplierBBody;
+
+  /// No description provided for @tutSuppliersOpenATitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the first supplier'**
+  String get tutSuppliersOpenATitle;
+
+  /// No description provided for @tutSuppliersOpenABody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Voltaic Drives Ltd from the list. Its price list is at the bottom of the supplier screen.'**
+  String get tutSuppliersOpenABody;
+
+  /// No description provided for @tutSuppliersPriceMotorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A price for the motor'**
+  String get tutSuppliersPriceMotorTitle;
+
+  /// No description provided for @tutSuppliersPriceMotorBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Add TUT-MOTOR to the price list: unit price 120, lead time 14 days, minimum order quantity 5. Purchase orders use these values to pre-fill their lines.'**
+  String get tutSuppliersPriceMotorBody;
+
+  /// No description provided for @tutSuppliersPriceMotorHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick the product with the search box in the dialog; type TUT-MOTOR.'**
+  String get tutSuppliersPriceMotorHint;
+
+  /// No description provided for @tutSuppliersPriceFrameTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A price for the frame'**
+  String get tutSuppliersPriceFrameTitle;
+
+  /// No description provided for @tutSuppliersPriceFrameBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Same again for TUT-FRAME: unit price 45, lead time 10 days, minimum order quantity 5.'**
+  String get tutSuppliersPriceFrameBody;
+
+  /// No description provided for @tutSuppliersPriceControllerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A price for the controller'**
+  String get tutSuppliersPriceControllerTitle;
+
+  /// No description provided for @tutSuppliersPriceControllerBody.
+  ///
+  /// In en, this message translates to:
+  /// **'And TUT-CTRL: unit price 30, lead time 7 days, minimum order quantity 5. This supplier now covers all three components.'**
+  String get tutSuppliersPriceControllerBody;
+
+  /// No description provided for @tutSuppliersOpenBTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the second supplier'**
+  String get tutSuppliersOpenBTitle;
+
+  /// No description provided for @tutSuppliersOpenBBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Go back to the list and open Ironbridge Frames.'**
+  String get tutSuppliersOpenBBody;
+
+  /// No description provided for @tutSuppliersPriceMotorBTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A competing price'**
+  String get tutSuppliersPriceMotorBTitle;
+
+  /// No description provided for @tutSuppliersPriceMotorBBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Give this supplier a price for TUT-MOTOR too: unit price 135, lead time 5 days, minimum order quantity 1. It is dearer but faster; that is the kind of choice a price list helps with.'**
+  String get tutSuppliersPriceMotorBBody;
+
+  /// No description provided for @tutSuppliersDoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What you learned'**
+  String get tutSuppliersDoneTitle;
+
+  /// No description provided for @tutSuppliersDoneBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A supplier is a record with payment terms and contacts, and its price list links it to products with a price, a lead time and a minimum order quantity. Next: ordering the goods.'**
+  String get tutSuppliersDoneBody;
+
+  /// No description provided for @tutBuyingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Buying and receiving'**
+  String get tutBuyingTitle;
+
+  /// No description provided for @tutBuyingSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Hats: purchaser and goods-in. Order the components, send the order and receive the goods in two deliveries.'**
+  String get tutBuyingSummary;
+
+  /// No description provided for @tutBuyingNeedsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chapters 1 and 2 first'**
+  String get tutBuyingNeedsTitle;
+
+  /// No description provided for @tutBuyingNeedsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This chapter needs the products of chapter 1 and the supplier Voltaic Drives Ltd with its price list from chapter 2, and could not find the products. Finish those chapters first.'**
+  String get tutBuyingNeedsBody;
+
+  /// No description provided for @tutBuyingOpenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The orders list'**
+  String get tutBuyingOpenTitle;
+
+  /// No description provided for @tutBuyingOpenBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Purchasing. Next to Suppliers there is a segment for purchase orders; open it.'**
+  String get tutBuyingOpenBody;
+
+  /// No description provided for @tutBuyingOrderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Order the components'**
+  String get tutBuyingOrderTitle;
+
+  /// No description provided for @tutBuyingOrderBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a purchase order for Voltaic Drives Ltd with three lines: TUT-MOTOR, TUT-FRAME and TUT-CTRL, 30 pieces each. The prices come from the price list.'**
+  String get tutBuyingOrderBody;
+
+  /// No description provided for @tutBuyingOrderHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the supplier first: the line prices fill in once its price list has loaded. Use Add line for the second and third component.'**
+  String get tutBuyingOrderHint;
+
+  /// No description provided for @tutBuyingOpenOrderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The order screen'**
+  String get tutBuyingOpenOrderTitle;
+
+  /// No description provided for @tutBuyingOpenOrderBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the order you just made. A purchase order is a draft first; the buttons at the top follow its life: approve, send, receive.'**
+  String get tutBuyingOpenOrderBody;
+
+  /// No description provided for @tutBuyingApproveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve the order'**
+  String get tutBuyingApproveTitle;
+
+  /// No description provided for @tutBuyingApproveBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Approving is a separate permission, so a purchaser can prepare orders that a manager releases. As admin you wear both hats: press Approve.'**
+  String get tutBuyingApproveBody;
+
+  /// No description provided for @tutBuyingSendTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Send it to the supplier'**
+  String get tutBuyingSendTitle;
+
+  /// No description provided for @tutBuyingSendBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Press Send. The order is marked as sent and the supplier gets it. In test and tutorial environments outgoing mail is only written to files on the server, nothing leaves the building.'**
+  String get tutBuyingSendBody;
+
+  /// No description provided for @tutBuyingReceivePartTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The first delivery arrives'**
+  String get tutBuyingReceivePartTitle;
+
+  /// No description provided for @tutBuyingReceivePartBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Put on the goods-in hat. Press Receive goods, choose the warehouse location MAIN and book 10 pieces of each component, fewer than ordered. The order becomes partially received.'**
+  String get tutBuyingReceivePartBody;
+
+  /// No description provided for @tutBuyingReceivePartHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Change the quantity of each line in the dialog; the remaining quantity is shown next to it. A delivery note number is optional.'**
+  String get tutBuyingReceivePartHint;
+
+  /// No description provided for @tutBuyingReceiveRestTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The rest arrives'**
+  String get tutBuyingReceiveRestTitle;
+
+  /// No description provided for @tutBuyingReceiveRestBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Receive the remaining 20 pieces of each component the same way. When everything is in, the order is fully received; each delivery keeps its own goods receipt.'**
+  String get tutBuyingReceiveRestBody;
+
+  /// No description provided for @tutBuyingStockTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Look at the stock'**
+  String get tutBuyingStockTitle;
+
+  /// No description provided for @tutBuyingStockBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Stock. The 30 motors, frames and controllers are on hand in warehouse MAIN. Every receipt created a stock movement, so the quantity can always be traced back.'**
+  String get tutBuyingStockBody;
+
+  /// No description provided for @tutBuyingDoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What you learned'**
+  String get tutBuyingDoneTitle;
+
+  /// No description provided for @tutBuyingDoneBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A purchase order goes draft, approved, sent, received. Goods can arrive in several deliveries and every delivery adds to stock. The supplier\'s invoice comes next.'**
+  String get tutBuyingDoneBody;
+
+  /// No description provided for @tutInvoicesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking the invoices'**
+  String get tutInvoicesTitle;
+
+  /// No description provided for @tutInvoicesSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Hat: accountant. Register supplier invoices, read the three-way match, approve, dispute and pay.'**
+  String get tutInvoicesSummary;
+
+  /// No description provided for @tutInvoicesNeedsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chapter 3 first'**
+  String get tutInvoicesNeedsTitle;
+
+  /// No description provided for @tutInvoicesNeedsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This chapter needs the purchase order from chapter 3, fully received, and it is not (yet). Finish chapter 3 first.'**
+  String get tutInvoicesNeedsBody;
+
+  /// No description provided for @tutInvoicesOpenOrderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to the order'**
+  String get tutInvoicesOpenOrderTitle;
+
+  /// No description provided for @tutInvoicesOpenOrderBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The supplier\'s invoice arrives. Open the purchase order from chapter 3 again: once goods are received it offers a shortcut to register the invoice.'**
+  String get tutInvoicesOpenOrderBody;
+
+  /// No description provided for @tutInvoicesCreateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Register the invoice'**
+  String get tutInvoicesCreateTitle;
+
+  /// No description provided for @tutInvoicesCreateBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Press Create supplier invoice. Type the supplier\'s own invoice number, for example TUT-INV-001, and save. The lines are filled in from what was ordered and received, so there is nothing to type.'**
+  String get tutInvoicesCreateBody;
+
+  /// No description provided for @tutInvoicesCreateHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The invoice date and due date default to today and to the payment terms of the supplier.'**
+  String get tutInvoicesCreateHint;
+
+  /// No description provided for @tutInvoicesMatchTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The three-way match'**
+  String get tutInvoicesMatchTitle;
+
+  /// No description provided for @tutInvoicesMatchBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The banner compares three documents: what was ordered, what was received and what is invoiced, line by line. Green means they agree within the tolerances; the tolerances are shown in the banner. Press Next when you have looked.'**
+  String get tutInvoicesMatchBody;
+
+  /// No description provided for @tutInvoicesApproveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve the invoice'**
+  String get tutInvoicesApproveTitle;
+
+  /// No description provided for @tutInvoicesApproveBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The match is green, so press Approve. An approved invoice is ready for payment.'**
+  String get tutInvoicesApproveBody;
+
+  /// No description provided for @tutInvoicesSecondTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A suspicious invoice'**
+  String get tutInvoicesSecondTitle;
+
+  /// No description provided for @tutInvoicesSecondBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Now a second invoice arrives from Voltaic Drives Ltd, this time without a purchase order: in Finance, create a supplier invoice for that supplier, number TUT-INV-002, leave the order empty and add one line with description Motors, quantity 10, unit price 150.'**
+  String get tutInvoicesSecondBody;
+
+  /// No description provided for @tutInvoicesSecondHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The real motor price is 120 and this line has no order line to compare with. The app cannot change prices of an order-based invoice, so a free-text invoice is how a mismatch shows up here.'**
+  String get tutInvoicesSecondHint;
+
+  /// No description provided for @tutInvoicesMismatchTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The match fails'**
+  String get tutInvoicesMismatchTitle;
+
+  /// No description provided for @tutInvoicesMismatchBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The banner is orange: a free-text line has nothing it can be matched against, so it cannot be checked against an order or a receipt. The line shows why. Press Next when you have looked.'**
+  String get tutInvoicesMismatchBody;
+
+  /// No description provided for @tutInvoicesDisputeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Dispute the invoice'**
+  String get tutInvoicesDisputeTitle;
+
+  /// No description provided for @tutInvoicesDisputeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Press Dispute and give a reason, for example price does not match the agreement. A disputed invoice cannot be paid until it is reopened. (An approver can also approve a failed match with an override reason, which is kept on the invoice.)'**
+  String get tutInvoicesDisputeBody;
+
+  /// No description provided for @tutInvoicesTolerancesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The tolerances'**
+  String get tutInvoicesTolerancesTitle;
+
+  /// No description provided for @tutInvoicesTolerancesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'How far an invoice may differ is a setting: open the Settings segment of Finance to see the quantity and price tolerances in percent. Look, then press Next; changing them is up to you.'**
+  String get tutInvoicesTolerancesBody;
+
+  /// No description provided for @tutInvoicesPayTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay the good invoice'**
+  String get tutInvoicesPayTitle;
+
+  /// No description provided for @tutInvoicesPayBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the first supplier invoice you registered (the one that matched and was approved) and press Mark as paid. Enter a payment reference such as TUT-PAY-001. The app records the payment; the bank transfer itself happens elsewhere.'**
+  String get tutInvoicesPayBody;
+
+  /// No description provided for @tutInvoicesDoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What you learned'**
+  String get tutInvoicesDoneTitle;
+
+  /// No description provided for @tutInvoicesDoneBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The three-way match compares order, receipt and invoice before money moves. Matching invoices are approved and paid, doubtful ones are disputed. Next: building the carts yourself.'**
+  String get tutInvoicesDoneBody;
+
+  /// No description provided for @tutInvoicesOpenSecondTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the suspicious invoice'**
+  String get tutInvoicesOpenSecondTitle;
+
+  /// No description provided for @tutInvoicesOpenSecondBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open invoice TUT-INV-002, the one you just registered, from the list in Finance.'**
+  String get tutInvoicesOpenSecondBody;
 }
 
 class _AppLocalizationsDelegate

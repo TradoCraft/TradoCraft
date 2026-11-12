@@ -368,6 +368,7 @@ fn auth_mode(state: &AppState) -> &'static str {
     match state.auth.as_ref() {
         AuthConfig::Dev { .. } => "dev",
         AuthConfig::Oidc(_) => "oidc",
+        AuthConfig::Disabled => "disabled",
     }
 }
 

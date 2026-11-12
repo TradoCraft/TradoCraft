@@ -60,6 +60,8 @@ calling. Customers want to follow and raise tickets themselves.
   but readable by script on the portal's origin, so the portal must not host untrusted content.
 * There is no rate limiting beyond the per-person link throttle; put the API behind a reverse
   proxy that limits requests per IP before exposing the portal.
+  *Superseded by [ADR 0050](0050-portal-surface.md): customers reach a separate server with only
+  the portal routes, which limits requests per client address; the API is not exposed at all.*
 * The portal needs `portal_url` set on the company, SMTP configured for the worker, and the web
   server must serve `index.html` for unknown paths (`/login#token=...`).
 

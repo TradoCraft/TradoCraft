@@ -366,12 +366,23 @@ class TutorialController extends Notifier<TutorialState> {
   Future<void> _runProbe(MissionStep s, Probe p, int gen) async {
     final path = state.context.resolve(p.path);
     if (path == null) return;
+    // Query values may hold `{name}` placeholders too.
+    Map<String, dynamic>? query;
+    if (p.query != null) {
+      query = {};
+      for (final e in p.query!.entries) {
+        final v = e.value;
+        final r = v is String ? state.context.resolve(v) : v;
+        if (r == null) return;
+        query[e.key] = r;
+      }
+    }
     try {
       final res = await ref
           .read(dioProvider)
           .get<Object?>(
             path,
-            queryParameters: p.query,
+            queryParameters: query,
             options: Options(extra: {tutorialProbeExtra: true}),
           );
       if (!ref.mounted || gen != _gen || step != s || !state.running) return;

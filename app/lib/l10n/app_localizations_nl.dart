@@ -7107,4 +7107,276 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get setupErrRedirect =>
       'De server stuurde de aanvraag door, dus het installatietoken is niet verder gestuurd. Controleer het serveradres (gebruik het definitieve https://-adres).';
+
+  @override
+  String get tutSuppliersTitle => 'Leveranciers';
+
+  @override
+  String get tutSuppliersSummary =>
+      'Hoed: inkoper. Maak twee leveranciers en geef ze een prijslijst voor je componenten.';
+
+  @override
+  String get tutSuppliersNeedsTitle => 'Eerst hoofdstuk 1';
+
+  @override
+  String get tutSuppliersNeedsBody =>
+      'Dit hoofdstuk heeft de vier producten uit hoofdstuk 1 nodig (TUT-MOTOR, TUT-FRAME, TUT-CTRL en TUT-CART) en vond ze niet. Ga terug naar de hoofdstukkaart en rond eerst hoofdstuk 1 af.';
+
+  @override
+  String get tutSuppliersOpenTitle => 'Zet de inkopershoed op';
+
+  @override
+  String get tutSuppliersOpenBody =>
+      'Je componenten moeten ergens vandaan komen. Open Inkoop in het menu: de lijst Leveranciers is het eerste segment.';
+
+  @override
+  String get tutSuppliersSupplierATitle => 'De eerste leverancier';
+
+  @override
+  String get tutSuppliersSupplierABody =>
+      'Maak een leverancier met code TUT-SUP-A en naam Voltaic Drives Ltd. Code en naam zijn de enige verplichte velden; betaaltermijn, btw-nummer en contactgegevens kunnen later.';
+
+  @override
+  String get tutSuppliersSupplierBTitle => 'Een tweede leverancier';
+
+  @override
+  String get tutSuppliersSupplierBBody =>
+      'Een inkoper vergelijkt graag. Maak een tweede leverancier met code TUT-SUP-B en naam Ironbridge Frames.';
+
+  @override
+  String get tutSuppliersOpenATitle => 'Open de eerste leverancier';
+
+  @override
+  String get tutSuppliersOpenABody =>
+      'Open Voltaic Drives Ltd uit de lijst. De prijslijst staat onderaan het leveranciersscherm.';
+
+  @override
+  String get tutSuppliersPriceMotorTitle => 'Een prijs voor de motor';
+
+  @override
+  String get tutSuppliersPriceMotorBody =>
+      'Voeg TUT-MOTOR toe aan de prijslijst: stukprijs 120, levertijd 14 dagen, minimale bestelhoeveelheid 5. Inkooporders gebruiken deze waarden om hun regels voor te vullen.';
+
+  @override
+  String get tutSuppliersPriceMotorHint =>
+      'Kies het product met het zoekveld in het dialoogvenster; typ TUT-MOTOR.';
+
+  @override
+  String get tutSuppliersPriceFrameTitle => 'Een prijs voor het frame';
+
+  @override
+  String get tutSuppliersPriceFrameBody =>
+      'Hetzelfde voor TUT-FRAME: stukprijs 45, levertijd 10 dagen, minimale bestelhoeveelheid 5.';
+
+  @override
+  String get tutSuppliersPriceControllerTitle => 'Een prijs voor de controller';
+
+  @override
+  String get tutSuppliersPriceControllerBody =>
+      'En TUT-CTRL: stukprijs 30, levertijd 7 dagen, minimale bestelhoeveelheid 5. Deze leverancier dekt nu alle drie de componenten.';
+
+  @override
+  String get tutSuppliersOpenBTitle => 'Open de tweede leverancier';
+
+  @override
+  String get tutSuppliersOpenBBody =>
+      'Ga terug naar de lijst en open Ironbridge Frames.';
+
+  @override
+  String get tutSuppliersPriceMotorBTitle => 'Een concurrerende prijs';
+
+  @override
+  String get tutSuppliersPriceMotorBBody =>
+      'Geef ook deze leverancier een prijs voor TUT-MOTOR: stukprijs 135, levertijd 5 dagen, minimale bestelhoeveelheid 1. Duurder maar sneller; precies zo\'n keuze helpt een prijslijst te maken.';
+
+  @override
+  String get tutSuppliersDoneTitle => 'Wat je geleerd hebt';
+
+  @override
+  String get tutSuppliersDoneBody =>
+      'Een leverancier is een record met betaaltermijn en contactgegevens, en de prijslijst koppelt hem aan producten met prijs, levertijd en minimale bestelhoeveelheid. Volgende stap: de goederen bestellen.';
+
+  @override
+  String get tutBuyingTitle => 'Kopen en ontvangen';
+
+  @override
+  String get tutBuyingSummary =>
+      'Hoeden: inkoper en goederenontvangst. Bestel de componenten, verstuur de order en ontvang de goederen in twee leveringen.';
+
+  @override
+  String get tutBuyingNeedsTitle => 'Eerst hoofdstuk 1 en 2';
+
+  @override
+  String get tutBuyingNeedsBody =>
+      'Dit hoofdstuk heeft de producten uit hoofdstuk 1 en leverancier Voltaic Drives Ltd met prijslijst uit hoofdstuk 2 nodig, en vond de producten niet. Rond die hoofdstukken eerst af.';
+
+  @override
+  String get tutBuyingOpenTitle => 'De orderlijst';
+
+  @override
+  String get tutBuyingOpenBody =>
+      'Open Inkoop. Naast Leveranciers staat een segment voor inkooporders; open dat.';
+
+  @override
+  String get tutBuyingOrderTitle => 'Bestel de componenten';
+
+  @override
+  String get tutBuyingOrderBody =>
+      'Maak een inkooporder voor Voltaic Drives Ltd met drie regels: TUT-MOTOR, TUT-FRAME en TUT-CTRL, elk 30 stuks. De prijzen komen uit de prijslijst.';
+
+  @override
+  String get tutBuyingOrderHint =>
+      'Kies eerst de leverancier: de regelprijzen worden ingevuld zodra de prijslijst geladen is. Gebruik Regel toevoegen voor de tweede en derde component.';
+
+  @override
+  String get tutBuyingOpenOrderTitle => 'Het orderscherm';
+
+  @override
+  String get tutBuyingOpenOrderBody =>
+      'Open de order die je net maakte. Een inkooporder is eerst een concept; de knoppen bovenaan volgen zijn leven: goedkeuren, versturen, ontvangen.';
+
+  @override
+  String get tutBuyingApproveTitle => 'Keur de order goed';
+
+  @override
+  String get tutBuyingApproveBody =>
+      'Goedkeuren is een apart recht, zodat een inkoper orders kan voorbereiden die een manager vrijgeeft. Als admin draag je beide hoeden: druk op Goedkeuren.';
+
+  @override
+  String get tutBuyingSendTitle => 'Verstuur naar de leverancier';
+
+  @override
+  String get tutBuyingSendBody =>
+      'Druk op Verzenden. De order wordt als verstuurd gemarkeerd en de leverancier krijgt hem. In test- en tutorialomgevingen wordt uitgaande e-mail alleen naar bestanden op de server geschreven; er verlaat niets het gebouw.';
+
+  @override
+  String get tutBuyingReceivePartTitle => 'De eerste levering komt aan';
+
+  @override
+  String get tutBuyingReceivePartBody =>
+      'Zet de hoed van goederenontvangst op. Druk op Goederen ontvangen, kies de magazijnlocatie MAIN en boek van elke component 10 stuks, minder dan besteld. De order wordt gedeeltelijk ontvangen.';
+
+  @override
+  String get tutBuyingReceivePartHint =>
+      'Pas in het dialoogvenster de hoeveelheid van elke regel aan; de resterende hoeveelheid staat ernaast. Een leverbonnummer is optioneel.';
+
+  @override
+  String get tutBuyingReceiveRestTitle => 'De rest komt aan';
+
+  @override
+  String get tutBuyingReceiveRestBody =>
+      'Ontvang de resterende 20 stuks van elke component op dezelfde manier. Is alles binnen, dan is de order volledig ontvangen; elke levering houdt haar eigen ontvangstbon.';
+
+  @override
+  String get tutBuyingStockTitle => 'Kijk naar de voorraad';
+
+  @override
+  String get tutBuyingStockBody =>
+      'Open Voorraad. De 30 motoren, frames en controllers liggen in magazijn MAIN. Elke ontvangst maakte een voorraadbeweging, dus de hoeveelheid is altijd te herleiden.';
+
+  @override
+  String get tutBuyingDoneTitle => 'Wat je geleerd hebt';
+
+  @override
+  String get tutBuyingDoneBody =>
+      'Een inkooporder gaat van concept naar goedgekeurd, verstuurd, ontvangen. Goederen mogen in meerdere leveringen komen en elke levering vult de voorraad aan. De factuur van de leverancier volgt.';
+
+  @override
+  String get tutInvoicesTitle => 'Facturen controleren';
+
+  @override
+  String get tutInvoicesSummary =>
+      'Hoed: boekhouder. Registreer leveranciersfacturen, lees de driewegmatch, keur goed, betwist en betaal.';
+
+  @override
+  String get tutInvoicesNeedsTitle => 'Eerst hoofdstuk 3';
+
+  @override
+  String get tutInvoicesNeedsBody =>
+      'Dit hoofdstuk heeft de volledig ontvangen inkooporder uit hoofdstuk 3 nodig en die is er (nog) niet. Rond eerst hoofdstuk 3 af.';
+
+  @override
+  String get tutInvoicesOpenOrderTitle => 'Terug naar de order';
+
+  @override
+  String get tutInvoicesOpenOrderBody =>
+      'De factuur van de leverancier komt binnen. Open de inkooporder uit hoofdstuk 3 opnieuw: zodra er goederen ontvangen zijn, biedt hij een snelkoppeling om de factuur te registreren.';
+
+  @override
+  String get tutInvoicesCreateTitle => 'Registreer de factuur';
+
+  @override
+  String get tutInvoicesCreateBody =>
+      'Druk op Inkoopfactuur aanmaken. Typ het eigen factuurnummer van de leverancier, bijvoorbeeld TUT-INV-001, en bewaar. De regels worden ingevuld vanuit wat besteld en ontvangen is, er valt niets te typen.';
+
+  @override
+  String get tutInvoicesCreateHint =>
+      'Factuurdatum en vervaldatum staan standaard op vandaag en op de betaaltermijn van de leverancier.';
+
+  @override
+  String get tutInvoicesMatchTitle => 'De driewegmatch';
+
+  @override
+  String get tutInvoicesMatchBody =>
+      'De banner vergelijkt drie documenten: wat besteld, wat ontvangen en wat gefactureerd is, regel voor regel. Groen betekent dat ze binnen de tolerantie overeenkomen; de tolerantie staat in de banner. Druk op Volgende als je gekeken hebt.';
+
+  @override
+  String get tutInvoicesApproveTitle => 'Keur de factuur goed';
+
+  @override
+  String get tutInvoicesApproveBody =>
+      'De match is groen, dus druk op Goedkeuren. Een goedgekeurde factuur is klaar voor betaling.';
+
+  @override
+  String get tutInvoicesSecondTitle => 'Een verdachte factuur';
+
+  @override
+  String get tutInvoicesSecondBody =>
+      'Nu komt een tweede factuur binnen van Voltaic Drives Ltd, deze keer zonder inkooporder: maak in Financiën een leveranciersfactuur voor die leverancier, nummer TUT-INV-002, laat de order leeg en voeg één regel toe met omschrijving Motoren, aantal 10, stukprijs 150.';
+
+  @override
+  String get tutInvoicesSecondHint =>
+      'De echte motorprijs is 120 en deze regel heeft geen orderregel om mee te vergelijken. De app kan prijzen van een orderfactuur niet wijzigen, dus een vrije-tekstfactuur is hier de manier om een afwijking te zien.';
+
+  @override
+  String get tutInvoicesMismatchTitle => 'De match mislukt';
+
+  @override
+  String get tutInvoicesMismatchBody =>
+      'De banner is oranje: een vrije-tekstregel heeft niets om mee te vergelijken en kan dus niet tegen een order of ontvangst gecontroleerd worden. De regel toont waarom. Druk op Volgende als je gekeken hebt.';
+
+  @override
+  String get tutInvoicesDisputeTitle => 'Betwist de factuur';
+
+  @override
+  String get tutInvoicesDisputeBody =>
+      'Druk op Betwisten en geef een reden, bijvoorbeeld prijs komt niet overeen met de afspraak. Een betwiste factuur kan niet betaald worden tot ze heropend is. (Een goedkeurder kan een mislukte match ook goedkeuren met een afwijkingsreden, die op de factuur bewaard blijft.)';
+
+  @override
+  String get tutInvoicesTolerancesTitle => 'De toleranties';
+
+  @override
+  String get tutInvoicesTolerancesBody =>
+      'Hoeveel een factuur mag afwijken is een instelling: open het segment Instellingen van Financiën om de hoeveelheids- en prijstolerantie in procenten te zien. Kijk en druk op Volgende; het wijzigen is aan jou.';
+
+  @override
+  String get tutInvoicesPayTitle => 'Betaal de goede factuur';
+
+  @override
+  String get tutInvoicesPayBody =>
+      'Open de eerste leveranciersfactuur die je registreerde (die gematcht en goedgekeurd werd) en druk op Markeren als betaald. Voer een betalingsreferentie in zoals TUT-PAY-001. De app legt de betaling vast; de overschrijving zelf gebeurt elders.';
+
+  @override
+  String get tutInvoicesDoneTitle => 'Wat je geleerd hebt';
+
+  @override
+  String get tutInvoicesDoneBody =>
+      'De driewegmatch vergelijkt order, ontvangst en factuur voordat er geld beweegt. Kloppende facturen worden goedgekeurd en betaald, twijfelachtige betwist. Volgende stap: de karretjes zelf bouwen.';
+
+  @override
+  String get tutInvoicesOpenSecondTitle => 'Open de verdachte factuur';
+
+  @override
+  String get tutInvoicesOpenSecondBody =>
+      'Open factuur TUT-INV-002, die je net registreerde, vanuit de lijst in Financiën.';
 }

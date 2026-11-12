@@ -7124,4 +7124,277 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get setupErrRedirect =>
       'Der Server hat die Anfrage umgeleitet, daher wurde das Einrichtungstoken nicht weitergesendet. Prüfen Sie die Serveradresse (verwenden Sie die endgültige https://-Adresse).';
+
+  @override
+  String get tutSuppliersTitle => 'Lieferanten';
+
+  @override
+  String get tutSuppliersSummary =>
+      'Hut: Einkäufer. Legen Sie zwei Lieferanten an und geben Sie ihnen eine Preisliste für Ihre Komponenten.';
+
+  @override
+  String get tutSuppliersNeedsTitle => 'Zuerst Kapitel 1';
+
+  @override
+  String get tutSuppliersNeedsBody =>
+      'Dieses Kapitel braucht die vier Produkte aus Kapitel 1 (TUT-MOTOR, TUT-FRAME, TUT-CTRL und TUT-CART) und hat sie nicht gefunden. Gehen Sie zurück zur Kapitelübersicht und schließen Sie zuerst Kapitel 1 ab.';
+
+  @override
+  String get tutSuppliersOpenTitle => 'Setzen Sie den Einkäufer-Hut auf';
+
+  @override
+  String get tutSuppliersOpenBody =>
+      'Ihre Komponenten müssen von irgendwoher kommen. Öffnen Sie Einkauf im Menü: Die Lieferantenliste ist das erste Segment.';
+
+  @override
+  String get tutSuppliersSupplierATitle => 'Der erste Lieferant';
+
+  @override
+  String get tutSuppliersSupplierABody =>
+      'Legen Sie einen Lieferanten mit Code TUT-SUP-A und Name Voltaic Drives Ltd an. Code und Name sind die einzigen Pflichtfelder; Zahlungsbedingungen, USt-IdNr. und Kontaktdaten können später folgen.';
+
+  @override
+  String get tutSuppliersSupplierBTitle => 'Ein zweiter Lieferant';
+
+  @override
+  String get tutSuppliersSupplierBBody =>
+      'Ein Einkäufer vergleicht gern. Legen Sie einen zweiten Lieferanten mit Code TUT-SUP-B und Name Ironbridge Frames an.';
+
+  @override
+  String get tutSuppliersOpenATitle => 'Öffnen Sie den ersten Lieferanten';
+
+  @override
+  String get tutSuppliersOpenABody =>
+      'Öffnen Sie Voltaic Drives Ltd in der Liste. Die Preisliste steht unten auf dem Lieferantenbildschirm.';
+
+  @override
+  String get tutSuppliersPriceMotorTitle => 'Ein Preis für den Motor';
+
+  @override
+  String get tutSuppliersPriceMotorBody =>
+      'Fügen Sie TUT-MOTOR der Preisliste hinzu: Stückpreis 120, Lieferzeit 14 Tage, Mindestbestellmenge 5. Bestellungen füllen ihre Positionen damit vor.';
+
+  @override
+  String get tutSuppliersPriceMotorHint =>
+      'Wählen Sie das Produkt über das Suchfeld im Dialog; tippen Sie TUT-MOTOR.';
+
+  @override
+  String get tutSuppliersPriceFrameTitle => 'Ein Preis für den Rahmen';
+
+  @override
+  String get tutSuppliersPriceFrameBody =>
+      'Dasselbe für TUT-FRAME: Stückpreis 45, Lieferzeit 10 Tage, Mindestbestellmenge 5.';
+
+  @override
+  String get tutSuppliersPriceControllerTitle => 'Ein Preis für die Steuerung';
+
+  @override
+  String get tutSuppliersPriceControllerBody =>
+      'Und TUT-CTRL: Stückpreis 30, Lieferzeit 7 Tage, Mindestbestellmenge 5. Dieser Lieferant deckt nun alle drei Komponenten ab.';
+
+  @override
+  String get tutSuppliersOpenBTitle => 'Öffnen Sie den zweiten Lieferanten';
+
+  @override
+  String get tutSuppliersOpenBBody =>
+      'Gehen Sie zurück zur Liste und öffnen Sie Ironbridge Frames.';
+
+  @override
+  String get tutSuppliersPriceMotorBTitle => 'Ein Konkurrenzpreis';
+
+  @override
+  String get tutSuppliersPriceMotorBBody =>
+      'Geben Sie auch diesem Lieferanten einen Preis für TUT-MOTOR: Stückpreis 135, Lieferzeit 5 Tage, Mindestbestellmenge 1. Teurer, aber schneller; bei solchen Entscheidungen hilft eine Preisliste.';
+
+  @override
+  String get tutSuppliersDoneTitle => 'Was Sie gelernt haben';
+
+  @override
+  String get tutSuppliersDoneBody =>
+      'Ein Lieferant ist ein Datensatz mit Zahlungsbedingungen und Kontakten; seine Preisliste verknüpft ihn mit Produkten samt Preis, Lieferzeit und Mindestbestellmenge. Als Nächstes: die Ware bestellen.';
+
+  @override
+  String get tutBuyingTitle => 'Einkaufen und Wareneingang';
+
+  @override
+  String get tutBuyingSummary =>
+      'Hüte: Einkäufer und Wareneingang. Bestellen Sie die Komponenten, senden Sie die Bestellung und nehmen Sie die Ware in zwei Lieferungen an.';
+
+  @override
+  String get tutBuyingNeedsTitle => 'Zuerst Kapitel 1 und 2';
+
+  @override
+  String get tutBuyingNeedsBody =>
+      'Dieses Kapitel braucht die Produkte aus Kapitel 1 und den Lieferanten Voltaic Drives Ltd mit Preisliste aus Kapitel 2 und hat die Produkte nicht gefunden. Schließen Sie diese Kapitel zuerst ab.';
+
+  @override
+  String get tutBuyingOpenTitle => 'Die Bestellliste';
+
+  @override
+  String get tutBuyingOpenBody =>
+      'Öffnen Sie Einkauf. Neben Lieferanten gibt es ein Segment für Bestellungen; öffnen Sie es.';
+
+  @override
+  String get tutBuyingOrderTitle => 'Bestellen Sie die Komponenten';
+
+  @override
+  String get tutBuyingOrderBody =>
+      'Legen Sie eine Bestellung an Voltaic Drives Ltd mit drei Positionen an: TUT-MOTOR, TUT-FRAME und TUT-CTRL, je 30 Stück. Die Preise kommen aus der Preisliste.';
+
+  @override
+  String get tutBuyingOrderHint =>
+      'Wählen Sie zuerst den Lieferanten: Die Positionspreise werden ausgefüllt, sobald seine Preisliste geladen ist. Mit Position hinzufügen kommen die zweite und dritte Komponente dazu.';
+
+  @override
+  String get tutBuyingOpenOrderTitle => 'Der Bestellbildschirm';
+
+  @override
+  String get tutBuyingOpenOrderBody =>
+      'Öffnen Sie die gerade angelegte Bestellung. Eine Bestellung ist zuerst ein Entwurf; die Schaltflächen oben folgen ihrem Verlauf: genehmigen, senden, empfangen.';
+
+  @override
+  String get tutBuyingApproveTitle => 'Genehmigen Sie die Bestellung';
+
+  @override
+  String get tutBuyingApproveBody =>
+      'Genehmigen ist ein eigenes Recht, so kann ein Einkäufer Bestellungen vorbereiten, die ein Manager freigibt. Als Admin tragen Sie beide Hüte: Drücken Sie Genehmigen.';
+
+  @override
+  String get tutBuyingSendTitle => 'An den Lieferanten senden';
+
+  @override
+  String get tutBuyingSendBody =>
+      'Drücken Sie Senden. Die Bestellung wird als gesendet markiert und der Lieferant erhält sie. In Test- und Tutorial-Umgebungen wird ausgehende E-Mail nur in Dateien auf dem Server geschrieben, nichts verlässt das Haus.';
+
+  @override
+  String get tutBuyingReceivePartTitle => 'Die erste Lieferung kommt an';
+
+  @override
+  String get tutBuyingReceivePartBody =>
+      'Setzen Sie den Wareneingangs-Hut auf. Drücken Sie Ware annehmen, wählen Sie den Lagerplatz MAIN und buchen Sie je 10 Stück jeder Komponente, weniger als bestellt. Die Bestellung ist dann teilweise empfangen.';
+
+  @override
+  String get tutBuyingReceivePartHint =>
+      'Ändern Sie im Dialog die Menge jeder Position; die Restmenge steht daneben. Eine Lieferscheinnummer ist optional.';
+
+  @override
+  String get tutBuyingReceiveRestTitle => 'Der Rest kommt an';
+
+  @override
+  String get tutBuyingReceiveRestBody =>
+      'Nehmen Sie die restlichen 20 Stück jeder Komponente genauso an. Ist alles da, ist die Bestellung vollständig empfangen; jede Lieferung behält ihren eigenen Wareneingangsbeleg.';
+
+  @override
+  String get tutBuyingStockTitle => 'Sehen Sie sich den Bestand an';
+
+  @override
+  String get tutBuyingStockBody =>
+      'Öffnen Sie Bestand. Die 30 Motoren, Rahmen und Steuerungen liegen im Lager MAIN. Jeder Wareneingang hat eine Lagerbewegung erzeugt, die Menge ist also immer nachvollziehbar.';
+
+  @override
+  String get tutBuyingDoneTitle => 'Was Sie gelernt haben';
+
+  @override
+  String get tutBuyingDoneBody =>
+      'Eine Bestellung geht von Entwurf über genehmigt und gesendet zu empfangen. Ware darf in mehreren Lieferungen kommen, jede erhöht den Bestand. Die Lieferantenrechnung folgt.';
+
+  @override
+  String get tutInvoicesTitle => 'Rechnungen prüfen';
+
+  @override
+  String get tutInvoicesSummary =>
+      'Hut: Buchhalter. Erfassen Sie Lieferantenrechnungen, lesen Sie den Drei-Wege-Abgleich, genehmigen, beanstanden und bezahlen Sie.';
+
+  @override
+  String get tutInvoicesNeedsTitle => 'Zuerst Kapitel 3';
+
+  @override
+  String get tutInvoicesNeedsBody =>
+      'Dieses Kapitel braucht die vollständig empfangene Bestellung aus Kapitel 3, und die gibt es (noch) nicht. Schließen Sie zuerst Kapitel 3 ab.';
+
+  @override
+  String get tutInvoicesOpenOrderTitle => 'Zurück zur Bestellung';
+
+  @override
+  String get tutInvoicesOpenOrderBody =>
+      'Die Rechnung des Lieferanten trifft ein. Öffnen Sie die Bestellung aus Kapitel 3 erneut: Sobald Ware empfangen ist, bietet sie eine Abkürzung zum Erfassen der Rechnung.';
+
+  @override
+  String get tutInvoicesCreateTitle => 'Erfassen Sie die Rechnung';
+
+  @override
+  String get tutInvoicesCreateBody =>
+      'Drücken Sie Eingangsrechnung anlegen. Tippen Sie die Rechnungsnummer des Lieferanten, zum Beispiel TUT-INV-001, und speichern Sie. Die Positionen werden aus Bestellung und Wareneingang vorausgefüllt.';
+
+  @override
+  String get tutInvoicesCreateHint =>
+      'Rechnungsdatum und Fälligkeit stehen standardmäßig auf heute und die Zahlungsbedingungen des Lieferanten.';
+
+  @override
+  String get tutInvoicesMatchTitle => 'Der Drei-Wege-Abgleich';
+
+  @override
+  String get tutInvoicesMatchBody =>
+      'Das Banner vergleicht drei Belege: was bestellt, was empfangen und was berechnet wurde, Position für Position. Grün heißt, sie stimmen innerhalb der Toleranzen überein, die im Banner stehen. Drücken Sie Weiter, wenn Sie hingesehen haben.';
+
+  @override
+  String get tutInvoicesApproveTitle => 'Genehmigen Sie die Rechnung';
+
+  @override
+  String get tutInvoicesApproveBody =>
+      'Der Abgleich ist grün, also drücken Sie Freigeben. Eine genehmigte Rechnung ist zahlungsbereit.';
+
+  @override
+  String get tutInvoicesSecondTitle => 'Eine verdächtige Rechnung';
+
+  @override
+  String get tutInvoicesSecondBody =>
+      'Jetzt kommt eine zweite Rechnung von Voltaic Drives Ltd, diesmal ohne Bestellung: Legen Sie in Finanzen eine Lieferantenrechnung für diesen Lieferanten an, Nummer TUT-INV-002, lassen Sie die Bestellung leer und fügen Sie eine Position mit Beschreibung Motoren, Menge 10, Stückpreis 150 hinzu.';
+
+  @override
+  String get tutInvoicesSecondHint =>
+      'Der echte Motorpreis ist 120 und diese Position hat keine Bestellposition zum Vergleich. Die App kann Preise einer bestellbezogenen Rechnung nicht ändern, daher zeigt hier eine Freitext-Rechnung eine Abweichung.';
+
+  @override
+  String get tutInvoicesMismatchTitle => 'Der Abgleich schlägt fehl';
+
+  @override
+  String get tutInvoicesMismatchBody =>
+      'Das Banner ist orange: Eine Freitext-Position hat nichts zum Abgleichen und kann daher weder mit einer Bestellung noch mit einem Wareneingang geprüft werden. Die Position zeigt den Grund. Drücken Sie Weiter, wenn Sie hingesehen haben.';
+
+  @override
+  String get tutInvoicesDisputeTitle => 'Beanstanden Sie die Rechnung';
+
+  @override
+  String get tutInvoicesDisputeBody =>
+      'Drücken Sie Beanstanden und nennen Sie einen Grund, zum Beispiel Preis entspricht nicht der Vereinbarung. Eine beanstandete Rechnung kann erst nach dem Wiedereröffnen bezahlt werden. (Ein Genehmiger kann einen fehlgeschlagenen Abgleich auch mit einem Abweichungsgrund genehmigen, der an der Rechnung bleibt.)';
+
+  @override
+  String get tutInvoicesTolerancesTitle => 'Die Toleranzen';
+
+  @override
+  String get tutInvoicesTolerancesBody =>
+      'Wie weit eine Rechnung abweichen darf, ist eine Einstellung: Öffnen Sie das Segment Einstellungen in Finanzen, um die Mengen- und Preistoleranz in Prozent zu sehen. Sehen Sie nach und drücken Sie Weiter; Änderungen liegen bei Ihnen.';
+
+  @override
+  String get tutInvoicesPayTitle => 'Bezahlen Sie die richtige Rechnung';
+
+  @override
+  String get tutInvoicesPayBody =>
+      'Öffnen Sie die erste Eingangsrechnung, die Sie erfasst haben (die, die gepasst hat und freigegeben wurde), und drücken Sie Als bezahlt markieren. Geben Sie eine Zahlungsreferenz wie TUT-PAY-001 ein. Die App erfasst die Zahlung; die Überweisung selbst geschieht anderswo.';
+
+  @override
+  String get tutInvoicesDoneTitle => 'Was Sie gelernt haben';
+
+  @override
+  String get tutInvoicesDoneBody =>
+      'Der Drei-Wege-Abgleich vergleicht Bestellung, Wareneingang und Rechnung, bevor Geld fließt. Stimmige Rechnungen werden genehmigt und bezahlt, zweifelhafte beanstandet. Als Nächstes: die Karren selbst bauen.';
+
+  @override
+  String get tutInvoicesOpenSecondTitle =>
+      'Öffnen Sie die verdächtige Rechnung';
+
+  @override
+  String get tutInvoicesOpenSecondBody =>
+      'Öffnen Sie die Rechnung TUT-INV-002, die Sie gerade erfasst haben, aus der Liste in Finanzen.';
 }
