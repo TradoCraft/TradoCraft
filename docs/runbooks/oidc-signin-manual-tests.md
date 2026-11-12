@@ -8,7 +8,7 @@ choice in ADR 0053.
 Common setup: a Keycloak (`docker compose -p oidcspike up -d` in `tool/oidc-spike`, port 18080,
 user `alice` / `alice-pass`) registered as a provider on a test API instance with `client_id`
 `tradocraft-app`, `token_use` `id_token`, and `ALLOW_INSECURE_IDP_URLS=true` (development only,
-ADR 0052). Admin console `http://127.0.0.1:18080` (`admin` / `admin`) for revoking sessions.
+ADR 0055). Admin console `http://127.0.0.1:18080` (`admin` / `admin`) for revoking sessions.
 Windows and Android need the Keycloak reachable from that machine. The default compose file
 binds `127.0.0.1` only and stays unchanged; use an override file kept outside the repository
 (for example `/tmp/oidc-lan.yml`), with `<LAN-IP>` the host's address on the test network:

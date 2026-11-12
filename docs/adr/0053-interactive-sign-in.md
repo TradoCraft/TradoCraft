@@ -3,9 +3,9 @@
 **Status:** Proposed
 
 **Context.** The API verifies bearer tokens against the identity providers an administrator
-configures (ADR 0004, ADR 0052). Today the app gets a token by pasting it, which is fine for
+configures (ADR 0004, ADR 0055). Today the app gets a token by pasting it, which is fine for
 developers and not for staff. The app has to sign people in itself: authorization code with PKCE
-as a public client (no client secret, ADR 0052 stores only `client_id` and `scopes`), refresh in
+as a public client (no client secret, ADR 0055 stores only `client_id` and `scopes`), refresh in
 the background, one session per environment (ADR 0043) and provider. First release: Microsoft
 Entra ID (the access token of our own exposed API) and Keycloak or any generic OIDC provider;
 Google later. Platforms: Linux, Windows, Android, web last, iOS and macOS later. A spike
@@ -172,7 +172,7 @@ path stays for development. The server learns one setting; it stays free of clie
 *Risks.* Entra issues v1 tokens (different issuer and `aud`) unless
 `requestedAccessTokenVersion` = 2; the runbook makes it a checklist step and the provider Test
 button shows the `aud` of a real token. Entra's `sub` is per application, so the client id must
-never be rotated or every user would look new (users are bound by e-mail and subject, ADR 0052).
+never be rotated or every user would look new (users are bound by e-mail and subject, ADR 0055).
 `oidc` is young and moves fast: pin exact versions, review each upgrade, and keep the wrapper
 thin so the fallback stays possible. Windows may show a firewall prompt for the loopback
 listener (it binds 127.0.0.1 only, so the prompt should not appear; to be confirmed on a clean

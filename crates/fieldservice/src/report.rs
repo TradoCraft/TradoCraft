@@ -564,6 +564,7 @@ mod tests {
             phone: None,
             iban: None,
             default_language: "nl".into(),
+            is_primary: true,
         };
         let customer = Customer {
             id: Uuid::nil(),

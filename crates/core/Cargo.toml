@@ -9,6 +9,8 @@ publish.workspace = true
 [dependencies]
 anyhow.workspace = true
 axum.workspace = true
+base64 = "0.22"
+url = "2"
 chrono.workspace = true
 jsonwebtoken.workspace = true
 reqwest.workspace = true

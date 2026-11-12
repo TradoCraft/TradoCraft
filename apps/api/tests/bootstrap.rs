@@ -8,16 +8,20 @@ use common::{call, call_portal};
 use serde_json::{json, Value};
 use sqlx::PgPool;
 use std::sync::Arc;
-use tradocraft_core::auth::{bind_oidc_user, AuthConfig, Claims, OidcVerifier};
+use tradocraft_core::auth::{bind_oidc_user, AuthConfig};
 use tradocraft_core::companies::BootstrapConfig;
 use tradocraft_core::environment::EnvironmentConfig;
+use tradocraft_core::identity::{Claims, IdentityProviders, IdpSettings, ProviderConfig};
 use tradocraft_core::{AppState, DocumentConfig};
 
 fn app(db: PgPool, oidc: bool, token: Option<&str>) -> axum::Router {
     let auth = if oidc {
-        AuthConfig::Oidc(OidcVerifier::new(
-            "https://issuer.invalid".into(),
-            "tradocraft".into(),
+        AuthConfig::Oidc(IdentityProviders::new(
+            IdpSettings::default(),
+            Some(ProviderConfig::from_env(
+                "https://issuer.invalid",
+                "tradocraft",
+            )),
         ))
     } else {
         AuthConfig::Dev {
@@ -82,6 +86,7 @@ async fn bootstraps_an_empty_database_once(db: PgPool) {
     assert_eq!(res["company"]["name"], "Fresh Co");
     assert_eq!(res["company"]["vat_number"], "BE0123456749");
     assert_eq!(res["company"]["default_language"], "en");
+    assert_eq!(res["company"]["is_primary"], true);
     assert_eq!(res["admin"]["email"], "boss@fresh.example");
     assert_eq!(res["admin"]["roles"], json!(["admin"]));
     assert!(!res.to_string().contains("token"));
@@ -236,18 +241,16 @@ async fn outside_dev_mode_the_endpoint_needs_a_token(db: PgPool) {
             template_dir: "templates".into(),
         }),
     };
-    let claims = |email: Option<&str>, verified: Option<bool>| Claims {
-        sub: "idp|boss".into(),
-        email: email.map(str::to_string),
-        email_verified: verified,
-    };
+    let provider = ProviderConfig::from_env("https://issuer.invalid", "tradocraft");
+    let claims =
+        |email: Option<&str>, verified: Option<bool>| Claims::simple("idp|boss", email, verified);
     for (email, verified) in [
         (Some("boss@fresh.example"), Some(false)),
         (Some("boss@fresh.example"), None),
         (None, Some(true)),
     ] {
         assert!(
-            bind_oidc_user(&state, &claims(email, verified))
+            bind_oidc_user(&state, &provider, &claims(email, verified))
                 .await
                 .is_err(),
             "{email:?} {verified:?}"
@@ -261,9 +264,13 @@ async fn outside_dev_mode_the_endpoint_needs_a_token(db: PgPool) {
     .unwrap();
     assert_eq!(subject, None, "nothing bound for unverified identities");
 
-    let uid = bind_oidc_user(&state, &claims(Some("Boss@Fresh.example"), Some(true)))
-        .await
-        .unwrap();
+    let uid = bind_oidc_user(
+        &state,
+        &provider,
+        &claims(Some("Boss@Fresh.example"), Some(true)),
+    )
+    .await
+    .unwrap();
     assert_eq!(uid.to_string(), res["admin"]["user_id"].as_str().unwrap());
     let (subject, roles, company): (String, Vec<String>, uuid::Uuid) = sqlx::query_as(
         "SELECT u.oidc_subject, uc.roles, uc.company_id FROM core.users u
@@ -277,12 +284,11 @@ async fn outside_dev_mode_the_endpoint_needs_a_token(db: PgPool) {
     assert_eq!(roles, ["admin"]);
     assert_eq!(company.to_string(), res["company"]["id"].as_str().unwrap());
     // The bound subject now signs in without the e-mail claim.
-    let again = Claims {
-        sub: "idp|boss".into(),
-        email: None,
-        email_verified: None,
-    };
-    assert_eq!(bind_oidc_user(&state, &again).await.unwrap(), uid);
+    let again = Claims::simple("idp|boss", None, None);
+    assert_eq!(
+        bind_oidc_user(&state, &provider, &again).await.unwrap(),
+        uid
+    );
 }
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
@@ -324,4 +330,25 @@ async fn provision_refuses_a_name_clash(db: PgPool) {
         matches!(err, tradocraft_core::AppError::Conflict(_)),
         "{err}"
     );
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn the_first_company_is_primary_and_later_ones_are_not(db: PgPool) {
+    let spec: tradocraft_core::companies::ProvisionSpec =
+        serde_json::from_value(body(None)).unwrap();
+    let mut tx = db.begin().await.unwrap();
+    let first = tradocraft_core::companies::provision(&mut tx, &spec)
+        .await
+        .unwrap();
+    let mut other = spec.clone();
+    other.name = "Second Co".into();
+    other.admin_email = "other@fresh.example".into();
+    let second = tradocraft_core::companies::provision(&mut tx, &other)
+        .await
+        .unwrap();
+    tx.commit().await.unwrap();
+    assert!(first.company.is_primary);
+    assert!(!second.company.is_primary);
+    let n = count(&db, "SELECT count(*) FROM core.companies WHERE is_primary").await;
+    assert_eq!(n, 1);
 }

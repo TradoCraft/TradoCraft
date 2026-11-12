@@ -2900,8 +2900,10 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "axum",
+ "base64 0.22.1",
  "chrono",
  "http-body-util",
+ "jsonwebtoken",
  "rust_decimal",
  "rust_decimal_macros",
  "serde",
@@ -2964,6 +2966,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "axum",
+ "base64 0.22.1",
  "chrono",
  "jsonwebtoken",
  "reqwest",
@@ -2975,6 +2978,7 @@ dependencies = [
  "tokio",
  "tower-http",
  "tracing",
+ "url",
  "utoipa",
  "utoipa-axum",
  "uuid",
