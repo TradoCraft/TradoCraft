@@ -342,6 +342,18 @@ async fn create_provider(
     Ok((StatusCode::CREATED, Json(row_info(&row))))
 }
 
+/// Serialises changes that can take an enabled provider out of use (held until the transaction ends).
+async fn lock_providers(conn: &mut sqlx::PgConnection) -> AppResult<()> {
+    sqlx::query("SELECT pg_advisory_xact_lock($1)")
+        .bind(IDENTITY_PROVIDERS_LOCK)
+        .execute(conn)
+        .await?;
+    Ok(())
+}
+
+/// Advisory-lock key of identity provider lock-out checks.
+const IDENTITY_PROVIDERS_LOCK: i64 = 0x1D3_0052;
+
 async fn load(state: &AppState, id: Uuid) -> AppResult<ProviderRow> {
     sqlx::query_as(&format!(
         "SELECT {PROVIDER_COLUMNS} FROM core.identity_providers WHERE id = $1"
@@ -354,8 +366,10 @@ async fn load(state: &AppState, id: Uuid) -> AppResult<ProviderRow> {
 
 /// Refuses a change that takes an enabled issuer out of use when that could lock everybody out
 /// (the last provider, with no environment fallback) or the caller out (their own provider),
-/// unless `confirm` is set. `new_enabled` is none for a delete.
+/// unless `confirm` is set. `new_enabled` is none for a delete. Must run in the transaction that
+/// holds [`lock_providers`] and makes the change, so concurrent changes cannot both pass on stale counts.
 async fn lockout_guard(
+    conn: &mut sqlx::PgConnection,
     state: &AppState,
     caller: &CallerIssuer,
     existing: &ProviderRow,
@@ -373,7 +387,7 @@ async fn lockout_guard(
         "SELECT count(*) FROM core.identity_providers WHERE enabled AND id <> $1",
     )
     .bind(existing.id)
-    .fetch_one(&state.db)
+    .fetch_one(&mut *conn)
     .await?;
     let remaining = others + i64::from(still);
     if remaining == 0 && env_provider(state).is_none() {
@@ -409,14 +423,27 @@ async fn update_provider(
     Json(input): Json<IdentityProviderInput>,
 ) -> AppResult<Json<IdentityProviderInfo>> {
     guard(&state, &user).await?;
-    let existing = load(&state, id).await?;
     let cfg = normalise_input(&settings, &input)?;
     if env_provider(&state).is_some_and(|e| e.issuer == cfg.issuer) {
         return Err(AppError::Conflict(
             "this issuer is already configured through OIDC_ISSUER".into(),
         ));
     }
+    if cfg.enabled {
+        probe(&settings, &cfg).await?;
+    }
+    let mut tx = state.db.begin().await?;
+    lock_providers(&mut tx).await?;
+    // Re-read under the lock: the guard must see the committed state.
+    let existing: ProviderRow = sqlx::query_as(&format!(
+        "SELECT {PROVIDER_COLUMNS} FROM core.identity_providers WHERE id = $1"
+    ))
+    .bind(id)
+    .fetch_optional(&mut *tx)
+    .await?
+    .ok_or(AppError::NotFound("identity provider"))?;
     lockout_guard(
+        &mut tx,
         &state,
         &caller,
         &existing,
@@ -425,10 +452,6 @@ async fn update_provider(
         input.confirm_lockout.unwrap_or(false),
     )
     .await?;
-    if cfg.enabled {
-        probe(&settings, &cfg).await?;
-    }
-    let mut tx = state.db.begin().await?;
     let row: ProviderRow = sqlx::query_as(&format!(
         "UPDATE core.identity_providers SET name=$2, issuer=$3, audience=$4, client_id=$5, scopes=$6,
              algorithms=$7, email_claim=$8, email_policy=$9, verified_claim=$10,
@@ -490,8 +513,17 @@ async fn delete_provider(
     Query(q): Query<DeleteQuery>,
 ) -> AppResult<StatusCode> {
     guard(&state, &user).await?;
-    let existing = load(&state, id).await?;
+    let mut tx = state.db.begin().await?;
+    lock_providers(&mut tx).await?;
+    let existing: ProviderRow = sqlx::query_as(&format!(
+        "SELECT {PROVIDER_COLUMNS} FROM core.identity_providers WHERE id = $1"
+    ))
+    .bind(id)
+    .fetch_optional(&mut *tx)
+    .await?
+    .ok_or(AppError::NotFound("identity provider"))?;
     lockout_guard(
+        &mut tx,
         &state,
         &caller,
         &existing,
@@ -500,7 +532,6 @@ async fn delete_provider(
         q.confirm_lockout.unwrap_or(false),
     )
     .await?;
-    let mut tx = state.db.begin().await?;
     sqlx::query("DELETE FROM core.identity_providers WHERE id = $1")
         .bind(id)
         .execute(&mut *tx)

@@ -911,13 +911,25 @@ async fn resolve_oidc_user(
     let d = decide(state, cfg, claims).await?;
     let user = d.user.ok_or(AppError::Unauthorized)?;
     if d.bind {
-        sqlx::query(
+        let done = sqlx::query(
             "UPDATE core.users SET oidc_subject = $1 WHERE id = $2 AND oidc_subject IS NULL",
         )
         .bind(&d.subject)
         .bind(user.id)
         .execute(&state.db)
         .await?;
+        if done.rows_affected() != 1 {
+            // Another sign-in bound the user first: only the same identity may continue.
+            let now: Option<String> =
+                sqlx::query_scalar("SELECT oidc_subject FROM core.users WHERE id = $1")
+                    .bind(user.id)
+                    .fetch_optional(&state.db)
+                    .await?
+                    .flatten();
+            if now.as_deref() != Some(d.subject.as_str()) {
+                return Err(AppError::Unauthorized);
+            }
+        }
     }
     Ok(user)
 }

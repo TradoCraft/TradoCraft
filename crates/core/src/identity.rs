@@ -322,6 +322,7 @@ async fn guarded_get(settings: &IdpSettings, raw: &str) -> Result<Vec<u8>, Strin
         ));
     }
     let client = reqwest::Client::builder()
+        .no_proxy()
         .connect_timeout(Duration::from_secs(5))
         .timeout(Duration::from_secs(10))
         .redirect(reqwest::redirect::Policy::none())

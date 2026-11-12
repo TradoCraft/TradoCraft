@@ -109,3 +109,27 @@ Notes from the spike for any provider: access token lifetime does not matter to 
 refreshes when a token expires within 120 s); keep refresh token rotation on, the app persists
 the rotated token before using it; an administrator revoking the user's sessions or offline
 tokens signs the user out in the app on the next refresh (`invalid_grant`).
+
+## Migrating existing users from the OIDC_ISSUER fallback to a database provider
+
+Users who signed in through `OIDC_ISSUER` before database providers existed have an unqualified
+`core.users.oidc_subject` (the bare `sub`). Database providers store `<issuer>|<sub>`, and an
+unqualified subject is deliberately never accepted for a database provider (a wrong guess would
+attach an identity to the wrong person), so those users cannot sign in through it until their
+subject is qualified or cleared (ADR 0052).
+
+Do this while `OIDC_ISSUER` is still set, so nobody is locked out in between:
+
+1. Add and test the database provider (Admin > Identity providers, or
+   `/api/v1/admin/identity-providers`).
+2. For each affected user, either set the new subject with
+   `PUT /api/v1/admin/users/{id}/oidc-subject` (body `{"issuer": "<issuer>", "subject": "<sub>"}`,
+   or "Link identity" on the users page), or clear it (empty subject). A cleared user is bound by
+   e-mail at the next sign-in, as the provider's e-mail rule allows.
+3. Only then remove `OIDC_ISSUER`/`OIDC_AUDIENCE` from the environment.
+
+If the step was missed: users with an old subject are refused by the database provider. An
+administrator who can still sign in fixes them with the same endpoint. If nobody can sign in,
+restore `OIDC_ISSUER`/`OIDC_AUDIENCE` (the fallback accepts the unqualified subjects again), or
+clear the subjects in SQL: `UPDATE core.users SET oidc_subject = NULL WHERE id = '<user id>'`, and
+let the next sign-in bind by e-mail.
