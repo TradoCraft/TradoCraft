@@ -7822,4 +7822,16 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get tutActionForbidden =>
       'You are not allowed to import e-mail into the helpdesk (it needs the helpdesk write permission). Ask an administrator, or sign in as one, and try again.';
+
+  @override
+  String workerDownBanner(String since) {
+    return 'The background worker has not run since $since: e-mail is not sent or fetched and SLA breaches are not escalated.';
+  }
+
+  @override
+  String get workerNeverSeenBanner =>
+      'No background worker has run yet: e-mail is not sent or fetched and SLA breaches are not escalated.';
+
+  @override
+  String get workerBannerSemantics => 'Background worker';
 }

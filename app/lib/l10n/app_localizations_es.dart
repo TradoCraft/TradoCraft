@@ -7849,4 +7849,16 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get tutActionForbidden =>
       'No tiene permiso para importar correo al helpdesk (hace falta el permiso de escritura del helpdesk). Pídalo a un administrador o inicie sesión como tal e inténtelo de nuevo.';
+
+  @override
+  String workerDownBanner(String since) {
+    return 'El procesamiento en segundo plano no funciona desde $since: no se envían ni reciben correos y no se escalan los incumplimientos de SLA.';
+  }
+
+  @override
+  String get workerNeverSeenBanner =>
+      'Todavía no ha funcionado ningún procesamiento en segundo plano: no se envían ni reciben correos y no se escalan los incumplimientos de SLA.';
+
+  @override
+  String get workerBannerSemantics => 'Procesamiento en segundo plano';
 }

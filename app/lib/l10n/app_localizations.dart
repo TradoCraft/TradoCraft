@@ -14063,6 +14063,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You are not allowed to import e-mail into the helpdesk (it needs the helpdesk write permission). Ask an administrator, or sign in as one, and try again.'**
   String get tutActionForbidden;
+
+  /// No description provided for @workerDownBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'The background worker has not run since {since}: e-mail is not sent or fetched and SLA breaches are not escalated.'**
+  String workerDownBanner(String since);
+
+  /// No description provided for @workerNeverSeenBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'No background worker has run yet: e-mail is not sent or fetched and SLA breaches are not escalated.'**
+  String get workerNeverSeenBanner;
+
+  /// No description provided for @workerBannerSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Background worker'**
+  String get workerBannerSemantics;
 }
 
 class _AppLocalizationsDelegate

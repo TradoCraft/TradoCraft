@@ -32,4 +32,9 @@ UPDATE helpdesk.articles
    SET body = regexp_replace(body, 'token=[^[:space:]&"<>)]+', 'token=REDACTED', 'g')
  WHERE body ~ 'token=';
 
+-- The live worker's heartbeat says nothing about the clone; kept, the clone's first worker would
+-- report the time since the dump as an outage (ADR 0052).
+DELETE FROM core.worker_heartbeat;
+DELETE FROM core.worker_outages;
+
 COMMIT;

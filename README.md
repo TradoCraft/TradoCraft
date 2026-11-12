@@ -29,7 +29,7 @@ crates/helpdesk/     tickets from e-mail and phone, threading, prepared answers,
 crates/portal/       customer portal: passwordless login for contacts, their tickets, repairs and profile
 crates/repairs/      repairs customers send in, workshop departments, routing workflow, photos
 crates/fieldservice/ jobs at customer sites for technicians: tasks, work logs, photos
-apps/worker/         background worker: IMAP polling and sending the e-mail outbox
+apps/worker/         background worker: IMAP polling, sending the e-mail outbox, heartbeat
 apps/portal-api/     customer-facing HTTP server: only the portal, public knowledge base and survey routes
 crates/documents/    Typst PDF rendering, Belgian number formatting
 migrations/          SQLx migrations (one PostgreSQL schema per module)

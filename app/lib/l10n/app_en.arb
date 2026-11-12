@@ -3802,5 +3802,9 @@
       }
     }
   },
-  "tutActionForbidden": "You are not allowed to import e-mail into the helpdesk (it needs the helpdesk write permission). Ask an administrator, or sign in as one, and try again."
+  "tutActionForbidden": "You are not allowed to import e-mail into the helpdesk (it needs the helpdesk write permission). Ask an administrator, or sign in as one, and try again.",
+  "workerDownBanner": "The background worker has not run since {since}: e-mail is not sent or fetched and SLA breaches are not escalated.",
+  "@workerDownBanner": {"placeholders": {"since": {"type": "String"}}},
+  "workerNeverSeenBanner": "No background worker has run yet: e-mail is not sent or fetched and SLA breaches are not escalated.",
+  "workerBannerSemantics": "Background worker"
 }

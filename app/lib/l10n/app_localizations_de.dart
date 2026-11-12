@@ -7868,4 +7868,16 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get tutActionForbidden =>
       'Sie dürfen keine E-Mail in das Helpdesk importieren (dafür ist das Schreibrecht für das Helpdesk nötig). Fragen Sie einen Administrator oder melden Sie sich als solcher an und versuchen Sie es erneut.';
+
+  @override
+  String workerDownBanner(String since) {
+    return 'Die Hintergrundverarbeitung läuft seit $since nicht mehr: E-Mails werden weder gesendet noch abgerufen und SLA-Verletzungen werden nicht eskaliert.';
+  }
+
+  @override
+  String get workerNeverSeenBanner =>
+      'Die Hintergrundverarbeitung ist noch nie gelaufen: E-Mails werden weder gesendet noch abgerufen und SLA-Verletzungen werden nicht eskaliert.';
+
+  @override
+  String get workerBannerSemantics => 'Hintergrundverarbeitung';
 }

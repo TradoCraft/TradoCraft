@@ -2491,5 +2491,8 @@
   "tutInvoicesOpenSecondTitle": "Abra la factura sospechosa",
   "tutInvoicesOpenSecondBody": "Abra la factura TUT-INV-002, la que acaba de registrar, desde la lista de Finanzas.",
   "tutActionFailed": "No se pudo enviar el correo simulado: {reason}. Inténtelo de nuevo.",
-  "tutActionForbidden": "No tiene permiso para importar correo al helpdesk (hace falta el permiso de escritura del helpdesk). Pídalo a un administrador o inicie sesión como tal e inténtelo de nuevo."
+  "tutActionForbidden": "No tiene permiso para importar correo al helpdesk (hace falta el permiso de escritura del helpdesk). Pídalo a un administrador o inicie sesión como tal e inténtelo de nuevo.",
+  "workerDownBanner": "El procesamiento en segundo plano no funciona desde {since}: no se envían ni reciben correos y no se escalan los incumplimientos de SLA.",
+  "workerNeverSeenBanner": "Todavía no ha funcionado ningún procesamiento en segundo plano: no se envían ni reciben correos y no se escalan los incumplimientos de SLA.",
+  "workerBannerSemantics": "Procesamiento en segundo plano"
 }

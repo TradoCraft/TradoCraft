@@ -3351,6 +3351,7 @@ name = "tradocraft-worker"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "chrono",
  "sqlx",
  "tokio",
  "tracing",

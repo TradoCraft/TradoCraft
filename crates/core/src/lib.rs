@@ -15,6 +15,7 @@ pub mod modules;
 pub mod numbering;
 pub mod serde_util;
 pub mod state;
+pub mod worker;
 
 pub use auth::{CurrentUser, Permission};
 pub use error::{AppError, AppResult};

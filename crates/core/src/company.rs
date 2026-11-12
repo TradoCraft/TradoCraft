@@ -133,4 +133,5 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(me))
         .routes(routes!(list_users))
         .merge(crate::admin::router())
+        .merge(crate::worker::router())
 }

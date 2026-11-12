@@ -2491,5 +2491,8 @@
   "tutInvoicesOpenSecondTitle": "Ouvrez la facture suspecte",
   "tutInvoicesOpenSecondBody": "Ouvrez la facture TUT-INV-002, celle que vous venez d'enregistrer, depuis la liste de Finance.",
   "tutActionFailed": "Impossible d'envoyer l'e-mail simulé : {reason}. Réessayez.",
-  "tutActionForbidden": "Vous n'avez pas le droit d'importer des e-mails dans le helpdesk (il faut le droit d'écriture du helpdesk). Demandez à un administrateur ou connectez-vous comme tel, puis réessayez."
+  "tutActionForbidden": "Vous n'avez pas le droit d'importer des e-mails dans le helpdesk (il faut le droit d'écriture du helpdesk). Demandez à un administrateur ou connectez-vous comme tel, puis réessayez.",
+  "workerDownBanner": "Le traitement en arrière-plan ne fonctionne plus depuis le {since} : les e-mails ne sont ni envoyés ni relevés et les dépassements de SLA ne sont pas escaladés.",
+  "workerNeverSeenBanner": "Aucun traitement en arrière-plan n'a encore fonctionné : les e-mails ne sont ni envoyés ni relevés et les dépassements de SLA ne sont pas escaladés.",
+  "workerBannerSemantics": "Traitement en arrière-plan"
 }

@@ -2491,5 +2491,8 @@
   "tutInvoicesOpenSecondTitle": "Öffnen Sie die verdächtige Rechnung",
   "tutInvoicesOpenSecondBody": "Öffnen Sie die Rechnung TUT-INV-002, die Sie gerade erfasst haben, aus der Liste in Finanzen.",
   "tutActionFailed": "Die simulierte E-Mail konnte nicht gesendet werden: {reason}. Versuchen Sie es erneut.",
-  "tutActionForbidden": "Sie dürfen keine E-Mail in das Helpdesk importieren (dafür ist das Schreibrecht für das Helpdesk nötig). Fragen Sie einen Administrator oder melden Sie sich als solcher an und versuchen Sie es erneut."
+  "tutActionForbidden": "Sie dürfen keine E-Mail in das Helpdesk importieren (dafür ist das Schreibrecht für das Helpdesk nötig). Fragen Sie einen Administrator oder melden Sie sich als solcher an und versuchen Sie es erneut.",
+  "workerDownBanner": "Die Hintergrundverarbeitung läuft seit {since} nicht mehr: E-Mails werden weder gesendet noch abgerufen und SLA-Verletzungen werden nicht eskaliert.",
+  "workerNeverSeenBanner": "Die Hintergrundverarbeitung ist noch nie gelaufen: E-Mails werden weder gesendet noch abgerufen und SLA-Verletzungen werden nicht eskaliert.",
+  "workerBannerSemantics": "Hintergrundverarbeitung"
 }

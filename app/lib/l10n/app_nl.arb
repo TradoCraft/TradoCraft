@@ -2491,5 +2491,8 @@
   "tutInvoicesOpenSecondTitle": "Open de verdachte factuur",
   "tutInvoicesOpenSecondBody": "Open factuur TUT-INV-002, die je net registreerde, vanuit de lijst in Financiën.",
   "tutActionFailed": "Het gesimuleerde e-mailbericht kon niet verstuurd worden: {reason}. Probeer het opnieuw.",
-  "tutActionForbidden": "Je mag geen e-mail in de helpdesk importeren (daarvoor is het schrijfrecht voor de helpdesk nodig). Vraag het aan een beheerder of meld je als beheerder aan en probeer opnieuw."
+  "tutActionForbidden": "Je mag geen e-mail in de helpdesk importeren (daarvoor is het schrijfrecht voor de helpdesk nodig). Vraag het aan een beheerder of meld je als beheerder aan en probeer opnieuw.",
+  "workerDownBanner": "De achtergrondverwerking draait niet meer sinds {since}: e-mail wordt niet verstuurd of opgehaald en SLA-overschrijdingen worden niet geëscaleerd.",
+  "workerNeverSeenBanner": "De achtergrondverwerking heeft nog nooit gedraaid: e-mail wordt niet verstuurd of opgehaald en SLA-overschrijdingen worden niet geëscaleerd.",
+  "workerBannerSemantics": "Achtergrondverwerking"
 }

@@ -17,6 +17,7 @@ import '../models/module_info.dart';
 import '../models/modules_input.dart';
 import '../models/role_info.dart';
 import '../models/setup_status.dart';
+import '../models/worker_status.dart';
 
 part 'core_client.g.dart';
 
@@ -62,6 +63,10 @@ abstract class CoreClient {
   Future<void> inviteAdminUser({
     @Path('id') required String id,
   });
+
+  /// The background worker's heartbeat: whether it is running, and its last outage.
+  @GET('/api/v1/admin/worker')
+  Future<WorkerStatus> getWorker();
 
   @GET('/api/v1/me')
   Future<Me> me();
