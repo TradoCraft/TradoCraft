@@ -165,7 +165,7 @@ pub enum Permission {
     /// Create, change and delete one's own reports and share them with the company.
     ReportsWrite,
     /// Configure the identity providers of the installation (ADR 0052). Also requires the admin
-    /// role in the installation's oldest company.
+    /// role in the installation's primary company.
     IdentityAdmin,
 }
 

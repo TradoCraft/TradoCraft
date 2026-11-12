@@ -15,6 +15,7 @@ class Company {
     required this.currency,
     required this.defaultLanguage,
     required this.id,
+    required this.isPrimary,
     required this.name,
     required this.postalCode,
     required this.street,
@@ -37,6 +38,11 @@ class Company {
   @JsonKey(includeIfNull: false)
   final String? iban;
   final String id;
+
+  /// True for the installation's primary company, whose administrators change the.
+  /// installation-wide settings (identity providers, ADR 0052).
+  @JsonKey(name: 'is_primary')
+  final bool isPrimary;
   final String name;
   @JsonKey(includeIfNull: false)
   final String? phone;

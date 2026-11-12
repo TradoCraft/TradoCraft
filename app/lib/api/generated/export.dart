@@ -200,6 +200,7 @@ export 'models/login_link_input.dart';
 export 'models/lookup_result.dart';
 export 'models/lot.dart';
 export 'models/lot_input.dart';
+export 'models/make_primary_result.dart';
 export 'models/mark_paid_input.dart';
 export 'models/mark_shipping_requested_input.dart';
 export 'models/match_report.dart';

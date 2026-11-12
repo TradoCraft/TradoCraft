@@ -25,13 +25,16 @@ pub struct Company {
     pub phone: Option<String>,
     pub iban: Option<String>,
     pub default_language: String,
+    /// True for the installation's primary company, whose administrators change the
+    /// installation-wide settings (identity providers, ADR 0052).
+    pub is_primary: bool,
 }
 
 pub async fn get_company<'e>(db: impl PgExecutor<'e>, id: Uuid) -> Result<Company, sqlx::Error> {
     sqlx::query_as(
         "SELECT id, name, vat_number, street, postal_code, city, country_code::text AS country_code,
                 currency::text AS currency, email, phone, iban,
-                default_language::text AS default_language
+                default_language::text AS default_language, is_primary
          FROM core.companies WHERE id = $1",
     )
     .bind(id)

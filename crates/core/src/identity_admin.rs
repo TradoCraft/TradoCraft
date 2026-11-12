@@ -1,6 +1,6 @@
 //! Administration of the identity providers (ADR 0052) and the public provider list for the
 //! sign-in page. Changing providers is changing who may sign in to the whole installation, so it
-//! needs `identity.admin` and the admin role in the oldest company.
+//! needs `identity.admin` and the admin role in the primary company.
 
 use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
@@ -202,26 +202,32 @@ fn normalise_input(settings: &IdpSettings, i: &IdentityProviderInput) -> AppResu
     })
 }
 
-/// `identity.admin` plus the admin role in the oldest company: an administrator of any company
-/// would otherwise be a global administrator of the installation.
-async fn guard(state: &AppState, user: &CurrentUser) -> AppResult<()> {
-    user.require(Permission::IdentityAdmin)?;
-    let ok: bool = sqlx::query_scalar(
+/// Whether the user is an active administrator of the installation's primary company (the one
+/// flagged `is_primary`; the oldest company when none is, which a migration prevents).
+async fn is_primary_admin(state: &AppState, user: &CurrentUser) -> AppResult<bool> {
+    Ok(sqlx::query_scalar(
         "SELECT EXISTS (
             SELECT 1 FROM core.user_companies uc
             WHERE uc.user_id = $1 AND uc.active AND 'admin' = ANY(uc.roles)
-              AND uc.company_id = (SELECT id FROM core.companies ORDER BY created_at, id LIMIT 1))",
+              AND uc.company_id = (SELECT id FROM core.companies
+                                   ORDER BY is_primary DESC, created_at, id LIMIT 1))",
     )
     .bind(user.user_id)
     .fetch_one(&state.db)
-    .await?;
-    if ok {
+    .await?)
+}
+
+const NOT_PRIMARY_ADMIN: &str =
+    "identity providers are managed by an administrator of the installation's primary company";
+
+/// `identity.admin` plus the admin role in the primary company: an administrator of any company
+/// would otherwise be a global administrator of the installation.
+async fn guard(state: &AppState, user: &CurrentUser) -> AppResult<()> {
+    user.require(Permission::IdentityAdmin)?;
+    if is_primary_admin(state, user).await? {
         Ok(())
     } else {
-        Err(AppError::Forbidden(
-            "identity providers are managed by an administrator of the installation's first company"
-                .into(),
-        ))
+        Err(AppError::Forbidden(NOT_PRIMARY_ADMIN.into()))
     }
 }
 
@@ -789,9 +795,11 @@ pub struct PublicProvider {
     pub client_id: Option<String>,
     /// Scopes to ask for.
     pub scopes: String,
+    /// `database` or `env` (the read-only fallback from `OIDC_ISSUER`), so the page can label it.
+    pub source: String,
 }
 
-/// The enabled identity providers, for the sign-in page. No sign-in needed; only these four
+/// The enabled identity providers, for the sign-in page. No sign-in needed; only these five
 /// fields are exposed. Empty in dev mode.
 #[utoipa::path(get, path = "/auth/providers", tag = "core", security(()),
     responses((status = 200, body = Vec<PublicProvider>)))]
@@ -805,11 +813,74 @@ async fn public_providers(State(state): State<AppState>) -> Json<Vec<PublicProvi
                 issuer: c.issuer.clone(),
                 client_id: c.client_id.clone(),
                 scopes: c.scopes.clone(),
+                source: c.source.as_str().to_string(),
             })
             .collect(),
         _ => vec![],
     };
     Json(list)
+}
+
+/// The company that was made primary.
+#[derive(Debug, Serialize, ToSchema)]
+pub struct MakePrimaryResult {
+    /// The new primary company.
+    pub company_id: Uuid,
+    /// Its name.
+    pub name: String,
+}
+
+/// Makes a company the installation's primary company (the one whose administrators manage the
+/// identity providers). Only an active administrator of the current primary company may do this;
+/// the flag moves in one transaction, so there is always exactly one primary company.
+#[utoipa::path(post, path = "/admin/companies/{id}/make-primary", tag = "admin",
+    params(("id" = Uuid, Path)),
+    responses((status = 200, body = MakePrimaryResult), (status = 403, body = ErrorBody),
+              (status = 404, body = ErrorBody), (status = 409, body = ErrorBody)))]
+async fn make_primary(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Path(id): Path<Uuid>,
+) -> AppResult<Json<MakePrimaryResult>> {
+    guard(&state, &user).await?;
+    let mut tx = state.db.begin().await?;
+    // Serialise swaps by locking the current primary row first.
+    let current: Option<Uuid> =
+        sqlx::query_scalar("SELECT id FROM core.companies WHERE is_primary FOR UPDATE")
+            .fetch_optional(&mut *tx)
+            .await?;
+    let target: Option<(Uuid, String)> =
+        sqlx::query_as("SELECT id, name FROM core.companies WHERE id = $1 FOR UPDATE")
+            .bind(id)
+            .fetch_optional(&mut *tx)
+            .await?;
+    let (_, name) = target.ok_or(AppError::NotFound("company"))?;
+    if current == Some(id) {
+        return Err(AppError::Conflict(
+            "this company is already the primary company".into(),
+        ));
+    }
+    sqlx::query("UPDATE core.companies SET is_primary = false WHERE is_primary")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("UPDATE core.companies SET is_primary = true WHERE id = $1")
+        .bind(id)
+        .execute(&mut *tx)
+        .await?;
+    audit::record(
+        &mut tx,
+        &user,
+        "company",
+        id,
+        "made_primary",
+        serde_json::json!({ "previous": current, "name": name }),
+    )
+    .await?;
+    tx.commit().await?;
+    Ok(Json(MakePrimaryResult {
+        company_id: id,
+        name,
+    }))
 }
 
 /// Routes of the identity provider administration and the public provider list.
@@ -820,4 +891,5 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(test_provider))
         .routes(routes!(set_oidc_subject))
         .routes(routes!(public_providers))
+        .routes(routes!(make_primary))
 }

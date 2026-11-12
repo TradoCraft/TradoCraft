@@ -9,6 +9,7 @@ import '../models/identity_provider_info.dart';
 import '../models/identity_provider_input.dart';
 import '../models/identity_provider_test.dart';
 import '../models/identity_provider_test_result.dart';
+import '../models/make_primary_result.dart';
 import '../models/oidc_subject_input.dart';
 
 part 'admin_client.g.dart';
@@ -16,6 +17,14 @@ part 'admin_client.g.dart';
 @RestApi()
 abstract class AdminClient {
   factory AdminClient(Dio dio, {String? baseUrl}) = _AdminClient;
+
+  /// Makes a company the installation's primary company (the one whose administrators manage the.
+  /// identity providers). Only an active administrator of the current primary company may do this;.
+  /// the flag moves in one transaction, so there is always exactly one primary company.
+  @POST('/api/v1/admin/companies/{id}/make-primary')
+  Future<MakePrimaryResult> makePrimary({
+    @Path('id') required String id,
+  });
 
   /// The identity providers: the database ones and, read-only, the one from the environment.
   @GET('/api/v1/admin/identity-providers')
