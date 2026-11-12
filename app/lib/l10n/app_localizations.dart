@@ -13260,6 +13260,786 @@ abstract class AppLocalizations {
   /// **'The three-way match compares order, receipt and invoice before money moves. Matching invoices are approved and paid, doubtful ones are disputed. Next: building the carts yourself.'**
   String get tutInvoicesDoneBody;
 
+  /// No description provided for @tutManufacturingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Manufacturing'**
+  String get tutManufacturingTitle;
+
+  /// No description provided for @tutManufacturingSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Hats: production manager and production worker. Set up a division, then build five carts from the components.'**
+  String get tutManufacturingSummary;
+
+  /// No description provided for @tutManufacturingNeedsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chapters 1 to 3 first'**
+  String get tutManufacturingNeedsTitle;
+
+  /// No description provided for @tutManufacturingNeedsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This chapter needs the cart with its bill of materials (chapter 1) and components in stock (chapter 3), and could not find the products. Finish those chapters first.'**
+  String get tutManufacturingNeedsBody;
+
+  /// No description provided for @tutManufacturingOpenDivisionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Divisions'**
+  String get tutManufacturingOpenDivisionsTitle;
+
+  /// No description provided for @tutManufacturingOpenDivisionsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Production work is organised in divisions, for example an assembly line. Only an administrator defines them. Open Production and use the gear button at the top right to reach the divisions.'**
+  String get tutManufacturingOpenDivisionsBody;
+
+  /// No description provided for @tutManufacturingDivisionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a division'**
+  String get tutManufacturingDivisionTitle;
+
+  /// No description provided for @tutManufacturingDivisionBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a division with code TUT-ASM and name Tutorial assembly, and tick yourself in the member list: members are the workers of the division.'**
+  String get tutManufacturingDivisionBody;
+
+  /// No description provided for @tutManufacturingDivisionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The dialog lists the users of the company; tick the chip with your own name.'**
+  String get tutManufacturingDivisionHint;
+
+  /// No description provided for @tutManufacturingQueueTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The production queue'**
+  String get tutManufacturingQueueTitle;
+
+  /// No description provided for @tutManufacturingQueueBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Go back to Production. In the queue header choose My divisions: it shows the orders of your divisions plus orders without a division, so nothing unassigned is hidden. You are a member of a division, so this is the default for you; choose All divisions to see everything.'**
+  String get tutManufacturingQueueBody;
+
+  /// No description provided for @tutManufacturingReleaseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Release a production order'**
+  String get tutManufacturingReleaseTitle;
+
+  /// No description provided for @tutManufacturingReleaseBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Press Build for stock, choose TUT-CART and quantity 5, and release. The bill of materials is frozen and the components are reserved. Normally production starts from a sales order line; you will see that in chapter 9.'**
+  String get tutManufacturingReleaseBody;
+
+  /// No description provided for @tutManufacturingReleaseHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Only manufactured products with an active bill of materials can be released.'**
+  String get tutManufacturingReleaseHint;
+
+  /// No description provided for @tutManufacturingAssignTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Give it to the division'**
+  String get tutManufacturingAssignTitle;
+
+  /// No description provided for @tutManufacturingAssignBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The new order is open. Choose the division Tutorial assembly in the Division field and press Save, so that the order shows up in the queue of that division.'**
+  String get tutManufacturingAssignBody;
+
+  /// No description provided for @tutManufacturingStartTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Start the work'**
+  String get tutManufacturingStartTitle;
+
+  /// No description provided for @tutManufacturingStartBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Put on the worker hat and press Start. The order moves from released to in progress.'**
+  String get tutManufacturingStartBody;
+
+  /// No description provided for @tutManufacturingCompleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete the order'**
+  String get tutManufacturingCompleteTitle;
+
+  /// No description provided for @tutManufacturingCompleteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Press Complete. The dialog shows the output quantity (5) and the components consumed. Confirm: the components leave the stock and five finished carts enter it.'**
+  String get tutManufacturingCompleteBody;
+
+  /// No description provided for @tutManufacturingCompleteHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave the planned values as they are; the dialog lets you record scrap or extra consumption when reality differs.'**
+  String get tutManufacturingCompleteHint;
+
+  /// No description provided for @tutManufacturingStockTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Check the stock'**
+  String get tutManufacturingStockTitle;
+
+  /// No description provided for @tutManufacturingStockBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Stock: TUT-CART now has 5 on hand, and each component is down by 5 (25 left of each). Production is what links purchasing to selling.'**
+  String get tutManufacturingStockBody;
+
+  /// No description provided for @tutManufacturingDoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What you learned'**
+  String get tutManufacturingDoneTitle;
+
+  /// No description provided for @tutManufacturingDoneBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Divisions group production workers; a production order freezes the bill of materials, reserves components, is started and completed, and turns components into finished goods. Next: prices.'**
+  String get tutManufacturingDoneBody;
+
+  /// No description provided for @tutPricesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Prices and zones'**
+  String get tutPricesTitle;
+
+  /// No description provided for @tutPricesSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Hat: sales manager. Create a price zone and give the cart a price in two zones.'**
+  String get tutPricesSummary;
+
+  /// No description provided for @tutPricesNeedsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chapter 1 first'**
+  String get tutPricesNeedsTitle;
+
+  /// No description provided for @tutPricesNeedsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This chapter needs the cart from chapter 1 and could not find it. Finish chapter 1 first.'**
+  String get tutPricesNeedsBody;
+
+  /// No description provided for @tutPricesOpenAdminTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the admin area'**
+  String get tutPricesOpenAdminTitle;
+
+  /// No description provided for @tutPricesOpenAdminBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A price depends on the customer\'s zone: a country or market with its own price list. Zones are managed under Admin. Open Admin and choose the Price zones segment; the company already has zones Z1 to Z5.'**
+  String get tutPricesOpenAdminBody;
+
+  /// No description provided for @tutPricesZoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a zone'**
+  String get tutPricesZoneTitle;
+
+  /// No description provided for @tutPricesZoneBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a price zone with code TUT-EXPORT and name Export zone. Customers are placed in a zone later, when you create one.'**
+  String get tutPricesZoneBody;
+
+  /// No description provided for @tutPricesZoneHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the Price zones segment at the top of the Admin page first.'**
+  String get tutPricesZoneHint;
+
+  /// No description provided for @tutPricesOpenCartTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the cart'**
+  String get tutPricesOpenCartTitle;
+
+  /// No description provided for @tutPricesOpenCartBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the product TUT-CART from the Products list. Its first tab, Prices, holds the prices per zone.'**
+  String get tutPricesOpenCartBody;
+
+  /// No description provided for @tutPricesPriceExportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A price in the new zone'**
+  String get tutPricesPriceExportTitle;
+
+  /// No description provided for @tutPricesPriceExportBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Press New price, choose zone TUT-EXPORT, enter unit price 1450 (excluding VAT) and save.'**
+  String get tutPricesPriceExportBody;
+
+  /// No description provided for @tutPricesPriceExportHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The valid-from date defaults to today; a later date schedules a price change.'**
+  String get tutPricesPriceExportHint;
+
+  /// No description provided for @tutPricesPriceHomeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A price in another zone'**
+  String get tutPricesPriceHomeTitle;
+
+  /// No description provided for @tutPricesPriceHomeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a second price for the cart in one of the existing zones, for example Z1 at 1200. The same product can now cost different amounts depending on the customer\'s zone.'**
+  String get tutPricesPriceHomeBody;
+
+  /// No description provided for @tutPricesDoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What you learned'**
+  String get tutPricesDoneTitle;
+
+  /// No description provided for @tutPricesDoneBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A price zone groups customers that get the same price list, and a product has one price per zone and date. Quotations pick the price of the customer\'s zone. Next: a new customer writes in.'**
+  String get tutPricesDoneBody;
+
+  /// No description provided for @tutCustomerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A new customer writes in'**
+  String get tutCustomerTitle;
+
+  /// No description provided for @tutCustomerSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Hats: sales and helpdesk. A customer e-mail becomes a ticket; the sender is new, so you ask for company details and create the customer.'**
+  String get tutCustomerSummary;
+
+  /// No description provided for @tutCustomerNeedsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chapter 6 first'**
+  String get tutCustomerNeedsTitle;
+
+  /// No description provided for @tutCustomerNeedsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This chapter needs the price zone TUT-EXPORT from chapter 6 (the new customer gets it) and could not find it. Finish the earlier chapters first.'**
+  String get tutCustomerNeedsBody;
+
+  /// No description provided for @tutCustomerMail1Title.
+  ///
+  /// In en, this message translates to:
+  /// **'An e-mail arrives'**
+  String get tutCustomerMail1Title;
+
+  /// No description provided for @tutCustomerMail1Body.
+  ///
+  /// In en, this message translates to:
+  /// **'Someone you do not know asks for a quotation for your cart. A real mailbox would deliver the message by itself; here the button below plays the customer and hands a ready-made e-mail (from Maya Okafor, example.test) to the helpdesk, exactly as the mail importer does.'**
+  String get tutCustomerMail1Body;
+
+  /// No description provided for @tutCustomerMail1Action.
+  ///
+  /// In en, this message translates to:
+  /// **'Simulate customer e-mail'**
+  String get tutCustomerMail1Action;
+
+  /// No description provided for @tutCustomerOpenHelpdeskTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The ticket'**
+  String get tutCustomerOpenHelpdeskTitle;
+
+  /// No description provided for @tutCustomerOpenHelpdeskBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Every incoming message becomes a ticket. Open Helpdesk: the ticket from Maya Okafor is in the list.'**
+  String get tutCustomerOpenHelpdeskBody;
+
+  /// No description provided for @tutCustomerOpenTicketTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the ticket'**
+  String get tutCustomerOpenTicketTitle;
+
+  /// No description provided for @tutCustomerOpenTicketBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the ticket. The conversation is on the left; on the right are its properties. No customer is linked yet, because nobody with this address exists in the system.'**
+  String get tutCustomerOpenTicketBody;
+
+  /// No description provided for @tutCustomerReplyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask for company details'**
+  String get tutCustomerReplyTitle;
+
+  /// No description provided for @tutCustomerReplyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Reply to Maya: thank her and ask for the company name, VAT number and address, then press Send. The reply is queued for the mail worker. In test and tutorial environments outgoing mail is only written to files on the server, so Maya never receives it.'**
+  String get tutCustomerReplyBody;
+
+  /// No description provided for @tutCustomerReplyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Make sure the Reply tab (not Internal note) is selected above the message box.'**
+  String get tutCustomerReplyHint;
+
+  /// No description provided for @tutCustomerMail2Title.
+  ///
+  /// In en, this message translates to:
+  /// **'The customer answers'**
+  String get tutCustomerMail2Title;
+
+  /// No description provided for @tutCustomerMail2Body.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the button to play Maya\'s answer. It is a reply to her first message, so it lands in the same ticket as a new message, with her company name, VAT number and address.'**
+  String get tutCustomerMail2Body;
+
+  /// No description provided for @tutCustomerMail2Action.
+  ///
+  /// In en, this message translates to:
+  /// **'Simulate customer e-mail'**
+  String get tutCustomerMail2Action;
+
+  /// No description provided for @tutCustomerReadDetailsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Read the details'**
+  String get tutCustomerReadDetailsTitle;
+
+  /// No description provided for @tutCustomerReadDetailsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Go back to the ticket (reopen it if it does not show the new message yet) and read Maya\'s answer: company Brightwheel Logistics BV, VAT number BE0123456749, Voorbeeldlaan 12, 9000 Gent, Belgium. Press Next when you have it.'**
+  String get tutCustomerReadDetailsBody;
+
+  /// No description provided for @tutCustomerCreateCustomerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create the customer'**
+  String get tutCustomerCreateCustomerTitle;
+
+  /// No description provided for @tutCustomerCreateCustomerBody.
+  ///
+  /// In en, this message translates to:
+  /// **'In the ticket properties press New customer. Fill in name Brightwheel Logistics BV, a code such as TUT-CUST, VAT number, the address, and choose the price zone TUT-EXPORT. The ticket is linked to the new customer when you save.'**
+  String get tutCustomerCreateCustomerBody;
+
+  /// No description provided for @tutCustomerCreateCustomerHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Street Voorbeeldlaan 12, postal code 9000, city Gent, country BE. Language and payment terms can stay as they are.'**
+  String get tutCustomerCreateCustomerHint;
+
+  /// No description provided for @tutCustomerLinkedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The ticket knows its customer'**
+  String get tutCustomerLinkedTitle;
+
+  /// No description provided for @tutCustomerLinkedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The ticket now shows the customer, and new buttons appear: create a lead or start a quotation straight from the ticket. The next chapter makes the quotation. Press Next.'**
+  String get tutCustomerLinkedBody;
+
+  /// No description provided for @tutCustomerDoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What you learned'**
+  String get tutCustomerDoneTitle;
+
+  /// No description provided for @tutCustomerDoneBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Incoming mail becomes tickets, a reply asks the customer for what is missing, and a customer can be created from the ticket so that everything stays linked. Next: the quotation.'**
+  String get tutCustomerDoneBody;
+
+  /// No description provided for @tutQuotationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The quotation'**
+  String get tutQuotationTitle;
+
+  /// No description provided for @tutQuotationSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Hat: salesperson. Quote 8 carts to the new customer, get an answer from production on timing and send it.'**
+  String get tutQuotationSummary;
+
+  /// No description provided for @tutQuotationNeedsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chapter 7 first'**
+  String get tutQuotationNeedsTitle;
+
+  /// No description provided for @tutQuotationNeedsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This chapter needs the customer Brightwheel Logistics BV from chapter 7 and could not find it. Finish chapter 7 first.'**
+  String get tutQuotationNeedsBody;
+
+  /// No description provided for @tutQuotationOpenQuotationsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Quotations'**
+  String get tutQuotationOpenQuotationsTitle;
+
+  /// No description provided for @tutQuotationOpenQuotationsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Quotations in the menu. This list holds every quotation with its number, customer and status.'**
+  String get tutQuotationOpenQuotationsBody;
+
+  /// No description provided for @tutQuotationCreateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Write the quotation'**
+  String get tutQuotationCreateTitle;
+
+  /// No description provided for @tutQuotationCreateBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Press New quotation, choose Brightwheel Logistics BV, add TUT-CART with quantity 8 and save the draft. The unit price comes from the customer\'s price zone, TUT-EXPORT, so it is the 1450 you entered in chapter 6.'**
+  String get tutQuotationCreateBody;
+
+  /// No description provided for @tutQuotationCreateHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the product search in the lines section; type TUT-CART. If the customer is not preselected, search for Brightwheel.'**
+  String get tutQuotationCreateHint;
+
+  /// No description provided for @tutQuotationLeadTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How long will it take?'**
+  String get tutQuotationLeadTitle;
+
+  /// No description provided for @tutQuotationLeadBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The customer asked for a delivery time. Honestly: the app does not calculate lead times automatically yet, and a quotation has no delivery date field. So ask production (put on that hat, look at the production queue and the components in stock) and write the answer into the quotation\'s notes, for example: Delivery about 3 weeks after order. Save the draft.'**
+  String get tutQuotationLeadBody;
+
+  /// No description provided for @tutQuotationLeadHint.
+  ///
+  /// In en, this message translates to:
+  /// **'On an order you can send production a question as a ticket (you will see that in chapter 9); quotations do not have that button yet.'**
+  String get tutQuotationLeadHint;
+
+  /// No description provided for @tutQuotationSendTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Send the quotation'**
+  String get tutQuotationSendTitle;
+
+  /// No description provided for @tutQuotationSendBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Press Mark as sent. From now on the quotation is frozen: it can only be accepted, rejected or revised. (Mail is not sent from this button; you would send the PDF yourself or reply in the ticket.)'**
+  String get tutQuotationSendBody;
+
+  /// No description provided for @tutQuotationPdfTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The PDF'**
+  String get tutQuotationPdfTitle;
+
+  /// No description provided for @tutQuotationPdfBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The PDF button shows the quotation as the customer would see it. It is made on the server with a typesetting tool; on a server without it you get an error message, which does not affect anything else. Look if you like, then press Next.'**
+  String get tutQuotationPdfBody;
+
+  /// No description provided for @tutQuotationPdfHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing breaks if the PDF fails: the quotation is already sent.'**
+  String get tutQuotationPdfHint;
+
+  /// No description provided for @tutQuotationDoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What you learned'**
+  String get tutQuotationDoneTitle;
+
+  /// No description provided for @tutQuotationDoneBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A quotation takes the price of the customer\'s zone, carries notes and freezes when it is sent. Delivery times are still your judgement call, together with production. Next: the customer wants a change.'**
+  String get tutQuotationDoneBody;
+
+  /// No description provided for @tutChangeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Change, order, production'**
+  String get tutChangeTitle;
+
+  /// No description provided for @tutChangeSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Hats: sales and production. Revise the quotation, turn it into an order, build the carts and a few extra for stock.'**
+  String get tutChangeSummary;
+
+  /// No description provided for @tutChangeNeedsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chapter 8 first'**
+  String get tutChangeNeedsTitle;
+
+  /// No description provided for @tutChangeNeedsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This chapter needs the sent quotation from chapter 8 and could not find it. Finish chapter 8 first.'**
+  String get tutChangeNeedsBody;
+
+  /// No description provided for @tutChangeMail3Title.
+  ///
+  /// In en, this message translates to:
+  /// **'The customer answers again'**
+  String get tutChangeMail3Title;
+
+  /// No description provided for @tutChangeMail3Body.
+  ///
+  /// In en, this message translates to:
+  /// **'Maya is happy with the quotation but wants 10 carts instead of 8. Use the button to play her e-mail; it joins the same ticket.'**
+  String get tutChangeMail3Body;
+
+  /// No description provided for @tutChangeMail3Action.
+  ///
+  /// In en, this message translates to:
+  /// **'Simulate customer e-mail'**
+  String get tutChangeMail3Action;
+
+  /// No description provided for @tutChangeOpenQuoteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the sent quotation'**
+  String get tutChangeOpenQuoteTitle;
+
+  /// No description provided for @tutChangeOpenQuoteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A sent quotation is frozen, so a change means a new revision. Open the quotation from chapter 8.'**
+  String get tutChangeOpenQuoteBody;
+
+  /// No description provided for @tutChangeReviseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Make a revision'**
+  String get tutChangeReviseTitle;
+
+  /// No description provided for @tutChangeReviseBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Press New revision and choose Keep agreed prices. The old revision is marked superseded and a new draft with the same number opens.'**
+  String get tutChangeReviseBody;
+
+  /// No description provided for @tutChangeReviseHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Update to current prices would reprice at today\'s price list; here the customer keeps the agreed price.'**
+  String get tutChangeReviseHint;
+
+  /// No description provided for @tutChangeEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Change the quantity'**
+  String get tutChangeEditTitle;
+
+  /// No description provided for @tutChangeEditBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Set the quantity of TUT-CART to 10 and save the draft.'**
+  String get tutChangeEditBody;
+
+  /// No description provided for @tutChangeEditHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The notes of the first revision were copied; adjust them if the delivery time changes.'**
+  String get tutChangeEditHint;
+
+  /// No description provided for @tutChangeSendTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Send the revision'**
+  String get tutChangeSendTitle;
+
+  /// No description provided for @tutChangeSendBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark the new revision as sent, as before.'**
+  String get tutChangeSendBody;
+
+  /// No description provided for @tutChangeAcceptTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The customer accepts'**
+  String get tutChangeAcceptTitle;
+
+  /// No description provided for @tutChangeAcceptBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Maya agrees with the new revision: press Accepted to record it.'**
+  String get tutChangeAcceptBody;
+
+  /// No description provided for @tutChangeConvertTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn it into a sales order'**
+  String get tutChangeConvertTitle;
+
+  /// No description provided for @tutChangeConvertBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Press Convert to order. A draft sales order is created from the accepted revision and opens.'**
+  String get tutChangeConvertBody;
+
+  /// No description provided for @tutChangeConvertHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The dialog asks for the customer\'s own reference; type for instance TUT-PO-1 or leave it empty.'**
+  String get tutChangeConvertHint;
+
+  /// No description provided for @tutChangeOpenOrderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The sales order'**
+  String get tutChangeOpenOrderTitle;
+
+  /// No description provided for @tutChangeOpenOrderBody.
+  ///
+  /// In en, this message translates to:
+  /// **'If the order did not open by itself, open it from Orders. It has the 10 carts, the price and the customer reference. Orders go from draft to sent to confirmed.'**
+  String get tutChangeOpenOrderBody;
+
+  /// No description provided for @tutChangeSendOrderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Send the order confirmation'**
+  String get tutChangeSendOrderTitle;
+
+  /// No description provided for @tutChangeSendOrderBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Press Send order confirmation. The order becomes sent: the customer can now confirm it.'**
+  String get tutChangeSendOrderBody;
+
+  /// No description provided for @tutChangeSendOrderHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Making the confirmation document needs the server\'s typesetting tool; if it is missing the server refuses this step and a server with the tool is needed to continue.'**
+  String get tutChangeSendOrderHint;
+
+  /// No description provided for @tutChangeConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm on the customer\'s behalf'**
+  String get tutChangeConfirmTitle;
+
+  /// No description provided for @tutChangeConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Maya already said yes by e-mail, so press Confirm on behalf and add a note such as confirmed by e-mail. The order is now confirmed and can go to production.'**
+  String get tutChangeConfirmBody;
+
+  /// No description provided for @tutChangeReleaseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'To release'**
+  String get tutChangeReleaseTitle;
+
+  /// No description provided for @tutChangeReleaseBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Put on the production hat. Open Production > To release: the confirmed order line with 10 carts is waiting. Press Release to production to create the production order for exactly that line.'**
+  String get tutChangeReleaseBody;
+
+  /// No description provided for @tutChangeStartTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Start production'**
+  String get tutChangeStartTitle;
+
+  /// No description provided for @tutChangeStartBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Press Start on the new production order.'**
+  String get tutChangeStartBody;
+
+  /// No description provided for @tutChangeCompleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete production'**
+  String get tutChangeCompleteTitle;
+
+  /// No description provided for @tutChangeCompleteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Press Complete and confirm the 10 carts. The components are consumed and the carts go to the order.'**
+  String get tutChangeCompleteBody;
+
+  /// No description provided for @tutChangeReadyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready for shipping'**
+  String get tutChangeReadyTitle;
+
+  /// No description provided for @tutChangeReadyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the order again: with all its lines produced it is ready for shipping. Delivery (picking, shipping, invoicing the customer) is outside this tutorial. Press Next.'**
+  String get tutChangeReadyBody;
+
+  /// No description provided for @tutChangeStockTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A few extra for stock'**
+  String get tutChangeStockTitle;
+
+  /// No description provided for @tutChangeStockBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Production is often ahead of orders. Open Production, press Build for stock and release 4 more carts of TUT-CART. Without an order they simply land in stock when completed.'**
+  String get tutChangeStockBody;
+
+  /// No description provided for @tutChangeStockHint.
+  ///
+  /// In en, this message translates to:
+  /// **'You can start and complete that order as in chapter 5, or leave it released.'**
+  String get tutChangeStockHint;
+
+  /// No description provided for @tutChangeDoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Well done: the whole story'**
+  String get tutChangeDoneTitle;
+
+  /// No description provided for @tutChangeDoneBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You went from suppliers to purchasing, invoices, production, prices, a ticket, a new customer, a revised quotation, an order and production for the order and for stock. Where next: deliveries and shipping, repairs, field service and the reports each have their own menu entry. Any chapter can be replayed from the chapter map; steps that are already done are skipped.'**
+  String get tutChangeDoneBody;
+
   /// No description provided for @tutInvoicesOpenSecondTitle.
   ///
   /// In en, this message translates to:
@@ -13271,6 +14051,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open invoice TUT-INV-002, the one you just registered, from the list in Finance.'**
   String get tutInvoicesOpenSecondBody;
+
+  /// No description provided for @tutActionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not send the simulated e-mail: {reason}. Try again.'**
+  String tutActionFailed(String reason);
+
+  /// No description provided for @tutActionForbidden.
+  ///
+  /// In en, this message translates to:
+  /// **'You are not allowed to import e-mail into the helpdesk (it needs the helpdesk write permission). Ask an administrator, or sign in as one, and try again.'**
+  String get tutActionForbidden;
 }
 
 class _AppLocalizationsDelegate

@@ -23,6 +23,7 @@ import 'ticket_extras.dart';
 import 'ticket_split.dart';
 import 'tickets_page.dart';
 import '../../shared/app_icons.dart';
+import '../tutorial/targets.dart';
 
 final teamsProvider = FutureProvider.autoDispose<List<Team>>(
   (ref) => ref.watch(apiProvider).helpdesk.listTeams(),
@@ -809,11 +810,11 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
                   ),
                 ),
                 const Spacer(),
-                FilledButton.icon(
+                TutorialTarget(id: 'ticket-send', child: FilledButton.icon(
                   onPressed: _busy ? null : _send,
                   icon: Icon(_reply ? AppIcons.send : AppIcons.noteAdd),
                   label: Text(_reply ? l.send : l.addNote),
-                ),
+                )),
               ],
             ),
           ],
@@ -1009,11 +1010,11 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
                 ),
               ),
               if (_customerId == null && canWrite)
-                TextButton.icon(
+                TutorialTarget(id: 'ticket-new-customer', child: TextButton.icon(
                   onPressed: _newCustomer,
                   icon: const Icon(AppIcons.personAddAlt),
                   label: Text(l.newCustomer),
-                ),
+                )),
             ],
           ),
         ),
@@ -1214,7 +1215,7 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
                 },
               ),
             if (t.customerId != null && perms.contains('quotations.write'))
-              OutlinedButton.icon(
+              TutorialTarget(id: 'ticket-new-quotation', child: OutlinedButton.icon(
                 icon: const Icon(AppIcons.add),
                 label: Text(l.newQuotation),
                 onPressed: () async {
@@ -1226,7 +1227,7 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
                   );
                   _loadLinks();
                 },
-              ),
+              )),
             if (t.orderId != null)
               OutlinedButton.icon(
                 icon: const Icon(AppIcons.inventory),

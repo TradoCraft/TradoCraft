@@ -7374,9 +7374,479 @@ class AppLocalizationsNl extends AppLocalizations {
       'De driewegmatch vergelijkt order, ontvangst en factuur voordat er geld beweegt. Kloppende facturen worden goedgekeurd en betaald, twijfelachtige betwist. Volgende stap: de karretjes zelf bouwen.';
 
   @override
+  String get tutManufacturingTitle => 'Produceren';
+
+  @override
+  String get tutManufacturingSummary =>
+      'Hoeden: productiebeheerder en productiemedewerker. Richt een afdeling in en bouw vijf karretjes uit de componenten.';
+
+  @override
+  String get tutManufacturingNeedsTitle => 'Eerst hoofdstuk 1 tot 3';
+
+  @override
+  String get tutManufacturingNeedsBody =>
+      'Dit hoofdstuk heeft het karretje met stuklijst (hoofdstuk 1) en componenten op voorraad (hoofdstuk 3) nodig en vond de producten niet. Rond die hoofdstukken eerst af.';
+
+  @override
+  String get tutManufacturingOpenDivisionsTitle => 'Afdelingen';
+
+  @override
+  String get tutManufacturingOpenDivisionsBody =>
+      'Productiewerk is georganiseerd in afdelingen, bijvoorbeeld een assemblagelijn. Alleen een beheerder definieert ze. Open Productie en gebruik de tandwielknop rechtsboven om bij de afdelingen te komen.';
+
+  @override
+  String get tutManufacturingDivisionTitle => 'Maak een afdeling';
+
+  @override
+  String get tutManufacturingDivisionBody =>
+      'Voeg een afdeling toe met code TUT-ASM en naam Tutorial assembly, en vink jezelf aan in de ledenlijst: leden zijn de werknemers van de afdeling.';
+
+  @override
+  String get tutManufacturingDivisionHint =>
+      'Het dialoogvenster toont de gebruikers van het bedrijf; vink het label met je eigen naam aan.';
+
+  @override
+  String get tutManufacturingQueueTitle => 'De productiewachtrij';
+
+  @override
+  String get tutManufacturingQueueBody =>
+      'Ga terug naar Productie. Kies bovenaan de wachtrij Mijn afdelingen: dat toont de orders van je afdelingen plus orders zonder afdeling, zodat niets onbeheerds verborgen blijft. Je bent lid van een afdeling, dus dit is voor jou de standaard; kies Alle afdelingen om alles te zien.';
+
+  @override
+  String get tutManufacturingReleaseTitle => 'Geef een productieorder vrij';
+
+  @override
+  String get tutManufacturingReleaseBody =>
+      'Druk op Voor voorraad maken, kies TUT-CART met hoeveelheid 5 en geef vrij. De stuklijst wordt bevroren en de componenten worden gereserveerd. Normaal start productie vanuit een verkooporderregel; dat zie je in hoofdstuk 9.';
+
+  @override
+  String get tutManufacturingReleaseHint =>
+      'Alleen geproduceerde producten met een actieve stuklijst kunnen vrijgegeven worden.';
+
+  @override
+  String get tutManufacturingAssignTitle => 'Wijs het toe aan de afdeling';
+
+  @override
+  String get tutManufacturingAssignBody =>
+      'De nieuwe order staat open. Kies de afdeling Tutorial assembly in het veld Afdeling en druk op Opslaan, zodat de order in de wachtrij van die afdeling verschijnt.';
+
+  @override
+  String get tutManufacturingStartTitle => 'Start het werk';
+
+  @override
+  String get tutManufacturingStartBody =>
+      'Zet de werknemershoed op en druk op Starten. De order gaat van vrijgegeven naar in uitvoering.';
+
+  @override
+  String get tutManufacturingCompleteTitle => 'Rond de order af';
+
+  @override
+  String get tutManufacturingCompleteBody =>
+      'Druk op Afronden. Het dialoogvenster toont de uitvoerhoeveelheid (5) en de verbruikte componenten. Bevestig: de componenten verdwijnen uit de voorraad en vijf afgewerkte karretjes komen erin.';
+
+  @override
+  String get tutManufacturingCompleteHint =>
+      'Laat de geplande waarden staan; het dialoogvenster laat je uitval of extra verbruik vastleggen als de werkelijkheid afwijkt.';
+
+  @override
+  String get tutManufacturingStockTitle => 'Controleer de voorraad';
+
+  @override
+  String get tutManufacturingStockBody =>
+      'Open Voorraad: TUT-CART heeft nu 5 op voorraad en elke component is met 5 gedaald (25 over van elk). Productie is de schakel tussen inkoop en verkoop.';
+
+  @override
+  String get tutManufacturingDoneTitle => 'Wat je geleerd hebt';
+
+  @override
+  String get tutManufacturingDoneBody =>
+      'Afdelingen groeperen productiemedewerkers; een productieorder bevriest de stuklijst, reserveert componenten, wordt gestart en voltooid en maakt van componenten eindproducten. Volgende stap: prijzen.';
+
+  @override
+  String get tutPricesTitle => 'Prijzen en zones';
+
+  @override
+  String get tutPricesSummary =>
+      'Hoed: verkoopbeheerder. Maak een prijszone en geef het karretje een prijs in twee zones.';
+
+  @override
+  String get tutPricesNeedsTitle => 'Eerst hoofdstuk 1';
+
+  @override
+  String get tutPricesNeedsBody =>
+      'Dit hoofdstuk heeft het karretje uit hoofdstuk 1 nodig en vond het niet. Rond eerst hoofdstuk 1 af.';
+
+  @override
+  String get tutPricesOpenAdminTitle => 'Open het beheer';
+
+  @override
+  String get tutPricesOpenAdminBody =>
+      'Een prijs hangt af van de zone van de klant: een land of markt met een eigen prijslijst. Zones beheer je onder Beheer. Open Beheer en kies het segment Prijszones; het bedrijf heeft al zones Z1 tot Z5.';
+
+  @override
+  String get tutPricesZoneTitle => 'Maak een zone';
+
+  @override
+  String get tutPricesZoneBody =>
+      'Voeg een prijszone toe met code TUT-EXPORT en naam Exportzone. Klanten krijgen later een zone, wanneer je er een aanmaakt.';
+
+  @override
+  String get tutPricesZoneHint =>
+      'Kies eerst het segment Prijszones bovenaan de pagina Beheer.';
+
+  @override
+  String get tutPricesOpenCartTitle => 'Open het karretje';
+
+  @override
+  String get tutPricesOpenCartBody =>
+      'Open het product TUT-CART uit de lijst Producten. Het eerste tabblad, Prijzen, bevat de prijzen per zone.';
+
+  @override
+  String get tutPricesPriceExportTitle => 'Een prijs in de nieuwe zone';
+
+  @override
+  String get tutPricesPriceExportBody =>
+      'Druk op Nieuwe prijs, kies zone TUT-EXPORT, voer stukprijs 1450 (excl. btw) in en bewaar.';
+
+  @override
+  String get tutPricesPriceExportHint =>
+      'De geldig-vanafdatum staat standaard op vandaag; een latere datum plant een prijswijziging.';
+
+  @override
+  String get tutPricesPriceHomeTitle => 'Een prijs in een andere zone';
+
+  @override
+  String get tutPricesPriceHomeBody =>
+      'Voeg een tweede prijs voor het karretje toe in een van de bestaande zones, bijvoorbeeld Z1 voor 1200. Hetzelfde product kan nu verschillend kosten afhankelijk van de zone van de klant.';
+
+  @override
+  String get tutPricesDoneTitle => 'Wat je geleerd hebt';
+
+  @override
+  String get tutPricesDoneBody =>
+      'Een prijszone groepeert klanten met dezelfde prijslijst en een product heeft één prijs per zone en datum. Offertes nemen de prijs van de zone van de klant. Volgende stap: een nieuwe klant neemt contact op.';
+
+  @override
+  String get tutCustomerTitle => 'Een nieuwe klant neemt contact op';
+
+  @override
+  String get tutCustomerSummary =>
+      'Hoeden: verkoop en helpdesk. Een e-mail van een klant wordt een ticket; de afzender is nieuw, dus je vraagt bedrijfsgegevens en maakt de klant aan.';
+
+  @override
+  String get tutCustomerNeedsTitle => 'Eerst hoofdstuk 6';
+
+  @override
+  String get tutCustomerNeedsBody =>
+      'Dit hoofdstuk heeft de prijszone TUT-EXPORT uit hoofdstuk 6 nodig (de nieuwe klant krijgt die) en vond ze niet. Rond eerst de vorige hoofdstukken af.';
+
+  @override
+  String get tutCustomerMail1Title => 'Er komt een e-mail binnen';
+
+  @override
+  String get tutCustomerMail1Body =>
+      'Iemand die je niet kent vraagt een offerte voor je karretje. Een echte mailbox levert het bericht zelf af; hier speelt de knop hieronder de klant en geeft een kant-en-klare e-mail (van Maya Okafor, example.test) aan de helpdesk, precies zoals de mailimporter doet.';
+
+  @override
+  String get tutCustomerMail1Action => 'Klant-e-mail simuleren';
+
+  @override
+  String get tutCustomerOpenHelpdeskTitle => 'Het ticket';
+
+  @override
+  String get tutCustomerOpenHelpdeskBody =>
+      'Elk binnenkomend bericht wordt een ticket. Open Helpdesk: het ticket van Maya Okafor staat in de lijst.';
+
+  @override
+  String get tutCustomerOpenTicketTitle => 'Open het ticket';
+
+  @override
+  String get tutCustomerOpenTicketBody =>
+      'Open het ticket. Links staat het gesprek, rechts de eigenschappen. Er is nog geen klant gekoppeld, want niemand met dit adres bestaat in het systeem.';
+
+  @override
+  String get tutCustomerReplyTitle => 'Vraag bedrijfsgegevens';
+
+  @override
+  String get tutCustomerReplyBody =>
+      'Antwoord Maya: bedank haar en vraag naar bedrijfsnaam, btw-nummer en adres, en druk op Verzenden. Het antwoord komt in de wachtrij van de mailworker. In test- en tutorialomgevingen wordt uitgaande mail alleen naar bestanden op de server geschreven, dus Maya ontvangt niets.';
+
+  @override
+  String get tutCustomerReplyHint =>
+      'Zorg dat het tabblad Antwoord (niet Interne notitie) boven het berichtvak is gekozen.';
+
+  @override
+  String get tutCustomerMail2Title => 'De klant antwoordt';
+
+  @override
+  String get tutCustomerMail2Body =>
+      'Gebruik de knop om het antwoord van Maya te spelen. Het is een antwoord op haar eerste bericht, dus het komt als nieuw bericht in hetzelfde ticket, met bedrijfsnaam, btw-nummer en adres.';
+
+  @override
+  String get tutCustomerMail2Action => 'Klant-e-mail simuleren';
+
+  @override
+  String get tutCustomerReadDetailsTitle => 'Lees de gegevens';
+
+  @override
+  String get tutCustomerReadDetailsBody =>
+      'Ga terug naar het ticket (open het opnieuw als het nieuwe bericht nog niet getoond wordt) en lees het antwoord van Maya: bedrijf Brightwheel Logistics BV, btw-nummer BE0123456749, Voorbeeldlaan 12, 9000 Gent, België. Druk op Volgende als je het hebt.';
+
+  @override
+  String get tutCustomerCreateCustomerTitle => 'Maak de klant aan';
+
+  @override
+  String get tutCustomerCreateCustomerBody =>
+      'Druk in de ticketeigenschappen op Nieuwe klant. Vul naam Brightwheel Logistics BV in, een code zoals TUT-CUST, btw-nummer, het adres, en kies de prijszone TUT-EXPORT. Het ticket wordt aan de nieuwe klant gekoppeld als je bewaart.';
+
+  @override
+  String get tutCustomerCreateCustomerHint =>
+      'Straat Voorbeeldlaan 12, postcode 9000, plaats Gent, land BE. Taal en betaaltermijn mogen blijven zoals ze zijn.';
+
+  @override
+  String get tutCustomerLinkedTitle => 'Het ticket kent zijn klant';
+
+  @override
+  String get tutCustomerLinkedBody =>
+      'Het ticket toont nu de klant en er verschijnen nieuwe knoppen: een lead maken of direct vanuit het ticket een offerte starten. Het volgende hoofdstuk maakt de offerte. Druk op Volgende.';
+
+  @override
+  String get tutCustomerDoneTitle => 'Wat je geleerd hebt';
+
+  @override
+  String get tutCustomerDoneBody =>
+      'Binnenkomende mail wordt tickets, een antwoord vraagt de klant om wat ontbreekt, en vanuit het ticket kan een klant aangemaakt worden zodat alles gekoppeld blijft. Volgende stap: de offerte.';
+
+  @override
+  String get tutQuotationTitle => 'De offerte';
+
+  @override
+  String get tutQuotationSummary =>
+      'Hoed: verkoper. Offreer 8 karretjes aan de nieuwe klant, vraag productie naar de timing en verstuur.';
+
+  @override
+  String get tutQuotationNeedsTitle => 'Eerst hoofdstuk 7';
+
+  @override
+  String get tutQuotationNeedsBody =>
+      'Dit hoofdstuk heeft klant Brightwheel Logistics BV uit hoofdstuk 7 nodig en vond die niet. Rond eerst hoofdstuk 7 af.';
+
+  @override
+  String get tutQuotationOpenQuotationsTitle => 'Offertes';
+
+  @override
+  String get tutQuotationOpenQuotationsBody =>
+      'Open Offertes in het menu. Deze lijst bevat elke offerte met nummer, klant en status.';
+
+  @override
+  String get tutQuotationCreateTitle => 'Maak de offerte';
+
+  @override
+  String get tutQuotationCreateBody =>
+      'Druk op Nieuwe offerte, kies Brightwheel Logistics BV, voeg TUT-CART toe met aantal 8 en bewaar het concept. De stukprijs komt uit de prijszone van de klant, TUT-EXPORT, dus de 1450 die je in hoofdstuk 6 invoerde.';
+
+  @override
+  String get tutQuotationCreateHint =>
+      'Gebruik het productzoekveld bij de regels; typ TUT-CART. Als de klant niet vooraf gekozen is, zoek op Brightwheel.';
+
+  @override
+  String get tutQuotationLeadTitle => 'Hoe lang duurt het?';
+
+  @override
+  String get tutQuotationLeadBody =>
+      'De klant vroeg om een levertijd. Eerlijk gezegd: de app berekent nog geen levertijden automatisch en een offerte heeft geen leverdatumveld. Vraag het dus aan productie (zet die hoed op, kijk naar de productiewachtrij en de componenten op voorraad) en schrijf het antwoord in de notities van de offerte, bijvoorbeeld: levering ongeveer 3 weken na bestelling. Bewaar het concept.';
+
+  @override
+  String get tutQuotationLeadHint =>
+      'Bij een order kun je productie een vraag als ticket sturen (dat zie je in hoofdstuk 9); offertes hebben die knop nog niet.';
+
+  @override
+  String get tutQuotationSendTitle => 'Verstuur de offerte';
+
+  @override
+  String get tutQuotationSendBody =>
+      'Druk op Markeren als verzonden. Vanaf nu ligt de offerte vast: ze kan alleen nog aanvaard, afgewezen of herzien worden. (Deze knop verstuurt geen mail; je stuurt de pdf zelf of antwoordt in het ticket.)';
+
+  @override
+  String get tutQuotationPdfTitle => 'De pdf';
+
+  @override
+  String get tutQuotationPdfBody =>
+      'De pdf-knop toont de offerte zoals de klant ze zou zien. Ze wordt op de server gemaakt met een zetprogramma; op een server zonder dat krijg je een foutmelding, die verder niets beïnvloedt. Kijk gerust en druk op Volgende.';
+
+  @override
+  String get tutQuotationPdfHint =>
+      'Er breekt niets als de pdf mislukt: de offerte is al verstuurd.';
+
+  @override
+  String get tutQuotationDoneTitle => 'Wat je geleerd hebt';
+
+  @override
+  String get tutQuotationDoneBody =>
+      'Een offerte neemt de prijs van de zone van de klant, draagt notities en ligt vast zodra ze verstuurd is. Levertijden blijven je eigen inschatting, samen met productie. Volgende stap: de klant wil een wijziging.';
+
+  @override
+  String get tutChangeTitle => 'Wijziging, order, productie';
+
+  @override
+  String get tutChangeSummary =>
+      'Hoeden: verkoop en productie. Herzie de offerte, maak er een order van, bouw de karretjes en enkele extra voor voorraad.';
+
+  @override
+  String get tutChangeNeedsTitle => 'Eerst hoofdstuk 8';
+
+  @override
+  String get tutChangeNeedsBody =>
+      'Dit hoofdstuk heeft de verstuurde offerte uit hoofdstuk 8 nodig en vond ze niet. Rond eerst hoofdstuk 8 af.';
+
+  @override
+  String get tutChangeMail3Title => 'De klant antwoordt opnieuw';
+
+  @override
+  String get tutChangeMail3Body =>
+      'Maya is tevreden met de offerte maar wil 10 karretjes in plaats van 8. Gebruik de knop om haar e-mail te spelen; ze komt in hetzelfde ticket.';
+
+  @override
+  String get tutChangeMail3Action => 'Klant-e-mail simuleren';
+
+  @override
+  String get tutChangeOpenQuoteTitle => 'Open de verstuurde offerte';
+
+  @override
+  String get tutChangeOpenQuoteBody =>
+      'Een verstuurde offerte ligt vast, dus een wijziging betekent een nieuwe revisie. Open de offerte uit hoofdstuk 8.';
+
+  @override
+  String get tutChangeReviseTitle => 'Maak een revisie';
+
+  @override
+  String get tutChangeReviseBody =>
+      'Druk op Nieuwe revisie en kies Afgesproken prijzen behouden. De oude revisie wordt vervangen en een nieuw concept met hetzelfde nummer opent.';
+
+  @override
+  String get tutChangeReviseHint =>
+      'Bijwerken naar actuele prijzen zou herprijzen met de prijslijst van vandaag; hier behoudt de klant de afgesproken prijs.';
+
+  @override
+  String get tutChangeEditTitle => 'Wijzig het aantal';
+
+  @override
+  String get tutChangeEditBody =>
+      'Zet het aantal van TUT-CART op 10 en bewaar het concept.';
+
+  @override
+  String get tutChangeEditHint =>
+      'De notities van de eerste revisie zijn gekopieerd; pas ze aan als de levertijd verandert.';
+
+  @override
+  String get tutChangeSendTitle => 'Verstuur de revisie';
+
+  @override
+  String get tutChangeSendBody =>
+      'Markeer de nieuwe revisie als verzonden, zoals eerder.';
+
+  @override
+  String get tutChangeAcceptTitle => 'De klant gaat akkoord';
+
+  @override
+  String get tutChangeAcceptBody =>
+      'Maya gaat akkoord met de nieuwe revisie: druk op Aanvaard om dat vast te leggen.';
+
+  @override
+  String get tutChangeConvertTitle => 'Maak er een verkooporder van';
+
+  @override
+  String get tutChangeConvertBody =>
+      'Druk op Omzetten naar order. Uit de aanvaarde revisie ontstaat een conceptverkooporder die opent.';
+
+  @override
+  String get tutChangeConvertHint =>
+      'Het dialoogvenster vraagt de eigen referentie van de klant; typ bijvoorbeeld TUT-PO-1 of laat het leeg.';
+
+  @override
+  String get tutChangeOpenOrderTitle => 'De verkooporder';
+
+  @override
+  String get tutChangeOpenOrderBody =>
+      'Is de order niet vanzelf geopend, open hem dan via Orders. Hij heeft de 10 karretjes, de prijs en de klantreferentie. Orders gaan van concept naar verstuurd naar bevestigd.';
+
+  @override
+  String get tutChangeSendOrderTitle => 'Verstuur de orderbevestiging';
+
+  @override
+  String get tutChangeSendOrderBody =>
+      'Druk op Orderbevestiging verzenden. De order wordt verstuurd: de klant kan hem nu bevestigen.';
+
+  @override
+  String get tutChangeSendOrderHint =>
+      'Het bevestigingsdocument maken vraagt het zetprogramma van de server; ontbreekt dat, dan weigert de server deze stap en is een server met dat programma nodig om verder te gaan.';
+
+  @override
+  String get tutChangeConfirmTitle => 'Bevestig namens de klant';
+
+  @override
+  String get tutChangeConfirmBody =>
+      'Maya zei al ja per e-mail, dus druk op Bevestigen namens de klant en voeg een notitie toe zoals per e-mail bevestigd. De order is nu bevestigd en kan naar productie.';
+
+  @override
+  String get tutChangeReleaseTitle => 'Vrij te geven';
+
+  @override
+  String get tutChangeReleaseBody =>
+      'Zet de productiehoed op. Open Productie > Vrij te geven: de bevestigde orderregel met 10 karretjes wacht. Druk op Vrijgeven aan productie om de productieorder voor precies die regel te maken.';
+
+  @override
+  String get tutChangeStartTitle => 'Start de productie';
+
+  @override
+  String get tutChangeStartBody =>
+      'Druk op Starten bij de nieuwe productieorder.';
+
+  @override
+  String get tutChangeCompleteTitle => 'Rond de productie af';
+
+  @override
+  String get tutChangeCompleteBody =>
+      'Druk op Afronden en bevestig de 10 karretjes. De componenten worden verbruikt en de karretjes gaan naar de order.';
+
+  @override
+  String get tutChangeReadyTitle => 'Klaar voor verzending';
+
+  @override
+  String get tutChangeReadyBody =>
+      'Open de order opnieuw: met alle regels geproduceerd is hij klaar voor verzending. Levering (picken, verzenden, de klant factureren) valt buiten deze tutorial. Druk op Volgende.';
+
+  @override
+  String get tutChangeStockTitle => 'Enkele extra voor voorraad';
+
+  @override
+  String get tutChangeStockBody =>
+      'Productie loopt vaak vooruit op orders. Open Productie, druk op Voor voorraad maken en geef nog 4 karretjes TUT-CART vrij. Zonder order komen ze bij voltooiing gewoon op voorraad.';
+
+  @override
+  String get tutChangeStockHint =>
+      'Je kunt die order starten en voltooien zoals in hoofdstuk 5, of hem vrijgegeven laten.';
+
+  @override
+  String get tutChangeDoneTitle => 'Goed gedaan: het hele verhaal';
+
+  @override
+  String get tutChangeDoneBody =>
+      'Je ging van leveranciers naar inkoop, facturen, productie, prijzen, een ticket, een nieuwe klant, een herziene offerte, een order en productie voor de order en voor voorraad. Wat nu: leveringen en verzending, herstellingen, buitendienst en rapporten hebben elk hun eigen menu-item. Elk hoofdstuk kan opnieuw gespeeld worden vanuit de hoofdstukkaart; stappen die al klaar zijn worden overgeslagen.';
+
+  @override
   String get tutInvoicesOpenSecondTitle => 'Open de verdachte factuur';
 
   @override
   String get tutInvoicesOpenSecondBody =>
       'Open factuur TUT-INV-002, die je net registreerde, vanuit de lijst in Financiën.';
+
+  @override
+  String tutActionFailed(String reason) {
+    return 'Het gesimuleerde e-mailbericht kon niet verstuurd worden: $reason. Probeer het opnieuw.';
+  }
+
+  @override
+  String get tutActionForbidden =>
+      'Je mag geen e-mail in de helpdesk importeren (daarvoor is het schrijfrecht voor de helpdesk nodig). Vraag het aan een beheerder of meld je als beheerder aan en probeer opnieuw.';
 }

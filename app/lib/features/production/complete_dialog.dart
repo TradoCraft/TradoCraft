@@ -7,6 +7,7 @@ import '../../l10n/l10n.dart';
 import '../../shared/format.dart';
 import '../inventory/inventory_common.dart';
 import '../planning/board_model.dart';
+import '../tutorial/targets.dart';
 
 /// What the planner fills in when a production order is completed: the output (quantity, place,
 /// lot or serial numbers) and, per component, what was really used, scrapped and (for serial
@@ -313,11 +314,11 @@ class _CompleteDialogState extends ConsumerState<CompleteDialog> {
           onPressed: () => Navigator.pop(context),
           child: Text(l.cancel),
         ),
-        FilledButton(
+        TutorialTarget(id: 'production-complete-save', child: FilledButton(
           key: const ValueKey('complete-save'),
           onPressed: _saving ? null : _save,
           child: Text(l.productionComplete),
-        ),
+        )),
       ],
     );
   }

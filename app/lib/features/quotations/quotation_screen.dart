@@ -20,6 +20,7 @@ import '../../shared/remark_history.dart';
 import '../../shared/search_picker.dart';
 import '../../l10n/l10n.dart';
 import '../../shared/app_icons.dart';
+import '../tutorial/targets.dart';
 
 /// An editable line of a draft. Prices are never computed here: they come from
 /// the server's pricing preview, matched by position.
@@ -680,32 +681,32 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
     final s = q?.status;
     return [
       if (_editable)
-        FilledButton.icon(
+        TutorialTarget(id: 'quotation-save', child: FilledButton.icon(
           onPressed: _busy ? null : _save,
           icon: const Icon(AppIcons.save),
           label: Text(context.l10n.saveDraft),
-        ),
+        )),
       if (q != null)
-        OutlinedButton.icon(
+        TutorialTarget(id: 'quotation-pdf', child: OutlinedButton.icon(
           onPressed: _busy ? null : _pdf,
           icon: const Icon(AppIcons.pictureAsPdf),
           label: const Text('PDF'),
-        ),
+        )),
       if (s == QuotationStatus.draft)
-        OutlinedButton.icon(
+        TutorialTarget(id: 'quotation-send', child: OutlinedButton.icon(
           onPressed: _busy
               ? null
               : () => _send(canWrite && can(ref, 'shipping.manage')),
           icon: const Icon(AppIcons.send),
           label: Text(context.l10n.markAsSent),
-        ),
+        )),
       if (s == QuotationStatus.sent) ...[
-        OutlinedButton(
+        TutorialTarget(id: 'quotation-accept', child: OutlinedButton(
           onPressed: _busy
               ? null
               : () => _transition((id) => _api.sales.acceptQuotation(id: id)),
           child: Text(context.l10n.accepted),
-        ),
+        )),
         OutlinedButton(
           onPressed: _busy
               ? null
@@ -714,17 +715,17 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
         ),
       ],
       if (s == QuotationStatus.sent || s == QuotationStatus.accepted)
-        FilledButton.icon(
+        TutorialTarget(id: 'quotation-convert', child: FilledButton.icon(
           onPressed: _busy ? null : _convert,
           icon: const Icon(AppIcons.shoppingCartCheckout),
           label: Text(context.l10n.convertToOrder),
-        ),
+        )),
       if (s == QuotationStatus.sent || s == QuotationStatus.rejected)
-        OutlinedButton.icon(
+        TutorialTarget(id: 'quotation-revise', child: OutlinedButton.icon(
           onPressed: _busy ? null : _revise,
           icon: const Icon(AppIcons.editNote),
           label: Text(context.l10n.newRevision),
-        ),
+        )),
     ];
   }
 
@@ -1737,10 +1738,10 @@ class RevisionDialog extends ConsumerWidget {
           onPressed: () => Navigator.pop(context),
           child: Text(context.l10n.cancel),
         ),
-        OutlinedButton(
+        TutorialTarget(id: 'quotation-revise-keep', child: OutlinedButton(
           onPressed: () => Navigator.pop(context, RevisionPricing.keep),
           child: Text(context.l10n.keepAgreedPrices),
-        ),
+        )),
         FilledButton(
           onPressed: () => Navigator.pop(context, RevisionPricing.current),
           child: Text(context.l10n.updateToCurrentPrices),

@@ -7374,9 +7374,479 @@ class AppLocalizationsEs extends AppLocalizations {
       'La conciliación a tres bandas compara pedido, recepción y factura antes de mover dinero. Las facturas correctas se aprueban y pagan, las dudosas se disputan. Siguiente: fabricar los carritos.';
 
   @override
+  String get tutManufacturingTitle => 'Fabricación';
+
+  @override
+  String get tutManufacturingSummary =>
+      'Sombreros: jefe de producción y operario. Configure una división y fabrique cinco carritos con los componentes.';
+
+  @override
+  String get tutManufacturingNeedsTitle => 'Primero los capítulos 1 a 3';
+
+  @override
+  String get tutManufacturingNeedsBody =>
+      'Este capítulo necesita el carrito con su lista de materiales (capítulo 1) y componentes en stock (capítulo 3), y no ha encontrado los productos. Termine antes esos capítulos.';
+
+  @override
+  String get tutManufacturingOpenDivisionsTitle => 'Divisiones';
+
+  @override
+  String get tutManufacturingOpenDivisionsBody =>
+      'El trabajo de producción se organiza en divisiones, por ejemplo una línea de montaje. Solo un administrador las define. Abra Producción y use el botón de engranaje de arriba a la derecha para llegar a las divisiones.';
+
+  @override
+  String get tutManufacturingDivisionTitle => 'Cree una división';
+
+  @override
+  String get tutManufacturingDivisionBody =>
+      'Añada una división con código TUT-ASM y nombre Tutorial assembly, y márquese en la lista de miembros: los miembros son los operarios de la división.';
+
+  @override
+  String get tutManufacturingDivisionHint =>
+      'El diálogo lista los usuarios de la empresa; marque la etiqueta con su nombre.';
+
+  @override
+  String get tutManufacturingQueueTitle => 'La cola de producción';
+
+  @override
+  String get tutManufacturingQueueBody =>
+      'Vuelva a Producción. En la cabecera de la cola elija Mis divisiones: muestra las órdenes de sus divisiones más las que no tienen división, así no se oculta nada sin asignar. Es miembro de una división, así que es la opción por defecto; elija Todas las divisiones para verlo todo.';
+
+  @override
+  String get tutManufacturingReleaseTitle => 'Libere una orden de producción';
+
+  @override
+  String get tutManufacturingReleaseBody =>
+      'Pulse Fabricar para stock, elija TUT-CART con cantidad 5 y libere. La lista de materiales se congela y los componentes se reservan. Normalmente la producción parte de una línea de pedido de venta; lo verá en el capítulo 9.';
+
+  @override
+  String get tutManufacturingReleaseHint =>
+      'Solo los productos fabricados con lista de materiales activa se pueden liberar.';
+
+  @override
+  String get tutManufacturingAssignTitle => 'Asígnelo a la división';
+
+  @override
+  String get tutManufacturingAssignBody =>
+      'La nueva orden está abierta. Elija la división Tutorial assembly en el campo División y pulse Guardar, para que aparezca en la cola de esa división.';
+
+  @override
+  String get tutManufacturingStartTitle => 'Empiece el trabajo';
+
+  @override
+  String get tutManufacturingStartBody =>
+      'Póngase el sombrero de operario y pulse Iniciar. La orden pasa de liberada a en curso.';
+
+  @override
+  String get tutManufacturingCompleteTitle => 'Complete la orden';
+
+  @override
+  String get tutManufacturingCompleteBody =>
+      'Pulse Completar. El diálogo muestra la cantidad producida (5) y los componentes consumidos. Confirme: los componentes salen del stock y entran cinco carritos terminados.';
+
+  @override
+  String get tutManufacturingCompleteHint =>
+      'Deje los valores previstos; el diálogo permite registrar desechos o consumo extra si la realidad difiere.';
+
+  @override
+  String get tutManufacturingStockTitle => 'Compruebe el stock';
+
+  @override
+  String get tutManufacturingStockBody =>
+      'Abra Stock: TUT-CART tiene ahora 5 y cada componente ha bajado 5 (quedan 25 de cada uno). La producción une compras y ventas.';
+
+  @override
+  String get tutManufacturingDoneTitle => 'Lo que ha aprendido';
+
+  @override
+  String get tutManufacturingDoneBody =>
+      'Las divisiones agrupan operarios; una orden de producción congela la lista de materiales, reserva componentes, se inicia y completa, y convierte componentes en producto terminado. Siguiente: los precios.';
+
+  @override
+  String get tutPricesTitle => 'Precios y zonas';
+
+  @override
+  String get tutPricesSummary =>
+      'Sombrero: jefe de ventas. Cree una zona de precios y dé al carrito un precio en dos zonas.';
+
+  @override
+  String get tutPricesNeedsTitle => 'Primero el capítulo 1';
+
+  @override
+  String get tutPricesNeedsBody =>
+      'Este capítulo necesita el carrito del capítulo 1 y no lo ha encontrado. Termine antes el capítulo 1.';
+
+  @override
+  String get tutPricesOpenAdminTitle => 'Abra la administración';
+
+  @override
+  String get tutPricesOpenAdminBody =>
+      'Un precio depende de la zona del cliente: un país o mercado con su propia lista. Las zonas se gestionan en Administración. Abra Administración y elija el segmento Zonas de precios; la empresa ya tiene las zonas Z1 a Z5.';
+
+  @override
+  String get tutPricesZoneTitle => 'Cree una zona';
+
+  @override
+  String get tutPricesZoneBody =>
+      'Añada una zona de precios con código TUT-EXPORT y nombre Zona export. Los clientes reciben una zona después, al crearlos.';
+
+  @override
+  String get tutPricesZoneHint =>
+      'Elija primero el segmento Zonas de precios en la parte superior de la página de Administración.';
+
+  @override
+  String get tutPricesOpenCartTitle => 'Abra el carrito';
+
+  @override
+  String get tutPricesOpenCartBody =>
+      'Abra el producto TUT-CART desde la lista de productos. Su primera pestaña, Precios, contiene los precios por zona.';
+
+  @override
+  String get tutPricesPriceExportTitle => 'Un precio en la nueva zona';
+
+  @override
+  String get tutPricesPriceExportBody =>
+      'Pulse Nuevo precio, elija la zona TUT-EXPORT, introduzca el precio unitario 1450 (sin IVA) y guarde.';
+
+  @override
+  String get tutPricesPriceExportHint =>
+      'La fecha de inicio es hoy por defecto; una fecha posterior programa un cambio de precio.';
+
+  @override
+  String get tutPricesPriceHomeTitle => 'Un precio en otra zona';
+
+  @override
+  String get tutPricesPriceHomeBody =>
+      'Añada un segundo precio para el carrito en una de las zonas existentes, por ejemplo Z1 a 1200. El mismo producto puede costar distinto según la zona del cliente.';
+
+  @override
+  String get tutPricesDoneTitle => 'Lo que ha aprendido';
+
+  @override
+  String get tutPricesDoneBody =>
+      'Una zona de precios agrupa clientes con la misma lista y un producto tiene un precio por zona y fecha. Los presupuestos toman el precio de la zona del cliente. Siguiente: escribe un cliente nuevo.';
+
+  @override
+  String get tutCustomerTitle => 'Escribe un cliente nuevo';
+
+  @override
+  String get tutCustomerSummary =>
+      'Sombreros: ventas y helpdesk. Un correo de cliente se convierte en ticket; el remitente es nuevo, así que pide los datos de la empresa y crea el cliente.';
+
+  @override
+  String get tutCustomerNeedsTitle => 'Primero el capítulo 6';
+
+  @override
+  String get tutCustomerNeedsBody =>
+      'Este capítulo necesita la zona de precios TUT-EXPORT del capítulo 6 (el cliente nuevo la recibe) y no la ha encontrado. Termine antes los capítulos anteriores.';
+
+  @override
+  String get tutCustomerMail1Title => 'Llega un correo';
+
+  @override
+  String get tutCustomerMail1Body =>
+      'Alguien que no conoce pide un presupuesto para su carrito. Un buzón real entregaría el mensaje solo; aquí el botón de abajo hace de cliente y entrega al helpdesk un correo ya preparado (de Maya Okafor, example.test), igual que el importador de correo.';
+
+  @override
+  String get tutCustomerMail1Action => 'Simular correo del cliente';
+
+  @override
+  String get tutCustomerOpenHelpdeskTitle => 'El ticket';
+
+  @override
+  String get tutCustomerOpenHelpdeskBody =>
+      'Cada mensaje entrante se convierte en ticket. Abra Helpdesk: el ticket de Maya Okafor está en la lista.';
+
+  @override
+  String get tutCustomerOpenTicketTitle => 'Abra el ticket';
+
+  @override
+  String get tutCustomerOpenTicketBody =>
+      'Abra el ticket. La conversación está a la izquierda y las propiedades a la derecha. Aún no hay cliente vinculado, porque nadie con esta dirección existe en el sistema.';
+
+  @override
+  String get tutCustomerReplyTitle => 'Pida los datos de la empresa';
+
+  @override
+  String get tutCustomerReplyBody =>
+      'Responda a Maya: agradézcale y pida razón social, NIF-IVA y dirección, y pulse Enviar. La respuesta queda en la cola del worker de correo. En entornos de prueba y tutorial el correo saliente solo se escribe en archivos del servidor, así que Maya no recibe nada.';
+
+  @override
+  String get tutCustomerReplyHint =>
+      'Compruebe que sobre el cuadro de mensaje esté seleccionada la pestaña Respuesta (no Nota interna).';
+
+  @override
+  String get tutCustomerMail2Title => 'El cliente responde';
+
+  @override
+  String get tutCustomerMail2Body =>
+      'Use el botón para reproducir la respuesta de Maya. Es una respuesta a su primer mensaje, así que llega al mismo ticket como mensaje nuevo, con razón social, NIF-IVA y dirección.';
+
+  @override
+  String get tutCustomerMail2Action => 'Simular correo del cliente';
+
+  @override
+  String get tutCustomerReadDetailsTitle => 'Lea los datos';
+
+  @override
+  String get tutCustomerReadDetailsBody =>
+      'Vuelva al ticket (ábralo de nuevo si aún no muestra el mensaje) y lea la respuesta de Maya: empresa Brightwheel Logistics BV, NIF-IVA BE0123456749, Voorbeeldlaan 12, 9000 Gante, Bélgica. Pulse Siguiente cuando los tenga.';
+
+  @override
+  String get tutCustomerCreateCustomerTitle => 'Cree el cliente';
+
+  @override
+  String get tutCustomerCreateCustomerBody =>
+      'En las propiedades del ticket pulse Nuevo cliente. Rellene el nombre Brightwheel Logistics BV, un código como TUT-CUST, el NIF-IVA, la dirección, y elija la zona de precios TUT-EXPORT. El ticket se vincula al nuevo cliente al guardar.';
+
+  @override
+  String get tutCustomerCreateCustomerHint =>
+      'Calle Voorbeeldlaan 12, código postal 9000, ciudad Gante, país BE. El idioma y las condiciones de pago pueden quedar como están.';
+
+  @override
+  String get tutCustomerLinkedTitle => 'El ticket conoce a su cliente';
+
+  @override
+  String get tutCustomerLinkedBody =>
+      'El ticket muestra ya al cliente y aparecen botones nuevos: crear un lead o empezar un presupuesto directamente desde el ticket. El siguiente capítulo hace el presupuesto. Pulse Siguiente.';
+
+  @override
+  String get tutCustomerDoneTitle => 'Lo que ha aprendido';
+
+  @override
+  String get tutCustomerDoneBody =>
+      'El correo entrante se convierte en tickets, una respuesta pide al cliente lo que falta, y desde el ticket se puede crear un cliente para que todo quede vinculado. Siguiente: el presupuesto.';
+
+  @override
+  String get tutQuotationTitle => 'El presupuesto';
+
+  @override
+  String get tutQuotationSummary =>
+      'Sombrero: comercial. Presupueste 8 carritos al cliente nuevo, pida a producción el plazo y envíelo.';
+
+  @override
+  String get tutQuotationNeedsTitle => 'Primero el capítulo 7';
+
+  @override
+  String get tutQuotationNeedsBody =>
+      'Este capítulo necesita al cliente Brightwheel Logistics BV del capítulo 7 y no lo ha encontrado. Termine antes el capítulo 7.';
+
+  @override
+  String get tutQuotationOpenQuotationsTitle => 'Presupuestos';
+
+  @override
+  String get tutQuotationOpenQuotationsBody =>
+      'Abra Presupuestos en el menú. Esta lista contiene cada presupuesto con su número, cliente y estado.';
+
+  @override
+  String get tutQuotationCreateTitle => 'Redacte el presupuesto';
+
+  @override
+  String get tutQuotationCreateBody =>
+      'Pulse Nuevo presupuesto, elija Brightwheel Logistics BV, añada TUT-CART con cantidad 8 y guarde el borrador. El precio unitario sale de la zona de precios del cliente, TUT-EXPORT: son los 1450 del capítulo 6.';
+
+  @override
+  String get tutQuotationCreateHint =>
+      'Use la búsqueda de producto en las líneas; escriba TUT-CART. Si el cliente no está preseleccionado, busque Brightwheel.';
+
+  @override
+  String get tutQuotationLeadTitle => '¿Cuánto tardará?';
+
+  @override
+  String get tutQuotationLeadBody =>
+      'El cliente pidió un plazo de entrega. Siendo honestos: la app aún no calcula plazos automáticamente y un presupuesto no tiene campo de fecha de entrega. Pregunte entonces a producción (póngase ese sombrero, mire la cola de producción y los componentes en stock) y escriba la respuesta en las notas del presupuesto, por ejemplo: entrega unas 3 semanas tras el pedido. Guarde el borrador.';
+
+  @override
+  String get tutQuotationLeadHint =>
+      'En un pedido puede enviar una pregunta a producción como ticket (se ve en el capítulo 9); los presupuestos aún no tienen ese botón.';
+
+  @override
+  String get tutQuotationSendTitle => 'Envíe el presupuesto';
+
+  @override
+  String get tutQuotationSendBody =>
+      'Pulse Marcar como enviado. Desde ahora el presupuesto queda congelado: solo puede aceptarse, rechazarse o revisarse. (Este botón no envía correo; usted envía el PDF o responde en el ticket.)';
+
+  @override
+  String get tutQuotationPdfTitle => 'El PDF';
+
+  @override
+  String get tutQuotationPdfBody =>
+      'El botón PDF muestra el presupuesto como lo vería el cliente. Se genera en el servidor con una herramienta de composición; sin ella verá un mensaje de error que no afecta a nada más. Mírelo si quiere y pulse Siguiente.';
+
+  @override
+  String get tutQuotationPdfHint =>
+      'No se rompe nada si el PDF falla: el presupuesto ya está enviado.';
+
+  @override
+  String get tutQuotationDoneTitle => 'Lo que ha aprendido';
+
+  @override
+  String get tutQuotationDoneBody =>
+      'Un presupuesto toma el precio de la zona del cliente, lleva notas y se congela al enviarse. Los plazos siguen siendo su criterio, junto con producción. Siguiente: el cliente quiere un cambio.';
+
+  @override
+  String get tutChangeTitle => 'Cambio, pedido, producción';
+
+  @override
+  String get tutChangeSummary =>
+      'Sombreros: ventas y producción. Revise el presupuesto, conviértalo en pedido, fabrique los carritos y algunos más para stock.';
+
+  @override
+  String get tutChangeNeedsTitle => 'Primero el capítulo 8';
+
+  @override
+  String get tutChangeNeedsBody =>
+      'Este capítulo necesita el presupuesto enviado del capítulo 8 y no lo ha encontrado. Termine antes el capítulo 8.';
+
+  @override
+  String get tutChangeMail3Title => 'El cliente responde otra vez';
+
+  @override
+  String get tutChangeMail3Body =>
+      'Maya está contenta con el presupuesto pero quiere 10 carritos en lugar de 8. Use el botón para reproducir su correo; llega al mismo ticket.';
+
+  @override
+  String get tutChangeMail3Action => 'Simular correo del cliente';
+
+  @override
+  String get tutChangeOpenQuoteTitle => 'Abra el presupuesto enviado';
+
+  @override
+  String get tutChangeOpenQuoteBody =>
+      'Un presupuesto enviado está congelado, así que un cambio significa una nueva revisión. Abra el presupuesto del capítulo 8.';
+
+  @override
+  String get tutChangeReviseTitle => 'Cree una revisión';
+
+  @override
+  String get tutChangeReviseBody =>
+      'Pulse Nueva revisión y elija Mantener precios acordados. La revisión anterior queda sustituida y se abre un nuevo borrador con el mismo número.';
+
+  @override
+  String get tutChangeReviseHint =>
+      'Actualizar a precios actuales recalcularía con la lista de hoy; aquí el cliente conserva el precio acordado.';
+
+  @override
+  String get tutChangeEditTitle => 'Cambie la cantidad';
+
+  @override
+  String get tutChangeEditBody =>
+      'Ponga la cantidad de TUT-CART en 10 y guarde el borrador.';
+
+  @override
+  String get tutChangeEditHint =>
+      'Las notas de la primera revisión se copiaron; ajústelas si cambia el plazo.';
+
+  @override
+  String get tutChangeSendTitle => 'Envíe la revisión';
+
+  @override
+  String get tutChangeSendBody =>
+      'Marque la nueva revisión como enviada, como antes.';
+
+  @override
+  String get tutChangeAcceptTitle => 'El cliente acepta';
+
+  @override
+  String get tutChangeAcceptBody =>
+      'Maya está de acuerdo con la nueva revisión: pulse Aceptado para registrarlo.';
+
+  @override
+  String get tutChangeConvertTitle => 'Conviértalo en pedido de venta';
+
+  @override
+  String get tutChangeConvertBody =>
+      'Pulse Convertir en pedido. Se crea un pedido de venta en borrador a partir de la revisión aceptada y se abre.';
+
+  @override
+  String get tutChangeConvertHint =>
+      'El diálogo pide la referencia propia del cliente; escriba por ejemplo TUT-PO-1 o déjela vacía.';
+
+  @override
+  String get tutChangeOpenOrderTitle => 'El pedido de venta';
+
+  @override
+  String get tutChangeOpenOrderBody =>
+      'Si el pedido no se abrió solo, ábralo desde Pedidos. Tiene los 10 carritos, el precio y la referencia del cliente. Los pedidos pasan de borrador a enviado y a confirmado.';
+
+  @override
+  String get tutChangeSendOrderTitle => 'Envíe la confirmación del pedido';
+
+  @override
+  String get tutChangeSendOrderBody =>
+      'Pulse Enviar confirmación de pedido. El pedido pasa a enviado: el cliente ya puede confirmarlo.';
+
+  @override
+  String get tutChangeSendOrderHint =>
+      'Generar el documento de confirmación requiere la herramienta de composición del servidor; si falta, el servidor rechaza este paso y hace falta un servidor que la tenga para continuar.';
+
+  @override
+  String get tutChangeConfirmTitle => 'Confirme en nombre del cliente';
+
+  @override
+  String get tutChangeConfirmBody =>
+      'Maya ya dijo que sí por correo: pulse Confirmar en nombre del cliente y añada una nota como confirmado por correo. El pedido queda confirmado y puede ir a producción.';
+
+  @override
+  String get tutChangeReleaseTitle => 'Por liberar';
+
+  @override
+  String get tutChangeReleaseBody =>
+      'Póngase el sombrero de producción. Abra Producción > Por liberar: la línea de pedido confirmada con 10 carritos espera. Pulse Liberar a producción para crear la orden de producción de esa línea.';
+
+  @override
+  String get tutChangeStartTitle => 'Inicie la producción';
+
+  @override
+  String get tutChangeStartBody =>
+      'Pulse Iniciar en la nueva orden de producción.';
+
+  @override
+  String get tutChangeCompleteTitle => 'Complete la producción';
+
+  @override
+  String get tutChangeCompleteBody =>
+      'Pulse Completar y confirme los 10 carritos. Se consumen los componentes y los carritos van al pedido.';
+
+  @override
+  String get tutChangeReadyTitle => 'Listo para enviar';
+
+  @override
+  String get tutChangeReadyBody =>
+      'Abra el pedido de nuevo: con todas sus líneas producidas está listo para enviar. La entrega (preparación, envío, facturación al cliente) queda fuera de este tutorial. Pulse Siguiente.';
+
+  @override
+  String get tutChangeStockTitle => 'Algunos más para stock';
+
+  @override
+  String get tutChangeStockBody =>
+      'La producción suele adelantarse a los pedidos. Abra Producción, pulse Fabricar para stock y libere 4 carritos más de TUT-CART. Sin pedido, simplemente entran en stock al completarse.';
+
+  @override
+  String get tutChangeStockHint =>
+      'Puede iniciar y completar esa orden como en el capítulo 5, o dejarla liberada.';
+
+  @override
+  String get tutChangeDoneTitle => 'Bien hecho: toda la historia';
+
+  @override
+  String get tutChangeDoneBody =>
+      'Ha pasado de proveedores a compras, facturas, producción, precios, un ticket, un cliente nuevo, un presupuesto revisado, un pedido y la producción para el pedido y para stock. Y ahora: entregas y envíos, reparaciones, servicio de campo e informes tienen cada uno su entrada de menú. Cualquier capítulo se puede repetir desde el mapa de capítulos; los pasos ya hechos se omiten.';
+
+  @override
   String get tutInvoicesOpenSecondTitle => 'Abra la factura sospechosa';
 
   @override
   String get tutInvoicesOpenSecondBody =>
       'Abra la factura TUT-INV-002, la que acaba de registrar, desde la lista de Finanzas.';
+
+  @override
+  String tutActionFailed(String reason) {
+    return 'No se pudo enviar el correo simulado: $reason. Inténtelo de nuevo.';
+  }
+
+  @override
+  String get tutActionForbidden =>
+      'No tiene permiso para importar correo al helpdesk (hace falta el permiso de escritura del helpdesk). Pídalo a un administrador o inicie sesión como tal e inténtelo de nuevo.';
 }

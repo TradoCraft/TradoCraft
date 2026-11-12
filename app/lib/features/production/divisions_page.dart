@@ -7,6 +7,7 @@ import '../../shared/actions.dart';
 import '../../shared/app_icons.dart';
 import '../helpdesk/ticket_screen.dart' show usersProvider;
 import 'production_page.dart';
+import '../tutorial/targets.dart';
 
 /// The production divisions, kept by the administrator (`production.admin`).
 class DivisionsPage extends ConsumerWidget {
@@ -30,12 +31,12 @@ class DivisionsPage extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: Text(l.productionDivisions)),
       floatingActionButton: admin
-          ? FloatingActionButton.extended(
+          ? TutorialTarget(id: 'division-add', child: FloatingActionButton.extended(
               key: const ValueKey('add-division'),
               onPressed: edit,
               icon: const Icon(AppIcons.add),
               label: Text(l.productionDivisionAdd),
-            )
+            ))
           : null,
       body: !admin
           ? Center(child: Text(l.noPermission))
@@ -202,11 +203,11 @@ class _DivisionDialogState extends ConsumerState<_DivisionDialog> {
           onPressed: () => Navigator.pop(context),
           child: Text(l.cancel),
         ),
-        FilledButton(
+        TutorialTarget(id: 'division-form-save', child: FilledButton(
           key: const ValueKey('division-save'),
           onPressed: _save,
           child: Text(l.save),
-        ),
+        )),
       ],
     );
   }

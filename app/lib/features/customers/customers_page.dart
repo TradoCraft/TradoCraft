@@ -56,6 +56,7 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
           onImported: () => _list.currentState?.reload(),
         ),
       ],
+      createTargetId: 'customers-create',
       createLabel: context.l10n.newCustomer,
       onCreate: canWrite ? () => showCustomerForm(context) : null,
       onOpen: (c) =>

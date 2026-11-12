@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/api.dart';
 import '../../l10n/l10n.dart';
 import '../../shared/actions.dart';
+import '../tutorial/targets.dart';
 
 /// Price zone management: list, create, edit and delete (the server refuses deleting a zone in use).
 class PriceZonesPage extends ConsumerWidget {
@@ -69,12 +70,12 @@ class PriceZonesPage extends ConsumerWidget {
               ),
             ),
             if (canWrite)
-              FilledButton.icon(
+              TutorialTarget(id: 'zone-new', child: FilledButton.icon(
                 key: const ValueKey('zone-new'),
                 onPressed: () => _edit(context, ref),
                 icon: const Icon(Icons.add),
                 label: Text(l.newPriceZone),
-              ),
+              )),
           ],
         ),
         const SizedBox(height: 8),
@@ -237,11 +238,11 @@ class _PriceZoneDialogState extends ConsumerState<PriceZoneDialog> {
           onPressed: _busy ? null : () => Navigator.pop(context, false),
           child: Text(l.cancel),
         ),
-        FilledButton(
+        TutorialTarget(id: 'zone-form-save', child: FilledButton(
           key: const ValueKey('zone-save'),
           onPressed: _busy ? null : _save,
           child: Text(l.save),
-        ),
+        )),
       ],
     );
   }

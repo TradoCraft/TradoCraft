@@ -359,6 +359,23 @@ class NarratorCard extends ConsumerWidget {
                             ),
                             const SizedBox(height: 6),
                             Text(body, style: theme.textTheme.bodyMedium),
+                            if (s.actionError != null) ...[
+                              const SizedBox(height: 6),
+                              Semantics(
+                                liveRegion: true,
+                                child: Text(
+                                  s.actionError!.status == 403
+                                      ? l.tutActionForbidden
+                                      : l.tutActionFailed(
+                                          s.actionError!.reason,
+                                        ),
+                                  key: const ValueKey('tutorial-action-error'),
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.error,
+                                  ),
+                                ),
+                              ),
+                            ],
                             if (hint != null) ...[
                               const SizedBox(height: 6),
                               Text(
@@ -387,7 +404,7 @@ class NarratorCard extends ConsumerWidget {
                         if (completion is ActionCompletion)
                           FilledButton(
                             key: const ValueKey('tutorial-action'),
-                            onPressed: c.runAction,
+                            onPressed: s.actionBusy ? null : c.runAction,
                             child: Text(
                               tutorialText(l, stepKey(m, step, 'Action')),
                             ),
