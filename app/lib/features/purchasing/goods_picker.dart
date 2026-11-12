@@ -48,7 +48,9 @@ String tickQuantity(SupplierProduct entry) {
   return moq != null && moq > 0 ? trimDecimal(entry.moq) : '1';
 }
 
-/// Purchase order line drafts for every product of [entries] with a non-blank quantity.
+/// Purchase order line drafts for every chosen product of [entries]: the same rule as the
+/// checkbox, a quantity above zero. Rows with a blank, zero or unparsable quantity are not on
+/// the order.
 ///
 /// The drafts own new controllers; the caller disposes them. Price and supplier article code
 /// come from the price list entry.
@@ -57,7 +59,7 @@ List<PoLineDraft> selectedGoodsLines(
   GoodsSelection selection,
 ) => [
   for (final e in entries)
-    if (selection.qty(e.productId).text.trim().isNotEmpty)
+    if (selection.isChosen(e.productId))
       PoLineDraft(
         productId: e.productId,
         label: '${e.productCode} · ${e.productName}',

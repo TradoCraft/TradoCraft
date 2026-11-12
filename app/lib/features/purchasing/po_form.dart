@@ -72,9 +72,12 @@ class _NewPoDialogState extends ConsumerState<_NewPoDialog> {
   Supplier? _supplier;
   List<SupplierProduct> _entries = const [];
   bool _loadingGoods = false;
+  bool _catalogError = false;
   bool _clearedNotice = false;
   final _selection = GoodsSelection();
   DateTime? _expected;
+  // True while [_expected] was derived from a lead time rather than picked by the user.
+  bool _expectedAuto = false;
   final _notes = TextEditingController();
 
   // Products that are not on the supplier's price list, added through the line editor.
@@ -107,12 +110,21 @@ class _NewPoDialogState extends ConsumerState<_NewPoDialog> {
         d.dispose();
       }
       _extra.clear();
+      // Only a date derived from the old supplier's lead time is dropped.
+      if (_expectedAuto) _expected = null;
     }
     setState(() {
       _supplier = s;
+      _clearedNotice = changed && hadChoice;
+    });
+    await _loadGoods(s);
+  }
+
+  Future<void> _loadGoods(Supplier s) async {
+    setState(() {
       _entries = const [];
       _loadingGoods = true;
-      _clearedNotice = changed && hadChoice;
+      _catalogError = false;
     });
     try {
       final list = await ref
@@ -127,7 +139,10 @@ class _NewPoDialogState extends ConsumerState<_NewPoDialog> {
       }
     } catch (_) {
       if (mounted && _supplier?.id == s.id) {
-        setState(() => _loadingGoods = false);
+        setState(() {
+          _loadingGoods = false;
+          _catalogError = true;
+        });
       }
     }
   }
@@ -136,14 +151,16 @@ class _NewPoDialogState extends ConsumerState<_NewPoDialog> {
     setState(() {
       _error = null;
       _clearedNotice = false;
-      // The supplier's lead time defaults the expected date when none is set.
-      if (_expected == null) {
+      // The lead time of the chosen goods defaults the date, unless the user picked one.
+      if (_expected == null || _expectedAuto) {
+        _expected = null;
         for (final e in _entries) {
           if (_selection.isChosen(e.productId) && e.leadTimeDays > 0) {
             _expected = DateTime.now().add(Duration(days: e.leadTimeDays));
             break;
           }
         }
+        _expectedAuto = _expected != null;
       }
     });
   }
@@ -151,11 +168,11 @@ class _NewPoDialogState extends ConsumerState<_NewPoDialog> {
   String _summary(AppLocalizations l) {
     var count = 0;
     var total = 0.0;
-    var currency = _supplier?.currency ?? 'EUR';
+    final currencies = <String>{};
     for (final e in _entries) {
       if (!_selection.isChosen(e.productId)) continue;
       count++;
-      currency = e.currency;
+      currencies.add(e.currency);
       final q = double.parse(
         parseDecimalInput(_selection.qty(e.productId).text)!,
       );
@@ -166,11 +183,21 @@ class _NewPoDialogState extends ConsumerState<_NewPoDialog> {
       final p = double.tryParse(parseDecimalInput(d.price.text) ?? '');
       if (d.productId == null || q == null) continue;
       count++;
+      currencies.add(_supplier?.currency ?? 'EUR');
       total += q * (p ?? 0);
+    }
+    if (currencies.length > 1) {
+      final names = currencies.toList()..sort();
+      return l.purchGoodsMixedCurrencies(count, names.join(', '));
     }
     return l.purchGoodsSummary(
       count,
-      money(total.toStringAsFixed(2), currency: currency),
+      money(
+        total.toStringAsFixed(2),
+        currency: currencies.isEmpty
+            ? (_supplier?.currency ?? 'EUR')
+            : currencies.first,
+      ),
     );
   }
 
@@ -249,7 +276,10 @@ class _NewPoDialogState extends ConsumerState<_NewPoDialog> {
               PoDateField(
                 label: l.purchExpectedDate,
                 value: _expected,
-                onChanged: (d) => setState(() => _expected = d),
+                onChanged: (d) => setState(() {
+                  _expected = d;
+                  _expectedAuto = false;
+                }),
               ),
               const SizedBox(height: 12),
               TextField(
@@ -280,13 +310,37 @@ class _NewPoDialogState extends ConsumerState<_NewPoDialog> {
                       key: const ValueKey('po-goods-cleared'),
                     ),
                   ),
-                if (_entries.isNotEmpty) Text(l.purchGoodsHeader),
-                SupplierGoodsPicker(
-                  key: ValueKey('po-goods-${_supplier!.id}'),
-                  entries: _entries,
-                  selection: _selection,
-                  onChanged: _goodsChanged,
-                ),
+                if (_catalogError)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            l.purchGoodsLoadFailed,
+                            key: const ValueKey('po-goods-load-error'),
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.error,
+                            ),
+                          ),
+                        ),
+                        TextButton(
+                          key: const ValueKey('po-goods-retry'),
+                          onPressed: () => _loadGoods(_supplier!),
+                          child: Text(l.retry),
+                        ),
+                      ],
+                    ),
+                  )
+                else ...[
+                  if (_entries.isNotEmpty) Text(l.purchGoodsHeader),
+                  SupplierGoodsPicker(
+                    key: ValueKey('po-goods-${_supplier!.id}'),
+                    entries: _entries,
+                    selection: _selection,
+                    onChanged: _goodsChanged,
+                  ),
+                ],
                 const SizedBox(height: 8),
                 Text(
                   l.purchGoodsOther,

@@ -33,6 +33,8 @@ Map<String, Object?> _entry(
   String moq = '1.0000',
   String sku = '',
   String price = '10.0000',
+  String currency = 'EUR',
+  int lead = 0,
 }) => {
   'id': 'sp-$supplier-$product',
   'company_id': 'co',
@@ -43,10 +45,10 @@ Map<String, Object?> _entry(
   'product_name': name,
   'supplier_product_code': sku,
   'supplier_product_name': '',
-  'currency': 'EUR',
+  'currency': currency,
   'unit_price': price,
   'moq': moq,
-  'lead_time_days': 0,
+  'lead_time_days': lead,
   'is_preferred': false,
   'created_at': '2027-01-01T00:00:00Z',
   'updated_at': '2027-01-01T00:00:00Z',
@@ -252,7 +254,7 @@ void main() {
     await _open(tester, _http());
     await _supplierPick(tester, 'empty', 'SUP-3 · Empty');
     expect(find.byKey(const ValueKey('po-goods-empty')), findsOneWidget);
-    expect(find.textContaining('price list first'), findsOneWidget);
+    expect(find.textContaining('Other products'), findsWidgets);
   });
 
   testWidgets('a long list scrolls inside a bounded area', (tester) async {
@@ -307,5 +309,114 @@ void main() {
     // Going back to the first supplier does not bring the old tick back.
     await _supplierPick(tester, 'acme', 'SUP-1 · Acme');
     expect(_checked(tester, 'p1'), isFalse);
+  });
+
+  testWidgets('a blank, zero or invalid quantity is not on the order', (
+    tester,
+  ) async {
+    final http = _http();
+    await _open(tester, http);
+    await _supplierPick(tester, 'acme', 'SUP-1 · Acme');
+    await tester.enterText(
+      find.byKey(const ValueKey('po-goods-qty-p1')),
+      'abc',
+    );
+    await tester.enterText(find.byKey(const ValueKey('po-goods-qty-p3')), '0');
+    await tester.enterText(find.byKey(const ValueKey('po-goods-qty-p2')), '4');
+    await tester.pumpAndSettle();
+    expect(_checked(tester, 'p1'), isFalse);
+    await tester.tap(find.byKey(const ValueKey('po-save')));
+    await tester.pumpAndSettle();
+    final lines =
+        ((http.bodies['POST /api/v1/purchase-orders']! as Map)['lines']!
+            as List);
+    expect(lines.length, 1);
+    expect((lines.single as Map)['product_id'], 'p2');
+  });
+
+  testWidgets(
+    'a failed goods load shows an error with retry, not the empty state',
+    (tester) async {
+      var fail = true;
+      final http = FakeHttp({
+        'GET /api/v1/suppliers': (_) => [_supplier('s1', 'SUP-1', 'Acme')],
+        'GET /api/v1/suppliers/s1/products': (_) => fail
+            ? const FakeStatus(500, {'error': 'x', 'message': 'down'})
+            : [_entry('s1', 'p1', 'MOT-1', 'Motor')],
+      });
+      await _open(tester, http);
+      await _supplierPick(tester, 'acme', 'SUP-1 · Acme');
+      expect(find.byKey(const ValueKey('po-goods-load-error')), findsOneWidget);
+      expect(find.byKey(const ValueKey('po-goods-empty')), findsNothing);
+      // The manual editor stays usable.
+      expect(find.byKey(const ValueKey('po-line-add')), findsOneWidget);
+      fail = false;
+      await tester.tap(find.byKey(const ValueKey('po-goods-retry')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('po-goods-load-error')), findsNothing);
+      expect(find.text('MOT-1 · Motor'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'a user-picked date survives goods and supplier changes; an automatic one does not',
+    (tester) async {
+      final http = _http(
+        s1: [_entry('s1', 'p1', 'MOT-1', 'Motor', lead: 14)],
+        s2: [_entry('s2', 'p9', 'BLT-1', 'Bolt', lead: 3)],
+      );
+      await _open(tester, http);
+      await _supplierPick(tester, 'acme', 'SUP-1 · Acme');
+      await tester.tap(find.byKey(const ValueKey('po-goods-check-p1')));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Expected delivery:'), findsOneWidget);
+      // Untick: the derived date goes away again.
+      await tester.tap(find.byKey(const ValueKey('po-goods-check-p1')));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Expected delivery:'), findsNothing);
+      // Tick again, then change supplier: the derived date is reset.
+      await tester.tap(find.byKey(const ValueKey('po-goods-check-p1')));
+      await tester.pumpAndSettle();
+      await _supplierPick(tester, 'bolt', 'SUP-2 · Bolt');
+      expect(find.textContaining('Expected delivery:'), findsNothing);
+
+      // A date the user picks is kept.
+      await tester.tap(find.byKey(const ValueKey('po-expected-date')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+      final picked = tester
+          .widget<Text>(find.textContaining('Expected delivery:'))
+          .data;
+      await tester.tap(find.byKey(const ValueKey('po-goods-check-p9')));
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<Text>(find.textContaining('Expected delivery:')).data,
+        picked,
+      );
+      await _supplierPick(tester, 'acme', 'SUP-1 · Acme');
+      expect(
+        tester.widget<Text>(find.textContaining('Expected delivery:')).data,
+        picked,
+      );
+    },
+  );
+
+  testWidgets('mixed currencies give no single total', (tester) async {
+    final http = _http(
+      s1: [
+        _entry('s1', 'p1', 'MOT-1', 'Motor'),
+        _entry('s1', 'p2', 'FRM-1', 'Frame', currency: 'USD'),
+      ],
+    );
+    await _open(tester, http);
+    await _supplierPick(tester, 'acme', 'SUP-1 · Acme');
+    await tester.tap(find.byKey(const ValueKey('po-goods-check-p1')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('total €'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('po-goods-check-p2')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('mixed currencies (EUR, USD)'), findsOneWidget);
+    expect(find.textContaining('total €'), findsNothing);
   });
 }

@@ -292,7 +292,7 @@ void main() {
     await tester.enterText(find.byKey(const ValueKey('po-goods-qty-p1')), '0');
     await tester.tap(find.byKey(const ValueKey('po-save')));
     await tester.pumpAndSettle();
-    expect(find.textContaining('greater than zero'), findsOneWidget);
+    expect(find.text('Add at least one line.'), findsOneWidget);
 
     await tester.enterText(find.byKey(const ValueKey('po-goods-qty-p1')), '10');
     await tester.enterText(find.byKey(const ValueKey('po-notes')), 'Rush');

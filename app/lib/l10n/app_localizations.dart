@@ -11973,7 +11973,7 @@ abstract class AppLocalizations {
   /// No description provided for @purchGoodsEmpty.
   ///
   /// In en, this message translates to:
-  /// **'This supplier has no products yet. Add them to the supplier\'s price list first, then come back.'**
+  /// **'This supplier has no products on its price list yet. Use \"Other products\" below to add products to this order, or add them to the price list later.'**
   String get purchGoodsEmpty;
 
   /// No description provided for @purchGoodsNoMatch.
@@ -12017,6 +12017,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count} lines, total {total}'**
   String purchGoodsSummary(int count, String total);
+
+  /// No description provided for @purchGoodsLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The supplier\'s goods could not be loaded. You can still add products under \"Other products\", or retry.'**
+  String get purchGoodsLoadFailed;
+
+  /// No description provided for @purchGoodsMixedCurrencies.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} lines in mixed currencies ({currencies}): no single total'**
+  String purchGoodsMixedCurrencies(int count, String currencies);
 
   /// No description provided for @purchPickSupplier.
   ///

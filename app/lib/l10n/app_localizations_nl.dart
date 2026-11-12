@@ -6648,7 +6648,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get purchGoodsEmpty =>
-      'Deze leverancier heeft nog geen producten. Voeg ze eerst toe aan de prijslijst van de leverancier en kom dan terug.';
+      'Deze leverancier heeft nog geen producten in zijn prijslijst. Gebruik hieronder \"Overige producten\" om producten aan deze order toe te voegen, of voeg ze later aan de prijslijst toe.';
 
   @override
   String get purchGoodsNoMatch => 'Geen artikel past bij het filter.';
@@ -6675,6 +6675,15 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String purchGoodsSummary(int count, String total) {
     return '$count regels, totaal $total';
+  }
+
+  @override
+  String get purchGoodsLoadFailed =>
+      'De artikelen van de leverancier konden niet worden geladen. U kunt nog steeds producten toevoegen onder \"Overige producten\", of opnieuw proberen.';
+
+  @override
+  String purchGoodsMixedCurrencies(int count, String currencies) {
+    return '$count regels in verschillende valuta ($currencies): geen enkel totaal';
   }
 
   @override

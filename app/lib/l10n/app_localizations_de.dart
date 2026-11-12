@@ -6662,7 +6662,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get purchGoodsEmpty =>
-      'Dieser Lieferant hat noch keine Produkte. Fügen Sie sie zuerst zur Preisliste des Lieferanten hinzu und kommen Sie dann zurück.';
+      'Dieser Lieferant hat noch keine Produkte in seiner Preisliste. Fügen Sie unten unter \"Weitere Produkte\" Produkte zu dieser Bestellung hinzu oder pflegen Sie die Preisliste später.';
 
   @override
   String get purchGoodsNoMatch => 'Kein Artikel passt zum Filter.';
@@ -6689,6 +6689,15 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String purchGoodsSummary(int count, String total) {
     return '$count Positionen, Summe $total';
+  }
+
+  @override
+  String get purchGoodsLoadFailed =>
+      'Die Artikel des Lieferanten konnten nicht geladen werden. Sie können weiterhin unter \"Weitere Produkte\" Produkte hinzufügen oder es erneut versuchen.';
+
+  @override
+  String purchGoodsMixedCurrencies(int count, String currencies) {
+    return '$count Positionen in gemischten Währungen ($currencies): keine Gesamtsumme';
   }
 
   @override
