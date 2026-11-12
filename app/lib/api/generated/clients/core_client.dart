@@ -18,6 +18,7 @@ import '../models/modules_input.dart';
 import '../models/public_provider.dart';
 import '../models/role_info.dart';
 import '../models/setup_status.dart';
+import '../models/worker_status.dart';
 
 part 'core_client.g.dart';
 
@@ -63,6 +64,10 @@ abstract class CoreClient {
   Future<void> inviteAdminUser({
     @Path('id') required String id,
   });
+
+  /// The background worker's heartbeat: whether it is running, and its last outage.
+  @GET('/api/v1/admin/worker')
+  Future<WorkerStatus> getWorker();
 
   /// The enabled identity providers, for the sign-in page. No sign-in needed; only these five.
   /// fields are exposed. Empty in dev mode.

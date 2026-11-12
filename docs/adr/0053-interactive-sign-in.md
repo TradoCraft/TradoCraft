@@ -3,9 +3,9 @@
 **Status:** Proposed
 
 **Context.** The API verifies bearer tokens against the identity providers an administrator
-configures (ADR 0004, ADR 0052). Today the app gets a token by pasting it, which is fine for
+configures (ADR 0004, ADR 0055). Today the app gets a token by pasting it, which is fine for
 developers and not for staff. The app has to sign people in itself: authorization code with PKCE
-as a public client (no client secret, ADR 0052 stores only `client_id` and `scopes`), refresh in
+as a public client (no client secret, ADR 0055 stores only `client_id` and `scopes`), refresh in
 the background, one session per environment (ADR 0043) and provider. First release: Microsoft
 Entra ID (the access token of our own exposed API) and Keycloak or any generic OIDC provider;
 Google later. Platforms: Linux, Windows, Android, web last, iOS and macOS later. A spike
@@ -114,8 +114,11 @@ administrator configured:
   (Microsoft Graph) must never be sent to the API.
 
 *Dio interceptor.* One interceptor per environment, using that environment's session:
-`onRequest` asks the session for `accessToken(minValidity: 120 s)`; the session refreshes only
-when the token expires within 120 s, and concurrent requests share one refresh (single-flight,
+`onRequest` asks the session for the token named by the provider's `token_use`
+(`bearerToken(minValidity: 120 s)`): with `access_token` the access token, with `id_token`
+(the default) the ID token, whose own `exp` is checked before use. The session refreshes only
+when that token expires within 120 s (a refresh returns a new ID token too; if the provider
+returns none, the session is treated as expired for `id_token` use), and concurrent requests share one refresh (single-flight,
 verified: 8 calls, 1 token request). On a 401 the request is retried once with a forced refresh.
 `invalid_grant` or `interaction_required` (`OidcInteractionRequiredException`, terminal event)
 means signed out for that environment only: clear the session, keep other environments, show the
@@ -131,7 +134,20 @@ Keys are namespaced by session id `<environment id>/<provider id>`. Web: memory 
 refresh token in `localStorage` is readable by any script on the origin). Linux without a usable
 keyring (no Secret Service, locked and no prompter, or the call times out after 3 s): ask once,
 then keep the session in memory only for this run ("you will have to sign in again next time");
-never write tokens to a plain file by default.
+never write tokens to a plain file by default. A secure-storage write that completes late (after
+the timeout, or after sign-out) must neither persist nor restore tokens. This is enforced at the
+`TokenStore.write` boundary: every session holds a generation number, incremented by sign-out,
+by a terminal refresh failure and by switching to the memory fallback; each write captures the
+generation when it starts and re-checks it, under the session's lock, immediately before the
+platform call and again before it reports success; a stale write is dropped. The stored record
+carries the generation it was written under (`{generation, tokens}`), and the store keeps the
+highest generation it has accepted: a write with a lower generation is refused at the store, and a
+delete is conditional ("delete only if the stored generation is at most G", where G is the
+generation being cleaned up). So a late write of an older attempt can neither overwrite nor
+delete the tokens of a newer sign-in, and a stale write that already reached the platform is
+removed only by a conditional delete for its own generation, which cannot touch newer records.
+Reads on start-up apply the same check. Sign-out clears the store **and** increments the
+generation, so pending writes die.
 
 *Logout.* Delete the local tokens first (the user is signed out even if the network is down),
 then revoke the refresh token where the provider has a `revocation_endpoint`, then open the
@@ -156,7 +172,7 @@ path stays for development. The server learns one setting; it stays free of clie
 *Risks.* Entra issues v1 tokens (different issuer and `aud`) unless
 `requestedAccessTokenVersion` = 2; the runbook makes it a checklist step and the provider Test
 button shows the `aud` of a real token. Entra's `sub` is per application, so the client id must
-never be rotated or every user would look new (users are bound by e-mail and subject, ADR 0052).
+never be rotated or every user would look new (users are bound by e-mail and subject, ADR 0055).
 `oidc` is young and moves fast: pin exact versions, review each upgrade, and keep the wrapper
 thin so the fallback stays possible. Windows may show a firewall prompt for the loopback
 listener (it binds 127.0.0.1 only, so the prompt should not appear; to be confirmed on a clean

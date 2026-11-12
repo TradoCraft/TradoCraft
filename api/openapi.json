@@ -764,6 +764,37 @@
         }
       }
     },
+    "/api/v1/admin/worker": {
+      "get": {
+        "tags": [
+          "core"
+        ],
+        "summary": "The background worker's heartbeat: whether it is running, and its last outage.",
+        "operationId": "get_worker",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkerStatus"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/auth/providers": {
       "get": {
         "tags": [
@@ -26074,7 +26105,7 @@
           },
           "is_primary": {
             "type": "boolean",
-            "description": "True for the installation's primary company, whose administrators change the\ninstallation-wide settings (identity providers, ADR 0052)."
+            "description": "True for the installation's primary company, whose administrators change the\ninstallation-wide settings (identity providers, ADR 0055)."
           },
           "name": {
             "type": "string"
@@ -33285,6 +33316,24 @@
           },
           "total": {
             "type": "string"
+          }
+        }
+      },
+      "Outage": {
+        "type": "object",
+        "description": "A period without any beat.",
+        "required": [
+          "down_from",
+          "down_until"
+        ],
+        "properties": {
+          "down_from": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "down_until": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },
@@ -43307,6 +43356,88 @@
           "started_at": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "WorkerState": {
+        "type": "string",
+        "description": "Whether the worker is running, as far as its heartbeat tells.",
+        "enum": [
+          "running",
+          "down",
+          "never_seen"
+        ]
+      },
+      "WorkerStatus": {
+        "type": "object",
+        "description": "The worker's heartbeat as administrators see it.",
+        "required": [
+          "state"
+        ],
+        "properties": {
+          "age_seconds": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Seconds since the last beat, by the database clock."
+          },
+          "host": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "interval_seconds": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "last_beat_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "last_outage": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Outage",
+                "description": "The most recent period without beats that has ended."
+              }
+            ]
+          },
+          "late_after_seconds": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "After how many seconds without a beat the worker counts as down."
+          },
+          "started_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When the worker process that wrote the last beat started."
+          },
+          "state": {
+            "$ref": "#/components/schemas/WorkerState"
+          },
+          "version": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         }
       },

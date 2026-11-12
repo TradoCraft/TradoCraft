@@ -6320,6 +6320,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tutReplay => 'Replay';
 
   @override
+  String tutFinishedTitle(String name) {
+    return 'Chapter $name complete';
+  }
+
+  @override
+  String tutFinishedNext(String name) {
+    return 'Well done. Next up: $name. Start it now, or pick it later from the chapter map.';
+  }
+
+  @override
+  String get tutFinishedLast =>
+      'That was the last chapter. Well done. You can replay any chapter from the chapter map.';
+
+  @override
+  String get tutStartNext => 'Start next chapter';
+
+  @override
+  String get tutBackToMap => 'Back to chapter map';
+
+  @override
   String get tutSkipChapter => 'Skip chapter';
 
   @override
@@ -7822,4 +7842,16 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get tutActionForbidden =>
       'You are not allowed to import e-mail into the helpdesk (it needs the helpdesk write permission). Ask an administrator, or sign in as one, and try again.';
+
+  @override
+  String workerDownBanner(String since) {
+    return 'The background worker has not run since $since: e-mail is not sent or fetched and SLA breaches are not escalated.';
+  }
+
+  @override
+  String get workerNeverSeenBanner =>
+      'No background worker has run yet: e-mail is not sent or fetched and SLA breaches are not escalated.';
+
+  @override
+  String get workerBannerSemantics => 'Background worker';
 }

@@ -6353,6 +6353,26 @@ class AppLocalizationsDe extends AppLocalizations {
   String get tutReplay => 'Wiederholen';
 
   @override
+  String tutFinishedTitle(String name) {
+    return 'Kapitel $name abgeschlossen';
+  }
+
+  @override
+  String tutFinishedNext(String name) {
+    return 'Gut gemacht. Als Nächstes: $name. Starte es jetzt oder wähle es später in der Kapitelübersicht.';
+  }
+
+  @override
+  String get tutFinishedLast =>
+      'Das war das letzte Kapitel. Gut gemacht. Jedes Kapitel lässt sich in der Kapitelübersicht wiederholen.';
+
+  @override
+  String get tutStartNext => 'Nächstes Kapitel starten';
+
+  @override
+  String get tutBackToMap => 'Zurück zur Kapitelübersicht';
+
+  @override
   String get tutSkipChapter => 'Kapitel überspringen';
 
   @override
@@ -7868,4 +7888,16 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get tutActionForbidden =>
       'Sie dürfen keine E-Mail in das Helpdesk importieren (dafür ist das Schreibrecht für das Helpdesk nötig). Fragen Sie einen Administrator oder melden Sie sich als solcher an und versuchen Sie es erneut.';
+
+  @override
+  String workerDownBanner(String since) {
+    return 'Die Hintergrundverarbeitung läuft seit $since nicht mehr: E-Mails werden weder gesendet noch abgerufen und SLA-Verletzungen werden nicht eskaliert.';
+  }
+
+  @override
+  String get workerNeverSeenBanner =>
+      'Die Hintergrundverarbeitung ist noch nie gelaufen: E-Mails werden weder gesendet noch abgerufen und SLA-Verletzungen werden nicht eskaliert.';
+
+  @override
+  String get workerBannerSemantics => 'Hintergrundverarbeitung';
 }

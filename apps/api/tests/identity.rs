@@ -1,4 +1,4 @@
-//! Configurable identity providers (ADR 0052): the registry and hardened verifier against a mock
+//! Configurable identity providers (ADR 0055): the registry and hardened verifier against a mock
 //! identity provider, the e-mail policies, and the admin API.
 
 mod common;

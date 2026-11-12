@@ -27,7 +27,7 @@ Module overview: [ARCHITECTURE.md](ARCHITECTURE.md).
 | C2 MRP | Open (needs B1, B2, C1) |
 | C3 Planning board, field-jobs half (calendars, absences, skills, conflicts, suggestions, drag-and-drop board) | Done, [ADR 0024](adr/0024-planning-board.md) |
 | C3 Planning board, work-centre half (capacity, finite loading) | Open (needs C1; reuses the resource calendar and `ResourceBoard`) |
-| D1 Worker heartbeat and "worker was down" alert | Open |
+| D1 Worker heartbeat and "worker was down" alert | Done, [ADR 0052](adr/0052-worker-heartbeat.md) |
 | D2 Backup and restore runbook | Open |
 | D3 Concurrent-edit protection on records | Open |
 | D4 VAT number validation, registry lookup and duplicate warning | Open |
@@ -115,6 +115,8 @@ production.
   nothing reports it.
 - The loop writes a heartbeat row each pass; the API exposes its age, the app shows a warning to
   administrators, and a system mail goes out when the worker resumes after a gap.
+- Done ([ADR 0052](adr/0052-worker-heartbeat.md)): `GET /admin/worker`, an amber strip for
+  administrators, and outages recorded in `core.worker_outages`.
 
 **D2 Backup and restore runbook** (small)
 - A scripted backup that copes with the files stored in `bytea` (a physical backup rather than

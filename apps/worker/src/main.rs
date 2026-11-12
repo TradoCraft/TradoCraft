@@ -1,5 +1,7 @@
 //! Background worker.
 //!
+//! * Writes a heartbeat at the start of every pass (ADR 0052). When the previous beat is too old,
+//!   the gap is recorded and the companies' administrators get a "worker was down" mail.
 //! * Polls the helpdesk mailbox over IMAP (when IMAP_HOST is set) and turns mails into tickets.
 //! * Escalates tickets whose SLA ran out (one internal e-mail per ticket and kind of breach).
 //! * Generates the planned jobs of active maintenance contracts before their visits are due.
@@ -126,8 +128,24 @@ async fn main() -> anyhow::Result<()> {
             .unwrap_or(3600),
     );
     let mut last_cooccurrence: Option<std::time::Instant> = None;
+    let heartbeat = tradocraft_core::worker::WorkerInfo {
+        started_at: chrono::Utc::now(),
+        interval_seconds: i32::try_from(interval.as_secs().max(1)).unwrap_or(i32::MAX),
+        version: env!("CARGO_PKG_VERSION").to_string(),
+        host: env("HOSTNAME").unwrap_or_else(|| "unknown".into()),
+    };
     tracing::info!(seconds = interval.as_secs(), "worker started");
     loop {
+        // First, so that a pass that hangs (a stuck IMAP or SMTP server) stops the beat.
+        match tradocraft_core::worker::beat(&db, &heartbeat).await {
+            Ok(None) => {}
+            Ok(Some(o)) => tracing::warn!(
+                from = %o.down_from,
+                until = %o.down_until,
+                "no worker ran for a while; administrators are notified"
+            ),
+            Err(e) => tracing::error!(error = ?e, "writing the heartbeat failed"),
+        }
         if last_cooccurrence.is_none_or(|t| t.elapsed() >= cooccurrence_every) {
             last_cooccurrence = Some(std::time::Instant::now());
             match tradocraft_sales::cooccurrence::recompute(&db).await {

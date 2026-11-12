@@ -1,4 +1,4 @@
--- Identity providers an administrator configures in the app (ADR 0052). Verifying a token needs
+-- Identity providers an administrator configures in the app (ADR 0055). Verifying a token needs
 -- only public information (issuer, audience, signing keys), so no secret is stored here.
 CREATE TABLE core.identity_providers (
     id                    uuid PRIMARY KEY,

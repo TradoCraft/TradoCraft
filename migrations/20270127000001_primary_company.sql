@@ -1,4 +1,4 @@
--- The primary company holds the installation-wide settings (identity providers, ADR 0052): only its
+-- The primary company holds the installation-wide settings (identity providers, ADR 0055): only its
 -- administrators may change them. At most one company is primary.
 ALTER TABLE core.companies ADD COLUMN is_primary boolean NOT NULL DEFAULT false;
 

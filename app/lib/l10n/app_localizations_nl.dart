@@ -6338,6 +6338,26 @@ class AppLocalizationsNl extends AppLocalizations {
   String get tutReplay => 'Opnieuw';
 
   @override
+  String tutFinishedTitle(String name) {
+    return 'Hoofdstuk $name voltooid';
+  }
+
+  @override
+  String tutFinishedNext(String name) {
+    return 'Goed gedaan. Hierna: $name. Start het nu, of kies het later op de hoofdstukkenkaart.';
+  }
+
+  @override
+  String get tutFinishedLast =>
+      'Dat was het laatste hoofdstuk. Goed gedaan. Je kunt elk hoofdstuk opnieuw doen vanaf de hoofdstukkenkaart.';
+
+  @override
+  String get tutStartNext => 'Volgend hoofdstuk starten';
+
+  @override
+  String get tutBackToMap => 'Terug naar hoofdstukkenkaart';
+
+  @override
   String get tutSkipChapter => 'Hoofdstuk overslaan';
 
   @override
@@ -7849,4 +7869,16 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get tutActionForbidden =>
       'Je mag geen e-mail in de helpdesk importeren (daarvoor is het schrijfrecht voor de helpdesk nodig). Vraag het aan een beheerder of meld je als beheerder aan en probeer opnieuw.';
+
+  @override
+  String workerDownBanner(String since) {
+    return 'De achtergrondverwerking draait niet meer sinds $since: e-mail wordt niet verstuurd of opgehaald en SLA-overschrijdingen worden niet geëscaleerd.';
+  }
+
+  @override
+  String get workerNeverSeenBanner =>
+      'De achtergrondverwerking heeft nog nooit gedraaid: e-mail wordt niet verstuurd of opgehaald en SLA-overschrijdingen worden niet geëscaleerd.';
+
+  @override
+  String get workerBannerSemantics => 'Achtergrondverwerking';
 }

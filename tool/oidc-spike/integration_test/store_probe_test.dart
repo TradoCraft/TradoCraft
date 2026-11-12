@@ -53,7 +53,8 @@ void main() {
     final m = manager(store, FakeBrowser());
     await m.init();
     final user = await m.loginAuthorizationCodeFlow();
-    print('login with OidcDefaultStore: ${user?.claims['email']}');
+    expect(user, isNotNull);
+    print('login with OidcDefaultStore: ${user!.claims['email']}');
     await m.dispose();
 
     // "Restart": new store + new manager with the same id.
@@ -64,11 +65,13 @@ void main() {
       'restored from keyring after restart: ${m2.currentUser?.claims['email']} '
       'refresh token present=${m2.currentUser?.token.refreshToken != null}',
     );
-    expect(m2.currentUser?.claims['sub'], user?.claims['sub']);
+    expect(m2.currentUser, isNotNull);
+    expect(m2.currentUser!.claims['sub'], user.claims['sub']);
+    expect(m2.currentUser!.token.refreshToken, isNotNull);
     // A different environment id must not see this session.
     final m3 = manager(OidcDefaultStore(), FakeBrowser(), id: 'env-test');
     await m3.init();
-    print('other manager id sees a session: ${m3.currentUser != null}');
+    expect(m3.currentUser, isNull);
     await m2.forgetUser();
     await m2.dispose();
     await m3.dispose();

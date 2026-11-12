@@ -177,8 +177,8 @@ class SupplierFields extends StatelessWidget {
       spacing: 12,
       runSpacing: 12,
       children: [
-        _field('name', draft.name, l.name, width: 340),
         _field('code', draft.code, l.code, width: 140),
+        _field('name', draft.name, l.name, width: 340),
         _field('country', draft.country, l.country, width: 100),
         _field('currency', draft.currency, l.currency, width: 100),
         _field(

@@ -1,4 +1,4 @@
-# 0052 — Configurable identity providers
+# 0055 — Configurable identity providers
 
 **Status:** Accepted
 

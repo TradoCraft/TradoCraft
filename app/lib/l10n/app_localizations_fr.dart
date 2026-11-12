@@ -6347,6 +6347,26 @@ class AppLocalizationsFr extends AppLocalizations {
   String get tutReplay => 'Rejouer';
 
   @override
+  String tutFinishedTitle(String name) {
+    return 'Chapitre $name terminé';
+  }
+
+  @override
+  String tutFinishedNext(String name) {
+    return 'Bravo. Prochain chapitre : $name. Lancez-le maintenant, ou choisissez-le plus tard sur la carte des chapitres.';
+  }
+
+  @override
+  String get tutFinishedLast =>
+      'C\'était le dernier chapitre. Bravo. Vous pouvez rejouer n\'importe quel chapitre depuis la carte des chapitres.';
+
+  @override
+  String get tutStartNext => 'Démarrer le chapitre suivant';
+
+  @override
+  String get tutBackToMap => 'Retour à la carte des chapitres';
+
+  @override
   String get tutSkipChapter => 'Passer le chapitre';
 
   @override
@@ -7859,4 +7879,16 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get tutActionForbidden =>
       'Vous n\'avez pas le droit d\'importer des e-mails dans le helpdesk (il faut le droit d\'écriture du helpdesk). Demandez à un administrateur ou connectez-vous comme tel, puis réessayez.';
+
+  @override
+  String workerDownBanner(String since) {
+    return 'Le traitement en arrière-plan ne fonctionne plus depuis le $since : les e-mails ne sont ni envoyés ni relevés et les dépassements de SLA ne sont pas escaladés.';
+  }
+
+  @override
+  String get workerNeverSeenBanner =>
+      'Aucun traitement en arrière-plan n\'a encore fonctionné : les e-mails ne sont ni envoyés ni relevés et les dépassements de SLA ne sont pas escaladés.';
+
+  @override
+  String get workerBannerSemantics => 'Traitement en arrière-plan';
 }
