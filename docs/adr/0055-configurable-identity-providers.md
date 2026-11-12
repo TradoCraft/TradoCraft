@@ -1,4 +1,4 @@
-# 0052 — Configurable identity providers
+# 0055 — Configurable identity providers
 
 **Status:** Accepted
 
@@ -44,7 +44,8 @@ JSON map so the configured claim names work. Tokens are never logged.
 and every resulting address must be public: loopback, private, link-local (including the
 169.254.169.254 metadata address), CGNAT, unique-local, multicast, unspecified and reserved ranges
 (also when embedded in an IPv6 address) are refused. The checked addresses are pinned for the
-connection, so a DNS answer cannot change between check and connect. The only exception is
+connection, so a DNS answer cannot change between check and connect; the client ignores proxy
+environment variables (`no_proxy()`), so a proxy cannot bypass the pinned addresses. The only exception is
 `ALLOW_INSECURE_IDP_URLS=true`, meant for local development and tests, which the API refuses to
 honour unless `AUTH_MODE=dev` or the bind address is loopback (like the dev-auth guard).
 

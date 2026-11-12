@@ -29,7 +29,7 @@ crates/helpdesk/     tickets from e-mail and phone, threading, prepared answers,
 crates/portal/       customer portal: passwordless login for contacts, their tickets, repairs and profile
 crates/repairs/      repairs customers send in, workshop departments, routing workflow, photos
 crates/fieldservice/ jobs at customer sites for technicians: tasks, work logs, photos
-apps/worker/         background worker: IMAP polling and sending the e-mail outbox
+apps/worker/         background worker: IMAP polling, sending the e-mail outbox, heartbeat
 apps/portal-api/     customer-facing HTTP server: only the portal, public knowledge base and survey routes
 crates/documents/    Typst PDF rendering, Belgian number formatting
 migrations/          SQLx migrations (one PostgreSQL schema per module)
@@ -181,7 +181,7 @@ catalogue). It works once, only while no company exists
   identity provider with the same e-mail address; remove the token from the environment.
   Set `OIDC_ISSUER` and `OIDC_AUDIENCE` (optionally `OIDC_CLIENT_ID` and `OIDC_SCOPES`, default
   `openid profile email`) before signing in: they define a read-only fallback provider
-  ([ADR 0052](docs/adr/0052-configurable-identity-providers.md)). Once signed in, an administrator
+  ([ADR 0055](docs/adr/0055-configurable-identity-providers.md)). Once signed in, an administrator
   of the primary company (the first company created; another one can be made primary with
   `POST /api/v1/admin/companies/{id}/make-primary`) adds database providers in the app
   (Admin > Identity providers) or through the authenticated admin API

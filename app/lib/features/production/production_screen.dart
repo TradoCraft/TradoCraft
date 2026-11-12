@@ -11,6 +11,7 @@ import '../../shared/format.dart';
 import '../planning/board_model.dart';
 import 'complete_dialog.dart';
 import 'production_page.dart';
+import '../tutorial/targets.dart';
 
 /// One production order: division, planned-ready date, the frozen components with what is
 /// reserved, start, complete (backflush) and cancel.
@@ -245,7 +246,7 @@ class _ProductionScreenState extends ConsumerState<ProductionScreen> {
               ),
             if (canWrite) ...[
               gap,
-              DropdownButtonFormField<String?>(
+              TutorialTarget(id: 'production-division', child: DropdownButtonFormField<String?>(
                 key: ValueKey(
                   'division-${_division ?? ''}-${divisions.length}',
                 ),
@@ -270,7 +271,7 @@ class _ProductionScreenState extends ConsumerState<ProductionScreen> {
                     ),
                 ],
                 onChanged: (v) => setState(() => _division = v),
-              ),
+              )),
               gap,
               Row(
                 children: [
@@ -364,11 +365,11 @@ class _ProductionScreenState extends ConsumerState<ProductionScreen> {
               runSpacing: 8,
               children: [
                 if (canWrite)
-                  OutlinedButton(
+                  TutorialTarget(id: 'production-save', child: OutlinedButton(
                     key: const ValueKey('save-production'),
                     onPressed: _busy ? null : _save,
                     child: Text(l.save),
-                  ),
+                  )),
                 if (canWrite && anyShort)
                   OutlinedButton(
                     key: const ValueKey('reserve-again'),
@@ -379,21 +380,21 @@ class _ProductionScreenState extends ConsumerState<ProductionScreen> {
                     child: Text(l.productionReserveAgain),
                   ),
                 if (canRun && po.status == 'released')
-                  OutlinedButton.icon(
+                  TutorialTarget(id: 'production-start', child: OutlinedButton.icon(
                     key: const ValueKey('start-production'),
                     onPressed: _busy
                         ? null
                         : () => _run(() => _api.startOrder(id: widget.id)),
                     icon: const Icon(AppIcons.playArrow),
                     label: Text(l.productionStart),
-                  ),
+                  )),
                 if (canRun && !po.orderCancelled)
-                  FilledButton.icon(
+                  TutorialTarget(id: 'production-complete', child: FilledButton.icon(
                     key: const ValueKey('complete-production'),
                     onPressed: _busy ? null : _complete,
                     icon: const Icon(AppIcons.check),
                     label: Text(l.productionComplete),
-                  ),
+                  )),
                 if (canWrite)
                   TextButton(
                     key: const ValueKey('cancel-production'),

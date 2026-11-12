@@ -1,4 +1,4 @@
-//! Identity providers (ADR 0052): the registry of OpenID Connect providers, the hardened token
+//! Identity providers (ADR 0055): the registry of OpenID Connect providers, the hardened token
 //! verifier and the rules for URLs an administrator supplies.
 //!
 //! A token is verified before the company is known, so providers belong to the installation. The
@@ -302,7 +302,7 @@ pub fn validate_idp_url(settings: &IdpSettings, raw: &str) -> Result<reqwest::Ur
     Ok(url)
 }
 
-/// GET with the rules of ADR 0052: validated URL, every resolved address checked and then pinned
+/// GET with the rules of ADR 0055: validated URL, every resolved address checked and then pinned
 /// for the connection, 5 s connect and 10 s total timeout, no redirects, 1 MiB body limit.
 async fn guarded_get(settings: &IdpSettings, raw: &str) -> Result<Vec<u8>, String> {
     let url = validate_idp_url(settings, raw)?;
@@ -322,6 +322,7 @@ async fn guarded_get(settings: &IdpSettings, raw: &str) -> Result<Vec<u8>, Strin
         ));
     }
     let client = reqwest::Client::builder()
+        .no_proxy()
         .connect_timeout(Duration::from_secs(5))
         .timeout(Duration::from_secs(10))
         .redirect(reqwest::redirect::Policy::none())

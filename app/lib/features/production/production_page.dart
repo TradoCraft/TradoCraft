@@ -9,6 +9,7 @@ import '../../shared/entity_list.dart';
 import '../../shared/format.dart';
 import '../../shared/search_picker.dart';
 import '../field/offline/kv_store.dart';
+import '../tutorial/targets.dart';
 
 /// The states a production order can be filtered on.
 const productionStatuses = [
@@ -132,7 +133,7 @@ class _ProductionQueuePageState extends ConsumerState<ProductionQueuePage> {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (mine.isNotEmpty) ...[
-            SegmentedButton<bool>(
+            TutorialTarget(id: 'production-scope', child: SegmentedButton<bool>(
               key: const ValueKey('queue-scope'),
               showSelectedIcon: false,
               segments: [
@@ -141,7 +142,7 @@ class _ProductionQueuePageState extends ConsumerState<ProductionQueuePage> {
               ],
               selected: {scopeMine},
               onSelectionChanged: (s) => _setScope(s.first),
-            ),
+            )),
             const SizedBox(width: 12),
             Tooltip(
               message: l.productionYourDivisions,
@@ -199,14 +200,15 @@ class _ProductionQueuePageState extends ConsumerState<ProductionQueuePage> {
           },
         ),
         if (perms.contains('production.admin'))
-          IconButton(
+          TutorialTarget(id: 'production-divisions', child: IconButton(
             key: const ValueKey('divisions'),
             tooltip: l.productionDivisions,
             icon: const Icon(AppIcons.settings),
             onPressed: () => context.push('/production/divisions'),
-          ),
+          )),
       ],
       onCreate: perms.contains('production.write') ? _buildForStock : null,
+      createTargetId: 'production-build',
       createLabel: l.productionBuildForStock,
       columns: [
         EntityColumn(l.number, (o) => o.number, flex: 2),
@@ -377,11 +379,11 @@ class _StockOrderDialogState extends ConsumerState<_StockOrderDialog> {
           onPressed: () => Navigator.pop(context),
           child: Text(l.cancel),
         ),
-        FilledButton(
+        TutorialTarget(id: 'production-build-save', child: FilledButton(
           key: const ValueKey('stock-save'),
           onPressed: _saving ? null : _save,
           child: Text(l.productionRelease),
-        ),
+        )),
       ],
     );
   }

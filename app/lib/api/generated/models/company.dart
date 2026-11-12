@@ -40,7 +40,7 @@ class Company {
   final String id;
 
   /// True for the installation's primary company, whose administrators change the.
-  /// installation-wide settings (identity providers, ADR 0052).
+  /// installation-wide settings (identity providers, ADR 0055).
   @JsonKey(name: 'is_primary')
   final bool isPrimary;
   final String name;

@@ -1,4 +1,4 @@
-//! Configurable identity providers (ADR 0052): the registry and hardened verifier against a mock
+//! Configurable identity providers (ADR 0055): the registry and hardened verifier against a mock
 //! identity provider, the e-mail policies, and the admin API.
 
 mod common;
@@ -30,7 +30,7 @@ fn settings() -> IdpSettings {
     IdpSettings {
         allow_insecure_urls: true,
         jwks_ttl: Duration::from_secs(3600),
-        refresh_throttle: Duration::from_millis(300),
+        refresh_throttle: Duration::from_secs(3),
     }
 }
 
@@ -268,7 +268,7 @@ async fn unknown_kid_refreshes_once_and_throttled_and_keys_expire(db: PgPool) {
     }
     assert_eq!(a.jwks_hits(), 1);
     // After the window exactly one refresh happens, however many bad kids arrive.
-    tokio::time::sleep(Duration::from_millis(350)).await;
+    tokio::time::sleep(Duration::from_millis(3300)).await;
     assert_eq!(me(&app, &t2).await.0, StatusCode::OK);
     assert_eq!(a.jwks_hits(), 2);
     for _ in 0..3 {
@@ -284,7 +284,7 @@ async fn unknown_kid_refreshes_once_and_throttled_and_keys_expire(db: PgPool) {
 async fn cached_keys_expire_after_the_ttl(db: PgPool) {
     let a = MockIdp::start("a", "k1", 0).await;
     let s = IdpSettings {
-        jwks_ttl: Duration::from_millis(250),
+        jwks_ttl: Duration::from_secs(3),
         refresh_throttle: Duration::from_millis(10),
         ..settings()
     };
@@ -295,12 +295,12 @@ async fn cached_keys_expire_after_the_ttl(db: PgPool) {
     assert_eq!(me(&app, &t).await.0, StatusCode::OK);
     assert_eq!(me(&app, &t).await.0, StatusCode::OK);
     assert_eq!(a.jwks_hits(), 1);
-    tokio::time::sleep(Duration::from_millis(300)).await;
+    tokio::time::sleep(Duration::from_millis(3300)).await;
     assert_eq!(me(&app, &t).await.0, StatusCode::OK);
     assert_eq!(a.jwks_hits(), 2);
     // A key the provider withdrew stops working once the cache expired.
     a.set_keys(vec![("other", 1)]);
-    tokio::time::sleep(Duration::from_millis(300)).await;
+    tokio::time::sleep(Duration::from_millis(3300)).await;
     assert_eq!(me(&app, &t).await.0, StatusCode::UNAUTHORIZED);
 }
 
@@ -1051,4 +1051,131 @@ async fn concurrent_make_primary_calls_cannot_both_win(db: PgPool) {
     let primaries = primary_ids(&db).await;
     assert_eq!(primaries.len(), 1);
     assert_ne!(primaries[0], seed);
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn concurrent_disables_of_the_last_two_providers_cannot_both_win(db: PgPool) {
+    let a = MockIdp::start("a", "ka", 0).await;
+    let b = MockIdp::start("b", "kb", 1).await;
+    let (app, _state) = oidc_app(db.clone(), settings(), None).await;
+    let a_id = insert_provider(&db, &a, "A", "aud-a").await;
+    let b_id = insert_provider(&db, &b, "B", "aud-b").await;
+    // A second administrator of the primary company who signs in through B.
+    let boss = uuid::Uuid::now_v7();
+    sqlx::query("INSERT INTO core.users (id, email, display_name) VALUES ($1, 'admin2@example.com', 'Admin 2')")
+        .bind(boss).execute(&db).await.unwrap();
+    sqlx::query("INSERT INTO core.user_companies (user_id, company_id, roles, is_default) VALUES ($1, '00000000-0000-7000-8000-000000000001', '{admin}', true)")
+        .bind(boss).execute(&db).await.unwrap();
+    reload(&_state).await;
+    let ta = a.token(
+        "ka",
+        0,
+        &user_claims(&a, "aud-a", "s1", "admin@example.com"),
+    );
+    let tb = b.token(
+        "kb",
+        1,
+        &user_claims(&b, "aud-b", "s2", "admin2@example.com"),
+    );
+    let off = |idp: &MockIdp, name: &str, aud: &str| json!({"name": name, "issuer": idp.issuer, "audience": aud, "enabled": false});
+    // Each administrator disables the other one's provider (not their own); disabled providers
+    // are not probed, so only the last-provider rule decides.
+    let (ua, ub) = (format!("{BASE}/{a_id}"), format!("{BASE}/{b_id}"));
+    let (r1, r2) = tokio::join!(
+        bcall(
+            &app,
+            Some(&tb),
+            Method::PUT,
+            &ua,
+            Some(off(&a, "A", "aud-a"))
+        ),
+        bcall(
+            &app,
+            Some(&ta),
+            Method::PUT,
+            &ub,
+            Some(off(&b, "B", "aud-b"))
+        ),
+    );
+    let mut codes = [r1.0.as_u16(), r2.0.as_u16()];
+    codes.sort();
+    assert_eq!(codes, [200, 409], "{r1:?} {r2:?}");
+    let loser = if r1.0 == StatusCode::CONFLICT {
+        &r1.1
+    } else {
+        &r2.1
+    };
+    assert_eq!(loser["code"], "last_identity_provider");
+    let enabled: i64 =
+        sqlx::query_scalar("SELECT count(*) FROM core.identity_providers WHERE enabled")
+            .fetch_one(&db)
+            .await
+            .unwrap();
+    assert_eq!(enabled, 1);
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn a_lost_binding_race_does_not_authenticate_the_second_identity(db: PgPool) {
+    sqlx::raw_sql(tradocraft_api::DEV_SEED_SQL)
+        .execute(&db)
+        .await
+        .unwrap();
+    let state = state_with(
+        db.clone(),
+        AuthConfig::Oidc(IdentityProviders::new(settings(), None)),
+    );
+    let cfg = provider(EmailPolicy::TrustProviderEmail);
+    let first = claims("sub-1", "email", "sales@example.com", None);
+    let second = claims("sub-2", "email", "sales@example.com", None);
+    let (r1, r2) = tokio::join!(
+        bind_oidc_user(&state, &cfg, &first),
+        bind_oidc_user(&state, &cfg, &second),
+    );
+    // Whichever bound first wins; the other identity must not be let in as the same user.
+    assert!(r1.is_ok() ^ r2.is_ok(), "{r1:?} {r2:?}");
+    let stored = subject_of(&db, "sales@example.com").await.unwrap();
+    let winner = if r1.is_ok() { "sub-1" } else { "sub-2" };
+    assert!(stored.ends_with(winner), "{stored}");
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn provider_writes_recheck_primary_authority_under_the_lock(db: PgPool) {
+    let app = common::setup(db.clone()).await;
+    let provider = uuid::Uuid::now_v7();
+    sqlx::query("INSERT INTO core.identity_providers (id, name, issuer, audience, enabled) VALUES ($1,'P','https://p.example','aud',false)")
+        .bind(provider).execute(&db).await.unwrap();
+    let url = format!("{BASE}/{provider}");
+    let put = json!({"name": "Renamed", "issuer": "https://p.example", "audience": "aud", "enabled": false});
+    for (method, body) in [(Method::PUT, Some(put)), (Method::DELETE, None)] {
+        // Hold the provider lock so the request passes its early guard and then waits; strip the
+        // caller's admin role meanwhile. The recheck on the transaction connection must refuse.
+        let mut holder = db.begin().await.unwrap();
+        sqlx::query("SELECT pg_advisory_xact_lock($1)")
+            .bind(0x1D3_0052_i64)
+            .execute(&mut *holder)
+            .await
+            .unwrap();
+        let (res, _) = tokio::join!(
+            call(&app, "admin@example.com", method.clone(), &url, body),
+            async {
+                tokio::time::sleep(Duration::from_millis(500)).await;
+                sqlx::query("UPDATE core.user_companies SET roles = '{}' WHERE user_id = (SELECT id FROM core.users WHERE email = 'admin@example.com')")
+                    .execute(&db).await.unwrap();
+                holder.commit().await.unwrap();
+            }
+        );
+        assert_eq!(res.0, StatusCode::FORBIDDEN, "{method}: {res:?}");
+        assert!(res.1.to_string().contains("primary company"), "{res:?}");
+        let (name, n): (String, i64) = sqlx::query_as(
+            "SELECT (SELECT name FROM core.identity_providers WHERE id = $1), 0::bigint",
+        )
+        .bind(provider)
+        .fetch_one(&db)
+        .await
+        .unwrap();
+        assert_eq!((name.as_str(), n), ("P", 0), "{method}");
+        // Restore the role for the next round.
+        sqlx::query("UPDATE core.user_companies SET roles = '{admin}' WHERE user_id = (SELECT id FROM core.users WHERE email = 'admin@example.com')")
+            .execute(&db).await.unwrap();
+    }
 }

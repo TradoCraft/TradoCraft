@@ -5,6 +5,7 @@ import '../../app/api.dart';
 import '../../shared/format.dart';
 import '../../l10n/l10n.dart';
 import '../../shared/app_icons.dart';
+import '../tutorial/targets.dart';
 
 final _pricesProvider = FutureProvider.autoDispose
     .family<List<ZonePriceEntry>, String>(
@@ -29,7 +30,7 @@ class PricesTab extends ConsumerWidget {
         if (canWrite)
           Align(
             alignment: Alignment.centerLeft,
-            child: FilledButton.tonalIcon(
+            child: TutorialTarget(id: 'price-new', child: FilledButton.tonalIcon(
               icon: Icon(AppIcons.add),
               label: Text(context.l10n.newPrice),
               onPressed: () async {
@@ -39,7 +40,7 @@ class PricesTab extends ConsumerWidget {
                 );
                 if (added == true) ref.invalidate(_pricesProvider(product.id));
               },
-            ),
+            )),
           ),
         prices.when(
           loading: () => LinearProgressIndicator(),
@@ -167,7 +168,7 @@ class _NewPriceState extends ConsumerState<_NewPrice> {
           onPressed: () => Navigator.pop(context),
           child: Text(context.l10n.cancel),
         ),
-        FilledButton(onPressed: _save, child: Text(context.l10n.save)),
+        TutorialTarget(id: 'price-form-save', child: FilledButton(onPressed: _save, child: Text(context.l10n.save))),
       ],
     );
   }

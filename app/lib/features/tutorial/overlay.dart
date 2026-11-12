@@ -142,6 +142,8 @@ class _TutorialHostState extends ConsumerState<TutorialHost> {
     if (s.loaded && signedIn) {
       if (s.activeId != null && !s.paused && !onMap) {
         layer = _RunningLayer(contentBox: _contentBox, router: widget.router);
+      } else if (s.activeId == null && s.finishedId != null && !onMap) {
+        layer = _FinishedCard(router: widget.router);
       } else if (s.activeId != null && s.paused && !onMap) {
         layer = const _PausedPill();
       } else if (s.activeId == null &&
@@ -359,6 +361,23 @@ class NarratorCard extends ConsumerWidget {
                             ),
                             const SizedBox(height: 6),
                             Text(body, style: theme.textTheme.bodyMedium),
+                            if (s.actionError != null) ...[
+                              const SizedBox(height: 6),
+                              Semantics(
+                                liveRegion: true,
+                                child: Text(
+                                  s.actionError!.status == 403
+                                      ? l.tutActionForbidden
+                                      : l.tutActionFailed(
+                                          s.actionError!.reason,
+                                        ),
+                                  key: const ValueKey('tutorial-action-error'),
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.error,
+                                  ),
+                                ),
+                              ),
+                            ],
                             if (hint != null) ...[
                               const SizedBox(height: 6),
                               Text(
@@ -387,7 +406,7 @@ class NarratorCard extends ConsumerWidget {
                         if (completion is ActionCompletion)
                           FilledButton(
                             key: const ValueKey('tutorial-action'),
-                            onPressed: c.runAction,
+                            onPressed: s.actionBusy ? null : c.runAction,
                             child: Text(
                               tutorialText(l, stepKey(m, step, 'Action')),
                             ),
@@ -431,6 +450,125 @@ class NarratorCard extends ConsumerWidget {
   }
 }
 
+/// Tallest a bottom-right card may be: what is left of the viewport after its padding.
+double _cardMaxHeight(BuildContext context, bool narrow) {
+  final h =
+      MediaQuery.sizeOf(context).height - 16 - _cardBottomGap(context, narrow);
+  return h < 120 ? 120 : h;
+}
+
+/// Space under a card: clears the bottom navigation, unless the viewport is too short for it.
+double _cardBottomGap(BuildContext context, bool narrow) =>
+    narrow && MediaQuery.sizeOf(context).height >= 480 ? 92 : 16;
+
+/// The card shown when a chapter has just been finished: what comes next, never a dead end.
+class _FinishedCard extends ConsumerWidget {
+  const _FinishedCard({required this.router});
+
+  final GoRouter? router;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    final c = ref.read(tutorialProvider.notifier);
+    final done = c.finishedChapter;
+    if (done == null) return const SizedBox.shrink();
+    final next = c.nextChapter;
+    final name = tutorialText(l, missionKey(done, 'Title'));
+    final narrow = MediaQuery.sizeOf(context).width < 800;
+    return Align(
+      alignment: Alignment.bottomRight,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          16,
+          16,
+          16,
+          _cardBottomGap(context, narrow),
+        ),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: 420,
+            maxHeight: _cardMaxHeight(context, narrow),
+          ),
+          child: Semantics(
+            container: true,
+            explicitChildNodes: true,
+            child: Material(
+              key: const ValueKey('tutorial-finished'),
+              elevation: 8,
+              color: theme.colorScheme.surface,
+              surfaceTintColor: theme.colorScheme.surfaceTint,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+                side: BorderSide(color: theme.colorScheme.outlineVariant),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Flexible(
+                      child: SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Semantics(
+                              header: true,
+                              liveRegion: true,
+                              child: Text(
+                                l.tutFinishedTitle(name),
+                                style: theme.textTheme.titleMedium,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              next == null
+                                  ? l.tutFinishedLast
+                                  : l.tutFinishedNext(
+                                      tutorialText(
+                                        l,
+                                        missionKey(next, 'Title'),
+                                      ),
+                                    ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      children: [
+                        if (next != null)
+                          FilledButton(
+                            key: const ValueKey('tutorial-finished-next'),
+                            onPressed: () => c.start(next.id),
+                            child: Text(l.tutStartNext),
+                          ),
+                        OutlinedButton(
+                          key: const ValueKey('tutorial-finished-map'),
+                          onPressed: () {
+                            c.dismissFinished();
+                            router?.go(tutorialRoute);
+                          },
+                          child: Text(l.tutBackToMap),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// A small "Resume" pill shown while a chapter is paused.
 class _PausedPill extends ConsumerWidget {
   const _PausedPill();
@@ -443,28 +581,39 @@ class _PausedPill extends ConsumerWidget {
     return Align(
       alignment: Alignment.bottomRight,
       child: Padding(
-        padding: EdgeInsets.fromLTRB(16, 16, 16, narrow ? 92 : 16),
-        child: Material(
-          elevation: 6,
-          color: theme.colorScheme.secondaryContainer,
-          borderRadius: BorderRadius.circular(24),
-          child: Padding(
-            padding: const EdgeInsets.only(left: 16, right: 4),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  l.tutPaused,
-                  style: TextStyle(
-                    color: theme.colorScheme.onSecondaryContainer,
+        padding: EdgeInsets.fromLTRB(
+          16,
+          16,
+          16,
+          _cardBottomGap(context, narrow),
+        ),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: Material(
+            elevation: 6,
+            color: theme.colorScheme.secondaryContainer,
+            borderRadius: BorderRadius.circular(24),
+            child: Padding(
+              padding: const EdgeInsets.only(left: 16, right: 4),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: Text(
+                      l.tutPaused,
+                      style: TextStyle(
+                        color: theme.colorScheme.onSecondaryContainer,
+                      ),
+                    ),
                   ),
-                ),
-                TextButton(
-                  key: const ValueKey('tutorial-resume'),
-                  onPressed: () => ref.read(tutorialProvider.notifier).resume(),
-                  child: Text(l.tutResume),
-                ),
-              ],
+                  TextButton(
+                    key: const ValueKey('tutorial-resume'),
+                    onPressed: () =>
+                        ref.read(tutorialProvider.notifier).resume(),
+                    child: Text(l.tutResume),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -488,9 +637,17 @@ class _OfferCard extends ConsumerWidget {
     return Align(
       alignment: Alignment.bottomRight,
       child: Padding(
-        padding: EdgeInsets.fromLTRB(16, 16, 16, narrow ? 92 : 16),
+        padding: EdgeInsets.fromLTRB(
+          16,
+          16,
+          16,
+          _cardBottomGap(context, narrow),
+        ),
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 420),
+          constraints: BoxConstraints(
+            maxWidth: 420,
+            maxHeight: _cardMaxHeight(context, narrow),
+          ),
           child: Semantics(
             container: true,
             explicitChildNodes: true,
@@ -509,15 +666,24 @@ class _OfferCard extends ConsumerWidget {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Semantics(
-                      header: true,
-                      child: Text(
-                        l.tutOfferTitle,
-                        style: theme.textTheme.titleMedium,
+                    Flexible(
+                      child: SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Semantics(
+                              header: true,
+                              child: Text(
+                                l.tutOfferTitle,
+                                style: theme.textTheme.titleMedium,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(l.tutOfferBody),
+                          ],
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 6),
-                    Text(l.tutOfferBody),
                     const SizedBox(height: 10),
                     Wrap(
                       spacing: 8,

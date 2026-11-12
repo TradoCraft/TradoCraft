@@ -26,7 +26,7 @@ pub struct Company {
     pub iban: Option<String>,
     pub default_language: String,
     /// True for the installation's primary company, whose administrators change the
-    /// installation-wide settings (identity providers, ADR 0052).
+    /// installation-wide settings (identity providers, ADR 0055).
     pub is_primary: bool,
 }
 
@@ -136,4 +136,5 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(me))
         .routes(routes!(list_users))
         .merge(crate::admin::router())
+        .merge(crate::worker::router())
 }

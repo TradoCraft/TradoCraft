@@ -16,6 +16,7 @@ import '../delivery/order_deliveries.dart';
 import '../production/order_production.dart';
 import '../inventory/order_stock_panel.dart';
 import '../../shared/app_icons.dart';
+import '../tutorial/targets.dart';
 
 final _historyProvider = FutureProvider.autoDispose
     .family<List<PriorityChange>, String>(
@@ -512,11 +513,11 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
               icon: const Icon(AppIcons.edit),
               label: Text(l.edit),
             ),
-            FilledButton.icon(
+            TutorialTarget(id: 'order-send', child: FilledButton.icon(
               onPressed: busy ? null : _send,
               icon: const Icon(AppIcons.forwardToInbox),
               label: Text(l.sendOrderConfirmation),
-            ),
+            )),
           ],
         ],
         if (canWrite && isCurrent && o.status == 'sent') ...[
@@ -525,11 +526,11 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
             icon: const Icon(AppIcons.copy),
             label: Text(l.newRevision),
           ),
-          FilledButton.icon(
+          TutorialTarget(id: 'order-confirm', child: FilledButton.icon(
             onPressed: busy ? null : _confirmOnBehalf,
             icon: const Icon(AppIcons.check),
             label: Text(l.confirmOnBehalf),
-          ),
+          )),
         ],
         if (canWrite && isCurrent && open && !_editing)
           OutlinedButton.icon(

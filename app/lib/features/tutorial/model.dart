@@ -101,10 +101,25 @@ class ManualNext extends Completion {
   const ManualNext();
 }
 
+String _noRetention(String kind) =>
+    '<tut.${DateTime.now().microsecondsSinceEpoch}.$kind@example.test>';
+
 /// What an [ActionCompletion] may use.
 class ActionHost {
   /// Creates the host.
-  const ActionHost({required this.dio, required this.context});
+  const ActionHost({
+    required this.dio,
+    required this.context,
+    this.languageCode = 'en',
+    this.messageId = _noRetention,
+  });
+
+  /// A Message-ID for the simulated e-mail of [kind] that stays the same when the step's action
+  /// is retried (it is reset when the step finishes or the chapter restarts).
+  final String Function(String kind) messageId;
+
+  /// The language of the app (for scripted texts such as simulated e-mails).
+  final String languageCode;
 
   /// The HTTP client of the active environment.
   final Dio dio;
@@ -126,13 +141,24 @@ class ActionCompletion extends Completion {
 /// A read-only GET that tells whether a step is already done.
 class Probe {
   /// Creates a probe of [path] (with optional `{name}` placeholders and [query]).
-  const Probe(this.path, {this.query, required this.done, this.capture});
+  const Probe(
+    this.path, {
+    this.query,
+    required this.done,
+    this.capture,
+    this.expand,
+  });
 
   /// Path below the API base host, e.g. `/api/v1/products`.
   final String path;
 
   /// Query parameters.
   final Map<String, dynamic>? query;
+
+  /// Optional second stage: from the answer, the paths (at most 5 are read) of the records to
+  /// look at in full; [done] and [capture] then get the list of those records' answers instead
+  /// (a list answer carries too little to tell whether a record is the one the story made).
+  final List<String> Function(Object? json, MissionContext ctx)? expand;
 
   /// Whether the answer shows the step is done.
   final bool Function(Object? json, MissionContext ctx) done;

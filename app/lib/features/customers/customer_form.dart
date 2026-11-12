@@ -9,6 +9,7 @@ import 'closures_dialog.dart';
 import 'rebates_dialog.dart';
 import '../../l10n/l10n.dart';
 import '../../shared/app_icons.dart';
+import '../tutorial/targets.dart';
 
 /// Shows the customer form; returns true when saved.
 Future<bool?> showCustomerForm(
@@ -351,10 +352,10 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
           ),
         ),
         if (!widget.readOnly)
-          FilledButton(
+          TutorialTarget(id: 'customer-form-save', child: FilledButton(
             onPressed: _saving ? null : _save,
             child: Text(context.l10n.save),
-          ),
+          )),
       ],
     );
   }

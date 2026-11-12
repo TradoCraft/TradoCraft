@@ -12,6 +12,7 @@ tradocraft-fieldservice.workspace = true
 tradocraft-sales.workspace = true
 tradocraft-core.workspace = true
 anyhow.workspace = true
+chrono.workspace = true
 sqlx.workspace = true
 tokio.workspace = true
 tracing.workspace = true

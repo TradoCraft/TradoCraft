@@ -126,7 +126,7 @@ pub fn app_with_cors(
     app_with_identity(state, environment, bootstrap, cors, IdpSettings::default())
 }
 
-/// The application with the identity provider settings (ADR 0052) the admin API validates and
+/// The application with the identity provider settings (ADR 0055) the admin API validates and
 /// tests providers with; the same settings the registry in `state.auth` runs with.
 pub fn app_with_identity(
     state: AppState,

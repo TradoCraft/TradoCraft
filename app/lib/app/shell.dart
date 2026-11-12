@@ -10,6 +10,7 @@ import 'environments.dart';
 import 'profile.dart';
 import 'profile_badge.dart';
 import 'session.dart';
+import 'worker_ui.dart';
 import 'workspace.dart';
 import '../features/tutorial/targets.dart';
 import '../l10n/l10n.dart';
@@ -289,6 +290,7 @@ class AppShell extends ConsumerWidget {
         body: Column(
           children: [
             const EnvironmentBanner(),
+            const WorkerBanner(),
             Expanded(
               child: Row(
                 children: [
@@ -357,6 +359,7 @@ class AppShell extends ConsumerWidget {
       body: Column(
         children: [
           const EnvironmentBanner(),
+          const WorkerBanner(),
           Expanded(child: WorkspaceBody(home: child, wide: false)),
         ],
       ),
