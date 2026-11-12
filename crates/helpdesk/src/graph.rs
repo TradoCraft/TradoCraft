@@ -26,6 +26,8 @@ const GRAPH_URL: &str = "https://graph.microsoft.com/v1.0";
 const LOGIN_URL: &str = "https://login.microsoftonline.com";
 /// Unread messages fetched from one mailbox in one pass; the rest follows in the next pass.
 const MAX_PER_POLL: usize = 200;
+/// Unread messages listed per pass, so that ones that keep failing cannot hide the later ones.
+const MAX_LISTED: usize = 1000;
 /// A token is renewed this long before it expires.
 const TOKEN_MARGIN: Duration = Duration::from_secs(120);
 
@@ -65,6 +67,9 @@ pub struct GraphClient {
     login_url: String,
     /// Per tenant and application; a token is valid for every mailbox the application may use.
     tokens: Arc<Mutex<HashMap<(String, String), Token>>>,
+    /// Per mailbox: how often ingesting a still unread message failed. Messages that failed
+    /// before are tried after the others, so a few bad mails cannot occupy every pass.
+    failures: Arc<Mutex<HashMap<Uuid, HashMap<String, u32>>>>,
 }
 
 impl Default for GraphClient {
@@ -140,6 +145,7 @@ impl GraphClient {
             graph_url: graph_url.trim_end_matches('/').to_string(),
             login_url: login_url.trim_end_matches('/').to_string(),
             tokens: Arc::default(),
+            failures: Arc::default(),
         }
     }
 
@@ -230,19 +236,58 @@ impl GraphClient {
             ids.extend(page.value.into_iter().map(|r| r.id));
             match page.next_link {
                 // Only follow links to the same service: the token must not go anywhere else.
-                Some(next) if ids.len() < MAX_PER_POLL && next.starts_with(&self.graph_url) => {
+                Some(next) if ids.len() < MAX_LISTED && next.starts_with(&self.graph_url) => {
                     url = next
                 }
                 _ => break,
             }
         }
+        // Messages that failed before go last (the sort is stable: otherwise oldest first); only
+        // the ones still unread keep a failure count.
+        let mut failed = self
+            .failures
+            .lock()
+            .await
+            .remove(&m.mailbox_id)
+            .unwrap_or_default();
+        failed.retain(|id, _| ids.contains(id));
+        ids.sort_by_key(|id| failed.get(id).copied().unwrap_or(0));
         let mut processed = 0;
+        let result = self
+            .ingest_unread(
+                db,
+                m,
+                &token,
+                &ids,
+                company_id,
+                source,
+                &mut failed,
+                &mut processed,
+            )
+            .await;
+        // Also after an error: what failed so far keeps its place at the back.
+        self.failures.lock().await.insert(m.mailbox_id, failed);
+        result.map(|()| processed)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    async fn ingest_unread(
+        &self,
+        db: &PgPool,
+        m: &GraphMailbox,
+        token: &str,
+        ids: &[String],
+        company_id: Uuid,
+        source: Source,
+        failed: &mut HashMap<String, u32>,
+        processed: &mut usize,
+    ) -> anyhow::Result<()> {
         for id in ids.iter().take(MAX_PER_POLL) {
             let message_url = format!("{}/messages/{id}", self.user_url(m));
             let res = self
                 .http
                 .get(format!("{message_url}/$value"))
-                .bearer_auth(&token)
+                .bearer_auth(token)
                 .send()
                 .await
                 .context("reaching Microsoft Graph")?;
@@ -253,21 +298,23 @@ impl GraphClient {
                 }
                 Err(e) => {
                     tracing::error!(error = ?e, "could not ingest e-mail; it stays unread");
+                    *failed.entry(id.clone()).or_insert(0) += 1;
                     continue;
                 }
             }
             let res = self
                 .http
                 .patch(&message_url)
-                .bearer_auth(&token)
+                .bearer_auth(token)
                 .json(&serde_json::json!({ "isRead": true }))
                 .send()
                 .await
                 .context("reaching Microsoft Graph")?;
             check(res, "marking an e-mail as read").await?;
-            processed += 1;
+            failed.remove(id);
+            *processed += 1;
         }
-        Ok(processed)
+        Ok(())
     }
 
     /// Sends a complete MIME message from the mailbox. Returns the Message-ID Exchange gave it

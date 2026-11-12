@@ -134,6 +134,14 @@ fn valid_host(h: &str) -> bool {
             .all(|c| c.is_ascii_alphanumeric() || c == '.' || c == '-')
 }
 
+/// A server on this machine, where plain IMAP (a local test server) sends nothing over a network.
+fn is_loopback(host: &str) -> bool {
+    host.eq_ignore_ascii_case("localhost")
+        || host
+            .parse::<std::net::Ipv4Addr>()
+            .is_ok_and(|ip| ip.is_loopback())
+}
+
 /// The validated, normalised form of an input.
 struct Clean {
     name: String,
@@ -234,6 +242,10 @@ fn validate(input: &MailboxInput) -> AppResult<Clean> {
                 return bad("IMAP/SMTP needs the SMTP server");
             }
             match c.imap_host.as_deref() {
+                // A password must not cross a network in plain text.
+                Some(h) if valid_host(h) && !input.imap_tls && !is_loopback(h) => {
+                    return bad("IMAP without TLS is only allowed for a server on this machine");
+                }
                 Some(h) if valid_host(h) => {}
                 None if !input.inbound_enabled => {}
                 _ => return bad("fetching mail needs the IMAP server"),
@@ -520,12 +532,53 @@ pub async fn load_active(db: &PgPool) -> Result<Vec<ActiveMailbox>, sqlx::Error>
     .await
 }
 
-/// Looks up a secret by its reference; the worker reads `MAILBOX_SECRET_<reference>`.
-pub type SecretLookup<'a> = &'a (dyn Fn(&str) -> Option<String> + Send + Sync);
+/// What a mailbox asks of the secret store: the secret it names, for whom, and for which servers.
+#[derive(Debug, Clone)]
+pub struct SecretRequest<'a> {
+    pub reference: &'a str,
+    pub company_id: Uuid,
+    /// The servers the secret would be sent to (empty for Microsoft Graph).
+    pub hosts: Vec<&'a str>,
+}
 
-/// The secret of a mailbox from the process environment.
-pub fn env_secret(reference: &str) -> Option<String> {
-    std::env::var(format!("{SECRET_ENV_PREFIX}{reference}"))
+/// Looks up a secret; the worker reads `MAILBOX_SECRET_<reference>` and only hands it out for the
+/// company and servers named in `MAILBOX_BIND_<reference>`.
+pub type SecretLookup<'a> = &'a (dyn Fn(&SecretRequest<'_>) -> Option<String> + Send + Sync);
+
+/// The prefix of the worker environment variable that says who may use a secret and where it may
+/// be sent: `MAILBOX_BIND_<reference>=<company id>[:host,host,...]`.
+pub const BIND_ENV_PREFIX: &str = "MAILBOX_BIND_";
+
+/// Whether a binding allows the request: the company must be the owner, and every server the
+/// secret would go to must be listed. Without a binding nothing is allowed, so a secret can
+/// neither be used by another company that names the same reference nor sent to a server that an
+/// administrator typed into the settings.
+fn bound(binding: &str, req: &SecretRequest<'_>) -> bool {
+    let (company, hosts) = match binding.trim().split_once(':') {
+        Some((c, h)) => (c, h),
+        None => (binding.trim(), ""),
+    };
+    if Uuid::parse_str(company.trim()).ok() != Some(req.company_id) {
+        return false;
+    }
+    let allowed: Vec<String> = hosts
+        .split(',')
+        .map(|h| h.trim().to_ascii_lowercase())
+        .filter(|h| !h.is_empty())
+        .collect();
+    req.hosts
+        .iter()
+        .all(|h| allowed.contains(&h.to_ascii_lowercase()))
+}
+
+/// The secret of a mailbox from the process environment, when it is bound to the company and the
+/// servers of the request.
+pub fn env_secret(req: &SecretRequest<'_>) -> Option<String> {
+    let binding = std::env::var(format!("{BIND_ENV_PREFIX}{}", req.reference)).ok()?;
+    if !bound(&binding, req) {
+        return None;
+    }
+    std::env::var(format!("{SECRET_ENV_PREFIX}{}", req.reference))
         .ok()
         .filter(|v| !v.is_empty())
 }
@@ -535,11 +588,19 @@ fn port(p: Option<i32>, default: u16) -> u16 {
 }
 
 impl ActiveMailbox {
-    fn secret(&self, secrets: SecretLookup<'_>) -> anyhow::Result<String> {
-        secrets(&self.secret_ref).ok_or_else(|| {
+    /// The secret for sending to `host` (none for Graph). Missing, or not bound to this company
+    /// and server, both end here before anything is sent.
+    fn secret(&self, secrets: SecretLookup<'_>, host: Option<&str>) -> anyhow::Result<String> {
+        let req = SecretRequest {
+            reference: &self.secret_ref,
+            company_id: self.company_id,
+            hosts: host.into_iter().collect(),
+        };
+        secrets(&req).ok_or_else(|| {
             anyhow::anyhow!(
-                "the worker has no {SECRET_ENV_PREFIX}{} variable",
-                self.secret_ref
+                "the worker has no {SECRET_ENV_PREFIX}{r} variable, or {BIND_ENV_PREFIX}{r} does not allow \
+                 this company and server",
+                r = self.secret_ref
             )
         })
     }
@@ -573,7 +634,8 @@ impl ActiveMailbox {
         graph: &GraphClient,
         secrets: SecretLookup<'_>,
     ) -> anyhow::Result<usize> {
-        let secret = self.secret(secrets)?;
+        let host = (self.kind != "graph").then(|| self.imap_host.as_deref().unwrap_or_default());
+        let secret = self.secret(secrets, host)?;
         match self.kind.as_str() {
             "graph" => {
                 graph
@@ -600,7 +662,8 @@ impl ActiveMailbox {
     }
 
     fn mailer(&self, graph: &GraphClient, secrets: SecretLookup<'_>) -> anyhow::Result<Mailer> {
-        let secret = self.secret(secrets)?;
+        let host = (self.kind != "graph").then(|| self.smtp_host.as_deref().unwrap_or_default());
+        let secret = self.secret(secrets, host)?;
         match self.kind.as_str() {
             "graph" => Ok(Mailer::Graph(graph.clone(), self.graph(secret)?)),
             _ => {
@@ -628,6 +691,10 @@ impl ActiveMailbox {
     }
 }
 
+/// The longest one mailbox may take to fetch its mail, so a stuck server cannot stop the pass (and
+/// the heartbeat, outbox and SLA work behind it).
+pub const POLL_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(120);
+
 /// Fetches the mail of every active mailbox that receives, and records per mailbox when it was
 /// tried and whether it worked. One failing mailbox does not stop the others. Returns the number
 /// of e-mails ingested.
@@ -639,7 +706,13 @@ pub async fn poll_all(
 ) -> usize {
     let mut total = 0;
     for m in mailboxes.iter().filter(|m| m.inbound_enabled) {
-        let result = m.poll(db, graph, secrets).await;
+        let result = match tokio::time::timeout(POLL_TIMEOUT, m.poll(db, graph, secrets)).await {
+            Ok(r) => r,
+            Err(_) => Err(anyhow::anyhow!(
+                "fetching mail took longer than {} seconds",
+                POLL_TIMEOUT.as_secs()
+            )),
+        };
         let error = match &result {
             Ok(n) => {
                 total += n;
@@ -684,4 +757,40 @@ pub fn transports(
             )
         })
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn req(company: Uuid, hosts: &[&'static str]) -> SecretRequest<'static> {
+        SecretRequest {
+            reference: "SUPPORT",
+            company_id: company,
+            hosts: hosts.to_vec(),
+        }
+    }
+
+    #[test]
+    fn a_secret_is_bound_to_its_company_and_servers() {
+        let a = Uuid::from_u128(1);
+        let b = Uuid::from_u128(2);
+        let binding = format!("{a}:imap.example.com, SMTP.example.com");
+        assert!(bound(&binding, &req(a, &["imap.example.com"])));
+        assert!(bound(&binding, &req(a, &["smtp.example.com"])));
+        assert!(!bound(&binding, &req(b, &["imap.example.com"])));
+        assert!(!bound(&binding, &req(a, &["evil.example.com"])));
+        // Graph has no server: the company alone decides.
+        assert!(bound(&a.to_string(), &req(a, &[])));
+        assert!(!bound(&a.to_string(), &req(a, &["imap.example.com"])));
+        assert!(!bound("not a uuid", &req(a, &[])));
+    }
+
+    #[test]
+    fn plain_imap_is_for_this_machine_only() {
+        assert!(is_loopback("localhost"));
+        assert!(is_loopback("127.0.0.1"));
+        assert!(!is_loopback("mail.example.com"));
+        assert!(!is_loopback("10.0.0.5"));
+    }
 }

@@ -203,12 +203,15 @@ class _MailboxEditorState extends ConsumerState<MailboxEditor> {
 
   Future<void> _save() async {
     final graph = _kind == 'graph';
+    final activeTeams = (ref.read(teamsProvider).value ?? const <Team>[])
+        .where((t) => t.active);
+    final teamId = activeTeams.any((t) => t.id == _team) ? _team : null;
     final input = MailboxInput(
       name: _name.text.trim(),
       address: _address.text.trim(),
       kind: _kind,
       secretRef: _secretRef.text.trim().toUpperCase(),
-      teamId: _team,
+      teamId: teamId,
       isDefault: _default,
       active: _active,
       inboundEnabled: _inbound,
@@ -232,6 +235,7 @@ class _MailboxEditorState extends ConsumerState<MailboxEditor> {
       }
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
+      if (!mounted) return;
       setState(() => _error = errorMessage(e));
     }
   }
@@ -260,6 +264,7 @@ class _MailboxEditorState extends ConsumerState<MailboxEditor> {
       await ref.read(apiProvider).helpdesk.deleteMailbox(id: _m!.id);
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
+      if (!mounted) return;
       setState(() => _error = errorMessage(e));
     }
   }

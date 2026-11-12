@@ -45,6 +45,12 @@ CREATE UNIQUE INDEX mailboxes_one_default_idx ON helpdesk.mailboxes (company_id)
 
 -- The mailbox a ticket came in on: replies leave through it. Empty for tickets made by hand, from
 -- the portal, or fetched through the worker's IMAP_* variables.
-ALTER TABLE helpdesk.tickets ADD COLUMN mailbox_id uuid REFERENCES helpdesk.mailboxes(id) ON DELETE SET NULL;
+-- The links are NOT VALID so that adding them does not scan the big tables under the lock; the
+-- next migration validates them.
+ALTER TABLE helpdesk.tickets ADD COLUMN mailbox_id uuid;
+ALTER TABLE helpdesk.tickets ADD CONSTRAINT tickets_mailbox_id_fkey
+    FOREIGN KEY (mailbox_id) REFERENCES helpdesk.mailboxes(id) ON DELETE SET NULL NOT VALID;
 -- The mailbox an e-mail was received on or is sent through.
-ALTER TABLE helpdesk.articles ADD COLUMN mailbox_id uuid REFERENCES helpdesk.mailboxes(id) ON DELETE SET NULL;
+ALTER TABLE helpdesk.articles ADD COLUMN mailbox_id uuid;
+ALTER TABLE helpdesk.articles ADD CONSTRAINT articles_mailbox_id_fkey
+    FOREIGN KEY (mailbox_id) REFERENCES helpdesk.mailboxes(id) ON DELETE SET NULL NOT VALID;

@@ -16,7 +16,7 @@ use serde_json::{json, Value};
 use sqlx::PgPool;
 use tradocraft_helpdesk::graph::GraphClient;
 use tradocraft_helpdesk::ingest::{ingest_from, Source};
-use tradocraft_helpdesk::mailboxes::{self, load_active, poll_all, transports};
+use tradocraft_helpdesk::mailboxes::{self, load_active, poll_all, transports, SecretRequest};
 use tradocraft_helpdesk::mailer::{
     process_outbox, process_outbox_with, process_system_mail_with, Mailer, Transports,
 };
@@ -74,11 +74,11 @@ fn mail(from: &str, to: &str, subject: &str, headers: &str) -> Vec<u8> {
     .into_bytes()
 }
 
-fn secrets(reference: &str) -> Option<String> {
-    (reference == "SUPPORT" || reference == "ONPREM").then(|| "s3cret-value".to_string())
+fn secrets(req: &SecretRequest<'_>) -> Option<String> {
+    (req.reference == "SUPPORT" || req.reference == "ONPREM").then(|| "s3cret-value".to_string())
 }
 
-fn no_secrets(_: &str) -> Option<String> {
+fn no_secrets(_: &SecretRequest<'_>) -> Option<String> {
     None
 }
 
@@ -174,6 +174,13 @@ async fn settings_api_validates_and_keeps_one_default(db: PgPool) {
                 json!({ "smtp_security": "ssl" }),
             ),
             "SMTP security",
+        ),
+        (
+            with(
+                imap_input("X", "x@contoso.example"),
+                json!({ "imap_tls": false }),
+            ),
+            "without TLS",
         ),
         (
             with(
@@ -879,7 +886,7 @@ async fn graph_mailbox_fetches_and_sends(db: PgPool) {
     assert_eq!(fake.lock().unwrap().token_requests, 2);
     assert_eq!(list(&app).await[0]["last_error"], Value::Null);
 
-    let wrong = |r: &str| (r == "SUPPORT").then(|| "wrong".to_string());
+    let wrong = |r: &SecretRequest<'_>| (r.reference == "SUPPORT").then(|| "wrong".to_string());
     let fresh = GraphClient::with_urls(
         &format!("{}/v1.0", fake.lock().unwrap().base),
         &format!("{}/login", fake.lock().unwrap().base),

@@ -180,9 +180,10 @@ pub async fn ingest_from(
     if let Some(mid) = &mail.message_id {
         let existing: Option<(Uuid, Uuid, String)> = sqlx::query_as(
             "SELECT a.id, t.id, t.number FROM helpdesk.articles a JOIN helpdesk.tickets t ON t.id = a.ticket_id
-             WHERE a.message_id = $1",
+             WHERE a.message_id = $1 AND t.company_id = $2",
         )
         .bind(mid)
+        .bind(company_id)
         .fetch_optional(&mut *tx)
         .await?;
         if let Some((article_id, ticket_id, ticket_number)) = existing {
