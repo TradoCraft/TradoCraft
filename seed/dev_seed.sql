@@ -1,10 +1,10 @@
 -- Development seed data. Loaded by the API when SEED_DEV_DATA=true and no company exists.
 -- All names and numbers are fictitious.
 
-INSERT INTO core.companies (id, name, vat_number, street, postal_code, city, country_code, currency, email, phone, iban)
+INSERT INTO core.companies (id, name, vat_number, street, postal_code, city, country_code, currency, email, phone, iban, is_primary)
 VALUES ('00000000-0000-7000-8000-000000000001', 'Demo Manufacturing BV', 'BE0123456749',
         'Industrieweg 1', '9000', 'Gent', 'BE', 'EUR', 'sales@example.com', '+32 9 000 00 00',
-        'BE68 5390 0754 7034');
+        'BE68 5390 0754 7034', true);
 
 INSERT INTO core.users (id, email, display_name) VALUES
     ('00000000-0000-7000-8000-000000000101', 'admin@example.com', 'Admin User'),

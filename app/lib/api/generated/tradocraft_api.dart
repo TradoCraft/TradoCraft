@@ -4,6 +4,7 @@
 
 import 'package:dio/dio.dart';
 
+import 'clients/admin_client.dart';
 import 'clients/core_client.dart';
 import 'clients/engineering_client.dart';
 import 'clients/crm_client.dart';
@@ -38,6 +39,7 @@ class TradocraftApi {
 
   static String get version => '0.1.0';
 
+  AdminClient? _admin;
   CoreClient? _core;
   EngineeringClient? _engineering;
   CrmClient? _crm;
@@ -56,6 +58,8 @@ class TradocraftApi {
   PlanningClient? _planning;
   PortalClient? _portal;
   ProductionClient? _production;
+
+  AdminClient get admin => _admin ??= AdminClient(_dio, baseUrl: _baseUrl);
 
   CoreClient get core => _core ??= CoreClient(_dio, baseUrl: _baseUrl);
 

@@ -201,7 +201,8 @@ pub struct Provisioned {
 /// commits): the company; the administrator (an existing active user with that e-mail is reused)
 /// with a membership holding the role `admin`, the default one when the user has none yet; the
 /// numbering sequences of the current year; the warehouse `MAIN` with its location and the
-/// virtual locations; price zones Z1-Z5. Units of measure are global (created by migrations) and
+/// virtual locations; price zones Z1-Z5. The first company of an empty database becomes the
+/// primary company. Units of measure are global (created by migrations) and
 /// VAT is a rate per product, so neither needs rows. Refuses a name another company already has
 /// (409).
 pub async fn provision(conn: &mut PgConnection, spec: &ProvisionSpec) -> AppResult<Provisioned> {
@@ -224,9 +225,10 @@ pub async fn provision(conn: &mut PgConnection, spec: &ProvisionSpec) -> AppResu
     }
 
     let company_id = new_id();
+    // The first company of an empty database is the primary one (the lock above serialises this).
     sqlx::query(
-        "INSERT INTO core.companies (id, name, legal_name, vat_number, country_code, currency, default_language)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)",
+        "INSERT INTO core.companies (id, name, legal_name, vat_number, country_code, currency, default_language, is_primary)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, NOT EXISTS (SELECT 1 FROM core.companies))",
     )
     .bind(company_id)
     .bind(&spec.name)

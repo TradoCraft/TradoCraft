@@ -88,6 +88,7 @@ class _Fake implements HttpClientAdapter {
           'country_code': 'BE',
           'currency': 'EUR',
           'default_language': 'nl',
+          'is_primary': true,
         },
       },
       'GET /api/v1/users' => [
