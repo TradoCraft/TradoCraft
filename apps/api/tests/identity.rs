@@ -62,6 +62,7 @@ async fn oidc_app(
         state.clone(),
         EnvironmentConfig::default(),
         BootstrapConfig::default(),
+        &tradocraft_core::cors::CorsConfig::Any,
         settings,
     );
     (app, state)
