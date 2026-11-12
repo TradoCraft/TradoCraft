@@ -142,6 +142,7 @@ class TutorialState {
     this.location = '',
     this.actionBusy = false,
     this.actionError,
+    this.finishedId,
   });
 
   /// Whether the stored progress has been read.
@@ -180,6 +181,10 @@ class TutorialState {
   /// Why the last run of the action button failed (not stored); null when it did not.
   final TutorialActionError? actionError;
 
+  /// The chapter that was just finished and whose completion card is shown (not stored, so a
+  /// restart never brings the card back); null when none is.
+  final String? finishedId;
+
   /// A chapter is on and not paused.
   bool get running => activeId != null && !paused;
 
@@ -203,6 +208,7 @@ class TutorialState {
     String? location,
     bool? actionBusy,
     Object? actionError = _keep,
+    Object? finishedId = _keep,
   }) => TutorialState(
     loaded: loaded ?? this.loaded,
     completed: completed ?? this.completed,
@@ -218,6 +224,9 @@ class TutorialState {
     actionError: identical(actionError, _keep)
         ? this.actionError
         : actionError as TutorialActionError?,
+    finishedId: identical(finishedId, _keep)
+        ? this.finishedId
+        : finishedId as String?,
   );
 
   static const Object _keep = Object();
@@ -290,9 +299,15 @@ class TutorialController extends Notifier<TutorialState> {
     }
     if (!ref.mounted || scope != _scope) return;
     // A restart comes back paused, and never on live data.
+    final active = scope.canRun ? loaded.activeId : null;
+    var at = loaded.stepIndex;
+    final stored = _missions.where((m) => m.id == active).firstOrNull;
+    // A stored place outside the chapter would give a card without a step: clamp it.
+    if (stored != null) at = at.clamp(0, stored.steps.length - 1);
     state = loaded.copyWith(
-      paused: loaded.activeId != null,
-      activeId: scope.canRun ? loaded.activeId : null,
+      paused: active != null,
+      activeId: active,
+      stepIndex: active == null ? 0 : at,
       location: state.location,
     );
   }
@@ -401,6 +416,7 @@ class TutorialController extends Notifier<TutorialState> {
         activeId: id,
         stepIndex: at,
         paused: false,
+        finishedId: null,
         actionBusy: samePending ? state.actionBusy : false,
         actionError: samePending ? state.actionError : null,
       ),
@@ -493,7 +509,11 @@ class TutorialController extends Notifier<TutorialState> {
   /// Tells the tutorial which location the app shows (completes route steps).
   void routeChanged(String location) {
     if (location == state.location) return;
-    state = state.copyWith(location: location);
+    // On the chapter map the completion card has done its job.
+    state = state.copyWith(
+      location: location,
+      finishedId: location.startsWith('/tutorial') ? null : state.finishedId,
+    );
     final s = step;
     if (s == null || !state.running) return;
     final c = s.completion;
@@ -521,6 +541,7 @@ class TutorialController extends Notifier<TutorialState> {
           activeId: null,
           stepIndex: 0,
           paused: false,
+          finishedId: m.id,
         ),
       );
       return;
@@ -535,6 +556,21 @@ class TutorialController extends Notifier<TutorialState> {
       ),
     );
     _enterStep();
+  }
+
+  /// The chapter whose completion card is shown, if any.
+  Mission? get finishedChapter =>
+      _missions.where((m) => m.id == state.finishedId).firstOrNull;
+
+  /// The chapter after the finished one, if there is one.
+  Mission? get nextChapter {
+    final i = _missions.indexWhere((m) => m.id == state.finishedId);
+    return i < 0 || i + 1 >= _missions.length ? null : _missions[i + 1];
+  }
+
+  /// Closes the completion card (progress is kept).
+  void dismissFinished() {
+    if (state.finishedId != null) _set(state.copyWith(finishedId: null));
   }
 
   /// Finishes a manual step (Next).
@@ -582,6 +618,7 @@ class TutorialController extends Notifier<TutorialState> {
       state.copyWith(
         actionBusy: target == state.activeId ? false : state.actionBusy,
         skipped: {...state.skipped, target},
+        finishedId: null,
         activeId: target == state.activeId ? null : state.activeId,
         stepIndex: target == state.activeId ? 0 : state.stepIndex,
         paused: target == state.activeId ? false : state.paused,

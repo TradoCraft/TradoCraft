@@ -6338,6 +6338,26 @@ class AppLocalizationsNl extends AppLocalizations {
   String get tutReplay => 'Opnieuw';
 
   @override
+  String tutFinishedTitle(String name) {
+    return 'Hoofdstuk $name voltooid';
+  }
+
+  @override
+  String tutFinishedNext(String name) {
+    return 'Goed gedaan. Hierna: $name. Start het nu, of kies het later op de hoofdstukkenkaart.';
+  }
+
+  @override
+  String get tutFinishedLast =>
+      'Dat was het laatste hoofdstuk. Goed gedaan. Je kunt elk hoofdstuk opnieuw doen vanaf de hoofdstukkenkaart.';
+
+  @override
+  String get tutStartNext => 'Volgend hoofdstuk starten';
+
+  @override
+  String get tutBackToMap => 'Terug naar hoofdstukkenkaart';
+
+  @override
   String get tutSkipChapter => 'Hoofdstuk overslaan';
 
   @override

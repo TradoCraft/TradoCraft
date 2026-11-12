@@ -6320,6 +6320,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tutReplay => 'Replay';
 
   @override
+  String tutFinishedTitle(String name) {
+    return 'Chapter $name complete';
+  }
+
+  @override
+  String tutFinishedNext(String name) {
+    return 'Well done. Next up: $name. Start it now, or pick it later from the chapter map.';
+  }
+
+  @override
+  String get tutFinishedLast =>
+      'That was the last chapter. Well done. You can replay any chapter from the chapter map.';
+
+  @override
+  String get tutStartNext => 'Start next chapter';
+
+  @override
+  String get tutBackToMap => 'Back to chapter map';
+
+  @override
   String get tutSkipChapter => 'Skip chapter';
 
   @override

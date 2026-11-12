@@ -6347,6 +6347,26 @@ class AppLocalizationsFr extends AppLocalizations {
   String get tutReplay => 'Rejouer';
 
   @override
+  String tutFinishedTitle(String name) {
+    return 'Chapitre $name terminé';
+  }
+
+  @override
+  String tutFinishedNext(String name) {
+    return 'Bravo. Prochain chapitre : $name. Lancez-le maintenant, ou choisissez-le plus tard sur la carte des chapitres.';
+  }
+
+  @override
+  String get tutFinishedLast =>
+      'C\'était le dernier chapitre. Bravo. Vous pouvez rejouer n\'importe quel chapitre depuis la carte des chapitres.';
+
+  @override
+  String get tutStartNext => 'Démarrer le chapitre suivant';
+
+  @override
+  String get tutBackToMap => 'Retour à la carte des chapitres';
+
+  @override
   String get tutSkipChapter => 'Passer le chapitre';
 
   @override
