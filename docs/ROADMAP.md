@@ -28,7 +28,7 @@ Module overview: [ARCHITECTURE.md](ARCHITECTURE.md).
 | C3 Planning board, field-jobs half (calendars, absences, skills, conflicts, suggestions, drag-and-drop board) | Done, [ADR 0024](adr/0024-planning-board.md) |
 | C3 Planning board, work-centre half (capacity, finite loading) | Open (needs C1; reuses the resource calendar and `ResourceBoard`) |
 | D1 Worker heartbeat and "worker was down" alert | Done, [ADR 0052](adr/0052-worker-heartbeat.md) |
-| D2 Backup and restore runbook | Open |
+| D2 Backup and restore runbook | Done, [ADR 0056](adr/0056-backup-and-restore.md) |
 | D3 Concurrent-edit protection on records | Open |
 | D4 VAT number validation, registry lookup and duplicate warning | Open |
 | D5 Accent-insensitive search | Open |
@@ -123,6 +123,10 @@ production.
   `pg_dump` while those live in the database), a retention rule, and a restore that is tested
   against a clone ([ADR 0043](adr/0043-environments.md)).
 - A runbook in `docs/runbooks/`.
+- Done ([ADR 0056](adr/0056-backup-and-restore.md)): `scripts/backupctl` (`pg_basebackup` with a
+  manifest, 7 daily, 4 weekly and 6 monthly backups kept, `verify` restores into a throwaway
+  server and reads every row) and the [runbook](runbooks/backup-and-restore.md), with a restore
+  drill through `envctl clone`.
 
 **D3 Concurrent-edit protection on records** (medium)
 - Updates carry no version check today, so two people who edit the same customer, quotation or
