@@ -697,6 +697,66 @@ void main() {
       );
     });
   });
+
+  group('action ownership', () {
+    final done = ['welcome', 'product', 'suppliers', 'buying', 'invoices', 'manufacturing', 'prices'];
+    Object? ok(Object? _) =>
+        {'ticket_id': 't1', 'ticket_number': 'T1', 'new_ticket': true};
+
+    test('skipping an inactive chapter leaves a pending action valid', () async {
+      final gate = Completer<void>();
+      final http = _SlowHttp(gate.future, {'POST /api/v1/helpdesk/inbound': ok});
+      final c = _boot(http, completed: done, active: 'customer');
+      final t = c.read(tutorialProvider.notifier);
+      await t.ready;
+      await t.resume();
+      t.next();
+      final pending = t.runAction();
+      await pumpEventQueue();
+      await t.skipChapter('quotation'); // not the active chapter
+      expect(c.read(tutorialProvider).actionBusy, isTrue);
+      gate.complete();
+      await pending;
+      expect(c.read(tutorialProvider).stepIndex, 2, reason: 'the response still advances the step');
+      expect(c.read(tutorialProvider).actionBusy, isFalse);
+    });
+
+    for (final failing in [false, true]) {
+      test('a stale ${failing ? 'error' : 'success'} does not touch the newer request', () async {
+        final gates = [Completer<void>(), Completer<void>()];
+        var served = 0;
+        final http = _GatedHttp(gates, {
+          'POST /api/v1/helpdesk/inbound': (_) => failing && served++ == 0
+              ? const FakeStatus(500, {'error': 'x', 'message': 'boom'})
+              : ok(null),
+        });
+        final c = _boot(http, completed: done, active: 'customer');
+        final t = c.read(tutorialProvider.notifier);
+        await t.ready;
+        await t.resume();
+        t.next(); // mail1
+        final first = t.runAction();
+        await pumpEventQueue();
+        t.back(); // a reset: the flags are freed
+        t.next(); // the same step again (same key)
+        expect(c.read(tutorialProvider).actionBusy, isFalse);
+        final second = t.runAction();
+        await pumpEventQueue();
+        expect(http.mails, 2);
+        gates[0].complete(); // the stale one finishes first
+        await first;
+        var s = c.read(tutorialProvider);
+        expect(s.actionBusy, isTrue, reason: 'the newer request is still running');
+        expect(s.actionError, isNull);
+        expect(s.stepIndex, 1);
+        gates[1].complete();
+        await second;
+        s = c.read(tutorialProvider);
+        expect(s.actionBusy, isFalse);
+        expect(s.stepIndex, 2);
+      });
+    }
+  });
 }
 
 /// A fake server that holds every answer back until [gate] completes and records the raw bodies.
@@ -722,6 +782,29 @@ class _SlowHttp extends FakeHttp {
         : Uint8List.fromList(await body.expand((c) => c).toList());
     sent.add(utf8.decode(bytes));
     await gate;
+    return super.fetch(o, Stream.value(bytes), cancel);
+  }
+}
+
+/// A fake server where each posted mail waits for its own gate.
+class _GatedHttp extends FakeHttp {
+  _GatedHttp(this.gates, super.routes);
+  final List<Completer<void>> gates;
+  int mails = 0;
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions o,
+    Stream<Uint8List>? body,
+    Future<void>? cancel,
+  ) async {
+    final bytes = body == null
+        ? Uint8List(0)
+        : Uint8List.fromList(await body.expand((c) => c).toList());
+    if (o.method == 'POST' && o.path.endsWith('/helpdesk/inbound')) {
+      final gate = gates[mails++];
+      await gate.future;
+    }
     return super.fetch(o, Stream.value(bytes), cancel);
   }
 }

@@ -393,6 +393,7 @@ class TutorialController extends Notifier<TutorialState> {
     final samePending = _actionKey == '$id/$at';
     if (!samePending) {
       _actionKey = null;
+      _actionOwner = null;
       _retained.clear();
     }
     _set(
@@ -507,6 +508,7 @@ class TutorialController extends Notifier<TutorialState> {
     final next = state.stepIndex + 1;
     _gen++;
     _actionKey = null;
+    _actionOwner = null;
     _retained.clear();
     if (next >= m.steps.length) {
       _set(
@@ -550,6 +552,7 @@ class TutorialController extends Notifier<TutorialState> {
     if (m == null || !state.running || state.stepIndex == 0) return;
     _gen++;
     _actionKey = null;
+    _actionOwner = null;
     _retained.clear();
     final at = state.stepIndex - 1;
     _set(
@@ -568,9 +571,11 @@ class TutorialController extends Notifier<TutorialState> {
     if (!ref.mounted) return;
     final target = id ?? state.activeId;
     if (target == null) return;
-    _gen++;
+    // Skipping another chapter leaves the active step as it is, so a pending action stays valid.
     if (target == state.activeId) {
+      _gen++;
       _actionKey = null;
+      _actionOwner = null;
       _retained.clear();
     }
     _set(
@@ -606,6 +611,10 @@ class TutorialController extends Notifier<TutorialState> {
   /// step change forgets it.
   String? _actionKey;
 
+  /// Identifies the one request that owns the action flags; a request that no longer is the
+  /// owner (its step was left or restarted meanwhile) must not touch them.
+  Object? _actionOwner;
+
   String get _stepKey => '${state.activeId}/${state.stepIndex}';
   final _random = Random();
 
@@ -622,8 +631,9 @@ class TutorialController extends Notifier<TutorialState> {
     if (s == null || c is! ActionCompletion || !state.running) return;
     if (state.actionBusy) return;
     final gen = _gen;
-    final key = _stepKey;
-    _actionKey = key;
+    final owner = Object();
+    _actionOwner = owner;
+    _actionKey = _stepKey;
     _set(state.copyWith(actionBusy: true, actionError: null));
     Map<String, String>? captured;
     try {
@@ -640,8 +650,9 @@ class TutorialController extends Notifier<TutorialState> {
       );
     } catch (e) {
       // Another step (or a restarted chapter) owns the flags now: leave them alone.
-      if (!ref.mounted || _actionKey != key) return;
+      if (!ref.mounted || _actionOwner != owner) return;
       _actionKey = null;
+      _actionOwner = null;
       _set(
         state.copyWith(
           actionBusy: false,
@@ -655,8 +666,9 @@ class TutorialController extends Notifier<TutorialState> {
       );
       return;
     }
-    if (!ref.mounted || _actionKey != key) return;
+    if (!ref.mounted || _actionOwner != owner) return;
     _actionKey = null;
+    _actionOwner = null;
     if (gen != _gen || step != s) {
       // Paused and resumed meanwhile: the answer is not used, the button is free again and a
       // new press sends the same Message-ID (kept in _retained), so the server drops a duplicate.
