@@ -1,0 +1,14 @@
+{
+  "name": "tradocraft-e2e",
+  "private": true,
+  "description": "Browser end-to-end tests: the Flutter web build against a real API and PostgreSQL",
+  "scripts": {
+    "test": "playwright test --trace off",
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@types/node": "^22.20.5",
+    "typescript": "^5.9.3"
+  }
+}
