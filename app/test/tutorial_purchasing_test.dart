@@ -2,12 +2,15 @@ import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/widgets.dart' show Locale;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tradocraft_app/app/api.dart';
 import 'package:tradocraft_app/app/environments.dart';
 import 'package:tradocraft_app/features/field/offline/kv_store.dart';
 import 'package:tradocraft_app/features/tutorial/api_events.dart';
 import 'package:tradocraft_app/features/tutorial/controller.dart';
+import 'package:tradocraft_app/features/tutorial/strings.dart';
+import 'package:tradocraft_app/l10n/app_localizations.dart';
 
 import 'fake_http.dart';
 
@@ -75,14 +78,20 @@ FakeHttp _withProducts(Map<String, Object? Function(Object?)> routes) =>
       ...routes,
     });
 
-Map<String, Object?> _warehouse({String kind = 'warehouse', bool active = true}) => {
+Map<String, Object?> _warehouse({
+  String code = 'MAIN',
+  String kind = 'warehouse',
+  bool active = true,
+  String location = 'MAIN',
+  bool locationActive = true,
+}) => {
   'id': 'w1',
-  'code': 'MAIN',
+  'code': code,
   'name': 'Main warehouse',
   'kind': kind,
   'active': active,
   'locations': [
-    {'id': 'l1', 'code': 'MAIN', 'active': true},
+    {'id': 'l1', 'code': location, 'active': locationActive},
   ],
 };
 
@@ -404,15 +413,57 @@ void main() {
         expect(http.requests, isNot(contains('POST /api/v1/inventory/warehouses')));
       });
 
-      test('a van or an inactive warehouse is not a place to receive goods', () async {
-        for (final w in [_warehouse(kind: 'van'), _warehouse(active: false)]) {
+      test('only an active warehouse MAIN with an active location MAIN is skipped', () async {
+        final cases = <String, (Map<String, Object?>, bool)>{
+          'MAIN exists': (_warehouse(), true),
+          'only BIN-01 in another warehouse': (_warehouse(code: 'WH1', location: 'BIN-01'), false),
+          'warehouse MAIN holds only BIN-01': (_warehouse(location: 'BIN-01'), false),
+          'inactive warehouse MAIN': (_warehouse(active: false), false),
+          'inactive location MAIN': (_warehouse(locationActive: false), false),
+          'a van': (_warehouse(kind: 'van'), false),
+        };
+        for (final e in cases.entries) {
+          final w = e.value.$1;
           final http = FakeHttp({'GET /api/v1/inventory/warehouses': (_) => [w]});
           final c = atTheStep(http);
           final t = c.read(tutorialProvider.notifier);
           await t.ready;
           await t.resume();
           await pumpEventQueue(times: 100);
-          expect(c.read(tutorialProvider).stepIndex, openWarehouses);
+          expect(
+            c.read(tutorialProvider).stepIndex,
+            e.value.$2 ? receivePart : openWarehouses,
+            reason: e.key,
+          );
+        }
+      });
+
+      test('a warehouse with another code does not finish the step', () async {
+        final http = FakeHttp({
+          'GET /api/v1/inventory/warehouses': (_) => [],
+          'POST /api/v1/inventory/warehouses': (_) => _warehouse(code: 'WH2'),
+        });
+        final c = atTheStep(http);
+        final t = c.read(tutorialProvider.notifier);
+        await t.ready;
+        await t.resume();
+        t.routeChanged('/stock/warehouses');
+        await c.read(dioProvider).post<Object?>('/api/v1/inventory/warehouses');
+        expect(c.read(tutorialProvider).stepIndex, warehouse);
+      });
+
+      test('the warehouse texts tell what to do when an inactive MAIN holds the code', () {
+        for (final code in ['en', 'de', 'es', 'fr', 'nl']) {
+          final l = lookupAppLocalizations(Locale(code));
+          for (final key in [
+            'tutBuyingWarehouseBody',
+            'tutManufacturingWarehouseBody',
+            'tutChangeWarehouseBody',
+          ]) {
+            final text = tutorialText(l, key);
+            expect(text, contains('MAIN'), reason: '$key $code');
+            expect(text.split('MAIN').length, greaterThanOrEqualTo(3), reason: '$key $code mentions the taken code');
+          }
         }
       });
     });

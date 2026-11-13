@@ -7330,7 +7330,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get tutBuyingWarehouseBody =>
-      'Pulse Nuevo almacén, póngale el código MAIN y el nombre Almacén principal, y guarde. Un almacén nuevo trae su ubicación MAIN, que es donde recibirá la mercancía a continuación.';
+      'Pulse Nuevo almacén, póngale el código MAIN y el nombre Almacén principal, y guarde. Un almacén nuevo trae su ubicación MAIN, que es donde recibirá la mercancía a continuación. Si se rechaza al guardar porque el código MAIN ya existe, lo tiene un almacén inactivo: vuelva a activarlo (y su ubicación) en Stock > Almacenes, o cámbiele el código con su botón de editar, y pulse después Siguiente.';
 
   @override
   String get tutBuyingWarehouseHint =>
@@ -7529,7 +7529,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get tutManufacturingWarehouseBody =>
-      'Los carritos terminados necesitan una ubicación donde ir, y todavía no hay ningún almacén (el capítulo 3 lo crea). Abra Stock, pulse Almacenes y cree el almacén MAIN con el nombre Almacén principal; después vuelva a la orden de producción.';
+      'Los carritos terminados necesitan una ubicación donde ir, y todavía no hay ningún almacén (el capítulo 3 lo crea). Abra Stock, pulse Almacenes y cree el almacén MAIN con el nombre Almacén principal; después vuelva a la orden de producción. Si se rechaza al guardar porque el código MAIN ya existe, lo tiene un almacén inactivo: vuelva a activarlo (y su ubicación) en Stock > Almacenes, o cámbiele el código con su botón de editar, y pulse después Siguiente.';
 
   @override
   String get tutManufacturingWarehouseHint =>
@@ -7905,7 +7905,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get tutChangeWarehouseBody =>
-      'Los carritos terminados necesitan una ubicación donde ir, y todavía no hay ningún almacén (el capítulo 3 lo crea). Abra Stock, pulse Almacenes y cree el almacén MAIN con el nombre Almacén principal; después vuelva a la orden de producción.';
+      'Los carritos terminados necesitan una ubicación donde ir, y todavía no hay ningún almacén (el capítulo 3 lo crea). Abra Stock, pulse Almacenes y cree el almacén MAIN con el nombre Almacén principal; después vuelva a la orden de producción. Si se rechaza al guardar porque el código MAIN ya existe, lo tiene un almacén inactivo: vuelva a activarlo (y su ubicación) en Stock > Almacenes, o cámbiele el código con su botón de editar, y pulse después Siguiente.';
 
   @override
   String get tutChangeWarehouseHint =>

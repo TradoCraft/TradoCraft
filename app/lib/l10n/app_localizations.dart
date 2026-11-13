@@ -13173,7 +13173,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutBuyingWarehouseBody.
   ///
   /// In en, this message translates to:
-  /// **'Press New warehouse, give it the code MAIN and the name Main warehouse, and save. A new warehouse comes with its location MAIN, which is where you receive the goods next.'**
+  /// **'Press New warehouse, give it the code MAIN and the name Main warehouse, and save. A new warehouse comes with its location MAIN, which is where you receive the goods next. If saving is refused because the code MAIN is taken, an inactive warehouse holds it: switch it (and its location) back on in Stock > Warehouses, or give it another code with its edit button, then press Next.'**
   String get tutBuyingWarehouseBody;
 
   /// No description provided for @tutBuyingWarehouseHint.
@@ -13509,7 +13509,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutManufacturingWarehouseBody.
   ///
   /// In en, this message translates to:
-  /// **'The finished carts need a location to go into, and there is no warehouse yet (chapter 3 creates it). Open Stock, press Warehouses and create the warehouse MAIN with the name Main warehouse, then go back to the production order.'**
+  /// **'The finished carts need a location to go into, and there is no warehouse yet (chapter 3 creates it). Open Stock, press Warehouses and create the warehouse MAIN with the name Main warehouse, then go back to the production order. If saving is refused because the code MAIN is taken, an inactive warehouse holds it: switch it (and its location) back on in Stock > Warehouses, or give it another code with its edit button, then press Next.'**
   String get tutManufacturingWarehouseBody;
 
   /// No description provided for @tutManufacturingWarehouseHint.
@@ -14145,7 +14145,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutChangeWarehouseBody.
   ///
   /// In en, this message translates to:
-  /// **'The finished carts need a location to go into, and there is no warehouse yet (chapter 3 creates it). Open Stock, press Warehouses and create the warehouse MAIN with the name Main warehouse, then go back to the production order.'**
+  /// **'The finished carts need a location to go into, and there is no warehouse yet (chapter 3 creates it). Open Stock, press Warehouses and create the warehouse MAIN with the name Main warehouse, then go back to the production order. If saving is refused because the code MAIN is taken, an inactive warehouse holds it: switch it (and its location) back on in Stock > Warehouses, or give it another code with its edit button, then press Next.'**
   String get tutChangeWarehouseBody;
 
   /// No description provided for @tutChangeWarehouseHint.

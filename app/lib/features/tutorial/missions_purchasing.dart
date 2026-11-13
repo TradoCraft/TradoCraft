@@ -56,18 +56,26 @@ bool _allProducts(Object? json, MissionContext ctx) =>
 Map<String, String> _productsCapture(Object? json, MissionContext ctx) =>
     _captureProducts(json);
 
-bool _usableWarehouse(Map w) =>
+/// The warehouse and location the texts name: an active warehouse MAIN with an active location MAIN.
+bool _isMainWarehouse(Map w) =>
+    w['code'] == 'MAIN' &&
     w['kind'] != 'van' &&
     w['active'] != false &&
     w['locations'] is List &&
-    (w['locations'] as List).any((l) => l is Map && l['active'] != false);
+    (w['locations'] as List).any(
+      (l) => l is Map && l['code'] == 'MAIN' && l['active'] != false,
+    );
 
-/// Whether a warehouse with an active location exists (goods can be received into it).
+/// Whether the warehouse MAIN with its location MAIN exists and is usable. Another warehouse does not
+/// count: the instructions of the later steps say "choose the location MAIN".
 bool _hasReceivingLocation(Object? json, MissionContext ctx) =>
-    json is List && json.any((w) => w is Map && _usableWarehouse(w));
+    json is List && json.any((w) => w is Map && _isMainWarehouse(w));
 
-/// A read-only look at the warehouses: the steps that put goods somewhere are skipped when a
-/// warehouse with a location already exists (made by hand, or by an earlier chapter).
+bool _isNewMain(Object? json, MissionContext ctx) =>
+    json is Map && json['code'] == 'MAIN';
+
+/// A read-only look at the warehouses: the steps that put goods somewhere are skipped when the
+/// warehouse MAIN with its location MAIN already exists (made by hand, or by an earlier chapter).
 const warehouseProbe = Probe(
   '/api/v1/inventory/warehouses',
   done: _hasReceivingLocation,
@@ -80,7 +88,12 @@ const warehouseStep = MissionStep(
   hasHint: true,
   route: '/stock/warehouses',
   targets: ['warehouse-form-save', 'warehouse-new'],
-  completion: OnApi('POST', '/inventory/warehouses'),
+  // The texts of the later steps name the location MAIN, so only a warehouse MAIN finishes the step.
+  completion: OnApi(
+    'POST',
+    '/inventory/warehouses',
+    predicate: _isNewMain,
+  ),
   probe: warehouseProbe,
 );
 

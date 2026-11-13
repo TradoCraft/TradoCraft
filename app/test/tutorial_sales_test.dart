@@ -402,7 +402,7 @@ void main() {
         },
         'POST /api/v1/production-orders/pr1/start': (_) => {'id': 'pr1'},
         'POST /api/v1/production-orders/pr1/complete': (_) => {'id': 'pr1'},
-        'POST /api/v1/inventory/warehouses': (_) => {'id': 'w1'},
+        'POST /api/v1/inventory/warehouses': (_) => {'id': 'w1', 'code': 'MAIN'},
       });
       final c = _boot(
         http,

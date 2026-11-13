@@ -7304,7 +7304,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tutBuyingWarehouseBody =>
-      'Press New warehouse, give it the code MAIN and the name Main warehouse, and save. A new warehouse comes with its location MAIN, which is where you receive the goods next.';
+      'Press New warehouse, give it the code MAIN and the name Main warehouse, and save. A new warehouse comes with its location MAIN, which is where you receive the goods next. If saving is refused because the code MAIN is taken, an inactive warehouse holds it: switch it (and its location) back on in Stock > Warehouses, or give it another code with its edit button, then press Next.';
 
   @override
   String get tutBuyingWarehouseHint =>
@@ -7503,7 +7503,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tutManufacturingWarehouseBody =>
-      'The finished carts need a location to go into, and there is no warehouse yet (chapter 3 creates it). Open Stock, press Warehouses and create the warehouse MAIN with the name Main warehouse, then go back to the production order.';
+      'The finished carts need a location to go into, and there is no warehouse yet (chapter 3 creates it). Open Stock, press Warehouses and create the warehouse MAIN with the name Main warehouse, then go back to the production order. If saving is refused because the code MAIN is taken, an inactive warehouse holds it: switch it (and its location) back on in Stock > Warehouses, or give it another code with its edit button, then press Next.';
 
   @override
   String get tutManufacturingWarehouseHint =>
@@ -7877,7 +7877,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tutChangeWarehouseBody =>
-      'The finished carts need a location to go into, and there is no warehouse yet (chapter 3 creates it). Open Stock, press Warehouses and create the warehouse MAIN with the name Main warehouse, then go back to the production order.';
+      'The finished carts need a location to go into, and there is no warehouse yet (chapter 3 creates it). Open Stock, press Warehouses and create the warehouse MAIN with the name Main warehouse, then go back to the production order. If saving is refused because the code MAIN is taken, an inactive warehouse holds it: switch it (and its location) back on in Stock > Warehouses, or give it another code with its edit button, then press Next.';
 
   @override
   String get tutChangeWarehouseHint =>

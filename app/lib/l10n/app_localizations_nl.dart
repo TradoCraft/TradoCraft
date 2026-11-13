@@ -7329,7 +7329,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get tutBuyingWarehouseBody =>
-      'Druk op Nieuw magazijn, geef het de code MAIN en de naam Hoofdmagazijn, en sla op. Een nieuw magazijn komt met zijn locatie MAIN, waar je de goederen straks ontvangt.';
+      'Druk op Nieuw magazijn, geef het de code MAIN en de naam Hoofdmagazijn, en sla op. Een nieuw magazijn komt met zijn locatie MAIN, waar je de goederen straks ontvangt. Wordt opslaan geweigerd omdat de code MAIN al bestaat, dan heeft een inactief magazijn hem: zet het (en zijn locatie) weer aan onder Voorraad > Magazijnen, of geef het met de bewerkknop een andere code, en druk daarna op Volgende.';
 
   @override
   String get tutBuyingWarehouseHint =>
@@ -7528,7 +7528,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get tutManufacturingWarehouseBody =>
-      'De afgewerkte karretjes hebben een locatie nodig om in te komen, en er is nog geen magazijn (hoofdstuk 3 maakt het aan). Open Voorraad, druk op Magazijnen en maak het magazijn MAIN aan met de naam Hoofdmagazijn; ga daarna terug naar de productieorder.';
+      'De afgewerkte karretjes hebben een locatie nodig om in te komen, en er is nog geen magazijn (hoofdstuk 3 maakt het aan). Open Voorraad, druk op Magazijnen en maak het magazijn MAIN aan met de naam Hoofdmagazijn; ga daarna terug naar de productieorder. Wordt opslaan geweigerd omdat de code MAIN al bestaat, dan heeft een inactief magazijn hem: zet het (en zijn locatie) weer aan onder Voorraad > Magazijnen, of geef het met de bewerkknop een andere code, en druk daarna op Volgende.';
 
   @override
   String get tutManufacturingWarehouseHint =>
@@ -7904,7 +7904,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get tutChangeWarehouseBody =>
-      'De afgewerkte karretjes hebben een locatie nodig om in te komen, en er is nog geen magazijn (hoofdstuk 3 maakt het aan). Open Voorraad, druk op Magazijnen en maak het magazijn MAIN aan met de naam Hoofdmagazijn; ga daarna terug naar de productieorder.';
+      'De afgewerkte karretjes hebben een locatie nodig om in te komen, en er is nog geen magazijn (hoofdstuk 3 maakt het aan). Open Voorraad, druk op Magazijnen en maak het magazijn MAIN aan met de naam Hoofdmagazijn; ga daarna terug naar de productieorder. Wordt opslaan geweigerd omdat de code MAIN al bestaat, dan heeft een inactief magazijn hem: zet het (en zijn locatie) weer aan onder Voorraad > Magazijnen, of geef het met de bewerkknop een andere code, en druk daarna op Volgende.';
 
   @override
   String get tutChangeWarehouseHint =>

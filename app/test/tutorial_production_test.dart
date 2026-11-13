@@ -94,7 +94,7 @@ void main() {
         },
         'POST /api/v1/production-orders/po1/start': (_) => {'id': 'po1'},
         'POST /api/v1/production-orders/po1/complete': (_) => {'id': 'po1'},
-        'POST /api/v1/inventory/warehouses': (_) => {'id': 'w1'},
+        'POST /api/v1/inventory/warehouses': (_) => {'id': 'w1', 'code': 'MAIN'},
       });
       final c = _boot(
         http,

@@ -7339,7 +7339,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get tutBuyingWarehouseBody =>
-      'Appuyez sur Nouvel entrepôt, donnez-lui le code MAIN et le nom Entrepôt principal, puis enregistrez. Un nouvel entrepôt vient avec son emplacement MAIN, où vous réceptionnerez ensuite les marchandises.';
+      'Appuyez sur Nouvel entrepôt, donnez-lui le code MAIN et le nom Entrepôt principal, puis enregistrez. Un nouvel entrepôt vient avec son emplacement MAIN, où vous réceptionnerez ensuite les marchandises. Si l\'enregistrement est refusé parce que le code MAIN est déjà pris, un entrepôt inactif le détient : réactivez-le (ainsi que son emplacement) dans Stock > Entrepôts, ou donnez-lui un autre code avec son bouton de modification, puis appuyez sur Suivant.';
 
   @override
   String get tutBuyingWarehouseHint =>
@@ -7538,7 +7538,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get tutManufacturingWarehouseBody =>
-      'Les chariots finis ont besoin d\'un emplacement où aller, et il n\'y a pas encore d\'entrepôt (le chapitre 3 le crée). Ouvrez Stock, appuyez sur Entrepôts et créez l\'entrepôt MAIN avec le nom Entrepôt principal, puis retournez à l\'ordre de production.';
+      'Les chariots finis ont besoin d\'un emplacement où aller, et il n\'y a pas encore d\'entrepôt (le chapitre 3 le crée). Ouvrez Stock, appuyez sur Entrepôts et créez l\'entrepôt MAIN avec le nom Entrepôt principal, puis retournez à l\'ordre de production. Si l\'enregistrement est refusé parce que le code MAIN est déjà pris, un entrepôt inactif le détient : réactivez-le (ainsi que son emplacement) dans Stock > Entrepôts, ou donnez-lui un autre code avec son bouton de modification, puis appuyez sur Suivant.';
 
   @override
   String get tutManufacturingWarehouseHint =>
@@ -7914,7 +7914,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get tutChangeWarehouseBody =>
-      'Les chariots finis ont besoin d\'un emplacement où aller, et il n\'y a pas encore d\'entrepôt (le chapitre 3 le crée). Ouvrez Stock, appuyez sur Entrepôts et créez l\'entrepôt MAIN avec le nom Entrepôt principal, puis retournez à l\'ordre de production.';
+      'Les chariots finis ont besoin d\'un emplacement où aller, et il n\'y a pas encore d\'entrepôt (le chapitre 3 le crée). Ouvrez Stock, appuyez sur Entrepôts et créez l\'entrepôt MAIN avec le nom Entrepôt principal, puis retournez à l\'ordre de production. Si l\'enregistrement est refusé parce que le code MAIN est déjà pris, un entrepôt inactif le détient : réactivez-le (ainsi que son emplacement) dans Stock > Entrepôts, ou donnez-lui un autre code avec son bouton de modification, puis appuyez sur Suivant.';
 
   @override
   String get tutChangeWarehouseHint =>
