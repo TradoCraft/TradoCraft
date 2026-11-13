@@ -21,7 +21,7 @@ export async function typeInto(field: Locator, text: string, opts: { refocus?: b
     await field.click();
     await expect(field).toBeFocused({ timeout: 1_000 });
     await page.waitForTimeout(300);
-    await page.keyboard.press('Control+A');
+    await page.keyboard.press('ControlOrMeta+A');
     await page.keyboard.press('Backspace');
     await page.waitForTimeout(100);
     await page.keyboard.type(text, { delay: 25 });

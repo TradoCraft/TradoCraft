@@ -343,7 +343,7 @@ test('the whole tutorial, chapter by chapter', async ({ page, request }) => {
     await expect(async () => {
       await page.mouse.click(568, 433);
       await page.waitForTimeout(600);
-      await page.keyboard.press('Control+A');
+      await page.keyboard.press('ControlOrMeta+A');
       await page.keyboard.press('Backspace');
       await page.keyboard.type('8', { delay: 80 });
       await expect(page.getByText('11.600,00').first()).toBeVisible({ timeout: 2_500 });
@@ -374,7 +374,7 @@ test('the whole tutorial, chapter by chapter', async ({ page, request }) => {
     await expect(async () => {
       await page.mouse.click(568, 433);
       await page.waitForTimeout(600);
-      await page.keyboard.press('Control+A');
+      await page.keyboard.press('ControlOrMeta+A');
       await page.keyboard.press('Backspace');
       await page.keyboard.type('10', { delay: 80 });
       await expect(page.getByText('14.500,00').first()).toBeVisible({ timeout: 2_500 });

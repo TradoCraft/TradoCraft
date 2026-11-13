@@ -15,7 +15,9 @@ a role that can create databases; override with `E2E_PG_URL`), Node 22 and Flutt
 ```bash
 cargo build -p tradocraft-api
 (cd app && flutter build web --release --no-web-resources-cdn)   # no CDN: works without gstatic
-cd e2e && npm ci && npx playwright test
+cd e2e && npm ci
+npx playwright install --with-deps chromium   # once; --with-deps adds the Linux system libraries
+npx playwright test
 ```
 
 `playwright.config.ts` recreates the database `tradocraft_e2e` on every run, starts the API as a

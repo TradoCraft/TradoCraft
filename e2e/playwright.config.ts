@@ -46,7 +46,7 @@ export default defineConfig({
       },
     },
     {
-      command: `node static-server.mjs ${path.join(root, 'app/build/web')} ${WEB_PORT}`,
+      command: `node static-server.mjs ${JSON.stringify(path.join(root, 'app/build/web'))} ${WEB_PORT}`,
       url: `http://127.0.0.1:${WEB_PORT}/`,
       reuseExistingServer: false,
       timeout: 30_000,
