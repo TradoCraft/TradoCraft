@@ -100,15 +100,15 @@ async fn main() -> anyhow::Result<()> {
     );
     // `tradocraft-worker check-mailbox <name>`: a real round trip with a Microsoft 365 mailbox,
     // for an administrator to run once after setting it up. It sends one message, to the mailbox
-    // itself, so it follows the same rule as fetching (ADR 0048).
+    // itself, so it runs only in a live environment: the opt-in that allows fetching in a test environment does not cover sending (ADR 0048).
     let args: Vec<String> = std::env::args().collect();
     if args.get(1).map(String::as_str) == Some("check-mailbox") {
         let name = args
             .get(2)
             .context("usage: tradocraft-worker check-mailbox <mailbox name>")?;
         anyhow::ensure!(
-            policy.inbound_allowed,
-            "this is not a live environment, where a mailbox is never used; set ALLOW_INBOUND_MAIL_IN_NON_LIVE=1 only with a dedicated test mailbox"
+            policy.is_unrestricted(),
+            "check-mailbox sends a real message, so it runs only in a live environment (ADR 0048: outside one, a mailbox is never used for sending)"
         );
         let report = mailboxes::check_graph_mailbox(
             &db,

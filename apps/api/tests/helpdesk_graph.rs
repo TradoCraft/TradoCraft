@@ -352,8 +352,9 @@ async fn a_send_that_may_have_gone_is_never_repeated(db: PgPool) {
     assert_eq!(w.standin.state().sent_count(), 2);
     assert_eq!(w.reply_state(b).await.0, "sent");
 
-    // The gateway gives up before the message went: the draft is still there, so it was not.
-    // It is removed (no stray draft) and the e-mail stays queued; the next try sends it.
+    // The gateway gives up and the draft is still there. That does not show the message was not
+    // sent (transport may pick it up after the look), so it is not tried again: the draft is
+    // removed so it cannot go out later, and the e-mail is marked failed with the reason.
     w.standin.state().send_outcome = SendOutcome::GatewayTimeoutBefore;
     let c = w.queue_reply("Invoice copy", "c1@alpha.example").await;
     assert_eq!(w.outbox().await, 0);
@@ -363,11 +364,11 @@ async fn a_send_that_may_have_gone_is_never_repeated(db: PgPool) {
         assert!(s.in_folder(Folder::Drafts).is_empty());
     }
     let (delivery, attempts, error, _) = w.reply_state(c).await;
-    assert_eq!((delivery.as_str(), attempts), ("queued", 1));
+    assert_eq!((delivery.as_str(), attempts), ("failed", 1), "{error:?}");
     assert!(error.unwrap().contains("HTTP 504"));
     w.standin.state().send_outcome = SendOutcome::Normal;
-    assert_eq!(w.outbox().await, 1);
-    assert_eq!(w.standin.state().sent_count(), 3);
+    assert_eq!(w.outbox().await, 0);
+    assert_eq!(w.standin.state().sent_count(), 2);
 
     // Nobody can tell: the message went, the answer was lost, and the draft cannot be looked up
     // either. The e-mail is marked failed with a reason, not tried again (that could send it twice).
@@ -378,12 +379,12 @@ async fn a_send_that_may_have_gone_is_never_repeated(db: PgPool) {
         .push(("get".into(), 500, "ErrorInternalServerError".into()));
     let d = w.queue_reply("Warranty", "d1@alpha.example").await;
     assert_eq!(w.outbox().await, 0);
-    assert_eq!(w.standin.state().sent_count(), 4);
+    assert_eq!(w.standin.state().sent_count(), 3);
     let (delivery, attempts, error, _) = w.reply_state(d).await;
     assert_eq!((delivery.as_str(), attempts), ("failed", 1), "{error:?}");
     assert!(error.unwrap().contains("Sent Items"));
     assert_eq!(w.outbox().await, 0);
-    assert_eq!(w.standin.state().sent_count(), 4);
+    assert_eq!(w.standin.state().sent_count(), 3);
 }
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
@@ -802,5 +803,71 @@ async fn the_check_says_where_it_fails_and_cleans_up(db: PgPool) {
         .await
         .unwrap_err();
     assert!(e.to_string().contains("IMAP/SMTP"), "{e}");
+    assert_eq!(w.standin.state().sent_count(), 0);
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn the_check_cleans_up_after_a_send_whose_answer_was_lost(db: PgPool) {
+    let w = world(db, None).await;
+    // The message went, the answer did not come: the step fails, but the copies are found and
+    // removed all the same.
+    w.standin.state().send_outcome = SendOutcome::GatewayTimeoutAfter;
+    let report = check_graph_mailbox(&w.db, "Support", &w.graph, &secrets, &quick())
+        .await
+        .unwrap();
+    assert!(!report.ok());
+    assert!(
+        report
+            .steps
+            .iter()
+            .any(|s| s.name == "send the draft" && !s.ok),
+        "{:#?}",
+        report.lines()
+    );
+    let s = w.standin.state();
+    assert!(s.in_folder(Folder::Inbox).is_empty());
+    assert!(s.in_folder(Folder::SentItems).is_empty());
+    assert!(s.in_folder(Folder::Drafts).is_empty());
+    assert_eq!(s.in_folder(Folder::Deleted).len(), 2);
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn the_check_fails_when_exchange_gives_the_draft_no_message_id(db: PgPool) {
+    let w = world(db, None).await;
+    w.standin.state().ids = MessageIds::MissingAtDraft;
+    let report = check_graph_mailbox(&w.db, "Support", &w.graph, &secrets, &quick())
+        .await
+        .unwrap();
+    assert!(!report.ok(), "{:#?}", report.lines());
+    assert_eq!(report.verdict, None);
+    assert!(
+        report.steps.iter().any(|s| s.name == "Message-ID" && !s.ok),
+        "{:#?}",
+        report.lines()
+    );
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn the_check_refuses_a_name_two_companies_share(db: PgPool) {
+    let w = world(db, None).await;
+    let other = Uuid::now_v7();
+    sqlx::query("INSERT INTO core.companies (id, name, country_code, currency) VALUES ($1, 'Other BV', 'BE', 'EUR')")
+        .bind(other)
+        .execute(&w.db)
+        .await
+        .unwrap();
+    sqlx::query(
+        "INSERT INTO helpdesk.mailboxes (id, company_id, name, address, kind, secret_ref, tenant_id, client_id, is_default)
+         SELECT gen_random_uuid(), $1, name, 'support@other.example', kind, 'OTHER', tenant_id, client_id, true
+         FROM helpdesk.mailboxes",
+    )
+    .bind(other)
+    .execute(&w.db)
+    .await
+    .unwrap();
+    let e = check_graph_mailbox(&w.db, "support", &w.graph, &secrets, &quick())
+        .await
+        .unwrap_err();
+    assert!(e.to_string().contains("more than one"), "{e}");
     assert_eq!(w.standin.state().sent_count(), 0);
 }

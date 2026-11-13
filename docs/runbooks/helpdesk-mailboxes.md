@@ -153,8 +153,14 @@ once with the mailbox before pointing customers at it (as the worker, so it has 
 docker compose exec worker tradocraft-worker check-mailbox "Support"
 ```
 
-`Support` is the name of the mailbox in the app. It refuses to run outside a live environment and
-for an IMAP/SMTP mailbox. It sends **one message to the mailbox itself**, never to anyone else, and
+`Support` is the name of the mailbox in the app. It refuses to run outside a live environment (the
+opt-in that allows fetching in a test environment does not cover sending), for an IMAP/SMTP
+mailbox, and when two companies have an active mailbox of that name (rename one first).
+
+**Pause inbound polling first.** The normal worker keeps polling while this runs. If a poll runs
+between the delivery of the test message and its removal, it is read as a customer's e-mail and
+becomes a ticket, which deleting the mail does not undo. Switch the mailbox's inbound polling off
+in the app, wait for the running pass to end (one poll interval), run the check, then switch it on. It sends **one message to the mailbox itself**, never to anyone else, and
 moves it to Deleted Items afterwards. Each step is one line; every line says `ok` or `FAIL` with
 the HTTP status and Graph's own message (never the secret or a token):
 

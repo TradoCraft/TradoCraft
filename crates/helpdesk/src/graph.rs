@@ -325,9 +325,11 @@ fn build_http(timeout: Duration) -> reqwest::Client {
         .expect("building the HTTP client")
 }
 
+/// What a look at the draft after an unclear send says. With immutable ids the id outlives the
+/// move to Sent Items, so "found" alone does not mean "not sent": `isDraft` decides.
 enum DraftState {
-    Present,
-    Gone,
+    Sent,
+    Draft,
     Unknown,
 }
 
@@ -657,14 +659,25 @@ impl GraphClient {
         match self
             .request(
                 reqwest::Method::GET,
-                &format!("{draft_url}?$select=id"),
+                &format!("{draft_url}?$select=id,isDraft"),
                 token,
             )
             .send()
             .await
         {
-            Ok(res) if res.status().is_success() => DraftState::Present,
-            Ok(res) if res.status() == reqwest::StatusCode::NOT_FOUND => DraftState::Gone,
+            Ok(res) if res.status().is_success() => {
+                match read_capped(res, 64 * 1024)
+                    .await
+                    .ok()
+                    .and_then(|b| serde_json::from_slice::<serde_json::Value>(&b).ok())
+                    .and_then(|v| v.get("isDraft").and_then(|d| d.as_bool()))
+                {
+                    Some(true) => DraftState::Draft,
+                    Some(false) => DraftState::Sent,
+                    None => DraftState::Unknown,
+                }
+            }
+            Ok(res) if res.status() == reqwest::StatusCode::NOT_FOUND => DraftState::Sent,
             _ => DraftState::Unknown,
         }
     }
@@ -702,10 +715,13 @@ impl GraphClient {
             return Err(e);
         }
         match self.draft_state(&draft_url, &token).await {
-            DraftState::Gone => Ok(assigned),
-            DraftState::Present => {
+            DraftState::Sent => Ok(assigned),
+            // Still a draft: that does not show it was not sent (transport may pick it up after
+            // this look), so the e-mail must not be sent again. The draft is removed so it does
+            // not go out later on its own.
+            DraftState::Draft => {
                 self.drop_draft(&draft_url, &token).await;
-                Err(e)
+                Err(anyhow::Error::new(SendUnknown(format!("{e:#}"))))
             }
             DraftState::Unknown => Err(anyhow::Error::new(SendUnknown(format!("{e:#}")))),
         }
@@ -808,12 +824,18 @@ impl GraphClient {
             }
         };
         let draft_url = self.message_url(m, &draft_id);
-        if let Err(e) = self.post_send(&draft_url, &token).await {
-            report.step("send the draft", false, format!("{e:#}"));
-            self.drop_draft(&draft_url, &token).await;
-            return report;
+        match self.post_send(&draft_url, &token).await {
+            Ok(()) => report.step("send the draft", true, "Exchange accepted it (202)"),
+            Err(e) => {
+                report.step("send the draft", false, format!("{e:#}"));
+                // A refusal means nothing went. An unclear answer (timeout, 5xx) may have
+                // delivered it anyway, so the copies are looked for and cleaned up below.
+                if status_of(&e).is_some_and(|s| s < 500) {
+                    self.drop_draft(&draft_url, &token).await;
+                    return report;
+                }
+            }
         }
-        report.step("send the draft", true, "Exchange accepted it (202)");
 
         let delivered = self
             .find_by_subject(m, &token, "inbox", &subject, options)
@@ -870,6 +892,13 @@ impl GraphClient {
             }
         }
 
+        if let (Ok(Some(_)), None) = (&delivered, &draft_message_id) {
+            report.step(
+                "Message-ID",
+                false,
+                "Exchange did not say what Message-ID the draft has, so it cannot be compared",
+            );
+        }
         if let (Ok(Some(delivered)), Some(draft_message_id)) = (&delivered, &draft_message_id) {
             let delivered_id = bare(delivered.internet_message_id.as_deref().unwrap_or_default());
             let sent_id = match &sent {

@@ -57,6 +57,9 @@ pub enum MessageIds {
     AssignedAtDraft,
     /// The draft says the one in the MIME, and the sent and delivered copies carry another.
     ChangedAtSend,
+    /// The answer to making the draft leaves `internetMessageId` out; the copies carry the one
+    /// in the MIME.
+    MissingAtDraft,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -869,8 +872,11 @@ impl State {
             to,
             mime,
         };
-        let answer = json!({ "id": self.id_form(&m, prefer), "internetMessageId": m.internet_id,
-                             "isDraft": true });
+        let mut answer = json!({ "id": self.id_form(&m, prefer), "internetMessageId": m.internet_id,
+                                 "isDraft": true });
+        if self.ids == MessageIds::MissingAtDraft {
+            answer.as_object_mut().unwrap().remove("internetMessageId");
+        }
         self.messages.push(m);
         Reply::Json(201, answer)
     }
@@ -928,14 +934,20 @@ impl State {
         let n = self.counter;
         let mime_id = header(&draft.mime, "Message-ID").unwrap_or_default();
         let final_id = match self.ids {
-            MessageIds::Kept => mime_id,
+            MessageIds::Kept | MessageIds::MissingAtDraft => mime_id,
             MessageIds::AssignedAtDraft => draft.internet_id.clone(),
             MessageIds::ChangedAtSend => format!("<changed-{n}@prod.outlook.com>"),
         };
         let mime = replace_message_id(&draft.mime, &final_id);
         self.sent_mimes.push(draft.mime.clone());
+        // The sent copy keeps the draft's immutable id (that is what "immutable" means: it
+        // survives a move between folders), while its mutable id changes.
         let copy = |folder: Folder, read: bool, suffix: &str| Msg {
-            key: format!("{}-{suffix}", draft.key),
+            key: if folder == Folder::SentItems {
+                draft.key.clone()
+            } else {
+                format!("{}-{suffix}", draft.key)
+            },
             mutable: format!("{}-{suffix}-m0", draft.key),
             folder,
             read,

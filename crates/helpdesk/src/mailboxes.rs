@@ -787,16 +787,27 @@ pub async fn check_graph_mailbox(
     options: &CheckOptions,
 ) -> anyhow::Result<CheckReport> {
     let all = load_active(db).await?;
-    let m = all
+    let matching: Vec<&ActiveMailbox> = all
         .iter()
-        .find(|m| m.name.eq_ignore_ascii_case(name.trim()))
-        .ok_or_else(|| {
-            let names: Vec<&str> = all.iter().map(|m| m.name.as_str()).collect();
-            anyhow::anyhow!(
-                "no active mailbox is named \"{name}\" (active: {})",
-                names.join(", ")
-            )
-        })?;
+        .filter(|m| m.name.eq_ignore_ascii_case(name.trim()))
+        .collect();
+    // Names are only unique within a company: never send through another company's mailbox.
+    anyhow::ensure!(
+        matching.len() <= 1,
+        "more than one active mailbox is named \"{name}\" ({}): rename one of them first",
+        matching
+            .iter()
+            .map(|m| format!("{} of company {}", m.address, m.company_id))
+            .collect::<Vec<_>>()
+            .join("; ")
+    );
+    let m = matching.first().copied().ok_or_else(|| {
+        let names: Vec<&str> = all.iter().map(|m| m.name.as_str()).collect();
+        anyhow::anyhow!(
+            "no active mailbox is named \"{name}\" (active: {})",
+            names.join(", ")
+        )
+    })?;
     anyhow::ensure!(
         m.kind == "graph",
         "the mailbox \"{}\" is an IMAP/SMTP mailbox: this check is for Microsoft 365 mailboxes",
