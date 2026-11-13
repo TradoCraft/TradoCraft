@@ -1,5 +1,5 @@
 // Runs the Playwright suite with friendly defaults, no environment syntax needed:
-//   node run.mjs watch [playwright args]   Firefox, visible window, every action slowed (150 ms)
+//   node run.mjs watch [playwright args]   Firefox, visible window fitted to the screen, every action slowed (150 ms)
 //   node run.mjs ui [playwright args]      Firefox in Playwright UI mode (scaled live view, timeline)
 // The same E2E_* variables as playwright.config.ts override the defaults. Extra arguments go to
 // `playwright test`, its exit code is returned. Checks the ports and prerequisites first.
@@ -7,7 +7,7 @@ import { createRequire } from 'node:module';
 import { spawn } from 'node:child_process';
 
 const require = createRequire(import.meta.url);
-const { missingPrerequisites, portProblem } = require('./lib.cjs');
+const { missingPrerequisites, portProblem, staleBuildWarning } = require('./lib.cjs');
 
 const [mode, ...rest] = process.argv.slice(2);
 const modes = {
@@ -34,6 +34,9 @@ if (!process.env.E2E_SKIP_PREFLIGHT && !args.includes('--list')) {
     console.error('e2e: (set E2E_SKIP_PREFLIGHT=1 to skip these checks)');
     process.exit(1);
   }
+  // Only a warning: the run can still be fine, but a stale build is the usual cause of "step not found".
+  const stale = staleBuildWarning();
+  if (stale) console.warn(`e2e: WARNING ${stale}`);
 }
 
 const child = spawn(process.execPath, [require.resolve('@playwright/test/cli'), 'test', ...args], { stdio: 'inherit' });
