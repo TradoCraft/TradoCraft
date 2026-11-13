@@ -58,6 +58,13 @@ export const field = (page: Page, label: string) => page.getByRole('textbox', { 
 
 /** Opens the Flutter web app, turns on its accessibility tree and signs in as a development user. */
 export async function boot(page: Page, user = 'admin') {
+  // A refused API call is often the real reason a later step never appears: say so in the test output.
+  page.on('response', async (r) => {
+    if (r.url().includes('/api/v1/') && r.status() >= 400) {
+      const body = await r.text().catch(() => '');
+      console.log(`API ${r.status()} ${r.request().method()} ${new URL(r.url()).pathname}: ${body.slice(0, 300)}`);
+    }
+  });
   await page.goto('/');
   await page.waitForSelector('flt-glass-pane', { state: 'attached', timeout: 60_000 });
   // Flutter draws to a canvas; the semantics tree (what Playwright sees) is off until asked for.

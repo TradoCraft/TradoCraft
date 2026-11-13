@@ -41,6 +41,8 @@ export default defineConfig({
         APP_ENV_KIND: 'tutorial',
         APP_ENV_NAME: 'tutorial',
         BIND_ADDR: `127.0.0.1:${API_PORT}`,
+        // The API reads its Typst templates relative to its working directory, which here is e2e/.
+        TEMPLATE_DIR: path.join(root, 'templates'),
         RUST_LOG: 'warn',
         ...(process.env.MAIL_FILES_DIR ? {} : { MAIL_TRANSPORT: 'files' }),
       },
