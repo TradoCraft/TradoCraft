@@ -9,6 +9,7 @@
 //! BOM revision is frozen onto the production order as operations, scheduled on the work centres'
 //! calendars, finished with the minutes worked, and shown against capacity.
 
+pub mod capacity;
 pub mod complete;
 pub mod divisions;
 pub mod operations;
@@ -27,5 +28,6 @@ pub fn router() -> OpenApiRouter<AppState> {
         .merge(routing::router())
         .merge(orders::router())
         .merge(operations::router())
+        .merge(capacity::router())
         .merge(complete::router())
 }

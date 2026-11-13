@@ -2008,3 +2008,341 @@ async fn operations_stay_within_their_company(db: PgPool) {
         "pending"
     );
 }
+
+// ---- Capacity (ADR 0060) ----
+
+/// The days of a capacity answer for one work centre as (date, available, load, overloaded).
+fn capacity_days(cap: &Value, code: &str) -> Vec<(String, i64, i64, bool)> {
+    cap["centres"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|c| c["code"] == code)
+        .unwrap_or_else(|| panic!("no work centre {code} in {cap}"))["days"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|d| {
+            (
+                d["date"].as_str().unwrap().to_string(),
+                d["available_minutes"].as_i64().unwrap(),
+                d["load_minutes"].as_i64().unwrap(),
+                d["overloaded"].as_bool().unwrap(),
+            )
+        })
+        .collect()
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn capacity_shows_what_each_day_offers(db: PgPool) {
+    let e = env(db).await;
+    let saw = e.work_centre("SAW", json!({})).await;
+    let press = e.work_centre("PRESS", json!({ "capacity": 3 })).await;
+    // PRESS works Monday only, 06:00-10:00, and is down on Monday 8 March.
+    let (status, _) = put(
+        &e.app,
+        ADMIN,
+        &format!("/production/work-centres/{}/hours", id(&press)),
+        json!({ "slots": [{ "weekday": 1, "start_time": "06:00:00", "end_time": "10:00:00" }] }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    close(&e, Some(&id(&press)), "2027-03-08", "2027-03-08").await;
+    close(&e, None, "2027-03-04", "2027-03-04").await; // a holiday for everyone
+
+    let (status, cap) = get(
+        &e.app,
+        VIEWER,
+        "/production/capacity?from=2027-03-01&to=2027-03-09",
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{cap}");
+    assert_eq!(cap["from"], "2027-03-01");
+    let saw_days = capacity_days(&cap, "SAW");
+    assert_eq!(saw_days.len(), 9, "one entry per day of the period");
+    let avail: Vec<i64> = saw_days.iter().map(|d| d.1).collect();
+    // Monday to Wednesday, a holiday, Friday, the weekend, Monday and Tuesday.
+    assert_eq!(avail, [480, 480, 480, 0, 480, 0, 0, 480, 480]);
+    assert!(
+        saw_days.iter().all(|d| d.2 == 0 && !d.3),
+        "no load, no overload"
+    );
+    let press_avail: Vec<i64> = capacity_days(&cap, "PRESS").iter().map(|d| d.1).collect();
+    // 240 minutes x 3 units on Mondays; nothing on 8 March (down) and the other days.
+    assert_eq!(press_avail, [720, 0, 0, 0, 0, 0, 0, 0, 0]);
+    let centre = &cap["centres"][0];
+    assert_eq!(centre["code"], "PRESS", "sorted by sort order, then code");
+    assert_eq!(centre["capacity"], 3);
+    assert_eq!(centre["total_available_minutes"], 720);
+    assert_eq!(centre["total_load_minutes"], 0);
+    let _ = saw;
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn capacity_asks_for_a_sensible_period_and_production_rights(db: PgPool) {
+    let e = env(db).await;
+    e.work_centre("SAW", json!({})).await;
+    // 62 days is the most; dates may come as date-times.
+    let (status, ok) = get(
+        &e.app,
+        PLANNER,
+        "/production/capacity?from=2027-03-01T00:00:00.000&to=2027-04-30T00:00:00.000",
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{ok}");
+    assert_eq!(ok["centres"][0]["days"].as_array().unwrap().len(), 61);
+    for (what, uri) in [
+        (
+            "63 days",
+            "/production/capacity?from=2027-03-01&to=2027-05-02",
+        ),
+        (
+            "backwards",
+            "/production/capacity?from=2027-03-02&to=2027-03-01",
+        ),
+    ] {
+        let (status, r) = get(&e.app, PLANNER, uri).await;
+        assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{what}: {r}");
+    }
+    let (status, ok) = get(
+        &e.app,
+        PLANNER,
+        "/production/capacity?from=2027-03-01&to=2027-03-01",
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "a single day: {ok}");
+    for uri in [
+        "/production/capacity",
+        "/production/capacity?from=2027-03-01",
+    ] {
+        let (status, _) = get(&e.app, PLANNER, uri).await;
+        assert!(status.is_client_error(), "{uri}: {status}");
+    }
+    for who in [SALES, VIEWER, STORES, PM] {
+        assert_eq!(
+            get(
+                &e.app,
+                who,
+                "/production/capacity?from=2027-03-01&to=2027-03-02"
+            )
+            .await
+            .0,
+            StatusCode::OK,
+            "{who}"
+        );
+    }
+    assert_eq!(
+        get(
+            &e.app,
+            TECHNICIAN,
+            "/production/capacity?from=2027-03-01&to=2027-03-02"
+        )
+        .await
+        .0,
+        StatusCode::FORBIDDEN
+    );
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn open_operations_load_their_work_centre_and_overload_shows(db: PgPool) {
+    let e = env(db).await;
+    e.receive(PROFILE, "200").await;
+    e.receive(BOLT, "1000").await;
+    let (_, weld) = e.frame_routing().await;
+    // Three orders of 20 frames, all from Monday 1 March: Cut 230 min and Weld 1200 min each.
+    let mut orders = Vec::new();
+    for _ in 0..3 {
+        orders.push(
+            e.build_for_stock(FRAME, "20", json!({ "start_date": "2027-03-01" }))
+                .await,
+        );
+    }
+    let uri = "/production/capacity?from=2027-03-01&to=2027-03-05";
+    let (_, cap) = get(&e.app, PLANNER, uri).await;
+    // Cut: 3 x 230 on Monday against 480. Weld: 3 x 1200 over Monday to Wednesday, 1200 a day
+    // against 480; Thursday and Friday are free.
+    let saw: Vec<(i64, bool)> = capacity_days(&cap, "SAW")
+        .iter()
+        .map(|d| (d.2, d.3))
+        .collect();
+    assert_eq!(
+        saw,
+        [(690, true), (0, false), (0, false), (0, false), (0, false)]
+    );
+    let welding: Vec<(i64, bool)> = capacity_days(&cap, "WELD")
+        .iter()
+        .map(|d| (d.2, d.3))
+        .collect();
+    assert_eq!(
+        welding,
+        [
+            (1200, true),
+            (1200, true),
+            (1200, true),
+            (0, false),
+            (0, false)
+        ]
+    );
+    let weld_centre = cap["centres"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|c| c["code"] == "WELD")
+        .unwrap();
+    assert_eq!(weld_centre["total_load_minutes"], 3600);
+
+    // Three units at the work centre carry the load: 3 x 480 = 1440 a day.
+    let (status, _) = put(
+        &e.app,
+        ADMIN,
+        &format!("/production/work-centres/{weld}"),
+        json!({ "code": "WELD", "name": "Welding", "capacity": 3 }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    let (_, cap) = get(&e.app, PLANNER, uri).await;
+    let welding = capacity_days(&cap, "WELD");
+    assert_eq!(welding[0], ("2027-03-01".into(), 1440, 1200, false));
+
+    // A window that starts in the middle counts only its own days of the spread.
+    let (_, cap) = get(
+        &e.app,
+        PLANNER,
+        "/production/capacity?from=2027-03-03&to=2027-03-04",
+    )
+    .await;
+    let welding: Vec<i64> = capacity_days(&cap, "WELD").iter().map(|d| d.2).collect();
+    assert_eq!(welding, [1200, 0]);
+
+    // Finishing an order's operations takes its load away; so does cancelling or completing it.
+    let first = id(&orders[0]);
+    for op in orders[0]["operations"].as_array().unwrap() {
+        post(
+            &e.app,
+            STORES,
+            &format!("/production-orders/{first}/operations/{}/finish", id(op)),
+            json!({}),
+        )
+        .await;
+    }
+    let (status, _) = post(
+        &e.app,
+        PLANNER,
+        &format!("/production-orders/{}/cancel", id(&orders[1])),
+        json!({ "reason": "changed our mind" }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    let (_, cap) = get(&e.app, PLANNER, uri).await;
+    let saw: Vec<i64> = capacity_days(&cap, "SAW").iter().map(|d| d.2).collect();
+    assert_eq!(
+        saw[0], 230,
+        "one order is left: the cancelled order's pending operations do not count"
+    );
+    let welding: Vec<i64> = capacity_days(&cap, "WELD").iter().map(|d| d.2).collect();
+    assert_eq!(&welding[..3], [400, 400, 400]);
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn late_work_counts_from_the_first_day_of_the_period(db: PgPool) {
+    let e = env(db).await;
+    e.frame_parts().await;
+    e.frame_routing().await;
+    e.build_for_stock(FRAME, "2", json!({ "start_date": "2027-03-01" }))
+        .await; // Cut 50, Weld 120
+                // Looking at April: the March work is not done, so it is still to do on 1 April.
+    let (_, cap) = get(
+        &e.app,
+        PLANNER,
+        "/production/capacity?from=2027-04-01&to=2027-04-07",
+    )
+    .await;
+    let saw = capacity_days(&cap, "SAW");
+    assert_eq!(saw[0], ("2027-04-01".into(), 480, 50, false));
+    assert_eq!(capacity_days(&cap, "WELD")[0].2, 120);
+    // A window before the work starts shows nothing of it.
+    let (_, early) = get(
+        &e.app,
+        PLANNER,
+        "/production/capacity?from=2027-02-01&to=2027-02-07",
+    )
+    .await;
+    assert!(capacity_days(&early, "SAW").iter().all(|d| d.2 == 0));
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn capacity_can_be_limited_to_a_division_and_hides_idle_inactive_work_centres(db: PgPool) {
+    let e = env(db).await;
+    let div = e.division("ASM").await;
+    e.work_centre("BENCH", json!({ "division_id": div })).await;
+    e.work_centre("LASER", json!({})).await;
+    let idle = e.work_centre("OLD", json!({})).await;
+    put(
+        &e.app,
+        ADMIN,
+        &format!("/production/work-centres/{}", id(&idle)),
+        json!({ "code": "OLD", "name": "Old", "active": false }),
+    )
+    .await;
+    let codes = |cap: &Value| -> Vec<String> {
+        cap["centres"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|c| c["code"].as_str().unwrap().to_string())
+            .collect()
+    };
+    let (_, all) = get(
+        &e.app,
+        PLANNER,
+        "/production/capacity?from=2027-03-01&to=2027-03-02",
+    )
+    .await;
+    assert_eq!(
+        codes(&all),
+        ["BENCH", "LASER"],
+        "an inactive work centre without work is left out"
+    );
+    let (_, one) = get(
+        &e.app,
+        PLANNER,
+        &format!("/production/capacity?from=2027-03-01&to=2027-03-02&division_id={div}"),
+    )
+    .await;
+    assert_eq!(codes(&one), ["BENCH"]);
+    assert_eq!(one["centres"][0]["division_id"], div.as_str());
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn capacity_stays_within_the_company(db: PgPool) {
+    let e = env(db).await;
+    e.frame_parts().await;
+    e.frame_routing().await;
+    e.build_for_stock(FRAME, "1", json!({ "start_date": "2027-03-01" }))
+        .await;
+    let other = Uuid::now_v7();
+    sqlx::query("INSERT INTO core.companies (id, name, country_code, currency) VALUES ($1, 'Other BV', 'BE', 'EUR')")
+        .bind(other)
+        .execute(&e.db)
+        .await
+        .unwrap();
+    let user = Uuid::now_v7();
+    sqlx::query("INSERT INTO core.users (id, email, display_name) VALUES ($1, 'other@example.com', 'Other')")
+        .bind(user)
+        .execute(&e.db)
+        .await
+        .unwrap();
+    sqlx::query("INSERT INTO core.user_companies (user_id, company_id, roles, is_default) VALUES ($1, $2, '{admin}', true)")
+        .bind(user)
+        .bind(other)
+        .execute(&e.db)
+        .await
+        .unwrap();
+    let (_, cap) = get(
+        &e.app,
+        "other@example.com",
+        "/production/capacity?from=2027-03-01&to=2027-03-05",
+    )
+    .await;
+    assert_eq!(cap["centres"], json!([]));
+}
