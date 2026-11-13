@@ -9,6 +9,8 @@ import 'package:tradocraft_app/app/environments.dart';
 import 'package:tradocraft_app/features/field/offline/kv_store.dart';
 import 'package:tradocraft_app/features/tutorial/api_events.dart';
 import 'package:tradocraft_app/features/tutorial/controller.dart';
+import 'package:tradocraft_app/features/tutorial/missions_purchasing.dart';
+import 'package:tradocraft_app/features/tutorial/model.dart';
 import 'package:tradocraft_app/features/tutorial/strings.dart';
 import 'package:tradocraft_app/l10n/app_localizations.dart';
 
@@ -29,6 +31,7 @@ ProviderContainer _boot(
   required String active,
   Map<String, String> values = const {},
   int step = 0,
+  List<Mission>? missions,
 }) {
   final kv = MemoryKvStore()
     ..data['tutorial.v1.e1.dev:a@x.test'] = jsonEncode({
@@ -40,6 +43,7 @@ ProviderContainer _boot(
   final c = ProviderContainer(
     retry: (_, _) => null,
     overrides: [
+      if (missions != null) tutorialMissionsProvider.overrideWithValue(missions),
       kvStoreProvider.overrideWithValue(kv),
       tutorialScopeProvider.overrideWithValue(
         const TutorialScope(
@@ -450,6 +454,142 @@ void main() {
         t.routeChanged('/stock/warehouses');
         await c.read(dioProvider).post<Object?>('/api/v1/inventory/warehouses');
         expect(c.read(tutorialProvider).stepIndex, warehouse);
+      });
+
+      group('reactivating MAIN', () {
+        /// The warehouse list the GET route answers with, and the PUT routes that change it.
+        late Map<String, Object?> now;
+        late FakeHttp http;
+        late ProviderContainer c;
+
+        Future<void> startInactive(Map<String, Object?> start, {Map<String, Object? Function(Object?)> routes = const {}}) async {
+          now = start;
+          http = FakeHttp({
+            'GET /api/v1/inventory/warehouses': (_) => [now],
+            'PUT /api/v1/inventory/warehouses/w1': (_) {
+              now = {...now, 'active': true};
+              return now;
+            },
+            'PUT /api/v1/inventory/locations/l1': (_) {
+              now = {
+                ...now,
+                'locations': [
+                  {'id': 'l1', 'code': 'MAIN', 'active': true},
+                ],
+              };
+              return (now['locations'] as List).first;
+            },
+            ...routes,
+          });
+          c = atTheStep(http);
+          final t = c.read(tutorialProvider.notifier);
+          await t.ready;
+          await t.resume();
+          t.routeChanged('/stock/warehouses');
+          await pumpEventQueue(times: 100);
+          expect(c.read(tutorialProvider).stepIndex, warehouse, reason: 'inactive MAIN: not done');
+        }
+
+        int step() => c.read(tutorialProvider).stepIndex;
+        Future<void> put(String path, [Object? body]) async {
+          try {
+            await c.read(dioProvider).put<Object?>('/api/v1$path', data: body ?? {});
+          } on DioException catch (_) {}
+          await pumpEventQueue(times: 100);
+        }
+
+        test('reactivating the warehouse (location active) advances', () async {
+          await startInactive(_warehouse(active: false));
+          await put('/inventory/warehouses/w1');
+          expect(step(), receivePart);
+        });
+
+        test('warehouse first, then the location', () async {
+          await startInactive(_warehouse(active: false, locationActive: false));
+          await put('/inventory/warehouses/w1');
+          expect(step(), warehouse, reason: 'the location is still inactive');
+          await put('/inventory/locations/l1');
+          expect(step(), receivePart);
+        });
+
+        test('location first, then the warehouse', () async {
+          await startInactive(_warehouse(active: false, locationActive: false));
+          await put('/inventory/locations/l1');
+          expect(step(), warehouse, reason: 'the warehouse is still inactive');
+          await put('/inventory/warehouses/w1');
+          expect(step(), receivePart);
+        });
+
+        test('a PUT that renames the warehouse away from MAIN does not advance', () async {
+          await startInactive(
+            _warehouse(active: false),
+            routes: {
+              'PUT /api/v1/inventory/warehouses/w1': (_) {
+                now = {...now, 'active': true, 'code': 'WH2'};
+                return now;
+              },
+            },
+          );
+          await put('/inventory/warehouses/w1');
+          expect(step(), warehouse);
+        });
+
+        test('a refused PUT (409) does not advance', () async {
+          await startInactive(
+            _warehouse(active: false),
+            routes: {
+              'PUT /api/v1/inventory/warehouses/w1': (_) {
+                now = {...now, 'active': true};
+                return FakeStatus(409, {'error': 'conflict', 'message': 'no'});
+              },
+            },
+          );
+          await put('/inventory/warehouses/w1');
+          expect(step(), warehouse);
+        });
+
+        test('a step without a probe ignores the triggers', () async {
+          const trigger = OnApi('PUT', '/inventory/warehouses/[^/]+');
+          final http = FakeHttp({'PUT /api/v1/inventory/warehouses/w1': (_) => {}});
+          final c = _boot(
+            http,
+            completed: [],
+            active: 'buying',
+            step: 0,
+            missions: const [
+              Mission(
+                id: 'buying',
+                steps: [
+                  MissionStep(id: 'a', recheckOn: [trigger]),
+                  MissionStep(id: 'b'),
+                ],
+              ),
+            ],
+          );
+          final t = c.read(tutorialProvider.notifier);
+          await t.ready;
+          await t.resume();
+          await c.read(dioProvider).put<Object?>('/api/v1/inventory/warehouses/w1', data: {});
+          await pumpEventQueue(times: 100);
+          expect(c.read(tutorialProvider).stepIndex, 0);
+        });
+      });
+
+      test('the recheck triggers match mutations of warehouses and locations only', () {
+        final triggers = warehouseStep.recheckOn;
+        bool any(String m, String path, [int status = 200]) =>
+            triggers.any((t) => t.matches(ApiEvent(m, path, status, null), MissionContext()));
+        expect(any('PUT', '/inventory/warehouses/w1'), isTrue);
+        expect(any('PUT', '/inventory/locations/l1'), isTrue);
+        expect(any('POST', '/inventory/locations'), isTrue);
+        expect(any('PUT', '/inventory/locations/l1', 204), isTrue);
+        expect(any('PUT', '/inventory/locations/l1', 409), isFalse);
+        expect(any('GET', '/inventory/warehouses/w1'), isFalse);
+        expect(any('POST', '/inventory/warehouses/w1'), isFalse);
+        expect(any('PUT', '/inventory/warehouses'), isFalse);
+        expect(any('PUT', '/inventory/warehouses/w1/locations'), isFalse);
+        expect(any('PUT', '/x/inventory/locations/l1'), isFalse);
+        expect(any('DELETE', '/inventory/locations/l1'), isFalse);
       });
 
       test('the warehouse texts tell what to do when an inactive MAIN holds the code', () {

@@ -503,6 +503,14 @@ class TutorialController extends Notifier<TutorialState> {
     final c = s.completion;
     if (c is OnApi && c.matches(e, state.context)) {
       _complete({...?s.capture?.call(e.json)});
+      return;
+    }
+    // A call that may have finished the step without matching `completion`: ask the probe. A
+    // stale or overlapping probe is dropped by the guards in `_runProbe` (generation, step,
+    // running); probe GETs are never mutations, so they cannot trigger this again.
+    final p = s.probe;
+    if (p != null && s.recheckOn.any((t) => t.matches(e, state.context))) {
+      unawaited(_runProbe(s, p, _gen));
     }
   }
 
