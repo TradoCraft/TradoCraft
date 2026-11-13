@@ -40,12 +40,17 @@ Phase A defines every action (so later phases only register handlers) but wires 
 area or the active tab; newest first), then **shell**. A null or missing entry means "not available now". Only the
 visible screen takes part: inside the workspace a scope registers only while its tab is active
 (`TabScope.activeOf`), and the main area registers only while no tab is focused (`ShortcutActivity`).
-Dialogs sit above the shell overlay. `ModalShortcutObserver` (on the root `GoRouter.observers`) makes **every**
-popup route modal without touching the call sites: while a dialog, bottom sheet, date picker or popup menu is open
+Dialogs sit above the shell overlay. `ModalShortcutObserver` makes **every**
+popup route modal without touching the call sites. There is one observer per navigator: the root router, the
+shell route and each workspace tab's navigator, because bottom sheets and menus (`useRootNavigator: false`) land
+on the nearest navigator, not the root. Each open popup route holds its own scope on the shared stack, so
+shortcuts stay blocked until every popup on any navigator is closed (a tab's observer also releases its scopes
+when the tab is closed). While a dialog, bottom sheet, date picker or popup menu is open
 it keeps an empty dialog-layer scope in the stack, so menu digits, Home, Back and Save are not reached. A dialog
 that wants keys of its own (Save, Discard) adds a `ShortcutScope(layer: ShortcutLayer.dialog, ...)`, which is
 newer and wins; a dialog-layer scope registers regardless of tab visibility. Phase B still has to add those
-Save/Discard scopes (shared dialog scaffold in `shared/actions.dart`).
+Save/Discard scopes (shared dialog scaffold in `shared/actions.dart`). Remaining gap: a popup pushed on a
+navigator that has no observer (a new nested `Navigator` added later) must get one.
 
 *Listener.* `ShortcutsHost` (in `MaterialApp.builder` next to `ZoomShell`) uses `HardwareKeyboard.addHandler`.
 It looks at key-down only, and returns "handled" only when a handler ran, so every other key (typing, Tab, zoom)

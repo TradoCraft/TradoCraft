@@ -583,6 +583,22 @@ class _TabHostState extends ConsumerState<_TabHost> {
     screenFor: ref.read(detailScreenProvider),
   );
   late final _TabObserver _observer = _TabObserver(_located);
+  // Menus and bottom sheets opened inside the tab land on its navigator: keep shortcuts blocked.
+  late final ModalShortcutObserver _modal = ModalShortcutObserver(
+    ref.read(shortcutRegistryProvider),
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    _modal; // created now: ref is not usable in dispose
+  }
+
+  @override
+  void dispose() {
+    _modal.dispose();
+    super.dispose();
+  }
 
   // A tab restored in the background builds its screen only when first shown.
   late bool _built = widget.active;
@@ -652,7 +668,7 @@ class _TabHostState extends ConsumerState<_TabHost> {
                 explicitChildNodes: true,
                 child: Navigator(
                   key: _navigator,
-                  observers: [_observer],
+                  observers: [_observer, _modal],
                   onGenerateInitialRoutes: (_, _) => [
                     _router.route<Object?>(_initial) ??
                         MaterialPageRoute<Object?>(

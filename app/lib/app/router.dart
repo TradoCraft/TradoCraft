@@ -80,6 +80,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(path: '/tutorial', builder: (_, _) => const TutorialMapPage()),
       ShellRoute(
+        // Bottom sheets and menus opened from a shell page use this navigator, not the root.
+        observers: [ModalShortcutObserver(ref.read(shortcutRegistryProvider))],
         builder: (context, state, child) => OfflineSyncHost(
           child: AppShell(location: state.matchedLocation, child: child),
         ),

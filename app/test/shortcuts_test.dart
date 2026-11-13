@@ -38,6 +38,19 @@ class _Probe extends StatelessWidget {
               onPressed: () => context.push('/orders/$name-in'),
               child: Text('push-$name'),
             ),
+            TextButton(
+              onPressed: () => showModalBottomSheet<void>(
+                context: context,
+                builder: (_) => Text('sheet of $name'),
+              ),
+              child: Text('sheet-$name'),
+            ),
+            PopupMenuButton<int>(
+              key: ValueKey('menu-$name'),
+              itemBuilder: (_) => [
+                PopupMenuItem(value: 1, child: Text('item of $name')),
+              ],
+            ),
           ],
         ),
       ),
@@ -80,6 +93,9 @@ void main() {
       initialLocation: '/orders',
       routes: [
         ShellRoute(
+          observers: [
+            ModalShortcutObserver(container.read(shortcutRegistryProvider)),
+          ],
           builder: (c, s, child) =>
               AppShell(location: s.matchedLocation, child: child),
           routes: [
@@ -89,7 +105,26 @@ void main() {
             ),
             GoRoute(
               path: '/orders',
-              builder: (_, _) => const Text('ORDERS LIST'),
+              builder: (_, _) => Column(
+                children: [
+                  const Text('ORDERS LIST'),
+                  Builder(
+                    builder: (c) => TextButton(
+                      onPressed: () => showModalBottomSheet<void>(
+                        context: c,
+                        builder: (_) => const Text('shell sheet'),
+                      ),
+                      child: const Text('shell-sheet'),
+                    ),
+                  ),
+                  PopupMenuButton<int>(
+                    key: const ValueKey('shell-menu'),
+                    itemBuilder: (_) => [
+                      const PopupMenuItem(value: 1, child: Text('shell item')),
+                    ],
+                  ),
+                ],
+              ),
             ),
             GoRoute(
               path: '/orders/:id',
@@ -205,8 +240,10 @@ void main() {
       expect(await chord(t, LogicalKeyboardKey.keyZ, alt: true), isFalse);
       expect(await chord(t, LogicalKeyboardKey.digit2), isFalse);
       expect(await chord(t, LogicalKeyboardKey.digit2, ctrl: true), isFalse);
-      expect(await chord(t, LogicalKeyboardKey.digit2, alt: true, ctrl: true),
-          isFalse);
+      expect(
+        await chord(t, LogicalKeyboardKey.digit2, alt: true, ctrl: true),
+        isFalse,
+      );
       // Home needs no handler outside the shell; Create has no scope yet (phase B).
       expect(await chord(t, LogicalKeyboardKey.keyC, alt: true), isFalse);
     });
@@ -483,6 +520,88 @@ void main() {
       } finally {
         debugDefaultTargetPlatformOverride = null;
       }
+    });
+  });
+
+  group('popups on the shell and tab navigators', () {
+    Future<void> expectBlocked(WidgetTester t, {bool back = false}) async {
+      expect(await chord(t, LogicalKeyboardKey.digit1, alt: true), isFalse);
+      expect(await chord(t, LogicalKeyboardKey.keyH, alt: true), isFalse);
+      if (back) {
+        expect(await chord(t, LogicalKeyboardKey.keyB, alt: true), isFalse);
+      }
+    }
+
+    testWidgets('a bottom sheet from a shell page blocks, closing restores', (
+      t,
+    ) async {
+      await pump(t);
+      await t.tap(find.text('shell-sheet'));
+      await t.pumpAndSettle();
+      expect(find.text('shell sheet'), findsOneWidget);
+      await expectBlocked(t);
+      Navigator.of(t.element(find.text('shell sheet'))).pop();
+      await t.pumpAndSettle();
+      expect(await chord(t, LogicalKeyboardKey.digit1, alt: true), isTrue);
+    });
+
+    testWidgets('a popup menu on a shell page blocks, closing restores', (
+      t,
+    ) async {
+      await pump(t);
+      await t.tap(find.byKey(const ValueKey('shell-menu')));
+      await t.pumpAndSettle();
+      expect(find.text('shell item'), findsOneWidget);
+      await expectBlocked(t);
+      await t.tap(find.text('shell item'));
+      await t.pumpAndSettle();
+      expect(await chord(t, LogicalKeyboardKey.digit1, alt: true), isTrue);
+    });
+
+    testWidgets('a menu and a sheet inside a tab block, closing restores', (
+      t,
+    ) async {
+      await pump(t);
+      ws().open('/orders/a');
+      await t.pumpAndSettle();
+      await t.tap(find.text('push-a'));
+      await t.pumpAndSettle();
+      await t.tap(find.byKey(const ValueKey('menu-a-in')));
+      await t.pumpAndSettle();
+      expect(find.text('item of a-in'), findsOneWidget);
+      await expectBlocked(t, back: true);
+      await t.tap(find.text('item of a-in'));
+      await t.pumpAndSettle();
+      await t.tap(find.text('sheet-a-in'));
+      await t.pumpAndSettle();
+      await expectBlocked(t, back: true);
+      Navigator.of(t.element(find.text('sheet of a-in'))).pop();
+      await t.pumpAndSettle();
+      expect(await chord(t, LogicalKeyboardKey.keyB, alt: true), isTrue);
+    });
+
+    testWidgets('stays blocked until popups on both navigators are closed', (
+      t,
+    ) async {
+      await pump(t);
+      ws().open('/orders/a');
+      await t.pumpAndSettle();
+      await t.tap(find.text('sheet-a'));
+      await t.pumpAndSettle();
+      // A second popup on the shell's navigator (its page is offstage behind the tab).
+      showModalBottomSheet<void>(
+        context: t.element(find.text('ORDERS LIST', skipOffstage: false)),
+        builder: (_) => const Text('shell sheet'),
+      );
+      await t.pumpAndSettle();
+      await expectBlocked(t);
+      Navigator.of(t.element(find.text('sheet of a'))).pop();
+      await t.pumpAndSettle();
+      await expectBlocked(t);
+      Navigator.of(t.element(find.text('shell sheet', skipOffstage: false)))
+          .pop();
+      await t.pumpAndSettle();
+      expect(await chord(t, LogicalKeyboardKey.digit1, alt: true), isTrue);
     });
   });
 

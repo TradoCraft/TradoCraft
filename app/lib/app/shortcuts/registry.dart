@@ -108,7 +108,10 @@ class _Entry {
 /// is open on the observed navigator, an empty [ShortcutLayer.dialog] scope sits in the stack, so
 /// the shell and page handlers (menu digits, Home, Back, Save) are not reached. A dialog that
 /// wants keys of its own adds a [ShortcutScope] on the dialog layer, which is newer and wins.
-/// Attach it to the root router (`GoRouter.observers`).
+/// Use one observer per navigator (root router, shell route, each workspace tab): popups opened
+/// with `useRootNavigator: false` (bottom sheets, menus) land on the nearest navigator, not the
+/// root. They all share the stack, and each route holds its own scope, so shortcuts stay blocked
+/// until every open popup, on any navigator, is closed.
 class ModalShortcutObserver extends NavigatorObserver {
   /// Creates the observer for [stack].
   ModalShortcutObserver(this.stack);
@@ -121,6 +124,14 @@ class ModalShortcutObserver extends NavigatorObserver {
     if (r is PopupRoute && !_tokens.containsKey(r)) {
       _tokens[r] = stack.register(ShortcutLayer.dialog, const {});
     }
+  }
+
+  /// Releases the scopes of popups still open when the navigator goes away (a tab is closed).
+  void dispose() {
+    for (final t in _tokens.values) {
+      stack.unregister(t);
+    }
+    _tokens.clear();
   }
 
   void _remove(Route<dynamic>? r) {
