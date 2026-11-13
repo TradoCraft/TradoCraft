@@ -13152,6 +13152,36 @@ abstract class AppLocalizations {
   /// **'Press Send. The order is marked as sent and the supplier gets it. In test and tutorial environments outgoing mail is only written to files on the server, nothing leaves the building.'**
   String get tutBuyingSendBody;
 
+  /// No description provided for @tutBuyingOpenWarehousesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Where do the goods go?'**
+  String get tutBuyingOpenWarehousesTitle;
+
+  /// No description provided for @tutBuyingOpenWarehousesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Goods need a place before they can be received. Open Stock and press Warehouses: this is where warehouses and their locations are kept.'**
+  String get tutBuyingOpenWarehousesBody;
+
+  /// No description provided for @tutBuyingWarehouseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create the warehouse'**
+  String get tutBuyingWarehouseTitle;
+
+  /// No description provided for @tutBuyingWarehouseBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Press New warehouse, give it the code MAIN and the name Main warehouse, and save. A new warehouse comes with its location MAIN, which is where you receive the goods next.'**
+  String get tutBuyingWarehouseBody;
+
+  /// No description provided for @tutBuyingWarehouseHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Code and name are both required. If a warehouse with a location exists already, this step is skipped.'**
+  String get tutBuyingWarehouseHint;
+
   /// No description provided for @tutBuyingReceivePartTitle.
   ///
   /// In en, this message translates to:
@@ -13469,6 +13499,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Put on the worker hat and press Start. The order moves from released to in progress.'**
   String get tutManufacturingStartBody;
+
+  /// No description provided for @tutManufacturingWarehouseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A place for the carts'**
+  String get tutManufacturingWarehouseTitle;
+
+  /// No description provided for @tutManufacturingWarehouseBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The finished carts need a location to go into, and there is no warehouse yet (chapter 3 creates it). Open Stock, press Warehouses and create the warehouse MAIN with the name Main warehouse, then go back to the production order.'**
+  String get tutManufacturingWarehouseBody;
+
+  /// No description provided for @tutManufacturingWarehouseHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The location MAIN is created together with the warehouse. If a warehouse with a location exists already, this step is skipped.'**
+  String get tutManufacturingWarehouseHint;
 
   /// No description provided for @tutManufacturingCompleteTitle.
   ///
@@ -14087,6 +14135,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Press Start on the new production order.'**
   String get tutChangeStartBody;
+
+  /// No description provided for @tutChangeWarehouseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A place for the carts'**
+  String get tutChangeWarehouseTitle;
+
+  /// No description provided for @tutChangeWarehouseBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The finished carts need a location to go into, and there is no warehouse yet (chapter 3 creates it). Open Stock, press Warehouses and create the warehouse MAIN with the name Main warehouse, then go back to the production order.'**
+  String get tutChangeWarehouseBody;
+
+  /// No description provided for @tutChangeWarehouseHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The location MAIN is created together with the warehouse. If a warehouse with a location exists already, this step is skipped.'**
+  String get tutChangeWarehouseHint;
 
   /// No description provided for @tutChangeCompleteTitle.
   ///

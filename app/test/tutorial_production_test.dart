@@ -94,6 +94,7 @@ void main() {
         },
         'POST /api/v1/production-orders/po1/start': (_) => {'id': 'po1'},
         'POST /api/v1/production-orders/po1/complete': (_) => {'id': 'po1'},
+        'POST /api/v1/inventory/warehouses': (_) => {'id': 'w1'},
       });
       final c = _boot(
         http,
@@ -144,10 +145,13 @@ void main() {
       );
       expect(step(), 6);
       await dio.post<Object?>('/api/v1/production-orders/po1/start');
-      await dio.post<Object?>('/api/v1/production-orders/po1/complete');
+      expect(step(), 7, reason: 'no warehouse exists: it is made here');
+      await dio.post<Object?>('/api/v1/inventory/warehouses');
       expect(step(), 8);
-      t.routeChanged('/stock');
+      await dio.post<Object?>('/api/v1/production-orders/po1/complete');
       expect(step(), 9);
+      t.routeChanged('/stock');
+      expect(step(), 10);
       t.next();
       expect(c.read(tutorialProvider).completed, contains('manufacturing'));
     });
@@ -167,6 +171,17 @@ void main() {
           'status': 'completed',
           'division_id': 'd1',
         },
+        'GET /api/v1/inventory/warehouses': (_) => [
+          {
+            'id': 'w1',
+            'code': 'MAIN',
+            'kind': 'warehouse',
+            'active': true,
+            'locations': [
+              {'id': 'l1', 'code': 'MAIN', 'active': true},
+            ],
+          },
+        ],
       });
       final c = _boot(
         http,
@@ -190,7 +205,7 @@ void main() {
         isTrue,
         reason: 'the production probe asks for the cart',
       );
-      expect(c.read(tutorialProvider).stepIndex, 8, reason: 'only the stock is left');
+      expect(c.read(tutorialProvider).stepIndex, 9, reason: 'only the stock is left');
     });
   });
 

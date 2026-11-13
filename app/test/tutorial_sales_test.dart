@@ -402,6 +402,7 @@ void main() {
         },
         'POST /api/v1/production-orders/pr1/start': (_) => {'id': 'pr1'},
         'POST /api/v1/production-orders/pr1/complete': (_) => {'id': 'pr1'},
+        'POST /api/v1/inventory/warehouses': (_) => {'id': 'w1'},
       });
       final c = _boot(
         http,
@@ -453,12 +454,15 @@ void main() {
       expect(step(), 12);
       expect(c.read(tutorialProvider).values['orderProductionId'], 'pr1');
       await dio.post<Object?>('/api/v1/production-orders/pr1/start');
-      await dio.post<Object?>('/api/v1/production-orders/pr1/complete');
+      expect(step(), 13, reason: 'no warehouse exists: it is made here');
+      await dio.post<Object?>('/api/v1/inventory/warehouses');
       expect(step(), 14);
-      t.next(); // ready
+      await dio.post<Object?>('/api/v1/production-orders/pr1/complete');
       expect(step(), 15);
-      await dio.post<Object?>('/api/v1/production-orders', data: {'product_id': 'k1', 'quantity': '4'});
+      t.next(); // ready
       expect(step(), 16);
+      await dio.post<Object?>('/api/v1/production-orders', data: {'product_id': 'k1', 'quantity': '4'});
+      expect(step(), 17);
       t.next();
       expect(c.read(tutorialProvider).completed, contains('change'));
     });

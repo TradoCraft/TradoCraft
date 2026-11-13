@@ -39,8 +39,10 @@ CI runs this as the `e2e` job (`.github/workflows/ci.yml`).
 * Drop-down options appear as `menuitem` roles shortly after the menu opens (`choose`).
 * The navigation rail is a scrolling list that only exposes the items on screen, so the viewport
   is tall (1400x1700) and every module is reachable by role (`railTo`).
-* Chapter 3 says "choose the location MAIN". The seed of an older `main` had no warehouse, so the test
-  creates it through the API when it is missing (the seed now has it).
+* The tutorial environment is seeded without a warehouse. Chapter 3 teaches creating one (the warehouse
+  MAIN; it brings its location MAIN) before the goods are received, and chapters 5 and 9 have the same
+  step in front of "Complete", which is skipped when a warehouse with a location exists. The test creates
+  it through the UI in chapter 3 and relies on the skip afterwards; the database is recreated on every run.
 
 Things that used to need workarounds here and are fixed in the app (keep them fixed: each has a test
 in `app/test`): the narrator card closing suggestion lists, the navigation rail and tab strip

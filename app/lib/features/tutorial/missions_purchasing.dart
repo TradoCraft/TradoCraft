@@ -56,6 +56,34 @@ bool _allProducts(Object? json, MissionContext ctx) =>
 Map<String, String> _productsCapture(Object? json, MissionContext ctx) =>
     _captureProducts(json);
 
+bool _usableWarehouse(Map w) =>
+    w['kind'] != 'van' &&
+    w['active'] != false &&
+    w['locations'] is List &&
+    (w['locations'] as List).any((l) => l is Map && l['active'] != false);
+
+/// Whether a warehouse with an active location exists (goods can be received into it).
+bool _hasReceivingLocation(Object? json, MissionContext ctx) =>
+    json is List && json.any((w) => w is Map && _usableWarehouse(w));
+
+/// A read-only look at the warehouses: the steps that put goods somewhere are skipped when a
+/// warehouse with a location already exists (made by hand, or by an earlier chapter).
+const warehouseProbe = Probe(
+  '/api/v1/inventory/warehouses',
+  done: _hasReceivingLocation,
+);
+
+/// A step that creates the warehouse (a new warehouse gets its location MAIN with it). It is
+/// skipped when one exists, so the same step can guard every chapter that puts goods somewhere.
+const warehouseStep = MissionStep(
+  id: 'warehouse',
+  hasHint: true,
+  route: '/stock/warehouses',
+  targets: ['warehouse-form-save', 'warehouse-new'],
+  completion: OnApi('POST', '/inventory/warehouses'),
+  probe: warehouseProbe,
+);
+
 Map<String, String> _idOf(Object? json, String key) =>
     json is Map ? {key: '${json['id']}'} : const {};
 
@@ -219,6 +247,14 @@ final buyingMission = Mission(
         done: (json, _) => _poHasStatus(json, _sentOrLater),
       ),
     ),
+    const MissionStep(
+      id: 'openWarehouses',
+      route: '/stock/warehouses',
+      targets: ['stock-warehouses'],
+      completion: OnRoute('/stock/warehouses'),
+      probe: warehouseProbe,
+    ),
+    warehouseStep,
     MissionStep(
       id: 'receivePart',
       hasHint: true,

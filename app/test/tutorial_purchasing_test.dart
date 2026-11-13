@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tradocraft_app/app/api.dart';
@@ -24,12 +25,13 @@ ProviderContainer _boot(
   required List<String> completed,
   required String active,
   Map<String, String> values = const {},
+  int step = 0,
 }) {
   final kv = MemoryKvStore()
     ..data['tutorial.v1.e1.dev:a@x.test'] = jsonEncode({
       'completed': completed,
       'active': active,
-      'step': 0,
+      'step': step,
       'values': {..._ids, ...values},
     });
   final c = ProviderContainer(
@@ -72,6 +74,17 @@ FakeHttp _withProducts(Map<String, Object? Function(Object?)> routes) =>
       },
       ...routes,
     });
+
+Map<String, Object?> _warehouse({String kind = 'warehouse', bool active = true}) => {
+  'id': 'w1',
+  'code': 'MAIN',
+  'name': 'Main warehouse',
+  'kind': kind,
+  'active': active,
+  'locations': [
+    {'id': 'l1', 'code': 'MAIN', 'active': true},
+  ],
+};
 
 void main() {
   group('chapter 2: suppliers', () {
@@ -182,6 +195,7 @@ void main() {
         'POST /api/v1/purchase-orders/po1/approve': (_) => po(),
         'POST /api/v1/purchase-orders/po1/send': (_) => po(),
         'POST /api/v1/purchase-orders/po1/receipts': (_) => {'id': 'g'},
+        'POST /api/v1/inventory/warehouses': (_) => _warehouse(),
       });
       final c = _boot(
         http,
@@ -211,13 +225,20 @@ void main() {
       expect(step(), 4);
       await dio.post<Object?>('/api/v1/purchase-orders/po1/approve');
       await dio.post<Object?>('/api/v1/purchase-orders/po1/send');
-      expect(step(), 6);
-      await dio.post<Object?>('/api/v1/purchase-orders/po1/receipts');
+      expect(step(), 6, reason: 'where do the goods go?');
+      t.routeChanged('/purchasing');
+      expect(step(), 6, reason: 'another page is not the warehouses page');
+      t.routeChanged('/stock/warehouses');
       expect(step(), 7);
+      await dio.post<Object?>('/api/v1/inventory/warehouses');
+      expect(step(), 8, reason: 'the warehouse with its location MAIN exists');
+      t.routeChanged('/purchase-orders/po1'); // back to the order
       await dio.post<Object?>('/api/v1/purchase-orders/po1/receipts');
-      expect(step(), 8);
-      t.routeChanged('/stock');
       expect(step(), 9);
+      await dio.post<Object?>('/api/v1/purchase-orders/po1/receipts');
+      expect(step(), 10);
+      t.routeChanged('/stock');
+      expect(step(), 11);
       t.next();
       expect(c.read(tutorialProvider).completed, contains('buying'));
     });
@@ -283,6 +304,7 @@ void main() {
           {'id': 'po2', 'status': 'received'},
         ],
         'GET /api/v1/purchase-orders/po2': (_) => {'status': 'received'},
+        'GET /api/v1/inventory/warehouses': (_) => [_warehouse()],
       });
       final c = _boot(
         http,
@@ -305,7 +327,94 @@ void main() {
       expect(c.read(tutorialProvider).stepIndex, 3);
       t.routeChanged('/purchase-orders/po2');
       await pumpEventQueue(times: 200);
-      expect(c.read(tutorialProvider).stepIndex, 8, reason: 'only stock is left');
+      expect(c.read(tutorialProvider).stepIndex, 10, reason: 'only stock is left');
+    });
+
+    group('the warehouse step', () {
+      const openWarehouses = 6, warehouse = 7, receivePart = 8;
+
+      ProviderContainer atTheStep(FakeHttp http) => _boot(
+        http,
+        completed: ['welcome', 'product', 'suppliers'],
+        active: 'buying',
+        values: {'supplierAId': 'sa', 'poId': 'po1'},
+        step: openWarehouses,
+      );
+
+      test('is taught when no warehouse exists: open the page, create it, then receive', () async {
+        final http = FakeHttp({
+          'GET /api/v1/inventory/warehouses': (_) => [],
+          'POST /api/v1/inventory/warehouses': (_) => _warehouse(),
+          'POST /api/v1/purchase-orders/po1/receipts': (_) => {'id': 'g'},
+        });
+        final c = atTheStep(http);
+        final t = c.read(tutorialProvider.notifier);
+        await t.ready;
+        await t.resume();
+        await pumpEventQueue(times: 100);
+        int step() => c.read(tutorialProvider).stepIndex;
+        expect(http.requests, contains('GET /api/v1/inventory/warehouses'));
+        expect(step(), openWarehouses, reason: 'nothing to skip');
+        final mission = c.read(tutorialProvider.notifier).mission!;
+        expect(mission.steps[openWarehouses].id, 'openWarehouses');
+        expect(mission.steps[warehouse].id, 'warehouse');
+        expect(mission.steps[warehouse].targets, contains('warehouse-new'));
+        t.routeChanged('/stock/warehouses');
+        await pumpEventQueue(times: 100);
+        expect(step(), warehouse, reason: 'still nothing to skip');
+        final dio = c.read(dioProvider);
+        await dio.post<Object?>('/api/v1/inventory/warehouses');
+        expect(step(), receivePart);
+        await dio.post<Object?>('/api/v1/purchase-orders/po1/receipts');
+        expect(step(), receivePart + 1, reason: 'the receipt after it counts');
+      });
+
+      test('a refused creation (code taken) does not finish the step', () async {
+        final http = FakeHttp({
+          'GET /api/v1/inventory/warehouses': (_) => [],
+          'POST /api/v1/inventory/warehouses': (_) =>
+              FakeStatus(409, {'error': 'conflict', 'message': 'exists'}),
+        });
+        final c = atTheStep(http);
+        final t = c.read(tutorialProvider.notifier);
+        await t.ready;
+        await t.resume();
+        t.routeChanged('/stock/warehouses');
+        expect(c.read(tutorialProvider).stepIndex, warehouse);
+        try {
+          await c.read(dioProvider).post<Object?>('/api/v1/inventory/warehouses');
+        } on DioException catch (_) {}
+        expect(c.read(tutorialProvider).stepIndex, warehouse);
+      });
+
+      test('is skipped when a warehouse with a location exists', () async {
+        final http = FakeHttp({
+          'GET /api/v1/inventory/warehouses': (_) => [_warehouse()],
+        });
+        final c = atTheStep(http);
+        final t = c.read(tutorialProvider.notifier);
+        await t.ready;
+        await t.resume();
+        await pumpEventQueue(times: 100);
+        expect(
+          c.read(tutorialProvider).stepIndex,
+          receivePart,
+          reason: 'both warehouse steps are skipped, the receipt is next',
+        );
+        expect(http.requests, isNot(contains('POST /api/v1/inventory/warehouses')));
+      });
+
+      test('a van or an inactive warehouse is not a place to receive goods', () async {
+        for (final w in [_warehouse(kind: 'van'), _warehouse(active: false)]) {
+          final http = FakeHttp({'GET /api/v1/inventory/warehouses': (_) => [w]});
+          final c = atTheStep(http);
+          final t = c.read(tutorialProvider.notifier);
+          await t.ready;
+          await t.resume();
+          await pumpEventQueue(times: 100);
+          expect(c.read(tutorialProvider).stepIndex, openWarehouses);
+        }
+      });
     });
   });
 

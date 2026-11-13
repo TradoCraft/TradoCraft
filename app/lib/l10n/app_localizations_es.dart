@@ -7319,6 +7319,24 @@ class AppLocalizationsEs extends AppLocalizations {
       'Pulse Enviar. El pedido se marca como enviado y el proveedor lo recibe. En entornos de prueba y tutorial el correo saliente solo se escribe en archivos del servidor: nada sale del edificio.';
 
   @override
+  String get tutBuyingOpenWarehousesTitle => '¿Adónde va la mercancía?';
+
+  @override
+  String get tutBuyingOpenWarehousesBody =>
+      'La mercancía necesita un lugar antes de poder recibirse. Abra Stock y pulse Almacenes: aquí se guardan los almacenes y sus ubicaciones.';
+
+  @override
+  String get tutBuyingWarehouseTitle => 'Cree el almacén';
+
+  @override
+  String get tutBuyingWarehouseBody =>
+      'Pulse Nuevo almacén, póngale el código MAIN y el nombre Almacén principal, y guarde. Un almacén nuevo trae su ubicación MAIN, que es donde recibirá la mercancía a continuación.';
+
+  @override
+  String get tutBuyingWarehouseHint =>
+      'El código y el nombre son obligatorios. Si ya existe un almacén con una ubicación, este paso se omite.';
+
+  @override
   String get tutBuyingReceivePartTitle => 'Llega la primera entrega';
 
   @override
@@ -7505,6 +7523,17 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get tutManufacturingStartBody =>
       'Póngase el sombrero de operario y pulse Iniciar. La orden pasa de liberada a en curso.';
+
+  @override
+  String get tutManufacturingWarehouseTitle => 'Un lugar para los carritos';
+
+  @override
+  String get tutManufacturingWarehouseBody =>
+      'Los carritos terminados necesitan una ubicación donde ir, y todavía no hay ningún almacén (el capítulo 3 lo crea). Abra Stock, pulse Almacenes y cree el almacén MAIN con el nombre Almacén principal; después vuelva a la orden de producción.';
+
+  @override
+  String get tutManufacturingWarehouseHint =>
+      'La ubicación MAIN se crea junto con el almacén. Si ya existe un almacén con una ubicación, este paso se omite.';
 
   @override
   String get tutManufacturingCompleteTitle => 'Complete la orden';
@@ -7870,6 +7899,17 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get tutChangeStartBody =>
       'Pulse Iniciar en la nueva orden de producción.';
+
+  @override
+  String get tutChangeWarehouseTitle => 'Un lugar para los carritos';
+
+  @override
+  String get tutChangeWarehouseBody =>
+      'Los carritos terminados necesitan una ubicación donde ir, y todavía no hay ningún almacén (el capítulo 3 lo crea). Abra Stock, pulse Almacenes y cree el almacén MAIN con el nombre Almacén principal; después vuelva a la orden de producción.';
+
+  @override
+  String get tutChangeWarehouseHint =>
+      'La ubicación MAIN se crea junto con el almacén. Si ya existe un almacén con una ubicación, este paso se omite.';
 
   @override
   String get tutChangeCompleteTitle => 'Complete la producción';
