@@ -11,11 +11,15 @@ pub mod rebates;
 
 use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
-use axum::Json;
+use axum::{Extension, Json};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, PgExecutor};
-use tradocraft_core::{audit, new_id, AppError, AppResult, AppState, CurrentUser, Permission};
+use tradocraft_core::vat_check::{self, VatCheck, VatCheckParams, VatDuplicate};
+use tradocraft_core::vies::ViesConfig;
+use tradocraft_core::{
+    audit, new_id, search, vat, AppError, AppResult, AppState, CurrentUser, Permission,
+};
 use utoipa::{IntoParams, ToSchema};
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
@@ -128,6 +132,18 @@ impl CustomerInput {
         out
     }
 
+    /// The VAT rule the number breaks, when it is new or changed (ADR 0058). `current` is the
+    /// stored number: one entered before numbers were checked must not block editing the rest of
+    /// the customer, so an unchanged number is left alone.
+    pub(crate) fn vat_problem(&self, current: Option<&str>) -> Option<String> {
+        let number = self.vat_number.as_deref()?;
+        let country = Some(self.country_code.as_str());
+        if current.is_some_and(|c| vat::same_number(number, c, country)) {
+            return None;
+        }
+        vat::problem(number, country)
+    }
+
     /// The first broken rule as a validation error.
     pub(crate) fn validate(&self) -> AppResult<()> {
         match self.problems().into_iter().next() {
@@ -145,7 +161,7 @@ pub struct CustomerPage {
 
 #[derive(Debug, Deserialize, IntoParams)]
 pub struct ListParams {
-    /// Searches code, name, VAT number and city.
+    /// Searches code, name, VAT number and city, ignoring case and accents ("Liege" finds "Liège").
     pub q: Option<String>,
     pub limit: Option<i64>,
     pub offset: Option<i64>,
@@ -220,11 +236,14 @@ async fn list_customers(
     Query(p): Query<ListParams>,
 ) -> AppResult<Json<CustomerPage>> {
     user.require(Permission::CustomersRead)?;
-    let pattern =
-        p.q.as_deref()
-            .map(|q| format!("%{}%", q.trim().to_lowercase()));
-    let filter = "WHERE ($2::text IS NULL OR lower(c.code) LIKE $2 OR lower(c.name) LIKE $2
-                  OR lower(coalesce(c.vat_number, '')) LIKE $2 OR lower(c.city) LIKE $2)";
+    let pattern = search::pattern(p.q.as_deref());
+    let filter = format!(
+        "WHERE ($2::text IS NULL OR {} OR {} OR {} OR {})",
+        search::matches("c.code", "$2"),
+        search::matches("c.name", "$2"),
+        search::matches("c.vat_number", "$2"),
+        search::matches("c.city", "$2"),
+    );
     let items = sqlx::query_as(&format!(
         "{SELECT_CUSTOMER} {filter} ORDER BY c.name LIMIT $3 OFFSET $4"
     ))
@@ -370,6 +389,9 @@ async fn create_customer(
 ) -> AppResult<(StatusCode, Json<Customer>)> {
     user.require(Permission::CustomersWrite)?;
     input.validate()?;
+    if let Some(m) = input.vat_problem(None) {
+        return Err(AppError::Validation(m));
+    }
     let id = new_id();
     let mut tx = state.db.begin().await?;
     insert_customer(&mut tx, id, &input).await?;
@@ -401,23 +423,115 @@ async fn update_customer(
     user.require(Permission::CustomersWrite)?;
     input.validate()?;
     let mut tx = state.db.begin().await?;
+    let before = get_customer(&mut *tx, user.company_id, id).await?;
+    if let Some(m) = input.vat_problem(before.vat_number.as_deref()) {
+        return Err(AppError::Validation(m));
+    }
     update_customer_row(&mut tx, id, &input).await?;
     upsert_terms(&mut tx, user.company_id, id, &input).await?;
+    // What changed, field by field, for the audit viewer (ADR 0059).
+    let changes = audit::Changes::new()
+        .field("code", before.code.as_str(), input.code.trim())
+        .field("name", before.name.as_str(), input.name.trim())
+        .field("vat_number", &before.vat_number, &input.vat_number)
+        .field("vat_regime", &before.vat_regime, &input.vat_regime)
+        .field("email", &before.email, &input.email)
+        .field("phone", &before.phone, &input.phone)
+        .field("street", &before.street, &input.street)
+        .field("postal_code", &before.postal_code, &input.postal_code)
+        .field("city", &before.city, &input.city)
+        .field(
+            "country_code",
+            before.country_code.as_str(),
+            input.country_code.to_uppercase().as_str(),
+        )
+        .field(
+            "language",
+            before.language.as_str(),
+            input.language.to_lowercase().as_str(),
+        )
+        .field("active", &before.active, &input.active)
+        .field(
+            "price_zone_id",
+            &before.price_zone_id,
+            &Some(input.price_zone_id),
+        )
+        .field(
+            "discount_percent",
+            &before.discount_percent.map(|d| d.normalize()),
+            &Some(input.discount_percent.normalize()),
+        )
+        .field(
+            "payment_terms_days",
+            &before.payment_terms_days,
+            &Some(input.payment_terms_days),
+        );
     audit::record(
         &mut tx,
         &user,
         "customer",
         id,
         "updated",
-        serde_json::json!({}),
+        changes.into_data(),
     )
     .await?;
     tx.commit().await?;
     Ok(Json(get_customer(&state.db, user.company_id, id).await?))
 }
 
+/// Customers that carry the same VAT number (ADR 0058). Customers are shared master data
+/// (ADR 0003), so this looks across the whole table, which is also what the customer list shows.
+async fn vat_duplicates(
+    db: &sqlx::PgPool,
+    a: &vat_check::Assessment,
+    exclude: Option<Uuid>,
+) -> AppResult<Vec<VatDuplicate>> {
+    let (bare, countries) = a.bare.clone().unwrap_or_default();
+    Ok(sqlx::query_as(
+        "SELECT id, code, name, active FROM crm.customers
+         WHERE vat_number IS NOT NULL AND vat_number <> ''
+           AND (core.vat_key(vat_number) = ANY($1)
+                OR (core.vat_key(vat_number) = $2 AND upper(country_code::text) = ANY($3)))
+           AND ($4::uuid IS NULL OR id <> $4)
+         ORDER BY active DESC, name LIMIT 10",
+    )
+    .bind(&a.keys)
+    .bind(bare)
+    .bind(countries)
+    .bind(exclude)
+    .fetch_all(db)
+    .await?)
+}
+
+/// Checks a VAT number for the customer form: the format and check digits, other customers with
+/// the same number, and with `lookup=true` the name and address VIES has for it. Advice only;
+/// nothing is stored. The lookup needs `customers.write`: it makes the server call VIES.
+#[utoipa::path(get, path = "/customers/vat-check", tag = "crm", operation_id = "check_customer_vat",
+    params(VatCheckParams), responses((status = 200, body = VatCheck),
+    (status = 403, body = tradocraft_core::error::ErrorBody)))]
+async fn check_vat(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Extension(vies): Extension<ViesConfig>,
+    Query(p): Query<VatCheckParams>,
+) -> AppResult<Json<VatCheck>> {
+    user.require(Permission::CustomersRead)?;
+    let lookup = p.lookup.unwrap_or(false);
+    if lookup {
+        user.require(Permission::CustomersWrite)?;
+    }
+    let a = vat_check::assess(&p.vat_number, p.country_code.as_deref());
+    let duplicates = if a.has_number() {
+        vat_duplicates(&state.db, &a, p.exclude_id).await?
+    } else {
+        Vec::new()
+    };
+    Ok(Json(a.build(duplicates, lookup.then_some(&vies)).await))
+}
+
 pub fn router() -> OpenApiRouter<AppState> {
     OpenApiRouter::new()
+        .routes(routes!(check_vat))
         .routes(routes!(list_customers, create_customer))
         .routes(routes!(get_customer_handler, update_customer))
         .merge(csv::router())

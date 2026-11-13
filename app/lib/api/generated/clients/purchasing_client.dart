@@ -17,6 +17,7 @@ import '../models/supplier.dart';
 import '../models/supplier_product.dart';
 import '../models/update_purchase_order_input.dart';
 import '../models/update_supplier_input.dart';
+import '../models/vat_check.dart';
 
 part 'purchasing_client.g.dart';
 
@@ -91,14 +92,36 @@ abstract class PurchasingClient {
     @Path('id') required String id,
   });
 
+  /// [q] - Searches name, code, e-mail address and contact person, ignoring case and accents.
   @GET('/api/v1/suppliers')
   Future<List<Supplier>> listSuppliers({
     @Query('active_only') bool? activeOnly,
+    @Query('q') String? q,
   });
 
   @POST('/api/v1/suppliers')
   Future<Supplier> createSupplier({
     @Body() required NewSupplierInput body,
+  });
+
+  /// Checks a supplier's VAT number for the supplier form: the format and check digits, other.
+  /// suppliers of the company with the same number, and with `lookup=true` the name and address VIES.
+  /// has for it (ADR 0058). Advice only; nothing is stored. The lookup needs `purchasing.write`.
+  ///
+  /// [vatNumber] - The number as typed, with or without prefix, spaces and dots.
+  ///
+  /// [countryCode] - The country of the customer or supplier (ISO 3166-1 alpha-2): the prefix of a number typed.
+  /// without one.
+  ///
+  /// [excludeId] - A record to leave out of the duplicates: the one being edited.
+  ///
+  /// [lookup] - Also ask VIES, for the name and address (needs the write permission of the module).
+  @GET('/api/v1/suppliers/vat-check')
+  Future<VatCheck> checkSupplierVat({
+    @Query('vat_number') required String vatNumber,
+    @Query('country_code') String? countryCode,
+    @Query('exclude_id') String? excludeId,
+    @Query('lookup') bool? lookup,
   });
 
   /// [id] - Supplier ID

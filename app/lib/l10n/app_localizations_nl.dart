@@ -8194,4 +8194,96 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get workerBannerSemantics => 'Achtergrondverwerking';
+
+  @override
+  String get vatLookup => 'Opzoeken in VIES';
+
+  @override
+  String get vatValid => 'Het btw-nummer is geldig.';
+
+  @override
+  String get vatFormatOk =>
+      'De notatie klopt. De controlecijfers van dit land worden hier niet gecontroleerd.';
+
+  @override
+  String get vatBadFormat =>
+      'Dit heeft niet de vorm van een btw-nummer van dit land.';
+
+  @override
+  String get vatBadChecksum =>
+      'De controlecijfers kloppen niet: controleer op een tikfout.';
+
+  @override
+  String get vatNotChecked => 'Geen EU-btw-nummer, dus niet gecontroleerd.';
+
+  @override
+  String vatDuplicates(String records) {
+    return 'Ook in gebruik bij: $records';
+  }
+
+  @override
+  String vatInactive(String record) {
+    return '$record (inactief)';
+  }
+
+  @override
+  String get viesValid => 'Geregistreerd en actief in VIES.';
+
+  @override
+  String get viesInvalid => 'VIES kent dit nummer niet.';
+
+  @override
+  String viesUnavailable(String reason) {
+    return 'VIES kon niet antwoorden ($reason). Vul de gegevens zelf in.';
+  }
+
+  @override
+  String get viesDisabled => 'De VIES-opzoeking staat uit op deze server.';
+
+  @override
+  String get viesFilled => 'Naam en adres ingevuld vanuit VIES.';
+
+  @override
+  String get viesNoDetails => 'De lidstaat maakt geen naam of adres bekend.';
+
+  @override
+  String get adminAuditTrail => 'Auditlog';
+
+  @override
+  String get auditRecordType => 'Soort gegeven';
+
+  @override
+  String get auditAllRecords => 'Alle';
+
+  @override
+  String get auditAction => 'Actie';
+
+  @override
+  String get auditFrom => 'Van';
+
+  @override
+  String get auditTo => 'Tot';
+
+  @override
+  String get auditClearDates => 'Datums wissen';
+
+  @override
+  String get auditSystem => 'Systeem';
+
+  @override
+  String get auditNoEvents => 'Geen gebeurtenissen gevonden.';
+
+  @override
+  String get auditLoadMore => 'Oudere gebeurtenissen laden';
+
+  @override
+  String get auditHistory => 'Geschiedenis';
+
+  @override
+  String auditHistoryTitle(String name) {
+    return 'Geschiedenis van $name';
+  }
+
+  @override
+  String get auditNoDetails => 'Er zijn geen details vastgelegd.';
 }

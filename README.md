@@ -19,7 +19,7 @@ our own processes.
 
 ```
 apps/api/            HTTP server: wires modules, OpenAPI, migrations, integration tests
-crates/core/         errors, auth (OIDC / dev), companies, numbering, audit trail
+crates/core/         errors, auth (OIDC / dev), companies, numbering, audit trail and its viewer, VAT validation and VIES lookup, accent-insensitive search
 crates/pricing/      pure pricing engine (no I/O): zone prices, discounts, rounding, VAT
 crates/crm/          customers, contacts (people), per-company commercial terms, opportunities
 crates/products/     products, price zones, price history
@@ -85,6 +85,16 @@ Test environments. `scripts/envctl clone <database> <name> [--anonymize]` copies
 IMAP unless `ALLOW_INBOUND_MAIL_IN_NON_LIVE=1`
 ([ADR 0048](docs/adr/0048-environment-clones-and-outbound-safety.md),
 [runbook](docs/runbooks/test-environments.md)).
+
+VAT numbers and the audit trail. Customer and supplier VAT numbers are checked as you type (format and
+check digits for EU numbers; the form warns about a number another record already has), and a lookup
+button asks the EU's VIES service for the name and address. `VIES_URL` changes the service or, as `off`,
+switches it off (it is always off in test and tutorial environments); only the VAT number is sent
+([ADR 0058](docs/adr/0058-vat-number-validation-and-lookup.md)).
+Administrators see the audit trail under Administration > Audit trail, and a History button on a customer
+or supplier shows that record's changes ([ADR 0059](docs/adr/0059-audit-trail-viewer.md)). Searches in the
+customer, contact, supplier and product lists ignore accents and case
+([ADR 0057](docs/adr/0057-accent-insensitive-search.md)).
 
 Backups. `scripts/backupctl backup` takes a physical backup of the whole PostgreSQL server
 (attachments included) and keeps 7 daily, 4 weekly and 6 monthly ones; `scripts/backupctl verify`

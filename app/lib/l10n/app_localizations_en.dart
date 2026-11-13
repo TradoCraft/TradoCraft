@@ -8162,4 +8162,97 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get workerBannerSemantics => 'Background worker';
+
+  @override
+  String get vatLookup => 'Look up in VIES';
+
+  @override
+  String get vatValid => 'The VAT number is valid.';
+
+  @override
+  String get vatFormatOk =>
+      'The format is right. This country\'s check digits are not verified here.';
+
+  @override
+  String get vatBadFormat =>
+      'This is not shaped like a VAT number of this country.';
+
+  @override
+  String get vatBadChecksum =>
+      'The check digits do not match: please check for a typo.';
+
+  @override
+  String get vatNotChecked => 'Not an EU VAT number, so it is not checked.';
+
+  @override
+  String vatDuplicates(String records) {
+    return 'Also used by: $records';
+  }
+
+  @override
+  String vatInactive(String record) {
+    return '$record (inactive)';
+  }
+
+  @override
+  String get viesValid => 'Registered and active in VIES.';
+
+  @override
+  String get viesInvalid => 'VIES does not know this number.';
+
+  @override
+  String viesUnavailable(String reason) {
+    return 'VIES could not answer ($reason). Fill in the details by hand.';
+  }
+
+  @override
+  String get viesDisabled => 'The VIES lookup is switched off on this server.';
+
+  @override
+  String get viesFilled => 'Name and address filled in from VIES.';
+
+  @override
+  String get viesNoDetails =>
+      'The member state does not disclose a name or address.';
+
+  @override
+  String get adminAuditTrail => 'Audit trail';
+
+  @override
+  String get auditRecordType => 'Record type';
+
+  @override
+  String get auditAllRecords => 'All';
+
+  @override
+  String get auditAction => 'Action';
+
+  @override
+  String get auditFrom => 'From';
+
+  @override
+  String get auditTo => 'Until';
+
+  @override
+  String get auditClearDates => 'Clear dates';
+
+  @override
+  String get auditSystem => 'System';
+
+  @override
+  String get auditNoEvents => 'No events found.';
+
+  @override
+  String get auditLoadMore => 'Load older events';
+
+  @override
+  String get auditHistory => 'History';
+
+  @override
+  String auditHistoryTitle(String name) {
+    return 'History of $name';
+  }
+
+  @override
+  String get auditNoDetails => 'No details were recorded.';
 }

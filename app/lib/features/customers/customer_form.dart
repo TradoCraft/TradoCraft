@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/api.dart';
 import '../../shared/format.dart';
+import '../../shared/record_history.dart';
+import '../../shared/vat_field.dart';
 import '../contacts/contacts_dialog.dart';
 import 'closures_dialog.dart';
 import 'rebates_dialog.dart';
@@ -123,6 +125,38 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
     }
   }
 
+  /// Asks the server about the number in the form (ADR 0058).
+  Future<VatCheck> _checkVat({required String number, required bool lookup}) {
+    final country = _country.text.trim().toUpperCase();
+    return ref
+        .read(apiProvider)
+        .crm
+        .checkCustomerVat(
+          vatNumber: number,
+          countryCode: country.isEmpty ? null : country,
+          excludeId: c?.id,
+          lookup: lookup,
+        );
+  }
+
+  /// Fills the empty name and address fields from what VIES knows. Fields that already hold text
+  /// are left as they are. Returns whether anything was filled.
+  bool _fillFromVies(ViesLookup v) {
+    var filled = false;
+    void fill(TextEditingController t, String? value) {
+      if (value != null && value.isNotEmpty && t.text.trim().isEmpty) {
+        t.text = value;
+        filled = true;
+      }
+    }
+
+    fill(_name, v.name);
+    fill(_street, v.street);
+    fill(_postal, v.postalCode);
+    fill(_city, v.city);
+    return filled;
+  }
+
   Widget _field(
     TextEditingController t,
     String label, {
@@ -166,10 +200,20 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
                   ],
                 ),
                 gap,
+                VatNumberField(
+                  fieldKey: const ValueKey('customer-vat'),
+                  controller: _vat,
+                  label: context.l10n.vatNumber,
+                  enabled: !widget.readOnly,
+                  check: _checkVat,
+                  // The lookup makes the server call VIES: for those who may change customers.
+                  onLookup: !widget.readOnly && can(ref, 'customers.write')
+                      ? _fillFromVies
+                      : null,
+                ),
+                gap,
                 Row(
                   children: [
-                    Expanded(child: _field(_vat, context.l10n.vatNumber)),
-                    gap,
                     Expanded(child: _field(_email, context.l10n.email)),
                     gap,
                     Expanded(child: _field(_phone, context.l10n.phone)),
@@ -327,6 +371,8 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
               router.push('/jobs/equipment/${c!.id}');
             },
           ),
+        if (c != null)
+          RecordHistoryButton(entity: 'customer', id: c!.id, title: c!.name),
         if (c != null)
           TextButton.icon(
             icon: const Icon(AppIcons.eventBusy),

@@ -795,6 +795,279 @@
         }
       }
     },
+    "/api/v1/audit/events": {
+      "get": {
+        "tags": [
+          "audit"
+        ],
+        "summary": "The company-wide audit trail, newest first, with filters.",
+        "operationId": "list_audit_events",
+        "parameters": [
+          {
+            "name": "entity",
+            "in": "query",
+            "description": "The kind of record.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "entity_id",
+            "in": "query",
+            "description": "One record.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "action",
+            "in": "query",
+            "description": "Exactly this action.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "query",
+            "description": "Events by this user.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "description": "From this moment on (inclusive).",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "Until this moment (exclusive).",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before_id",
+            "in": "query",
+            "description": "Only events older than this id: the `next_before_id` of the previous page.",
+            "required": false,
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Page size, 50 by default, at most 200.",
+            "required": false,
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditPage"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/audit/facets": {
+      "get": {
+        "tags": [
+          "audit"
+        ],
+        "summary": "The kinds of record the trail has events for, to fill the filter of the viewer.",
+        "operationId": "get_audit_facets",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditFacets"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/audit/records/{entity}/{id}": {
+      "get": {
+        "tags": [
+          "audit"
+        ],
+        "summary": "The history of one record, newest first.",
+        "operationId": "get_record_history",
+        "parameters": [
+          {
+            "name": "entity",
+            "in": "path",
+            "description": "The kind of record, e.g. `customer`",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The record",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "before_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Page size, 50 by default, at most 200.",
+            "required": false,
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditPage"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/auth/providers": {
       "get": {
         "tags": [
@@ -2048,7 +2321,7 @@
           {
             "name": "q",
             "in": "query",
-            "description": "Part of a name (first, last or customer).",
+            "description": "Part of a name (first, last or customer), ignoring case and accents.",
             "required": false,
             "schema": {
               "type": [
@@ -2781,7 +3054,7 @@
           {
             "name": "q",
             "in": "query",
-            "description": "Searches code, name, VAT number and city.",
+            "description": "Searches code, name, VAT number and city, ignoring case and accents (\"Liege\" finds \"Liège\").",
             "required": false,
             "schema": {
               "type": [
@@ -2956,6 +3229,85 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ImportReport"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/customers/vat-check": {
+      "get": {
+        "tags": [
+          "crm"
+        ],
+        "summary": "Checks a VAT number for the customer form: the format and check digits, other customers with\nthe same number, and with `lookup=true` the name and address VIES has for it. Advice only;\nnothing is stored. The lookup needs `customers.write`: it makes the server call VIES.",
+        "operationId": "check_customer_vat",
+        "parameters": [
+          {
+            "name": "vat_number",
+            "in": "query",
+            "description": "The number as typed, with or without prefix, spaces and dots.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "country_code",
+            "in": "query",
+            "description": "The country of the customer or supplier (ISO 3166-1 alpha-2): the prefix of a number typed\nwithout one.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "exclude_id",
+            "in": "query",
+            "description": "A record to leave out of the duplicates: the one being edited.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "lookup",
+            "in": "query",
+            "description": "Also ask VIES, for the name and address (needs the write permission of the module).",
+            "required": false,
+            "schema": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VatCheck"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
                 }
               }
             }
@@ -16552,7 +16904,7 @@
           {
             "name": "q",
             "in": "query",
-            "description": "Searches code and name.",
+            "description": "Searches code and name, ignoring case and accents.",
             "required": false,
             "schema": {
               "type": [
@@ -22105,6 +22457,18 @@
                 "null"
               ]
             }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Searches name, code, e-mail address and contact person, ignoring case and accents.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
           }
         ],
         "responses": {
@@ -22210,6 +22574,95 @@
             }
           },
           "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/suppliers/vat-check": {
+      "get": {
+        "tags": [
+          "purchasing"
+        ],
+        "summary": "Checks a supplier's VAT number for the supplier form: the format and check digits, other\nsuppliers of the company with the same number, and with `lookup=true` the name and address VIES\nhas for it (ADR 0058). Advice only; nothing is stored. The lookup needs `purchasing.write`.",
+        "operationId": "check_supplier_vat",
+        "parameters": [
+          {
+            "name": "vat_number",
+            "in": "query",
+            "description": "The number as typed, with or without prefix, spaces and dots.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "country_code",
+            "in": "query",
+            "description": "The country of the customer or supplier (ISO 3166-1 alpha-2): the prefix of a number typed\nwithout one.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "exclude_id",
+            "in": "query",
+            "description": "A record to leave out of the duplicates: the one being edited.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "lookup",
+            "in": "query",
+            "description": "Also ask VIES, for the name and address (needs the write permission of the module).",
+            "required": false,
+            "schema": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VatCheck"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
             "description": "",
             "content": {
               "application/json": {
@@ -25062,6 +25515,104 @@
           "text",
           "boolean"
         ]
+      },
+      "AuditEvent": {
+        "type": "object",
+        "description": "One audited event: who did what to which record, and when.",
+        "required": [
+          "id",
+          "occurred_at",
+          "entity",
+          "entity_id",
+          "action",
+          "data"
+        ],
+        "properties": {
+          "action": {
+            "type": "string",
+            "description": "What happened (`created`, `updated`, `sent`, ...); the modules name their own."
+          },
+          "data": {
+            "type": "object",
+            "description": "What the module recorded: for an update usually `{\"changes\": {\"field\": {\"from\", \"to\"}}}`,\nbut each module decides, and some record nothing but the action."
+          },
+          "entity": {
+            "type": "string",
+            "description": "The kind of record (`customer`, `quotation`, `supplier_invoice`, ...)."
+          },
+          "entity_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Increases with time; the cursor for the next page."
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "user_email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "user_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "Absent for an event without a staff user, such as a customer acting in the portal; who\nacted is then in `data`."
+          },
+          "user_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "AuditFacets": {
+        "type": "object",
+        "description": "What the filters of the viewer can offer.",
+        "required": [
+          "entities"
+        ],
+        "properties": {
+          "entities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The kinds of record that have events in this company, alphabetically."
+          }
+        }
+      },
+      "AuditPage": {
+        "type": "object",
+        "description": "A page of events, newest first.",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuditEvent"
+            }
+          },
+          "next_before_id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Pass as `before_id` for the next (older) page; absent on the last page."
+          }
+        }
       },
       "BalanceDifference": {
         "type": "object",
@@ -43000,6 +43551,80 @@
           "error"
         ]
       },
+      "VatCheck": {
+        "type": "object",
+        "required": [
+          "vat_number",
+          "status",
+          "duplicates"
+        ],
+        "properties": {
+          "duplicates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VatDuplicate"
+            },
+            "description": "Other records with the same number (at most 10). A warning only: two branches of one\ncompany share a number legitimately."
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "What is wrong, in words, when `status` is `bad_format` or `bad_checksum`."
+          },
+          "normalized": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "An EU number in its VIES form (`BE0428759497`), to store or look up; absent otherwise."
+          },
+          "status": {
+            "$ref": "#/components/schemas/VatStatus"
+          },
+          "vat_number": {
+            "type": "string",
+            "description": "The number as given."
+          },
+          "vies": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ViesLookup",
+                "description": "VIES's answer; present only when a lookup was asked for."
+              }
+            ]
+          }
+        }
+      },
+      "VatDuplicate": {
+        "type": "object",
+        "description": "A record that carries the same VAT number.",
+        "required": [
+          "id",
+          "code",
+          "name",
+          "active"
+        ],
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "code": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
       "VatGroup": {
         "type": "object",
         "required": [
@@ -43018,6 +43643,80 @@
             "type": "string"
           }
         }
+      },
+      "VatStatus": {
+        "type": "string",
+        "description": "What the local rules say about the number.",
+        "enum": [
+          "empty",
+          "not_checked",
+          "valid",
+          "format_ok",
+          "bad_format",
+          "bad_checksum"
+        ]
+      },
+      "ViesLookup": {
+        "type": "object",
+        "description": "The outcome of a lookup, ready to pre-fill a form.",
+        "required": [
+          "state"
+        ],
+        "properties": {
+          "address": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The registered address as VIES wrote it, lines joined by a line break."
+          },
+          "city": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The registered name; absent when VIES does not disclose it."
+          },
+          "postal_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Why `state` is `unavailable`: `disabled`, `timeout`, `network`, `bad_response`, `http_NNN`,\nor the code VIES gave (`ms_unavailable`, `server_busy`, ...)."
+          },
+          "state": {
+            "$ref": "#/components/schemas/ViesState"
+          },
+          "street": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The address split as well as it can be: street lines, postal code and city. Absent parts\nwere not recognised; `address` has the full text."
+          }
+        }
+      },
+      "ViesState": {
+        "type": "string",
+        "description": "What VIES said.",
+        "enum": [
+          "valid",
+          "invalid",
+          "unavailable",
+          "not_applicable"
+        ]
       },
       "VisitTemplate": {
         "type": "object",
@@ -43561,6 +44260,10 @@
     {
       "name": "admin",
       "description": "Installation administration: identity providers and who may sign in"
+    },
+    {
+      "name": "audit",
+      "description": "The audit trail: the history of a record and the company-wide view, for administrators"
     },
     {
       "name": "crm",

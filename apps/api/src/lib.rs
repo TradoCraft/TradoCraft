@@ -6,6 +6,7 @@ use tradocraft_core::companies::BootstrapConfig;
 use tradocraft_core::cors::CorsConfig;
 use tradocraft_core::environment::EnvironmentConfig;
 use tradocraft_core::identity::IdpSettings;
+use tradocraft_core::vies::ViesConfig;
 use tradocraft_core::AppState;
 use utoipa::openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme};
 use utoipa::openapi::OpenApi as OpenApiDoc;
@@ -26,6 +27,7 @@ pub const DEV_SEED_SQL: &str = include_str!("../../../seed/dev_seed.sql");
     tags(
         (name = "core", description = "Users and companies"),
         (name = "admin", description = "Installation administration: identity providers and who may sign in"),
+        (name = "audit", description = "The audit trail: the history of a record and the company-wide view, for administrators"),
         (name = "crm", description = "Customers and opportunities"),
         (name = "products", description = "Products, price zones and price lists"),
         (name = "sales", description = "Quotations, pricing and orders"),
@@ -70,6 +72,7 @@ fn api() -> (Router<AppState>, OpenApiDoc) {
         .merge(tradocraft_core::environment::router())
         .merge(tradocraft_core::companies::router())
         .merge(tradocraft_core::identity_admin::router())
+        .merge(tradocraft_core::audit_log::router())
         .merge(tradocraft_crm::router())
         .merge(tradocraft_products::router())
         .merge(tradocraft_sales::router())
@@ -135,6 +138,27 @@ pub fn app_with_identity(
     cors: &CorsConfig,
     identity: IdpSettings,
 ) -> Router {
+    // Without a say in the matter the VIES lookup is off: a test must not call the Commission.
+    app_with_vies(
+        state,
+        environment,
+        bootstrap,
+        cors,
+        identity,
+        ViesConfig::disabled(),
+    )
+}
+
+/// The application with the VIES lookup (ADR 0058) pointed at `vies`: the server passes
+/// `ViesConfig::from_env()` (`VIES_URL`), a test passes a local stand-in.
+pub fn app_with_vies(
+    state: AppState,
+    environment: EnvironmentConfig,
+    bootstrap: BootstrapConfig,
+    cors: &CorsConfig,
+    identity: IdpSettings,
+    vies: ViesConfig,
+) -> Router {
     let (router, doc) = api();
     router
         .route("/health", axum::routing::get(|| async { "ok" }))
@@ -146,6 +170,7 @@ pub fn app_with_identity(
         .layer(axum::Extension(environment))
         .layer(axum::Extension(bootstrap))
         .layer(axum::Extension(identity))
+        .layer(axum::Extension(vies))
         .layer(TraceLayer::new_for_http())
         .layer(cors.layer())
         .with_state(state)

@@ -192,14 +192,17 @@ async fn main() -> anyhow::Result<()> {
         "environment"
     );
     tracing::info!("listening on http://{addr} (API docs at /docs)");
+    // The VIES lookup is an outbound call: live environments only (ADR 0048, ADR 0058).
+    let vies = tradocraft_core::vies::ViesConfig::for_environment(&environment);
     axum::serve(
         listener,
-        tradocraft_api::app_with_identity(
+        tradocraft_api::app_with_vies(
             state,
             environment,
             tradocraft_core::companies::BootstrapConfig::from_env(),
             &cors,
             idp_settings,
+            vies,
         ),
     )
     .with_graceful_shutdown(async {

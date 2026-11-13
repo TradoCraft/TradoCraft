@@ -178,6 +178,10 @@ impl OutboundPolicy {
                 "OUTBOUND SAFETY: IMAP polling is disabled (set {ALLOW_INBOUND_MAIL_VAR}=1 to opt in)"
             )
         });
+        // The API only (the worker never calls VIES), but the policy is one list for both.
+        w.push(
+            "OUTBOUND SAFETY: the VIES lookup of VAT numbers is disabled (ADR 0058)".to_string(),
+        );
         w
     }
 
@@ -306,6 +310,7 @@ mod tests {
             assert!(!p.imap_allowed);
             let w = p.warnings("smtp").join("\n");
             assert!(w.contains("overridden to files") && w.contains("IMAP polling is disabled"));
+            assert!(w.contains("VIES lookup of VAT numbers is disabled"));
         }
     }
 

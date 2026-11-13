@@ -14633,6 +14633,168 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Background worker'**
   String get workerBannerSemantics;
+
+  /// No description provided for @vatLookup.
+  ///
+  /// In en, this message translates to:
+  /// **'Look up in VIES'**
+  String get vatLookup;
+
+  /// No description provided for @vatValid.
+  ///
+  /// In en, this message translates to:
+  /// **'The VAT number is valid.'**
+  String get vatValid;
+
+  /// No description provided for @vatFormatOk.
+  ///
+  /// In en, this message translates to:
+  /// **'The format is right. This country\'s check digits are not verified here.'**
+  String get vatFormatOk;
+
+  /// No description provided for @vatBadFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'This is not shaped like a VAT number of this country.'**
+  String get vatBadFormat;
+
+  /// No description provided for @vatBadChecksum.
+  ///
+  /// In en, this message translates to:
+  /// **'The check digits do not match: please check for a typo.'**
+  String get vatBadChecksum;
+
+  /// No description provided for @vatNotChecked.
+  ///
+  /// In en, this message translates to:
+  /// **'Not an EU VAT number, so it is not checked.'**
+  String get vatNotChecked;
+
+  /// No description provided for @vatDuplicates.
+  ///
+  /// In en, this message translates to:
+  /// **'Also used by: {records}'**
+  String vatDuplicates(String records);
+
+  /// No description provided for @vatInactive.
+  ///
+  /// In en, this message translates to:
+  /// **'{record} (inactive)'**
+  String vatInactive(String record);
+
+  /// No description provided for @viesValid.
+  ///
+  /// In en, this message translates to:
+  /// **'Registered and active in VIES.'**
+  String get viesValid;
+
+  /// No description provided for @viesInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'VIES does not know this number.'**
+  String get viesInvalid;
+
+  /// No description provided for @viesUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'VIES could not answer ({reason}). Fill in the details by hand.'**
+  String viesUnavailable(String reason);
+
+  /// No description provided for @viesDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'The VIES lookup is switched off on this server.'**
+  String get viesDisabled;
+
+  /// No description provided for @viesFilled.
+  ///
+  /// In en, this message translates to:
+  /// **'Name and address filled in from VIES.'**
+  String get viesFilled;
+
+  /// No description provided for @viesNoDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'The member state does not disclose a name or address.'**
+  String get viesNoDetails;
+
+  /// No description provided for @adminAuditTrail.
+  ///
+  /// In en, this message translates to:
+  /// **'Audit trail'**
+  String get adminAuditTrail;
+
+  /// No description provided for @auditRecordType.
+  ///
+  /// In en, this message translates to:
+  /// **'Record type'**
+  String get auditRecordType;
+
+  /// No description provided for @auditAllRecords.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get auditAllRecords;
+
+  /// No description provided for @auditAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Action'**
+  String get auditAction;
+
+  /// No description provided for @auditFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'From'**
+  String get auditFrom;
+
+  /// No description provided for @auditTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Until'**
+  String get auditTo;
+
+  /// No description provided for @auditClearDates.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear dates'**
+  String get auditClearDates;
+
+  /// No description provided for @auditSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get auditSystem;
+
+  /// No description provided for @auditNoEvents.
+  ///
+  /// In en, this message translates to:
+  /// **'No events found.'**
+  String get auditNoEvents;
+
+  /// No description provided for @auditLoadMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Load older events'**
+  String get auditLoadMore;
+
+  /// No description provided for @auditHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'History'**
+  String get auditHistory;
+
+  /// No description provided for @auditHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'History of {name}'**
+  String auditHistoryTitle(String name);
+
+  /// No description provided for @auditNoDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'No details were recorded.'**
+  String get auditNoDetails;
 }
 
 class _AppLocalizationsDelegate

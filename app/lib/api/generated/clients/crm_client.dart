@@ -22,6 +22,7 @@ import '../models/opportunity_page.dart';
 import '../models/pipeline_stage.dart';
 import '../models/rebate_input.dart';
 import '../models/stage_input.dart';
+import '../models/vat_check.dart';
 
 part 'crm_client.g.dart';
 
@@ -46,7 +47,7 @@ abstract class CrmClient {
   ///
   /// [email] - An e-mail address.
   ///
-  /// [q] - Part of a name (first, last or customer).
+  /// [q] - Part of a name (first, last or customer), ignoring case and accents.
   @GET('/api/v1/contacts/lookup')
   Future<LookupResult> lookupContacts({
     @Query('phone') String? phone,
@@ -65,7 +66,7 @@ abstract class CrmClient {
     @Body() required ContactInput body,
   });
 
-  /// [q] - Searches code, name, VAT number and city.
+  /// [q] - Searches code, name, VAT number and city, ignoring case and accents ("Liege" finds "Liège").
   @GET('/api/v1/customers')
   Future<CustomerPage> listCustomers({
     @Query('q') String? q,
@@ -90,6 +91,26 @@ abstract class CrmClient {
   Future<ImportReport> importCustomers({
     @Body() required String body,
     @Query('dry_run') bool? dryRun,
+  });
+
+  /// Checks a VAT number for the customer form: the format and check digits, other customers with.
+  /// the same number, and with `lookup=true` the name and address VIES has for it. Advice only;.
+  /// nothing is stored. The lookup needs `customers.write`: it makes the server call VIES.
+  ///
+  /// [vatNumber] - The number as typed, with or without prefix, spaces and dots.
+  ///
+  /// [countryCode] - The country of the customer or supplier (ISO 3166-1 alpha-2): the prefix of a number typed.
+  /// without one.
+  ///
+  /// [excludeId] - A record to leave out of the duplicates: the one being edited.
+  ///
+  /// [lookup] - Also ask VIES, for the name and address (needs the write permission of the module).
+  @GET('/api/v1/customers/vat-check')
+  Future<VatCheck> checkCustomerVat({
+    @Query('vat_number') required String vatNumber,
+    @Query('country_code') String? countryCode,
+    @Query('exclude_id') String? excludeId,
+    @Query('lookup') bool? lookup,
   });
 
   @GET('/api/v1/customers/{id}')

@@ -286,6 +286,11 @@ async fn plan(
                 .filter(|m| !(name_missing && m.starts_with("code and name"))),
             &COLUMNS,
         );
+        // The VAT rule (ADR 0058) applies to a number the file adds or changes, so that an
+        // untouched legacy number does not stop a re-import of an export.
+        if let Some(m) = input.vat_problem(current.and_then(|c| c.vat_number.as_deref())) {
+            cells.error(Some("vat_number"), m);
+        }
         if cells.error_count() > before {
             continue;
         }

@@ -30,9 +30,9 @@ Module overview: [ARCHITECTURE.md](ARCHITECTURE.md).
 | D1 Worker heartbeat and "worker was down" alert | Done, [ADR 0052](adr/0052-worker-heartbeat.md) |
 | D2 Backup and restore runbook | Done, [ADR 0056](adr/0056-backup-and-restore.md) |
 | D3 Concurrent-edit protection on records | Open |
-| D4 VAT number validation, registry lookup and duplicate warning | Open |
-| D5 Accent-insensitive search | Open |
-| D6 Audit log viewer | Open |
+| D4 VAT number validation, registry lookup and duplicate warning | Done, [ADR 0058](adr/0058-vat-number-validation-and-lookup.md); the request to the live VIES service is untested (see the ADR) |
+| D5 Accent-insensitive search | Done for customers, contacts, suppliers and products, [ADR 0057](adr/0057-accent-insensitive-search.md); the other lists follow |
+| D6 Audit log viewer | Done, [ADR 0059](adr/0059-audit-trail-viewer.md); field-level changes are recorded for customers and suppliers, other modules adopt `audit::Changes` |
 | D7 Restrict CORS to configured origins | Done, [ADR 0050](adr/0050-portal-surface.md) |
 
 ## Sequencing
@@ -135,18 +135,38 @@ production.
   reload prompt in the app) and a short-lived edit lock that shows who has the record open.
 
 **D4 VAT number validation, registry lookup and duplicate warning** (small-medium)
-- `vat_number` on customers is stored unchecked; suppliers have no VAT number field yet.
+- `vat_number` on customers was stored unchecked; the supplier's `tax_id` (free text) was never looked at.
 - Format and check-digit validation, a VIES lookup that pre-fills name and address on create (with
-  a fallback when the service is down), and a warning when the number already exists in the company.
+  a fallback when the service is down), and a warning when the number already exists.
+- Done ([ADR 0058](adr/0058-vat-number-validation-and-lookup.md)): `core::vat` (format for the 27 member
+  states, check digits for 19, cross-checked against an independent implementation), a refusal of a
+  new or changed wrong number on customers and suppliers (an unchanged legacy number is left alone),
+  `GET /customers/vat-check` and `GET /suppliers/vat-check` (status, duplicates, optional VIES lookup),
+  and a VAT field in the customer and supplier forms that shows the verdict as the user types and has a
+  lookup button. `VIES_URL` configures or switches off the lookup.
+- Still to do: one lookup against the live VIES service (the build environment could not reach it);
+  check digits for the other countries (BG CY CZ ES IE LT LV MT); validating the company's own number.
 
 **D5 Accent-insensitive search** (small)
 - List and lookup searches use `ILIKE`, so "Liege" does not find "Liège". Customers, contacts,
   suppliers and products in five languages need accent folding (`unaccent` with a matching index).
+- Done ([ADR 0057](adr/0057-accent-insensitive-search.md)): `core.search_fold` and `core::search`, applied to
+  those four searches, trigram indexes for the three large tables, and a `q` on `GET /suppliers` (the
+  app's supplier list no longer filters in Dart).
+- Still to do: the other lists that search with `lower(...) LIKE` (orders, quotations, tickets, repairs,
+  packages, delivery notes, field jobs, contracts, stock, production orders, finance invoices, report
+  filters): each is a one-line change to `search::matches`.
 
 **D6 Audit log viewer** (medium)
 - `audit.events` is written in every transaction but cannot be read: no endpoint and no screen.
 - A permission-gated history per record (who changed what and when) and a company-wide view with
   filters for administrators.
+- Done ([ADR 0059](adr/0059-audit-trail-viewer.md)): permission `audit.view` (administrators), `GET /audit/events`,
+  `GET /audit/records/{entity}/{id}` and `GET /audit/facets` with cursor paging, an Audit trail tab in
+  Administration and a History button on customers and suppliers. Customer and supplier updates now
+  record which fields changed (`audit::Changes`).
+- Still to do: the other modules record little more than the action; adopt `audit::Changes` where
+  they record an update. A user filter in the app, an export, and a retention rule.
 
 **D7 Restrict CORS to configured origins** (small)
 - Done ([ADR 0050](adr/0050-portal-surface.md)): the API reads `CORS_ALLOWED_ORIGINS` (any origin

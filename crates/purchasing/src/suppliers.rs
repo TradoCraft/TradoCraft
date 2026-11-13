@@ -1,7 +1,8 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, PgConnection};
-use tradocraft_core::{audit, new_id, AppError, AppResult, CurrentUser};
+use tradocraft_core::vat_check::{Assessment, VatDuplicate};
+use tradocraft_core::{audit, new_id, search, vat, AppError, AppResult, CurrentUser};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -82,21 +83,31 @@ pub async fn load(conn: &mut PgConnection, company_id: Uuid, id: Uuid) -> AppRes
     .ok_or(AppError::NotFound("supplier"))
 }
 
-/// Lists suppliers of the company, optionally only active ones.
+/// Lists suppliers of the company, optionally only active ones and only those whose name, code,
+/// e-mail address or contact person contains `q`, ignoring case and accents (ADR 0057).
 pub async fn list(
     conn: &mut PgConnection,
     company_id: Uuid,
     active_only: bool,
+    q: Option<&str>,
 ) -> AppResult<Vec<Supplier>> {
-    sqlx::query_as::<_, Supplier>(
+    let filter = format!(
+        "($3::text IS NULL OR {} OR {} OR {} OR {})",
+        search::matches("name", "$3"),
+        search::matches("code", "$3"),
+        search::matches("email", "$3"),
+        search::matches("contact_person", "$3"),
+    );
+    sqlx::query_as::<_, Supplier>(&format!(
         "SELECT id, company_id, name, code, country, currency, email, phone, contact_person,
                 payment_terms_days, tax_id, active, notes, created_at, updated_at
          FROM purchasing.suppliers
-         WHERE company_id = $1 AND ($2 = false OR active = true)
-         ORDER BY name ASC",
-    )
+         WHERE company_id = $1 AND ($2 = false OR active = true) AND {filter}
+         ORDER BY name ASC"
+    ))
     .bind(company_id)
     .bind(active_only)
+    .bind(search::pattern(q))
     .fetch_all(conn)
     .await
     .map_err(Into::into)
@@ -120,6 +131,10 @@ pub async fn create(
     }
     let code = input.code.unwrap_or_default().trim().to_uppercase();
     let currency = normalize_currency(input.currency.as_deref().unwrap_or("EUR"))?;
+    let tax_id = input.tax_id.unwrap_or_default().trim().to_string();
+    if let Some(m) = vat::problem(&tax_id, Some(&country)) {
+        return Err(AppError::Validation(m));
+    }
     let id = new_id();
 
     let res = sqlx::query_as::<_, Supplier>(
@@ -141,7 +156,7 @@ pub async fn create(
     .bind(input.phone.unwrap_or_default().trim())
     .bind(input.contact_person.unwrap_or_default().trim())
     .bind(input.payment_terms_days.unwrap_or(30))
-    .bind(input.tax_id.unwrap_or_default().trim())
+    .bind(&tax_id)
     .bind(input.notes.unwrap_or_default().trim())
     .fetch_one(&mut *conn)
     .await;
@@ -183,6 +198,8 @@ pub async fn update(
     .await?
     .ok_or(AppError::NotFound("supplier"))?;
     let current = load(conn, user.company_id, id).await?;
+    let before = current.clone();
+    let previous_tax_id = current.tax_id.clone();
     let name = input
         .name
         .map(|n| n.trim().to_string())
@@ -223,6 +240,13 @@ pub async fn update(
         .tax_id
         .map(|t| t.trim().to_string())
         .unwrap_or(current.tax_id);
+    // A number entered before numbers were checked stays editable around: only a new or changed
+    // number has to pass (ADR 0058).
+    if !vat::same_number(&tax_id, &previous_tax_id, Some(&country)) {
+        if let Some(m) = vat::problem(&tax_id, Some(&country)) {
+            return Err(AppError::Validation(m));
+        }
+    }
     let active = input.active.unwrap_or(current.active);
     let notes = input
         .notes
@@ -262,17 +286,62 @@ pub async fn update(
         Err(e) => return Err(e.into()),
     };
 
+    // What changed, field by field, next to the identifying keys, for the audit viewer (ADR 0059).
+    let changes = audit::Changes::new()
+        .field("name", &before.name, &name)
+        .field("code", &before.code, &code)
+        .field("country", &before.country, &country)
+        .field("currency", &before.currency, &currency)
+        .field("email", &before.email, &email)
+        .field("phone", &before.phone, &phone)
+        .field("contact_person", &before.contact_person, &contact_person)
+        .field(
+            "payment_terms_days",
+            &before.payment_terms_days,
+            &payment_terms_days,
+        )
+        .field("tax_id", &before.tax_id, &tax_id)
+        .field("active", &before.active, &active)
+        .field("notes", &before.notes, &notes);
     audit::record(
         conn,
         user,
         "supplier",
         id,
         "updated",
-        serde_json::json!({ "name": name, "code": code, "active": active }),
+        changes.into_data_with(serde_json::json!({ "name": name, "code": code, "active": active })),
     )
     .await?;
 
     Ok(s)
+}
+
+/// Suppliers of the company with the same VAT number (ADR 0058): the number's key, or the bare
+/// national part for a supplier in the number's country. Other companies' suppliers are not looked
+/// at.
+pub async fn vat_duplicates(
+    conn: &mut PgConnection,
+    company_id: Uuid,
+    a: &Assessment,
+    exclude: Option<Uuid>,
+) -> AppResult<Vec<VatDuplicate>> {
+    let (bare, countries) = a.bare.clone().unwrap_or_default();
+    sqlx::query_as::<_, VatDuplicate>(
+        "SELECT id, code, name, active FROM purchasing.suppliers
+         WHERE company_id = $1 AND tax_id <> ''
+           AND (core.vat_key(tax_id) = ANY($2)
+                OR (core.vat_key(tax_id) = $3 AND upper(country) = ANY($4)))
+           AND ($5::uuid IS NULL OR id <> $5)
+         ORDER BY active DESC, name LIMIT 10",
+    )
+    .bind(company_id)
+    .bind(&a.keys)
+    .bind(bare)
+    .bind(countries)
+    .bind(exclude)
+    .fetch_all(conn)
+    .await
+    .map_err(Into::into)
 }
 
 /// Looks up supplier names by id (for modules that only hold the id, such as finance). Unknown
