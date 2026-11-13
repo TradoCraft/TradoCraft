@@ -21,7 +21,11 @@ const _products = {
   'pI': ['IND-1', 'indicative'],
 };
 
+/// Default production remark per product id (none unless a test sets one).
+final _defaults = <String, String>{};
+
 Map<String, Object?> _product(String id) => {
+  'default_production_remark': ?_defaults[id],
   'id': id,
   'code': _products[id]![0],
   'name': 'Name of ${_products[id]![0]}',
@@ -476,5 +480,47 @@ void main() {
       ),
       findsOneWidget,
     );
+  });
+
+  group('production remark on a swap', () {
+    setUp(() {
+      _defaults
+        ..['p1'] = 'Weld first'
+        ..['pB'] = 'Paint after';
+    });
+    tearDown(_defaults.clear);
+
+    testWidgets('the unedited default of the old product is cleared', (
+      tester,
+    ) async {
+      // The line carries 'Weld first', which is exactly BASE's default.
+      final http = _http();
+      await _pump(tester, http);
+      await _change(tester, 'NEW-B');
+      // Empty, so the server applies NEW-B's default; the old text is never sent.
+      expect(_preview(http)[0]['production_remark'], '');
+      await _save(tester, http);
+      final saved =
+          ((http.bodies['PUT /api/v1/quotations/q1'] as Map)['lines'] as List);
+      expect(saved.first['production_remark'], '');
+    });
+
+    testWidgets('an edited remark is kept', (tester) async {
+      final lines = _lines();
+      (lines.first as Map)['production_remark'] = 'Weld twice';
+      final http = _http(lines: lines);
+      await _pump(tester, http);
+      await _change(tester, 'NEW-B');
+      expect(_preview(http)[0]['production_remark'], 'Weld twice');
+    });
+
+    testWidgets('an empty remark stays empty', (tester) async {
+      final lines = _lines();
+      (lines.first as Map)['production_remark'] = '';
+      final http = _http(lines: lines);
+      await _pump(tester, http);
+      await _change(tester, 'NEW-B');
+      expect(_preview(http)[0]['production_remark'], '');
+    });
   });
 }
