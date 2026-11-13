@@ -172,10 +172,13 @@ pub enum Permission {
     /// `.view` and not `.read` on purpose: every `.read` permission belongs to the read-only
     /// viewer role (see `viewer_is_read_only`), and the viewer must not see the trail.
     AuditView,
+    /// Use the to-do list: create, change, complete and delete one's own items and the ones handed
+    /// over to oneself (ADR 0061). Not a `.read` permission, so the read-only viewer role has none.
+    TodoUse,
 }
 
 impl Permission {
-    pub const ALL: [Permission; 71] = [
+    pub const ALL: [Permission; 72] = [
         Permission::CustomersRead,
         Permission::CustomersWrite,
         Permission::ProductsRead,
@@ -247,6 +250,7 @@ impl Permission {
         Permission::ReportsWrite,
         Permission::IdentityAdmin,
         Permission::AuditView,
+        Permission::TodoUse,
     ];
 
     pub fn as_str(self) -> &'static str {
@@ -322,6 +326,7 @@ impl Permission {
             Permission::ReportsWrite => "reports.write",
             Permission::IdentityAdmin => "identity.admin",
             Permission::AuditView => "audit.view",
+            Permission::TodoUse => "todo.use",
         }
     }
 }
@@ -354,6 +359,13 @@ pub const ROLES: [&str; 17] = [
 /// Role → permission mapping. Kept in code (reviewed, tested) rather than data for now.
 pub fn role_grants(role: &str, p: Permission) -> bool {
     use Permission::*;
+    // Everyone who works in the company has a to-do list, except the read-only viewer and the
+    // integration service account (ADR 0061).
+    if p == TodoUse {
+        return ROLES
+            .iter()
+            .any(|r| *r == role && !matches!(role, "viewer" | "integration"));
+    }
     match role {
         "admin" => true,
         "sales_manager" => {
@@ -1370,6 +1382,19 @@ mod tests {
                 "{r}"
             );
         }
+    }
+
+    #[test]
+    fn everyone_but_the_viewer_and_the_integration_account_has_a_to_do_list() {
+        for r in ROLES {
+            assert_eq!(
+                role_grants(r, Permission::TodoUse),
+                !matches!(r, "viewer" | "integration"),
+                "{r}"
+            );
+        }
+        assert_eq!(Permission::TodoUse.as_str(), "todo.use");
+        assert!(!role_grants("nobody", Permission::TodoUse));
     }
 
     #[test]
