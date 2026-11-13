@@ -67,6 +67,16 @@ class _BomTabState extends ConsumerState<BomTab> {
   /// The routing of the revision that is shown (loaded when the user may see production).
   final List<_EditOp> _ops = [];
   bool _routingDirty = false;
+
+  /// Counts the edits of the routing, so that a save that was under way when the user edited again
+  /// does not mark the newer edits as saved.
+  int _routingEdits = 0;
+
+  /// The revision whose routing was loaded successfully. The routing can only be edited (and so
+  /// saved, which replaces it as a whole) once it is known: a routing that failed to load is not an
+  /// empty one.
+  String? _routingLoadedFor;
+  bool _routingFailed = false;
   final _notes = TextEditingController();
   final _explodeQty = TextEditingController(text: '1');
   Explosion? _explosion;
@@ -78,6 +88,11 @@ class _BomTabState extends ConsumerState<BomTab> {
   Set<String> get _perms =>
       ref.read(meProvider).value?.permissions.toSet() ?? const {};
   bool get _canSeeRouting => _perms.contains('production.read');
+
+  void _touchRouting() {
+    _routingDirty = true;
+    _routingEdits++;
+  }
 
   @override
   void initState() {
@@ -114,7 +129,11 @@ class _BomTabState extends ConsumerState<BomTab> {
       if (!me.permissions.contains('production.read')) return;
       final r = await _api.production.getRouting(id: bomId);
       if (!mounted || _bom?.id != bomId) return;
+      // Edits made to this revision's routing meanwhile win over what the server sent.
+      if (_routingLoadedFor == bomId && _routingDirty) return;
       setState(() {
+        _routingLoadedFor = bomId;
+        _routingFailed = false;
         _ops
           ..clear()
           ..addAll(
@@ -131,7 +150,9 @@ class _BomTabState extends ConsumerState<BomTab> {
         _routingDirty = false;
       });
     } catch (_) {
-      if (mounted && _bom?.id == bomId) setState(() => _ops.clear());
+      if (mounted && _bom?.id == bomId && _routingLoadedFor != bomId) {
+        setState(() => _routingFailed = true);
+      }
     }
   }
 
@@ -141,6 +162,8 @@ class _BomTabState extends ConsumerState<BomTab> {
     if (bom?.id != _bom?.id) {
       _ops.clear();
       _routingDirty = false;
+      _routingLoadedFor = null;
+      _routingFailed = false;
     }
     _bom = bom;
     _notes.text = bom?.notes ?? '';
@@ -178,6 +201,10 @@ class _BomTabState extends ConsumerState<BomTab> {
   }
 
   Future<bool> _saveDraft() async {
+    // Everything this save needs is taken now: the user may pick another revision while the
+    // requests are under way, and the lines, the notes and the routing must all go to this one.
+    final bomId = _bom!.id;
+    final notes = _notes.text;
     final lines = <BomLineInput>[];
     for (final (i, l) in _lines.indexed) {
       final q = parseDecimalInput(l.quantity.text);
@@ -199,23 +226,24 @@ class _BomTabState extends ConsumerState<BomTab> {
     // The routing is part of the revision: saved first, so a routing that is refused leaves the
     // lines as they were and nothing is lost on screen.
     if (_isDraft && _routingDirty && _perms.contains('bom.write')) {
-      if (!await _saveRouting()) return false;
-      if (!mounted) return false;
+      if (!await _saveRouting(bomId)) return false;
+      if (!mounted || _bom?.id != bomId) return false;
     }
     Bom? saved;
     final ok = await runAction(
       context,
       () async => saved = await _api.engineering.updateBom(
-        id: _bom!.id,
-        body: BomInput(notes: _notes.text, lines: lines),
+        id: bomId,
+        body: BomInput(notes: notes, lines: lines),
       ),
       success: context.l10n.draftSaved,
     );
-    if (ok) setState(() => _setBom(saved));
+    if (ok && mounted && _bom?.id == bomId) setState(() => _setBom(saved));
     return ok;
   }
 
-  Future<bool> _saveRouting() async {
+  Future<bool> _saveRouting(String bomId) async {
+    final edits = _routingEdits;
     final ops = <RoutingOperationInput>[];
     for (final (i, o) in _ops.indexed) {
       final setup = int.tryParse(
@@ -244,11 +272,12 @@ class _BomTabState extends ConsumerState<BomTab> {
     final ok = await runAction(
       context,
       () => _api.production.setRouting(
-        id: _bom!.id,
+        id: bomId,
         body: BomRoutingInput(operations: ops),
       ),
     );
-    if (ok) _routingDirty = false;
+    // Edits made while the request was under way are not saved yet.
+    if (ok && _routingEdits == edits) _routingDirty = false;
     return ok;
   }
 
@@ -415,7 +444,11 @@ class _BomTabState extends ConsumerState<BomTab> {
           ],
         ],
         if (_bom != null && _canSeeRouting)
-          ..._routingSection(theme, editable: canWrite && _isDraft),
+          ..._routingSection(
+            theme,
+            editable: canWrite && _isDraft && _routingLoadedFor == _bom!.id,
+            loaded: _routingLoadedFor == _bom!.id,
+          ),
         const Divider(height: 40),
         Text(
           context.l10n.materialRequirements,
@@ -453,7 +486,11 @@ class _BomTabState extends ConsumerState<BomTab> {
 
   /// The routing of the revision: operations in order, each on a work centre. Editable on a
   /// draft by whoever may edit BOMs; saved together with the lines.
-  List<Widget> _routingSection(ThemeData theme, {required bool editable}) {
+  List<Widget> _routingSection(
+    ThemeData theme, {
+    required bool editable,
+    required bool loaded,
+  }) {
     final l = context.l10n;
     final centres =
         ref.watch(workCentresProvider).value ?? const <WorkCentre>[];
@@ -466,7 +503,30 @@ class _BomTabState extends ConsumerState<BomTab> {
       const Divider(height: 40),
       Text(l.productionRouting, style: theme.textTheme.titleMedium),
       const SizedBox(height: 8),
-      if (_ops.isEmpty && !editable)
+      if (!loaded)
+        // Not known yet, or not readable: never shown as an empty routing.
+        if (_routingFailed)
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  l.productionRoutingLoadFailed,
+                  style: theme.textTheme.bodySmall,
+                ),
+              ),
+              TextButton(
+                key: const ValueKey('retry-routing'),
+                onPressed: () {
+                  setState(() => _routingFailed = false);
+                  _loadRouting(_bom!.id);
+                },
+                child: Text(l.retry),
+              ),
+            ],
+          )
+        else
+          const LinearProgressIndicator()
+      else if (_ops.isEmpty && !editable)
         Text(l.productionRoutingNone, style: theme.textTheme.bodySmall)
       else if (_ops.isNotEmpty)
         Table(
@@ -510,7 +570,7 @@ class _BomTabState extends ConsumerState<BomTab> {
                         ? TextField(
                             key: ValueKey('op-name-$i'),
                             controller: o.name,
-                            onChanged: (_) => _routingDirty = true,
+                            onChanged: (_) => _touchRouting(),
                           )
                         : Text(o.name.text),
                   ),
@@ -535,7 +595,7 @@ class _BomTabState extends ConsumerState<BomTab> {
                             ],
                             onChanged: (v) => setState(() {
                               o.centreId = v;
-                              _routingDirty = true;
+                              _touchRouting();
                             }),
                           )
                         : Text(centreLabel(o.centreId)),
@@ -548,7 +608,7 @@ class _BomTabState extends ConsumerState<BomTab> {
                             controller: o.setup,
                             textAlign: TextAlign.right,
                             keyboardType: TextInputType.number,
-                            onChanged: (_) => _routingDirty = true,
+                            onChanged: (_) => _touchRouting(),
                           )
                         : Text(o.setup.text, textAlign: TextAlign.right),
                   ),
@@ -562,7 +622,7 @@ class _BomTabState extends ConsumerState<BomTab> {
                             keyboardType: const TextInputType.numberWithOptions(
                               decimal: true,
                             ),
-                            onChanged: (_) => _routingDirty = true,
+                            onChanged: (_) => _touchRouting(),
                           )
                         : Text(o.run.text, textAlign: TextAlign.right),
                   ),
@@ -577,7 +637,7 @@ class _BomTabState extends ConsumerState<BomTab> {
                                   ? null
                                   : () => setState(() {
                                       _ops.insert(i - 1, _ops.removeAt(i));
-                                      _routingDirty = true;
+                                      _touchRouting();
                                     }),
                               icon: const Icon(AppIcons.arrowUpward),
                             ),
@@ -588,7 +648,7 @@ class _BomTabState extends ConsumerState<BomTab> {
                                   ? null
                                   : () => setState(() {
                                       _ops.insert(i + 1, _ops.removeAt(i));
-                                      _routingDirty = true;
+                                      _touchRouting();
                                     }),
                               icon: const Icon(AppIcons.arrowDownward),
                             ),
@@ -597,7 +657,7 @@ class _BomTabState extends ConsumerState<BomTab> {
                               tooltip: l.remove,
                               onPressed: () => setState(() {
                                 _ops.removeAt(i);
-                                _routingDirty = true;
+                                _touchRouting();
                               }),
                               icon: const Icon(AppIcons.close),
                             ),
@@ -622,7 +682,7 @@ class _BomTabState extends ConsumerState<BomTab> {
                         centreId: centres.firstWhere((w) => w.active).id,
                       ),
                     );
-                    _routingDirty = true;
+                    _touchRouting();
                   }),
             icon: const Icon(AppIcons.add),
             label: Text(l.productionRoutingAddOperation),

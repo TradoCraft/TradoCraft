@@ -48,7 +48,7 @@ class WorkCentre {
   final String name;
   final String notes;
 
-  /// Operations of production orders that are not finished.
+  /// Operations that are not finished, of production orders that are still open.
   @JsonKey(name: 'open_operations')
   final int openOperations;
   @JsonKey(name: 'sort_order')

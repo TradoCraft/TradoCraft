@@ -107,6 +107,24 @@ class _CompleteDialogState extends ConsumerState<CompleteDialog> {
       );
       return;
     }
+    // A minutes field that is left empty skips its operation; one that is filled in must be a
+    // whole number, or the operation would be silently left out.
+    final operations = <ProductionOperationActual>[];
+    for (final op in o.operations) {
+      final text = _opMinutes[op.id]?.text.trim() ?? '';
+      if (text.isEmpty) continue;
+      final minutes = int.tryParse(text);
+      if (minutes == null || minutes < 0) {
+        setState(
+          () => _error =
+              '${op.position}. ${op.name}: ${l.productionOperationMinutesInvalid}',
+        );
+        return;
+      }
+      operations.add(
+        ProductionOperationActual(operationId: op.id, actualMinutes: minutes),
+      );
+    }
     setState(() {
       _saving = true;
       _error = null;
@@ -148,14 +166,7 @@ class _CompleteDialogState extends ConsumerState<CompleteDialog> {
                         : null,
                   ),
               ],
-              operations: [
-                for (final e in _opMinutes.entries)
-                  if (int.tryParse(e.value.text.trim()) != null)
-                    ProductionOperationActual(
-                      operationId: e.key,
-                      actualMinutes: int.parse(e.value.text.trim()),
-                    ),
-              ],
+              operations: operations,
               note: _note.text.trim(),
             ),
           );

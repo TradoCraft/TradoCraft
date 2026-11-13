@@ -2740,5 +2740,7 @@
   "productionCostPerUnit": "Kosten pro Einheit",
   "productionCostGapProduct": "Keine Standardkosten: {code}",
   "productionCostGapWorkCentre": "Kein Stundensatz: {code}",
-  "productionCostCalculate": "Berechnen"
+  "productionCostCalculate": "Berechnen",
+  "productionOperationMinutesInvalid": "Geben Sie die Minuten als ganze Zahl ein.",
+  "productionRoutingLoadFailed": "Der Arbeitsplan konnte nicht geladen werden und kann deshalb jetzt nicht geändert werden."
 }

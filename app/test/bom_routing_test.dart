@@ -396,4 +396,50 @@ void main() {
     await _pump(tester, _http(perms: _editor, status: 'active'));
     expect(find.byKey(const ValueKey('cost-rollup')), findsNothing);
   });
+
+  testWidgets('a routing that could not be loaded cannot be edited, saved over or mistaken for empty', (
+    tester,
+  ) async {
+    var tries = 0;
+    final http = _http(
+      perms: _editor,
+      status: 'draft',
+      ops: [_routingOp('r1', 1, 'Cut')],
+      extra: {
+        'GET /api/v1/boms/b2/routing': (_) {
+          tries++;
+          if (tries == 1) {
+            return const FakeStatus(500, {'error': 'internal', 'message': 'boom'});
+          }
+          return {
+            'bom_id': 'b2',
+            'product_id': 'p-unit',
+            'bom_revision': 2,
+            'bom_status': 'draft',
+            'operations': [_routingOp('r1', 1, 'Cut')],
+          };
+        },
+      },
+    );
+    await _pump(tester, http);
+    // Not editable, not shown as "no routing", and saving the draft leaves the routing alone.
+    expect(find.textContaining('could not be loaded'), findsOneWidget);
+    expect(find.byKey(const ValueKey('add-operation')), findsNothing);
+    expect(find.textContaining('No routing'), findsNothing);
+    await tester.tap(find.text('Save draft'));
+    await tester.pumpAndSettle();
+    expect(http.requests, contains('PUT /api/v1/boms/b2'));
+    expect(http.requests, isNot(contains('PUT /api/v1/boms/b2/routing')));
+    // Retrying loads it, and then it can be edited.
+    await tester.tap(find.byKey(const ValueKey('retry-routing')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('could not be loaded'), findsNothing);
+    expect(
+      (tester.widget(find.byKey(const ValueKey('op-name-0'))) as TextField)
+          .controller!
+          .text,
+      'Cut',
+    );
+    expect(find.byKey(const ValueKey('add-operation')), findsOneWidget);
+  });
 }

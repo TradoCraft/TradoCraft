@@ -47,7 +47,7 @@ pub struct WorkCentre {
     pub active: bool,
     pub sort_order: i32,
     pub notes: String,
-    /// Operations of production orders that are not finished.
+    /// Operations that are not finished, of production orders that are still open.
     pub open_operations: i64,
     /// Own opening hours. None: the default week (Monday to Friday 08:00-12:00 and 13:00-17:00).
     #[sqlx(skip)]
@@ -117,10 +117,13 @@ pub struct WorkCentreListParams {
     pub division_id: Option<Uuid>,
 }
 
-const SELECT: &str = "SELECT w.id, w.code, w.name, w.division_id, d.name AS division_name, w.capacity,
+const SELECT: &str =
+    "SELECT w.id, w.code, w.name, w.division_id, d.name AS division_name, w.capacity,
         w.cost_per_hour, w.active, w.sort_order, w.notes,
         (SELECT count(*) FROM production.order_operations o
-          WHERE o.work_centre_id = w.id AND o.status IN ('pending', 'in_progress')) AS open_operations
+           JOIN production.production_orders po ON po.id = o.production_order_id
+          WHERE o.work_centre_id = w.id AND o.status IN ('pending', 'in_progress')
+            AND po.status IN ('released', 'in_progress')) AS open_operations
      FROM production.work_centres w
      LEFT JOIN production.divisions d ON d.id = w.division_id";
 

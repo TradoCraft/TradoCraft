@@ -3464,3 +3464,223 @@ fn the_new_endpoints_are_in_the_api_contract_without_name_clashes() {
         );
     }
 }
+
+// ---- Review follow-ups (ADR 0060) ----
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn work_spread_from_before_the_period_respects_closures_before_it(db: PgPool) {
+    let e = env(db).await;
+    e.receive(PROFILE, "200").await;
+    e.receive(BOLT, "1000").await;
+    let (_, weld) = e.frame_routing().await;
+    // Weld takes 1200 minutes: Monday to Wednesday.
+    let po = e
+        .build_for_stock(FRAME, "20", json!({ "start_date": "2027-03-01" }))
+        .await;
+    assert_eq!(
+        dates(&po, "Weld"),
+        ("2027-03-01".into(), "2027-03-03".into())
+    );
+    // Welding is then closed on Monday. Looking at Tuesday and Wednesday only, the work is spread
+    // over the two days it can still be done on, not three.
+    close(&e, Some(&weld), "2027-03-01", "2027-03-01").await;
+    let (_, cap) = get(
+        &e.app,
+        PLANNER,
+        "/production/capacity?from=2027-03-02&to=2027-03-03",
+    )
+    .await;
+    let welding: Vec<i64> = capacity_days(&cap, "WELD").iter().map(|d| d.2).collect();
+    assert_eq!(welding, [600, 600]);
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn the_cost_rollup_refuses_a_structure_that_is_too_large_to_walk(db: PgPool) {
+    let e = env(db).await;
+    // Every level uses the one below twice: the walk doubles at each level.
+    let mut below = BOLT.to_string();
+    let mut tops = Vec::new();
+    for i in 0..12 {
+        below = e
+            .make_product(&format!("D{i}"), "none", &[(&below, "1"), (&below, "1")])
+            .await;
+        tops.push(below.clone());
+    }
+    // 2^5 - 1 built products is fine; 2^12 - 1 is too many.
+    let (status, small) = e.rollup(ADMIN, &tops[4], "1").await;
+    assert_eq!(status, StatusCode::OK, "{small}");
+    assert_eq!(small["levels"].as_array().unwrap().len(), 31);
+    let (status, big) = e.rollup(ADMIN, &tops[11], "1").await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{big}");
+    assert!(
+        big["message"].as_str().unwrap().contains("more than 1000"),
+        "{big}"
+    );
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn an_order_cancelled_after_work_began_keeps_its_actual_cost(db: PgPool) {
+    let e = env(db).await;
+    e.frame_parts().await;
+    e.standard_costs().await;
+    e.frame_routing().await;
+    let po = e.build_for_stock(FRAME, "2", json!({})).await;
+    let n = id(&po);
+    let cut = id(operation(&po, "Cut"));
+    let (status, _) = post(
+        &e.app,
+        STORES,
+        &format!("/production-orders/{n}/operations/{cut}/finish"),
+        json!({ "actual_minutes": 65 }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    let (status, _) = post(
+        &e.app,
+        PLANNER,
+        &format!("/production-orders/{n}/cancel"),
+        json!({ "reason": "customer withdrew" }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    // 65 minutes at 30 an hour were worked; nothing was consumed.
+    let cancelled = e.production_order(PM, &n).await;
+    assert_eq!(cancelled["status"], "cancelled");
+    assert_eq!(
+        cost_of(&cancelled, "actual_cost"),
+        (q("0"), q("32.5"), q("32.5"), false)
+    );
+    // An order that never began has no actual cost, cancelled or not.
+    let idle = e.build_for_stock(FRAME, "1", json!({})).await;
+    post(
+        &e.app,
+        PLANNER,
+        &format!("/production-orders/{}/cancel", id(&idle)),
+        json!({ "reason": "duplicate" }),
+    )
+    .await;
+    assert!(e.production_order(PM, &id(&idle)).await["actual_cost"].is_null());
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn a_work_centre_counts_only_the_open_operations_of_open_orders(db: PgPool) {
+    let e = env(db).await;
+    e.frame_parts().await;
+    e.frame_routing().await;
+    let po = e.build_for_stock(FRAME, "1", json!({})).await;
+    let open = |who: &'static str| {
+        let e = &e;
+        async move {
+            let (_, list) = get(&e.app, who, "/production/work-centres").await;
+            list.as_array()
+                .unwrap()
+                .iter()
+                .map(|w| w["open_operations"].as_i64().unwrap())
+                .sum::<i64>()
+        }
+    };
+    assert_eq!(open(ADMIN).await, 2, "Cut and Weld");
+    // Cancelling the order leaves its operations pending, but they are no work to do.
+    post(
+        &e.app,
+        PLANNER,
+        &format!("/production-orders/{}/cancel", id(&po)),
+        json!({ "reason": "no" }),
+    )
+    .await;
+    assert_eq!(open(ADMIN).await, 0);
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn the_traveller_of_a_cancelled_order_says_so(db: PgPool) {
+    let e = env(db).await;
+    e.frame_parts().await;
+    let live = e.build_for_stock(FRAME, "1", json!({})).await;
+    let dead = e.build_for_stock(FRAME, "1", json!({})).await;
+    post(
+        &e.app,
+        PLANNER,
+        &format!("/production-orders/{}/cancel", id(&dead)),
+        json!({ "reason": "no" }),
+    )
+    .await;
+    for (lang, word) in [
+        ("en", "CANCELLED"),
+        ("nl", "GEANNULEERD"),
+        ("fr", "ANNULÉ"),
+        ("de", "STORNIERT"),
+        ("es", "CANCELADO"),
+    ] {
+        let (status, _, bytes) = pdf(&e, PLANNER, &id(&dead), &format!("?lang={lang}")).await;
+        assert_eq!(status, StatusCode::OK);
+        assert!(pdf_text(&bytes).contains(word), "{lang}");
+        let (_, _, bytes) = pdf(&e, PLANNER, &id(&live), &format!("?lang={lang}")).await;
+        assert!(
+            !pdf_text(&bytes).contains(word),
+            "{lang}: a live order is not cancelled"
+        );
+    }
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn auto_release_does_not_count_the_same_free_stock_twice(db: PgPool) {
+    let e = env(db).await;
+    // The set lists the frame twice, 5 each: 10 are needed, and 3 are on the shelf. A reservation
+    // is all or nothing, so neither line holds them, and the subassembly orders must cover the
+    // other 7 (2 + 5), not 4.
+    let dup = e
+        .make_product("DUP", "none", &[(FRAME, "5"), (FRAME, "5")])
+        .await;
+    e.receive(FRAME, "3").await;
+    let (status, po) = post(
+        &e.app,
+        PLANNER,
+        "/production-orders",
+        json!({ "product_id": dup, "quantity": "1", "auto_release_subassemblies": true }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{po}");
+    let mut built: Vec<Decimal> = po["sub_orders"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|s| dec(&s["quantity"]))
+        .collect();
+    built.sort();
+    assert_eq!(built, [q("2"), q("5")]);
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn building_a_component_listed_twice_covers_all_its_lines_once(db: PgPool) {
+    let e = env(db).await;
+    let dup = e
+        .make_product("DUP", "none", &[(FRAME, "5"), (FRAME, "5")])
+        .await;
+    let po = e.build_for_stock(&dup, "1", json!({})).await;
+    let n = id(&po);
+    let rows: Vec<&Value> = po["components"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|c| c["component_code"] == "FRAME-A")
+        .collect();
+    assert_eq!(rows.len(), 2);
+    // The first build serves both lines (10), so building for the second finds them covered.
+    let (status, child) = post(
+        &e.app,
+        PLANNER,
+        &format!("/production-orders/{n}/components/{}/build", id(rows[0])),
+        json!({}),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{child}");
+    assert_eq!(dec(&child["quantity"]), q("10"));
+    let (status, r) = post(
+        &e.app,
+        PLANNER,
+        &format!("/production-orders/{n}/components/{}/build", id(rows[1])),
+        json!({}),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CONFLICT, "{r}");
+}

@@ -74,7 +74,9 @@ foreign keys `(x_id, company_id)` as in ADR 0049. Every change is audited.
   releases a production order below it (`parent_order_id`, built for stock, so the sales order's line and
   status maths are untouched) for every component that is built from a BOM and that stock could not
   reserve, for the **shortfall**: required minus what is free to reserve (`inventory::reservations::
-  free_to_reserve`, sharing the candidate query of `allocate`). It recurses up to five levels in one
+  free_to_reserve`, sharing the candidate query of `allocate`). Stock is claimed once per release: what an
+  earlier component (or subassembly) of the same release already counts on is not counted again. A
+  component the order lists on several rows is one need, built once. It recurses up to five levels in one
   transaction; any failure undoes everything. The parent's own work is scheduled after the last
   subassembly's end. `POST /production-orders/{id}/components/{component_id}/build` does it for one
   component of an existing order (required minus reserved, free and what open subassembly orders already
@@ -85,7 +87,8 @@ foreign keys `(x_id, company_id)` as in ADR 0049. Every change is audited.
   belongs to the Products module, also `production.read`. `GET /production/products/{id}/cost-rollup?
   quantity=` walks the active BOM and routing through every level: bought components at their standard
   cost (a subassembly is costed from its own BOM and routing, not from its standard cost), operation minutes
-  at the work centre's current `cost_per_hour`, a breakdown per level, and the products or work centres
+  at the work centre's current `cost_per_hour`, a breakdown per level (at most 1000 built products in one
+  roll-up, 422 beyond), and the products or work centres
   that have no cost listed as `gaps` instead of counting as zero. A production order shows `planned_cost`
   (components at their frozen cost, operations at planned minutes and frozen rates) and, once it has
   started, `actual_cost` (consumed and scrapped quantities, booked at completion, and the minutes of

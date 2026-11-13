@@ -8686,4 +8686,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get productionCostCalculate => 'Calculate';
+
+  @override
+  String get productionOperationMinutesInvalid =>
+      'Enter the minutes as a whole number.';
+
+  @override
+  String get productionRoutingLoadFailed =>
+      'The routing could not be loaded, so it cannot be changed now.';
 }

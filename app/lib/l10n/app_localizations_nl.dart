@@ -8720,4 +8720,12 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get productionCostCalculate => 'Berekenen';
+
+  @override
+  String get productionOperationMinutesInvalid =>
+      'Geef de minuten als een geheel getal op.';
+
+  @override
+  String get productionRoutingLoadFailed =>
+      'De routing kon niet worden geladen en kan nu niet worden gewijzigd.';
 }

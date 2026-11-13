@@ -8727,4 +8727,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get productionCostCalculate => 'Calcular';
+
+  @override
+  String get productionOperationMinutesInvalid =>
+      'Indique los minutos como número entero.';
+
+  @override
+  String get productionRoutingLoadFailed =>
+      'No se pudo cargar la ruta, así que no se puede modificar ahora.';
 }

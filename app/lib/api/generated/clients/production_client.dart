@@ -108,8 +108,10 @@ abstract class ProductionClient {
   });
 
   /// Releases a production order for a component that is built from a BOM and that stock does not.
-  /// cover, below this order: it builds what is still missing (required, less what is reserved,.
-  /// free in stock and already under way in open subassembly orders).
+  /// cover, below this order: it builds what is still missing. The order may list the same.
+  /// component more than once, so this compares everything the order needs of the product with.
+  /// everything that covers it (reserved, free in stock, already under way in open subassembly.
+  /// orders): one build serves all its rows, and building again for another row finds it covered.
   @POST('/api/v1/production-orders/{id}/components/{component_id}/build')
   Future<ProductionOrder> buildComponent({
     @Path('id') required String id,

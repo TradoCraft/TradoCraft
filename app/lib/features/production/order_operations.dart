@@ -45,7 +45,7 @@ class OrderOperations extends ConsumerWidget {
       context: context,
       builder: (_) => _FinishDialog(operation: o),
     );
-    if (body == null) return;
+    if (body == null || !context.mounted) return;
     await run(
       () => _api(ref).finishProductionOperation(
         id: order.id,
@@ -64,7 +64,7 @@ class OrderOperations extends ConsumerWidget {
       context: context,
       builder: (_) => _MoveDialog(operation: o),
     );
-    if (body == null) return;
+    if (body == null || !context.mounted) return;
     await run(
       () => _api(ref).updateProductionOperation(
         id: order.id,
@@ -83,7 +83,7 @@ class OrderOperations extends ConsumerWidget {
       firstDate: now,
       lastDate: DateTime(now.year + 3),
     );
-    if (d == null) return;
+    if (d == null || !context.mounted) return;
     await run(
       () => _api(ref).scheduleProductionOrder(
         id: order.id,
@@ -219,12 +219,27 @@ class _FinishDialogState extends State<_FinishDialog> {
     text: widget.operation.plannedMinutes.toString(),
   );
   final _note = TextEditingController();
+  String? _error;
 
   @override
   void dispose() {
     _minutes.dispose();
     _note.dispose();
     super.dispose();
+  }
+
+  /// An empty field means the planned minutes; anything else must be a whole number.
+  void _finish() {
+    final text = _minutes.text.trim();
+    final minutes = int.tryParse(text);
+    if (text.isNotEmpty && (minutes == null || minutes < 0)) {
+      setState(() => _error = context.l10n.productionOperationMinutesInvalid);
+      return;
+    }
+    Navigator.pop(
+      context,
+      ProductionOperationFinish(actualMinutes: minutes, note: _note.text.trim()),
+    );
   }
 
   @override
@@ -243,7 +258,11 @@ class _FinishDialogState extends State<_FinishDialog> {
               keyboardType: TextInputType.number,
               decoration: InputDecoration(
                 labelText: l.productionOperationMinutes,
+                errorText: _error,
               ),
+              onChanged: (_) {
+                if (_error != null) setState(() => _error = null);
+              },
             ),
             TextField(
               key: const ValueKey('finish-note'),
@@ -260,13 +279,7 @@ class _FinishDialogState extends State<_FinishDialog> {
         ),
         FilledButton(
           key: const ValueKey('finish-save'),
-          onPressed: () => Navigator.pop(
-            context,
-            ProductionOperationFinish(
-              actualMinutes: int.tryParse(_minutes.text.trim()),
-              note: _note.text.trim(),
-            ),
-          ),
+          onPressed: _finish,
           child: Text(l.productionOperationFinish),
         ),
       ],
@@ -295,7 +308,7 @@ class _MoveDialogState extends ConsumerState<_MoveDialog> {
       firstDate: DateTime(2000),
       lastDate: DateTime(2100),
     );
-    if (d == null) return;
+    if (d == null || !mounted) return;
     setState(() {
       if (start) {
         _start = dateOnly(d);

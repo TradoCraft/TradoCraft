@@ -1690,5 +1690,125 @@ void main() {
       await _pump(tester, http, const CapacityPage());
       expect(find.text('You do not have permission to change these settings.'), findsOneWidget);
     });
+
+    testWidgets('completing refuses minutes that are not a whole number', (
+      tester,
+    ) async {
+      final http = opsHttp(
+        _planner,
+        extra: {
+          'POST /api/v1/production-orders/po1/complete': (_) =>
+              _order(status: 'completed', operations: ops),
+        },
+      );
+      await _pump(tester, http, const ProductionScreen(id: 'po1'));
+      await tester.tap(find.byKey(const ValueKey('complete-production')));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(const ValueKey('output-quantity')), '2');
+      await tester.tap(find.byType(DropdownButtonFormField<String>).last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('WH1/MAIN').last);
+      await tester.pumpAndSettle();
+      // Typed with a decimal point or a letter, the operation would silently have been skipped.
+      for (final bad in ['7.5', 'abc', '-3']) {
+        await tester.enterText(find.byKey(const ValueKey('op-minutes-op1')), bad);
+        await tester.tap(find.byKey(const ValueKey('complete-save')));
+        await tester.pumpAndSettle();
+        expect(
+          find.text('1. Cut: Enter the minutes as a whole number.'),
+          findsOneWidget,
+          reason: bad,
+        );
+        expect(
+          http.requests,
+          isNot(contains('POST /api/v1/production-orders/po1/complete')),
+          reason: '$bad is not sent',
+        );
+      }
+      // Empty is a choice (skip the operation); a number is sent.
+      await tester.enterText(find.byKey(const ValueKey('op-minutes-op1')), '');
+      await tester.tap(find.byKey(const ValueKey('complete-save')));
+      await tester.pumpAndSettle();
+      final sent =
+          http.bodies['POST /api/v1/production-orders/po1/complete']! as Map;
+      expect(
+        (sent['operations'] as List).map((o) => o['operation_id']),
+        ['op2'],
+        reason: 'op2 still has its planned minutes; op1 was left empty',
+      );
+    });
+
+    testWidgets('finishing an operation refuses minutes that are not a whole number', (
+      tester,
+    ) async {
+      final http = opsHttp(
+        _planner,
+        extra: {
+          'POST /api/v1/production-orders/po1/operations/op2/finish': (_) =>
+              _order(status: 'in_progress', operations: ops),
+        },
+      );
+      await _pump(tester, http, const ProductionScreen(id: 'po1'));
+      await tester.tap(find.byKey(const ValueKey('finish-op-op2')));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(const ValueKey('finish-minutes')), '1.5h');
+      await tester.tap(find.byKey(const ValueKey('finish-save')));
+      await tester.pumpAndSettle();
+      expect(find.text('Enter the minutes as a whole number.'), findsOneWidget);
+      expect(find.byKey(const ValueKey('finish-save')), findsOneWidget, reason: 'the dialog stays');
+      expect(
+        http.requests,
+        isNot(contains('POST /api/v1/production-orders/po1/operations/op2/finish')),
+      );
+      // Typing again clears the message; an empty field means the planned minutes.
+      await tester.enterText(find.byKey(const ValueKey('finish-minutes')), '');
+      await tester.pumpAndSettle();
+      expect(find.text('Enter the minutes as a whole number.'), findsNothing);
+      await tester.tap(find.byKey(const ValueKey('finish-save')));
+      await tester.pumpAndSettle();
+      final sent =
+          http.bodies['POST /api/v1/production-orders/po1/operations/op2/finish']!
+              as Map;
+      expect(sent.containsKey('actual_minutes'), isFalse);
+    });
+
+    testWidgets('working on an operation keeps what the planner typed but did not save', (
+      tester,
+    ) async {
+      final http = opsHttp(
+        _planner,
+        order: _order(
+          operations: [_operation(id: 'op1', end: '2099-08-01')],
+          scheduledEnd: '2099-08-01',
+        ),
+        extra: {
+          // The server knows nothing of the unsaved date.
+          'POST /api/v1/production-orders/po1/operations/op1/start': (_) =>
+              _order(
+                status: 'in_progress',
+                operations: [
+                  _operation(id: 'op1', status: 'in_progress', end: '2099-08-01'),
+                ],
+                scheduledEnd: '2099-08-01',
+              ),
+        },
+      );
+      await _pump(tester, http, const ProductionScreen(id: 'po1'));
+      await tester.tap(find.byKey(const ValueKey('use-scheduled-end')));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.widgetWithText(TextField, 'Notes'), 'urgent');
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Planned ready: 01/08/2099'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('start-op-op1')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('finish-op-op1')), findsOneWidget, reason: 'it started');
+      expect(find.textContaining('Planned ready: 01/08/2099'), findsOneWidget);
+      expect(
+        (tester.widget(find.widgetWithText(TextField, 'Notes')) as TextField)
+            .controller!
+            .text,
+        'urgent',
+      );
+    });
   });
 }

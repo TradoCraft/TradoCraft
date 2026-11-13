@@ -2740,5 +2740,7 @@
   "productionCostPerUnit": "Kost per eenheid",
   "productionCostGapProduct": "Geen standaardkost: {code}",
   "productionCostGapWorkCentre": "Geen kost per uur: {code}",
-  "productionCostCalculate": "Berekenen"
+  "productionCostCalculate": "Berekenen",
+  "productionOperationMinutesInvalid": "Geef de minuten als een geheel getal op.",
+  "productionRoutingLoadFailed": "De routing kon niet worden geladen en kan nu niet worden gewijzigd."
 }

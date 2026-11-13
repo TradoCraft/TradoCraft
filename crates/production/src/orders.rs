@@ -3,6 +3,7 @@
 
 use crate::cost::{order_costs, ProductionOrderCost};
 use crate::operations::{load_operations, snapshot_routing, ProductionOperation};
+use std::collections::HashMap;
 use std::future::Future;
 use std::pin::Pin;
 
@@ -128,7 +129,8 @@ pub struct ProductionOrder {
     /// operations at their planned minutes. Only for users who may see cost.
     pub planned_cost: Option<ProductionOrderCost>,
     /// What it cost so far: the components consumed (booked when the order is completed) and the
-    /// minutes of the finished operations. Only for users who may see cost, once it has started.
+    /// minutes of the finished operations. Only for users who may see cost, once it has started
+    /// (also when it was cancelled afterwards).
     pub actual_cost: Option<ProductionOrderCost>,
     /// When the last operation that is not finished is scheduled to end: the date to suggest as
     /// the planned-ready date. Empty without open operations.
@@ -372,8 +374,9 @@ pub(crate) async fn load_order(
         };
     let (planned_cost, actual_cost) = if user.can(Permission::InventoryCost) {
         let (planned, actual) = order_costs(&mut *conn, id).await?;
-        let started = matches!(summary.status.as_str(), "in_progress" | "completed");
-        (Some(planned), started.then_some(actual))
+        // Work was recorded once the order began, whatever became of it since (an order that is
+        // cancelled halfway still cost what was worked).
+        (Some(planned), extra.started_at.map(|_| actual))
     } else {
         (None, None)
     };
@@ -553,12 +556,15 @@ type ReleaseFuture<'a> = Pin<Box<dyn Future<Output = AppResult<Released>> + Send
 /// Releases one production order inside the caller's transaction: freezes the active BOM and its
 /// routing, creates the order and its components, reserves them and, when asked, releases a
 /// production order for every subassembly that is short, with the same rules and below this
-/// order. `ancestors` are the products being built above it.
+/// order. `ancestors` are the products being built above it; `claimed` is the free stock that
+/// earlier components of this release already counted on, so that two components (or branches)
+/// that need the same product do not both rely on the same units.
 fn release_in_tx<'a>(
     tx: &'a mut PgConnection,
     user: &'a CurrentUser,
     spec: ReleaseSpec,
     ancestors: &'a mut Vec<Uuid>,
+    claimed: &'a mut HashMap<Uuid, Decimal>,
 ) -> ReleaseFuture<'a> {
     Box::pin(async move {
         let quantity = spec.quantity;
@@ -695,8 +701,16 @@ fn release_in_tx<'a>(
             }
             // A serial-tracked need is always whole (a fraction cannot be reserved, so the release
             // would already have been refused), and so is the free stock: so is the shortfall.
+            // Free stock that an earlier component of this release already counted on is not
+            // counted again (a reservation is all or nothing, so it is still free in the books).
             let free = free_to_reserve(&mut *tx, user.company_id, component_product).await?;
-            let shortfall = need - free;
+            let taken = claimed
+                .get(&component_product)
+                .copied()
+                .unwrap_or(Decimal::ZERO);
+            let available = (free - taken).max(Decimal::ZERO);
+            claimed.insert(component_product, taken + need.min(available));
+            let shortfall = need - available;
             if shortfall <= Decimal::ZERO {
                 continue;
             }
@@ -717,6 +731,7 @@ fn release_in_tx<'a>(
                     auto_release_subassemblies: true,
                 },
                 &mut *ancestors,
+                &mut *claimed,
             )
             .await?;
             ancestors.pop();
@@ -842,6 +857,7 @@ async fn release(
             auto_release_subassemblies: input.auto_release_subassemblies,
         },
         &mut Vec::new(),
+        &mut HashMap::new(),
     )
     .await?;
     if let Some(order_id) = input.order_id {
@@ -862,12 +878,13 @@ pub struct ProductionBuildComponentInput {
 #[derive(FromRow)]
 struct BuildComponent {
     component_product_id: Uuid,
-    required_quantity: Decimal,
 }
 
 /// Releases a production order for a component that is built from a BOM and that stock does not
-/// cover, below this order: it builds what is still missing (required, less what is reserved,
-/// free in stock and already under way in open subassembly orders).
+/// cover, below this order: it builds what is still missing. The order may list the same
+/// component more than once, so this compares everything the order needs of the product with
+/// everything that covers it (reserved, free in stock, already under way in open subassembly
+/// orders): one build serves all its rows, and building again for another row finds it covered.
 #[utoipa::path(post, path = "/production-orders/{id}/components/{component_id}/build", tag = "production",
     params(("id" = Uuid, Path), ("component_id" = Uuid, Path)), request_body = ProductionBuildComponentInput,
     responses((status = 201, body = ProductionOrder), (status = 404, body = ErrorBody), (status = 409, body = ErrorBody), (status = 422, body = ErrorBody)))]
@@ -887,7 +904,7 @@ async fn build_component(
         )));
     }
     let comp: BuildComponent = sqlx::query_as(
-        "SELECT component_product_id, required_quantity FROM production.order_components
+        "SELECT component_product_id FROM production.order_components
          WHERE id = $1 AND production_order_id = $2",
     )
     .bind(component_id)
@@ -906,16 +923,29 @@ async fn build_component(
             product.code
         )));
     }
-    let held = held_by(
-        &mut tx,
-        user.company_id,
-        &ReserveTarget {
-            reference_type: PRODUCTION_COMPONENT,
-            reference_id: component_id,
-            product_id: comp.component_product_id,
-        },
+    let rows: Vec<(Uuid, Decimal)> = sqlx::query_as(
+        "SELECT id, required_quantity FROM production.order_components
+         WHERE production_order_id = $1 AND component_product_id = $2",
     )
+    .bind(id)
+    .bind(comp.component_product_id)
+    .fetch_all(&mut *tx)
     .await?;
+    let mut required_total = Decimal::ZERO;
+    let mut held = Decimal::ZERO;
+    for (row, need) in rows {
+        required_total += need;
+        held += held_by(
+            &mut tx,
+            user.company_id,
+            &ReserveTarget {
+                reference_type: PRODUCTION_COMPONENT,
+                reference_id: row,
+                product_id: comp.component_product_id,
+            },
+        )
+        .await?;
+    }
     let free = free_to_reserve(&mut tx, user.company_id, comp.component_product_id).await?;
     let under_way: Decimal = sqlx::query_scalar(
         "SELECT COALESCE(sum(quantity), 0) FROM production.production_orders
@@ -927,7 +957,7 @@ async fn build_component(
     .bind(comp.component_product_id)
     .fetch_one(&mut *tx)
     .await?;
-    let shortfall = comp.required_quantity - held - free - under_way;
+    let shortfall = required_total - held - free - under_way;
     if shortfall <= Decimal::ZERO {
         return Err(AppError::Conflict(format!(
             "stock and the open production orders already cover {}; reserve the components again",
@@ -950,6 +980,7 @@ async fn build_component(
             auto_release_subassemblies: input.auto_release_subassemblies,
         },
         &mut vec![po.product_id],
+        &mut HashMap::new(),
     )
     .await?;
     let out = load_order(&mut tx, &user, released.id).await?;

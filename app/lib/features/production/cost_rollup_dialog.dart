@@ -20,6 +20,9 @@ class _CostRollupDialogState extends ConsumerState<CostRollupDialog> {
   ProductionCostRollup? _result;
   String? _error;
 
+  /// Counts the requests: only the answer to the latest one is shown.
+  int _request = 0;
+
   @override
   void initState() {
     super.initState();
@@ -35,19 +38,20 @@ class _CostRollupDialogState extends ConsumerState<CostRollupDialog> {
   Future<void> _calculate() async {
     final q = parseDecimalInput(_quantity.text);
     if (q == null) return;
+    final mine = ++_request;
     try {
       final r = await ref
           .read(apiProvider)
           .production
           .productionCostRollup(id: widget.product.id, quantity: q);
-      if (mounted) {
+      if (mounted && mine == _request) {
         setState(() {
           _result = r;
           _error = null;
         });
       }
     } catch (e) {
-      if (mounted) {
+      if (mounted && mine == _request) {
         setState(() {
           _result = null;
           _error = errorMessage(e);

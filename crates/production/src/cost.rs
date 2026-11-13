@@ -35,6 +35,11 @@ type ErrorBody = tradocraft_core::error::ErrorBody;
 /// itself, so this only guards against a broken structure).
 const MAX_LEVELS: i32 = 20;
 
+/// How many built products (the product and every subassembly, each time it is met) one roll-up
+/// may visit. A subassembly used several times at several levels is walked once per use, so a
+/// structure that doubles at every level would otherwise cost the server exponential work.
+const MAX_VISITS: usize = 1000;
+
 fn money(d: Decimal) -> Decimal {
     d.round_dp_with_strategy(4, RoundingStrategy::MidpointAwayFromZero)
 }
@@ -173,6 +178,18 @@ struct Rollup {
 }
 
 impl Rollup {
+    /// Counts a visit and refuses the roll-up when the structure is too large to walk.
+    fn visit(&self) -> AppResult<()> {
+        if self.levels.len() >= MAX_VISITS {
+            return Err(AppError::Validation(format!(
+                "the structure has more than {MAX_VISITS} built products (a subassembly counts each time it is used); cost it in parts"
+            )));
+        }
+        Ok(())
+    }
+}
+
+impl Rollup {
     fn gap(&mut self, kind: &str, code: &str) {
         let gap = ProductionCostGap {
             kind: kind.into(),
@@ -201,6 +218,7 @@ fn rollup_level<'a>(
                 "the structure is more than {MAX_LEVELS} levels deep"
             )));
         }
+        out.visit()?;
         let product = tradocraft_products::get_product(&mut *conn, product_id).await?;
         let (bom_id, _, lines) =
             active_bom_lines(&mut *conn, product_id)

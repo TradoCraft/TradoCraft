@@ -15545,6 +15545,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Calculate'**
   String get productionCostCalculate;
+
+  /// No description provided for @productionOperationMinutesInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the minutes as a whole number.'**
+  String get productionOperationMinutesInvalid;
+
+  /// No description provided for @productionRoutingLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The routing could not be loaded, so it cannot be changed now.'**
+  String get productionRoutingLoadFailed;
 }
 
 class _AppLocalizationsDelegate

@@ -4086,5 +4086,7 @@
   "@productionCostGapProduct": {"placeholders": {"code": {"type": "String"}}},
   "productionCostGapWorkCentre": "No cost per hour: {code}",
   "@productionCostGapWorkCentre": {"placeholders": {"code": {"type": "String"}}},
-  "productionCostCalculate": "Calculate"
+  "productionCostCalculate": "Calculate",
+  "productionOperationMinutesInvalid": "Enter the minutes as a whole number.",
+  "productionRoutingLoadFailed": "The routing could not be loaded, so it cannot be changed now."
 }

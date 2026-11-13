@@ -70,16 +70,19 @@ class _ProductionScreenState extends ConsumerState<ProductionScreen> {
     _notes.text = po.notes;
   }
 
+  /// Runs an action that answers with the changed order and shows it. With [keepEdits] what the
+  /// planner has typed but not saved (division, planned-ready date, notes) stays as it is.
   Future<void> _run(
     Future<ProductionOrder> Function() action, {
     String? success,
+    bool keepEdits = false,
   }) async {
     setState(() => _busy = true);
     try {
       final po = await action();
       _changed = true;
       if (mounted) {
-        setState(() => _show(po));
+        setState(() => keepEdits ? _po = po : _show(po));
         if (success != null) _snack(success);
       }
     } catch (e) {
@@ -424,7 +427,7 @@ class _ProductionScreenState extends ConsumerState<ProductionScreen> {
               canRun: canRun,
               canWrite: canWrite,
               busy: _busy,
-              run: (action) => _run(action),
+              run: (action) => _run(action, keepEdits: true),
             ),
             if (po.subOrders.isNotEmpty) ...[
               gap,

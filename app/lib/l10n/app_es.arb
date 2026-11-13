@@ -2740,5 +2740,7 @@
   "productionCostPerUnit": "Coste por unidad",
   "productionCostGapProduct": "Sin coste estándar: {code}",
   "productionCostGapWorkCentre": "Sin coste por hora: {code}",
-  "productionCostCalculate": "Calcular"
+  "productionCostCalculate": "Calcular",
+  "productionOperationMinutesInvalid": "Indique los minutos como número entero.",
+  "productionRoutingLoadFailed": "No se pudo cargar la ruta, así que no se puede modificar ahora."
 }

@@ -114,6 +114,7 @@ class ProductionOrder {
 
   /// What it cost so far: the components consumed (booked when the order is completed) and the.
   /// minutes of the finished operations. Only for users who may see cost, once it has started.
+  /// (also when it was cancelled afterwards).
   @JsonKey(includeIfNull: false,name: 'actual_cost')
   final ProductionOrderCost? actualCost;
   @JsonKey(includeIfNull: false,name: 'cancel_reason')

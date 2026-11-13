@@ -16763,7 +16763,7 @@
         "tags": [
           "production"
         ],
-        "summary": "Releases a production order for a component that is built from a BOM and that stock does not\ncover, below this order: it builds what is still missing (required, less what is reserved,\nfree in stock and already under way in open subassembly orders).",
+        "summary": "Releases a production order for a component that is built from a BOM and that stock does not\ncover, below this order: it builds what is still missing. The order may list the same\ncomponent more than once, so this compares everything the order needs of the product with\neverything that covers it (reserved, free in stock, already under way in open subassembly\norders): one build serves all its rows, and building again for another row finds it covered.",
         "operationId": "build_component",
         "parameters": [
           {
@@ -38756,7 +38756,7 @@
                   },
                   {
                     "$ref": "#/components/schemas/ProductionOrderCost",
-                    "description": "What it cost so far: the components consumed (booked when the order is completed) and the\nminutes of the finished operations. Only for users who may see cost, once it has started."
+                    "description": "What it cost so far: the components consumed (booked when the order is completed) and the\nminutes of the finished operations. Only for users who may see cost, once it has started\n(also when it was cancelled afterwards)."
                   }
                 ]
               },
@@ -46507,7 +46507,7 @@
           "open_operations": {
             "type": "integer",
             "format": "int64",
-            "description": "Operations of production orders that are not finished."
+            "description": "Operations that are not finished, of production orders that are still open."
           },
           "sort_order": {
             "type": "integer",

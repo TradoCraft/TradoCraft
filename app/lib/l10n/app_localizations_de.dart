@@ -8741,4 +8741,12 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get productionCostCalculate => 'Berechnen';
+
+  @override
+  String get productionOperationMinutesInvalid =>
+      'Geben Sie die Minuten als ganze Zahl ein.';
+
+  @override
+  String get productionRoutingLoadFailed =>
+      'Der Arbeitsplan konnte nicht geladen werden und kann deshalb jetzt nicht geändert werden.';
 }

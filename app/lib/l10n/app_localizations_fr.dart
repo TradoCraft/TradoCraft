@@ -8732,4 +8732,12 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get productionCostCalculate => 'Calculer';
+
+  @override
+  String get productionOperationMinutesInvalid =>
+      'Indiquez les minutes en nombre entier.';
+
+  @override
+  String get productionRoutingLoadFailed =>
+      'La gamme n\'a pas pu être chargée et ne peut donc pas être modifiée maintenant.';
 }

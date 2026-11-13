@@ -128,7 +128,6 @@ async fn production_capacity(
     .fetch_all(&mut *conn)
     .await?;
     let ids: Vec<Uuid> = centres.iter().map(|c| c.id).collect();
-    let calendars = load_calendars(&mut conn, user.company_id, &ids, p.from).await?;
     // Operations of cancelled and completed orders are not work to do, whatever their status.
     let loads: Vec<OpLoad> = sqlx::query_as(
         "SELECT o.work_centre_id, o.planned_minutes, o.planned_start, o.planned_end
@@ -143,6 +142,13 @@ async fn production_capacity(
     .bind(p.to)
     .fetch_all(&mut *conn)
     .await?;
+    // An operation that began before the period is spread over its whole range, so the calendars
+    // (closures included) must reach back to the earliest of them, not only to the period.
+    let earliest = loads
+        .iter()
+        .map(|o| o.planned_start)
+        .fold(p.from, NaiveDate::min);
+    let calendars = load_calendars(&mut conn, user.company_id, &ids, earliest).await?;
     let mut by_day: HashMap<(Uuid, NaiveDate), i64> = HashMap::new();
     for o in &loads {
         let Some(cal) = calendars.get(&o.work_centre_id) else {

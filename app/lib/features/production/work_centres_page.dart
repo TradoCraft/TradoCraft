@@ -44,7 +44,7 @@ class WorkCentresPage extends ConsumerWidget {
         context: context,
         builder: (_) => _WorkCentreDialog(existing: w, canCost: canCost),
       );
-      if (saved == true) ref.invalidate(workCentresProvider);
+      if (saved == true && context.mounted) ref.invalidate(workCentresProvider);
     }
 
     Future<void> hours(WorkCentre w) async {
@@ -52,7 +52,7 @@ class WorkCentresPage extends ConsumerWidget {
         context: context,
         builder: (_) => _HoursDialog(centre: w),
       );
-      if (saved == true) ref.invalidate(workCentresProvider);
+      if (saved == true && context.mounted) ref.invalidate(workCentresProvider);
     }
 
     return Scaffold(
@@ -128,6 +128,7 @@ class WorkCentresPage extends ConsumerWidget {
                                                 .production
                                                 .deleteWorkCentre(id: w.id),
                                           );
+                                          if (!context.mounted) return;
                                           ref.invalidate(workCentresProvider);
                                         },
                                       ),
@@ -215,7 +216,7 @@ class _WorkCentreDialogState extends ConsumerState<_WorkCentreDialog> {
       }
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
-      setState(() => _error = errorMessage(e));
+      if (mounted) setState(() => _error = errorMessage(e));
     }
   }
 
@@ -354,7 +355,7 @@ class _HoursDialogState extends ConsumerState<_HoursDialog> {
       context: context,
       initialTime: TimeOfDay(hour: m ~/ 60, minute: m % 60),
     );
-    if (t == null) return;
+    if (t == null || !mounted) return;
     final v = t.hour * 60 + t.minute;
     setState(
       () => _blocks[weekday]![index] = start ? (v, cur.$2) : (cur.$1, v),
@@ -382,7 +383,7 @@ class _HoursDialogState extends ConsumerState<_HoursDialog> {
           );
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
-      setState(() => _error = errorMessage(e));
+      if (mounted) setState(() => _error = errorMessage(e));
     }
   }
 
@@ -527,7 +528,7 @@ class _ClosuresDialogState extends ConsumerState<_ClosuresDialog> {
       firstDate: DateTime(2000),
       lastDate: DateTime(2100),
     );
-    if (d == null) return;
+    if (d == null || !mounted) return;
     setState(() {
       if (from) {
         _from = dateOnly(d);
@@ -553,11 +554,12 @@ class _ClosuresDialogState extends ConsumerState<_ClosuresDialog> {
               note: _note.text.trim(),
             ),
           );
+      if (!mounted) return;
       _note.clear();
       ref.invalidate(workCentreClosuresProvider);
-      if (mounted) setState(() => _error = null);
+      setState(() => _error = null);
     } catch (e) {
-      setState(() => _error = errorMessage(e));
+      if (mounted) setState(() => _error = errorMessage(e));
     }
   }
 
@@ -621,6 +623,7 @@ class _ClosuresDialogState extends ConsumerState<_ClosuresDialog> {
                                                 id: c.id,
                                               ),
                                         );
+                                        if (!mounted) return;
                                         ref.invalidate(
                                           workCentreClosuresProvider,
                                         );
