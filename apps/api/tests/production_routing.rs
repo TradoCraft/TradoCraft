@@ -2755,3 +2755,350 @@ async fn building_a_component_can_release_its_own_subassemblies(db: PgPool) {
     assert_eq!(child["sub_orders"][0]["product_code"], "FRAME-A");
     assert_eq!(e.production_orders().await["total"], 3);
 }
+
+// ---- Cost roll-up and order costs (ADR 0060) ----
+
+const PUMP: &str = "00000000-0000-7000-8000-000000000303"; // serial, bought
+const CTRL: &str = "00000000-0000-7000-8000-000000000310"; // serial, bought
+const BUYER: &str = "buyer@example.com"; // role purchaser: may see cost, not production
+
+impl Env {
+    /// Standard costs for what the frame and the unit are made of.
+    async fn standard_costs(&self) {
+        for (product, cost) in [(PROFILE, "10"), (BOLT, "0.5"), (PUMP, "100"), (CTRL, "40")] {
+            sqlx::query(
+                "UPDATE products.products SET standard_cost = $2::numeric WHERE id = $1::uuid",
+            )
+            .bind(product)
+            .bind(cost)
+            .execute(&self.db)
+            .await
+            .unwrap();
+        }
+    }
+
+    /// Routings for the frame (Cut 30 + 10/unit at 30 an hour, Weld 60/unit at 60 an hour) and
+    /// for the unit (Assemble 30/unit at 48 an hour). Returns the assembly work centre's id.
+    async fn unit_routing(&self) -> String {
+        self.frame_routing().await;
+        let asm = id(&self
+            .work_centre("ASM", json!({ "cost_per_hour": "48" }))
+            .await);
+        let draft = self.draft_bom(UNIT_100, json!({})).await;
+        self.set_routing(&draft, vec![op("Assemble", &asm, 0, "30")])
+            .await;
+        let (status, a) = post(&self.app, PM, &format!("/boms/{draft}/activate"), json!({})).await;
+        assert_eq!(status, StatusCode::OK, "{a}");
+        asm
+    }
+
+    async fn rollup(&self, who: &str, product: &str, quantity: &str) -> (StatusCode, Value) {
+        get(
+            &self.app,
+            who,
+            &format!("/production/products/{product}/cost-rollup?quantity={quantity}"),
+        )
+        .await
+    }
+}
+
+fn cost_of(order: &Value, which: &str) -> (Decimal, Decimal, Decimal, bool) {
+    let c = &order[which];
+    (
+        dec(&c["material_cost"]),
+        dec(&c["labour_cost"]),
+        dec(&c["total_cost"]),
+        c["incomplete"].as_bool().unwrap(),
+    )
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn the_rollup_costs_material_and_labour_through_every_level(db: PgPool) {
+    let e = env(db).await;
+    e.standard_costs().await;
+    e.unit_routing().await;
+
+    let (status, r) = e.rollup(PM, UNIT_100, "2").await;
+    assert_eq!(status, StatusCode::OK, "{r}");
+    assert_eq!(r["product_code"], "UNIT-100");
+    assert_eq!(r["currency"], "EUR");
+    assert_eq!(dec(&r["quantity"]), q("2"));
+    // The unit: 4 pumps (400), 2 controllers (80), 16 bolts (8) and Assemble 60 min at 48 an hour.
+    // The frame is costed from its own BOM and routing for the 2 needed: profile 14.3 m (143),
+    // bolts 48.96 (24.48); Cut 50 min at 30 (25), Weld 120 min at 60 (120).
+    assert_eq!(dec(&r["material_cost"]), q("655.48"));
+    assert_eq!(dec(&r["labour_cost"]), q("193"));
+    assert_eq!(dec(&r["total_cost"]), q("848.48"));
+    assert_eq!(dec(&r["unit_cost"]), q("424.24"));
+    assert_eq!(r["gaps"], json!([]));
+    let levels = r["levels"].as_array().unwrap();
+    assert_eq!(levels.len(), 2);
+    assert_eq!(
+        (
+            levels[0]["level"].as_i64(),
+            levels[0]["product_code"].as_str()
+        ),
+        (Some(0), Some("UNIT-100"))
+    );
+    assert_eq!(dec(&levels[0]["material_cost"]), q("488"));
+    assert_eq!(dec(&levels[0]["labour_cost"]), q("48"));
+    assert_eq!(levels[0]["minutes"], 60);
+    assert_eq!(
+        (
+            levels[1]["level"].as_i64(),
+            levels[1]["product_code"].as_str()
+        ),
+        (Some(1), Some("FRAME-A"))
+    );
+    assert_eq!(dec(&levels[1]["quantity"]), q("2"));
+    assert_eq!(dec(&levels[1]["material_cost"]), q("167.48"));
+    assert_eq!(dec(&levels[1]["labour_cost"]), q("145"));
+    assert_eq!(levels[1]["minutes"], 170);
+
+    // The default is one; the frame on its own is cheaper.
+    let (_, one) = e.rollup(ADMIN, FRAME, "1").await;
+    assert_eq!(
+        dec(&one["material_cost"]),
+        q("83.74"),
+        "7.15 m x 10 + 24.48 bolts x 0.5"
+    );
+    assert_eq!(
+        dec(&one["labour_cost"]),
+        q("80"),
+        "Cut 40 min at 30, Weld 60 min at 60"
+    );
+    let (_, default) = get(
+        &e.app,
+        ADMIN,
+        &format!("/production/products/{FRAME}/cost-rollup"),
+    )
+    .await;
+    assert_eq!(dec(&default["total_cost"]), q("163.74"));
+    assert_eq!(dec(&default["unit_cost"]), q("163.74"));
+    // Setup is counted once however many are built: 10 frames take 130 + 600 minutes.
+    let (_, ten) = e.rollup(ADMIN, FRAME, "10").await;
+    assert_eq!(ten["levels"][0]["minutes"], 130 + 600);
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn what_has_no_cost_is_left_out_and_reported(db: PgPool) {
+    let e = env(db).await;
+    e.standard_costs().await;
+    let asm = e.unit_routing().await;
+    sqlx::query("UPDATE products.products SET standard_cost = NULL WHERE id = $1::uuid")
+        .bind(CTRL)
+        .execute(&e.db)
+        .await
+        .unwrap();
+    let (status, _) = put(
+        &e.app,
+        ADMIN,
+        &format!("/production/work-centres/{asm}"),
+        json!({ "code": "ASM", "name": "Assembly" }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "no rate any more");
+    let (_, r) = e.rollup(ADMIN, UNIT_100, "2").await;
+    assert_eq!(
+        dec(&r["material_cost"]),
+        q("575.48"),
+        "the controllers (80) are left out"
+    );
+    assert_eq!(
+        dec(&r["labour_cost"]),
+        q("145"),
+        "assembly (48) is left out"
+    );
+    assert_eq!(
+        r["gaps"],
+        json!([
+            { "kind": "standard_cost", "code": "CTRL-01" },
+            { "kind": "cost_per_hour", "code": "ASM" },
+        ])
+    );
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn the_rollup_asks_for_a_buildable_product_a_sensible_quantity_and_the_cost_right(
+    db: PgPool,
+) {
+    let e = env(db).await;
+    e.standard_costs().await;
+    e.unit_routing().await;
+    for (what, status, product, quantity) in [
+        ("unknown product", StatusCode::NOT_FOUND, uid(), "1"),
+        (
+            "a bought product has no BOM",
+            StatusCode::UNPROCESSABLE_ENTITY,
+            PROFILE.to_string(),
+            "1",
+        ),
+        (
+            "no quantity",
+            StatusCode::UNPROCESSABLE_ENTITY,
+            FRAME.to_string(),
+            "0",
+        ),
+        (
+            "negative",
+            StatusCode::UNPROCESSABLE_ENTITY,
+            FRAME.to_string(),
+            "-1",
+        ),
+        (
+            "fine quantity",
+            StatusCode::UNPROCESSABLE_ENTITY,
+            FRAME.to_string(),
+            "1.00001",
+        ),
+    ] {
+        let (got, r) = e.rollup(ADMIN, &product, quantity).await;
+        assert_eq!(got, status, "{what}: {r}");
+    }
+    add_user(&e.db, BUYER, "purchaser").await;
+    // Cost is for those who hold inventory.cost and see production: the administrator and the
+    // product manager. Production, sales, viewers, the technician and the warehouse are not.
+    for who in [ADMIN, PM] {
+        assert_eq!(e.rollup(who, FRAME, "1").await.0, StatusCode::OK, "{who}");
+    }
+    for who in [PLANNER, SALES, VIEWER, TECHNICIAN, STORES, BUYER] {
+        assert_eq!(
+            e.rollup(who, FRAME, "1").await.0,
+            StatusCode::FORBIDDEN,
+            "{who}"
+        );
+    }
+    // ... and not at all where the Production module is off.
+    sqlx::query("UPDATE core.companies SET disabled_modules = '{production}'")
+        .execute(&e.db)
+        .await
+        .unwrap();
+    assert_eq!(e.rollup(PM, FRAME, "1").await.0, StatusCode::FORBIDDEN);
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn an_order_shows_its_planned_and_actual_cost_to_those_who_may_see_cost(db: PgPool) {
+    let e = env(db).await;
+    e.frame_parts().await;
+    e.standard_costs().await;
+    e.frame_routing().await;
+    let po = e
+        .build_for_stock(FRAME, "2", json!({ "start_date": "2027-03-01" }))
+        .await;
+    let n = id(&po);
+
+    // The plan: 14.3 m of profile (143) and 48.96 bolts (24.48); Cut 50 min at 30 an hour (25) and
+    // Weld 120 min at 60 an hour (120). Nothing has happened yet, so there is no actual cost.
+    let as_pm = e.production_order(PM, &n).await;
+    assert_eq!(
+        cost_of(&as_pm, "planned_cost"),
+        (q("167.48"), q("145"), q("312.48"), false)
+    );
+    assert!(as_pm["actual_cost"].is_null());
+    assert!(!e.production_order(ADMIN, &n).await["planned_cost"].is_null());
+    // The people who run production, sell and read do not see cost anywhere on the order.
+    for who in [PLANNER, STORES, SALES, VIEWER] {
+        let o = e.production_order(who, &n).await;
+        assert!(o["planned_cost"].is_null(), "{who}");
+        assert!(o["actual_cost"].is_null(), "{who}");
+        assert!(o["operations"][0]["cost_rate"].is_null(), "{who}");
+    }
+
+    // Standard costs are frozen on the order: a later change does not move it.
+    sqlx::query("UPDATE products.products SET standard_cost = 99 WHERE id = $1::uuid")
+        .bind(PROFILE)
+        .execute(&e.db)
+        .await
+        .unwrap();
+    assert_eq!(
+        cost_of(&e.production_order(PM, &n).await, "planned_cost"),
+        (q("167.48"), q("145"), q("312.48"), false)
+    );
+    let frozen: Vec<Option<Decimal>> = sqlx::query_scalar(
+        "SELECT standard_cost FROM production.order_components WHERE production_order_id = $1::uuid ORDER BY position",
+    )
+    .bind(&n)
+    .fetch_all(&e.db)
+    .await
+    .unwrap();
+    assert_eq!(frozen, [Some(q("10")), Some(q("0.5"))]);
+
+    // The work on the floor: Cut took 65 minutes, Weld 100. Material is booked at completion.
+    let cut = id(operation(&po, "Cut"));
+    let weld = id(operation(&po, "Weld"));
+    for (op, minutes) in [(&cut, 65), (&weld, 100)] {
+        let (status, r) = post(
+            &e.app,
+            STORES,
+            &format!("/production-orders/{n}/operations/{op}/finish"),
+            json!({ "actual_minutes": minutes }),
+        )
+        .await;
+        assert_eq!(status, StatusCode::OK, "{r}");
+    }
+    let running = e.production_order(PM, &n).await;
+    assert_eq!(
+        cost_of(&running, "actual_cost"),
+        (q("0"), q("132.5"), q("132.5"), false)
+    );
+    let (status, done) = post(
+        &e.app,
+        STORES,
+        &format!("/production-orders/{n}/complete"),
+        json!({ "output": { "quantity": "2", "location_id": e.main } }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{done}");
+    let as_pm = e.production_order(PM, &n).await;
+    // Consumed 14.3 m and 48.96 bolts at the frozen costs: 167.48; labour 65 min at 30 and 100 at 60.
+    assert_eq!(
+        cost_of(&as_pm, "actual_cost"),
+        (q("167.48"), q("132.5"), q("299.98"), false)
+    );
+    assert_eq!(
+        cost_of(&as_pm, "planned_cost").2,
+        q("312.48"),
+        "the plan stays for comparison"
+    );
+    assert!(
+        done["actual_cost"].is_null(),
+        "completing as the warehouse shows no cost"
+    );
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn an_order_says_when_a_cost_is_missing(db: PgPool) {
+    let e = env(db).await;
+    e.frame_parts().await;
+    e.standard_costs().await;
+    e.frame_routing().await;
+    sqlx::query("UPDATE products.products SET standard_cost = NULL WHERE id = $1::uuid")
+        .bind(BOLT)
+        .execute(&e.db)
+        .await
+        .unwrap();
+    let po = e.build_for_stock(FRAME, "2", json!({})).await;
+    let n = id(&po);
+    // The bolts have no cost: the profile (143) and the labour (145) are counted, the order is flagged.
+    assert_eq!(
+        cost_of(&e.production_order(ADMIN, &n).await, "planned_cost"),
+        (q("143"), q("145"), q("288"), true)
+    );
+    // An operation without a rate: the same.
+    sqlx::query("UPDATE production.order_operations SET cost_rate = NULL WHERE production_order_id = $1::uuid AND name = 'Weld'")
+        .bind(&n)
+        .execute(&e.db)
+        .await
+        .unwrap();
+    assert_eq!(
+        cost_of(&e.production_order(ADMIN, &n).await, "planned_cost"),
+        (q("143"), q("25"), q("168"), true)
+    );
+    // Without a routing there is no labour, and that is not a gap.
+    let plain = e.build_for_stock(UNIT_100, "1", json!({})).await;
+    let c = cost_of(
+        &e.production_order(ADMIN, &id(&plain)).await,
+        "planned_cost",
+    );
+    assert_eq!(c.1, q("0"));
+}

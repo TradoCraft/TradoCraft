@@ -1,6 +1,7 @@
 //! Production orders: releasing an order (or building for stock), the frozen BOM and its reserved
 //! components, planning dates, start, cancel, and the order status that follows (ADR 0036).
 
+use crate::cost::{order_costs, ProductionOrderCost};
 use crate::operations::{load_operations, snapshot_routing, ProductionOperation};
 use std::future::Future;
 use std::pin::Pin;
@@ -120,6 +121,12 @@ pub struct ProductionOrder {
     pub sub_orders: Vec<ProductionSubOrder>,
     /// The number of the production order this one is a subassembly of.
     pub parent_order_number: Option<String>,
+    /// What the order is planned to cost: components at the standard cost frozen at release and
+    /// operations at their planned minutes. Only for users who may see cost.
+    pub planned_cost: Option<ProductionOrderCost>,
+    /// What it cost so far: the components consumed (booked when the order is completed) and the
+    /// minutes of the finished operations. Only for users who may see cost, once it has started.
+    pub actual_cost: Option<ProductionOrderCost>,
     /// When the last operation that is not finished is scheduled to end: the date to suggest as
     /// the planned-ready date. Empty without open operations.
     pub scheduled_end: Option<NaiveDate>,
@@ -351,6 +358,13 @@ pub(crate) async fn load_order(
             .await?,
             None => None,
         };
+    let (planned_cost, actual_cost) = if user.can(Permission::InventoryCost) {
+        let (planned, actual) = order_costs(&mut *conn, id).await?;
+        let started = matches!(summary.status.as_str(), "in_progress" | "completed");
+        (Some(planned), started.then_some(actual))
+    } else {
+        (None, None)
+    };
     Ok(ProductionOrder {
         summary,
         order_line_id: extra.order_line_id,
@@ -365,6 +379,8 @@ pub(crate) async fn load_order(
         operations,
         sub_orders,
         parent_order_number,
+        planned_cost,
+        actual_cost,
         scheduled_end,
     })
 }
@@ -442,7 +458,7 @@ pub(crate) async fn sync_order_status(
 
 /// A component needs this much for the whole order: BOM quantity x order quantity x (1 + scrap %),
 /// rounded up to four decimals so the order never runs short by rounding.
-fn required(per_unit: Decimal, quantity: Decimal, scrap_percent: Decimal) -> Decimal {
+pub(crate) fn required(per_unit: Decimal, quantity: Decimal, scrap_percent: Decimal) -> Decimal {
     (per_unit * quantity * (Decimal::ONE_HUNDRED + scrap_percent) / Decimal::ONE_HUNDRED)
         .round_dp_with_strategy(4, RoundingStrategy::AwayFromZero)
 }

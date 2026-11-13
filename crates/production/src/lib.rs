@@ -11,6 +11,7 @@
 
 pub mod capacity;
 pub mod complete;
+pub mod cost;
 pub mod divisions;
 pub mod operations;
 pub mod orders;
@@ -29,5 +30,6 @@ pub fn router() -> OpenApiRouter<AppState> {
         .merge(orders::router())
         .merge(operations::router())
         .merge(capacity::router())
+        .merge(cost::router())
         .merge(complete::router())
 }
