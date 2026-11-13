@@ -33,6 +33,7 @@ pub const DEV_SEED_SQL: &str = include_str!("../../../seed/dev_seed.sql");
         (name = "crm", description = "Customers and opportunities"),
         (name = "products", description = "Products, price zones and price lists"),
         (name = "sales", description = "Quotations, pricing and orders"),
+        (name = "favorites", description = "Company-wide favorites for sales lines: a main product with its options and comments, no prices"),
         (name = "engineering", description = "Bills of materials and serial numbers"),
         (name = "helpdesk", description = "Tickets, e-mail and prepared answers"),
         (name = "reports", description = "User-defined reports: build, save, share, run and export"),

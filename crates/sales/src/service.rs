@@ -69,6 +69,15 @@ pub fn validate_structure(inputs: &[QuotationLineInput]) -> AppResult<()> {
                 )));
             }
         }
+        if l.customer_remark_language
+            .as_deref()
+            .is_some_and(|c| !tradocraft_core::is_language(c))
+        {
+            return Err(AppError::Validation(format!(
+                "line {n}: customer_remark_language must be one of {}",
+                tradocraft_core::LANGUAGES.join(", ")
+            )));
+        }
         match l.percent_of_parent {
             Some(_) if l.parent_position.is_none() => {
                 return Err(AppError::Validation(format!(
@@ -163,6 +172,8 @@ pub async fn expand_options(
                     percent_base: None,
                     production_remark: String::new(),
                     customer_remark: String::new(),
+                    customer_remark_language: None,
+                    favorite_item_id: None,
                     add_options: false,
                 });
             }
@@ -174,6 +185,36 @@ pub async fn expand_options(
         stack.extend(pending);
     }
     Ok(out)
+}
+
+/// Every `favorite_item_id` must be an item of a favorite of the caller's company (422 otherwise;
+/// an id that belongs to another company or no longer exists is not told apart).
+pub async fn check_favorite_items(
+    db: &PgPool,
+    company_id: Uuid,
+    inputs: &[QuotationLineInput],
+) -> AppResult<()> {
+    let mut ids: Vec<Uuid> = inputs.iter().filter_map(|l| l.favorite_item_id).collect();
+    ids.sort();
+    ids.dedup();
+    if ids.is_empty() {
+        return Ok(());
+    }
+    let found: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM sales.favorite_items i
+         JOIN sales.favorites f ON f.id = i.favorite_id
+         WHERE i.id = ANY($1) AND f.company_id = $2",
+    )
+    .bind(&ids)
+    .bind(company_id)
+    .fetch_one(db)
+    .await?;
+    if found != ids.len() as i64 {
+        return Err(AppError::Validation(
+            "favorite_item_id does not refer to a favorite of this company".into(),
+        ));
+    }
+    Ok(())
 }
 
 /// The trimmed text, or `None` when it is absent or blank.
@@ -198,6 +239,7 @@ pub async fn price_lines(
     inputs: &[QuotationLineInput],
 ) -> AppResult<Priced> {
     validate_structure(inputs)?;
+    check_favorite_items(db, company_id, inputs).await?;
     let expanded = expand_options(db, inputs).await?;
     let inputs = &expanded[..];
     let customer = get_customer_for_quoting(db, company_id, customer_id).await?;
@@ -339,6 +381,11 @@ pub async fn price_lines(
                 input.production_remark.trim().to_string()
             },
             customer_remark: input.customer_remark.trim().to_string(),
+            customer_remark_language: input
+                .customer_remark_language
+                .clone()
+                .filter(|_| !input.customer_remark.trim().is_empty()),
+            favorite_item_id: input.favorite_item_id,
         });
         priced.push(p);
     }
@@ -418,6 +465,8 @@ pub fn line_inputs(
                 percent_base: l.percent_base.as_deref().and_then(PercentBase::parse),
                 production_remark: l.production_remark.clone(),
                 customer_remark: l.customer_remark.clone(),
+                customer_remark_language: l.customer_remark_language.clone(),
+                favorite_item_id: l.favorite_item_id,
                 add_options: false,
             })
         })
@@ -801,9 +850,10 @@ pub async fn insert_lines(
             "INSERT INTO sales.quotation_lines (id, quotation_id, position, product_id, product_code, description,
                 unit, quantity, list_unit_price, line_discount_percent, net_unit_price, line_total, vat_rate,
                 pricing_type, rebate_percent, rebate_source, price_confirmed, parent_line_id, section, comment,
-                percent_of_parent, percent_base, production_remark, customer_remark)
+                percent_of_parent, percent_base, production_remark, customer_remark,
+                customer_remark_language, favorite_item_id)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
-                $21, $22, $23, $24)",
+                $21, $22, $23, $24, $25, $26)",
         )
         .bind(id)
         .bind(quotation_id)
@@ -829,6 +879,8 @@ pub async fn insert_lines(
         .bind(&l.percent_base)
         .bind(&l.production_remark)
         .bind(&l.customer_remark)
+        .bind(&l.customer_remark_language)
+        .bind(l.favorite_item_id)
         .execute(&mut *conn)
         .await?;
     }
@@ -863,7 +915,8 @@ pub async fn load_quotation(
         "SELECT l.position, l.product_id, l.product_code, l.description, l.unit, l.quantity, l.list_unit_price,
                 l.pricing_type, l.rebate_percent, l.rebate_source, l.line_discount_percent, l.net_unit_price,
                 l.line_total, l.vat_rate, l.price_confirmed, p.position AS parent_position, l.section, l.comment,
-                l.percent_of_parent, l.percent_base, l.production_remark, l.customer_remark
+                l.percent_of_parent, l.percent_base, l.production_remark, l.customer_remark,
+                l.customer_remark_language::text AS customer_remark_language, l.favorite_item_id
          FROM sales.quotation_lines l
          LEFT JOIN sales.quotation_lines p ON p.id = l.parent_line_id
          WHERE l.quotation_id = $1 ORDER BY l.position",
