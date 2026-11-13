@@ -1,7 +1,9 @@
-import 'package:decimal/decimal.dart';
+import 'dart:typed_data';
+
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:printing/printing.dart';
 
 import '../../app/api.dart';
 import '../../l10n/l10n.dart';
@@ -10,6 +12,7 @@ import '../../shared/app_icons.dart';
 import '../../shared/format.dart';
 import '../planning/board_model.dart';
 import 'complete_dialog.dart';
+import 'order_operations.dart';
 import 'production_page.dart';
 import '../tutorial/targets.dart';
 
@@ -151,19 +154,16 @@ class _ProductionScreenState extends ConsumerState<ProductionScreen> {
     }
   }
 
+  /// Releases a production order for what is still missing of a component that is built from a
+  /// BOM; the server works out how much (required, less reserved, free and already under way).
   Future<void> _buildComponent(ProductionComponent c) async {
     final po = _po!;
-    final missing =
-        (Decimal.tryParse(c.requiredQuantity) ?? Decimal.zero) -
-        (Decimal.tryParse(c.reservedQuantity) ?? Decimal.zero);
     String? opened;
     await runAction(context, () async {
-      final child = await _api.release(
-        body: ReleaseProductionInput(
-          productId: c.componentProductId,
-          quantity: parseDecimalInput(missing.toString()),
-          parentOrderId: po.id,
-        ),
+      final child = await _api.buildComponent(
+        id: po.id,
+        componentId: c.id,
+        body: ProductionBuildComponentInput(),
       );
       opened = child.id;
     }, success: context.l10n.productionReleased);
@@ -171,6 +171,20 @@ class _ProductionScreenState extends ConsumerState<ProductionScreen> {
       await context.push('/production/$opened');
       _load();
     }
+  }
+
+  Future<void> _pdf() async {
+    final po = _po!;
+    await runAction(context, () async {
+      final bytes = await downloadBytes(
+        ref.read(dioProvider),
+        '/api/v1/production-orders/${po.id}/pdf',
+      );
+      await Printing.layoutPdf(
+        name: '${po.number}.pdf',
+        onLayout: (_) async => Uint8List.fromList(bytes),
+      );
+    });
   }
 
   @override
@@ -208,6 +222,14 @@ class _ProductionScreenState extends ConsumerState<ProductionScreen> {
       child: Scaffold(
         appBar: AppBar(
           title: Text('${po.number} · ${l.productionStatus(po.status)}'),
+          actions: [
+            IconButton(
+              key: const ValueKey('production-pdf'),
+              tooltip: l.pdf,
+              icon: const Icon(AppIcons.pictureAsPdf),
+              onPressed: _busy ? null : _pdf,
+            ),
+          ],
         ),
         body: ListView(
           padding: const EdgeInsets.all(16),
@@ -235,6 +257,47 @@ class _ProductionScreenState extends ConsumerState<ProductionScreen> {
                   ),
               ],
             ),
+            if (po.parentOrderId != null && po.parentOrderNumber != null)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  key: const ValueKey('parent-order'),
+                  icon: const Icon(AppIcons.subdirectoryArrowRight),
+                  label: Text(l.productionSubassemblyOf(po.parentOrderNumber!)),
+                  onPressed: () async {
+                    await context.push('/production/${po.parentOrderId}');
+                    _load();
+                  },
+                ),
+              ),
+            if ((po.productionRemark ?? '').isNotEmpty)
+              Card(
+                key: const ValueKey('production-remark'),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l.productionRemark,
+                        style: Theme.of(context).textTheme.labelSmall,
+                      ),
+                      Text(po.productionRemark!),
+                    ],
+                  ),
+                ),
+              ),
+            if (po.behindSchedule && po.scheduledEnd != null && open)
+              Card(
+                key: const ValueKey('behind-schedule'),
+                color: Theme.of(context).colorScheme.errorContainer,
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Text(
+                    l.productionBehindSchedule(date(po.scheduledEnd)),
+                  ),
+                ),
+              ),
             if (po.orderCancelled && open)
               Card(
                 key: const ValueKey('order-cancelled'),
@@ -291,6 +354,20 @@ class _ProductionScreenState extends ConsumerState<ProductionScreen> {
                     ),
                 ],
               ),
+              if (po.scheduledEnd != null &&
+                  (_ready == null ||
+                      _ready!.isBefore(dateOnly(po.scheduledEnd!))))
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton(
+                    key: const ValueKey('use-scheduled-end'),
+                    onPressed: () =>
+                        setState(() => _ready = dateOnly(po.scheduledEnd!)),
+                    child: Text(
+                      l.productionUseScheduledEnd(date(po.scheduledEnd)),
+                    ),
+                  ),
+                ),
               gap,
               TextField(
                 controller: _notes,
@@ -342,6 +419,54 @@ class _ProductionScreenState extends ConsumerState<ProductionScreen> {
                       )
                     : null,
               ),
+            OrderOperations(
+              order: po,
+              canRun: canRun,
+              canWrite: canWrite,
+              busy: _busy,
+              run: (action) => _run(action),
+            ),
+            if (po.subOrders.isNotEmpty) ...[
+              gap,
+              Text(
+                l.productionSubOrders,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              for (final c in po.subOrders)
+                ListTile(
+                  key: ValueKey('sub-order-${c.id}'),
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(
+                    '${c.number} · ${c.productCode} · ${number(c.quantity)} ${c.unit}',
+                  ),
+                  subtitle: Text(
+                    [
+                      l.productionStatus(c.status),
+                      if (c.scheduledEnd != null) date(c.scheduledEnd),
+                    ].join(' · '),
+                  ),
+                  trailing: const Icon(AppIcons.chevronRight),
+                  onTap: () async {
+                    await context.push('/production/${c.id}');
+                    _load();
+                  },
+                ),
+            ],
+            if (po.plannedCost != null) ...[
+              gap,
+              Text(
+                l.productionCost,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              _costRow(l, l.productionCostPlanned, po.plannedCost!),
+              if (po.actualCost != null)
+                _costRow(l, l.productionCostActual, po.actualCost!),
+              if (po.plannedCost!.incomplete)
+                Text(
+                  l.productionCostIncomplete,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+            ],
             if (po.outputs.isNotEmpty) ...[
               gap,
               Text(
@@ -409,3 +534,15 @@ class _ProductionScreenState extends ConsumerState<ProductionScreen> {
     );
   }
 }
+
+/// One line of cost: what it is, material and labour, and the total.
+Widget _costRow(AppLocalizations l, String label, ProductionOrderCost c) =>
+    ListTile(
+      key: ValueKey('cost-$label'),
+      contentPadding: EdgeInsets.zero,
+      title: Text(label),
+      subtitle: Text(
+        '${l.productionCostMaterial} ${money(c.materialCost)} · ${l.productionCostLabour} ${money(c.labourCost)}',
+      ),
+      trailing: Text(money(c.totalCost)),
+    );

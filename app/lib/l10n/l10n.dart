@@ -258,6 +258,14 @@ extension CodeLabels on AppLocalizations {
     _ => s,
   };
 
+  String productionOperationStatus(String s) => switch (s) {
+    'pending' => productionOperationPending,
+    'in_progress' => productionStatusInProgress,
+    'done' => productionOperationDone,
+    'skipped' => productionOperationSkipped,
+    _ => s,
+  };
+
   String contactRole(String s) => switch (s) {
     'sales_contact' => roleSalesContact,
     'technical' => roleTechnical,

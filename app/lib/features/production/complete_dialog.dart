@@ -45,11 +45,22 @@ class _CompleteDialogState extends ConsumerState<CompleteDialog> {
   late final Map<String, _Actual> _actuals = {
     for (final c in widget.order.components) c.id: _Actual(c),
   };
+  /// Operations that are not finished, with the minutes worked (the planned minutes to start
+  /// with). A field left empty skips the operation.
+  late final Map<String, TextEditingController> _opMinutes = {
+    for (final o in widget.order.operations.where(
+      (o) => o.status == 'pending' || o.status == 'in_progress',
+    ))
+      o.id: TextEditingController(text: o.plannedMinutes.toString()),
+  };
   String? _error;
   bool _saving = false;
 
   @override
   void dispose() {
+    for (final c in _opMinutes.values) {
+      c.dispose();
+    }
     _quantity.dispose();
     _lot.dispose();
     _serials.dispose();
@@ -136,6 +147,14 @@ class _CompleteDialogState extends ConsumerState<CompleteDialog> {
                         ? [for (final u in _actuals[c.id]!.units) u.id]
                         : null,
                   ),
+              ],
+              operations: [
+                for (final e in _opMinutes.entries)
+                  if (int.tryParse(e.value.text.trim()) != null)
+                    ProductionOperationActual(
+                      operationId: e.key,
+                      actualMinutes: int.parse(e.value.text.trim()),
+                    ),
               ],
               note: _note.text.trim(),
             ),
@@ -291,6 +310,35 @@ class _CompleteDialogState extends ConsumerState<CompleteDialog> {
                     ],
                   ),
                 ),
+              if (_opMinutes.isNotEmpty) ...[
+                gap,
+                Text(
+                  l.productionOperations,
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                Text(
+                  l.productionOperationsOpenWarning(
+                    _opMinutes.length.toString(),
+                  ),
+                  key: const ValueKey('operations-open-warning'),
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                for (final op in o.operations.where(
+                  (x) => _opMinutes.containsKey(x.id),
+                ))
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: TextField(
+                      key: ValueKey('op-minutes-${op.id}'),
+                      controller: _opMinutes[op.id],
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText:
+                            '${op.position}. ${op.name} · ${l.productionOperationMinutes}',
+                      ),
+                    ),
+                  ),
+              ],
               gap,
               TextField(
                 controller: _note,

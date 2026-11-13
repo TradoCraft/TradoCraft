@@ -7,7 +7,28 @@ import '../../shared/format.dart';
 import '../../shared/search_picker.dart';
 import '../../l10n/l10n.dart';
 import '../../shared/app_icons.dart';
+import '../production/cost_rollup_dialog.dart';
+import '../production/work_centres_page.dart' show workCentresProvider;
 import '../tutorial/targets.dart';
+
+/// An editable operation of the routing of a draft BOM revision.
+class _EditOp {
+  _EditOp({
+    required this.centreId,
+    String name = '',
+    String setup = '0',
+    String run = '0',
+    this.notes = '',
+  }) : name = TextEditingController(text: name),
+       setup = TextEditingController(text: setup),
+       run = TextEditingController(text: run);
+
+  String? centreId;
+  final TextEditingController name;
+  final TextEditingController setup;
+  final TextEditingController run;
+  final String notes;
+}
 
 /// An editable line of a draft BOM.
 class _EditLine {
@@ -42,6 +63,10 @@ class _BomTabState extends ConsumerState<BomTab> {
   List<BomSummary> _revisions = [];
   Bom? _bom;
   final List<_EditLine> _lines = [];
+
+  /// The routing of the revision that is shown (loaded when the user may see production).
+  final List<_EditOp> _ops = [];
+  bool _routingDirty = false;
   final _notes = TextEditingController();
   final _explodeQty = TextEditingController(text: '1');
   Explosion? _explosion;
@@ -50,6 +75,9 @@ class _BomTabState extends ConsumerState<BomTab> {
 
   TradocraftApi get _api => ref.read(apiProvider);
   bool get _isDraft => _bom?.status == 'draft';
+  Set<String> get _perms =>
+      ref.read(meProvider).value?.permissions.toSet() ?? const {};
+  bool get _canSeeRouting => _perms.contains('production.read');
 
   @override
   void initState() {
@@ -69,6 +97,7 @@ class _BomTabState extends ConsumerState<BomTab> {
         _setBom(bom);
         _error = null;
       });
+      if (bom != null) await _loadRouting(bom.id);
       if (active != null && _explosion == null) await _explode();
     } catch (e) {
       setState(() => _error = errorMessage(e));
@@ -77,7 +106,42 @@ class _BomTabState extends ConsumerState<BomTab> {
     }
   }
 
+  /// Loads the routing of a revision for those who may see production (waits for the permissions
+  /// when they have not arrived yet). A routing that cannot be read is shown as empty.
+  Future<void> _loadRouting(String bomId) async {
+    try {
+      final me = await ref.read(meProvider.future);
+      if (!me.permissions.contains('production.read')) return;
+      final r = await _api.production.getRouting(id: bomId);
+      if (!mounted || _bom?.id != bomId) return;
+      setState(() {
+        _ops
+          ..clear()
+          ..addAll(
+            r.operations.map(
+              (o) => _EditOp(
+                centreId: o.workCentreId,
+                name: o.name,
+                setup: o.setupMinutes.toString(),
+                run: number(o.runMinutesPerUnit),
+                notes: o.notes,
+              ),
+            ),
+          );
+        _routingDirty = false;
+      });
+    } catch (_) {
+      if (mounted && _bom?.id == bomId) setState(() => _ops.clear());
+    }
+  }
+
   void _setBom(Bom? bom) {
+    // The routing belongs to the revision: it stays when the same revision is shown again (after
+    // a save) and is loaded when another one is.
+    if (bom?.id != _bom?.id) {
+      _ops.clear();
+      _routingDirty = false;
+    }
     _bom = bom;
     _notes.text = bom?.notes ?? '';
     _lines
@@ -99,6 +163,7 @@ class _BomTabState extends ConsumerState<BomTab> {
   Future<void> _select(String id) async {
     final bom = await _api.engineering.getBom(id: id);
     setState(() => _setBom(bom));
+    await _loadRouting(bom.id);
   }
 
   Future<void> _newRevision() async {
@@ -131,6 +196,12 @@ class _BomTabState extends ConsumerState<BomTab> {
         ),
       );
     }
+    // The routing is part of the revision: saved first, so a routing that is refused leaves the
+    // lines as they were and nothing is lost on screen.
+    if (_isDraft && _routingDirty && _perms.contains('bom.write')) {
+      if (!await _saveRouting()) return false;
+      if (!mounted) return false;
+    }
     Bom? saved;
     final ok = await runAction(
       context,
@@ -141,6 +212,43 @@ class _BomTabState extends ConsumerState<BomTab> {
       success: context.l10n.draftSaved,
     );
     if (ok) setState(() => _setBom(saved));
+    return ok;
+  }
+
+  Future<bool> _saveRouting() async {
+    final ops = <RoutingOperationInput>[];
+    for (final (i, o) in _ops.indexed) {
+      final setup = int.tryParse(
+        o.setup.text.trim().isEmpty ? '0' : o.setup.text.trim(),
+      );
+      final run = parseDecimalInput(o.run.text.isEmpty ? '0' : o.run.text);
+      if (setup == null ||
+          run == null ||
+          o.centreId == null ||
+          o.name.text.trim().isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.enterValidNumbersLine(i + 1))),
+        );
+        return false;
+      }
+      ops.add(
+        RoutingOperationInput(
+          name: o.name.text.trim(),
+          workCentreId: o.centreId!,
+          setupMinutes: setup,
+          runMinutesPerUnit: run,
+          notes: o.notes,
+        ),
+      );
+    }
+    final ok = await runAction(
+      context,
+      () => _api.production.setRouting(
+        id: _bom!.id,
+        body: BomRoutingInput(operations: ops),
+      ),
+    );
+    if (ok) _routingDirty = false;
     return ok;
   }
 
@@ -219,6 +327,18 @@ class _BomTabState extends ConsumerState<BomTab> {
                   label: Text(context.l10n.newRevision),
                 ),
               ),
+            if (_perms.contains('inventory.cost') &&
+                _canSeeRouting &&
+                _revisions.any((r) => r.status == 'active'))
+              OutlinedButton.icon(
+                key: const ValueKey('cost-rollup'),
+                onPressed: () => showDialog<void>(
+                  context: context,
+                  builder: (_) => CostRollupDialog(product: widget.product),
+                ),
+                icon: const Icon(AppIcons.calculate),
+                label: Text(context.l10n.productionCostRollup),
+              ),
             if (canWrite && _isDraft) ...[
               OutlinedButton.icon(
                 onPressed: _saveDraft,
@@ -294,6 +414,8 @@ class _BomTabState extends ConsumerState<BomTab> {
             ),
           ],
         ],
+        if (_bom != null && _canSeeRouting)
+          ..._routingSection(theme, editable: canWrite && _isDraft),
         const Divider(height: 40),
         Text(
           context.l10n.materialRequirements,
@@ -327,6 +449,195 @@ class _BomTabState extends ConsumerState<BomTab> {
           _explosionView(theme, _explosion!),
       ],
     );
+  }
+
+  /// The routing of the revision: operations in order, each on a work centre. Editable on a
+  /// draft by whoever may edit BOMs; saved together with the lines.
+  List<Widget> _routingSection(ThemeData theme, {required bool editable}) {
+    final l = context.l10n;
+    final centres =
+        ref.watch(workCentresProvider).value ?? const <WorkCentre>[];
+    String centreLabel(String? id) {
+      final c = centres.where((w) => w.id == id).firstOrNull;
+      return c == null ? '' : '${c.code} · ${c.name}';
+    }
+
+    return [
+      const Divider(height: 40),
+      Text(l.productionRouting, style: theme.textTheme.titleMedium),
+      const SizedBox(height: 8),
+      if (_ops.isEmpty && !editable)
+        Text(l.productionRoutingNone, style: theme.textTheme.bodySmall)
+      else if (_ops.isNotEmpty)
+        Table(
+          columnWidths: const {
+            0: FixedColumnWidth(40),
+            1: FlexColumnWidth(),
+            2: FixedColumnWidth(220),
+            3: FixedColumnWidth(110),
+            4: FixedColumnWidth(130),
+            5: FixedColumnWidth(144),
+          },
+          defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+          children: [
+            TableRow(
+              children: [
+                for (final h in [
+                  '#',
+                  l.productionRoutingOperation,
+                  l.productionWorkCentres,
+                  l.productionRoutingSetup,
+                  l.productionRoutingRun,
+                  '',
+                ])
+                  Padding(
+                    padding: const EdgeInsets.all(6),
+                    child: Text(h, style: theme.textTheme.labelLarge),
+                  ),
+              ],
+            ),
+            for (final (i, o) in _ops.indexed)
+              TableRow(
+                key: ObjectKey(o),
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(6),
+                    child: Text('${i + 1}'),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(4),
+                    child: editable
+                        ? TextField(
+                            key: ValueKey('op-name-$i'),
+                            controller: o.name,
+                            onChanged: (_) => _routingDirty = true,
+                          )
+                        : Text(o.name.text),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(4),
+                    child: editable
+                        ? DropdownButton<String>(
+                            key: ValueKey('op-centre-$i'),
+                            isExpanded: true,
+                            value: centres.any((w) => w.id == o.centreId)
+                                ? o.centreId
+                                : null,
+                            items: [
+                              for (final w in centres.where(
+                                (w) => w.active || w.id == o.centreId,
+                              ))
+                                DropdownMenuItem(
+                                  value: w.id,
+                                  enabled: w.active || w.id == o.centreId,
+                                  child: Text('${w.code} · ${w.name}'),
+                                ),
+                            ],
+                            onChanged: (v) => setState(() {
+                              o.centreId = v;
+                              _routingDirty = true;
+                            }),
+                          )
+                        : Text(centreLabel(o.centreId)),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(4),
+                    child: editable
+                        ? TextField(
+                            key: ValueKey('op-setup-$i'),
+                            controller: o.setup,
+                            textAlign: TextAlign.right,
+                            keyboardType: TextInputType.number,
+                            onChanged: (_) => _routingDirty = true,
+                          )
+                        : Text(o.setup.text, textAlign: TextAlign.right),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(4),
+                    child: editable
+                        ? TextField(
+                            key: ValueKey('op-run-$i'),
+                            controller: o.run,
+                            textAlign: TextAlign.right,
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
+                            onChanged: (_) => _routingDirty = true,
+                          )
+                        : Text(o.run.text, textAlign: TextAlign.right),
+                  ),
+                  editable
+                      ? Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              key: ValueKey('op-up-$i'),
+                              tooltip: l.moveUp,
+                              onPressed: i == 0
+                                  ? null
+                                  : () => setState(() {
+                                      _ops.insert(i - 1, _ops.removeAt(i));
+                                      _routingDirty = true;
+                                    }),
+                              icon: const Icon(AppIcons.arrowUpward),
+                            ),
+                            IconButton(
+                              key: ValueKey('op-down-$i'),
+                              tooltip: l.moveDown,
+                              onPressed: i == _ops.length - 1
+                                  ? null
+                                  : () => setState(() {
+                                      _ops.insert(i + 1, _ops.removeAt(i));
+                                      _routingDirty = true;
+                                    }),
+                              icon: const Icon(AppIcons.arrowDownward),
+                            ),
+                            IconButton(
+                              key: ValueKey('op-remove-$i'),
+                              tooltip: l.remove,
+                              onPressed: () => setState(() {
+                                _ops.removeAt(i);
+                                _routingDirty = true;
+                              }),
+                              icon: const Icon(AppIcons.close),
+                            ),
+                          ],
+                        )
+                      : const SizedBox.shrink(),
+                ],
+              ),
+          ],
+        ),
+      if (editable) ...[
+        const SizedBox(height: 8),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: OutlinedButton.icon(
+            key: const ValueKey('add-operation'),
+            onPressed: centres.where((w) => w.active).isEmpty
+                ? null
+                : () => setState(() {
+                    _ops.add(
+                      _EditOp(
+                        centreId: centres.firstWhere((w) => w.active).id,
+                      ),
+                    );
+                    _routingDirty = true;
+                  }),
+            icon: const Icon(AppIcons.add),
+            label: Text(l.productionRoutingAddOperation),
+          ),
+        ),
+        if (centres.where((w) => w.active).isEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              l.productionRoutingNoWorkCentres,
+              style: theme.textTheme.bodySmall,
+            ),
+          ),
+      ],
+    ];
   }
 
   Widget _linesTable(ThemeData theme, {required bool editable}) {

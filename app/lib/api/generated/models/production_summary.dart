@@ -9,10 +9,13 @@ part 'production_summary.g.dart';
 @JsonSerializable()
 class ProductionSummary {
   const ProductionSummary({
+    required this.behindSchedule,
     required this.bomRevision,
     required this.createdAt,
     required this.id,
     required this.number,
+    required this.operationCount,
+    required this.operationsDone,
     required this.orderCancelled,
     required this.priority,
     required this.productCode,
@@ -33,6 +36,9 @@ class ProductionSummary {
   
   factory ProductionSummary.fromJson(Map<String, Object?> json) => _$ProductionSummaryFromJson(json);
   
+  /// An operation that is not finished is scheduled after the planned-ready date.
+  @JsonKey(name: 'behind_schedule')
+  final bool behindSchedule;
   @JsonKey(name: 'bom_revision')
   final int bomRevision;
   @JsonKey(name: 'created_at')
@@ -45,6 +51,14 @@ class ProductionSummary {
   final String? divisionName;
   final String id;
   final String number;
+
+  /// Operations of the routing that was frozen at release (0 without a routing).
+  @JsonKey(name: 'operation_count')
+  final int operationCount;
+
+  /// How many of them are finished.
+  @JsonKey(name: 'operations_done')
+  final int operationsDone;
 
   /// The sales order was cancelled meanwhile: the planner should cancel this order too.
   @JsonKey(name: 'order_cancelled')

@@ -15143,6 +15143,408 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Remove the mailbox {name}? Its tickets stay. Replies on them then leave through the default mailbox.'**
   String mailboxDeleteConfirm(String name);
+
+  /// No description provided for @productionWorkCentres.
+  ///
+  /// In en, this message translates to:
+  /// **'Work centres'**
+  String get productionWorkCentres;
+
+  /// No description provided for @productionWorkCentreAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add work centre'**
+  String get productionWorkCentreAdd;
+
+  /// No description provided for @productionWorkCentreEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit work centre'**
+  String get productionWorkCentreEdit;
+
+  /// No description provided for @productionWorkCentreCapacity.
+  ///
+  /// In en, this message translates to:
+  /// **'Capacity (units working at once)'**
+  String get productionWorkCentreCapacity;
+
+  /// No description provided for @productionWorkCentreCost.
+  ///
+  /// In en, this message translates to:
+  /// **'Cost per hour'**
+  String get productionWorkCentreCost;
+
+  /// No description provided for @productionWorkCentreOpenOps.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} open operations'**
+  String productionWorkCentreOpenOps(String count);
+
+  /// No description provided for @productionWorkCentreEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No work centres yet. Add the machines and benches your operations run on.'**
+  String get productionWorkCentreEmpty;
+
+  /// No description provided for @productionWorkingHours.
+  ///
+  /// In en, this message translates to:
+  /// **'Working hours'**
+  String get productionWorkingHours;
+
+  /// No description provided for @productionHoursDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'No hours of its own: Monday to Friday 08:00–12:00 and 13:00–17:00.'**
+  String get productionHoursDefault;
+
+  /// No description provided for @productionHoursAddBlock.
+  ///
+  /// In en, this message translates to:
+  /// **'Add block'**
+  String get productionHoursAddBlock;
+
+  /// No description provided for @productionClosures.
+  ///
+  /// In en, this message translates to:
+  /// **'Closures'**
+  String get productionClosures;
+
+  /// No description provided for @productionClosureAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add closure'**
+  String get productionClosureAdd;
+
+  /// No description provided for @productionClosureWholePlant.
+  ///
+  /// In en, this message translates to:
+  /// **'Whole plant'**
+  String get productionClosureWholePlant;
+
+  /// No description provided for @productionClosureKind.
+  ///
+  /// In en, this message translates to:
+  /// **'Kind'**
+  String get productionClosureKind;
+
+  /// No description provided for @productionClosureMaintenance.
+  ///
+  /// In en, this message translates to:
+  /// **'Maintenance'**
+  String get productionClosureMaintenance;
+
+  /// No description provided for @productionClosureHoliday.
+  ///
+  /// In en, this message translates to:
+  /// **'Holiday'**
+  String get productionClosureHoliday;
+
+  /// No description provided for @productionClosureOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get productionClosureOther;
+
+  /// No description provided for @productionClosureEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No closures.'**
+  String get productionClosureEmpty;
+
+  /// No description provided for @productionCapacity.
+  ///
+  /// In en, this message translates to:
+  /// **'Capacity'**
+  String get productionCapacity;
+
+  /// No description provided for @productionCapacityLegend.
+  ///
+  /// In en, this message translates to:
+  /// **'Load of the open operations against what each work centre can work. Red: overloaded.'**
+  String get productionCapacityLegend;
+
+  /// No description provided for @productionCapacityOverloaded.
+  ///
+  /// In en, this message translates to:
+  /// **'Overloaded'**
+  String get productionCapacityOverloaded;
+
+  /// No description provided for @productionCapacityEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No work centres to show.'**
+  String get productionCapacityEmpty;
+
+  /// No description provided for @productionCapacityEarlier.
+  ///
+  /// In en, this message translates to:
+  /// **'Earlier'**
+  String get productionCapacityEarlier;
+
+  /// No description provided for @productionCapacityLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Later'**
+  String get productionCapacityLater;
+
+  /// No description provided for @productionCapacityToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get productionCapacityToday;
+
+  /// No description provided for @productionWorkCentreUnits.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} units'**
+  String productionWorkCentreUnits(String count);
+
+  /// No description provided for @productionOperations.
+  ///
+  /// In en, this message translates to:
+  /// **'Operations'**
+  String get productionOperations;
+
+  /// No description provided for @productionOperationPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Not started'**
+  String get productionOperationPending;
+
+  /// No description provided for @productionOperationDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get productionOperationDone;
+
+  /// No description provided for @productionOperationSkipped.
+  ///
+  /// In en, this message translates to:
+  /// **'Skipped'**
+  String get productionOperationSkipped;
+
+  /// No description provided for @productionOperationStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start operation'**
+  String get productionOperationStart;
+
+  /// No description provided for @productionOperationFinish.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish operation'**
+  String get productionOperationFinish;
+
+  /// No description provided for @productionOperationReopen.
+  ///
+  /// In en, this message translates to:
+  /// **'Reopen operation'**
+  String get productionOperationReopen;
+
+  /// No description provided for @productionOperationMove.
+  ///
+  /// In en, this message translates to:
+  /// **'Move operation'**
+  String get productionOperationMove;
+
+  /// No description provided for @productionOperationMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'Minutes worked'**
+  String get productionOperationMinutes;
+
+  /// No description provided for @productionOperationPlanned.
+  ///
+  /// In en, this message translates to:
+  /// **'Planned'**
+  String get productionOperationPlanned;
+
+  /// No description provided for @productionOperationWorked.
+  ///
+  /// In en, this message translates to:
+  /// **'Worked'**
+  String get productionOperationWorked;
+
+  /// No description provided for @productionOperationBy.
+  ///
+  /// In en, this message translates to:
+  /// **'by {name}'**
+  String productionOperationBy(String name);
+
+  /// No description provided for @productionScheduleAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule again'**
+  String get productionScheduleAgain;
+
+  /// No description provided for @productionStartFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'Start from'**
+  String get productionStartFrom;
+
+  /// No description provided for @productionBehindSchedule.
+  ///
+  /// In en, this message translates to:
+  /// **'Behind schedule: the last operation is planned for {date}, after the planned-ready date.'**
+  String productionBehindSchedule(String date);
+
+  /// No description provided for @productionBehindScheduleShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Behind schedule'**
+  String get productionBehindScheduleShort;
+
+  /// No description provided for @productionUseScheduledEnd.
+  ///
+  /// In en, this message translates to:
+  /// **'Use {date} as planned-ready date'**
+  String productionUseScheduledEnd(String date);
+
+  /// No description provided for @productionRemark.
+  ///
+  /// In en, this message translates to:
+  /// **'Production remark (internal)'**
+  String get productionRemark;
+
+  /// No description provided for @productionSubOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Subassembly orders'**
+  String get productionSubOrders;
+
+  /// No description provided for @productionSubassemblyOf.
+  ///
+  /// In en, this message translates to:
+  /// **'Subassembly of {number}'**
+  String productionSubassemblyOf(String number);
+
+  /// No description provided for @productionCost.
+  ///
+  /// In en, this message translates to:
+  /// **'Cost'**
+  String get productionCost;
+
+  /// No description provided for @productionCostPlanned.
+  ///
+  /// In en, this message translates to:
+  /// **'Planned'**
+  String get productionCostPlanned;
+
+  /// No description provided for @productionCostActual.
+  ///
+  /// In en, this message translates to:
+  /// **'Actual'**
+  String get productionCostActual;
+
+  /// No description provided for @productionCostMaterial.
+  ///
+  /// In en, this message translates to:
+  /// **'Material'**
+  String get productionCostMaterial;
+
+  /// No description provided for @productionCostLabour.
+  ///
+  /// In en, this message translates to:
+  /// **'Labour'**
+  String get productionCostLabour;
+
+  /// No description provided for @productionCostIncomplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Some costs are missing and left out.'**
+  String get productionCostIncomplete;
+
+  /// No description provided for @productionOperationsOpenWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} operations are still open. Fill in the minutes worked to finish them; leave the field empty to skip one.'**
+  String productionOperationsOpenWarning(String count);
+
+  /// No description provided for @productionAutoRelease.
+  ///
+  /// In en, this message translates to:
+  /// **'Also release the subassemblies that stock does not cover'**
+  String get productionAutoRelease;
+
+  /// No description provided for @productionRouting.
+  ///
+  /// In en, this message translates to:
+  /// **'Routing'**
+  String get productionRouting;
+
+  /// No description provided for @productionRoutingNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No routing: production orders for this product have no operations.'**
+  String get productionRoutingNone;
+
+  /// No description provided for @productionRoutingAddOperation.
+  ///
+  /// In en, this message translates to:
+  /// **'Add operation'**
+  String get productionRoutingAddOperation;
+
+  /// No description provided for @productionRoutingOperation.
+  ///
+  /// In en, this message translates to:
+  /// **'Operation'**
+  String get productionRoutingOperation;
+
+  /// No description provided for @productionRoutingSetup.
+  ///
+  /// In en, this message translates to:
+  /// **'Setup (min)'**
+  String get productionRoutingSetup;
+
+  /// No description provided for @productionRoutingRun.
+  ///
+  /// In en, this message translates to:
+  /// **'Run per unit (min)'**
+  String get productionRoutingRun;
+
+  /// No description provided for @productionRoutingNoWorkCentres.
+  ///
+  /// In en, this message translates to:
+  /// **'Add work centres first (Production, work centres).'**
+  String get productionRoutingNoWorkCentres;
+
+  /// No description provided for @productionCostRollup.
+  ///
+  /// In en, this message translates to:
+  /// **'Cost roll-up'**
+  String get productionCostRollup;
+
+  /// No description provided for @productionCostRollupHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Material at standard cost and labour at the work centres\' cost per hour, through every level.'**
+  String get productionCostRollupHint;
+
+  /// No description provided for @productionCostPerUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'Cost per unit'**
+  String get productionCostPerUnit;
+
+  /// No description provided for @productionCostGapProduct.
+  ///
+  /// In en, this message translates to:
+  /// **'No standard cost: {code}'**
+  String productionCostGapProduct(String code);
+
+  /// No description provided for @productionCostGapWorkCentre.
+  ///
+  /// In en, this message translates to:
+  /// **'No cost per hour: {code}'**
+  String productionCostGapWorkCentre(String code);
+
+  /// No description provided for @productionCostCalculate.
+  ///
+  /// In en, this message translates to:
+  /// **'Calculate'**
+  String get productionCostCalculate;
 }
 
 class _AppLocalizationsDelegate

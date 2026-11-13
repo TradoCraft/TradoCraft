@@ -18,6 +18,11 @@ CompleteProductionInput _$CompleteProductionInputFromJson(
       )
       .toList(),
   note: json['note'] as String?,
+  operations: (json['operations'] as List<dynamic>?)
+      ?.map(
+        (e) => ProductionOperationActual.fromJson(e as Map<String, dynamic>),
+      )
+      .toList(),
 );
 
 Map<String, dynamic> _$CompleteProductionInputToJson(
@@ -25,5 +30,6 @@ Map<String, dynamic> _$CompleteProductionInputToJson(
 ) => <String, dynamic>{
   'components': ?instance.components,
   'note': ?instance.note,
+  'operations': ?instance.operations,
   'output': instance.output,
 };

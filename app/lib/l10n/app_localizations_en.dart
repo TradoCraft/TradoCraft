@@ -8460,4 +8460,230 @@ class AppLocalizationsEn extends AppLocalizations {
   String mailboxDeleteConfirm(String name) {
     return 'Remove the mailbox $name? Its tickets stay. Replies on them then leave through the default mailbox.';
   }
+
+  @override
+  String get productionWorkCentres => 'Work centres';
+
+  @override
+  String get productionWorkCentreAdd => 'Add work centre';
+
+  @override
+  String get productionWorkCentreEdit => 'Edit work centre';
+
+  @override
+  String get productionWorkCentreCapacity => 'Capacity (units working at once)';
+
+  @override
+  String get productionWorkCentreCost => 'Cost per hour';
+
+  @override
+  String productionWorkCentreOpenOps(String count) {
+    return '$count open operations';
+  }
+
+  @override
+  String get productionWorkCentreEmpty =>
+      'No work centres yet. Add the machines and benches your operations run on.';
+
+  @override
+  String get productionWorkingHours => 'Working hours';
+
+  @override
+  String get productionHoursDefault =>
+      'No hours of its own: Monday to Friday 08:00–12:00 and 13:00–17:00.';
+
+  @override
+  String get productionHoursAddBlock => 'Add block';
+
+  @override
+  String get productionClosures => 'Closures';
+
+  @override
+  String get productionClosureAdd => 'Add closure';
+
+  @override
+  String get productionClosureWholePlant => 'Whole plant';
+
+  @override
+  String get productionClosureKind => 'Kind';
+
+  @override
+  String get productionClosureMaintenance => 'Maintenance';
+
+  @override
+  String get productionClosureHoliday => 'Holiday';
+
+  @override
+  String get productionClosureOther => 'Other';
+
+  @override
+  String get productionClosureEmpty => 'No closures.';
+
+  @override
+  String get productionCapacity => 'Capacity';
+
+  @override
+  String get productionCapacityLegend =>
+      'Load of the open operations against what each work centre can work. Red: overloaded.';
+
+  @override
+  String get productionCapacityOverloaded => 'Overloaded';
+
+  @override
+  String get productionCapacityEmpty => 'No work centres to show.';
+
+  @override
+  String get productionCapacityEarlier => 'Earlier';
+
+  @override
+  String get productionCapacityLater => 'Later';
+
+  @override
+  String get productionCapacityToday => 'Today';
+
+  @override
+  String productionWorkCentreUnits(String count) {
+    return '$count units';
+  }
+
+  @override
+  String get productionOperations => 'Operations';
+
+  @override
+  String get productionOperationPending => 'Not started';
+
+  @override
+  String get productionOperationDone => 'Done';
+
+  @override
+  String get productionOperationSkipped => 'Skipped';
+
+  @override
+  String get productionOperationStart => 'Start operation';
+
+  @override
+  String get productionOperationFinish => 'Finish operation';
+
+  @override
+  String get productionOperationReopen => 'Reopen operation';
+
+  @override
+  String get productionOperationMove => 'Move operation';
+
+  @override
+  String get productionOperationMinutes => 'Minutes worked';
+
+  @override
+  String get productionOperationPlanned => 'Planned';
+
+  @override
+  String get productionOperationWorked => 'Worked';
+
+  @override
+  String productionOperationBy(String name) {
+    return 'by $name';
+  }
+
+  @override
+  String get productionScheduleAgain => 'Schedule again';
+
+  @override
+  String get productionStartFrom => 'Start from';
+
+  @override
+  String productionBehindSchedule(String date) {
+    return 'Behind schedule: the last operation is planned for $date, after the planned-ready date.';
+  }
+
+  @override
+  String get productionBehindScheduleShort => 'Behind schedule';
+
+  @override
+  String productionUseScheduledEnd(String date) {
+    return 'Use $date as planned-ready date';
+  }
+
+  @override
+  String get productionRemark => 'Production remark (internal)';
+
+  @override
+  String get productionSubOrders => 'Subassembly orders';
+
+  @override
+  String productionSubassemblyOf(String number) {
+    return 'Subassembly of $number';
+  }
+
+  @override
+  String get productionCost => 'Cost';
+
+  @override
+  String get productionCostPlanned => 'Planned';
+
+  @override
+  String get productionCostActual => 'Actual';
+
+  @override
+  String get productionCostMaterial => 'Material';
+
+  @override
+  String get productionCostLabour => 'Labour';
+
+  @override
+  String get productionCostIncomplete => 'Some costs are missing and left out.';
+
+  @override
+  String productionOperationsOpenWarning(String count) {
+    return '$count operations are still open. Fill in the minutes worked to finish them; leave the field empty to skip one.';
+  }
+
+  @override
+  String get productionAutoRelease =>
+      'Also release the subassemblies that stock does not cover';
+
+  @override
+  String get productionRouting => 'Routing';
+
+  @override
+  String get productionRoutingNone =>
+      'No routing: production orders for this product have no operations.';
+
+  @override
+  String get productionRoutingAddOperation => 'Add operation';
+
+  @override
+  String get productionRoutingOperation => 'Operation';
+
+  @override
+  String get productionRoutingSetup => 'Setup (min)';
+
+  @override
+  String get productionRoutingRun => 'Run per unit (min)';
+
+  @override
+  String get productionRoutingNoWorkCentres =>
+      'Add work centres first (Production, work centres).';
+
+  @override
+  String get productionCostRollup => 'Cost roll-up';
+
+  @override
+  String get productionCostRollupHint =>
+      'Material at standard cost and labour at the work centres\' cost per hour, through every level.';
+
+  @override
+  String get productionCostPerUnit => 'Cost per unit';
+
+  @override
+  String productionCostGapProduct(String code) {
+    return 'No standard cost: $code';
+  }
+
+  @override
+  String productionCostGapWorkCentre(String code) {
+    return 'No cost per hour: $code';
+  }
+
+  @override
+  String get productionCostCalculate => 'Calculate';
 }

@@ -8492,4 +8492,232 @@ class AppLocalizationsNl extends AppLocalizations {
   String mailboxDeleteConfirm(String name) {
     return 'De mailbox $name verwijderen? De tickets blijven bestaan. Antwoorden daarop vertrekken dan via de standaardmailbox.';
   }
+
+  @override
+  String get productionWorkCentres => 'Werkplekken';
+
+  @override
+  String get productionWorkCentreAdd => 'Werkplek toevoegen';
+
+  @override
+  String get productionWorkCentreEdit => 'Werkplek bewerken';
+
+  @override
+  String get productionWorkCentreCapacity =>
+      'Capaciteit (eenheden tegelijk aan het werk)';
+
+  @override
+  String get productionWorkCentreCost => 'Kost per uur';
+
+  @override
+  String productionWorkCentreOpenOps(String count) {
+    return '$count openstaande bewerkingen';
+  }
+
+  @override
+  String get productionWorkCentreEmpty =>
+      'Nog geen werkplekken. Voeg de machines en werkbanken toe waarop uw bewerkingen draaien.';
+
+  @override
+  String get productionWorkingHours => 'Werkuren';
+
+  @override
+  String get productionHoursDefault =>
+      'Geen eigen uren: maandag tot vrijdag 08:00–12:00 en 13:00–17:00.';
+
+  @override
+  String get productionHoursAddBlock => 'Blok toevoegen';
+
+  @override
+  String get productionClosures => 'Sluitingen';
+
+  @override
+  String get productionClosureAdd => 'Sluiting toevoegen';
+
+  @override
+  String get productionClosureWholePlant => 'Hele bedrijf';
+
+  @override
+  String get productionClosureKind => 'Soort';
+
+  @override
+  String get productionClosureMaintenance => 'Onderhoud';
+
+  @override
+  String get productionClosureHoliday => 'Feestdag';
+
+  @override
+  String get productionClosureOther => 'Andere';
+
+  @override
+  String get productionClosureEmpty => 'Geen sluitingen.';
+
+  @override
+  String get productionCapacity => 'Capaciteit';
+
+  @override
+  String get productionCapacityLegend =>
+      'Belasting door de openstaande bewerkingen tegenover wat elke werkplek kan werken. Rood: overbelast.';
+
+  @override
+  String get productionCapacityOverloaded => 'Overbelast';
+
+  @override
+  String get productionCapacityEmpty => 'Geen werkplekken om te tonen.';
+
+  @override
+  String get productionCapacityEarlier => 'Eerder';
+
+  @override
+  String get productionCapacityLater => 'Later';
+
+  @override
+  String get productionCapacityToday => 'Vandaag';
+
+  @override
+  String productionWorkCentreUnits(String count) {
+    return '$count eenheden';
+  }
+
+  @override
+  String get productionOperations => 'Bewerkingen';
+
+  @override
+  String get productionOperationPending => 'Niet gestart';
+
+  @override
+  String get productionOperationDone => 'Klaar';
+
+  @override
+  String get productionOperationSkipped => 'Overgeslagen';
+
+  @override
+  String get productionOperationStart => 'Bewerking starten';
+
+  @override
+  String get productionOperationFinish => 'Bewerking afronden';
+
+  @override
+  String get productionOperationReopen => 'Bewerking heropenen';
+
+  @override
+  String get productionOperationMove => 'Bewerking verplaatsen';
+
+  @override
+  String get productionOperationMinutes => 'Gewerkte minuten';
+
+  @override
+  String get productionOperationPlanned => 'Gepland';
+
+  @override
+  String get productionOperationWorked => 'Gewerkt';
+
+  @override
+  String productionOperationBy(String name) {
+    return 'door $name';
+  }
+
+  @override
+  String get productionScheduleAgain => 'Opnieuw inplannen';
+
+  @override
+  String get productionStartFrom => 'Starten vanaf';
+
+  @override
+  String productionBehindSchedule(String date) {
+    return 'Achter op schema: de laatste bewerking is gepland op $date, na de geplande klaar-datum.';
+  }
+
+  @override
+  String get productionBehindScheduleShort => 'Achter op schema';
+
+  @override
+  String productionUseScheduledEnd(String date) {
+    return '$date als geplande klaar-datum nemen';
+  }
+
+  @override
+  String get productionRemark => 'Opmerking voor productie (intern)';
+
+  @override
+  String get productionSubOrders => 'Orders voor onderdelen';
+
+  @override
+  String productionSubassemblyOf(String number) {
+    return 'Onderdeel van $number';
+  }
+
+  @override
+  String get productionCost => 'Kost';
+
+  @override
+  String get productionCostPlanned => 'Gepland';
+
+  @override
+  String get productionCostActual => 'Werkelijk';
+
+  @override
+  String get productionCostMaterial => 'Materiaal';
+
+  @override
+  String get productionCostLabour => 'Arbeid';
+
+  @override
+  String get productionCostIncomplete =>
+      'Sommige kosten ontbreken en zijn weggelaten.';
+
+  @override
+  String productionOperationsOpenWarning(String count) {
+    return '$count bewerkingen staan nog open. Vul de gewerkte minuten in om ze af te ronden; laat het veld leeg om er een over te slaan.';
+  }
+
+  @override
+  String get productionAutoRelease =>
+      'Ook de onderdelen vrijgeven die niet uit voorraad komen';
+
+  @override
+  String get productionRouting => 'Routing';
+
+  @override
+  String get productionRoutingNone =>
+      'Geen routing: productieorders voor dit product hebben geen bewerkingen.';
+
+  @override
+  String get productionRoutingAddOperation => 'Bewerking toevoegen';
+
+  @override
+  String get productionRoutingOperation => 'Bewerking';
+
+  @override
+  String get productionRoutingSetup => 'Opstellen (min)';
+
+  @override
+  String get productionRoutingRun => 'Looptijd per eenheid (min)';
+
+  @override
+  String get productionRoutingNoWorkCentres =>
+      'Voeg eerst werkplekken toe (Productie, werkplekken).';
+
+  @override
+  String get productionCostRollup => 'Kostprijsberekening';
+
+  @override
+  String get productionCostRollupHint =>
+      'Materiaal tegen standaardkost en arbeid tegen de kost per uur van de werkplekken, over alle niveaus.';
+
+  @override
+  String get productionCostPerUnit => 'Kost per eenheid';
+
+  @override
+  String productionCostGapProduct(String code) {
+    return 'Geen standaardkost: $code';
+  }
+
+  @override
+  String productionCostGapWorkCentre(String code) {
+    return 'Geen kost per uur: $code';
+  }
+
+  @override
+  String get productionCostCalculate => 'Berekenen';
 }
