@@ -1,4 +1,8 @@
+import 'dart:async';
+
+import 'package:dio/dio.dart';
 import 'package:material_ui/material_ui.dart';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -53,6 +57,24 @@ Map<String, Object?> _item(
   'updated_at': '2027-02-02T09:00:00Z',
 };
 
+/// A fake server that holds back the answers to the paths in [held] until [release] is called.
+class _GatedHttp extends FakeHttp {
+  _GatedHttp(super.routes, this.held);
+  final Set<String> held;
+  final _gate = Completer<void>();
+  void release() => _gate.complete();
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions o,
+    Stream<Uint8List>? body,
+    Future<void>? cancel,
+  ) async {
+    if (held.contains('${o.method} ${o.path}')) await _gate.future;
+    return super.fetch(o, body, cancel);
+  }
+}
+
 /// A detail screen of the harness: names its location, reports a title like a real screen and
 /// carries the to-dos button of a quotation.
 class _Detail extends StatefulWidget {
@@ -101,11 +123,12 @@ void main() {
     String initial = '/orders',
     bool realScreens = false,
     Map<String, Object? Function(Object?)> routes = const {},
+    Set<String> held = const {},
   }) async {
     tester.view.physicalSize = const Size(1400, 1000);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
-    http = FakeHttp({
+    final all = <String, Object? Function(Object?)>{
       'GET /api/v1/me': (_) => meJson(perms),
       'GET /api/v1/todo/items': (_) => items,
       'POST /api/v1/todo/items': (b) {
@@ -126,7 +149,8 @@ void main() {
       },
       'PATCH /api/v1/todo/items/a': (_) => _item('a', 'Call'),
       ...routes,
-    });
+    };
+    http = held.isEmpty ? FakeHttp(all) : _GatedHttp(all, held);
     container = ProviderContainer(
       overrides: [
         dioProvider.overrideWithValue(fakeDio(http)),
@@ -511,6 +535,66 @@ void main() {
         http.requests.where((r) => r == 'GET /api/v1/todo/items'),
         isEmpty,
       );
+    });
+  });
+
+  group('a sheet dismissed while a request is pending', () {
+    Future<void> dismissSheet(WidgetTester t) async {
+      await t.tapAt(const Offset(700, 80));
+      await t.pumpAndSettle();
+      expect(key('object-todos-add'), findsNothing);
+    }
+
+    testWidgets('completing still refreshes the lists', (t) async {
+      items = [_item('a', 'Call', linkKind: 'quotation', linkId: 'q1')];
+      await pump(t, held: {'POST /api/v1/todo/items/a/complete'});
+      await openTab(t, '/quotations/q1');
+      await t.tap(key('object-todos-button'));
+      await t.pumpAndSettle();
+      await t.tap(
+        find.descendant(
+          of: key('object-todo-a'),
+          matching: find.byType(Checkbox),
+        ),
+      );
+      await t.pump();
+      await dismissSheet(t);
+      final before = http.requests
+          .where((r) => r == 'GET /api/v1/todo/items')
+          .length;
+      (http as _GatedHttp).release();
+      await t.pumpAndSettle();
+      expect(
+        http.requests.where((r) => r == 'GET /api/v1/todo/items').length,
+        greaterThan(before),
+      );
+      expect(t.takeException(), isNull);
+      expect(
+        t.widget<Badge>(key('object-todos-badge')).isLabelVisible,
+        isFalse,
+      );
+    });
+
+    testWidgets('adding still creates, refreshes and reports no failure', (
+      t,
+    ) async {
+      await pump(t, held: {'POST /api/v1/todo/items'});
+      await openTab(t, '/quotations/q1');
+      await t.tap(key('object-todos-button'));
+      await t.pumpAndSettle();
+      await t.tap(key('object-todos-add'));
+      await t.pumpAndSettle();
+      await save(t, 'Follow up');
+      await dismissSheet(t);
+      (http as _GatedHttp).release();
+      await t.pumpAndSettle();
+      expect(items.length, 1);
+      expect(
+        t.widget<Badge>(key('object-todos-badge')).label,
+        isA<Text>().having((x) => x.data, 'count', '1'),
+      );
+      expect(find.byType(SnackBar), findsNothing);
+      expect(t.takeException(), isNull);
     });
   });
 

@@ -13,6 +13,13 @@ import 'todo_repository.dart';
 /// module is off, so this covers "module on" as well.
 bool canUseTodo(WidgetRef ref) => can(ref, 'todo.use');
 
+/// Reloads the lists that show to-dos. Takes the container, which outlives any screen, so a
+/// request that finishes after its screen is gone still refreshes what is shown.
+void refreshTodoLists(ProviderContainer container) {
+  container.invalidate(todoItemsProvider);
+  container.invalidate(objectTodosProvider);
+}
+
 /// Asks for a new to-do and creates it. Reachable from the to-do page, the account menu and the
 /// New to-do shortcut, from any screen.
 ///
@@ -26,7 +33,10 @@ Future<TodoItem?> showTodoQuickAdd(
   TodoItem? parent,
   LinkTarget? target,
 }) async {
+  // Taken before any await: the caller may be gone when the request ends.
   final messenger = ScaffoldMessenger.maybeOf(context);
+  final container = ProviderScope.containerOf(context);
+  final repo = ref.read(todoRepositoryProvider);
   final l = context.l10n;
   final offered = parent != null
       ? null
@@ -37,26 +47,29 @@ Future<TodoItem?> showTodoQuickAdd(
   );
   if (input == null) return null;
   final link = input.link;
+  final TodoItem item;
   try {
-    final item = await ref
-        .read(todoRepositoryProvider)
-        .add(
-          title: input.title,
-          parentId: parent?.id,
-          dueDate: input.due,
-          linkKind: link?.kind,
-          linkId: link?.id,
-          linkLabel: link?.label,
-          linkLocation: link?.location,
-        );
-    ref.invalidate(todoItemsProvider);
-    ref.invalidate(objectTodosProvider);
-    messenger?.showSnackBar(SnackBar(content: Text(l.todoAdded)));
-    return item;
+    item = await repo.add(
+      title: input.title,
+      parentId: parent?.id,
+      dueDate: input.due,
+      linkKind: link?.kind,
+      linkId: link?.id,
+      linkLabel: link?.label,
+      linkLocation: link?.location,
+    );
   } catch (e) {
-    messenger?.showSnackBar(SnackBar(content: Text(errorMessage(e))));
+    if (context.mounted) {
+      messenger?.showSnackBar(SnackBar(content: Text(errorMessage(e))));
+    }
     return null;
   }
+  // The item exists: refresh even if the caller is gone, and tell only a caller that is still there.
+  refreshTodoLists(container);
+  if (context.mounted) {
+    messenger?.showSnackBar(SnackBar(content: Text(l.todoAdded)));
+  }
+  return item;
 }
 
 /// The link the dialog was saved with.

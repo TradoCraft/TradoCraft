@@ -140,7 +140,9 @@ class _Row extends ConsumerWidget {
   final LinkTarget target;
 
   Future<void> _complete(BuildContext context, WidgetRef ref) async {
+    // Taken before any await: the sheet can be dismissed while the request runs.
     final messenger = ScaffoldMessenger.maybeOf(context);
+    final container = ProviderScope.containerOf(context);
     final repo = ref.read(todoRepositoryProvider);
     try {
       try {
@@ -152,10 +154,12 @@ class _Row extends ConsumerWidget {
         await repo.complete(item.id, completeChildren: true);
       }
     } catch (e) {
-      messenger?.showSnackBar(SnackBar(content: Text(errorMessage(e))));
+      if (context.mounted) {
+        messenger?.showSnackBar(SnackBar(content: Text(errorMessage(e))));
+      }
+    } finally {
+      refreshTodoLists(container);
     }
-    ref.invalidate(objectTodosProvider);
-    ref.invalidate(todoItemsProvider);
   }
 
   Future<bool> _confirm(BuildContext context) async {

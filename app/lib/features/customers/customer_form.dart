@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/api.dart';
+import '../../app/workspace.dart' show TabScope;
 import '../../shared/format.dart';
 import '../../shared/record_history.dart';
 import '../../shared/vat_field.dart';
@@ -98,6 +99,33 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
   String? _nn(TextEditingController t) =>
       t.text.trim().isEmpty ? null : t.text.trim();
 
+  @override
+  void initState() {
+    super.initState();
+    // In the customer screen an edit marks the tab as holding unsaved changes (ADR 0041).
+    for (final t in [
+      _code,
+      _name,
+      _vat,
+      _email,
+      _phone,
+      _street,
+      _postal,
+      _city,
+      _country,
+      _discount,
+      _terms,
+    ]) {
+      t.addListener(_markDirty);
+    }
+  }
+
+  void _markDirty() {
+    if (widget.screen && !widget.readOnly && mounted) {
+      TabScope.reportDirty(context, true);
+    }
+  }
+
   Future<void> _save() async {
     if (!_form.currentState!.validate()) return;
     setState(() {
@@ -133,9 +161,19 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
     }
   }
 
+  /// Builds a row that wraps when the page is narrow. [build] gets the available width, or null
+  /// in the dialog: its content sits in an `IntrinsicWidth`, which cannot hold a `LayoutBuilder`,
+  /// and 560 px fits the single-row layout.
+  Widget _responsive(
+    Widget Function(BuildContext context, double? width) build,
+  ) => widget.screen
+      ? LayoutBuilder(builder: (c, box) => build(c, box.maxWidth))
+      : Builder(builder: (c) => build(c, null));
+
   /// Ends the form: a dialog pops with the result, a screen hands it to its owner.
   void _finish(Customer? saved) {
     if (widget.screen) {
+      TabScope.reportDirty(context, false);
       widget.onDone?.call(saved);
     } else {
       Navigator.pop(context, saved);
@@ -236,6 +274,8 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
             ),
             gap,
             DropdownButtonFormField<String>(
+              isExpanded:
+                  true, // a long regime name must not overflow a narrow form
               initialValue: _vatRegime,
               decoration: InputDecoration(labelText: context.l10n.vatRegime),
               items: [
@@ -254,102 +294,147 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
               ],
               onChanged: widget.readOnly
                   ? null
-                  : (v) => setState(() => _vatRegime = v!),
+                  : (v) {
+                      setState(() => _vatRegime = v!);
+                      _markDirty();
+                    },
             ),
             gap,
             _field(_street, context.l10n.street),
             gap,
-            Row(
-              children: [
-                SizedBox(
-                  width: 110,
-                  child: _field(_postal, context.l10n.postalCode),
+            _responsive((context, width) {
+              final postal = SizedBox(
+                width: 110,
+                child: _field(_postal, context.l10n.postalCode),
+              );
+              final country = SizedBox(
+                width: 80,
+                child: _field(
+                  _country,
+                  context.l10n.country,
+                  check: (s) => s.length == 2 ? null : context.l10n.twoLetters,
                 ),
-                gap,
-                Expanded(child: _field(_city, context.l10n.city)),
-                gap,
-                SizedBox(
-                  width: 80,
-                  child: _field(
-                    _country,
-                    context.l10n.country,
-                    check: (s) =>
-                        s.length == 2 ? null : context.l10n.twoLetters,
+              );
+              final language = SizedBox(
+                width: 110,
+                child: DropdownButtonFormField<String>(
+                  initialValue: _language,
+                  decoration: InputDecoration(
+                    labelText: context.l10n.appLanguage,
                   ),
+                  items: const [
+                    DropdownMenuItem(value: 'nl', child: Text('NL')),
+                    DropdownMenuItem(value: 'fr', child: Text('FR')),
+                    DropdownMenuItem(value: 'en', child: Text('EN')),
+                    DropdownMenuItem(value: 'de', child: Text('DE')),
+                    DropdownMenuItem(value: 'es', child: Text('ES')),
+                  ],
+                  onChanged: widget.readOnly
+                      ? null
+                      : (v) {
+                          setState(() => _language = v!);
+                          _markDirty();
+                        },
                 ),
-                gap,
-                SizedBox(
-                  width: 110,
-                  child: DropdownButtonFormField<String>(
-                    initialValue: _language,
-                    decoration: InputDecoration(
-                      labelText: context.l10n.appLanguage,
-                    ),
-                    items: const [
-                      DropdownMenuItem(value: 'nl', child: Text('NL')),
-                      DropdownMenuItem(value: 'fr', child: Text('FR')),
-                      DropdownMenuItem(value: 'en', child: Text('EN')),
-                      DropdownMenuItem(value: 'de', child: Text('DE')),
-                      DropdownMenuItem(value: 'es', child: Text('ES')),
-                    ],
-                    onChanged: widget.readOnly
-                        ? null
-                        : (v) => setState(() => _language = v!),
+              );
+              // The fixed fields take 110 + 80 + 110 and three gaps; the city needs room too.
+              const fixed = 110 + 80 + 110 + 3 * 12;
+              if (width == null || width >= fixed + 160) {
+                return Row(
+                  children: [
+                    postal,
+                    gap,
+                    Expanded(child: _field(_city, context.l10n.city)),
+                    gap,
+                    country,
+                    gap,
+                    language,
+                  ],
+                );
+              }
+              // Too narrow for one row (a phone, a narrow tab): the fields wrap, same widths.
+              return Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  postal,
+                  SizedBox(
+                    width: (width - 110 - 12).clamp(120.0, width),
+                    child: _field(_city, context.l10n.city),
                   ),
-                ),
-              ],
-            ),
+                  country,
+                  language,
+                ],
+              );
+            }),
             const Divider(height: 32),
-            Row(
-              children: [
-                Expanded(
-                  child: zones.when(
-                    data: (list) => DropdownButtonFormField<String>(
-                      initialValue: _zoneId,
-                      decoration: InputDecoration(
-                        labelText: context.l10n.priceZone,
+            _responsive((context, width) {
+              final zone = zones.when(
+                data: (list) => DropdownButtonFormField<String>(
+                  initialValue: _zoneId,
+                  decoration: InputDecoration(
+                    labelText: context.l10n.priceZone,
+                  ),
+                  items: [
+                    for (final z in list)
+                      DropdownMenuItem(
+                        value: z.id,
+                        child: Text('${z.code} – ${z.name}'),
                       ),
-                      items: [
-                        for (final z in list)
-                          DropdownMenuItem(
-                            value: z.id,
-                            child: Text('${z.code} – ${z.name}'),
-                          ),
-                      ],
-                      onChanged: widget.readOnly
-                          ? null
-                          : (v) => setState(() => _zoneId = v),
-                      validator: (v) =>
-                          v == null ? context.l10n.required : null,
-                    ),
-                    loading: () => const LinearProgressIndicator(),
-                    error: (e, _) => Text(errorMessage(e)),
-                  ),
+                  ],
+                  onChanged: widget.readOnly
+                      ? null
+                      : (v) {
+                          setState(() => _zoneId = v);
+                          _markDirty();
+                        },
+                  validator: (v) => v == null ? context.l10n.required : null,
                 ),
-                gap,
-                SizedBox(
-                  width: 110,
-                  child: _field(
-                    _discount,
-                    context.l10n.generalRebatePercent,
-                    check: (s) => parseDecimalInput(s.isEmpty ? '0' : s) == null
-                        ? context.l10n.numberRequired
-                        : null,
-                  ),
+                loading: () => const LinearProgressIndicator(),
+                error: (e, _) => Text(errorMessage(e)),
+              );
+              final discount = SizedBox(
+                width: 110,
+                child: _field(
+                  _discount,
+                  context.l10n.generalRebatePercent,
+                  check: (s) => parseDecimalInput(s.isEmpty ? '0' : s) == null
+                      ? context.l10n.numberRequired
+                      : null,
                 ),
-                gap,
-                SizedBox(
-                  width: 120,
-                  child: _field(
-                    _terms,
-                    context.l10n.paymentDays,
-                    check: (s) => int.tryParse(s) == null
-                        ? context.l10n.numberRequired
-                        : null,
-                  ),
+              );
+              final terms = SizedBox(
+                width: 120,
+                child: _field(
+                  _terms,
+                  context.l10n.paymentDays,
+                  check: (s) => int.tryParse(s) == null
+                      ? context.l10n.numberRequired
+                      : null,
                 ),
-              ],
-            ),
+              );
+              // The zone dropdown needs about 300 px next to the two fixed fields.
+              if (width == null || width >= 110 + 120 + 24 + 300) {
+                return Row(
+                  children: [
+                    Expanded(child: zone),
+                    gap,
+                    discount,
+                    gap,
+                    terms,
+                  ],
+                );
+              }
+              return Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  SizedBox(width: width, child: zone),
+                  discount,
+                  terms,
+                ],
+              );
+            }),
             if (_error != null) ...[
               gap,
               Text(
