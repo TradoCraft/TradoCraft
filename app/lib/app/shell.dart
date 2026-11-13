@@ -171,6 +171,7 @@ final _allDestinations = [
     alsoPaths: ['/supplier-invoices'],
   ),
   _Dest('/reports', (l) => l.crTitle, AppIcons.tableChart, 'reports.read'),
+  _Dest('/todo', (l) => l.todoTitle, AppIcons.checklist, 'todo.use'),
   _Dest(
     '/admin',
     (l) => l.adminTitle,

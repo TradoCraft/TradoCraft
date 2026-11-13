@@ -95,6 +95,12 @@ const warehouseStep = MissionStep(
     predicate: _isNewMain,
   ),
   probe: warehouseProbe,
+  // Reactivating or editing the warehouse or its location can satisfy the probe as well.
+  recheckOn: [
+    OnApi('PUT', '/inventory/warehouses/[^/]+'),
+    OnApi('PUT', '/inventory/locations/[^/]+'),
+    OnApi('POST', '/inventory/locations'),
+  ],
 );
 
 Map<String, String> _idOf(Object? json, String key) =>

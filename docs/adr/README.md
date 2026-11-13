@@ -63,3 +63,4 @@ accepted one; mark superseded records as such.
 | [0058](0058-vat-number-validation-and-lookup.md) | VAT numbers: EU format and check-digit validation, duplicate warning through a comparison key, VIES lookup that pre-fills and never blocks | Accepted (live VIES request unverified) |
 | [0059](0059-audit-trail-viewer.md) | Audit trail viewer: `audit.view` for administrators, cursor-paged endpoints, field-level changes, Admin tab and History button | Accepted |
 | [0060](0060-keyboard-shortcuts.md) | Keyboard shortcuts: common business-app chords (Alt, Ctrl on macOS), scoped handler registry, hint badges, web policy (Alt+Shift digits) | Accepted (phase A) |
+| [0061](0061-todo-items.md) | To-do items: private to owner and assignee, two levels, polymorphic link without foreign key (permission-gated label), completion rules, `todo` module and `todo.use` | Accepted |

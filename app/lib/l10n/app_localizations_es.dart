@@ -8544,4 +8544,92 @@ class AppLocalizationsEs extends AppLocalizations {
   String shortcutHint(String keys) {
     return 'Atajo: $keys';
   }
+
+  @override
+  String get moduleTodo => 'Tareas';
+
+  @override
+  String get todoTitle => 'Tareas';
+
+  @override
+  String get todoAdd => 'Añadir tarea';
+
+  @override
+  String get todoAddSub => 'Añadir subtarea';
+
+  @override
+  String get todoWhat => '¿Qué hay que hacer?';
+
+  @override
+  String get todoNotes => 'Notas';
+
+  @override
+  String get todoDueDate => 'Fecha límite';
+
+  @override
+  String get todoSetDue => 'Fijar fecha límite';
+
+  @override
+  String get todoClearDue => 'Quitar fecha límite';
+
+  @override
+  String todoDue(String date) {
+    return 'Vence $date';
+  }
+
+  @override
+  String get todoOverdue => 'Vencida';
+
+  @override
+  String get todoFilterOpen => 'Abiertas';
+
+  @override
+  String get todoFilterDone => 'Hechas';
+
+  @override
+  String get todoFilterAll => 'Todas';
+
+  @override
+  String get todoEmpty => 'Nada pendiente. Añada su primera tarea.';
+
+  @override
+  String get todoEmptyDone => 'No hay tareas hechas.';
+
+  @override
+  String get todoComplete => 'Marcar como hecha';
+
+  @override
+  String get todoReopen => 'Reabrir';
+
+  @override
+  String todoDeleteConfirm(String title) {
+    return '¿Eliminar «$title»? Sus subtareas también se eliminan.';
+  }
+
+  @override
+  String get todoCompleteAllTitle => '¿Completar también las subtareas?';
+
+  @override
+  String todoCompleteAllBody(String title) {
+    return '«$title» aún tiene subtareas abiertas. Al completarla, también se completan.';
+  }
+
+  @override
+  String get todoCompleteAll => 'Completar todas';
+
+  @override
+  String get todoLinkedItem => 'Elemento vinculado';
+
+  @override
+  String todoFromOwner(String name) {
+    return 'De $name';
+  }
+
+  @override
+  String todoSubProgress(int done, int total) {
+    return '$done de $total subtareas hechas';
+  }
+
+  @override
+  String get todoReorder => 'Arrastrar para reordenar';
 }
