@@ -7328,6 +7328,24 @@ class AppLocalizationsFr extends AppLocalizations {
       'Appuyez sur Envoyer. La commande est marquée comme envoyée et le fournisseur la reçoit. Dans les environnements de test et de tutoriel, le courrier sortant n\'est écrit que dans des fichiers sur le serveur : rien ne sort.';
 
   @override
+  String get tutBuyingOpenWarehousesTitle => 'Où vont les marchandises ?';
+
+  @override
+  String get tutBuyingOpenWarehousesBody =>
+      'Les marchandises ont besoin d\'une place avant d\'être réceptionnées. Ouvrez Stock et appuyez sur Entrepôts : c\'est là que sont tenus les entrepôts et leurs emplacements.';
+
+  @override
+  String get tutBuyingWarehouseTitle => 'Créer l\'entrepôt';
+
+  @override
+  String get tutBuyingWarehouseBody =>
+      'Appuyez sur Nouvel entrepôt, donnez-lui le code MAIN et le nom Entrepôt principal, puis enregistrez. Un nouvel entrepôt vient avec son emplacement MAIN, où vous réceptionnerez ensuite les marchandises. Si l\'enregistrement est refusé parce que le code MAIN est déjà pris, un entrepôt inactif le détient : réactivez-le (ainsi que son emplacement) dans Stock > Entrepôts, ou donnez-lui un autre code avec son bouton de modification, puis appuyez sur Suivant.';
+
+  @override
+  String get tutBuyingWarehouseHint =>
+      'Le code et le nom sont obligatoires. Si un entrepôt avec un emplacement existe déjà, cette étape est ignorée.';
+
+  @override
   String get tutBuyingReceivePartTitle => 'La première livraison arrive';
 
   @override
@@ -7514,6 +7532,17 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get tutManufacturingStartBody =>
       'Mettez la casquette d\'opérateur et appuyez sur Démarrer. L\'ordre passe de lancé à en cours.';
+
+  @override
+  String get tutManufacturingWarehouseTitle => 'Une place pour les chariots';
+
+  @override
+  String get tutManufacturingWarehouseBody =>
+      'Les chariots finis ont besoin d\'un emplacement où aller, et il n\'y a pas encore d\'entrepôt (le chapitre 3 le crée). Ouvrez Stock, appuyez sur Entrepôts et créez l\'entrepôt MAIN avec le nom Entrepôt principal, puis retournez à l\'ordre de production. Si l\'enregistrement est refusé parce que le code MAIN est déjà pris, un entrepôt inactif le détient : réactivez-le (ainsi que son emplacement) dans Stock > Entrepôts, ou donnez-lui un autre code avec son bouton de modification, puis appuyez sur Suivant.';
+
+  @override
+  String get tutManufacturingWarehouseHint =>
+      'L\'emplacement MAIN est créé avec l\'entrepôt. Si un entrepôt avec un emplacement existe déjà, cette étape est ignorée.';
 
   @override
   String get tutManufacturingCompleteTitle => 'Terminez l\'ordre';
@@ -7879,6 +7908,17 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get tutChangeStartBody =>
       'Appuyez sur Démarrer sur le nouvel ordre de production.';
+
+  @override
+  String get tutChangeWarehouseTitle => 'Une place pour les chariots';
+
+  @override
+  String get tutChangeWarehouseBody =>
+      'Les chariots finis ont besoin d\'un emplacement où aller, et il n\'y a pas encore d\'entrepôt (le chapitre 3 le crée). Ouvrez Stock, appuyez sur Entrepôts et créez l\'entrepôt MAIN avec le nom Entrepôt principal, puis retournez à l\'ordre de production. Si l\'enregistrement est refusé parce que le code MAIN est déjà pris, un entrepôt inactif le détient : réactivez-le (ainsi que son emplacement) dans Stock > Entrepôts, ou donnez-lui un autre code avec son bouton de modification, puis appuyez sur Suivant.';
+
+  @override
+  String get tutChangeWarehouseHint =>
+      'L\'emplacement MAIN est créé avec l\'entrepôt. Si un entrepôt avec un emplacement existe déjà, cette étape est ignorée.';
 
   @override
   String get tutChangeCompleteTitle => 'Terminez la production';

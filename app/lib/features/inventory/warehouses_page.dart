@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../app/api.dart';
 import '../../l10n/l10n.dart';
 import '../../shared/actions.dart';
+import '../tutorial/targets.dart';
 import 'inventory_common.dart';
 import '../../shared/app_icons.dart';
 
@@ -38,10 +39,13 @@ class WarehousesPage extends ConsumerWidget {
                   style: Theme.of(context).textTheme.headlineSmall,
                 ),
                 if (canAdmin) ...[
-                  FilledButton.icon(
-                    icon: const Icon(AppIcons.add),
-                    label: Text(l.stockNewWarehouse),
-                    onPressed: () => _edit(context, ref, null, van: false),
+                  TutorialTarget(
+                    id: 'warehouse-new',
+                    child: FilledButton.icon(
+                      icon: const Icon(AppIcons.add),
+                      label: Text(l.stockNewWarehouse),
+                      onPressed: () => _edit(context, ref, null, van: false),
+                    ),
                   ),
                   OutlinedButton.icon(
                     icon: const Icon(AppIcons.localShipping),
@@ -348,7 +352,13 @@ class _WarehouseDialogState extends ConsumerState<_WarehouseDialog> {
           onPressed: () => Navigator.pop(context),
           child: Text(l.cancel),
         ),
-        FilledButton(onPressed: _saving ? null : _save, child: Text(l.save)),
+        TutorialTarget(
+          id: 'warehouse-form-save',
+          child: FilledButton(
+            onPressed: _saving ? null : _save,
+            child: Text(l.save),
+          ),
+        ),
       ],
     );
   }

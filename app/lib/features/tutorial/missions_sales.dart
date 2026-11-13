@@ -1,4 +1,5 @@
 import 'missions_production.dart' show tutorialZoneCode;
+import 'missions_purchasing.dart' show warehouseStep;
 import 'model.dart';
 import 'simulated_mail.dart';
 
@@ -429,6 +430,7 @@ final changeMission = Mission(
         done: (json, _) => _productionStatus(json, {'in_progress', 'completed'}),
       ),
     ),
+    warehouseStep,
     MissionStep(
       id: 'complete',
       route: '/production/{orderProductionId}',

@@ -7335,6 +7335,24 @@ class AppLocalizationsDe extends AppLocalizations {
       'Drücken Sie Senden. Die Bestellung wird als gesendet markiert und der Lieferant erhält sie. In Test- und Tutorial-Umgebungen wird ausgehende E-Mail nur in Dateien auf dem Server geschrieben, nichts verlässt das Haus.';
 
   @override
+  String get tutBuyingOpenWarehousesTitle => 'Wohin kommt die Ware?';
+
+  @override
+  String get tutBuyingOpenWarehousesBody =>
+      'Ware braucht einen Platz, bevor sie angenommen werden kann. Öffnen Sie Bestand und drücken Sie Lager und Fahrzeuge: Hier werden die Lager und ihre Lagerplätze verwaltet.';
+
+  @override
+  String get tutBuyingWarehouseTitle => 'Das Lager anlegen';
+
+  @override
+  String get tutBuyingWarehouseBody =>
+      'Drücken Sie Neues Lager, geben Sie den Code MAIN und den Namen Hauptlager ein und speichern Sie. Ein neues Lager kommt mit seinem Lagerplatz MAIN; dorthin buchen Sie die Ware als Nächstes. Wird das Speichern abgelehnt, weil der Code MAIN schon vergeben ist, gehört er einem inaktiven Lager: Schalten Sie es (und seinen Lagerplatz) unter Bestand > Lager und Fahrzeuge wieder ein oder geben Sie ihm mit dem Bearbeiten-Knopf einen anderen Code, und drücken Sie dann Weiter.';
+
+  @override
+  String get tutBuyingWarehouseHint =>
+      'Code und Name sind Pflicht. Gibt es schon ein Lager mit einem Lagerplatz, wird dieser Schritt übersprungen.';
+
+  @override
   String get tutBuyingReceivePartTitle => 'Die erste Lieferung kommt an';
 
   @override
@@ -7522,6 +7540,17 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get tutManufacturingStartBody =>
       'Setzen Sie den Werker-Hut auf und drücken Sie Starten. Der Auftrag geht von freigegeben auf in Arbeit.';
+
+  @override
+  String get tutManufacturingWarehouseTitle => 'Ein Platz für die Karren';
+
+  @override
+  String get tutManufacturingWarehouseBody =>
+      'Die fertigen Karren brauchen einen Lagerplatz, und es gibt noch kein Lager (Kapitel 3 legt es an). Öffnen Sie Bestand, drücken Sie Lager und Fahrzeuge und legen Sie das Lager MAIN mit dem Namen Hauptlager an; gehen Sie danach zurück zum Fertigungsauftrag. Wird das Speichern abgelehnt, weil der Code MAIN schon vergeben ist, gehört er einem inaktiven Lager: Schalten Sie es (und seinen Lagerplatz) unter Bestand > Lager und Fahrzeuge wieder ein oder geben Sie ihm mit dem Bearbeiten-Knopf einen anderen Code, und drücken Sie dann Weiter.';
+
+  @override
+  String get tutManufacturingWarehouseHint =>
+      'Der Lagerplatz MAIN wird zusammen mit dem Lager angelegt. Gibt es schon ein Lager mit einem Lagerplatz, wird dieser Schritt übersprungen.';
 
   @override
   String get tutManufacturingCompleteTitle => 'Schließen Sie den Auftrag ab';
@@ -7887,6 +7916,17 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get tutChangeStartBody =>
       'Drücken Sie Starten beim neuen Fertigungsauftrag.';
+
+  @override
+  String get tutChangeWarehouseTitle => 'Ein Platz für die Karren';
+
+  @override
+  String get tutChangeWarehouseBody =>
+      'Die fertigen Karren brauchen einen Lagerplatz, und es gibt noch kein Lager (Kapitel 3 legt es an). Öffnen Sie Bestand, drücken Sie Lager und Fahrzeuge und legen Sie das Lager MAIN mit dem Namen Hauptlager an; gehen Sie danach zurück zum Fertigungsauftrag. Wird das Speichern abgelehnt, weil der Code MAIN schon vergeben ist, gehört er einem inaktiven Lager: Schalten Sie es (und seinen Lagerplatz) unter Bestand > Lager und Fahrzeuge wieder ein oder geben Sie ihm mit dem Bearbeiten-Knopf einen anderen Code, und drücken Sie dann Weiter.';
+
+  @override
+  String get tutChangeWarehouseHint =>
+      'Der Lagerplatz MAIN wird zusammen mit dem Lager angelegt. Gibt es schon ein Lager mit einem Lagerplatz, wird dieser Schritt übersprungen.';
 
   @override
   String get tutChangeCompleteTitle => 'Schließen Sie die Fertigung ab';

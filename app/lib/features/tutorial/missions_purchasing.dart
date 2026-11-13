@@ -56,6 +56,47 @@ bool _allProducts(Object? json, MissionContext ctx) =>
 Map<String, String> _productsCapture(Object? json, MissionContext ctx) =>
     _captureProducts(json);
 
+/// The warehouse and location the texts name: an active warehouse MAIN with an active location MAIN.
+bool _isMainWarehouse(Map w) =>
+    w['code'] == 'MAIN' &&
+    w['kind'] != 'van' &&
+    w['active'] != false &&
+    w['locations'] is List &&
+    (w['locations'] as List).any(
+      (l) => l is Map && l['code'] == 'MAIN' && l['active'] != false,
+    );
+
+/// Whether the warehouse MAIN with its location MAIN exists and is usable. Another warehouse does not
+/// count: the instructions of the later steps say "choose the location MAIN".
+bool _hasReceivingLocation(Object? json, MissionContext ctx) =>
+    json is List && json.any((w) => w is Map && _isMainWarehouse(w));
+
+bool _isNewMain(Object? json, MissionContext ctx) =>
+    json is Map && json['code'] == 'MAIN';
+
+/// A read-only look at the warehouses: the steps that put goods somewhere are skipped when the
+/// warehouse MAIN with its location MAIN already exists (made by hand, or by an earlier chapter).
+const warehouseProbe = Probe(
+  '/api/v1/inventory/warehouses',
+  done: _hasReceivingLocation,
+);
+
+/// A step that creates the warehouse (a new warehouse gets its location MAIN with it). It is
+/// skipped when one exists, so the same step can guard every chapter that puts goods somewhere.
+const warehouseStep = MissionStep(
+  id: 'warehouse',
+  hasHint: true,
+  route: '/stock/warehouses',
+  targets: ['warehouse-form-save', 'warehouse-new'],
+  // The texts of the later steps name the location MAIN, so only a warehouse MAIN finishes the step.
+  completion: OnApi(
+    'POST',
+    '/inventory/warehouses',
+    predicate: _isNewMain,
+  ),
+  probe: warehouseProbe,
+);
+
 Map<String, String> _idOf(Object? json, String key) =>
     json is Map ? {key: '${json['id']}'} : const {};
 
@@ -219,6 +260,14 @@ final buyingMission = Mission(
         done: (json, _) => _poHasStatus(json, _sentOrLater),
       ),
     ),
+    const MissionStep(
+      id: 'openWarehouses',
+      route: '/stock/warehouses',
+      targets: ['stock-warehouses'],
+      completion: OnRoute('/stock/warehouses'),
+      probe: warehouseProbe,
+    ),
+    warehouseStep,
     MissionStep(
       id: 'receivePart',
       hasHint: true,
