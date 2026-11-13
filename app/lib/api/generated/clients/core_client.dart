@@ -69,7 +69,7 @@ abstract class CoreClient {
   @GET('/api/v1/admin/worker')
   Future<WorkerStatus> getWorker();
 
-  /// The enabled identity providers, for the sign-in page. No sign-in needed; only these five.
+  /// The enabled identity providers, for the sign-in page. No sign-in needed; only these six.
   /// fields are exposed. Empty in dev mode.
   @GET('/api/v1/auth/providers')
   Future<List<PublicProvider>> publicProviders();

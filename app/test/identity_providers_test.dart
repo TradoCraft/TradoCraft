@@ -12,6 +12,7 @@ Map<String, Object?> _provider(
   String name, {
   String issuer = 'https://login.example.com',
   String policy = 'require_verified_claim',
+  String tokenUse = 'id_token',
   List<String> domains = const [],
   bool enabled = true,
   bool env = false,
@@ -24,6 +25,7 @@ Map<String, Object?> _provider(
   'audience': 'aud-$name',
   'client_id': null,
   'scopes': 'openid profile email',
+  'token_use': tokenUse,
   'algorithms': ['RS256'],
   'email_claim': 'email',
   'email_policy': policy,
@@ -206,6 +208,26 @@ void main() {
     expect(find.byKey(const ValueKey('idp-tenant')), findsNothing);
   });
 
+  testWidgets('token use defaults to the ID token; Entra preset picks the access token', (
+    tester,
+  ) async {
+    await _pump(tester, FakeHttp(_routes()));
+    await _tap(tester, 'idp-add');
+    String? selected() => tester
+        .widget<RadioGroup<String>>(
+          find.ancestor(
+            of: find.byKey(const ValueKey('idp-token-use-id_token')),
+            matching: find.byType(RadioGroup<String>),
+          ),
+        )
+        .groupValue;
+    expect(selected(), 'id_token');
+    await _tap(tester, 'idp-preset-entra');
+    expect(selected(), 'access_token');
+    await _tap(tester, 'idp-preset-generic');
+    expect(selected(), 'id_token');
+  });
+
   testWidgets('validates before sending anything', (tester) async {
     final http = FakeHttp(_routes());
     await _pump(tester, http);
@@ -240,6 +262,7 @@ void main() {
     await _fillBasics(tester);
     await _enter(tester, 'idp-client-id', 'app-1');
     await _tap(tester, 'idp-rule-trust_provider_email');
+    await _tap(tester, 'idp-token-use-access_token');
     await _enter(tester, 'idp-domain-input', '@Example.com');
     await tester.testTextInput.receiveAction(TextInputAction.done);
     await tester.pumpAndSettle();
@@ -251,6 +274,7 @@ void main() {
     expect(body['audience'], 'tradocraft');
     expect(body['client_id'], 'app-1');
     expect(body['email_policy'], 'trust_provider_email');
+    expect(body['token_use'], 'access_token');
     expect(body['allowed_email_domains'], ['example.com']);
     expect(body['enabled'], true);
     expect((body['algorithms'] as List).length, 8);

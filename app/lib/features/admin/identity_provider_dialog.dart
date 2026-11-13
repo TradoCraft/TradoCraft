@@ -69,6 +69,7 @@ class _IdentityProviderDialogState
   final _sample = TextEditingController();
 
   late String _policy = _p?.emailPolicy ?? 'require_verified_claim';
+  late String _tokenUse = _p?.tokenUse ?? 'id_token';
   late final List<String> _domains = [...?_p?.allowedEmailDomains];
   late final Set<String> _algs = {...?_p?.algorithms};
   late bool _enabled = _p?.enabled ?? true;
@@ -115,12 +116,15 @@ class _IdentityProviderDialogState
           _issuer.text = entraIssuer(_tenant.text);
           _policy = 'trust_provider_email';
           _verifiedClaim.text = 'xms_edov';
+          _tokenUse = 'access_token';
         case IdpPreset.google:
           _name.text = 'Google';
           _issuer.text = 'https://accounts.google.com';
+          _tokenUse = 'id_token';
           _policy = 'require_verified_claim';
           _verifiedClaim.text = 'email_verified';
         case IdpPreset.generic:
+          _tokenUse = 'id_token';
           _policy = 'require_verified_claim';
           _verifiedClaim.text = 'email_verified';
       }
@@ -180,6 +184,7 @@ class _IdentityProviderDialogState
     audience: _audience.text.trim(),
     clientId: _nullIfEmpty(_clientId.text),
     scopes: _nullIfEmpty(_scopes.text),
+    tokenUse: _tokenUse,
     emailClaim: _nullIfEmpty(_emailClaim.text),
     emailPolicy: _policy,
     verifiedClaim: _nullIfEmpty(_verifiedClaim.text),
@@ -425,6 +430,30 @@ class _IdentityProviderDialogState
                 key: const ValueKey('idp-scopes'),
                 controller: _scopes,
                 decoration: InputDecoration(labelText: l.idpFieldScopes),
+              ),
+              const SizedBox(height: 12),
+              Text(l.idpFieldTokenUse, style: theme.textTheme.titleSmall),
+              RadioGroup<String>(
+                groupValue: _tokenUse,
+                onChanged: (v) => setState(() => _tokenUse = v ?? _tokenUse),
+                child: Column(
+                  children: [
+                    RadioListTile<String>(
+                      key: const ValueKey('idp-token-use-id_token'),
+                      value: 'id_token',
+                      title: Text(l.idpTokenUseIdTitle),
+                      subtitle: Text(l.idpTokenUseIdBody),
+                      isThreeLine: true,
+                    ),
+                    RadioListTile<String>(
+                      key: const ValueKey('idp-token-use-access_token'),
+                      value: 'access_token',
+                      title: Text(l.idpTokenUseAccessTitle),
+                      subtitle: Text(l.idpTokenUseAccessBody),
+                      isThreeLine: true,
+                    ),
+                  ],
+                ),
               ),
               TextField(
                 key: const ValueKey('idp-email-claim'),

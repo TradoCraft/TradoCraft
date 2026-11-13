@@ -1073,7 +1073,7 @@
         "tags": [
           "core"
         ],
-        "summary": "The enabled identity providers, for the sign-in page. No sign-in needed; only these five\nfields are exposed. Empty in dev mode.",
+        "summary": "The enabled identity providers, for the sign-in page. No sign-in needed; only these six\nfields are exposed. Empty in dev mode.",
         "operationId": "public_providers",
         "responses": {
           "200": {
@@ -30564,6 +30564,7 @@
           "issuer",
           "audience",
           "scopes",
+          "token_use",
           "algorithms",
           "email_claim",
           "email_policy",
@@ -30644,6 +30645,10 @@
           "source": {
             "type": "string",
             "description": "`database` or `env` (read-only emergency fallback from `OIDC_ISSUER`)."
+          },
+          "token_use": {
+            "type": "string",
+            "description": "Token the interactive sign-in sends: `id_token` or `access_token`."
           },
           "updated_at": {
             "type": [
@@ -30741,6 +30746,13 @@
               "null"
             ],
             "description": "Default `openid profile email`."
+          },
+          "token_use": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`id_token` (default) or `access_token`: the token the interactive sign-in sends."
           },
           "verified_claim": {
             "type": [
@@ -37469,6 +37481,7 @@
           "name",
           "issuer",
           "scopes",
+          "token_use",
           "source"
         ],
         "properties": {
@@ -37494,6 +37507,10 @@
           "source": {
             "type": "string",
             "description": "`database` or `env` (the read-only fallback from `OIDC_ISSUER`), so the page can label it."
+          },
+          "token_use": {
+            "type": "string",
+            "description": "Token to send as the bearer token: `id_token` or `access_token`."
           }
         }
       },

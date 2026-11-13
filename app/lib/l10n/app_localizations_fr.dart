@@ -8021,6 +8021,24 @@ class AppLocalizationsFr extends AppLocalizations {
   String get idpFieldScopes => 'Scopes';
 
   @override
+  String get idpFieldTokenUse =>
+      'Jeton à envoyer (pas encore utilisé pour la connexion)';
+
+  @override
+  String get idpTokenUseIdTitle => 'Jeton d\'identité';
+
+  @override
+  String get idpTokenUseIdBody =>
+      'Par défaut. Fonctionne avec Keycloak et la plupart des fournisseurs OpenID Connect : l\'audience est l\'identifiant client.';
+
+  @override
+  String get idpTokenUseAccessTitle => 'Jeton d\'accès';
+
+  @override
+  String get idpTokenUseAccessBody =>
+      'Pour Microsoft Entra ID : le jeton d\'accès de votre propre API (scope api://<client-id>/access_as_user).';
+
+  @override
   String get idpFieldEmailClaim => 'Déclaration de l\'e-mail';
 
   @override

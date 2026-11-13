@@ -14,6 +14,7 @@ class PublicProvider {
     required this.name,
     required this.scopes,
     required this.source,
+    required this.tokenUse,
     this.clientId,
   });
   
@@ -34,6 +35,10 @@ class PublicProvider {
 
   /// `database` or `env` (the read-only fallback from `OIDC_ISSUER`), so the page can label it.
   final String source;
+
+  /// Token to send as the bearer token: `id_token` or `access_token`.
+  @JsonKey(name: 'token_use')
+  final String tokenUse;
 
   Map<String, Object?> toJson() => _$PublicProviderToJson(this);
 }

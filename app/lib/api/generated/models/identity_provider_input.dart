@@ -21,6 +21,7 @@ class IdentityProviderInput {
     this.emailPolicy,
     this.enabled,
     this.scopes,
+    this.tokenUse,
     this.verifiedClaim,
   });
   
@@ -67,6 +68,10 @@ class IdentityProviderInput {
   /// Default `openid profile email`.
   @JsonKey(includeIfNull: false)
   final String? scopes;
+
+  /// `id_token` (default) or `access_token`: the token the interactive sign-in sends.
+  @JsonKey(includeIfNull: false,name: 'token_use')
+  final String? tokenUse;
 
   /// Default `email_verified` (Microsoft Entra ID: `xms_edov`).
   @JsonKey(includeIfNull: false,name: 'verified_claim')

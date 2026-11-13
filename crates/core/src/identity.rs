@@ -90,6 +90,38 @@ impl EmailPolicy {
     }
 }
 
+/// Which token the interactive sign-in sends as the bearer token. The server verifies both the
+/// same way (signature, issuer, audience); this only tells the client what to send.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TokenUse {
+    /// The OpenID Connect ID token (`aud` = client id).
+    IdToken,
+    /// The access token (`aud` = the API, e.g. Microsoft Entra ID).
+    AccessToken,
+}
+
+impl TokenUse {
+    /// All codes, as stored in the database.
+    pub const ALL: [&'static str; 2] = ["id_token", "access_token"];
+
+    /// The stored code.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            TokenUse::IdToken => "id_token",
+            TokenUse::AccessToken => "access_token",
+        }
+    }
+
+    /// Parses a stored code.
+    pub fn parse(s: &str) -> Option<Self> {
+        match s {
+            "id_token" => Some(TokenUse::IdToken),
+            "access_token" => Some(TokenUse::AccessToken),
+            _ => None,
+        }
+    }
+}
+
 /// Where a provider's configuration comes from.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ProviderSource {
@@ -126,6 +158,8 @@ pub struct ProviderConfig {
     pub client_id: Option<String>,
     /// Scopes the interactive sign-in asks for.
     pub scopes: String,
+    /// Which token the interactive sign-in sends.
+    pub token_use: TokenUse,
     /// Accepted JWS algorithms.
     pub algorithms: Vec<String>,
     /// Claim holding the e-mail address.
@@ -151,6 +185,7 @@ impl ProviderConfig {
             audience: audience.trim().to_string(),
             client_id: None,
             scopes: "openid profile email".into(),
+            token_use: TokenUse::IdToken,
             algorithms: ALLOWED_ALGORITHMS.iter().map(|s| s.to_string()).collect(),
             email_claim: "email".into(),
             email_policy: EmailPolicy::RequireVerifiedClaim,
@@ -183,6 +218,7 @@ pub(crate) struct ProviderRow {
     pub audience: String,
     pub client_id: Option<String>,
     pub scopes: String,
+    pub token_use: String,
     pub algorithms: Vec<String>,
     pub email_claim: String,
     pub email_policy: String,
@@ -193,7 +229,7 @@ pub(crate) struct ProviderRow {
     pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
-pub(crate) const PROVIDER_COLUMNS: &str = "id, name, issuer, audience, client_id, scopes, algorithms, \
+pub(crate) const PROVIDER_COLUMNS: &str = "id, name, issuer, audience, client_id, scopes, token_use, algorithms, \
      email_claim, email_policy, verified_claim, allowed_email_domains, enabled, created_at, updated_at";
 
 impl ProviderRow {
@@ -206,6 +242,7 @@ impl ProviderRow {
             audience: self.audience.clone(),
             client_id: self.client_id.clone(),
             scopes: self.scopes.clone(),
+            token_use: TokenUse::parse(&self.token_use).unwrap_or(TokenUse::IdToken),
             algorithms: self.algorithms.clone(),
             email_claim: self.email_claim.clone(),
             email_policy: EmailPolicy::parse(&self.email_policy)

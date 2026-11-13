@@ -12,6 +12,7 @@ PublicProvider _$PublicProviderFromJson(Map<String, dynamic> json) =>
       name: json['name'] as String,
       scopes: json['scopes'] as String,
       source: json['source'] as String,
+      tokenUse: json['token_use'] as String,
       clientId: json['client_id'] as String?,
     );
 
@@ -22,4 +23,5 @@ Map<String, dynamic> _$PublicProviderToJson(PublicProvider instance) =>
       'name': instance.name,
       'scopes': instance.scopes,
       'source': instance.source,
+      'token_use': instance.tokenUse,
     };
