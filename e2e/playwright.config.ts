@@ -9,7 +9,7 @@ import path from 'node:path';
 //   npm run test:watch | npm run test:ui          (Firefox, visible; see README.md)
 // Environment: E2E_BROWSER=firefox|chromium, E2E_HEADED=1, E2E_SLOWMO=<ms>, E2E_PG_URL, E2E_API_PORT,
 // E2E_WEB_PORT, E2E_DB_NAME, E2E_API_BIN.
-const { envPg, guardDbName } = require('./lib.cjs');
+const { apiBin, envPg, guardDbName } = require('./lib.cjs');
 const root = path.resolve(__dirname, '..');
 export const API_PORT = Number(process.env.E2E_API_PORT ?? 18080);
 export const WEB_PORT = Number(process.env.E2E_WEB_PORT ?? 18088);
@@ -50,7 +50,7 @@ export default defineConfig({
       reuseExistingServer: false,
       timeout: 120_000,
       env: {
-        E2E_API_BIN: process.env.E2E_API_BIN ?? path.join(root, 'target/debug/tradocraft-api'),
+        E2E_API_BIN: apiBin(),
         E2E_DB_NAME: DB_NAME,
         DATABASE_URL: `${pgBase}/${DB_NAME}`,
         AUTH_MODE: 'dev',

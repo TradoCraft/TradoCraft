@@ -47,13 +47,22 @@ function readDatabaseUrl() {
 
 /** Splits a PostgreSQL URL into its server part (scheme://user:pass@host:port) and database name. */
 function splitPgUrl(url) {
-  const m = url && url.match(/^([a-z][a-z0-9+.-]*:\/\/[^/?#]*)(?:\/([^?#]*))?/i);
+  const m = url && url.match(/^([a-z][a-z0-9+.-]*:\/\/[^/?#]*)(?:\/([^?#]*))?(?:\?([^#]*))?/i);
   if (!m) return undefined;
-  let db = m[2] || undefined;
-  try {
-    if (db) db = decodeURIComponent(db);
-  } catch {
-    // keep it raw
+  const decode = (v) => {
+    try {
+      return decodeURIComponent(v);
+    } catch {
+      return v; // keep it raw
+    }
+  };
+  // The path names the database; else a libpq-style ?dbname=... does.
+  let db = m[2] ? decode(m[2]) : undefined;
+  if (!db && m[3]) {
+    for (const pair of m[3].split('&')) {
+      const eq = pair.indexOf('=');
+      if (eq > 0 && pair.slice(0, eq) === 'dbname' && eq < pair.length - 1) db = decode(pair.slice(eq + 1));
+    }
   }
   return { server: m[1], db };
 }
@@ -117,10 +126,16 @@ function onPath(bin) {
   return (process.env.PATH ?? '').split(path.delimiter).filter(Boolean).some((d) => names.some((n) => fs.existsSync(path.join(d, n))));
 }
 
+/** The default API binary (E2E_API_BIN overrides it). */
+function apiBin() {
+  const exe = process.platform === 'win32' ? 'tradocraft-api.exe' : 'tradocraft-api';
+  return process.env.E2E_API_BIN ?? path.join(root, 'target', 'debug', exe);
+}
+
 /** One actionable line per missing prerequisite. */
 function missingPrerequisites() {
   const out = [];
-  const api = process.env.E2E_API_BIN ?? path.join(root, 'target/debug/tradocraft-api');
+  const api = apiBin();
   if (!fs.existsSync(api)) out.push(`API binary not found (${api}): run  cargo build -p tradocraft-api  (or set E2E_API_BIN)`);
   if (!fs.existsSync(path.join(root, 'app/build/web/index.html'))) {
     out.push('Flutter web build not found (app/build/web): run  (cd app && flutter build web --release --no-web-resources-cdn)');
@@ -134,4 +149,4 @@ function missingPrerequisites() {
   return out;
 }
 
-module.exports = { root, envPg, guardDbName, portProblem, missingPrerequisites };
+module.exports = { root, apiBin, splitPgUrl, envPg, guardDbName, portProblem, missingPrerequisites };
