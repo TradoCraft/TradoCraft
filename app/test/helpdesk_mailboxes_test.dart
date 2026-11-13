@@ -111,7 +111,7 @@ void main() {
     expect(find.text('parts@contoso.example · IMAP and SMTP'), findsOneWidget);
     expect(
       find.text(
-        'Fetching e-mail failed: the worker has no MAILBOX_SECRET_PARTS variable',
+        'Problem fetching e-mail: the worker has no MAILBOX_SECRET_PARTS variable',
       ),
       findsOneWidget,
     );

@@ -5,6 +5,8 @@
 //! * Fetches the mail of every active helpdesk mailbox (Microsoft Graph or IMAP, ADR 0054) and of
 //!   the single mailbox from the IMAP_* variables (when IMAP_HOST is set), and turns mails into
 //!   tickets.
+//! * `tradocraft-worker check-mailbox <name>` runs a real round trip with a Microsoft 365 mailbox
+//!   (sign in, the unread query, send to itself, compare the Message-ID) and exits.
 //! * Escalates tickets whose SLA ran out (one internal e-mail per ticket and kind of breach).
 //! * Generates the planned jobs of active maintenance contracts before their visits are due.
 //! * Recomputes the "often bought together" table from confirmed installation orders (hourly, or
@@ -96,6 +98,33 @@ async fn main() -> anyhow::Result<()> {
         name = environment.name.as_deref().unwrap_or("(database name)"),
         "environment"
     );
+    // `tradocraft-worker check-mailbox <name>`: a real round trip with a Microsoft 365 mailbox,
+    // for an administrator to run once after setting it up. It sends one message, to the mailbox
+    // itself, so it runs only in a live environment: the opt-in that allows fetching in a test environment does not cover sending (ADR 0048).
+    let args: Vec<String> = std::env::args().collect();
+    if args.get(1).map(String::as_str) == Some("check-mailbox") {
+        let name = args
+            .get(2)
+            .context("usage: tradocraft-worker check-mailbox <mailbox name>")?;
+        anyhow::ensure!(
+            policy.is_unrestricted(),
+            "check-mailbox sends a real message, so it runs only in a live environment (ADR 0048: outside one, a mailbox is never used for sending)"
+        );
+        let report = mailboxes::check_graph_mailbox(
+            &db,
+            name,
+            &GraphClient::new(),
+            &mailboxes::env_secret,
+            &Default::default(),
+        )
+        .await?;
+        for line in report.lines() {
+            println!("{line}");
+        }
+        anyhow::ensure!(report.ok(), "the check found a problem");
+        println!("all steps worked");
+        return Ok(());
+    }
     let mailer = mailer(&policy.mail_transport)?;
     let interval = Duration::from_secs(
         env("POLL_SECONDS")

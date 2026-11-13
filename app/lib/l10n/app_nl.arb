@@ -2618,6 +2618,6 @@
   "mailboxSendOnly": "Verstuurt alleen",
   "mailboxNeverPolled": "Nog geen e-mail opgehaald",
   "mailboxLastOk": "E-mail laatst opgehaald op {when}",
-  "mailboxError": "E-mail ophalen mislukt: {error}",
+  "mailboxError": "Probleem bij het ophalen van e-mail: {error}",
   "mailboxDeleteConfirm": "De mailbox {name} verwijderen? De tickets blijven bestaan. Antwoorden daarop vertrekken dan via de standaardmailbox."
 }

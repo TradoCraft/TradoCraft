@@ -8302,7 +8302,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String mailboxError(String error) {
-    return 'Échec de la relève des e-mails : $error';
+    return 'Problème lors de la relève des e-mails : $error';
   }
 
   @override

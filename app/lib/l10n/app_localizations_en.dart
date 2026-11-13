@@ -8258,7 +8258,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String mailboxError(String error) {
-    return 'Fetching e-mail failed: $error';
+    return 'Problem fetching e-mail: $error';
   }
 
   @override

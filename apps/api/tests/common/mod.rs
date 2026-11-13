@@ -2,6 +2,7 @@
 #![allow(dead_code)]
 
 pub mod e2e;
+pub mod graph;
 pub mod idp;
 
 use std::path::PathBuf;

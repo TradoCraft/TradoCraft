@@ -19,7 +19,7 @@ use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 use uuid::Uuid;
 
-use crate::graph::{GraphClient, GraphMailbox};
+use crate::graph::{CheckOptions, CheckReport, GraphClient, GraphMailbox, Polled};
 use crate::imap::ImapConfig;
 use crate::ingest::Source;
 use crate::mailer::{Mailer, SmtpSecurity};
@@ -633,7 +633,7 @@ impl ActiveMailbox {
         db: &PgPool,
         graph: &GraphClient,
         secrets: SecretLookup<'_>,
-    ) -> anyhow::Result<usize> {
+    ) -> anyhow::Result<Polled> {
         let host = (self.kind != "graph").then(|| self.imap_host.as_deref().unwrap_or_default());
         let secret = self.secret(secrets, host)?;
         match self.kind.as_str() {
@@ -656,7 +656,11 @@ impl ActiveMailbox {
                     company_id: self.company_id,
                     source: Some(self.source()),
                 };
-                crate::imap::poll(db, &cfg).await
+                Ok(Polled {
+                    ingested: crate::imap::poll(db, &cfg).await?,
+                    problems: Vec::new(),
+                    complete: true,
+                })
             }
         }
     }
@@ -691,13 +695,38 @@ impl ActiveMailbox {
     }
 }
 
+/// What a pass left to say about a mailbox: the first few distinct problems, in words for the
+/// status line. Empty when nothing went wrong.
+fn summarize(problems: &[String]) -> Option<String> {
+    let mut distinct: Vec<&str> = Vec::new();
+    for p in problems {
+        if !distinct.contains(&p.as_str()) {
+            distinct.push(p);
+        }
+    }
+    if distinct.is_empty() {
+        return None;
+    }
+    let mut text = distinct
+        .iter()
+        .take(3)
+        .copied()
+        .collect::<Vec<_>>()
+        .join("; ");
+    if distinct.len() > 3 {
+        text.push_str(&format!("; and {} more", distinct.len() - 3));
+    }
+    Some(text.chars().take(500).collect())
+}
+
 /// The longest one mailbox may take to fetch its mail, so a stuck server cannot stop the pass (and
 /// the heartbeat, outbox and SLA work behind it).
 pub const POLL_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(120);
 
 /// Fetches the mail of every active mailbox that receives, and records per mailbox when it was
-/// tried and whether it worked. One failing mailbox does not stop the others. Returns the number
-/// of e-mails ingested.
+/// tried and whether it worked. One failing mailbox does not stop the others. A mailbox that
+/// could be read to its end is "ok" even when it names messages it had to skip; those are shown
+/// as its error. Returns the number of e-mails ingested.
 pub async fn poll_all(
     db: &PgPool,
     mailboxes: &[ActiveMailbox],
@@ -706,31 +735,38 @@ pub async fn poll_all(
 ) -> usize {
     let mut total = 0;
     for m in mailboxes.iter().filter(|m| m.inbound_enabled) {
-        let result = match tokio::time::timeout(POLL_TIMEOUT, m.poll(db, graph, secrets)).await {
+        let polled = match tokio::time::timeout(POLL_TIMEOUT, m.poll(db, graph, secrets)).await {
             Ok(r) => r,
             Err(_) => Err(anyhow::anyhow!(
                 "fetching mail took longer than {} seconds",
                 POLL_TIMEOUT.as_secs()
             )),
         };
-        let error = match &result {
-            Ok(n) => {
-                total += n;
-                None
+        let (error, complete) = match polled {
+            Ok(polled) => {
+                total += polled.ingested;
+                for p in &polled.problems {
+                    tracing::warn!(mailbox = %m.name, problem = %p, "fetching mail");
+                }
+                (summarize(&polled.problems), polled.complete)
             }
             Err(e) => {
                 tracing::error!(mailbox = %m.name, error = ?e, "fetching mail failed");
                 // The whole chain: the first line alone ("connecting to IMAP server") says too little.
-                Some(format!("{e:#}").chars().take(500).collect::<String>())
+                (
+                    Some(format!("{e:#}").chars().take(500).collect::<String>()),
+                    false,
+                )
             }
         };
         if let Err(e) = sqlx::query(
             "UPDATE helpdesk.mailboxes SET last_poll_at = now(), last_error = $2,
-                    last_ok_at = CASE WHEN $2 IS NULL THEN now() ELSE last_ok_at END
+                    last_ok_at = CASE WHEN $3 THEN now() ELSE last_ok_at END
              WHERE id = $1",
         )
         .bind(m.id)
         .bind(&error)
+        .bind(complete)
         .execute(db)
         .await
         {
@@ -738,6 +774,47 @@ pub async fn poll_all(
         }
     }
     total
+}
+
+/// Runs the real round trip of [`GraphClient::check_mailbox`] against the active Microsoft 365
+/// mailbox of this name (`tradocraft-worker check-mailbox`). An administrator asks for it; nothing
+/// runs it by itself.
+pub async fn check_graph_mailbox(
+    db: &PgPool,
+    name: &str,
+    graph: &GraphClient,
+    secrets: SecretLookup<'_>,
+    options: &CheckOptions,
+) -> anyhow::Result<CheckReport> {
+    let all = load_active(db).await?;
+    let matching: Vec<&ActiveMailbox> = all
+        .iter()
+        .filter(|m| m.name.eq_ignore_ascii_case(name.trim()))
+        .collect();
+    // Names are only unique within a company: never send through another company's mailbox.
+    anyhow::ensure!(
+        matching.len() <= 1,
+        "more than one active mailbox is named \"{name}\" ({}): rename one of them first",
+        matching
+            .iter()
+            .map(|m| format!("{} of company {}", m.address, m.company_id))
+            .collect::<Vec<_>>()
+            .join("; ")
+    );
+    let m = matching.first().copied().ok_or_else(|| {
+        let names: Vec<&str> = all.iter().map(|m| m.name.as_str()).collect();
+        anyhow::anyhow!(
+            "no active mailbox is named \"{name}\" (active: {})",
+            names.join(", ")
+        )
+    })?;
+    anyhow::ensure!(
+        m.kind == "graph",
+        "the mailbox \"{}\" is an IMAP/SMTP mailbox: this check is for Microsoft 365 mailboxes",
+        m.name
+    );
+    let graph_mailbox = m.graph(m.secret(secrets, None)?)?;
+    Ok(graph.check_mailbox(&graph_mailbox, options).await)
 }
 
 /// One transport per active mailbox, or why it cannot send (e.g. the secret is missing): an

@@ -14811,7 +14811,7 @@ abstract class AppLocalizations {
   /// No description provided for @mailboxError.
   ///
   /// In en, this message translates to:
-  /// **'Fetching e-mail failed: {error}'**
+  /// **'Problem fetching e-mail: {error}'**
   String mailboxError(String error);
 
   /// No description provided for @mailboxDeleteConfirm.

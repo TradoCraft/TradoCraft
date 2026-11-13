@@ -2618,6 +2618,6 @@
   "mailboxSendOnly": "Nur Versand",
   "mailboxNeverPolled": "Noch keine E-Mails abgerufen",
   "mailboxLastOk": "E-Mails zuletzt abgerufen am {when}",
-  "mailboxError": "Abrufen der E-Mails fehlgeschlagen: {error}",
+  "mailboxError": "Problem beim Abrufen der E-Mails: {error}",
   "mailboxDeleteConfirm": "Das Postfach {name} entfernen? Die Tickets bleiben erhalten. Antworten darauf gehen dann über das Standardpostfach."
 }
