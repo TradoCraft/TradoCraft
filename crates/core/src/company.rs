@@ -42,6 +42,22 @@ pub async fn get_company<'e>(db: impl PgExecutor<'e>, id: Uuid) -> Result<Compan
     .await
 }
 
+/// The language to address a user in: their own, else the company's default.
+pub async fn user_language<'e>(
+    db: impl PgExecutor<'e>,
+    company_id: Uuid,
+    user_id: Uuid,
+) -> Result<String, sqlx::Error> {
+    sqlx::query_scalar(
+        "SELECT coalesce(u.language, c.default_language)::text
+         FROM core.users u, core.companies c WHERE u.id = $1 AND c.id = $2",
+    )
+    .bind(user_id)
+    .bind(company_id)
+    .fetch_one(db)
+    .await
+}
+
 #[derive(Debug, Serialize, FromRow, ToSchema)]
 pub struct Membership {
     pub company_id: Uuid,

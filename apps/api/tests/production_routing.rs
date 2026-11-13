@@ -5,7 +5,7 @@
 mod common;
 
 use axum::http::{Method, StatusCode};
-use common::{call, dec, setup};
+use common::{call, dec, raw, setup, Who};
 use rust_decimal::Decimal;
 use serde_json::{json, Value};
 use sqlx::PgPool;
@@ -3101,4 +3101,276 @@ async fn an_order_says_when_a_cost_is_missing(db: PgPool) {
         "planned_cost",
     );
     assert_eq!(c.1, q("0"));
+}
+
+// ---- The traveller PDF (ADR 0060) ----
+
+async fn pdf(
+    e: &Env,
+    who: &str,
+    po: &str,
+    query: &str,
+) -> (StatusCode, axum::http::HeaderMap, Vec<u8>) {
+    raw(
+        &e.app,
+        Who::Staff(who),
+        Method::GET,
+        &format!("/api/v1/production-orders/{po}/pdf{query}"),
+        None,
+    )
+    .await
+}
+
+/// The text of a PDF; fails when pdftotext (poppler-utils) is missing so it never passes unchecked.
+fn pdf_text(bytes: &[u8]) -> String {
+    let dir = std::env::temp_dir().join(format!("traveller-{}-{}", std::process::id(), uid()));
+    std::fs::create_dir_all(&dir).unwrap();
+    std::fs::write(dir.join("t.pdf"), bytes).unwrap();
+    let out = std::process::Command::new("pdftotext")
+        .arg(dir.join("t.pdf"))
+        .arg("-")
+        .output()
+        .expect("pdftotext (poppler-utils) must be installed to check the traveller");
+    let _ = std::fs::remove_dir_all(&dir);
+    String::from_utf8_lossy(&out.stdout).to_string()
+}
+
+impl Env {
+    /// A confirmed order of the frame whose line carries an internal production remark.
+    async fn order_with_remark(&self, quantity: &str, remark: &str) -> (String, String) {
+        let (status, qn) = post(
+            &self.app,
+            SALES,
+            "/quotations",
+            json!({ "customer_id": ALPHA, "lines": [{ "product_id": FRAME, "quantity": quantity, "production_remark": remark }] }),
+        )
+        .await;
+        assert_eq!(status, StatusCode::CREATED, "{qn}");
+        let qid = id(&qn);
+        post(
+            &self.app,
+            SALES,
+            &format!("/quotations/{qid}/send"),
+            json!({}),
+        )
+        .await;
+        let (_, o) = post(
+            &self.app,
+            SALES,
+            &format!("/quotations/{qid}/convert"),
+            json!({ "customer_reference": "PO" }),
+        )
+        .await;
+        let order = id(&o["order"]);
+        post(
+            &self.app,
+            SALES,
+            &format!("/orders/{order}/send"),
+            json!({}),
+        )
+        .await;
+        let (status, o) = post(
+            &self.app,
+            SALES,
+            &format!("/orders/{order}/confirm"),
+            json!({}),
+        )
+        .await;
+        assert_eq!(status, StatusCode::OK, "{o}");
+        (order, o["lines"][0]["id"].as_str().unwrap().into())
+    }
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn the_traveller_is_a_pdf_for_everyone_who_sees_production(db: PgPool) {
+    let e = env(db).await;
+    e.frame_parts().await;
+    e.frame_routing().await;
+    let (order, line) = e
+        .order_with_remark("2", "SECRETSHOPNOTE paint RAL 5010")
+        .await;
+    let (_, po) = e
+        .release(&order, &line, json!({ "start_date": "2027-03-01" }))
+        .await;
+    let n = id(&po);
+    assert_eq!(po["production_remark"], "SECRETSHOPNOTE paint RAL 5010");
+
+    for who in [PLANNER, STORES, SALES, VIEWER, ADMIN, PM] {
+        let (status, headers, bytes) = pdf(&e, who, &n, "").await;
+        assert_eq!(status, StatusCode::OK, "{who}");
+        assert_eq!(headers["content-type"], "application/pdf");
+        assert!(bytes.starts_with(b"%PDF"), "{who}");
+        let disposition = headers["content-disposition"].to_str().unwrap();
+        assert!(
+            disposition.contains(po["number"].as_str().unwrap()),
+            "{disposition}"
+        );
+        assert!(disposition.contains(".pdf"));
+    }
+    for lang in ["nl", "fr", "en", "de", "es", "DE"] {
+        let (status, _, bytes) = pdf(&e, PLANNER, &n, &format!("?lang={lang}")).await;
+        assert_eq!(status, StatusCode::OK, "{lang}");
+        assert!(bytes.starts_with(b"%PDF"), "{lang}");
+    }
+    assert_eq!(
+        pdf(&e, PLANNER, &n, "?lang=xx").await.0,
+        StatusCode::UNPROCESSABLE_ENTITY
+    );
+    assert_eq!(pdf(&e, TECHNICIAN, &n, "").await.0, StatusCode::FORBIDDEN);
+    assert_eq!(pdf(&e, PLANNER, &uid(), "").await.0, StatusCode::NOT_FOUND);
+
+    // What is printed: the order, the product, the components, the operations with their work
+    // centres and dates, the customer and the internal remark.
+    let (_, _, bytes) = pdf(&e, PLANNER, &n, "?lang=en").await;
+    let text = pdf_text(&bytes);
+    for expected in [
+        "Production order",
+        po["number"].as_str().unwrap(),
+        po["order_number"].as_str().unwrap(),
+        "FRAME-A",
+        "PROFILE-40",
+        "BOLT-M8",
+        "14,3",
+        "Cut",
+        "Weld",
+        "SAW",
+        "WELD",
+        "01/03/2027",
+        "Planned (min)",
+        "SECRETSHOPNOTE paint RAL 5010",
+        "Normal",
+    ] {
+        assert!(text.contains(expected), "missing {expected:?} in:\n{text}");
+    }
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn the_traveller_never_prints_cost_not_even_for_those_who_may_see_it(db: PgPool) {
+    let e = env(db).await;
+    e.frame_parts().await;
+    e.standard_costs().await;
+    for (product, cost) in [(PROFILE, "7777.77"), (BOLT, "8888.88")] {
+        sqlx::query("UPDATE products.products SET standard_cost = $2::numeric WHERE id = $1::uuid")
+            .bind(product)
+            .bind(cost)
+            .execute(&e.db)
+            .await
+            .unwrap();
+    }
+    let saw = id(&e
+        .work_centre("SAW", json!({ "cost_per_hour": "6666.66" }))
+        .await);
+    let draft = e.draft_bom(FRAME, json!({})).await;
+    e.set_routing(&draft, vec![op("Cut", &saw, 0, "1")]).await;
+    post(&e.app, PM, &format!("/boms/{draft}/activate"), json!({})).await;
+    let po = e.build_for_stock(FRAME, "1", json!({})).await;
+    let n = id(&po);
+    // The cost is on the order for the administrator ...
+    assert!(!e.production_order(ADMIN, &n).await["planned_cost"].is_null());
+    // ... and in no language on the paper.
+    for lang in ["nl", "fr", "en", "de", "es"] {
+        let (status, _, bytes) = pdf(&e, ADMIN, &n, &format!("?lang={lang}")).await;
+        assert_eq!(status, StatusCode::OK);
+        let text = pdf_text(&bytes);
+        for secret in ["7777", "7.777", "8888", "8.888", "6666", "6.666"] {
+            assert!(
+                !text.contains(secret),
+                "{lang}: {secret} printed in:\n{text}"
+            );
+        }
+        assert!(text.contains("PROFILE-40"), "{lang}");
+    }
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn the_traveller_speaks_the_language_of_the_user_else_of_the_company(db: PgPool) {
+    let e = env(db).await;
+    e.frame_parts().await;
+    let po = e.build_for_stock(FRAME, "1", json!({})).await;
+    let n = id(&po);
+    let title = |lang: &str| match lang {
+        "nl" => "Productieorder",
+        "fr" => "Ordre de fabrication",
+        "en" => "Production order",
+        "de" => "Fertigungsauftrag",
+        "es" => "Orden de producción",
+        other => panic!("{other}"),
+    };
+    let text_of = |lang: &'static str| {
+        let e = &e;
+        let n = n.clone();
+        async move { pdf_text(&pdf(e, PLANNER, &n, lang).await.2) }
+    };
+    // Without a language of their own the company's default is used.
+    let company: String = sqlx::query_scalar("SELECT default_language::text FROM core.companies")
+        .fetch_one(&e.db)
+        .await
+        .unwrap();
+    assert!(text_of("").await.contains(title(&company)));
+    // The user's own language wins; ?lang wins over both.
+    sqlx::query("UPDATE core.users SET language = 'fr' WHERE email = $1")
+        .bind(PLANNER)
+        .execute(&e.db)
+        .await
+        .unwrap();
+    assert!(text_of("").await.contains("Ordre de fabrication"));
+    let german = text_of("?lang=de").await;
+    assert!(german.contains("Fertigungsauftrag"), "{german}");
+    assert!(!german.contains("Ordre de fabrication"));
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn a_traveller_without_a_routing_or_an_order_still_prints(db: PgPool) {
+    let e = env(db).await;
+    e.frame_parts().await;
+    let po = e.build_for_stock(FRAME, "2", json!({})).await;
+    let (status, _, bytes) = pdf(&e, PLANNER, &id(&po), "?lang=en").await;
+    assert_eq!(status, StatusCode::OK);
+    let text = pdf_text(&bytes);
+    assert!(text.contains("Components"), "{text}");
+    assert!(
+        !text.contains("Operations"),
+        "no routing, no operations: {text}"
+    );
+    assert!(!text.contains("Sales order"), "built for stock: {text}");
+    // Subassemblies are listed on the parent.
+    let unit = e
+        .build_for_stock(UNIT_100, "1", json!({ "auto_release_subassemblies": true }))
+        .await;
+    let (_, _, bytes) = pdf(&e, PLANNER, &id(&unit), "?lang=en").await;
+    let text = pdf_text(&bytes);
+    assert!(
+        text.contains("Subassemblies with their own order"),
+        "{text}"
+    );
+    assert!(text.contains("FRAME-A"), "{text}");
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn the_traveller_of_another_company_is_not_found(db: PgPool) {
+    let e = env(db).await;
+    e.frame_parts().await;
+    let po = e.build_for_stock(FRAME, "1", json!({})).await;
+    let other = Uuid::now_v7();
+    sqlx::query("INSERT INTO core.companies (id, name, country_code, currency) VALUES ($1, 'Other BV', 'BE', 'EUR')")
+        .bind(other)
+        .execute(&e.db)
+        .await
+        .unwrap();
+    let user = Uuid::now_v7();
+    sqlx::query("INSERT INTO core.users (id, email, display_name) VALUES ($1, 'other@example.com', 'Other')")
+        .bind(user)
+        .execute(&e.db)
+        .await
+        .unwrap();
+    sqlx::query("INSERT INTO core.user_companies (user_id, company_id, roles, is_default) VALUES ($1, $2, '{admin}', true)")
+        .bind(user)
+        .bind(other)
+        .execute(&e.db)
+        .await
+        .unwrap();
+    assert_eq!(
+        pdf(&e, "other@example.com", &id(&po), "").await.0,
+        StatusCode::NOT_FOUND
+    );
 }

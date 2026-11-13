@@ -121,6 +121,9 @@ pub struct ProductionOrder {
     pub sub_orders: Vec<ProductionSubOrder>,
     /// The number of the production order this one is a subassembly of.
     pub parent_order_number: Option<String>,
+    /// The internal production remark of the sales order line it builds for (never printed for
+    /// the customer).
+    pub production_remark: Option<String>,
     /// What the order is planned to cost: components at the standard cost frozen at release and
     /// operations at their planned minutes. Only for users who may see cost.
     pub planned_cost: Option<ProductionOrderCost>,
@@ -347,6 +350,15 @@ pub(crate) async fn load_order(
     .bind(company_id)
     .fetch_all(&mut *conn)
     .await?;
+    let production_remark: Option<String> = match extra.order_line_id {
+        Some(line) => {
+            sqlx::query_scalar("SELECT production_remark FROM sales.order_lines WHERE id = $1")
+                .bind(line)
+                .fetch_optional(&mut *conn)
+                .await?
+        }
+        None => None,
+    };
     let parent_order_number: Option<String> =
         match extra.parent_order_id {
             Some(parent) => sqlx::query_scalar(
@@ -379,6 +391,7 @@ pub(crate) async fn load_order(
         operations,
         sub_orders,
         parent_order_number,
+        production_remark,
         planned_cost,
         actual_cost,
         scheduled_end,
