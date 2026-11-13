@@ -103,12 +103,18 @@ void main() {
   testWidgets('lists suppliers (first segment), filters', (
     tester,
   ) async {
-    final http = FakeHttp({
+    // The search is the server's (ignoring case and accents, ADR 0057): the stand-in filters by
+    // the `q` it was sent, like the API does.
+    late final FakeHttp http;
+    http = FakeHttp({
       'GET /api/v1/me': (_) => meJson(['purchasing.read']),
-      'GET /api/v1/suppliers': (_) => [
-        _supplier(),
-        _supplier(id: 's2', name: 'Bolt Works', code: 'SUP-002'),
-      ],
+      'GET /api/v1/suppliers': (_) {
+        final q = (http.queries.last['q'] as String?)?.toLowerCase();
+        return [
+          _supplier(),
+          _supplier(id: 's2', name: 'Bolt Works', code: 'SUP-002'),
+        ].where((s) => q == null || '${s['name']}'.toLowerCase().contains(q)).toList();
+      },
     });
     await _app(tester, http, initial: '/purchasing');
     expect(find.text('Acme Motors'), findsOneWidget);
@@ -124,6 +130,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Acme Motors'), findsNothing);
     expect(find.text('Bolt Works'), findsOneWidget);
+    expect(http.queries.last['q'], 'bolt', reason: 'the search goes to the server');
+    expect(http.queries.first['q'], isNull, reason: 'no search, no parameter');
 
     await tester.tap(find.byKey(const ValueKey('suppliers-active-only')));
     await tester.pumpAndSettle();

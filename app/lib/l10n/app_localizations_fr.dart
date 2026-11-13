@@ -8208,6 +8208,100 @@ class AppLocalizationsFr extends AppLocalizations {
   String get workerBannerSemantics => 'Traitement en arrière-plan';
 
   @override
+  String get vatLookup => 'Rechercher dans VIES';
+
+  @override
+  String get vatValid =>
+      'Le format et les chiffres de contrôle sont corrects. Cela ne prouve pas que le numéro est enregistré.';
+
+  @override
+  String get vatFormatOk =>
+      'Le format est correct. Les chiffres de contrôle de ce pays ne sont pas vérifiés ici.';
+
+  @override
+  String get vatBadFormat =>
+      'Ceci n\'a pas la forme d\'un numéro de TVA de ce pays.';
+
+  @override
+  String get vatBadChecksum =>
+      'Les chiffres de contrôle ne correspondent pas : vérifiez s\'il y a une faute de frappe.';
+
+  @override
+  String get vatNotChecked =>
+      'Ce n\'est pas un numéro de TVA de l\'UE : il n\'est pas vérifié.';
+
+  @override
+  String vatDuplicates(String records) {
+    return 'Également utilisé par : $records';
+  }
+
+  @override
+  String vatInactive(String record) {
+    return '$record (inactif)';
+  }
+
+  @override
+  String get viesValid => 'Enregistré et actif dans VIES.';
+
+  @override
+  String get viesInvalid => 'VIES ne connaît pas ce numéro.';
+
+  @override
+  String viesUnavailable(String reason) {
+    return 'VIES n\'a pas pu répondre ($reason). Saisissez les données à la main.';
+  }
+
+  @override
+  String get viesDisabled => 'La recherche VIES est désactivée sur ce serveur.';
+
+  @override
+  String get viesFilled => 'Champs vides remplis depuis VIES.';
+
+  @override
+  String get viesNoDetails => 'L\'État membre ne communique ni nom ni adresse.';
+
+  @override
+  String get adminAuditTrail => 'Journal d\'audit';
+
+  @override
+  String get auditRecordType => 'Type d\'enregistrement';
+
+  @override
+  String get auditAllRecords => 'Tous';
+
+  @override
+  String get auditAction => 'Action';
+
+  @override
+  String get auditFrom => 'Du';
+
+  @override
+  String get auditTo => 'Au';
+
+  @override
+  String get auditClearDates => 'Réinitialiser les dates';
+
+  @override
+  String get auditSystem => 'Système';
+
+  @override
+  String get auditNoEvents => 'Aucun événement trouvé.';
+
+  @override
+  String get auditLoadMore => 'Charger les événements plus anciens';
+
+  @override
+  String get auditHistory => 'Historique';
+
+  @override
+  String auditHistoryTitle(String name) {
+    return 'Historique de $name';
+  }
+
+  @override
+  String get auditNoDetails => 'Aucun détail n\'a été enregistré.';
+
+  @override
   String get mailboxes => 'Boîtes aux lettres';
 
   @override

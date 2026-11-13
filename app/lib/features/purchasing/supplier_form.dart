@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/api.dart';
 import '../../l10n/l10n.dart';
+import '../../shared/vat_field.dart';
 import '../tutorial/targets.dart';
 
 /// The editable fields of a supplier: the controllers behind the create dialog and the edit mode
@@ -129,7 +130,7 @@ class SupplierDraft {
 }
 
 /// The input fields of a [SupplierDraft], laid out in wrapping rows.
-class SupplierFields extends StatelessWidget {
+class SupplierFields extends ConsumerWidget {
   /// Shows the fields of [draft]; [showActive] adds the active switch (existing suppliers).
   const SupplierFields({
     super.key,
@@ -137,7 +138,12 @@ class SupplierFields extends StatelessWidget {
     this.showActive = false,
     this.onActiveChanged,
     this.enabled = true,
+    this.supplierId,
   });
+
+  /// The supplier being edited, so that its own VAT number is not reported as a duplicate; null
+  /// when creating one.
+  final String? supplierId;
 
   /// The draft being edited.
   final SupplierDraft draft;
@@ -170,8 +176,18 @@ class SupplierFields extends StatelessWidget {
     ),
   );
 
+  /// Fills the name from VIES when it is still empty. Suppliers keep no address here.
+  bool _fillFromVies(ViesLookup v) {
+    final name = v.name;
+    if (name != null && name.isNotEmpty && draft.name.text.trim().isEmpty) {
+      draft.name.text = name;
+      return true;
+    }
+    return false;
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     return Wrap(
       spacing: 12,
@@ -188,7 +204,29 @@ class SupplierFields extends StatelessWidget {
           width: 160,
           type: TextInputType.number,
         ),
-        _field('taxid', draft.taxId, l.vatNumber),
+        SizedBox(
+          width: 340,
+          child: VatNumberField(
+            fieldKey: const ValueKey('supplier-taxid'),
+            controller: draft.taxId,
+            label: l.vatNumber,
+            enabled: enabled,
+            check: ({required String number, required bool lookup}) {
+              final country = draft.country.text.trim().toUpperCase();
+              return ref
+                  .read(apiProvider)
+                  .purchasing
+                  .checkSupplierVat(
+                    vatNumber: number,
+                    countryCode: country.isEmpty ? null : country,
+                    excludeId: supplierId,
+                    lookup: lookup,
+                  );
+            },
+            // The lookup makes the server call VIES: for those who may change suppliers.
+            onLookup: can(ref, 'purchasing.write') ? _fillFromVies : null,
+          ),
+        ),
         _field('contact', draft.contact, l.contactPerson),
         _field('email', draft.email, l.email),
         _field('phone', draft.phone, l.phone),

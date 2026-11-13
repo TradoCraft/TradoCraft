@@ -20,22 +20,16 @@ class _SuppliersListState extends ConsumerState<SuppliersList> {
   final _list = GlobalKey<EntityListState<Supplier>>();
   bool _activeOnly = true;
 
-  /// The API returns the whole (small) supplier list, so search and paging happen here.
+  /// The API returns the whole (small) matching supplier list, so paging happens here. The search
+  /// itself is the server's: it ignores case and accents ("Muller" finds "Müller", ADR 0057).
   Future<(List<Supplier>, int)> _load(String? q, int offset, int limit) async {
-    final all = await ref
+    final hits = await ref
         .read(apiProvider)
         .purchasing
-        .listSuppliers(activeOnly: _activeOnly);
-    final needle = q?.toLowerCase();
-    final hits = needle == null
-        ? all
-        : [
-            for (final s in all)
-              if ('${s.name} ${s.code} ${s.email} ${s.contactPerson}'
-                  .toLowerCase()
-                  .contains(needle))
-                s,
-          ];
+        .listSuppliers(
+          activeOnly: _activeOnly,
+          q: (q == null || q.trim().isEmpty) ? null : q.trim(),
+        );
     final end = (offset + limit).clamp(0, hits.length);
     return (hits.sublist(offset.clamp(0, end), end), hits.length);
   }

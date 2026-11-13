@@ -7,6 +7,7 @@ import '../../l10n/l10n.dart';
 import '../../shared/actions.dart';
 import '../../shared/app_icons.dart';
 import '../../shared/format.dart';
+import '../../shared/record_history.dart';
 import 'supplier_form.dart';
 import 'supplier_price_dialog.dart';
 import '../tutorial/targets.dart';
@@ -189,6 +190,7 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
                 ],
               ),
             ),
+            RecordHistoryButton(entity: 'supplier', id: s.id, title: s.name),
             if (canWrite && !editing)
               OutlinedButton.icon(
                 key: const ValueKey('supplier-edit'),
@@ -213,6 +215,7 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
         if (editing) ...[
           SupplierFields(
             draft: _draft!,
+            supplierId: widget.id,
             showActive: true,
             enabled: !_busy,
             onActiveChanged: (v) {

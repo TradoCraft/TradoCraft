@@ -59,3 +59,6 @@ accepted one; mark superseded records as such.
 | [0054](0054-helpdesk-mailboxes.md) | Helpdesk mailboxes: several per company, Microsoft Graph (Exchange Online) or IMAP/SMTP, secrets only in the worker environment, replies through the ticket's mailbox | Accepted |
 | [0055](0055-configurable-identity-providers.md) | Configurable identity providers: per installation, selected by issuer, hardened verifier, e-mail trust policies, admin API with lock-out safeguards | Accepted |
 | [0056](0056-backup-and-restore.md) | Backup and restore: physical base backups with `scripts/backupctl`, grandfather-father-son retention, verify by restoring, restore drill through a clone | Accepted |
+| [0057](0057-accent-insensitive-search.md) | Accent-insensitive search: `core.search_fold` (lower and `unaccent`) on column and text, trigram indexes, customers, contacts, products and suppliers | Accepted |
+| [0058](0058-vat-number-validation-and-lookup.md) | VAT numbers: EU format and check-digit validation, duplicate warning through a comparison key, VIES lookup that pre-fills and never blocks | Accepted (live VIES request unverified) |
+| [0059](0059-audit-trail-viewer.md) | Audit trail viewer: `audit.view` for administrators, cursor-paged endpoints, field-level changes, Admin tab and History button | Accepted |

@@ -1,7 +1,9 @@
 use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
-use axum::Json;
+use axum::{Extension, Json};
 use serde::Deserialize;
+use tradocraft_core::vat_check::{self, VatCheck, VatCheckParams};
+use tradocraft_core::vies::ViesConfig;
 use tradocraft_core::{AppResult, AppState, CurrentUser, Permission};
 use utoipa::IntoParams;
 use utoipa_axum::router::OpenApiRouter;
@@ -22,6 +24,8 @@ type ErrorBody = tradocraft_core::error::ErrorBody;
 #[derive(Debug, Deserialize, IntoParams)]
 pub struct ListSuppliersParams {
     pub active_only: Option<bool>,
+    /// Searches name, code, e-mail address and contact person, ignoring case and accents.
+    pub q: Option<String>,
 }
 
 /// Query filters for listing purchase orders.
@@ -55,9 +59,46 @@ async fn list_suppliers(
         &mut conn,
         user.company_id,
         params.active_only.unwrap_or(false),
+        params.q.as_deref(),
     )
     .await?;
     Ok(Json(list))
+}
+
+/// Checks a supplier's VAT number for the supplier form: the format and check digits, other
+/// suppliers of the company with the same number, and with `lookup=true` the name and address VIES
+/// has for it (ADR 0058). Advice only; nothing is stored. The lookup needs `purchasing.write`.
+#[utoipa::path(
+    get,
+    path = "/suppliers/vat-check",
+    tag = "purchasing",
+    operation_id = "check_supplier_vat",
+    params(VatCheckParams),
+    responses(
+        (status = 200, body = VatCheck),
+        (status = 401, body = ErrorBody),
+        (status = 403, body = ErrorBody)
+    )
+)]
+async fn check_supplier_vat(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Extension(vies): Extension<ViesConfig>,
+    Query(p): Query<VatCheckParams>,
+) -> AppResult<Json<VatCheck>> {
+    user.require(Permission::PurchasingRead)?;
+    let lookup = p.lookup.unwrap_or(false);
+    if lookup {
+        user.require(Permission::PurchasingWrite)?;
+    }
+    let a = vat_check::assess(&p.vat_number, p.country_code.as_deref());
+    let duplicates = if a.has_number() {
+        let mut conn = state.db.acquire().await?;
+        suppliers::vat_duplicates(&mut conn, user.company_id, &a, p.exclude_id).await?
+    } else {
+        Vec::new()
+    };
+    Ok(Json(a.build(duplicates, lookup.then_some(&vies)).await))
 }
 
 #[utoipa::path(
@@ -504,6 +545,7 @@ async fn get_receipt(
 /// Registers all purchasing routes with their OpenAPI declarations.
 pub fn router() -> OpenApiRouter<AppState> {
     OpenApiRouter::new()
+        .routes(routes!(check_supplier_vat))
         .routes(routes!(list_suppliers, create_supplier))
         .routes(routes!(get_supplier, update_supplier))
         .routes(routes!(list_supplier_products))

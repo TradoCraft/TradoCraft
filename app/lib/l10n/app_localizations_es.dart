@@ -8198,6 +8198,102 @@ class AppLocalizationsEs extends AppLocalizations {
   String get workerBannerSemantics => 'Procesamiento en segundo plano';
 
   @override
+  String get vatLookup => 'Buscar en VIES';
+
+  @override
+  String get vatValid =>
+      'El formato y los dígitos de control son correctos. Eso no demuestra que el número esté registrado.';
+
+  @override
+  String get vatFormatOk =>
+      'El formato es correcto. Los dígitos de control de este país no se verifican aquí.';
+
+  @override
+  String get vatBadFormat =>
+      'Esto no tiene la forma de un NIF-IVA de este país.';
+
+  @override
+  String get vatBadChecksum =>
+      'Los dígitos de control no coinciden: revise si hay un error de escritura.';
+
+  @override
+  String get vatNotChecked =>
+      'No es un NIF-IVA de la UE, por lo que no se comprueba.';
+
+  @override
+  String vatDuplicates(String records) {
+    return 'También lo usa: $records';
+  }
+
+  @override
+  String vatInactive(String record) {
+    return '$record (inactivo)';
+  }
+
+  @override
+  String get viesValid => 'Registrado y activo en VIES.';
+
+  @override
+  String get viesInvalid => 'VIES no conoce este número.';
+
+  @override
+  String viesUnavailable(String reason) {
+    return 'VIES no pudo responder ($reason). Introduzca los datos a mano.';
+  }
+
+  @override
+  String get viesDisabled =>
+      'La consulta VIES está desactivada en este servidor.';
+
+  @override
+  String get viesFilled => 'Campos vacíos rellenados desde VIES.';
+
+  @override
+  String get viesNoDetails =>
+      'El Estado miembro no divulga nombre ni dirección.';
+
+  @override
+  String get adminAuditTrail => 'Registro de auditoría';
+
+  @override
+  String get auditRecordType => 'Tipo de registro';
+
+  @override
+  String get auditAllRecords => 'Todos';
+
+  @override
+  String get auditAction => 'Acción';
+
+  @override
+  String get auditFrom => 'Desde';
+
+  @override
+  String get auditTo => 'Hasta';
+
+  @override
+  String get auditClearDates => 'Quitar las fechas';
+
+  @override
+  String get auditSystem => 'Sistema';
+
+  @override
+  String get auditNoEvents => 'No se encontraron eventos.';
+
+  @override
+  String get auditLoadMore => 'Cargar eventos anteriores';
+
+  @override
+  String get auditHistory => 'Historial';
+
+  @override
+  String auditHistoryTitle(String name) {
+    return 'Historial de $name';
+  }
+
+  @override
+  String get auditNoDetails => 'No se registraron detalles.';
+
+  @override
   String get mailboxes => 'Buzones';
 
   @override

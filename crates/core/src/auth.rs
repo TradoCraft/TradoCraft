@@ -167,10 +167,15 @@ pub enum Permission {
     /// Configure the identity providers of the installation (ADR 0055). Also requires the admin
     /// role in the installation's primary company.
     IdentityAdmin,
+    /// See the audit trail of the company: the history of a record and the company-wide view
+    /// (ADR 0059). The trail holds what every module recorded, so it is for administrators. Named
+    /// `.view` and not `.read` on purpose: every `.read` permission belongs to the read-only
+    /// viewer role (see `viewer_is_read_only`), and the viewer must not see the trail.
+    AuditView,
 }
 
 impl Permission {
-    pub const ALL: [Permission; 70] = [
+    pub const ALL: [Permission; 71] = [
         Permission::CustomersRead,
         Permission::CustomersWrite,
         Permission::ProductsRead,
@@ -241,6 +246,7 @@ impl Permission {
         Permission::ReportsRead,
         Permission::ReportsWrite,
         Permission::IdentityAdmin,
+        Permission::AuditView,
     ];
 
     pub fn as_str(self) -> &'static str {
@@ -315,6 +321,7 @@ impl Permission {
             Permission::ReportsRead => "reports.read",
             Permission::ReportsWrite => "reports.write",
             Permission::IdentityAdmin => "identity.admin",
+            Permission::AuditView => "audit.view",
         }
     }
 }
@@ -1363,6 +1370,14 @@ mod tests {
                 "{r}"
             );
         }
+    }
+
+    #[test]
+    fn only_admins_view_the_audit_trail() {
+        for r in ROLES {
+            assert_eq!(role_grants(r, Permission::AuditView), r == "admin", "{r}");
+        }
+        assert_eq!(Permission::AuditView.as_str(), "audit.view");
     }
 
     #[test]

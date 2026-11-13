@@ -354,9 +354,12 @@ class _PurchasingClient implements PurchasingClient {
   }
 
   @override
-  Future<List<Supplier>> listSuppliers({bool? activeOnly}) async {
+  Future<List<Supplier>> listSuppliers({bool? activeOnly, String? q}) async {
     final _extra = <String, dynamic>{};
-    final queryParameters = <String, dynamic>{r'active_only': activeOnly};
+    final queryParameters = <String, dynamic>{
+      r'active_only': activeOnly,
+      r'q': q,
+    };
     queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
@@ -404,6 +407,44 @@ class _PurchasingClient implements PurchasingClient {
     late Supplier _value;
     try {
       _value = Supplier.fromJson(_result.data!);
+    } on Object catch (e, s) {
+      errorLogger?.logError(e, s, _options, response: _result);
+      rethrow;
+    }
+    return _value;
+  }
+
+  @override
+  Future<VatCheck> checkSupplierVat({
+    required String vatNumber,
+    String? countryCode,
+    String? excludeId,
+    bool? lookup,
+  }) async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{
+      r'vat_number': vatNumber,
+      r'country_code': countryCode,
+      r'exclude_id': excludeId,
+      r'lookup': lookup,
+    };
+    queryParameters.removeWhere((k, v) => v == null);
+    final _headers = <String, dynamic>{};
+    const Map<String, dynamic>? _data = null;
+    final _options = _setStreamType<VatCheck>(
+      Options(method: 'GET', headers: _headers, extra: _extra)
+          .compose(
+            _dio.options,
+            '/api/v1/suppliers/vat-check',
+            queryParameters: queryParameters,
+            data: _data,
+          )
+          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
+    );
+    final _result = await _dio.fetch<Map<String, Object?>>(_options);
+    late VatCheck _value;
+    try {
+      _value = VatCheck.fromJson(_result.data!);
     } on Object catch (e, s) {
       errorLogger?.logError(e, s, _options, response: _result);
       rethrow;
