@@ -2715,5 +2715,16 @@
   "todoLinkedItem": "Élément lié",
   "todoFromOwner": "De {name}",
   "todoSubProgress": "{done} sous-tâches sur {total} terminées",
-  "todoReorder": "Glisser pour réordonner"
+  "todoReorder": "Glisser pour réordonner",
+  "tabCustomer": "Client",
+  "todoAdded": "Tâche ajoutée",
+  "todoLinkToScreen": "Lier à l’écran actuel",
+  "todoLinkNotAvailable": "Cet écran n’a pas d’enregistrement à lier.",
+  "todoOpenLink": "Ouvrir l’enregistrement lié",
+  "todoRemoveLink": "Supprimer le lien",
+  "recordNotFound": "Cet enregistrement est introuvable. Il a peut-être été supprimé, ou vous n’y avez pas accès.",
+  "todoForObject": "Tâches de cet enregistrement",
+  "todoForObjectCount": "Tâches de cet enregistrement ({count} ouvertes)",
+  "@todoForObjectCount": {"placeholders": {"count": {"type": "int"}}},
+  "todoForObjectEmpty": "Aucune tâche ouverte pour cet enregistrement."
 }

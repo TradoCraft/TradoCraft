@@ -15383,6 +15383,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Drag to reorder'**
   String get todoReorder;
+
+  /// No description provided for @tabCustomer.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer'**
+  String get tabCustomer;
+
+  /// No description provided for @todoAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'To-do added'**
+  String get todoAdded;
+
+  /// No description provided for @todoLinkToScreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Link to current screen'**
+  String get todoLinkToScreen;
+
+  /// No description provided for @todoLinkNotAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'This screen has no record to link to.'**
+  String get todoLinkNotAvailable;
+
+  /// No description provided for @todoOpenLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the linked record'**
+  String get todoOpenLink;
+
+  /// No description provided for @todoRemoveLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove link'**
+  String get todoRemoveLink;
+
+  /// No description provided for @recordNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'This record was not found. It may have been deleted, or you may not have access to it.'**
+  String get recordNotFound;
+
+  /// No description provided for @todoForObject.
+  ///
+  /// In en, this message translates to:
+  /// **'To-dos for this record'**
+  String get todoForObject;
+
+  /// No description provided for @todoForObjectCount.
+  ///
+  /// In en, this message translates to:
+  /// **'To-dos for this record ({count} open)'**
+  String todoForObjectCount(int count);
+
+  /// No description provided for @todoForObjectEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No open to-dos for this record.'**
+  String get todoForObjectEmpty;
 }
 
 class _AppLocalizationsDelegate
