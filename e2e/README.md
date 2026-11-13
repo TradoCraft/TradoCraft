@@ -8,9 +8,11 @@ completion detection moves it on, so a broken screen or API path stops the run a
 
 ## Run
 
-Needs Typst on the PATH (or `TYPST_BIN`) for the last steps of chapter 9, where the API makes the order
-confirmation PDF: without it the walk ends at "Send order confirmation" and says so. Also needs PostgreSQL running (default `postgresql://tradocraft:tradocraft@localhost`, a superuser or
-a role that can create databases; override with `E2E_PG_URL`), Node 22 and Flutter 3.50.
+Needs Typst on the PATH (or `TYPST_BIN`): from chapter 9's "Send order confirmation" on, the API makes the
+order confirmation PDF. Without it the test **skips** locally and **fails** on CI, so a run that stopped
+short can never count as a pass. Also needs PostgreSQL running (default
+`postgresql://tradocraft:tradocraft@localhost`, a superuser or a role that can create databases; override
+with `E2E_PG_URL`), Node 22 and Flutter 3.50.
 
 ```bash
 cargo build -p tradocraft-api
