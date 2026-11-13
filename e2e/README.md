@@ -8,7 +8,8 @@ completion detection moves it on, so a broken screen or API path stops the run a
 
 ## Run
 
-Needs PostgreSQL running (default `postgresql://tradocraft:tradocraft@localhost`, a superuser or
+Needs Typst on the PATH (or `TYPST_BIN`) for the last steps of chapter 9, where the API makes the order
+confirmation PDF: without it the walk ends at "Send order confirmation" and says so. Also needs PostgreSQL running (default `postgresql://tradocraft:tradocraft@localhost`, a superuser or
 a role that can create databases; override with `E2E_PG_URL`), Node 22 and Flutter 3.50.
 
 ```bash
@@ -21,6 +22,8 @@ cd e2e && npm ci && npx playwright test
 `tutorial` environment (dev auth, demo seed) on port 18080 and serves the web build on 18088.
 `E2E_DUMP=1` writes the accessibility tree and a screenshot of `dump(page, tag)` calls to
 `e2e/dump/`.
+
+CI runs this as the `e2e` job (`.github/workflows/ci.yml`).
 
 ## Driving Flutter web: what we learned
 
@@ -37,3 +40,6 @@ cd e2e && npm ci && npx playwright test
   dialog do not open; the test pauses the narrator around that dialog.
 * The development seed has no warehouse, so chapter 3 ("choose the location MAIN") cannot be
   done in a seeded environment; the test creates the `MAIN` warehouse through the API first.
+* The quantity input of a quotation line has no accessible name, so the test clicks it by position.
+* The Complete dialog of a production order needs a "Put into" location that the tutorial step does
+  not mention.

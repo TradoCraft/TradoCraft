@@ -1,6 +1,15 @@
-import { expect, Locator, Page, test } from '@playwright/test';
+import { expect, Page, test } from '@playwright/test';
+import fs from 'node:fs';
+import path from 'node:path';
 import { API_PORT } from '../playwright.config';
 import { boot, choose, dump, expectStep, field, next, overviewTab, railTo, searchPick, startNextChapter, takeMeThere, typeInto } from './flutter';
+
+/** Whether a Typst binary can be found (TYPST_BIN or on PATH); the server needs it for PDFs. */
+function typstAvailable(): boolean {
+  const names = process.platform === 'win32' ? ['typst.exe'] : ['typst'];
+  const dirs = (process.env.PATH ?? '').split(path.delimiter);
+  return [process.env.TYPST_BIN, ...dirs.flatMap((d) => names.map((n) => path.join(d, n)))].some((p) => p && fs.existsSync(p));
+}
 
 /** Adds a product to the supplier's price list through the "Add product" dialog. */
 async function addSupplierPrice(page: Page, code: string, price: number, leadDays: number, moq: number) {
@@ -377,7 +386,44 @@ test('the whole tutorial, chapter by chapter', async ({ page, request }) => {
     await page.getByRole('button', { name: 'Accepted' }).click();
     await expectStep(page, 'change', 'convert');
     await page.getByRole('button', { name: 'Convert to order' }).click();
-    await page.waitForTimeout(1000);
-    await dump(page, 'convert-dialog');
+    await typeInto(field(page, 'Customer reference'), 'TUT-PO-1');
+    await page.getByRole('alertdialog').getByRole('button', { name: 'OK' }).click();
+    // Converting opens the order, which completes "open the order" by itself.
+    await expectStep(page, 'change', 'sendOrder');
+    await page.getByRole('button', { name: /Send order confirmation/ }).click();
+    if (!typstAvailable()) {
+      // The confirmation PDF is made by the Typst binary; without it the server refuses this step and the
+      // tutorial cannot go on (the step says so itself). CI installs Typst; here the walk ends.
+      test.info().annotations.push({ type: 'stopped', description: 'chapter 9 stops at "Send order confirmation": no typst on PATH' });
+      return;
+    }
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Send' }).click();
+    await expectStep(page, 'change', 'confirm');
+    await page.getByRole('button', { name: 'Confirm on behalf of customer' }).click();
+    await typeInto(page.getByRole('alertdialog').getByRole('textbox').first(), 'confirmed by e-mail');
+    await page.getByRole('alertdialog').getByRole('button', { name: 'OK' }).click();
+    await expectStep(page, 'change', 'release');
+    await railTo(page, 'Production');
+    await overviewTab(page);
+    await page.getByRole('button', { name: 'To release' }).click();
+    await page.getByRole('button', { name: 'Release to production' }).first().click();
+    await expectStep(page, 'change', 'start');
+    await page.getByRole('button', { name: 'Start', exact: true }).click();
+    await expectStep(page, 'change', 'complete');
+    await page.getByRole('button', { name: 'Complete', exact: true }).click();
+    await choose(page, /^Put into/, /MAIN/);
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Complete' }).click();
+    await expectStep(page, 'change', 'ready');
+    await next(page);
+    await expectStep(page, 'change', 'stock');
+    await railTo(page, 'Production');
+    await overviewTab(page);
+    await page.getByRole('button', { name: /Build for stock/ }).click();
+    await page.getByRole('button', { name: 'Pause' }).click();
+    await searchPick(page, 'Product', 'TUT-CART', /^TUT-CART ·/);
+    await typeInto(field(page, 'Quantity'), '4');
+    await page.getByRole('button', { name: 'Release to production' }).click();
+    await page.getByRole('button', { name: 'Resume' }).click();
+    await expectStep(page, 'change', 'done');
   });
 });
