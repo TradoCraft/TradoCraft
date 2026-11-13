@@ -130,6 +130,7 @@ Future<void> _run(
   } catch (e) {
     messenger.showSnackBar(SnackBar(content: Text(errorMessage(e))));
   }
+  if (!context.mounted) return;
   ref.invalidate(todoItemsProvider);
 }
 
@@ -291,6 +292,9 @@ class _RootTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final item = node.item;
+    // Only a real root item is reordered among the roots and takes sub-items. A sub-item shown as a
+    // root (a filter hid its parent) has neither.
+    final isRoot = item.parentId == null;
     final handle = ReorderableDragStartListener(
       index: index,
       child: Tooltip(
@@ -306,7 +310,10 @@ class _RootTile extends ConsumerWidget {
       onChanged: () =>
           _toggle(context, ref, item, hasOpenChildren: node.hasOpenChildren),
     );
-    final actions = [_ItemMenu(item: item, canAddSub: true), handle];
+    final actions = [
+      _ItemMenu(item: item, canAddSub: isRoot),
+      if (isRoot) handle,
+    ];
     if (node.children.isEmpty) {
       return Card(
         child: ListTile(

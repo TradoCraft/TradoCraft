@@ -295,6 +295,21 @@ void main() {
     expect(sent['ids'], ['b', 'a']);
   });
 
+  testWidgets(
+    'a sub-item shown as a root has no sub-item entry and no handle',
+    (tester) async {
+      final server = _Server([
+        _item('c1', 'Orphan', parent: 'gone', done: true),
+      ]);
+      await _pump(tester, server);
+      expect(find.text('Orphan'), findsOneWidget);
+      expect(find.byIcon(Icons.drag_handle), findsNothing);
+      await tester.tap(_key('todo-menu-c1'));
+      await tester.pumpAndSettle();
+      expect(_key('todo-add-sub-c1'), findsNothing);
+    },
+  );
+
   testWidgets('due dates and the link chip show; a hidden label says so', (
     tester,
   ) async {
