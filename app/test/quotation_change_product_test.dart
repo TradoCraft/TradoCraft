@@ -490,19 +490,21 @@ void main() {
     });
     tearDown(_defaults.clear);
 
-    testWidgets('the unedited default of the old product is cleared', (
+    testWidgets('the unedited default of the old product becomes the new one', (
       tester,
     ) async {
       // The line carries 'Weld first', which is exactly BASE's default.
       final http = _http();
       await _pump(tester, http);
       await _change(tester, 'NEW-B');
-      // Empty, so the server applies NEW-B's default; the old text is never sent.
-      expect(_preview(http)[0]['production_remark'], '');
+      // The box shows what will be saved, and the old text is never sent.
+      expect(find.text('Paint after'), findsOneWidget);
+      expect(find.text('Weld first'), findsNothing);
+      expect(_preview(http)[0]['production_remark'], 'Paint after');
       await _save(tester, http);
       final saved =
           ((http.bodies['PUT /api/v1/quotations/q1'] as Map)['lines'] as List);
-      expect(saved.first['production_remark'], '');
+      expect(saved.first['production_remark'], 'Paint after');
     });
 
     testWidgets('an edited remark is kept', (tester) async {
@@ -512,15 +514,26 @@ void main() {
       await _pump(tester, http);
       await _change(tester, 'NEW-B');
       expect(_preview(http)[0]['production_remark'], 'Weld twice');
+      expect(find.text('Weld twice'), findsOneWidget);
     });
 
-    testWidgets('an empty remark stays empty', (tester) async {
+    testWidgets('an empty remark gets the new default', (tester) async {
       final lines = _lines();
       (lines.first as Map)['production_remark'] = '';
       final http = _http(lines: lines);
       await _pump(tester, http);
       await _change(tester, 'NEW-B');
+      expect(_preview(http)[0]['production_remark'], 'Paint after');
+    });
+
+    testWidgets('a new product without a default leaves the field empty', (
+      tester,
+    ) async {
+      final http = _http();
+      await _pump(tester, http);
+      await _change(tester, 'NEW-C');
       expect(_preview(http)[0]['production_remark'], '');
+      expect(find.text('Weld first'), findsNothing);
     });
   });
 }

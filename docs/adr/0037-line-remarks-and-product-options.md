@@ -87,8 +87,9 @@ accepted quotation does not offer it: revise first, as for any other edit. Order
 - Kept: position, quantity, line discount, section, comment, customer remark, production remark
   (see below), and all sub-lines with their quantities; percent-of-parent lines keep their percentage.
 - Production remark: if it is empty, or equals (trimmed) the default production remark of the
-  product being replaced, it is cleared and the server applies the new product's default, as for a
-  new line. A remark the user edited stays untouched.
+  product being replaced, the field is set at once to the new product's default (empty when it
+  has none), so that the field shows what will be saved and the text is sent explicitly. A remark
+  the user edited stays untouched.
 - Reset: the stored description. The line is sent without a description override so the server
   names it from the new product in the customer's language. Prices are not kept: the normal pricing
   preview reprices the line (price list of the customer's zone at the quotation's price date). A net

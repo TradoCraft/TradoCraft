@@ -1246,11 +1246,13 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
     final l10n = context.l10n;
     final notes = <String>[];
     setState(() {
-      // An empty remark, or the old product's unedited default, is cleared so that the server
-      // applies the new product's default; a remark the user edited stays.
+      // An empty remark, or the old product's unedited default, becomes the new product's
+      // default, so that the field shows what will be saved; a remark the user edited stays.
       final remark = line.productionRemark.text.trim();
       final oldDefault = line.product.defaultProductionRemark?.trim() ?? '';
-      if (remark == oldDefault) line.productionRemark.clear();
+      if (remark.isEmpty || remark == oldDefault) {
+        line.productionRemark.text = p.defaultProductionRemark?.trim() ?? '';
+      }
       line.product = p;
       // The server names the line from the new product, in the customer's language.
       line.description = null;
