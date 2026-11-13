@@ -34,16 +34,15 @@ CI runs this as the `e2e` job (`.github/workflows/ci.yml`).
 * Flutter draws to a canvas. The test turns on the accessibility tree (`boot()`), and
   Playwright's role/label selectors work on that.
 * `fill()` does not reach Flutter; real key presses do (`typeInto`). Flutter attaches its
-  editing connection a moment after the click, so typing is paced and verified.
-* After picking from a search list, the next search needs a re-focus (`searchPick` retries).
+  editing connection a moment after the click, so typing is paced and verified, and a failed
+  attempt blurs the field first.
 * Drop-down options appear as `menuitem` roles shortly after the menu opens (`choose`).
-* On record pages (a product, a supplier...) the navigation rail and the workspace tab strip are
-  missing from the accessibility tree although they are on screen. `railTo` and `overviewTab`
-  click at their fixed positions, so the viewport (1400x1700) must not change.
-* While the narrator card is showing, the product suggestions in the "New purchase order"
-  dialog do not open; the test pauses the narrator around that dialog.
+* The navigation rail is a scrolling list that only exposes the items on screen, so the viewport
+  is tall (1400x1700) and every module is reachable by role (`railTo`).
 * Chapter 3 says "choose the location MAIN". The seed of an older `main` had no warehouse, so the test
   creates it through the API when it is missing (the seed now has it).
-* The quantity input of a quotation line has no accessible name, so the test clicks it by position.
-* The Complete dialog of a production order needs a "Put into" location that the tutorial step does
-  not mention.
+
+Things that used to need workarounds here and are fixed in the app (keep them fixed: each has a test
+in `app/test`): the narrator card closing suggestion lists, the navigation rail and tab strip
+vanishing from the accessibility tree on record pages, and the unnamed quantity input of a quotation
+line.

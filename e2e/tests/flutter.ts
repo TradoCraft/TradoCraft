@@ -6,8 +6,9 @@ import { API_PORT } from '../playwright.config';
  * key events Flutter's text editing listens to, so real key presses are used. Flutter attaches its
  * editing connection a moment after the click and keys typed before that are lost, hence the pauses;
  * the result is checked, and a failed attempt starts by clearing the field again.
- * `refocus`: blur first, for a field Flutter still considers focused (after a pick from its own list),
- * where a plain click would keep the keys going to a stale element.
+ * `refocus`: blur first. After a pick from its own list a field is still focused as far as Flutter is
+ * concerned, so a plain click would keep the keys going to a stale element. A failed attempt also
+ * blurs first.
  */
 export async function typeInto(field: Locator, text: string, opts: { refocus?: boolean } = {}) {
   const page = field.page();
@@ -39,16 +40,11 @@ export async function choose(page: Page, button: string | RegExp, option: string
 /** Types into a search box and picks the suggestion whose label is `result` (a button under the box). */
 export async function searchPick(page: Page, label: string, query: string, result: string | RegExp = query, nth = 0) {
   const suggestion = page.getByRole('button', { name: result }).first();
-  // The box is rebuilt after a pick and can swallow the next query; type again until suggestions show.
+  // The box can swallow a query typed right after the previous pick: alternate between a plain click and a
+  // blur-first click until the suggestions show.
   let tries = 0;
   await expect(async () => {
     await typeInto(field(page, label).nth(nth), query, { refocus: tries++ % 2 === 1 });
-    // In some dialogs focus jumps away when the search answer arrives and the list closes; focusing the
-    // field again (the text stays) shows it.
-    if (!(await suggestion.isVisible())) {
-      await page.waitForTimeout(800);
-      await field(page, label).nth(nth).click();
-    }
     await suggestion.click({ timeout: 3_000 });
   }).toPass({ timeout: 45_000 });
 }
@@ -118,25 +114,14 @@ export async function expectStep(page: Page, chapter: string, stepId: string) {
   await expect(page.getByText(tutorialText(chapter, stepId), { exact: true }).first()).toBeVisible({ timeout: 20_000 });
 }
 
-/** Modules in navigation-rail order (the rail is a fixed 64px-per-item column at x=60, starting at y=137). */
-const RAIL = ['Opportunities', 'Quotations', 'Configurator', 'Orders', 'Deliveries', 'Production', 'Shipping requests',
-  'Helpdesk', 'Knowledge base', 'Repairs', 'Receiving', 'Repair intake', 'Jobs', 'Stock', 'Planning', 'Customers',
-  'Products', 'Purchasing', 'Finance', 'Reports', 'Administration'];
-
-/**
- * Opens a module from the navigation rail. On record pages (a product, a supplier...) Flutter drops the
- * rail and the workspace tab strip from the accessibility tree although they are on screen, so this
- * clicks at the rail's position: it needs the 1400x1700 viewport of playwright.config.ts.
- */
+/** Opens a module from the navigation rail. */
 export async function railTo(page: Page, module: string) {
-  const i = RAIL.indexOf(module);
-  if (i < 0) throw new Error(`unknown module ${module}`);
-  await page.mouse.click(60, 137 + 64 * i);
+  await page.getByRole('tab', { name: module, exact: true }).click();
 }
 
-/** The workspace's "Overview" tab (the module list under the open records), also missing from the tree on record pages. */
+/** The workspace's "Overview" tab: the module's list under the open records. */
 export async function overviewTab(page: Page) {
-  await page.mouse.click(175, 77);
+  await page.getByRole('button', { name: 'Overview', exact: true }).click();
 }
 
 /** The narrator's "Take me there": goes to the screen a step is about (the app's rail is not reachable from every page). */
