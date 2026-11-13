@@ -393,9 +393,10 @@ test('the whole tutorial, chapter by chapter', async ({ page, request }) => {
     await page.getByRole('button', { name: /Send order confirmation/ }).click();
     if (!typstAvailable()) {
       // The confirmation PDF is made by the Typst binary; without it the server refuses this step and the
-      // tutorial cannot go on (the step says so itself). CI installs Typst; here the walk ends.
-      test.info().annotations.push({ type: 'stopped', description: 'chapter 9 stops at "Send order confirmation": no typst on PATH' });
-      return;
+      // tutorial cannot go on (the step says so itself). Never let CI pass a walk that stopped here.
+      const why = 'no typst on PATH (or TYPST_BIN): the tutorial cannot get past "Send order confirmation"';
+      if (process.env.CI) throw new Error(why);
+      test.skip(true, why);
     }
     await page.getByRole('alertdialog').getByRole('button', { name: 'Send' }).click();
     await expectStep(page, 'change', 'confirm');
