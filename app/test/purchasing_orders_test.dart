@@ -48,6 +48,8 @@ Map<String, Object?> _po({
   'status': status,
   'order_date': '2027-01-05',
   'expected_delivery_date': '2027-01-20',
+  'sent_at': null,
+  'sent_to': '',
   'currency': 'EUR',
   'subtotal': '125.00',
   'tax_total': '0.00',
@@ -66,9 +68,10 @@ Map<String, Object?> _supplier() => {
   'code': 'SUP-001',
   'country': 'DE',
   'currency': 'EUR',
-  'email': '',
+  'email': 'orders@acme.example',
   'phone': '',
   'contact_person': '',
+  'language': 'de',
   'payment_terms_days': 30,
   'tax_id': '',
   'active': true,
@@ -144,7 +147,10 @@ Future<void> _app(
       child: MaterialApp.router(
         routerConfig: router,
         locale: const Locale('en'),
-        localizationsDelegates: [AppLocalizations.delegate, ...GlobalMaterialLocalizations.delegates],
+        localizationsDelegates: [
+          AppLocalizations.delegate,
+          ...GlobalMaterialLocalizations.delegates,
+        ],
         supportedLocales: AppLocalizations.supportedLocales,
       ),
     ),
@@ -163,6 +169,7 @@ Map<String, Object? Function(Object?)> _detailRoutes(
 ) => {
   'GET /api/v1/me': (_) => meJson(perms),
   'GET /api/v1/purchase-orders/po1': (_) => current(),
+  'GET /api/v1/suppliers/s1': (_) => _supplier(),
   'GET /api/v1/suppliers/s1/products': (_) => [_price()],
 };
 
@@ -445,6 +452,21 @@ void main() {
 
     await tester.tap(find.byKey(const ValueKey('po-send')));
     await tester.pumpAndSettle();
+    // Sending asks for the address and language first, filled from the supplier.
+    expect(find.text('Send purchase order PO2027-00001'), findsOneWidget);
+    expect(
+      tester
+          .widget<TextField>(find.byKey(const ValueKey('po-send-to')))
+          .controller!
+          .text,
+      'orders@acme.example',
+    );
+    await tester.tap(find.byKey(const ValueKey('po-send-confirm')));
+    await tester.pumpAndSettle();
+    expect(http.bodies['POST /api/v1/purchase-orders/po1/send'], {
+      'to': 'orders@acme.example',
+      'lang': 'de',
+    });
     expect(find.byKey(const ValueKey('po-status-sent')), findsOneWidget);
     expect(find.byKey(const ValueKey('po-send')), findsNothing);
 
@@ -524,7 +546,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('en'),
-        localizationsDelegates: [AppLocalizations.delegate, ...GlobalMaterialLocalizations.delegates],
+        localizationsDelegates: [
+          AppLocalizations.delegate,
+          ...GlobalMaterialLocalizations.delegates,
+        ],
         supportedLocales: AppLocalizations.supportedLocales,
         home: Builder(
           builder: (context) {
@@ -539,4 +564,82 @@ void main() {
     );
     expect(label, 'Purchase order abcdef12');
   });
+  testWidgets('cancelling the send dialog sends nothing', (tester) async {
+    final http = FakeHttp({
+      ..._detailRoutes([
+        'purchasing.read',
+        'purchasing.write',
+      ], () => _po(status: 'approved')),
+      'POST /api/v1/purchase-orders/po1/send': (_) => _po(status: 'sent'),
+    });
+    await _app(tester, http, initial: '/purchase-orders/po1');
+    await tester.tap(find.byKey(const ValueKey('po-send')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('po-send-cancel')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('po-send-to')), findsNothing);
+    expect(
+      http.requests,
+      isNot(contains('POST /api/v1/purchase-orders/po1/send')),
+    );
+    expect(find.byKey(const ValueKey('po-status-approved')), findsOneWidget);
+  });
+
+  testWidgets(
+    'a supplier without an address leaves the field empty and the server decides',
+    (tester) async {
+      final http = FakeHttp({
+        ..._detailRoutes([
+          'purchasing.read',
+          'purchasing.write',
+        ], () => _po(status: 'approved')),
+        'GET /api/v1/suppliers/s1': (_) => {..._supplier(), 'email': ''},
+        'POST /api/v1/purchase-orders/po1/send': (_) => const FakeStatus(409, {
+          'error': 'conflict',
+          'message': 'supplier Acme Motors has no usable e-mail address; enter one to send the order to',
+        }),
+      });
+      await _app(tester, http, initial: '/purchase-orders/po1');
+      await tester.tap(find.byKey(const ValueKey('po-send')));
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<TextField>(find.byKey(const ValueKey('po-send-to')))
+            .controller!
+            .text,
+        '',
+      );
+      await tester.tap(find.byKey(const ValueKey('po-send-confirm')));
+      await tester.pumpAndSettle();
+      // No address typed: none is sent, the refusal is shown and the order stays approved.
+      expect(
+        (http.bodies['POST /api/v1/purchase-orders/po1/send']! as Map)
+            .containsKey('to'),
+        false,
+      );
+      expect(find.textContaining('no usable e-mail address'), findsOneWidget);
+      expect(find.byKey(const ValueKey('po-status-approved')), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'a sent order shows where it went; the PDF needs purchasing.read',
+    (tester) async {
+      final sent = {
+        ..._po(status: 'sent'),
+        'sent_at': '2027-01-06T09:00:00Z',
+        'sent_to': 'orders@acme.example',
+      };
+      final http = FakeHttp({
+        ..._detailRoutes(['purchasing.read'], () => sent),
+      });
+      await _app(tester, http, initial: '/purchase-orders/po1');
+      expect(
+        find.textContaining('Sent to orders@acme.example on'),
+        findsOneWidget,
+      );
+      expect(find.byKey(const ValueKey('po-pdf')), findsOneWidget);
+      expect(find.byKey(const ValueKey('po-send')), findsNothing);
+    },
+  );
 }

@@ -43,6 +43,8 @@ Map<String, Object?> _po({
   'status': status,
   'order_date': '2027-01-05',
   'expected_delivery_date': '2027-01-20',
+  'sent_at': null,
+  'sent_to': '',
   'currency': 'EUR',
   'subtotal': '125.00',
   'tax_total': '0.00',

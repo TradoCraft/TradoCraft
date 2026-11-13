@@ -16,6 +16,7 @@ class NewSupplierInput {
     this.contactPerson,
     this.currency,
     this.email,
+    this.language,
     this.notes,
     this.paymentTermsDays,
     this.phone,
@@ -33,6 +34,10 @@ class NewSupplierInput {
   final String? currency;
   @JsonKey(includeIfNull: false)
   final String? email;
+
+  /// Default: the language of the supplier's country, else English.
+  @JsonKey(includeIfNull: false)
+  final String? language;
   final String name;
   @JsonKey(includeIfNull: false)
   final String? notes;

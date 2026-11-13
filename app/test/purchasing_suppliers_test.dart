@@ -29,6 +29,7 @@ Map<String, Object?> _supplier({
   'email': 'sales@acme.example',
   'phone': '+49 1',
   'contact_person': 'Ines Acme',
+  'language': 'en',
   'payment_terms_days': 45,
   'tax_id': 'DE123',
   'active': active,
@@ -91,7 +92,10 @@ Future<void> _app(
       child: MaterialApp.router(
         routerConfig: router,
         locale: const Locale('en'),
-        localizationsDelegates: [AppLocalizations.delegate, ...GlobalMaterialLocalizations.delegates],
+        localizationsDelegates: [
+          AppLocalizations.delegate,
+          ...GlobalMaterialLocalizations.delegates,
+        ],
         supportedLocales: AppLocalizations.supportedLocales,
       ),
     ),
@@ -100,9 +104,7 @@ Future<void> _app(
 }
 
 void main() {
-  testWidgets('lists suppliers (first segment), filters', (
-    tester,
-  ) async {
+  testWidgets('lists suppliers (first segment), filters', (tester) async {
     // The search is the server's (ignoring case and accents, ADR 0057): the stand-in filters by
     // the `q` it was sent, like the API does.
     late final FakeHttp http;
@@ -111,9 +113,11 @@ void main() {
       'GET /api/v1/suppliers': (_) {
         final q = (http.queries.last['q'] as String?)?.toLowerCase();
         return [
-          _supplier(),
-          _supplier(id: 's2', name: 'Bolt Works', code: 'SUP-002'),
-        ].where((s) => q == null || '${s['name']}'.toLowerCase().contains(q)).toList();
+              _supplier(),
+              _supplier(id: 's2', name: 'Bolt Works', code: 'SUP-002'),
+            ]
+            .where((s) => q == null || '${s['name']}'.toLowerCase().contains(q))
+            .toList();
       },
     });
     await _app(tester, http, initial: '/purchasing');
@@ -130,7 +134,11 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Acme Motors'), findsNothing);
     expect(find.text('Bolt Works'), findsOneWidget);
-    expect(http.queries.last['q'], 'bolt', reason: 'the search goes to the server');
+    expect(
+      http.queries.last['q'],
+      'bolt',
+      reason: 'the search goes to the server',
+    );
     expect(http.queries.first['q'], isNull, reason: 'no search, no parameter');
 
     await tester.tap(find.byKey(const ValueKey('suppliers-active-only')));
@@ -245,6 +253,8 @@ void main() {
     expect(body['name'], 'Acme Drives');
     expect(body['payment_terms_days'], 45);
     expect(body['active'], true);
+    // The language is part of the update and unchanged unless edited.
+    expect(body['language'], 'en');
     expect(find.text('Acme Drives'), findsOneWidget);
     expect(find.byKey(const ValueKey('supplier-edit')), findsOneWidget);
   });
@@ -421,7 +431,10 @@ void main() {
           child: MaterialApp.router(
             routerConfig: router,
             locale: const Locale('en'),
-            localizationsDelegates: [AppLocalizations.delegate, ...GlobalMaterialLocalizations.delegates],
+            localizationsDelegates: [
+              AppLocalizations.delegate,
+              ...GlobalMaterialLocalizations.delegates,
+            ],
             supportedLocales: AppLocalizations.supportedLocales,
           ),
         ),
@@ -554,5 +567,25 @@ void main() {
   test('a supplier detail falls back to the purchasing section', () {
     expect(sectionOfDetail('/suppliers/s1'), '/purchasing');
     expect(sectionOfDetail('/orders/o1'), '/orders');
+  });
+  testWidgets('the supplier language is chosen from the five languages', (
+    tester,
+  ) async {
+    final http = FakeHttp({
+      'GET /api/v1/me': (_) => meJson(['purchasing.read', 'purchasing.write']),
+      'GET /api/v1/suppliers/s1': (_) => _supplier(),
+      'GET /api/v1/suppliers/s1/products': (_) => [_price()],
+      'PUT /api/v1/suppliers/s1': (_) => _supplier(),
+    });
+    await _app(tester, http, initial: '/suppliers/s1');
+    await tester.tap(find.byKey(const ValueKey('supplier-edit')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('supplier-language')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Français').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('supplier-save')));
+    await tester.pumpAndSettle();
+    expect((http.bodies['PUT /api/v1/suppliers/s1']! as Map)['language'], 'fr');
   });
 }

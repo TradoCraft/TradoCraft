@@ -6685,6 +6685,20 @@ class AppLocalizationsDe extends AppLocalizations {
   String get purchNeedLine => 'Fügen Sie mindestens eine Position hinzu.';
 
   @override
+  String get purchSendTitle => 'Bestellung senden';
+
+  @override
+  String get purchSendTo => 'Senden an (E-Mail-Adresse)';
+
+  @override
+  String get purchSentTo => 'Gesendet an';
+
+  @override
+  String purchSentInfo(String to, String date) {
+    return 'Gesendet an $to am $date';
+  }
+
+  @override
   String get purchApprove => 'Genehmigen';
 
   @override

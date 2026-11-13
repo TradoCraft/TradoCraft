@@ -16,6 +16,7 @@ class UpdateSupplierInput {
     this.country,
     this.currency,
     this.email,
+    this.language,
     this.name,
     this.notes,
     this.paymentTermsDays,
@@ -37,6 +38,8 @@ class UpdateSupplierInput {
   final String? currency;
   @JsonKey(includeIfNull: false)
   final String? email;
+  @JsonKey(includeIfNull: false)
+  final String? language;
   @JsonKey(includeIfNull: false)
   final String? name;
   @JsonKey(includeIfNull: false)

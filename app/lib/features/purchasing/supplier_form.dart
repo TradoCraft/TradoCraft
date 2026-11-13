@@ -21,6 +21,7 @@ class SupplierDraft {
       phone = TextEditingController(text: s?.phone ?? ''),
       contact = TextEditingController(text: s?.contactPerson ?? ''),
       notes = TextEditingController(text: s?.notes ?? ''),
+      language = s?.language,
       active = s?.active ?? true;
 
   /// Supplier name (required).
@@ -52,6 +53,10 @@ class SupplierDraft {
 
   /// Free notes.
   final TextEditingController notes;
+
+  /// The language documents and mails to the supplier are written in; null on create lets the
+  /// server choose from the country.
+  String? language;
 
   /// Whether the supplier is active (edit mode only).
   bool active;
@@ -110,6 +115,7 @@ class SupplierDraft {
     email: email.text.trim(),
     phone: phone.text.trim(),
     contactPerson: contact.text.trim(),
+    language: language,
     notes: notes.text.trim(),
   );
 
@@ -124,6 +130,7 @@ class SupplierDraft {
     email: email.text.trim(),
     phone: phone.text.trim(),
     contactPerson: contact.text.trim(),
+    language: language,
     notes: notes.text.trim(),
     active: active,
   );
@@ -228,6 +235,23 @@ class SupplierFields extends ConsumerWidget {
           ),
         ),
         _field('contact', draft.contact, l.contactPerson),
+        SizedBox(
+          width: 200,
+          child: StatefulBuilder(
+            builder: (context, setLanguage) => DropdownButtonFormField<String>(
+              key: const ValueKey('supplier-language'),
+              initialValue: draft.language,
+              decoration: InputDecoration(labelText: l.language),
+              items: [
+                for (final c in const ['nl', 'fr', 'en', 'de', 'es'])
+                  DropdownMenuItem(value: c, child: Text(languageName(c))),
+              ],
+              onChanged: enabled
+                  ? (v) => setLanguage(() => draft.language = v)
+                  : null,
+            ),
+          ),
+        ),
         _field('email', draft.email, l.email),
         _field('phone', draft.phone, l.phone),
         _field('notes', draft.notes, l.notes, width: 500, maxLines: 3),
@@ -338,11 +362,14 @@ class _NewSupplierDialogState extends ConsumerState<_NewSupplierDialog> {
           onPressed: _busy ? null : () => Navigator.pop(context),
           child: Text(l.cancel),
         ),
-        TutorialTarget(id: 'supplier-form-save', child: FilledButton(
-          key: const ValueKey('supplier-save'),
-          onPressed: _busy ? null : _save,
-          child: Text(l.save),
-        )),
+        TutorialTarget(
+          id: 'supplier-form-save',
+          child: FilledButton(
+            key: const ValueKey('supplier-save'),
+            onPressed: _busy ? null : _save,
+            child: Text(l.save),
+          ),
+        ),
       ],
     );
   }

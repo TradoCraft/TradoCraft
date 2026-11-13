@@ -198,6 +198,7 @@ void main() {
           'vat_number': 'BE0428759497',
           'price_zone_id': 'z1',
           'discount_percent': '0',
+          'language': 'en',
           'payment_terms_days': 30,
         });
         tester.view.physicalSize = const Size(1400, 1800);

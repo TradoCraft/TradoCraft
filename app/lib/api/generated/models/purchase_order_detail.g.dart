@@ -16,6 +16,7 @@ PurchaseOrderDetail _$PurchaseOrderDetailFromJson(Map<String, dynamic> json) =>
       notes: json['notes'] as String,
       number: json['number'] as String,
       orderDate: DateTime.parse(json['order_date'] as String),
+      sentTo: json['sent_to'] as String,
       status: json['status'] as String,
       subtotal: json['subtotal'] as String,
       supplierId: json['supplier_id'] as String,
@@ -30,6 +31,9 @@ PurchaseOrderDetail _$PurchaseOrderDetailFromJson(Map<String, dynamic> json) =>
       expectedDeliveryDate: json['expected_delivery_date'] == null
           ? null
           : DateTime.parse(json['expected_delivery_date'] as String),
+      sentAt: json['sent_at'] == null
+          ? null
+          : DateTime.parse(json['sent_at'] as String),
     );
 
 Map<String, dynamic> _$PurchaseOrderDetailToJson(
@@ -45,6 +49,8 @@ Map<String, dynamic> _$PurchaseOrderDetailToJson(
   'notes': instance.notes,
   'number': instance.number,
   'order_date': instance.orderDate.toIso8601String(),
+  'sent_at': ?instance.sentAt?.toIso8601String(),
+  'sent_to': instance.sentTo,
   'status': instance.status,
   'subtotal': instance.subtotal,
   'supplier_id': instance.supplierId,

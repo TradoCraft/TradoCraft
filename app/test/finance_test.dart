@@ -114,6 +114,7 @@ Map<String, Object?> _supplier() => {
   'email': '',
   'phone': '',
   'contact_person': '',
+  'language': 'en',
   'payment_terms_days': 30,
   'tax_id': '',
   'active': true,
@@ -130,6 +131,8 @@ Map<String, Object?> _poSummary(String id, String number, String status) => {
   'supplier_name': 'Acme Motors',
   'status': status,
   'order_date': '2027-01-05',
+  'sent_at': null,
+  'sent_to': '',
   'currency': 'EUR',
   'subtotal': '125.00',
   'tax_total': '0.00',
@@ -181,7 +184,10 @@ Future<void> _app(
       child: MaterialApp.router(
         routerConfig: router,
         locale: const Locale('en'),
-        localizationsDelegates: [AppLocalizations.delegate, ...GlobalMaterialLocalizations.delegates],
+        localizationsDelegates: [
+          AppLocalizations.delegate,
+          ...GlobalMaterialLocalizations.delegates,
+        ],
         supportedLocales: AppLocalizations.supportedLocales,
       ),
     ),
@@ -822,7 +828,10 @@ void main() {
           child: MaterialApp.router(
             routerConfig: router,
             locale: const Locale('en'),
-            localizationsDelegates: [AppLocalizations.delegate, ...GlobalMaterialLocalizations.delegates],
+            localizationsDelegates: [
+              AppLocalizations.delegate,
+              ...GlobalMaterialLocalizations.delegates,
+            ],
             supportedLocales: AppLocalizations.supportedLocales,
           ),
         ),

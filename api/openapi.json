@@ -19236,6 +19236,96 @@
         }
       }
     },
+    "/api/v1/purchase-orders/{id}/pdf": {
+      "get": {
+        "tags": [
+          "purchasing"
+        ],
+        "summary": "The purchase order as a PDF. An order that has not been sent is a preview with a watermark.",
+        "operationId": "order_pdf",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Purchase Order ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "description": "nl | fr | en | de | es; default: the language of the supplier.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "format": "int32",
+                    "minimum": 0
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/purchase-orders/{id}/receipts": {
       "get": {
         "tags": [
@@ -19396,6 +19486,7 @@
         "tags": [
           "purchasing"
         ],
+        "summary": "Sends an approved order to the supplier: the PDF is rendered in the supplier's language and\nmailed through the outbox. `to` and `lang` override the supplier's address and language.",
         "operationId": "send_order",
         "parameters": [
           {
@@ -19409,6 +19500,16 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendPurchaseOrderInput"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "",
@@ -19451,6 +19552,16 @@
             }
           },
           "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "",
             "content": {
               "application/json": {
@@ -33683,6 +33794,13 @@
               "null"
             ]
           },
+          "language": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Default: the language of the supplier's country, else English."
+          },
           "name": {
             "type": "string"
           },
@@ -37732,6 +37850,7 @@
           "total",
           "notes",
           "created_by_user_id",
+          "sent_to",
           "created_at",
           "updated_at"
         ],
@@ -37778,6 +37897,17 @@
           "order_date": {
             "type": "string",
             "format": "date"
+          },
+          "sent_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When the order was sent to the supplier, and to which address."
+          },
+          "sent_to": {
+            "type": "string"
           },
           "status": {
             "type": "string",
@@ -41168,6 +41298,26 @@
           }
         }
       },
+      "SendPurchaseOrderInput": {
+        "type": "object",
+        "description": "Who the order goes to and in which language, when they differ from the supplier's own.",
+        "properties": {
+          "lang": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "nl | fr | en | de | es. Default: the supplier's language."
+          },
+          "to": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Default: the supplier's e-mail address."
+          }
+        }
+      },
       "SerialChoice": {
         "type": "object",
         "required": [
@@ -42350,6 +42500,7 @@
           "email",
           "phone",
           "contact_person",
+          "language",
           "payment_terms_days",
           "tax_id",
           "active",
@@ -42387,6 +42538,10 @@
           "id": {
             "type": "string",
             "format": "uuid"
+          },
+          "language": {
+            "type": "string",
+            "description": "nl | fr | en | de | es: the language of the documents and mails sent to the supplier."
           },
           "name": {
             "type": "string"
@@ -43991,6 +44146,12 @@
             ]
           },
           "email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "language": {
             "type": [
               "string",
               "null"

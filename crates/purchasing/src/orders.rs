@@ -29,6 +29,9 @@ pub struct PurchaseOrderSummary {
     pub notes: String,
     pub created_by_user_id: Uuid,
     pub approved_by_user_id: Option<Uuid>,
+    /// When the order was sent to the supplier, and to which address.
+    pub sent_at: Option<DateTime<Utc>>,
+    pub sent_to: String,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -102,7 +105,7 @@ const SELECT_SUMMARY: &str = r#"
     SELECT po.id, po.company_id, po.number, po.supplier_id, s.name AS supplier_name,
            po.status, po.order_date, po.expected_delivery_date, po.currency,
            po.subtotal, po.tax_total, po.total, po.notes,
-           po.created_by_user_id, po.approved_by_user_id,
+           po.created_by_user_id, po.approved_by_user_id, po.sent_at, po.sent_to,
            po.created_at, po.updated_at
     FROM purchasing.purchase_orders po
     JOIN purchasing.suppliers s ON s.id = po.supplier_id
@@ -461,28 +464,27 @@ pub async fn approve(
     load(conn, user.company_id, id).await
 }
 
-/// Marks an approved purchase order as sent; no PDF or e-mail is produced yet.
+/// Marks an approved purchase order as sent to `to` and records who sent it and when. The PDF
+/// and the mail are made by [`crate::document::send`], which calls this in the same transaction.
 pub async fn send(
     conn: &mut PgConnection,
     user: &CurrentUser,
     id: Uuid,
+    to: &str,
 ) -> AppResult<PurchaseOrderDetail> {
     lock(conn, user.company_id, id).await?;
     let po = load(conn, user.company_id, id).await?;
-    if po.summary.status != "approved" {
-        return Err(AppError::Conflict(format!(
-            "only approved purchase orders can be sent (current status: {})",
-            po.summary.status
-        )));
-    }
+    require_sendable(&po)?;
 
     sqlx::query(
         "UPDATE purchasing.purchase_orders
-         SET status = 'sent', updated_at = now()
+         SET status = 'sent', sent_at = now(), sent_by_user_id = $3, sent_to = $4, updated_at = now()
          WHERE company_id = $1 AND id = $2",
     )
     .bind(user.company_id)
     .bind(id)
+    .bind(user.user_id)
+    .bind(to)
     .execute(&mut *conn)
     .await?;
 
@@ -492,11 +494,22 @@ pub async fn send(
         "purchase_order",
         id,
         "sent",
-        serde_json::json!({ "number": po.summary.number }),
+        serde_json::json!({ "number": po.summary.number, "to": to }),
     )
     .await?;
 
     load(conn, user.company_id, id).await
+}
+
+/// Only an approved order can be sent.
+pub fn require_sendable(po: &PurchaseOrderDetail) -> AppResult<()> {
+    if po.summary.status != "approved" {
+        return Err(AppError::Conflict(format!(
+            "only approved purchase orders can be sent (current status: {})",
+            po.summary.status
+        )));
+    }
+    Ok(())
 }
 
 /// Cancels a purchase order that has not received goods yet.

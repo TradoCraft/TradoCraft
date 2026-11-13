@@ -416,6 +416,7 @@ export 'models/saved_report.dart';
 export 'models/saved_report_input.dart';
 export 'models/schedule_input.dart';
 export 'models/schedule_result.dart';
+export 'models/send_purchase_order_input.dart';
 export 'models/serial_choice.dart';
 export 'models/serial_component.dart';
 export 'models/serial_input.dart';

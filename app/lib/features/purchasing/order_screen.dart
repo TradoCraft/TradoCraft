@@ -1,6 +1,9 @@
+import 'dart:typed_data';
+
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:printing/printing.dart';
 
 import '../../app/api.dart';
 import '../../app/workspace.dart' show TabScope;
@@ -211,6 +214,60 @@ class _PurchaseOrderScreenState extends ConsumerState<PurchaseOrderScreen> {
     }
   }
 
+  /// The order as a PDF (a preview until it has been sent), in the supplier's language.
+  Future<void> _pdf() async {
+    final number = _po!.number;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final bytes = await downloadBytes(
+        ref.read(dioProvider),
+        '/api/v1/purchase-orders/${widget.id}/pdf',
+      );
+      await Printing.layoutPdf(
+        name: '$number.pdf',
+        onLayout: (_) async => Uint8List.fromList(bytes),
+      );
+    } catch (e) {
+      if (mounted) setState(() => _error = errorMessage(e));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  /// Asks where to send the order and in which language (the supplier's own by default), then
+  /// sends it: the server renders the PDF and mails it.
+  Future<void> _send(PurchaseOrderDetail s) async {
+    // The supplier's address and language are the defaults; without them the fields start empty
+    // and the server refuses an order that has nowhere to go.
+    Supplier? supplier;
+    try {
+      supplier = await _api.getSupplier(id: s.supplierId);
+    } catch (_) {}
+    if (!mounted) return;
+    final result = await showDialog<({String to, String lang})>(
+      context: context,
+      builder: (_) => _SendDialog(
+        number: s.number,
+        supplierName: s.supplierName,
+        to: supplier?.email ?? '',
+        lang: supplier?.language ?? 'en',
+      ),
+    );
+    if (result == null || !mounted) return;
+    await _transition(
+      () => _api.sendOrder(
+        id: widget.id,
+        body: SendPurchaseOrderInput(
+          to: result.to.isEmpty ? null : result.to,
+          lang: result.lang,
+        ),
+      ),
+    );
+  }
+
   Future<void> _cancelOrder() async {
     final l = context.l10n;
     final number = _po!.number;
@@ -251,35 +308,52 @@ class _PurchaseOrderScreenState extends ConsumerState<PurchaseOrderScreen> {
           label: Text(l.edit),
         ),
       if (s.status == 'draft' && canApprove)
-        TutorialTarget(id: 'po-approve', child: FilledButton(
-          key: const ValueKey('po-approve'),
-          onPressed: _busy
-              ? null
-              : () => _transition(() => _api.approveOrder(id: widget.id)),
-          child: Text(l.purchApprove),
-        )),
+        TutorialTarget(
+          id: 'po-approve',
+          child: FilledButton(
+            key: const ValueKey('po-approve'),
+            onPressed: _busy
+                ? null
+                : () => _transition(() => _api.approveOrder(id: widget.id)),
+            child: Text(l.purchApprove),
+          ),
+        ),
       if (s.status == 'approved' && canWrite)
-        TutorialTarget(id: 'po-send', child: FilledButton(
-          key: const ValueKey('po-send'),
-          onPressed: _busy
-              ? null
-              : () => _transition(() => _api.sendOrder(id: widget.id)),
-          child: Text(l.send),
-        )),
+        TutorialTarget(
+          id: 'po-send',
+          child: FilledButton(
+            key: const ValueKey('po-send'),
+            onPressed: _busy ? null : () => _send(s),
+            child: Text(l.send),
+          ),
+        ),
+      if (can(ref, 'purchasing.read'))
+        OutlinedButton.icon(
+          key: const ValueKey('po-pdf'),
+          onPressed: _busy ? null : _pdf,
+          icon: const Icon(AppIcons.pictureAsPdf),
+          label: Text(l.pdf),
+        ),
       if (const {'approved', 'sent', 'partially_received'}.contains(s.status) &&
           can(ref, 'purchasing.receipt'))
-        TutorialTarget(id: 'po-receive', child: FilledButton(
-          key: const ValueKey('po-receive'),
-          onPressed: _busy ? null : _receive,
-          child: Text(l.purchReceiveGoods),
-        )),
+        TutorialTarget(
+          id: 'po-receive',
+          child: FilledButton(
+            key: const ValueKey('po-receive'),
+            onPressed: _busy ? null : _receive,
+            child: Text(l.purchReceiveGoods),
+          ),
+        ),
       if (const {'partially_received', 'received'}.contains(s.status) &&
           can(ref, 'finance.write'))
-        TutorialTarget(id: 'po-create-invoice', child: OutlinedButton(
-          key: const ValueKey('po-create-invoice'),
-          onPressed: _busy ? null : _createInvoice,
-          child: Text(l.finCreateInvoice),
-        )),
+        TutorialTarget(
+          id: 'po-create-invoice',
+          child: OutlinedButton(
+            key: const ValueKey('po-create-invoice'),
+            onPressed: _busy ? null : _createInvoice,
+            child: Text(l.finCreateInvoice),
+          ),
+        ),
       if (const {'draft', 'approved', 'sent'}.contains(s.status) && canWrite)
         TextButton(
           key: const ValueKey('po-cancel'),
@@ -340,6 +414,11 @@ class _PurchaseOrderScreenState extends ConsumerState<PurchaseOrderScreen> {
             if (!editing)
               InfoItem(l.purchExpectedDate, date(s.expectedDeliveryDate)),
             InfoItem(l.currency, s.currency),
+            if (s.sentAt != null)
+              InfoItem(
+                l.purchSentTo,
+                l.purchSentInfo(s.sentTo, date(s.sentAt!.toLocal())),
+              ),
             InfoItem(l.purchSubtotal, money(s.subtotal, currency: s.currency)),
             InfoItem(l.purchTax, money(s.taxTotal, currency: s.currency)),
             InfoItem(l.total, money(s.total, currency: s.currency)),
@@ -442,6 +521,84 @@ class _LinesTable extends StatelessWidget {
             ),
         ],
       ),
+    );
+  }
+}
+
+/// Asks for the address and the language an order is sent in.
+class _SendDialog extends StatefulWidget {
+  const _SendDialog({
+    required this.number,
+    required this.supplierName,
+    required this.to,
+    required this.lang,
+  });
+
+  final String number;
+  final String supplierName;
+  final String to;
+  final String lang;
+
+  @override
+  State<_SendDialog> createState() => _SendDialogState();
+}
+
+class _SendDialogState extends State<_SendDialog> {
+  late final TextEditingController _to = TextEditingController(text: widget.to);
+  late String _lang = widget.lang;
+
+  @override
+  void dispose() {
+    _to.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    return AlertDialog(
+      title: Text('${l.purchSendTitle} ${widget.number}'),
+      content: SizedBox(
+        width: 380,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(widget.supplierName),
+            const SizedBox(height: 12),
+            TextField(
+              key: const ValueKey('po-send-to'),
+              controller: _to,
+              keyboardType: TextInputType.emailAddress,
+              decoration: InputDecoration(labelText: l.purchSendTo),
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              key: const ValueKey('po-send-lang'),
+              initialValue: _lang,
+              decoration: InputDecoration(labelText: l.language),
+              items: [
+                for (final c in const ['nl', 'fr', 'en', 'de', 'es'])
+                  DropdownMenuItem(value: c, child: Text(languageName(c))),
+              ],
+              onChanged: (v) => setState(() => _lang = v ?? _lang),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          key: const ValueKey('po-send-cancel'),
+          onPressed: () => Navigator.pop(context),
+          child: Text(l.cancel),
+        ),
+        FilledButton(
+          key: const ValueKey('po-send-confirm'),
+          onPressed: () =>
+              Navigator.pop(context, (to: _to.text.trim(), lang: _lang)),
+          child: Text(l.send),
+        ),
+      ],
     );
   }
 }

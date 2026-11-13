@@ -96,7 +96,7 @@ impl Env {
             &self.app,
             BUYER,
             "/suppliers",
-            json!({ "name": name, "code": code, "country": "de" }),
+            json!({ "name": name, "code": code, "country": "de", "email": "orders@supplier.example" }),
         )
         .await;
         assert_eq!(status, StatusCode::CREATED, "{s}");
@@ -1611,6 +1611,279 @@ async fn incoming_supply_validates_ids_and_needs_purchasing_read(db: PgPool) {
         &e.app,
         BUYER,
         &format!("/purchase-orders/incoming?product_ids={many}"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+}
+
+// ---------------------------------------------------------------------------------------------
+// The purchase order as a PDF and a mail (ADR 0061)
+// ---------------------------------------------------------------------------------------------
+
+fn typst_available() -> bool {
+    std::process::Command::new(std::env::var("TYPST_BIN").unwrap_or_else(|_| "typst".into()))
+        .arg("--version")
+        .output()
+        .is_ok()
+}
+
+/// A purchase order PDF as raw bytes.
+async fn pdf(app: &axum::Router, user: &str, uri: &str) -> (StatusCode, Vec<u8>) {
+    use http_body_util::BodyExt;
+    use tower::ServiceExt;
+    let req = axum::http::Request::builder()
+        .uri(format!("/api/v1{uri}"))
+        .header("x-dev-user", user)
+        .body(axum::body::Body::empty())
+        .unwrap();
+    let res = app.clone().oneshot(req).await.unwrap();
+    let status = res.status();
+    (
+        status,
+        res.into_body().collect().await.unwrap().to_bytes().to_vec(),
+    )
+}
+
+/// The mails waiting in the outbox: (to, subject, attachment name, attachment size).
+async fn outbox(db: &PgPool) -> Vec<(String, String, Option<String>, Option<i32>)> {
+    sqlx::query_as(
+        "SELECT to_address, subject, attachment_name, length(attachment_data) FROM core.mail_outbox ORDER BY created_at",
+    )
+    .fetch_all(db)
+    .await
+    .unwrap()
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn sending_an_order_queues_the_pdf_for_the_supplier(db: PgPool) {
+    if !typst_available() {
+        eprintln!("typst not installed; skipping");
+        return;
+    }
+    let e = env(db).await;
+    let s = e.supplier("One", "S1").await;
+    let po = e.approved(&s).await;
+    let id = po["id"].as_str().unwrap();
+    assert!(outbox(&e.db).await.is_empty());
+
+    let (status, sent) = post(
+        &e.app,
+        BUYER,
+        &format!("/purchase-orders/{id}/send"),
+        json!({}),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{sent}");
+    assert_eq!(sent["status"], "sent");
+    assert_eq!(sent["sent_to"], "orders@supplier.example");
+    assert!(sent["sent_at"].is_string());
+
+    // One mail with the PDF attached, in the supplier's language (country DE -> German).
+    let mails = outbox(&e.db).await;
+    assert_eq!(mails.len(), 1, "{mails:?}");
+    let number = po["number"].as_str().unwrap();
+    assert_eq!(mails[0].0, "orders@supplier.example");
+    assert_eq!(mails[0].1, format!("Bestellung {number}"));
+    assert_eq!(
+        mails[0].2.as_deref(),
+        Some(format!("{number}.pdf").as_str())
+    );
+    assert!(mails[0].3.unwrap() > 1000);
+    let magic: Vec<u8> =
+        sqlx::query_scalar("SELECT substring(attachment_data from 1 for 4) FROM core.mail_outbox")
+            .fetch_one(&e.db)
+            .await
+            .unwrap();
+    assert_eq!(magic, b"%PDF");
+
+    // The audit event says where it went; sending twice is refused and queues nothing more.
+    let to: String = sqlx::query_scalar(
+        "SELECT data->>'to' FROM audit.events WHERE entity = 'purchase_order' AND action = 'sent'",
+    )
+    .fetch_one(&e.db)
+    .await
+    .unwrap();
+    assert_eq!(to, "orders@supplier.example");
+    let (status, _) = post(
+        &e.app,
+        BUYER,
+        &format!("/purchase-orders/{id}/send"),
+        json!({}),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CONFLICT);
+    assert_eq!(outbox(&e.db).await.len(), 1);
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn the_address_and_language_can_be_overridden_when_sending(db: PgPool) {
+    if !typst_available() {
+        eprintln!("typst not installed; skipping");
+        return;
+    }
+    let e = env(db).await;
+    let s = e.supplier("One", "S1").await;
+    let po = e.approved(&s).await;
+    let id = po["id"].as_str().unwrap();
+    let uri = format!("/purchase-orders/{id}/send");
+
+    // A bad address or language is a 422 and nothing changes.
+    let (status, _) = post(&e.app, BUYER, &uri, json!({ "to": "not an address" })).await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+    let (status, _) = post(&e.app, BUYER, &uri, json!({ "lang": "xx" })).await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(e.status_of(id).await, "approved");
+    assert!(outbox(&e.db).await.is_empty());
+
+    let (status, sent) = post(
+        &e.app,
+        BUYER,
+        &uri,
+        json!({ "to": " other@supplier.example ", "lang": "FR" }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{sent}");
+    assert_eq!(sent["sent_to"], "other@supplier.example");
+    let mails = outbox(&e.db).await;
+    assert_eq!(mails[0].0, "other@supplier.example");
+    assert!(mails[0].1.starts_with("Bon de commande"), "{mails:?}");
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn a_supplier_without_an_address_blocks_sending_until_one_is_given(db: PgPool) {
+    if !typst_available() {
+        eprintln!("typst not installed; skipping");
+        return;
+    }
+    let e = env(db).await;
+    let (status, s) = post(
+        &e.app,
+        BUYER,
+        "/suppliers",
+        json!({ "name": "Mute", "code": "M1", "country": "BE" }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{s}");
+    assert_eq!(s["language"], "nl");
+    let po = e.approved(s["id"].as_str().unwrap()).await;
+    let id = po["id"].as_str().unwrap();
+    let uri = format!("/purchase-orders/{id}/send");
+
+    let (status, err) = post(&e.app, BUYER, &uri, json!({})).await;
+    assert_eq!(status, StatusCode::CONFLICT, "{err}");
+    assert_eq!(e.status_of(id).await, "approved");
+    assert!(outbox(&e.db).await.is_empty());
+
+    let (status, sent) = post(&e.app, BUYER, &uri, json!({ "to": "someone@mute.example" })).await;
+    assert_eq!(status, StatusCode::OK, "{sent}");
+    assert!(outbox(&e.db).await[0].1.starts_with("Bestelbon"));
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn only_an_approved_order_can_be_sent_and_the_warehouse_cannot_send(db: PgPool) {
+    let e = env(db).await;
+    let s = e.supplier("One", "S1").await;
+    let draft = e.draft(&s).await;
+    let uri = format!("/purchase-orders/{}/send", draft["id"].as_str().unwrap());
+    let (status, _) = post(&e.app, BUYER, &uri, json!({})).await;
+    assert_eq!(status, StatusCode::CONFLICT);
+    let po = e.approved(&s).await;
+    let (status, _) = post(
+        &e.app,
+        STORES,
+        &format!("/purchase-orders/{}/send", po["id"].as_str().unwrap()),
+        json!({}),
+    )
+    .await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
+    assert!(outbox(&e.db).await.is_empty());
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn the_pdf_is_a_preview_until_the_order_is_sent(db: PgPool) {
+    if !typst_available() {
+        eprintln!("typst not installed; skipping");
+        return;
+    }
+    let e = env(db).await;
+    let s = e.supplier("One", "S1").await;
+    let po = e.draft(&s).await;
+    let id = po["id"].as_str().unwrap();
+    let (status, draft_pdf) = pdf(&e.app, STORES, &format!("/purchase-orders/{id}/pdf")).await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(draft_pdf.starts_with(b"%PDF"));
+    let (status, de) = pdf(&e.app, BUYER, &format!("/purchase-orders/{id}/pdf?lang=de")).await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(de.starts_with(b"%PDF"));
+    let (status, _) = pdf(&e.app, BUYER, &format!("/purchase-orders/{id}/pdf?lang=xx")).await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+    let (status, _) = pdf(&e.app, BUYER, &format!("/purchase-orders/{}/pdf", MISSING)).await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    // A role that may not read purchasing gets no PDF.
+    add_user(&e.db, "sales2@example.com", "sales").await;
+    let (status, _) = pdf(
+        &e.app,
+        "sales2@example.com",
+        &format!("/purchase-orders/{id}/pdf"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn supplier_language_defaults_from_the_country_and_is_validated(db: PgPool) {
+    let e = env(db).await;
+    for (country, expected) in [
+        ("FR", "fr"),
+        ("AT", "de"),
+        ("ES", "es"),
+        ("NL", "nl"),
+        ("US", "en"),
+    ] {
+        let (status, s) = post(
+            &e.app,
+            BUYER,
+            "/suppliers",
+            json!({ "name": country, "country": country }),
+        )
+        .await;
+        assert_eq!(status, StatusCode::CREATED, "{s}");
+        assert_eq!(s["language"], expected, "{country}");
+    }
+    let (_, s) = post(
+        &e.app,
+        BUYER,
+        "/suppliers",
+        json!({ "name": "X", "country": "DE", "language": "ES" }),
+    )
+    .await;
+    assert_eq!(s["language"], "es");
+    let id = s["id"].as_str().unwrap();
+    let (status, s) = put(
+        &e.app,
+        BUYER,
+        &format!("/suppliers/{id}"),
+        json!({ "language": "nl" }),
+    )
+    .await;
+    assert_eq!(
+        (status, s["language"].as_str()),
+        (StatusCode::OK, Some("nl")),
+        "{s}"
+    );
+    let (status, _) = put(
+        &e.app,
+        BUYER,
+        &format!("/suppliers/{id}"),
+        json!({ "language": "xx" }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+    let (status, _) = post(
+        &e.app,
+        BUYER,
+        "/suppliers",
+        json!({ "name": "Y", "country": "DE", "language": "" }),
     )
     .await;
     assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);

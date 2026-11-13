@@ -6671,6 +6671,20 @@ class AppLocalizationsNl extends AppLocalizations {
   String get purchNeedLine => 'Voeg minstens een regel toe.';
 
   @override
+  String get purchSendTitle => 'Bestelbon versturen';
+
+  @override
+  String get purchSendTo => 'Versturen naar (e-mailadres)';
+
+  @override
+  String get purchSentTo => 'Verstuurd naar';
+
+  @override
+  String purchSentInfo(String to, String date) {
+    return 'Verstuurd naar $to op $date';
+  }
+
+  @override
   String get purchApprove => 'Goedkeuren';
 
   @override

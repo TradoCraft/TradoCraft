@@ -1,5 +1,6 @@
 use axum::extract::{Path, Query, State};
-use axum::http::StatusCode;
+use axum::http::{header, StatusCode};
+use axum::response::{IntoResponse, Response};
 use axum::{Extension, Json};
 use serde::Deserialize;
 use tradocraft_core::vat_check::{self, VatCheck, VatCheckParams};
@@ -10,6 +11,7 @@ use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 use uuid::Uuid;
 
+use crate::document::{self, SendPurchaseOrderInput};
 use crate::orders::{
     self, IncomingSupply, NewPurchaseOrderInput, PurchaseOrderDetail, PurchaseOrderSummary,
     UpdatePurchaseOrderInput,
@@ -469,24 +471,83 @@ async fn approve_order(
     path = "/purchase-orders/{id}/send",
     tag = "purchasing",
     params(("id" = Uuid, Path, description = "Purchase Order ID")),
+    request_body = SendPurchaseOrderInput,
     responses(
         (status = 200, body = PurchaseOrderDetail),
         (status = 401, body = ErrorBody),
         (status = 403, body = ErrorBody),
         (status = 404, body = ErrorBody),
-        (status = 409, body = ErrorBody)
+        (status = 409, body = ErrorBody),
+        (status = 422, body = ErrorBody)
     )
 )]
+/// Sends an approved order to the supplier: the PDF is rendered in the supplier's language and
+/// mailed through the outbox. `to` and `lang` override the supplier's address and language.
 async fn send_order(
     State(state): State<AppState>,
     user: CurrentUser,
     Path(id): Path<Uuid>,
+    Json(input): Json<SendPurchaseOrderInput>,
 ) -> AppResult<Json<PurchaseOrderDetail>> {
     user.require(Permission::PurchasingWrite)?;
-    let mut tx = state.db.begin().await?;
-    let po = orders::send(&mut tx, &user, id).await?;
-    tx.commit().await?;
-    Ok(Json(po))
+    Ok(Json(document::send(&state, &user, id, input).await?))
+}
+
+/// Query of the PDF route.
+#[derive(Debug, Deserialize, IntoParams)]
+pub struct PdfParams {
+    /// nl | fr | en | de | es; default: the language of the supplier.
+    pub lang: Option<String>,
+}
+
+/// The purchase order as a PDF. An order that has not been sent is a preview with a watermark.
+#[utoipa::path(
+    get,
+    path = "/purchase-orders/{id}/pdf",
+    tag = "purchasing",
+    params(("id" = Uuid, Path, description = "Purchase Order ID"), PdfParams),
+    responses(
+        (status = 200, content_type = "application/pdf", body = Vec<u8>),
+        (status = 401, body = ErrorBody),
+        (status = 403, body = ErrorBody),
+        (status = 404, body = ErrorBody),
+        (status = 422, body = ErrorBody)
+    )
+)]
+async fn order_pdf(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Path(id): Path<Uuid>,
+    Query(p): Query<PdfParams>,
+) -> AppResult<Response> {
+    user.require(Permission::PurchasingRead)?;
+    let mut conn = state.db.acquire().await?;
+    let po = orders::load(&mut conn, user.company_id, id).await?;
+    let supplier = suppliers::load(&mut conn, user.company_id, po.summary.supplier_id).await?;
+    let language = match p.lang {
+        Some(l) => suppliers::normalize_language(&l)?,
+        None => supplier.language.clone(),
+    };
+    let bytes = document::render(
+        &state,
+        &mut conn,
+        user.company_id,
+        &po,
+        &supplier,
+        &language,
+    )
+    .await?;
+    Ok((
+        [
+            (header::CONTENT_TYPE, "application/pdf".to_string()),
+            (
+                header::CONTENT_DISPOSITION,
+                format!("inline; filename=\"{}\"", document::pdf_filename(&po)),
+            ),
+        ],
+        bytes,
+    )
+        .into_response())
 }
 
 #[utoipa::path(
@@ -604,6 +665,7 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(get_order, update_order))
         .routes(routes!(approve_order))
         .routes(routes!(send_order))
+        .routes(routes!(order_pdf))
         .routes(routes!(cancel_order))
         .routes(routes!(receive_goods, list_order_receipts))
         .routes(routes!(get_receipt))

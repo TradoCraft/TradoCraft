@@ -19,6 +19,7 @@ class Supplier {
     required this.currency,
     required this.email,
     required this.id,
+    required this.language,
     required this.name,
     required this.notes,
     required this.paymentTermsDays,
@@ -41,6 +42,9 @@ class Supplier {
   final String currency;
   final String email;
   final String id;
+
+  /// nl | fr | en | de | es: the language of the documents and mails sent to the supplier.
+  final String language;
   final String name;
   final String notes;
   @JsonKey(name: 'payment_terms_days')

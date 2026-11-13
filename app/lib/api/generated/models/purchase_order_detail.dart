@@ -20,6 +20,7 @@ class PurchaseOrderDetail {
     required this.notes,
     required this.number,
     required this.orderDate,
+    required this.sentTo,
     required this.status,
     required this.subtotal,
     required this.supplierId,
@@ -30,6 +31,7 @@ class PurchaseOrderDetail {
     required this.lines,
     this.approvedByUserId,
     this.expectedDeliveryDate,
+    this.sentAt,
   });
   
   factory PurchaseOrderDetail.fromJson(Map<String, Object?> json) => _$PurchaseOrderDetailFromJson(json);
@@ -50,6 +52,12 @@ class PurchaseOrderDetail {
   final String number;
   @JsonKey(name: 'order_date')
   final DateTime orderDate;
+
+  /// When the order was sent to the supplier, and to which address.
+  @JsonKey(includeIfNull: false,name: 'sent_at')
+  final DateTime? sentAt;
+  @JsonKey(name: 'sent_to')
+  final String sentTo;
 
   /// draft | approved | sent | partially_received | received | cancelled
   final String status;

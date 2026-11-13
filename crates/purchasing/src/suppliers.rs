@@ -18,6 +18,8 @@ pub struct Supplier {
     pub email: String,
     pub phone: String,
     pub contact_person: String,
+    /// nl | fr | en | de | es: the language of the documents and mails sent to the supplier.
+    pub language: String,
     pub payment_terms_days: i32,
     pub tax_id: String,
     pub active: bool,
@@ -36,6 +38,8 @@ pub struct NewSupplierInput {
     pub email: Option<String>,
     pub phone: Option<String>,
     pub contact_person: Option<String>,
+    /// Default: the language of the supplier's country, else English.
+    pub language: Option<String>,
     pub payment_terms_days: Option<i32>,
     pub tax_id: Option<String>,
     pub notes: Option<String>,
@@ -51,10 +55,35 @@ pub struct UpdateSupplierInput {
     pub email: Option<String>,
     pub phone: Option<String>,
     pub contact_person: Option<String>,
+    pub language: Option<String>,
     pub payment_terms_days: Option<i32>,
     pub tax_id: Option<String>,
     pub active: Option<bool>,
     pub notes: Option<String>,
+}
+
+/// The language a supplier in `country` is written to unless someone chooses another.
+pub fn default_language(country: &str) -> &'static str {
+    match country {
+        "NL" | "BE" => "nl",
+        "FR" | "LU" => "fr",
+        "DE" | "AT" => "de",
+        "ES" => "es",
+        _ => "en",
+    }
+}
+
+/// A language code in lower case, one of the five the app is translated to.
+pub fn normalize_language(raw: &str) -> AppResult<String> {
+    let l = raw.trim().to_lowercase();
+    if tradocraft_core::is_language(&l) {
+        Ok(l)
+    } else {
+        Err(AppError::Validation(format!(
+            "language must be one of {}",
+            tradocraft_core::LANGUAGES.join(", ")
+        )))
+    }
 }
 
 /// Normalizes a currency code to upper case and requires exactly 3 ASCII letters.
@@ -72,7 +101,7 @@ pub fn normalize_currency(raw: &str) -> AppResult<String> {
 pub async fn load(conn: &mut PgConnection, company_id: Uuid, id: Uuid) -> AppResult<Supplier> {
     sqlx::query_as::<_, Supplier>(
         "SELECT id, company_id, name, code, country, currency, email, phone, contact_person,
-                payment_terms_days, tax_id, active, notes, created_at, updated_at
+                language, payment_terms_days, tax_id, active, notes, created_at, updated_at
          FROM purchasing.suppliers
          WHERE company_id = $1 AND id = $2",
     )
@@ -100,7 +129,7 @@ pub async fn list(
     );
     sqlx::query_as::<_, Supplier>(&format!(
         "SELECT id, company_id, name, code, country, currency, email, phone, contact_person,
-                payment_terms_days, tax_id, active, notes, created_at, updated_at
+                language, payment_terms_days, tax_id, active, notes, created_at, updated_at
          FROM purchasing.suppliers
          WHERE company_id = $1 AND ($2 = false OR active = true) AND {filter}
          ORDER BY name ASC"
@@ -132,6 +161,10 @@ pub async fn create(
     let code = input.code.unwrap_or_default().trim().to_uppercase();
     let currency = normalize_currency(input.currency.as_deref().unwrap_or("EUR"))?;
     let tax_id = input.tax_id.unwrap_or_default().trim().to_string();
+    let language = match input.language {
+        Some(l) => normalize_language(&l)?,
+        None => default_language(&country).to_string(),
+    };
     if let Some(m) = vat::problem(&tax_id, Some(&country)) {
         return Err(AppError::Validation(m));
     }
@@ -140,11 +173,11 @@ pub async fn create(
     let res = sqlx::query_as::<_, Supplier>(
         "INSERT INTO purchasing.suppliers (
             id, company_id, name, code, country, currency, email, phone, contact_person,
-            payment_terms_days, tax_id, active, notes, created_at, updated_at
+            language, payment_terms_days, tax_id, active, notes, created_at, updated_at
          )
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, true, $12, now(), now())
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $13, $10, $11, true, $12, now(), now())
          RETURNING id, company_id, name, code, country, currency, email, phone, contact_person,
-                   payment_terms_days, tax_id, active, notes, created_at, updated_at",
+                   language, payment_terms_days, tax_id, active, notes, created_at, updated_at",
     )
     .bind(id)
     .bind(user.company_id)
@@ -158,6 +191,7 @@ pub async fn create(
     .bind(input.payment_terms_days.unwrap_or(30))
     .bind(&tax_id)
     .bind(input.notes.unwrap_or_default().trim())
+    .bind(&language)
     .fetch_one(&mut *conn)
     .await;
 
@@ -247,6 +281,10 @@ pub async fn update(
             return Err(AppError::Validation(m));
         }
     }
+    let language = match input.language {
+        Some(l) => normalize_language(&l)?,
+        None => current.language.clone(),
+    };
     let active = input.active.unwrap_or(current.active);
     let notes = input
         .notes
@@ -257,10 +295,10 @@ pub async fn update(
         "UPDATE purchasing.suppliers
          SET name = $3, code = $4, country = $5, currency = $6, email = $7, phone = $8,
              contact_person = $9, payment_terms_days = $10, tax_id = $11, active = $12,
-             notes = $13, updated_at = now()
+             notes = $13, language = $14, updated_at = now()
          WHERE company_id = $1 AND id = $2
          RETURNING id, company_id, name, code, country, currency, email, phone, contact_person,
-                   payment_terms_days, tax_id, active, notes, created_at, updated_at",
+                   language, payment_terms_days, tax_id, active, notes, created_at, updated_at",
     )
     .bind(user.company_id)
     .bind(id)
@@ -275,6 +313,7 @@ pub async fn update(
     .bind(&tax_id)
     .bind(active)
     .bind(&notes)
+    .bind(&language)
     .fetch_one(&mut *conn)
     .await;
 
@@ -300,6 +339,7 @@ pub async fn update(
             &before.payment_terms_days,
             &payment_terms_days,
         )
+        .field("language", &before.language, &language)
         .field("tax_id", &before.tax_id, &tax_id)
         .field("active", &before.active, &active)
         .field("notes", &before.notes, &notes);

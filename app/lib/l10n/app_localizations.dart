@@ -12006,6 +12006,30 @@ abstract class AppLocalizations {
   /// **'Add at least one line.'**
   String get purchNeedLine;
 
+  /// No description provided for @purchSendTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Send purchase order'**
+  String get purchSendTitle;
+
+  /// No description provided for @purchSendTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Send to (e-mail address)'**
+  String get purchSendTo;
+
+  /// No description provided for @purchSentTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent to'**
+  String get purchSentTo;
+
+  /// No description provided for @purchSentInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent to {to} on {date}'**
+  String purchSentInfo(String to, String date);
+
   /// No description provided for @purchApprove.
   ///
   /// In en, this message translates to:

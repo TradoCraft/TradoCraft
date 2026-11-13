@@ -13,6 +13,7 @@ import '../models/new_supplier_input.dart';
 import '../models/purchase_order_detail.dart';
 import '../models/purchase_order_summary.dart';
 import '../models/receive_goods_input.dart';
+import '../models/send_purchase_order_input.dart';
 import '../models/set_supplier_product_input.dart';
 import '../models/supplier.dart';
 import '../models/supplier_product.dart';
@@ -83,6 +84,17 @@ abstract class PurchasingClient {
     @Path('id') required String id,
   });
 
+  /// The purchase order as a PDF. An order that has not been sent is a preview with a watermark.
+  ///
+  /// [id] - Purchase Order ID.
+  ///
+  /// [lang] - nl | fr | en | de | es; default: the language of the supplier.
+  @GET('/api/v1/purchase-orders/{id}/pdf')
+  Future<List<int>> orderPdf({
+    @Path('id') required String id,
+    @Query('lang') String? lang,
+  });
+
   /// [id] - Purchase Order ID
   @GET('/api/v1/purchase-orders/{id}/receipts')
   Future<List<GoodsReceiptSummary>> listOrderReceipts({
@@ -96,10 +108,14 @@ abstract class PurchasingClient {
     @Body() required ReceiveGoodsInput body,
   });
 
-  /// [id] - Purchase Order ID
+  /// Sends an approved order to the supplier: the PDF is rendered in the supplier's language and.
+  /// mailed through the outbox. `to` and `lang` override the supplier's address and language.
+  ///
+  /// [id] - Purchase Order ID.
   @POST('/api/v1/purchase-orders/{id}/send')
   Future<PurchaseOrderDetail> sendOrder({
     @Path('id') required String id,
+    @Body() required SendPurchaseOrderInput body,
   });
 
   /// [q] - Searches name, code, e-mail address and contact person, ignoring case and accents.

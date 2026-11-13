@@ -6678,6 +6678,20 @@ class AppLocalizationsFr extends AppLocalizations {
   String get purchNeedLine => 'Ajoutez au moins une ligne.';
 
   @override
+  String get purchSendTitle => 'Envoyer le bon de commande';
+
+  @override
+  String get purchSendTo => 'Envoyer à (adresse e-mail)';
+
+  @override
+  String get purchSentTo => 'Envoyé à';
+
+  @override
+  String purchSentInfo(String to, String date) {
+    return 'Envoyé à $to le $date';
+  }
+
+  @override
   String get purchApprove => 'Approuver';
 
   @override
