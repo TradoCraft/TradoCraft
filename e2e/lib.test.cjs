@@ -22,3 +22,68 @@ test('no database', () => {
   assert.strictEqual(splitPgUrl('postgres://h?dbname=').db, undefined);
   assert.strictEqual(splitPgUrl('not a url'), undefined);
 });
+
+// ---- fit-to-screen mode ----
+const { parseXrandr, parseWorkArea, parseWindowSpec, detectScreen, fitPlan, fitWanted } = require('./lib.cjs');
+const XRANDR = `Screen 0: minimum 320 x 200, current 3840 x 1080, maximum 16384 x 16384
+HDMI-1 connected 1920x1080+1920+0 (normal left inverted right x axis y axis) 527mm x 296mm
+   1920x1080     60.00*+
+eDP connected primary 1366x768+0+0 (normal left inverted right x axis y axis) 344mm x 193mm
+   1366x768     144.15*+
+DP-1 disconnected (normal left inverted right x axis y axis)
+`;
+
+test('xrandr: the primary output wins, else the first connected one', () => {
+  assert.deepStrictEqual(parseXrandr(XRANDR), { width: 1366, height: 768 });
+  assert.deepStrictEqual(parseXrandr(XRANDR.replace(' primary', '')), { width: 1920, height: 1080 });
+  assert.deepStrictEqual(parseXrandr('eDP connected 1080x1920+0+0 left (normal) 1mm x 1mm'), { width: 1080, height: 1920 });
+  assert.strictEqual(parseXrandr('DP-1 disconnected\n'), undefined);
+  assert.strictEqual(parseXrandr(''), undefined);
+});
+test('work area from xprop, window spec', () => {
+  assert.deepStrictEqual(parseWorkArea('_NET_WORKAREA(CARDINAL) = 0, 0, 1920, 1040, 0, 0, 1920, 1040'), { width: 1920, height: 1040 });
+  assert.strictEqual(parseWorkArea('_NET_WORKAREA:  not found.'), undefined);
+  assert.deepStrictEqual(parseWindowSpec('1280x720'), { width: 1280, height: 720 });
+  assert.deepStrictEqual(parseWindowSpec(' 2560X1440 '), { width: 2560, height: 1440 });
+  assert.throws(() => parseWindowSpec('wide'), /E2E_WINDOW/);
+});
+test('screen detection: override, xrandr with work area, xrandr alone, fallbacks', () => {
+  const exec = (cmd) => (cmd === 'xrandr' ? XRANDR : '_NET_WORKAREA(CARDINAL) = 0, 0, 1366, 728');
+  assert.deepStrictEqual(detectScreen({ E2E_WINDOW: '1600x900' }, 'linux', exec), { width: 1600, height: 900, workArea: false, source: 'E2E_WINDOW' });
+  assert.deepStrictEqual(detectScreen({ DISPLAY: ':0' }, 'linux', exec), { width: 1366, height: 728, workArea: true, source: 'xrandr + _NET_WORKAREA' });
+  // a work area spanning several monitors is not this screen's
+  const wide = (cmd) => (cmd === 'xrandr' ? XRANDR : '_NET_WORKAREA(CARDINAL) = 0, 0, 3840, 1040');
+  assert.deepStrictEqual(detectScreen({ DISPLAY: ':0' }, 'linux', wide), { width: 1366, height: 768, workArea: false, source: 'xrandr' });
+  const none = detectScreen({}, 'linux', () => '');
+  assert.deepStrictEqual([none.width, none.height, none.source], [1920, 1080, 'fallback']);
+  assert.match(none.note, /Wayland/);
+  assert.strictEqual(detectScreen({}, 'darwin', () => '').source, 'fallback');
+  assert.deepStrictEqual(detectScreen({}, 'win32', () => '1920x1040\r\n'), { width: 1920, height: 1040, workArea: true, source: 'powershell WorkingArea' });
+});
+test('fit plan: scale, window and overrides', () => {
+  // 1920x1080 without work area: 960 usable height / (1700+88) -> 0.53
+  const p = fitPlan({ width: 1920, height: 1080, workArea: false });
+  assert.strictEqual(p.scale, 0.53);
+  assert.deepStrictEqual(p.window, { width: 742, height: 948 });
+  assert.deepStrictEqual(p.css, { width: 1400, height: 1700 });
+  assert.ok(p.fits);
+  // the work area allows a larger window
+  assert.strictEqual(fitPlan({ width: 1920, height: 1040, workArea: true }).scale, 0.57);
+  // a huge screen is capped at 1
+  assert.strictEqual(fitPlan({ width: 3840, height: 2400, workArea: false }).scale, 1);
+  // a narrow screen is limited by the width
+  assert.strictEqual(fitPlan({ width: 800, height: 4000, workArea: false }).scale, 0.54);
+  // overrides
+  assert.strictEqual(fitPlan({ width: 1920, height: 1080 }, { E2E_SCALE: '0.4' }).scale, 0.4);
+  assert.throws(() => fitPlan({ width: 1920, height: 1080 }, { E2E_SCALE: '0.2' }), /E2E_SCALE/);
+  assert.throws(() => fitPlan({ width: 1920, height: 1080 }, { E2E_SCALE: '1.5' }), /E2E_SCALE/);
+  assert.throws(() => fitPlan({ width: 1920, height: 1080 }, { E2E_SCALE: 'x' }), /E2E_SCALE/);
+  assert.strictEqual(fitPlan({ width: 1920, height: 1080 }, { E2E_SCALE: '1' }).fits, false);
+});
+test('fit applies to headed Firefox only, E2E_FIT=0 disables it', () => {
+  assert.strictEqual(fitWanted({ E2E_HEADED: '1', E2E_BROWSER: 'firefox' }), true);
+  assert.strictEqual(fitWanted({ E2E_HEADED: '1', E2E_BROWSER: 'firefox', E2E_FIT: '0' }), false);
+  assert.strictEqual(fitWanted({ E2E_BROWSER: 'firefox' }), false);
+  assert.strictEqual(fitWanted({ E2E_HEADED: '1' }), false);
+  assert.strictEqual(fitWanted({}), false);
+});
