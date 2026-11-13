@@ -8300,4 +8300,107 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get auditNoDetails => 'Aucun détail n\'a été enregistré.';
+
+  @override
+  String get mailboxes => 'Boîtes aux lettres';
+
+  @override
+  String get newMailbox => 'Nouvelle boîte aux lettres';
+
+  @override
+  String get mailboxesEmpty =>
+      'Aucune boîte aux lettres pour l\'instant. Les e-mails sont relevés et envoyés avec les réglages du traitement en arrière-plan.';
+
+  @override
+  String get mailboxRefresh => 'Actualiser l\'état';
+
+  @override
+  String get mailboxAddress => 'Adresse e-mail';
+
+  @override
+  String get mailboxKind => 'Connexion';
+
+  @override
+  String get mailboxKindGraph => 'Microsoft 365 (Exchange Online)';
+
+  @override
+  String get mailboxKindImap => 'IMAP et SMTP';
+
+  @override
+  String get mailboxTenantId => 'ID du locataire (tenant)';
+
+  @override
+  String get mailboxClientId => 'ID d\'application (client)';
+
+  @override
+  String get mailboxUsername => 'Nom d\'utilisateur';
+
+  @override
+  String get mailboxImapHost => 'Serveur IMAP';
+
+  @override
+  String get mailboxImapPort => 'Port IMAP';
+
+  @override
+  String get mailboxImapFolder => 'Dossier';
+
+  @override
+  String get mailboxImapTls => 'Connexion IMAP chiffrée (TLS)';
+
+  @override
+  String get mailboxSmtpHost => 'Serveur SMTP';
+
+  @override
+  String get mailboxSmtpPort => 'Port SMTP';
+
+  @override
+  String get mailboxSmtpSecurity => 'Chiffrement SMTP';
+
+  @override
+  String get mailboxSmtpNone => 'Aucun';
+
+  @override
+  String get mailboxSecretRef => 'Nom du secret';
+
+  @override
+  String mailboxSecretHelp(String variable) {
+    return 'Le mot de passe ou le secret client n\'est pas enregistré ici. Définissez-le sur le serveur dans la variable $variable du traitement en arrière-plan.';
+  }
+
+  @override
+  String get mailboxTeam => 'Équipe pour les nouveaux tickets';
+
+  @override
+  String get mailboxTeamDefault => 'L\'équipe par défaut';
+
+  @override
+  String get mailboxInbound => 'Relever les e-mails entrants';
+
+  @override
+  String get mailboxDefault =>
+      'Boîte par défaut : pour les e-mails système et les tickets sans boîte aux lettres';
+
+  @override
+  String get mailboxDefaultBadge => 'par défaut';
+
+  @override
+  String get mailboxSendOnly => 'Envoi uniquement';
+
+  @override
+  String get mailboxNeverPolled => 'Aucun e-mail relevé pour l\'instant';
+
+  @override
+  String mailboxLastOk(String when) {
+    return 'E-mails relevés pour la dernière fois le $when';
+  }
+
+  @override
+  String mailboxError(String error) {
+    return 'Échec de la relève des e-mails : $error';
+  }
+
+  @override
+  String mailboxDeleteConfirm(String name) {
+    return 'Supprimer la boîte aux lettres $name ? Ses tickets sont conservés. Les réponses partent alors par la boîte par défaut.';
+  }
 }

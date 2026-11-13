@@ -8287,4 +8287,107 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get auditNoDetails => 'Er zijn geen details vastgelegd.';
+
+  @override
+  String get mailboxes => 'Mailboxen';
+
+  @override
+  String get newMailbox => 'Nieuwe mailbox';
+
+  @override
+  String get mailboxesEmpty =>
+      'Nog geen mailboxen. E-mail wordt opgehaald en verstuurd met de instellingen van de achtergrondverwerking.';
+
+  @override
+  String get mailboxRefresh => 'Status vernieuwen';
+
+  @override
+  String get mailboxAddress => 'E-mailadres';
+
+  @override
+  String get mailboxKind => 'Verbinding';
+
+  @override
+  String get mailboxKindGraph => 'Microsoft 365 (Exchange Online)';
+
+  @override
+  String get mailboxKindImap => 'IMAP en SMTP';
+
+  @override
+  String get mailboxTenantId => 'Tenant-ID';
+
+  @override
+  String get mailboxClientId => 'Toepassings-ID (client)';
+
+  @override
+  String get mailboxUsername => 'Gebruikersnaam';
+
+  @override
+  String get mailboxImapHost => 'IMAP-server';
+
+  @override
+  String get mailboxImapPort => 'IMAP-poort';
+
+  @override
+  String get mailboxImapFolder => 'Map';
+
+  @override
+  String get mailboxImapTls => 'Versleutelde IMAP-verbinding (TLS)';
+
+  @override
+  String get mailboxSmtpHost => 'SMTP-server';
+
+  @override
+  String get mailboxSmtpPort => 'SMTP-poort';
+
+  @override
+  String get mailboxSmtpSecurity => 'SMTP-versleuteling';
+
+  @override
+  String get mailboxSmtpNone => 'Geen';
+
+  @override
+  String get mailboxSecretRef => 'Naam van het geheim';
+
+  @override
+  String mailboxSecretHelp(String variable) {
+    return 'Het wachtwoord of clientgeheim wordt hier niet bewaard. Stel het op de server in als de variabele $variable van de achtergrondverwerking.';
+  }
+
+  @override
+  String get mailboxTeam => 'Team voor nieuwe tickets';
+
+  @override
+  String get mailboxTeamDefault => 'Het standaardteam';
+
+  @override
+  String get mailboxInbound => 'Inkomende e-mail ophalen';
+
+  @override
+  String get mailboxDefault =>
+      'Standaardmailbox: voor systeemmail en tickets zonder mailbox';
+
+  @override
+  String get mailboxDefaultBadge => 'standaard';
+
+  @override
+  String get mailboxSendOnly => 'Verstuurt alleen';
+
+  @override
+  String get mailboxNeverPolled => 'Nog geen e-mail opgehaald';
+
+  @override
+  String mailboxLastOk(String when) {
+    return 'E-mail laatst opgehaald op $when';
+  }
+
+  @override
+  String mailboxError(String error) {
+    return 'E-mail ophalen mislukt: $error';
+  }
+
+  @override
+  String mailboxDeleteConfirm(String name) {
+    return 'De mailbox $name verwijderen? De tickets blijven bestaan. Antwoorden daarop vertrekken dan via de standaardmailbox.';
+  }
 }

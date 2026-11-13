@@ -56,6 +56,7 @@ accepted one; mark superseded records as such.
 | [0051](0051-material-and-cupertino-as-packages.md) | Material and Cupertino as packages: `material_ui`/`cupertino_ui` replace `package:flutter/material.dart`; Flutter pinned to 3.50.0 | Accepted |
 | [0052](0052-worker-heartbeat.md) | Worker heartbeat: one beat row, `GET /admin/worker`, an in-app warning and a "worker was down" mail to administrators | Accepted |
 | [0053](0053-interactive-sign-in.md) | Interactive sign-in: OIDC code + PKCE in the app with the `oidc` package behind our own interface, loopback redirect on desktop, `token_use` per provider, Dio interceptor, secure storage | Proposed |
+| [0054](0054-helpdesk-mailboxes.md) | Helpdesk mailboxes: several per company, Microsoft Graph (Exchange Online) or IMAP/SMTP, secrets only in the worker environment, replies through the ticket's mailbox | Accepted |
 | [0055](0055-configurable-identity-providers.md) | Configurable identity providers: per installation, selected by issuer, hardened verifier, e-mail trust policies, admin API with lock-out safeguards | Accepted |
 | [0056](0056-backup-and-restore.md) | Backup and restore: physical base backups with `scripts/backupctl`, grandfather-father-son retention, verify by restoring, restore drill through a clone | Accepted |
 | [0057](0057-accent-insensitive-search.md) | Accent-insensitive search: `core.search_fold` (lower and `unaccent`) on column and text, trigram indexes, customers, contacts, products and suppliers | Accepted |
