@@ -1,6 +1,9 @@
+import 'dart:typed_data';
+
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:printing/printing.dart';
 
 import '../../app/api.dart';
 import '../../app/workspace.dart' show TabScope;
@@ -211,6 +214,30 @@ class _PurchaseOrderScreenState extends ConsumerState<PurchaseOrderScreen> {
     }
   }
 
+  /// Opens the order as a PDF to print or save; for a supplier without an e-mail address this is
+  /// how the order is handed over after "send".
+  Future<void> _pdf() async {
+    final number = _po!.number;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final bytes = await downloadBytes(
+        ref.read(dioProvider),
+        '/api/v1/purchase-orders/${widget.id}/pdf',
+      );
+      await Printing.layoutPdf(
+        name: '$number.pdf',
+        onLayout: (_) async => Uint8List.fromList(bytes),
+      );
+    } catch (e) {
+      if (mounted) setState(() => _error = errorMessage(e));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   Future<void> _cancelOrder() async {
     final l = context.l10n;
     final number = _po!.number;
@@ -286,6 +313,12 @@ class _PurchaseOrderScreenState extends ConsumerState<PurchaseOrderScreen> {
           onPressed: _busy ? null : _cancelOrder,
           child: Text(l.purchCancelOrder),
         ),
+      OutlinedButton.icon(
+        key: const ValueKey('po-pdf'),
+        onPressed: _busy ? null : _pdf,
+        icon: const Icon(AppIcons.pictureAsPdf),
+        label: Text(l.pdf),
+      ),
     ];
   }
 

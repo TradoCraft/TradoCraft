@@ -71,7 +71,7 @@ Remaining knowledge base gaps (ADR 0018): non-image attachments, analytics, sema
 **B2 Purchasing** (large)
 - Crate `purchasing`: suppliers, supplier price lists, product codes, MOQ and lead times;
   RFQ -> PO -> goods receipt; a receipt creates stock moves and serial units ([ADR 0011](adr/0011-bom-revisions-and-serial-genealogy.md)).
-- PO PDF and mail to the supplier through the outbox; approval limits; vendor bill matching: see B2b for the three-way match.
+- PO PDF and mail to the supplier through the outbox (done, [ADR 0031](adr/0031-purchasing.md) update); approval limits; vendor bill matching: see B2b for the three-way match.
 - Numbering through `core::numbering::next_number` (new codes PO, GR). Export of bills and valuation to the accounting package later.
 
 **B3 Delivery** (small-medium, done), [ADR 0035](adr/0035-delivery.md)

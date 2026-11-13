@@ -368,6 +368,8 @@ void main() {
     expect(find.byKey(const ValueKey('po-edit')), findsNothing);
     expect(find.byKey(const ValueKey('po-approve')), findsNothing);
     expect(find.byKey(const ValueKey('po-cancel')), findsNothing);
+    // The PDF is for everyone who can read the order.
+    expect(find.byKey(const ValueKey('po-pdf')), findsOneWidget);
   });
 
   testWidgets('edits a draft', (tester) async {

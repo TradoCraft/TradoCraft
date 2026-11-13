@@ -461,7 +461,8 @@ pub async fn approve(
     load(conn, user.company_id, id).await
 }
 
-/// Marks an approved purchase order as sent; no PDF or e-mail is produced yet.
+/// Marks an approved purchase order as sent. The PDF and the e-mail to the supplier are made by the
+/// route in the same transaction (`po_doc::mail_to_supplier`).
 pub async fn send(
     conn: &mut PgConnection,
     user: &CurrentUser,

@@ -1,6 +1,7 @@
 //! Purchasing: suppliers, price lists, purchase orders, and goods receipts (ADR 0031).
 
 pub mod orders;
+pub mod po_doc;
 pub mod receipts;
 pub mod routes;
 pub mod supplier_products;

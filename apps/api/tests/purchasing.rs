@@ -4,7 +4,7 @@
 mod common;
 
 use axum::http::{Method, StatusCode};
-use common::{call, call_portal, dec, setup};
+use common::{call, call_portal, dec, raw, setup, Who};
 use rust_decimal::Decimal;
 use serde_json::{json, Value};
 use sqlx::PgPool;
@@ -1472,4 +1472,180 @@ async fn unauthenticated_requests_are_rejected(db: PgPool) {
     )
     .await;
     assert_eq!(status, StatusCode::UNAUTHORIZED);
+}
+
+// ---------------- PDF and e-mail to the supplier ----------------
+
+impl Env {
+    async fn supplier_with_email(&self, name: &str, code: &str, email: &str) -> String {
+        let (status, s) = post(
+            &self.app,
+            BUYER,
+            "/suppliers",
+            json!({ "name": name, "code": code, "country": "de", "email": email,
+                    "contact_person": "Jan Peeters", "payment_terms_days": 30 }),
+        )
+        .await;
+        assert_eq!(status, StatusCode::CREATED, "{s}");
+        s["id"].as_str().unwrap().into()
+    }
+
+    async fn pdf(&self, user: &str, po: &str, query: &str) -> (StatusCode, Vec<u8>) {
+        let (status, _, bytes) = raw(
+            &self.app,
+            Who::Staff(user),
+            Method::GET,
+            &format!("/api/v1/purchase-orders/{po}/pdf{query}"),
+            None,
+        )
+        .await;
+        (status, bytes)
+    }
+
+    async fn mails_for(
+        &self,
+        to: &str,
+    ) -> Vec<(
+        String,
+        String,
+        Option<String>,
+        Option<String>,
+        Option<Vec<u8>>,
+    )> {
+        sqlx::query_as(
+            "SELECT subject, body, attachment_name, attachment_type, attachment_data
+             FROM core.mail_outbox WHERE to_address = $1 ORDER BY created_at",
+        )
+        .bind(to)
+        .fetch_all(&self.db)
+        .await
+        .unwrap()
+    }
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn the_purchase_order_is_a_pdf_in_every_language(db: PgPool) {
+    let e = env(db).await;
+    let s = e
+        .supplier_with_email("Voltaic", "S1", "sales@voltaic.example")
+        .await;
+    let po = e.draft(&s).await;
+    let id = po["id"].as_str().unwrap();
+
+    // A draft is a preview, in the company's language unless one is asked for.
+    let (status, bytes) = e.pdf(BUYER, id, "").await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(bytes.starts_with(b"%PDF"));
+    for lang in ["nl", "fr", "en", "de", "es"] {
+        let (status, bytes) = e.pdf(STORES, id, &format!("?lang={lang}")).await;
+        assert_eq!(status, StatusCode::OK, "{lang}");
+        assert!(bytes.starts_with(b"%PDF"), "{lang}");
+    }
+    let (status, _) = e.pdf(BUYER, id, "?lang=xx").await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+    let (status, _) = e.pdf(BUYER, MISSING, "").await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    // Sales has no purchasing rights.
+    let (status, _) = e.pdf(SALES, id, "").await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
+
+    // A cancelled order still renders (marked as cancelled), and so does one with a long note.
+    let (status, _) = post(
+        &e.app,
+        BUYER,
+        &format!("/purchase-orders/{id}/cancel"),
+        json!({}),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    let (status, bytes) = e.pdf(BUYER, id, "").await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(bytes.starts_with(b"%PDF"));
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn sending_queues_the_pdf_for_the_supplier(db: PgPool) {
+    let e = env(db).await;
+    let s = e
+        .supplier_with_email("Voltaic", "S1", "sales@voltaic.example")
+        .await;
+    let po = e.approved(&s).await;
+    let id = po["id"].as_str().unwrap();
+    let number = po["number"].as_str().unwrap();
+
+    // Nothing is mailed before the order is sent.
+    assert!(e.mails_for("sales@voltaic.example").await.is_empty());
+
+    let (status, sent) = post(
+        &e.app,
+        BUYER,
+        &format!("/purchase-orders/{id}/send"),
+        json!({}),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{sent}");
+    assert_eq!(sent["status"], "sent");
+
+    // One mail to the supplier, with the order as PDF attachment, addressed to the contact person.
+    let mails = e.mails_for("sales@voltaic.example").await;
+    assert_eq!(mails.len(), 1);
+    let (subject, body, name, content_type, data) = &mails[0];
+    assert!(subject.contains(number), "{subject}");
+    assert!(
+        body.contains("Jan Peeters") && body.contains(number),
+        "{body}"
+    );
+    assert_eq!(name.as_deref(), Some(format!("{number}.pdf").as_str()));
+    assert_eq!(content_type.as_deref(), Some("application/pdf"));
+    assert!(data.as_ref().unwrap().starts_with(b"%PDF"));
+
+    // The audit trail records both the send and the mail.
+    let actions: Vec<String> = sqlx::query_scalar(
+        "SELECT action FROM audit.events WHERE entity = 'purchase_order' AND entity_id = $1::uuid ORDER BY id",
+    )
+    .bind(id)
+    .fetch_all(&e.db)
+    .await
+    .unwrap();
+    assert!(
+        actions.contains(&"sent".to_string()) && actions.contains(&"mailed".to_string()),
+        "{actions:?}"
+    );
+
+    // A second send is refused and queues nothing more.
+    let (status, _) = post(
+        &e.app,
+        BUYER,
+        &format!("/purchase-orders/{id}/send"),
+        json!({}),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CONFLICT);
+    assert_eq!(e.mails_for("sales@voltaic.example").await.len(), 1);
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn a_supplier_without_an_address_gets_no_mail_but_the_order_is_still_sent(db: PgPool) {
+    let e = env(db).await;
+    let s = e.supplier("No mail", "S2").await;
+    let po = e.approved(&s).await;
+    let id = po["id"].as_str().unwrap();
+    let (status, sent) = post(
+        &e.app,
+        BUYER,
+        &format!("/purchase-orders/{id}/send"),
+        json!({}),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{sent}");
+    assert_eq!(sent["status"], "sent");
+    let queued: i64 = sqlx::query_scalar("SELECT count(*) FROM core.mail_outbox")
+        .fetch_one(&e.db)
+        .await
+        .unwrap();
+    assert_eq!(queued, 0);
+    // The PDF is there to be handed over by hand.
+    let (status, bytes) = e.pdf(BUYER, id, "").await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(bytes.starts_with(b"%PDF"));
 }

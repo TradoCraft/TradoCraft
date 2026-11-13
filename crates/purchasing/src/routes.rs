@@ -1,10 +1,12 @@
 use axum::extract::{Path, Query, State};
-use axum::http::StatusCode;
+use axum::http::{header, StatusCode};
+use axum::response::{IntoResponse, Response};
 use axum::{Extension, Json};
 use serde::Deserialize;
+use tradocraft_core::company::get_company;
 use tradocraft_core::vat_check::{self, VatCheck, VatCheckParams};
 use tradocraft_core::vies::ViesConfig;
-use tradocraft_core::{AppResult, AppState, CurrentUser, Permission};
+use tradocraft_core::{AppError, AppResult, AppState, CurrentUser, Permission};
 use utoipa::IntoParams;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
@@ -14,6 +16,7 @@ use crate::orders::{
     self, NewPurchaseOrderInput, PurchaseOrderDetail, PurchaseOrderSummary,
     UpdatePurchaseOrderInput,
 };
+use crate::po_doc;
 use crate::receipts::{self, GoodsReceiptDetail, GoodsReceiptSummary, ReceiveGoodsInput};
 use crate::supplier_products::{self, SetSupplierProductInput, SupplierProduct};
 use crate::suppliers::{self, NewSupplierInput, Supplier, UpdateSupplierInput};
@@ -437,8 +440,67 @@ async fn send_order(
     user.require(Permission::PurchasingWrite)?;
     let mut tx = state.db.begin().await?;
     let po = orders::send(&mut tx, &user, id).await?;
+    // The PDF goes to the supplier in the same transaction: if it cannot be made the order stays approved.
+    po_doc::mail_to_supplier(&mut tx, &state.documents, &user, &po).await?;
     tx.commit().await?;
     Ok(Json(po))
+}
+
+/// Query of the purchase order PDF.
+#[derive(Debug, Deserialize, IntoParams)]
+pub struct PdfParams {
+    /// nl | fr | en | de | es; default: the company's language.
+    pub lang: Option<String>,
+}
+
+/// The purchase order as a PDF. A draft is a preview and a cancelled order is marked as cancelled.
+#[utoipa::path(
+    get,
+    path = "/purchase-orders/{id}/pdf",
+    tag = "purchasing",
+    params(("id" = Uuid, Path, description = "Purchase Order ID"), PdfParams),
+    responses(
+        (status = 200, content_type = "application/pdf", body = Vec<u8>),
+        (status = 401, body = ErrorBody),
+        (status = 403, body = ErrorBody),
+        (status = 404, body = ErrorBody),
+        (status = 422, body = ErrorBody)
+    )
+)]
+async fn order_pdf(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Path(id): Path<Uuid>,
+    Query(p): Query<PdfParams>,
+) -> AppResult<Response> {
+    user.require(Permission::PurchasingRead)?;
+    let mut conn = state.db.acquire().await?;
+    let po = orders::load(&mut conn, user.company_id, id).await?;
+    let supplier = suppliers::load(&mut conn, user.company_id, po.summary.supplier_id).await?;
+    let company = get_company(&mut *conn, user.company_id).await?;
+    drop(conn);
+    let language = match p.lang.as_deref().map(str::to_lowercase) {
+        Some(l) if tradocraft_core::is_language(&l) => l,
+        Some(_) => {
+            return Err(AppError::Validation(format!(
+                "lang must be one of {}",
+                tradocraft_core::LANGUAGES.join(", ")
+            )))
+        }
+        None => company.default_language.clone(),
+    };
+    let bytes = po_doc::render(&state.documents, &company, &supplier, &po, &language).await?;
+    Ok((
+        [
+            (header::CONTENT_TYPE, "application/pdf".to_string()),
+            (
+                header::CONTENT_DISPOSITION,
+                format!("inline; filename=\"{}\"", po_doc::pdf_filename(&po)),
+            ),
+        ],
+        bytes,
+    )
+        .into_response())
 }
 
 #[utoipa::path(
@@ -555,6 +617,7 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(get_order, update_order))
         .routes(routes!(approve_order))
         .routes(routes!(send_order))
+        .routes(routes!(order_pdf))
         .routes(routes!(cancel_order))
         .routes(routes!(receive_goods, list_order_receipts))
         .routes(routes!(get_receipt))

@@ -73,6 +73,17 @@ abstract class PurchasingClient {
     @Path('id') required String id,
   });
 
+  /// The purchase order as a PDF. A draft is a preview and a cancelled order is marked as cancelled.
+  ///
+  /// [id] - Purchase Order ID.
+  ///
+  /// [lang] - nl | fr | en | de | es; default: the company's language.
+  @GET('/api/v1/purchase-orders/{id}/pdf')
+  Future<List<int>> orderPdf({
+    @Path('id') required String id,
+    @Query('lang') String? lang,
+  });
+
   /// [id] - Purchase Order ID
   @GET('/api/v1/purchase-orders/{id}/receipts')
   Future<List<GoodsReceiptSummary>> listOrderReceipts({

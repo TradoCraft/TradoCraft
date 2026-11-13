@@ -57,4 +57,20 @@ lead times and open purchase orders to calculate component availability (ATP) an
 * **Out of scope for this step:**
   - Automated three-way vendor bill matching (deferred until the finance module).
   - Supplier RFQ portal (suppliers receive orders via PDF email).
-  - PO PDF generation and e-mail dispatch to the supplier.
+  - ~~PO PDF generation and e-mail dispatch to the supplier.~~ Done, see the update below.
+
+**Update: PO PDF and e-mail to the supplier.**
+
+* `templates/purchase_order.typ` (nl, fr, en, de, es) renders the order with the pattern of the delivery
+  note: `crates/purchasing/src/po_doc.rs` prepares the data and formats the amounts. A draft carries a
+  preview watermark and a cancelled order says so on every page.
+* `GET /purchase-orders/{id}/pdf?lang=` (permission `PurchasingRead`). A supplier has no language yet,
+  so the language is `lang` or else the company's default language.
+* `POST /purchase-orders/{id}/send` now also queues the PDF as an attachment in `core.mail_outbox`
+  (`core::mail::enqueue_with_attachment`) in the same transaction as the status change and records a
+  `mailed` audit event. If the PDF cannot be made, the order stays `approved`.
+* A supplier without an e-mail address is not an error: the order is still marked `sent`, nothing is queued
+  and the PDF can be handed over by hand (the order screen has a PDF button). Rejecting the send instead
+  would break the tutorial, where suppliers are created with a code and a name only.
+* Still open: a supplier language and postal address (the document shows name, country, contact and tax
+  id), resending a sent order, and approval limits.
