@@ -46,6 +46,7 @@ returned. Nothing is ever killed: if a port is taken the message names what list
 | `E2E_FIT` | on for headed Firefox | `0` turns the fit-to-screen mode off (plain emulated 1400x1700 viewport) |
 | `E2E_SCALE` | computed | `0.3`-`1`: force the scale of the fit mode |
 | `E2E_WINDOW` | detected | `<W>x<H>`: the screen size to fit into, when the detection is wrong |
+| `E2E_FIT_CHECK_TIMEOUT` | `30000` | milliseconds the pre-run window check may take; on expiry it warns and the run goes on |
 | `E2E_PG_URL` | see below | PostgreSQL server, `scheme://user:pass@host:port` |
 | `E2E_API_PORT`, `E2E_WEB_PORT` | `18080`, `18088` | change both (and `E2E_DB_NAME`) to run next to another run |
 | `E2E_DB_NAME` | `tradocraft_e2e` | the database that is dropped and recreated on every run |

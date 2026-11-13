@@ -24,7 +24,7 @@ test('no database', () => {
 });
 
 // ---- fit-to-screen mode ----
-const { parseXrandr, parseWorkArea, parseWindowSpec, detectScreen, fitPlan, fitWanted } = require('./lib.cjs');
+const { parseXrandr, parseWorkArea, parseWindowSpec, detectScreen, fitPlan, fitWanted, withDeadline } = require('./lib.cjs');
 const XRANDR = `Screen 0: minimum 320 x 200, current 3840 x 1080, maximum 16384 x 16384
 HDMI-1 connected 1920x1080+1920+0 (normal left inverted right x axis y axis) 527mm x 296mm
    1920x1080     60.00*+
@@ -62,17 +62,17 @@ test('screen detection: override, xrandr with work area, xrandr alone, fallbacks
 });
 test('fit plan: scale, window and overrides', () => {
   // 1920x1080 without work area: 960 usable height / (1700+88) -> 0.53
-  const p = fitPlan({ width: 1920, height: 1080, workArea: false });
+  const p = fitPlan({ width: 1920, height: 1080, workArea: false }, {});
   assert.strictEqual(p.scale, 0.53);
   assert.deepStrictEqual(p.window, { width: 742, height: 948 });
   assert.deepStrictEqual(p.css, { width: 1400, height: 1700 });
   assert.ok(p.fits);
   // the work area allows a larger window
-  assert.strictEqual(fitPlan({ width: 1920, height: 1040, workArea: true }).scale, 0.57);
+  assert.strictEqual(fitPlan({ width: 1920, height: 1040, workArea: true }, {}).scale, 0.57);
   // a huge screen is capped at 1
-  assert.strictEqual(fitPlan({ width: 3840, height: 2400, workArea: false }).scale, 1);
+  assert.strictEqual(fitPlan({ width: 3840, height: 2400, workArea: false }, {}).scale, 1);
   // a narrow screen is limited by the width
-  assert.strictEqual(fitPlan({ width: 800, height: 4000, workArea: false }).scale, 0.54);
+  assert.strictEqual(fitPlan({ width: 800, height: 4000, workArea: false }, {}).scale, 0.54);
   // overrides
   assert.strictEqual(fitPlan({ width: 1920, height: 1080 }, { E2E_SCALE: '0.4' }).scale, 0.4);
   assert.throws(() => fitPlan({ width: 1920, height: 1080 }, { E2E_SCALE: '0.2' }), /E2E_SCALE/);
@@ -86,4 +86,31 @@ test('fit applies to headed Firefox only, E2E_FIT=0 disables it', () => {
   assert.strictEqual(fitWanted({ E2E_BROWSER: 'firefox' }), false);
   assert.strictEqual(fitWanted({ E2E_HEADED: '1' }), false);
   assert.strictEqual(fitWanted({}), false);
+});
+
+test('withDeadline: finishes in time, rejects in time, times out, swallows a late rejection', async () => {
+  assert.deepStrictEqual(await withDeadline(async () => 7, 1000), { timedOut: false, value: 7 });
+  await assert.rejects(withDeadline(async () => { throw new Error('boom'); }, 1000), /boom/);
+  await assert.rejects(withDeadline(() => { throw new Error('sync'); }, 1000), /sync/);
+  assert.deepStrictEqual(await withDeadline(() => new Promise(() => {}), 20), { timedOut: true });
+  // the work rejects after the deadline: no unhandled rejection
+  const unhandled = [];
+  const onUnhandled = (e) => unhandled.push(e);
+  process.on('unhandledRejection', onUnhandled);
+  const r = await withDeadline(() => new Promise((_, rej) => setTimeout(() => rej(new Error('late')), 40)), 10);
+  assert.deepStrictEqual(r, { timedOut: true });
+  await new Promise((res) => setTimeout(res, 100));
+  process.off('unhandledRejection', onUnhandled);
+  assert.deepStrictEqual(unhandled, []);
+});
+test('withDeadline clears its timer when the work finishes', async () => {
+  const real = global.clearTimeout;
+  let cleared = 0;
+  global.clearTimeout = (t) => { cleared++; return real(t); };
+  try {
+    await withDeadline(async () => 1, 60_000);
+  } finally {
+    global.clearTimeout = real;
+  }
+  assert.strictEqual(cleared, 1);
 });

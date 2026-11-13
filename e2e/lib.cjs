@@ -263,6 +263,41 @@ function fitWanted(env = process.env) {
   return headed && (env.E2E_BROWSER ?? 'chromium') === 'firefox' && !['0', 'false', 'off'].includes((env.E2E_FIT ?? '').toLowerCase());
 }
 
+/**
+ * Runs `factory()` under a deadline. Resolves { timedOut: false, value } when it finishes in time, rejects
+ * when it rejects in time, and resolves { timedOut: true } once `ms` have passed (the work is abandoned:
+ * a rejection that arrives later is swallowed). The timer is always cleared.
+ */
+function withDeadline(factory, ms) {
+  return new Promise((resolve, reject) => {
+    let done = false;
+    const timer = setTimeout(() => {
+      done = true;
+      resolve({ timedOut: true });
+    }, ms);
+    let work;
+    try {
+      work = Promise.resolve(factory());
+    } catch (e) {
+      work = Promise.reject(e);
+    }
+    work.then(
+      (value) => {
+        if (done) return;
+        done = true;
+        clearTimeout(timer);
+        resolve({ timedOut: false, value });
+      },
+      (err) => {
+        if (done) return; // late rejection of abandoned work
+        done = true;
+        clearTimeout(timer);
+        reject(err);
+      },
+    );
+  });
+}
+
 /** Warning for a web build older than the newest commit that touched app/lib, or undefined. */
 function staleBuildWarning() {
   const built = path.join(root, 'app/build/web/main.dart.js');
@@ -296,4 +331,5 @@ module.exports = {
   fitPlan,
   fitWanted,
   staleBuildWarning,
+  withDeadline,
 };
