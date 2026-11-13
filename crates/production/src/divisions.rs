@@ -302,6 +302,17 @@ async fn delete_division(
             "this division has production orders; deactivate it instead".into(),
         ));
     }
+    let has_work_centres: bool = sqlx::query_scalar(
+        "SELECT EXISTS (SELECT 1 FROM production.work_centres WHERE division_id = $1)",
+    )
+    .bind(id)
+    .fetch_one(&mut *tx)
+    .await?;
+    if has_work_centres {
+        return Err(AppError::Conflict(
+            "this division has work centres; move them to another division first".into(),
+        ));
+    }
     sqlx::query(
         "DELETE FROM production.product_divisions WHERE division_id = $1 AND company_id = $2",
     )
@@ -322,6 +333,14 @@ async fn delete_division(
             {
                 AppError::Conflict(
                     "this division has production orders; deactivate it instead".into(),
+                )
+            }
+            // A work centre was added to it between the check above and the delete.
+            sqlx::Error::Database(d)
+                if d.code().as_deref() == Some("23503") && d.table() == Some("work_centres") =>
+            {
+                AppError::Conflict(
+                    "this division has work centres; move them to another division first".into(),
                 )
             }
             _ => AppError::from(e),

@@ -387,7 +387,7 @@ async fn try_reserve(
 }
 
 /// Checks that a division exists in the company and is active.
-async fn check_division(
+pub(crate) async fn check_division(
     conn: &mut PgConnection,
     company_id: Uuid,
     division_id: Uuid,

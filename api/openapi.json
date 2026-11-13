@@ -1248,6 +1248,118 @@
         }
       }
     },
+    "/api/v1/boms/{id}/routing": {
+      "get": {
+        "tags": [
+          "production"
+        ],
+        "summary": "The routing of a BOM revision: empty operations when it has none.",
+        "operationId": "get_routing",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BomRouting"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "production"
+        ],
+        "summary": "Replaces the routing of a draft BOM revision. Work centres must belong to the company and be\nactive, except ones the routing already uses (deactivating a work centre does not break the\nroutings that have it).",
+        "operationId": "set_routing",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BomRoutingInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BomRouting"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/closures": {
       "get": {
         "tags": [
@@ -16816,6 +16928,205 @@
         }
       }
     },
+    "/api/v1/production/closures": {
+      "get": {
+        "tags": [
+          "production"
+        ],
+        "summary": "Closures, earliest first.",
+        "operationId": "list_work_centre_closures",
+        "parameters": [
+          {
+            "name": "work_centre_id",
+            "in": "query",
+            "description": "This work centre's closures and the whole-plant ones.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "description": "Only closures that end on or after this day.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "Only closures that start on or before this day.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WorkCentreClosure"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "production"
+        ],
+        "summary": "Adds a closure.",
+        "operationId": "create_work_centre_closure",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkCentreClosureInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkCentreClosure"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/production/closures/{id}": {
+      "put": {
+        "tags": [
+          "production"
+        ],
+        "summary": "Changes a closure.",
+        "operationId": "update_work_centre_closure",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkCentreClosureInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkCentreClosure"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "production"
+        ],
+        "summary": "Removes a closure.",
+        "operationId": "delete_work_centre_closure",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/production/divisions": {
       "get": {
         "tags": [
@@ -17103,6 +17414,282 @@
                   "items": {
                     "$ref": "#/components/schemas/ProductionToRelease"
                   }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/production/work-centres": {
+      "get": {
+        "tags": [
+          "production"
+        ],
+        "summary": "The work centres of the company, in their sort order.",
+        "operationId": "list_work_centres",
+        "parameters": [
+          {
+            "name": "active",
+            "in": "query",
+            "description": "Only active (true) or only inactive (false) work centres.",
+            "required": false,
+            "schema": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "division_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WorkCentre"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "production"
+        ],
+        "summary": "Adds a work centre.",
+        "operationId": "create_work_centre",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkCentreInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkCentre"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/production/work-centres/{id}": {
+      "put": {
+        "tags": [
+          "production"
+        ],
+        "summary": "Changes a work centre. Deactivating one hides it from new routings; existing routings and\noperations keep it.",
+        "operationId": "update_work_centre",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkCentreInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkCentre"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "production"
+        ],
+        "summary": "Removes a work centre that nothing uses. One that routings or operations refer to is refused\nwith 409 Conflict: deactivate it instead.",
+        "operationId": "delete_work_centre",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/production/work-centres/{id}/hours": {
+      "put": {
+        "tags": [
+          "production"
+        ],
+        "summary": "Replaces the opening hours of a work centre. No blocks: the default week applies again.",
+        "operationId": "set_work_centre_hours",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkCentreHoursInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkCentre"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
                 }
               }
             }
@@ -26231,6 +26818,56 @@
           "scrap_percent": {
             "type": "string",
             "example": "0"
+          }
+        }
+      },
+      "BomRouting": {
+        "type": "object",
+        "description": "The routing of one BOM revision.",
+        "required": [
+          "bom_id",
+          "product_id",
+          "bom_revision",
+          "bom_status",
+          "operations"
+        ],
+        "properties": {
+          "bom_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "bom_revision": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "bom_status": {
+            "type": "string",
+            "description": "draft | active | obsolete. Only a draft can be changed."
+          },
+          "operations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RoutingOperation"
+            }
+          },
+          "product_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "BomRoutingInput": {
+        "type": "object",
+        "description": "Replaces the whole routing of a draft BOM revision. The order of the list is the order of the\noperations.",
+        "required": [
+          "operations"
+        ],
+        "properties": {
+          "operations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RoutingOperationInput"
+            }
           }
         }
       },
@@ -40540,6 +41177,84 @@
           }
         }
       },
+      "RoutingOperation": {
+        "type": "object",
+        "description": "One operation of a routing.",
+        "required": [
+          "id",
+          "position",
+          "name",
+          "work_centre_id",
+          "work_centre_code",
+          "work_centre_name",
+          "setup_minutes",
+          "run_minutes_per_unit",
+          "notes"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "position": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "run_minutes_per_unit": {
+            "type": "string",
+            "description": "Minutes for each unit built, in the stock unit of the product.",
+            "example": "2.5"
+          },
+          "setup_minutes": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Minutes once per production order, whatever its quantity."
+          },
+          "work_centre_code": {
+            "type": "string"
+          },
+          "work_centre_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "work_centre_name": {
+            "type": "string"
+          }
+        }
+      },
+      "RoutingOperationInput": {
+        "type": "object",
+        "required": [
+          "name",
+          "work_centre_id"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "run_minutes_per_unit": {
+            "type": "string",
+            "example": "2.5"
+          },
+          "setup_minutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "work_centre_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
       "RowError": {
         "type": "object",
         "description": "One problem in an import file.",
@@ -44454,6 +45169,243 @@
           "user_id": {
             "type": "string",
             "format": "uuid"
+          }
+        }
+      },
+      "WorkCentre": {
+        "type": "object",
+        "description": "A work centre with its own opening hours.",
+        "required": [
+          "id",
+          "code",
+          "name",
+          "capacity",
+          "active",
+          "sort_order",
+          "notes",
+          "open_operations",
+          "hours"
+        ],
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "capacity": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Parallel units (machines or crews) the work centre offers at once."
+          },
+          "code": {
+            "type": "string"
+          },
+          "cost_per_hour": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Cost of one hour of work in the company currency. Only for users with the cost permission.",
+            "example": "45"
+          },
+          "division_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "division_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "hours": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkCentreHoursSlot"
+            },
+            "description": "Own opening hours. None: the default week (Monday to Friday 08:00-12:00 and 13:00-17:00)."
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "open_operations": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Operations of production orders that are not finished."
+          },
+          "sort_order": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "WorkCentreClosure": {
+        "type": "object",
+        "description": "A period in which a work centre (or the whole plant) does not work.",
+        "required": [
+          "id",
+          "from_date",
+          "to_date",
+          "kind",
+          "note"
+        ],
+        "properties": {
+          "from_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "type": "string",
+            "description": "maintenance | holiday | other"
+          },
+          "note": {
+            "type": "string"
+          },
+          "to_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "work_centre_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "work_centre_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "Empty: the whole plant is closed (a holiday)."
+          }
+        }
+      },
+      "WorkCentreClosureInput": {
+        "type": "object",
+        "required": [
+          "from_date",
+          "to_date"
+        ],
+        "properties": {
+          "from_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "kind": {
+            "type": "string",
+            "description": "maintenance | holiday | other"
+          },
+          "note": {
+            "type": "string"
+          },
+          "to_date": {
+            "type": "string",
+            "format": "date",
+            "description": "Inclusive."
+          },
+          "work_centre_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "Leave empty to close the whole plant."
+          }
+        }
+      },
+      "WorkCentreHoursInput": {
+        "type": "object",
+        "description": "Replaces the opening hours of a work centre.",
+        "required": [
+          "slots"
+        ],
+        "properties": {
+          "slots": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkCentreHoursSlot"
+            },
+            "description": "All blocks; none means the default week applies again."
+          }
+        }
+      },
+      "WorkCentreHoursSlot": {
+        "type": "object",
+        "description": "A block of working time of a work centre.",
+        "required": [
+          "weekday",
+          "start_time",
+          "end_time"
+        ],
+        "properties": {
+          "end_time": {
+            "type": "string"
+          },
+          "start_time": {
+            "type": "string"
+          },
+          "weekday": {
+            "type": "integer",
+            "format": "int32",
+            "description": "1 (Monday) to 7 (Sunday)."
+          }
+        }
+      },
+      "WorkCentreInput": {
+        "type": "object",
+        "description": "Input to create or change a work centre.",
+        "required": [
+          "code",
+          "name"
+        ],
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "capacity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "code": {
+            "type": "string"
+          },
+          "cost_per_hour": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Ignored (the stored rate stays) for users without the cost permission.",
+            "example": "45"
+          },
+          "division_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "sort_order": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },

@@ -442,6 +442,25 @@ async fn create_bom(
         .bind(src)
         .execute(&mut *tx)
         .await?;
+        // The routing (ADR 0060) is part of a revision just as the lines are, so the new draft
+        // starts with the one of the revision it was copied from, in the same transaction.
+        // This is a deliberate exception to the layering: production depends on engineering, so
+        // engineering cannot call it, and a revision that silently lost its routing when it was
+        // activated would be worse than one write into production's table (the reverse of the
+        // sales cancel guard that reads `production.production_orders`, ADR 0036). BOMs have no
+        // company, so the rows of every company are copied.
+        sqlx::query(
+            "INSERT INTO production.routing_operations
+                 (id, company_id, bom_id, position, name, work_centre_id, setup_minutes,
+                  run_minutes_per_unit, notes)
+             SELECT gen_random_uuid(), company_id, $1, position, name, work_centre_id,
+                    setup_minutes, run_minutes_per_unit, notes
+             FROM production.routing_operations WHERE bom_id = $2",
+        )
+        .bind(id)
+        .bind(src)
+        .execute(&mut *tx)
+        .await?;
     }
     audit::record(
         &mut tx,

@@ -5,6 +5,8 @@
 import 'package:dio/dio.dart';
 import 'package:retrofit/retrofit.dart';
 
+import '../models/bom_routing.dart';
+import '../models/bom_routing_input.dart';
 import '../models/cancel_production_input.dart';
 import '../models/complete_production_input.dart';
 import '../models/division.dart';
@@ -16,12 +18,32 @@ import '../models/production_serial_candidate.dart';
 import '../models/production_to_release.dart';
 import '../models/release_production_input.dart';
 import '../models/update_production_input.dart';
+import '../models/work_centre.dart';
+import '../models/work_centre_closure.dart';
+import '../models/work_centre_closure_input.dart';
+import '../models/work_centre_hours_input.dart';
+import '../models/work_centre_input.dart';
 
 part 'production_client.g.dart';
 
 @RestApi()
 abstract class ProductionClient {
   factory ProductionClient(Dio dio, {String? baseUrl}) = _ProductionClient;
+
+  /// The routing of a BOM revision: empty operations when it has none.
+  @GET('/api/v1/boms/{id}/routing')
+  Future<BomRouting> getRouting({
+    @Path('id') required String id,
+  });
+
+  /// Replaces the routing of a draft BOM revision. Work centres must belong to the company and be.
+  /// active, except ones the routing already uses (deactivating a work centre does not break the.
+  /// routings that have it).
+  @PUT('/api/v1/boms/{id}/routing')
+  Future<BomRouting> setRouting({
+    @Path('id') required String id,
+    @Body() required BomRoutingInput body,
+  });
 
   /// The production queue: most urgent first (sales order priority, then planned-ready date).
   ///
@@ -99,6 +121,39 @@ abstract class ProductionClient {
     @Path('id') required String id,
   });
 
+  /// Closures, earliest first.
+  ///
+  /// [workCentreId] - This work centre's closures and the whole-plant ones.
+  ///
+  /// [from] - Only closures that end on or after this day.
+  ///
+  /// [to] - Only closures that start on or before this day.
+  @GET('/api/v1/production/closures')
+  Future<List<WorkCentreClosure>> listWorkCentreClosures({
+    @Query('work_centre_id') String? workCentreId,
+    @Query('from') DateTime? from,
+    @Query('to') DateTime? to,
+  });
+
+  /// Adds a closure.
+  @POST('/api/v1/production/closures')
+  Future<WorkCentreClosure> createWorkCentreClosure({
+    @Body() required WorkCentreClosureInput body,
+  });
+
+  /// Changes a closure.
+  @PUT('/api/v1/production/closures/{id}')
+  Future<WorkCentreClosure> updateWorkCentreClosure({
+    @Path('id') required String id,
+    @Body() required WorkCentreClosureInput body,
+  });
+
+  /// Removes a closure.
+  @DELETE('/api/v1/production/closures/{id}')
+  Future<void> deleteWorkCentreClosure({
+    @Path('id') required String id,
+  });
+
   /// The divisions of the company, in their sort order.
   @GET('/api/v1/production/divisions')
   Future<List<Division>> listDivisions();
@@ -140,4 +195,41 @@ abstract class ProductionClient {
   /// orders: what a planner can release. Most urgent orders first.
   @GET('/api/v1/production/to-release')
   Future<List<ProductionToRelease>> toRelease();
+
+  /// The work centres of the company, in their sort order.
+  ///
+  /// [active] - Only active (true) or only inactive (false) work centres.
+  @GET('/api/v1/production/work-centres')
+  Future<List<WorkCentre>> listWorkCentres({
+    @Query('active') bool? active,
+    @Query('division_id') String? divisionId,
+  });
+
+  /// Adds a work centre.
+  @POST('/api/v1/production/work-centres')
+  Future<WorkCentre> createWorkCentre({
+    @Body() required WorkCentreInput body,
+  });
+
+  /// Changes a work centre. Deactivating one hides it from new routings; existing routings and.
+  /// operations keep it.
+  @PUT('/api/v1/production/work-centres/{id}')
+  Future<WorkCentre> updateWorkCentre({
+    @Path('id') required String id,
+    @Body() required WorkCentreInput body,
+  });
+
+  /// Removes a work centre that nothing uses. One that routings or operations refer to is refused.
+  /// with 409 Conflict: deactivate it instead.
+  @DELETE('/api/v1/production/work-centres/{id}')
+  Future<void> deleteWorkCentre({
+    @Path('id') required String id,
+  });
+
+  /// Replaces the opening hours of a work centre. No blocks: the default week applies again.
+  @PUT('/api/v1/production/work-centres/{id}/hours')
+  Future<WorkCentre> setWorkCentreHours({
+    @Path('id') required String id,
+    @Body() required WorkCentreHoursInput body,
+  });
 }
