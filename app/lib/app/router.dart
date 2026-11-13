@@ -50,6 +50,7 @@ import '../features/tutorial/chapter_map_page.dart';
 import 'session.dart';
 import '../features/field/offline/offline_ui.dart' show OfflineSyncHost;
 import 'shell.dart';
+import 'shortcuts/registry.dart' show ModalShortcutObserver, shortcutRegistryProvider;
 import 'workspace.dart' show DetailPortal;
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -58,6 +59,8 @@ final routerProvider = Provider<GoRouter>((ref) {
   ref.onDispose(signedIn.dispose);
 
   return GoRouter(
+    // Dialogs and popups are modal for keyboard shortcuts (see ModalShortcutObserver).
+    observers: [ModalShortcutObserver(ref.read(shortcutRegistryProvider))],
     initialLocation: '/quotations',
     refreshListenable: signedIn,
     redirect: (context, state) {
@@ -77,6 +80,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(path: '/tutorial', builder: (_, _) => const TutorialMapPage()),
       ShellRoute(
+        // Bottom sheets and menus opened from a shell page use this navigator, not the root.
+        observers: [ModalShortcutObserver(ref.read(shortcutRegistryProvider))],
         builder: (context, state, child) => OfflineSyncHost(
           child: AppShell(location: state.matchedLocation, child: child),
         ),

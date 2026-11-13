@@ -8494,6 +8494,52 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get shortcutBack => 'Terug';
+
+  @override
+  String get shortcutCreate => 'Aanmaken';
+
+  @override
+  String get shortcutHome => 'Startpagina';
+
+  @override
+  String get shortcutDiscard => 'Wijzigingen verwerpen';
+
+  @override
+  String get shortcutSave => 'Opslaan';
+
+  @override
+  String get shortcutNextPage => 'Meer laden';
+
+  @override
+  String get shortcutSearch => 'Zoeken';
+
+  @override
+  String get shortcutNewTodo => 'Nieuwe taak';
+
+  @override
+  String get shortcutKbSearch => 'Artikelen zoeken';
+
+  @override
+  String get shortcutKbShare => 'Artikel delen';
+
+  @override
+  String get shortcutPalette => 'Opdrachtenpalet';
+
+  @override
+  String get shortcutHelp => 'Sneltoetsen';
+
+  @override
+  String shortcutMenuItem(int n) {
+    return 'Menu-item $n';
+  }
+
+  @override
+  String shortcutHint(String keys) {
+    return 'Sneltoets: $keys';
+  }
+
+  @override
   String get moduleTodo => 'Taken';
 
   @override
