@@ -175,7 +175,7 @@ impl OutboundPolicy {
             )
         } else {
             format!(
-                "OUTBOUND SAFETY: IMAP polling is disabled (set {ALLOW_INBOUND_MAIL_VAR}=1 to opt in)"
+                "OUTBOUND SAFETY: inbound mailbox polling (Graph and IMAP) is disabled (set {ALLOW_INBOUND_MAIL_VAR}=1 to opt in)"
             )
         });
         w
@@ -305,7 +305,10 @@ mod tests {
             assert_eq!(p.mail_transport, "files");
             assert!(!p.inbound_allowed);
             let w = p.warnings("smtp").join("\n");
-            assert!(w.contains("overridden to files") && w.contains("IMAP polling is disabled"));
+            assert!(
+                w.contains("overridden to files")
+                    && w.contains("inbound mailbox polling (Graph and IMAP) is disabled")
+            );
         }
     }
 

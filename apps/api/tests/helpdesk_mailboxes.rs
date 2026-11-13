@@ -159,6 +159,13 @@ async fn settings_api_validates_and_keeps_one_default(db: PgPool) {
         (
             with(
                 imap_input("X", "x@contoso.example"),
+                json!({ "imap_tls": false }),
+            ),
+            "without TLS",
+        ),
+        (
+            with(
+                imap_input("X", "x@contoso.example"),
                 json!({ "smtp_port": 70000 }),
             ),
             "port",

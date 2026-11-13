@@ -43,6 +43,12 @@ const GRAPH_URL: &str = "https://graph.microsoft.com/v1.0";
 const LOGIN_URL: &str = "https://login.microsoftonline.com";
 /// Unread messages fetched from one mailbox in one pass; the rest follows in the next pass.
 const MAX_PER_POLL: usize = 200;
+/// Unread messages listed per pass: more than are processed, so that ones that keep failing (they
+/// go last) cannot hide the later ones.
+const MAX_LISTED: usize = 1_000;
+/// Pages of a list followed in one pass, whatever they hold (a page of nothing but oversized ids
+/// adds nothing to the count of messages).
+const MAX_PAGES: usize = 100;
 /// The longest id taken from Graph (ids are a few hundred characters).
 const MAX_ID: usize = 1_024;
 /// The largest message downloaded. Graph's own limit is far above it; a larger one stays unread
@@ -150,6 +156,9 @@ pub struct GraphClient {
     login_url: String,
     /// Per tenant and application; a token is valid for every mailbox the application may use.
     tokens: Arc<Mutex<HashMap<(String, String), Token>>>,
+    /// Per mailbox: how often a message that is still unread could not be dealt with. Those are
+    /// tried after the others, so a few bad mails cannot occupy every pass.
+    failures: Arc<Mutex<HashMap<Uuid, HashMap<String, u32>>>>,
 }
 
 impl Default for GraphClient {
@@ -335,6 +344,7 @@ impl GraphClient {
             graph_url: graph_url.trim_end_matches('/').to_string(),
             login_url: login_url.trim_end_matches('/').to_string(),
             tokens: Arc::default(),
+            failures: Arc::default(),
         }
     }
 
@@ -421,6 +431,7 @@ impl GraphClient {
         let mut ids: Vec<String> = Vec::new();
         let mut notes: Vec<String> = Vec::new();
         let mut too_long = 0;
+        let mut pages = 0;
         let mut url = format!(
             "{}/mailFolders/inbox/messages?$filter=isRead%20eq%20false&$select=id&$top=50",
             self.user_url(m)
@@ -433,6 +444,7 @@ impl GraphClient {
                 .context("reaching Microsoft Graph")?;
             let res = check(res, "listing unread mail").await?;
             let page: MessagePage = json(res, "the list of unread mail").await?;
+            pages += 1;
             for r in page.value {
                 if r.id.len() > MAX_ID {
                     too_long += 1;
@@ -441,7 +453,7 @@ impl GraphClient {
                 }
             }
             match page.next_link {
-                Some(next) if ids.len() < MAX_PER_POLL => {
+                Some(next) if ids.len() < MAX_LISTED && pages < MAX_PAGES => {
                     if !same_origin(&self.graph_url, &next) {
                         notes.push(
                             "Microsoft Graph named another address for the next page; it was not followed"
@@ -466,7 +478,8 @@ impl GraphClient {
     /// marked read after it has been stored, so nothing is lost if this fails; one that cannot be
     /// ingested stays unread. A message that cannot be fetched is skipped and reported, and the
     /// pass goes on; a refused sign-in, a busy answer or a server error stops it (`complete` is
-    /// false) and the next pass tries again.
+    /// false) and the next pass tries again. Messages that were skipped before are tried after the
+    /// others, so a few bad mails cannot occupy the whole pass.
     pub async fn poll(
         &self,
         db: &PgPool,
@@ -475,34 +488,55 @@ impl GraphClient {
         source: Source,
     ) -> anyhow::Result<Polled> {
         let token = self.token(m).await?;
-        let (ids, notes) = match self.list_unread(m, &token).await {
+        let (mut ids, notes) = match self.list_unread(m, &token).await {
             Ok(listed) => listed,
             Err(e) => {
                 self.forget_if_refused(m, &e).await;
                 return Err(e);
             }
         };
+        // Messages that failed before go last (the sort is stable: otherwise in the order Graph
+        // listed them); only the ones still unread keep a failure count.
+        let mut failed = self
+            .failures
+            .lock()
+            .await
+            .remove(&m.mailbox_id)
+            .unwrap_or_default();
+        {
+            let listed: std::collections::HashSet<&String> = ids.iter().collect();
+            failed.retain(|id, _| listed.contains(id));
+        }
+        ids.sort_by_key(|id| failed.get(id).copied().unwrap_or(0));
         let mut out = Polled {
             ingested: 0,
             problems: notes,
             complete: true,
         };
         for id in ids.iter().take(MAX_PER_POLL) {
-            if let Err(e) = self
+            match self
                 .one(db, m, &token, company_id, source, id, &mut out)
                 .await
             {
-                self.forget_if_refused(m, &e).await;
-                out.problems.push(format!("{e:#}"));
-                out.complete = false;
-                break;
+                Ok(true) => {
+                    failed.remove(id);
+                }
+                Ok(false) => *failed.entry(id.clone()).or_insert(0) += 1,
+                Err(e) => {
+                    self.forget_if_refused(m, &e).await;
+                    out.problems.push(format!("{e:#}"));
+                    out.complete = false;
+                    break;
+                }
             }
         }
+        // Also after a stop: what failed so far keeps its place at the back.
+        self.failures.lock().await.insert(m.mailbox_id, failed);
         Ok(out)
     }
 
-    /// One unread message. `Ok` when it is dealt with (stored, or skipped and noted in `out`);
-    /// `Err` when the pass should stop.
+    /// One unread message. `Ok(true)` when it is stored and marked read, `Ok(false)` when it was
+    /// skipped (noted in `out`), `Err` when the pass should stop.
     #[allow(clippy::too_many_arguments)]
     async fn one(
         &self,
@@ -513,7 +547,7 @@ impl GraphClient {
         source: Source,
         id: &str,
         out: &mut Polled,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<bool> {
         let message_url = self.message_url(m, id);
         let res = self
             .request(
@@ -535,12 +569,12 @@ impl GraphClient {
                     "an e-mail is larger than {} MB and was left unread",
                     MAX_MESSAGE_BYTES / 1024 / 1024
                 ));
-                return Ok(());
+                return Ok(false);
             }
             Err(e) if about_one_message(&e) => {
                 out.problems
                     .push(format!("an e-mail could not be downloaded ({e})"));
-                return Ok(());
+                return Ok(false);
             }
             Err(e) => return Err(e),
         };
@@ -553,7 +587,7 @@ impl GraphClient {
                 out.problems.push(
                     "an e-mail could not be turned into a ticket (see the worker log)".into(),
                 );
-                return Ok(());
+                return Ok(false);
             }
         }
         out.ingested += 1;
@@ -564,11 +598,11 @@ impl GraphClient {
             .await
             .context("reaching Microsoft Graph")?;
         match check(res, "marking an e-mail as read").await {
-            Ok(_) => Ok(()),
+            Ok(_) => Ok(true),
             Err(e) if about_one_message(&e) => {
                 out.problems
                     .push(format!("an e-mail was stored but not marked read ({e})"));
-                Ok(())
+                Ok(false)
             }
             Err(e) => Err(e),
         }

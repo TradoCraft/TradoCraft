@@ -51,3 +51,4 @@ rust_decimal_macros.workspace = true
 serde.workspace = true
 tower.workspace = true
 uuid.workspace = true
+jsonwebtoken.workspace = true

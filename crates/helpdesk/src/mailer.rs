@@ -113,6 +113,23 @@ struct Queued {
     attempts: i32,
     /// The mailbox to send through: the article's, else the company's default.
     mailbox_id: Option<Uuid>,
+    /// That mailbox's address: the transport only sends as that address.
+    mailbox_address: Option<String>,
+}
+
+impl Queued {
+    /// A queued reply whose mailbox is gone (the article's link is cleared when a mailbox is
+    /// deleted) must not leave through the default mailbox under another sender address.
+    fn check_sender(&self) -> anyhow::Result<()> {
+        match &self.mailbox_address {
+            Some(a) if !a.eq_ignore_ascii_case(self.from_address.trim()) => anyhow::bail!(
+                "the sender {} does not belong to the mailbox this e-mail would leave through ({a}); \
+                 check the mailbox settings and queue the reply again",
+                self.from_address
+            ),
+            _ => Ok(()),
+        }
+    }
 }
 
 const MAX_ATTEMPTS: i32 = 5;
@@ -198,10 +215,11 @@ pub async fn process_outbox_with(
                     (SELECT array_agg(x.message_id ORDER BY x.created_at) FROM helpdesk.articles x
                      WHERE x.ticket_id = a.ticket_id AND x.message_id IS NOT NULL AND x.id <> a.id
                        AND x.kind <> 'note') AS references,
-                    a.attempts, coalesce(a.mailbox_id, d.id) AS mailbox_id
+                    a.attempts, coalesce(a.mailbox_id, d.id) AS mailbox_id, e.address AS mailbox_address
              FROM helpdesk.articles a
              JOIN helpdesk.tickets t ON t.id = a.ticket_id
              LEFT JOIN helpdesk.mailboxes d ON d.company_id = t.company_id AND d.is_default AND d.active
+             LEFT JOIN helpdesk.mailboxes e ON e.id = coalesce(a.mailbox_id, d.id)
              WHERE a.delivery = 'queued'
              -- An e-mail that failed goes behind the others, so one broken mailbox does not hold
              -- up the rest.
@@ -221,7 +239,11 @@ pub async fn process_outbox_with(
         .fetch_all(&mut *tx)
         .await?;
         let result = match (build(&q, &files), transports.pick(q.mailbox_id)) {
-            (Ok(m), Ok(mailer)) => mailer.send(m, q.id).await,
+            // Outside live the fallback writes files whatever the address.
+            (Ok(m), Ok(mailer)) => match (transports.mailboxes, q.check_sender()) {
+                (Some(_), Err(e)) => Err(e),
+                _ => mailer.send(m, q.id).await,
+            },
             (Err(e), _) | (_, Err(e)) => Err(e),
         };
         match result {

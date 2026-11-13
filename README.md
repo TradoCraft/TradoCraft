@@ -89,7 +89,7 @@ IMAP unless `ALLOW_INBOUND_MAIL_IN_NON_LIVE=1`
 Backups. `scripts/backupctl backup` takes a physical backup of the whole PostgreSQL server
 (attachments included) and keeps 7 daily, 4 weekly and 6 monthly ones; `scripts/backupctl verify`
 restores the latest into a throwaway server and checks it
-([ADR 0053](docs/adr/0053-backup-and-restore.md),
+([ADR 0056](docs/adr/0056-backup-and-restore.md),
 [runbook](docs/runbooks/backup-and-restore.md)).
 
 Story-mission tutorial. `scripts/tutorial-env up` creates a clean, throwaway environment of kind
@@ -189,6 +189,15 @@ catalogue). It works once, only while no company exists
 * `AUTH_MODE=oidc`: set `BOOTSTRAP_TOKEN` (a long random string) before starting, or the setup
   endpoint answers 404. The wizard asks for it. Afterwards the administrator signs in through the
   identity provider with the same e-mail address; remove the token from the environment.
+  Set `OIDC_ISSUER` and `OIDC_AUDIENCE` (optionally `OIDC_CLIENT_ID` and `OIDC_SCOPES`, default
+  `openid profile email`) before signing in: they define a read-only fallback provider
+  ([ADR 0055](docs/adr/0055-configurable-identity-providers.md)). Once signed in, an administrator
+  of the primary company (the first company created; another one can be made primary with
+  `POST /api/v1/admin/companies/{id}/make-primary`) adds database providers in the app
+  (Admin > Identity providers) or through the authenticated admin API
+  `/api/v1/admin/identity-providers` (permission `identity.admin`). The API
+  may start without the variables when the database has providers; with neither, every request
+  answers 401 and the bootstrap still works with `BOOTSTRAP_TOKEN`.
 
 Without the app: `curl -X POST localhost:8080/api/v1/setup/bootstrap -H 'content-type:
 application/json' -d '{"name": "Acme", "country_code": "BE", "currency": "EUR",

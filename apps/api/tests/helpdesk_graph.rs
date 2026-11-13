@@ -17,7 +17,9 @@ use serde_json::{json, Value};
 use sqlx::PgPool;
 use tradocraft_helpdesk::graph::{CheckOptions, GraphClient, MessageIdVerdict};
 use tradocraft_helpdesk::ingest::{ingest_from, Source};
-use tradocraft_helpdesk::mailboxes::{check_graph_mailbox, load_active, poll_all, transports};
+use tradocraft_helpdesk::mailboxes::{
+    check_graph_mailbox, load_active, poll_all, transports, SecretRequest,
+};
 use tradocraft_helpdesk::mailer::{process_outbox_with, Mailer, Transports};
 use uuid::Uuid;
 
@@ -26,15 +28,15 @@ const ADMIN: &str = "admin@example.com";
 const SUPPORT: &str = "support@example.com";
 const ANNA: &str = "anna@alpha.example";
 
-fn secrets(reference: &str) -> Option<String> {
-    (reference == "SUPPORT").then(|| CLIENT_SECRET.to_string())
+fn secrets(req: &SecretRequest<'_>) -> Option<String> {
+    (req.reference == "SUPPORT").then(|| CLIENT_SECRET.to_string())
 }
 
-fn wrong_secret(reference: &str) -> Option<String> {
-    (reference == "SUPPORT").then(|| "wrong".to_string())
+fn wrong_secret(req: &SecretRequest<'_>) -> Option<String> {
+    (req.reference == "SUPPORT").then(|| "wrong".to_string())
 }
 
-fn no_secrets(_: &str) -> Option<String> {
+fn no_secrets(_: &SecretRequest<'_>) -> Option<String> {
     None
 }
 

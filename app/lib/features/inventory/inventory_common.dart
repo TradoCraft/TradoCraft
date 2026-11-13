@@ -64,7 +64,18 @@ class LocationField extends ConsumerWidget {
       key: ValueKey('$label-$value-${choices.length}'),
       initialValue: choices.any((c) => c.$1 == value) ? value : null,
       isExpanded: true,
-      decoration: InputDecoration(labelText: label),
+      decoration: InputDecoration(
+        labelText: label,
+        // An empty list greys the field out; say why and where to fix it.
+        helper: choices.isEmpty && warehouses.hasValue
+            ? Text(
+                context.l10n.stockNoLocationsHint,
+                key: const ValueKey('no-locations-hint'),
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              )
+            : null,
+        helperMaxLines: 3,
+      ),
       items: [
         for (final c in choices)
           DropdownMenuItem(value: c.$1, child: Text(c.$2)),

@@ -1,8 +1,10 @@
 import 'dart:convert';
 
 import 'dart:async';
+import 'dart:typed_data';
 import 'dart:ui' show Locale;
 
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tradocraft_app/app/api.dart';
@@ -593,4 +595,216 @@ void main() {
       expect(ids[1], ids[0], reason: 'a retry is idempotent for the server');
     });
   });
+  group('action edge cases', () {
+    final done = ['welcome', 'product', 'suppliers', 'buying', 'invoices', 'manufacturing', 'prices'];
+    Object? ok(Object? _) =>
+        {'ticket_id': 't1', 'ticket_number': 'T1', 'new_ticket': true};
+
+    test('pause and resume while the request is pending keep the button disabled and the Message-ID', () async {
+      final gate = Completer<void>();
+      final http = _SlowHttp(gate.future, {'POST /api/v1/helpdesk/inbound': ok});
+      final c = _boot(http, completed: done, active: 'customer');
+      final t = c.read(tutorialProvider.notifier);
+      await t.ready;
+      await t.resume();
+      t.next();
+      final first = t.runAction();
+      await pumpEventQueue();
+      t.pause();
+      await t.resume();
+      expect(c.read(tutorialProvider).actionBusy, isTrue);
+      await t.runAction(); // ignored: the first request is still pending
+      expect(http.mails, hasLength(1));
+      gate.complete();
+      await first;
+      expect(c.read(tutorialProvider).actionBusy, isFalse);
+      expect(c.read(tutorialProvider).stepIndex, 1, reason: 'the stale answer is not used');
+      await t.runAction();
+      expect(http.mails, hasLength(2));
+      String id(String raw) => RegExp(r'Message-ID: (.*)\r\n').firstMatch(raw)!.group(1)!;
+      expect(id(http.mails[1]), id(http.mails[0]));
+      expect(c.read(tutorialProvider).stepIndex, 2);
+    });
+
+    test('skipping a step while its request is pending frees the next action step', () async {
+      final gate = Completer<void>();
+      final http = _SlowHttp(gate.future, {'POST /api/v1/helpdesk/inbound': ok});
+      final c = _boot(
+        http,
+        completed: done,
+        active: 'customer',
+        values: {'ticketId': 't1', 'ticketNumber': 'T1'},
+      );
+      final t = c.read(tutorialProvider.notifier);
+      await t.ready;
+      await t.resume();
+      t.next(); // mail1
+      final stale = t.runAction();
+      await pumpEventQueue();
+      expect(c.read(tutorialProvider).actionBusy, isTrue);
+      t.skipStep();
+      expect(c.read(tutorialProvider).actionBusy, isFalse);
+      t.routeChanged('/helpdesk');
+      t.routeChanged('/helpdesk/t1');
+      t.next(); // reply -> mail2
+      expect(c.read(tutorialProvider).stepIndex, 5);
+      gate.complete();
+      await stale;
+      expect(c.read(tutorialProvider).stepIndex, 5, reason: 'the old run changes nothing');
+      expect(c.read(tutorialProvider).actionBusy, isFalse);
+      await t.runAction();
+      expect(c.read(tutorialProvider).stepIndex, 6);
+    });
+
+    test('the quotation probe looks past the first five candidates', () async {
+      final routes = <String, Object? Function(Object?)>{
+        'GET /api/v1/quotations': (_) => {
+          'items': [
+            for (final i in ['a', 'b', 'c', 'd', 'e', 'f', 'q1']) {'id': i},
+          ],
+        },
+        for (final i in ['a', 'b', 'c', 'd', 'e', 'f'])
+          'GET /api/v1/quotations/$i': (_) => {
+            'id': i,
+            'customer_id': 'cu1',
+            'status': 'draft',
+            'lines': [{'product_id': 'k1', 'quantity': '3'}],
+          },
+        'GET /api/v1/quotations/q1': (_) => {
+          'id': 'q1',
+          'customer_id': 'cu1',
+          'status': 'draft',
+          'lines': [{'product_id': 'k1', 'quantity': '8'}],
+        },
+      };
+      final http = FakeHttp(routes);
+      final c = _boot(
+        http,
+        completed: [...done, 'customer'],
+        active: 'quotation',
+        step: 1,
+        values: {'customerId': 'cu1'},
+      );
+      final t = c.read(tutorialProvider.notifier);
+      await t.ready;
+      await t.resume();
+      t.routeChanged('/quotations');
+      await pumpEventQueue(times: 300);
+      expect(c.read(tutorialProvider).values['quotationId'], 'q1');
+      expect(
+        http.requests.where((r) => r.startsWith('GET /api/v1/quotations/')).length,
+        lessThanOrEqualTo(20),
+      );
+    });
+  });
+
+  group('action ownership', () {
+    final done = ['welcome', 'product', 'suppliers', 'buying', 'invoices', 'manufacturing', 'prices'];
+    Object? ok(Object? _) =>
+        {'ticket_id': 't1', 'ticket_number': 'T1', 'new_ticket': true};
+
+    test('skipping an inactive chapter leaves a pending action valid', () async {
+      final gate = Completer<void>();
+      final http = _SlowHttp(gate.future, {'POST /api/v1/helpdesk/inbound': ok});
+      final c = _boot(http, completed: done, active: 'customer');
+      final t = c.read(tutorialProvider.notifier);
+      await t.ready;
+      await t.resume();
+      t.next();
+      final pending = t.runAction();
+      await pumpEventQueue();
+      await t.skipChapter('quotation'); // not the active chapter
+      expect(c.read(tutorialProvider).actionBusy, isTrue);
+      gate.complete();
+      await pending;
+      expect(c.read(tutorialProvider).stepIndex, 2, reason: 'the response still advances the step');
+      expect(c.read(tutorialProvider).actionBusy, isFalse);
+    });
+
+    for (final failing in [false, true]) {
+      test('a stale ${failing ? 'error' : 'success'} does not touch the newer request', () async {
+        final gates = [Completer<void>(), Completer<void>()];
+        var served = 0;
+        final http = _GatedHttp(gates, {
+          'POST /api/v1/helpdesk/inbound': (_) => failing && served++ == 0
+              ? const FakeStatus(500, {'error': 'x', 'message': 'boom'})
+              : ok(null),
+        });
+        final c = _boot(http, completed: done, active: 'customer');
+        final t = c.read(tutorialProvider.notifier);
+        await t.ready;
+        await t.resume();
+        t.next(); // mail1
+        final first = t.runAction();
+        await pumpEventQueue();
+        t.back(); // a reset: the flags are freed
+        t.next(); // the same step again (same key)
+        expect(c.read(tutorialProvider).actionBusy, isFalse);
+        final second = t.runAction();
+        await pumpEventQueue();
+        expect(http.mails, 2);
+        gates[0].complete(); // the stale one finishes first
+        await first;
+        var s = c.read(tutorialProvider);
+        expect(s.actionBusy, isTrue, reason: 'the newer request is still running');
+        expect(s.actionError, isNull);
+        expect(s.stepIndex, 1);
+        gates[1].complete();
+        await second;
+        s = c.read(tutorialProvider);
+        expect(s.actionBusy, isFalse);
+        expect(s.stepIndex, 2);
+      });
+    }
+  });
+}
+
+/// A fake server that holds every answer back until [gate] completes and records the raw bodies.
+class _SlowHttp extends FakeHttp {
+  _SlowHttp(this.gate, super.routes);
+  final Future<void> gate;
+  final sent = <String>[];
+
+  /// The mails posted so far.
+  List<String> get mails => [
+    for (final s in sent)
+      if (s.startsWith('Message-ID')) s,
+  ];
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions o,
+    Stream<Uint8List>? body,
+    Future<void>? cancel,
+  ) async {
+    final bytes = body == null
+        ? Uint8List(0)
+        : Uint8List.fromList(await body.expand((c) => c).toList());
+    sent.add(utf8.decode(bytes));
+    await gate;
+    return super.fetch(o, Stream.value(bytes), cancel);
+  }
+}
+
+/// A fake server where each posted mail waits for its own gate.
+class _GatedHttp extends FakeHttp {
+  _GatedHttp(this.gates, super.routes);
+  final List<Completer<void>> gates;
+  int mails = 0;
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions o,
+    Stream<Uint8List>? body,
+    Future<void>? cancel,
+  ) async {
+    final bytes = body == null
+        ? Uint8List(0)
+        : Uint8List.fromList(await body.expand((c) => c).toList());
+    if (o.method == 'POST' && o.path.endsWith('/helpdesk/inbound')) {
+      final gate = gates[mails++];
+      await gate.future;
+    }
+    return super.fetch(o, Stream.value(bytes), cancel);
+  }
 }

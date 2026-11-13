@@ -1,10 +1,10 @@
 -- Development seed data. Loaded by the API when SEED_DEV_DATA=true and no company exists.
 -- All names and numbers are fictitious.
 
-INSERT INTO core.companies (id, name, vat_number, street, postal_code, city, country_code, currency, email, phone, iban)
+INSERT INTO core.companies (id, name, vat_number, street, postal_code, city, country_code, currency, email, phone, iban, is_primary)
 VALUES ('00000000-0000-7000-8000-000000000001', 'Demo Manufacturing BV', 'BE0123456749',
         'Industrieweg 1', '9000', 'Gent', 'BE', 'EUR', 'sales@example.com', '+32 9 000 00 00',
-        'BE68 5390 0754 7034');
+        'BE68 5390 0754 7034', true);
 
 INSERT INTO core.users (id, email, display_name) VALUES
     ('00000000-0000-7000-8000-000000000101', 'admin@example.com', 'Admin User'),
@@ -15,6 +15,13 @@ INSERT INTO core.user_companies (user_id, company_id, roles, is_default) VALUES
     ('00000000-0000-7000-8000-000000000101', '00000000-0000-7000-8000-000000000001', '{admin}', true),
     ('00000000-0000-7000-8000-000000000102', '00000000-0000-7000-8000-000000000001', '{sales}', true),
     ('00000000-0000-7000-8000-000000000103', '00000000-0000-7000-8000-000000000001', '{viewer}', true);
+
+-- A default receiving place, as a newly provisioned company has it (the tutorial buys goods into
+-- warehouse MAIN). Virtual locations are created on first use.
+INSERT INTO inventory.warehouses (id, company_id, code, name, kind) VALUES
+    ('00000000-0000-7000-8000-000000000401', '00000000-0000-7000-8000-000000000001', 'MAIN', 'Main warehouse', 'warehouse');
+INSERT INTO inventory.locations (id, company_id, warehouse_id, code, name) VALUES
+    ('00000000-0000-7000-8000-000000000402', '00000000-0000-7000-8000-000000000001', '00000000-0000-7000-8000-000000000401', 'MAIN', 'Main warehouse');
 
 INSERT INTO pricing.price_zones (id, company_id, code, name, sort_order) VALUES
     ('00000000-0000-7000-8000-000000000201', '00000000-0000-7000-8000-000000000001', 'Z1', 'Zone 1 – Distributors', 1),

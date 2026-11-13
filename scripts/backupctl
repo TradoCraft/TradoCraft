@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # backupctl: physical backups of the tradocraft PostgreSQL server, retention, verification and
-# restore (ADR 0053, roadmap D2).
+# restore (ADR 0056, roadmap D2).
 #
 # A backup is a pg_basebackup of the whole server (every database, including the attachments and
 # photos stored as bytea) in tar format with the WAL it needs, compressed, with a SHA-256 checksum
@@ -19,7 +19,7 @@ info() { echo "backupctl: $*"; }
 
 usage() {
   cat <<'EOF'
-backupctl: physical backups of the tradocraft PostgreSQL server (ADR 0053)
+backupctl: physical backups of the tradocraft PostgreSQL server (ADR 0056)
 
 Usage: backupctl [--config FILE] [--dir DIR] [--database-url URL] <command> [args]
 

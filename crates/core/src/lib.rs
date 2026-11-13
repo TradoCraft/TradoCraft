@@ -10,6 +10,8 @@ pub mod csv_io;
 pub mod environment;
 pub mod error;
 pub mod files;
+pub mod identity;
+pub mod identity_admin;
 pub mod mail;
 pub mod modules;
 pub mod numbering;

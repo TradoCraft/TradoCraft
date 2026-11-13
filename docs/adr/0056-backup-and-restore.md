@@ -1,4 +1,4 @@
-# 0053 — Backup and restore: physical base backups, retention, verified restores
+# 0056 — Backup and restore: physical base backups, retention, verified restores
 
 **Status:** Accepted
 

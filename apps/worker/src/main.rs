@@ -193,30 +193,39 @@ async fn main() -> anyhow::Result<()> {
                 Err(e) => tracing::error!(error = ?e, "recomputing product co-occurrence failed"),
             }
         }
-        if let Some(cfg) = &imap {
-            match poll(&db, cfg).await {
-                Ok(0) => {}
-                Ok(n) => tracing::info!(n, "e-mails fetched"),
-                Err(e) => tracing::error!(error = ?e, "IMAP poll failed"),
+        // Read every pass, so a mailbox added or changed in the app is picked up without a restart.
+        // `None` when that failed: what depends on the mailboxes then waits for the next pass.
+        let active = if live || policy.inbound_allowed {
+            match mailboxes::load_active(&db).await {
+                Ok(a) => Some(a),
+                Err(e) => {
+                    tracing::error!(error = ?e, "loading the helpdesk mailboxes failed");
+                    None
+                }
+            }
+        } else {
+            Some(Vec::new())
+        };
+        // The single IMAP_* mailbox is the fallback of a company that has no mailbox of its own:
+        // with active mailboxes it would fetch the same mail a second time.
+        if let (Some(cfg), Some(active)) = (&imap, &active) {
+            if active.is_empty() {
+                match poll(&db, cfg).await {
+                    Ok(0) => {}
+                    Ok(n) => tracing::info!(n, "e-mails fetched"),
+                    Err(e) => tracing::error!(error = ?e, "IMAP poll failed"),
+                }
             }
         }
-        // Read every pass, so a mailbox added or changed in the app is picked up without a restart.
-        let active = if live || policy.inbound_allowed {
-            mailboxes::load_active(&db).await.unwrap_or_else(|e| {
-                tracing::error!(error = ?e, "loading the helpdesk mailboxes failed");
-                Vec::new()
-            })
-        } else {
-            Vec::new()
-        };
-        if policy.inbound_allowed && !active.is_empty() {
-            match mailboxes::poll_all(&db, &active, &graph, &mailboxes::env_secret).await {
+        let active_list = active.as_deref().unwrap_or_default();
+        if policy.inbound_allowed && !active_list.is_empty() {
+            match mailboxes::poll_all(&db, active_list, &graph, &mailboxes::env_secret).await {
                 0 => {}
                 n => tracing::info!(n, "e-mails fetched from helpdesk mailboxes"),
             }
         }
         let by_mailbox =
-            live.then(|| mailboxes::transports(&active, &graph, &mailboxes::env_secret));
+            live.then(|| mailboxes::transports(active_list, &graph, &mailboxes::env_secret));
         let transports = Transports {
             fallback: &mailer,
             mailboxes: by_mailbox.as_ref(),
@@ -240,15 +249,21 @@ async fn main() -> anyhow::Result<()> {
             ),
             Err(e) => tracing::error!(error = ?e, "generating contract visits failed"),
         }
-        match process_outbox_with(&db, &transports, 50).await {
-            Ok(0) => {}
-            Ok(n) => tracing::info!(n, "e-mails sent"),
-            Err(e) => tracing::error!(error = ?e, "sending the outbox failed"),
-        }
-        match process_system_mail_with(&db, &transports, 50).await {
-            Ok(0) => {}
-            Ok(n) => tracing::info!(n, "system e-mails sent"),
-            Err(e) => tracing::error!(error = ?e, "sending system e-mail failed"),
+        // Without the mailbox list every queued mail would look as if its mailbox is gone and be
+        // charged an attempt: wait for the next pass.
+        if active.is_some() {
+            match process_outbox_with(&db, &transports, 50).await {
+                Ok(0) => {}
+                Ok(n) => tracing::info!(n, "e-mails sent"),
+                Err(e) => tracing::error!(error = ?e, "sending the outbox failed"),
+            }
+            match process_system_mail_with(&db, &transports, 50).await {
+                Ok(0) => {}
+                Ok(n) => tracing::info!(n, "system e-mails sent"),
+                Err(e) => tracing::error!(error = ?e, "sending system e-mail failed"),
+            }
+        } else {
+            tracing::warn!("outgoing e-mail skipped this pass: the mailboxes are unknown");
         }
         tokio::select! {
             _ = tokio::time::sleep(interval) => {}

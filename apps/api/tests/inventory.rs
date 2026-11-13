@@ -201,9 +201,15 @@ async fn warehouses_locations_and_vans_are_maintained_by_the_admin(db: PgPool) {
 
     let shelf = e.location("A-01").await;
     let (_, list) = get(&e.app, SALES, "/inventory/warehouses").await;
-    assert_eq!(list.as_array().unwrap().len(), 2);
-    assert_eq!(list[1]["code"], "WH1");
-    assert_eq!(list[1]["locations"].as_array().unwrap().len(), 2);
+    // The development seed's warehouse MAIN, this test's WH1 and the van.
+    assert_eq!(list.as_array().unwrap().len(), 3);
+    let wh1 = list
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|w| w["code"] == "WH1")
+        .unwrap();
+    assert_eq!(wh1["locations"].as_array().unwrap().len(), 2);
 
     // Only the admin changes the structure.
     for who in [STORES, SALES, VIEWER, PM] {
@@ -3288,4 +3294,30 @@ async fn counts_are_searched_and_paged_and_a_foreign_lot_is_refused(db: PgPool) 
     )
     .await;
     assert_eq!(status, StatusCode::NOT_FOUND, "{r}");
+}
+
+/// The development seed (the tutorial environment) has a receiving location: goods can be
+/// received into warehouse MAIN without creating a warehouse first.
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn dev_seed_has_a_default_receiving_location(db: PgPool) {
+    let app = setup(db).await;
+    let (st, list) = get(&app, ADMIN, "/inventory/warehouses").await;
+    assert_eq!(st, StatusCode::OK, "{list}");
+    let codes: Vec<(&str, Vec<&str>)> = list
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|w| {
+            (
+                w["code"].as_str().unwrap(),
+                w["locations"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .map(|l| l["code"].as_str().unwrap())
+                    .collect(),
+            )
+        })
+        .collect();
+    assert_eq!(codes, vec![("MAIN", vec!["MAIN"])]);
 }

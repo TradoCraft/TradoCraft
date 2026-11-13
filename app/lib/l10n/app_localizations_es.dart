@@ -2707,6 +2707,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get stockNoMoves => 'Aún no hay movimientos';
 
   @override
+  String get stockNoLocationsHint =>
+      'Aún no hay ubicaciones. Un administrador crea un almacén y una ubicación en Existencias > Almacenes.';
+
+  @override
   String get stockNoWarehouses =>
       'Aún no hay almacenes. Un administrador los crea aquí.';
 
@@ -6337,6 +6341,26 @@ class AppLocalizationsEs extends AppLocalizations {
   String get tutReplay => 'Repetir';
 
   @override
+  String tutFinishedTitle(String name) {
+    return 'Capítulo $name completado';
+  }
+
+  @override
+  String tutFinishedNext(String name) {
+    return 'Bien hecho. Lo siguiente: $name. Empiézalo ahora o elígelo más tarde en el mapa de capítulos.';
+  }
+
+  @override
+  String get tutFinishedLast =>
+      'Ese era el último capítulo. Bien hecho. Puedes repetir cualquier capítulo desde el mapa de capítulos.';
+
+  @override
+  String get tutStartNext => 'Empezar el siguiente capítulo';
+
+  @override
+  String get tutBackToMap => 'Volver al mapa de capítulos';
+
+  @override
   String get tutSkipChapter => 'Omitir capítulo';
 
   @override
@@ -7840,6 +7864,317 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get tutInvoicesOpenSecondBody =>
       'Abra la factura TUT-INV-002, la que acaba de registrar, desde la lista de Finanzas.';
+
+  @override
+  String get adminIdentityProviders => 'Proveedores de identidad';
+
+  @override
+  String get idpIntro =>
+      'Los proveedores de identidad deciden quién puede iniciar sesión en TradoCraft. Las personas se siguen creando en el ERP; el proveedor solo demuestra quién es cada una.';
+
+  @override
+  String idpPrimaryCompany(String name) {
+    return 'Empresa principal: $name';
+  }
+
+  @override
+  String get idpPrimaryNote =>
+      'Solo los administradores de la empresa principal de la instalación pueden cambiar estos ajustes.';
+
+  @override
+  String get idpReadOnlyNotice =>
+      'No eres administrador de la empresa principal de la instalación, así que estos ajustes no están disponibles para ti. Pídeselo a un administrador de esa empresa.';
+
+  @override
+  String get idpAdd => 'Añadir proveedor';
+
+  @override
+  String get idpNone => 'Aún no hay proveedores de identidad configurados.';
+
+  @override
+  String get idpEnabled => 'Activado';
+
+  @override
+  String get idpDisabled => 'Desactivado';
+
+  @override
+  String get idpSourceEnv => 'Entorno del servidor';
+
+  @override
+  String get idpSourceDatabase => 'Guardado en la app';
+
+  @override
+  String get idpEnvExplain =>
+      'Definido por OIDC_ISSUER / OIDC_AUDIENCE del servidor. No se puede cambiar aquí; sigue disponible como solución de emergencia.';
+
+  @override
+  String idpRuleVerified(String claim) {
+    return 'Vincula por correo cuando la declaración $claim es verdadera';
+  }
+
+  @override
+  String get idpRuleTrust =>
+      'Vincula por correo y confía en la dirección del proveedor';
+
+  @override
+  String get idpRuleSubject =>
+      'Solo sujetos existentes: sin vincular por correo';
+
+  @override
+  String idpRuleDomains(String domains) {
+    return 'solo para $domains';
+  }
+
+  @override
+  String get idpAddTitle => 'Añadir proveedor de identidad';
+
+  @override
+  String get idpEditTitle => 'Editar proveedor de identidad';
+
+  @override
+  String get idpPreset => 'Empezar desde';
+
+  @override
+  String get idpPresetEntra => 'Microsoft Entra ID';
+
+  @override
+  String get idpPresetGoogle => 'Google';
+
+  @override
+  String get idpPresetGeneric => 'OpenID Connect genérico';
+
+  @override
+  String get idpTenantId => 'Id del inquilino (directorio)';
+
+  @override
+  String get idpAudienceEntraHint =>
+      'El id de aplicación (cliente) de tu registro de app de Entra';
+
+  @override
+  String get idpFieldName => 'Nombre';
+
+  @override
+  String get idpFieldIssuer => 'URL del emisor';
+
+  @override
+  String get idpFieldAudience => 'Audiencia';
+
+  @override
+  String get idpFieldClientId => 'Id de cliente (cliente público, sin secreto)';
+
+  @override
+  String get idpFieldScopes => 'Scopes';
+
+  @override
+  String get idpFieldEmailClaim => 'Declaración del correo';
+
+  @override
+  String get idpFieldVerifiedClaim => 'Declaración de verificación';
+
+  @override
+  String get idpFieldDomains => 'Dominios de correo permitidos';
+
+  @override
+  String get idpDomainsHint =>
+      'Escribe un dominio y pulsa Intro, por ejemplo example.com';
+
+  @override
+  String get idpAdvanced => 'Avanzado';
+
+  @override
+  String get idpAlgorithms => 'Algoritmos de firma aceptados';
+
+  @override
+  String get idpEmailRuleTitle =>
+      '¿Cómo puede usarse una dirección de correo para vincular a una persona?';
+
+  @override
+  String get idpRuleVerifiedTitle =>
+      'Exigir una declaración verificada (recomendado)';
+
+  @override
+  String get idpRuleVerifiedBody =>
+      'El primer inicio de sesión solo se vincula al usuario del ERP con el mismo correo si el token incluye una declaración, como email_verified, que indique que el proveedor comprobó esa dirección. Riesgo: si el proveedor no comprueba realmente las direcciones, la declaración no vale nada y un extraño podría apropiarse de un usuario.';
+
+  @override
+  String get idpRuleTrustTitle =>
+      'Confiar en la dirección de correo del proveedor';
+
+  @override
+  String get idpRuleTrustBody =>
+      'La dirección del token se acepta sin declaración de verificación. Úsalo solo en un directorio donde tu empresa controle todas las direcciones, como un único inquilino de Entra, y añade dominios permitidos. Riesgo: si las personas pueden fijar su propia dirección en el proveedor, pueden entrar como cualquier usuario.';
+
+  @override
+  String get idpRuleSubjectTitle => 'Solo sujetos existentes';
+
+  @override
+  String get idpRuleSubjectBody =>
+      'Nadie se vincula por correo. Un administrador vincula cada usuario con una identidad del proveedor (Usuarios, Vincular identidad). Lo más seguro, pero más trabajo.';
+
+  @override
+  String get idpEntraAdvice =>
+      'Entra ID: o bien confiar en el correo del proveedor y listar tus dominios permitidos (un inquilino solo contiene a tu gente), o bien exigir la declaración xms_edov, que Entra solo envía si la añades como declaración opcional en el registro de la app.';
+
+  @override
+  String get idpErrName => 'El nombre es obligatorio.';
+
+  @override
+  String get idpErrIssuer => 'El emisor debe ser una URL https://.';
+
+  @override
+  String get idpErrAudience => 'La audiencia es obligatoria.';
+
+  @override
+  String idpErrDomain(String domain) {
+    return '$domain no parece un dominio.';
+  }
+
+  @override
+  String get idpErrAlgorithms => 'Selecciona al menos un algoritmo.';
+
+  @override
+  String idpSaveRefused(String reason) {
+    return 'El servidor rechazó estos ajustes: $reason';
+  }
+
+  @override
+  String get idpSaved => 'Proveedor de identidad guardado';
+
+  @override
+  String get idpDeleted => 'Proveedor de identidad eliminado';
+
+  @override
+  String idpDeleteConfirm(String name) {
+    return '¿Eliminar el proveedor de identidad $name? Quienes inician sesión con él ya no podrán hacerlo.';
+  }
+
+  @override
+  String get idpLockoutTitle => 'Esto puede dejar a personas fuera';
+
+  @override
+  String get idpLockoutLast =>
+      'Este es el último proveedor de identidad activado y el servidor no tiene alternativa OIDC_ISSUER. Si continúas, nadie podrá iniciar sesión hasta que se arregle la configuración del servidor.';
+
+  @override
+  String get idpLockoutOwn =>
+      'Has iniciado sesión con este proveedor. Si continúas, se cerrará tu sesión y no podrás volver a entrar salvo que otro proveedor te acepte.';
+
+  @override
+  String get idpLockoutContinue => 'Continuar de todos modos';
+
+  @override
+  String get idpTest => 'Probar';
+
+  @override
+  String get idpTestSampleToken => 'Token de ejemplo (opcional)';
+
+  @override
+  String get idpTestSampleHint =>
+      'Pega un token de acceso de una persona de este proveedor para ver cómo se trataría.';
+
+  @override
+  String get idpTestNothing =>
+      'La prueba solo lee el proveedor y comprueba el token. No se vincula ni se guarda nada.';
+
+  @override
+  String idpTestFailed(String error) {
+    return 'No se pudo leer el proveedor: $error';
+  }
+
+  @override
+  String get idpTestDiscovery => 'Documento de descubrimiento accesible';
+
+  @override
+  String get idpTestIssuerMatch =>
+      'El emisor coincide con el documento de descubrimiento';
+
+  @override
+  String idpTestKeys(int count, String algorithms) {
+    return '$count claves de firma, algoritmos: $algorithms';
+  }
+
+  @override
+  String idpTestClaims(String claims) {
+    return 'Declaraciones que el proveedor dice admitir: $claims';
+  }
+
+  @override
+  String get idpTestToken => 'Token de ejemplo';
+
+  @override
+  String get idpTestSignature => 'Firma';
+
+  @override
+  String get idpTestAudience => 'Audiencia';
+
+  @override
+  String get idpTestExpiry => 'No caducado';
+
+  @override
+  String get idpTestOk => 'OK';
+
+  @override
+  String get idpTestNotOk => 'Fallo';
+
+  @override
+  String idpTestEmail(String email) {
+    return 'Correo encontrado: $email';
+  }
+
+  @override
+  String get idpTestNoEmail =>
+      'No se encontró ninguna dirección de correo en el token';
+
+  @override
+  String get idpTestVerified =>
+      'El proveedor marca la dirección como verificada';
+
+  @override
+  String get idpTestNotVerified =>
+      'La dirección no está marcada como verificada';
+
+  @override
+  String idpBindWould(String email) {
+    return 'Iniciaría sesión como $email';
+  }
+
+  @override
+  String idpBindExisting(String email) {
+    return 'Ya vinculado a $email';
+  }
+
+  @override
+  String idpBindRefused(String reason) {
+    return 'Sería rechazado: $reason';
+  }
+
+  @override
+  String get idpLinkIdentity => 'Vincular identidad';
+
+  @override
+  String idpLinkTitle(String name) {
+    return 'Vincular la identidad de $name';
+  }
+
+  @override
+  String get idpLinkExplain =>
+      'Solo necesario para proveedores con la regla «Solo sujetos existentes». Elige el proveedor e introduce el sujeto (la declaración sub) de esta persona allí. Déjalo vacío para quitar el vínculo.';
+
+  @override
+  String get idpLinkProvider => 'Proveedor';
+
+  @override
+  String get idpLinkSubject => 'Sujeto (sub)';
+
+  @override
+  String get idpLinkNoProviders =>
+      'Aún no hay proveedores de identidad guardados en la app.';
+
+  @override
+  String get idpLinkSaved => 'Vínculo de identidad guardado';
+
+  @override
+  String get idpLinkCleared => 'Vínculo de identidad eliminado';
 
   @override
   String tutActionFailed(String reason) {

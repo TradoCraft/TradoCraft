@@ -2699,6 +2699,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get stockNoMoves => 'No movements yet';
 
   @override
+  String get stockNoLocationsHint =>
+      'No locations yet. An administrator creates a warehouse and a location under Stock > Warehouses.';
+
+  @override
   String get stockNoWarehouses =>
       'No warehouses yet. An administrator creates them here.';
 
@@ -6320,6 +6324,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tutReplay => 'Replay';
 
   @override
+  String tutFinishedTitle(String name) {
+    return 'Chapter $name complete';
+  }
+
+  @override
+  String tutFinishedNext(String name) {
+    return 'Well done. Next up: $name. Start it now, or pick it later from the chapter map.';
+  }
+
+  @override
+  String get tutFinishedLast =>
+      'That was the last chapter. Well done. You can replay any chapter from the chapter map.';
+
+  @override
+  String get tutStartNext => 'Start next chapter';
+
+  @override
+  String get tutBackToMap => 'Back to chapter map';
+
+  @override
   String get tutSkipChapter => 'Skip chapter';
 
   @override
@@ -7813,6 +7837,310 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get tutInvoicesOpenSecondBody =>
       'Open invoice TUT-INV-002, the one you just registered, from the list in Finance.';
+
+  @override
+  String get adminIdentityProviders => 'Identity providers';
+
+  @override
+  String get idpIntro =>
+      'Identity providers decide who can sign in to TradoCraft. People are still created in the ERP; the provider only proves who someone is.';
+
+  @override
+  String idpPrimaryCompany(String name) {
+    return 'Primary company: $name';
+  }
+
+  @override
+  String get idpPrimaryNote =>
+      'Only administrators of the installation\'s primary company can change these settings.';
+
+  @override
+  String get idpReadOnlyNotice =>
+      'You are not an administrator of the installation\'s primary company, so these settings are not available to you. Ask an administrator of that company.';
+
+  @override
+  String get idpAdd => 'Add provider';
+
+  @override
+  String get idpNone => 'No identity providers configured yet.';
+
+  @override
+  String get idpEnabled => 'Enabled';
+
+  @override
+  String get idpDisabled => 'Disabled';
+
+  @override
+  String get idpSourceEnv => 'Server environment';
+
+  @override
+  String get idpSourceDatabase => 'Saved in the app';
+
+  @override
+  String get idpEnvExplain =>
+      'Set by the server\'s OIDC_ISSUER / OIDC_AUDIENCE. It cannot be changed here; it stays available as an emergency fallback.';
+
+  @override
+  String idpRuleVerified(String claim) {
+    return 'Links people by e-mail when the claim $claim is true';
+  }
+
+  @override
+  String get idpRuleTrust =>
+      'Links people by e-mail and trusts the provider\'s address';
+
+  @override
+  String get idpRuleSubject => 'Only existing subjects: no linking by e-mail';
+
+  @override
+  String idpRuleDomains(String domains) {
+    return 'only for $domains';
+  }
+
+  @override
+  String get idpAddTitle => 'Add identity provider';
+
+  @override
+  String get idpEditTitle => 'Edit identity provider';
+
+  @override
+  String get idpPreset => 'Start from';
+
+  @override
+  String get idpPresetEntra => 'Microsoft Entra ID';
+
+  @override
+  String get idpPresetGoogle => 'Google';
+
+  @override
+  String get idpPresetGeneric => 'Generic OpenID Connect';
+
+  @override
+  String get idpTenantId => 'Tenant id (directory id)';
+
+  @override
+  String get idpAudienceEntraHint =>
+      'The application (client) id of your Entra app registration';
+
+  @override
+  String get idpFieldName => 'Name';
+
+  @override
+  String get idpFieldIssuer => 'Issuer URL';
+
+  @override
+  String get idpFieldAudience => 'Audience';
+
+  @override
+  String get idpFieldClientId => 'Client id (public client, no secret)';
+
+  @override
+  String get idpFieldScopes => 'Scopes';
+
+  @override
+  String get idpFieldEmailClaim => 'E-mail claim';
+
+  @override
+  String get idpFieldVerifiedClaim => 'Verified claim';
+
+  @override
+  String get idpFieldDomains => 'Allowed e-mail domains';
+
+  @override
+  String get idpDomainsHint =>
+      'Type a domain and press Enter, for example example.com';
+
+  @override
+  String get idpAdvanced => 'Advanced';
+
+  @override
+  String get idpAlgorithms => 'Accepted signature algorithms';
+
+  @override
+  String get idpEmailRuleTitle =>
+      'How may an e-mail address be used to link a person?';
+
+  @override
+  String get idpRuleVerifiedTitle => 'Require a verified claim (recommended)';
+
+  @override
+  String get idpRuleVerifiedBody =>
+      'The first sign-in is linked to the ERP user with the same e-mail address only when the token carries a claim, such as email_verified, saying the provider checked that address. Risk: if the provider does not really check addresses, the claim is worthless and a stranger could take over a user.';
+
+  @override
+  String get idpRuleTrustTitle => 'Trust the provider\'s e-mail address';
+
+  @override
+  String get idpRuleTrustBody =>
+      'The address in the token is accepted without any verification claim. Only use this for a directory where your company controls every address, such as a single Entra tenant, and add allowed domains. Risk: if people can set their own address at the provider, they can sign in as any user.';
+
+  @override
+  String get idpRuleSubjectTitle => 'Only existing subjects';
+
+  @override
+  String get idpRuleSubjectBody =>
+      'Nobody is linked by e-mail. An administrator links each user to an identity at the provider (Users, Link identity). Safest, but more work.';
+
+  @override
+  String get idpEntraAdvice =>
+      'Entra ID: either trust the provider\'s e-mail and list your allowed domains (a tenant only holds your own people), or require the claim xms_edov, which Entra only sends when you add it as an optional claim in the app registration.';
+
+  @override
+  String get idpErrName => 'A name is required.';
+
+  @override
+  String get idpErrIssuer => 'The issuer must be an https:// URL.';
+
+  @override
+  String get idpErrAudience => 'The audience is required.';
+
+  @override
+  String idpErrDomain(String domain) {
+    return '$domain does not look like a domain.';
+  }
+
+  @override
+  String get idpErrAlgorithms => 'Select at least one algorithm.';
+
+  @override
+  String idpSaveRefused(String reason) {
+    return 'The server refused these settings: $reason';
+  }
+
+  @override
+  String get idpSaved => 'Identity provider saved';
+
+  @override
+  String get idpDeleted => 'Identity provider deleted';
+
+  @override
+  String idpDeleteConfirm(String name) {
+    return 'Delete identity provider $name? People who sign in through it can no longer do so.';
+  }
+
+  @override
+  String get idpLockoutTitle => 'This can lock people out';
+
+  @override
+  String get idpLockoutLast =>
+      'This is the last enabled identity provider and the server has no OIDC_ISSUER fallback. If you continue, nobody can sign in until the server\'s configuration is fixed.';
+
+  @override
+  String get idpLockoutOwn =>
+      'You are signed in through this provider. If you continue, you will be signed out and cannot sign in again unless another provider accepts you.';
+
+  @override
+  String get idpLockoutContinue => 'Continue anyway';
+
+  @override
+  String get idpTest => 'Test';
+
+  @override
+  String get idpTestSampleToken => 'Sample token (optional)';
+
+  @override
+  String get idpTestSampleHint =>
+      'Paste an access token of a person from this provider to see how it would be handled.';
+
+  @override
+  String get idpTestNothing =>
+      'Testing reads the provider and checks the token only. Nothing is linked or stored.';
+
+  @override
+  String idpTestFailed(String error) {
+    return 'Could not read the provider: $error';
+  }
+
+  @override
+  String get idpTestDiscovery => 'Discovery document reachable';
+
+  @override
+  String get idpTestIssuerMatch => 'Issuer matches the discovery document';
+
+  @override
+  String idpTestKeys(int count, String algorithms) {
+    return '$count signing keys, algorithms: $algorithms';
+  }
+
+  @override
+  String idpTestClaims(String claims) {
+    return 'Claims the provider says it supports: $claims';
+  }
+
+  @override
+  String get idpTestToken => 'Sample token';
+
+  @override
+  String get idpTestSignature => 'Signature';
+
+  @override
+  String get idpTestAudience => 'Audience';
+
+  @override
+  String get idpTestExpiry => 'Not expired';
+
+  @override
+  String get idpTestOk => 'OK';
+
+  @override
+  String get idpTestNotOk => 'Failed';
+
+  @override
+  String idpTestEmail(String email) {
+    return 'E-mail found: $email';
+  }
+
+  @override
+  String get idpTestNoEmail => 'No e-mail address found in the token';
+
+  @override
+  String get idpTestVerified => 'The provider marks the address as verified';
+
+  @override
+  String get idpTestNotVerified => 'The address is not marked as verified';
+
+  @override
+  String idpBindWould(String email) {
+    return 'Would sign in as $email';
+  }
+
+  @override
+  String idpBindExisting(String email) {
+    return 'Already linked to $email';
+  }
+
+  @override
+  String idpBindRefused(String reason) {
+    return 'Would be refused: $reason';
+  }
+
+  @override
+  String get idpLinkIdentity => 'Link identity';
+
+  @override
+  String idpLinkTitle(String name) {
+    return 'Link identity of $name';
+  }
+
+  @override
+  String get idpLinkExplain =>
+      'Only needed for providers that use the rule \'Only existing subjects\'. Choose the provider and enter the subject (the sub claim) this person has there. Leave it empty to remove the link.';
+
+  @override
+  String get idpLinkProvider => 'Provider';
+
+  @override
+  String get idpLinkSubject => 'Subject (sub)';
+
+  @override
+  String get idpLinkNoProviders =>
+      'No identity providers are saved in the app yet.';
+
+  @override
+  String get idpLinkSaved => 'Identity link saved';
+
+  @override
+  String get idpLinkCleared => 'Identity link removed';
 
   @override
   String tutActionFailed(String reason) {
