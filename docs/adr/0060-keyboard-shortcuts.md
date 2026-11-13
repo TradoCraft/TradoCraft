@@ -77,11 +77,12 @@ registered by the tab). Existing `ValueKey`s stay.
 
 **Browser results (Firefox, Playwright, `e2e/tests/shortcuts.spec.ts`).**
 
-| Chord | Result in Firefox 1xx on Linux |
+| Chord | Result in headless Firefox on Linux (Playwright 1.63) |
 | --- | --- |
-| Alt+Shift+2 (menu entry 2) | to fill in |
-| Alt+2 (plain, the browser's tab key) | to fill in |
-| Alt+H, Alt+B, Alt+S, Alt+F | to fill in |
+| Alt+Shift+2, Alt+Shift+1 (menu entries 2 and 1) | Reach the app; the menu navigates. |
+| Alt+H (Home) | Reaches the app; navigates to the first entry. |
+| Alt+2 (plain digit) | Ignored by the app, as intended (the browser's tab key). Headless Firefox has no tabs to switch, so the browser side is not observable. |
+| Alt+B, Alt+S, Alt+F (and Alt+H opening the History menu) | Not observable headless: there is no menu bar. To verify by hand in a headed Firefox on Linux, Windows and macOS (Ctrl) before phase B registers Create/Save/Search; remap where the browser wins. |
 
 **Consequences.** Every screen can offer shortcuts by wrapping itself in a scope; the hint badges stay correct
 because they read the same registry the key handler uses. The web chords differ from desktop only for the menu
