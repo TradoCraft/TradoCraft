@@ -96,11 +96,10 @@ contract. Its code is not used; ours is written from the contract. The compariso
 the client, now fixed and tested:
 
 * **A send is never repeated blindly.** When the answer to `/send` does not say whether the message
-  went (a timeout, a 5xx), the draft is looked up: gone means it was sent, still there does
-  not show it was not (transport may yet pick it up), so it is removed and the e-mail is marked
-  failed, not tried again. When even that cannot be told, the
-  e-mail is marked failed with a reason that points at Sent Items, and is not tried again
-  (`SendUnknown`). Before, the draft was deleted and the outbox tried again, which could send the
+  went (a timeout, a 5xx), the draft is looked up (`isDraft`): sent means it was sent. Still a
+  draft does not show it was not (transport may yet pick it up), so it is removed; and when the
+  lookup itself fails nothing can be told. In both cases the e-mail is marked failed with a reason
+  that points at Sent Items, and is not tried again (`SendUnknown`). Before, the draft was deleted and the outbox tried again, which could send the
   e-mail to the customer twice.
 * **One bad message does not stop the rest.** A message that is gone, forbidden or invalid, or
   larger than 35 MB, is skipped and shown in the mailbox's status line; it stays unread. Before, the

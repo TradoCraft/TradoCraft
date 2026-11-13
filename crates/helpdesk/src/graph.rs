@@ -21,9 +21,10 @@
 //! a server error stops the pass, which the next pass tries again.
 //!
 //! Sending is the one thing that must never be repeated without looking: after an answer that
-//! does not say whether the message went (a timeout, a 5xx), the draft is looked up. Gone means it
-//! was sent. Still there means it was not. When even that cannot be told, the e-mail is marked
-//! failed instead of being tried again ([`SendUnknown`]).
+//! does not say whether the message went (a timeout, a 5xx), the draft is looked up (`isDraft`).
+//! Sent means it was sent. Still a draft does not show it was not (transport may pick it up after
+//! the look), and neither does a lookup that fails: in both cases the e-mail is marked failed
+//! instead of being tried again ([`SendUnknown`]).
 
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -102,8 +103,8 @@ impl std::fmt::Display for GraphStatus {
 
 impl std::error::Error for GraphStatus {}
 
-/// A send whose outcome is not known: the answer did not say, and the draft could not be looked
-/// up either. The e-mail is not tried again, because that could send it twice.
+/// A send whose outcome is not known: the answer did not say, and the draft is still a draft or
+/// could not be looked up. The e-mail is not tried again, because that could send it twice.
 #[derive(Debug)]
 pub struct SendUnknown(String);
 
@@ -695,8 +696,9 @@ impl GraphClient {
     /// (without angle brackets), which can differ from the one in the message.
     ///
     /// When the answer to the send itself does not say whether the message went (a timeout, a
-    /// 5xx), the draft is looked up: gone means it was sent. Where that cannot be told either,
-    /// the error is a [`SendUnknown`] and the e-mail must not be sent again.
+    /// 5xx), the draft is looked up: sent means it was sent. Still a draft, or a lookup that
+    /// fails, is a [`SendUnknown`] (a draft still there is removed): the e-mail must not be sent
+    /// again.
     pub async fn send(&self, m: &GraphMailbox, mime: &[u8]) -> anyhow::Result<Option<String>> {
         let token = self.token(m).await?;
         let (draft_id, assigned) = match self.make_draft(m, &token, mime).await {
