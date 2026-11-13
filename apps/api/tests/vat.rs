@@ -347,6 +347,128 @@ async fn the_check_and_the_lookup_have_their_own_permissions(db: PgPool) {
     assert_eq!(c["vies"]["reason"], "disabled");
 }
 
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn a_belgian_number_matches_with_and_without_its_leading_zero(db: PgPool) {
+    let app = setup(db).await;
+    // Both are accepted spellings of one number: the ten-digit form and the older nine-digit one.
+    let (status, a) = send(
+        &app,
+        SALES,
+        Method::POST,
+        "/customers",
+        customer("Z1", Some("BE0428759497")),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{a}");
+    let (status, b) = send(
+        &app,
+        SALES,
+        Method::POST,
+        "/customers",
+        customer("Z2", Some("BE 428.759.497")),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{b}");
+    let (id_a, id_b) = (a["id"].as_str().unwrap(), b["id"].as_str().unwrap());
+
+    let codes = |c: &Value| -> Vec<String> {
+        let mut v: Vec<String> = c["duplicates"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|d| d["code"].as_str().unwrap().to_string())
+            .collect();
+        v.sort();
+        v
+    };
+    // Whichever spelling is typed finds both records, whichever spelling they were stored in.
+    for q in [
+        "vat_number=BE0428759497",
+        "vat_number=BE428759497",
+        "vat_number=0428.759.497&country_code=BE",
+        "vat_number=428759497&country_code=BE",
+    ] {
+        let (_, c) = get(&app, SALES, &format!("/customers/vat-check?{q}")).await;
+        assert_eq!(c["status"], "valid", "{q}");
+        assert_eq!(codes(&c), ["Z1", "Z2"], "{q}: {c}");
+    }
+    // Editing one of them sees the other, not itself.
+    let (_, c) = get(
+        &app,
+        SALES,
+        &format!("/customers/vat-check?vat_number=BE428759497&exclude_id={id_a}"),
+    )
+    .await;
+    assert_eq!(codes(&c), ["Z2"]);
+    let (_, c) = get(
+        &app,
+        SALES,
+        &format!("/customers/vat-check?vat_number=BE0428759497&exclude_id={id_b}"),
+    )
+    .await;
+    assert_eq!(codes(&c), ["Z1"]);
+    // Another country's bare number is still another number.
+    let (_, c) = get(
+        &app,
+        SALES,
+        "/customers/vat-check?vat_number=428759497&country_code=NL",
+    )
+    .await;
+    assert!(codes(&c).is_empty(), "{c}");
+
+    // The same for suppliers.
+    send(
+        &app,
+        ADMIN,
+        Method::POST,
+        "/suppliers",
+        supplier("Short", "BE", Some("BE428759497")),
+    )
+    .await;
+    let (_, c) = get(&app, ADMIN, "/suppliers/vat-check?vat_number=BE0428759497").await;
+    assert_eq!(c["duplicates"].as_array().unwrap().len(), 1, "{c}");
+    let (_, c) = get(
+        &app,
+        ADMIN,
+        "/suppliers/vat-check?vat_number=0428759497&country_code=BE",
+    )
+    .await;
+    assert_eq!(c["duplicates"].as_array().unwrap().len(), 1, "{c}");
+}
+
+/// The duplicate warning compares a number typed now with numbers stored earlier. The typed one is
+/// reduced in Rust, the stored ones in SQL (`core.vat_key`): the two have to agree on every input.
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn the_key_in_rust_is_the_key_in_the_database(db: PgPool) {
+    for raw in [
+        "BE0428759497",
+        "be 0428.759.497",
+        "BE (0)428.759.497",
+        "BE-0428/759,497_",
+        "CHE-123.456.789 (MWST)",
+        "gr 094 259 216",
+        "GR094259216",
+        "EL094259216",
+        "AGR1",
+        "GRGR1",
+        "US 12-3456789",
+        "Ünï-1 Çé 2",
+        "ß ǅ 3 ０１２",
+        "tab\there\nnewline",
+        "+32 (0)475 12 34 56",
+        "",
+        "   ",
+        "---",
+    ] {
+        let sql: String = sqlx::query_scalar("SELECT core.vat_key($1)")
+            .bind(raw)
+            .fetch_one(&db)
+            .await
+            .unwrap();
+        assert_eq!(tradocraft_core::vat::key(raw), sql, "{raw:?}");
+    }
+}
+
 // ---- the lookup against a stand-in for VIES ---------------------------------------------------
 
 struct Vies {

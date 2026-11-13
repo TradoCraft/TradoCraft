@@ -19,6 +19,12 @@ and promises it does not change. If the rules are ever replaced, the indexes bel
 `ss`, `œ` to `oe`, `æ` to `ae`, `ł` and `å` (the test pins these). Both extensions (`unaccent`,
 `pg_trgm`) are *trusted* since PostgreSQL 13: the owner of the database creates them, no superuser.
 
+*Prerequisite.* The function and the indexes name the schema `public`, so the extensions must live
+there. On a database where `unaccent` or `pg_trgm` is already installed in another schema, `CREATE
+EXTENSION IF NOT EXISTS` changes nothing, so the migration checks first and stops with the way out
+(`ALTER EXTENSION <name> SET SCHEMA public`, as the extension's owner) instead of failing later with
+"function public.unaccent does not exist".
+
 *The query.* `core::search` has two helpers. `pattern(q)` trims, treats the user's `%`, `_` and `\`
 as the characters they are (a search for `100%` finds "Rabat 100% BV", not everything) and wraps
 the text in `%`; a blank search is no filter. `matches(expr, param)` is the SQL test

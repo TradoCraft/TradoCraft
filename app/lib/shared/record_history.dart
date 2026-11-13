@@ -61,10 +61,8 @@ class AuditEventTile extends StatelessWidget {
       for (final e in data.entries)
         if (e.key != 'changes') '${e.key}: ${auditValue(e.value)}',
     ];
-    if (rest.isNotEmpty) {
-      final joined = rest.join(', ');
-      lines.add(joined.length > 200 ? '${joined.substring(0, 200)}…' : joined);
-    }
+    // In full: a value cut short could not be read, or copied, anywhere.
+    if (rest.isNotEmpty) lines.add(rest.join(', '));
     return lines.isEmpty ? [l.auditNoDetails] : lines;
   }
 
@@ -86,6 +84,8 @@ class AuditEventTile extends StatelessWidget {
             children: [
               Text(event.action, style: theme.textTheme.titleSmall),
               if (showRecord) Text('·  ${event.entity}', style: muted),
+              // Which record: the id, selectable, to look the record up or filter by it.
+              if (showRecord) SelectableText(event.entityId, style: muted),
             ],
           ),
           Text(

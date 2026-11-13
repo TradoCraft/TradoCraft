@@ -330,7 +330,7 @@ pub async fn vat_duplicates(
         "SELECT id, code, name, active FROM purchasing.suppliers
          WHERE company_id = $1 AND tax_id <> ''
            AND (core.vat_key(tax_id) = ANY($2)
-                OR (core.vat_key(tax_id) = $3 AND upper(country) = ANY($4)))
+                OR (core.vat_key(tax_id) = ANY($3) AND upper(country) = ANY($4)))
            AND ($5::uuid IS NULL OR id <> $5)
          ORDER BY active DESC, name LIMIT 10",
     )

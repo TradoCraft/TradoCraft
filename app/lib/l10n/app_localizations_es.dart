@@ -8201,7 +8201,8 @@ class AppLocalizationsEs extends AppLocalizations {
   String get vatLookup => 'Buscar en VIES';
 
   @override
-  String get vatValid => 'El NIF-IVA es válido.';
+  String get vatValid =>
+      'El formato y los dígitos de control son correctos. Eso no demuestra que el número esté registrado.';
 
   @override
   String get vatFormatOk =>
@@ -8245,7 +8246,7 @@ class AppLocalizationsEs extends AppLocalizations {
       'La consulta VIES está desactivada en este servidor.';
 
   @override
-  String get viesFilled => 'Nombre y dirección rellenados desde VIES.';
+  String get viesFilled => 'Campos vacíos rellenados desde VIES.';
 
   @override
   String get viesNoDetails =>
@@ -8270,7 +8271,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get auditTo => 'Hasta';
 
   @override
-  String get auditClearDates => 'Borrar fechas';
+  String get auditClearDates => 'Quitar las fechas';
 
   @override
   String get auditSystem => 'Sistema';

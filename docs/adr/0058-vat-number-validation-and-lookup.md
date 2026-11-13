@@ -19,7 +19,8 @@ a number without a country that is in the EU) is stored as typed and never refus
 block a customer for no reason.
 
 *What is checked* (`core::vat`, pure functions). The format of the country (`BE` ten digits starting 0 or
-1, `NL` nine digits, `B`, two digits, and so on for all 27) and, for 19 countries, the check digits:
+1, `NL` nine digits, `B`, two digits, and so on for all 27; for Spain the first and last character
+may not both be digits) and, for 19 countries, the check digits:
 AT BE DE DK EE EL FI FR HR HU IT LU NL PL PT RO SE SI SK. The other countries get the format test and
 the answer says so (`format_ok`: the shape is right, the check digits are not verified here). A
 rule is only here if it could be checked against an independent implementation.
@@ -42,7 +43,10 @@ user sees "check digits do not match" before pressing save. Checking needs the r
 module; the lookup makes the server call an outside service, so it needs the write permission.
 
 *Duplicates.* Compared through `core.vat_key(text)`: letters and digits only, upper case, `GR` as `EL`,
-with expression indexes. A record stored without a prefix matches when it is in the number's country.
+with expression indexes. The typed number is reduced in Rust by `vat::key`, the same rule written
+again, and a test holds the two together on awkward input (parentheses, non-ASCII letters, `GR`).
+A number is looked for in every spelling it is accepted in: Belgian numbers with and without the
+leading 0 (`BE0428759497`, `BE428759497`) and Greek ones with eight or nine digits. A record stored without a prefix matches when it is in the number's country.
 Customers are shared master data (ADR 0003), so customers are compared across the whole table, which
 is also what the customer list shows every company. Suppliers are compared within the company. Only a
 warning: two branches of one company legitimately share a number. The record being edited is
@@ -68,7 +72,9 @@ environment (a clone of live data, or a throwaway) it is off whatever `VIES_URL`
 effects. The local check and the duplicate warning work everywhere.
 
 *Pre-filling.* VIES writes the address as lines: the street lines, then "postal code city". The server
-splits it as well as it can (`1000 BRUXELLES`, `B-1000 BRUXELLES`, `1234 AB AMSTERDAM`) and returns the
+splits it as well as it can (`1000 BRUXELLES`, `B-1000 BRUXELLES`, `1234 AB AMSTERDAM`; the two
+letters after the postal code belong to it only for Dutch addresses, so `7100 LA LOUVIERE` keeps its
+city) and returns the
 parts together with the full text. The customer form fills the empty name, street, postal code and city
 and leaves fields that already hold text alone; the supplier form fills an empty name (suppliers keep
 no address). It says what it did ("name and address filled in", or that the member state does not

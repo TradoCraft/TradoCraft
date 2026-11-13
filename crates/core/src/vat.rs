@@ -38,6 +38,43 @@ impl VatNumber {
     pub fn full(&self) -> String {
         format!("{}{}", self.prefix, self.number)
     }
+
+    /// The national part in the other spellings the same number is written in. Belgian numbers are
+    /// ten digits starting with 0, but older documents leave the 0 out (`BE428759497`); Greek
+    /// numbers have nine digits, and eight are written when the first is 0. Both are accepted by
+    /// [`validate`], so a duplicate search has to look for both.
+    pub fn equivalent_numbers(&self) -> Vec<String> {
+        let n = self.number.as_str();
+        let (long, short) = match self.prefix {
+            "BE" => (10, 9),
+            "EL" => (9, 8),
+            _ => return Vec::new(),
+        };
+        if n.len() == short {
+            vec![format!("0{n}")]
+        } else if n.len() == long && n.starts_with('0') {
+            vec![n[1..].to_string()]
+        } else {
+            Vec::new()
+        }
+    }
+}
+
+/// The key two spellings of a VAT number are compared by: letters and digits only, upper case, and
+/// Greece's `GR` written `EL`. This is `core.vat_key` of the database (migration
+/// `20270201000002`) written again, character for character, because the duplicate warning compares
+/// a typed number with stored ones and both sides have to be reduced the same way; the integration
+/// tests hold the two together.
+pub fn key(raw: &str) -> String {
+    let k: String = raw
+        .chars()
+        .filter(char::is_ascii_alphanumeric)
+        .map(|c| c.to_ascii_uppercase())
+        .collect();
+    match k.strip_prefix("GR") {
+        Some(rest) => format!("EL{rest}"),
+        None => k,
+    }
 }
 
 /// What a typed VAT number turns out to be.
@@ -108,6 +145,13 @@ pub fn validate(v: &VatNumber) -> Verdict {
         return Verdict::BadFormat;
     };
     let _ = shape;
+    // Spain: the first and the last character may be letters or digits, but not both digits.
+    if v.prefix == "ES"
+        && !(n.starts_with(|c: char| c.is_ascii_alphabetic())
+            || n.ends_with(|c: char| c.is_ascii_alphabetic()))
+    {
+        return Verdict::BadFormat;
+    }
     match checksum(v.prefix, n) {
         Some(true) => Verdict::Valid,
         Some(false) => Verdict::BadChecksum,
@@ -550,7 +594,10 @@ mod tests {
     fn countries_without_a_rule_get_the_format_test_only() {
         // Spain: right shape, no check digit rule here.
         assert_eq!(verdict("ESB12345678"), Verdict::FormatOk);
+        assert_eq!(verdict("ES12345678Z"), Verdict::FormatOk);
         assert_eq!(verdict("ES1234567"), Verdict::BadFormat);
+        // The first and the last character must not both be digits: nine digits is no Spanish number.
+        assert_eq!(verdict("ES123456789"), Verdict::BadFormat);
         assert_eq!(verdict("BG123456789"), Verdict::FormatOk);
         // A French key with a letter is not checked either.
         assert_eq!(verdict("FRAB303265045"), Verdict::FormatOk);
@@ -568,6 +615,38 @@ mod tests {
         assert!(m.contains("check digits"), "{m}");
         let m = problem("0428759", Some("BE")).unwrap();
         assert!(m.contains("not shaped like a BE"), "{m}");
+    }
+
+    #[test]
+    fn equivalent_numbers_cover_the_belgian_and_greek_spellings() {
+        let eu = |raw: &str| match parse(raw, None) {
+            Parsed::Eu(v) => v,
+            other => panic!("{other:?}"),
+        };
+        assert_eq!(eu("BE0428759497").equivalent_numbers(), ["428759497"]);
+        assert_eq!(eu("BE428759497").equivalent_numbers(), ["0428759497"]);
+        // A ten-digit number starting with 1 has no short form.
+        assert!(eu("BE1781974825").equivalent_numbers().is_empty());
+        assert_eq!(eu("EL094259216").equivalent_numbers(), ["94259216"]);
+        assert_eq!(eu("EL94259216").equivalent_numbers(), ["094259216"]);
+        assert!(eu("DE136695976").equivalent_numbers().is_empty());
+        // Both spellings are accepted by the validation, which is why both are looked for.
+        assert_eq!(verdict("BE428759497"), verdict("BE0428759497"));
+    }
+
+    #[test]
+    fn the_key_is_what_the_database_makes_of_it() {
+        assert_eq!(key("be 0428.759.497"), "BE0428759497");
+        // Parentheses, slashes and everything else that is not a letter or digit go.
+        assert_eq!(key("BE (0)428.759.497"), "BE0428759497");
+        assert_eq!(key("CHE-123.456.789 (MWST)"), "CHE123456789MWST");
+        // Greece: GR and EL are one key.
+        assert_eq!(key("gr 094 259 216"), "EL094259216");
+        assert_eq!(key("EL094259216"), "EL094259216");
+        // Only the leading GR; non-ASCII letters are dropped, as `[^A-Za-z0-9]` does.
+        assert_eq!(key("AGR1"), "AGR1");
+        assert_eq!(key("Ünï1"), "N1");
+        assert_eq!(key(""), "");
     }
 
     #[test]

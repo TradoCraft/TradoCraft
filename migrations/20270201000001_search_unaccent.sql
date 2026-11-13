@@ -8,6 +8,23 @@
 CREATE EXTENSION IF NOT EXISTS unaccent WITH SCHEMA public;
 CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA public;
 
+-- IF NOT EXISTS does not move an extension that is already installed somewhere else, and the
+-- function and indexes below name the schema `public`. Stop here, with the way out, instead of
+-- failing further down with "function public.unaccent does not exist".
+DO $$
+DECLARE
+    elsewhere text;
+BEGIN
+    SELECT string_agg(e.extname || ' (in schema ' || n.nspname || ')', ', ' ORDER BY e.extname)
+      INTO elsewhere
+      FROM pg_extension e
+      JOIN pg_namespace n ON n.oid = e.extnamespace
+     WHERE e.extname IN ('unaccent', 'pg_trgm') AND n.nspname <> 'public';
+    IF elsewhere IS NOT NULL THEN
+        RAISE EXCEPTION 'accent-insensitive search (ADR 0057) needs unaccent and pg_trgm in schema public, but found %. Move each one as its owner with ALTER EXTENSION <name> SET SCHEMA public, then start again.', elsewhere;
+    END IF;
+END $$;
+
 -- unaccent() is only STABLE, because its rules can be replaced, so an index cannot use it as it is.
 -- This wrapper pins the dictionary by name and promises it does not change: should the rules ever
 -- change, rebuild the indexes below (REINDEX) or the old entries no longer match.

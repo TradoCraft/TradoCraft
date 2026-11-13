@@ -92,7 +92,7 @@ void main() {
 
   testWidgets('each verdict has its own words', (tester) async {
     final words = {
-      'valid': 'The VAT number is valid.',
+      'valid': 'The format and check digits are right. This does not show that the number is registered.',
       'format_ok': "The format is right. This country's check digits are not verified here.",
       'bad_format': 'This is not shaped like a VAT number of this country.',
       'not_checked': 'Not an EU VAT number, so it is not checked.',
@@ -194,16 +194,75 @@ void main() {
     await tester.enterText(find.byKey(const ValueKey('vat-input')), 'B');
     await tester.pump(vatCheckDelay);
     await tester.pumpAndSettle();
-    expect(find.text('The VAT number is valid.'), findsOneWidget);
+    expect(
+      find.text(
+        'The format and check digits are right. This does not show that the number is registered.',
+      ),
+      findsOneWidget,
+    );
     // The old answer arrives now and must not overwrite the newer one.
     first.complete(_check(status: 'bad_checksum', number: 'A'));
     await tester.pumpAndSettle();
-    expect(find.text('The VAT number is valid.'), findsOneWidget);
+    expect(
+      find.text(
+        'The format and check digits are right. This does not show that the number is registered.',
+      ),
+      findsOneWidget,
+    );
     expect(
       find.text('The check digits do not match: please check for a typo.'),
       findsNothing,
     );
   });
+
+  testWidgets(
+    'a lookup answer for a number that was edited since fills nothing',
+    (tester) async {
+      final pending = Completer<VatCheck>();
+      var handed = 0;
+      final rig = _Rig(
+        text: 'BE0428759497',
+        answer: (n, lookup) => lookup
+            ? pending.future
+            : Future.value(_check(number: n, status: 'valid')),
+        onLookup: (_) {
+          handed++;
+          return true;
+        },
+      );
+      await tester.pumpWidget(_host(rig.widget));
+      await tester.pumpAndSettle();
+      // The lookup is on its way ...
+      await tester.tap(find.byKey(const ValueKey('vat-lookup')));
+      await tester.pump();
+      // ... and the number is edited before it answers.
+      await tester.enterText(find.byKey(const ValueKey('vat-input')), 'BE1');
+      await tester.pump();
+      pending.complete(
+        _check(
+          number: 'BE0428759497',
+          vies: {'state': 'valid', 'name': 'OLD NUMBER NV'},
+        ),
+      );
+      await tester.pump();
+      expect(
+        handed,
+        0,
+        reason: 'the form must not be filled from the old number',
+      );
+      expect(find.text('Registered and active in VIES.'), findsNothing);
+      // Nor does any advice about the old number stay on screen while the new one is typed.
+      expect(find.byKey(const ValueKey('vat-status')), findsNothing);
+      // The button is usable again for the new number.
+      expect(
+        tester
+            .widget<IconButton>(find.byKey(const ValueKey('vat-lookup')))
+            .onPressed,
+        isNotNull,
+      );
+      await tester.pumpAndSettle();
+    },
+  );
 
   group('the VIES lookup', () {
     Map<String, Object?> valid({String? name, String? street}) => {
@@ -254,10 +313,7 @@ void main() {
       expect(rig.asked.last, ('BE0428759497', true));
       expect(got?.name, 'ACME NV');
       expect(find.text('Registered and active in VIES.'), findsOneWidget);
-      expect(
-        find.text('Name and address filled in from VIES.'),
-        findsOneWidget,
-      );
+      expect(find.text('Empty fields filled in from VIES.'), findsOneWidget);
 
       // Editing the number makes what VIES said about the old one stale.
       await tester.enterText(find.byKey(const ValueKey('vat-input')), 'BE1');

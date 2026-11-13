@@ -8167,7 +8167,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get vatLookup => 'Look up in VIES';
 
   @override
-  String get vatValid => 'The VAT number is valid.';
+  String get vatValid =>
+      'The format and check digits are right. This does not show that the number is registered.';
 
   @override
   String get vatFormatOk =>
@@ -8209,7 +8210,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get viesDisabled => 'The VIES lookup is switched off on this server.';
 
   @override
-  String get viesFilled => 'Name and address filled in from VIES.';
+  String get viesFilled => 'Empty fields filled in from VIES.';
 
   @override
   String get viesNoDetails =>

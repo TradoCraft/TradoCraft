@@ -72,11 +72,11 @@ pub struct Assessment {
     pub raw: String,
     pub status: VatStatus,
     pub eu: Option<VatNumber>,
-    /// Keys (see `core.vat_key`) under which the same number may be stored.
+    /// Keys (see `core.vat_key`, [`vat::key`]) under which the same number may be stored.
     pub keys: Vec<String>,
-    /// The bare national part, to match numbers stored without a prefix, together with the
-    /// country codes such a record must be in.
-    pub bare: Option<(String, Vec<String>)>,
+    /// The bare national part (in each spelling it is written in), to match numbers stored
+    /// without a prefix, together with the country codes such a record must be in.
+    pub bare: Option<(Vec<String>, Vec<String>)>,
 }
 
 /// Judges a typed number with the rules of this module.
@@ -90,9 +90,9 @@ pub fn assess(raw: &str, default_country: Option<&str>) -> Assessment {
     };
     match vat::parse(raw, default_country) {
         Parsed::Empty => {}
-        Parsed::Other(c) => {
+        Parsed::Other(_) => {
             a.status = VatStatus::NotChecked;
-            a.keys.push(c);
+            a.keys.push(vat::key(raw));
         }
         Parsed::Eu(v) => {
             a.status = match vat::validate(&v) {
@@ -101,7 +101,15 @@ pub fn assess(raw: &str, default_country: Option<&str>) -> Assessment {
                 Verdict::BadFormat => VatStatus::BadFormat,
                 Verdict::BadChecksum => VatStatus::BadChecksum,
             };
-            a.keys.push(v.full());
+            // The number in every spelling it is written in (Belgian numbers with and without the
+            // leading 0), each reduced the way the database reduces stored numbers.
+            let numbers: Vec<String> = std::iter::once(v.number.clone())
+                .chain(v.equivalent_numbers())
+                .collect();
+            a.keys = numbers
+                .iter()
+                .map(|n| vat::key(&format!("{}{n}", v.prefix)))
+                .collect();
             // A number stored without its prefix is the same number when its record is in the
             // country of the prefix (Greece: EL for the number, GR for the country).
             let countries = if v.prefix == "EL" {
@@ -109,7 +117,7 @@ pub fn assess(raw: &str, default_country: Option<&str>) -> Assessment {
             } else {
                 vec![v.prefix.to_string()]
             };
-            a.bare = Some((v.number.clone(), countries));
+            a.bare = Some((numbers.iter().map(|n| vat::key(n)).collect(), countries));
             a.eu = Some(v);
         }
     }
@@ -165,8 +173,23 @@ mod tests {
     fn assess_reads_prefix_country_and_foreign_numbers() {
         let a = assess("be 0428.759.497", None);
         assert_eq!(a.status, VatStatus::Valid);
-        assert_eq!(a.keys, vec!["BE0428759497".to_string()]);
-        assert_eq!(a.bare, Some(("0428759497".into(), vec!["BE".into()])));
+        // Both spellings of a Belgian number: with and without the leading 0.
+        assert_eq!(
+            a.keys,
+            vec!["BE0428759497".to_string(), "BE428759497".to_string()]
+        );
+        assert_eq!(
+            a.bare,
+            Some((
+                vec!["0428759497".to_string(), "428759497".to_string()],
+                vec!["BE".to_string()]
+            ))
+        );
+        let a = assess("BE428759497", None);
+        assert_eq!(
+            a.keys,
+            vec!["BE428759497".to_string(), "BE0428759497".to_string()]
+        );
 
         let a = assess("0428.759.497", Some("BE"));
         assert_eq!(a.eu.unwrap().full(), "BE0428759497");
@@ -178,6 +201,9 @@ mod tests {
         let a = assess("CHE-123.456.789", Some("CH"));
         assert_eq!(a.status, VatStatus::NotChecked);
         assert_eq!(a.keys, vec!["CHE123456789".to_string()]);
+        // Punctuation the typed-number rules keep is still dropped from the key, like in the database.
+        let a = assess("CHE-123.456.789 (MWST)", Some("CH"));
+        assert_eq!(a.keys, vec!["CHE123456789MWST".to_string()]);
         assert!(a.eu.is_none() && a.bare.is_none() && !a.lookup_worthwhile());
 
         let a = assess("  ", Some("BE"));

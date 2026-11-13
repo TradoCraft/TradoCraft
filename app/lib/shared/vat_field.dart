@@ -101,11 +101,16 @@ class _VatNumberFieldState extends State<VatNumberField> {
   void _changed() {
     final text = widget.controller.text.trim();
     if (text == _checked) return;
-    // What VIES said was about the old number.
-    if (_vies != null || _filled) {
+    // What was asked, and what was answered, was about the old number: an answer still on its
+    // way must not show, or fill the form, once the number has been edited.
+    _seq++;
+    if (_result != null || _vies != null || _filled || _busy) {
       setState(() {
+        _result = null;
         _vies = null;
         _filled = false;
+        _busy = false;
+        _checked = '';
       });
     }
     _schedule(vatCheckDelay);

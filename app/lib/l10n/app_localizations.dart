@@ -14643,7 +14643,7 @@ abstract class AppLocalizations {
   /// No description provided for @vatValid.
   ///
   /// In en, this message translates to:
-  /// **'The VAT number is valid.'**
+  /// **'The format and check digits are right. This does not show that the number is registered.'**
   String get vatValid;
 
   /// No description provided for @vatFormatOk.
@@ -14709,7 +14709,7 @@ abstract class AppLocalizations {
   /// No description provided for @viesFilled.
   ///
   /// In en, this message translates to:
-  /// **'Name and address filled in from VIES.'**
+  /// **'Empty fields filled in from VIES.'**
   String get viesFilled;
 
   /// No description provided for @viesNoDetails.

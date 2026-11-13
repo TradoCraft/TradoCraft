@@ -266,7 +266,7 @@ pub struct AddressParts {
 /// the countries that disclose addresses is street, then "postal code city" (`1000 BRUXELLES`,
 /// `B-1000 BRUXELLES`, `1234 AB AMSTERDAM`). Anything else comes back as one street line: the form
 /// is a starting point, and the full text stays in [`ViesLookup::address`].
-pub fn split_address(address: &str, _prefix: &str) -> AddressParts {
+pub fn split_address(address: &str, prefix: &str) -> AddressParts {
     let lines: Vec<&str> = address
         .split(['\n', '\r'])
         .map(str::trim)
@@ -276,7 +276,7 @@ pub fn split_address(address: &str, _prefix: &str) -> AddressParts {
         return AddressParts::default();
     };
     if !head.is_empty() {
-        if let Some((postal, city)) = postal_and_city(last) {
+        if let Some((postal, city)) = postal_and_city(last, prefix) {
             return AddressParts {
                 street: Some(head.join(", ")),
                 postal_code: Some(postal),
@@ -292,7 +292,8 @@ pub fn split_address(address: &str, _prefix: &str) -> AddressParts {
 }
 
 /// `1000 BRUXELLES`, `B-1000 BRUXELLES`, `L-1234 LUXEMBOURG`, `1234 AB AMSTERDAM`, `75008 PARIS`.
-fn postal_and_city(line: &str) -> Option<(String, String)> {
+/// `prefix` is the country of the number (VIES prefix): only Dutch postal codes carry letters.
+fn postal_and_city(line: &str, prefix: &str) -> Option<(String, String)> {
     // A country letter prefix such as `B-` or `NL-`.
     let line = match line.split_once('-') {
         Some((p, rest))
@@ -309,8 +310,9 @@ fn postal_and_city(line: &str) -> Option<(String, String)> {
     }
     let mut postal = first.to_string();
     let mut rest: Vec<&str> = tokens.collect();
-    // Dutch postal codes carry two letters after the four digits.
-    if first.len() == 4 && rest.len() > 1 {
+    // Dutch postal codes carry two letters after the four digits. In another country the same
+    // two letters are the start of the city: 7100 LA LOUVIERE.
+    if prefix == "NL" && first.len() == 4 && rest.len() > 1 {
         if let Some(l) = rest.first() {
             if l.len() == 2 && l.chars().all(|c| c.is_ascii_uppercase()) {
                 postal = format!("{first} {l}");
@@ -471,10 +473,17 @@ mod tests {
             (p.postal_code.as_deref(), p.city.as_deref()),
             (Some("1050"), Some("IXELLES"))
         );
-        // Dutch postal codes have letters.
-        let p = a("KEIZERSGRACHT 1\n1015 CJ AMSTERDAM");
+        // Dutch postal codes have letters, and only Dutch ones.
+        let nl = |s| split_address(s, "NL");
+        let p = nl("KEIZERSGRACHT 1\n1015 CJ AMSTERDAM");
         assert_eq!(p.postal_code.as_deref(), Some("1015 CJ"));
         assert_eq!(p.city.as_deref(), Some("AMSTERDAM"));
+        // Two letters after a Belgian postal code are the start of the city, not part of the code.
+        let p = a("RUE X 1\n7100 LA LOUVIERE");
+        assert_eq!(p.postal_code.as_deref(), Some("7100"));
+        assert_eq!(p.city.as_deref(), Some("LA LOUVIERE"));
+        let p = split_address("RUE Y 2\n4500 HU Y", "BE");
+        assert_eq!(p.city.as_deref(), Some("HU Y"));
         // A city of several words.
         let p = a("RUE X 2\n4000 LIEGE CENTRE");
         assert_eq!(p.city.as_deref(), Some("LIEGE CENTRE"));

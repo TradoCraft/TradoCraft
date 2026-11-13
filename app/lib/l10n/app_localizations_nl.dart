@@ -8199,7 +8199,8 @@ class AppLocalizationsNl extends AppLocalizations {
   String get vatLookup => 'Opzoeken in VIES';
 
   @override
-  String get vatValid => 'Het btw-nummer is geldig.';
+  String get vatValid =>
+      'De notatie en de controlecijfers kloppen. Dat bewijst niet dat het nummer geregistreerd is.';
 
   @override
   String get vatFormatOk =>
@@ -8241,7 +8242,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get viesDisabled => 'De VIES-opzoeking staat uit op deze server.';
 
   @override
-  String get viesFilled => 'Naam en adres ingevuld vanuit VIES.';
+  String get viesFilled => 'Lege velden ingevuld vanuit VIES.';
 
   @override
   String get viesNoDetails => 'De lidstaat maakt geen naam of adres bekend.';
@@ -8265,7 +8266,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get auditTo => 'Tot';
 
   @override
-  String get auditClearDates => 'Datums wissen';
+  String get auditClearDates => 'Datumfilter wissen';
 
   @override
   String get auditSystem => 'Systeem';

@@ -8218,7 +8218,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get vatLookup => 'In VIES nachschlagen';
 
   @override
-  String get vatValid => 'Die USt-IdNr. ist gültig.';
+  String get vatValid =>
+      'Format und Prüfziffern stimmen. Das belegt nicht, dass die Nummer registriert ist.';
 
   @override
   String get vatFormatOk =>
@@ -8261,7 +8262,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'Die VIES-Abfrage ist auf diesem Server abgeschaltet.';
 
   @override
-  String get viesFilled => 'Name und Adresse aus VIES übernommen.';
+  String get viesFilled => 'Leere Felder aus VIES übernommen.';
 
   @override
   String get viesNoDetails =>
@@ -8286,7 +8287,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get auditTo => 'Bis';
 
   @override
-  String get auditClearDates => 'Daten löschen';
+  String get auditClearDates => 'Datumsfilter zurücksetzen';
 
   @override
   String get auditSystem => 'System';

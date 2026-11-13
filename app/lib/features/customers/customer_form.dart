@@ -140,8 +140,10 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
   }
 
   /// Fills the empty name and address fields from what VIES knows. Fields that already hold text
-  /// are left as they are. Returns whether anything was filled.
+  /// are left as they are. Returns whether anything was filled. Not once the form is being saved:
+  /// the payload is already taken, and the fields must keep showing what was sent.
   bool _fillFromVies(ViesLookup v) {
+    if (_saving) return false;
     var filled = false;
     void fill(TextEditingController t, String? value) {
       if (value != null && value.isNotEmpty && t.text.trim().isEmpty) {
@@ -204,7 +206,7 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
                   fieldKey: const ValueKey('customer-vat'),
                   controller: _vat,
                   label: context.l10n.vatNumber,
-                  enabled: !widget.readOnly,
+                  enabled: !widget.readOnly && !_saving,
                   check: _checkVat,
                   // The lookup makes the server call VIES: for those who may change customers.
                   onLookup: !widget.readOnly && can(ref, 'customers.write')

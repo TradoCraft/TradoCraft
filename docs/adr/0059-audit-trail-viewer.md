@@ -36,14 +36,20 @@ shown to anyone (there are none today); another company's events on the same rec
 *Paging by cursor.* Newest first by `id` (a sequence that grows with time), a page at a time with
 `before_id`; the answer carries `next_before_id` while there is more. No total: counting a table that
 grows with every transaction gets slower every month, and a deep `OFFSET` reads everything it skips.
-The primary key already serves "newest first within the company" (it walks backwards and stops after one
-page); a single record's history uses the existing `(entity, entity_id)` index. One index is new,
-`(company_id, entity, id DESC)`, for the list of kinds of record, which walks it entity by entity: 0.2 ms
-on half a million events against 54 ms for a `DISTINCT`. (A second index for the plain company-wide page
-was tried and dropped: the planner did not need it, in an even or in a skewed table, and every index
-taxes every business transaction.)
+Two indexes serve it, `(company_id, id DESC)` for the newest page and `(company_id, entity, id DESC)`
+for the list of kinds of record. The primary key alone would do for the newest page when the company
+wrote most of the table, but not for a company that has been quiet while another one wrote: the
+planner then walks back through every event of the other company first (108 ms for 300,000 old events
+next to a million newer ones, 0.07 ms with the index, and growing with the other company's volume).
+The list of kinds of record walks the second index entity by entity: 0.2 ms on half a million events
+against 54 ms for a `DISTINCT`. A single record's history uses the existing `(entity, entity_id)`
+index. (An earlier version of this migration had only the second index, after tests with an even and
+with a skewed mix of two companies showed no use for the first. The case above, a large quiet company,
+was not among them; a review pointed at it and the measurement above settled it.)
 
-*What changed.* `core::audit::Changes` collects, for an update, the fields that differ as
+*What changed.* An update reads the record it changes with `FOR UPDATE`, so that "before" is the latest
+committed row and two concurrent updates do not both diff against the same stale one (the second
+waits for the first). `core::audit::Changes` collects, for an update, the fields that differ as
 `{"changes": {"field": {"from": .., "to": ..}}}`; a save that changed nothing records `{}`. Customer
 updates (15 fields, including the commercial terms of the active company) and supplier updates (11
 fields, next to the keys the event already had) now record it. Other modules adopt it by calling

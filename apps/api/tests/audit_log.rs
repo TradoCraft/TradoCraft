@@ -529,3 +529,63 @@ async fn the_kinds_of_record_are_listed_for_the_filter(db: PgPool) {
     assert_eq!(status, StatusCode::OK, "{f}");
     assert_eq!(f["entities"], json!(["aaa_first", "customer", "supplier"]));
 }
+
+/// An update records what it changed from the latest committed row. A concurrent update holds the
+/// row; the one behind it waits and then reads what the first one wrote, not what was there before.
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn an_update_waits_for_a_concurrent_one_and_records_the_latest_before(db: PgPool) {
+    let app = setup(db.clone()).await;
+    let (_, c) = send(
+        &app,
+        SALES,
+        Method::POST,
+        "/customers",
+        customer("L1", "Gent", "0"),
+    )
+    .await;
+    let id = c["id"].as_str().unwrap().to_string();
+
+    // Another transaction takes the customer row, as a concurrent update would.
+    let mut holder = db.begin().await.unwrap();
+    sqlx::query("SELECT id FROM crm.customers WHERE id = $1::uuid FOR UPDATE")
+        .bind(&id)
+        .fetch_one(&mut *holder)
+        .await
+        .unwrap();
+
+    let second = {
+        let (app, id) = (app.clone(), id.clone());
+        tokio::spawn(async move {
+            send(
+                &app,
+                SALES,
+                Method::PUT,
+                &format!("/customers/{id}"),
+                customer("L1", "Brugge", "0"),
+            )
+            .await
+        })
+    };
+    tokio::time::sleep(std::time::Duration::from_millis(400)).await;
+    assert!(
+        !second.is_finished(),
+        "the update must wait for the row it is going to change"
+    );
+
+    // The first update commits its change; only then may the second one read the row.
+    sqlx::query("UPDATE crm.customers SET city = 'Namur' WHERE id = $1::uuid")
+        .bind(&id)
+        .execute(&mut *holder)
+        .await
+        .unwrap();
+    holder.commit().await.unwrap();
+    let (status, body) = second.await.unwrap();
+    assert_eq!(status, StatusCode::OK, "{body}");
+
+    let (_, h) = get(&app, ADMIN, &format!("/audit/records/customer/{id}")).await;
+    assert_eq!(
+        items(&h)[0]["data"]["changes"]["city"],
+        json!({"from": "Namur", "to": "Brugge"}),
+        "the baseline is the committed row, not the one the update started from: {h}"
+    );
+}

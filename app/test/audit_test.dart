@@ -146,6 +146,59 @@ void main() {
       expect(find.byKey(const ValueKey('audit-more')), findsNothing);
     });
 
+    testWidgets('older events keep the action the list was loaded with', (
+      tester,
+    ) async {
+      final http = FakeHttp({
+        'GET /api/v1/me': (_) => meJson(['audit.view']),
+        'GET /api/v1/audit/facets': (_) => {'entities': <String>[]},
+      });
+      http.routes['GET /api/v1/audit/events'] = (_) {
+        final before = http.queries.last['before_id'];
+        return before == null
+            ? _page([_event(3), _event(2)], next: 2)
+            : _page([_event(1)]);
+      };
+      await _show(tester, http, const AdminPage());
+      // Filter by action and confirm it.
+      await tester.enterText(
+        find.byKey(const ValueKey('audit-action')),
+        'sent',
+      );
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+      expect(_calls(http, 'GET /api/v1/audit/events').last['action'], 'sent');
+      // Edit the box without confirming, then ask for older events: still the confirmed action,
+      // so that the cursor and the filter belong together.
+      await tester.enterText(
+        find.byKey(const ValueKey('audit-action')),
+        'something else',
+      );
+      await tester.tap(find.byKey(const ValueKey('audit-more')));
+      await tester.pumpAndSettle();
+      final q = _calls(http, 'GET /api/v1/audit/events').last;
+      expect(q['before_id'], 2);
+      expect(q['action'], 'sent');
+      // Confirming the new text starts over with it.
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+      final fresh = _calls(http, 'GET /api/v1/audit/events').last;
+      expect(fresh['action'], 'something else');
+      expect(fresh['before_id'], isNull);
+    });
+
+    testWidgets('the company-wide trail names the record, not just its kind', (
+      tester,
+    ) async {
+      final http = FakeHttp({
+        'GET /api/v1/me': (_) => meJson(['audit.view']),
+        'GET /api/v1/audit/facets': (_) => {'entities': <String>[]},
+        'GET /api/v1/audit/events': (_) => _page([_event(7)]),
+      });
+      await _show(tester, http, const AdminPage());
+      expect(find.text('e7'), findsOneWidget);
+    });
+
     testWidgets('the filters go to the server and start the list over', (
       tester,
     ) async {
@@ -296,6 +349,30 @@ void main() {
       await tester.tap(find.text('Close'));
       await tester.pumpAndSettle();
       expect(find.text('History of Acme Motors'), findsNothing);
+    });
+
+    testWidgets('shows what was recorded in full, however long', (
+      tester,
+    ) async {
+      final long = List.generate(60, (i) => 'word$i').join(' ');
+      expect(long.length, greaterThan(200));
+      final http = FakeHttp({
+        'GET /api/v1/me': (_) => meJson(['audit.view']),
+        'GET /api/v1/audit/records/customer/c1': (_) => _page([
+          _event(1, data: {'notes': long}),
+        ]),
+      });
+      await _show(
+        tester,
+        http,
+        const RecordHistoryButton(entity: 'customer', id: 'c1', title: 'X'),
+      );
+      await tester.tap(find.byKey(const ValueKey('record-history')));
+      await tester.pumpAndSettle();
+      expect(find.text('notes: $long'), findsOneWidget);
+      expect(find.textContaining('…'), findsNothing);
+      // The record is not repeated in its own history.
+      expect(find.text('e1'), findsNothing);
     });
 
     testWidgets('has no button without the right, and says when empty', (

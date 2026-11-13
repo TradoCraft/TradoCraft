@@ -189,6 +189,25 @@ pub async fn get_customer<'e>(
         .ok_or(AppError::NotFound("customer"))
 }
 
+/// Like [`get_customer`], for the row an update is about to change: locked until the transaction
+/// ends, so that what an update records as "before" (the audit trail, ADR 0059) is the latest
+/// committed row and not one that a concurrent update is replacing. Only the customer row is
+/// locked, not its terms or price zone.
+async fn get_customer_for_update(
+    conn: &mut sqlx::PgConnection,
+    company_id: Uuid,
+    id: Uuid,
+) -> AppResult<Customer> {
+    sqlx::query_as(&format!(
+        "{SELECT_CUSTOMER} WHERE c.id = $2 FOR UPDATE OF c"
+    ))
+    .bind(company_id)
+    .bind(id)
+    .fetch_optional(conn)
+    .await?
+    .ok_or(AppError::NotFound("customer"))
+}
+
 /// Everything sales needs to quote a customer in a company.
 #[derive(Debug, Clone)]
 pub struct QuotingCustomer {
@@ -423,7 +442,7 @@ async fn update_customer(
     user.require(Permission::CustomersWrite)?;
     input.validate()?;
     let mut tx = state.db.begin().await?;
-    let before = get_customer(&mut *tx, user.company_id, id).await?;
+    let before = get_customer_for_update(&mut tx, user.company_id, id).await?;
     if let Some(m) = input.vat_problem(before.vat_number.as_deref()) {
         return Err(AppError::Validation(m));
     }
@@ -491,7 +510,7 @@ async fn vat_duplicates(
         "SELECT id, code, name, active FROM crm.customers
          WHERE vat_number IS NOT NULL AND vat_number <> ''
            AND (core.vat_key(vat_number) = ANY($1)
-                OR (core.vat_key(vat_number) = $2 AND upper(country_code::text) = ANY($3)))
+                OR (core.vat_key(vat_number) = ANY($2) AND upper(country_code::text) = ANY($3)))
            AND ($4::uuid IS NULL OR id <> $4)
          ORDER BY active DESC, name LIMIT 10",
     )

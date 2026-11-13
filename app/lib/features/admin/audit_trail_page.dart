@@ -21,6 +21,9 @@ class _AuditTrailPageState extends ConsumerState<AuditTrailPage> {
   final _events = <AuditEvent>[];
   List<String> _entities = const [];
   String? _entity;
+  // The action the list on screen was loaded with. The text box can be edited without being
+  // confirmed, and "load older" must keep asking for what the list was filtered by.
+  String? _appliedAction;
   DateTime? _from;
   DateTime? _to;
   int? _next;
@@ -61,14 +64,18 @@ class _AuditTrailPageState extends ConsumerState<AuditTrailPage> {
         _next = null;
       }
     });
-    final action = _action.text.trim();
+    if (reset) {
+      final typed = _action.text.trim();
+      _appliedAction = typed.isEmpty ? null : typed;
+    }
+    final action = _appliedAction;
     try {
       final page = await ref
           .read(apiProvider)
           .audit
           .listAuditEvents(
             entity: _entity,
-            action: action.isEmpty ? null : action,
+            action: action,
             // Whole local days: from the start of the first to the start of the day after the last.
             from: _from?.toUtc(),
             to: _to == null
