@@ -3363,6 +3363,7 @@ dependencies = [
  "serde_json",
  "sqlx",
  "tradocraft-core",
+ "tradocraft-fieldservice",
  "utoipa",
  "utoipa-axum",
  "uuid",

@@ -11,6 +11,7 @@ use axum::Json;
 use chrono::{DateTime, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, PgConnection};
+use std::collections::HashSet;
 use tradocraft_core::audit::{self, Changes};
 use tradocraft_core::{new_id, AppError, AppResult, AppState, CurrentUser, Permission};
 use utoipa::{IntoParams, ToSchema};
@@ -102,12 +103,79 @@ const SELECT: &str = "SELECT i.id, i.parent_id, i.position, i.title, i.notes, i.
 /// The visibility rule, as SQL: `$1` is the company and `$2` the caller.
 const VISIBLE: &str = "i.company_id = $1 AND (i.owner_id = $2 OR i.assignee_id = $2)";
 
-fn to_item(r: Row, user: &CurrentUser) -> TodoItem {
+/// Whether the viewer may read the record a link points at: the kind's read permission and, for
+/// jobs, the field module's own rule (a technician reads only the jobs they are assigned to).
+/// `readable_jobs` holds the job ids of the batch that passed that rule.
+fn link_readable(
+    user: &CurrentUser,
+    kind: Option<TodoLinkKind>,
+    id: Option<Uuid>,
+    readable_jobs: &HashSet<Uuid>,
+) -> bool {
+    match kind {
+        Some(k) if user.can(k.read_permission()) => {
+            k != TodoLinkKind::Job || id.is_some_and(|i| readable_jobs.contains(&i))
+        }
+        _ => false,
+    }
+}
+
+/// The job ids among `rows`' links that the viewer may read.
+async fn readable_jobs(
+    conn: &mut PgConnection,
+    user: &CurrentUser,
+    rows: &[Row],
+) -> AppResult<HashSet<Uuid>> {
+    let ids: Vec<Uuid> = rows
+        .iter()
+        .filter(|r| r.link_kind.as_deref() == Some(TodoLinkKind::Job.as_str()))
+        .filter_map(|r| r.link_id)
+        .collect();
+    readable_job_ids(conn, user, &ids).await
+}
+
+async fn readable_job_ids(
+    conn: &mut PgConnection,
+    user: &CurrentUser,
+    ids: &[Uuid],
+) -> AppResult<HashSet<Uuid>> {
+    if ids.is_empty() || !user.can(TodoLinkKind::Job.read_permission()) {
+        return Ok(HashSet::new());
+    }
+    let found: Vec<Uuid> = sqlx::query_scalar(
+        "SELECT j.id FROM field.jobs j
+         WHERE j.id = ANY($1) AND j.company_id = $2
+           AND ($3 OR EXISTS (SELECT 1 FROM field.job_technicians x
+                              WHERE x.job_id = j.id AND x.user_id = $4))",
+    )
+    .bind(ids)
+    .bind(user.company_id)
+    .bind(tradocraft_fieldservice::sees_all(user))
+    .bind(user.user_id)
+    .fetch_all(&mut *conn)
+    .await?;
+    Ok(found.into_iter().collect())
+}
+
+/// Turns rows into items. A link the viewer may not read keeps only its kind (the app shows
+/// "Linked item"): id, label and location are left out, since the id and the location would let
+/// the viewer reach the record.
+async fn to_items(
+    conn: &mut PgConnection,
+    user: &CurrentUser,
+    rows: Vec<Row>,
+) -> AppResult<Vec<TodoItem>> {
+    let jobs = readable_jobs(conn, user, &rows).await?;
+    Ok(rows.into_iter().map(|r| to_item(r, user, &jobs)).collect())
+}
+
+fn to_item(r: Row, user: &CurrentUser, jobs: &HashSet<Uuid>) -> TodoItem {
     let kind = r.link_kind.as_deref().and_then(TodoLinkKind::parse);
-    // The label is a snapshot of a record the viewer may not be allowed to read.
-    let label = match kind {
-        Some(k) if user.can(k.read_permission()) => r.link_label,
-        _ => None,
+    let readable = link_readable(user, kind, r.link_id, jobs);
+    let (link_id, label, location) = if readable {
+        (r.link_id, r.link_label, r.link_location)
+    } else {
+        (None, None, None)
     };
     TodoItem {
         id: r.id,
@@ -126,9 +194,9 @@ fn to_item(r: Row, user: &CurrentUser) -> TodoItem {
         done_at: r.done_at,
         done_by: r.done_by,
         link_kind: kind,
-        link_id: r.link_id,
+        link_id,
         link_label: label,
-        link_location: r.link_location,
+        link_location: location,
         client_id: r.client_id,
         created_at: r.created_at,
         updated_at: r.updated_at,
@@ -142,8 +210,9 @@ async fn load(conn: &mut PgConnection, user: &CurrentUser, id: Uuid) -> AppResul
         .bind(id)
         .fetch_optional(&mut *conn)
         .await?;
-    row.map(|r| to_item(r, user))
-        .ok_or(AppError::NotFound(NOT_FOUND))
+    let row = row.ok_or(AppError::NotFound(NOT_FOUND))?;
+    let mut items = to_items(conn, user, vec![row]).await?;
+    Ok(items.remove(0))
 }
 
 /// The columns a mutation needs, read under a row lock.
@@ -179,6 +248,64 @@ async fn lock(conn: &mut PgConnection, user: &CurrentUser, id: Uuid) -> AppResul
     .fetch_optional(&mut *conn)
     .await?;
     row.ok_or(AppError::NotFound(NOT_FOUND))
+}
+
+/// Locks the parent (if any) before the item, the order in which completing a parent locks its
+/// sub-items, so two requests cannot wait for each other. `also` is a further parent the request
+/// is about to use (a move); it is locked in the same pass, in id order. The item's parent is
+/// read first without a lock and checked again once the item is locked: when it was moved in
+/// between, the pass starts over.
+async fn lock_family(
+    conn: &mut PgConnection,
+    user: &CurrentUser,
+    id: Uuid,
+    also: Option<Uuid>,
+) -> AppResult<Raw> {
+    for _ in 0..3 {
+        let parent: Option<Option<Uuid>> = sqlx::query_scalar(
+            "SELECT parent_id FROM todo.items
+             WHERE id = $3 AND company_id = $1 AND (owner_id = $2 OR assignee_id = $2)",
+        )
+        .bind(user.company_id)
+        .bind(user.user_id)
+        .bind(id)
+        .fetch_optional(&mut *conn)
+        .await?;
+        let parent = parent.ok_or(AppError::NotFound(NOT_FOUND))?;
+        let mut parents: Vec<Uuid> = parent.into_iter().chain(also).collect();
+        parents.sort();
+        parents.dedup();
+        for p in parents {
+            lock(conn, user, p).await?;
+        }
+        let item = lock(conn, user, id).await?;
+        if item.parent_id == parent {
+            return Ok(item);
+        }
+    }
+    Err(AppError::Conflict(
+        "the item was moved at the same time, try again".into(),
+    ))
+}
+
+/// A job link is only allowed to a job the caller may read (a technician: one they are assigned
+/// to). Other kinds need the kind's read permission only (see ADR 0061).
+async fn check_link_target(
+    conn: &mut PgConnection,
+    user: &CurrentUser,
+    link: &Link,
+) -> AppResult<()> {
+    if link.kind != TodoLinkKind::Job {
+        return Ok(());
+    }
+    if readable_job_ids(conn, user, &[link.id])
+        .await?
+        .contains(&link.id)
+    {
+        Ok(())
+    } else {
+        Err(AppError::NotFound("job"))
+    }
 }
 
 fn forbidden_not_owner(what: &str) -> AppError {
@@ -346,6 +473,7 @@ pub struct TodoCreate {
     pub title: String,
     #[serde(default)]
     pub notes: String,
+    #[serde(default, deserialize_with = "tradocraft_core::serde_util::opt_date")]
     pub due_date: Option<NaiveDate>,
     /// Hands the item to a colleague. Not allowed for sub-items.
     pub assignee_id: Option<Uuid>,
@@ -361,6 +489,7 @@ pub struct TodoCreate {
 pub struct TodoPatch {
     pub title: Option<String>,
     pub notes: Option<String>,
+    #[serde(default, deserialize_with = "tradocraft_core::serde_util::opt_date")]
     pub due_date: Option<NaiveDate>,
     #[serde(default)]
     pub clear_due_date: bool,
@@ -421,6 +550,7 @@ pub struct TodoQuery {
     /// Needs `link_kind`.
     pub link_id: Option<Uuid>,
     /// Items due strictly before this date.
+    #[serde(default, deserialize_with = "tradocraft_core::serde_util::opt_date")]
     pub due_before: Option<NaiveDate>,
 }
 
@@ -488,7 +618,8 @@ async fn list_items(
     .bind(q.due_before)
     .fetch_all(&state.db)
     .await?;
-    Ok(Json(rows.into_iter().map(|r| to_item(r, &user)).collect()))
+    let mut conn = state.db.acquire().await?;
+    Ok(Json(to_items(&mut conn, &user, rows).await?))
 }
 
 #[utoipa::path(get, path = "/todo/items/counts", tag = "todo", operation_id = "todo_counts",
@@ -545,6 +676,9 @@ async fn create_item(
         &input.link_label,
         &input.link_location,
     )?;
+    if let Some(l) = &link {
+        check_link_target(&mut tx, &user, l).await?;
+    }
 
     let (owner_id, assignee_id) = match input.parent_id {
         Some(parent_id) => {
@@ -670,7 +804,8 @@ async fn update_item(
 ) -> AppResult<Json<TodoItem>> {
     user.require(Permission::TodoUse)?;
     let mut tx = state.db.begin().await?;
-    let old = lock(&mut tx, &user, id).await?;
+    // Parents before the item, the new parent included (see `lock_family`).
+    let old = lock_family(&mut tx, &user, id, p.parent_id.filter(|x| *x != id)).await?;
     let mut new = old.clone();
 
     if let Some(t) = &p.title {
@@ -712,6 +847,7 @@ async fn update_item(
             &p.link_location,
         )?
         .ok_or_else(|| AppError::Validation("link_kind and link_id go together".into()))?;
+        check_link_target(&mut tx, &user, &link).await?;
         new.link_kind = Some(link.kind.as_str().to_string());
         new.link_id = Some(link.id);
         new.link_label = link.label;
@@ -729,7 +865,13 @@ async fn update_item(
         if old.owner_id != user.user_id {
             return Err(forbidden_not_owner("hand it to someone else"));
         }
-        if old.parent_id.is_some() && p.parent_id.is_none() && !p.make_root {
+        // Whether the item is, or becomes, a sub-item: then it follows its parent.
+        let sub_item = if p.make_root {
+            false
+        } else {
+            p.parent_id.is_some() || old.parent_id.is_some()
+        };
+        if sub_item {
             return Err(AppError::Validation(
                 "a sub-item follows the assignee of its parent".into(),
             ));
@@ -847,6 +989,10 @@ async fn update_item(
     if old.link_label != new.link_label {
         text.push("link_label");
     }
+    // Only that the location changed, never its value.
+    if old.link_location != new.link_location {
+        text.push("link_location");
+    }
     if !changes.is_empty() || !text.is_empty() {
         audit::record(
             &mut tx,
@@ -940,7 +1086,7 @@ async fn reopen_item(
     user.require(Permission::TodoUse)?;
     let mut tx = state.db.begin().await?;
     // Parent first, then child: the same order as completing a parent.
-    let probe = lock(&mut tx, &user, id).await?;
+    let probe = lock_family(&mut tx, &user, id, None).await?;
     let parent = match probe.parent_id {
         Some(pid) => Some(lock(&mut tx, &user, pid).await?),
         None => None,
@@ -993,40 +1139,60 @@ async fn reorder(
         return Err(AppError::Validation("an item is listed twice".into()));
     }
     let mut tx = state.db.begin().await?;
-    let rows: Vec<(Uuid, i32)> = sqlx::query_as(
-        "SELECT id, position FROM todo.items
-         WHERE id = ANY($3) AND company_id = $1 AND (owner_id = $2 OR assignee_id = $2)
+    // The parent first, then all its visible children in id order (see `lock_family`).
+    if let Some(parent_id) = input.parent_id {
+        lock(&mut tx, &user, parent_id).await?;
+    }
+    let siblings: Vec<(Uuid, i32, DateTime<Utc>)> = sqlx::query_as(
+        "SELECT id, position, created_at FROM todo.items
+         WHERE company_id = $1 AND (owner_id = $2 OR assignee_id = $2)
+           AND parent_id IS NOT DISTINCT FROM $3
          ORDER BY id FOR UPDATE",
     )
     .bind(user.company_id)
     .bind(user.user_id)
-    .bind(&input.ids)
+    .bind(input.parent_id)
     .fetch_all(&mut *tx)
     .await?;
-    if rows.len() != input.ids.len() {
-        return Err(AppError::NotFound(NOT_FOUND));
+    for id in &input.ids {
+        if !siblings.iter().any(|(s, _, _)| s == id) {
+            let elsewhere: bool = sqlx::query_scalar(
+                "SELECT EXISTS (SELECT 1 FROM todo.items
+                 WHERE id = $3 AND company_id = $1 AND (owner_id = $2 OR assignee_id = $2))",
+            )
+            .bind(user.company_id)
+            .bind(user.user_id)
+            .bind(id)
+            .fetch_one(&mut *tx)
+            .await?;
+            return Err(if elsewhere {
+                AppError::Validation("the items do not all have the given parent".into())
+            } else {
+                AppError::NotFound(NOT_FOUND)
+            });
+        }
     }
-    let foreign_parent: i64 = sqlx::query_scalar(
-        "SELECT count(*) FROM todo.items
-         WHERE id = ANY($1) AND parent_id IS DISTINCT FROM $2",
-    )
-    .bind(&input.ids)
-    .bind(input.parent_id)
-    .fetch_one(&mut *tx)
-    .await?;
-    if foreign_parent > 0 {
-        return Err(AppError::Validation(
-            "the items do not all have the given parent".into(),
-        ));
-    }
-    let mut slots: Vec<i32> = rows.iter().map(|(_, p)| *p).collect();
-    slots.sort();
-    // Equal positions cannot express an order: number them afresh.
-    if slots.windows(2).any(|w| w[0] >= w[1]) {
-        slots = (0..slots.len() as i32).collect();
-    }
-    for (id, slot) in input.ids.iter().zip(slots) {
-        let before = rows.iter().find(|(r, _)| r == id).map(|(_, p)| *p);
+    // The full order of the siblings, as lists show it (also settles equal positions). The listed
+    // items take the places the listed items hold, in the new order; the others stay where they are.
+    let mut full = siblings.clone();
+    full.sort_by_key(|r| (r.1, r.2, r.0));
+    let mut next = input.ids.iter();
+    let new_order: Vec<Uuid> = full
+        .iter()
+        .map(|(id, _, _)| {
+            if input.ids.contains(id) {
+                *next.next().unwrap_or(id)
+            } else {
+                *id
+            }
+        })
+        .collect();
+    for (slot, id) in new_order.iter().enumerate() {
+        let slot = slot as i32;
+        let before = siblings
+            .iter()
+            .find(|(s, _, _)| s == id)
+            .map(|(_, p, _)| *p);
         if before == Some(slot) {
             continue;
         }

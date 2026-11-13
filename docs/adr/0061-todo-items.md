@@ -37,6 +37,19 @@ and, in PR 2, a registry in the app. `CHECK ((link_kind IS NULL) = (link_id IS N
   permission of the kind (`LinkKind::read_permission`); otherwise it is null and the app shows "Linked
   item". Creating or changing a link needs that same permission (403 otherwise). Permission, not
   existence, is checked at link time: the id is not verified against the target table.
+- **Jobs are checked per record.** `field.read` means different things: a technician (`field.work`
+  without `field.plan`) sees only the jobs they are assigned to, planners and read-only roles see all
+  (`tradocraft_fieldservice::sees_all`). Linking a job therefore needs the right to read *that* job
+  (404 otherwise, the same answer as for an unknown id), and a job link is shown to a viewer only if
+  they can read that job now. Every other kind is shared master data or a record whose "mine" scopes
+  are list filters, not access rules (customers, products, suppliers, opportunities, quotations,
+  orders, tickets, repairs, deliveries, production orders: readable by everyone holding the kind's
+  read permission; ADR 0049 division membership restricts who works on a production order, not who
+  reads it), so the kind-level permission is enough for them. If one of them gets a record-level
+  rule, it joins the job check.
+- **What a viewer who may not read the link sees.** The item keeps `link_kind` (the app shows "Linked
+  item"); `link_id`, `link_label` and `link_location` are omitted, so the viewer cannot reach or
+  learn about the record. This holds for a missing kind permission and for an unreadable job alike.
 - `link_location` is the app path to jump to (`/quotations/<id>`); the API accepts only paths that start
   with a single `/`, so a stored location can never leave the app.
 
@@ -47,6 +60,24 @@ the creator; the owner may hand a root item to an active colleague of the same c
 cascading to its sub-items), take it back, and delete it. The assignee sees, edits, completes and reopens
 it, but can neither reassign nor delete (403). `GET /todo/items` has the scopes `mine` (on my plate:
 handed to me, or mine and not handed to anyone), `assigned` (mine, handed to a colleague) and `all-mine`.
+
+*Hand-over rule.* Only a root item is handed over. Changing `assignee_id` or `clear_assignee` on an item
+that is, or in the same call becomes, a sub-item is 422; with `make_root` it is allowed.
+
+*Reordering.* The listed items take, in the new order, the places the listed items hold in the full
+order of their siblings (position, then creation time, then id, the order lists use). Siblings that are
+not listed (hidden finished ones) keep their places, equal positions are settled by that order, and the
+siblings are renumbered 0..n, so showing hidden items again moves nothing. A repeat of the same order
+writes nothing.
+
+*Dates.* `due_date` is a date. The Dart client serialises a `DateTime` with a time part, so the API
+reads only the first ten characters (the repo's `serde_util::opt_date`), as the other crates do.
+
+*Lock order.* Every request that changes several rows locks the parent before its sub-items, and
+siblings by id: completing a parent locks it, then its open sub-items; reopening, updating (including a
+move, whose new parent is locked in the same pass) and reordering lock the parent first, then the
+item(s). After locking an item its parent is read again and the pass restarts if it moved (409 after
+three tries). A test runs complete, reopen, move and reorder concurrently and checks for deadlocks.
 
 *Completion.* `POST /todo/items/{id}/complete` takes `complete_children`. Completing an item that still
 has open sub-items without it answers 409 (code `open_sub_items`); with it, the open sub-items are
@@ -65,7 +96,7 @@ backfill migration is needed; a company switches it off in the admin screen like
 *Audit.* Every mutation records in its transaction (`core::audit::record`, entity `todo`): created,
 updated, completed, reopened, reordered, deleted. Updates use the `Changes` helper for ids, dates and
 positions. Titles, notes and link labels are private to the owner and the assignee while the trail is read
-by administrators (`audit.view`), so events record *that* the text changed (`text_changed`), never what it
+by administrators (`audit.view`), so events record *that* the text changed (`text_changed`: `title`, `notes`, `link_label`, `link_location`), never what it
 says. Rows are locked with `SELECT .. FOR UPDATE` before they change; related rows are locked parent first.
 
 *Endpoints* (tag `todo`; all need `todo.use`): `GET /todo/items` (filters `scope`, `done`, `link_kind` with

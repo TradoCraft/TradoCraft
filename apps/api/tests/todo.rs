@@ -581,12 +581,23 @@ async fn links_need_the_read_permission_and_the_label_follows_it(db: PgPool) {
     )
     .await;
     assert_eq!(status, StatusCode::FORBIDDEN);
-    // ...but jobs, yes.
+    // ...but a job they are assigned to, yes.
+    let (status, planned) = post(
+        &app,
+        "dispatcher@example.com",
+        "/field/jobs",
+        json!({ "title": "Pump", "kind": "maintenance",
+                "customer_id": "00000000-0000-7000-8000-000000000401",
+                "technician_ids": [TECH_ID], "tasks": [] }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{planned}");
+    let job_id = planned["job"]["id"].as_str().unwrap().to_string();
     let (status, job) = post(
         &app,
         TECH,
         "/todo/items",
-        json!({ "title": "Job note", "link_kind": "job", "link_id": QUOTE,
+        json!({ "title": "Job note", "link_kind": "job", "link_id": job_id,
                 "link_label": "J-9 Pump", "link_location": "/field/jobs/x" }),
     )
     .await;
@@ -610,6 +621,7 @@ async fn links_need_the_read_permission_and_the_label_follows_it(db: PgPool) {
     let seen = theirs.iter().find(|i| i["id"] == id.as_str()).unwrap();
     assert_eq!(seen["link_kind"], "quotation");
     assert!(seen["link_label"].is_null());
+    assert!(seen["link_id"].is_null() && seen["link_location"].is_null());
     // ...and may not re-link it to something they may not read, but may unlink it.
     let uri = format!("/todo/items/{id}");
     assert_eq!(
@@ -640,7 +652,7 @@ async fn links_need_the_read_permission_and_the_label_follows_it(db: PgPool) {
         StatusCode::UNPROCESSABLE_ENTITY,
         "link_id needs link_kind"
     );
-    let q = format!("?scope=all-mine&link_kind=job&link_id={QUOTE}");
+    let q = format!("?scope=all-mine&link_kind=job&link_id={job_id}");
     assert!(list(&app, SALES, &q).await.is_empty());
     assert_eq!(list(&app, TECH, &q).await.len(), 1);
 
@@ -902,4 +914,327 @@ async fn counts_cover_what_is_on_my_plate(db: PgPool) {
     let before = list(&app, SALES, &format!("?due_before={today}")).await;
     assert_eq!(titles(&before), ["late", "done"]);
     assert_eq!(list(&app, SALES, "?done=true").await.len(), 1);
+}
+
+const DISPATCHER: &str = "dispatcher@example.com"; // plans field jobs, sees all of them
+const TECH2: &str = "tech2@example.com";
+const ALPHA: &str = "00000000-0000-7000-8000-000000000401";
+
+async fn second_technician(db: &PgPool) -> String {
+    let id = Uuid::now_v7();
+    sqlx::query(
+        "INSERT INTO core.users (id, email, display_name) VALUES ($1, $2, 'Tina Technician')",
+    )
+    .bind(id)
+    .bind(TECH2)
+    .execute(db)
+    .await
+    .unwrap();
+    sqlx::query("INSERT INTO core.user_companies (user_id, company_id, roles, is_default) VALUES ($1, $2::uuid, '{technician}', true)")
+        .bind(id)
+        .bind(COMPANY)
+        .execute(db)
+        .await
+        .unwrap();
+    id.to_string()
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn a_job_link_needs_the_right_to_read_that_job(db: PgPool) {
+    let app = setup(db.clone()).await;
+    let tina = second_technician(&db).await;
+    let (status, job) = post(
+        &app,
+        DISPATCHER,
+        "/field/jobs",
+        json!({ "title": "Service pump", "kind": "maintenance", "customer_id": ALPHA,
+                "technician_ids": [TECH_ID], "tasks": [] }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{job}");
+    let job_id = job["job"]["id"].as_str().unwrap().to_string();
+    let with = |title: &str, extra: Value| {
+        let mut b = json!({ "link_kind": "job", "link_id": job_id, "link_label": "Service pump",
+                            "link_location": "/jobs/x" });
+        b["title"] = json!(title);
+        b.as_object_mut()
+            .unwrap()
+            .extend(extra.as_object().unwrap().clone());
+        b
+    };
+
+    // Another technician may not link a job that is not theirs; an unknown job is the same 404.
+    assert_eq!(
+        post(&app, TECH2, "/todo/items", with("x", json!({})))
+            .await
+            .0,
+        StatusCode::NOT_FOUND
+    );
+    let nobody = with("x", json!({ "link_id": Uuid::now_v7().to_string() }));
+    assert_eq!(
+        post(&app, DISPATCHER, "/todo/items", nobody).await.0,
+        StatusCode::NOT_FOUND
+    );
+    // The assigned technician and the planner may.
+    let mine = item(&app, TECH, with("Prepare", json!({ "assignee_id": tina }))).await;
+    let planner = item(&app, DISPATCHER, with("Plan", json!({}))).await;
+    // Linking an existing item through PATCH is checked the same way.
+    let plain = item(&app, TECH2, json!({ "title": "Plain" })).await;
+    let (status, _) = patch(
+        &app,
+        TECH2,
+        &format!("/todo/items/{plain}"),
+        json!({ "link_kind": "job", "link_id": job_id }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+
+    // Tina was handed Tom's item but cannot read the job: she sees the kind only.
+    let seen = list(&app, TECH2, "").await;
+    let theirs = seen.iter().find(|i| i["id"] == mine.as_str()).unwrap();
+    assert_eq!(theirs["link_kind"], "job");
+    assert!(theirs["link_id"].is_null());
+    assert!(theirs["link_label"].is_null());
+    assert!(theirs["link_location"].is_null());
+    // Tom and the planner see everything.
+    let toms = list(&app, TECH, "?scope=all-mine").await;
+    assert_eq!(toms[0]["link_label"], "Service pump");
+    assert_eq!(toms[0]["link_id"], job_id.as_str());
+    assert_eq!(toms[0]["link_location"], "/jobs/x");
+    let planners = list(&app, DISPATCHER, "").await;
+    let seen = planners
+        .iter()
+        .find(|i| i["id"] == planner.as_str())
+        .unwrap();
+    assert_eq!(seen["link_id"], job_id.as_str());
+    // The right is checked when reading: once Tina is assigned to the job she sees the link.
+    sqlx::query("INSERT INTO field.job_technicians (job_id, user_id) VALUES ($1::uuid, $2::uuid)")
+        .bind(&job_id)
+        .bind(&tina)
+        .execute(&db)
+        .await
+        .unwrap();
+    let seen = list(&app, TECH2, "").await;
+    let theirs = seen.iter().find(|i| i["id"] == mine.as_str()).unwrap();
+    assert_eq!(theirs["link_id"], job_id.as_str());
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn due_dates_accept_a_date_or_a_datetime_from_the_app(db: PgPool) {
+    let app = setup(db.clone()).await;
+    let (status, a) = post(
+        &app,
+        SALES,
+        "/todo/items",
+        json!({ "title": "A", "due_date": "2030-01-31T00:00:00.000" }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{a}");
+    assert_eq!(a["due_date"], "2030-01-31");
+    let uri = format!("/todo/items/{}", a["id"].as_str().unwrap());
+    let (status, b) = patch(
+        &app,
+        SALES,
+        &uri,
+        json!({ "due_date": "2030-02-01T00:00:00.000" }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{b}");
+    assert_eq!(b["due_date"], "2030-02-01");
+    let (status, _) = post(
+        &app,
+        SALES,
+        "/todo/items",
+        json!({ "title": "B", "due_date": "1/2/2030" }),
+    )
+    .await;
+    assert!(status.is_client_error());
+    let q = list(&app, SALES, "?due_before=2030-03-01T00:00:00.000").await;
+    assert_eq!(q.len(), 1);
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn a_sub_item_only_changes_assignee_by_becoming_a_root(db: PgPool) {
+    let app = setup(db.clone()).await;
+    let p = item(&app, SALES, json!({ "title": "P" })).await;
+    let c = item(&app, SALES, json!({ "title": "C", "parent_id": p })).await;
+    let uri = format!("/todo/items/{c}");
+    for body in [
+        json!({ "assignee_id": TECH_ID }),
+        json!({ "assignee_id": TECH_ID, "parent_id": p }),
+        json!({ "clear_assignee": true, "parent_id": p }),
+    ] {
+        assert_eq!(
+            patch(&app, SALES, &uri, body.clone()).await.0,
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "{body}"
+        );
+    }
+    // A root that becomes a sub-item cannot be handed over in the same call either.
+    let r = item(&app, SALES, json!({ "title": "R" })).await;
+    let (status, _) = patch(
+        &app,
+        SALES,
+        &format!("/todo/items/{r}"),
+        json!({ "assignee_id": TECH_ID, "parent_id": p }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+    // Becoming a root, it can be.
+    let (status, v) = patch(
+        &app,
+        SALES,
+        &uri,
+        json!({ "make_root": true, "assignee_id": TECH_ID }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{v}");
+    assert_eq!(v["assignee_id"], TECH_ID);
+    assert!(v["parent_id"].is_null());
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn a_subset_reorder_keeps_the_hidden_items_and_settles_equal_positions(db: PgPool) {
+    let app = setup(db.clone()).await;
+    let mut ids = Vec::new();
+    for t in ["A", "B", "C", "D", "E"] {
+        ids.push(item(&app, SALES, json!({ "title": t })).await);
+    }
+    // Equal positions everywhere: the order is then the order of creation.
+    sqlx::query("UPDATE todo.items SET position = 0")
+        .execute(&db)
+        .await
+        .unwrap();
+    for hidden in [&ids[1], &ids[3]] {
+        post_empty(&app, SALES, &format!("/todo/items/{hidden}/complete")).await;
+    }
+    assert_eq!(
+        titles(&list(&app, SALES, "").await),
+        ["A", "B", "C", "D", "E"]
+    );
+
+    // The app shows A, C, E (open) and moves E to the top.
+    let (status, _) = post(
+        &app,
+        SALES,
+        "/todo/items/reorder",
+        json!({ "ids": [ids[4], ids[2], ids[0]] }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    // B and D keep their places between the others; showing them again moves nothing.
+    assert_eq!(
+        titles(&list(&app, SALES, "").await),
+        ["E", "B", "C", "D", "A"]
+    );
+    assert_eq!(
+        titles(&list(&app, SALES, "?done=false").await),
+        ["E", "C", "A"]
+    );
+    let positions: Vec<i32> =
+        sqlx::query_scalar("SELECT position FROM todo.items ORDER BY position")
+            .fetch_all(&db)
+            .await
+            .unwrap();
+    assert_eq!(positions, [0, 1, 2, 3, 4]);
+
+    // Repeating the same order changes nothing; the reverse restores the first order.
+    let count = "SELECT count(*) FROM audit.events WHERE action = 'reordered'";
+    let before: i64 = sqlx::query_scalar(count).fetch_one(&db).await.unwrap();
+    post(
+        &app,
+        SALES,
+        "/todo/items/reorder",
+        json!({ "ids": [ids[4], ids[2], ids[0]] }),
+    )
+    .await;
+    let after: i64 = sqlx::query_scalar(count).fetch_one(&db).await.unwrap();
+    assert_eq!(before, after);
+    post(
+        &app,
+        SALES,
+        "/todo/items/reorder",
+        json!({ "ids": [ids[0], ids[2], ids[4]] }),
+    )
+    .await;
+    assert_eq!(
+        titles(&list(&app, SALES, "").await),
+        ["A", "B", "C", "D", "E"]
+    );
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn changing_only_the_link_location_is_audited_without_the_location(db: PgPool) {
+    let app = setup(db.clone()).await;
+    let id = item(
+        &app,
+        SALES,
+        json!({ "title": "L", "link_kind": "quotation", "link_id": QUOTE,
+                "link_label": "Q-1", "link_location": "/quotations/first" }),
+    )
+    .await;
+    let (status, v) = patch(
+        &app,
+        SALES,
+        &format!("/todo/items/{id}"),
+        json!({ "link_kind": "quotation", "link_id": QUOTE, "link_label": "Q-1",
+                "link_location": "/quotations/second" }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{v}");
+    assert_eq!(v["link_location"], "/quotations/second");
+    assert_eq!(audit_actions(&db, &id).await, ["created", "updated"]);
+    let data: Value = sqlx::query_scalar(
+        "SELECT data FROM audit.events WHERE entity_id = $1::uuid AND action = 'updated'",
+    )
+    .bind(&id)
+    .fetch_one(&db)
+    .await
+    .unwrap();
+    assert_eq!(data["text_changed"], json!(["link_location"]));
+    assert!(!data.to_string().contains("quotations/"), "{data}");
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn parents_and_children_can_be_changed_at_the_same_time(db: PgPool) {
+    let app = setup(db.clone()).await;
+    for _ in 0..8 {
+        let p = item(&app, SALES, json!({ "title": "P" })).await;
+        let other = item(&app, SALES, json!({ "title": "Q" })).await;
+        let c = item(&app, SALES, json!({ "title": "C", "parent_id": p })).await;
+        post_empty(&app, SALES, &format!("/todo/items/{c}/complete")).await;
+        let done = json!({ "complete_children": true });
+        let (complete_uri, reopen_uri, child_uri) = (
+            format!("/todo/items/{p}/complete"),
+            format!("/todo/items/{c}/reopen"),
+            format!("/todo/items/{c}"),
+        );
+        let (a, b, d, e) = tokio::join!(
+            post(&app, SALES, &complete_uri, done),
+            post_empty(&app, SALES, &reopen_uri),
+            patch(&app, SALES, &child_uri, json!({ "parent_id": other })),
+            post(
+                &app,
+                SALES,
+                "/todo/items/reorder",
+                json!({ "parent_id": p, "ids": [c] })
+            ),
+        );
+        for (status, body) in [a, b, d, e] {
+            assert_ne!(status, StatusCode::INTERNAL_SERVER_ERROR, "{body}");
+        }
+        // Whatever won, a done parent has no open sub-item.
+        let open_under_done: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM todo.items c JOIN todo.items p ON p.id = c.parent_id
+             WHERE p.done AND NOT c.done",
+        )
+        .fetch_one(&db)
+        .await
+        .unwrap();
+        assert_eq!(open_under_done, 0);
+        sqlx::query("DELETE FROM todo.items")
+            .execute(&db)
+            .await
+            .unwrap();
+    }
 }
