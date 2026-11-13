@@ -2346,3 +2346,412 @@ async fn capacity_stays_within_the_company(db: PgPool) {
     .await;
     assert_eq!(cap["centres"], json!([]));
 }
+
+// ---- Multi-level auto-release (ADR 0060) ----
+
+const UNIT_100: &str = "00000000-0000-7000-8000-000000000301"; // serial; frame, 2 pumps, controller, 8 bolts
+
+impl Env {
+    /// A manufactured product with an active BOM of `parts` (product id, quantity per unit).
+    async fn make_product(&self, code: &str, tracking: &str, parts: &[(&str, &str)]) -> String {
+        let (status, p) = post(
+            &self.app,
+            ADMIN,
+            "/products",
+            json!({ "code": code, "name": code, "vat_rate": "21", "product_type": "manufactured", "tracking": tracking }),
+        )
+        .await;
+        assert_eq!(status, StatusCode::CREATED, "{p}");
+        let product = id(&p);
+        let draft = self.draft_bom(&product, json!({})).await;
+        let lines: Vec<Value> = parts
+            .iter()
+            .map(|(c, q)| json!({ "component_product_id": c, "quantity": q }))
+            .collect();
+        let (status, b) = put(
+            &self.app,
+            PM,
+            &format!("/boms/{draft}"),
+            json!({ "notes": "", "lines": lines }),
+        )
+        .await;
+        assert_eq!(status, StatusCode::OK, "{b}");
+        let (status, a) = post(&self.app, PM, &format!("/boms/{draft}/activate"), json!({})).await;
+        assert_eq!(status, StatusCode::OK, "{a}");
+        product
+    }
+
+    async fn production_orders(&self) -> Value {
+        get(&self.app, ADMIN, "/production-orders?limit=200")
+            .await
+            .1
+    }
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn auto_release_builds_the_short_subassembly_below_the_order(db: PgPool) {
+    let e = env(db).await;
+    let (order, line) = e.order(UNIT_100, "2").await;
+    let (status, po) = e
+        .release(&order, &line, json!({ "auto_release_subassemblies": true }))
+        .await;
+    assert_eq!(status, StatusCode::CREATED, "{po}");
+
+    // The frame is a subassembly that stock cannot cover: 2 are needed, none exist. The pumps,
+    // controller and bolts are not built.
+    let subs = po["sub_orders"].as_array().unwrap();
+    assert_eq!(subs.len(), 1, "{po}");
+    assert_eq!(subs[0]["product_code"], "FRAME-A");
+    assert_eq!(dec(&subs[0]["quantity"]), q("2"));
+    assert_eq!(subs[0]["status"], "released");
+    let child = e
+        .production_order(PLANNER, subs[0]["id"].as_str().unwrap())
+        .await;
+    assert_eq!(child["parent_order_id"], po["id"]);
+    assert_eq!(child["parent_order_number"], po["number"]);
+    assert!(
+        child["order_id"].is_null(),
+        "a subassembly is built for stock"
+    );
+    assert_eq!(
+        child["short_components"], 2,
+        "its profile and bolts are not in stock either"
+    );
+
+    // The sales order only sees the order it was released for.
+    assert_eq!(e.order_status(&order).await, "in_planning");
+    let (_, for_order) = get(
+        &e.app,
+        PLANNER,
+        &format!("/production-orders?order_id={order}"),
+    )
+    .await;
+    assert_eq!(for_order["total"], 1);
+    let (_, all) = get(&e.app, PLANNER, "/production-orders").await;
+    assert_eq!(all["total"], 2);
+    let (_, todo) = get(&e.app, PLANNER, "/production/to-release").await;
+    assert!(
+        todo.as_array()
+            .unwrap()
+            .iter()
+            .all(|t| t["order_line_id"] != line.as_str()),
+        "the line is covered by the one order"
+    );
+    // The planned-ready date of the parent alone moves the sales order: the subassembly has none.
+    let (_, ready) = put(
+        &e.app,
+        PLANNER,
+        &format!("/production-orders/{}", id(&po)),
+        json!({ "planned_ready_date": "2027-06-01" }),
+    )
+    .await;
+    assert_eq!(ready["planned_ready_date"], "2027-06-01");
+    assert_eq!(e.order_status(&order).await, "planned");
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn auto_release_builds_only_what_stock_does_not_cover(db: PgPool) {
+    let e = env(db).await;
+    // One frame is on the shelf, two are needed: reserving is all or nothing, so the order is
+    // short, and the subassembly order covers the one that is missing.
+    e.receive(FRAME, "1").await;
+    let (status, po) = post(
+        &e.app,
+        PLANNER,
+        "/production-orders",
+        json!({ "product_id": UNIT_100, "quantity": "2", "auto_release_subassemblies": true }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{po}");
+    assert_eq!(dec(&po["sub_orders"][0]["quantity"]), q("1"));
+
+    // Enough on the shelf: nothing is built.
+    e.receive(FRAME, "5").await;
+    let (_, po) = post(
+        &e.app,
+        PLANNER,
+        "/production-orders",
+        json!({ "product_id": UNIT_100, "quantity": "2", "auto_release_subassemblies": true }),
+    )
+    .await;
+    assert_eq!(po["sub_orders"], json!([]));
+    assert_eq!(component(&po, "FRAME-A")["short"], false);
+
+    // And without the flag, as before: the component is short and no order is made for it.
+    let (_, none) = post(
+        &e.app,
+        PLANNER,
+        "/production-orders",
+        json!({ "product_id": UNIT_100, "quantity": "9" }),
+    )
+    .await;
+    assert_eq!(none["sub_orders"], json!([]));
+    assert_eq!(component(&none, "FRAME-A")["short"], true);
+    let all = e.production_orders().await;
+    assert_eq!(
+        all["total"], 4,
+        "three parents and the one subassembly order"
+    );
+}
+
+fn component<'a>(po: &'a Value, code: &str) -> &'a Value {
+    po["components"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|c| c["component_code"] == code)
+        .unwrap_or_else(|| panic!("no component {code} in {po}"))
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn auto_release_goes_down_the_levels(db: PgPool) {
+    let e = env(db).await;
+    // A line that takes two of the serial-tracked unit, which contains the frame.
+    let line = e.make_product("LINE-X", "none", &[(UNIT_100, "2")]).await;
+    let (status, po) = post(
+        &e.app,
+        PLANNER,
+        "/production-orders",
+        json!({ "product_id": line, "quantity": "1", "auto_release_subassemblies": true }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{po}");
+    let unit = &po["sub_orders"][0];
+    assert_eq!(unit["product_code"], "UNIT-100");
+    assert_eq!(dec(&unit["quantity"]), q("2"));
+    // The unit contains the frame, built one level further down for the two units.
+    let unit_po = e
+        .production_order(PLANNER, unit["id"].as_str().unwrap())
+        .await;
+    assert_eq!(unit_po["sub_orders"][0]["product_code"], "FRAME-A");
+    assert_eq!(dec(&unit_po["sub_orders"][0]["quantity"]), q("2"));
+    assert_eq!(unit_po["parent_order_number"], po["number"]);
+    assert_eq!(e.production_orders().await["total"], 3);
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn a_failure_further_down_undoes_the_whole_release(db: PgPool) {
+    let e = env(db).await;
+    e.frame_routing().await;
+    // The frame has a routing now, and the whole plant is closed for years.
+    close(&e, None, "2027-01-01", "2031-12-31").await;
+    let (status, r) = post(
+        &e.app,
+        PLANNER,
+        "/production-orders",
+        json!({ "product_id": UNIT_100, "quantity": "1", "start_date": "2027-03-01", "auto_release_subassemblies": true }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{r}");
+    let orders: i64 = sqlx::query_scalar("SELECT count(*) FROM production.production_orders")
+        .fetch_one(&e.db)
+        .await
+        .unwrap();
+    assert_eq!(
+        orders, 0,
+        "neither the unit nor the frame order is left behind"
+    );
+    // The numbers are not used up either (the sequence is part of the transaction).
+    let (status, ok) = post(
+        &e.app,
+        PLANNER,
+        "/production-orders",
+        json!({ "product_id": UNIT_100, "quantity": "1" }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{ok}");
+    assert!(ok["number"].as_str().unwrap().ends_with("-00001"), "{ok}");
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn subassemblies_may_be_nested_five_levels_deep(db: PgPool) {
+    let e = env(db).await;
+    // P0 contains P1 contains ... P5, which contains bolts: a chain of six products.
+    let mut below = BOLT.to_string();
+    let mut chain = Vec::new();
+    for i in (0..6).rev() {
+        below = e
+            .make_product(&format!("P{i}"), "none", &[(&below, "1")])
+            .await;
+        chain.push(below.clone());
+    }
+    let top = chain.last().unwrap().clone();
+    let (status, po) = post(
+        &e.app,
+        PLANNER,
+        "/production-orders",
+        json!({ "product_id": top, "quantity": "1", "auto_release_subassemblies": true }),
+    )
+    .await;
+    assert_eq!(
+        status,
+        StatusCode::CREATED,
+        "five levels below the order are fine: {po}"
+    );
+    assert_eq!(e.production_orders().await["total"], 6);
+
+    // One more level is too deep, and nothing of it is kept.
+    let deeper = e.make_product("P-TOP", "none", &[(&top, "1")]).await;
+    let (status, r) = post(
+        &e.app,
+        PLANNER,
+        "/production-orders",
+        json!({ "product_id": deeper, "quantity": "1", "auto_release_subassemblies": true }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{r}");
+    assert!(
+        r["message"].as_str().unwrap().contains("levels deep"),
+        "{r}"
+    );
+    assert_eq!(
+        e.production_orders().await["total"],
+        6,
+        "still only the first chain"
+    );
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn the_parents_own_work_is_scheduled_after_its_subassemblies(db: PgPool) {
+    let e = env(db).await;
+    e.frame_routing().await; // Cut (SAW) and Weld (WELD) on the frame
+    let assemble = id(&e.work_centre("ASM", json!({})).await);
+    let draft = e.draft_bom(UNIT_100, json!({})).await;
+    e.set_routing(&draft, vec![op("Assemble", &assemble, 0, "30")])
+        .await;
+    post(&e.app, PM, &format!("/boms/{draft}/activate"), json!({})).await;
+
+    // Without auto-release the unit starts when told to: Monday 1 March.
+    let plain = e
+        .build_for_stock(UNIT_100, "1", json!({ "start_date": "2027-03-01" }))
+        .await;
+    assert_eq!(dates(&plain, "Assemble").0, "2027-03-01");
+
+    // With it, the frame (Cut 40, Weld 60 minutes: all on Monday) is ready first, so the unit
+    // starts the day after.
+    let (status, po) = post(
+        &e.app,
+        PLANNER,
+        "/production-orders",
+        json!({ "product_id": UNIT_100, "quantity": "1", "start_date": "2027-03-01", "auto_release_subassemblies": true }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{po}");
+    let frame = e
+        .production_order(PLANNER, po["sub_orders"][0]["id"].as_str().unwrap())
+        .await;
+    assert_eq!(frame["scheduled_end"], "2027-03-01");
+    assert_eq!(po["sub_orders"][0]["scheduled_end"], "2027-03-01");
+    assert_eq!(
+        dates(&po, "Assemble"),
+        ("2027-03-02".into(), "2027-03-02".into())
+    );
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn a_short_component_can_be_built_for_the_shortfall_only_once(db: PgPool) {
+    let e = env(db).await;
+    // Three frames are needed and two are on the shelf, but a reservation is all or nothing.
+    e.receive(FRAME, "2").await;
+    let po = e.build_for_stock(UNIT_100, "3", json!({})).await;
+    let n = id(&po);
+    let frame = id(component(&po, "FRAME-A"));
+    assert_eq!(component(&po, "FRAME-A")["short"], true);
+    let uri = format!("/production-orders/{n}/components/{frame}/build");
+
+    let (status, child) = post(&e.app, PLANNER, &uri, json!({})).await;
+    assert_eq!(status, StatusCode::CREATED, "{child}");
+    assert_eq!(child["product_code"], "FRAME-A");
+    assert_eq!(dec(&child["quantity"]), q("1"), "3 needed, 2 free");
+    assert_eq!(child["parent_order_number"], po["number"]);
+    assert_eq!(
+        e.production_order(PLANNER, &n).await["sub_orders"][0]["id"],
+        child["id"]
+    );
+
+    // The open order covers the rest: a second click is refused rather than doubling it.
+    let (status, r) = post(&e.app, PLANNER, &uri, json!({})).await;
+    assert_eq!(status, StatusCode::CONFLICT, "{r}");
+
+    // Components that are bought are not built; other orders' components are not found.
+    let bolt = id(component(&po, "BOLT-M8"));
+    let (status, _) = post(
+        &e.app,
+        PLANNER,
+        &format!("/production-orders/{n}/components/{bolt}/build"),
+        json!({}),
+    )
+    .await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+    let (status, _) = post(
+        &e.app,
+        PLANNER,
+        &format!("/production-orders/{n}/components/{}/build", uid()),
+        json!({}),
+    )
+    .await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    // Only planners release; a closed order has no more subassemblies to build.
+    for who in [STORES, SALES, VIEWER] {
+        assert_eq!(
+            post(&e.app, who, &uri, json!({})).await.0,
+            StatusCode::FORBIDDEN,
+            "{who}"
+        );
+    }
+    let (status, _) = post(
+        &e.app,
+        PLANNER,
+        &format!("/production-orders/{n}/cancel"),
+        json!({ "reason": "no" }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(
+        post(&e.app, PLANNER, &uri, json!({})).await.0,
+        StatusCode::CONFLICT
+    );
+
+    // When stock covers it by itself there is nothing to build.
+    e.receive(FRAME, "10").await;
+    let again = e.build_for_stock(UNIT_100, "1", json!({})).await;
+    let frame = id(component(&again, "FRAME-A"));
+    assert_eq!(component(&again, "FRAME-A")["short"], false);
+    let (status, r) = post(
+        &e.app,
+        PLANNER,
+        &format!("/production-orders/{}/components/{frame}/build", id(&again)),
+        json!({}),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CONFLICT, "{r}");
+
+    // The older way, a release with a parent order, still works.
+    let (status, legacy) = post(
+        &e.app,
+        PLANNER,
+        "/production-orders",
+        json!({ "product_id": FRAME, "quantity": "1", "parent_order_id": id(&again) }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{legacy}");
+    assert_eq!(legacy["parent_order_number"], again["number"]);
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn building_a_component_can_release_its_own_subassemblies(db: PgPool) {
+    let e = env(db).await;
+    let line = e.make_product("LINE-Y", "none", &[(UNIT_100, "1")]).await;
+    let po = e.build_for_stock(&line, "1", json!({})).await;
+    let unit = id(component(&po, "UNIT-100"));
+    let (status, child) = post(
+        &e.app,
+        PLANNER,
+        &format!("/production-orders/{}/components/{unit}/build", id(&po)),
+        json!({ "auto_release_subassemblies": true }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{child}");
+    assert_eq!(child["sub_orders"][0]["product_code"], "FRAME-A");
+    assert_eq!(e.production_orders().await["total"], 3);
+}

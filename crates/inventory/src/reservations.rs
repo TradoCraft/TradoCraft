@@ -528,15 +528,10 @@ struct Candidate {
     free: Decimal,
 }
 
-async fn allocate(
-    conn: &mut PgConnection,
-    user: &CurrentUser,
-    t: &ReserveTarget<'_>,
-    mut needed: Decimal,
-    pin: &ReservePin,
-) -> AppResult<()> {
-    let candidates: Vec<Candidate> = sqlx::query_as(
-        "SELECT b.location_id, b.lot_id, b.quantity - COALESCE(res.q, 0) AS free
+/// The stock a reservation can draw from: free quantity (on hand minus what is already reserved)
+/// per location and lot, in active warehouses and internal locations, without expired lots. Bound
+/// to `$1` company, `$2` product and the pin: `$3` warehouse, `$4` location, `$5` lot.
+const CANDIDATES: &str = "SELECT b.location_id, b.lot_id, b.quantity - COALESCE(res.q, 0) AS free
          FROM inventory.stock_balances b
          JOIN inventory.locations l ON l.id = b.location_id AND l.kind = 'internal' AND l.active
          JOIN inventory.warehouses w ON w.id = l.warehouse_id AND w.active
@@ -549,10 +544,38 @@ async fn allocate(
            AND ($3::uuid IS NULL OR w.id = $3) AND ($4::uuid IS NULL OR l.id = $4) AND ($5::uuid IS NULL OR b.lot_id = $5)
            AND (w.kind = 'warehouse' OR $3::uuid IS NOT NULL OR $4::uuid IS NOT NULL)
            AND (lot.expiry_date IS NULL OR lot.expiry_date >= current_date)
-           AND b.quantity - COALESCE(res.q, 0) > 0
-         ORDER BY lot.expiry_date NULLS LAST, w.code, l.code
-         FOR UPDATE OF b",
-    )
+           AND b.quantity - COALESCE(res.q, 0) > 0";
+
+/// How much of a product [`set_reserved`] could allocate right now without a pin: free stock in
+/// the normal warehouses (what is not reserved, expired lots left out). A read: nothing is locked,
+/// so it is a figure to plan with, not a promise.
+pub async fn free_to_reserve(
+    conn: &mut PgConnection,
+    company_id: Uuid,
+    product_id: Uuid,
+) -> AppResult<Decimal> {
+    Ok(sqlx::query_scalar(&format!(
+        "SELECT COALESCE(sum(c.free), 0) FROM ({CANDIDATES}) c"
+    ))
+    .bind(company_id)
+    .bind(product_id)
+    .bind(None::<Uuid>)
+    .bind(None::<Uuid>)
+    .bind(None::<Uuid>)
+    .fetch_one(conn)
+    .await?)
+}
+
+async fn allocate(
+    conn: &mut PgConnection,
+    user: &CurrentUser,
+    t: &ReserveTarget<'_>,
+    mut needed: Decimal,
+    pin: &ReservePin,
+) -> AppResult<()> {
+    let candidates: Vec<Candidate> = sqlx::query_as(&format!(
+        "{CANDIDATES} ORDER BY lot.expiry_date NULLS LAST, w.code, l.code FOR UPDATE OF b"
+    ))
     .bind(user.company_id)
     .bind(t.product_id)
     .bind(pin.warehouse_id)
