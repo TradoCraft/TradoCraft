@@ -159,7 +159,18 @@ class _TutorialHostState extends ConsumerState<TutorialHost> {
           child: KeyedSubtree(key: _content, child: widget.child),
         ),
         // No full-screen Material here: it would take every tap meant for the app.
-        if (layer != null) Positioned.fill(child: layer),
+        // The spotlight and card come last in the reading order of the semantics tree. Without a
+        // sort key their small node is interleaved by position with the nodes of dialogs and
+        // suggestion lists; when the list opens the order changes and the web engine moves the DOM
+        // node of the focused text field, which drops its focus and closes the list.
+        if (layer != null)
+          Positioned.fill(
+            child: Semantics(
+              container: true,
+              sortKey: const OrdinalSortKey(1000),
+              child: layer,
+            ),
+          ),
       ],
     );
   }
