@@ -7476,7 +7476,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get tutManufacturingCompleteBody =>
-      'Appuyez sur Terminer. Le dialogue montre la quantité produite (5) et les composants consommés. Confirmez : les composants sortent du stock et cinq chariots finis y entrent.';
+      'Appuyez sur Terminer. Le dialogue montre la quantité produite (5) et les composants consommés. Choisissez l\'emplacement MAIN de l\'entrepôt sous Ranger dans, pour que les chariots finis aient une place, et confirmez : les composants sortent du stock et cinq chariots finis y entrent.';
 
   @override
   String get tutManufacturingCompleteHint =>
@@ -7841,7 +7841,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get tutChangeCompleteBody =>
-      'Appuyez sur Terminer et confirmez les 10 chariots. Les composants sont consommés et les chariots vont à la commande.';
+      'Appuyez sur Terminer, choisissez l\'emplacement MAIN de l\'entrepôt sous Ranger dans et confirmez les 10 chariots. Les composants sont consommés et les chariots vont à la commande.';
 
   @override
   String get tutChangeReadyTitle => 'Prêt à expédier';

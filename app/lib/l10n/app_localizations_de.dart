@@ -7484,7 +7484,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get tutManufacturingCompleteBody =>
-      'Drücken Sie Abschließen. Der Dialog zeigt die Ausbringungsmenge (5) und die verbrauchten Komponenten. Bestätigen Sie: Die Komponenten verlassen den Bestand und fünf fertige Karren kommen hinein.';
+      'Drücken Sie Abschließen. Der Dialog zeigt die Ausbringungsmenge (5) und die verbrauchten Komponenten. Wählen Sie unter Einlagern in den Lagerplatz MAIN, damit die fertigen Karren einen Platz haben, und bestätigen Sie: Die Komponenten verlassen den Bestand und fünf fertige Karren kommen hinein.';
 
   @override
   String get tutManufacturingCompleteHint =>
@@ -7849,7 +7849,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get tutChangeCompleteBody =>
-      'Drücken Sie Abschließen und bestätigen Sie die 10 Karren. Die Komponenten werden verbraucht und die Karren gehen an den Auftrag.';
+      'Drücken Sie Abschließen, wählen Sie unter Einlagern in den Lagerplatz MAIN und bestätigen Sie die 10 Karren. Die Komponenten werden verbraucht und die Karren gehen an den Auftrag.';
 
   @override
   String get tutChangeReadyTitle => 'Versandbereit';

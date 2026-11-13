@@ -7441,7 +7441,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tutManufacturingCompleteBody =>
-      'Press Complete. The dialog shows the output quantity (5) and the components consumed. Confirm: the components leave the stock and five finished carts enter it.';
+      'Press Complete. The dialog shows the output quantity (5) and the components consumed. Choose the warehouse location MAIN in Put into, so the finished carts have a place to go, and confirm: the components leave the stock and five finished carts enter it.';
 
   @override
   String get tutManufacturingCompleteHint =>
@@ -7804,7 +7804,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tutChangeCompleteBody =>
-      'Press Complete and confirm the 10 carts. The components are consumed and the carts go to the order.';
+      'Press Complete, choose the warehouse location MAIN in Put into and confirm the 10 carts. The components are consumed and the carts go to the order.';
 
   @override
   String get tutChangeReadyTitle => 'Ready for shipping';
