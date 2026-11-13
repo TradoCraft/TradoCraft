@@ -5,12 +5,26 @@ import path from 'node:path';
 // environment on a throw-away database, and a static server for the Flutter web build.
 //   cargo build -p tradocraft-api
 //   (cd app && flutter build web --release --no-web-resources-cdn)
-//   cd e2e && npm ci && npx playwright test
+//   cd e2e && npm ci && npx playwright test      (headless Chromium, as CI does)
+//   npm run test:watch | npm run test:ui          (Firefox, visible; see README.md)
+// Environment: E2E_BROWSER=firefox|chromium, E2E_HEADED=1, E2E_SLOWMO=<ms>, E2E_PG_URL, E2E_API_PORT,
+// E2E_WEB_PORT, E2E_DB_NAME, E2E_API_BIN.
+const { envPg, guardDbName } = require('./lib.cjs');
 const root = path.resolve(__dirname, '..');
 export const API_PORT = Number(process.env.E2E_API_PORT ?? 18080);
 export const WEB_PORT = Number(process.env.E2E_WEB_PORT ?? 18088);
 export const DB_NAME = process.env.E2E_DB_NAME ?? 'tradocraft_e2e';
-const pgBase = process.env.E2E_PG_URL ?? 'postgresql://tradocraft:tradocraft@localhost';
+guardDbName(DB_NAME);
+// Login: E2E_PG_URL, else the server part of DATABASE_URL in the repository .env, else the CI default.
+const pgBase = (process.env.E2E_PG_URL ?? envPg().server ?? 'postgresql://tradocraft:tradocraft@localhost').replace(/\/+$/, '');
+
+const browser = process.env.E2E_BROWSER ?? 'chromium';
+if (browser !== 'chromium' && browser !== 'firefox') {
+  throw new Error(`E2E_BROWSER must be "chromium" or "firefox", got "${browser}"`);
+}
+const slowMo = Number(process.env.E2E_SLOWMO ?? 0);
+if (!Number.isFinite(slowMo) || slowMo < 0) throw new Error(`E2E_SLOWMO must be a number of milliseconds, got "${process.env.E2E_SLOWMO}"`);
+const headed = ['1', 'true'].includes((process.env.E2E_HEADED ?? '').toLowerCase());
 
 export default defineConfig({
   testDir: './tests',
@@ -20,6 +34,9 @@ export default defineConfig({
   fullyParallel: false,
   reporter: [['list']],
   use: {
+    browserName: browser,
+    headless: !headed,
+    launchOptions: { slowMo },
     baseURL: `http://127.0.0.1:${WEB_PORT}`,
     viewport: { width: 1400, height: 1700 },
     screenshot: 'only-on-failure',
