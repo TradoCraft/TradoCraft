@@ -1,7 +1,6 @@
 import { expect, Page, test } from '@playwright/test';
 import fs from 'node:fs';
 import path from 'node:path';
-import { API_PORT } from '../playwright.config';
 import { boot, choose, dump, expectStep, field, next, overviewTab, railTo, searchPick, startNextChapter, takeMeThere, typeInto } from './flutter';
 
 /** Whether a Typst binary can be found (TYPST_BIN or on PATH); the server needs it for PDFs. */
@@ -32,14 +31,9 @@ async function receiveGoods(page: Page, qty: number) {
   await expect(dialog).toBeHidden();
 }
 
-test('the whole tutorial, chapter by chapter', async ({ page, request }) => {
-  // Older seeds had no warehouse, yet chapter 3 says "choose the location MAIN" (the seed now has one, and
-  // companies made through the setup wizard always did). Create it if it is missing, as an administrator would.
-  const made = await request.post(`http://127.0.0.1:${API_PORT}/api/v1/inventory/warehouses`, {
-    headers: { 'X-Dev-User': 'admin@example.com' },
-    data: { code: 'MAIN', name: 'Main warehouse' },
-  });
-  expect([201, 409]).toContain(made.status()); // 409: it already exists
+test('the whole tutorial, chapter by chapter', async ({ page }) => {
+  // The tutorial environment starts without a warehouse: chapter 3 teaches creating one (MAIN, with its
+  // location MAIN), and the goods are received into it. The database is recreated on every run.
   await boot(page);
   await page.getByRole('button', { name: 'Start the tutorial' }).click();
 
@@ -147,14 +141,12 @@ test('the whole tutorial, chapter by chapter', async ({ page, request }) => {
     await expectStep(page, 'buying', 'order');
     await page.getByRole('button', { name: /New purchase order/ }).click();
     await searchPick(page, 'Supplier', 'TUT-SUP-A', /Voltaic Drives/);
-    const components = ['TUT-MOTOR', 'TUT-FRAME', 'TUT-CTRL'];
-    // Once the supplier is chosen its price-list goods are listed: one group per good (label
-    // "TUT-MOTOR · Motor € 120,00 · MOQ 5") with a checkbox and a quantity box. Ticking fills in the
-    // minimum order quantity, which is then replaced by 30.
-    for (const code of components) {
-      const good = page.getByRole('group', { name: new RegExp(`^${code} ·`) });
-      await good.getByRole('checkbox').click();
-      await typeInto(good.getByRole('textbox', { name: 'Quantity', exact: true }), '30');
+    // The goods picker lists the supplier's price list as rows with a checkbox (no accessible name) and a
+    // quantity box. Typing a quantity above zero ticks the row, so narrow the list with the filter box and
+    // type 30 into the one remaining row's Quantity (the first one: "Other products" comes below the list).
+    for (const code of ['TUT-MOTOR', 'TUT-FRAME', 'TUT-CTRL']) {
+      await typeInto(field(page, 'Filter goods'), code);
+      await typeInto(field(page, 'Quantity').first(), '30');
     }
     await dump(page, 'po-filled');
     await page.getByRole('button', { name: 'Save' }).click();
@@ -163,7 +155,17 @@ test('the whole tutorial, chapter by chapter', async ({ page, request }) => {
     await page.getByRole('button', { name: 'Approve', exact: true }).click();
     await expectStep(page, 'buying', 'send');
     await page.getByRole('button', { name: 'Send', exact: true }).click();
+    await expectStep(page, 'buying', 'openWarehouses');
+    await railTo(page, 'Stock');
+    await page.getByRole('button', { name: 'Warehouses', exact: true }).click();
+    await expectStep(page, 'buying', 'warehouse');
+    await page.getByRole('button', { name: 'New warehouse' }).click();
+    await typeInto(field(page, 'Code'), 'MAIN');
+    await typeInto(field(page, 'Name'), 'Main warehouse');
+    await page.getByRole('button', { name: 'Save' }).click();
+    // The new warehouse brings its location MAIN; the step after it sends us back to the order.
     await expectStep(page, 'buying', 'receivePart');
+    await takeMeThere(page);
     await receiveGoods(page, 10);
     await expectStep(page, 'buying', 'receiveRest');
     await receiveGoods(page, 20);
@@ -253,7 +255,7 @@ test('the whole tutorial, chapter by chapter', async ({ page, request }) => {
     await expectStep(page, 'manufacturing', 'complete');
     await page.getByRole('button', { name: 'Complete', exact: true }).click();
     await page.waitForTimeout(1000);
-    // The step does not mention it, but the finished carts need a location to go into.
+    // Chapter 3 created the warehouse, so the warehouse step is skipped; the finished carts go into MAIN.
     await choose(page, /^Put into/, /MAIN/);
     await page.getByRole('alertdialog').getByRole('button', { name: 'Complete' }).click();
     await expectStep(page, 'manufacturing', 'stock');

@@ -6,6 +6,7 @@ import '../../app/api.dart';
 import '../../l10n/l10n.dart';
 import '../../shared/entity_list.dart';
 import '../../shared/format.dart';
+import '../tutorial/targets.dart';
 import 'inventory_common.dart';
 import 'move_dialogs.dart';
 import '../../shared/app_icons.dart';
@@ -113,10 +114,13 @@ class _StockPageState extends ConsumerState<StockPage> {
           label: Text(l.stockCounts),
           onPressed: () => context.push('/stock/counts'),
         ),
-        OutlinedButton.icon(
-          icon: const Icon(AppIcons.warehouse),
-          label: Text(l.stockWarehouses),
-          onPressed: () => context.push('/stock/warehouses'),
+        TutorialTarget(
+          id: 'stock-warehouses',
+          child: OutlinedButton.icon(
+            icon: const Icon(AppIcons.warehouse),
+            label: Text(l.stockWarehouses),
+            onPressed: () => context.push('/stock/warehouses'),
+          ),
         ),
       ],
       columns: [

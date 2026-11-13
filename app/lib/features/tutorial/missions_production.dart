@@ -126,6 +126,7 @@ final manufacturingMission = Mission(
         done: (json, _) => _orderStatus(json, {'in_progress', 'completed'}),
       ),
     ),
+    warehouseStep,
     MissionStep(
       id: 'complete',
       hasHint: true,

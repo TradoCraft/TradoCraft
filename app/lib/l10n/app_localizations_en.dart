@@ -7293,6 +7293,24 @@ class AppLocalizationsEn extends AppLocalizations {
       'Press Send. The order is marked as sent and the supplier gets it. In test and tutorial environments outgoing mail is only written to files on the server, nothing leaves the building.';
 
   @override
+  String get tutBuyingOpenWarehousesTitle => 'Where do the goods go?';
+
+  @override
+  String get tutBuyingOpenWarehousesBody =>
+      'Goods need a place before they can be received. Open Stock and press Warehouses: this is where warehouses and their locations are kept.';
+
+  @override
+  String get tutBuyingWarehouseTitle => 'Create the warehouse';
+
+  @override
+  String get tutBuyingWarehouseBody =>
+      'Press New warehouse, give it the code MAIN and the name Main warehouse, and save. A new warehouse comes with its location MAIN, which is where you receive the goods next. If saving is refused because the code MAIN is taken, an inactive warehouse holds it: switch it (and its location) back on in Stock > Warehouses, or give it another code with its edit button, then press Next.';
+
+  @override
+  String get tutBuyingWarehouseHint =>
+      'Code and name are both required. If a warehouse with a location exists already, this step is skipped.';
+
+  @override
   String get tutBuyingReceivePartTitle => 'The first delivery arrives';
 
   @override
@@ -7479,6 +7497,17 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get tutManufacturingStartBody =>
       'Put on the worker hat and press Start. The order moves from released to in progress.';
+
+  @override
+  String get tutManufacturingWarehouseTitle => 'A place for the carts';
+
+  @override
+  String get tutManufacturingWarehouseBody =>
+      'The finished carts need a location to go into, and there is no warehouse yet (chapter 3 creates it). Open Stock, press Warehouses and create the warehouse MAIN with the name Main warehouse, then go back to the production order. If saving is refused because the code MAIN is taken, an inactive warehouse holds it: switch it (and its location) back on in Stock > Warehouses, or give it another code with its edit button, then press Next.';
+
+  @override
+  String get tutManufacturingWarehouseHint =>
+      'The location MAIN is created together with the warehouse. If a warehouse with a location exists already, this step is skipped.';
 
   @override
   String get tutManufacturingCompleteTitle => 'Complete the order';
@@ -7842,6 +7871,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tutChangeStartBody => 'Press Start on the new production order.';
+
+  @override
+  String get tutChangeWarehouseTitle => 'A place for the carts';
+
+  @override
+  String get tutChangeWarehouseBody =>
+      'The finished carts need a location to go into, and there is no warehouse yet (chapter 3 creates it). Open Stock, press Warehouses and create the warehouse MAIN with the name Main warehouse, then go back to the production order. If saving is refused because the code MAIN is taken, an inactive warehouse holds it: switch it (and its location) back on in Stock > Warehouses, or give it another code with its edit button, then press Next.';
+
+  @override
+  String get tutChangeWarehouseHint =>
+      'The location MAIN is created together with the warehouse. If a warehouse with a location exists already, this step is skipped.';
 
   @override
   String get tutChangeCompleteTitle => 'Complete production';
