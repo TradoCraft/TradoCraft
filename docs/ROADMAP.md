@@ -20,8 +20,8 @@ Module overview: [ARCHITECTURE.md](ARCHITECTURE.md).
 | User-defined reports (customers, quotations, orders; joins, grouping, charts, CSV and PDF) | Done, [ADR 0042](adr/0042-report-builder.md) |
 | Environment awareness (`/meta/environment`, environment list, banner and switcher in the app) | Done, [ADR 0043](adr/0043-environments.md); clone script, bootstrap wizard and outbound-side-effect switch-off follow |
 | B1 Inventory foundation | Done, [ADR 0019](adr/0019-inventory-stock-ledger.md) |
-| B2 Purchasing | In progress, [ADR 0031](adr/0031-purchasing.md) |
-| B2b Supplier invoices and three-way match (AP register, no ledger) | Backend done, [ADR 0046](adr/0046-supplier-invoices-and-three-way-match.md); Flutter screens follow |
+| B2 Purchasing | Core done (suppliers, price lists, PO lifecycle, goods receipts into stock, app screens), [ADR 0031](adr/0031-purchasing.md); open: PO PDF and mail to the supplier, approval limits, RFQ, open POs in ATP |
+| B2b Supplier invoices and three-way match (AP register, no ledger) | Done (backend and Flutter screens), [ADR 0046](adr/0046-supplier-invoices-and-three-way-match.md) |
 | B3 Delivery | Done, [ADR 0035](adr/0035-delivery.md) |
 | C1a Production orders | Done, [ADR 0036](adr/0036-production.md) |
 | C1b Work centres, routings, operations | Open (needs C1a) |
@@ -68,11 +68,13 @@ Remaining knowledge base gaps (ADR 0018): non-image attachments, analytics, sema
 - Reservations against confirmed orders; availability (ATP) on the order screen.
 - Deferred to later items: two-step transfers, valuation beyond the standard-cost snapshot, a UI for product-specific units, van stock for technicians (A3), open POs/MOs in ATP (B2, C1).
 
-**B2 Purchasing** (large)
+**B2 Purchasing** (large, core done)
 - Crate `purchasing`: suppliers, supplier price lists, product codes, MOQ and lead times;
   RFQ -> PO -> goods receipt; a receipt creates stock moves and serial units ([ADR 0011](adr/0011-bom-revisions-and-serial-genealogy.md)).
 - PO PDF and mail to the supplier through the outbox; approval limits; vendor bill matching: see B2b for the three-way match.
 - Numbering through `core::numbering::next_number` (new codes PO, GR). Export of bills and valuation to the accounting package later.
+- Done ([ADR 0031](adr/0031-purchasing.md)): suppliers, price lists, PO draft -> approved -> sent -> received, goods receipts (stock moves, lots, serial units), screens and tests.
+- Still to do: PO PDF and e-mail through the outbox (`send` only changes the status today), approval limits, RFQ, open POs in ATP (needed by C2).
 
 **B3 Delivery** (small-medium, done), [ADR 0035](adr/0035-delivery.md)
 - Delivery notes for confirmed orders (also while partly shipped), picking from the reservations, a
