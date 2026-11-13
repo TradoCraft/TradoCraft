@@ -1473,3 +1473,145 @@ async fn unauthenticated_requests_are_rejected(db: PgPool) {
     .await;
     assert_eq!(status, StatusCode::UNAUTHORIZED);
 }
+
+// ---------------------------------------------------------------------------------------------
+// Incoming supply (open purchase orders, ADR 0060)
+// ---------------------------------------------------------------------------------------------
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn only_sent_and_partly_received_orders_count_as_incoming(db: PgPool) {
+    let e = env(db).await;
+    let s = e.supplier("One", "S1").await;
+    let incoming = |ids: String| {
+        let app = e.app.clone();
+        async move {
+            get(
+                &app,
+                BUYER,
+                &format!("/purchase-orders/incoming?product_ids={ids}"),
+            )
+            .await
+        }
+    };
+
+    // Draft and approved orders are not a promise yet.
+    let draft = e.draft(&s).await;
+    let (status, v) = incoming(FRAME.into()).await;
+    assert_eq!(
+        (status, v.as_array().unwrap().len()),
+        (StatusCode::OK, 0),
+        "{v}"
+    );
+    let po = e.approved(&s).await;
+    let po_id = po["id"].as_str().unwrap().to_string();
+    let (_, v) = incoming(FRAME.into()).await;
+    assert!(v.as_array().unwrap().is_empty(), "{v}");
+    assert_ne!(draft["id"], po["id"]);
+
+    // Sent: the whole quantity is on its way.
+    let (status, _) = post(
+        &e.app,
+        BUYER,
+        &format!("/purchase-orders/{po_id}/send"),
+        json!({}),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    let (status, v) = incoming(format!("{FRAME},{PROFILE}")).await;
+    assert_eq!(status, StatusCode::OK, "{v}");
+    let frame = v
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|x| x["product_id"] == FRAME)
+        .unwrap();
+    assert_eq!(dec(&frame["open_quantity"]), q("10"));
+    assert_eq!(frame["lines"][0]["purchase_order_number"], po["number"]);
+    let profile = v
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|x| x["product_id"] == PROFILE)
+        .unwrap();
+    assert_eq!(dec(&profile["open_quantity"]), q("4.5"));
+
+    // A partial receipt leaves only the rest.
+    let frame_line = po["lines"][0]["id"].as_str().unwrap();
+    let (status, gr) = e
+        .receive(
+            &po_id,
+            json!([{ "po_line_id": frame_line, "quantity": "4" }]),
+        )
+        .await;
+    assert_eq!(status, StatusCode::CREATED, "{gr}");
+    let (_, v) = incoming(FRAME.into()).await;
+    assert_eq!(dec(&v[0]["open_quantity"]), q("6"));
+
+    // Fully received lines drop out; so does a product nobody ordered.
+    let (status, _) = e
+        .receive(
+            &po_id,
+            json!([{ "po_line_id": frame_line, "quantity": "6" }]),
+        )
+        .await;
+    assert_eq!(status, StatusCode::CREATED);
+    let (_, v) = incoming(FRAME.into()).await;
+    assert!(v.as_array().unwrap().is_empty(), "{v}");
+    let (_, v) = incoming(PROFILE.into()).await;
+    assert_eq!(dec(&v[0]["open_quantity"]), q("4.5"));
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn incoming_supply_sums_orders_and_reports_the_earliest_date(db: PgPool) {
+    let e = env(db).await;
+    let s = e.supplier("One", "S1").await;
+    for (date, qty) in [("2027-03-10", "5"), ("2027-03-01", "2"), ("", "1")] {
+        let mut body = json!({ "supplier_id": s,
+            "lines": [{ "product_id": FRAME, "quantity": qty, "unit_price": "1" }] });
+        if !date.is_empty() {
+            body["expected_delivery_date"] = json!(date);
+        }
+        let (status, po) = post(&e.app, BUYER, "/purchase-orders", body).await;
+        assert_eq!(status, StatusCode::CREATED, "{po}");
+        let id = po["id"].as_str().unwrap();
+        for step in ["approve", "send"] {
+            let (status, _) = post(
+                &e.app,
+                BUYER,
+                &format!("/purchase-orders/{id}/{step}"),
+                json!({}),
+            )
+            .await;
+            assert_eq!(status, StatusCode::OK);
+        }
+    }
+    let (status, v) = get(
+        &e.app,
+        BUYER,
+        &format!("/purchase-orders/incoming?product_ids={FRAME}"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{v}");
+    assert_eq!(dec(&v[0]["open_quantity"]), q("8"));
+    assert_eq!(v[0]["next_expected_date"], "2027-03-01");
+    assert_eq!(v[0]["lines"].as_array().unwrap().len(), 3);
+    // The line without a date sorts last.
+    assert!(v[0]["lines"][2]["expected_delivery_date"].is_null());
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn incoming_supply_validates_ids_and_needs_purchasing_read(db: PgPool) {
+    let e = env(db).await;
+    let (status, _) = get(&e.app, BUYER, "/purchase-orders/incoming?product_ids=nope").await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+    let (status, v) = get(&e.app, BUYER, "/purchase-orders/incoming?product_ids=").await;
+    assert_eq!((status, v.as_array().unwrap().len()), (StatusCode::OK, 0));
+    let many = vec![FRAME; 201].join(",");
+    let (status, _) = get(
+        &e.app,
+        BUYER,
+        &format!("/purchase-orders/incoming?product_ids={many}"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+}

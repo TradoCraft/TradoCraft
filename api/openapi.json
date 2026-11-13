@@ -18865,6 +18865,71 @@
         }
       }
     },
+    "/api/v1/purchase-orders/incoming": {
+      "get": {
+        "tags": [
+          "purchasing"
+        ],
+        "summary": "What is on order and not yet received for the given products (sent and partially received\norders only), with the earliest expected date. Feeds the availability view of an order.",
+        "operationId": "incoming_supply",
+        "parameters": [
+          {
+            "name": "product_ids",
+            "in": "query",
+            "description": "Comma-separated product ids (at most 200).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/IncomingSupply"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/purchase-orders/{id}": {
       "get": {
         "tags": [
@@ -30901,6 +30966,72 @@
           },
           "ticket_number": {
             "type": "string"
+          }
+        }
+      },
+      "IncomingLine": {
+        "type": "object",
+        "description": "One open purchase order line that still has goods to come.",
+        "required": [
+          "purchase_order_id",
+          "purchase_order_number",
+          "product_id",
+          "open_quantity"
+        ],
+        "properties": {
+          "expected_delivery_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "open_quantity": {
+            "type": "string",
+            "description": "Ordered minus received, in the stock unit of the product."
+          },
+          "product_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "purchase_order_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "purchase_order_number": {
+            "type": "string"
+          }
+        }
+      },
+      "IncomingSupply": {
+        "type": "object",
+        "description": "Incoming supply of one product.",
+        "required": [
+          "product_id",
+          "open_quantity",
+          "lines"
+        ],
+        "properties": {
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IncomingLine"
+            }
+          },
+          "next_expected_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "The earliest expected date among the lines that carry one."
+          },
+          "open_quantity": {
+            "type": "string"
+          },
+          "product_id": {
+            "type": "string",
+            "format": "uuid"
           }
         }
       },

@@ -20,7 +20,7 @@ Module overview: [ARCHITECTURE.md](ARCHITECTURE.md).
 | User-defined reports (customers, quotations, orders; joins, grouping, charts, CSV and PDF) | Done, [ADR 0042](adr/0042-report-builder.md) |
 | Environment awareness (`/meta/environment`, environment list, banner and switcher in the app) | Done, [ADR 0043](adr/0043-environments.md); clone script, bootstrap wizard and outbound-side-effect switch-off follow |
 | B1 Inventory foundation | Done, [ADR 0019](adr/0019-inventory-stock-ledger.md) |
-| B2 Purchasing | Core done (suppliers, price lists, PO lifecycle, goods receipts into stock, app screens), [ADR 0031](adr/0031-purchasing.md); open: PO PDF and mail to the supplier, approval limits, RFQ, open POs in ATP |
+| B2 Purchasing | Core done (suppliers, price lists, PO lifecycle, goods receipts into stock, app screens), [ADR 0031](adr/0031-purchasing.md); open: PO PDF and mail to the supplier, approval limits, RFQ; open POs in ATP backend done ([ADR 0060](adr/0060-incoming-supply-from-purchase-orders.md)), order screen display pending |
 | B2b Supplier invoices and three-way match (AP register, no ledger) | Done (backend and Flutter screens), [ADR 0046](adr/0046-supplier-invoices-and-three-way-match.md) |
 | B3 Delivery | Done, [ADR 0035](adr/0035-delivery.md) |
 | C1a Production orders | Done, [ADR 0036](adr/0036-production.md) |
@@ -74,7 +74,7 @@ Remaining knowledge base gaps (ADR 0018): non-image attachments, analytics, sema
 - PO PDF and mail to the supplier through the outbox; approval limits; vendor bill matching: see B2b for the three-way match.
 - Numbering through `core::numbering::next_number` (new codes PO, GR). Export of bills and valuation to the accounting package later.
 - Done ([ADR 0031](adr/0031-purchasing.md)): suppliers, price lists, PO draft -> approved -> sent -> received, goods receipts (stock moves, lots, serial units), screens and tests.
-- Still to do: PO PDF and e-mail through the outbox (`send` only changes the status today), approval limits, RFQ, open POs in ATP (needed by C2).
+- Still to do: PO PDF and e-mail through the outbox (`send` only changes the status today), approval limits, RFQ. Open POs in ATP: `GET /purchase-orders/incoming` is done ([ADR 0060](adr/0060-incoming-supply-from-purchase-orders.md)); the order stock panel (Flutter, needs the regenerated Dart client) still has to show it.
 
 **B3 Delivery** (small-medium, done), [ADR 0035](adr/0035-delivery.md)
 - Delivery notes for confirmed orders (also while partly shipped), picking from the reservations, a

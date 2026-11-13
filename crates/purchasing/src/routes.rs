@@ -11,7 +11,7 @@ use utoipa_axum::routes;
 use uuid::Uuid;
 
 use crate::orders::{
-    self, NewPurchaseOrderInput, PurchaseOrderDetail, PurchaseOrderSummary,
+    self, IncomingSupply, NewPurchaseOrderInput, PurchaseOrderDetail, PurchaseOrderSummary,
     UpdatePurchaseOrderInput,
 };
 use crate::receipts::{self, GoodsReceiptDetail, GoodsReceiptSummary, ReceiveGoodsInput};
@@ -33,6 +33,13 @@ pub struct ListSuppliersParams {
 pub struct ListOrdersParams {
     pub supplier_id: Option<Uuid>,
     pub status: Option<String>,
+}
+
+/// Query for incoming supply.
+#[derive(Debug, Deserialize, IntoParams)]
+pub struct IncomingParams {
+    /// Comma-separated product ids (at most 200).
+    pub product_ids: String,
 }
 
 // ---------------- Suppliers ----------------
@@ -313,6 +320,47 @@ async fn list_orders(
     Ok(Json(list))
 }
 
+/// What is on order and not yet received for the given products (sent and partially received
+/// orders only), with the earliest expected date. Feeds the availability view of an order.
+#[utoipa::path(
+    get,
+    path = "/purchase-orders/incoming",
+    tag = "purchasing",
+    params(IncomingParams),
+    responses(
+        (status = 200, body = Vec<IncomingSupply>),
+        (status = 401, body = ErrorBody),
+        (status = 403, body = ErrorBody),
+        (status = 422, body = ErrorBody)
+    )
+)]
+async fn incoming_supply(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Query(params): Query<IncomingParams>,
+) -> AppResult<Json<Vec<IncomingSupply>>> {
+    user.require(Permission::PurchasingRead)?;
+    let ids = params
+        .product_ids
+        .split(',')
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(|s| {
+            s.parse::<Uuid>()
+                .map_err(|_| tradocraft_core::AppError::Validation("invalid product id".into()))
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    if ids.len() > 200 {
+        return Err(tradocraft_core::AppError::Validation(
+            "at most 200 product ids".into(),
+        ));
+    }
+    let mut conn = state.db.acquire().await?;
+    Ok(Json(
+        orders::incoming_for_products(&mut conn, user.company_id, &ids).await?,
+    ))
+}
+
 #[utoipa::path(
     post,
     path = "/purchase-orders",
@@ -551,6 +599,7 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(list_supplier_products))
         .routes(routes!(set_supplier_product, delete_supplier_product))
         .routes(routes!(list_product_suppliers))
+        .routes(routes!(incoming_supply))
         .routes(routes!(list_orders, create_order))
         .routes(routes!(get_order, update_order))
         .routes(routes!(approve_order))

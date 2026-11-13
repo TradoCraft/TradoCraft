@@ -557,3 +557,78 @@ pub async fn numbers_by_id(
     .await
     .map_err(Into::into)
 }
+
+// ---------------- Incoming supply (open purchase orders) ----------------
+
+/// Statuses whose unreceived quantity counts as incoming supply: the order has gone to the
+/// supplier. A draft or merely approved order is not a promise yet (ADR 0060).
+const INCOMING_STATUSES: [&str; 2] = ["sent", "partially_received"];
+
+/// One open purchase order line that still has goods to come.
+#[derive(Debug, Clone, Serialize, FromRow, ToSchema)]
+pub struct IncomingLine {
+    pub purchase_order_id: Uuid,
+    pub purchase_order_number: String,
+    pub product_id: Uuid,
+    /// Ordered minus received, in the stock unit of the product.
+    #[schema(value_type = String)]
+    pub open_quantity: Decimal,
+    pub expected_delivery_date: Option<NaiveDate>,
+}
+
+/// Incoming supply of one product.
+#[derive(Debug, Clone, Serialize, ToSchema)]
+pub struct IncomingSupply {
+    pub product_id: Uuid,
+    #[schema(value_type = String)]
+    pub open_quantity: Decimal,
+    /// The earliest expected date among the lines that carry one.
+    pub next_expected_date: Option<NaiveDate>,
+    pub lines: Vec<IncomingLine>,
+}
+
+/// What is on order and not yet received, per product, for the given products. Products without
+/// open lines are left out. Public so that MRP (C2) and the order stock panel read the same figure.
+pub async fn incoming_for_products(
+    conn: &mut PgConnection,
+    company_id: Uuid,
+    product_ids: &[Uuid],
+) -> AppResult<Vec<IncomingSupply>> {
+    if product_ids.is_empty() {
+        return Ok(Vec::new());
+    }
+    let rows: Vec<IncomingLine> = sqlx::query_as(
+        "SELECT po.id AS purchase_order_id, po.number AS purchase_order_number, l.product_id,
+                l.quantity - l.quantity_received AS open_quantity, po.expected_delivery_date
+         FROM purchasing.purchase_order_lines l
+         JOIN purchasing.purchase_orders po ON po.id = l.purchase_order_id
+         WHERE po.company_id = $1 AND l.product_id = ANY($2) AND po.status = ANY($3)
+           AND l.quantity > l.quantity_received
+         ORDER BY l.product_id, po.expected_delivery_date NULLS LAST, po.number, l.line_number",
+    )
+    .bind(company_id)
+    .bind(product_ids)
+    .bind(&INCOMING_STATUSES[..])
+    .fetch_all(&mut *conn)
+    .await?;
+    let mut out: Vec<IncomingSupply> = Vec::new();
+    for line in rows {
+        match out.last_mut().filter(|s| s.product_id == line.product_id) {
+            Some(s) => {
+                s.open_quantity += line.open_quantity;
+                s.next_expected_date = match (s.next_expected_date, line.expected_delivery_date) {
+                    (Some(a), Some(b)) => Some(a.min(b)),
+                    (a, b) => a.or(b),
+                };
+                s.lines.push(line);
+            }
+            None => out.push(IncomingSupply {
+                product_id: line.product_id,
+                open_quantity: line.open_quantity,
+                next_expected_date: line.expected_delivery_date,
+                lines: vec![line],
+            }),
+        }
+    }
+    Ok(out)
+}
