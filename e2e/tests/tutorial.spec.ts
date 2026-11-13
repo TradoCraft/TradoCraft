@@ -33,13 +33,13 @@ async function receiveGoods(page: Page, qty: number) {
 }
 
 test('the whole tutorial, chapter by chapter', async ({ page, request }) => {
-  // The development seed has no warehouse, yet chapter 3 says "choose the location MAIN" (companies made
-  // through the setup wizard get one). Create it here, as an administrator would.
+  // Older seeds had no warehouse, yet chapter 3 says "choose the location MAIN" (the seed now has one, and
+  // companies made through the setup wizard always did). Create it if it is missing, as an administrator would.
   const made = await request.post(`http://127.0.0.1:${API_PORT}/api/v1/inventory/warehouses`, {
     headers: { 'X-Dev-User': 'admin@example.com' },
     data: { code: 'MAIN', name: 'Main warehouse' },
   });
-  expect(made.status()).toBe(201);
+  expect([201, 409]).toContain(made.status()); // 409: it already exists
   await boot(page);
   await page.getByRole('button', { name: 'Start the tutorial' }).click();
 

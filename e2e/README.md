@@ -38,8 +38,8 @@ CI runs this as the `e2e` job (`.github/workflows/ci.yml`).
   click at their fixed positions, so the viewport (1400x1700) must not change.
 * While the narrator card is showing, the product suggestions in the "New purchase order"
   dialog do not open; the test pauses the narrator around that dialog.
-* The development seed has no warehouse, so chapter 3 ("choose the location MAIN") cannot be
-  done in a seeded environment; the test creates the `MAIN` warehouse through the API first.
+* Chapter 3 says "choose the location MAIN". The seed of an older `main` had no warehouse, so the test
+  creates it through the API when it is missing (the seed now has it).
 * The quantity input of a quotation line has no accessible name, so the test clicks it by position.
 * The Complete dialog of a production order needs a "Put into" location that the tutorial step does
   not mention.
