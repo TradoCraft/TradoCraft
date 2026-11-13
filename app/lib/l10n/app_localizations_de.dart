@@ -2709,6 +2709,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get stockNoMoves => 'Noch keine Bewegungen';
 
   @override
+  String get stockNoLocationsHint =>
+      'Noch keine Lagerorte. Ein Administrator legt unter Lager > Lager und Fahrzeuge ein Lager und einen Lagerort an.';
+
+  @override
   String get stockNoWarehouses =>
       'Noch keine Lager. Ein Administrator legt sie hier an.';
 
@@ -8209,4 +8213,107 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get workerBannerSemantics => 'Hintergrundverarbeitung';
+
+  @override
+  String get mailboxes => 'Postfächer';
+
+  @override
+  String get newMailbox => 'Neues Postfach';
+
+  @override
+  String get mailboxesEmpty =>
+      'Noch keine Postfächer. E-Mails werden mit den Einstellungen der Hintergrundverarbeitung abgerufen und gesendet.';
+
+  @override
+  String get mailboxRefresh => 'Status aktualisieren';
+
+  @override
+  String get mailboxAddress => 'E-Mail-Adresse';
+
+  @override
+  String get mailboxKind => 'Verbindung';
+
+  @override
+  String get mailboxKindGraph => 'Microsoft 365 (Exchange Online)';
+
+  @override
+  String get mailboxKindImap => 'IMAP und SMTP';
+
+  @override
+  String get mailboxTenantId => 'Mandanten-ID (Tenant)';
+
+  @override
+  String get mailboxClientId => 'Anwendungs-ID (Client)';
+
+  @override
+  String get mailboxUsername => 'Benutzername';
+
+  @override
+  String get mailboxImapHost => 'IMAP-Server';
+
+  @override
+  String get mailboxImapPort => 'IMAP-Port';
+
+  @override
+  String get mailboxImapFolder => 'Ordner';
+
+  @override
+  String get mailboxImapTls => 'Verschlüsselte IMAP-Verbindung (TLS)';
+
+  @override
+  String get mailboxSmtpHost => 'SMTP-Server';
+
+  @override
+  String get mailboxSmtpPort => 'SMTP-Port';
+
+  @override
+  String get mailboxSmtpSecurity => 'SMTP-Verschlüsselung';
+
+  @override
+  String get mailboxSmtpNone => 'Keine';
+
+  @override
+  String get mailboxSecretRef => 'Name des Geheimnisses';
+
+  @override
+  String mailboxSecretHelp(String variable) {
+    return 'Das Passwort oder der geheime Clientschlüssel wird hier nicht gespeichert. Legen Sie es auf dem Server in der Variable $variable der Hintergrundverarbeitung fest.';
+  }
+
+  @override
+  String get mailboxTeam => 'Team für neue Tickets';
+
+  @override
+  String get mailboxTeamDefault => 'Das Standardteam';
+
+  @override
+  String get mailboxInbound => 'Eingehende E-Mails abrufen';
+
+  @override
+  String get mailboxDefault =>
+      'Standardpostfach: für System-E-Mails und Tickets ohne Postfach';
+
+  @override
+  String get mailboxDefaultBadge => 'Standard';
+
+  @override
+  String get mailboxSendOnly => 'Nur Versand';
+
+  @override
+  String get mailboxNeverPolled => 'Noch keine E-Mails abgerufen';
+
+  @override
+  String mailboxLastOk(String when) {
+    return 'E-Mails zuletzt abgerufen am $when';
+  }
+
+  @override
+  String mailboxError(String error) {
+    return 'Abrufen der E-Mails fehlgeschlagen: $error';
+  }
+
+  @override
+  String mailboxDeleteConfirm(String name) {
+    return 'Das Postfach $name entfernen? Die Tickets bleiben erhalten. Antworten darauf gehen dann über das Standardpostfach.';
+  }
 }

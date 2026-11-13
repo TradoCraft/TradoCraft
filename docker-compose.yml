@@ -82,6 +82,10 @@ services:
       # IMAP_HOST: imap.example.com
       # IMAP_USER: helpdesk@example.com
       # IMAP_PASSWORD: ...
+      # Several mailboxes or Microsoft 365 (ADR 0054): add them in the app (Helpdesk > Settings >
+      # Mailboxes) and set each secret here under the name given there:
+      # MAILBOX_SECRET_SUPPORT: ...
+      # MAILBOX_BIND_SUPPORT: <company id>[:imap.example.com,smtp.example.com]
       # Real sending:
       # MAIL_TRANSPORT: smtp
       # SMTP_HOST: smtp.example.com

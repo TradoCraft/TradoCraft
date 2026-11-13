@@ -86,6 +86,12 @@ IMAP unless `ALLOW_INBOUND_MAIL_IN_NON_LIVE=1`
 ([ADR 0048](docs/adr/0048-environment-clones-and-outbound-safety.md),
 [runbook](docs/runbooks/test-environments.md)).
 
+Backups. `scripts/backupctl backup` takes a physical backup of the whole PostgreSQL server
+(attachments included) and keeps 7 daily, 4 weekly and 6 monthly ones; `scripts/backupctl verify`
+restores the latest into a throwaway server and checks it
+([ADR 0056](docs/adr/0056-backup-and-restore.md),
+[runbook](docs/runbooks/backup-and-restore.md)).
+
 Story-mission tutorial. `scripts/tutorial-env up` creates a clean, throwaway environment of kind
 `tutorial` with the demo data and prints its address; add that address in the app (login page >
 Environments), sign in as `admin@example.com` and start it from the account menu > Tutorial.
@@ -93,7 +99,11 @@ Environments), sign in as `admin@example.com` and start it from the account menu
 ([runbook](docs/runbooks/test-environments.md#do-the-tutorial-in-three-commands)).
 
 Worker (helpdesk e-mail). By default outgoing mail is written to `./outbox` as `.eml` files;
-set `MAIL_TRANSPORT=smtp` and `SMTP_*`, and `IMAP_*` to fetch incoming mail (see `.env.example`):
+set `MAIL_TRANSPORT=smtp` and `SMTP_*`, and `IMAP_*` to fetch incoming mail (see `.env.example`).
+For several mailboxes, or a Microsoft 365 mailbox (Exchange Online, through Microsoft Graph), add
+them in the app under Helpdesk > Settings > Mailboxes and give the worker each secret as
+`MAILBOX_SECRET_<NAME>` ([ADR 0054](docs/adr/0054-helpdesk-mailboxes.md),
+[runbook](docs/runbooks/helpdesk-mailboxes.md)):
 
 ```bash
 cargo run -p tradocraft-worker

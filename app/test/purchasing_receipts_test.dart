@@ -307,12 +307,58 @@ void main() {
   });
 
   testWidgets('needs a destination location', (tester) async {
-    final http = FakeHttp(_routes(_recv, () => _po()));
+    final http = FakeHttp({
+      ..._routes(_recv, () => _po()),
+      'GET /api/v1/inventory/warehouses': (_) => [
+        _warehouse(),
+        {
+          ..._warehouse(),
+          'id': 'w2',
+          'code': 'WH2',
+          'locations': [
+            {
+              'id': 'l2',
+              'warehouse_id': 'w2',
+              'code': 'MAIN',
+              'name': '',
+              'active': true,
+            },
+          ],
+        },
+      ],
+    });
     await _app(tester, http);
     await tester.tap(find.byKey(const ValueKey('po-receive')));
     await tester.pumpAndSettle();
     await _submit(tester);
     expect(find.text('Choose a destination location.'), findsOneWidget);
+  });
+
+  testWidgets('preselects the only destination location', (tester) async {
+    final http = FakeHttp({
+      ..._routes(_recv, () => _po(), receipts: [_summary()]),
+      'GET /api/v1/goods-receipts/gr1': (_) => _receipt(),
+      'POST /api/v1/purchase-orders/po1/receipts': (_) => _receipt(),
+    });
+    await _app(tester, http);
+    await tester.tap(find.byKey(const ValueKey('po-receive')));
+    await tester.pumpAndSettle();
+    await _submit(tester);
+    final body =
+        http.bodies['POST /api/v1/purchase-orders/po1/receipts']!
+            as Map<String, dynamic>;
+    expect(body['location_id'], 'l1');
+  });
+
+  testWidgets('says how to create a location when none exists', (tester) async {
+    final http = FakeHttp({
+      ..._routes(_recv, () => _po()),
+      'GET /api/v1/inventory/warehouses': (_) => <Object?>[],
+    });
+    await _app(tester, http);
+    await tester.tap(find.byKey(const ValueKey('po-receive')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('no-locations-hint')), findsOneWidget);
   });
 
   testWidgets('lot-tracked products need a lot number', (tester) async {

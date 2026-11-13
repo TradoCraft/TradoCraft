@@ -22,6 +22,8 @@ import '../models/holiday.dart';
 import '../models/holiday_input.dart';
 import '../models/inbound_result.dart';
 import '../models/lead_input.dart';
+import '../models/mailbox.dart';
+import '../models/mailbox_input.dart';
 import '../models/merge_input.dart';
 import '../models/new_ticket_input.dart';
 import '../models/note_input.dart';
@@ -152,6 +154,28 @@ abstract class HelpdeskClient {
   @POST('/api/v1/helpdesk/inbound')
   Future<InboundResult> inbound({
     @Body() required String body,
+  });
+
+  /// The mailboxes of the company, the default one first.
+  @GET('/api/v1/helpdesk/mailboxes')
+  Future<List<Mailbox>> listMailboxes();
+
+  @POST('/api/v1/helpdesk/mailboxes')
+  Future<Mailbox> createMailbox({
+    @Body() required MailboxInput body,
+  });
+
+  @PUT('/api/v1/helpdesk/mailboxes/{id}')
+  Future<Mailbox> updateMailbox({
+    @Path('id') required String id,
+    @Body() required MailboxInput body,
+  });
+
+  /// Removes a mailbox. Its tickets and e-mails stay; replies on them then leave through the.
+  /// default mailbox.
+  @DELETE('/api/v1/helpdesk/mailboxes/{id}')
+  Future<void> deleteMailbox({
+    @Path('id') required String id,
   });
 
   /// The helpdesk report for a period. Response and resolution times are in business time when the.

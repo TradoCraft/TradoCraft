@@ -2707,6 +2707,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get stockNoMoves => 'Aún no hay movimientos';
 
   @override
+  String get stockNoLocationsHint =>
+      'Aún no hay ubicaciones. Un administrador crea un almacén y una ubicación en Existencias > Almacenes.';
+
+  @override
   String get stockNoWarehouses =>
       'Aún no hay almacenes. Un administrador los crea aquí.';
 
@@ -8192,4 +8196,107 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get workerBannerSemantics => 'Procesamiento en segundo plano';
+
+  @override
+  String get mailboxes => 'Buzones';
+
+  @override
+  String get newMailbox => 'Nuevo buzón';
+
+  @override
+  String get mailboxesEmpty =>
+      'Todavía no hay buzones. El correo se recibe y se envía con la configuración del proceso en segundo plano.';
+
+  @override
+  String get mailboxRefresh => 'Actualizar el estado';
+
+  @override
+  String get mailboxAddress => 'Dirección de correo';
+
+  @override
+  String get mailboxKind => 'Conexión';
+
+  @override
+  String get mailboxKindGraph => 'Microsoft 365 (Exchange Online)';
+
+  @override
+  String get mailboxKindImap => 'IMAP y SMTP';
+
+  @override
+  String get mailboxTenantId => 'ID del inquilino (tenant)';
+
+  @override
+  String get mailboxClientId => 'ID de aplicación (cliente)';
+
+  @override
+  String get mailboxUsername => 'Nombre de usuario';
+
+  @override
+  String get mailboxImapHost => 'Servidor IMAP';
+
+  @override
+  String get mailboxImapPort => 'Puerto IMAP';
+
+  @override
+  String get mailboxImapFolder => 'Carpeta';
+
+  @override
+  String get mailboxImapTls => 'Conexión IMAP cifrada (TLS)';
+
+  @override
+  String get mailboxSmtpHost => 'Servidor SMTP';
+
+  @override
+  String get mailboxSmtpPort => 'Puerto SMTP';
+
+  @override
+  String get mailboxSmtpSecurity => 'Cifrado SMTP';
+
+  @override
+  String get mailboxSmtpNone => 'Ninguno';
+
+  @override
+  String get mailboxSecretRef => 'Nombre del secreto';
+
+  @override
+  String mailboxSecretHelp(String variable) {
+    return 'La contraseña o el secreto de cliente no se guarda aquí. Defínalo en el servidor en la variable $variable del proceso en segundo plano.';
+  }
+
+  @override
+  String get mailboxTeam => 'Equipo para tickets nuevos';
+
+  @override
+  String get mailboxTeamDefault => 'El equipo predeterminado';
+
+  @override
+  String get mailboxInbound => 'Recibir el correo entrante';
+
+  @override
+  String get mailboxDefault =>
+      'Buzón predeterminado: para el correo del sistema y los tickets sin buzón';
+
+  @override
+  String get mailboxDefaultBadge => 'predeterminado';
+
+  @override
+  String get mailboxSendOnly => 'Solo envía';
+
+  @override
+  String get mailboxNeverPolled => 'Todavía no se ha recibido correo';
+
+  @override
+  String mailboxLastOk(String when) {
+    return 'Correo recibido por última vez el $when';
+  }
+
+  @override
+  String mailboxError(String error) {
+    return 'Error al recibir el correo: $error';
+  }
+
+  @override
+  String mailboxDeleteConfirm(String name) {
+    return '¿Eliminar el buzón $name? Sus tickets se conservan. Las respuestas salen entonces por el buzón predeterminado.';
+  }
 }

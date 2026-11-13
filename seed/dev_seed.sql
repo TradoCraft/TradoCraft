@@ -16,6 +16,13 @@ INSERT INTO core.user_companies (user_id, company_id, roles, is_default) VALUES
     ('00000000-0000-7000-8000-000000000102', '00000000-0000-7000-8000-000000000001', '{sales}', true),
     ('00000000-0000-7000-8000-000000000103', '00000000-0000-7000-8000-000000000001', '{viewer}', true);
 
+-- A default receiving place, as a newly provisioned company has it (the tutorial buys goods into
+-- warehouse MAIN). Virtual locations are created on first use.
+INSERT INTO inventory.warehouses (id, company_id, code, name, kind) VALUES
+    ('00000000-0000-7000-8000-000000000401', '00000000-0000-7000-8000-000000000001', 'MAIN', 'Main warehouse', 'warehouse');
+INSERT INTO inventory.locations (id, company_id, warehouse_id, code, name) VALUES
+    ('00000000-0000-7000-8000-000000000402', '00000000-0000-7000-8000-000000000001', '00000000-0000-7000-8000-000000000401', 'MAIN', 'Main warehouse');
+
 INSERT INTO pricing.price_zones (id, company_id, code, name, sort_order) VALUES
     ('00000000-0000-7000-8000-000000000201', '00000000-0000-7000-8000-000000000001', 'Z1', 'Zone 1 – Distributors', 1),
     ('00000000-0000-7000-8000-000000000202', '00000000-0000-7000-8000-000000000001', 'Z2', 'Zone 2 – Installers', 2),

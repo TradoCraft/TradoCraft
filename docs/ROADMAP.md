@@ -16,6 +16,7 @@ Module overview: [ARCHITECTURE.md](ARCHITECTURE.md).
 | A3 Field service completion | Done, ADR 0020 and [ADR 0022](adr/0022-technician-offline-queue.md) |
 | A4 Helpdesk collaboration (manual escalation, hand-over, watchers, unread, timeline, soft presence) | Done, [ADR 0023](adr/0023-helpdesk-collaboration.md) |
 | Helpdesk follow-up: business hours, automation rules, split, reporting | Done, ADR 0021 |
+| Helpdesk mailboxes: several per company, Microsoft 365 (Graph) or IMAP/SMTP, replies through the ticket's mailbox | Done, [ADR 0054](adr/0054-helpdesk-mailboxes.md) |
 | User-defined reports (customers, quotations, orders; joins, grouping, charts, CSV and PDF) | Done, [ADR 0042](adr/0042-report-builder.md) |
 | Environment awareness (`/meta/environment`, environment list, banner and switcher in the app) | Done, [ADR 0043](adr/0043-environments.md); clone script, bootstrap wizard and outbound-side-effect switch-off follow |
 | B1 Inventory foundation | Done, [ADR 0019](adr/0019-inventory-stock-ledger.md) |
@@ -28,7 +29,7 @@ Module overview: [ARCHITECTURE.md](ARCHITECTURE.md).
 | C3 Planning board, field-jobs half (calendars, absences, skills, conflicts, suggestions, drag-and-drop board) | Done, [ADR 0024](adr/0024-planning-board.md) |
 | C3 Planning board, work-centre half (capacity, finite loading) | Open (needs C1; reuses the resource calendar and `ResourceBoard`) |
 | D1 Worker heartbeat and "worker was down" alert | Done, [ADR 0052](adr/0052-worker-heartbeat.md) |
-| D2 Backup and restore runbook | Open |
+| D2 Backup and restore runbook | Done, [ADR 0056](adr/0056-backup-and-restore.md) |
 | D3 Concurrent-edit protection on records | Open |
 | D4 VAT number validation, registry lookup and duplicate warning | Open |
 | D5 Accent-insensitive search | Open |
@@ -123,6 +124,10 @@ production.
   `pg_dump` while those live in the database), a retention rule, and a restore that is tested
   against a clone ([ADR 0043](adr/0043-environments.md)).
 - A runbook in `docs/runbooks/`.
+- Done ([ADR 0056](adr/0056-backup-and-restore.md)): `scripts/backupctl` (`pg_basebackup` with a
+  manifest, 7 daily, 4 weekly and 6 monthly backups kept, `verify` restores into a throwaway
+  server and reads every row) and the [runbook](runbooks/backup-and-restore.md), with a restore
+  drill through `envctl clone`.
 
 **D3 Concurrent-edit protection on records** (medium)
 - Updates carry no version check today, so two people who edit the same customer, quotation or
