@@ -15143,6 +15143,162 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Remove the mailbox {name}? Its tickets stay. Replies on them then leave through the default mailbox.'**
   String mailboxDeleteConfirm(String name);
+
+  /// No description provided for @moduleTodo.
+  ///
+  /// In en, this message translates to:
+  /// **'To-do'**
+  String get moduleTodo;
+
+  /// No description provided for @todoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'To-dos'**
+  String get todoTitle;
+
+  /// No description provided for @todoAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to-do'**
+  String get todoAdd;
+
+  /// No description provided for @todoAddSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Add sub-item'**
+  String get todoAddSub;
+
+  /// No description provided for @todoWhat.
+  ///
+  /// In en, this message translates to:
+  /// **'What needs doing?'**
+  String get todoWhat;
+
+  /// No description provided for @todoNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get todoNotes;
+
+  /// No description provided for @todoDueDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Due date'**
+  String get todoDueDate;
+
+  /// No description provided for @todoSetDue.
+  ///
+  /// In en, this message translates to:
+  /// **'Set due date'**
+  String get todoSetDue;
+
+  /// No description provided for @todoClearDue.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear due date'**
+  String get todoClearDue;
+
+  /// No description provided for @todoDue.
+  ///
+  /// In en, this message translates to:
+  /// **'Due {date}'**
+  String todoDue(String date);
+
+  /// No description provided for @todoOverdue.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue'**
+  String get todoOverdue;
+
+  /// No description provided for @todoFilterOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get todoFilterOpen;
+
+  /// No description provided for @todoFilterDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get todoFilterDone;
+
+  /// No description provided for @todoFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get todoFilterAll;
+
+  /// No description provided for @todoEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to do. Add your first to-do.'**
+  String get todoEmpty;
+
+  /// No description provided for @todoEmptyDone.
+  ///
+  /// In en, this message translates to:
+  /// **'No finished to-dos.'**
+  String get todoEmptyDone;
+
+  /// No description provided for @todoComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark as done'**
+  String get todoComplete;
+
+  /// No description provided for @todoReopen.
+  ///
+  /// In en, this message translates to:
+  /// **'Reopen'**
+  String get todoReopen;
+
+  /// No description provided for @todoDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete \"{title}\"? Its sub-items are deleted too.'**
+  String todoDeleteConfirm(String title);
+
+  /// No description provided for @todoCompleteAllTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete the sub-items too?'**
+  String get todoCompleteAllTitle;
+
+  /// No description provided for @todoCompleteAllBody.
+  ///
+  /// In en, this message translates to:
+  /// **'\"{title}\" still has open sub-items. Completing it marks them as done too.'**
+  String todoCompleteAllBody(String title);
+
+  /// No description provided for @todoCompleteAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete all'**
+  String get todoCompleteAll;
+
+  /// No description provided for @todoLinkedItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Linked item'**
+  String get todoLinkedItem;
+
+  /// No description provided for @todoFromOwner.
+  ///
+  /// In en, this message translates to:
+  /// **'From {name}'**
+  String todoFromOwner(String name);
+
+  /// No description provided for @todoSubProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'{done} of {total} sub-items done'**
+  String todoSubProgress(int done, int total);
+
+  /// No description provided for @todoReorder.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag to reorder'**
+  String get todoReorder;
 }
 
 class _AppLocalizationsDelegate

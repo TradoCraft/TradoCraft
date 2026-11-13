@@ -8513,4 +8513,92 @@ class AppLocalizationsDe extends AppLocalizations {
   String mailboxDeleteConfirm(String name) {
     return 'Das Postfach $name entfernen? Die Tickets bleiben erhalten. Antworten darauf gehen dann über das Standardpostfach.';
   }
+
+  @override
+  String get moduleTodo => 'Aufgaben';
+
+  @override
+  String get todoTitle => 'Aufgaben';
+
+  @override
+  String get todoAdd => 'Aufgabe hinzufügen';
+
+  @override
+  String get todoAddSub => 'Unteraufgabe hinzufügen';
+
+  @override
+  String get todoWhat => 'Was ist zu tun?';
+
+  @override
+  String get todoNotes => 'Notizen';
+
+  @override
+  String get todoDueDate => 'Fällig am';
+
+  @override
+  String get todoSetDue => 'Fälligkeitsdatum setzen';
+
+  @override
+  String get todoClearDue => 'Fälligkeitsdatum entfernen';
+
+  @override
+  String todoDue(String date) {
+    return 'Fällig $date';
+  }
+
+  @override
+  String get todoOverdue => 'Überfällig';
+
+  @override
+  String get todoFilterOpen => 'Offen';
+
+  @override
+  String get todoFilterDone => 'Erledigt';
+
+  @override
+  String get todoFilterAll => 'Alle';
+
+  @override
+  String get todoEmpty => 'Nichts zu tun. Fügen Sie Ihre erste Aufgabe hinzu.';
+
+  @override
+  String get todoEmptyDone => 'Keine erledigten Aufgaben.';
+
+  @override
+  String get todoComplete => 'Als erledigt markieren';
+
+  @override
+  String get todoReopen => 'Wieder öffnen';
+
+  @override
+  String todoDeleteConfirm(String title) {
+    return '„$title“ löschen? Die Unteraufgaben werden ebenfalls gelöscht.';
+  }
+
+  @override
+  String get todoCompleteAllTitle => 'Unteraufgaben ebenfalls erledigen?';
+
+  @override
+  String todoCompleteAllBody(String title) {
+    return '„$title“ hat noch offene Unteraufgaben. Beim Erledigen werden sie ebenfalls erledigt.';
+  }
+
+  @override
+  String get todoCompleteAll => 'Alle erledigen';
+
+  @override
+  String get todoLinkedItem => 'Verknüpftes Element';
+
+  @override
+  String todoFromOwner(String name) {
+    return 'Von $name';
+  }
+
+  @override
+  String todoSubProgress(int done, int total) {
+    return '$done von $total Unteraufgaben erledigt';
+  }
+
+  @override
+  String get todoReorder => 'Zum Sortieren ziehen';
 }

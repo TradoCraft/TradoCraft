@@ -8492,4 +8492,92 @@ class AppLocalizationsNl extends AppLocalizations {
   String mailboxDeleteConfirm(String name) {
     return 'De mailbox $name verwijderen? De tickets blijven bestaan. Antwoorden daarop vertrekken dan via de standaardmailbox.';
   }
+
+  @override
+  String get moduleTodo => 'Taken';
+
+  @override
+  String get todoTitle => 'Taken';
+
+  @override
+  String get todoAdd => 'Taak toevoegen';
+
+  @override
+  String get todoAddSub => 'Subtaak toevoegen';
+
+  @override
+  String get todoWhat => 'Wat moet er gebeuren?';
+
+  @override
+  String get todoNotes => 'Notities';
+
+  @override
+  String get todoDueDate => 'Vervaldatum';
+
+  @override
+  String get todoSetDue => 'Vervaldatum instellen';
+
+  @override
+  String get todoClearDue => 'Vervaldatum wissen';
+
+  @override
+  String todoDue(String date) {
+    return 'Vervalt $date';
+  }
+
+  @override
+  String get todoOverdue => 'Te laat';
+
+  @override
+  String get todoFilterOpen => 'Open';
+
+  @override
+  String get todoFilterDone => 'Afgerond';
+
+  @override
+  String get todoFilterAll => 'Alle';
+
+  @override
+  String get todoEmpty => 'Niets te doen. Voeg je eerste taak toe.';
+
+  @override
+  String get todoEmptyDone => 'Geen afgeronde taken.';
+
+  @override
+  String get todoComplete => 'Als afgerond markeren';
+
+  @override
+  String get todoReopen => 'Heropenen';
+
+  @override
+  String todoDeleteConfirm(String title) {
+    return '\"$title\" verwijderen? De subtaken worden ook verwijderd.';
+  }
+
+  @override
+  String get todoCompleteAllTitle => 'Ook de subtaken afronden?';
+
+  @override
+  String todoCompleteAllBody(String title) {
+    return '\"$title\" heeft nog open subtaken. Afronden rondt ze ook af.';
+  }
+
+  @override
+  String get todoCompleteAll => 'Alles afronden';
+
+  @override
+  String get todoLinkedItem => 'Gekoppeld item';
+
+  @override
+  String todoFromOwner(String name) {
+    return 'Van $name';
+  }
+
+  @override
+  String todoSubProgress(int done, int total) {
+    return '$done van $total subtaken afgerond';
+  }
+
+  @override
+  String get todoReorder => 'Slepen om te ordenen';
 }
