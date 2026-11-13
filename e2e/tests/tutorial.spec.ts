@@ -148,11 +148,13 @@ test('the whole tutorial, chapter by chapter', async ({ page, request }) => {
     await page.getByRole('button', { name: /New purchase order/ }).click();
     await searchPick(page, 'Supplier', 'TUT-SUP-A', /Voltaic Drives/);
     const components = ['TUT-MOTOR', 'TUT-FRAME', 'TUT-CTRL'];
-    for (const [i, code] of components.entries()) {
-      if (i > 0) await page.getByRole('button', { name: 'Add line' }).click();
-      // A picked product turns into a label, so the next empty Product box is always the first one.
-      await searchPick(page, 'Product', code, new RegExp(`^${code} ·`));
-      await typeInto(field(page, 'Quantity').nth(i), '30');
+    // Once the supplier is chosen its price-list goods are listed: one group per good (label
+    // "TUT-MOTOR · Motor € 120,00 · MOQ 5") with a checkbox and a quantity box. Ticking fills in the
+    // minimum order quantity, which is then replaced by 30.
+    for (const code of components) {
+      const good = page.getByRole('group', { name: new RegExp(`^${code} ·`) });
+      await good.getByRole('checkbox').click();
+      await typeInto(good.getByRole('textbox', { name: 'Quantity', exact: true }), '30');
     }
     await dump(page, 'po-filled');
     await page.getByRole('button', { name: 'Save' }).click();

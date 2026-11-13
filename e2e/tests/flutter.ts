@@ -33,8 +33,11 @@ export async function typeInto(field: Locator, text: string, opts: { refocus?: b
 
 /** Opens a drop-down (a button whose name starts with `button`) and picks an option from its menu. */
 export async function choose(page: Page, button: string | RegExp, option: string | RegExp) {
-  await page.getByRole('button', { name: button }).click();
-  await page.getByRole('menuitem', { name: option }).click();
+  // A click right after a dialog opens can be swallowed and the menu never shows: try again.
+  await expect(async () => {
+    await page.getByRole('button', { name: button }).click({ timeout: 3_000 });
+    await page.getByRole('menuitem', { name: option }).click({ timeout: 3_000 });
+  }).toPass({ timeout: 30_000 });
 }
 
 /** Types into a search box and picks the suggestion whose label is `result` (a button under the box). */
