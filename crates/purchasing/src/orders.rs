@@ -439,6 +439,7 @@ pub async fn approve(
             po.summary.status
         )));
     }
+    crate::approval::check(conn, user, &po.summary).await?;
 
     sqlx::query(
         "UPDATE purchasing.purchase_orders

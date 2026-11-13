@@ -19574,6 +19574,106 @@
         }
       }
     },
+    "/api/v1/purchasing/approval-limits": {
+      "get": {
+        "tags": [
+          "purchasing"
+        ],
+        "summary": "The approval limits per role, and the caller's own.",
+        "operationId": "get_approval_limits",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApprovalLimits"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "purchasing"
+        ],
+        "summary": "Sets or removes the approval limit of roles. For administrators of users only, so that the\npeople who are limited cannot raise their own limit.",
+        "operationId": "update_approval_limits",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateApprovalLimitsInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApprovalLimits"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/quotations": {
       "get": {
         "tags": [
@@ -25725,6 +25825,34 @@
           },
           "subject": {
             "type": "string"
+          }
+        }
+      },
+      "ApprovalLimits": {
+        "type": "object",
+        "description": "The approval limits of the company and the caller's own.",
+        "required": [
+          "currency",
+          "roles"
+        ],
+        "properties": {
+          "currency": {
+            "type": "string",
+            "description": "The limits are amounts of the order's net total in this currency."
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RoleLimit"
+            },
+            "description": "Every role whose approvals can be limited, with its limit."
+          },
+          "your_limit": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "What the caller may approve at most; `None` when the caller has no limit."
           }
         }
       },
@@ -40761,6 +40889,43 @@
           }
         }
       },
+      "RoleLimit": {
+        "type": "object",
+        "description": "The limit of one role; `None` means no limit.",
+        "required": [
+          "role"
+        ],
+        "properties": {
+          "max_amount": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "role": {
+            "type": "string"
+          }
+        }
+      },
+      "RoleLimitInput": {
+        "type": "object",
+        "description": "A change to one role's limit.",
+        "required": [
+          "role"
+        ],
+        "properties": {
+          "max_amount": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The new limit (0 or more, at most 2 decimals); null removes it."
+          },
+          "role": {
+            "type": "string"
+          }
+        }
+      },
       "RouteInput": {
         "type": "object",
         "required": [
@@ -43929,6 +44094,21 @@
           },
           "title": {
             "type": "string"
+          }
+        }
+      },
+      "UpdateApprovalLimitsInput": {
+        "type": "object",
+        "description": "Payload to change limits; roles that are not listed keep theirs.",
+        "required": [
+          "limits"
+        ],
+        "properties": {
+          "limits": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RoleLimitInput"
+            }
           }
         }
       },

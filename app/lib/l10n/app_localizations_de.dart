@@ -6699,6 +6699,24 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get purchApprovalLimits => 'Freigabelimits';
+
+  @override
+  String purchApprovalLimitsHelp(String currency) {
+    return 'Größte Bestellung, die jede Rolle freigeben darf, in $currency und ohne MwSt. Ein leeres Feld bedeutet kein Limit. Administratoren haben nie ein Limit. Eine Bestellung in anderer Währung kann nur jemand ohne Limit freigeben.';
+  }
+
+  @override
+  String get purchNoLimit => 'Kein Limit';
+
+  @override
+  String get purchLimitsSaved => 'Limits gespeichert';
+
+  @override
+  String get purchLimitInvalid =>
+      'Geben Sie einen Betrag ab 0 ein oder lassen Sie das Feld leer.';
+
+  @override
   String get purchApprove => 'Genehmigen';
 
   @override

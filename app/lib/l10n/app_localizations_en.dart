@@ -6662,6 +6662,24 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get purchApprovalLimits => 'Approval limits';
+
+  @override
+  String purchApprovalLimitsHelp(String currency) {
+    return 'Largest order each role may approve, in $currency and excluding VAT. Leave a field empty for no limit. Administrators are never limited. An order in another currency can only be approved by someone without a limit.';
+  }
+
+  @override
+  String get purchNoLimit => 'No limit';
+
+  @override
+  String get purchLimitsSaved => 'Limits saved';
+
+  @override
+  String get purchLimitInvalid =>
+      'Enter an amount of 0 or more, or leave the field empty.';
+
+  @override
   String get purchApprove => 'Approve';
 
   @override

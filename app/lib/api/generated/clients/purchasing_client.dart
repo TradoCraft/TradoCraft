@@ -5,6 +5,7 @@
 import 'package:dio/dio.dart';
 import 'package:retrofit/retrofit.dart';
 
+import '../models/approval_limits.dart';
 import '../models/goods_receipt_detail.dart';
 import '../models/goods_receipt_summary.dart';
 import '../models/incoming_supply.dart';
@@ -17,6 +18,7 @@ import '../models/send_purchase_order_input.dart';
 import '../models/set_supplier_product_input.dart';
 import '../models/supplier.dart';
 import '../models/supplier_product.dart';
+import '../models/update_approval_limits_input.dart';
 import '../models/update_purchase_order_input.dart';
 import '../models/update_supplier_input.dart';
 import '../models/vat_check.dart';
@@ -116,6 +118,17 @@ abstract class PurchasingClient {
   Future<PurchaseOrderDetail> sendOrder({
     @Path('id') required String id,
     @Body() required SendPurchaseOrderInput body,
+  });
+
+  /// The approval limits per role, and the caller's own.
+  @GET('/api/v1/purchasing/approval-limits')
+  Future<ApprovalLimits> getApprovalLimits();
+
+  /// Sets or removes the approval limit of roles. For administrators of users only, so that the.
+  /// people who are limited cannot raise their own limit.
+  @PUT('/api/v1/purchasing/approval-limits')
+  Future<ApprovalLimits> updateApprovalLimits({
+    @Body() required UpdateApprovalLimitsInput body,
   });
 
   /// [q] - Searches name, code, e-mail address and contact person, ignoring case and accents.

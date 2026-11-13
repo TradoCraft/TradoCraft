@@ -20,7 +20,7 @@ Module overview: [ARCHITECTURE.md](ARCHITECTURE.md).
 | User-defined reports (customers, quotations, orders; joins, grouping, charts, CSV and PDF) | Done, [ADR 0042](adr/0042-report-builder.md) |
 | Environment awareness (`/meta/environment`, environment list, banner and switcher in the app) | Done, [ADR 0043](adr/0043-environments.md); clone script, bootstrap wizard and outbound-side-effect switch-off follow |
 | B1 Inventory foundation | Done, [ADR 0019](adr/0019-inventory-stock-ledger.md) |
-| B2 Purchasing | Core done (suppliers, price lists, PO lifecycle, goods receipts into stock, app screens), [ADR 0031](adr/0031-purchasing.md); PO PDF and mail done ([ADR 0061](adr/0061-purchase-order-pdf-and-mail.md)); open: approval limits, RFQ; open POs in ATP done ([ADR 0060](adr/0060-incoming-supply-from-purchase-orders.md)) |
+| B2 Purchasing | Core done (suppliers, price lists, PO lifecycle, goods receipts into stock, app screens), [ADR 0031](adr/0031-purchasing.md); PO PDF and mail done ([ADR 0061](adr/0061-purchase-order-pdf-and-mail.md)); approval limits done ([ADR 0062](adr/0062-purchase-order-approval-limits.md)); open: RFQ; open POs in ATP done ([ADR 0060](adr/0060-incoming-supply-from-purchase-orders.md)) |
 | B2b Supplier invoices and three-way match (AP register, no ledger) | Done (backend and Flutter screens), [ADR 0046](adr/0046-supplier-invoices-and-three-way-match.md) |
 | B3 Delivery | Done, [ADR 0035](adr/0035-delivery.md) |
 | C1a Production orders | Done, [ADR 0036](adr/0036-production.md) |
@@ -75,7 +75,8 @@ Remaining knowledge base gaps (ADR 0018): non-image attachments, analytics, sema
 - Numbering through `core::numbering::next_number` (new codes PO, GR). Export of bills and valuation to the accounting package later.
 - Done ([ADR 0031](adr/0031-purchasing.md)): suppliers, price lists, PO draft -> approved -> sent -> received, goods receipts (stock moves, lots, serial units), screens and tests.
 - Done ([ADR 0061](adr/0061-purchase-order-pdf-and-mail.md)): `send` renders the PDF in the supplier's language and mails it through the outbox, records address and time; PDF preview; supplier language.
-- Still to do: approval limits, RFQ, a postal address on suppliers for the PDF, resend or revision of a sent order. Open POs in ATP: done ([ADR 0060](adr/0060-incoming-supply-from-purchase-orders.md)), `GET /purchase-orders/incoming` and the "on order" hint in the order stock panel.
+- Done ([ADR 0062](adr/0062-purchase-order-approval-limits.md)): approval limits per role on the net total, set by user administrators, 403 above the limit.
+- Still to do: multi-level approval, RFQ, a postal address on suppliers for the PDF, resend or revision of a sent order. Open POs in ATP: done ([ADR 0060](adr/0060-incoming-supply-from-purchase-orders.md)), `GET /purchase-orders/incoming` and the "on order" hint in the order stock panel.
 
 **B3 Delivery** (small-medium, done), [ADR 0035](adr/0035-delivery.md)
 - Delivery notes for confirmed orders (also while partly shipped), picking from the reservations, a

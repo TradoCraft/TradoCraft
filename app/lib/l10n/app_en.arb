@@ -3471,6 +3471,18 @@
       }
     }
   },
+  "purchApprovalLimits": "Approval limits",
+  "purchApprovalLimitsHelp": "Largest order each role may approve, in {currency} and excluding VAT. Leave a field empty for no limit. Administrators are never limited. An order in another currency can only be approved by someone without a limit.",
+  "@purchApprovalLimitsHelp": {
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      }
+    }
+  },
+  "purchNoLimit": "No limit",
+  "purchLimitsSaved": "Limits saved",
+  "purchLimitInvalid": "Enter an amount of 0 or more, or leave the field empty.",
   "purchApprove": "Approve",
   "purchCancelOrder": "Cancel order",
   "purchCancelOrderConfirm": "Cancel purchase order {number}? This cannot be undone.",

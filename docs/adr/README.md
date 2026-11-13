@@ -64,3 +64,4 @@ accepted one; mark superseded records as such.
 | [0059](0059-audit-trail-viewer.md) | Audit trail viewer: `audit.view` for administrators, cursor-paged endpoints, field-level changes, Admin tab and History button | Accepted |
 | [0060](0060-incoming-supply-from-purchase-orders.md) | Incoming supply: open purchase order quantities per product from purchasing (`GET /purchase-orders/incoming`), sent and partly received orders only, shown beside ATP and never added to it | Accepted |
 | [0061](0061-purchase-order-pdf-and-mail.md) | Purchase order PDF and mail: supplier language, `send` renders the PDF and queues the mail in one transaction and records address and time, PREVIEW watermark until sent | Accepted |
+| [0062](0062-purchase-order-approval-limits.md) | Purchase order approval limits: per role in the company's currency on the net total, no row means no limit, admin never limited, set by user administrators only, 403 above the limit | Accepted |

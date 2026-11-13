@@ -12030,6 +12030,36 @@ abstract class AppLocalizations {
   /// **'Sent to {to} on {date}'**
   String purchSentInfo(String to, String date);
 
+  /// No description provided for @purchApprovalLimits.
+  ///
+  /// In en, this message translates to:
+  /// **'Approval limits'**
+  String get purchApprovalLimits;
+
+  /// No description provided for @purchApprovalLimitsHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Largest order each role may approve, in {currency} and excluding VAT. Leave a field empty for no limit. Administrators are never limited. An order in another currency can only be approved by someone without a limit.'**
+  String purchApprovalLimitsHelp(String currency);
+
+  /// No description provided for @purchNoLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'No limit'**
+  String get purchNoLimit;
+
+  /// No description provided for @purchLimitsSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Limits saved'**
+  String get purchLimitsSaved;
+
+  /// No description provided for @purchLimitInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter an amount of 0 or more, or leave the field empty.'**
+  String get purchLimitInvalid;
+
   /// No description provided for @purchApprove.
   ///
   /// In en, this message translates to:

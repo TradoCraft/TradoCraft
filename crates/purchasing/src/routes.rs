@@ -11,6 +11,7 @@ use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 use uuid::Uuid;
 
+use crate::approval::{self, ApprovalLimits, UpdateApprovalLimitsInput};
 use crate::document::{self, SendPurchaseOrderInput};
 use crate::orders::{
     self, IncomingSupply, NewPurchaseOrderInput, PurchaseOrderDetail, PurchaseOrderSummary,
@@ -42,6 +43,54 @@ pub struct ListOrdersParams {
 pub struct IncomingParams {
     /// Comma-separated product ids (at most 200).
     pub product_ids: String,
+}
+
+// ---------------- Approval limits ----------------
+
+/// The approval limits per role, and the caller's own.
+#[utoipa::path(
+    get,
+    path = "/purchasing/approval-limits",
+    tag = "purchasing",
+    responses(
+        (status = 200, body = ApprovalLimits),
+        (status = 401, body = ErrorBody),
+        (status = 403, body = ErrorBody)
+    )
+)]
+async fn get_approval_limits(
+    State(state): State<AppState>,
+    user: CurrentUser,
+) -> AppResult<Json<ApprovalLimits>> {
+    user.require(Permission::PurchasingRead)?;
+    let mut conn = state.db.acquire().await?;
+    Ok(Json(approval::load(&mut conn, &user).await?))
+}
+
+/// Sets or removes the approval limit of roles. For administrators of users only, so that the
+/// people who are limited cannot raise their own limit.
+#[utoipa::path(
+    put,
+    path = "/purchasing/approval-limits",
+    tag = "purchasing",
+    request_body = UpdateApprovalLimitsInput,
+    responses(
+        (status = 200, body = ApprovalLimits),
+        (status = 401, body = ErrorBody),
+        (status = 403, body = ErrorBody),
+        (status = 422, body = ErrorBody)
+    )
+)]
+async fn update_approval_limits(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Json(input): Json<UpdateApprovalLimitsInput>,
+) -> AppResult<Json<ApprovalLimits>> {
+    user.require(Permission::UsersAdmin)?;
+    let mut tx = state.db.begin().await?;
+    let limits = approval::update(&mut tx, &user, input).await?;
+    tx.commit().await?;
+    Ok(Json(limits))
 }
 
 // ---------------- Suppliers ----------------
@@ -660,6 +709,7 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(list_supplier_products))
         .routes(routes!(set_supplier_product, delete_supplier_product))
         .routes(routes!(list_product_suppliers))
+        .routes(routes!(get_approval_limits, update_approval_limits))
         .routes(routes!(incoming_supply))
         .routes(routes!(list_orders, create_order))
         .routes(routes!(get_order, update_order))

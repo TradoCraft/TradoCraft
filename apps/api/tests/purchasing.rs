@@ -1888,3 +1888,176 @@ async fn supplier_language_defaults_from_the_country_and_is_validated(db: PgPool
     .await;
     assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
 }
+
+// ---------------------------------------------------------------------------------------------
+// Approval limits (ADR 0062)
+// ---------------------------------------------------------------------------------------------
+
+async fn set_limit(e: &Env, max: Option<&str>) -> (StatusCode, Value) {
+    put(
+        &e.app,
+        ADMIN,
+        "/purchasing/approval-limits",
+        json!({ "limits": [{ "role": "purchaser", "max_amount": max }] }),
+    )
+    .await
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn a_purchaser_cannot_approve_above_the_limit_but_at_it_yes(db: PgPool) {
+    let e = env(db).await;
+    let s = e.supplier("One", "S1").await;
+    let po = e.draft(&s).await; // net total 140.00 (125.00 + 15.00)
+    let id = po["id"].as_str().unwrap();
+    assert_eq!(dec(&po["subtotal"]), q("140"));
+    let approve = format!("/purchase-orders/{id}/approve");
+
+    let (status, _) = set_limit(&e, Some("139.99")).await;
+    assert_eq!(status, StatusCode::OK);
+    let (status, err) = post(&e.app, BUYER, &approve, json!({})).await;
+    assert_eq!(status, StatusCode::FORBIDDEN, "{err}");
+    assert!(
+        err["message"]
+            .as_str()
+            .unwrap()
+            .contains("above your approval limit of 139.99"),
+        "{err}"
+    );
+    assert_eq!(e.status_of(id).await, "draft");
+
+    // An order exactly at the limit is fine.
+    set_limit(&e, Some("140.00")).await;
+    let (status, ok) = post(&e.app, BUYER, &approve, json!({})).await;
+    assert_eq!(status, StatusCode::OK, "{ok}");
+    assert_eq!(ok["status"], "approved");
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn without_a_limit_nothing_changes_and_an_admin_is_never_limited(db: PgPool) {
+    let e = env(db).await;
+    let s = e.supplier("One", "S1").await;
+    // No limit set: the purchaser approves as before.
+    let po = e.draft(&s).await;
+    let (status, _) = post(
+        &e.app,
+        BUYER,
+        &format!("/purchase-orders/{}/approve", po["id"].as_str().unwrap()),
+        json!({}),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    // A limit of zero stops the purchaser but not the administrator.
+    set_limit(&e, Some("0")).await;
+    let po = e.draft(&s).await;
+    let uri = format!("/purchase-orders/{}/approve", po["id"].as_str().unwrap());
+    let (status, _) = post(&e.app, BUYER, &uri, json!({})).await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
+    let (status, ok) = post(&e.app, ADMIN, &uri, json!({})).await;
+    assert_eq!(status, StatusCode::OK, "{ok}");
+    // Removing the limit frees the purchaser again.
+    set_limit(&e, None).await;
+    let po = e.draft(&s).await;
+    let (status, _) = post(
+        &e.app,
+        BUYER,
+        &format!("/purchase-orders/{}/approve", po["id"].as_str().unwrap()),
+        json!({}),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn an_order_in_another_currency_needs_an_approver_without_a_limit(db: PgPool) {
+    let e = env(db).await;
+    let s = e.supplier("One", "S1").await;
+    set_limit(&e, Some("1000000")).await;
+    let (status, po) = post(
+        &e.app,
+        BUYER,
+        "/purchase-orders",
+        json!({ "supplier_id": s, "currency": "USD",
+                "lines": [{ "product_id": FRAME, "quantity": "1", "unit_price": "1" }] }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{po}");
+    let uri = format!("/purchase-orders/{}/approve", po["id"].as_str().unwrap());
+    let (status, err) = post(&e.app, BUYER, &uri, json!({})).await;
+    assert_eq!(status, StatusCode::FORBIDDEN, "{err}");
+    assert!(err["message"].as_str().unwrap().contains("USD"), "{err}");
+    let (status, _) = post(&e.app, ADMIN, &uri, json!({})).await;
+    assert_eq!(status, StatusCode::OK);
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn only_user_administrators_set_limits_and_the_input_is_validated(db: PgPool) {
+    let e = env(db).await;
+    // The purchaser, who is limited, cannot raise the limit; the warehouse cannot either.
+    for user in [BUYER, STORES] {
+        let (status, _) = put(
+            &e.app,
+            user,
+            "/purchasing/approval-limits",
+            json!({ "limits": [{ "role": "purchaser", "max_amount": "1" }] }),
+        )
+        .await;
+        assert_eq!(status, StatusCode::FORBIDDEN, "{user}");
+    }
+    for (role, amount) in [
+        ("warehouse", "10"),    // cannot approve at all
+        ("admin", "10"),        // never limited
+        ("nobody", "10"),       // no such role
+        ("purchaser", "-1"),    // negative
+        ("purchaser", "1.005"), // more than two decimals
+    ] {
+        let (status, err) = put(
+            &e.app,
+            ADMIN,
+            "/purchasing/approval-limits",
+            json!({ "limits": [{ "role": role, "max_amount": amount }] }),
+        )
+        .await;
+        assert_eq!(
+            status,
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "{role} {amount}: {err}"
+        );
+    }
+    // Nothing above was saved.
+    let (status, v) = get(&e.app, BUYER, "/purchasing/approval-limits").await;
+    assert_eq!(status, StatusCode::OK, "{v}");
+    assert!(v["roles"][0]["max_amount"].is_null(), "{v}");
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn limits_are_listed_with_the_callers_own_and_are_audited(db: PgPool) {
+    let e = env(db).await;
+    let (status, v) = set_limit(&e, Some("2500.50")).await;
+    assert_eq!(status, StatusCode::OK, "{v}");
+    assert_eq!(v["roles"].as_array().unwrap().len(), 1);
+    assert_eq!(v["roles"][0]["role"], "purchaser");
+    assert_eq!(dec(&v["roles"][0]["max_amount"]), q("2500.50"));
+    assert!(v["currency"].as_str().unwrap().len() == 3);
+    // The purchaser sees a limit of their own, the administrator none, a viewer may read too.
+    let (_, mine) = get(&e.app, BUYER, "/purchasing/approval-limits").await;
+    assert_eq!(dec(&mine["your_limit"]), q("2500.50"));
+    let (_, admin) = get(&e.app, ADMIN, "/purchasing/approval-limits").await;
+    assert!(admin["your_limit"].is_null());
+    add_user(&e.db, "viewer2@example.com", "viewer").await;
+    let (status, _) = get(&e.app, "viewer2@example.com", "/purchasing/approval-limits").await;
+    assert_eq!(status, StatusCode::OK);
+    let (status, _) = get(&e.app, "sales@example.com", "/purchasing/approval-limits").await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
+
+    set_limit(&e, None).await;
+    let rows: Vec<(Value,)> = sqlx::query_as(
+        "SELECT data FROM audit.events WHERE entity = 'purchasing_approval_limits' ORDER BY id",
+    )
+    .fetch_all(&e.db)
+    .await
+    .unwrap();
+    assert_eq!(rows.len(), 2);
+    assert_eq!(rows[0].0["before"]["purchaser"], Value::Null);
+    assert_eq!(rows[0].0["after"]["purchaser"], "2500.50");
+    assert_eq!(rows[1].0["after"]["purchaser"], Value::Null);
+}

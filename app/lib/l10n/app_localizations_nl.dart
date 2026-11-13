@@ -6685,6 +6685,24 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get purchApprovalLimits => 'Goedkeuringslimieten';
+
+  @override
+  String purchApprovalLimitsHelp(String currency) {
+    return 'Grootste bestelling die elke rol mag goedkeuren, in $currency en exclusief btw. Laat een veld leeg voor geen limiet. Beheerders hebben nooit een limiet. Een bestelling in een andere munt kan alleen worden goedgekeurd door iemand zonder limiet.';
+  }
+
+  @override
+  String get purchNoLimit => 'Geen limiet';
+
+  @override
+  String get purchLimitsSaved => 'Limieten opgeslagen';
+
+  @override
+  String get purchLimitInvalid =>
+      'Geef een bedrag van 0 of meer in, of laat het veld leeg.';
+
+  @override
   String get purchApprove => 'Goedkeuren';
 
   @override

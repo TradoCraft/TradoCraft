@@ -6682,6 +6682,24 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get purchApprovalLimits => 'Límites de aprobación';
+
+  @override
+  String purchApprovalLimitsHelp(String currency) {
+    return 'Pedido más grande que cada rol puede aprobar, en $currency y sin IVA. Deje un campo vacío para no tener límite. Los administradores nunca tienen límite. Un pedido en otra moneda solo puede aprobarlo alguien sin límite.';
+  }
+
+  @override
+  String get purchNoLimit => 'Sin límite';
+
+  @override
+  String get purchLimitsSaved => 'Límites guardados';
+
+  @override
+  String get purchLimitInvalid =>
+      'Introduzca un importe de 0 o más, o deje el campo vacío.';
+
+  @override
   String get purchApprove => 'Aprobar';
 
   @override

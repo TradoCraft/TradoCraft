@@ -6692,6 +6692,24 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get purchApprovalLimits => 'Limites d\'approbation';
+
+  @override
+  String purchApprovalLimitsHelp(String currency) {
+    return 'Plus grosse commande que chaque rôle peut approuver, en $currency et hors TVA. Laissez un champ vide pour aucune limite. Les administrateurs ne sont jamais limités. Une commande dans une autre devise ne peut être approuvée que par quelqu\'un sans limite.';
+  }
+
+  @override
+  String get purchNoLimit => 'Aucune limite';
+
+  @override
+  String get purchLimitsSaved => 'Limites enregistrées';
+
+  @override
+  String get purchLimitInvalid =>
+      'Saisissez un montant de 0 ou plus, ou laissez le champ vide.';
+
+  @override
   String get purchApprove => 'Approuver';
 
   @override

@@ -642,4 +642,30 @@ void main() {
       expect(find.byKey(const ValueKey('po-send')), findsNothing);
     },
   );
+  testWidgets(
+    'an approval above the limit is refused and the order stays a draft',
+    (tester) async {
+      final http = FakeHttp({
+        ..._detailRoutes([
+          'purchasing.read',
+          'purchasing.write',
+          'purchasing.approve',
+        ], () => _po()),
+        'POST /api/v1/purchase-orders/po1/approve': (_) =>
+            const FakeStatus(403, {
+              'error': 'forbidden',
+              'message': 'order PO2027-00001 totals 125.00 EUR (excluding VAT), above your approval limit of 100.00 EUR',
+            }),
+      });
+      await _app(tester, http, initial: '/purchase-orders/po1');
+      await tester.tap(find.byKey(const ValueKey('po-approve')));
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining('above your approval limit of 100.00 EUR'),
+        findsOneWidget,
+      );
+      expect(find.byKey(const ValueKey('po-status-draft')), findsOneWidget);
+      expect(find.byKey(const ValueKey('po-approve')), findsOneWidget);
+    },
+  );
 }

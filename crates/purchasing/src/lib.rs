@@ -1,6 +1,7 @@
 //! Purchasing: suppliers, price lists, purchase orders, and goods receipts (ADR 0031); the purchase
 //! order as a PDF and a mail to the supplier (ADR 0061).
 
+pub mod approval;
 pub mod document;
 pub mod orders;
 pub mod receipts;
