@@ -39,6 +39,8 @@ CI runs this as the `e2e` job (`.github/workflows/ci.yml`).
 * Drop-down options appear as `menuitem` roles shortly after the menu opens (`choose`).
 * The navigation rail is a scrolling list that only exposes the items on screen, so the viewport
   is tall (1400x1700) and every module is reachable by role (`railTo`).
+* The purchase order form lists the supplier's goods as rows whose checkbox has no accessible name; the test
+  narrows the list with the "Filter goods" box and types the quantity (which ticks the row).
 * The tutorial environment is seeded without a warehouse. Chapter 3 teaches creating one (the warehouse
   MAIN; it brings its location MAIN) before the goods are received, and chapters 5 and 9 have the same
   step in front of "Complete", which is skipped when a warehouse with a location exists. The test creates
