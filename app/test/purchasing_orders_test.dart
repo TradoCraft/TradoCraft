@@ -77,19 +77,26 @@ Map<String, Object?> _supplier() => {
   'updated_at': '2027-01-01T00:00:00Z',
 };
 
-Map<String, Object?> _price() => {
-  'id': 'sp-p1',
+Map<String, Object?> _price({
+  String product = 'p1',
+  String code = 'MOT-1',
+  String name = 'Motor 1kW',
+  String sku = 'AC-77',
+  String price = '12.5000',
+  String moq = '1.0000',
+}) => {
+  'id': 'sp-$product',
   'company_id': 'co',
   'supplier_id': 's1',
   'supplier_name': 'Acme Motors',
-  'product_id': 'p1',
-  'product_code': 'MOT-1',
-  'product_name': 'Motor 1kW',
-  'supplier_product_code': 'AC-77',
+  'product_id': product,
+  'product_code': code,
+  'product_name': name,
+  'supplier_product_code': sku,
   'supplier_product_name': 'Acme motor',
   'currency': 'EUR',
-  'unit_price': '12.5000',
-  'moq': '1.0000',
+  'unit_price': price,
+  'moq': moq,
   'lead_time_days': 14,
   'is_preferred': true,
   'created_at': '2027-01-01T00:00:00Z',
@@ -275,34 +282,19 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('po-save')));
     await tester.pumpAndSettle();
-    expect(find.text('Choose a product.'), findsOneWidget);
+    expect(find.text('Add at least one line.'), findsOneWidget);
 
-    await tester.enterText(
-      find.descendant(
-        of: find.byKey(const ValueKey('po-line-product-0')),
-        matching: find.byType(TextField),
-      ),
-      'motor',
-    );
+    await tester.tap(find.byKey(const ValueKey('po-goods-check-p1')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('MOT-1 · Motor 1kW').last);
-    await tester.pumpAndSettle();
-    // Price and quantity default from the price list / to 1; lead time sets the date.
-    expect(
-      tester
-          .widget<TextField>(find.byKey(const ValueKey('po-line-price-0')))
-          .controller!
-          .text,
-      '12.5',
-    );
+    // Price comes from the price list, quantity from the tick; lead time sets the date.
     expect(find.textContaining('Expected delivery:'), findsOneWidget);
 
-    await tester.enterText(find.byKey(const ValueKey('po-line-qty-0')), '0');
+    await tester.enterText(find.byKey(const ValueKey('po-goods-qty-p1')), '0');
     await tester.tap(find.byKey(const ValueKey('po-save')));
     await tester.pumpAndSettle();
-    expect(find.textContaining('greater than zero'), findsOneWidget);
+    expect(find.text('Add at least one line.'), findsOneWidget);
 
-    await tester.enterText(find.byKey(const ValueKey('po-line-qty-0')), '10');
+    await tester.enterText(find.byKey(const ValueKey('po-goods-qty-p1')), '10');
     await tester.enterText(find.byKey(const ValueKey('po-notes')), 'Rush');
     await tester.tap(find.byKey(const ValueKey('po-save')));
     await tester.pumpAndSettle();
@@ -347,15 +339,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('SUP-001 · Acme Motors').last);
     await tester.pumpAndSettle();
-    await tester.enterText(
-      find.descendant(
-        of: find.byKey(const ValueKey('po-line-product-0')),
-        matching: find.byType(TextField),
-      ),
-      'motor',
-    );
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('MOT-1 · Motor 1kW').last);
+    await tester.tap(find.byKey(const ValueKey('po-goods-check-p1')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('po-save')));
     await tester.pumpAndSettle();

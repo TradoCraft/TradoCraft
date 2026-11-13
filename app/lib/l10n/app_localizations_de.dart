@@ -6661,6 +6661,50 @@ class AppLocalizationsDe extends AppLocalizations {
   String get purchAddLine => 'Position hinzufügen';
 
   @override
+  String get purchGoodsPickSupplier =>
+      'Wählen Sie einen Lieferanten, um seine Artikel zu sehen.';
+
+  @override
+  String get purchGoodsEmpty =>
+      'Dieser Lieferant hat noch keine Produkte in seiner Preisliste. Fügen Sie unten unter \"Weitere Produkte\" Produkte zu dieser Bestellung hinzu oder pflegen Sie die Preisliste später.';
+
+  @override
+  String get purchGoodsNoMatch => 'Kein Artikel passt zum Filter.';
+
+  @override
+  String get purchGoodsFilter => 'Artikel filtern';
+
+  @override
+  String get purchGoodsHeader =>
+      'Artikel dieses Lieferanten: Haken setzen, was bestellt werden soll';
+
+  @override
+  String purchGoodsBelowMoq(String qty) {
+    return 'Unter der Mindestbestellmenge ($qty)';
+  }
+
+  @override
+  String get purchGoodsCleared =>
+      'Die gewählten Artikel wurden entfernt, weil der Lieferant gewechselt wurde.';
+
+  @override
+  String get purchGoodsOther => 'Weitere Produkte (nicht in der Preisliste)';
+
+  @override
+  String purchGoodsSummary(int count, String total) {
+    return '$count Positionen, Summe $total';
+  }
+
+  @override
+  String get purchGoodsLoadFailed =>
+      'Die Artikel des Lieferanten konnten nicht geladen werden. Sie können weiterhin unter \"Weitere Produkte\" Produkte hinzufügen oder es erneut versuchen.';
+
+  @override
+  String purchGoodsMixedCurrencies(int count, String currencies) {
+    return '$count Positionen in gemischten Währungen ($currencies): keine Gesamtsumme';
+  }
+
+  @override
   String get purchPickSupplier => 'Wählen Sie einen Lieferanten.';
 
   @override
@@ -7263,11 +7307,11 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get tutBuyingOrderBody =>
-      'Legen Sie eine Bestellung an Voltaic Drives Ltd mit drei Positionen an: TUT-MOTOR, TUT-FRAME und TUT-CTRL, je 30 Stück. Die Preise kommen aus der Preisliste.';
+      'Legen Sie eine Bestellung an Voltaic Drives Ltd an. Nach der Wahl des Lieferanten werden seine Artikel aufgelistet: Haken Sie TUT-MOTOR, TUT-FRAME und TUT-CTRL an, setzen Sie die Menge jeweils auf 30 und speichern Sie. Die Preise kommen aus der Preisliste.';
 
   @override
   String get tutBuyingOrderHint =>
-      'Wählen Sie zuerst den Lieferanten: Die Positionspreise werden ausgefüllt, sobald seine Preisliste geladen ist. Mit Position hinzufügen kommen die zweite und dritte Komponente dazu.';
+      'Wählen Sie zuerst den Lieferanten. Beim Anhaken wird die Mindestbestellmenge (oder 1) eingetragen; tippen Sie stattdessen 30 in das Mengenfeld. Mit dem Filterfeld finden Sie ein Produkt schnell.';
 
   @override
   String get tutBuyingOpenOrderTitle => 'Der Bestellbildschirm';

@@ -6647,6 +6647,50 @@ class AppLocalizationsNl extends AppLocalizations {
   String get purchAddLine => 'Regel toevoegen';
 
   @override
+  String get purchGoodsPickSupplier =>
+      'Kies een leverancier om zijn artikelen te zien.';
+
+  @override
+  String get purchGoodsEmpty =>
+      'Deze leverancier heeft nog geen producten in zijn prijslijst. Gebruik hieronder \"Overige producten\" om producten aan deze order toe te voegen, of voeg ze later aan de prijslijst toe.';
+
+  @override
+  String get purchGoodsNoMatch => 'Geen artikel past bij het filter.';
+
+  @override
+  String get purchGoodsFilter => 'Artikelen filteren';
+
+  @override
+  String get purchGoodsHeader =>
+      'Artikelen van deze leverancier: vink aan wat u wilt bestellen';
+
+  @override
+  String purchGoodsBelowMoq(String qty) {
+    return 'Onder de minimale bestelhoeveelheid ($qty)';
+  }
+
+  @override
+  String get purchGoodsCleared =>
+      'De gekozen artikelen zijn gewist omdat de leverancier is gewijzigd.';
+
+  @override
+  String get purchGoodsOther => 'Overige producten (niet in de prijslijst)';
+
+  @override
+  String purchGoodsSummary(int count, String total) {
+    return '$count regels, totaal $total';
+  }
+
+  @override
+  String get purchGoodsLoadFailed =>
+      'De artikelen van de leverancier konden niet worden geladen. U kunt nog steeds producten toevoegen onder \"Overige producten\", of opnieuw proberen.';
+
+  @override
+  String purchGoodsMixedCurrencies(int count, String currencies) {
+    return '$count regels in verschillende valuta ($currencies): geen enkel totaal';
+  }
+
+  @override
   String get purchPickSupplier => 'Kies een leverancier.';
 
   @override
@@ -7246,11 +7290,11 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get tutBuyingOrderBody =>
-      'Maak een inkooporder voor Voltaic Drives Ltd met drie regels: TUT-MOTOR, TUT-FRAME en TUT-CTRL, elk 30 stuks. De prijzen komen uit de prijslijst.';
+      'Maak een inkooporder voor Voltaic Drives Ltd. Na het kiezen van de leverancier worden zijn artikelen getoond: vink TUT-MOTOR, TUT-FRAME en TUT-CTRL aan, zet de hoeveelheid op 30 voor elk en sla op. De prijzen komen uit de prijslijst.';
 
   @override
   String get tutBuyingOrderHint =>
-      'Kies eerst de leverancier: de regelprijzen worden ingevuld zodra de prijslijst geladen is. Gebruik Regel toevoegen voor de tweede en derde component.';
+      'Kies eerst de leverancier. Aanvinken vult de minimale bestelhoeveelheid (of 1) in; typ liever 30 in het hoeveelheidsveld. Met het filterveld vindt u snel een product.';
 
   @override
   String get tutBuyingOpenOrderTitle => 'Het orderscherm';

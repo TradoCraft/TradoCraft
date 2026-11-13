@@ -11970,6 +11970,72 @@ abstract class AppLocalizations {
   /// **'Add line'**
   String get purchAddLine;
 
+  /// No description provided for @purchGoodsPickSupplier.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a supplier to see the goods it offers.'**
+  String get purchGoodsPickSupplier;
+
+  /// No description provided for @purchGoodsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'This supplier has no products on its price list yet. Use \"Other products\" below to add products to this order, or add them to the price list later.'**
+  String get purchGoodsEmpty;
+
+  /// No description provided for @purchGoodsNoMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'No goods match the filter.'**
+  String get purchGoodsNoMatch;
+
+  /// No description provided for @purchGoodsFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter goods'**
+  String get purchGoodsFilter;
+
+  /// No description provided for @purchGoodsHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Goods of this supplier: tick what you want to order'**
+  String get purchGoodsHeader;
+
+  /// No description provided for @purchGoodsBelowMoq.
+  ///
+  /// In en, this message translates to:
+  /// **'Below the minimum order quantity ({qty})'**
+  String purchGoodsBelowMoq(String qty);
+
+  /// No description provided for @purchGoodsCleared.
+  ///
+  /// In en, this message translates to:
+  /// **'The selected goods were cleared because the supplier changed.'**
+  String get purchGoodsCleared;
+
+  /// No description provided for @purchGoodsOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other products (not on the price list)'**
+  String get purchGoodsOther;
+
+  /// No description provided for @purchGoodsSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} lines, total {total}'**
+  String purchGoodsSummary(int count, String total);
+
+  /// No description provided for @purchGoodsLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The supplier\'s goods could not be loaded. You can still add products under \"Other products\", or retry.'**
+  String get purchGoodsLoadFailed;
+
+  /// No description provided for @purchGoodsMixedCurrencies.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} lines in mixed currencies ({currencies}): no single total'**
+  String purchGoodsMixedCurrencies(int count, String currencies);
+
   /// No description provided for @purchPickSupplier.
   ///
   /// In en, this message translates to:
@@ -13041,13 +13107,13 @@ abstract class AppLocalizations {
   /// No description provided for @tutBuyingOrderBody.
   ///
   /// In en, this message translates to:
-  /// **'Create a purchase order for Voltaic Drives Ltd with three lines: TUT-MOTOR, TUT-FRAME and TUT-CTRL, 30 pieces each. The prices come from the price list.'**
+  /// **'Create a purchase order for Voltaic Drives Ltd. After choosing the supplier its goods are listed: tick TUT-MOTOR, TUT-FRAME and TUT-CTRL and set the quantity to 30 for each, then save. The prices come from the price list.'**
   String get tutBuyingOrderBody;
 
   /// No description provided for @tutBuyingOrderHint.
   ///
   /// In en, this message translates to:
-  /// **'Choose the supplier first: the line prices fill in once its price list has loaded. Use Add line for the second and third component.'**
+  /// **'Choose the supplier first. Ticking a box fills in the minimum order quantity (or 1); type 30 in the quantity box instead. Use the filter box to find a product quickly.'**
   String get tutBuyingOrderHint;
 
   /// No description provided for @tutBuyingOpenOrderTitle.
