@@ -2796,6 +2796,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get stockReversed => 'storniert';
 
   @override
+  String stockOnOrder(String quantity) {
+    return 'Bestellt: $quantity';
+  }
+
+  @override
+  String stockOnOrderExpected(String quantity, String date) {
+    return 'Bestellt: $quantity, erwartet am $date';
+  }
+
+  @override
   String stockShortBy(String quantity) {
     return 'Es fehlen $quantity';
   }

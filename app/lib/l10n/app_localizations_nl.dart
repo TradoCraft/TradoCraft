@@ -2791,6 +2791,16 @@ class AppLocalizationsNl extends AppLocalizations {
   String get stockReversed => 'teruggedraaid';
 
   @override
+  String stockOnOrder(String quantity) {
+    return 'Besteld: $quantity';
+  }
+
+  @override
+  String stockOnOrderExpected(String quantity, String date) {
+    return 'Besteld: $quantity, verwacht $date';
+  }
+
+  @override
   String stockShortBy(String quantity) {
     return 'Tekort van $quantity';
   }

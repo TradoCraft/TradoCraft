@@ -918,6 +918,8 @@
   "stockReverseAnyway": "Annuler quand même",
   "stockReverseTitle": "Annuler ce mouvement",
   "stockReversed": "annulé",
+  "stockOnOrder": "Commandé : {quantity}",
+  "stockOnOrderExpected": "Commandé : {quantity}, attendu le {date}",
   "stockShortBy": "Manque {quantity}",
   "stockStandardCost": "Coût standard",
   "stockStateAvailable": "En stock",

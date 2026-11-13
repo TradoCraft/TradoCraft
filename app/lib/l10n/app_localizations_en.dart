@@ -2786,6 +2786,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get stockReversed => 'reversed';
 
   @override
+  String stockOnOrder(String quantity) {
+    return 'On order: $quantity';
+  }
+
+  @override
+  String stockOnOrderExpected(String quantity, String date) {
+    return 'On order: $quantity, expected $date';
+  }
+
+  @override
   String stockShortBy(String quantity) {
     return 'Short by $quantity';
   }

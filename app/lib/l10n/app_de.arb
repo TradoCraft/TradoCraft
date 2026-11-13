@@ -918,6 +918,8 @@
   "stockReverseAnyway": "Trotzdem stornieren",
   "stockReverseTitle": "Diese Bewegung stornieren",
   "stockReversed": "storniert",
+  "stockOnOrder": "Bestellt: {quantity}",
+  "stockOnOrderExpected": "Bestellt: {quantity}, erwartet am {date}",
   "stockShortBy": "Es fehlen {quantity}",
   "stockStandardCost": "Standardkosten",
   "stockStateAvailable": "Auf Lager",

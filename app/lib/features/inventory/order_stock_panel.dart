@@ -24,6 +24,10 @@ class OrderStockPanel extends ConsumerStatefulWidget {
 
 class _OrderStockPanelState extends ConsumerState<OrderStockPanel> {
   OrderAvailability? _a;
+
+  /// What open purchase orders still have to deliver, per product id (ADR 0060). Advisory:
+  /// empty when the user may not read purchasing or the request failed.
+  Map<String, IncomingSupply> _incoming = const {};
   String? _error;
   bool _busy = false;
 
@@ -49,9 +53,11 @@ class _OrderStockPanelState extends ConsumerState<OrderStockPanel> {
   Future<void> _load() async {
     try {
       final a = await _api.inventory.orderAvailability(id: widget.orderId);
+      final incoming = await _loadIncoming(a);
       if (mounted) {
         setState(() {
           _a = a;
+          _incoming = incoming;
           _error = null;
           _stale = false;
         });
@@ -64,6 +70,33 @@ class _OrderStockPanelState extends ConsumerState<OrderStockPanel> {
         });
       }
     }
+  }
+
+  /// Open purchase order quantities for the lines that are short. Never blocks or fails the panel:
+  /// the figure is a hint beside the availability, not part of it.
+  Future<Map<String, IncomingSupply>> _loadIncoming(OrderAvailability a) async {
+    if (!hasPermission(ref, 'purchasing.read')) return const {};
+    final ids = {
+      for (final x in a.lines)
+        if (x.productId != null && !_isZero(x.shortfall)) x.productId!,
+    };
+    if (ids.isEmpty) return const {};
+    try {
+      final list = await _api.purchasing.incomingSupply(
+        productIds: ids.join(','),
+      );
+      return {for (final s in list) s.productId: s};
+    } catch (_) {
+      return const {};
+    }
+  }
+
+  /// "On order: 6 · expected 01/03/2027" for a short line, or nothing.
+  String _onOrder(LineAvailability line, AppLocalizations l) {
+    final s = _incoming[line.productId];
+    if (s == null || _isZero(s.openQuantity)) return '';
+    final when = s.nextExpectedDate;
+    return ' · ${when == null ? l.stockOnOrder(number(s.openQuantity)) : l.stockOnOrderExpected(number(s.openQuantity), date(when))}';
   }
 
   Future<void> _set(LineAvailability line, String quantity) async {
@@ -131,7 +164,8 @@ class _OrderStockPanelState extends ConsumerState<OrderStockPanel> {
               '${l.stockAvailable}: ${number(line.available)}'
               '${_isZero(line.expired) ? '' : ' · ${l.stockExpiredQty(number(line.expired))}'}'
               '${_isZero(line.reserved) ? '' : ' · ${l.orderStockThisLine(number(line.reserved))}'}'
-              '${_isZero(line.shortfall) ? '' : ' · ${l.stockShortBy(number(line.shortfall))}'}',
+              '${_isZero(line.shortfall) ? '' : ' · ${l.stockShortBy(number(line.shortfall))}'}'
+              '${_onOrder(line, l)}',
             ),
             trailing: Wrap(
               spacing: 8,

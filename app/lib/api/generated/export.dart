@@ -171,6 +171,8 @@ export 'models/identity_provider_test.dart';
 export 'models/identity_provider_test_result.dart';
 export 'models/import_report.dart';
 export 'models/inbound_result.dart';
+export 'models/incoming_line.dart';
+export 'models/incoming_supply.dart';
 export 'models/inputs.dart';
 export 'models/integrity.dart';
 export 'models/invoice_detail.dart';

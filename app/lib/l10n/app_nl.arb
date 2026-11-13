@@ -918,6 +918,8 @@
   "stockReverseAnyway": "Toch terugdraaien",
   "stockReverseTitle": "Deze beweging terugdraaien",
   "stockReversed": "teruggedraaid",
+  "stockOnOrder": "Besteld: {quantity}",
+  "stockOnOrderExpected": "Besteld: {quantity}, verwacht {date}",
   "stockShortBy": "Tekort van {quantity}",
   "stockStandardCost": "Standaardkostprijs",
   "stockStateAvailable": "Op voorraad",

@@ -23,5 +23,9 @@ cannot call purchasing without a dependency cycle, and no module reads another m
   only in the UI, with its date.
 * Quantities are in the stock unit; PO lines have no unit of their own.
 
-**Still to do.** The order stock panel (Flutter) shows the incoming quantity and date per short
-line, which needs the regenerated Dart client; production orders as supply follow with C1b/C2.
+**Order screen.** The order stock panel asks for the incoming supply of the lines that are still
+short, only for users with `purchasing.read`, and shows "On order: 6, expected 01/03/2027" after the
+shortfall. The request is advisory: when it fails the panel shows availability as before, without an
+error. Lines that are fully covered are not asked about.
+
+**Still to do.** Production orders as supply follow with C1b/C2.

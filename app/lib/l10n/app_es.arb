@@ -918,6 +918,8 @@
   "stockReverseAnyway": "Revertir de todos modos",
   "stockReverseTitle": "Revertir este movimiento",
   "stockReversed": "revertido",
+  "stockOnOrder": "Pedido: {quantity}",
+  "stockOnOrderExpected": "Pedido: {quantity}, previsto el {date}",
   "stockShortBy": "Faltan {quantity}",
   "stockStandardCost": "Coste estándar",
   "stockStateAvailable": "En stock",

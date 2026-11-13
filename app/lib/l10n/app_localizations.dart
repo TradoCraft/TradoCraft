@@ -5240,6 +5240,18 @@ abstract class AppLocalizations {
   /// **'reversed'**
   String get stockReversed;
 
+  /// No description provided for @stockOnOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'On order: {quantity}'**
+  String stockOnOrder(String quantity);
+
+  /// No description provided for @stockOnOrderExpected.
+  ///
+  /// In en, this message translates to:
+  /// **'On order: {quantity}, expected {date}'**
+  String stockOnOrderExpected(String quantity, String date);
+
   /// No description provided for @stockShortBy.
   ///
   /// In en, this message translates to:

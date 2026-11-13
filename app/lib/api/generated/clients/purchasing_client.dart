@@ -7,6 +7,7 @@ import 'package:retrofit/retrofit.dart';
 
 import '../models/goods_receipt_detail.dart';
 import '../models/goods_receipt_summary.dart';
+import '../models/incoming_supply.dart';
 import '../models/new_purchase_order_input.dart';
 import '../models/new_supplier_input.dart';
 import '../models/purchase_order_detail.dart';
@@ -46,6 +47,15 @@ abstract class PurchasingClient {
   @POST('/api/v1/purchase-orders')
   Future<PurchaseOrderDetail> createOrder({
     @Body() required NewPurchaseOrderInput body,
+  });
+
+  /// What is on order and not yet received for the given products (sent and partially received.
+  /// orders only), with the earliest expected date. Feeds the availability view of an order.
+  ///
+  /// [productIds] - Comma-separated product ids (at most 200).
+  @GET('/api/v1/purchase-orders/incoming')
+  Future<List<IncomingSupply>> incomingSupply({
+    @Query('product_ids') required String productIds,
   });
 
   /// [id] - Purchase Order ID

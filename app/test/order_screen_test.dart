@@ -182,7 +182,10 @@ Future<void> _pump(WidgetTester tester, FakeHttp http, Widget home) async {
       child: MaterialApp.router(
         routerConfig: router,
         locale: const Locale('en'),
-        localizationsDelegates: [AppLocalizations.delegate, ...GlobalMaterialLocalizations.delegates],
+        localizationsDelegates: [
+          AppLocalizations.delegate,
+          ...GlobalMaterialLocalizations.delegates,
+        ],
         supportedLocales: AppLocalizations.supportedLocales,
       ),
     ),
@@ -781,6 +784,81 @@ void main() {
       },
     ],
   };
+
+  Map<String, Object?> incomingSupply() => {
+    'product_id': 'p2',
+    'open_quantity': '6.0000',
+    'next_expected_date': '2027-03-01',
+    'lines': [
+      {
+        'purchase_order_id': 'po1',
+        'purchase_order_number': 'PO2027-00001',
+        'product_id': 'p2',
+        'open_quantity': '6.0000',
+        'expected_delivery_date': '2027-03-01',
+      },
+    ],
+  };
+
+  testWidgets('a short line shows what is on order and when it is expected', (
+    tester,
+  ) async {
+    final http = await _screen(
+      tester,
+      'confirmed',
+      perms: const ['orders.read', 'inventory.read', 'purchasing.read'],
+      extra: {
+        'GET /api/v1/inventory/orders/o1/availability': (_) => availability(),
+        'GET /api/v1/purchase-orders/incoming': (_) => [incomingSupply()],
+      },
+    );
+    expect(
+      find.textContaining('On order: 6, expected 01/03/2027'),
+      findsOneWidget,
+    );
+    // Only the short line (p2) is asked about.
+    final i = http.requests.indexOf('GET /api/v1/purchase-orders/incoming');
+    expect(http.queries[i]['product_ids'], 'p2');
+  });
+
+  testWidgets(
+    'without purchasing access nothing is asked and nothing is shown',
+    (tester) async {
+      final http = await _screen(
+        tester,
+        'confirmed',
+        perms: const ['orders.read', 'inventory.read'],
+        extra: {
+          'GET /api/v1/inventory/orders/o1/availability': (_) => availability(),
+          'GET /api/v1/purchase-orders/incoming': (_) => [incomingSupply()],
+        },
+      );
+      expect(find.textContaining('Short by 6'), findsOneWidget);
+      expect(find.textContaining('On order'), findsNothing);
+      expect(
+        http.requests,
+        isNot(contains('GET /api/v1/purchase-orders/incoming')),
+      );
+    },
+  );
+
+  testWidgets('a failing on-order request does not break the availability', (
+    tester,
+  ) async {
+    await _screen(
+      tester,
+      'confirmed',
+      perms: const ['orders.read', 'inventory.read', 'purchasing.read'],
+      extra: {
+        'GET /api/v1/inventory/orders/o1/availability': (_) => availability(),
+        'GET /api/v1/purchase-orders/incoming': (_) =>
+            const FakeStatus(500, {'error': 'internal', 'message': 'boom'}),
+      },
+    );
+    expect(find.textContaining('Short by 6'), findsOneWidget);
+    expect(find.textContaining('On order'), findsNothing);
+    expect(find.text('Retry'), findsNothing);
+  });
 
   testWidgets('the order shows availability per line and reserves stock', (
     tester,

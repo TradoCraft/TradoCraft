@@ -1415,6 +1415,25 @@
   "stockReverseAnyway": "Reverse anyway",
   "stockReverseTitle": "Reverse this movement",
   "stockReversed": "reversed",
+  "stockOnOrder": "On order: {quantity}",
+  "@stockOnOrder": {
+    "placeholders": {
+      "quantity": {
+        "type": "String"
+      }
+    }
+  },
+  "stockOnOrderExpected": "On order: {quantity}, expected {date}",
+  "@stockOnOrderExpected": {
+    "placeholders": {
+      "quantity": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "stockShortBy": "Short by {quantity}",
   "@stockShortBy": {
     "placeholders": {
