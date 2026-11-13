@@ -252,6 +252,9 @@ class TutorialController extends Notifier<TutorialState> {
   late Future<void> _ready;
   int _gen = 0;
 
+  /// Counts the probes started; only the newest one may apply its answer.
+  int _probeSeq = 0;
+
   /// Completes when the stored progress has been read (for tests).
   Future<void> get ready => _ready;
 
@@ -442,6 +445,14 @@ class TutorialController extends Notifier<TutorialState> {
   Future<void> _runProbe(MissionStep s, Probe p, int gen) async {
     final path = state.context.resolve(p.path);
     if (path == null) return;
+    // A newer probe (entry or recheck) supersedes this one: the newest state wins.
+    final seq = ++_probeSeq;
+    bool stale() =>
+        !ref.mounted ||
+        gen != _gen ||
+        step != s ||
+        !state.running ||
+        seq != _probeSeq;
     // Query values may hold `{name}` placeholders too.
     Map<String, dynamic>? query;
     if (p.query != null) {
@@ -461,7 +472,7 @@ class TutorialController extends Notifier<TutorialState> {
             queryParameters: query,
             options: Options(extra: {tutorialProbeExtra: true}),
           );
-      if (!ref.mounted || gen != _gen || step != s || !state.running) return;
+      if (stale()) return;
       final ctx = state.context;
       Object? data = res.data;
       if (p.expand != null) {
@@ -478,10 +489,10 @@ class TutorialController extends Notifier<TutorialState> {
                 );
             details.add(d.data);
           }
-          if (!ref.mounted || gen != _gen || step != s || !state.running) return;
+          if (stale()) return;
           if (p.done(details, ctx)) break;
         }
-        if (!ref.mounted || gen != _gen || step != s || !state.running) return;
+        if (stale()) return;
         data = details;
       }
       if (p.done(data, ctx)) {
@@ -503,6 +514,14 @@ class TutorialController extends Notifier<TutorialState> {
     final c = s.completion;
     if (c is OnApi && c.matches(e, state.context)) {
       _complete({...?s.capture?.call(e.json)});
+      return;
+    }
+    // A call that may have finished the step without matching `completion`: ask the probe. A
+    // stale or overlapping probe is dropped by the guards in `_runProbe` (generation, step,
+    // running); probe GETs are never mutations, so they cannot trigger this again.
+    final p = s.probe;
+    if (p != null && s.recheckOn.any((t) => t.matches(e, state.context))) {
+      unawaited(_runProbe(s, p, _gen));
     }
   }
 

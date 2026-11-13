@@ -8505,4 +8505,92 @@ class AppLocalizationsFr extends AppLocalizations {
   String mailboxDeleteConfirm(String name) {
     return 'Supprimer la boîte aux lettres $name ? Ses tickets sont conservés. Les réponses partent alors par la boîte par défaut.';
   }
+
+  @override
+  String get moduleTodo => 'Tâches';
+
+  @override
+  String get todoTitle => 'Tâches';
+
+  @override
+  String get todoAdd => 'Ajouter une tâche';
+
+  @override
+  String get todoAddSub => 'Ajouter une sous-tâche';
+
+  @override
+  String get todoWhat => 'Que faut-il faire ?';
+
+  @override
+  String get todoNotes => 'Notes';
+
+  @override
+  String get todoDueDate => 'Échéance';
+
+  @override
+  String get todoSetDue => 'Définir l\'échéance';
+
+  @override
+  String get todoClearDue => 'Supprimer l\'échéance';
+
+  @override
+  String todoDue(String date) {
+    return 'Échéance $date';
+  }
+
+  @override
+  String get todoOverdue => 'En retard';
+
+  @override
+  String get todoFilterOpen => 'Ouvertes';
+
+  @override
+  String get todoFilterDone => 'Terminées';
+
+  @override
+  String get todoFilterAll => 'Toutes';
+
+  @override
+  String get todoEmpty => 'Rien à faire. Ajoutez votre première tâche.';
+
+  @override
+  String get todoEmptyDone => 'Aucune tâche terminée.';
+
+  @override
+  String get todoComplete => 'Marquer comme terminée';
+
+  @override
+  String get todoReopen => 'Rouvrir';
+
+  @override
+  String todoDeleteConfirm(String title) {
+    return 'Supprimer « $title » ? Ses sous-tâches sont supprimées aussi.';
+  }
+
+  @override
+  String get todoCompleteAllTitle => 'Terminer aussi les sous-tâches ?';
+
+  @override
+  String todoCompleteAllBody(String title) {
+    return '« $title » a encore des sous-tâches ouvertes. La terminer les termine aussi.';
+  }
+
+  @override
+  String get todoCompleteAll => 'Tout terminer';
+
+  @override
+  String get todoLinkedItem => 'Élément lié';
+
+  @override
+  String todoFromOwner(String name) {
+    return 'De $name';
+  }
+
+  @override
+  String todoSubProgress(int done, int total) {
+    return '$done sous-tâches sur $total terminées';
+  }
+
+  @override
+  String get todoReorder => 'Glisser pour réordonner';
 }
