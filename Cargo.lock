@@ -3383,6 +3383,7 @@ dependencies = [
  "tradocraft-fieldservice",
  "tradocraft-helpdesk",
  "tradocraft-sales",
+ "tradocraft-todo",
  "uuid",
 ]
 

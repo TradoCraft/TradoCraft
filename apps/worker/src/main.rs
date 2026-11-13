@@ -11,6 +11,7 @@
 //! * Generates the planned jobs of active maintenance contracts before their visits are due.
 //! * Recomputes the "often bought together" table from confirmed installation orders (hourly, or
 //!   every COOCCURRENCE_SECONDS).
+//! * Queues one digest e-mail per user for to-do items that are due or overdue (once per item).
 //! * Sends queued outgoing e-mails (ticket replies and system mail such as portal login links)
 //!   through the helpdesk mailbox they belong to, else over SMTP, or writes them as .eml files
 //!   when MAIL_TRANSPORT=files (development) and always outside a live environment.
@@ -248,6 +249,13 @@ async fn main() -> anyhow::Result<()> {
                 "maintenance contracts processed"
             ),
             Err(e) => tracing::error!(error = ?e, "generating contract visits failed"),
+        }
+        // One digest mail per recipient for to-dos that are due (ADR 0061). Only queues mail: the
+        // outbox below applies the outbound policy (files outside a live environment).
+        match tradocraft_todo::send_due_reminders(&db).await {
+            Ok(0) => {}
+            Ok(n) => tracing::info!(n, "to-do reminders queued"),
+            Err(e) => tracing::error!(error = ?e, "queuing to-do reminders failed"),
         }
         // Without the mailbox list every queued mail would look as if its mailbox is gone and be
         // charged an attempt: wait for the next pass.
