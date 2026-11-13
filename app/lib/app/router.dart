@@ -21,6 +21,7 @@ import '../features/helpdesk/reports_page.dart';
 import '../features/reports/report_builder_page.dart';
 import '../features/reports/report_screen.dart';
 import '../features/reports/reports_page.dart';
+import '../features/todo/todo_page.dart';
 import '../features/helpdesk/tickets_page.dart';
 import '../features/kb/kb_categories_page.dart';
 import '../features/kb/kb_page.dart';
@@ -147,6 +148,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/helpdesk/:id',
             builder: (_, s) => DetailPortal(location: s.uri.toString()),
           ),
+          GoRoute(path: '/todo', builder: (_, _) => const TodoPage()),
           GoRoute(
             path: '/reports',
             builder: (_, _) => const SavedReportsPage(),

@@ -480,7 +480,8 @@ async fn a_module_the_company_switches_off_is_gone_for_everyone(db: PgPool) {
             "delivery",
             "production",
             "reports",
-            "finance"
+            "finance",
+            "todo"
         ]
     );
     assert!(mods

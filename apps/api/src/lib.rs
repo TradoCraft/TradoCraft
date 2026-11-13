@@ -22,6 +22,8 @@ pub const DEV_SEED_SQL: &str = include_str!("../../../seed/dev_seed.sql");
 #[derive(OpenApi)]
 #[openapi(
     info(title = "tradocraft API", description = "Business platform API (CRM, products, pricing, sales, engineering, helpdesk, customer portal)."),
+    // Query parameters are not collected from the routes: list the enums they use.
+    components(schemas(tradocraft_todo::TodoScope)),
     modifiers(&Security),
     security(("bearer" = [])),
     tags(
@@ -34,6 +36,7 @@ pub const DEV_SEED_SQL: &str = include_str!("../../../seed/dev_seed.sql");
         (name = "engineering", description = "Bills of materials and serial numbers"),
         (name = "helpdesk", description = "Tickets, e-mail and prepared answers"),
         (name = "reports", description = "User-defined reports: build, save, share, run and export"),
+        (name = "todo", description = "To-do items: private checklists with sub-items, hand-over to a colleague and links to records"),
         (name = "kb", description = "Knowledge base: entries in five languages, search, versions, public reading"),
         (name = "repairs", description = "Repairs, workshop departments and photos"),
         (name = "field", description = "Field jobs for technicians: tasks, work logs and photos"),
@@ -89,6 +92,7 @@ fn api() -> (Router<AppState>, OpenApiDoc) {
         .merge(tradocraft_production::router())
         .merge(tradocraft_configurator::router())
         .merge(tradocraft_reports::router())
+        .merge(tradocraft_todo::router())
         .merge(tradocraft_portal::router());
     OpenApiRouter::with_openapi(ApiDoc::openapi())
         .nest("/api/v1", v1)
