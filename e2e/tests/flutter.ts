@@ -82,6 +82,11 @@ export async function tree(page: Page): Promise<string> {
         return `${el.getAttribute('role') ?? '-'} | ${t}`;
       })
       .filter((s) => s.split('| ')[1])
+      .concat(
+        Array.from(document.querySelectorAll('input, textarea')).map(
+          (e) => `input | ${e.getAttribute('aria-label') ?? ''} = ${(e as HTMLInputElement).value}`,
+        ),
+      )
       .join('\n'),
   );
 }

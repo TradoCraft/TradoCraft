@@ -321,4 +321,63 @@ test('the whole tutorial, chapter by chapter', async ({ page, request }) => {
     await next(page);
     await startNextChapter(page);
   });
+
+  await test.step('chapter 8: the quotation', async () => {
+    await expectStep(page, 'quotation', 'openQuotations');
+    await railTo(page, 'Quotations');
+    await overviewTab(page);
+    await expectStep(page, 'quotation', 'create');
+    await page.getByRole('button', { name: /New quotation/ }).click();
+    await searchPick(page, 'Customer', 'Brightwheel', /Brightwheel/);
+    await searchPick(page, 'Add product', 'TUT-CART', /^TUT-CART ·/);
+    // The line's quantity input has no accessible name, so it is clicked by position (fixed viewport).
+    await expect(async () => {
+      await page.mouse.click(568, 433);
+      await page.waitForTimeout(600);
+      await page.keyboard.press('Control+A');
+      await page.keyboard.press('Backspace');
+      await page.keyboard.type('8', { delay: 80 });
+      await expect(page.getByText('11.600,00').first()).toBeVisible({ timeout: 2_500 });
+    }).toPass({ timeout: 30_000 });
+    await page.getByRole('button', { name: 'Save draft' }).click();
+    await expectStep(page, 'quotation', 'lead');
+    await typeInto(field(page, 'Notes'), 'Delivery about 3 weeks after order.');
+    await page.getByRole('button', { name: 'Save draft' }).click();
+    await expectStep(page, 'quotation', 'send');
+    await page.getByRole('button', { name: 'Mark as sent' }).click();
+    await expectStep(page, 'quotation', 'pdf');
+    // The PDF button needs the Typst binary on the server; the step is explanation only, so it is not pressed.
+    await next(page);
+    await expectStep(page, 'quotation', 'done');
+    await next(page);
+    await startNextChapter(page);
+  });
+
+  await test.step('chapter 9: a change, an order and production', async () => {
+    await expectStep(page, 'change', 'mail3');
+    await page.getByRole('button', { name: 'Simulate customer e-mail' }).click();
+    await expectStep(page, 'change', 'openQuote');
+    await takeMeThere(page);
+    await expectStep(page, 'change', 'revise');
+    await page.getByRole('button', { name: 'New revision' }).click();
+    await page.getByRole('button', { name: 'Keep agreed prices' }).click();
+    await expectStep(page, 'change', 'edit');
+    await expect(async () => {
+      await page.mouse.click(568, 433);
+      await page.waitForTimeout(600);
+      await page.keyboard.press('Control+A');
+      await page.keyboard.press('Backspace');
+      await page.keyboard.type('10', { delay: 80 });
+      await expect(page.getByText('14.500,00').first()).toBeVisible({ timeout: 2_500 });
+    }).toPass({ timeout: 30_000 });
+    await page.getByRole('button', { name: 'Save draft' }).click();
+    await expectStep(page, 'change', 'send');
+    await page.getByRole('button', { name: 'Mark as sent' }).click();
+    await expectStep(page, 'change', 'accept');
+    await page.getByRole('button', { name: 'Accepted' }).click();
+    await expectStep(page, 'change', 'convert');
+    await page.getByRole('button', { name: 'Convert to order' }).click();
+    await page.waitForTimeout(1000);
+    await dump(page, 'convert-dialog');
+  });
 });
