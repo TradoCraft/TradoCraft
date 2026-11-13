@@ -189,23 +189,25 @@ pub async fn get_customer<'e>(
         .ok_or(AppError::NotFound("customer"))
 }
 
-/// Like [`get_customer`], for the row an update is about to change: locked until the transaction
+/// Like [`get_customer`], for the row an update is about to change: locks it until the transaction
 /// ends, so that what an update records as "before" (the audit trail, ADR 0059) is the latest
-/// committed row and not one that a concurrent update is replacing. Only the customer row is
-/// locked, not its terms or price zone.
+/// committed state and not one that a concurrent update is replacing.
+///
+/// Two statements, on purpose. A single `SELECT ... FOR UPDATE OF c` over the joins would re-read
+/// the locked customer after waiting, but keep the terms and price zone rows of the snapshot it
+/// started with, so a concurrent change of the discount would be reported as it was before that
+/// change. The lock is taken first; the read that follows sees everything committed up to then.
 async fn get_customer_for_update(
     conn: &mut sqlx::PgConnection,
     company_id: Uuid,
     id: Uuid,
 ) -> AppResult<Customer> {
-    sqlx::query_as(&format!(
-        "{SELECT_CUSTOMER} WHERE c.id = $2 FOR UPDATE OF c"
-    ))
-    .bind(company_id)
-    .bind(id)
-    .fetch_optional(conn)
-    .await?
-    .ok_or(AppError::NotFound("customer"))
+    sqlx::query_scalar::<_, Uuid>("SELECT id FROM crm.customers WHERE id = $1 FOR UPDATE")
+        .bind(id)
+        .fetch_optional(&mut *conn)
+        .await?
+        .ok_or(AppError::NotFound("customer"))?;
+    get_customer(&mut *conn, company_id, id).await
 }
 
 /// Everything sales needs to quote a customer in a company.

@@ -47,9 +47,13 @@ index. (An earlier version of this migration had only the second index, after te
 with a skewed mix of two companies showed no use for the first. The case above, a large quiet company,
 was not among them; a review pointed at it and the measurement above settled it.)
 
-*What changed.* An update reads the record it changes with `FOR UPDATE`, so that "before" is the latest
-committed row and two concurrent updates do not both diff against the same stale one (the second
-waits for the first). `core::audit::Changes` collects, for an update, the fields that differ as
+*What changed.* An update locks the record it changes (`SELECT ... FOR UPDATE`) and reads it in a
+second statement, so that "before" is the latest committed state and two concurrent updates do not
+both diff against the same stale one: the second waits for the first. The lock and the read are
+separate on purpose. A single locking `SELECT` over the joins re-reads the locked customer after
+waiting but keeps the commercial terms (discount, payment terms) of the snapshot it started with,
+which a test showed: it reported a discount as changing from 5 when the committed value was 9.
+`core::audit::Changes` collects, for an update, the fields that differ as
 `{"changes": {"field": {"from": .., "to": ..}}}`; a save that changed nothing records `{}`. Customer
 updates (15 fields, including the commercial terms of the active company) and supplier updates (11
 fields, next to the keys the event already had) now record it. Other modules adopt it by calling

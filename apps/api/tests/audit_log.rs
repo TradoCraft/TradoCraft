@@ -530,8 +530,34 @@ async fn the_kinds_of_record_are_listed_for_the_filter(db: PgPool) {
     assert_eq!(f["entities"], json!(["aaa_first", "customer", "supplier"]));
 }
 
-/// An update records what it changed from the latest committed row. A concurrent update holds the
-/// row; the one behind it waits and then reads what the first one wrote, not what was there before.
+/// Waits until some other session of this database is blocked on a lock, so that a test knows its
+/// request is really waiting for the row and not just slow. Bounded: a request that never waits
+/// fails the test instead of hanging it.
+async fn wait_for_a_lock_waiter(db: &PgPool) {
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
+    loop {
+        let waiting: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM pg_stat_activity
+             WHERE datname = current_database() AND pid <> pg_backend_pid()
+               AND wait_event_type = 'Lock'",
+        )
+        .fetch_one(db)
+        .await
+        .unwrap();
+        if waiting > 0 {
+            return;
+        }
+        assert!(
+            std::time::Instant::now() < deadline,
+            "no session ever waited for the row lock"
+        );
+        tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+    }
+}
+
+/// An update records what it changed from the latest committed state. A concurrent update holds the
+/// customer; the one behind it waits and then reads what the first one wrote: the customer's own
+/// columns and its commercial terms (discount, payment terms), which live in another table.
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
 async fn an_update_waits_for_a_concurrent_one_and_records_the_latest_before(db: PgPool) {
     let app = setup(db.clone()).await;
@@ -540,7 +566,7 @@ async fn an_update_waits_for_a_concurrent_one_and_records_the_latest_before(db: 
         SALES,
         Method::POST,
         "/customers",
-        customer("L1", "Gent", "0"),
+        customer("L1", "Gent", "5"),
     )
     .await;
     let id = c["id"].as_str().unwrap().to_string();
@@ -561,31 +587,52 @@ async fn an_update_waits_for_a_concurrent_one_and_records_the_latest_before(db: 
                 SALES,
                 Method::PUT,
                 &format!("/customers/{id}"),
-                customer("L1", "Brugge", "0"),
+                customer("L1", "Brugge", "7.5"),
             )
             .await
         })
     };
-    tokio::time::sleep(std::time::Duration::from_millis(400)).await;
+    wait_for_a_lock_waiter(&db).await;
     assert!(
         !second.is_finished(),
         "the update must wait for the row it is going to change"
     );
 
-    // The first update commits its change; only then may the second one read the row.
+    // The first update changes the customer and its terms, and commits; only then may the second
+    // one read them.
     sqlx::query("UPDATE crm.customers SET city = 'Namur' WHERE id = $1::uuid")
         .bind(&id)
         .execute(&mut *holder)
         .await
         .unwrap();
+    sqlx::query(
+        "UPDATE crm.customer_terms SET discount_percent = 9, payment_terms_days = 45
+         WHERE customer_id = $1::uuid AND company_id = $2::uuid",
+    )
+    .bind(&id)
+    .bind(COMPANY)
+    .execute(&mut *holder)
+    .await
+    .unwrap();
     holder.commit().await.unwrap();
     let (status, body) = second.await.unwrap();
     assert_eq!(status, StatusCode::OK, "{body}");
 
     let (_, h) = get(&app, ADMIN, &format!("/audit/records/customer/{id}")).await;
+    let changes = &items(&h)[0]["data"]["changes"];
     assert_eq!(
-        items(&h)[0]["data"]["changes"]["city"],
+        changes["city"],
         json!({"from": "Namur", "to": "Brugge"}),
-        "the baseline is the committed row, not the one the update started from: {h}"
+        "the customer row is the committed one, not the one the update started from: {h}"
+    );
+    assert_eq!(
+        changes["discount_percent"],
+        json!({"from": "9", "to": "7.5"}),
+        "and so are its terms, read after the lock and not with it: {h}"
+    );
+    assert_eq!(
+        changes["payment_terms_days"],
+        json!({"from": 45, "to": 30}),
+        "{h}"
     );
 }
