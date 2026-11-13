@@ -42,7 +42,11 @@ returned. Nothing is ever killed: if a port is taken the message names what list
 | --- | --- | --- |
 | `E2E_BROWSER` | `chromium` (`firefox` for the scripts above) | `firefox` or `chromium`; anything else is an error |
 | `E2E_HEADED` | off (`1` for `test:watch`) | `1` shows the browser window |
-| `E2E_SLOWMO` | `0` (`150` for `test:watch`) | milliseconds to wait after every action |
+| `E2E_SLOWMO` | `0` (`150` for `test:watch`) | milliseconds to wait after every Playwright action (see "Watching" below) |
+| `E2E_FIT` | on for headed Firefox | `0` turns the fit-to-screen mode off (plain emulated 1400x1700 viewport) |
+| `E2E_SCALE` | computed | `0.3`-`1`: force the scale of the fit mode |
+| `E2E_WINDOW` | detected | `<W>x<H>`: the screen size to fit into, when the detection is wrong |
+| `E2E_FIT_CHECK_TIMEOUT` | `30000` | milliseconds the pre-run window check may take; on expiry it warns and the run goes on |
 | `E2E_PG_URL` | see below | PostgreSQL server, `scheme://user:pass@host:port` |
 | `E2E_API_PORT`, `E2E_WEB_PORT` | `18080`, `18088` | change both (and `E2E_DB_NAME`) to run next to another run |
 | `E2E_DB_NAME` | `tradocraft_e2e` | the database that is dropped and recreated on every run |
@@ -58,9 +62,37 @@ PostgreSQL login, first match wins: `E2E_PG_URL`; the server part of `DATABASE_U
 dropped is always `E2E_DB_NAME`, and the run refuses a name equal to the database in the `.env`'s
 `DATABASE_URL`, so a mis-set variable cannot drop the real one.
 
-The viewport is deliberately tall (1400x1700): the navigation rail only exposes the items that are on screen,
-so a short window cannot reach every module. On a laptop screen the headed window is therefore cropped; UI mode
-scales the page to fit and is the better way to watch.
+### Viewport and fit-to-screen mode
+
+The viewport is deliberately tall (1400x1700 CSS px): the navigation rail only exposes the items that are on
+screen, so a short page cannot reach every module. Headless runs (and CI) simply emulate that size.
+
+A real window cannot be that tall on a laptop screen. The part of the page below the screen is not really there:
+Playwright's click on, say, "Start next chapter" in the bottom-right corner is reported as successful but the
+app never receives it, and the run then times out at the next step. So headed Firefox runs (`test:watch`, or
+`E2E_HEADED=1 E2E_BROWSER=firefox`) use **fit mode** by default: the page is scaled down with Firefox's
+`layout.css.devPixelsPerPx` so that it still behaves as 1400x1700 CSS px, while the window, sized by
+Playwright for that viewport at that scale, fits the screen. The scale is the largest one (at most 1) for which
+the page plus Firefox's own title bar and toolbar fit the screen minus a small margin, for example 0.57 on a
+1920x1080 screen with a panel (the text is small, but the whole page and the narrator card are visible).
+
+* `E2E_FIT=0` turns it off (a plain emulated viewport; the run prints a warning that clicks near the bottom may be lost).
+* `E2E_SCALE=0.45` forces a scale (`0.3` to `1`).
+* `E2E_WINDOW=1366x768` overrides the detected screen size.
+
+The screen size comes from `xrandr` and the panel-free work area from `xprop` on Linux/X11 (no new dependencies),
+from PowerShell's `WorkingArea` on Windows (best effort, untested), and falls back to 1920x1080 with a printed
+note on Wayland and macOS. Before a headed run a throw-away window opens with the same settings and clicks a
+button in the bottom-right corner of the 1400x1700 page; if the click does not arrive or the viewport is smaller,
+a warning names the numbers and the way out (`E2E_SCALE`, `E2E_FIT=0`, or run headless). `npm run test:ui` runs
+the browser headless inside Playwright's UI, which scales the live view itself, so fit mode does not apply there.
+
+### Watching
+
+`E2E_SLOWMO` is Playwright's `slowMo`: it pauses after each Playwright *action* (a click, a key press), not per
+tutorial step. A tutorial step is many actions, the typing alone is one per character, so a small value is hardly
+visible as a pause between steps. For a real "step by step" look raise it (`E2E_SLOWMO=600 npm run test:watch`),
+or run one chapter at a time with `-g`, or add `await page.pause()` (opens Playwright's inspector) while debugging.
 
 `E2E_DUMP=1` writes the accessibility tree and a screenshot of `dump(page, tag)` calls to `e2e/dump/`.
 Screenshots of a failed run are in `e2e/test-results/` (CI uploads that folder as the `e2e-failures` artifact).

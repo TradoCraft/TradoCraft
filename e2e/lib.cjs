@@ -149,4 +149,187 @@ function missingPrerequisites() {
   return out;
 }
 
-module.exports = { root, apiBin, splitPgUrl, envPg, guardDbName, portProblem, missingPrerequisites };
+// ---- Fit-to-screen mode (headed Firefox) --------------------------------------------------------
+// The tests assume a 1400x1700 CSS-pixel viewport (the navigation rail only exposes the items that
+// are on screen). A real window cannot be that tall on a laptop screen, and the part below the
+// screen is not really there (clicks near the bottom are lost). So the page is scaled down with
+// layout.css.devPixelsPerPx: the viewport stays 1400x1700 CSS pixels while the window shrinks.
+const CSS_VIEWPORT = { width: 1400, height: 1700 };
+/** Height of Firefox's own title bar, tab strip and toolbar at scale 1, in CSS px (measured: 48 device px at 0.55). */
+const FIREFOX_CHROME_CSS = 88;
+const FALLBACK_SCREEN = { width: 1920, height: 1080 };
+
+/** The geometry of the primary (else the first) connected output in `xrandr --current` output. */
+function parseXrandr(text) {
+  let first;
+  for (const line of String(text ?? '').split(/\r?\n/)) {
+    const m = line.match(/^(\S+)\s+connected(\s+primary)?\s+(\d+)x(\d+)\+\d+\+\d+/);
+    if (!m) continue;
+    const size = { width: Number(m[3]), height: Number(m[4]) };
+    if (m[2]) return size;
+    first ??= size;
+  }
+  return first;
+}
+
+/** The first desktop's work area (without panels) from `xprop -root _NET_WORKAREA`. */
+function parseWorkArea(text) {
+  const m = String(text ?? '').match(/_NET_WORKAREA\(CARDINAL\)\s*=\s*(\d+),\s*(\d+),\s*(\d+),\s*(\d+)/);
+  return m ? { width: Number(m[3]), height: Number(m[4]) } : undefined;
+}
+
+/** "1920x1080" (also "1920X1080"); throws on anything else. */
+function parseWindowSpec(spec) {
+  const m = String(spec).trim().match(/^(\d{3,5})\s*[xX]\s*(\d{3,5})$/);
+  if (!m) throw new Error(`E2E_WINDOW must look like 1920x1080, got "${spec}"`);
+  return { width: Number(m[1]), height: Number(m[2]) };
+}
+
+function run(cmd, args, timeout = 5000) {
+  try {
+    return execFileSync(cmd, args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], timeout, windowsHide: true });
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * Best-effort screen size without new dependencies: { width, height, workArea, source, note? }.
+ * `workArea` is true when the size excludes panels (then a small margin is enough).
+ * E2E_WINDOW=<W>x<H> overrides everything. Wayland/unknown platforms fall back to 1920x1080 with a note.
+ */
+function detectScreen(env = process.env, platform = process.platform, exec = run) {
+  if (env.E2E_WINDOW) return { ...parseWindowSpec(env.E2E_WINDOW), workArea: false, source: 'E2E_WINDOW' };
+  if (platform === 'win32') {
+    const out = exec(
+      'powershell',
+      [
+        '-NoProfile',
+        '-Command',
+        'Add-Type -AssemblyName System.Windows.Forms; $a = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea; "$($a.Width)x$($a.Height)"',
+      ],
+      15000,
+    );
+    const m = out.match(/(\d{3,5})x(\d{3,5})/);
+    if (m) return { width: Number(m[1]), height: Number(m[2]), workArea: true, source: 'powershell WorkingArea' };
+  } else if (platform === 'linux' && env.DISPLAY) {
+    const screen = parseXrandr(exec('xrandr', ['--current']));
+    if (screen) {
+      // Use the work area only when it belongs to this one screen (several monitors give their union).
+      const work = parseWorkArea(exec('xprop', ['-root', '_NET_WORKAREA']));
+      if (work && work.width <= screen.width && work.height <= screen.height) {
+        return { ...work, workArea: true, source: 'xrandr + _NET_WORKAREA' };
+      }
+      return { ...screen, workArea: false, source: 'xrandr' };
+    }
+  }
+  const why = platform === 'linux' && !env.DISPLAY ? 'no X display (Wayland?)' : 'screen size not detectable here';
+  return {
+    ...FALLBACK_SCREEN,
+    workArea: false,
+    source: 'fallback',
+    note: `${why}; assuming ${FALLBACK_SCREEN.width}x${FALLBACK_SCREEN.height}. Set E2E_WINDOW=<W>x<H> if that is wrong.`,
+  };
+}
+
+/**
+ * The scale and window for a screen: the largest scale (at most 1, at least 0.3, two decimals) at which
+ * a window showing 1400x1700 CSS px plus Firefox's chrome fits the screen minus a margin.
+ * E2E_SCALE (0.3-1) forces the scale.
+ */
+function fitPlan(screen, env = process.env) {
+  const mx = screen.workArea ? 20 : 40;
+  const my = screen.workArea ? 20 : 120;
+  const availW = screen.width - mx;
+  const availH = screen.height - my;
+  let scale;
+  if (env.E2E_SCALE !== undefined && env.E2E_SCALE !== '') {
+    scale = Number(env.E2E_SCALE);
+    if (!Number.isFinite(scale) || scale < 0.3 || scale > 1) throw new Error(`E2E_SCALE must be a number from 0.3 to 1, got "${env.E2E_SCALE}"`);
+  } else {
+    const raw = Math.min(availW / CSS_VIEWPORT.width, availH / (CSS_VIEWPORT.height + FIREFOX_CHROME_CSS), 1);
+    scale = Math.max(0.3, Math.floor(raw * 100) / 100);
+  }
+  const window = {
+    width: Math.round(CSS_VIEWPORT.width * scale),
+    height: Math.round((CSS_VIEWPORT.height + FIREFOX_CHROME_CSS) * scale),
+  };
+  return { scale, css: { ...CSS_VIEWPORT }, window, screen, fits: window.width <= availW && window.height <= availH };
+}
+
+/** Whether fit mode applies: headed Firefox, unless E2E_FIT=0. */
+function fitWanted(env = process.env) {
+  const headed = ['1', 'true'].includes((env.E2E_HEADED ?? '').toLowerCase());
+  return headed && (env.E2E_BROWSER ?? 'chromium') === 'firefox' && !['0', 'false', 'off'].includes((env.E2E_FIT ?? '').toLowerCase());
+}
+
+/**
+ * Runs `factory()` under a deadline. Resolves { timedOut: false, value } when it finishes in time, rejects
+ * when it rejects in time, and resolves { timedOut: true } once `ms` have passed (the work is abandoned:
+ * a rejection that arrives later is swallowed). The timer is always cleared.
+ */
+function withDeadline(factory, ms) {
+  return new Promise((resolve, reject) => {
+    let done = false;
+    const timer = setTimeout(() => {
+      done = true;
+      resolve({ timedOut: true });
+    }, ms);
+    let work;
+    try {
+      work = Promise.resolve(factory());
+    } catch (e) {
+      work = Promise.reject(e);
+    }
+    work.then(
+      (value) => {
+        if (done) return;
+        done = true;
+        clearTimeout(timer);
+        resolve({ timedOut: false, value });
+      },
+      (err) => {
+        if (done) return; // late rejection of abandoned work
+        done = true;
+        clearTimeout(timer);
+        reject(err);
+      },
+    );
+  });
+}
+
+/** Warning for a web build older than the newest commit that touched app/lib, or undefined. */
+function staleBuildWarning() {
+  const built = path.join(root, 'app/build/web/main.dart.js');
+  if (!fs.existsSync(built)) return undefined;
+  const commit = Number(run('git', ['-C', root, 'log', '-1', '--format=%ct', '--', 'app/lib']).trim());
+  if (!commit) return undefined;
+  const builtAt = fs.statSync(built).mtimeMs / 1000;
+  if (builtAt >= commit) return undefined;
+  const fmt = (t) => new Date(t * 1000).toLocaleString();
+  return (
+    `The web build (app/build/web, ${fmt(builtAt)}) is older than the newest commit touching app/lib (${fmt(commit)}).\n` +
+    '  The test reads the tutorial texts from the CURRENT app_en.arb, so a stale build can fail with "step not found".\n' +
+    '  Rebuild:  (cd app && flutter build web --release --no-web-resources-cdn)'
+  );
+}
+
+module.exports = {
+  root,
+  apiBin,
+  splitPgUrl,
+  envPg,
+  guardDbName,
+  portProblem,
+  missingPrerequisites,
+  CSS_VIEWPORT,
+  FIREFOX_CHROME_CSS,
+  parseXrandr,
+  parseWorkArea,
+  parseWindowSpec,
+  detectScreen,
+  fitPlan,
+  fitWanted,
+  staleBuildWarning,
+  withDeadline,
+};
