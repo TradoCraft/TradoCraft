@@ -509,11 +509,18 @@ async fn answers_from_graph_are_not_trusted(db: PgPool) {
         "{}/v1.0/users/{MAILBOX}/mailFolders/inbox/messages?$skiptoken=1",
         evil.base
     ));
+    let ok_before = w.status().await["last_ok_at"].clone();
     assert_eq!(w.pass().await, 1, "the first page is still taken");
     assert!(w.error().await.contains("another address"));
     assert_eq!(evil.count(), 0);
+    assert_eq!(
+        w.status().await["last_ok_at"],
+        ok_before,
+        "a list that stopped early is not a pass that reached its end"
+    );
     w.standin.state().hostile = Hostile::None;
     assert_eq!(w.pass().await, 1, "the rest comes on the next pass");
+    assert_ne!(w.status().await["last_ok_at"], ok_before);
 
     // A redirect is not followed.
     w.unread("r1", "Redirected", "r1@alpha.example");

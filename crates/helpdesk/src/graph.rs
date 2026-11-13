@@ -423,14 +423,15 @@ impl GraphClient {
         format!("{}/messages/{}", self.user_url(m), encode_segment(id))
     }
 
-    /// The ids of the unread messages of the inbox, and what went wrong on the way that did not
-    /// stop the list.
+    /// The ids of the unread messages of the inbox, what went wrong on the way that did not stop
+    /// the list, and whether the list is whole (false when a next page was refused).
     async fn list_unread(
         &self,
         m: &GraphMailbox,
         token: &str,
-    ) -> anyhow::Result<(Vec<String>, Vec<String>)> {
+    ) -> anyhow::Result<(Vec<String>, Vec<String>, bool)> {
         let mut ids: Vec<String> = Vec::new();
+        let mut whole = true;
         let mut notes: Vec<String> = Vec::new();
         let mut too_long = 0;
         let mut pages = 0;
@@ -461,6 +462,7 @@ impl GraphClient {
                             "Microsoft Graph named another address for the next page; it was not followed"
                                 .into(),
                         );
+                        whole = false;
                         break;
                     }
                     url = next;
@@ -473,7 +475,7 @@ impl GraphClient {
                 "{too_long} e-mail(s) with an id that is too long were left unread"
             ));
         }
-        Ok((ids, notes))
+        Ok((ids, notes, whole))
     }
 
     /// Fetches unread messages of the inbox, ingests each one and marks it read. A message is only
@@ -490,7 +492,7 @@ impl GraphClient {
         source: Source,
     ) -> anyhow::Result<Polled> {
         let token = self.token(m).await?;
-        let (mut ids, notes) = match self.list_unread(m, &token).await {
+        let (mut ids, notes, whole) = match self.list_unread(m, &token).await {
             Ok(listed) => listed,
             Err(e) => {
                 self.forget_if_refused(m, &e).await;
@@ -513,7 +515,7 @@ impl GraphClient {
         let mut out = Polled {
             ingested: 0,
             problems: notes,
-            complete: true,
+            complete: whole,
         };
         for id in ids.iter().take(MAX_PER_POLL) {
             match self
@@ -776,7 +778,7 @@ impl GraphClient {
             }
         };
         match self.list_unread(m, &token).await {
-            Ok((ids, notes)) => report.step(
+            Ok((ids, notes, _)) => report.step(
                 "the query the worker uses for unread mail",
                 notes.is_empty(),
                 format!(
@@ -963,6 +965,12 @@ fn bare(id: &str) -> String {
 fn header_value(raw: &[u8], name: &str) -> Option<String> {
     let text = String::from_utf8_lossy(raw);
     let head = text.split("\r\n\r\n").next()?.split("\n\n").next()?;
+    // A header can be folded over several lines (RFC 5322): unfold before reading it.
+    let head = head
+        .replace("\r\n ", " ")
+        .replace("\r\n\t", " ")
+        .replace("\n ", " ")
+        .replace("\n\t", " ");
     head.lines().find_map(|line| {
         let (have, value) = line.split_once(':')?;
         have.trim()
@@ -1074,6 +1082,21 @@ impl CheckReport {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_folded_header_is_read_whole() {
+        let raw = b"Subject: x\r\nMessage-ID:\r\n <id@example.com>\r\nTo: a@b.c\r\n\r\nbody";
+        assert_eq!(
+            header_value(raw, "message-id").as_deref(),
+            Some("<id@example.com>")
+        );
+        let long = b"Message-Id: <a@b>\n\t<c@d>\nX: y\n\nbody";
+        assert_eq!(
+            header_value(long, "Message-ID").as_deref(),
+            Some("<a@b> <c@d>")
+        );
+        assert_eq!(header_value(b"Subject: x\r\n\r\nbody", "message-id"), None);
+    }
 
     #[test]
     fn ids_are_written_into_an_address_as_one_piece() {
