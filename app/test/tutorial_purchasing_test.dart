@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -98,6 +100,28 @@ Map<String, Object?> _warehouse({
     {'id': 'l1', 'code': location, 'active': locationActive},
   ],
 };
+
+/// A [FakeHttp] whose answers to `GET /api/v1/inventory/warehouses` are computed when the request
+/// arrives but delivered only once the gate for that request number (counted from 0) is opened.
+class _GatedHttp extends FakeHttp {
+  _GatedHttp(super.routes);
+  final gates = <int, Completer<void>>{};
+  int _gets = 0;
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions o,
+    Stream<Uint8List>? body,
+    Future<void>? cancel,
+  ) async {
+    final gate = o.method == 'GET' && o.path == '/api/v1/inventory/warehouses'
+        ? gates[_gets++]
+        : null;
+    final r = await super.fetch(o, body, cancel);
+    if (gate != null) await gate.future;
+    return r;
+  }
+}
 
 void main() {
   group('chapter 2: suppliers', () {
@@ -572,6 +596,52 @@ void main() {
           await c.read(dioProvider).put<Object?>('/api/v1/inventory/warehouses/w1', data: {});
           await pumpEventQueue(times: 100);
           expect(c.read(tutorialProvider).stepIndex, 0);
+        });
+      });
+
+      group('overlapping probes', () {
+        // GET 0 is the probe of the resume, GET 1 the entry probe of the warehouse step (held),
+        // GET 2 the recheck after the PUT (held). Each answer shows the state at request time.
+        Future<void> run({required bool olderDone, required bool newerFirst}) async {
+          var active = !olderDone ? false : true;
+          var open = false;
+          final http = _GatedHttp({
+            'GET /api/v1/inventory/warehouses': (_) => [_warehouse(active: open ? active : false)],
+            'PUT /api/v1/inventory/warehouses/w1': (_) => {},
+          });
+          http.gates[1] = Completer<void>();
+          http.gates[2] = Completer<void>();
+          final c = atTheStep(http);
+          final t = c.read(tutorialProvider.notifier);
+          await t.ready;
+          await t.resume();
+          await pumpEventQueue(times: 100);
+          open = true;
+          t.routeChanged('/stock/warehouses');
+          await pumpEventQueue(times: 100);
+          active = !olderDone;
+          await c.read(dioProvider).put<Object?>('/api/v1/inventory/warehouses/w1', data: {});
+          await pumpEventQueue(times: 100);
+          int step() => c.read(tutorialProvider).stepIndex;
+          expect(step(), warehouse, reason: 'both answers held back');
+          final first = newerFirst ? http.gates[2]! : http.gates[1]!;
+          final second = newerFirst ? http.gates[1]! : http.gates[2]!;
+          first.complete();
+          await pumpEventQueue(times: 100);
+          // The newer probe (the recheck) decides; an older answer is ignored either way.
+          final expected = newerFirst ? (olderDone ? warehouse : receivePart) : warehouse;
+          expect(step(), expected);
+          second.complete();
+          await pumpEventQueue(times: 100);
+          expect(step(), olderDone ? warehouse : receivePart, reason: 'the newest state wins, once');
+        }
+
+        test('an older "done" answer arriving after a newer "not done" does not advance', () async {
+          await run(olderDone: true, newerFirst: true);
+        });
+
+        test('a newer "done" advances once; the late older "not done" changes nothing', () async {
+          await run(olderDone: false, newerFirst: true);
         });
       });
 
