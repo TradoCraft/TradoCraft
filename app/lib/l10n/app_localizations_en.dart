@@ -8460,4 +8460,50 @@ class AppLocalizationsEn extends AppLocalizations {
   String mailboxDeleteConfirm(String name) {
     return 'Remove the mailbox $name? Its tickets stay. Replies on them then leave through the default mailbox.';
   }
+
+  @override
+  String get shortcutBack => 'Back';
+
+  @override
+  String get shortcutCreate => 'Create';
+
+  @override
+  String get shortcutHome => 'Home';
+
+  @override
+  String get shortcutDiscard => 'Discard changes';
+
+  @override
+  String get shortcutSave => 'Save';
+
+  @override
+  String get shortcutNextPage => 'Load more';
+
+  @override
+  String get shortcutSearch => 'Search';
+
+  @override
+  String get shortcutNewTodo => 'New to-do';
+
+  @override
+  String get shortcutKbSearch => 'Search articles';
+
+  @override
+  String get shortcutKbShare => 'Share article';
+
+  @override
+  String get shortcutPalette => 'Command palette';
+
+  @override
+  String get shortcutHelp => 'Keyboard shortcuts';
+
+  @override
+  String shortcutMenuItem(int n) {
+    return 'Menu item $n';
+  }
+
+  @override
+  String shortcutHint(String keys) {
+    return 'Shortcut: $keys';
+  }
 }

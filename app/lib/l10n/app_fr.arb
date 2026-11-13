@@ -2673,5 +2673,21 @@
   "mailboxNeverPolled": "Aucun e-mail relevé pour l'instant",
   "mailboxLastOk": "E-mails relevés pour la dernière fois le {when}",
   "mailboxError": "Problème lors de la relève des e-mails : {error}",
-  "mailboxDeleteConfirm": "Supprimer la boîte aux lettres {name} ? Ses tickets sont conservés. Les réponses partent alors par la boîte par défaut."
+  "mailboxDeleteConfirm": "Supprimer la boîte aux lettres {name} ? Ses tickets sont conservés. Les réponses partent alors par la boîte par défaut.",
+  "shortcutBack": "Retour",
+  "shortcutCreate": "Créer",
+  "shortcutHome": "Accueil",
+  "shortcutDiscard": "Annuler les modifications",
+  "shortcutSave": "Enregistrer",
+  "shortcutNextPage": "Charger plus",
+  "shortcutSearch": "Rechercher",
+  "shortcutNewTodo": "Nouvelle tâche",
+  "shortcutKbSearch": "Rechercher des articles",
+  "shortcutKbShare": "Partager l'article",
+  "shortcutPalette": "Palette de commandes",
+  "shortcutHelp": "Raccourcis clavier",
+  "shortcutMenuItem": "Entrée de menu {n}",
+  "@shortcutMenuItem": {"placeholders": {"n": {"type": "int"}}},
+  "shortcutHint": "Raccourci : {keys}",
+  "@shortcutHint": {"placeholders": {"keys": {"type": "String"}}}
 }

@@ -15143,6 +15143,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Remove the mailbox {name}? Its tickets stay. Replies on them then leave through the default mailbox.'**
   String mailboxDeleteConfirm(String name);
+
+  /// No description provided for @shortcutBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get shortcutBack;
+
+  /// No description provided for @shortcutCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
+  String get shortcutCreate;
+
+  /// No description provided for @shortcutHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get shortcutHome;
+
+  /// No description provided for @shortcutDiscard.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard changes'**
+  String get shortcutDiscard;
+
+  /// No description provided for @shortcutSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get shortcutSave;
+
+  /// No description provided for @shortcutNextPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Load more'**
+  String get shortcutNextPage;
+
+  /// No description provided for @shortcutSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get shortcutSearch;
+
+  /// No description provided for @shortcutNewTodo.
+  ///
+  /// In en, this message translates to:
+  /// **'New to-do'**
+  String get shortcutNewTodo;
+
+  /// No description provided for @shortcutKbSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search articles'**
+  String get shortcutKbSearch;
+
+  /// No description provided for @shortcutKbShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Share article'**
+  String get shortcutKbShare;
+
+  /// No description provided for @shortcutPalette.
+  ///
+  /// In en, this message translates to:
+  /// **'Command palette'**
+  String get shortcutPalette;
+
+  /// No description provided for @shortcutHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Keyboard shortcuts'**
+  String get shortcutHelp;
+
+  /// No description provided for @shortcutMenuItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Menu item {n}'**
+  String shortcutMenuItem(int n);
+
+  /// No description provided for @shortcutHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Shortcut: {keys}'**
+  String shortcutHint(String keys);
 }
 
 class _AppLocalizationsDelegate

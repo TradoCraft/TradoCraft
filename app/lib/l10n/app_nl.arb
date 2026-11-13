@@ -2673,5 +2673,21 @@
   "mailboxNeverPolled": "Nog geen e-mail opgehaald",
   "mailboxLastOk": "E-mail laatst opgehaald op {when}",
   "mailboxError": "Probleem bij het ophalen van e-mail: {error}",
-  "mailboxDeleteConfirm": "De mailbox {name} verwijderen? De tickets blijven bestaan. Antwoorden daarop vertrekken dan via de standaardmailbox."
+  "mailboxDeleteConfirm": "De mailbox {name} verwijderen? De tickets blijven bestaan. Antwoorden daarop vertrekken dan via de standaardmailbox.",
+  "shortcutBack": "Terug",
+  "shortcutCreate": "Aanmaken",
+  "shortcutHome": "Startpagina",
+  "shortcutDiscard": "Wijzigingen verwerpen",
+  "shortcutSave": "Opslaan",
+  "shortcutNextPage": "Meer laden",
+  "shortcutSearch": "Zoeken",
+  "shortcutNewTodo": "Nieuwe taak",
+  "shortcutKbSearch": "Artikelen zoeken",
+  "shortcutKbShare": "Artikel delen",
+  "shortcutPalette": "Opdrachtenpalet",
+  "shortcutHelp": "Sneltoetsen",
+  "shortcutMenuItem": "Menu-item {n}",
+  "@shortcutMenuItem": {"placeholders": {"n": {"type": "int"}}},
+  "shortcutHint": "Sneltoets: {keys}",
+  "@shortcutHint": {"placeholders": {"keys": {"type": "String"}}}
 }

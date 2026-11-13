@@ -8498,4 +8498,50 @@ class AppLocalizationsEs extends AppLocalizations {
   String mailboxDeleteConfirm(String name) {
     return '¿Eliminar el buzón $name? Sus tickets se conservan. Las respuestas salen entonces por el buzón predeterminado.';
   }
+
+  @override
+  String get shortcutBack => 'Atrás';
+
+  @override
+  String get shortcutCreate => 'Crear';
+
+  @override
+  String get shortcutHome => 'Inicio';
+
+  @override
+  String get shortcutDiscard => 'Descartar cambios';
+
+  @override
+  String get shortcutSave => 'Guardar';
+
+  @override
+  String get shortcutNextPage => 'Cargar más';
+
+  @override
+  String get shortcutSearch => 'Buscar';
+
+  @override
+  String get shortcutNewTodo => 'Nueva tarea';
+
+  @override
+  String get shortcutKbSearch => 'Buscar artículos';
+
+  @override
+  String get shortcutKbShare => 'Compartir artículo';
+
+  @override
+  String get shortcutPalette => 'Paleta de comandos';
+
+  @override
+  String get shortcutHelp => 'Atajos de teclado';
+
+  @override
+  String shortcutMenuItem(int n) {
+    return 'Elemento de menú $n';
+  }
+
+  @override
+  String shortcutHint(String keys) {
+    return 'Atajo: $keys';
+  }
 }

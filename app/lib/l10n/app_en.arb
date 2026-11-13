@@ -4010,5 +4010,21 @@
   "mailboxError": "Problem fetching e-mail: {error}",
   "@mailboxError": {"placeholders": {"error": {"type": "String"}}},
   "mailboxDeleteConfirm": "Remove the mailbox {name}? Its tickets stay. Replies on them then leave through the default mailbox.",
-  "@mailboxDeleteConfirm": {"placeholders": {"name": {"type": "String"}}}
+  "@mailboxDeleteConfirm": {"placeholders": {"name": {"type": "String"}}},
+  "shortcutBack": "Back",
+  "shortcutCreate": "Create",
+  "shortcutHome": "Home",
+  "shortcutDiscard": "Discard changes",
+  "shortcutSave": "Save",
+  "shortcutNextPage": "Load more",
+  "shortcutSearch": "Search",
+  "shortcutNewTodo": "New to-do",
+  "shortcutKbSearch": "Search articles",
+  "shortcutKbShare": "Share article",
+  "shortcutPalette": "Command palette",
+  "shortcutHelp": "Keyboard shortcuts",
+  "shortcutMenuItem": "Menu item {n}",
+  "@shortcutMenuItem": {"placeholders": {"n": {"type": "int"}}},
+  "shortcutHint": "Shortcut: {keys}",
+  "@shortcutHint": {"placeholders": {"keys": {"type": "String"}}}
 }

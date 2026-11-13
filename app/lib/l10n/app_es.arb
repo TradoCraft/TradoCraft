@@ -2673,5 +2673,21 @@
   "mailboxNeverPolled": "Todavía no se ha recibido correo",
   "mailboxLastOk": "Correo recibido por última vez el {when}",
   "mailboxError": "Problema al recibir el correo: {error}",
-  "mailboxDeleteConfirm": "¿Eliminar el buzón {name}? Sus tickets se conservan. Las respuestas salen entonces por el buzón predeterminado."
+  "mailboxDeleteConfirm": "¿Eliminar el buzón {name}? Sus tickets se conservan. Las respuestas salen entonces por el buzón predeterminado.",
+  "shortcutBack": "Atrás",
+  "shortcutCreate": "Crear",
+  "shortcutHome": "Inicio",
+  "shortcutDiscard": "Descartar cambios",
+  "shortcutSave": "Guardar",
+  "shortcutNextPage": "Cargar más",
+  "shortcutSearch": "Buscar",
+  "shortcutNewTodo": "Nueva tarea",
+  "shortcutKbSearch": "Buscar artículos",
+  "shortcutKbShare": "Compartir artículo",
+  "shortcutPalette": "Paleta de comandos",
+  "shortcutHelp": "Atajos de teclado",
+  "shortcutMenuItem": "Elemento de menú {n}",
+  "@shortcutMenuItem": {"placeholders": {"n": {"type": "int"}}},
+  "shortcutHint": "Atajo: {keys}",
+  "@shortcutHint": {"placeholders": {"keys": {"type": "String"}}}
 }

@@ -10,6 +10,9 @@ import 'environments.dart';
 import 'profile.dart';
 import 'profile_badge.dart';
 import 'session.dart';
+import 'shortcuts/actions.dart';
+import 'shortcuts/key_hint.dart';
+import 'shortcuts/registry.dart';
 import 'worker_ui.dart';
 import 'workspace.dart';
 import '../features/tutorial/targets.dart';
@@ -226,6 +229,22 @@ class AppShell extends ConsumerWidget {
       context.go(destinations[i].path);
     }
 
+    // Menu 1-9 pick the n-th entry of the permission-filtered list; Home is the first one (the
+    // main area of the first permitted section). Back lives in each tab (see workspace.dart).
+    final shellActions = <ShortcutAction, VoidCallback?>{
+      ShortcutAction.home: () => go(0),
+      for (
+        var i = 0;
+        i < destinations.length && i < ShortcutAction.menus.length;
+        i++
+      )
+        ShortcutAction.menus[i]: () => go(i),
+    };
+    // The badge of entry [i] (only the first nine have a shortcut).
+    Widget hinted(int i, Widget icon) => i < ShortcutAction.menus.length
+        ? KeyHint(action: ShortcutAction.menus[i], child: icon)
+        : icon;
+
     final profile = ref.watch(profileProvider);
     final activeEnv = ref.watch(activeEnvironmentProvider);
     final badge = profile == null
@@ -287,67 +306,75 @@ class AppShell extends ConsumerWidget {
 
     if (wide) {
       return Scaffold(
-        body: Column(
-          children: [
-            const EnvironmentBanner(),
-            const WorkerBanner(),
-            Expanded(
-              child: Row(
-                children: [
-                  // Many destinations do not fit a short window: scroll, but keep the user menu at the
-                  // bottom when there is room to spare.
-                  LayoutBuilder(
-                    builder: (context, constraints) => SingleChildScrollView(
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(
-                          minHeight: constraints.maxHeight,
-                        ),
-                        child: IntrinsicHeight(
-                          child: NavigationRail(
-                            selectedIndex: index,
-                            onDestinationSelected: go,
-                            labelType: NavigationRailLabelType.all,
-                            leading: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              child: Column(
-                                children: [
-                                  Text(
-                                    brandName,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleMedium,
-                                  ),
-                                  if (badge != null) ...[
-                                    const SizedBox(height: 6),
-                                    badge,
-                                  ],
-                                ],
-                              ),
-                            ),
-                            trailing: Expanded(
-                              child: Align(
-                                alignment: Alignment.bottomCenter,
-                                child: userMenu,
-                              ),
-                            ),
-                            destinations: [
-                              for (final d in destinations)
-                                NavigationRailDestination(
-                                  icon: _destIcon(d),
-                                  label: Text(d.label(context.l10n)),
+        body: ShortcutScope(
+          layer: ShortcutLayer.shell,
+          actions: shellActions,
+          child: Column(
+            children: [
+              const EnvironmentBanner(),
+              const WorkerBanner(),
+              Expanded(
+                child: Row(
+                  children: [
+                    // Many destinations do not fit a short window: scroll, but keep the user menu at the
+                    // bottom when there is room to spare.
+                    LayoutBuilder(
+                      builder: (context, constraints) => SingleChildScrollView(
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            minHeight: constraints.maxHeight,
+                          ),
+                          child: IntrinsicHeight(
+                            child: NavigationRail(
+                              selectedIndex: index,
+                              onDestinationSelected: go,
+                              labelType: NavigationRailLabelType.all,
+                              leading: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
                                 ),
-                            ],
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      brandName,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleMedium,
+                                    ),
+                                    if (badge != null) ...[
+                                      const SizedBox(height: 6),
+                                      badge,
+                                    ],
+                                  ],
+                                ),
+                              ),
+                              trailing: Expanded(
+                                child: Align(
+                                  alignment: Alignment.bottomCenter,
+                                  child: userMenu,
+                                ),
+                              ),
+                              destinations: [
+                                for (var i = 0; i < destinations.length; i++)
+                                  NavigationRailDestination(
+                                    icon: hinted(i, _destIcon(destinations[i])),
+                                    label: Text(
+                                      destinations[i].label(context.l10n),
+                                    ),
+                                  ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                  const VerticalDivider(width: 1),
-                  Expanded(child: WorkspaceBody(home: child, wide: true)),
-                ],
+                    const VerticalDivider(width: 1),
+                    Expanded(child: WorkspaceBody(home: child, wide: true)),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       );
     }
@@ -356,21 +383,25 @@ class AppShell extends ConsumerWidget {
         title: Text(me.value?.company.name ?? brandName),
         actions: [?badge, const WorkspaceMenuButton(), userMenu],
       ),
-      body: Column(
-        children: [
-          const EnvironmentBanner(),
-          const WorkerBanner(),
-          Expanded(child: WorkspaceBody(home: child, wide: false)),
-        ],
+      body: ShortcutScope(
+        layer: ShortcutLayer.shell,
+        actions: shellActions,
+        child: Column(
+          children: [
+            const EnvironmentBanner(),
+            const WorkerBanner(),
+            Expanded(child: WorkspaceBody(home: child, wide: false)),
+          ],
+        ),
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: index,
         onDestinationSelected: go,
         destinations: [
-          for (final d in destinations)
+          for (var i = 0; i < destinations.length; i++)
             NavigationDestination(
-              icon: _destIcon(d),
-              label: d.label(context.l10n),
+              icon: hinted(i, _destIcon(destinations[i])),
+              label: destinations[i].label(context.l10n),
             ),
         ],
       ),
