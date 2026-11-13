@@ -626,16 +626,24 @@ class _TabHostState extends ConsumerState<_TabHost> {
           excluding: !widget.active,
           child: TickerMode(
             enabled: widget.active,
-            child: Navigator(
-              key: _navigator,
-              observers: [_observer],
-              onGenerateInitialRoutes: (_, _) => [
-                _router.route<Object?>(_initial) ??
-                    MaterialPageRoute<Object?>(
-                      builder: (_) => const SizedBox(),
-                    ),
-              ],
-              onGenerateRoute: (s) => _router.route<Object?>(s.name ?? ''),
+            // A semantic boundary: the modal barrier of the tab's page route blocks the semantics of
+            // everything painted before it, and without a boundary around the navigator that
+            // reaches up to the navigation rail, the tab strip and the banner, which then vanish
+            // from the accessibility tree (screen readers could not reach them from a record).
+            child: Semantics(
+              container: true,
+              explicitChildNodes: true,
+              child: Navigator(
+                key: _navigator,
+                observers: [_observer],
+                onGenerateInitialRoutes: (_, _) => [
+                  _router.route<Object?>(_initial) ??
+                      MaterialPageRoute<Object?>(
+                        builder: (_) => const SizedBox(),
+                      ),
+                ],
+                onGenerateRoute: (s) => _router.route<Object?>(s.name ?? ''),
+              ),
             ),
           ),
         ),
