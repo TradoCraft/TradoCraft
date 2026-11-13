@@ -32,6 +32,12 @@ UPDATE helpdesk.articles
    SET body = regexp_replace(body, 'token=[^[:space:]&"<>)]+', 'token=REDACTED', 'g')
  WHERE body ~ 'token=';
 
+-- Helpdesk mailboxes (ADR 0054) hold no secret, but they name the real mailboxes. Switched off,
+-- a clone never fetches from or sends through them, whatever its worker's variables say; the
+-- status of the live worker says nothing about the clone.
+UPDATE helpdesk.mailboxes
+   SET active = false, is_default = false, last_poll_at = NULL, last_ok_at = NULL, last_error = NULL;
+
 -- The live worker's heartbeat says nothing about the clone; kept, the clone's first worker would
 -- report the time since the dump as an outage (ADR 0052).
 DELETE FROM core.worker_heartbeat;

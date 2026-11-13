@@ -42,6 +42,7 @@ utoipa-scalar.workspace = true
 uuid.workspace = true
 
 [dev-dependencies]
+base64 = "0.22"
 tempfile.workspace = true
 chrono.workspace = true
 http-body-util = "0.1"
@@ -51,4 +52,3 @@ serde.workspace = true
 tower.workspace = true
 uuid.workspace = true
 jsonwebtoken.workspace = true
-base64 = "0.22"

@@ -96,10 +96,10 @@ async fn split(
     sqlx::query(
         "INSERT INTO helpdesk.tickets (id, company_id, number, subject, status, priority, category, language,
                 customer_id, contact_id, contact_name, contact_email, owner_user_id, team_id, internal,
-                quotation_id, opportunity_id, order_id, channel, split_from_id, created_by)
+                quotation_id, opportunity_id, order_id, channel, split_from_id, created_by, mailbox_id)
          SELECT $3, company_id, $4, $5, 'open', priority, category, language,
                 customer_id, contact_id, contact_name, contact_email, owner_user_id, team_id, internal,
-                quotation_id, opportunity_id, order_id, channel, id, $6
+                quotation_id, opportunity_id, order_id, channel, id, $6, mailbox_id
          FROM helpdesk.tickets WHERE id = $1 AND company_id = $2",
     )
     .bind(id)

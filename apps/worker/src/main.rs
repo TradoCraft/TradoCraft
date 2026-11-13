@@ -2,14 +2,16 @@
 //!
 //! * Writes a heartbeat at the start of every pass (ADR 0052). When the previous beat is too old,
 //!   the gap is recorded and the companies' administrators get a "worker was down" mail.
-//! * Polls the helpdesk mailbox over IMAP (when IMAP_HOST is set) and turns mails into tickets.
+//! * Fetches the mail of every active helpdesk mailbox (Microsoft Graph or IMAP, ADR 0054) and of
+//!   the single mailbox from the IMAP_* variables (when IMAP_HOST is set), and turns mails into
+//!   tickets.
 //! * Escalates tickets whose SLA ran out (one internal e-mail per ticket and kind of breach).
 //! * Generates the planned jobs of active maintenance contracts before their visits are due.
 //! * Recomputes the "often bought together" table from confirmed installation orders (hourly, or
 //!   every COOCCURRENCE_SECONDS).
 //! * Sends queued outgoing e-mails (ticket replies and system mail such as portal login links)
-//!   over SMTP, or writes them as .eml files when
-//!   MAIL_TRANSPORT=files (development).
+//!   through the helpdesk mailbox they belong to, else over SMTP, or writes them as .eml files
+//!   when MAIL_TRANSPORT=files (development) and always outside a live environment.
 //!
 //! Several workers may run at once: outbox rows are locked while sent, and IMAP messages are only
 //! marked read after they are stored.
@@ -20,8 +22,12 @@ use std::time::Duration;
 use anyhow::Context;
 use sqlx::postgres::PgPoolOptions;
 use tracing_subscriber::EnvFilter;
+use tradocraft_helpdesk::graph::GraphClient;
 use tradocraft_helpdesk::imap::{poll, ImapConfig};
-use tradocraft_helpdesk::mailer::{process_outbox, process_system_mail, Mailer, SmtpSecurity};
+use tradocraft_helpdesk::mailboxes;
+use tradocraft_helpdesk::mailer::{
+    process_outbox_with, process_system_mail_with, Mailer, SmtpSecurity, Transports,
+};
 use uuid::Uuid;
 
 fn env(name: &str) -> Option<String> {
@@ -98,7 +104,7 @@ async fn main() -> anyhow::Result<()> {
             .unwrap_or(30),
     );
     let imap = match env("IMAP_HOST") {
-        Some(_) if !policy.imap_allowed => {
+        Some(_) if !policy.inbound_allowed => {
             tracing::warn!(
                 "IMAP_HOST ignored: not a live environment, incoming e-mail is not fetched"
             );
@@ -115,6 +121,7 @@ async fn main() -> anyhow::Result<()> {
             mailbox: env("IMAP_MAILBOX").unwrap_or_else(|| "INBOX".into()),
             tls: env("IMAP_TLS").as_deref() != Some("false"),
             company_id: company_id(&db).await?,
+            source: None,
         }),
         None => {
             tracing::warn!("IMAP_HOST not set: incoming e-mail is not fetched");
@@ -134,6 +141,10 @@ async fn main() -> anyhow::Result<()> {
         version: env!("CARGO_PKG_VERSION").to_string(),
         host: env("HOSTNAME").unwrap_or_else(|| "unknown".into()),
     };
+    // Helpdesk mailboxes are only used for sending in a live environment: everywhere else the
+    // policy forces files. Fetching follows the same opt-in as IMAP_HOST.
+    let live = environment.kind == tradocraft_core::environment::EnvKind::Live;
+    let graph = GraphClient::new();
     tracing::info!(seconds = interval.as_secs(), "worker started");
     loop {
         // First, so that a pass that hangs (a stuck IMAP or SMTP server) stops the beat.
@@ -153,13 +164,43 @@ async fn main() -> anyhow::Result<()> {
                 Err(e) => tracing::error!(error = ?e, "recomputing product co-occurrence failed"),
             }
         }
-        if let Some(cfg) = &imap {
-            match poll(&db, cfg).await {
-                Ok(0) => {}
-                Ok(n) => tracing::info!(n, "e-mails fetched"),
-                Err(e) => tracing::error!(error = ?e, "IMAP poll failed"),
+        // Read every pass, so a mailbox added or changed in the app is picked up without a restart.
+        // `None` when that failed: what depends on the mailboxes then waits for the next pass.
+        let active = if live || policy.inbound_allowed {
+            match mailboxes::load_active(&db).await {
+                Ok(a) => Some(a),
+                Err(e) => {
+                    tracing::error!(error = ?e, "loading the helpdesk mailboxes failed");
+                    None
+                }
+            }
+        } else {
+            Some(Vec::new())
+        };
+        // The single IMAP_* mailbox is the fallback of a company that has no mailbox of its own:
+        // with active mailboxes it would fetch the same mail a second time.
+        if let (Some(cfg), Some(active)) = (&imap, &active) {
+            if active.is_empty() {
+                match poll(&db, cfg).await {
+                    Ok(0) => {}
+                    Ok(n) => tracing::info!(n, "e-mails fetched"),
+                    Err(e) => tracing::error!(error = ?e, "IMAP poll failed"),
+                }
             }
         }
+        let active_list = active.as_deref().unwrap_or_default();
+        if policy.inbound_allowed && !active_list.is_empty() {
+            match mailboxes::poll_all(&db, active_list, &graph, &mailboxes::env_secret).await {
+                0 => {}
+                n => tracing::info!(n, "e-mails fetched from helpdesk mailboxes"),
+            }
+        }
+        let by_mailbox =
+            live.then(|| mailboxes::transports(active_list, &graph, &mailboxes::env_secret));
+        let transports = Transports {
+            fallback: &mailer,
+            mailboxes: by_mailbox.as_ref(),
+        };
         match tradocraft_helpdesk::sla::escalate(&db).await {
             Ok(0) => {}
             Ok(n) => tracing::info!(n, "SLA breaches escalated"),
@@ -179,15 +220,21 @@ async fn main() -> anyhow::Result<()> {
             ),
             Err(e) => tracing::error!(error = ?e, "generating contract visits failed"),
         }
-        match process_outbox(&db, &mailer, 50).await {
-            Ok(0) => {}
-            Ok(n) => tracing::info!(n, "e-mails sent"),
-            Err(e) => tracing::error!(error = ?e, "sending the outbox failed"),
-        }
-        match process_system_mail(&db, &mailer, 50).await {
-            Ok(0) => {}
-            Ok(n) => tracing::info!(n, "system e-mails sent"),
-            Err(e) => tracing::error!(error = ?e, "sending system e-mail failed"),
+        // Without the mailbox list every queued mail would look as if its mailbox is gone and be
+        // charged an attempt: wait for the next pass.
+        if active.is_some() {
+            match process_outbox_with(&db, &transports, 50).await {
+                Ok(0) => {}
+                Ok(n) => tracing::info!(n, "e-mails sent"),
+                Err(e) => tracing::error!(error = ?e, "sending the outbox failed"),
+            }
+            match process_system_mail_with(&db, &transports, 50).await {
+                Ok(0) => {}
+                Ok(n) => tracing::info!(n, "system e-mails sent"),
+                Err(e) => tracing::error!(error = ?e, "sending system e-mail failed"),
+            }
+        } else {
+            tracing::warn!("outgoing e-mail skipped this pass: the mailboxes are unknown");
         }
         tokio::select! {
             _ = tokio::time::sleep(interval) => {}

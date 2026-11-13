@@ -8162,4 +8162,107 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get workerBannerSemantics => 'Background worker';
+
+  @override
+  String get mailboxes => 'Mailboxes';
+
+  @override
+  String get newMailbox => 'New mailbox';
+
+  @override
+  String get mailboxesEmpty =>
+      'No mailboxes yet. E-mail is fetched and sent with the settings of the background worker.';
+
+  @override
+  String get mailboxRefresh => 'Refresh the status';
+
+  @override
+  String get mailboxAddress => 'E-mail address';
+
+  @override
+  String get mailboxKind => 'Connection';
+
+  @override
+  String get mailboxKindGraph => 'Microsoft 365 (Exchange Online)';
+
+  @override
+  String get mailboxKindImap => 'IMAP and SMTP';
+
+  @override
+  String get mailboxTenantId => 'Tenant ID';
+
+  @override
+  String get mailboxClientId => 'Application (client) ID';
+
+  @override
+  String get mailboxUsername => 'User name';
+
+  @override
+  String get mailboxImapHost => 'IMAP server';
+
+  @override
+  String get mailboxImapPort => 'IMAP port';
+
+  @override
+  String get mailboxImapFolder => 'Folder';
+
+  @override
+  String get mailboxImapTls => 'Encrypted IMAP connection (TLS)';
+
+  @override
+  String get mailboxSmtpHost => 'SMTP server';
+
+  @override
+  String get mailboxSmtpPort => 'SMTP port';
+
+  @override
+  String get mailboxSmtpSecurity => 'SMTP encryption';
+
+  @override
+  String get mailboxSmtpNone => 'None';
+
+  @override
+  String get mailboxSecretRef => 'Name of the secret';
+
+  @override
+  String mailboxSecretHelp(String variable) {
+    return 'The password or client secret is not stored here. Set it on the server as the worker variable $variable.';
+  }
+
+  @override
+  String get mailboxTeam => 'Team for new tickets';
+
+  @override
+  String get mailboxTeamDefault => 'The default team';
+
+  @override
+  String get mailboxInbound => 'Fetch incoming e-mail';
+
+  @override
+  String get mailboxDefault =>
+      'Default mailbox: for system e-mail and tickets without a mailbox';
+
+  @override
+  String get mailboxDefaultBadge => 'default';
+
+  @override
+  String get mailboxSendOnly => 'Sends only';
+
+  @override
+  String get mailboxNeverPolled => 'No e-mail fetched yet';
+
+  @override
+  String mailboxLastOk(String when) {
+    return 'E-mail last fetched on $when';
+  }
+
+  @override
+  String mailboxError(String error) {
+    return 'Fetching e-mail failed: $error';
+  }
+
+  @override
+  String mailboxDeleteConfirm(String name) {
+    return 'Remove the mailbox $name? Its tickets stay. Replies on them then leave through the default mailbox.';
+  }
 }
