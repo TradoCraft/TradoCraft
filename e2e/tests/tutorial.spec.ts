@@ -1,6 +1,6 @@
 import { expect, Locator, Page, test } from '@playwright/test';
 import { API_PORT } from '../playwright.config';
-import { boot, choose, dump, expectStep, field, next, overviewTab, railTo, searchPick, takeMeThere, typeInto } from './flutter';
+import { boot, choose, dump, expectStep, field, next, overviewTab, railTo, searchPick, startNextChapter, takeMeThere, typeInto } from './flutter';
 
 /** Adds a product to the supplier's price list through the "Add product" dialog. */
 async function addSupplierPrice(page: Page, code: string, price: number, leadDays: number, moq: number) {
@@ -162,6 +162,100 @@ test('the whole tutorial, chapter by chapter', async ({ page, request }) => {
     await expectStep(page, 'buying', 'stock');
     await railTo(page, 'Stock');
     await expectStep(page, 'buying', 'done');
-    await dump(page, 'stock');
+    await next(page);
+    await startNextChapter(page);
+  });
+
+  await test.step('chapter 4: supplier invoices', async () => {
+    await expectStep(page, 'invoices', 'openOrder');
+    await takeMeThere(page);
+    await expectStep(page, 'invoices', 'create');
+    await page.getByRole('button', { name: /Create supplier invoice/ }).click();
+    await page.waitForTimeout(1000);
+    await dump(page, 'inv-dialog');
+    await typeInto(field(page, 'Invoice number'), 'TUT-INV-001');
+    await page.getByRole('button', { name: 'Save' }).click();
+    await expectStep(page, 'invoices', 'match');
+    await page.waitForTimeout(1000);
+    await dump(page, 'inv-page');
+    await next(page);
+    await expectStep(page, 'invoices', 'approve');
+    await page.getByRole('button', { name: 'Approve', exact: true }).click();
+    await expectStep(page, 'invoices', 'second');
+    await railTo(page, 'Finance');
+    await overviewTab(page);
+    await page.waitForTimeout(1000);
+    await page.getByRole('button', { name: /New supplier invoice|New invoice/ }).first().click();
+    await page.getByRole('button', { name: 'Pause' }).click(); // supplier suggestions need the narrator out of the way
+    await searchPick(page, 'Supplier', 'TUT-SUP-A', /Voltaic Drives/);
+    await typeInto(field(page, 'Invoice number'), 'TUT-INV-002');
+    await typeInto(field(page, 'Description'), 'Motors');
+    await typeInto(field(page, 'Quantity'), '10');
+    await typeInto(field(page, 'Unit price'), '150');
+    await page.getByRole('button', { name: 'Save' }).click();
+    await page.getByRole('button', { name: 'Resume' }).click();
+    // Saving opens the invoice, which completes "open invoice TUT-INV-002".
+    await expectStep(page, 'invoices', 'mismatch');
+    await next(page);
+    await expectStep(page, 'invoices', 'dispute');
+    await page.getByRole('button', { name: 'Dispute' }).click();
+    await page.waitForTimeout(800);
+    await dump(page, 'dispute-dialog');
+    await typeInto(page.getByRole('alertdialog').getByRole('textbox').first(), 'price does not match the agreement');
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Dispute' }).click();
+    await expectStep(page, 'invoices', 'tolerances');
+    await railTo(page, 'Finance');
+    await overviewTab(page);
+    await page.getByRole('button', { name: 'Settings' }).click();
+    await next(page);
+    await expectStep(page, 'invoices', 'pay');
+    await takeMeThere(page);
+    await page.getByRole('button', { name: 'Mark as paid' }).click();
+    await page.waitForTimeout(800);
+    await dump(page, 'pay-dialog');
+    await typeInto(page.getByRole('alertdialog').getByRole('textbox').first(), 'TUT-PAY-001');
+    await page.getByRole('alertdialog').getByRole('button', { name: /OK|Save|Mark as paid/ }).click();
+    await expectStep(page, 'invoices', 'done');
+    await next(page);
+    await startNextChapter(page);
+  });
+
+  await test.step('chapter 5: production', async () => {
+    await expectStep(page, 'manufacturing', 'openDivisions');
+    await railTo(page, 'Production');
+    await overviewTab(page);
+    await takeMeThere(page);
+    await expectStep(page, 'manufacturing', 'division');
+    await page.getByRole('button', { name: 'Add division' }).click();
+    await page.waitForTimeout(1000);
+    await typeInto(field(page, 'Code'), 'TUT-ASM');
+    await typeInto(field(page, 'Name'), 'Tutorial assembly');
+    await page.getByRole('checkbox', { name: 'Admin User' }).click();
+    await page.getByRole('button', { name: 'Save' }).click();
+    await expectStep(page, 'manufacturing', 'queue');
+    await takeMeThere(page);
+    await expectStep(page, 'manufacturing', 'release');
+    await page.getByRole('button', { name: /Build for stock/ }).click();
+    await page.getByRole('button', { name: 'Pause' }).click(); // product suggestions need the narrator out of the way
+    await searchPick(page, 'Product', 'TUT-CART', /^TUT-CART ·/);
+    await typeInto(field(page, 'Quantity'), '5');
+    await page.getByRole('button', { name: 'Release to production' }).click();
+    await page.getByRole('button', { name: 'Resume' }).click();
+    await expectStep(page, 'manufacturing', 'assign');
+    await choose(page, /^Division/, /Tutorial assembly/);
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await expectStep(page, 'manufacturing', 'start');
+    await page.getByRole('button', { name: 'Start', exact: true }).click();
+    await expectStep(page, 'manufacturing', 'complete');
+    await page.getByRole('button', { name: 'Complete', exact: true }).click();
+    await page.waitForTimeout(1000);
+    // The step does not mention it, but the finished carts need a location to go into.
+    await choose(page, /^Put into/, /MAIN/);
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Complete' }).click();
+    await expectStep(page, 'manufacturing', 'stock');
+    await railTo(page, 'Stock');
+    await expectStep(page, 'manufacturing', 'done');
+    await next(page);
+    await startNextChapter(page);
   });
 });

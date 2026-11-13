@@ -149,3 +149,10 @@ export async function dump(page: Page, tag: string) {
   fs.writeFileSync(path.resolve(__dirname, `../dump/${tag}.txt`), await tree(page));
   await page.screenshot({ path: path.resolve(__dirname, `../dump/${tag}.png`) });
 }
+
+/** Closes a finished chapter's card by starting the next chapter. */
+export async function startNextChapter(page: Page) {
+  const button = page.getByRole('button', { name: 'Start next chapter' });
+  await expect(button).toBeVisible();
+  await button.click();
+}
