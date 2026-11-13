@@ -48,7 +48,15 @@ class CustomerForm extends ConsumerStatefulWidget {
     this.initialName,
     this.initialEmail,
     this.initialLanguage,
+    this.screen = false,
+    this.onDone,
   });
+
+  /// Shows the form as a page (the customer screen) instead of a dialog.
+  final bool screen;
+
+  /// Screen mode: called with the saved customer, or null when the user closes the form.
+  final void Function(Customer? saved)? onDone;
 
   final String? initialName;
   final String? initialEmail;
@@ -117,11 +125,20 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
       final saved = c == null
           ? await crm.createCustomer(body: input)
           : await crm.updateCustomer(id: c!.id, body: input);
-      if (mounted) Navigator.pop(context, saved);
+      if (mounted) _finish(saved);
     } catch (e) {
       setState(() => _error = errorMessage(e));
     } finally {
       if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  /// Ends the form: a dialog pops with the result, a screen hands it to its owner.
+  void _finish(Customer? saved) {
+    if (widget.screen) {
+      widget.onDone?.call(saved);
+    } else {
+      Navigator.pop(context, saved);
     }
   }
 
@@ -179,232 +196,246 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
   Widget build(BuildContext context) {
     final zones = ref.watch(priceZonesProvider);
     const gap = SizedBox(width: 12, height: 12);
-    return AlertDialog(
-      title: Text(c == null ? context.l10n.newCustomer : c!.name),
-      content: SizedBox(
-        width: 560,
-        child: Form(
-          key: _form,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
+    final content = Form(
+      key: _form,
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
               children: [
-                Row(
-                  children: [
-                    SizedBox(
-                      width: 140,
-                      child: _field(_code, context.l10n.code, required: true),
-                    ),
-                    gap,
-                    Expanded(
-                      child: _field(_name, context.l10n.name, required: true),
-                    ),
-                  ],
+                SizedBox(
+                  width: 140,
+                  child: _field(_code, context.l10n.code, required: true),
                 ),
                 gap,
-                VatNumberField(
-                  fieldKey: const ValueKey('customer-vat'),
-                  controller: _vat,
-                  label: context.l10n.vatNumber,
-                  enabled: !widget.readOnly && !_saving,
-                  check: _checkVat,
-                  // The lookup makes the server call VIES: for those who may change customers.
-                  onLookup: !widget.readOnly && can(ref, 'customers.write')
-                      ? _fillFromVies
-                      : null,
+                Expanded(
+                  child: _field(_name, context.l10n.name, required: true),
+                ),
+              ],
+            ),
+            gap,
+            VatNumberField(
+              fieldKey: const ValueKey('customer-vat'),
+              controller: _vat,
+              label: context.l10n.vatNumber,
+              enabled: !widget.readOnly && !_saving,
+              check: _checkVat,
+              // The lookup makes the server call VIES: for those who may change customers.
+              onLookup: !widget.readOnly && can(ref, 'customers.write')
+                  ? _fillFromVies
+                  : null,
+            ),
+            gap,
+            Row(
+              children: [
+                Expanded(child: _field(_email, context.l10n.email)),
+                gap,
+                Expanded(child: _field(_phone, context.l10n.phone)),
+              ],
+            ),
+            gap,
+            DropdownButtonFormField<String>(
+              initialValue: _vatRegime,
+              decoration: InputDecoration(labelText: context.l10n.vatRegime),
+              items: [
+                DropdownMenuItem(
+                  value: 'domestic',
+                  child: Text(context.l10n.vatRegimeDomestic),
+                ),
+                DropdownMenuItem(
+                  value: 'intra_eu',
+                  child: Text(context.l10n.vatRegimeIntraEu),
+                ),
+                DropdownMenuItem(
+                  value: 'outside_eu',
+                  child: Text(context.l10n.vatRegimeOutsideEu),
+                ),
+              ],
+              onChanged: widget.readOnly
+                  ? null
+                  : (v) => setState(() => _vatRegime = v!),
+            ),
+            gap,
+            _field(_street, context.l10n.street),
+            gap,
+            Row(
+              children: [
+                SizedBox(
+                  width: 110,
+                  child: _field(_postal, context.l10n.postalCode),
                 ),
                 gap,
-                Row(
-                  children: [
-                    Expanded(child: _field(_email, context.l10n.email)),
-                    gap,
-                    Expanded(child: _field(_phone, context.l10n.phone)),
-                  ],
-                ),
+                Expanded(child: _field(_city, context.l10n.city)),
                 gap,
-                DropdownButtonFormField<String>(
-                  initialValue: _vatRegime,
-                  decoration: InputDecoration(
-                    labelText: context.l10n.vatRegime,
+                SizedBox(
+                  width: 80,
+                  child: _field(
+                    _country,
+                    context.l10n.country,
+                    check: (s) =>
+                        s.length == 2 ? null : context.l10n.twoLetters,
                   ),
-                  items: [
-                    DropdownMenuItem(
-                      value: 'domestic',
-                      child: Text(context.l10n.vatRegimeDomestic),
-                    ),
-                    DropdownMenuItem(
-                      value: 'intra_eu',
-                      child: Text(context.l10n.vatRegimeIntraEu),
-                    ),
-                    DropdownMenuItem(
-                      value: 'outside_eu',
-                      child: Text(context.l10n.vatRegimeOutsideEu),
-                    ),
-                  ],
-                  onChanged: widget.readOnly
-                      ? null
-                      : (v) => setState(() => _vatRegime = v!),
                 ),
                 gap,
-                _field(_street, context.l10n.street),
-                gap,
-                Row(
-                  children: [
-                    SizedBox(
-                      width: 110,
-                      child: _field(_postal, context.l10n.postalCode),
+                SizedBox(
+                  width: 110,
+                  child: DropdownButtonFormField<String>(
+                    initialValue: _language,
+                    decoration: InputDecoration(
+                      labelText: context.l10n.appLanguage,
                     ),
-                    gap,
-                    Expanded(child: _field(_city, context.l10n.city)),
-                    gap,
-                    SizedBox(
-                      width: 80,
-                      child: _field(
-                        _country,
-                        context.l10n.country,
-                        check: (s) =>
-                            s.length == 2 ? null : context.l10n.twoLetters,
-                      ),
-                    ),
-                    gap,
-                    SizedBox(
-                      width: 110,
-                      child: DropdownButtonFormField<String>(
-                        initialValue: _language,
-                        decoration: InputDecoration(
-                          labelText: context.l10n.appLanguage,
-                        ),
-                        items: const [
-                          DropdownMenuItem(value: 'nl', child: Text('NL')),
-                          DropdownMenuItem(value: 'fr', child: Text('FR')),
-                          DropdownMenuItem(value: 'en', child: Text('EN')),
-                          DropdownMenuItem(value: 'de', child: Text('DE')),
-                          DropdownMenuItem(value: 'es', child: Text('ES')),
-                        ],
-                        onChanged: widget.readOnly
-                            ? null
-                            : (v) => setState(() => _language = v!),
-                      ),
-                    ),
-                  ],
+                    items: const [
+                      DropdownMenuItem(value: 'nl', child: Text('NL')),
+                      DropdownMenuItem(value: 'fr', child: Text('FR')),
+                      DropdownMenuItem(value: 'en', child: Text('EN')),
+                      DropdownMenuItem(value: 'de', child: Text('DE')),
+                      DropdownMenuItem(value: 'es', child: Text('ES')),
+                    ],
+                    onChanged: widget.readOnly
+                        ? null
+                        : (v) => setState(() => _language = v!),
+                  ),
                 ),
-                const Divider(height: 32),
-                Row(
-                  children: [
-                    Expanded(
-                      child: zones.when(
-                        data: (list) => DropdownButtonFormField<String>(
-                          initialValue: _zoneId,
-                          decoration: InputDecoration(
-                            labelText: context.l10n.priceZone,
+              ],
+            ),
+            const Divider(height: 32),
+            Row(
+              children: [
+                Expanded(
+                  child: zones.when(
+                    data: (list) => DropdownButtonFormField<String>(
+                      initialValue: _zoneId,
+                      decoration: InputDecoration(
+                        labelText: context.l10n.priceZone,
+                      ),
+                      items: [
+                        for (final z in list)
+                          DropdownMenuItem(
+                            value: z.id,
+                            child: Text('${z.code} – ${z.name}'),
                           ),
-                          items: [
-                            for (final z in list)
-                              DropdownMenuItem(
-                                value: z.id,
-                                child: Text('${z.code} – ${z.name}'),
-                              ),
-                          ],
-                          onChanged: widget.readOnly
-                              ? null
-                              : (v) => setState(() => _zoneId = v),
-                          validator: (v) =>
-                              v == null ? context.l10n.required : null,
-                        ),
-                        loading: () => const LinearProgressIndicator(),
-                        error: (e, _) => Text(errorMessage(e)),
-                      ),
+                      ],
+                      onChanged: widget.readOnly
+                          ? null
+                          : (v) => setState(() => _zoneId = v),
+                      validator: (v) =>
+                          v == null ? context.l10n.required : null,
                     ),
-                    gap,
-                    SizedBox(
-                      width: 110,
-                      child: _field(
-                        _discount,
-                        context.l10n.generalRebatePercent,
-                        check: (s) =>
-                            parseDecimalInput(s.isEmpty ? '0' : s) == null
-                            ? context.l10n.numberRequired
-                            : null,
-                      ),
-                    ),
-                    gap,
-                    SizedBox(
-                      width: 120,
-                      child: _field(
-                        _terms,
-                        context.l10n.paymentDays,
-                        check: (s) => int.tryParse(s) == null
-                            ? context.l10n.numberRequired
-                            : null,
-                      ),
-                    ),
-                  ],
-                ),
-                if (_error != null) ...[
-                  gap,
-                  Text(
-                    _error!,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
-                    ),
+                    loading: () => const LinearProgressIndicator(),
+                    error: (e, _) => Text(errorMessage(e)),
                   ),
-                ],
+                ),
+                gap,
+                SizedBox(
+                  width: 110,
+                  child: _field(
+                    _discount,
+                    context.l10n.generalRebatePercent,
+                    check: (s) => parseDecimalInput(s.isEmpty ? '0' : s) == null
+                        ? context.l10n.numberRequired
+                        : null,
+                  ),
+                ),
+                gap,
+                SizedBox(
+                  width: 120,
+                  child: _field(
+                    _terms,
+                    context.l10n.paymentDays,
+                    check: (s) => int.tryParse(s) == null
+                        ? context.l10n.numberRequired
+                        : null,
+                  ),
+                ),
+              ],
+            ),
+            if (_error != null) ...[
+              gap,
+              Text(
+                _error!,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+    final actions = [
+      if (c != null)
+        TextButton.icon(
+          icon: const Icon(AppIcons.people),
+          label: Text(context.l10n.contacts),
+          onPressed: () => showContactsDialog(context, c!),
+        ),
+      if (c != null &&
+          (ref.read(meProvider).value?.permissions.contains('field.read') ??
+              false))
+        TextButton.icon(
+          icon: const Icon(AppIcons.precisionManufacturing),
+          label: Text(context.l10n.customerEquipment),
+          onPressed: () {
+            final router = GoRouter.of(context);
+            if (!widget.screen) Navigator.pop(context);
+            router.push('/jobs/equipment/${c!.id}');
+          },
+        ),
+      if (c != null)
+        RecordHistoryButton(entity: 'customer', id: c!.id, title: c!.name),
+      if (c != null)
+        TextButton.icon(
+          icon: const Icon(AppIcons.eventBusy),
+          label: Text(context.l10n.closures),
+          onPressed: () => showDialog<void>(
+            context: context,
+            builder: (_) => ClosuresDialog(customer: c!),
+          ),
+        ),
+      if (c != null)
+        TextButton.icon(
+          icon: const Icon(AppIcons.percent),
+          label: Text(context.l10n.productRebates),
+          onPressed: () => showDialog<void>(
+            context: context,
+            builder: (_) => RebatesDialog(customer: c!),
+          ),
+        ),
+      TextButton(
+        onPressed: () => _finish(null),
+        child: Text(widget.readOnly ? context.l10n.close : context.l10n.cancel),
+      ),
+      if (!widget.readOnly)
+        TutorialTarget(
+          id: 'customer-form-save',
+          child: FilledButton(
+            onPressed: _saving ? null : _save,
+            child: Text(context.l10n.save),
+          ),
+        ),
+    ];
+    if (widget.screen) {
+      return SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Align(
+          alignment: Alignment.topLeft,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 640),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                content,
+                const SizedBox(height: 16),
+                Wrap(spacing: 8, runSpacing: 8, children: actions),
               ],
             ),
           ),
         ),
-      ),
-      actions: [
-        if (c != null)
-          TextButton.icon(
-            icon: const Icon(AppIcons.people),
-            label: Text(context.l10n.contacts),
-            onPressed: () => showContactsDialog(context, c!),
-          ),
-        if (c != null &&
-            (ref.read(meProvider).value?.permissions.contains('field.read') ??
-                false))
-          TextButton.icon(
-            icon: const Icon(AppIcons.precisionManufacturing),
-            label: Text(context.l10n.customerEquipment),
-            onPressed: () {
-              final router = GoRouter.of(context);
-              Navigator.pop(context);
-              router.push('/jobs/equipment/${c!.id}');
-            },
-          ),
-        if (c != null)
-          RecordHistoryButton(entity: 'customer', id: c!.id, title: c!.name),
-        if (c != null)
-          TextButton.icon(
-            icon: const Icon(AppIcons.eventBusy),
-            label: Text(context.l10n.closures),
-            onPressed: () => showDialog<void>(
-              context: context,
-              builder: (_) => ClosuresDialog(customer: c!),
-            ),
-          ),
-        if (c != null)
-          TextButton.icon(
-            icon: const Icon(AppIcons.percent),
-            label: Text(context.l10n.productRebates),
-            onPressed: () => showDialog<void>(
-              context: context,
-              builder: (_) => RebatesDialog(customer: c!),
-            ),
-          ),
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(
-            widget.readOnly ? context.l10n.close : context.l10n.cancel,
-          ),
-        ),
-        if (!widget.readOnly)
-          TutorialTarget(id: 'customer-form-save', child: FilledButton(
-            onPressed: _saving ? null : _save,
-            child: Text(context.l10n.save),
-          )),
-      ],
+      );
+    }
+    return AlertDialog(
+      title: Text(c == null ? context.l10n.newCustomer : c!.name),
+      content: SizedBox(width: 560, child: content),
+      actions: actions,
     );
   }
 }
