@@ -8460,4 +8460,92 @@ class AppLocalizationsEn extends AppLocalizations {
   String mailboxDeleteConfirm(String name) {
     return 'Remove the mailbox $name? Its tickets stay. Replies on them then leave through the default mailbox.';
   }
+
+  @override
+  String get moduleTodo => 'To-do';
+
+  @override
+  String get todoTitle => 'To-dos';
+
+  @override
+  String get todoAdd => 'Add to-do';
+
+  @override
+  String get todoAddSub => 'Add sub-item';
+
+  @override
+  String get todoWhat => 'What needs doing?';
+
+  @override
+  String get todoNotes => 'Notes';
+
+  @override
+  String get todoDueDate => 'Due date';
+
+  @override
+  String get todoSetDue => 'Set due date';
+
+  @override
+  String get todoClearDue => 'Clear due date';
+
+  @override
+  String todoDue(String date) {
+    return 'Due $date';
+  }
+
+  @override
+  String get todoOverdue => 'Overdue';
+
+  @override
+  String get todoFilterOpen => 'Open';
+
+  @override
+  String get todoFilterDone => 'Done';
+
+  @override
+  String get todoFilterAll => 'All';
+
+  @override
+  String get todoEmpty => 'Nothing to do. Add your first to-do.';
+
+  @override
+  String get todoEmptyDone => 'No finished to-dos.';
+
+  @override
+  String get todoComplete => 'Mark as done';
+
+  @override
+  String get todoReopen => 'Reopen';
+
+  @override
+  String todoDeleteConfirm(String title) {
+    return 'Delete \"$title\"? Its sub-items are deleted too.';
+  }
+
+  @override
+  String get todoCompleteAllTitle => 'Complete the sub-items too?';
+
+  @override
+  String todoCompleteAllBody(String title) {
+    return '\"$title\" still has open sub-items. Completing it marks them as done too.';
+  }
+
+  @override
+  String get todoCompleteAll => 'Complete all';
+
+  @override
+  String get todoLinkedItem => 'Linked item';
+
+  @override
+  String todoFromOwner(String name) {
+    return 'From $name';
+  }
+
+  @override
+  String todoSubProgress(int done, int total) {
+    return '$done of $total sub-items done';
+  }
+
+  @override
+  String get todoReorder => 'Drag to reorder';
 }

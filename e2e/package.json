@@ -4,6 +4,9 @@
   "description": "Browser end-to-end tests: the Flutter web build against a real API and PostgreSQL",
   "scripts": {
     "test": "playwright test --trace off",
+    "test:watch": "node run.mjs watch",
+    "test:ui": "node run.mjs ui",
+    "test:lib": "node --test lib.test.cjs",
     "typecheck": "tsc --noEmit -p ."
   },
   "devDependencies": {

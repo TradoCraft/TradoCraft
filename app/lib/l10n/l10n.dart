@@ -398,6 +398,7 @@ extension CodeLabels on AppLocalizations {
     'delivery' => moduleDelivery,
     'production' => moduleProduction,
     'finance' => moduleFinance,
+    'todo' => moduleTodo,
     _ => code,
   };
 }

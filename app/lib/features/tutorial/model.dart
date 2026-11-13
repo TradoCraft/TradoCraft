@@ -178,6 +178,7 @@ class MissionStep {
     this.route,
     this.completion = const ManualNext(),
     this.probe,
+    this.recheckOn = const [],
     this.capture,
   });
 
@@ -200,6 +201,10 @@ class MissionStep {
 
   /// Tells whether the step is already done.
   final Probe? probe;
+
+  /// API calls after which the [probe] runs again (for changes that can finish the step without
+  /// matching [completion], such as reactivating a warehouse). Ignored without a probe.
+  final List<OnApi> recheckOn;
 
   /// Values to capture from the API answer that finished the step.
   final Map<String, String> Function(Object? json)? capture;

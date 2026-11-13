@@ -304,7 +304,7 @@ async fn assemble(conn: &mut PgConnection, rows: Vec<JobRow>) -> AppResult<Vec<J
 }
 
 /// Planners and read-only roles see every job; a technician only the jobs they are assigned to.
-fn sees_all(user: &CurrentUser) -> bool {
+pub fn sees_all(user: &CurrentUser) -> bool {
     user.can(Permission::FieldPlan) || !user.can(Permission::FieldWork)
 }
 

@@ -25267,6 +25267,516 @@
         }
       }
     },
+    "/api/v1/todo/items": {
+      "get": {
+        "tags": [
+          "todo"
+        ],
+        "operationId": "todo_list",
+        "parameters": [
+          {
+            "name": "scope",
+            "in": "query",
+            "description": "Defaults to `mine`.",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "$ref": "#/components/schemas/TodoScope"
+                }
+              ]
+            }
+          },
+          {
+            "name": "done",
+            "in": "query",
+            "description": "`true`: only finished items, `false`: only open ones; absent: both.",
+            "required": false,
+            "schema": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "link_kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "$ref": "#/components/schemas/TodoLinkKind"
+                }
+              ]
+            }
+          },
+          {
+            "name": "link_id",
+            "in": "query",
+            "description": "Needs `link_kind`.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "due_before",
+            "in": "query",
+            "description": "Items due strictly before this date.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TodoItem"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "todo"
+        ],
+        "operationId": "todo_create",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TodoCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The item of this client_id already existed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TodoItem"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TodoItem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/todo/items/counts": {
+      "get": {
+        "tags": [
+          "todo"
+        ],
+        "operationId": "todo_counts",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TodoCounts"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/todo/items/reorder": {
+      "post": {
+        "tags": [
+          "todo"
+        ],
+        "operationId": "todo_reorder",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TodoReorderInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/todo/items/{id}": {
+      "delete": {
+        "tags": [
+          "todo"
+        ],
+        "operationId": "todo_delete",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "todo"
+        ],
+        "operationId": "todo_update",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TodoPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TodoItem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/todo/items/{id}/complete": {
+      "post": {
+        "tags": [
+          "todo"
+        ],
+        "operationId": "todo_complete",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TodoCompleteInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TodoItem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Open sub-items and complete_children is false",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/todo/items/{id}/reopen": {
+      "post": {
+        "tags": [
+          "todo"
+        ],
+        "operationId": "todo_reopen",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TodoItem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/users": {
       "get": {
         "tags": [
@@ -43457,6 +43967,405 @@
           }
         }
       },
+      "TodoCompleteInput": {
+        "type": "object",
+        "properties": {
+          "complete_children": {
+            "type": "boolean",
+            "description": "Also complete the open sub-items. Without it, completing an item that still has open\nsub-items is refused with 409."
+          }
+        }
+      },
+      "TodoCounts": {
+        "type": "object",
+        "required": [
+          "open",
+          "overdue",
+          "due_today"
+        ],
+        "properties": {
+          "due_today": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Open items on my plate that are due today."
+          },
+          "open": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Open items on my plate, sub-items included."
+          },
+          "overdue": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Open items on my plate that were due before today."
+          }
+        }
+      },
+      "TodoCreate": {
+        "type": "object",
+        "required": [
+          "title"
+        ],
+        "properties": {
+          "assignee_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "Hands the item to a colleague. Not allowed for sub-items."
+          },
+          "client_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "Chosen by the client; a repeated create with the same id returns the item that exists."
+          },
+          "due_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "link_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "link_kind": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TodoLinkKind"
+              }
+            ]
+          },
+          "link_label": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "link_location": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "notes": {
+            "type": "string"
+          },
+          "parent_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "Makes this a sub-item of that root item; it then shares the parent's owner and assignee."
+          },
+          "position": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Defaults to the end of its siblings."
+          },
+          "title": {
+            "type": "string"
+          }
+        }
+      },
+      "TodoItem": {
+        "type": "object",
+        "description": "One to-do item. Lists are flat: build the tree from `parent_id`.",
+        "required": [
+          "id",
+          "position",
+          "title",
+          "notes",
+          "owner_id",
+          "owner_name",
+          "created_by",
+          "mine",
+          "done",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "assignee_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "The colleague the item is handed to; absent when it stays with the owner."
+          },
+          "assignee_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "client_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "created_by": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "done": {
+            "type": "boolean"
+          },
+          "done_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "done_by": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "due_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "link_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "link_kind": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TodoLinkKind"
+              }
+            ]
+          },
+          "link_label": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "What the linked record was called when it was linked. Absent when the caller may not read\nrecords of that kind (the app then shows \"Linked item\")."
+          },
+          "link_location": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Where the app jumps to for the linked record, e.g. `/quotations/<id>`."
+          },
+          "mine": {
+            "type": "boolean",
+            "description": "Whether the caller is the owner (only the owner reassigns and deletes)."
+          },
+          "notes": {
+            "type": "string"
+          },
+          "owner_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "owner_name": {
+            "type": "string"
+          },
+          "parent_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "The root item this is a sub-item of; absent for a root item."
+          },
+          "position": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "title": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "TodoLinkKind": {
+        "type": "string",
+        "description": "The kind of record an item is linked to. Closed list, mirrored by the `CHECK` on\n`todo.items.link_kind` and by the app's link registry.",
+        "enum": [
+          "customer",
+          "quotation",
+          "order",
+          "ticket",
+          "repair",
+          "job",
+          "production_order",
+          "delivery",
+          "product",
+          "opportunity",
+          "purchase_order",
+          "goods_receipt",
+          "supplier",
+          "supplier_invoice",
+          "kb_entry",
+          "stock_count"
+        ]
+      },
+      "TodoPatch": {
+        "type": "object",
+        "properties": {
+          "assignee_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "Owner only; cascades to the sub-items."
+          },
+          "clear_assignee": {
+            "type": "boolean"
+          },
+          "clear_due_date": {
+            "type": "boolean"
+          },
+          "clear_link": {
+            "type": "boolean"
+          },
+          "due_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "link_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "link_kind": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TodoLinkKind"
+              }
+            ]
+          },
+          "link_label": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "link_location": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "make_root": {
+            "type": "boolean",
+            "description": "Moves a sub-item up to be a root item."
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "parent_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "Moves a root item (without sub-items) under another root item of the same owner."
+          },
+          "position": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "TodoReorderInput": {
+        "type": "object",
+        "required": [
+          "ids"
+        ],
+        "properties": {
+          "ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The items in their new order. They take the positions the same items had, so items that are\nnot in the list (for example finished ones that are hidden) keep their places."
+          },
+          "parent_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "The common parent; absent for root items."
+          }
+        }
+      },
+      "TodoScope": {
+        "type": "string",
+        "enum": [
+          "mine",
+          "assigned",
+          "all-mine"
+        ]
+      },
       "TokenTestResult": {
         "type": "object",
         "description": "The result of checking a sample token.",
@@ -44854,6 +45763,10 @@
     {
       "name": "reports",
       "description": "User-defined reports: build, save, share, run and export"
+    },
+    {
+      "name": "todo",
+      "description": "To-do items: private checklists with sub-items, hand-over to a colleague and links to records"
     },
     {
       "name": "kb",
