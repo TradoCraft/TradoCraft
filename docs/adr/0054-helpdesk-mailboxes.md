@@ -140,10 +140,10 @@ sorting). A tenant is still the only proof; `check-mailbox` is how to get it.
 
 *Review follow-ups.* A send whose answer is unclear (timeout, 5xx) is looked at once with
 `isDraft`: with immutable ids the id outlives the move to Sent Items, so "found" is not "still a
-draft". Sent is accepted as sent. Still a draft does **not** show it was not sent (transport may
+draft". Sent is accepted as sent; a 404 is not (the draft may have been deleted, and a sent copy keeps its id), and neither is a connection that failed mid-way, while one that was never made, like a refusal, means nothing was sent and the e-mail is tried again. Still a draft does **not** show it was not sent (transport may
 pick it up after the look), so the draft is removed and the e-mail is marked failed
 (`SendUnknown`), not retried: an e-mail that may have gone twice is worse than one a person
 re-sends. `check-mailbox` runs only in a live environment (it sends), refuses a name two companies
 share, still finds and removes the copies after a send with a lost answer, and fails the
-Message-ID step when Exchange does not give the draft one. The stand-in keeps the draft's
+Message-ID step when Exchange does not give the draft one. If a copy cannot even be looked for, the cleanup step fails and says to remove the mail by hand. The stand-in keeps the draft's
 immutable id on the Sent Items copy, as Exchange does.

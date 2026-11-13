@@ -307,6 +307,14 @@ async fn check(res: reqwest::Response, what: &str) -> anyhow::Result<reqwest::Re
     }))
 }
 
+/// The send certainly did not happen: Graph refused it (4xx, a busy answer), or the connection
+/// to it could not even be made.
+fn nothing_was_sent(e: &anyhow::Error) -> bool {
+    status_of(e).is_some_and(|s| s < 500)
+        || e.downcast_ref::<reqwest::Error>()
+            .is_some_and(|r| r.is_connect())
+}
+
 fn status_of(e: &anyhow::Error) -> Option<u16> {
     e.downcast_ref::<GraphStatus>().map(|s| s.status)
 }
@@ -658,6 +666,9 @@ impl GraphClient {
         Ok(())
     }
 
+    /// Looks at the draft after an unclear send. Only `isDraft: false` shows it was sent: with
+    /// immutable ids a sent copy keeps the draft's id, so a 404 means the draft is gone (deleted,
+    /// say), not that it went, and is as unknown as any other failed lookup.
     async fn draft_state(&self, draft_url: &str, token: &str) -> DraftState {
         match self
             .request(
@@ -680,7 +691,6 @@ impl GraphClient {
                     None => DraftState::Unknown,
                 }
             }
-            Ok(res) if res.status() == reqwest::StatusCode::NOT_FOUND => DraftState::Sent,
             _ => DraftState::Unknown,
         }
     }
@@ -713,8 +723,9 @@ impl GraphClient {
             return Ok(assigned);
         };
         self.forget_if_refused(m, &e).await;
-        // A refusal (4xx, a busy answer) is a "no": nothing was sent.
-        if status_of(&e).is_some_and(|s| s < 500) {
+        // A refusal (4xx, a busy answer) or a connection that was never made is a "no": nothing
+        // was sent.
+        if nothing_was_sent(&e) {
             self.drop_draft(&draft_url, &token).await;
             return Err(e);
         }
@@ -834,7 +845,7 @@ impl GraphClient {
                 report.step("send the draft", false, format!("{e:#}"));
                 // A refusal means nothing went. An unclear answer (timeout, 5xx) may have
                 // delivered it anyway, so the copies are looked for and cleaned up below.
-                if status_of(&e).is_some_and(|s| s < 500) {
+                if nothing_was_sent(&e) {
                     self.drop_draft(&draft_url, &token).await;
                     return report;
                 }
@@ -928,7 +939,17 @@ impl GraphClient {
 
         // Clean up: the two copies (to Deleted Items) and any draft left over.
         let mut leftovers = Vec::new();
-        for found in [&delivered, &sent].into_iter().flatten().flatten() {
+        // A copy that could not even be looked for may still be in the mailbox.
+        let mut unchecked = false;
+        for found in [&delivered, &sent] {
+            let found = match found {
+                Ok(Some(found)) => found,
+                Ok(None) => continue,
+                Err(_) => {
+                    unchecked = true;
+                    continue;
+                }
+            };
             let res = self
                 .request(
                     reqwest::Method::DELETE,
@@ -944,8 +965,8 @@ impl GraphClient {
         self.drop_draft(&draft_url, &token).await;
         report.step(
             "remove the test mail",
-            leftovers.is_empty(),
-            if leftovers.is_empty() {
+            leftovers.is_empty() && !unchecked,
+            if leftovers.is_empty() && !unchecked {
                 "moved to Deleted Items".to_string()
             } else {
                 "some of it could not be removed: delete \"tradocraft mailbox check\" mail by hand"
@@ -1084,6 +1105,36 @@ impl CheckReport {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[tokio::test]
+    async fn a_connection_that_was_never_made_means_nothing_was_sent() {
+        // Nothing listens on port 1.
+        let http = build_http(Duration::from_secs(5));
+        let e: anyhow::Error = http
+            .post("http://127.0.0.1:1/x")
+            .send()
+            .await
+            .map(|_| ())
+            .map_err(anyhow::Error::new)
+            .context("reaching Microsoft Graph")
+            .unwrap_err();
+        assert!(nothing_was_sent(&e), "{e:#}");
+        // An answer that never came proves nothing.
+        let timed_out = anyhow::anyhow!("operation timed out");
+        assert!(!nothing_was_sent(&timed_out));
+        let busy = anyhow::Error::new(GraphStatus {
+            status: 503,
+            retry_after: None,
+            text: String::new(),
+        });
+        assert!(!nothing_was_sent(&busy));
+        let refused = anyhow::Error::new(GraphStatus {
+            status: 403,
+            retry_after: None,
+            text: String::new(),
+        });
+        assert!(nothing_was_sent(&refused));
+    }
 
     #[test]
     fn a_folded_header_is_read_whole() {

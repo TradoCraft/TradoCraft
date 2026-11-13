@@ -609,6 +609,7 @@ impl State {
     }
 
     fn list(&mut self, folder: &str, raw_query: &str, prefer: &Option<String>) -> Reply {
+        let folder_name = folder.to_ascii_lowercase();
         if let Some(r) = self.take_fail("list") {
             return r;
         }
@@ -623,6 +624,13 @@ impl State {
             return error(400, "BadRequest", "Parsing OData Select and Expand failed.");
         }
         let filter = q.get("$filter").cloned().unwrap_or_default();
+        // `find:<folder>` fails only a search by subject in that folder (what the self-check does
+        // after sending), not the query for unread mail.
+        if filter.starts_with("subject eq") {
+            if let Some(r) = self.take_fail(&format!("find:{folder_name}")) {
+                return r;
+            }
+        }
         if let Some(order) = q.get("$orderby") {
             let property = order.split_whitespace().next().unwrap_or_default();
             if !filter.contains(property) {

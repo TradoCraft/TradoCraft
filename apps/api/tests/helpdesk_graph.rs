@@ -385,6 +385,19 @@ async fn a_send_that_may_have_gone_is_never_repeated(db: PgPool) {
     assert!(error.unwrap().contains("Sent Items"));
     assert_eq!(w.outbox().await, 0);
     assert_eq!(w.standin.state().sent_count(), 3);
+
+    // A lookup that says "not found" is no better: the draft may have been deleted rather than
+    // sent, so it is not taken for a success.
+    w.standin.state().send_outcome = SendOutcome::GatewayTimeoutAfter;
+    w.standin
+        .state()
+        .fail_next
+        .push(("get".into(), 404, "ErrorItemNotFound".into()));
+    let f = w.queue_reply("Gasket", "f1@alpha.example").await;
+    assert_eq!(w.outbox().await, 0);
+    let (delivery, attempts, error, _) = w.reply_state(f).await;
+    assert_eq!((delivery.as_str(), attempts), ("failed", 1), "{error:?}");
+    assert!(error.unwrap().contains("Sent Items"));
 }
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
@@ -877,4 +890,25 @@ async fn the_check_refuses_a_name_two_companies_share(db: PgPool) {
         .unwrap_err();
     assert!(e.to_string().contains("more than one"), "{e}");
     assert_eq!(w.standin.state().sent_count(), 0);
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn the_check_does_not_call_the_cleanup_done_when_a_lookup_failed(db: PgPool) {
+    let w = world(db, None).await;
+    // The inbox cannot be searched: the copy there is not found, so it is not removed, and the
+    // report says to remove it by hand.
+    w.standin
+        .state()
+        .fail_next
+        .push(("find:inbox".into(), 500, "ErrorInternalServerError".into()));
+    let report = check_graph_mailbox(&w.db, "Support", &w.graph, &secrets, &quick())
+        .await
+        .unwrap();
+    assert!(!report.ok(), "{:#?}", report.lines());
+    let clean = report
+        .steps
+        .iter()
+        .find(|s| s.name == "remove the test mail")
+        .unwrap();
+    assert!(!clean.ok && clean.detail.contains("by hand"), "{clean:?}");
 }
