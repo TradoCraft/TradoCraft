@@ -2742,5 +2742,7 @@
   "todoForObject": "Tareas de este registro",
   "todoForObjectCount": "Tareas de este registro ({count} abiertas)",
   "@todoForObjectCount": {"placeholders": {"count": {"type": "int"}}},
-  "todoForObjectEmpty": "No hay tareas abiertas para este registro."
+  "todoForObjectEmpty": "No hay tareas abiertas para este registro.",
+  "todoEmailReminders": "Recordatorios por correo",
+  "todoRemoveLink": "Quitar el enlace de mis tareas"
 }

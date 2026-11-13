@@ -481,6 +481,8 @@ export 'models/todo_link_kind.dart';
 export 'models/todo_patch.dart';
 export 'models/todo_reorder_input.dart';
 export 'models/todo_scope.dart';
+export 'models/todo_settings.dart';
+export 'models/todo_settings_input.dart';
 export 'models/token_test_result.dart';
 export 'models/trace.dart';
 export 'models/trace_source.dart';

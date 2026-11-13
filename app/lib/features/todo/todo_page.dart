@@ -92,6 +92,7 @@ class TodoPage extends ConsumerWidget {
                 onSelectionChanged: (s) =>
                     ref.read(todoFilterProvider.notifier).set(s.first),
               ),
+              const _ReminderSwitch(),
             ],
           ),
           const SizedBox(height: 16),
@@ -241,6 +242,44 @@ Future<void> _setDue(BuildContext context, WidgetRef ref, TodoItem item) async {
 }
 
 /// The root items, reorderable by dragging their handle.
+/// "E-mail reminders": whether the server mails a digest of items that are due. Stored on the
+/// server, so it follows the user to other devices.
+class _ReminderSwitch extends ConsumerWidget {
+  const _ReminderSwitch();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    final settings = ref.watch(todoSettingsProvider);
+    // On (the default) until the server says otherwise.
+    final on = settings.value?.emailReminders ?? true;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(l.todoEmailReminders),
+        const SizedBox(width: 8),
+        Switch(
+          key: const ValueKey('todo-email-reminders'),
+          value: on,
+          onChanged: !settings.hasValue
+              ? null
+              : (v) async {
+                  final messenger = ScaffoldMessenger.maybeOf(context);
+                  try {
+                    await ref.read(todoRepositoryProvider).setEmailReminders(v);
+                  } catch (e) {
+                    messenger?.showSnackBar(
+                      SnackBar(content: Text(errorMessage(e))),
+                    );
+                  }
+                  ref.invalidate(todoSettingsProvider);
+                },
+        ),
+      ],
+    );
+  }
+}
+
 class _RootList extends ConsumerWidget {
   const _RootList({required this.tree});
 

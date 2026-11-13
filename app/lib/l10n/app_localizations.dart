@@ -15471,7 +15471,7 @@ abstract class AppLocalizations {
   /// No description provided for @todoRemoveLink.
   ///
   /// In en, this message translates to:
-  /// **'Remove link'**
+  /// **'Remove link from my to-dos'**
   String get todoRemoveLink;
 
   /// No description provided for @recordNotFound.
@@ -15497,6 +15497,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No open to-dos for this record.'**
   String get todoForObjectEmpty;
+
+  /// No description provided for @todoEmailReminders.
+  ///
+  /// In en, this message translates to:
+  /// **'E-mail reminders'**
+  String get todoEmailReminders;
 }
 
 class _AppLocalizationsDelegate

@@ -64,6 +64,8 @@ class _CustomerScreenState extends ConsumerState<CustomerScreen> {
                 message: _error!,
                 leaveTo: '/customers',
                 notFound: _missing,
+                todoKind: TodoLinkKind.customer,
+                todoId: widget.id,
               ),
       );
     }

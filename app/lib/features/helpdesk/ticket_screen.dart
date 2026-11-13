@@ -532,6 +532,8 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
                 message: _error!,
                 leaveTo: '/helpdesk',
                 notFound: _missing,
+                todoKind: TodoLinkKind.ticket,
+                todoId: widget.id,
               )
             : const Center(child: CircularProgressIndicator()),
       );

@@ -16,14 +16,14 @@ class TodoCounts {
   
   factory TodoCounts.fromJson(Map<String, Object?> json) => _$TodoCountsFromJson(json);
   
-  /// Open items on my plate that are due today.
+  /// Open root items on my plate that are due today.
   @JsonKey(name: 'due_today')
   final int dueToday;
 
-  /// Open items on my plate, sub-items included.
+  /// Open root items on my plate (the list the page shows by default); sub-items are not counted.
   final int open;
 
-  /// Open items on my plate that were due before today.
+  /// Open root items on my plate that were due before today (the database date).
   final int overdue;
 
   Map<String, Object?> toJson() => _$TodoCountsToJson(this);

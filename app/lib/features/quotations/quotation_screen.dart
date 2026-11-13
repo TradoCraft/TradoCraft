@@ -646,6 +646,8 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
           message: _error!,
           leaveTo: '/quotations',
           notFound: _missing,
+          todoKind: TodoLinkKind.quotation,
+          todoId: _id,
         ),
       );
     }

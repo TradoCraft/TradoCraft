@@ -37,8 +37,18 @@ class ObjectTodosButton extends ConsumerWidget {
     final info = linkKindInfo(kind);
     if (info == null || !canUseTodo(ref)) return const SizedBox.shrink();
     final l = context.l10n;
-    final count =
-        ref.watch(objectTodosProvider((kind: kind, id: id))).value?.length ?? 0;
+    final items =
+        ref.watch(objectTodosProvider((kind: kind, id: id))).value ?? const [];
+    final count = items.length;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final overdue = items.any((i) {
+      final d = i.dueDate;
+      return !i.done &&
+          d != null &&
+          DateTime(d.year, d.month, d.day).isBefore(today);
+    });
+    final scheme = Theme.of(context).colorScheme;
     return IconButton(
       key: const ValueKey('object-todos-button'),
       tooltip: count == 0 ? l.todoForObject : l.todoForObjectCount(count),
@@ -53,6 +63,9 @@ class ObjectTodosButton extends ConsumerWidget {
       icon: Badge(
         key: const ValueKey('object-todos-badge'),
         isLabelVisible: count > 0,
+        // Red when one of the listed items is overdue, else the neutral accent.
+        backgroundColor: overdue ? scheme.error : scheme.primary,
+        textColor: overdue ? scheme.onError : scheme.onPrimary,
         label: Text('$count'),
         child: const Icon(AppIcons.checklist),
       ),

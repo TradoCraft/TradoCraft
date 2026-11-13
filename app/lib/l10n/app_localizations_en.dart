@@ -8652,7 +8652,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get todoOpenLink => 'Open the linked record';
 
   @override
-  String get todoRemoveLink => 'Remove link';
+  String get todoRemoveLink => 'Remove link from my to-dos';
 
   @override
   String get recordNotFound =>
@@ -8668,4 +8668,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get todoForObjectEmpty => 'No open to-dos for this record.';
+
+  @override
+  String get todoEmailReminders => 'E-mail reminders';
 }

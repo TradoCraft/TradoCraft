@@ -1,6 +1,10 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../app/api.dart';
+import '../features/todo/todo_quick_add.dart';
+import '../features/todo/todo_repository.dart';
 import '../l10n/l10n.dart';
 import 'app_icons.dart';
 
@@ -8,12 +12,14 @@ import 'app_icons.dart';
 /// the record is gone ([notFound], HTTP 404; a to-do link can outlive its record), otherwise the
 /// error. Always with a way out: back to where the user came from, or [leaveTo] (the section
 /// list) when nothing is left to go back to. Inside a workspace tab that closes the tab.
-class LoadFailedView extends StatelessWidget {
+class LoadFailedView extends ConsumerWidget {
   const LoadFailedView({
     super.key,
     required this.message,
     required this.leaveTo,
     this.notFound = false,
+    this.todoKind,
+    this.todoId,
   });
 
   /// The error sentence (`errorMessage`).
@@ -25,8 +31,13 @@ class LoadFailedView extends StatelessWidget {
   /// The record does not exist (any more) or is not available to the user.
   final bool notFound;
 
+  /// The kind and id of the record. With [notFound], the caller's to-dos that still link to it are
+  /// looked up and one button offers to remove that link.
+  final TodoLinkKind? todoKind;
+  final String? todoId;
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final theme = Theme.of(context);
     return Center(
@@ -61,6 +72,11 @@ class LoadFailedView extends StatelessWidget {
                     : TextStyle(color: theme.colorScheme.error),
               ),
             ),
+            if (notFound &&
+                todoKind != null &&
+                todoId != null &&
+                canUseTodo(ref))
+              _RemoveLinkButton(kind: todoKind!, id: todoId!),
             OutlinedButton.icon(
               key: const ValueKey('record-back'),
               icon: const Icon(AppIcons.arrowBack),
@@ -70,6 +86,53 @@ class LoadFailedView extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// "Remove link from my to-dos": shown only while the caller has to-dos linked to the missing
+/// record. Clears the link of all of them, then looks again (and so disappears).
+class _RemoveLinkButton extends ConsumerStatefulWidget {
+  const _RemoveLinkButton({required this.kind, required this.id});
+
+  final TodoLinkKind kind;
+  final String id;
+
+  @override
+  ConsumerState<_RemoveLinkButton> createState() => _RemoveLinkButtonState();
+}
+
+class _RemoveLinkButtonState extends ConsumerState<_RemoveLinkButton> {
+  bool _busy = false;
+
+  Future<void> _remove(List<TodoItem> items) async {
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    setState(() => _busy = true);
+    try {
+      await ref.read(todoRepositoryProvider).clearLinks(items);
+      ref.invalidate(todoItemsProvider);
+      ref.invalidate(objectTodosProvider);
+    } catch (e) {
+      messenger?.showSnackBar(SnackBar(content: Text(errorMessage(e))));
+    }
+    ref.invalidate(linkedTodosProvider);
+    if (mounted) setState(() => _busy = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final items = ref
+        .watch(linkedTodosProvider((kind: widget.kind, id: widget.id)))
+        .value;
+    if (items == null || items.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: FilledButton.tonalIcon(
+        key: const ValueKey('record-remove-todo-link'),
+        icon: const Icon(AppIcons.linkOff),
+        label: Text(context.l10n.todoRemoveLink),
+        onPressed: _busy ? null : () => _remove(items),
       ),
     );
   }

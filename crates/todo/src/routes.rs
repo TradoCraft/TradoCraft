@@ -675,7 +675,9 @@ async fn get_settings(
     user.require(Permission::TodoUse)?;
     let mut conn = state.db.acquire().await?;
     let on = email_reminders(&mut conn, &user).await?.unwrap_or(true);
-    Ok(Json(TodoSettings { email_reminders: on }))
+    Ok(Json(TodoSettings {
+        email_reminders: on,
+    }))
 }
 
 #[utoipa::path(put, path = "/todo/settings", tag = "todo", operation_id = "todo_settings_put",
