@@ -7,6 +7,7 @@ import 'app/brand.dart';
 import 'app/environments.dart';
 import 'app/profile.dart';
 import 'app/session.dart';
+import 'app/shortcuts/host.dart';
 import 'app/zoom.dart';
 import 'features/field/offline/kv_store.dart';
 import 'features/tutorial/overlay.dart';
@@ -67,12 +68,17 @@ class TradocraftApp extends ConsumerWidget {
       ),
       // The tutorial's spotlight and narrator sit inside the zoom, above every page and dialog.
       builder: (context, child) => ZoomShell(
-        child: TutorialHost(router: router, child: child ?? const SizedBox()),
+        child: ShortcutsHost(
+          child: TutorialHost(router: router, child: child ?? const SizedBox()),
+        ),
       ),
       routerConfig: router,
       locale: ref.watch(localeProvider),
       supportedLocales: AppLocalizations.supportedLocales,
-      localizationsDelegates: [AppLocalizations.delegate, ...GlobalMaterialLocalizations.delegates],
+      localizationsDelegates: [
+        AppLocalizations.delegate,
+        ...GlobalMaterialLocalizations.delegates,
+      ],
       onGenerateTitle: (context) {
         final profile = ref.read(profileProvider);
         return appWindowTitle(profile);

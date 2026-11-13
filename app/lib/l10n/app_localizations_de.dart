@@ -8515,6 +8515,52 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get shortcutBack => 'Zurück';
+
+  @override
+  String get shortcutCreate => 'Anlegen';
+
+  @override
+  String get shortcutHome => 'Startseite';
+
+  @override
+  String get shortcutDiscard => 'Änderungen verwerfen';
+
+  @override
+  String get shortcutSave => 'Speichern';
+
+  @override
+  String get shortcutNextPage => 'Mehr laden';
+
+  @override
+  String get shortcutSearch => 'Suchen';
+
+  @override
+  String get shortcutNewTodo => 'Neue Aufgabe';
+
+  @override
+  String get shortcutKbSearch => 'Artikel suchen';
+
+  @override
+  String get shortcutKbShare => 'Artikel teilen';
+
+  @override
+  String get shortcutPalette => 'Befehlspalette';
+
+  @override
+  String get shortcutHelp => 'Tastenkürzel';
+
+  @override
+  String shortcutMenuItem(int n) {
+    return 'Menüeintrag $n';
+  }
+
+  @override
+  String shortcutHint(String keys) {
+    return 'Tastenkürzel: $keys';
+  }
+
+  @override
   String get moduleTodo => 'Aufgaben';
 
   @override

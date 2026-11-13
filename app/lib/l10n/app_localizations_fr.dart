@@ -8507,6 +8507,52 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get shortcutBack => 'Retour';
+
+  @override
+  String get shortcutCreate => 'Créer';
+
+  @override
+  String get shortcutHome => 'Accueil';
+
+  @override
+  String get shortcutDiscard => 'Annuler les modifications';
+
+  @override
+  String get shortcutSave => 'Enregistrer';
+
+  @override
+  String get shortcutNextPage => 'Charger plus';
+
+  @override
+  String get shortcutSearch => 'Rechercher';
+
+  @override
+  String get shortcutNewTodo => 'Nouvelle tâche';
+
+  @override
+  String get shortcutKbSearch => 'Rechercher des articles';
+
+  @override
+  String get shortcutKbShare => 'Partager l\'article';
+
+  @override
+  String get shortcutPalette => 'Palette de commandes';
+
+  @override
+  String get shortcutHelp => 'Raccourcis clavier';
+
+  @override
+  String shortcutMenuItem(int n) {
+    return 'Entrée de menu $n';
+  }
+
+  @override
+  String shortcutHint(String keys) {
+    return 'Raccourci : $keys';
+  }
+
+  @override
   String get moduleTodo => 'Tâches';
 
   @override
