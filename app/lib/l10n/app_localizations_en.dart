@@ -8694,4 +8694,8 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get productionRoutingLoadFailed =>
       'The routing could not be loaded, so it cannot be changed now.';
+
+  @override
+  String get productionRoutingChangedWhileSaving =>
+      'The routing changed while it was being saved. Save again to include the latest changes.';
 }

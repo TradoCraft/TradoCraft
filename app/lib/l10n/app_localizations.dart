@@ -15557,6 +15557,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The routing could not be loaded, so it cannot be changed now.'**
   String get productionRoutingLoadFailed;
+
+  /// No description provided for @productionRoutingChangedWhileSaving.
+  ///
+  /// In en, this message translates to:
+  /// **'The routing changed while it was being saved. Save again to include the latest changes.'**
+  String get productionRoutingChangedWhileSaving;
 }
 
 class _AppLocalizationsDelegate

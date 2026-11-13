@@ -4088,5 +4088,6 @@
   "@productionCostGapWorkCentre": {"placeholders": {"code": {"type": "String"}}},
   "productionCostCalculate": "Calculate",
   "productionOperationMinutesInvalid": "Enter the minutes as a whole number.",
-  "productionRoutingLoadFailed": "The routing could not be loaded, so it cannot be changed now."
+  "productionRoutingLoadFailed": "The routing could not be loaded, so it cannot be changed now.",
+  "productionRoutingChangedWhileSaving": "The routing changed while it was being saved. Save again to include the latest changes."
 }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -441,5 +443,75 @@ void main() {
       'Cut',
     );
     expect(find.byKey(const ValueKey('add-operation')), findsOneWidget);
+  });
+
+  testWidgets('a routing edited while it is being saved is not activated as it was', (
+    tester,
+  ) async {
+    // The routing PUT stays under way until the test lets it answer.
+    final puts = <Completer<Object?>>[];
+    final http = _http(
+      perms: _editor,
+      status: 'draft',
+      ops: [_routingOp('r1', 1, 'Cut')],
+      extra: {
+        'PUT /api/v1/boms/b2/routing': (_) {
+          final c = Completer<Object?>();
+          puts.add(c);
+          return c.future;
+        },
+        'POST /api/v1/boms/b2/activate': (_) => _bom('active'),
+      },
+    );
+    final answer = {
+      'bom_id': 'b2',
+      'product_id': 'p-unit',
+      'bom_revision': 2,
+      'bom_status': 'draft',
+      'operations': [_routingOp('r1', 1, 'Cut')],
+    };
+    Future<void> until(int n) async {
+      for (var i = 0; i < 50 && puts.length < n; i++) {
+        await tester.pump(const Duration(milliseconds: 10));
+      }
+      expect(puts, hasLength(n));
+    }
+
+    await _pump(tester, http);
+    await tester.enterText(find.byKey(const ValueKey('op-name-0')), 'Cut 1');
+    await tester.tap(find.text('Activate'));
+    await until(1);
+    // The planner keeps typing while the first save is under way.
+    await tester.enterText(find.byKey(const ValueKey('op-name-0')), 'Cut 2');
+    puts[0].complete(answer);
+    await tester.pumpAndSettle();
+    expect(
+      http.requests,
+      isNot(contains('PUT /api/v1/boms/b2')),
+      reason: 'the draft is not saved on top of a routing that is out of date',
+    );
+    expect(
+      http.requests,
+      isNot(contains('POST /api/v1/boms/b2/activate')),
+      reason: 'the older routing must not be the one that is frozen',
+    );
+    expect(
+      find.text(
+        'The routing changed while it was being saved. Save again to include the latest changes.',
+      ),
+      findsOneWidget,
+    );
+    // Activating again saves the latest routing, then the lines, then activates.
+    await tester.tap(find.text('Activate'));
+    await until(2);
+    puts[1].complete(answer);
+    await tester.pumpAndSettle();
+    final sent = http.bodies['PUT /api/v1/boms/b2/routing']! as Map;
+    expect((sent['operations'] as List).single['name'], 'Cut 2');
+    final routing = http.requests.lastIndexOf('PUT /api/v1/boms/b2/routing');
+    final lines = http.requests.indexOf('PUT /api/v1/boms/b2');
+    final activate = http.requests.indexOf('POST /api/v1/boms/b2/activate');
+    expect(routing, lessThan(lines));
+    expect(lines, lessThan(activate));
   });
 }

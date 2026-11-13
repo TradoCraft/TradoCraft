@@ -8740,4 +8740,8 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get productionRoutingLoadFailed =>
       'La gamme n\'a pas pu être chargée et ne peut donc pas être modifiée maintenant.';
+
+  @override
+  String get productionRoutingChangedWhileSaving =>
+      'La gamme a été modifiée pendant l\'enregistrement. Enregistrez à nouveau pour inclure les dernières modifications.';
 }

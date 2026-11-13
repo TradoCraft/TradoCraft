@@ -2742,5 +2742,6 @@
   "productionCostGapWorkCentre": "Geen kost per uur: {code}",
   "productionCostCalculate": "Berekenen",
   "productionOperationMinutesInvalid": "Geef de minuten als een geheel getal op.",
-  "productionRoutingLoadFailed": "De routing kon niet worden geladen en kan nu niet worden gewijzigd."
+  "productionRoutingLoadFailed": "De routing kon niet worden geladen en kan nu niet worden gewijzigd.",
+  "productionRoutingChangedWhileSaving": "De routing is gewijzigd terwijl ze werd opgeslagen. Sla opnieuw op om de laatste wijzigingen mee te nemen."
 }

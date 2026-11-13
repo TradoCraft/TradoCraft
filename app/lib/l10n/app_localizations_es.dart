@@ -8735,4 +8735,8 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get productionRoutingLoadFailed =>
       'No se pudo cargar la ruta, así que no se puede modificar ahora.';
+
+  @override
+  String get productionRoutingChangedWhileSaving =>
+      'La ruta cambió mientras se guardaba. Guarde de nuevo para incluir los últimos cambios.';
 }

@@ -2742,5 +2742,6 @@
   "productionCostGapWorkCentre": "Kein Stundensatz: {code}",
   "productionCostCalculate": "Berechnen",
   "productionOperationMinutesInvalid": "Geben Sie die Minuten als ganze Zahl ein.",
-  "productionRoutingLoadFailed": "Der Arbeitsplan konnte nicht geladen werden und kann deshalb jetzt nicht geändert werden."
+  "productionRoutingLoadFailed": "Der Arbeitsplan konnte nicht geladen werden und kann deshalb jetzt nicht geändert werden.",
+  "productionRoutingChangedWhileSaving": "Der Arbeitsplan wurde während des Speicherns geändert. Speichern Sie erneut, um die letzten Änderungen zu übernehmen."
 }

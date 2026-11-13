@@ -276,9 +276,21 @@ class _BomTabState extends ConsumerState<BomTab> {
         body: BomRoutingInput(operations: ops),
       ),
     );
-    // Edits made while the request was under way are not saved yet.
-    if (ok && _routingEdits == edits) _routingDirty = false;
-    return ok;
+    if (!ok) return false;
+    // Edits made while the request was under way are not saved yet: the draft is not saved (and
+    // so not activated) as the user sees it until they save again.
+    if (_routingEdits != edits) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(context.l10n.productionRoutingChangedWhileSaving),
+          ),
+        );
+      }
+      return false;
+    }
+    _routingDirty = false;
+    return true;
   }
 
   Future<void> _activate() async {

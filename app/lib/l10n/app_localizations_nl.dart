@@ -8728,4 +8728,8 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get productionRoutingLoadFailed =>
       'De routing kon niet worden geladen en kan nu niet worden gewijzigd.';
+
+  @override
+  String get productionRoutingChangedWhileSaving =>
+      'De routing is gewijzigd terwijl ze werd opgeslagen. Sla opnieuw op om de laatste wijzigingen mee te nemen.';
 }

@@ -480,17 +480,26 @@ pub(crate) fn required(per_unit: Decimal, quantity: Decimal, scrap_percent: Deci
 }
 
 /// Reserves what a component needs, all or nothing. Short stock is not an error: the component
-/// stays unreserved and is flagged, and `reserve` tries again later.
+/// stays unreserved and is flagged, and `reserve` tries again later. `claimed` is the free stock
+/// that an earlier component of the same release already counts on (see [`release_in_tx`]): it is
+/// not taken either, so the component stays unreserved exactly as if stock were short. Without a
+/// claim for the product nothing changes (and nothing extra is read).
 async fn try_reserve(
     conn: &mut PgConnection,
     user: &CurrentUser,
     component_id: Uuid,
     product_id: Uuid,
     want: Decimal,
+    claimed: &HashMap<Uuid, Decimal>,
 ) -> AppResult<()> {
     let product = tradocraft_products::get_product(&mut *conn, product_id).await?;
     if product.product_type == "service" {
         return Ok(());
+    }
+    if let Some(taken) = claimed.get(&product_id).filter(|t| **t > Decimal::ZERO) {
+        if free_to_reserve(&mut *conn, user.company_id, product_id).await? - *taken < want {
+            return Ok(());
+        }
     }
     let target = ReserveTarget {
         reference_type: PRODUCTION_COMPONENT,
@@ -558,7 +567,9 @@ type ReleaseFuture<'a> = Pin<Box<dyn Future<Output = AppResult<Released>> + Send
 /// production order for every subassembly that is short, with the same rules and below this
 /// order. `ancestors` are the products being built above it; `claimed` is the free stock that
 /// earlier components of this release already counted on, so that two components (or branches)
-/// that need the same product do not both rely on the same units.
+/// that need the same product do not both rely on the same units: neither the shortfall maths
+/// nor a later reservation (`try_reserve`) takes it again. A reservation stays all or nothing:
+/// a claimed component is not given part of its stock, it is simply left for `reserve`.
 fn release_in_tx<'a>(
     tx: &'a mut PgConnection,
     user: &'a CurrentUser,
@@ -665,7 +676,15 @@ fn release_in_tx<'a>(
             .bind(component.standard_cost)
             .execute(&mut *tx)
             .await?;
-            try_reserve(&mut *tx, user, component_id, l.component_product_id, need).await?;
+            try_reserve(
+                &mut *tx,
+                user,
+                component_id,
+                l.component_product_id,
+                need,
+                &*claimed,
+            )
+            .await?;
             if spec.auto_release_subassemblies
                 && matches!(
                     component.product_type.as_str(),
@@ -686,7 +705,11 @@ fn release_in_tx<'a>(
                     && tradocraft_engineering::bom::has_active_bom(&mut *tx, l.component_product_id)
                         .await?
                 {
-                    short.push((l.component_product_id, need));
+                    // A product the order lists on several rows is one need, built once.
+                    match short.iter_mut().find(|(p, _)| *p == l.component_product_id) {
+                        Some(row) => row.1 += need,
+                        None => short.push((l.component_product_id, need)),
+                    }
                 }
             }
         }
@@ -1076,7 +1099,15 @@ async fn reserve_components(
         )
         .await?;
         if held < need {
-            try_reserve(&mut tx, &user, component_id, product_id, need).await?;
+            try_reserve(
+                &mut tx,
+                &user,
+                component_id,
+                product_id,
+                need,
+                &HashMap::new(),
+            )
+            .await?;
         }
     }
     let out = load_order(&mut tx, &user, id).await?;

@@ -75,7 +75,9 @@ foreign keys `(x_id, company_id)` as in ADR 0049. Every change is audited.
   status maths are untouched) for every component that is built from a BOM and that stock could not
   reserve, for the **shortfall**: required minus what is free to reserve (`inventory::reservations::
   free_to_reserve`, sharing the candidate query of `allocate`). Stock is claimed once per release: what an
-  earlier component (or subassembly) of the same release already counts on is not counted again. A
+  earlier component (or subassembly) of the same release already counts on is not counted again, nor
+  taken by a later reservation of the release (that component stays unreserved and is flagged, like
+  short stock: a reservation stays all or nothing, so no component is given part of its stock). A
   component the order lists on several rows is one need, built once. It recurses up to five levels in one
   transaction; any failure undoes everything. The parent's own work is scheduled after the last
   subassembly's end. `POST /production-orders/{id}/components/{component_id}/build` does it for one

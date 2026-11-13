@@ -8749,4 +8749,8 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get productionRoutingLoadFailed =>
       'Der Arbeitsplan konnte nicht geladen werden und kann deshalb jetzt nicht geändert werden.';
+
+  @override
+  String get productionRoutingChangedWhileSaving =>
+      'Der Arbeitsplan wurde während des Speicherns geändert. Speichern Sie erneut, um die letzten Änderungen zu übernehmen.';
 }

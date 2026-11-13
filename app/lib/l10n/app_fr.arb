@@ -2742,5 +2742,6 @@
   "productionCostGapWorkCentre": "Pas de coût horaire : {code}",
   "productionCostCalculate": "Calculer",
   "productionOperationMinutesInvalid": "Indiquez les minutes en nombre entier.",
-  "productionRoutingLoadFailed": "La gamme n'a pas pu être chargée et ne peut donc pas être modifiée maintenant."
+  "productionRoutingLoadFailed": "La gamme n'a pas pu être chargée et ne peut donc pas être modifiée maintenant.",
+  "productionRoutingChangedWhileSaving": "La gamme a été modifiée pendant l'enregistrement. Enregistrez à nouveau pour inclure les dernières modifications."
 }

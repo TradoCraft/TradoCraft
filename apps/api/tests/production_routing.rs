@@ -3626,8 +3626,8 @@ async fn the_traveller_of_a_cancelled_order_says_so(db: PgPool) {
 async fn auto_release_does_not_count_the_same_free_stock_twice(db: PgPool) {
     let e = env(db).await;
     // The set lists the frame twice, 5 each: 10 are needed, and 3 are on the shelf. A reservation
-    // is all or nothing, so neither line holds them, and the subassembly orders must cover the
-    // other 7 (2 + 5), not 4.
+    // is all or nothing, so neither line holds them. The two lines are one need, built once: one
+    // subassembly order covers the other 7 (not two orders of 2 and 5).
     let dup = e
         .make_product("DUP", "none", &[(FRAME, "5"), (FRAME, "5")])
         .await;
@@ -3640,14 +3640,65 @@ async fn auto_release_does_not_count_the_same_free_stock_twice(db: PgPool) {
     )
     .await;
     assert_eq!(status, StatusCode::CREATED, "{po}");
-    let mut built: Vec<Decimal> = po["sub_orders"]
+    let built: Vec<Decimal> = po["sub_orders"]
         .as_array()
         .unwrap()
         .iter()
         .map(|s| dec(&s["quantity"]))
         .collect();
-    built.sort();
-    assert_eq!(built, [q("2"), q("5")]);
+    assert_eq!(built, [q("7")]);
+}
+
+/// A top product that needs 4 frames and a subassembly that needs 3 frames of its own, with 3
+/// frames on the shelf, released with auto-release. Whichever of the two comes first in the BOM,
+/// the tree must build the 4 frames that are missing (4 + 3 needed, 3 in stock): the 3 on the
+/// shelf are counted on once. Returns the quantities of the frame orders below the top order.
+async fn frames_built_for_shared_stock(db: PgPool, subassembly_first: bool) -> Vec<Decimal> {
+    let e = env(db).await;
+    let sub = e.make_product("SUB", "none", &[(FRAME, "3")]).await;
+    let parts = if subassembly_first {
+        [(sub.as_str(), "1"), (FRAME, "4")]
+    } else {
+        [(FRAME, "4"), (sub.as_str(), "1")]
+    };
+    let top = e.make_product("TOP", "none", &parts).await;
+    e.receive(FRAME, "3").await;
+    let (status, po) = post(
+        &e.app,
+        PLANNER,
+        "/production-orders",
+        json!({ "product_id": top, "quantity": "1", "auto_release_subassemblies": true }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{po}");
+    let all = e.production_orders().await;
+    let mut frames: Vec<Decimal> = all["items"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|o| o["product_code"] == "FRAME-A")
+        .map(|o| dec(&o["quantity"]))
+        .collect();
+    frames.sort();
+    frames
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn a_later_branch_does_not_reserve_the_stock_an_earlier_line_counts_on(db: PgPool) {
+    // The frames come first: the line counts on the 3 on the shelf and builds 1. The subassembly's
+    // order must not take those 3 for its own frames, or the top order would stay 3 short; it
+    // builds its 3 frames itself.
+    assert_eq!(
+        frames_built_for_shared_stock(db, false).await,
+        [q("1"), q("3")]
+    );
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn the_branches_build_the_same_frames_in_either_bom_order(db: PgPool) {
+    // The subassembly comes first: its order reserves the 3 on the shelf, and the 4 frames of the
+    // top order are all built. The same 4 frames are built as the other way round.
+    assert_eq!(frames_built_for_shared_stock(db, true).await, [q("4")]);
 }
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
