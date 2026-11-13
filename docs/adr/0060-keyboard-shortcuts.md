@@ -40,7 +40,12 @@ Phase A defines every action (so later phases only register handlers) but wires 
 area or the active tab; newest first), then **shell**. A null or missing entry means "not available now". Only the
 visible screen takes part: inside the workspace a scope registers only while its tab is active
 (`TabScope.activeOf`), and the main area registers only while no tab is focused (`ShortcutActivity`).
-Dialogs sit above the shell overlay, so each pushes its own scope.
+Dialogs sit above the shell overlay. `ModalShortcutObserver` (on the root `GoRouter.observers`) makes **every**
+popup route modal without touching the call sites: while a dialog, bottom sheet, date picker or popup menu is open
+it keeps an empty dialog-layer scope in the stack, so menu digits, Home, Back and Save are not reached. A dialog
+that wants keys of its own (Save, Discard) adds a `ShortcutScope(layer: ShortcutLayer.dialog, ...)`, which is
+newer and wins; a dialog-layer scope registers regardless of tab visibility. Phase B still has to add those
+Save/Discard scopes (shared dialog scaffold in `shared/actions.dart`).
 
 *Listener.* `ShortcutsHost` (in `MaterialApp.builder` next to `ZoomShell`) uses `HardwareKeyboard.addHandler`.
 It looks at key-down only, and returns "handled" only when a handler ran, so every other key (typing, Tab, zoom)

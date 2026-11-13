@@ -165,7 +165,13 @@ enum ShortcutAction {
       c.key == LogicalKeyboardKey.slash ? '/' : c.key.keyLabel.toUpperCase();
 
   /// The text of the corner badge: the letter or digit, with an arrow for Shift chords.
-  String get hintLabel => chord.shift ? '⇧${_keyText(chord)}' : _keyText(chord);
+  String get hintLabel => hintLabelFor();
+
+  /// [hintLabel] for the chord in effect on the web or elsewhere ([chordFor]).
+  String hintLabelFor({bool web = kIsWeb}) {
+    final c = chordFor(web: web);
+    return c.shift ? '⇧${_keyText(c)}' : _keyText(c);
+  }
 
   /// The full chord for people, e.g. `Alt+Shift+2` or `Ctrl+K`.
   String describe({bool web = kIsWeb}) {

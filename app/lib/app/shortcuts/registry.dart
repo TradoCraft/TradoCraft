@@ -104,6 +104,49 @@ class _Entry {
   };
 }
 
+/// Makes every dialog, bottom sheet, picker and popup menu modal for shortcuts: while such a route
+/// is open on the observed navigator, an empty [ShortcutLayer.dialog] scope sits in the stack, so
+/// the shell and page handlers (menu digits, Home, Back, Save) are not reached. A dialog that
+/// wants keys of its own adds a [ShortcutScope] on the dialog layer, which is newer and wins.
+/// Attach it to the root router (`GoRouter.observers`).
+class ModalShortcutObserver extends NavigatorObserver {
+  /// Creates the observer for [stack].
+  ModalShortcutObserver(this.stack);
+
+  /// The stack that gets the blocking scopes.
+  final ShortcutStack stack;
+  final _tokens = <Route<dynamic>, Object>{};
+
+  void _add(Route<dynamic> r) {
+    if (r is PopupRoute && !_tokens.containsKey(r)) {
+      _tokens[r] = stack.register(ShortcutLayer.dialog, const {});
+    }
+  }
+
+  void _remove(Route<dynamic>? r) {
+    final t = _tokens.remove(r);
+    if (t != null) stack.unregister(t);
+  }
+
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) =>
+      _add(route);
+
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) =>
+      _remove(route);
+
+  @override
+  void didRemove(Route<dynamic> route, Route<dynamic>? previousRoute) =>
+      _remove(route);
+
+  @override
+  void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
+    _remove(oldRoute);
+    if (newRoute != null) _add(newRoute);
+  }
+}
+
 /// The registry of the running app.
 final shortcutRegistryProvider = Provider<ShortcutStack>((ref) {
   final r = ShortcutStack();
@@ -186,7 +229,11 @@ class _ShortcutScopeState extends ConsumerState<ShortcutScope> {
 
   @override
   Widget build(BuildContext context) {
-    _sync(TabScope.activeOf(context) && ShortcutActivity.of(context));
+    // A dialog is modal wherever it was opened from: it never depends on the visibility of a tab.
+    _sync(
+      widget.layer == ShortcutLayer.dialog ||
+          (TabScope.activeOf(context) && ShortcutActivity.of(context)),
+    );
     return widget.child;
   }
 }

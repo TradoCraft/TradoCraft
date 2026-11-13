@@ -65,7 +65,18 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     final http = FakeHttp({'GET /api/v1/me': (_) => meJson(perms)});
+    container = ProviderContainer(
+      overrides: [
+        dioProvider.overrideWithValue(fakeDio(http)),
+        kvStoreProvider.overrideWithValue(MemoryKvStore()),
+        detailScreenProvider.overrideWithValue(_probes),
+      ],
+    );
+    addTearDown(container.dispose);
     router = GoRouter(
+      observers: [
+        ModalShortcutObserver(container.read(shortcutRegistryProvider)),
+      ],
       initialLocation: '/orders',
       routes: [
         ShellRoute(
@@ -92,14 +103,6 @@ void main() {
         ),
       ],
     );
-    container = ProviderContainer(
-      overrides: [
-        dioProvider.overrideWithValue(fakeDio(http)),
-        kvStoreProvider.overrideWithValue(MemoryKvStore()),
-        detailScreenProvider.overrideWithValue(_probes),
-      ],
-    );
-    addTearDown(container.dispose);
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
@@ -341,6 +344,63 @@ void main() {
       expect(find.text('QUOTATIONS LIST'), findsOneWidget);
     });
 
+    testWidgets('any dialog is modal without declaring a scope', (t) async {
+      await pump(t);
+      showDialog<void>(
+        context: t.element(find.byType(AppShell)),
+        builder: (_) => const AlertDialog(content: Text('plain dialog')),
+      );
+      await t.pumpAndSettle();
+      expect(await chord(t, LogicalKeyboardKey.digit1, alt: true), isFalse);
+      expect(await chord(t, LogicalKeyboardKey.keyH, alt: true), isFalse);
+      expect(find.text('ORDERS LIST'), findsOneWidget);
+      Navigator.of(t.element(find.text('plain dialog'))).pop();
+      await t.pumpAndSettle();
+      expect(await chord(t, LogicalKeyboardKey.digit1, alt: true), isTrue);
+    });
+
+    testWidgets('the unsaved-changes dialog of a tab blocks shell and Back', (
+      t,
+    ) async {
+      await pump(t);
+      final id = ws().open('/orders/a');
+      await t.pumpAndSettle();
+      await t.tap(find.text('push-a'));
+      await t.pumpAndSettle();
+      ws().dirtyOf(id).value = true;
+      await t.tap(find.byTooltip('Close tab'));
+      await t.pumpAndSettle();
+      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(await chord(t, LogicalKeyboardKey.digit1, alt: true), isFalse);
+      expect(await chord(t, LogicalKeyboardKey.keyB, alt: true), isFalse);
+      expect(await chord(t, LogicalKeyboardKey.keyH, alt: true), isFalse);
+      expect(find.text('screen a-in'), findsOneWidget);
+    });
+
+    testWidgets('a dialog scope is active although the tab is not', (t) async {
+      await pump(t);
+      ws().open('/orders/a');
+      await t.pumpAndSettle();
+      var n = 0;
+      await t.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            home: ShortcutActivity(
+              active: false,
+              child: ShortcutScope(
+                layer: ShortcutLayer.dialog,
+                actions: {ShortcutAction.save: () => n++},
+                child: const SizedBox(),
+              ),
+            ),
+          ),
+        ),
+      );
+      container.read(shortcutRegistryProvider).resolve(ShortcutAction.save)!();
+      expect(n, 1);
+    });
+
     testWidgets('a dialog above a tab shadows the tab handler', (t) async {
       await pump(t);
       ws().open('/orders/a');
@@ -423,6 +483,17 @@ void main() {
       } finally {
         debugDefaultTargetPlatformOverride = null;
       }
+    });
+  });
+
+  group('display', () {
+    test('the badge and the text follow the chord in effect', () {
+      expect(ShortcutAction.menu2.hintLabelFor(web: false), '2');
+      expect(ShortcutAction.menu2.hintLabelFor(web: true), '⇧2');
+      expect(ShortcutAction.menu2.describe(web: false), 'Alt+2');
+      expect(ShortcutAction.menu2.describe(web: true), 'Alt+Shift+2');
+      expect(ShortcutAction.save.hintLabelFor(web: true), 'S');
+      expect(ShortcutAction.kbShare.hintLabelFor(web: false), '⇧S');
     });
   });
 
