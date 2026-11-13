@@ -3374,3 +3374,93 @@ async fn the_traveller_of_another_company_is_not_found(db: PgPool) {
         StatusCode::NOT_FOUND
     );
 }
+
+// ---- The API contract (ADR 0060) ----
+
+#[test]
+fn the_new_endpoints_are_in_the_api_contract_without_name_clashes() {
+    // Schema names and operation ids are global in the OpenAPI document: a clash silently replaces one
+    // with the other and the generated clients then send the wrong body or call the wrong method.
+    let doc = serde_json::to_value(tradocraft_api::openapi()).unwrap();
+    // (Other modules share a few ids, such as `get_settings`, which is harmless as the clients are
+    // per tag; the ones of this item must stay unique.)
+    let mut uses: std::collections::HashMap<String, Vec<String>> = Default::default();
+    for (path, item) in doc["paths"].as_object().unwrap() {
+        for (method, operation) in item.as_object().unwrap() {
+            if let Some(id) = operation["operationId"].as_str() {
+                uses.entry(id.to_string())
+                    .or_default()
+                    .push(format!("{method} {path}"));
+            }
+        }
+    }
+    let schemas = &doc["components"]["schemas"];
+    for (name, field) in [
+        ("WorkCentreInput", "code"),
+        ("WorkCentreHoursInput", "slots"),
+        ("WorkCentreClosureInput", "from_date"),
+        ("BomRoutingInput", "operations"),
+        ("RoutingOperationInput", "work_centre_id"),
+        ("ProductionOperationFinish", "actual_minutes"),
+        ("ProductionOperationActual", "operation_id"),
+        ("ProductionOperationUpdate", "planned_start"),
+        ("ProductionScheduleInput", "start_date"),
+        (
+            "ProductionBuildComponentInput",
+            "auto_release_subassemblies",
+        ),
+        ("ReleaseProductionInput", "auto_release_subassemblies"),
+        ("ReleaseProductionInput", "start_date"),
+        ("CompleteProductionInput", "operations"),
+        ("ProductionOrder", "operations"),
+        ("ProductionOrder", "scheduled_end"),
+        ("ProductionOrder", "planned_cost"),
+        ("ProductionSummary", "behind_schedule"),
+        ("ProductionCostRollup", "gaps"),
+        ("ProductionCapacityDay", "overloaded"),
+    ] {
+        // A flattened struct (`ProductionOrder`) keeps its own fields in an `allOf` member.
+        let schema = &schemas[name];
+        let found = schema["properties"].get(field).is_some()
+            || schema["allOf"].as_array().is_some_and(|parts| {
+                parts
+                    .iter()
+                    .any(|part| part["properties"].get(field).is_some())
+            });
+        assert!(found, "{name} lacks {field}");
+    }
+    // The field service's own completion body is a different schema and was not replaced.
+    assert!(schemas["CompleteInput"]["properties"]
+        .get("notes")
+        .is_some());
+    let paths = doc["paths"].as_object().unwrap();
+    for (path, method) in [
+        ("/api/v1/production/work-centres", "post"),
+        ("/api/v1/production/work-centres/{id}/hours", "put"),
+        ("/api/v1/production/closures", "post"),
+        ("/api/v1/boms/{id}/routing", "put"),
+        (
+            "/api/v1/production-orders/{id}/operations/{operation_id}/finish",
+            "post",
+        ),
+        ("/api/v1/production-orders/{id}/schedule", "post"),
+        (
+            "/api/v1/production-orders/{id}/components/{component_id}/build",
+            "post",
+        ),
+        ("/api/v1/production-orders/{id}/pdf", "get"),
+        ("/api/v1/production/capacity", "get"),
+        ("/api/v1/production/products/{id}/cost-rollup", "get"),
+    ] {
+        let operation = paths[path]
+            .get(method)
+            .unwrap_or_else(|| panic!("{method} {path} is missing"));
+        let id = operation["operationId"].as_str().unwrap();
+        assert_eq!(
+            uses[id].len(),
+            1,
+            "operation id {id} of {method} {path} is also used by {:?}",
+            uses[id]
+        );
+    }
+}

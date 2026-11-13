@@ -611,9 +611,9 @@ async fn step_assert_confirmation_email(app: &axum::Router, db: &PgPool, flow: &
 }
 
 async fn step_stub_production_planning(app: &axum::Router, flow: &E2eFlow) {
-    // Stub: the production module (planning, work orders) does not exist yet. When it ships,
-    // replace this body with steps driving the order through in_planning -> planned ->
-    // in_production -> ready_for_shipping. Current boundary: the order stays confirmed.
+    // Boundary: production exists (ADR 0036, 0060, driven in tests/production.rs and
+    // tests/production_routing.rs) but is manual: a planner releases a confirmed order. Nobody
+    // does in this flow, so the order stays confirmed.
     let (status, o) = call(
         app,
         SALES,
@@ -625,7 +625,7 @@ async fn step_stub_production_planning(app: &axum::Router, flow: &E2eFlow) {
     assert_eq!(status, StatusCode::OK, "{o}");
     assert_eq!(
         o["order"]["status"], "confirmed",
-        "the order stays confirmed until a production module drives further statuses"
+        "the order stays confirmed until a planner releases it to production"
     );
 }
 
