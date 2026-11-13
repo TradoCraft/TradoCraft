@@ -76,3 +76,33 @@ is a read-only aggregate over existing lines, no extra table to maintain.
 **Later.** Scaling option quantities when the parent quantity is edited afterwards; options with a
 percentage price; showing option lines on orders (needs the order structure of ADR 0033's "Later");
 history by product family when a product has no earlier remarks.
+
+### 5. Changing the main product
+
+A main line (no parent) of an editable quotation (draft or new) can change its product in place
+("Change product" in the line's actions), using the same product search as adding a line. A sent or
+accepted quotation does not offer it: revise first, as for any other edit. Orders are unchanged
+(ADR 0016: a different product is a new quotation).
+
+- Kept: position, quantity, line discount, section, comment, customer remark, production remark
+  (an empty production remark gets the new product's default from the server, as for a new line),
+  and all sub-lines with their quantities; percent-of-parent lines keep their percentage.
+- Reset: the stored description. The line is sent without a description override so the server
+  names it from the new product in the customer's language. Prices are not kept: the normal pricing
+  preview reprices the line (price list of the customer's zone at the quotation's price date). A net
+  priced product cannot be discounted, so the discount is cleared and a note says so; an indicative
+  product has no confirmed price until the user enters one.
+- Options stay. They are never removed automatically. A sub-line whose product is not in the
+  active option catalogue of its parent (`GET /products/{id}/options`) is marked "Not offered with
+  <code>", but only when that catalogue is non-empty (a product without options leaves its
+  sub-items free) and never for percent-of-parent lines. The rule is evaluated from the catalogue,
+  so it also marks lines when a saved quotation is reloaded. After a swap a note counts the marked
+  lines and offers a Remove button for each; removal (with the line's own sub-lines) is always the
+  user's action. Marks never block saving or sending; sending with marked lines only shows a note
+  afterwards.
+- After a swap, the options of the new product that are not on the line yet are offered in the
+  options chooser (required ones ticked). The server does not refuse a quotation that lacks a
+  required option: required options are only added when asked for (`add_options`).
+- Catalogues are cached per screen and refetched for the new product; a failed fetch marks nothing
+  and never blocks editing.
+

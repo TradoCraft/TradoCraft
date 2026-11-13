@@ -2715,5 +2715,21 @@
   "todoLinkedItem": "Gekoppeld item",
   "todoFromOwner": "Van {name}",
   "todoSubProgress": "{done} van {total} subtaken afgerond",
-  "todoReorder": "Slepen om te ordenen"
+  "todoReorder": "Slepen om te ordenen",
+  "changeProduct": "Product wijzigen",
+  "changeProductOf": "Nieuw hoofdproduct voor {product}",
+  "@changeProductOf": {"placeholders": {"product": {"type": "String"}}},
+  "changeProductNew": "Nieuw product",
+  "changeProductNetNote": "{product} heeft een nettoprijs: de regelkorting is gewist.",
+  "@changeProductNetNote": {"placeholders": {"product": {"type": "String"}}},
+  "changeProductIndicativeNote": "{product} heeft een indicatieve prijs: bevestig de prijs voor het verzenden.",
+  "@changeProductIndicativeNote": {"placeholders": {"product": {"type": "String"}}},
+  "optionsNotApplicable": "{count} optie(s) gelden niet voor {product}: verwijder ze.",
+  "@optionsNotApplicable": {"placeholders": {"count": {"type": "int"}, "product": {"type": "String"}}},
+  "removeNamedLine": "{code} verwijderen",
+  "@removeNamedLine": {"placeholders": {"code": {"type": "String"}}},
+  "optionNotOffered": "Niet aangeboden bij {product}",
+  "@optionNotOffered": {"placeholders": {"product": {"type": "String"}}},
+  "sentWithNotApplicable": "Verzonden met {count} optie(s) die niet bij hun hoofdproduct horen.",
+  "@sentWithNotApplicable": {"placeholders": {"count": {"type": "int"}}}
 }

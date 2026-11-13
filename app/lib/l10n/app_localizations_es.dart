@@ -8632,4 +8632,45 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get todoReorder => 'Arrastrar para reordenar';
+
+  @override
+  String get changeProduct => 'Cambiar producto';
+
+  @override
+  String changeProductOf(String product) {
+    return 'Nuevo producto principal para $product';
+  }
+
+  @override
+  String get changeProductNew => 'Nuevo producto';
+
+  @override
+  String changeProductNetNote(String product) {
+    return '$product tiene precio neto: se ha borrado el descuento de la línea.';
+  }
+
+  @override
+  String changeProductIndicativeNote(String product) {
+    return '$product tiene precio indicativo: confirme el precio antes de enviar.';
+  }
+
+  @override
+  String optionsNotApplicable(int count, String product) {
+    return '$count opción(es) no se aplican a $product: elimínelas.';
+  }
+
+  @override
+  String removeNamedLine(String code) {
+    return 'Eliminar $code';
+  }
+
+  @override
+  String optionNotOffered(String product) {
+    return 'No se ofrece con $product';
+  }
+
+  @override
+  String sentWithNotApplicable(int count) {
+    return 'Enviado con $count opción(es) que no se aplican a su producto principal.';
+  }
 }

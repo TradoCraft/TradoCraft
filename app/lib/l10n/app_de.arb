@@ -2715,5 +2715,21 @@
   "todoLinkedItem": "Verknüpftes Element",
   "todoFromOwner": "Von {name}",
   "todoSubProgress": "{done} von {total} Unteraufgaben erledigt",
-  "todoReorder": "Zum Sortieren ziehen"
+  "todoReorder": "Zum Sortieren ziehen",
+  "changeProduct": "Produkt ändern",
+  "changeProductOf": "Neues Hauptprodukt für {product}",
+  "@changeProductOf": {"placeholders": {"product": {"type": "String"}}},
+  "changeProductNew": "Neues Produkt",
+  "changeProductNetNote": "{product} hat einen Nettopreis: der Positionsrabatt wurde entfernt.",
+  "@changeProductNetNote": {"placeholders": {"product": {"type": "String"}}},
+  "changeProductIndicativeNote": "{product} hat einen Richtpreis: Preis vor dem Versand bestätigen.",
+  "@changeProductIndicativeNote": {"placeholders": {"product": {"type": "String"}}},
+  "optionsNotApplicable": "{count} Option(en) gelten nicht für {product}: bitte entfernen.",
+  "@optionsNotApplicable": {"placeholders": {"count": {"type": "int"}, "product": {"type": "String"}}},
+  "removeNamedLine": "{code} entfernen",
+  "@removeNamedLine": {"placeholders": {"code": {"type": "String"}}},
+  "optionNotOffered": "Nicht verfügbar mit {product}",
+  "@optionNotOffered": {"placeholders": {"product": {"type": "String"}}},
+  "sentWithNotApplicable": "Versendet mit {count} Option(en), die nicht zu ihrem Hauptprodukt passen.",
+  "@sentWithNotApplicable": {"placeholders": {"count": {"type": "int"}}}
 }
