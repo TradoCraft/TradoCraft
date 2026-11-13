@@ -53,6 +53,7 @@ class _Server {
   late final FakeHttp http = FakeHttp({
     'GET /api/v1/me': (_) => meJson(['todo.use']),
     'GET /api/v1/todo/items': (_) => items,
+    'GET /api/v1/todo/settings': (_) => {'email_reminders': true},
     'POST /api/v1/todo/items': (b) {
       final body = b as Map;
       final item = _item(
@@ -98,6 +99,10 @@ Future<void> _pump(WidgetTester tester, _Server server) async {
   await tester.pumpAndSettle();
 }
 
+/// Query of the latest list request (the page also asks for its settings).
+Map<String, dynamic> _lastList(FakeHttp http) =>
+    http.queries[http.requests.lastIndexOf('GET /api/v1/todo/items')];
+
 Finder _key(String k) => find.byKey(ValueKey(k));
 
 void main() {
@@ -131,14 +136,14 @@ void main() {
   ) async {
     final server = _Server([]);
     await _pump(tester, server);
-    expect(server.http.queries.last['done'], false);
+    expect(_lastList(server.http)['done'], false);
     await tester.tap(find.text('Done'));
     await tester.pumpAndSettle();
-    expect(server.http.queries.last['done'], true);
+    expect(_lastList(server.http)['done'], true);
     expect(find.text('No finished to-dos.'), findsOneWidget);
     await tester.tap(find.text('All'));
     await tester.pumpAndSettle();
-    expect(server.http.queries.last.containsKey('done'), false);
+    expect(_lastList(server.http).containsKey('done'), false);
   });
 
   testWidgets('adding an item sends it with a client id and lists it', (
