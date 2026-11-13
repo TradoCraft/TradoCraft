@@ -1,6 +1,7 @@
 //! Production orders: releasing an order (or building for stock), the frozen BOM and its reserved
 //! components, planning dates, start, cancel, and the order status that follows (ADR 0036).
 
+use crate::operations::{load_operations, snapshot_routing, ProductionOperation};
 use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use axum::Json;
@@ -88,6 +89,12 @@ pub struct ProductionSummary {
     pub status: String,
     pub planned_ready_date: Option<NaiveDate>,
     pub short_components: i64,
+    /// Operations of the routing that was frozen at release (0 without a routing).
+    pub operation_count: i64,
+    /// How many of them are finished.
+    pub operations_done: i64,
+    /// An operation that is not finished is scheduled after the planned-ready date.
+    pub behind_schedule: bool,
     pub created_at: DateTime<Utc>,
 }
 
@@ -105,6 +112,10 @@ pub struct ProductionOrder {
     pub cancel_reason: Option<String>,
     pub components: Vec<ProductionComponent>,
     pub outputs: Vec<ProductionOutput>,
+    pub operations: Vec<ProductionOperation>,
+    /// When the last operation that is not finished is scheduled to end: the date to suggest as
+    /// the planned-ready date. Empty without open operations.
+    pub scheduled_end: Option<NaiveDate>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -129,6 +140,9 @@ pub struct ReleaseProductionInput {
     pub planned_ready_date: Option<NaiveDate>,
     /// A subassembly order made for a component of this production order.
     pub parent_order_id: Option<Uuid>,
+    /// The first day work can start, for scheduling the operations; defaults to today.
+    #[serde(default, deserialize_with = "tradocraft_core::serde_util::opt_date")]
+    pub start_date: Option<NaiveDate>,
     #[serde(default)]
     pub notes: String,
 }
@@ -172,6 +186,14 @@ const SELECT_SUMMARY: &str = "SELECT po.id, po.number, po.product_id, p.code AS 
             AND c.required_quantity > COALESCE((SELECT sum(r.quantity) FROM inventory.reservations r
                  WHERE r.reference_type = 'production_component' AND r.reference_id = c.id
                    AND r.status = 'active'), 0)) AS short_components,
+        (SELECT count(*) FROM production.order_operations x
+          WHERE x.production_order_id = po.id) AS operation_count,
+        (SELECT count(*) FROM production.order_operations x
+          WHERE x.production_order_id = po.id AND x.status = 'done') AS operations_done,
+        (po.status IN ('released', 'in_progress') AND po.planned_ready_date IS NOT NULL
+         AND EXISTS (SELECT 1 FROM production.order_operations x
+                     WHERE x.production_order_id = po.id AND x.status IN ('pending', 'in_progress')
+                       AND x.planned_end > po.planned_ready_date)) AS behind_schedule,
         po.created_at
      FROM production.production_orders po
      JOIN products.products p ON p.id = po.product_id
@@ -224,9 +246,10 @@ pub(crate) async fn lock_order(
 /// Loads a production order with its components and outputs.
 pub(crate) async fn load_order(
     conn: &mut PgConnection,
-    company_id: Uuid,
+    user: &CurrentUser,
     id: Uuid,
 ) -> AppResult<ProductionOrder> {
+    let company_id = user.company_id;
     let summary: ProductionSummary = sqlx::query_as(&format!(
         "{SELECT_SUMMARY} WHERE po.id = $1 AND po.company_id = $2"
     ))
@@ -268,8 +291,14 @@ pub(crate) async fn load_order(
          WHERE o.production_order_id = $1 ORDER BY su.serial_number, o.id",
     )
     .bind(id)
-    .fetch_all(conn)
+    .fetch_all(&mut *conn)
     .await?;
+    let operations = load_operations(conn, user, id).await?;
+    let scheduled_end = operations
+        .iter()
+        .filter(|o| o.is_open())
+        .map(|o| o.planned_end)
+        .max();
     Ok(ProductionOrder {
         summary,
         order_line_id: extra.order_line_id,
@@ -281,6 +310,8 @@ pub(crate) async fn load_order(
         cancel_reason: extra.cancel_reason,
         components,
         outputs,
+        operations,
+        scheduled_end,
     })
 }
 
@@ -551,20 +582,35 @@ async fn release(
     for (i, l) in lines.iter().enumerate() {
         let component_id = new_id();
         let need = required(l.quantity, quantity, l.scrap_percent);
+        // The standard cost is frozen with the component, like the BOM, so the planned and
+        // actual cost of the order do not move when a standard cost is changed later.
+        let standard_cost = tradocraft_products::get_product(&mut *tx, l.component_product_id)
+            .await?
+            .standard_cost;
         sqlx::query(
             "INSERT INTO production.order_components
-                 (id, production_order_id, position, component_product_id, required_quantity)
-             VALUES ($1, $2, $3, $4, $5)",
+                 (id, production_order_id, position, component_product_id, required_quantity, standard_cost)
+             VALUES ($1, $2, $3, $4, $5, $6)",
         )
         .bind(component_id)
         .bind(id)
         .bind(i as i32 + 1)
         .bind(l.component_product_id)
         .bind(need)
+        .bind(standard_cost)
         .execute(&mut *tx)
         .await?;
         try_reserve(&mut tx, &user, component_id, l.component_product_id, need).await?;
     }
+    let operations = snapshot_routing(
+        &mut tx,
+        &user,
+        id,
+        bom_id,
+        quantity,
+        input.start_date.unwrap_or_else(tradocraft_core::today),
+    )
+    .await?;
     audit::record(
         &mut tx,
         &user,
@@ -573,14 +619,14 @@ async fn release(
         "released",
         serde_json::json!({
             "number": number, "product": product.code, "quantity": quantity, "bom_revision": bom_revision,
-            "order": order_number, "division_id": division_id,
+            "order": order_number, "division_id": division_id, "operations": operations,
         }),
     )
     .await?;
     if let Some(order_id) = input.order_id {
         sync_order_status(&mut tx, &user, order_id).await?;
     }
-    let out = load_order(&mut tx, user.company_id, id).await?;
+    let out = load_order(&mut tx, &user, id).await?;
     tx.commit().await?;
     Ok((StatusCode::CREATED, Json(out)))
 }
@@ -632,7 +678,7 @@ async fn update_order(
     if let Some(order_id) = po.order_id {
         sync_order_status(&mut tx, &user, order_id).await?;
     }
-    let out = load_order(&mut tx, user.company_id, id).await?;
+    let out = load_order(&mut tx, &user, id).await?;
     tx.commit().await?;
     Ok(Json(out))
 }
@@ -676,7 +722,7 @@ async fn reserve_components(
             try_reserve(&mut tx, &user, component_id, product_id, need).await?;
         }
     }
-    let out = load_order(&mut tx, user.company_id, id).await?;
+    let out = load_order(&mut tx, &user, id).await?;
     tx.commit().await?;
     Ok(Json(out))
 }
@@ -698,16 +744,30 @@ async fn start_order(
             po.number, po.status
         )));
     }
+    begin_order(&mut tx, &user, id, &po).await?;
+    let out = load_order(&mut tx, &user, id).await?;
+    tx.commit().await?;
+    Ok(Json(out))
+}
+
+/// Puts a released order in progress and moves the sales order along. Starting the order and
+/// starting its first operation do the same.
+pub(crate) async fn begin_order(
+    conn: &mut PgConnection,
+    user: &CurrentUser,
+    id: Uuid,
+    po: &Locked,
+) -> AppResult<()> {
     sqlx::query(
         "UPDATE production.production_orders
          SET status = 'in_progress', started_at = now(), updated_at = now() WHERE id = $1",
     )
     .bind(id)
-    .execute(&mut *tx)
+    .execute(&mut *conn)
     .await?;
     audit::record(
-        &mut tx,
-        &user,
+        conn,
+        user,
         "production_order",
         id,
         "started",
@@ -715,11 +775,9 @@ async fn start_order(
     )
     .await?;
     if let Some(order_id) = po.order_id {
-        sync_order_status(&mut tx, &user, order_id).await?;
+        sync_order_status(conn, user, order_id).await?;
     }
-    let out = load_order(&mut tx, user.company_id, id).await?;
-    tx.commit().await?;
-    Ok(Json(out))
+    Ok(())
 }
 
 /// Cancels an open production order and releases the components reserved for it.
@@ -765,7 +823,7 @@ async fn cancel_order(
     if let Some(order_id) = po.order_id {
         sync_order_status(&mut tx, &user, order_id).await?;
     }
-    let out = load_order(&mut tx, user.company_id, id).await?;
+    let out = load_order(&mut tx, &user, id).await?;
     tx.commit().await?;
     Ok(Json(out))
 }
@@ -805,7 +863,7 @@ async fn get_order(
 ) -> AppResult<Json<ProductionOrder>> {
     user.require(Permission::ProductionRead)?;
     let mut conn = state.db.acquire().await?;
-    Ok(Json(load_order(&mut conn, user.company_id, id).await?))
+    Ok(Json(load_order(&mut conn, &user, id).await?))
 }
 
 /// The production queue: most urgent first (sales order priority, then planned-ready date).

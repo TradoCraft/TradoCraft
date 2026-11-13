@@ -17,6 +17,7 @@ const VIEWER: &str = "viewer@example.com";
 const TECHNICIAN: &str = "technician@example.com"; // no production rights
 const PLANNER: &str = "planner@example.com"; // role production
 const PM: &str = "pm@example.com"; // role product_manager
+const STORES: &str = "stores@example.com"; // role warehouse
 const COMPANY: &str = "00000000-0000-7000-8000-000000000001";
 
 async fn add_user(db: &PgPool, email: &str, role: &str) {
@@ -70,13 +71,28 @@ fn id(v: &Value) -> String {
 struct Env {
     app: axum::Router,
     db: PgPool,
+    /// A stock location of the warehouse WH1.
+    main: String,
 }
 
 async fn env(db: PgPool) -> Env {
     let app = setup(db.clone()).await;
     add_user(&db, PLANNER, "production").await;
     add_user(&db, PM, "product_manager").await;
-    Env { app, db }
+    add_user(&db, STORES, "warehouse").await;
+    let (status, w) = post(
+        &app,
+        ADMIN,
+        "/inventory/warehouses",
+        json!({ "code": "WH1", "name": "Main warehouse" }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{w}");
+    Env {
+        app,
+        db,
+        main: w["locations"][0]["id"].as_str().unwrap().into(),
+    }
 }
 
 impl Env {
@@ -1093,4 +1109,902 @@ async fn routings_are_off_with_the_production_module(db: PgPool) {
     .await
     .unwrap();
     assert_eq!(copied, 1);
+}
+
+// ---- Operations on production orders (ADR 0060) ----
+
+const ALPHA: &str = "00000000-0000-7000-8000-000000000401";
+const PROFILE: &str = "00000000-0000-7000-8000-000000000308";
+const BOLT: &str = "00000000-0000-7000-8000-000000000309";
+
+fn uid() -> String {
+    Uuid::now_v7().to_string()
+}
+
+/// Opens the closure of a work centre (or, without one, the whole plant) for the planner.
+async fn close(e: &Env, work_centre: Option<&str>, from: &str, to: &str) {
+    let (status, c) = post(
+        &e.app,
+        PLANNER,
+        "/production/closures",
+        json!({ "work_centre_id": work_centre, "from_date": from, "to_date": to, "kind": "maintenance" }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{c}");
+}
+
+impl Env {
+    async fn receive(&self, product: &str, quantity: &str) {
+        let (status, m) = post(
+            &self.app,
+            STORES,
+            "/inventory/receipts",
+            json!({ "id": uid(), "location_id": self.main, "product_id": product, "quantity": quantity }),
+        )
+        .await;
+        assert_eq!(status, StatusCode::CREATED, "{m}");
+    }
+
+    /// Parts for two frames: 14.3 m of profile and 48.96 bolts are needed, so this is plenty.
+    async fn frame_parts(&self) {
+        self.receive(PROFILE, "20").await;
+        self.receive(BOLT, "100").await;
+    }
+
+    /// A confirmed order of one line; returns (order id, line id).
+    async fn order(&self, product: &str, quantity: &str) -> (String, String) {
+        let (status, qn) = post(&self.app, SALES, "/quotations", json!({ "customer_id": ALPHA, "lines": [{ "product_id": product, "quantity": quantity }] })).await;
+        assert_eq!(status, StatusCode::CREATED, "{qn}");
+        let qid = id(&qn);
+        post(
+            &self.app,
+            SALES,
+            &format!("/quotations/{qid}/send"),
+            json!({}),
+        )
+        .await;
+        let (status, o) = post(
+            &self.app,
+            SALES,
+            &format!("/quotations/{qid}/convert"),
+            json!({ "customer_reference": "PO" }),
+        )
+        .await;
+        assert_eq!(status, StatusCode::CREATED, "{o}");
+        let order = id(&o["order"]);
+        post(
+            &self.app,
+            SALES,
+            &format!("/orders/{order}/send"),
+            json!({}),
+        )
+        .await;
+        let (status, o) = post(
+            &self.app,
+            SALES,
+            &format!("/orders/{order}/confirm"),
+            json!({}),
+        )
+        .await;
+        assert_eq!(status, StatusCode::OK, "{o}");
+        (order, o["lines"][0]["id"].as_str().unwrap().into())
+    }
+
+    async fn release(&self, order: &str, line: &str, body: Value) -> (StatusCode, Value) {
+        let mut b = body;
+        b["order_id"] = json!(order);
+        b["order_line_id"] = json!(line);
+        post(&self.app, PLANNER, "/production-orders", b).await
+    }
+
+    async fn build_for_stock(&self, product: &str, quantity: &str, extra: Value) -> Value {
+        let mut b = json!({ "product_id": product, "quantity": quantity });
+        for (k, v) in extra.as_object().unwrap() {
+            b[k] = v.clone();
+        }
+        let (status, po) = post(&self.app, PLANNER, "/production-orders", b).await;
+        assert_eq!(status, StatusCode::CREATED, "{po}");
+        po
+    }
+
+    async fn production_order(&self, who: &str, po: &str) -> Value {
+        let (status, o) = get(&self.app, who, &format!("/production-orders/{po}")).await;
+        assert_eq!(status, StatusCode::OK, "{o}");
+        o
+    }
+
+    async fn order_status(&self, order: &str) -> String {
+        sqlx::query_scalar("SELECT status FROM sales.orders WHERE id = $1::uuid")
+            .bind(order)
+            .fetch_one(&self.db)
+            .await
+            .unwrap()
+    }
+
+    /// Gives the frame a routing (Cut on SAW: 30 min + 10 per frame; Weld on WELD: 60 per frame)
+    /// as the active BOM revision. Returns (SAW id, WELD id).
+    async fn frame_routing(&self) -> (String, String) {
+        let saw = id(&self
+            .work_centre("SAW", json!({ "cost_per_hour": "30" }))
+            .await);
+        let weld = id(&self
+            .work_centre("WELD", json!({ "cost_per_hour": "60" }))
+            .await);
+        let draft = self.draft_bom(FRAME, json!({})).await;
+        self.set_routing(
+            &draft,
+            vec![op("Cut", &saw, 30, "10"), op("Weld", &weld, 0, "60")],
+        )
+        .await;
+        let (status, a) = post(&self.app, PM, &format!("/boms/{draft}/activate"), json!({})).await;
+        assert_eq!(status, StatusCode::OK, "{a}");
+        (saw, weld)
+    }
+}
+
+fn operation<'a>(po: &'a Value, name: &str) -> &'a Value {
+    po["operations"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|o| o["name"] == name)
+        .unwrap_or_else(|| panic!("no operation {name} in {po}"))
+}
+
+fn minutes(po: &Value, name: &str) -> i64 {
+    operation(po, name)["planned_minutes"].as_i64().unwrap()
+}
+
+fn dates(po: &Value, name: &str) -> (String, String) {
+    let o = operation(po, name);
+    (
+        o["planned_start"].as_str().unwrap().into(),
+        o["planned_end"].as_str().unwrap().into(),
+    )
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn releasing_snapshots_the_routing_and_schedules_it_on_the_calendars(db: PgPool) {
+    let e = env(db).await;
+    e.frame_parts().await;
+    let (_, weld) = e.frame_routing().await;
+    // WELD is down on Monday 1 March 2027.
+    close(&e, Some(&weld), "2027-03-01", "2027-03-01").await;
+    let (order, line) = e.order(FRAME, "2").await;
+
+    let (status, po) = e
+        .release(
+            &order,
+            &line,
+            json!({ "start_date": "2027-03-01T00:00:00.000" }),
+        )
+        .await;
+    assert_eq!(status, StatusCode::CREATED, "{po}");
+    let ops = po["operations"].as_array().unwrap();
+    assert_eq!(ops.len(), 2);
+    assert_eq!(ops[0]["name"], "Cut");
+    assert_eq!(ops[0]["position"], 1);
+    assert_eq!(ops[0]["status"], "pending");
+    assert_eq!(ops[0]["work_centre_code"], "SAW");
+    assert_eq!(ops[0]["setup_minutes"], 30);
+    // 30 setup + 10 per frame x 2; 60 x 2.
+    assert_eq!(minutes(&po, "Cut"), 50);
+    assert_eq!(minutes(&po, "Weld"), 120);
+    // Cut works on Monday; Weld cannot (maintenance), so it starts on Tuesday.
+    assert_eq!(
+        dates(&po, "Cut"),
+        ("2027-03-01".into(), "2027-03-01".into())
+    );
+    assert_eq!(
+        dates(&po, "Weld"),
+        ("2027-03-02".into(), "2027-03-02".into())
+    );
+    assert_eq!(po["scheduled_end"], "2027-03-02");
+    assert_eq!(po["operation_count"], 2);
+    assert_eq!(po["operations_done"], 0);
+    // The schedule is a suggestion: the planned-ready date and so the sales order are untouched.
+    assert!(po["planned_ready_date"].is_null());
+    assert_eq!(po["behind_schedule"], false);
+    assert_eq!(e.order_status(&order).await, "in_planning");
+
+    // The rate is a cost: the administrator sees it, production does not.
+    let id = id(&po);
+    let admin = e.production_order(ADMIN, &id).await;
+    assert_eq!(dec(&operation(&admin, "Weld")["cost_rate"]), q("60"));
+    let planner = e.production_order(PLANNER, &id).await;
+    assert!(operation(&planner, "Weld")["cost_rate"].is_null());
+
+    // The planned-ready date is the planner's call; behind_schedule compares with it.
+    for (date, behind) in [
+        ("2027-03-01", true),
+        ("2027-03-02", false),
+        ("2027-03-05", false),
+    ] {
+        let (status, u) = put(
+            &e.app,
+            PLANNER,
+            &format!("/production-orders/{id}"),
+            json!({ "planned_ready_date": date }),
+        )
+        .await;
+        assert_eq!(status, StatusCode::OK, "{u}");
+        assert_eq!(u["behind_schedule"], behind, "ready {date}: {u}");
+        let (_, queue) = get(&e.app, PLANNER, "/production-orders").await;
+        assert_eq!(queue["items"][0]["behind_schedule"], behind, "{date}");
+        assert_eq!(queue["items"][0]["operation_count"], 2);
+    }
+
+    // The snapshot is frozen: a later revision with another routing does not change the order.
+    let draft = e.draft_bom(FRAME, json!({})).await;
+    let weld_op = &e.routing(PM, &draft).await["operations"][1]["work_centre_id"];
+    e.set_routing(
+        &draft,
+        vec![op("Just weld", weld_op.as_str().unwrap(), 0, "5")],
+    )
+    .await;
+    post(&e.app, PM, &format!("/boms/{draft}/activate"), json!({})).await;
+    let again = e.production_order(PLANNER, &id).await;
+    assert_eq!(again["operations"].as_array().unwrap().len(), 2);
+    assert_eq!(minutes(&again, "Weld"), 120);
+    // ... while a new order gets the new routing.
+    let fresh = e.build_for_stock(FRAME, "1", json!({})).await;
+    assert_eq!(fresh["operations"].as_array().unwrap().len(), 1);
+    assert_eq!(fresh["operations"][0]["name"], "Just weld");
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn a_long_operation_runs_over_several_working_days_from_today_by_default(db: PgPool) {
+    let e = env(db).await;
+    e.frame_parts().await;
+    e.frame_routing().await;
+    let po = e.build_for_stock(FRAME, "2", json!({})).await;
+    let today = chrono::Utc::now().date_naive().to_string();
+    let (start, end) = dates(&po, "Cut");
+    assert!(
+        start >= today,
+        "work starts today or the next working day: {start}"
+    );
+    assert!(end >= start);
+
+    // 20 frames: Weld takes 1200 minutes, 2.5 working days of 480.
+    let big = e
+        .build_for_stock(FRAME, "20", json!({ "start_date": "2027-03-01" }))
+        .await;
+    assert_eq!(minutes(&big, "Weld"), 1200);
+    let (cut_start, cut_end) = dates(&big, "Cut");
+    assert_eq!(
+        (cut_start.as_str(), cut_end.as_str()),
+        ("2027-03-01", "2027-03-01")
+    );
+    // Cut 230 on Monday leaves 250 for Weld on Monday; 1200 - 250 = 950 = 480 + 470: Tuesday and Wednesday.
+    assert_eq!(
+        dates(&big, "Weld"),
+        ("2027-03-01".into(), "2027-03-03".into())
+    );
+    assert_eq!(big["scheduled_end"], "2027-03-03");
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn an_order_without_a_routing_has_no_operations_and_works_as_before(db: PgPool) {
+    let e = env(db).await;
+    e.frame_parts().await;
+    let po = e.build_for_stock(FRAME, "1", json!({})).await;
+    assert_eq!(po["operations"], json!([]));
+    assert!(po["scheduled_end"].is_null());
+    assert_eq!(po["operation_count"], 0);
+    assert_eq!(po["behind_schedule"], false);
+    let id = id(&po);
+    let (status, done) = post(
+        &e.app,
+        STORES,
+        &format!("/production-orders/{id}/complete"),
+        json!({ "output": { "quantity": "1", "location_id": e.main } }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{done}");
+    assert_eq!(done["operations"], json!([]));
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn a_release_is_refused_when_a_work_centre_has_no_working_time(db: PgPool) {
+    let e = env(db).await;
+    e.frame_parts().await;
+    e.frame_routing().await;
+    // The whole plant is closed for years.
+    close(&e, None, "2027-01-01", "2031-12-31").await;
+    let (status, r) = post(
+        &e.app,
+        PLANNER,
+        "/production-orders",
+        json!({ "product_id": FRAME, "quantity": "1", "start_date": "2027-03-01" }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{r}");
+    assert!(
+        r["message"].as_str().unwrap().contains("no working time"),
+        "{r}"
+    );
+    // Nothing was created: not the order, not its reservations.
+    let orders: i64 = sqlx::query_scalar("SELECT count(*) FROM production.production_orders")
+        .fetch_one(&e.db)
+        .await
+        .unwrap();
+    assert_eq!(orders, 0);
+    let held: i64 = sqlx::query_scalar("SELECT count(*) FROM inventory.reservations")
+        .fetch_one(&e.db)
+        .await
+        .unwrap();
+    assert_eq!(held, 0);
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn the_shop_floor_starts_and_finishes_operations_with_the_minutes_worked(db: PgPool) {
+    let e = env(db).await;
+    e.frame_parts().await;
+    e.frame_routing().await;
+    let (order, line) = e.order(FRAME, "2").await;
+    let (_, po) = e
+        .release(&order, &line, json!({ "start_date": "2027-03-01" }))
+        .await;
+    let n = id(&po);
+    let cut = id(operation(&po, "Cut"));
+    let weld = id(operation(&po, "Weld"));
+    let uri = |op: &str, action: &str| format!("/production-orders/{n}/operations/{op}/{action}");
+
+    // Production and the warehouse run operations; sales and viewers do not.
+    for who in [SALES, VIEWER, TECHNICIAN] {
+        assert_eq!(
+            post(&e.app, who, &uri(&cut, "start"), json!({})).await.0,
+            StatusCode::FORBIDDEN,
+            "{who}"
+        );
+    }
+    assert_eq!(e.order_status(&order).await, "in_planning");
+
+    // Starting the first operation starts the order, and the sales order follows.
+    let (status, started) = post(&e.app, STORES, &uri(&cut, "start"), json!({})).await;
+    assert_eq!(status, StatusCode::OK, "{started}");
+    assert_eq!(operation(&started, "Cut")["status"], "in_progress");
+    assert!(!operation(&started, "Cut")["started_at"].is_null());
+    assert_eq!(started["status"], "in_progress");
+    assert!(!started["started_at"].is_null());
+    assert_eq!(e.order_status(&order).await, "in_production");
+    let (status, _) = post(&e.app, STORES, &uri(&cut, "start"), json!({})).await;
+    assert_eq!(status, StatusCode::CONFLICT, "already started");
+
+    // Finishing records the minutes and who finished it.
+    for (what, body) in [
+        ("negative", json!({ "actual_minutes": -1 })),
+        ("silly", json!({ "actual_minutes": 5_000_000 })),
+    ] {
+        let (status, r) = post(&e.app, STORES, &uri(&cut, "finish"), body).await;
+        assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{what}: {r}");
+    }
+    let (status, fin) = post(
+        &e.app,
+        STORES,
+        &uri(&cut, "finish"),
+        json!({ "actual_minutes": 65, "note": "  a burr on the first one  " }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{fin}");
+    let cut_op = operation(&fin, "Cut");
+    assert_eq!(cut_op["status"], "done");
+    assert_eq!(cut_op["actual_minutes"], 65);
+    assert_eq!(cut_op["completed_by_name"], STORES);
+    assert!(!cut_op["completed_at"].is_null());
+    assert_eq!(cut_op["notes"], "a burr on the first one");
+    assert_eq!(fin["operations_done"], 1);
+    assert_eq!(
+        fin["status"], "in_progress",
+        "finishing operations does not complete the order"
+    );
+    assert_eq!(
+        post(&e.app, STORES, &uri(&cut, "finish"), json!({}))
+            .await
+            .0,
+        StatusCode::CONFLICT,
+        "already finished"
+    );
+
+    // An operation that was never started is started and finished at once, with the planned
+    // minutes unless told otherwise. Reopening takes it back to work.
+    let (status, fin) = post(&e.app, PLANNER, &uri(&weld, "finish"), json!({})).await;
+    assert_eq!(status, StatusCode::OK, "{fin}");
+    assert_eq!(operation(&fin, "Weld")["actual_minutes"], 120);
+    assert!(!operation(&fin, "Weld")["started_at"].is_null());
+    let (status, re) = post(&e.app, PLANNER, &uri(&weld, "reopen"), json!({})).await;
+    assert_eq!(status, StatusCode::OK, "{re}");
+    let weld_op = operation(&re, "Weld");
+    assert_eq!(weld_op["status"], "in_progress");
+    assert!(weld_op["actual_minutes"].is_null());
+    assert!(weld_op["completed_by"].is_null());
+    assert_eq!(re["operations_done"], 1);
+    assert_eq!(
+        post(&e.app, PLANNER, &uri(&weld, "reopen"), json!({}))
+            .await
+            .0,
+        StatusCode::CONFLICT,
+        "only a finished operation can be reopened"
+    );
+    let (status, _) = post(
+        &e.app,
+        PLANNER,
+        &uri(&weld, "finish"),
+        json!({ "actual_minutes": 140 }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+
+    // Unknown operations and operations of another order are 404.
+    other_order_is_not_found(&e, &uri(&weld, "start")).await;
+    for action in ["start", "finish", "reopen"] {
+        assert_eq!(
+            post(&e.app, STORES, &uri(&uid(), action), json!({}))
+                .await
+                .0,
+            StatusCode::NOT_FOUND,
+            "{action}"
+        );
+    }
+
+    // Every step is in the history of the order.
+    let actions: Vec<String> = sqlx::query_scalar(
+        "SELECT action FROM audit.events WHERE entity = 'production_order' AND entity_id = $1::uuid ORDER BY id",
+    )
+    .bind(&n)
+    .fetch_all(&e.db)
+    .await
+    .unwrap();
+    assert!(
+        actions.contains(&"operation_started".to_string()),
+        "{actions:?}"
+    );
+    assert_eq!(
+        actions
+            .iter()
+            .filter(|a| *a == "operation_finished")
+            .count(),
+        3,
+        "{actions:?}"
+    );
+    assert!(
+        actions.contains(&"operation_reopened".to_string()),
+        "{actions:?}"
+    );
+}
+
+/// The operation `uri` belongs to one order; another order's id in the same place is 404.
+async fn other_order_is_not_found(e: &Env, uri: &str) {
+    let po = e.build_for_stock(FRAME, "1", json!({})).await;
+    let other = uri.replacen(uri.split('/').nth(2).unwrap(), &id(&po), 1);
+    assert_eq!(
+        post(&e.app, STORES, &other, json!({})).await.0,
+        StatusCode::NOT_FOUND,
+        "{other}"
+    );
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn operations_can_only_be_worked_on_while_the_order_is_open(db: PgPool) {
+    let e = env(db).await;
+    e.frame_parts().await;
+    e.frame_routing().await;
+    let po = e.build_for_stock(FRAME, "1", json!({})).await;
+    let n = id(&po);
+    let cut = id(operation(&po, "Cut"));
+    let (status, c) = post(
+        &e.app,
+        PLANNER,
+        &format!("/production-orders/{n}/cancel"),
+        json!({ "reason": "not needed" }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{c}");
+    for (method, action, body) in [
+        (Method::POST, "start", json!({})),
+        (Method::POST, "finish", json!({})),
+        (Method::POST, "reopen", json!({})),
+    ] {
+        let (status, r) = api(
+            &e.app,
+            STORES,
+            method,
+            &format!("/production-orders/{n}/operations/{cut}/{action}"),
+            Some(body),
+        )
+        .await;
+        assert_eq!(status, StatusCode::CONFLICT, "{action}: {r}");
+    }
+    let (status, _) = put(
+        &e.app,
+        PLANNER,
+        &format!("/production-orders/{n}/operations/{cut}"),
+        json!({ "planned_start": "2027-03-01" }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CONFLICT);
+    let (status, _) = post(
+        &e.app,
+        PLANNER,
+        &format!("/production-orders/{n}/schedule"),
+        json!({}),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CONFLICT);
+}
+
+/// Completes a production order of two frames with `extra` merged into the body.
+async fn complete_two(e: &Env, n: &str, extra: Value) -> (StatusCode, Value) {
+    let mut body = json!({ "output": { "quantity": "2", "location_id": e.main } });
+    for (k, v) in extra.as_object().unwrap() {
+        body[k] = v.clone();
+    }
+    post(
+        &e.app,
+        STORES,
+        &format!("/production-orders/{n}/complete"),
+        body,
+    )
+    .await
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn completing_an_order_finishes_the_named_operations_and_skips_the_rest(db: PgPool) {
+    let e = env(db).await;
+    e.frame_parts().await;
+    e.frame_routing().await;
+    let po = e
+        .build_for_stock(FRAME, "2", json!({ "start_date": "2027-03-01" }))
+        .await;
+    let n = id(&po);
+    let cut = id(operation(&po, "Cut"));
+    let weld = id(operation(&po, "Weld"));
+    let complete = |extra: Value| complete_two(&e, &n, extra);
+
+    // Refused: another order's operation, twice the same one, silly minutes. Nothing changes.
+    let stranger = e.build_for_stock(FRAME, "1", json!({})).await;
+    for (what, ops) in [
+        (
+            "an operation of another order",
+            json!([{ "operation_id": id(&stranger["operations"][0]) }]),
+        ),
+        ("unknown", json!([{ "operation_id": uid() }])),
+        (
+            "twice",
+            json!([{ "operation_id": cut }, { "operation_id": cut, "actual_minutes": 5 }]),
+        ),
+        (
+            "negative",
+            json!([{ "operation_id": cut, "actual_minutes": -5 }]),
+        ),
+    ] {
+        let (status, r) = complete(json!({ "operations": ops })).await;
+        assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{what}: {r}");
+    }
+    assert_eq!(e.production_order(PLANNER, &n).await["status"], "released");
+
+    // Weld was finished on the floor already; the dialog names Cut (65 min) and leaves out Weld.
+    let (status, _) = post(
+        &e.app,
+        STORES,
+        &format!("/production-orders/{n}/operations/{weld}/finish"),
+        json!({ "actual_minutes": 130 }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    let (status, done) = complete(json!({ "operations": [
+        { "operation_id": cut, "actual_minutes": 65 },
+        { "operation_id": weld, "actual_minutes": 1 },
+    ] }))
+    .await;
+    assert_eq!(status, StatusCode::OK, "{done}");
+    assert_eq!(done["status"], "completed");
+    assert_eq!(operation(&done, "Cut")["status"], "done");
+    assert_eq!(operation(&done, "Cut")["actual_minutes"], 65);
+    assert_eq!(
+        operation(&done, "Weld")["actual_minutes"],
+        130,
+        "a finished operation is left alone"
+    );
+    assert!(done["scheduled_end"].is_null(), "nothing is open any more");
+    assert_eq!(done["operations_done"], 2);
+    let data: Value = sqlx::query_scalar(
+        "SELECT data FROM audit.events WHERE entity = 'production_order' AND action = 'completed' AND entity_id = $1::uuid",
+    )
+    .bind(&n)
+    .fetch_one(&e.db)
+    .await
+    .unwrap();
+    assert_eq!(data["operations_finished"], 1);
+    assert_eq!(data["operations_skipped"], 0);
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn open_operations_never_stop_an_order_from_being_completed(db: PgPool) {
+    let e = env(db).await;
+    e.frame_parts().await;
+    e.frame_routing().await;
+    let po = e.build_for_stock(FRAME, "2", json!({})).await;
+    let n = id(&po);
+    let cut = id(operation(&po, "Cut"));
+    // Cut is running when the order is completed without naming any operation (an older client
+    // sends none): both open operations are skipped, with nothing recorded for them.
+    post(
+        &e.app,
+        STORES,
+        &format!("/production-orders/{n}/operations/{cut}/start"),
+        json!({}),
+    )
+    .await;
+    let (status, done) = post(
+        &e.app,
+        STORES,
+        &format!("/production-orders/{n}/complete"),
+        json!({ "output": { "quantity": "2", "location_id": e.main } }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{done}");
+    for name in ["Cut", "Weld"] {
+        let o = operation(&done, name);
+        assert_eq!(o["status"], "skipped", "{name}");
+        assert!(o["actual_minutes"].is_null());
+        assert_eq!(o["completed_by_name"], STORES);
+    }
+    assert_eq!(done["operations_done"], 0);
+    assert!(done["scheduled_end"].is_null());
+    assert_eq!(done["behind_schedule"], false);
+    // A skipped operation can be reopened for a correction only while the order is open: it is not.
+    let (status, _) = post(
+        &e.app,
+        STORES,
+        &format!("/production-orders/{n}/operations/{cut}/reopen"),
+        json!({}),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CONFLICT);
+    let data: Value = sqlx::query_scalar(
+        "SELECT data FROM audit.events WHERE entity = 'production_order' AND action = 'completed' AND entity_id = $1::uuid",
+    )
+    .bind(&n)
+    .fetch_one(&e.db)
+    .await
+    .unwrap();
+    assert_eq!(data["operations_skipped"], 2);
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn planners_move_operations_and_schedule_the_rest_again(db: PgPool) {
+    let e = env(db).await;
+    e.frame_parts().await;
+    let (saw, _weld) = e.frame_routing().await;
+    let spare = e
+        .work_centre("SPARE", json!({ "cost_per_hour": "99" }))
+        .await;
+    let retired = e.work_centre("OLD", json!({})).await;
+    put(
+        &e.app,
+        ADMIN,
+        &format!("/production/work-centres/{}", id(&retired)),
+        json!({ "code": "OLD", "name": "Old", "active": false }),
+    )
+    .await;
+    let (order, line) = e.order(FRAME, "2").await;
+    let (_, po) = e
+        .release(&order, &line, json!({ "start_date": "2027-03-01" }))
+        .await;
+    let n = id(&po);
+    let cut = id(operation(&po, "Cut"));
+    let weld_op = id(operation(&po, "Weld"));
+    let edit = |op: &str| format!("/production-orders/{n}/operations/{op}");
+
+    // Move Cut to another work centre and other dates: the rate is taken again.
+    let (status, moved) = put(
+        &e.app,
+        PLANNER,
+        &edit(&cut),
+        json!({ "work_centre_id": id(&spare), "planned_start": "2027-03-08", "planned_end": "2027-03-09T00:00:00.000" }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{moved}");
+    assert_eq!(operation(&moved, "Cut")["work_centre_code"], "SPARE");
+    assert_eq!(
+        dates(&moved, "Cut"),
+        ("2027-03-08".into(), "2027-03-09".into())
+    );
+    let as_admin = e.production_order(ADMIN, &n).await;
+    assert_eq!(dec(&operation(&as_admin, "Cut")["cost_rate"]), q("99"));
+    assert_eq!(moved["scheduled_end"], "2027-03-09");
+    // What is left out stays.
+    let (status, moved) = put(
+        &e.app,
+        PLANNER,
+        &edit(&cut),
+        json!({ "planned_end": "2027-03-10" }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{moved}");
+    assert_eq!(operation(&moved, "Cut")["work_centre_code"], "SPARE");
+    assert_eq!(
+        dates(&moved, "Cut"),
+        ("2027-03-08".into(), "2027-03-10".into())
+    );
+
+    for (what, body) in [
+        (
+            "ends before it starts",
+            json!({ "planned_start": "2027-03-20", "planned_end": "2027-03-19" }),
+        ),
+        (
+            "only the end, before the start",
+            json!({ "planned_end": "2027-03-01" }),
+        ),
+        (
+            "an inactive work centre",
+            json!({ "work_centre_id": id(&retired) }),
+        ),
+        ("an unknown work centre", json!({ "work_centre_id": uid() })),
+    ] {
+        let (status, r) = put(&e.app, PLANNER, &edit(&cut), body).await;
+        assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{what}: {r}");
+    }
+    // Planners change plans; the floor and sales do not.
+    for who in [STORES, SALES, VIEWER] {
+        let (status, _) = put(
+            &e.app,
+            who,
+            &edit(&cut),
+            json!({ "planned_end": "2027-03-11" }),
+        )
+        .await;
+        assert_eq!(status, StatusCode::FORBIDDEN, "{who}");
+    }
+
+    // Weld is running; scheduling again places only what has not started, after the running one.
+    post(
+        &e.app,
+        STORES,
+        &format!("{}/start", edit(&weld_op)),
+        json!({}),
+    )
+    .await;
+    let (status, ready) = put(
+        &e.app,
+        PLANNER,
+        &format!("/production-orders/{n}"),
+        json!({ "planned_ready_date": "2027-06-30" }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{ready}");
+    let (status, again) = post(
+        &e.app,
+        PLANNER,
+        &format!("/production-orders/{n}/schedule"),
+        json!({ "start_date": "2027-04-05" }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{again}");
+    // SPARE has the default week: Cut takes 50 minutes on Monday 5 April.
+    assert_eq!(
+        dates(&again, "Cut"),
+        ("2027-04-05".into(), "2027-04-05".into())
+    );
+    assert_eq!(
+        dates(&again, "Weld"),
+        dates(&ready, "Weld"),
+        "the running operation is not moved"
+    );
+    assert_eq!(
+        again["planned_ready_date"], "2027-06-30",
+        "the promise stays the planner's"
+    );
+    assert_eq!(again["scheduled_end"], "2027-04-05");
+    // Nothing pending: scheduling again is fine and changes nothing.
+    post(&e.app, STORES, &format!("{}/finish", edit(&cut)), json!({})).await;
+    let (status, same) = post(
+        &e.app,
+        PLANNER,
+        &format!("/production-orders/{n}/schedule"),
+        json!({}),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{same}");
+    assert_eq!(
+        dates(&same, "Cut"),
+        ("2027-04-05".into(), "2027-04-05".into())
+    );
+    for who in [STORES, SALES] {
+        assert_eq!(
+            post(
+                &e.app,
+                who,
+                &format!("/production-orders/{n}/schedule"),
+                json!({})
+            )
+            .await
+            .0,
+            StatusCode::FORBIDDEN,
+            "{who}"
+        );
+    }
+    // Scheduling is refused when a work centre has no working time at all.
+    close(&e, Some(&saw), "2027-01-01", "2031-12-31").await;
+    let (status, r) = put(
+        &e.app,
+        PLANNER,
+        &edit(&weld_op),
+        json!({ "work_centre_id": saw }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "moving does not schedule: {r}");
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn operations_stay_within_their_company(db: PgPool) {
+    let e = env(db).await;
+    e.frame_parts().await;
+    e.frame_routing().await;
+    let po = e.build_for_stock(FRAME, "1", json!({})).await;
+    let n = id(&po);
+    let cut = id(operation(&po, "Cut"));
+
+    let other = Uuid::now_v7();
+    sqlx::query("INSERT INTO core.companies (id, name, country_code, currency) VALUES ($1, 'Other BV', 'BE', 'EUR')")
+        .bind(other)
+        .execute(&e.db)
+        .await
+        .unwrap();
+    let user = Uuid::now_v7();
+    sqlx::query("INSERT INTO core.users (id, email, display_name) VALUES ($1, 'other@example.com', 'Other')")
+        .bind(user)
+        .execute(&e.db)
+        .await
+        .unwrap();
+    sqlx::query("INSERT INTO core.user_companies (user_id, company_id, roles, is_default) VALUES ($1, $2, '{admin}', true)")
+        .bind(user)
+        .bind(other)
+        .execute(&e.db)
+        .await
+        .unwrap();
+    let theirs = "other@example.com";
+    for action in ["start", "finish", "reopen"] {
+        assert_eq!(
+            post(
+                &e.app,
+                theirs,
+                &format!("/production-orders/{n}/operations/{cut}/{action}"),
+                json!({})
+            )
+            .await
+            .0,
+            StatusCode::NOT_FOUND,
+            "{action}"
+        );
+    }
+    assert_eq!(
+        put(
+            &e.app,
+            theirs,
+            &format!("/production-orders/{n}/operations/{cut}"),
+            json!({})
+        )
+        .await
+        .0,
+        StatusCode::NOT_FOUND
+    );
+    assert_eq!(
+        post(
+            &e.app,
+            theirs,
+            &format!("/production-orders/{n}/schedule"),
+            json!({})
+        )
+        .await
+        .0,
+        StatusCode::NOT_FOUND
+    );
+    assert_eq!(
+        e.production_order(PLANNER, &n).await["operations"][0]["status"],
+        "pending"
+    );
 }

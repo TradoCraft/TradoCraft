@@ -11,6 +11,7 @@
 
 pub mod complete;
 pub mod divisions;
+pub mod operations;
 pub mod orders;
 pub mod routing;
 pub mod schedule;
@@ -25,5 +26,6 @@ pub fn router() -> OpenApiRouter<AppState> {
         .merge(work_centres::router())
         .merge(routing::router())
         .merge(orders::router())
+        .merge(operations::router())
         .merge(complete::router())
 }

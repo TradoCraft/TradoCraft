@@ -182,8 +182,6 @@ async fn load_one(conn: &mut PgConnection, user: &CurrentUser, id: Uuid) -> AppR
 /// Calendars of work centres of the company for scheduling: their hours (the default week when
 /// none), the closures that end on or after `from`, whole-plant closures included, and their
 /// capacity. Ids that are not work centres of the company are absent from the result.
-// Used by the operations (ADR 0060, order operations) as they land.
-#[allow(dead_code)]
 pub(crate) async fn load_calendars(
     conn: &mut PgConnection,
     company_id: Uuid,
