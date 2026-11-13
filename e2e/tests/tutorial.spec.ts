@@ -258,4 +258,67 @@ test('the whole tutorial, chapter by chapter', async ({ page, request }) => {
     await next(page);
     await startNextChapter(page);
   });
+
+  await test.step('chapter 6: price zones and prices', async () => {
+    await expectStep(page, 'prices', 'openAdmin');
+    await railTo(page, 'Administration');
+    await overviewTab(page);
+    await expectStep(page, 'prices', 'zone');
+    await page.getByRole('button', { name: 'Price zones' }).click();
+    await page.waitForTimeout(1500);
+    await page.getByRole('button', { name: 'New price zone' }).click();
+    await typeInto(field(page, 'Code'), 'TUT-EXPORT');
+    await typeInto(field(page, 'Name'), 'Export zone');
+    await page.getByRole('button', { name: 'Save' }).click();
+    await expectStep(page, 'prices', 'openCart');
+    await takeMeThere(page);
+    await expectStep(page, 'prices', 'priceExport');
+    await page.getByRole('tab', { name: 'Prices' }).click(); // the product page keeps the tab it was left on
+    await page.getByRole('button', { name: /New price/ }).click();
+    await choose(page, /^Zone/, /TUT-EXPORT/);
+    await typeInto(field(page, 'Unit price (excl. VAT)'), '1450');
+    await page.getByRole('button', { name: 'Save' }).click();
+    await expectStep(page, 'prices', 'priceHome');
+    await page.getByRole('button', { name: /New price/ }).click();
+    await choose(page, /^Zone/, /^Z1\b/);
+    await typeInto(field(page, 'Unit price (excl. VAT)'), '1200');
+    await page.getByRole('button', { name: 'Save' }).click();
+    await expectStep(page, 'prices', 'done');
+    await next(page);
+    await startNextChapter(page);
+  });
+
+  await test.step('chapter 7: a new customer writes in', async () => {
+    await expectStep(page, 'customer', 'mail1');
+    await page.getByRole('button', { name: 'Simulate customer e-mail' }).click();
+    await expectStep(page, 'customer', 'openHelpdesk');
+    await railTo(page, 'Helpdesk');
+    await overviewTab(page);
+    await expectStep(page, 'customer', 'openTicket');
+    await page.getByRole('button', { name: 'All', exact: true }).click(); // the new ticket is unassigned
+    await page.waitForTimeout(1000);
+    await page.getByRole('button', { name: /Maya Okafor|quotation/i }).first().click();
+    await expectStep(page, 'customer', 'reply');
+    await typeInto(field(page, 'Message'), 'Thank you Maya. Could you send us your company name, VAT number and address?');
+    await page.getByRole('button', { name: 'Send', exact: true }).click();
+    await expectStep(page, 'customer', 'mail2');
+    await page.getByRole('button', { name: 'Simulate customer e-mail' }).click();
+    await expectStep(page, 'customer', 'readDetails');
+    await next(page);
+    await expectStep(page, 'customer', 'createCustomer');
+    await page.getByRole('button', { name: 'New customer' }).click();
+    await typeInto(field(page, 'Code'), 'TUT-CUST');
+    await typeInto(field(page, 'Name'), 'Brightwheel Logistics BV');
+    await typeInto(field(page, 'VAT number'), 'BE0123456749');
+    await typeInto(field(page, 'Street'), 'Voorbeeldlaan 12');
+    await typeInto(field(page, 'Postal code'), '9000');
+    await typeInto(field(page, 'City'), 'Gent');
+    await choose(page, /^Price zone/, /TUT-EXPORT/);
+    await page.getByRole('button', { name: 'Save' }).click();
+    await expectStep(page, 'customer', 'linked');
+    await next(page);
+    await expectStep(page, 'customer', 'done');
+    await next(page);
+    await startNextChapter(page);
+  });
 });
