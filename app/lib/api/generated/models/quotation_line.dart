@@ -25,6 +25,8 @@ class QuotationLine {
     required this.vatRate,
     this.comment,
     this.customerRemark,
+    this.customerRemarkLanguage,
+    this.favoriteItemId,
     this.parentPosition,
     this.percentBase,
     this.percentOfParent,
@@ -41,7 +43,15 @@ class QuotationLine {
   /// Remark printed under the description on the documents.
   @JsonKey(includeIfNull: false,name: 'customer_remark')
   final String? customerRemark;
+
+  /// Language the customer remark is written in; absent: the quotation language, or unknown.
+  @JsonKey(includeIfNull: false,name: 'customer_remark_language')
+  final String? customerRemarkLanguage;
   final String description;
+
+  /// The favorite item the line was loaded from; absent when it was not, or the favorite was deleted.
+  @JsonKey(includeIfNull: false,name: 'favorite_item_id')
+  final String? favoriteItemId;
   @JsonKey(name: 'line_discount_percent')
   final String lineDiscountPercent;
   @JsonKey(name: 'line_total')
