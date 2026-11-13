@@ -7510,7 +7510,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get tutManufacturingCompleteBody =>
-      'Druk op Afronden. Het dialoogvenster toont de uitvoerhoeveelheid (5) en de verbruikte componenten. Bevestig: de componenten verdwijnen uit de voorraad en vijf afgewerkte karretjes komen erin.';
+      'Druk op Afronden. Het dialoogvenster toont de uitvoerhoeveelheid (5) en de verbruikte componenten. Kies de magazijnlocatie MAIN bij Opslaan in, zodat de afgewerkte karretjes een plek hebben, en bevestig: de componenten verdwijnen uit de voorraad en vijf afgewerkte karretjes komen erin.';
 
   @override
   String get tutManufacturingCompleteHint =>
@@ -7875,7 +7875,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get tutChangeCompleteBody =>
-      'Druk op Afronden en bevestig de 10 karretjes. De componenten worden verbruikt en de karretjes gaan naar de order.';
+      'Druk op Afronden, kies de magazijnlocatie MAIN bij Opslaan in en bevestig de 10 karretjes. De componenten worden verbruikt en de karretjes gaan naar de order.';
 
   @override
   String get tutChangeReadyTitle => 'Klaar voor verzending';

@@ -146,8 +146,6 @@ test('the whole tutorial, chapter by chapter', async ({ page, request }) => {
     await page.getByRole('button', { name: 'Purchase orders' }).click();
     await expectStep(page, 'buying', 'order');
     await page.getByRole('button', { name: /New purchase order/ }).click();
-    // While the narrator card is up, the product suggestions in this dialog do not open (see README): pause it.
-    await page.getByRole('button', { name: 'Pause' }).click();
     await searchPick(page, 'Supplier', 'TUT-SUP-A', /Voltaic Drives/);
     const components = ['TUT-MOTOR', 'TUT-FRAME', 'TUT-CTRL'];
     for (const [i, code] of components.entries()) {
@@ -158,7 +156,6 @@ test('the whole tutorial, chapter by chapter', async ({ page, request }) => {
     }
     await dump(page, 'po-filled');
     await page.getByRole('button', { name: 'Save' }).click();
-    await page.getByRole('button', { name: 'Resume' }).click();
     // Saving opens the order, which completes the "open the order" step by itself.
     await expectStep(page, 'buying', 'approve');
     await page.getByRole('button', { name: 'Approve', exact: true }).click();
@@ -195,14 +192,12 @@ test('the whole tutorial, chapter by chapter', async ({ page, request }) => {
     await overviewTab(page);
     await page.waitForTimeout(1000);
     await page.getByRole('button', { name: /New supplier invoice|New invoice/ }).first().click();
-    await page.getByRole('button', { name: 'Pause' }).click(); // supplier suggestions need the narrator out of the way
     await searchPick(page, 'Supplier', 'TUT-SUP-A', /Voltaic Drives/);
     await typeInto(field(page, 'Invoice number'), 'TUT-INV-002');
     await typeInto(field(page, 'Description'), 'Motors');
     await typeInto(field(page, 'Quantity'), '10');
     await typeInto(field(page, 'Unit price'), '150');
     await page.getByRole('button', { name: 'Save' }).click();
-    await page.getByRole('button', { name: 'Resume' }).click();
     // Saving opens the invoice, which completes "open invoice TUT-INV-002".
     await expectStep(page, 'invoices', 'mismatch');
     await next(page);
@@ -245,11 +240,9 @@ test('the whole tutorial, chapter by chapter', async ({ page, request }) => {
     await takeMeThere(page);
     await expectStep(page, 'manufacturing', 'release');
     await page.getByRole('button', { name: /Build for stock/ }).click();
-    await page.getByRole('button', { name: 'Pause' }).click(); // product suggestions need the narrator out of the way
     await searchPick(page, 'Product', 'TUT-CART', /^TUT-CART ·/);
     await typeInto(field(page, 'Quantity'), '5');
     await page.getByRole('button', { name: 'Release to production' }).click();
-    await page.getByRole('button', { name: 'Resume' }).click();
     await expectStep(page, 'manufacturing', 'assign');
     await choose(page, /^Division/, /Tutorial assembly/);
     await page.getByRole('button', { name: 'Save', exact: true }).click();
@@ -339,15 +332,8 @@ test('the whole tutorial, chapter by chapter', async ({ page, request }) => {
     await page.getByRole('button', { name: /New quotation/ }).click();
     await searchPick(page, 'Customer', 'Brightwheel', /Brightwheel/);
     await searchPick(page, 'Add product', 'TUT-CART', /^TUT-CART ·/);
-    // The line's quantity input has no accessible name, so it is clicked by position (fixed viewport).
-    await expect(async () => {
-      await page.mouse.click(568, 433);
-      await page.waitForTimeout(600);
-      await page.keyboard.press('ControlOrMeta+A');
-      await page.keyboard.press('Backspace');
-      await page.keyboard.type('8', { delay: 80 });
-      await expect(page.getByText('11.600,00').first()).toBeVisible({ timeout: 2_500 });
-    }).toPass({ timeout: 30_000 });
+    await typeInto(field(page, 'Quantity'), '8');
+    await expect(page.getByText('11.600,00').first()).toBeVisible();
     await page.getByRole('button', { name: 'Save draft' }).click();
     await expectStep(page, 'quotation', 'lead');
     await typeInto(field(page, 'Notes'), 'Delivery about 3 weeks after order.');
@@ -371,14 +357,8 @@ test('the whole tutorial, chapter by chapter', async ({ page, request }) => {
     await page.getByRole('button', { name: 'New revision' }).click();
     await page.getByRole('button', { name: 'Keep agreed prices' }).click();
     await expectStep(page, 'change', 'edit');
-    await expect(async () => {
-      await page.mouse.click(568, 433);
-      await page.waitForTimeout(600);
-      await page.keyboard.press('ControlOrMeta+A');
-      await page.keyboard.press('Backspace');
-      await page.keyboard.type('10', { delay: 80 });
-      await expect(page.getByText('14.500,00').first()).toBeVisible({ timeout: 2_500 });
-    }).toPass({ timeout: 30_000 });
+    await typeInto(field(page, 'Quantity'), '10');
+    await expect(page.getByText('14.500,00').first()).toBeVisible();
     await page.getByRole('button', { name: 'Save draft' }).click();
     await expectStep(page, 'change', 'send');
     await page.getByRole('button', { name: 'Mark as sent' }).click();
@@ -420,11 +400,9 @@ test('the whole tutorial, chapter by chapter', async ({ page, request }) => {
     await railTo(page, 'Production');
     await overviewTab(page);
     await page.getByRole('button', { name: /Build for stock/ }).click();
-    await page.getByRole('button', { name: 'Pause' }).click();
     await searchPick(page, 'Product', 'TUT-CART', /^TUT-CART ·/);
     await typeInto(field(page, 'Quantity'), '4');
     await page.getByRole('button', { name: 'Release to production' }).click();
-    await page.getByRole('button', { name: 'Resume' }).click();
     await expectStep(page, 'change', 'done');
   });
 });

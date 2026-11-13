@@ -7511,7 +7511,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get tutManufacturingCompleteBody =>
-      'Pulse Completar. El diálogo muestra la cantidad producida (5) y los componentes consumidos. Confirme: los componentes salen del stock y entran cinco carritos terminados.';
+      'Pulse Completar. El diálogo muestra la cantidad producida (5) y los componentes consumidos. Elija la ubicación MAIN del almacén en Almacenar en, para que los carritos terminados tengan dónde ir, y confirme: los componentes salen del stock y entran cinco carritos terminados.';
 
   @override
   String get tutManufacturingCompleteHint =>
@@ -7876,7 +7876,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get tutChangeCompleteBody =>
-      'Pulse Completar y confirme los 10 carritos. Se consumen los componentes y los carritos van al pedido.';
+      'Pulse Completar, elija la ubicación MAIN del almacén en Almacenar en y confirme los 10 carritos. Se consumen los componentes y los carritos van al pedido.';
 
   @override
   String get tutChangeReadyTitle => 'Listo para enviar';

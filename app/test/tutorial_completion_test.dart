@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/semantics.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -130,6 +131,32 @@ bool _enabled(WidgetTester tester, Finder f) {
 }
 
 void main() {
+  group('narrator semantics', () {
+    testWidgets(
+      'the running narrator comes last in the reading order of the semantics tree',
+      (tester) async {
+        final handle = tester.ensureSemantics();
+        final c = _boot(FakeHttp({}));
+        await tester.pumpWidget(_app(c, _router()));
+        await _startIn(tester, c, 'one');
+        expect(_card, findsOneWidget);
+        // Without an explicit sort key the card's small node is interleaved by position with the nodes of
+        // dialogs and suggestion lists; when a list opens the order changes and the web engine moves the
+        // DOM node of the focused text field, which drops its focus and closes the list.
+        SemanticsNode? node = tester.getSemantics(_card);
+        SemanticsSortKey? key;
+        while (node != null && key == null) {
+          key = node.sortKey;
+          node = node.parent;
+        }
+        expect(key, isA<OrdinalSortKey>());
+        expect((key! as OrdinalSortKey).order, greaterThan(100));
+        handle.dispose();
+        await tester.pumpWidget(const SizedBox());
+      },
+    );
+  });
+
   group('chapter completion card', () {
     for (final last in [false, true]) {
       testWidgets(

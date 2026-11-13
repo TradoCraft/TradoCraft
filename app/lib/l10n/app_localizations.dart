@@ -13479,7 +13479,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutManufacturingCompleteBody.
   ///
   /// In en, this message translates to:
-  /// **'Press Complete. The dialog shows the output quantity (5) and the components consumed. Confirm: the components leave the stock and five finished carts enter it.'**
+  /// **'Press Complete. The dialog shows the output quantity (5) and the components consumed. Choose the warehouse location MAIN in Put into, so the finished carts have a place to go, and confirm: the components leave the stock and five finished carts enter it.'**
   String get tutManufacturingCompleteBody;
 
   /// No description provided for @tutManufacturingCompleteHint.
@@ -14097,7 +14097,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutChangeCompleteBody.
   ///
   /// In en, this message translates to:
-  /// **'Press Complete and confirm the 10 carts. The components are consumed and the carts go to the order.'**
+  /// **'Press Complete, choose the warehouse location MAIN in Put into and confirm the 10 carts. The components are consumed and the carts go to the order.'**
   String get tutChangeCompleteBody;
 
   /// No description provided for @tutChangeReadyTitle.

@@ -341,6 +341,22 @@ void main() {
     expect(find.text('€ 7.372,00'), findsWidgets);
   });
 
+  testWidgets('the number inputs of a line have accessible names', (
+    tester,
+  ) async {
+    final handle = tester.ensureSemantics();
+    await _pump(tester, 'draft');
+    // The column headers are the only visible labels, so each input carries its header as its name.
+    final quantity = tester.getSemantics(find.widgetWithText(TextField, '1'));
+    expect(quantity.label, contains('Quantity'));
+    expect(quantity.flagsCollection.isTextField, isTrue);
+    expect(
+      tester.getSemantics(find.widgetWithText(TextField, '0')).label,
+      contains('Extra disc.'),
+    );
+    handle.dispose();
+  });
+
   testWidgets('remarks are loaded, edited and saved with the draft', (
     tester,
   ) async {

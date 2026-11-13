@@ -885,11 +885,16 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
               level: l.level,
               description: l.description ?? l.product.name,
               detail: l.sectionAndComment,
-              quantity: _numField(l.quantity, l.product.unit),
+              quantity: _numField(
+                l.quantity,
+                l.product.unit,
+                semanticLabel: context.l10n.quantity,
+              ),
               listPrice: l.hasConfirmablePrice
                   ? _numField(
                       l.price,
                       '€',
+                      semanticLabel: context.l10n.listPrice,
                       hint: number(
                         preview?.lines.elementAtOrNull(i)?.listUnitPrice,
                       ),
@@ -903,7 +908,12 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
               rebate: _rebateText(preview?.lines.elementAtOrNull(i)),
               discount: l.isNet
                   ? Text(context.l10n.pricingNet)
-                  : _numField(l.discount, '%', signed: true),
+                  : _numField(
+                      l.discount,
+                      '%',
+                      signed: true,
+                      semanticLabel: context.l10n.lineDiscount,
+                    ),
               netPrice: money(preview?.lines.elementAtOrNull(i)?.netUnitPrice),
               total: money(preview?.lines.elementAtOrNull(i)?.lineTotal),
               onRemove: () {
@@ -1131,31 +1141,37 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
     }
   }
 
+  /// A number input of a line. The column header is the only visible label, so [semanticLabel]
+  /// gives the input the name screen readers (and browser tests) find it by.
   Widget _numField(
     TextEditingController c,
     String suffix, {
     String? hint,
     String? label,
+    String? semanticLabel,
     bool signed = false,
   }) => SizedBox(
     width: 104,
-    child: TextField(
-      controller: c,
-      textAlign: TextAlign.right,
-      keyboardType: TextInputType.numberWithOptions(
-        decimal: true,
-        signed: signed,
+    child: Semantics(
+      label: semanticLabel,
+      child: TextField(
+        controller: c,
+        textAlign: TextAlign.right,
+        keyboardType: TextInputType.numberWithOptions(
+          decimal: true,
+          signed: signed,
+        ),
+        decoration: InputDecoration(
+          suffixText: suffix,
+          hintText: hint,
+          labelText: label,
+          floatingLabelBehavior: FloatingLabelBehavior.always,
+        ),
+        onChanged: (_) {
+          _onEdited();
+          if (label != null) setState(() {});
+        },
       ),
-      decoration: InputDecoration(
-        suffixText: suffix,
-        hintText: hint,
-        labelText: label,
-        floatingLabelBehavior: FloatingLabelBehavior.always,
-      ),
-      onChanged: (_) {
-        _onEdited();
-        if (label != null) setState(() {});
-      },
     ),
   );
 
