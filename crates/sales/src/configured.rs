@@ -307,6 +307,7 @@ pub async fn import(
         delivery_country_code: input.delivery_country_code.clone(),
         power_grid_id: input.power_grid_id,
         clear_power_grid: None,
+        expected_version: None,
         lines: flat.lines,
     };
 

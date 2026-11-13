@@ -6,6 +6,7 @@ pub mod audit_log;
 pub mod auth;
 pub mod companies;
 pub mod company;
+pub mod concurrency;
 pub mod cors;
 pub mod csv_io;
 pub mod environment;

@@ -568,6 +568,7 @@ mod tests {
         };
         let customer = Customer {
             id: Uuid::nil(),
+            version: 1,
             code: "C1".into(),
             name: "Alpha".into(),
             vat_number: None,

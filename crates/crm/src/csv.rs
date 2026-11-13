@@ -190,6 +190,8 @@ async fn plan(
                 price_zone_id: c.price_zone_id.unwrap_or_default(),
                 discount_percent: c.discount_percent.unwrap_or_default(),
                 payment_terms_days: c.payment_terms_days.unwrap_or(30),
+                // An import is a bulk overwrite by design; it does not check versions.
+                expected_version: None,
             },
             None => CustomerInput {
                 code: code.clone(),
@@ -207,6 +209,7 @@ async fn plan(
                 price_zone_id: Uuid::nil(),
                 discount_percent: Decimal::ZERO,
                 payment_terms_days: 30,
+                expected_version: None,
             },
         };
         cells.text("name").apply(&mut input.name);

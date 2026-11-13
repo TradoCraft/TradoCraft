@@ -30,7 +30,7 @@ Module overview: [ARCHITECTURE.md](ARCHITECTURE.md).
 | C3 Planning board, work-centre half (capacity, finite loading) | Open (needs C1; reuses the resource calendar and `ResourceBoard`) |
 | D1 Worker heartbeat and "worker was down" alert | Done, [ADR 0052](adr/0052-worker-heartbeat.md) |
 | D2 Backup and restore runbook | Done, [ADR 0056](adr/0056-backup-and-restore.md) |
-| D3 Concurrent-edit protection on records | Open |
+| D3 Concurrent-edit protection on records | Backend done for customers, quotations and orders, [ADR 0060](adr/0060-concurrent-edit-protection.md); the Flutter screens and the other records follow |
 | D4 VAT number validation, registry lookup and duplicate warning | Done, [ADR 0058](adr/0058-vat-number-validation-and-lookup.md); the request to the live VIES service is untested (see the ADR) |
 | D5 Accent-insensitive search | Done for customers, contacts, suppliers and products, [ADR 0057](adr/0057-accent-insensitive-search.md); the other lists follow |
 | D6 Audit log viewer | Done, [ADR 0059](adr/0059-audit-trail-viewer.md); field-level changes are recorded for customers and suppliers, other modules adopt `audit::Changes` |
@@ -134,6 +134,13 @@ production.
   order overwrite each other without a warning.
 - Decide in the ADR between optimistic concurrency (a row version checked on update, a 409 and a
   reload prompt in the app) and a short-lived edit lock that shows who has the record open.
+- Done for customers, quotations and orders ([ADR 0060](adr/0060-concurrent-edit-protection.md)): optimistic
+  concurrency on a `version` counter that a trigger raises on every update, an optional `expected_version`
+  on the update inputs, and 409 `record_changed` for a stale save.
+- Still to do: the Flutter client sends `expected_version` and offers a reload on `record_changed`
+  (needs the Dart client regenerated); the other records (suppliers, products, contacts, opportunities,
+  tickets and so on) each need a column, the field and one check; delivery notes can move from
+  `expected_updated_at` to the counter.
 
 **D4 VAT number validation, registry lookup and duplicate warning** (small-medium)
 - `vat_number` on customers was stored unchecked; the supplier's `tax_id` (free text) was never looked at.

@@ -119,6 +119,9 @@ pub struct OrderRevisionInfo {
 #[derive(Debug, Clone, Serialize, ToSchema)]
 pub struct Order {
     pub order: OrderSummary,
+    /// Raised on every change to the order. Send it back as `expected_version` when saving: an
+    /// order someone else changed meanwhile is refused (409 `record_changed`).
+    pub version: i64,
     /// The revision these lines and totals belong to.
     pub revision: i32,
     pub revision_status: String,
@@ -182,6 +185,10 @@ pub struct OrderEditInput {
     pub clear_power_grid: Option<bool>,
     #[serde(default)]
     pub notes: String,
+    /// The `version` the form was loaded with. An order that has changed since is refused (409
+    /// `record_changed`); left out, the save always goes through.
+    #[serde(default)]
+    pub expected_version: Option<i64>,
     pub lines: Vec<OrderLineEdit>,
 }
 
@@ -232,11 +239,12 @@ pub(crate) struct Head {
     pub current_revision: i32,
     pub customer_id: Uuid,
     pub quotation_id: Uuid,
+    pub version: i64,
 }
 
 pub(crate) async fn lock(conn: &mut PgConnection, company_id: Uuid, id: Uuid) -> AppResult<Head> {
     sqlx::query_as(
-        "SELECT id, number, status, current_revision, customer_id, quotation_id
+        "SELECT id, number, status, current_revision, customer_id, quotation_id, version
          FROM sales.orders WHERE id = $1 AND company_id = $2 FOR UPDATE",
     )
     .bind(id)
@@ -475,6 +483,7 @@ pub async fn load_order(
             .ok_or(AppError::NotFound("order"))?;
     #[derive(FromRow)]
     struct Extra {
+        version: i64,
         created_at: DateTime<Utc>,
         confirmed_at: Option<DateTime<Utc>>,
         confirmed_by: Option<Uuid>,
@@ -484,7 +493,7 @@ pub async fn load_order(
         cancel_reason: String,
     }
     let extra: Extra = sqlx::query_as(
-        "SELECT created_at, confirmed_at, confirmed_by, confirmed_via, confirmed_revision, confirmation_note,
+        "SELECT version, created_at, confirmed_at, confirmed_by, confirmed_via, confirmed_revision, confirmation_note,
                 cancel_reason
          FROM sales.orders WHERE id = $1",
     )
@@ -516,6 +525,7 @@ pub async fn load_order(
     let lines = revision_lines(conn, id, wanted).await?;
     Ok(Order {
         order,
+        version: extra.version,
         revision: wanted,
         revision_status: info.status,
         vat_total,
@@ -809,6 +819,11 @@ async fn edit_order(
         .flatten();
     let mut tx = state.db.begin().await?;
     let head = lock(&mut tx, user.company_id, id).await?;
+    tradocraft_core::concurrency::check_version(
+        input.expected_version,
+        head.version,
+        &format!("order {}", head.number),
+    )?;
     if head.status != "draft" {
         let current: String = sqlx::query_scalar("SELECT purpose FROM sales.orders WHERE id = $1")
             .bind(id)

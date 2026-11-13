@@ -62,3 +62,4 @@ accepted one; mark superseded records as such.
 | [0057](0057-accent-insensitive-search.md) | Accent-insensitive search: `core.search_fold` (lower and `unaccent`) on column and text, trigram indexes, customers, contacts, products and suppliers | Accepted |
 | [0058](0058-vat-number-validation-and-lookup.md) | VAT numbers: EU format and check-digit validation, duplicate warning through a comparison key, VIES lookup that pre-fills and never blocks | Accepted (live VIES request unverified) |
 | [0059](0059-audit-trail-viewer.md) | Audit trail viewer: `audit.view` for administrators, cursor-paged endpoints, field-level changes, Admin tab and History button | Accepted |
+| [0060](0060-concurrent-edit-protection.md) | Concurrent-edit protection: a `version` counter raised by a trigger, optional `expected_version` on updates, 409 `record_changed`; customers, quotations and orders | Accepted (app screens follow) |

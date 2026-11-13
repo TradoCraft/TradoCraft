@@ -3391,6 +3391,16 @@
                 }
               }
             }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -28375,6 +28385,7 @@
         "type": "object",
         "required": [
           "id",
+          "version",
           "code",
           "name",
           "vat_regime",
@@ -28462,6 +28473,11 @@
           "vat_regime": {
             "type": "string",
             "description": "`domestic` (VAT charged), `intra_eu` (reverse charge) or `outside_eu`."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Raised on every change. Send it back as `expected_version` when saving: a customer someone\nelse changed meanwhile is refused (409 `record_changed`)."
           }
         }
       },
@@ -28516,6 +28532,14 @@
               "string",
               "null"
             ]
+          },
+          "expected_version": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "The `version` the form was loaded with. On an update, a customer that has changed since is\nrefused (409 `record_changed`); left out, the save always goes through. Ignored on create."
           },
           "language": {
             "type": "string"
@@ -33864,6 +33888,7 @@
         "description": "One revision of an order (the latest unless asked otherwise) with its lines.",
         "required": [
           "order",
+          "version",
           "revision",
           "revision_status",
           "vat_total",
@@ -33952,6 +33977,11 @@
           "vat_total": {
             "type": "string"
           },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Raised on every change to the order. Send it back as `expected_version` when saving: an\norder someone else changed meanwhile is refused (409 `record_changed`)."
+          },
           "warnings": {
             "type": "array",
             "items": {
@@ -34019,6 +34049,14 @@
               "null"
             ],
             "description": "Delivery country (ISO alpha-2); unchanged when omitted."
+          },
+          "expected_version": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "The `version` the form was loaded with. An order that has changed since is refused (409\n`record_changed`); left out, the save always goes through."
           },
           "lines": {
             "type": "array",
@@ -37682,6 +37720,7 @@
           "company_id",
           "number",
           "revision",
+          "version",
           "status",
           "customer_id",
           "customer_name",
@@ -37870,6 +37909,11 @@
           "vat_total": {
             "type": "string"
           },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Raised on every change. Send it back as `expected_version` when saving: a quotation someone\nelse changed meanwhile is refused (409 `record_changed`)."
+          },
           "warnings": {
             "type": "array",
             "items": {
@@ -37903,6 +37947,14 @@
               "null"
             ],
             "description": "ISO 3166 alpha-2 country the goods go to. Defaults to the customer's country for an\ninstallation (on update: unchanged when omitted, unless the customer changes)."
+          },
+          "expected_version": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "The `version` the form was loaded with. On an update, a quotation that has changed since is\nrefused (409 `record_changed`); left out, the save always goes through. Ignored on create."
           },
           "lines": {
             "type": "array",

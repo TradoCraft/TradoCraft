@@ -332,6 +332,11 @@ pub(crate) async fn update_draft(
 ) -> AppResult<()> {
     service::validate_input(input)?;
     let current = service::load_quotation(&mut *tx, user.company_id, id, true).await?;
+    tradocraft_core::concurrency::check_version(
+        input.expected_version,
+        current.version,
+        &format!("quotation {}", current.number),
+    )?;
     if service::status_of(&current) != QuotationStatus::Draft {
         return Err(AppError::Conflict(format!(
             "quotation {} is {}; only drafts can be changed (create a revision instead)",
