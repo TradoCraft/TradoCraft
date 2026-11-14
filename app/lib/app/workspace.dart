@@ -11,6 +11,8 @@ import '../features/field/offline/kv_store.dart';
 import '../l10n/l10n.dart';
 import '../shared/app_icons.dart';
 import 'detail_routes.dart';
+import 'shortcuts/actions.dart';
+import 'shortcuts/registry.dart';
 
 /// One open tab of the workspace: a detail screen (ticket, quotation, ...) identified by its
 /// location. Tabs keep their screens alive, so an unsent reply or a half-edited quote is still
@@ -476,8 +478,12 @@ class _TabObserver extends NavigatorObserver {
     if (_stack.isNotEmpty) onLocation(_stack.last.settings.name ?? '');
   }
 
+  // Only screens have a location. A bottom sheet or a menu opened inside the tab lands on the
+  // same navigator but has no name: it must not replace the tab's location (which would make the
+  // shell lose the section, and the to-do context the record).
   @override
   void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    if (route is! PageRoute) return;
     _stack.add(route);
     _report();
   }
@@ -503,7 +509,7 @@ class _TabObserver extends NavigatorObserver {
       } else {
         _stack[i] = newRoute;
       }
-    } else if (newRoute != null) {
+    } else if (newRoute is PageRoute) {
       _stack.add(newRoute);
     }
     _report();
@@ -533,9 +539,12 @@ class WorkspaceBody extends ConsumerWidget {
             index: ws.stackIndex,
             sizing: StackFit.expand,
             children: [
-              ExcludeFocus(
-                excluding: ws.active != null,
-                child: TickerMode(enabled: ws.active == null, child: home),
+              ShortcutActivity(
+                active: ws.active == null,
+                child: ExcludeFocus(
+                  excluding: ws.active != null,
+                  child: TickerMode(enabled: ws.active == null, child: home),
+                ),
               ),
               for (final t in ws.tabs)
                 _TabHost(
@@ -578,17 +587,38 @@ class _TabHostState extends ConsumerState<_TabHost> {
     screenFor: ref.read(detailScreenProvider),
   );
   late final _TabObserver _observer = _TabObserver(_located);
+  // Menus and bottom sheets opened inside the tab land on its navigator: keep shortcuts blocked.
+  late final ModalShortcutObserver _modal = ModalShortcutObserver(
+    ref.read(shortcutRegistryProvider),
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    _modal; // created now: ref is not usable in dispose
+  }
+
+  @override
+  void dispose() {
+    _modal.dispose();
+    super.dispose();
+  }
 
   // A tab restored in the background builds its screen only when first shown.
   late bool _built = widget.active;
 
   int get _id => widget.tab.id;
 
+  /// Whether the tab's navigator has a screen below the top one (the Back shortcut works).
+  bool _canPop = false;
+
   /// Passes the location now shown by this tab on to the workspace.
   void _located(String location) {
     // Navigation callbacks can run while the tree is building.
     scheduleMicrotask(() {
       if (mounted) {
+        final can = _navigator.currentState?.canPop() ?? false;
+        if (can != _canPop) setState(() => _canPop = can);
         ref.read(workspaceProvider.notifier).setLocation(_id, location);
       }
     });
@@ -620,29 +650,37 @@ class _TabHostState extends ConsumerState<_TabHost> {
       active: widget.active,
       dirty: n.dirtyOf(_id),
       setTitle: (t) => n.setTitle(_id, t),
-      child: InheritedGoRouter(
-        goRouter: _router,
-        child: ExcludeFocus(
-          excluding: !widget.active,
-          child: TickerMode(
-            enabled: widget.active,
-            // A semantic boundary: the modal barrier of the tab's page route blocks the semantics of
-            // everything painted before it, and without a boundary around the navigator that
-            // reaches up to the navigation rail, the tab strip and the banner, which then vanish
-            // from the accessibility tree (screen readers could not reach them from a record).
-            child: Semantics(
-              container: true,
-              explicitChildNodes: true,
-              child: Navigator(
-                key: _navigator,
-                observers: [_observer],
-                onGenerateInitialRoutes: (_, _) => [
-                  _router.route<Object?>(_initial) ??
-                      MaterialPageRoute<Object?>(
-                        builder: (_) => const SizedBox(),
-                      ),
-                ],
-                onGenerateRoute: (s) => _router.route<Object?>(s.name ?? ''),
+      // Back pops the tab's route; at the tab's first screen it is not offered (no badge either).
+      child: ShortcutScope(
+        actions: {
+          ShortcutAction.back: _canPop
+              ? () => _navigator.currentState?.maybePop()
+              : null,
+        },
+        child: InheritedGoRouter(
+          goRouter: _router,
+          child: ExcludeFocus(
+            excluding: !widget.active,
+            child: TickerMode(
+              enabled: widget.active,
+              // A semantic boundary: the modal barrier of the tab's page route blocks the semantics of
+              // everything painted before it, and without a boundary around the navigator that
+              // reaches up to the navigation rail, the tab strip and the banner, which then vanish
+              // from the accessibility tree (screen readers could not reach them from a record).
+              child: Semantics(
+                container: true,
+                explicitChildNodes: true,
+                child: Navigator(
+                  key: _navigator,
+                  observers: [_observer, _modal],
+                  onGenerateInitialRoutes: (_, _) => [
+                    _router.route<Object?>(_initial) ??
+                        MaterialPageRoute<Object?>(
+                          builder: (_) => const SizedBox(),
+                        ),
+                  ],
+                  onGenerateRoute: (s) => _router.route<Object?>(s.name ?? ''),
+                ),
               ),
             ),
           ),
@@ -665,6 +703,7 @@ String tabLabel(AppLocalizations l, WorkTab tab) {
     'orders' => l.tabOrder,
     'repairs' => l.tabRepair,
     'jobs' => s.length == 3 ? l.tabContract : l.tabJob,
+    'customers' => l.tabCustomer,
     'products' => l.tabProduct,
     'opportunities' => l.tabOpportunity,
     'stock' => s.length > 1 && s[1] == 'counts' ? l.tabCount : l.tabStock,

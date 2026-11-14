@@ -8739,4 +8739,216 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get productionRoutingChangedWhileSaving =>
       'La ruta cambió mientras se guardaba. Guarde de nuevo para incluir los últimos cambios.';
+
+  @override
+  String get shortcutBack => 'Atrás';
+
+  @override
+  String get shortcutCreate => 'Crear';
+
+  @override
+  String get shortcutHome => 'Inicio';
+
+  @override
+  String get shortcutDiscard => 'Descartar cambios';
+
+  @override
+  String get shortcutSave => 'Guardar';
+
+  @override
+  String get shortcutNextPage => 'Cargar más';
+
+  @override
+  String get shortcutSearch => 'Buscar';
+
+  @override
+  String get shortcutNewTodo => 'Nueva tarea';
+
+  @override
+  String get shortcutKbSearch => 'Buscar artículos';
+
+  @override
+  String get shortcutKbShare => 'Compartir artículo';
+
+  @override
+  String get shortcutPalette => 'Paleta de comandos';
+
+  @override
+  String get shortcutHelp => 'Atajos de teclado';
+
+  @override
+  String shortcutMenuItem(int n) {
+    return 'Elemento de menú $n';
+  }
+
+  @override
+  String shortcutHint(String keys) {
+    return 'Atajo: $keys';
+  }
+
+  @override
+  String get moduleTodo => 'Tareas';
+
+  @override
+  String get todoTitle => 'Tareas';
+
+  @override
+  String get todoAdd => 'Añadir tarea';
+
+  @override
+  String get todoAddSub => 'Añadir subtarea';
+
+  @override
+  String get todoWhat => '¿Qué hay que hacer?';
+
+  @override
+  String get todoNotes => 'Notas';
+
+  @override
+  String get todoDueDate => 'Fecha límite';
+
+  @override
+  String get todoSetDue => 'Fijar fecha límite';
+
+  @override
+  String get todoClearDue => 'Quitar fecha límite';
+
+  @override
+  String todoDue(String date) {
+    return 'Vence $date';
+  }
+
+  @override
+  String get todoOverdue => 'Vencida';
+
+  @override
+  String get todoFilterOpen => 'Abiertas';
+
+  @override
+  String get todoFilterDone => 'Hechas';
+
+  @override
+  String get todoFilterAll => 'Todas';
+
+  @override
+  String get todoEmpty => 'Nada pendiente. Añada su primera tarea.';
+
+  @override
+  String get todoEmptyDone => 'No hay tareas hechas.';
+
+  @override
+  String get todoComplete => 'Marcar como hecha';
+
+  @override
+  String get todoReopen => 'Reabrir';
+
+  @override
+  String todoDeleteConfirm(String title) {
+    return '¿Eliminar «$title»? Sus subtareas también se eliminan.';
+  }
+
+  @override
+  String get todoCompleteAllTitle => '¿Completar también las subtareas?';
+
+  @override
+  String todoCompleteAllBody(String title) {
+    return '«$title» aún tiene subtareas abiertas. Al completarla, también se completan.';
+  }
+
+  @override
+  String get todoCompleteAll => 'Completar todas';
+
+  @override
+  String get todoLinkedItem => 'Elemento vinculado';
+
+  @override
+  String todoFromOwner(String name) {
+    return 'De $name';
+  }
+
+  @override
+  String todoSubProgress(int done, int total) {
+    return '$done de $total subtareas hechas';
+  }
+
+  @override
+  String get todoReorder => 'Arrastrar para reordenar';
+
+  @override
+  String get changeProduct => 'Cambiar producto';
+
+  @override
+  String changeProductOf(String product) {
+    return 'Nuevo producto principal para $product';
+  }
+
+  @override
+  String get changeProductNew => 'Nuevo producto';
+
+  @override
+  String changeProductNetNote(String product) {
+    return '$product tiene precio neto: se ha borrado el descuento de la línea.';
+  }
+
+  @override
+  String changeProductIndicativeNote(String product) {
+    return '$product tiene precio indicativo: confirme el precio antes de enviar.';
+  }
+
+  @override
+  String optionsNotApplicable(int count, String product) {
+    return '$count opción(es) no se aplican a $product: elimínelas.';
+  }
+
+  @override
+  String removeNamedLine(String code) {
+    return 'Eliminar $code';
+  }
+
+  @override
+  String optionNotOffered(String product) {
+    return 'No se ofrece con $product';
+  }
+
+  @override
+  String sentWithNotApplicable(int count) {
+    return 'Enviado con $count opción(es) que no se aplican a su producto principal.';
+  }
+
+  @override
+  String get tabCustomer => 'Cliente';
+
+  @override
+  String get todoAdded => 'Tarea añadida';
+
+  @override
+  String get todoLinkToScreen => 'Vincular a la pantalla actual';
+
+  @override
+  String get todoLinkNotAvailable =>
+      'Esta pantalla no tiene ningún registro al que vincular.';
+
+  @override
+  String get todoOpenLink => 'Abrir el registro vinculado';
+
+  @override
+  String get todoRemoveLink => 'Quitar el enlace de mis tareas';
+
+  @override
+  String get recordNotFound =>
+      'No se encontró este registro. Puede que se haya eliminado o que no tengas acceso a él.';
+
+  @override
+  String get todoForObject => 'Tareas de este registro';
+
+  @override
+  String todoForObjectCount(int count) {
+    return 'Tareas de este registro ($count abiertas)';
+  }
+
+  @override
+  String get todoForObjectEmpty => 'No hay tareas abiertas para este registro.';
+
+  @override
+  String get todoEmailReminders => 'Recordatorios por correo';
 }

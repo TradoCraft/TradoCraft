@@ -8753,4 +8753,217 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get productionRoutingChangedWhileSaving =>
       'Der Arbeitsplan wurde während des Speicherns geändert. Speichern Sie erneut, um die letzten Änderungen zu übernehmen.';
+
+  @override
+  String get shortcutBack => 'Zurück';
+
+  @override
+  String get shortcutCreate => 'Anlegen';
+
+  @override
+  String get shortcutHome => 'Startseite';
+
+  @override
+  String get shortcutDiscard => 'Änderungen verwerfen';
+
+  @override
+  String get shortcutSave => 'Speichern';
+
+  @override
+  String get shortcutNextPage => 'Mehr laden';
+
+  @override
+  String get shortcutSearch => 'Suchen';
+
+  @override
+  String get shortcutNewTodo => 'Neue Aufgabe';
+
+  @override
+  String get shortcutKbSearch => 'Artikel suchen';
+
+  @override
+  String get shortcutKbShare => 'Artikel teilen';
+
+  @override
+  String get shortcutPalette => 'Befehlspalette';
+
+  @override
+  String get shortcutHelp => 'Tastenkürzel';
+
+  @override
+  String shortcutMenuItem(int n) {
+    return 'Menüeintrag $n';
+  }
+
+  @override
+  String shortcutHint(String keys) {
+    return 'Tastenkürzel: $keys';
+  }
+
+  @override
+  String get moduleTodo => 'Aufgaben';
+
+  @override
+  String get todoTitle => 'Aufgaben';
+
+  @override
+  String get todoAdd => 'Aufgabe hinzufügen';
+
+  @override
+  String get todoAddSub => 'Unteraufgabe hinzufügen';
+
+  @override
+  String get todoWhat => 'Was ist zu tun?';
+
+  @override
+  String get todoNotes => 'Notizen';
+
+  @override
+  String get todoDueDate => 'Fällig am';
+
+  @override
+  String get todoSetDue => 'Fälligkeitsdatum setzen';
+
+  @override
+  String get todoClearDue => 'Fälligkeitsdatum entfernen';
+
+  @override
+  String todoDue(String date) {
+    return 'Fällig $date';
+  }
+
+  @override
+  String get todoOverdue => 'Überfällig';
+
+  @override
+  String get todoFilterOpen => 'Offen';
+
+  @override
+  String get todoFilterDone => 'Erledigt';
+
+  @override
+  String get todoFilterAll => 'Alle';
+
+  @override
+  String get todoEmpty => 'Nichts zu tun. Fügen Sie Ihre erste Aufgabe hinzu.';
+
+  @override
+  String get todoEmptyDone => 'Keine erledigten Aufgaben.';
+
+  @override
+  String get todoComplete => 'Als erledigt markieren';
+
+  @override
+  String get todoReopen => 'Wieder öffnen';
+
+  @override
+  String todoDeleteConfirm(String title) {
+    return '„$title“ löschen? Die Unteraufgaben werden ebenfalls gelöscht.';
+  }
+
+  @override
+  String get todoCompleteAllTitle => 'Unteraufgaben ebenfalls erledigen?';
+
+  @override
+  String todoCompleteAllBody(String title) {
+    return '„$title“ hat noch offene Unteraufgaben. Beim Erledigen werden sie ebenfalls erledigt.';
+  }
+
+  @override
+  String get todoCompleteAll => 'Alle erledigen';
+
+  @override
+  String get todoLinkedItem => 'Verknüpftes Element';
+
+  @override
+  String todoFromOwner(String name) {
+    return 'Von $name';
+  }
+
+  @override
+  String todoSubProgress(int done, int total) {
+    return '$done von $total Unteraufgaben erledigt';
+  }
+
+  @override
+  String get todoReorder => 'Zum Sortieren ziehen';
+
+  @override
+  String get changeProduct => 'Produkt ändern';
+
+  @override
+  String changeProductOf(String product) {
+    return 'Neues Hauptprodukt für $product';
+  }
+
+  @override
+  String get changeProductNew => 'Neues Produkt';
+
+  @override
+  String changeProductNetNote(String product) {
+    return '$product hat einen Nettopreis: der Positionsrabatt wurde entfernt.';
+  }
+
+  @override
+  String changeProductIndicativeNote(String product) {
+    return '$product hat einen Richtpreis: Preis vor dem Versand bestätigen.';
+  }
+
+  @override
+  String optionsNotApplicable(int count, String product) {
+    return '$count Option(en) gelten nicht für $product: bitte entfernen.';
+  }
+
+  @override
+  String removeNamedLine(String code) {
+    return '$code entfernen';
+  }
+
+  @override
+  String optionNotOffered(String product) {
+    return 'Nicht verfügbar mit $product';
+  }
+
+  @override
+  String sentWithNotApplicable(int count) {
+    return 'Versendet mit $count Option(en), die nicht zu ihrem Hauptprodukt passen.';
+  }
+
+  @override
+  String get tabCustomer => 'Kunde';
+
+  @override
+  String get todoAdded => 'Aufgabe hinzugefügt';
+
+  @override
+  String get todoLinkToScreen => 'Mit aktuellem Bildschirm verknüpfen';
+
+  @override
+  String get todoLinkNotAvailable =>
+      'Dieser Bildschirm hat keinen Datensatz zum Verknüpfen.';
+
+  @override
+  String get todoOpenLink => 'Verknüpften Datensatz öffnen';
+
+  @override
+  String get todoRemoveLink => 'Verknüpfung aus meinen To-dos entfernen';
+
+  @override
+  String get recordNotFound =>
+      'Dieser Datensatz wurde nicht gefunden. Er wurde möglicherweise gelöscht, oder Sie haben keinen Zugriff darauf.';
+
+  @override
+  String get todoForObject => 'Aufgaben zu diesem Datensatz';
+
+  @override
+  String todoForObjectCount(int count) {
+    return 'Aufgaben zu diesem Datensatz ($count offen)';
+  }
+
+  @override
+  String get todoForObjectEmpty =>
+      'Keine offenen Aufgaben zu diesem Datensatz.';
+
+  @override
+  String get todoEmailReminders => 'E-Mail-Erinnerungen';
 }

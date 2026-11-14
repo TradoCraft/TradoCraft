@@ -8732,4 +8732,216 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get productionRoutingChangedWhileSaving =>
       'De routing is gewijzigd terwijl ze werd opgeslagen. Sla opnieuw op om de laatste wijzigingen mee te nemen.';
+
+  @override
+  String get shortcutBack => 'Terug';
+
+  @override
+  String get shortcutCreate => 'Aanmaken';
+
+  @override
+  String get shortcutHome => 'Startpagina';
+
+  @override
+  String get shortcutDiscard => 'Wijzigingen verwerpen';
+
+  @override
+  String get shortcutSave => 'Opslaan';
+
+  @override
+  String get shortcutNextPage => 'Meer laden';
+
+  @override
+  String get shortcutSearch => 'Zoeken';
+
+  @override
+  String get shortcutNewTodo => 'Nieuwe taak';
+
+  @override
+  String get shortcutKbSearch => 'Artikelen zoeken';
+
+  @override
+  String get shortcutKbShare => 'Artikel delen';
+
+  @override
+  String get shortcutPalette => 'Opdrachtenpalet';
+
+  @override
+  String get shortcutHelp => 'Sneltoetsen';
+
+  @override
+  String shortcutMenuItem(int n) {
+    return 'Menu-item $n';
+  }
+
+  @override
+  String shortcutHint(String keys) {
+    return 'Sneltoets: $keys';
+  }
+
+  @override
+  String get moduleTodo => 'Taken';
+
+  @override
+  String get todoTitle => 'Taken';
+
+  @override
+  String get todoAdd => 'Taak toevoegen';
+
+  @override
+  String get todoAddSub => 'Subtaak toevoegen';
+
+  @override
+  String get todoWhat => 'Wat moet er gebeuren?';
+
+  @override
+  String get todoNotes => 'Notities';
+
+  @override
+  String get todoDueDate => 'Vervaldatum';
+
+  @override
+  String get todoSetDue => 'Vervaldatum instellen';
+
+  @override
+  String get todoClearDue => 'Vervaldatum wissen';
+
+  @override
+  String todoDue(String date) {
+    return 'Vervalt $date';
+  }
+
+  @override
+  String get todoOverdue => 'Te laat';
+
+  @override
+  String get todoFilterOpen => 'Open';
+
+  @override
+  String get todoFilterDone => 'Afgerond';
+
+  @override
+  String get todoFilterAll => 'Alle';
+
+  @override
+  String get todoEmpty => 'Niets te doen. Voeg je eerste taak toe.';
+
+  @override
+  String get todoEmptyDone => 'Geen afgeronde taken.';
+
+  @override
+  String get todoComplete => 'Als afgerond markeren';
+
+  @override
+  String get todoReopen => 'Heropenen';
+
+  @override
+  String todoDeleteConfirm(String title) {
+    return '\"$title\" verwijderen? De subtaken worden ook verwijderd.';
+  }
+
+  @override
+  String get todoCompleteAllTitle => 'Ook de subtaken afronden?';
+
+  @override
+  String todoCompleteAllBody(String title) {
+    return '\"$title\" heeft nog open subtaken. Afronden rondt ze ook af.';
+  }
+
+  @override
+  String get todoCompleteAll => 'Alles afronden';
+
+  @override
+  String get todoLinkedItem => 'Gekoppeld item';
+
+  @override
+  String todoFromOwner(String name) {
+    return 'Van $name';
+  }
+
+  @override
+  String todoSubProgress(int done, int total) {
+    return '$done van $total subtaken afgerond';
+  }
+
+  @override
+  String get todoReorder => 'Slepen om te ordenen';
+
+  @override
+  String get changeProduct => 'Product wijzigen';
+
+  @override
+  String changeProductOf(String product) {
+    return 'Nieuw hoofdproduct voor $product';
+  }
+
+  @override
+  String get changeProductNew => 'Nieuw product';
+
+  @override
+  String changeProductNetNote(String product) {
+    return '$product heeft een nettoprijs: de regelkorting is gewist.';
+  }
+
+  @override
+  String changeProductIndicativeNote(String product) {
+    return '$product heeft een indicatieve prijs: bevestig de prijs voor het verzenden.';
+  }
+
+  @override
+  String optionsNotApplicable(int count, String product) {
+    return '$count optie(s) gelden niet voor $product: verwijder ze.';
+  }
+
+  @override
+  String removeNamedLine(String code) {
+    return '$code verwijderen';
+  }
+
+  @override
+  String optionNotOffered(String product) {
+    return 'Niet aangeboden bij $product';
+  }
+
+  @override
+  String sentWithNotApplicable(int count) {
+    return 'Verzonden met $count optie(s) die niet bij hun hoofdproduct horen.';
+  }
+
+  @override
+  String get tabCustomer => 'Klant';
+
+  @override
+  String get todoAdded => 'Taak toegevoegd';
+
+  @override
+  String get todoLinkToScreen => 'Koppelen aan huidig scherm';
+
+  @override
+  String get todoLinkNotAvailable =>
+      'Dit scherm heeft geen record om aan te koppelen.';
+
+  @override
+  String get todoOpenLink => 'Gekoppeld record openen';
+
+  @override
+  String get todoRemoveLink => 'Koppeling uit mijn taken verwijderen';
+
+  @override
+  String get recordNotFound =>
+      'Dit record is niet gevonden. Het is misschien verwijderd, of je hebt er geen toegang toe.';
+
+  @override
+  String get todoForObject => 'Taken voor dit record';
+
+  @override
+  String todoForObjectCount(int count) {
+    return 'Taken voor dit record ($count open)';
+  }
+
+  @override
+  String get todoForObjectEmpty => 'Geen openstaande taken voor dit record.';
+
+  @override
+  String get todoEmailReminders => 'E-mailherinneringen';
 }

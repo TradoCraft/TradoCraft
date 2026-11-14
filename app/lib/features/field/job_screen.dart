@@ -21,6 +21,8 @@ import 'offline/offline_ui.dart';
 import 'offline/pending_overlay.dart';
 import 'work_log_dialog.dart';
 import '../../shared/app_icons.dart';
+import '../../shared/load_failed.dart';
+import '../todo/object_todos_button.dart';
 
 final _stamp = DateFormat('dd/MM HH:mm');
 
@@ -39,6 +41,7 @@ class _JobScreenState extends ConsumerState<JobScreen> {
   /// when it is shown.
   JobDetail? _d;
   String? _error;
+  bool _missing = false;
   bool _busy = false;
 
   /// Set while what is shown comes from the local copy because the server cannot be reached.
@@ -106,7 +109,12 @@ class _JobScreenState extends ConsumerState<JobScreen> {
           return;
         }
       }
-      if (mounted && _d == null) setState(() => _error = errorMessage(e));
+      if (mounted && _d == null) {
+        setState(() {
+          _error = errorMessage(e);
+          _missing = errorStatus(e) == 404;
+        });
+      }
     }
   }
 
@@ -241,11 +249,15 @@ class _JobScreenState extends ConsumerState<JobScreen> {
   Widget build(BuildContext context) {
     if (_d == null) {
       return Scaffold(
-        body: Center(
-          child: _error != null
-              ? Text(_error!)
-              : const CircularProgressIndicator(),
-        ),
+        body: _error != null
+            ? LoadFailedView(
+                message: _error!,
+                leaveTo: '/jobs',
+                notFound: _missing,
+                todoKind: TodoLinkKind.job,
+                todoId: widget.id,
+              )
+            : const Center(child: CircularProgressIndicator()),
       );
     }
     final queue = ref.watch(offlineQueueProvider);
@@ -289,6 +301,11 @@ class _JobScreenState extends ConsumerState<JobScreen> {
                   '${j.number}  ${j.title}',
                   style: theme.textTheme.titleLarge,
                 ),
+              ),
+              ObjectTodosButton(
+                kind: TodoLinkKind.job,
+                id: j.id,
+                label: j.number,
               ),
               IconButton(
                 tooltip: l.offlineReload,

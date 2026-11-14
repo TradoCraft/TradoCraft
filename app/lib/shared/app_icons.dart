@@ -40,6 +40,7 @@ abstract final class AppIcons {
   static const IconData category = Icons.category_outlined;
   static const IconData check = Icons.check;
   static const IconData checkCircle = Icons.check_circle_outlined;
+  static const IconData checklist = Icons.checklist;
   static const IconData chevronLeft = Icons.chevron_left;
   static const IconData chevronRight = Icons.chevron_right;
   static const IconData circle = Icons.circle;
@@ -131,6 +132,7 @@ abstract final class AppIcons {
   static const IconData schedule = Icons.schedule;
   static const IconData science = Icons.science_outlined;
   static const IconData search = Icons.search;
+  static const IconData searchOff = Icons.search_off;
   static const IconData sell = Icons.sell_outlined;
   static const IconData send = Icons.send;
   static const IconData sentimentDissatisfied = Icons.sentiment_dissatisfied;

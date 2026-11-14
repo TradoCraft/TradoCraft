@@ -15563,6 +15563,366 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The routing changed while it was being saved. Save again to include the latest changes.'**
   String get productionRoutingChangedWhileSaving;
+
+  /// No description provided for @shortcutBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get shortcutBack;
+
+  /// No description provided for @shortcutCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
+  String get shortcutCreate;
+
+  /// No description provided for @shortcutHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get shortcutHome;
+
+  /// No description provided for @shortcutDiscard.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard changes'**
+  String get shortcutDiscard;
+
+  /// No description provided for @shortcutSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get shortcutSave;
+
+  /// No description provided for @shortcutNextPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Load more'**
+  String get shortcutNextPage;
+
+  /// No description provided for @shortcutSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get shortcutSearch;
+
+  /// No description provided for @shortcutNewTodo.
+  ///
+  /// In en, this message translates to:
+  /// **'New to-do'**
+  String get shortcutNewTodo;
+
+  /// No description provided for @shortcutKbSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search articles'**
+  String get shortcutKbSearch;
+
+  /// No description provided for @shortcutKbShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Share article'**
+  String get shortcutKbShare;
+
+  /// No description provided for @shortcutPalette.
+  ///
+  /// In en, this message translates to:
+  /// **'Command palette'**
+  String get shortcutPalette;
+
+  /// No description provided for @shortcutHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Keyboard shortcuts'**
+  String get shortcutHelp;
+
+  /// No description provided for @shortcutMenuItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Menu item {n}'**
+  String shortcutMenuItem(int n);
+
+  /// No description provided for @shortcutHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Shortcut: {keys}'**
+  String shortcutHint(String keys);
+
+  /// No description provided for @moduleTodo.
+  ///
+  /// In en, this message translates to:
+  /// **'To-do'**
+  String get moduleTodo;
+
+  /// No description provided for @todoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'To-dos'**
+  String get todoTitle;
+
+  /// No description provided for @todoAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to-do'**
+  String get todoAdd;
+
+  /// No description provided for @todoAddSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Add sub-item'**
+  String get todoAddSub;
+
+  /// No description provided for @todoWhat.
+  ///
+  /// In en, this message translates to:
+  /// **'What needs doing?'**
+  String get todoWhat;
+
+  /// No description provided for @todoNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get todoNotes;
+
+  /// No description provided for @todoDueDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Due date'**
+  String get todoDueDate;
+
+  /// No description provided for @todoSetDue.
+  ///
+  /// In en, this message translates to:
+  /// **'Set due date'**
+  String get todoSetDue;
+
+  /// No description provided for @todoClearDue.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear due date'**
+  String get todoClearDue;
+
+  /// No description provided for @todoDue.
+  ///
+  /// In en, this message translates to:
+  /// **'Due {date}'**
+  String todoDue(String date);
+
+  /// No description provided for @todoOverdue.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue'**
+  String get todoOverdue;
+
+  /// No description provided for @todoFilterOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get todoFilterOpen;
+
+  /// No description provided for @todoFilterDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get todoFilterDone;
+
+  /// No description provided for @todoFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get todoFilterAll;
+
+  /// No description provided for @todoEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to do. Add your first to-do.'**
+  String get todoEmpty;
+
+  /// No description provided for @todoEmptyDone.
+  ///
+  /// In en, this message translates to:
+  /// **'No finished to-dos.'**
+  String get todoEmptyDone;
+
+  /// No description provided for @todoComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark as done'**
+  String get todoComplete;
+
+  /// No description provided for @todoReopen.
+  ///
+  /// In en, this message translates to:
+  /// **'Reopen'**
+  String get todoReopen;
+
+  /// No description provided for @todoDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete \"{title}\"? Its sub-items are deleted too.'**
+  String todoDeleteConfirm(String title);
+
+  /// No description provided for @todoCompleteAllTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete the sub-items too?'**
+  String get todoCompleteAllTitle;
+
+  /// No description provided for @todoCompleteAllBody.
+  ///
+  /// In en, this message translates to:
+  /// **'\"{title}\" still has open sub-items. Completing it marks them as done too.'**
+  String todoCompleteAllBody(String title);
+
+  /// No description provided for @todoCompleteAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete all'**
+  String get todoCompleteAll;
+
+  /// No description provided for @todoLinkedItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Linked item'**
+  String get todoLinkedItem;
+
+  /// No description provided for @todoFromOwner.
+  ///
+  /// In en, this message translates to:
+  /// **'From {name}'**
+  String todoFromOwner(String name);
+
+  /// No description provided for @todoSubProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'{done} of {total} sub-items done'**
+  String todoSubProgress(int done, int total);
+
+  /// No description provided for @todoReorder.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag to reorder'**
+  String get todoReorder;
+
+  /// No description provided for @changeProduct.
+  ///
+  /// In en, this message translates to:
+  /// **'Change product'**
+  String get changeProduct;
+
+  /// No description provided for @changeProductOf.
+  ///
+  /// In en, this message translates to:
+  /// **'New main product for {product}'**
+  String changeProductOf(String product);
+
+  /// No description provided for @changeProductNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New product'**
+  String get changeProductNew;
+
+  /// No description provided for @changeProductNetNote.
+  ///
+  /// In en, this message translates to:
+  /// **'{product} has a net price: the line discount was cleared.'**
+  String changeProductNetNote(String product);
+
+  /// No description provided for @changeProductIndicativeNote.
+  ///
+  /// In en, this message translates to:
+  /// **'{product} has an indicative price: confirm the price before sending.'**
+  String changeProductIndicativeNote(String product);
+
+  /// No description provided for @optionsNotApplicable.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} option(s) do not apply to {product}: remove them.'**
+  String optionsNotApplicable(int count, String product);
+
+  /// No description provided for @removeNamedLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {code}'**
+  String removeNamedLine(String code);
+
+  /// No description provided for @optionNotOffered.
+  ///
+  /// In en, this message translates to:
+  /// **'Not offered with {product}'**
+  String optionNotOffered(String product);
+
+  /// No description provided for @sentWithNotApplicable.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent with {count} option(s) that do not apply to their main product.'**
+  String sentWithNotApplicable(int count);
+
+  /// No description provided for @tabCustomer.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer'**
+  String get tabCustomer;
+
+  /// No description provided for @todoAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'To-do added'**
+  String get todoAdded;
+
+  /// No description provided for @todoLinkToScreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Link to current screen'**
+  String get todoLinkToScreen;
+
+  /// No description provided for @todoLinkNotAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'This screen has no record to link to.'**
+  String get todoLinkNotAvailable;
+
+  /// No description provided for @todoOpenLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the linked record'**
+  String get todoOpenLink;
+
+  /// No description provided for @todoRemoveLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove link from my to-dos'**
+  String get todoRemoveLink;
+
+  /// No description provided for @recordNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'This record was not found. It may have been deleted, or you may not have access to it.'**
+  String get recordNotFound;
+
+  /// No description provided for @todoForObject.
+  ///
+  /// In en, this message translates to:
+  /// **'To-dos for this record'**
+  String get todoForObject;
+
+  /// No description provided for @todoForObjectCount.
+  ///
+  /// In en, this message translates to:
+  /// **'To-dos for this record ({count} open)'**
+  String todoForObjectCount(int count);
+
+  /// No description provided for @todoForObjectEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No open to-dos for this record.'**
+  String get todoForObjectEmpty;
+
+  /// No description provided for @todoEmailReminders.
+  ///
+  /// In en, this message translates to:
+  /// **'E-mail reminders'**
+  String get todoEmailReminders;
 }
 
 class _AppLocalizationsDelegate

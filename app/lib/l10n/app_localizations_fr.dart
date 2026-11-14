@@ -8744,4 +8744,217 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get productionRoutingChangedWhileSaving =>
       'La gamme a été modifiée pendant l\'enregistrement. Enregistrez à nouveau pour inclure les dernières modifications.';
+
+  @override
+  String get shortcutBack => 'Retour';
+
+  @override
+  String get shortcutCreate => 'Créer';
+
+  @override
+  String get shortcutHome => 'Accueil';
+
+  @override
+  String get shortcutDiscard => 'Annuler les modifications';
+
+  @override
+  String get shortcutSave => 'Enregistrer';
+
+  @override
+  String get shortcutNextPage => 'Charger plus';
+
+  @override
+  String get shortcutSearch => 'Rechercher';
+
+  @override
+  String get shortcutNewTodo => 'Nouvelle tâche';
+
+  @override
+  String get shortcutKbSearch => 'Rechercher des articles';
+
+  @override
+  String get shortcutKbShare => 'Partager l\'article';
+
+  @override
+  String get shortcutPalette => 'Palette de commandes';
+
+  @override
+  String get shortcutHelp => 'Raccourcis clavier';
+
+  @override
+  String shortcutMenuItem(int n) {
+    return 'Entrée de menu $n';
+  }
+
+  @override
+  String shortcutHint(String keys) {
+    return 'Raccourci : $keys';
+  }
+
+  @override
+  String get moduleTodo => 'Tâches';
+
+  @override
+  String get todoTitle => 'Tâches';
+
+  @override
+  String get todoAdd => 'Ajouter une tâche';
+
+  @override
+  String get todoAddSub => 'Ajouter une sous-tâche';
+
+  @override
+  String get todoWhat => 'Que faut-il faire ?';
+
+  @override
+  String get todoNotes => 'Notes';
+
+  @override
+  String get todoDueDate => 'Échéance';
+
+  @override
+  String get todoSetDue => 'Définir l\'échéance';
+
+  @override
+  String get todoClearDue => 'Supprimer l\'échéance';
+
+  @override
+  String todoDue(String date) {
+    return 'Échéance $date';
+  }
+
+  @override
+  String get todoOverdue => 'En retard';
+
+  @override
+  String get todoFilterOpen => 'Ouvertes';
+
+  @override
+  String get todoFilterDone => 'Terminées';
+
+  @override
+  String get todoFilterAll => 'Toutes';
+
+  @override
+  String get todoEmpty => 'Rien à faire. Ajoutez votre première tâche.';
+
+  @override
+  String get todoEmptyDone => 'Aucune tâche terminée.';
+
+  @override
+  String get todoComplete => 'Marquer comme terminée';
+
+  @override
+  String get todoReopen => 'Rouvrir';
+
+  @override
+  String todoDeleteConfirm(String title) {
+    return 'Supprimer « $title » ? Ses sous-tâches sont supprimées aussi.';
+  }
+
+  @override
+  String get todoCompleteAllTitle => 'Terminer aussi les sous-tâches ?';
+
+  @override
+  String todoCompleteAllBody(String title) {
+    return '« $title » a encore des sous-tâches ouvertes. La terminer les termine aussi.';
+  }
+
+  @override
+  String get todoCompleteAll => 'Tout terminer';
+
+  @override
+  String get todoLinkedItem => 'Élément lié';
+
+  @override
+  String todoFromOwner(String name) {
+    return 'De $name';
+  }
+
+  @override
+  String todoSubProgress(int done, int total) {
+    return '$done sous-tâches sur $total terminées';
+  }
+
+  @override
+  String get todoReorder => 'Glisser pour réordonner';
+
+  @override
+  String get changeProduct => 'Changer de produit';
+
+  @override
+  String changeProductOf(String product) {
+    return 'Nouveau produit principal pour $product';
+  }
+
+  @override
+  String get changeProductNew => 'Nouveau produit';
+
+  @override
+  String changeProductNetNote(String product) {
+    return '$product a un prix net : la remise de ligne a été effacée.';
+  }
+
+  @override
+  String changeProductIndicativeNote(String product) {
+    return '$product a un prix indicatif : confirmez le prix avant l\'envoi.';
+  }
+
+  @override
+  String optionsNotApplicable(int count, String product) {
+    return '$count option(s) ne s\'appliquent pas à $product : supprimez-les.';
+  }
+
+  @override
+  String removeNamedLine(String code) {
+    return 'Supprimer $code';
+  }
+
+  @override
+  String optionNotOffered(String product) {
+    return 'Non proposé avec $product';
+  }
+
+  @override
+  String sentWithNotApplicable(int count) {
+    return 'Envoyé avec $count option(s) qui ne s\'appliquent pas à leur produit principal.';
+  }
+
+  @override
+  String get tabCustomer => 'Client';
+
+  @override
+  String get todoAdded => 'Tâche ajoutée';
+
+  @override
+  String get todoLinkToScreen => 'Lier à l’écran actuel';
+
+  @override
+  String get todoLinkNotAvailable =>
+      'Cet écran n’a pas d’enregistrement à lier.';
+
+  @override
+  String get todoOpenLink => 'Ouvrir l’enregistrement lié';
+
+  @override
+  String get todoRemoveLink => 'Retirer le lien de mes tâches';
+
+  @override
+  String get recordNotFound =>
+      'Cet enregistrement est introuvable. Il a peut-être été supprimé, ou vous n’y avez pas accès.';
+
+  @override
+  String get todoForObject => 'Tâches de cet enregistrement';
+
+  @override
+  String todoForObjectCount(int count) {
+    return 'Tâches de cet enregistrement ($count ouvertes)';
+  }
+
+  @override
+  String get todoForObjectEmpty =>
+      'Aucune tâche ouverte pour cet enregistrement.';
+
+  @override
+  String get todoEmailReminders => 'Rappels par e-mail';
 }

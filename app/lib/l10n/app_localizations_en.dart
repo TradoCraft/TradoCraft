@@ -8698,4 +8698,215 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get productionRoutingChangedWhileSaving =>
       'The routing changed while it was being saved. Save again to include the latest changes.';
+
+  @override
+  String get shortcutBack => 'Back';
+
+  @override
+  String get shortcutCreate => 'Create';
+
+  @override
+  String get shortcutHome => 'Home';
+
+  @override
+  String get shortcutDiscard => 'Discard changes';
+
+  @override
+  String get shortcutSave => 'Save';
+
+  @override
+  String get shortcutNextPage => 'Load more';
+
+  @override
+  String get shortcutSearch => 'Search';
+
+  @override
+  String get shortcutNewTodo => 'New to-do';
+
+  @override
+  String get shortcutKbSearch => 'Search articles';
+
+  @override
+  String get shortcutKbShare => 'Share article';
+
+  @override
+  String get shortcutPalette => 'Command palette';
+
+  @override
+  String get shortcutHelp => 'Keyboard shortcuts';
+
+  @override
+  String shortcutMenuItem(int n) {
+    return 'Menu item $n';
+  }
+
+  @override
+  String shortcutHint(String keys) {
+    return 'Shortcut: $keys';
+  }
+
+  @override
+  String get moduleTodo => 'To-do';
+
+  @override
+  String get todoTitle => 'To-dos';
+
+  @override
+  String get todoAdd => 'Add to-do';
+
+  @override
+  String get todoAddSub => 'Add sub-item';
+
+  @override
+  String get todoWhat => 'What needs doing?';
+
+  @override
+  String get todoNotes => 'Notes';
+
+  @override
+  String get todoDueDate => 'Due date';
+
+  @override
+  String get todoSetDue => 'Set due date';
+
+  @override
+  String get todoClearDue => 'Clear due date';
+
+  @override
+  String todoDue(String date) {
+    return 'Due $date';
+  }
+
+  @override
+  String get todoOverdue => 'Overdue';
+
+  @override
+  String get todoFilterOpen => 'Open';
+
+  @override
+  String get todoFilterDone => 'Done';
+
+  @override
+  String get todoFilterAll => 'All';
+
+  @override
+  String get todoEmpty => 'Nothing to do. Add your first to-do.';
+
+  @override
+  String get todoEmptyDone => 'No finished to-dos.';
+
+  @override
+  String get todoComplete => 'Mark as done';
+
+  @override
+  String get todoReopen => 'Reopen';
+
+  @override
+  String todoDeleteConfirm(String title) {
+    return 'Delete \"$title\"? Its sub-items are deleted too.';
+  }
+
+  @override
+  String get todoCompleteAllTitle => 'Complete the sub-items too?';
+
+  @override
+  String todoCompleteAllBody(String title) {
+    return '\"$title\" still has open sub-items. Completing it marks them as done too.';
+  }
+
+  @override
+  String get todoCompleteAll => 'Complete all';
+
+  @override
+  String get todoLinkedItem => 'Linked item';
+
+  @override
+  String todoFromOwner(String name) {
+    return 'From $name';
+  }
+
+  @override
+  String todoSubProgress(int done, int total) {
+    return '$done of $total sub-items done';
+  }
+
+  @override
+  String get todoReorder => 'Drag to reorder';
+
+  @override
+  String get changeProduct => 'Change product';
+
+  @override
+  String changeProductOf(String product) {
+    return 'New main product for $product';
+  }
+
+  @override
+  String get changeProductNew => 'New product';
+
+  @override
+  String changeProductNetNote(String product) {
+    return '$product has a net price: the line discount was cleared.';
+  }
+
+  @override
+  String changeProductIndicativeNote(String product) {
+    return '$product has an indicative price: confirm the price before sending.';
+  }
+
+  @override
+  String optionsNotApplicable(int count, String product) {
+    return '$count option(s) do not apply to $product: remove them.';
+  }
+
+  @override
+  String removeNamedLine(String code) {
+    return 'Remove $code';
+  }
+
+  @override
+  String optionNotOffered(String product) {
+    return 'Not offered with $product';
+  }
+
+  @override
+  String sentWithNotApplicable(int count) {
+    return 'Sent with $count option(s) that do not apply to their main product.';
+  }
+
+  @override
+  String get tabCustomer => 'Customer';
+
+  @override
+  String get todoAdded => 'To-do added';
+
+  @override
+  String get todoLinkToScreen => 'Link to current screen';
+
+  @override
+  String get todoLinkNotAvailable => 'This screen has no record to link to.';
+
+  @override
+  String get todoOpenLink => 'Open the linked record';
+
+  @override
+  String get todoRemoveLink => 'Remove link from my to-dos';
+
+  @override
+  String get recordNotFound =>
+      'This record was not found. It may have been deleted, or you may not have access to it.';
+
+  @override
+  String get todoForObject => 'To-dos for this record';
+
+  @override
+  String todoForObjectCount(int count) {
+    return 'To-dos for this record ($count open)';
+  }
+
+  @override
+  String get todoForObjectEmpty => 'No open to-dos for this record.';
+
+  @override
+  String get todoEmailReminders => 'E-mail reminders';
 }

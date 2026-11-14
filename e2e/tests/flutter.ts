@@ -33,8 +33,20 @@ export async function typeInto(field: Locator, text: string, opts: { refocus?: b
 
 /** Opens a drop-down (a button whose name starts with `button`) and picks an option from its menu. */
 export async function choose(page: Page, button: string | RegExp, option: string | RegExp) {
-  await page.getByRole('button', { name: button }).click();
-  await page.getByRole('menuitem', { name: option }).click();
+  // A drop-down whose options come from the server (locations, zones, divisions) has no items until the
+  // answer arrives, and a tap on it then opens nothing; the menu does not fill in afterwards. So open it
+  // again until the option is really there, instead of tapping once and hoping the data has loaded.
+  await expect(async () => {
+    await page.getByRole('button', { name: button }).click({ timeout: 15_000 });
+    try {
+      await page.getByRole('menuitem', { name: option }).click({ timeout: 3_000 });
+    } catch (e) {
+      // A menu that is open but lacks the option must be closed first; with no menu open, Escape would
+      // close the dialog the field is in (a disabled field opens nothing), so only press it for a menu.
+      if ((await page.getByRole('menuitem').count()) > 0) await page.keyboard.press('Escape');
+      throw e;
+    }
+  }).toPass({ timeout: 45_000 });
 }
 
 /** Types into a search box and picks the suggestion whose label is `result` (a button under the box). */

@@ -23,6 +23,7 @@ import '../features/helpdesk/reports_page.dart';
 import '../features/reports/report_builder_page.dart';
 import '../features/reports/report_screen.dart';
 import '../features/reports/reports_page.dart';
+import '../features/todo/todo_page.dart';
 import '../features/helpdesk/tickets_page.dart';
 import '../features/kb/kb_categories_page.dart';
 import '../features/kb/kb_page.dart';
@@ -51,6 +52,7 @@ import '../features/tutorial/chapter_map_page.dart';
 import 'session.dart';
 import '../features/field/offline/offline_ui.dart' show OfflineSyncHost;
 import 'shell.dart';
+import 'shortcuts/registry.dart' show ModalShortcutObserver, shortcutRegistryProvider;
 import 'workspace.dart' show DetailPortal;
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -59,6 +61,8 @@ final routerProvider = Provider<GoRouter>((ref) {
   ref.onDispose(signedIn.dispose);
 
   return GoRouter(
+    // Dialogs and popups are modal for keyboard shortcuts (see ModalShortcutObserver).
+    observers: [ModalShortcutObserver(ref.read(shortcutRegistryProvider))],
     initialLocation: '/quotations',
     refreshListenable: signedIn,
     redirect: (context, state) {
@@ -78,6 +82,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(path: '/tutorial', builder: (_, _) => const TutorialMapPage()),
       ShellRoute(
+        // Bottom sheets and menus opened from a shell page use this navigator, not the root.
+        observers: [ModalShortcutObserver(ref.read(shortcutRegistryProvider))],
         builder: (context, state, child) => OfflineSyncHost(
           child: AppShell(location: state.matchedLocation, child: child),
         ),
@@ -149,6 +155,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/helpdesk/:id',
             builder: (_, s) => DetailPortal(location: s.uri.toString()),
           ),
+          GoRoute(path: '/todo', builder: (_, _) => const TodoPage()),
           GoRoute(
             path: '/reports',
             builder: (_, _) => const SavedReportsPage(),
@@ -269,6 +276,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (_, s) => DetailPortal(location: s.uri.toString()),
           ),
           GoRoute(path: '/customers', builder: (_, _) => const CustomersPage()),
+          GoRoute(
+            path: '/customers/:id',
+            builder: (_, s) => DetailPortal(location: s.uri.toString()),
+          ),
           GoRoute(path: '/products', builder: (_, _) => const ProductsPage()),
           GoRoute(
             path: '/products/:id',

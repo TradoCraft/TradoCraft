@@ -63,6 +63,11 @@ String? errorCode(Object error) {
   return null;
 }
 
+/// The HTTP status of a failed API call (null for other errors, e.g. no connection). A detail
+/// screen uses it to tell "this record is gone" (404) from other failures.
+int? errorStatus(Object error) =>
+    error is DioException ? error.response?.statusCode : null;
+
 /// Turns API errors into a sentence for the user (the server sends `{error, message}`).
 String errorMessage(Object error) {
   if (error is DioException) {
