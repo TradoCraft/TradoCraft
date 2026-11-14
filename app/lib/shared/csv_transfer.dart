@@ -35,6 +35,8 @@ final csvPickerProvider = Provider<CsvPicker>((_) => pickCsvFile);
 
 /// Picks a CSV, XLSX or ODS file for an import.
 final importFilePickerProvider = Provider<CsvPicker>((_) => pickImportFile);
+/// Picks a JSON file (a tower configurator export).
+final jsonPickerProvider = Provider<CsvPicker>((_) => pickJsonFile);
 final csvSaverProvider = Provider<CsvSaver>((_) => saveCsvFile);
 
 const _csvTypes = XTypeGroup(
@@ -61,6 +63,13 @@ const _odsTypes = XTypeGroup(
   uniformTypeIdentifiers: ['org.oasis-open.opendocument.spreadsheet'],
 );
 
+const _jsonTypes = XTypeGroup(
+  label: 'JSON',
+  extensions: ['json'],
+  mimeTypes: ['application/json'],
+  uniformTypeIdentifiers: ['public.json'],
+);
+
 /// The spreadsheet and CSV types an import accepts.
 const importFileTypes = [_csvTypes, _xlsxTypes, _odsTypes];
 
@@ -71,6 +80,8 @@ Future<PickedFile?> _pick(List<XTypeGroup> types) async {
 }
 
 Future<PickedFile?> pickCsvFile() => _pick(const [_csvTypes]);
+
+Future<PickedFile?> pickJsonFile() => _pick(const [_jsonTypes]);
 
 Future<PickedFile?> pickImportFile() => _pick(importFileTypes);
 

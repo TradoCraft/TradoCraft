@@ -9718,4 +9718,53 @@ class AppLocalizationsNl extends AppLocalizations {
   String baselineUnknownSet(String label) {
     return '$label: onbekend — invullen';
   }
+
+  @override
+  String get baselineImportTower => 'Importeren uit torenconfigurator';
+
+  @override
+  String get baselineImportTitle => 'Voorbeeld van de import';
+
+  @override
+  String baselineImportCreates(int groups, int bells, int dials) {
+    return 'Maakt $groups klokkengroep(en), $bells klok(ken) en $dials wijzerplaat/-platen aan.';
+  }
+
+  @override
+  String baselineImportReplaces(int count) {
+    return 'Dit vervangt $count item(s) van een eerdere import van dezelfde bron; met de hand ingevoerde items blijven behouden.';
+  }
+
+  @override
+  String get baselineImportFresh =>
+      'Er is geen eerdere import om te vervangen.';
+
+  @override
+  String get baselineImportWarnings => 'Waarschuwingen';
+
+  @override
+  String baselineImportWarning(String bell, String field, String message) {
+    return '$bell, $field: $message';
+  }
+
+  @override
+  String get baselineImportUnmapped =>
+      'Niet gekoppelde velden (bewaard bij het geïmporteerde item)';
+
+  @override
+  String baselineImportUnmappedRow(String field, int count) {
+    return '$field ($count)';
+  }
+
+  @override
+  String get baselineImportConfirm => 'Importeren';
+
+  @override
+  String get baselineImportDone => 'Basislijn geïmporteerd.';
+
+  @override
+  String get baselineImportBadFile => 'Dit bestand is geen geldige JSON.';
+
+  @override
+  String get baselineImported => 'geïmporteerd';
 }

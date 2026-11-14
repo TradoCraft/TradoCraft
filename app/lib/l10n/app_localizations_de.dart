@@ -9741,4 +9741,53 @@ class AppLocalizationsDe extends AppLocalizations {
   String baselineUnknownSet(String label) {
     return '$label: unbekannt — eintragen';
   }
+
+  @override
+  String get baselineImportTower => 'Aus dem Turmkonfigurator importieren';
+
+  @override
+  String get baselineImportTitle => 'Importvorschau';
+
+  @override
+  String baselineImportCreates(int groups, int bells, int dials) {
+    return 'Legt $groups Glockengruppe(n), $bells Glocke(n) und $dials Zifferblatt/-blätter an.';
+  }
+
+  @override
+  String baselineImportReplaces(int count) {
+    return 'Dies ersetzt $count Eintrag/Einträge eines früheren Imports derselben Quelle; von Hand erfasste Einträge bleiben erhalten.';
+  }
+
+  @override
+  String get baselineImportFresh =>
+      'Es gibt keinen früheren Import, der ersetzt wird.';
+
+  @override
+  String get baselineImportWarnings => 'Warnungen';
+
+  @override
+  String baselineImportWarning(String bell, String field, String message) {
+    return '$bell, $field: $message';
+  }
+
+  @override
+  String get baselineImportUnmapped =>
+      'Nicht zugeordnete Felder (beim importierten Eintrag gespeichert)';
+
+  @override
+  String baselineImportUnmappedRow(String field, int count) {
+    return '$field ($count)';
+  }
+
+  @override
+  String get baselineImportConfirm => 'Importieren';
+
+  @override
+  String get baselineImportDone => 'Bestand importiert.';
+
+  @override
+  String get baselineImportBadFile => 'Diese Datei ist kein gültiges JSON.';
+
+  @override
+  String get baselineImported => 'importiert';
 }

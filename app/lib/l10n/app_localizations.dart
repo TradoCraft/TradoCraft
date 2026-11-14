@@ -17243,6 +17243,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{label}: unknown — set'**
   String baselineUnknownSet(String label);
+
+  /// No description provided for @baselineImportTower.
+  ///
+  /// In en, this message translates to:
+  /// **'Import from tower configurator'**
+  String get baselineImportTower;
+
+  /// No description provided for @baselineImportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Import preview'**
+  String get baselineImportTitle;
+
+  /// No description provided for @baselineImportCreates.
+  ///
+  /// In en, this message translates to:
+  /// **'Creates {groups} bell group(s), {bells} bell(s) and {dials} clock dial(s).'**
+  String baselineImportCreates(int groups, int bells, int dials);
+
+  /// No description provided for @baselineImportReplaces.
+  ///
+  /// In en, this message translates to:
+  /// **'This replaces {count} item(s) from a previous import of the same source; items entered by hand are kept.'**
+  String baselineImportReplaces(int count);
+
+  /// No description provided for @baselineImportFresh.
+  ///
+  /// In en, this message translates to:
+  /// **'There is no previous import to replace.'**
+  String get baselineImportFresh;
+
+  /// No description provided for @baselineImportWarnings.
+  ///
+  /// In en, this message translates to:
+  /// **'Warnings'**
+  String get baselineImportWarnings;
+
+  /// No description provided for @baselineImportWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'{bell}, {field}: {message}'**
+  String baselineImportWarning(String bell, String field, String message);
+
+  /// No description provided for @baselineImportUnmapped.
+  ///
+  /// In en, this message translates to:
+  /// **'Fields not mapped (kept with the imported item)'**
+  String get baselineImportUnmapped;
+
+  /// No description provided for @baselineImportUnmappedRow.
+  ///
+  /// In en, this message translates to:
+  /// **'{field} ({count})'**
+  String baselineImportUnmappedRow(String field, int count);
+
+  /// No description provided for @baselineImportConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Import'**
+  String get baselineImportConfirm;
+
+  /// No description provided for @baselineImportDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Baseline imported.'**
+  String get baselineImportDone;
+
+  /// No description provided for @baselineImportBadFile.
+  ///
+  /// In en, this message translates to:
+  /// **'This file is not valid JSON.'**
+  String get baselineImportBadFile;
+
+  /// No description provided for @baselineImported.
+  ///
+  /// In en, this message translates to:
+  /// **'imported'**
+  String get baselineImported;
 }
 
 class _AppLocalizationsDelegate

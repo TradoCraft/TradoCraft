@@ -3039,5 +3039,22 @@
   "matchesUnknown": "Desconocido",
   "matchesUnsuitable": "No adecuado",
   "matchesNoReason": "No se pudo evaluar.",
-  "baselineUnknownSet": "{label}: desconocido — completar"
+  "baselineUnknownSet": "{label}: desconocido — completar",
+  "baselineImportTower": "Importar desde el configurador de torre",
+  "baselineImportTitle": "Vista previa de la importación",
+  "baselineImportCreates": "Crea {groups} grupo(s) de campanas, {bells} campana(s) y {dials} esfera(s) de reloj.",
+  "@baselineImportCreates": {"placeholders": {"groups": {"type": "int"}, "bells": {"type": "int"}, "dials": {"type": "int"}}},
+  "baselineImportReplaces": "Esto sustituye {count} elemento(s) de una importación anterior de la misma fuente; los elementos introducidos a mano se conservan.",
+  "@baselineImportReplaces": {"placeholders": {"count": {"type": "int"}}},
+  "baselineImportFresh": "No hay una importación anterior que sustituir.",
+  "baselineImportWarnings": "Avisos",
+  "baselineImportWarning": "{bell}, {field}: {message}",
+  "@baselineImportWarning": {"placeholders": {"bell": {"type": "String"}, "field": {"type": "String"}, "message": {"type": "String"}}},
+  "baselineImportUnmapped": "Campos sin asignar (se guardan con el elemento importado)",
+  "baselineImportUnmappedRow": "{field} ({count})",
+  "@baselineImportUnmappedRow": {"placeholders": {"field": {"type": "String"}, "count": {"type": "int"}}},
+  "baselineImportConfirm": "Importar",
+  "baselineImportDone": "Situación actual importada.",
+  "baselineImportBadFile": "Este archivo no es un JSON válido.",
+  "baselineImported": "importado"
 }
