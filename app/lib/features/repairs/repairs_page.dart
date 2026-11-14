@@ -202,7 +202,30 @@ class _NewRepairDialogState extends ConsumerState<NewRepairDialog> {
         .crm
         .listCustomerContacts(id: customerId)
         .then((p) => p, onError: (Object _) => <Contact>[]);
-    if (mounted) setState(() => _contacts = list);
+    if (!mounted) return;
+    // A preselected contact missing from the list must stay selected and visible: fetch it.
+    final linked = _contactId;
+    Contact? extra;
+    var drop = false;
+    if (linked != null && !list.any((c) => c.id == linked)) {
+      try {
+        final c = await ref.read(apiProvider).crm.getContact(id: linked);
+        if (c.customerId == customerId) {
+          extra = c;
+        } else {
+          drop = true; // belongs to another customer
+        }
+      } catch (e) {
+        drop = errorStatus(e) == 404;
+      }
+      if (!mounted) return;
+    }
+    // The customer was changed while loading: this answer is stale.
+    if (_customer?.id != customerId) return;
+    setState(() {
+      _contacts = [...list, ?extra];
+      if (drop && _contactId == linked) _contactId = null;
+    });
   }
 
   Future<void> _save() async {
@@ -290,6 +313,13 @@ class _NewRepairDialogState extends ConsumerState<NewRepairDialog> {
                       DropdownMenuItem<String?>(
                         value: c.id,
                         child: Text(c.fullName),
+                      ),
+                    // Linked but unreadable (e.g. no access): still shown, and kept on save.
+                    if (_contactId != null &&
+                        !_contacts.any((c) => c.id == _contactId))
+                      DropdownMenuItem<String?>(
+                        value: _contactId,
+                        child: Text(_contactId!),
                       ),
                   ],
                   onChanged: (v) => setState(() => _contactId = v),
