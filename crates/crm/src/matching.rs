@@ -625,7 +625,10 @@ mod tests {
     #[test]
     fn requires_if_true_does_not_apply_when_false_or_unset() {
         let rules = [lit_rule()];
-        for v in [lit_dial(json!(false)), node("clock_dial", None, json!({ "dial_diameter_mm": 900 }))] {
+        for v in [
+            lit_dial(json!(false)),
+            node("clock_dial", None, json!({ "dial_diameter_mm": 900 })),
+        ] {
             for p in [Some(true), Some(false), None] {
                 let e = run(&[v.clone()], &rules, &lit_product(p));
                 assert!(e.reasons.is_empty(), "{p:?}");

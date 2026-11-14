@@ -412,7 +412,13 @@ mod tests {
             product_kind_for(Operator::RequiresIfTrue),
             DefinitionKind::Boolean
         );
-        assert_eq!(baseline_kind_for(Operator::RequiresIfTrue), DefinitionKind::Boolean);
-        assert_eq!(baseline_kind_for(Operator::WithinRange), DefinitionKind::Number);
+        assert_eq!(
+            baseline_kind_for(Operator::RequiresIfTrue),
+            DefinitionKind::Boolean
+        );
+        assert_eq!(
+            baseline_kind_for(Operator::WithinRange),
+            DefinitionKind::Number
+        );
     }
 }

@@ -908,9 +908,9 @@ async fn matching_can_be_limited_to_one_baseline_item_and_its_children(db: PgPoo
     let p = of(&for_group, UNIT_100);
     assert_eq!(p["status"], "unsuitable");
     let rs = reasons(p);
-    assert!(rs
-        .iter()
-        .any(|r| r.1 == "fail" && r.2 == "bell: weight_kg 900 is above the maximum max_bell_kg 500"));
+    assert!(rs.iter().any(
+        |r| r.1 == "fail" && r.2 == "bell: weight_kg 900 is above the maximum max_bell_kg 500"
+    ));
     assert!(rs.iter().all(|r| !r.2.contains("clock_dial")));
 
     // Unknown item and an item of another opportunity are 404.
