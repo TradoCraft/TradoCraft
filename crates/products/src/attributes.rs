@@ -446,7 +446,7 @@ mod tests {
         );
         // A single point is a valid range.
         assert!(parse(&range(Some("5"), Some("5"))).is_ok());
-        assert!(parse(&range(Some("0"), Some("-1"))).is_ok() == false);
+        assert!(parse(&range(Some("0"), Some("-1"))).is_err());
         assert!(parse(&range(None, Some("10"))).is_err());
         assert!(parse(&range(Some("10"), None)).is_err());
         assert!(parse(&range(None, None)).is_err());
