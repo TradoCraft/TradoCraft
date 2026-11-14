@@ -458,6 +458,14 @@ void main() {
       expect(find.text('ADMIN'), findsOneWidget);
     });
 
+    testWidgets('imports.admin alone reaches the Administration destination', (
+      tester,
+    ) async {
+      await shell(tester, ['imports.admin']);
+      expect(find.text('Administration'), findsOneWidget);
+      expect(find.text('ADMIN'), findsOneWidget);
+    });
+
     testWidgets('without users.admin it disappears and the redirect works', (
       tester,
     ) async {
