@@ -474,6 +474,50 @@ async fn the_source_of_an_item_can_be_read_back(db: PgPool) {
     assert_eq!(status, StatusCode::NOT_FOUND);
 }
 
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn a_dry_run_reports_the_same_placement_failure_as_the_import(db: PgPool) {
+    let app = seeded(&db).await;
+    import(&app, SALES, OPP, "", mini()).await;
+    // A hand-entered bell inside the imported group, then bells may no longer sit at the top
+    // level: the replace would have to move it there.
+    let group_id = tree(&app, OPP).await[0]["id"].as_str().unwrap().to_string();
+    let (s, r) = call(
+        &app,
+        SALES,
+        Method::POST,
+        &format!("/api/v1/opportunities/{OPP}/baseline/items"),
+        Some(json!({"type_code": "bell", "name": "By hand", "parent_id": group_id})),
+    )
+    .await;
+    assert_eq!(s, StatusCode::CREATED, "{r}");
+    sqlx::query("UPDATE crm.baseline_item_types SET allow_top_level = false WHERE code = 'bell'")
+        .execute(&db)
+        .await
+        .unwrap();
+    let before = count(&db, OPP).await;
+
+    let (dry, dry_body) = import(&app, SALES, OPP, "?dry_run=true", mini()).await;
+    let (real, real_body) = import(&app, SALES, OPP, "", mini()).await;
+    assert_eq!(real, StatusCode::UNPROCESSABLE_ENTITY, "{real_body}");
+    assert_eq!(
+        dry,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "the preview must refuse what the import refuses: {dry_body}"
+    );
+    assert_eq!(dry_body, real_body, "the same message");
+    assert_eq!(count(&db, OPP).await, before, "nothing was written");
+}
+
+#[test]
+fn the_openapi_spec_describes_the_source_response_as_any_json_value() {
+    // A bell of the source may be any JSON value (a bare string is imported with a warning), so
+    // the read-back is not an object.
+    let doc = serde_json::to_value(tradocraft_api::openapi()).unwrap();
+    let schema = &doc["paths"]["/api/v1/opportunities/{id}/baseline/items/{item_id}/source"]["get"]
+        ["responses"]["200"]["content"]["application/json"]["schema"];
+    assert_ne!(schema["type"], "object", "{schema}");
+}
+
 #[test]
 fn the_openapi_spec_describes_the_baseline_import_response_under_its_own_schema() {
     // The CSV import already owns the `ImportReport` schema; sharing the name would make the

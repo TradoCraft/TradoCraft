@@ -362,7 +362,7 @@ abstract class CrmClient {
   /// The source of an imported item as it was received (the whole bell, or the document without.
   /// its bells for the group). 404 for an item entered by hand.
   @GET('/api/v1/opportunities/{id}/baseline/items/{item_id}/source')
-  Future<dynamic> getSource({
+  Future<void> getSource({
     @Path('id') required String id,
     @Path('item_id') required String itemId,
   });

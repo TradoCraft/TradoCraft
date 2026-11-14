@@ -82,20 +82,70 @@ const MAPPED_PROPERTIES: [&str; 11] = [
 const DEFAULT_GROUP_NAME: &str = "Tower configurator import";
 const MAX_NAME: usize = 200;
 
-/// A text value of the source; `None` for absent, non-text, blank and `NOT_SET`.
-fn set_text(v: Option<&Value>) -> Option<String> {
-    let s = match v? {
-        Value::String(s) => s.trim().to_string(),
-        Value::Number(n) => n.to_string(),
-        _ => return None,
-    };
-    (!s.is_empty() && s != "NOT_SET").then_some(s)
+/// What the source holds at a key. Absent, null, blank and `NOT_SET` are all "not set" (unknown,
+/// no warning); a boolean, list or object where text or a number belongs is something else and
+/// is reported, so it is not mistaken for "not set".
+enum Field {
+    Unset,
+    Text(String),
+    Unsupported(&'static str),
 }
 
+fn read_field(v: Option<&Value>) -> Field {
+    match v {
+        None | Some(Value::Null) => Field::Unset,
+        Some(Value::String(s)) => {
+            let s = s.trim();
+            if s.is_empty() || s == "NOT_SET" {
+                Field::Unset
+            } else {
+                Field::Text(s.to_string())
+            }
+        }
+        Some(Value::Number(n)) => Field::Text(n.to_string()),
+        Some(Value::Bool(_)) => Field::Unsupported("a boolean"),
+        Some(Value::Array(_)) => Field::Unsupported("a list"),
+        Some(Value::Object(_)) => Field::Unsupported("an object"),
+    }
+}
+
+/// The warning (source field, message) for a value of a type that cannot be read.
+fn unsupported(field: &str, kind: &str) -> (String, String) {
+    (
+        field.to_string(),
+        format!("{field} is {kind}, not text or a number"),
+    )
+}
+
+/// A text value of the source; `None` for anything that is not usable text (see [`Field`]).
+fn set_text(v: Option<&Value>) -> Option<String> {
+    match read_field(v) {
+        Field::Text(s) => Some(s),
+        _ => None,
+    }
+}
+
+/// A text property of a bell: `Ok(None)` when not set, `Err` (field, message) when it holds a
+/// type that cannot be read.
+fn prop_text(props: &Map<String, Value>, key: &str) -> Result<Option<String>, (String, String)> {
+    match read_field(props.get(key)) {
+        Field::Text(t) => Ok(Some(t)),
+        Field::Unset => Ok(None),
+        Field::Unsupported(kind) => Err(unsupported(key, kind)),
+    }
+}
+
+/// The longest text read as a quantity ("220.0 kg"). Longer text cannot be a quantity and is
+/// refused before the number is searched for, which keeps the work per value bounded.
+const MAX_QUANTITY_TEXT: usize = 64;
+
 /// Splits "220.0 kg" into the number and the unit text (which may be empty). `Err` when there is
-/// no number in front.
+/// no number in front, or the text is too long to be a quantity.
 fn split_quantity(text: &str) -> Result<(f64, String), ()> {
     let text = text.trim();
+    if text.len() > MAX_QUANTITY_TEXT {
+        return Err(());
+    }
     let end = text
         .char_indices()
         .find(|(_, c)| !(c.is_ascii_digit() || matches!(c, '.' | '-' | '+' | 'e' | 'E' | ',')))
@@ -143,25 +193,40 @@ fn quantity(
     default_unit: &str,
 ) -> Result<Option<f64>, (String, String)> {
     let bad = |field: &str, v: &str| {
+        // The offending text is quoted, but never at its full (possibly huge) length.
+        let shown: String = v.chars().take(40).collect();
+        let dots = if v.chars().count() > 40 { "…" } else { "" };
         (
             field.to_string(),
-            format!("{field} \"{v}\" is not a positive number in a known unit"),
+            format!("{field} \"{shown}{dots}\" is not a positive number in a known unit"),
         )
     };
-    if let Some(text) = set_text(props.get(exact)) {
-        match text.replace(',', ".").parse::<f64>() {
-            Ok(n) if n.is_finite() && n > 0.0 => return Ok(Some(round3(n * exact_factor))),
-            _ => return Err(bad(name, &text)),
+    match read_field(props.get(exact)) {
+        Field::Text(text) => {
+            if text.len() > MAX_QUANTITY_TEXT {
+                return Err(bad(name, &text));
+            }
+            return match text.replace(',', ".").parse::<f64>() {
+                Ok(n) if n.is_finite() && n > 0.0 => Ok(Some(round3(n * exact_factor))),
+                _ => Err(bad(name, &text)),
+            };
         }
+        Field::Unsupported(kind) => return Err(unsupported(exact, kind)),
+        Field::Unset => {}
     }
-    let Some(text) = set_text(props.get(name)) else {
-        return Ok(None);
+    let text = match read_field(props.get(name)) {
+        Field::Text(text) => text,
+        Field::Unsupported(kind) => return Err(unsupported(name, kind)),
+        Field::Unset => return Ok(None),
     };
     let (n, unit) = split_quantity(&text).map_err(|()| bad(name, &text))?;
     let unit = if unit.is_empty() {
-        set_text(props.get(&format!("{name}_unit")))
-            .map(|u| u.to_lowercase())
-            .unwrap_or_else(|| default_unit.to_string())
+        let unit_key = format!("{name}_unit");
+        match read_field(props.get(&unit_key)) {
+            Field::Text(u) => u.to_lowercase(),
+            Field::Unsupported(kind) => return Err(unsupported(&unit_key, kind)),
+            Field::Unset => default_unit.to_string(),
+        }
     } else {
         unit
     };
@@ -256,7 +321,11 @@ pub fn plan(doc: &Value, defs: &[AttributeDefinition]) -> Result<ImportPlan, Str
                     props,
                     &MAPPED_PROPERTIES,
                 );
-                if let Some(note) = set_text(props.get("note")) {
+                let note = prop_text(props, "note").unwrap_or_else(|(f, m)| {
+                    warn(&f, m);
+                    None
+                });
+                if let Some(note) = note {
                     candidates.push(("note", Value::String(note)));
                 }
                 for (key, name_in_source, exact, exact_factor, table, default_unit) in [
@@ -298,7 +367,11 @@ pub fn plan(doc: &Value, defs: &[AttributeDefinition]) -> Result<ImportPlan, Str
                         Err((field, message)) => warn(&field, message),
                     }
                 }
-                if let Some(motion) = set_text(props.get("motion")) {
+                let motion = prop_text(props, "motion").unwrap_or_else(|(f, m)| {
+                    warn(&f, m);
+                    None
+                });
+                if let Some(motion) = motion {
                     let value = defs
                         .iter()
                         .find(|d| d.key == "motion")
@@ -306,7 +379,11 @@ pub fn plan(doc: &Value, defs: &[AttributeDefinition]) -> Result<ImportPlan, Str
                         .unwrap_or_else(|| motion.to_lowercase());
                     candidates.push(("motion", Value::String(value)));
                 }
-                match set_text(props.get("motor")).as_deref() {
+                let motor = prop_text(props, "motor").unwrap_or_else(|(f, m)| {
+                    warn(&f, m);
+                    None
+                });
+                match motor.as_deref() {
                     Some("linear") => warn(
                         "motor",
                         "linear motor: the motor brand is not set, rotating-motor rules do not apply".into(),
@@ -523,11 +600,9 @@ async fn import_baseline(
         warnings: plan.warnings.clone(),
         unmapped_fields: plan.unmapped.clone(),
     };
-    if q.dry_run {
-        return Ok(Json(report));
-    }
-
     // Hand-entered items inside a replaced item move to the top level; they are never deleted.
+    // Checked before the dry run returns (it only reads), so the preview refuses what the import
+    // would refuse.
     let stuck: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM crm.opportunity_baseline_items c
          JOIN crm.opportunity_baseline_items p ON p.opportunity_id = c.opportunity_id AND p.id = c.parent_id
@@ -545,6 +620,9 @@ async fn import_baseline(
              move or delete them first"
                 .into(),
         ));
+    }
+    if q.dry_run {
+        return Ok(Json(report));
     }
     sqlx::query(
         "UPDATE crm.opportunity_baseline_items c SET parent_id = NULL, updated_at = now()
@@ -615,7 +693,7 @@ async fn import_baseline(
 /// its bells for the group). 404 for an item entered by hand.
 #[utoipa::path(get, path = "/opportunities/{id}/baseline/items/{item_id}/source", tag = "crm",
     params(("id" = Uuid, Path), ("item_id" = Uuid, Path)),
-    responses((status = 200, body = Object), (status = 404, body = ErrorBody)))]
+    responses((status = 200, body = Value), (status = 404, body = ErrorBody)))]
 async fn get_source(
     State(state): State<AppState>,
     user: CurrentUser,
@@ -930,5 +1008,76 @@ mod tests {
         assert!(p.bells[0].values.get("note").is_none());
         assert_eq!(p.bells[0].values["weight_kg"], json!(1.0));
         assert_eq!(p.warnings[0].field, "note");
+    }
+
+    #[test]
+    fn unsupported_json_types_warn_while_unset_values_stay_quiet() {
+        // Absent, null, blank and NOT_SET are "not set": no warning. A boolean, list or object
+        // where text or a number belongs is unreadable: one warning per field, the bell stays.
+        let quiet = doc(vec![bell(
+            "q",
+            json!({"note": null, "weight_g": "", "diameter_mm": "NOT_SET", "motion": "NOT_SET"}),
+        )]);
+        let p = plan_ok(&quiet);
+        assert!(p.warnings.is_empty(), "{:?}", p.warnings);
+        assert!(p.bells[0].values.is_empty());
+
+        let odd = doc(vec![bell(
+            "odd",
+            json!({"note": {"a": 1}, "weight_g": true, "diameter_mm": [824],
+                   "height": {"v": 1}, "motion": ["flying"], "motor": false,
+                   "weight_unit": ["g"]}),
+        )]);
+        let p = plan_ok(&odd);
+        assert_eq!(p.bells.len(), 1, "the bell is still imported");
+        assert!(p.bells[0].values.is_empty(), "{:?}", p.bells[0].values);
+        let fields: Vec<&str> = p.warnings.iter().map(|w| w.field.as_str()).collect();
+        for expected in [
+            "note",
+            "weight_g",
+            "diameter_mm",
+            "height",
+            "motion",
+            "motor",
+        ] {
+            assert!(fields.contains(&expected), "{expected} in {fields:?}");
+        }
+        assert!(
+            p.warnings
+                .iter()
+                .all(|w| w.message.contains("not text or a number")),
+            "{:?}",
+            p.warnings
+        );
+    }
+
+    #[test]
+    fn a_huge_quantity_text_is_refused_before_it_is_parsed() {
+        // "1e1e1e..." makes the number back-off retry at every length; the text is bounded first.
+        let long = "1e".repeat(100_000);
+        assert!(split_quantity(&long).is_err());
+        let d = doc(vec![bell(
+            "huge",
+            json!({"weight": long, "diameter_mm": "1e".repeat(100_000), "height_mm": "824"}),
+        )]);
+        let started = std::time::Instant::now();
+        let p = plan_ok(&d);
+        assert!(
+            started.elapsed() < std::time::Duration::from_secs(2),
+            "took {:?}",
+            started.elapsed()
+        );
+        assert_eq!(p.bells[0].values["height_mm"], json!(824.0));
+        assert!(p.bells[0].values.get("weight_kg").is_none());
+        let fields: Vec<&str> = p.warnings.iter().map(|w| w.field.as_str()).collect();
+        assert!(
+            fields.contains(&"weight") && fields.contains(&"diameter"),
+            "{fields:?}"
+        );
+        // A normal quantity is unaffected.
+        assert_eq!(
+            split_quantity("220.0 kg").unwrap(),
+            (220.0, "kg".to_string())
+        );
     }
 }

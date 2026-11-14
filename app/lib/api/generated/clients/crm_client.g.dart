@@ -1283,15 +1283,12 @@ class _CrmClient implements CrmClient {
   }
 
   @override
-  Future<dynamic> getSource({
-    required String id,
-    required String itemId,
-  }) async {
+  Future<void> getSource({required String id, required String itemId}) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
-    final _options = _setStreamType<dynamic>(
+    final _options = _setStreamType<void>(
       Options(method: 'GET', headers: _headers, extra: _extra)
           .compose(
             _dio.options,
@@ -1301,9 +1298,7 @@ class _CrmClient implements CrmClient {
           )
           .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
     );
-    final _result = await _dio.fetch(_options);
-    final _value = _result.data;
-    return _value;
+    await _dio.fetch<void>(_options);
   }
 
   @override
