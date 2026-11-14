@@ -139,6 +139,11 @@ async fn put_sla_notices(
             }
         }
     }
+    // Serialises concurrent replacements for the company until this transaction ends.
+    sqlx::query("SELECT id FROM core.companies WHERE id = $1 FOR UPDATE")
+        .bind(user.company_id)
+        .fetch_optional(&mut *tx)
+        .await?;
     sqlx::query("DELETE FROM helpdesk.sla_notice_settings WHERE company_id = $1")
         .bind(user.company_id)
         .execute(&mut *tx)
@@ -418,6 +423,12 @@ async fn queue(
     if !valid_address(&address) || automated(&address) {
         return Ok(false);
     }
+    // Held until the transaction ends, so the count, the claim and the enqueue of concurrent
+    // notices to the same address run one after another.
+    sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))")
+        .bind(format!("sla-notice:{}:{address}", t.company_id))
+        .execute(&mut *conn)
+        .await?;
     let recent: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM helpdesk.sla_notice_log
          WHERE company_id = $1 AND address = $2 AND sent_at > now() - interval '1 hour'",
@@ -537,27 +548,48 @@ pub async fn acknowledge(
 /// once per ticket and only while the business is open (outside the opening hours the notice
 /// waits for the next opening). Returns the number of notices queued.
 pub async fn send_breach_notices(db: &PgPool) -> anyhow::Result<usize> {
-    let candidates: Vec<(Uuid, Uuid)> = sqlx::query_as(
-        "SELECT t.id, t.company_id FROM helpdesk.tickets t
-         WHERE t.closed_at IS NULL AND NOT t.internal AND t.merged_into_id IS NULL
-           AND t.split_from_id IS NULL AND t.sla_paused_at IS NULL
-           AND t.channel = ANY($1) AND t.first_response_at IS NULL AND t.first_response_due_at < now()
-           AND EXISTS (SELECT 1 FROM helpdesk.sla_notice_settings s
-                       WHERE s.company_id = t.company_id AND s.breach_enabled)
-           AND NOT EXISTS (SELECT 1 FROM helpdesk.sla_notice_log l
-                           WHERE l.ticket_id = t.id AND l.kind = 'breach')
-         ORDER BY t.first_response_due_at LIMIT 100",
-    )
-    .bind(CHANNELS.map(String::from).to_vec())
-    .fetch_all(db)
-    .await?;
+    let mut sent = 0;
+    // Eligibility (the applicable rule, the address) is decided per ticket below, so the candidates
+    // are paged forward: tickets that are not eligible must not occupy the batch.
+    let mut after: Option<(DateTime<Utc>, Uuid)> = None;
+    loop {
+        let candidates: Vec<(Uuid, Uuid, DateTime<Utc>)> = sqlx::query_as(
+            "SELECT t.id, t.company_id, t.first_response_due_at FROM helpdesk.tickets t
+             WHERE t.closed_at IS NULL AND NOT t.internal AND t.merged_into_id IS NULL
+               AND t.split_from_id IS NULL AND t.sla_paused_at IS NULL
+               AND t.channel = ANY($1) AND t.first_response_at IS NULL AND t.first_response_due_at < now()
+               AND EXISTS (SELECT 1 FROM helpdesk.sla_notice_settings s
+                           WHERE s.company_id = t.company_id AND s.breach_enabled)
+               AND NOT EXISTS (SELECT 1 FROM helpdesk.sla_notice_log l
+                               WHERE l.ticket_id = t.id AND l.kind = 'breach')
+               AND ($2::timestamptz IS NULL OR (t.first_response_due_at, t.id) > ($2, $3))
+             ORDER BY t.first_response_due_at, t.id LIMIT 100",
+        )
+        .bind(CHANNELS.map(String::from).to_vec())
+        .bind(after.map(|a| a.0))
+        .bind(after.map(|a| a.1))
+        .fetch_all(db)
+        .await?;
+        let Some(last) = candidates.last() else { break };
+        after = Some((last.2, last.0));
+        sent += notify_page(db, candidates.iter().map(|c| (c.0, c.1))).await?;
+    }
+    Ok(sent)
+}
+
+async fn notify_page(
+    db: &PgPool,
+    candidates: impl Iterator<Item = (Uuid, Uuid)>,
+) -> anyhow::Result<usize> {
     let mut sent = 0;
     for (id, company_id) in candidates {
         let mut tx = db.begin().await?;
         // Re-read under the lock: the ticket may have been answered since.
         let t: Option<T> = sqlx::query_as(&format!(
             "{SELECT} WHERE t.id = $1 AND t.closed_at IS NULL AND t.first_response_at IS NULL
-               AND t.first_response_due_at < now() FOR UPDATE OF t SKIP LOCKED"
+               AND t.first_response_due_at < now() AND NOT t.internal
+               AND t.merged_into_id IS NULL AND t.split_from_id IS NULL
+               AND t.sla_paused_at IS NULL FOR UPDATE OF t SKIP LOCKED"
         ))
         .bind(id)
         .fetch_optional(&mut *tx)

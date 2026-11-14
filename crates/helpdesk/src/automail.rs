@@ -38,11 +38,32 @@ pub struct Vars<'a> {
 /// Replaces `{ticket_number}`, `{subject}`, `{customer}` and `{agent}`. Other text, including
 /// braces that do not name a placeholder, is left as it is.
 pub fn render(template: &str, v: &Vars) -> String {
-    template
-        .replace("{ticket_number}", v.ticket_number)
-        .replace("{subject}", v.subject)
-        .replace("{customer}", v.customer)
-        .replace("{agent}", v.agent)
+    let mut out = String::with_capacity(template.len());
+    let mut rest = template;
+    while let Some(start) = rest.find('{') {
+        out.push_str(&rest[..start]);
+        let tail = &rest[start..];
+        let value = [
+            ("{ticket_number}", v.ticket_number),
+            ("{subject}", v.subject),
+            ("{customer}", v.customer),
+            ("{agent}", v.agent),
+        ]
+        .into_iter()
+        .find(|(p, _)| tail.starts_with(p));
+        match value {
+            Some((p, val)) => {
+                out.push_str(val);
+                rest = &tail[p.len()..];
+            }
+            None => {
+                out.push('{');
+                rest = &tail[1..];
+            }
+        }
+    }
+    out.push_str(rest);
+    out
 }
 
 /// A subject is one line: line breaks (which could inject headers) become spaces.
@@ -188,7 +209,9 @@ pub async fn send(
     let t: T = sqlx::query_as(
         "SELECT t.number, t.subject, t.internal, t.contact_name, t.contact_email,
                 c.name AS customer_name, u.display_name AS agent_name, u.email AS agent_email,
-                u.active AS agent_active
+                (u.active AND EXISTS (SELECT 1 FROM core.user_companies uc
+                                WHERE uc.user_id = u.id AND uc.company_id = $2 AND uc.active))
+                AS agent_active
          FROM helpdesk.tickets t
          LEFT JOIN crm.customers c ON c.id = t.customer_id
          LEFT JOIN core.users u ON u.id = t.owner_user_id
@@ -283,6 +306,20 @@ mod tests {
         assert_eq!(
             render("{ticket_number} {subject} {customer} {agent} {x} {}", &v),
             "T-0001 Pump Alpha Sam {x} {}"
+        );
+    }
+
+    #[test]
+    fn inserted_values_stay_literal() {
+        let v = Vars {
+            ticket_number: "{subject}",
+            subject: "{customer}",
+            customer: "{agent}",
+            agent: "{ticket_number}",
+        };
+        assert_eq!(
+            render("{ticket_number}|{subject}|{customer}|{agent}", &v),
+            "{subject}|{customer}|{agent}|{ticket_number}"
         );
     }
 
