@@ -874,6 +874,45 @@ async fn matching_can_be_limited_to_one_baseline_item_and_its_children(db: PgPoo
         .iter()
         .all(|r| !r.0.starts_with("rule:")));
 
+    // With a child below it, selecting the group judges the child and nothing outside the subtree.
+    define_product_number(&app, "max_bell_kg").await;
+    let (status, _) = api(
+        &app,
+        ADMIN,
+        Method::POST,
+        "/match-rules",
+        Some(rule_body(json!({}))),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED);
+    add_item(
+        &app,
+        OPP,
+        json!({ "type_code": "bell", "parent_id": group, "values": { "weight_kg": 900 } }),
+    )
+    .await;
+    let (status, r) = api(
+        &app,
+        ADMIN,
+        Method::PUT,
+        &format!("/products/{UNIT_100}/attributes"),
+        Some(json!([
+            { "key": "dial_size_mm", "kind": "range", "value": "",
+              "value_min": "600", "value_max": "1250", "unit": "mm" },
+            { "key": "max_bell_kg", "kind": "number", "value": "500" }
+        ])),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{r}");
+    let for_group = matches(&app, OPP, &format!("item_id={group}&limit=500")).await;
+    let p = of(&for_group, UNIT_100);
+    assert_eq!(p["status"], "unsuitable");
+    let rs = reasons(p);
+    assert!(rs
+        .iter()
+        .any(|r| r.1 == "fail" && r.2 == "bell: weight_kg 900 is above the maximum max_bell_kg 500"));
+    assert!(rs.iter().all(|r| !r.2.contains("clock_dial")));
+
     // Unknown item and an item of another opportunity are 404.
     for bad in ["00000000-0000-7000-8000-0000000fff99".to_string(), {
         let other = add_item(&app, OPP2, json!({ "type_code": "clock_dial" })).await;
