@@ -1,4 +1,4 @@
-//! What the worker does for imports (ADR 0064 section 6): reclaiming stale jobs, running the
+//! What the worker does for imports (ADR 0067 section 6): reclaiming stale jobs, running the
 //! queued ones, removing old files, and two workers at once.
 
 mod common;

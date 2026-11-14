@@ -1,4 +1,4 @@
-//! The shared import and export engine (ADR 0064 section 1). An entity supplies an
+//! The shared import and export engine (ADR 0067 section 1). An entity supplies an
 //! [`Importable`]; everything else lives here.
 //!
 //! [`run_import`] is callable outside an HTTP handler (a background job calls it): it takes the

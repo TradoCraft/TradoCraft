@@ -12,5 +12,8 @@ pub mod pdf;
 /// Relative dates.
 pub mod relative;
 mod routes;
+/// Scheduled report mails.
+pub mod schedule;
+mod schedule_routes;
 
 pub use routes::{router, ReportClock};

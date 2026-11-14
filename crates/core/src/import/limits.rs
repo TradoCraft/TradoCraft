@@ -1,4 +1,4 @@
-//! The size limits of an import file (ADR 0064 section 4).
+//! The size limits of an import file (ADR 0067 section 4).
 
 use crate::csv_io::{MAX_BODY_BYTES, MAX_COLUMNS, MAX_ROWS};
 

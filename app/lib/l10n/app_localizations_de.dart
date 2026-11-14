@@ -191,7 +191,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get automationHelp =>
-      'Regeln laufen in dieser Reihenfolge, wenn ein Ticket erstellt, geändert oder vom Kunden beantwortet wird. Eine Regel gilt, wenn alle Bedingungen zutreffen. Regeln ändern nur Tickets; sie senden keine E-Mails.';
+      'Regeln laufen in dieser Reihenfolge, wenn ein Ticket erstellt, geändert oder vom Kunden beantwortet wird. Eine Regel gilt, wenn alle Bedingungen zutreffen. Regeln können Tickets ändern und E-Mails senden.';
 
   @override
   String get automationRules => 'Automatisierungsregeln';
@@ -9266,4 +9266,209 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get impRefresh => 'Aktualisieren';
+
+  @override
+  String get actionSendEmail => 'E-Mail senden';
+
+  @override
+  String get mailRecipient => 'Empfänger';
+
+  @override
+  String get mailRecipientCustomer => 'Der Kunde';
+
+  @override
+  String get mailRecipientAssignee => 'Der Bearbeiter';
+
+  @override
+  String get mailRecipientTeam => 'Ein Team';
+
+  @override
+  String get mailRecipientAddress => 'Eine feste Adresse';
+
+  @override
+  String get mailAddress => 'E-Mail-Adresse';
+
+  @override
+  String get mailBody => 'Nachricht';
+
+  @override
+  String get mailPeriodHours =>
+      'Höchstens eine Mail pro Ticket innerhalb von (Stunden)';
+
+  @override
+  String get mailPeriodInvalid =>
+      'Der Zeitraum muss eine ganze Zahl von Stunden sein.';
+
+  @override
+  String mailPlaceholdersHint(String placeholders) {
+    return 'Platzhalter: $placeholders';
+  }
+
+  @override
+  String actionSendEmailSummary(String recipient, String subject) {
+    return '$recipient: $subject';
+  }
+
+  @override
+  String get slaNotices => 'Kundenbenachrichtigungen';
+
+  @override
+  String get slaNoticesHelp =>
+      'Dem Kunden eine Eingangsbestätigung mit Ticketnummer und Zielzeit für die Antwort senden, wenn eine Anfrage per E-Mail oder Portal eingeht, und optional eine Nachricht, wenn die Zeit für die Erstantwort abgelaufen ist (nur während der Geschäftszeiten). Die spezifischste Regel gilt: Team und Priorität, dann Team, dann Priorität, dann alle. Ohne Regel wird nichts gesendet. Die Mails sind in der Sprache des Kunden.';
+
+  @override
+  String get slaNoticesNone =>
+      'Es werden keine Benachrichtigungen an Kunden gesendet.';
+
+  @override
+  String get slaNoticesAllTeams => 'Alle Teams';
+
+  @override
+  String get slaNoticesAllPriorities => 'Alle Prioritäten';
+
+  @override
+  String get slaNoticeAck => 'Eingangsbestätigung';
+
+  @override
+  String get slaNoticeBreach => 'Verzugsmeldung';
+
+  @override
+  String get slaNoticesAdd => 'Regel hinzufügen';
+
+  @override
+  String get rsTitle => 'Geplante Berichtsmails';
+
+  @override
+  String get rsOpen => 'Geplante Mails';
+
+  @override
+  String get rsHelp =>
+      'Einen gespeicherten Bericht oder einen Helpdesk-Bericht nach Zeitplan als CSV oder PDF an Kollegen und andere Adressen mailen. Jede Mail wird mit den Rechten des Eigentümers des Zeitplans zum Zeitpunkt des Versands erstellt.';
+
+  @override
+  String get rsNew => 'Neuer Zeitplan';
+
+  @override
+  String get rsEdit => 'Zeitplan';
+
+  @override
+  String get rsEmpty => 'Es sind keine Berichte geplant.';
+
+  @override
+  String get rsSource => 'Berichtsart';
+
+  @override
+  String get rsSourceCustom => 'Gespeicherter Bericht';
+
+  @override
+  String get rsSourceHelpdesk => 'Helpdesk-Bericht';
+
+  @override
+  String get rsReport => 'Bericht';
+
+  @override
+  String get rsTable => 'Tabelle';
+
+  @override
+  String get rsPeriod => 'Zeitraum';
+
+  @override
+  String get rsPeriodYesterday => 'Gestern';
+
+  @override
+  String get rsPeriodLast7 => 'Die letzten 7 Tage';
+
+  @override
+  String get rsPeriodLastWeek => 'Letzte Woche (Montag bis Sonntag)';
+
+  @override
+  String get rsPeriodLast30 => 'Die letzten 30 Tage';
+
+  @override
+  String get rsPeriodLastMonth => 'Letzter Kalendermonat';
+
+  @override
+  String get rsFrequency => 'Häufigkeit';
+
+  @override
+  String get rsDaily => 'Täglich';
+
+  @override
+  String get rsWeekly => 'Wöchentlich';
+
+  @override
+  String get rsMonthly => 'Monatlich';
+
+  @override
+  String get rsWeekday => 'Wochentag';
+
+  @override
+  String get rsDayOfMonth => 'Tag des Monats (1-28)';
+
+  @override
+  String get rsTime => 'Uhrzeit (HH:MM)';
+
+  @override
+  String get rsFormat => 'Format';
+
+  @override
+  String get rsColleagues => 'Kollegen';
+
+  @override
+  String get rsAddresses => 'Weitere E-Mail-Adressen (durch Kommas getrennt)';
+
+  @override
+  String get rsMon => 'Montag';
+
+  @override
+  String get rsTue => 'Dienstag';
+
+  @override
+  String get rsWed => 'Mittwoch';
+
+  @override
+  String get rsThu => 'Donnerstag';
+
+  @override
+  String get rsFri => 'Freitag';
+
+  @override
+  String get rsSat => 'Samstag';
+
+  @override
+  String get rsSun => 'Sonntag';
+
+  @override
+  String rsSummary(String when, String format, int recipients) {
+    return '$when · $format · $recipients Empfänger';
+  }
+
+  @override
+  String rsNextRun(String when) {
+    return 'Nächste Mail: $when';
+  }
+
+  @override
+  String rsLastSent(String when) {
+    return 'Zuletzt: eingereiht $when';
+  }
+
+  @override
+  String rsLastFailed(String when, String reason) {
+    return 'Zuletzt fehlgeschlagen ($when): $reason';
+  }
+
+  @override
+  String get rsSendNow => 'Jetzt senden';
+
+  @override
+  String rsQueued(int count) {
+    return '$count Mails eingereiht.';
+  }
+
+  @override
+  String get rsPaused => 'Pausiert';
+
+  @override
+  String get rsNeedsRecipient => 'Wählen Sie mindestens einen Empfänger.';
 }

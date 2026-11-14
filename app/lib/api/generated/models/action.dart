@@ -18,15 +18,15 @@ class Action {
     this.userId,
     this.value,
   });
-  
+
   factory Action.fromJson(Map<String, Object?> json) => _$ActionFromJson(json);
-  
+
   @JsonKey(includeIfNull: false)
   final bool? flag;
   final String kind;
-  @JsonKey(includeIfNull: false,name: 'team_id')
+  @JsonKey(includeIfNull: false, name: 'team_id')
   final String? teamId;
-  @JsonKey(includeIfNull: false,name: 'user_id')
+  @JsonKey(includeIfNull: false, name: 'user_id')
   final String? userId;
   @JsonKey(includeIfNull: false)
   final String? value;

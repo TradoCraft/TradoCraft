@@ -1,4 +1,4 @@
-//! Customers as an importable entity (ADR 0029, ADR 0064): an export and an all-or-nothing
+//! Customers as an importable entity (ADR 0029, ADR 0067): an export and an all-or-nothing
 //! upsert-by-`code` import in CSV, XLSX or ODS. The commercial terms (price zone, discount, payment
 //! terms) are those of the active company. Everything shared lives in `tradocraft_core::import`;
 //! this file holds only what is the customers'.

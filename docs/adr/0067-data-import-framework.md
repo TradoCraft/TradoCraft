@@ -1,4 +1,4 @@
-# 0064 — Data import framework: one importer, CSV/XLSX/ODS readers, admin screen, background jobs
+# 0067 — Data import framework: one importer, CSV/XLSX/ODS readers, admin screen, background jobs
 
 **Status:** Accepted (extends [ADR 0029](0029-csv-export-import.md))
 
@@ -117,13 +117,13 @@ must name our columns exactly, as in ADR 0029. The screen proposes the saved map
 columns all occur in the header, else it pairs equal names. Mappings are saved per company and
 entity under a name.
 
-*Tables* (migration `20270206000001_imports.sql`, schema `core`):
+*Tables* (migration `20270208000001_imports.sql`, schema `core`):
 
 | Table | Holds |
 |---|---|
 | `core.import_files` | an uploaded file: company, file name, detected format, size, the bytes, uploader. Separate from `core.files` (other types, sizes and lifetime). Removed 7 days after upload by the worker. |
 | `core.import_mappings` | company, entity, name (unique together), the column pairs, who saved it |
-| `core.import_jobs` | one run: company, entity, file, sheet, the column pairs used, `dry_run`, status (`queued`, `running`, `done`, `failed`, `cancelled`), phase, total and processed rows, the counts, the errors (at most 10 000 are kept, with the full count), a failure message, requester, timestamps, attempts, heartbeat, the claim token and whether the run is inline (migration `20270207000001_import_job_claims.sql`) |
+| `core.import_jobs` | one run: company, entity, file, sheet, the column pairs used, `dry_run`, status (`queued`, `running`, `done`, `failed`, `cancelled`), phase, total and processed rows, the counts, the errors (at most 10 000 are kept, with the full count), a failure message, requester, timestamps, attempts, heartbeat, the claim token and whether the run is inline (migration `20270208000002_import_job_claims.sql`) |
 
 *Endpoints* under `/imports` (all `imports.admin`):
 

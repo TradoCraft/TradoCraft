@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tradocraft_app/app/api.dart';
+import 'package:tradocraft_app/shared/app_icons.dart';
 import 'package:tradocraft_app/features/helpdesk/automation_page.dart';
 import 'package:tradocraft_app/features/helpdesk/calendar_page.dart';
 import 'package:tradocraft_app/features/helpdesk/report_charts.dart';
@@ -48,7 +49,10 @@ Future<void> _pump(WidgetTester tester, FakeHttp http, Widget home) async {
       child: MaterialApp.router(
         routerConfig: router,
         locale: const Locale('en'),
-        localizationsDelegates: [AppLocalizations.delegate, ...GlobalMaterialLocalizations.delegates],
+        localizationsDelegates: [
+          AppLocalizations.delegate,
+          ...GlobalMaterialLocalizations.delegates,
+        ],
         supportedLocales: AppLocalizations.supportedLocales,
       ),
     ),
@@ -398,6 +402,161 @@ void main() {
       expect(body['actions'], [
         {'kind': 'add_tag', 'value': 'alpha'},
       ]);
+    });
+
+    testWidgets('the editor builds a send e-mail action', (tester) async {
+      final h = http();
+      await _pump(tester, h, const AutomationPage());
+      await tester.tap(find.byKey(const ValueKey('new-rule')));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(const ValueKey('rule-name')), 'Tell');
+      await tester.tap(find.byKey(const ValueKey('add-action')));
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('action-kind-0')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Send e-mail').last);
+      await tester.pumpAndSettle();
+      // The customer is the default recipient; a fixed address asks for the address.
+      await tester.tap(find.byKey(const ValueKey('mail-recipient-0')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('A fixed address').last);
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('mail-address-0')),
+        'ops@example.com',
+      );
+      await tester.enterText(
+        find.byKey(const ValueKey('mail-subject-0')),
+        'Ticket {ticket_number}',
+      );
+      await tester.enterText(
+        find.byKey(const ValueKey('mail-body-0')),
+        'Hello {customer}',
+      );
+      await tester.enterText(find.byKey(const ValueKey('mail-period-0')), '48');
+      await tester.tap(find.byKey(const ValueKey('save-rule')));
+      await tester.pumpAndSettle();
+      final body = h.bodies['POST /api/v1/helpdesk/automation/rules'] as Map;
+      expect(body['actions'], [
+        {
+          'kind': 'send_email',
+          'recipient': 'address',
+          'address': 'ops@example.com',
+          'subject': 'Ticket {ticket_number}',
+          'body': 'Hello {customer}',
+          'period_hours': 48,
+        },
+      ]);
+    });
+
+    Future<void> openMailEditor(WidgetTester tester) async {
+      await tester.tap(find.byKey(const ValueKey('new-rule')));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(const ValueKey('rule-name')), 'Tell');
+      await tester.tap(find.byKey(const ValueKey('add-action')));
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('action-kind-0')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Send e-mail').last);
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('an invalid period blocks saving', (tester) async {
+      final h = http();
+      await _pump(tester, h, const AutomationPage());
+      await openMailEditor(tester);
+      await tester.enterText(find.byKey(const ValueKey('mail-subject-0')), 'S');
+      await tester.enterText(find.byKey(const ValueKey('mail-body-0')), 'B');
+      await tester.enterText(
+        find.byKey(const ValueKey('mail-period-0')),
+        'two days',
+      );
+      await tester.tap(find.byKey(const ValueKey('save-rule')));
+      await tester.pumpAndSettle();
+      expect(
+        find.text('The period must be a whole number of hours.'),
+        findsOneWidget,
+      );
+      expect(
+        h.requests,
+        isNot(contains('POST /api/v1/helpdesk/automation/rules')),
+      );
+    });
+
+    testWidgets('changing the recipient keeps subject, body and period', (
+      tester,
+    ) async {
+      final h = http();
+      await _pump(tester, h, const AutomationPage());
+      await openMailEditor(tester);
+      await tester.enterText(
+        find.byKey(const ValueKey('mail-subject-0')),
+        'Ticket {ticket_number}',
+      );
+      await tester.enterText(
+        find.byKey(const ValueKey('mail-body-0')),
+        'Hello {customer}',
+      );
+      await tester.enterText(find.byKey(const ValueKey('mail-period-0')), '72');
+      await tester.tap(find.byKey(const ValueKey('mail-recipient-0')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('A fixed address').last);
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<TextField>(find.byKey(const ValueKey('mail-subject-0')))
+            .controller!
+            .text,
+        'Ticket {ticket_number}',
+      );
+      await tester.enterText(
+        find.byKey(const ValueKey('mail-address-0')),
+        'ops@example.com',
+      );
+      await tester.tap(find.byKey(const ValueKey('save-rule')));
+      await tester.pumpAndSettle();
+      final body = h.bodies['POST /api/v1/helpdesk/automation/rules'] as Map;
+      expect(body['actions'], [
+        {
+          'kind': 'send_email',
+          'recipient': 'address',
+          'address': 'ops@example.com',
+          'subject': 'Ticket {ticket_number}',
+          'body': 'Hello {customer}',
+          'period_hours': 72,
+        },
+      ]);
+    });
+
+    testWidgets('removing an action keeps what was typed in the others', (
+      tester,
+    ) async {
+      final h = http();
+      await _pump(tester, h, const AutomationPage());
+      await tester.tap(find.byKey(const ValueKey('new-rule')));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(const ValueKey('rule-name')), 'Two');
+      for (var i = 0; i < 2; i++) {
+        await tester.tap(find.byKey(const ValueKey('add-action')));
+        await tester.pump();
+        await tester.tap(find.byKey(ValueKey('action-kind-$i')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Send e-mail').last);
+        await tester.pumpAndSettle();
+      }
+      await tester.enterText(find.byKey(const ValueKey('mail-subject-0')), 'A');
+      await tester.enterText(find.byKey(const ValueKey('mail-body-0')), 'a');
+      await tester.enterText(find.byKey(const ValueKey('mail-subject-1')), 'B');
+      await tester.enterText(find.byKey(const ValueKey('mail-body-1')), 'b');
+      await tester.tap(find.byIcon(AppIcons.close).first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('save-rule')));
+      await tester.pumpAndSettle();
+      final body = h.bodies['POST /api/v1/helpdesk/automation/rules'] as Map;
+      final actions = body['actions'] as List;
+      expect(actions, hasLength(1));
+      expect((actions[0] as Map)['subject'], 'B');
+      expect((actions[0] as Map)['recipient'], 'customer');
     });
 
     testWidgets('the editor asks for a name and shows the server message', (

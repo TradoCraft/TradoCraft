@@ -1,4 +1,4 @@
-//! The data import format layer (ADR 0064): read CSV, XLSX and ODS into one table of typed cells,
+//! The data import format layer (ADR 0067): read CSV, XLSX and ODS into one table of typed cells,
 //! bind it to an entity's columns, and write the same cells back as CSV, XLSX or ODS.
 //!
 //! ```text

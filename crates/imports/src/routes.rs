@@ -1,4 +1,4 @@
-//! HTTP endpoints of the import admin screen (ADR 0064 section 5). All need `imports.admin`;
+//! HTTP endpoints of the import admin screen (ADR 0067 section 5). All need `imports.admin`;
 //! running a job also needs the write permission of the entity. Everything is scoped to the
 //! caller's company: another company's file, mapping or job is a 404.
 

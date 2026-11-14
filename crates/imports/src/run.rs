@@ -1,4 +1,4 @@
-//! Running an import job (ADR 0064 section 6). One function does the work for both callers: the
+//! Running an import job (ADR 0067 section 6). One function does the work for both callers: the
 //! HTTP handler runs a small job inline, the worker runs a queued one. A job row is in `running`
 //! when it gets here and leaves as `done` or `failed`.
 //!

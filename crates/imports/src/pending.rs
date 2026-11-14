@@ -1,4 +1,4 @@
-//! What the worker does for imports on each pass (ADR 0064 section 6): put the jobs of dead workers
+//! What the worker does for imports on each pass (ADR 0067 section 6): put the jobs of dead workers
 //! back, run the queued jobs, remove old uploads. [`run_pending`] is the one entry point.
 
 use std::time::Duration;

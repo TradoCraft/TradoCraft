@@ -89,6 +89,12 @@ impl Calendar {
         (e > s).then_some((s, e))
     }
 
+    /// True when `t` lies inside the opening interval of a working day.
+    pub fn is_open_at(&self, t: DateTime<Utc>) -> bool {
+        self.interval(self.local_day(t))
+            .is_some_and(|(open, close)| open <= t && t < close)
+    }
+
     fn local_day(&self, t: DateTime<Utc>) -> NaiveDate {
         t.with_timezone(&self.tz).date_naive()
     }

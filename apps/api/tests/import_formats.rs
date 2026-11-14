@@ -1,4 +1,4 @@
-//! Import and export of customers and products as XLSX and ODS (ADR 0064): typed cells, sheet
+//! Import and export of customers and products as XLSX and ODS (ADR 0067): typed cells, sheet
 //! selection, real sheet row numbers, refused files, audit sources and permissions.
 
 mod common;

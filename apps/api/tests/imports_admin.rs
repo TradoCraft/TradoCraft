@@ -1,4 +1,4 @@
-//! The import admin screen (ADR 0064 section 5): upload, preview, mappings, jobs run inline or
+//! The import admin screen (ADR 0067 section 5): upload, preview, mappings, jobs run inline or
 //! queued, and the shared job runner a worker calls.
 
 mod common;

@@ -41,6 +41,13 @@ class SavedReportsPage extends ConsumerWidget {
                   label: Text(l.crNew),
                   onPressed: () => context.go('/reports/new'),
                 ),
+              if (can(ref, 'reports.schedule'))
+                OutlinedButton.icon(
+                  key: const ValueKey('open-schedules'),
+                  icon: const Icon(AppIcons.schedule),
+                  label: Text(l.rsOpen),
+                  onPressed: () => context.go('/reports/schedules'),
+                ),
             ],
           ),
           const SizedBox(height: 16),

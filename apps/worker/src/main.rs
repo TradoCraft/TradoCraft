@@ -7,13 +7,16 @@
 //!   tickets.
 //! * `tradocraft-worker check-mailbox <name>` runs a real round trip with a Microsoft 365 mailbox
 //!   (sign in, the unread query, send to itself, compare the Message-ID) and exits.
-//! * Escalates tickets whose SLA ran out (one internal e-mail per ticket and kind of breach).
+//! * Escalates tickets whose SLA ran out (one internal e-mail per ticket and kind of breach) and,
+//!   when configured, tells the customer that the first response time has run out (ADR 0067).
 //! * Generates the planned jobs of active maintenance contracts before their visits are due.
 //! * Recomputes the "often bought together" table from confirmed installation orders (hourly, or
 //!   every COOCCURRENCE_SECONDS).
+//! * Runs the scheduled report mails that are due (saved reports and helpdesk reports, as CSV or
+//!   PDF, ADR 0065).
 //! * Queues one digest e-mail per user for to-do items that are due or overdue (once per item).
 //! * Runs queued data imports, requeues the ones whose worker died and removes old uploaded files
-//!   (ADR 0064), in a task of its own so a long import does not delay the steps below.
+//!   (ADR 0067), in a task of its own so a long import does not delay the steps below.
 //! * Sends queued outgoing e-mails (ticket replies and system mail such as portal login links)
 //!   through the helpdesk mailbox they belong to, else over SMTP, or writes them as .eml files
 //!   when MAIL_TRANSPORT=files (development) and always outside a live environment.
@@ -129,6 +132,11 @@ async fn main() -> anyhow::Result<()> {
         return Ok(());
     }
     let mailer = mailer(&policy.mail_transport)?;
+    // PDF reports are rendered with Typst, like in the API.
+    let documents = tradocraft_core::DocumentConfig {
+        typst_bin: PathBuf::from(env("TYPST_BIN").unwrap_or_else(|| "typst".into())),
+        template_dir: PathBuf::from(env("TEMPLATE_DIR").unwrap_or_else(|| "templates".into())),
+    };
     let interval = Duration::from_secs(
         env("POLL_SECONDS")
             .map(|s| s.parse())
@@ -177,7 +185,7 @@ async fn main() -> anyhow::Result<()> {
     // policy forces files. Fetching follows the same opt-in as IMAP_HOST.
     let live = environment.kind == tradocraft_core::environment::EnvKind::Live;
     let graph = GraphClient::new();
-    // Imports run in a task of their own (ADR 0064): a 200 000-row import takes minutes and would
+    // Imports run in a task of their own (ADR 0067): a 200 000-row import takes minutes and would
     // hold up the mail and the SLA escalation below. The task awaits each pass before it sleeps,
     // so this process never runs two import passes at once. It does not beat: the heartbeat
     // above stays the sign that the main loop is alive. When the process stops, an import that is
@@ -262,6 +270,11 @@ async fn main() -> anyhow::Result<()> {
             Ok(n) => tracing::info!(n, "SLA breaches escalated"),
             Err(e) => tracing::error!(error = ?e, "SLA escalation failed"),
         }
+        match tradocraft_helpdesk::sla_notice::send_breach_notices(&db).await {
+            Ok(0) => {}
+            Ok(n) => tracing::info!(n, "SLA breach notices queued for customers"),
+            Err(e) => tracing::error!(error = ?e, "SLA breach notices failed"),
+        }
         if let Err(e) = tradocraft_helpdesk::collab::cleanup_presence(&db).await {
             tracing::error!(error = ?e, "presence cleanup failed");
         }
@@ -282,6 +295,13 @@ async fn main() -> anyhow::Result<()> {
             Ok(0) => {}
             Ok(n) => tracing::info!(n, "to-do reminders queued"),
             Err(e) => tracing::error!(error = ?e, "queuing to-do reminders failed"),
+        }
+        // Scheduled report mails (ADR 0065): builds the files and queues the mail; the outbox below
+        // sends it, or writes it to a file outside a live environment.
+        match tradocraft_reports::schedule::run_due(&db, &documents).await {
+            Ok(0) => {}
+            Ok(n) => tracing::info!(n, "scheduled reports run"),
+            Err(e) => tracing::error!(error = ?e, "running scheduled reports failed"),
         }
         // Without the mailbox list every queued mail would look as if its mailbox is gone and be
         // charged an attempt: wait for the next pass.

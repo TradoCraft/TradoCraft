@@ -1,4 +1,4 @@
-//! What an entity supplies to the shared import engine (ADR 0064 section 1).
+//! What an entity supplies to the shared import engine (ADR 0067 section 1).
 //!
 //! The engine ([`super::engine`]) does everything that is the same for every entity: header
 //! binding, the key column, duplicate keys, locking the named records, classifying rows as create,

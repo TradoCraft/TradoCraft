@@ -1,5 +1,5 @@
 //! Binding a read file to an entity's columns, and typed access to the cells of a row. The same
-//! code serves every format; the rules are those of ADR 0029 and ADR 0064 section 2.
+//! code serves every format; the rules are those of ADR 0029 and ADR 0067 section 2.
 
 use std::collections::{HashMap, HashSet};
 

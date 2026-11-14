@@ -1,4 +1,4 @@
-//! Data import (ADR 0064): the registry of importable entities, the admin screen's endpoints and
+//! Data import (ADR 0067): the registry of importable entities, the admin screen's endpoints and
 //! the job runner that the API (inline) and the worker (queued jobs) share.
 
 pub mod mapping;
