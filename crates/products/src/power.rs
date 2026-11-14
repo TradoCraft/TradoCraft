@@ -64,8 +64,14 @@ pub struct PowerSupply {
     pub phases: Option<i16>,
     /// 50 or 60; null means the product works on both (always null for DC).
     pub frequency_hz: Option<i16>,
-    /// Accepted deviation of the grid voltage from the nominal one, in percent.
+    /// Accepted deviation of the grid voltage from the nominal one, in percent. Ignored when
+    /// explicit bounds are set.
     pub tolerance_pct: i32,
+    /// Explicit lower voltage bound; set together with `voltage_max_v`, or both null. With
+    /// bounds the range is `[voltage_min_v, voltage_max_v]` instead of `voltage_v` +/- tolerance.
+    pub voltage_min_v: Option<i32>,
+    /// Explicit upper voltage bound (see `voltage_min_v`).
+    pub voltage_max_v: Option<i32>,
 }
 
 #[derive(Debug, Clone, Deserialize, ToSchema)]
@@ -76,6 +82,11 @@ pub struct PowerSupplyInput {
     pub frequency_hz: Option<i16>,
     /// Defaults to 10.
     pub tolerance_pct: Option<i32>,
+    /// Explicit voltage range; both or neither. `voltage_v` must lie within it.
+    #[serde(default)]
+    pub voltage_min_v: Option<i32>,
+    #[serde(default)]
+    pub voltage_max_v: Option<i32>,
 }
 
 /// Outcome of checking a product against the grid(s) of a country.
@@ -102,6 +113,9 @@ fn grid_matches(s: &PowerSupply, g: &PowerGrid) -> bool {
         return false;
     }
     let (sv, gv) = (i64::from(s.voltage_v), i64::from(g.voltage_v));
+    if let (Some(lo), Some(hi)) = (s.voltage_min_v, s.voltage_max_v) {
+        return (i64::from(lo)..=i64::from(hi)).contains(&gv);
+    }
     (gv - sv).abs() * 100 <= sv * i64::from(s.tolerance_pct)
 }
 
@@ -166,7 +180,8 @@ const GRID_SELECT: &str =
      FROM products.power_grids";
 
 const SUPPLY_SELECT: &str =
-    "SELECT id, current_type, voltage_v, phases, frequency_hz, tolerance_pct
+    "SELECT id, current_type, voltage_v, phases, frequency_hz, tolerance_pct,
+            voltage_min_v, voltage_max_v
      FROM products.product_power_supplies";
 
 fn country(code: &str) -> AppResult<String> {
@@ -201,6 +216,35 @@ fn validate_grid(input: &PowerGridInput) -> AppResult<(String, String)> {
         n => n.to_string(),
     };
     Ok((cc, name))
+}
+
+/// Explicit bounds: both or neither, positive, ordered, and around the nominal voltage.
+fn validate_bounds(s: &PowerSupplyInput) -> AppResult<()> {
+    let (lo, hi) = match (s.voltage_min_v, s.voltage_max_v) {
+        (None, None) => return Ok(()),
+        (Some(lo), Some(hi)) => (lo, hi),
+        _ => {
+            return Err(AppError::Validation(
+                "voltage_min_v and voltage_max_v must be given together".into(),
+            ))
+        }
+    };
+    if !(1..=100_000).contains(&lo) || !(1..=100_000).contains(&hi) {
+        return Err(AppError::Validation(
+            "voltage_min_v and voltage_max_v must be between 1 and 100000".into(),
+        ));
+    }
+    if lo > hi {
+        return Err(AppError::Validation(
+            "voltage_min_v must not exceed voltage_max_v".into(),
+        ));
+    }
+    if !(lo..=hi).contains(&s.voltage_v) {
+        return Err(AppError::Validation(
+            "voltage_v must lie within voltage_min_v and voltage_max_v".into(),
+        ));
+    }
+    Ok(())
 }
 
 /// Checks and normalises a product's supply list.
@@ -244,6 +288,7 @@ fn validate_supplies(inputs: &[PowerSupplyInput]) -> AppResult<Vec<PowerSupplyIn
                 "tolerance_pct must be between 0 and 50".into(),
             ));
         }
+        validate_bounds(s)?;
         let n = PowerSupplyInput {
             tolerance_pct: Some(tol),
             ..s.clone()
@@ -430,8 +475,9 @@ async fn replace_product_power_supplies(
     for s in &supplies {
         sqlx::query(
             "INSERT INTO products.product_power_supplies
-                (id, product_id, current_type, voltage_v, phases, frequency_hz, tolerance_pct)
-             VALUES ($1, $2, $3, $4, $5, $6, $7)",
+                (id, product_id, current_type, voltage_v, phases, frequency_hz, tolerance_pct,
+                 voltage_min_v, voltage_max_v)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
         )
         .bind(new_id())
         .bind(id)
@@ -440,6 +486,8 @@ async fn replace_product_power_supplies(
         .bind(s.phases)
         .bind(s.frequency_hz)
         .bind(s.tolerance_pct.unwrap_or(10))
+        .bind(s.voltage_min_v)
+        .bind(s.voltage_max_v)
         .execute(&mut *tx)
         .await?;
     }
@@ -552,7 +600,8 @@ pub async fn check_products(
         supply: PowerSupply,
     }
     let rows: Vec<Row> = sqlx::query_as(
-        "SELECT product_id, id, current_type, voltage_v, phases, frequency_hz, tolerance_pct
+        "SELECT product_id, id, current_type, voltage_v, phases, frequency_hz, tolerance_pct,
+                voltage_min_v, voltage_max_v
          FROM products.product_power_supplies WHERE product_id = ANY($1) ORDER BY product_id",
     )
     .bind(product_ids)
@@ -618,7 +667,14 @@ mod tests {
             phases: Some(phases),
             frequency_hz: f,
             tolerance_pct: 10,
+            voltage_min_v: None,
+            voltage_max_v: None,
         }
+    }
+    fn ranged(mut s: PowerSupply, lo: i32, hi: i32) -> PowerSupply {
+        s.voltage_min_v = Some(lo);
+        s.voltage_max_v = Some(hi);
+        s
     }
     fn dc(v: i32) -> PowerSupply {
         PowerSupply {
@@ -748,6 +804,8 @@ mod tests {
             phases: p,
             frequency_hz: f,
             tolerance_pct: None,
+            voltage_min_v: None,
+            voltage_max_v: None,
         };
         assert!(validate_supplies(&[s("dc", Some(1), None)]).is_err());
         assert!(validate_supplies(&[s("dc", None, Some(50))]).is_err());
@@ -757,5 +815,79 @@ mod tests {
         assert!(validate_supplies(&[s("xx", None, None)]).is_err());
         assert!(validate_supplies(&[s("ac", Some(1), None), s("ac", Some(1), None)]).is_err());
         assert!(validate_supplies(&[s("dc", None, None), s("ac", Some(1), None)]).is_ok());
+    }
+
+    #[test]
+    fn explicit_bounds_replace_tolerance() {
+        // 230 +/- 10% would not reach 207 .. 253 wide enough for 260; the bounds do.
+        let s = ranged(ac(230, 1, None), 200, 260);
+        assert_eq!(
+            check(std::slice::from_ref(&s), &[grid(260, 1, 50)]),
+            PowerCompatibility::Compatible
+        );
+        assert_eq!(
+            check(std::slice::from_ref(&s), &[grid(200, 1, 50)]),
+            PowerCompatibility::Compatible
+        );
+        // Without bounds 200 V is outside 230 +/- 10%.
+        assert!(matches!(
+            check(&[ac(230, 1, None)], &[grid(200, 1, 50)]),
+            PowerCompatibility::Incompatible { .. }
+        ));
+        // Bounds are strict: tolerance no longer widens them.
+        assert!(matches!(
+            check(&[s], &[grid(261, 1, 50)]),
+            PowerCompatibility::Incompatible { .. }
+        ));
+    }
+
+    #[test]
+    fn bounds_still_need_phases_and_frequency() {
+        let s = ranged(ac(230, 1, Some(50)), 200, 260);
+        assert!(matches!(
+            check(std::slice::from_ref(&s), &[grid(230, 3, 50)]),
+            PowerCompatibility::Incompatible { .. }
+        ));
+        assert!(matches!(
+            check(&[s], &[grid(230, 1, 60)]),
+            PowerCompatibility::Incompatible { .. }
+        ));
+        let any_hz = ranged(ac(230, 1, None), 200, 260);
+        assert_eq!(
+            check(&[any_hz], &[grid(230, 1, 60)]),
+            PowerCompatibility::Compatible
+        );
+    }
+
+    #[test]
+    fn dc_with_bounds_still_needs_external_supply() {
+        let d = ranged(dc(24), 12, 48);
+        assert_eq!(
+            check(&[d], &[grid(24, 1, 50)]),
+            PowerCompatibility::NeedsExternalSupply
+        );
+    }
+
+    #[test]
+    fn bounds_validation() {
+        let s = |lo: Option<i32>, hi: Option<i32>, v: i32, t: &str| PowerSupplyInput {
+            current_type: t.into(),
+            voltage_v: v,
+            phases: (t == "ac").then_some(1),
+            frequency_hz: None,
+            tolerance_pct: None,
+            voltage_min_v: lo,
+            voltage_max_v: hi,
+        };
+        assert!(validate_supplies(&[s(Some(200), Some(260), 230, "ac")]).is_ok());
+        assert!(validate_supplies(&[s(Some(12), Some(48), 24, "dc")]).is_ok());
+        assert!(validate_supplies(&[s(Some(230), Some(230), 230, "ac")]).is_ok());
+        assert!(validate_supplies(&[s(Some(200), None, 230, "ac")]).is_err());
+        assert!(validate_supplies(&[s(None, Some(260), 230, "ac")]).is_err());
+        assert!(validate_supplies(&[s(Some(260), Some(200), 230, "ac")]).is_err());
+        assert!(validate_supplies(&[s(Some(0), Some(260), 230, "ac")]).is_err());
+        assert!(validate_supplies(&[s(Some(-5), Some(260), 230, "ac")]).is_err());
+        assert!(validate_supplies(&[s(Some(200), Some(220), 230, "ac")]).is_err());
+        assert!(validate_supplies(&[s(Some(240), Some(260), 230, "ac")]).is_err());
     }
 }
