@@ -449,7 +449,7 @@ abstract class AppLocalizations {
   /// No description provided for @automationHelp.
   ///
   /// In en, this message translates to:
-  /// **'Rules run in this order when a ticket is created, changed or answered by the customer. A rule applies when all its conditions match. Rules change tickets only; they send no e-mail.'**
+  /// **'Rules run in this order when a ticket is created, changed or answered by the customer. A rule applies when all its conditions match. Rules can change tickets and send e-mail.'**
   String get automationHelp;
 
   /// No description provided for @automationRules.
@@ -15558,6 +15558,12 @@ abstract class AppLocalizations {
   /// **'At most one mail per ticket in (hours)'**
   String get mailPeriodHours;
 
+  /// No description provided for @mailPeriodInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'The period must be a whole number of hours.'**
+  String get mailPeriodInvalid;
+
   /// No description provided for @mailPlaceholdersHint.
   ///
   /// In en, this message translates to:
@@ -15837,7 +15843,7 @@ abstract class AppLocalizations {
   /// No description provided for @rsLastSent.
   ///
   /// In en, this message translates to:
-  /// **'Last run: sent {when}'**
+  /// **'Last run: queued {when}'**
   String rsLastSent(String when);
 
   /// No description provided for @rsLastFailed.

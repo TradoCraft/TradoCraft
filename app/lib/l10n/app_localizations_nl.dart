@@ -192,7 +192,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get automationHelp =>
-      'Regels worden in deze volgorde uitgevoerd wanneer een ticket wordt aangemaakt, gewijzigd of door de klant beantwoord. Een regel geldt als al zijn voorwaarden kloppen. Regels wijzigen alleen tickets; ze versturen geen e-mail.';
+      'Regels worden in deze volgorde uitgevoerd wanneer een ticket wordt aangemaakt, gewijzigd of door de klant beantwoord. Een regel geldt als al zijn voorwaarden kloppen. Regels kunnen tickets wijzigen en e-mail versturen.';
 
   @override
   String get automationRules => 'Automatiseringsregels';
@@ -8733,6 +8733,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get mailPeriodHours => 'Hoogstens één mail per ticket binnen (uren)';
 
   @override
+  String get mailPeriodInvalid =>
+      'De periode moet een geheel aantal uren zijn.';
+
+  @override
   String mailPlaceholdersHint(String placeholders) {
     return 'Tijdelijke aanduidingen: $placeholders';
   }
@@ -8883,7 +8887,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String rsLastSent(String when) {
-    return 'Laatste keer: verstuurd $when';
+    return 'Laatste keer: in de wachtrij gezet $when';
   }
 
   @override

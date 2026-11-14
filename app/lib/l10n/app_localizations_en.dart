@@ -191,7 +191,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get automationHelp =>
-      'Rules run in this order when a ticket is created, changed or answered by the customer. A rule applies when all its conditions match. Rules change tickets only; they send no e-mail.';
+      'Rules run in this order when a ticket is created, changed or answered by the customer. A rule applies when all its conditions match. Rules can change tickets and send e-mail.';
 
   @override
   String get automationRules => 'Automation rules';
@@ -8700,6 +8700,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mailPeriodHours => 'At most one mail per ticket in (hours)';
 
   @override
+  String get mailPeriodInvalid => 'The period must be a whole number of hours.';
+
+  @override
   String mailPlaceholdersHint(String placeholders) {
     return 'Placeholders: $placeholders';
   }
@@ -8849,7 +8852,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String rsLastSent(String when) {
-    return 'Last run: sent $when';
+    return 'Last run: queued $when';
   }
 
   @override

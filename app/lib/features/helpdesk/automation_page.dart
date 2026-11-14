@@ -356,6 +356,10 @@ class _MailTexts {
     body: body.text.trim(),
     periodHours: int.tryParse(period.text.trim()),
   );
+
+  /// An empty period means the default; anything else must be a whole number.
+  bool get periodValid =>
+      period.text.trim().isEmpty || int.tryParse(period.text.trim()) != null;
 }
 
 /// Create or edit a rule. Returns true when it was saved.
@@ -439,6 +443,10 @@ class _RuleEditorState extends ConsumerState<RuleEditor> {
     final l = context.l10n;
     if (_name.text.trim().isEmpty) {
       setState(() => _error = l.ruleNameRequired);
+      return;
+    }
+    if (_mailTexts.values.any((t) => !t.periodValid)) {
+      setState(() => _error = l.mailPeriodInvalid);
       return;
     }
     final actions = _collect();
@@ -543,7 +551,7 @@ class _RuleEditorState extends ConsumerState<RuleEditor> {
           ],
           onChanged: (v) => setState(() {
             final kept = _collect();
-            kept[i] = with_(r: v);
+            kept[i] = _mailTexts[i]!.build(with_(r: v));
             _actions
               ..clear()
               ..addAll(kept);

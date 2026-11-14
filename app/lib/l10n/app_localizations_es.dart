@@ -191,7 +191,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get automationHelp =>
-      'Las reglas se ejecutan en este orden cuando se crea o modifica un ticket o responde el cliente. Una regla se aplica si se cumplen todas sus condiciones. Las reglas solo modifican tickets; no envían correo.';
+      'Las reglas se ejecutan en este orden cuando se crea o modifica un ticket o responde el cliente. Una regla se aplica si se cumplen todas sus condiciones. Las reglas pueden modificar tickets y enviar correo.';
 
   @override
   String get automationRules => 'Reglas de automatización';
@@ -8739,6 +8739,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get mailPeriodHours => 'Como máximo un correo por ticket en (horas)';
 
   @override
+  String get mailPeriodInvalid =>
+      'El periodo debe ser un número entero de horas.';
+
+  @override
   String mailPlaceholdersHint(String placeholders) {
     return 'Marcadores: $placeholders';
   }
@@ -8888,7 +8892,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String rsLastSent(String when) {
-    return 'Último envío: $when';
+    return 'Última puesta en cola: $when';
   }
 
   @override

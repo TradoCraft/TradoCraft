@@ -191,7 +191,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get automationHelp =>
-      'Regeln laufen in dieser Reihenfolge, wenn ein Ticket erstellt, geändert oder vom Kunden beantwortet wird. Eine Regel gilt, wenn alle Bedingungen zutreffen. Regeln ändern nur Tickets; sie senden keine E-Mails.';
+      'Regeln laufen in dieser Reihenfolge, wenn ein Ticket erstellt, geändert oder vom Kunden beantwortet wird. Eine Regel gilt, wenn alle Bedingungen zutreffen. Regeln können Tickets ändern und E-Mails senden.';
 
   @override
   String get automationRules => 'Automatisierungsregeln';
@@ -8756,6 +8756,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Höchstens eine Mail pro Ticket innerhalb von (Stunden)';
 
   @override
+  String get mailPeriodInvalid =>
+      'Der Zeitraum muss eine ganze Zahl von Stunden sein.';
+
+  @override
   String mailPlaceholdersHint(String placeholders) {
     return 'Platzhalter: $placeholders';
   }
@@ -8906,7 +8910,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String rsLastSent(String when) {
-    return 'Zuletzt: gesendet $when';
+    return 'Zuletzt: eingereiht $when';
   }
 
   @override
