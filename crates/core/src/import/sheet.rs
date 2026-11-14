@@ -594,6 +594,11 @@ fn cell_attrs(e: &BytesStart<'_>) -> Result<CellAttrs, Vec<RowError>> {
                 out.repeat = a.value.trim().parse::<u64>().ok().ok_or_else(|| {
                     fatal("the file has an invalid table:number-columns-repeated value")
                 })?;
+                if out.repeat == 0 {
+                    return Err(fatal(
+                        "the file has an invalid table:number-columns-repeated value",
+                    ));
+                }
             }
             "office:value"
             | "office:date-value"
@@ -681,6 +686,11 @@ fn scan_ods_content(
                 }
                 "table:table-row" if depth == 1 => {
                     row_repeat = attr_u64(e, "table:number-rows-repeated")?;
+                    if row_repeat == 0 {
+                        return Err(fatal(
+                            "the file has an invalid table:number-rows-repeated value",
+                        ));
+                    }
                     (col, row_first, row_end) = (0, None, 0);
                     if empty {
                         cursor = cursor.saturating_add(row_repeat);
@@ -874,6 +884,21 @@ mod scan_tests {
         )))
         .unwrap_err();
         assert!(e.contains("too much text"), "{e}");
+    }
+
+    #[test]
+    fn a_zero_repeat_cannot_hide_text() {
+        let text = format!(
+            r#"<table:table-cell office:value-type="string"><text:p>a<text:s text:c="{}"/></text:p></table:table-cell>"#,
+            70_000_000
+        );
+        let zero_row =
+            format!(r#"<table:table-row table:number-rows-repeated="0">{text}</table:table-row>"#);
+        let e = scan(&sheet(&zero_row)).unwrap_err();
+        assert!(e.contains("number-rows-repeated"), "{e}");
+        let zero_col = r#"<table:table-row><table:table-cell office:value-type="string" table:number-columns-repeated="0"><text:p>a<text:s text:c="70000000"/></text:p></table:table-cell></table:table-row>"#;
+        let e = scan(&sheet(zero_col)).unwrap_err();
+        assert!(e.contains("number-columns-repeated"), "{e}");
     }
 
     #[test]
