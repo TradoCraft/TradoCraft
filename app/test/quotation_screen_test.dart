@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -9,6 +10,7 @@ import 'package:go_router/go_router.dart';
 import 'package:tradocraft_app/app/api.dart';
 import 'package:tradocraft_app/features/quotations/quotation_screen.dart';
 import 'package:tradocraft_app/l10n/app_localizations.dart';
+import 'package:tradocraft_app/shared/search_picker.dart';
 
 const _quotationId = 'q1';
 const _customerId = 'c1';
@@ -50,7 +52,45 @@ Map<String, Object?> _optionLine() => {
   'percent_base': 'parent_list_unit_price',
 };
 
-Map<String, Object?> _quotation(String status, {bool configured = false}) => {
+Map<String, Object?> _opportunity(String id, String stage) => {
+  'id': id,
+  'number': 'OPP-$id',
+  'title': 'Deal $id',
+  'stage': stage,
+  'customer_id': _customerId,
+  'customer_name': 'Alpha Installaties NV',
+  'expected_value': '1000',
+  'probability': 50,
+  'notes': '',
+  'owner_name': 'Sales',
+  'owner_user_id': 'u',
+  'created_at': '2026-11-01T10:00:00Z',
+  'updated_at': '2026-11-01T10:00:00Z',
+};
+
+Map<String, Object?> _otherCustomer(String id) => {
+  'id': id,
+  'code': 'C-$id',
+  'name': 'Customer $id',
+  'vat_regime': 'domestic',
+  'street': 'Straat 1',
+  'postal_code': '2000',
+  'city': 'Antwerpen',
+  'country_code': 'BE',
+  'language': 'nl',
+  'active': true,
+  'price_zone_id': 'z2',
+  'price_zone_code': 'Z2',
+  'discount_percent': '5',
+  'payment_terms_days': 30,
+};
+
+Map<String, Object?> _quotation(
+  String status, {
+  bool configured = false,
+  String? opportunityId,
+}) => {
+  'opportunity_id': opportunityId,
   'id': _quotationId,
   'company_id': 'co',
   'number': 'Q2026-00001',
@@ -92,11 +132,31 @@ Map<String, Object?> _quotation(String status, {bool configured = false}) => {
 
 /// Fake backend: records requests and answers like the Rust API would.
 class FakeApi implements HttpClientAdapter {
-  FakeApi(this.status, {this.configured = false});
+  FakeApi(
+    this.status, {
+    this.configured = false,
+    this.linkedOpportunity,
+    this.openOpportunities = const [],
+  });
   final String status;
   final bool configured;
+
+  /// Opportunity the stored quotation is linked to (may be closed, so not in the open list).
+  final String? linkedOpportunity;
+
+  /// Ids returned by the open-opportunities list (answered after a delay, like a slow network).
+  final List<String> openOpportunities;
   final requests = <String>[];
   final bodies = <String, Object?>{};
+
+  /// Per customer id: holds the open-opportunities answer until completed (that customer then
+  /// has the single opportunity `opp-<id>`).
+  final gates = <String, Completer<void>>{};
+
+  /// Holds the answer for customer c1 (quotation q1's customer) until completed; with
+  /// [failGatedCustomer] the answer is then a server error.
+  Completer<void>? customerGate;
+  bool failGatedCustomer = false;
 
   @override
   Future<ResponseBody> fetch(
@@ -110,8 +170,65 @@ class FakeApi implements HttpClientAdapter {
     Object? json;
     switch (key) {
       case 'GET /api/v1/quotations/$_quotationId':
-        json = _quotation(status, configured: configured);
+        json = _quotation(
+          status,
+          configured: configured,
+          opportunityId: linkedOpportunity,
+        );
+      case 'GET /api/v1/customers':
+        json = {
+          'items': [
+            for (final id in ['c2', 'c3']) _otherCustomer(id),
+          ],
+          'total': 2,
+        };
+      case 'GET /api/v1/opportunities'
+          when gates.containsKey(o.queryParameters['customer_id']):
+        final cid = o.queryParameters['customer_id'] as String;
+        await gates[cid]!.future;
+        json = {
+          'items': [
+            {..._opportunity('opp-$cid', 'proposal'), 'customer_id': cid},
+          ],
+          'total': 1,
+        };
+      case 'GET /api/v1/opportunities':
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+        json = {
+          'items': [
+            for (final id in openOpportunities) _opportunity(id, 'proposal'),
+          ],
+          'total': openOpportunities.length,
+        };
+      case 'GET /api/v1/opportunities/opp-closed':
+        json = _opportunity('opp-closed', 'won');
+      case 'GET /api/v1/opportunities/opp1':
+        json = _opportunity('opp1', 'proposal');
+      case 'GET /api/v1/quotations/q2':
+        json = {
+          ..._quotation(status),
+          'id': 'q2',
+          'number': 'Q-B',
+          'notes': 'Notes B',
+          'customer_id': 'c2',
+        };
+      case 'GET /api/v1/customers/c2':
+        json = _otherCustomer('c2');
+      case 'PUT /api/v1/quotations/q2':
+        json = {..._quotation(status), 'id': 'q2', 'number': 'Q-B'};
       case 'GET /api/v1/customers/$_customerId':
+        if (customerGate != null) {
+          await customerGate!.future;
+          if (failGatedCustomer) {
+            return ResponseBody.fromString(
+              '{"error":"internal","message":"boom"}',
+              500,
+              headers: {
+                Headers.contentTypeHeader: [Headers.jsonContentType],
+              },
+            );
+          }
+        }
         json = {
           'id': _customerId,
           'code': 'C0001',
@@ -279,12 +396,51 @@ Future<FakeApi> _pump(
       overrides: [dioProvider.overrideWithValue(dio)],
       child: MaterialApp(
         locale: const Locale('en'),
-        localizationsDelegates: [AppLocalizations.delegate, ...GlobalMaterialLocalizations.delegates],
+        localizationsDelegates: [
+          AppLocalizations.delegate,
+          ...GlobalMaterialLocalizations.delegates,
+        ],
         supportedLocales: AppLocalizations.supportedLocales,
         home: QuotationScreen(id: _quotationId),
       ),
     ),
   );
+  await tester.pumpAndSettle();
+  return fake;
+}
+
+Future<FakeApi> _pumpNew(
+  WidgetTester tester, {
+  required String opportunityId,
+  List<String> open = const [],
+}) async {
+  tester.view.physicalSize = const Size(1400, 1000);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+  final fake = FakeApi('draft', openOpportunities: open);
+  final dio = Dio(BaseOptions(baseUrl: 'http://test'))
+    ..httpClientAdapter = fake;
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [dioProvider.overrideWithValue(dio)],
+      child: MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: [
+          AppLocalizations.delegate,
+          ...GlobalMaterialLocalizations.delegates,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: QuotationScreen(
+          customerId: _customerId,
+          opportunityId: opportunityId,
+        ),
+      ),
+    ),
+  );
+  // Small steps so frames are built while the opportunity list is still loading.
+  for (var i = 0; i < 5; i++) {
+    await tester.pump(const Duration(milliseconds: 10));
+  }
   await tester.pumpAndSettle();
   return fake;
 }
@@ -315,7 +471,10 @@ Future<FakeApi> _pumpRouted(WidgetTester tester, String status) async {
       child: MaterialApp.router(
         routerConfig: router,
         locale: const Locale('en'),
-        localizationsDelegates: [AppLocalizations.delegate, ...GlobalMaterialLocalizations.delegates],
+        localizationsDelegates: [
+          AppLocalizations.delegate,
+          ...GlobalMaterialLocalizations.delegates,
+        ],
         supportedLocales: AppLocalizations.supportedLocales,
       ),
     ),
@@ -324,7 +483,189 @@ Future<FakeApi> _pumpRouted(WidgetTester tester, String status) async {
   return fake;
 }
 
+Future<FakeApi> _pumpLinkedDraft(
+  WidgetTester tester,
+  List<String> gated,
+) async {
+  tester.view.physicalSize = const Size(1400, 1000);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+  final fake = FakeApi('draft', linkedOpportunity: 'opp-closed');
+  for (final id in gated) {
+    fake.gates[id] = Completer<void>();
+  }
+  final dio = Dio(BaseOptions(baseUrl: 'http://test'))
+    ..httpClientAdapter = fake;
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [dioProvider.overrideWithValue(dio)],
+      child: MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: [
+          AppLocalizations.delegate,
+          ...GlobalMaterialLocalizations.delegates,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: QuotationScreen(id: _quotationId),
+      ),
+    ),
+  );
+  await tester.pumpAndSettle();
+  return fake;
+}
+
+Future<void> _changeCustomer(WidgetTester tester, String id) async {
+  await tester.enterText(
+    find.descendant(
+      of: find.byType(SearchPicker<Customer>),
+      matching: find.byType(TextField),
+    ),
+    'c',
+  );
+  await tester.pumpAndSettle();
+  await tester.tap(find.textContaining('Customer $id').last);
+  await tester.pump();
+}
+
+/// Opens q1 with its customer answer held back, then switches the same screen to q2.
+Future<FakeApi> _pumpSwitched(WidgetTester tester, {bool fail = false}) async {
+  tester.view.physicalSize = const Size(1400, 1000);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+  final fake = FakeApi('draft')
+    ..customerGate = Completer<void>()
+    ..failGatedCustomer = fail;
+  final dio = Dio(BaseOptions(baseUrl: 'http://test'))
+    ..httpClientAdapter = fake;
+  Widget app(String id) => ProviderScope(
+    overrides: [dioProvider.overrideWithValue(dio)],
+    child: MaterialApp(
+      locale: const Locale('en'),
+      localizationsDelegates: [
+        AppLocalizations.delegate,
+        ...GlobalMaterialLocalizations.delegates,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: QuotationScreen(id: id),
+    ),
+  );
+  await tester.pumpWidget(app(_quotationId));
+  await tester.pump(const Duration(milliseconds: 50));
+  await tester.pumpWidget(app('q2'));
+  await tester.pumpAndSettle();
+  fake.customerGate!.complete();
+  await tester.pumpAndSettle();
+  return fake;
+}
+
 void main() {
+  testWidgets('a slow load of the previous quotation does not overwrite the new one', (
+    tester,
+  ) async {
+    final fake = await _pumpSwitched(tester);
+    expect(tester.takeException(), isNull);
+    expect(find.textContaining('Q-B'), findsWidgets);
+    expect(find.textContaining('Q2026-00001'), findsNothing);
+    expect(find.text('Notes B'), findsOneWidget);
+    await tester.tap(find.text('Save draft'));
+    await tester.pumpAndSettle();
+    expect(fake.bodies.containsKey('PUT /api/v1/quotations/q2'), isTrue);
+    expect(fake.bodies.containsKey('PUT /api/v1/quotations/$_quotationId'), isFalse);
+  });
+
+  testWidgets('an error from the stale load shows no error banner', (
+    tester,
+  ) async {
+    await _pumpSwitched(tester, fail: true);
+    expect(tester.takeException(), isNull);
+    expect(find.textContaining('boom'), findsNothing);
+    expect(find.text('Notes B'), findsOneWidget);
+  });
+
+  testWidgets(
+    'changing the customer hides the old customer opportunities while loading',
+    (tester) async {
+      await _pumpLinkedDraft(tester, ['c2']);
+      expect(find.textContaining('OPP-opp-closed'), findsOneWidget);
+      await _changeCustomer(tester, 'c2');
+      await tester.pump(const Duration(milliseconds: 10));
+      expect(tester.takeException(), isNull);
+      expect(find.textContaining('OPP-opp-closed'), findsNothing);
+    },
+  );
+
+  testWidgets('a late answer for a previous customer is ignored', (
+    tester,
+  ) async {
+    final fake = await _pumpLinkedDraft(tester, ['c2', 'c3']);
+    await _changeCustomer(tester, 'c2');
+    await _changeCustomer(tester, 'c3');
+    fake.gates['c3']!.complete();
+    await tester.pumpAndSettle();
+    fake.gates['c2']!.complete();
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    await tester.tap(
+      find.byWidgetPredicate(
+        (w) => w.key is ValueKey && '${(w.key as ValueKey).value}'.startsWith('opp-'),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.textContaining('OPP-opp-c3'), findsWidgets);
+    expect(find.textContaining('OPP-opp-c2'), findsNothing);
+  });
+
+  testWidgets(
+    'new quotation with a preselected opportunity builds while the list loads',
+    (tester) async {
+      await _pumpNew(tester, opportunityId: 'opp1', open: ['opp1']);
+      expect(tester.takeException(), isNull);
+      expect(find.textContaining('OPP-opp1'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'a preselected opportunity missing from the open list is fetched and kept',
+    (tester) async {
+      final fake = await _pumpNew(tester, opportunityId: 'opp-closed');
+      expect(tester.takeException(), isNull);
+      expect(fake.requests, contains('GET /api/v1/opportunities/opp-closed'));
+      expect(find.textContaining('OPP-opp-closed'), findsOneWidget);
+    },
+  );
+
+  testWidgets('a draft linked to a closed opportunity keeps the link on save', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1400, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final fake = FakeApi('draft', linkedOpportunity: 'opp-closed');
+    final dio = Dio(BaseOptions(baseUrl: 'http://test'))
+      ..httpClientAdapter = fake;
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [dioProvider.overrideWithValue(dio)],
+        child: MaterialApp(
+          locale: const Locale('en'),
+          localizationsDelegates: [
+            AppLocalizations.delegate,
+            ...GlobalMaterialLocalizations.delegates,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: QuotationScreen(id: _quotationId),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(find.textContaining('OPP-opp-closed'), findsOneWidget);
+    await tester.tap(find.text('Save draft'));
+    await tester.pumpAndSettle();
+    final body = fake.bodies['PUT /api/v1/quotations/$_quotationId'] as Map;
+    expect(body['opportunity_id'], 'opp-closed');
+  });
+
   testWidgets('draft totals come from the server pricing preview', (
     tester,
   ) async {
