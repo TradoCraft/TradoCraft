@@ -215,14 +215,17 @@ pub struct ImportParams {
 // Reading
 // ---------------------------------------------------------------------------------------------
 
-/// The delimiter of a file: `;` when the header line has more semicolons than commas (Excel in
-/// many locales), else `,`.
+/// The delimiter of a file: `;` when the header line (the first non-blank record, as the parsers
+/// read it) has more semicolons than commas (Excel in many locales), else `,`.
 pub fn detect_delimiter(text: &str) -> char {
-    let (mut commas, mut semis, mut quoted) = (0, 0, false);
+    let (mut commas, mut semis, mut quoted, mut started) = (0, 0, false, false);
     for c in text.chars() {
+        if !matches!(c, '\r' | '\n') {
+            started = true;
+        }
         match c {
             '"' => quoted = !quoted,
-            '\n' if !quoted => break,
+            '\n' if !quoted && started => break,
             ',' if !quoted => commas += 1,
             ';' if !quoted => semis += 1,
             _ => {}

@@ -101,6 +101,15 @@ struct Plan<E: Importable> {
     stopped: bool,
 }
 
+/// Whether the first [`csv_io::MAX_REPORTED_ERRORS`] problems in file order are known once the row
+/// at `line` is checked: the `planned` errors so far plus the reader's errors up to that line.
+/// Reader errors of later rows do not count, so they cannot stop the check of earlier rows.
+/// `width_errors` is ordered by row.
+fn limit_reached(width_errors: &[RowError], planned: usize, line: usize) -> bool {
+    let earlier = width_errors.partition_point(|e| e.row <= line);
+    planned + earlier >= csv_io::MAX_REPORTED_ERRORS
+}
+
 /// Checks every row against the database and decides what each one would do.
 async fn plan<E: Importable>(
     conn: &mut PgConnection,
@@ -130,9 +139,7 @@ async fn plan<E: Importable>(
         plan_one::<E>(conn, user, &mut context, &stored, &mut seen, row, &mut plan).await?;
         tick(progress, Phase::Validating, n + 1, total);
         // A file this wrong is refused whatever else is in it; do not keep collecting.
-        if plan.errors.len() + table.width_errors.len() >= csv_io::MAX_REPORTED_ERRORS
-            && n + 1 < total
-        {
+        if limit_reached(&table.width_errors, plan.errors.len(), row.line) && n + 1 < total {
             plan.stopped = true;
             break;
         }
@@ -198,20 +205,30 @@ fn audit_data(options: &RunOptions<'_>, extra: Option<(&str, &str)>) -> serde_js
     data.into()
 }
 
-/// Fails when the run belongs to a job that is no longer running under its claim.
-async fn still_claimed(conn: &mut PgConnection, options: &RunOptions<'_>) -> AppResult<()> {
+/// Fails when the run belongs to a job that is no longer running under its claim. With `lock` the
+/// job row is also locked until the transaction ends, so a reclaim cannot take the job over
+/// between this check and the commit.
+async fn still_claimed(
+    conn: &mut PgConnection,
+    options: &RunOptions<'_>,
+    lock: bool,
+) -> AppResult<()> {
     let (Some(job), Some(claim)) = (options.import_job, options.claim) else {
         return Ok(());
     };
-    let held: bool = sqlx::query_scalar(
-        "SELECT EXISTS (SELECT 1 FROM core.import_jobs
-                        WHERE id = $1 AND status = 'running' AND claim_token = $2)",
-    )
-    .bind(job)
-    .bind(claim)
-    .fetch_one(conn)
-    .await?;
-    if held {
+    let query = if lock {
+        "SELECT id FROM core.import_jobs
+         WHERE id = $1 AND status = 'running' AND claim_token = $2 FOR UPDATE"
+    } else {
+        "SELECT id FROM core.import_jobs
+         WHERE id = $1 AND status = 'running' AND claim_token = $2"
+    };
+    let held: Option<Uuid> = sqlx::query_scalar(query)
+        .bind(job)
+        .bind(claim)
+        .fetch_optional(conn)
+        .await?;
+    if held.is_some() {
         Ok(())
     } else {
         Err(AppError::ConflictCode(
@@ -243,7 +260,7 @@ async fn attempt<E: Importable>(
     if !report.errors.is_empty() || options.dry_run {
         return Ok(report);
     }
-    still_claimed(&mut tx, options).await?;
+    still_claimed(&mut tx, options, false).await?;
     let total = plan.actions.len();
     for (n, a) in plan.actions.into_iter().enumerate() {
         match a {
@@ -261,7 +278,7 @@ async fn attempt<E: Importable>(
         }
         tick(options.progress, Phase::Writing, n + 1, total);
     }
-    still_claimed(&mut tx, options).await?;
+    still_claimed(&mut tx, options, true).await?;
     tx.commit().await?;
     Ok(report)
 }
@@ -403,6 +420,25 @@ mod tests {
         assert_eq!(counts, [PROGRESS_EVERY, PROGRESS_EVERY * 2, total]);
         assert!(got.iter().all(|(p, _)| *p == Phase::Validating));
         assert_eq!(Phase::Writing.as_str(), "writing");
+    }
+
+    #[test]
+    fn later_reader_errors_do_not_stop_the_check_of_earlier_rows() {
+        let at = |row| RowError {
+            row,
+            column: None,
+            message: String::new(),
+            limit: false,
+        };
+        let max = csv_io::MAX_REPORTED_ERRORS;
+        // The reader's errors are all on lines after 10: row 10 is checked whatever they are.
+        let late: Vec<RowError> = (11..11 + max).map(at).collect();
+        assert!(!limit_reached(&late, 0, 10));
+        assert!(!limit_reached(&late, max - 1, 10));
+        assert!(limit_reached(&late, max, 10));
+        // Once the lines up to the row hold enough problems, the first `max` are known.
+        assert!(limit_reached(&late, 0, 10 + max));
+        assert!(!limit_reached(&late, 0, 10 + max - 1));
     }
 
     #[test]

@@ -80,7 +80,12 @@ fn excel_date(d: NaiveDate) -> Option<ExcelDateTime> {
     ExcelDateTime::from_ymd(year, d.month() as u8, d.day() as u8).ok()
 }
 
+/// The date-time as an Excel one, if Excel can hold it: from 1900 and in whole milliseconds. A
+/// finer time would be rounded, so it is `None` and the caller writes the exact ISO text.
 fn excel_datetime(t: NaiveDateTime) -> Option<ExcelDateTime> {
+    if !t.nanosecond().is_multiple_of(1_000_000) {
+        return None;
+    }
     excel_date(t.date())?
         .and_hms_milli(
             t.hour() as u16,
@@ -133,4 +138,40 @@ fn write_xlsx(
         }
     }
     workbook.save_to_buffer().map_err(xlsx_error)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn at(text: &str) -> NaiveDateTime {
+        NaiveDateTime::parse_from_str(text, "%Y-%m-%dT%H:%M:%S%.f").unwrap()
+    }
+
+    #[test]
+    fn a_time_finer_than_a_millisecond_is_not_rounded() {
+        assert!(excel_datetime(at("2024-01-31T10:30:05.250")).is_some());
+        assert!(excel_datetime(at("2024-01-31T10:30:05")).is_some());
+        assert!(excel_datetime(at("2024-01-31T10:30:05.250123456")).is_none());
+        assert!(excel_datetime(at("2024-01-31T10:30:05.250000001")).is_none());
+    }
+
+    #[test]
+    fn a_fine_date_time_is_written_as_its_exact_text() {
+        let t = at("2024-01-31T10:30:05.250123456");
+        let bytes = write(
+            Format::Xlsx,
+            "S",
+            &["when"],
+            vec![vec![CellValue::DateTime(t)]],
+        )
+        .unwrap();
+        let raw = crate::import::read_raw(&bytes, None, &crate::import::Limits::request())
+            .unwrap()
+            .1;
+        assert_eq!(
+            raw.rows[0].cells[0],
+            CellValue::Text("2024-01-31T10:30:05.250123456".into())
+        );
+    }
 }

@@ -110,7 +110,13 @@ fn parse_records(text: &str, delim: char, limits: &Limits) -> Result<Records, Ro
                     ));
                 }
             }
-            '\r' => {}
+            '\r' if chars.peek() == Some(&'\n') => {}
+            '\r' => {
+                return Err(format_error(
+                    start,
+                    "a carriage return outside quotes must be part of a CRLF line break",
+                ))
+            }
             '\n' => {
                 finish_record(&mut records, &mut fields, &mut field, start, limits)?;
                 closed = false;
@@ -183,5 +189,23 @@ mod limit_tests {
         let t = read(body.as_bytes(), &limits).unwrap();
         assert_eq!(t.rows.len(), limits.rows);
         assert_eq!(t.header.len(), limits.cells_per_row);
+    }
+
+    #[test]
+    fn the_delimiter_comes_from_the_first_non_blank_record() {
+        let t = read(b"\n\r\na;b;c\n1;2;3\n", &Limits::request()).unwrap();
+        assert_eq!(t.header, vec!["a", "b", "c"]);
+        assert_eq!(t.header_row, 3);
+    }
+
+    #[test]
+    fn a_lone_carriage_return_is_rejected_but_crlf_and_quoted_cr_are_kept() {
+        let e = read(b"a,b\r1,2\n", &Limits::request()).unwrap_err();
+        assert!(e[0].message.contains("carriage return"), "{e:?}");
+        assert!(read(b"a,b\r", &Limits::request()).is_err());
+        let t = read(b"a,b\r\n1,2\r\n", &Limits::request()).unwrap();
+        assert_eq!(t.rows.len(), 1);
+        let t = read(b"a,b\r\n\"x\ry\",2\r\n", &Limits::request()).unwrap();
+        assert_eq!(t.rows[0].cells[0], CellValue::text("x\ry"));
     }
 }

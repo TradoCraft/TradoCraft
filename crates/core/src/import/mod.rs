@@ -28,7 +28,7 @@ pub use engine::{
     ExportParams, RunOptions,
 };
 pub use entity::{BoxFuture, ImportEntity};
-pub use format::{detect, download, Format};
+pub use format::{detect, download, BinaryFile, Format};
 pub use importable::{
     Column, ColumnKind, ImportDescription, Importable, NoProgress, Phase, Progress,
 };

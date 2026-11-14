@@ -49,8 +49,9 @@ refused with one error, everything else is read as CSV.
   empty cell. A cell that holds a spreadsheet error (`#N/A`, `#REF!` ...) is a row error, and so is
   a time or duration cell (ODS `time-value`, XLSX durations): no field takes one.
 * *Percent formats are read as stored.* A cell that shows `21%` holds 0.21 and imports as 0.21, not
-  21. A VAT or discount column typed as a percentage in the spreadsheet must be formatted as a
-  number (or the value be given as the fraction) before the import. The file does not say how a
+  21. Formatting a percentage cell as a number does not change its stored value: the cell still
+  holds 0.21 and shows 0.21. To import 21, enter the needed value as an ordinary number (21) in
+  the column, or multiply the stored fractions by 100 before the import. The file does not say how a
   cell was formatted once it is read, and guessing from the format would make the same file import
   differently depending on how it was saved.
 * Macros and external links are never evaluated; only cell values are read.

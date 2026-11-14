@@ -496,18 +496,47 @@ struct ErrorCells {
     cols: u64,
 }
 
+/// The [`ErrorCells`] of one sheet indexed by row, so that finding out whether a cell is marked
+/// costs a lookup and not a scan of every marked cell. The spans of a sheet do not overlap: a row
+/// element has its own rows, and the cells in it follow each other.
+#[derive(Debug, Default)]
+struct ErrorIndex {
+    /// First row of a span of rows -> (how many rows, the column spans in column order).
+    rows: std::collections::BTreeMap<u64, (u64, Vec<(u64, u64)>)>,
+}
+
+impl ErrorIndex {
+    fn push(&mut self, e: ErrorCells) {
+        self.rows
+            .entry(e.row)
+            .or_insert_with(|| (e.rows, Vec::new()))
+            .1
+            .push((e.col, e.cols));
+    }
+
+    fn contains(&self, row: u64, col: u64) -> bool {
+        let Some((first, (rows, cols))) = self.rows.range(..=row).next_back() else {
+            return false;
+        };
+        if row - first >= *rows {
+            return false;
+        }
+        let at = cols.partition_point(|(c, _)| *c <= col);
+        at > 0 && {
+            let (c, n) = cols[at - 1];
+            col < c.saturating_add(n)
+        }
+    }
+}
+
 fn convert_ods(
     data: &Data,
-    error_cells: &[ErrorCells],
+    error_cells: &ErrorIndex,
     row: u64,
     col: u64,
 ) -> Result<CellValue, String> {
     if let Data::String(text) = data {
-        let marked = error_cells.iter().any(|e| {
-            (e.row..e.row.saturating_add(e.rows)).contains(&row)
-                && (e.col..e.col.saturating_add(e.cols)).contains(&col)
-        });
-        if marked {
+        if error_cells.contains(row, col) {
             return Err(format!("the cell holds the spreadsheet error {text}"));
         }
     }
@@ -534,7 +563,7 @@ fn attr_u64(e: &BytesStart<'_>, name: &str) -> Result<u64, Vec<RowError>> {
 fn scan_ods(
     bytes: &[u8],
     limits: &Limits,
-) -> Result<std::collections::HashMap<String, Vec<ErrorCells>>, Vec<RowError>> {
+) -> Result<std::collections::HashMap<String, ErrorIndex>, Vec<RowError>> {
     let mut zip = ZipArchive::new(Cursor::new(bytes)).map_err(|e| damaged("an ODS workbook", e))?;
     let entry = zip
         .by_name("content.xml")
@@ -549,7 +578,7 @@ struct CellAttrs {
     /// `calamine` keeps the cell: it has a value, a formula or a value type.
     stored: bool,
     error: bool,
-    /// Bytes of an `office:string-value`.
+    /// Bytes of an `office:string-value` and of a `table:formula`.
     text: u64,
 }
 
@@ -570,11 +599,10 @@ fn cell_attrs(e: &BytesStart<'_>) -> Result<CellAttrs, Vec<RowError>> {
             | "office:date-value"
             | "office:time-value"
             | "office:boolean-value"
-            | "office:value-type"
-            | "table:formula" => out.stored = true,
-            "office:string-value" => {
+            | "office:value-type" => out.stored = true,
+            "office:string-value" | "table:formula" => {
                 out.stored = true;
-                out.text = a.value.len() as u64;
+                out.text = out.text.saturating_add(a.value.len() as u64);
             }
             "calcext:value-type" => {
                 out.stored = true;
@@ -592,7 +620,7 @@ const ODS_MAX_COLUMNS: u64 = 16_384;
 fn scan_ods_content(
     input: impl Read,
     limits: &Limits,
-) -> Result<std::collections::HashMap<String, Vec<ErrorCells>>, Vec<RowError>> {
+) -> Result<std::collections::HashMap<String, ErrorIndex>, Vec<RowError>> {
     let mut reader = quick_xml::Reader::from_reader(BufReader::new(input));
     let mut buf = Vec::new();
     let mut depth = 0u32; // nesting of table:table
@@ -603,13 +631,13 @@ fn scan_ods_content(
     // Current row: its repeat count, the column cursor, the first and last stored column.
     let (mut row_repeat, mut col) = (1u64, 0u64);
     let (mut row_first, mut row_end) = (None::<u64>, 0u64);
-    let (mut in_row, mut in_cell, mut cell_repeat) = (false, false, 1u64);
+    let (mut in_row, mut in_cell, mut cell_repeat) = (false, false, 1u128);
     // What calamine holds: the cells it stores per row (from column A, a repeated row is stored
     // once) and the dense rectangle of every sheet, each over all sheets together.
     let (mut stored, mut dense) = (0u128, 0u128);
     let mut text = 0u128;
     let mut table_name = String::new();
-    let mut error_cells: std::collections::HashMap<String, Vec<ErrorCells>> = Default::default();
+    let mut error_cells: std::collections::HashMap<String, ErrorIndex> = Default::default();
     let mut errors_seen = 0usize;
     // The limit counts the data rows; the header row is allowed on top.
     let allowed_cells = (limits.total_cells + limits.cells_per_row) as u128;
@@ -687,18 +715,20 @@ fn scan_ods_content(
                     if attrs.stored {
                         row_end = col;
                     }
-                    text += u128::from(attrs.text) * u128::from(attrs.repeat);
+                    text +=
+                        u128::from(attrs.text) * u128::from(attrs.repeat) * u128::from(row_repeat);
                     if text > u128::from(limits.unpacked_bytes) {
                         return Err(too_much_text());
                     }
                     if !empty {
                         in_cell = true;
-                        cell_repeat = attrs.repeat;
+                        // Every copy of the cell, in every copy of the row, expands its text.
+                        cell_repeat = u128::from(attrs.repeat) * u128::from(row_repeat);
                     }
                 }
                 "text:s" if in_cell => {
                     let n = attr_u64(e, "text:c")?;
-                    text += u128::from(n) * u128::from(cell_repeat);
+                    text += u128::from(n) * cell_repeat;
                     if text > u128::from(limits.unpacked_bytes) {
                         return Err(too_much_text());
                     }
@@ -707,7 +737,7 @@ fn scan_ods_content(
             }
         } else if let Event::Text(t) = &event {
             if in_cell {
-                text += t.len() as u128 * u128::from(cell_repeat);
+                text += t.len() as u128 * cell_repeat;
                 if text > u128::from(limits.unpacked_bytes) {
                     return Err(too_much_text());
                 }
@@ -856,6 +886,68 @@ mod scan_tests {
         // 100 MB of text from 1 MB of file.
         let e = scan(&sheet(&rows)).unwrap_err();
         assert!(e.contains("too much text"), "{e}");
+    }
+
+    #[test]
+    fn text_is_multiplied_by_the_row_repeat_too() {
+        let long = "x".repeat(1_000_000);
+        // 1 MB in a cell repeated 10 times in a row repeated 10 times: 100 MB, over the 64 MB.
+        let cells = [
+            format!(r#"<table:table-cell office:string-value="{long}" table:number-columns-repeated="10"/>"#),
+            format!(r#"<table:table-cell office:value-type="string"><text:p>{long}</text:p></table:table-cell>"#)
+                .repeat(10),
+            format!(
+                r#"<table:table-cell office:value-type="string"><text:p>a<text:s text:c="{}"/></text:p></table:table-cell>"#,
+                7_000_000
+            )
+            .repeat(10),
+        ];
+        for cell in cells {
+            let rows = format!(
+                r#"<table:table-row table:number-rows-repeated="10">{cell}</table:table-row>"#
+            );
+            let e = scan(&sheet(&rows)).unwrap_err();
+            assert!(e.contains("too much text"), "{e}");
+        }
+    }
+
+    #[test]
+    fn formula_bytes_count_against_the_text_budget() {
+        let long = "1+".repeat(500_000);
+        let cell = format!(
+            r#"<table:table-cell table:formula="of:={long}1" table:number-columns-repeated="10"/>"#
+        );
+        let rows =
+            format!(r#"<table:table-row table:number-rows-repeated="10">{cell}</table:table-row>"#);
+        let e = scan(&sheet(&rows)).unwrap_err();
+        assert!(e.contains("too much text"), "{e}");
+    }
+
+    #[test]
+    fn error_cells_are_found_by_row_and_column() {
+        let mut index = ErrorIndex::default();
+        index.push(ErrorCells {
+            row: 2,
+            rows: 3,
+            col: 1,
+            cols: 2,
+        });
+        index.push(ErrorCells {
+            row: 2,
+            rows: 3,
+            col: 5,
+            cols: 1,
+        });
+        index.push(ErrorCells {
+            row: 10,
+            rows: 1,
+            col: 0,
+            cols: 1,
+        });
+        let hit = |r, c| index.contains(r, c);
+        assert!(hit(2, 1) && hit(2, 2) && hit(4, 2) && hit(3, 5) && hit(10, 0));
+        assert!(!hit(1, 1) && !hit(5, 1) && !hit(2, 0) && !hit(2, 3) && !hit(2, 4));
+        assert!(!hit(2, 6) && !hit(9, 0) && !hit(10, 1) && !hit(11, 0) && !hit(0, 0));
     }
 
     #[test]

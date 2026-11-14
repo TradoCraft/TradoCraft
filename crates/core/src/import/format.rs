@@ -8,6 +8,14 @@ use zip::ZipArchive;
 /// The `mimetype` an OpenDocument spreadsheet carries as the first entry of its archive.
 pub const ODS_MIMETYPE: &str = "application/vnd.oasis.opendocument.spreadsheet";
 
+// `type: string, format: binary` in the OpenAPI document: a string schema alone would make a
+// generated client send or decode the body as text, which corrupts a spreadsheet. Documentation
+// only: the handlers take and return bytes.
+/// The raw bytes of a file.
+#[derive(utoipa::ToSchema)]
+#[schema(value_type = String, format = Binary)]
+pub struct BinaryFile(#[allow(dead_code)] Vec<u8>);
+
 /// A supported file format.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Format {
