@@ -7,6 +7,7 @@ import '../../shared/actions.dart';
 import '../../shared/format.dart';
 import '../../shared/power_text.dart';
 import 'baseline_section.dart';
+import 'matches_panel.dart';
 import 'opportunity_form.dart';
 import '../../l10n/l10n.dart';
 import '../../shared/app_icons.dart';
@@ -228,6 +229,8 @@ class _OpportunityScreenState extends ConsumerState<OpportunityScreen> {
               ],
               const SizedBox(height: 24),
               BaselineSection(opportunityId: id),
+              const SizedBox(height: 24),
+              MatchesPanel(opportunityId: id),
               const SizedBox(height: 24),
               Text(
                 context.l10n.quotations,

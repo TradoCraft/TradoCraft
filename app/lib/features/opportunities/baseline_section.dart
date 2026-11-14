@@ -7,6 +7,7 @@ import '../../shared/actions.dart';
 import '../../shared/app_icons.dart';
 import '../products/suitability_logic.dart';
 import 'baseline_logic.dart';
+import 'matches_panel.dart';
 
 final _baselineProvider = FutureProvider.autoDispose
     .family<List<BaselineItem>, String>(
@@ -38,8 +39,10 @@ class BaselineSection extends ConsumerWidget {
   const BaselineSection({super.key, required this.opportunityId});
   final String opportunityId;
 
-  void _refresh(WidgetRef ref) =>
-      ref.invalidate(_baselineProvider(opportunityId));
+  void _refresh(WidgetRef ref) {
+    ref.invalidate(_baselineProvider(opportunityId));
+    ref.invalidate(productMatchesProvider);
+  }
 
   Future<void> _edit(
     BuildContext context,
@@ -102,6 +105,7 @@ class BaselineSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final canWrite = can(ref, 'opportunities.write');
+    final canSuggest = can(ref, 'products.read');
     final tree = ref.watch(_baselineProvider(opportunityId));
     final types = ref.watch(_typesProvider);
     final typeList = types.value ?? const <BaselineItemType>[];
@@ -135,6 +139,18 @@ class BaselineSection extends ConsumerWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (item.quantity != 1) Text(l.baselineQty(item.quantity)),
+                  if (canSuggest)
+                    IconButton(
+                      key: ValueKey('baseline-suggest-${item.id}'),
+                      tooltip: l.matchesSuggest,
+                      icon: const Icon(AppIcons.search),
+                      onPressed: () => showSuggestedProducts(
+                        context,
+                        opportunityId: opportunityId,
+                        itemId: item.id,
+                        itemLabel: label,
+                      ),
+                    ),
                   if (canWrite) ...[
                     IconButton(
                       key: ValueKey('baseline-edit-${item.id}'),
