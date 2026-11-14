@@ -824,7 +824,7 @@ mod scan_tests {
     fn stored_cells_are_counted_from_column_a_across_all_sheets() {
         // Narrow (one column) but 100 000 cells to the left of it in every row of two sheets.
         let rows = r#"<table:table-row table:number-rows-repeated="10"><table:table-cell table:number-columns-repeated="16000"/><table:table-cell office:value="1"/></table:table-row>"#;
-        let one = sheet(rows).repeat(1);
+        let one = sheet(rows);
         assert!(scan(&one).is_ok());
         let many = (0..20)
             .map(|i| format!(r#"<table:table table:name="N{i}">{rows}</table:table>"#))
@@ -852,7 +852,7 @@ mod scan_tests {
         let cell = format!(
             r#"<table:table-cell office:string-value="{long}" table:number-columns-repeated="100"/>"#
         );
-        let rows = format!("<table:table-row>{cell}</table:table-row>").repeat(1);
+        let rows = format!("<table:table-row>{cell}</table:table-row>");
         // 100 MB of text from 1 MB of file.
         let e = scan(&sheet(&rows)).unwrap_err();
         assert!(e.contains("too much text"), "{e}");
