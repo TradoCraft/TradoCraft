@@ -160,9 +160,17 @@ async fn seed_creates_the_tower_setup_and_is_idempotent(db: PgPool) {
     assert_eq!(by("clock_dial"), ["dial_diameter_mm"]);
     assert_eq!(
         by("bell"),
-        ["weight_kg", "diameter_mm", "height_mm", "motion", "note"]
+        [
+            "weight_kg",
+            "diameter_mm",
+            "height_mm",
+            "motion",
+            "note",
+            "num_wheels",
+            "motor_brand"
+        ]
     );
-    assert_eq!(by("product"), ["dial_size_mm"]);
+    assert_eq!(by("product"), ["dial_size_mm", "motor_kw"]);
     let motion = defs
         .as_array()
         .unwrap()
@@ -253,7 +261,7 @@ async fn a_provisioned_company_gets_the_defaults(db: PgPool) {
     .fetch_one(&db)
     .await
     .unwrap();
-    assert_eq!(d, 7);
+    assert_eq!(d, 10);
 }
 
 // ---------------------------------------------------------------------------------------------

@@ -887,7 +887,7 @@ async fn permissions_and_product_attributes(db: PgPool) {
 async fn the_dev_seed_loads_the_demo_configurator(db: PgPool) {
     assert!(tradocraft_api::seed_if_empty(&db).await.unwrap());
     let (code, status): (String, String) = sqlx::query_as(
-        "SELECT m.code, r.status FROM configurator.models m JOIN configurator.model_revisions r ON r.model_id = m.id",
+        "SELECT m.code, r.status FROM configurator.models m JOIN configurator.model_revisions r ON r.model_id = m.id WHERE m.code = 'CONVEYOR-LINE'",
     )
     .fetch_one(&db)
     .await
