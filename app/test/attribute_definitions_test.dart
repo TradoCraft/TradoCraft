@@ -215,6 +215,77 @@ void main() {
     expect(find.byKey(const ValueKey('attrdef-edit-dial')), findsNothing);
   });
 
+  testWidgets('the scope is chosen from product and the baseline types', (
+    tester,
+  ) async {
+    final h = FakeHttp({
+      'GET /api/v1/me': (_) => meJson(['products.write']),
+      'GET /api/v1/attribute-definitions': (_) => [],
+      'GET /api/v1/baseline-item-types': (_) => [
+        {
+          'id': 't1',
+          'code': 'bell',
+          'name': 'Bell',
+          'allowed_parent_codes': <String>[],
+          'allow_top_level': true,
+          'sort_order': 0,
+          'active': true,
+        },
+      ],
+      'POST /api/v1/attribute-definitions': (b) => _def('weight', 'number'),
+    });
+    await _pump(tester, h);
+    await tester.tap(find.byKey(const ValueKey('attrdef-new')));
+    await tester.pumpAndSettle();
+    expect(
+      find
+          .byType(TextField)
+          .evaluate()
+          .where(
+            (e) =>
+                (e.widget as TextField).key == const ValueKey('attrdef-scope'),
+          ),
+      isEmpty,
+      reason: 'no longer free text',
+    );
+    await tester.enterText(find.byKey(const ValueKey('attrdef-key')), 'weight');
+    await tester.enterText(
+      find.byKey(const ValueKey('attrdef-label')),
+      'Weight',
+    );
+    await tester.tap(find.byKey(const ValueKey('attrdef-scope')));
+    await tester.pumpAndSettle();
+    expect(find.text('Product'), findsWidgets);
+    await tester.tap(find.text('Bell (bell)').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('attrdef-save')));
+    await tester.pumpAndSettle();
+    expect(
+      (h.bodies['POST /api/v1/attribute-definitions'] as Map)['scope'],
+      'bell',
+    );
+  });
+
+  testWidgets('key, type and scope are locked when editing', (tester) async {
+    await _pump(
+      tester,
+      FakeHttp({
+        'GET /api/v1/me': (_) => meJson(['products.write']),
+        'GET /api/v1/attribute-definitions': (_) => [_def('dial', 'range')],
+      }),
+    );
+    await tester.tap(find.byKey(const ValueKey('attrdef-edit-dial')));
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<DropdownButtonFormField<String>>(
+            find.byKey(const ValueKey('attrdef-scope')),
+          )
+          .onChanged,
+      isNull,
+    );
+  });
+
   testWidgets('the admin page offers the attributes to product writers', (
     tester,
   ) async {

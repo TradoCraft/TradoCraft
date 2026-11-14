@@ -38,7 +38,8 @@ class BaselineSection extends ConsumerWidget {
   const BaselineSection({super.key, required this.opportunityId});
   final String opportunityId;
 
-  void _refresh(WidgetRef ref) => ref.invalidate(_baselineProvider(opportunityId));
+  void _refresh(WidgetRef ref) =>
+      ref.invalidate(_baselineProvider(opportunityId));
 
   Future<void> _edit(
     BuildContext context,
@@ -117,7 +118,10 @@ class BaselineSection extends ConsumerWidget {
       final label = (item.name ?? '').isEmpty
           ? typeName
           : '$typeName · ${item.name}';
-      final summary = summarizeValues(defs[item.typeCode] ?? const [], item.values);
+      final summary = summarizeValues(
+        defs[item.typeCode] ?? const [],
+        item.values,
+      );
       return Column(
         children: [
           Padding(
@@ -379,7 +383,9 @@ class _BaselineItemDialogState extends ConsumerState<BaselineItemDialog> {
         if (t.active || t.code == widget.item?.typeCode) t,
     ];
     final type = _typeObj;
-    final defsAsync = type == null ? null : ref.watch(_scopeDefsProvider(type.code));
+    final defsAsync = type == null
+        ? null
+        : ref.watch(_scopeDefsProvider(type.code));
     final activeDefs = [
       for (final d in defsAsync?.value ?? const <AttributeDefinition>[])
         if (d.active) d,

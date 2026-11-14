@@ -55,10 +55,14 @@ BaselineItemType _type(
 final _defs = [
   _def('weight', 'number', unit: 'kg'),
   _def('dial', 'range', unit: 'mm'),
-  _def('motion', 'select', options: [
-    {'label': 'Flying', 'value': 'flying'},
-    {'label': 'Falling', 'value': 'falling'},
-  ]),
+  _def(
+    'motion',
+    'select',
+    options: [
+      {'label': 'Flying', 'value': 'flying'},
+      {'label': 'Falling', 'value': 'falling'},
+    ],
+  ),
   _def('note', 'text'),
 ];
 
@@ -142,18 +146,21 @@ void main() {
   });
 
   group('summarizeValues', () {
-    test('one line with units, option labels and ranges, in definition order', () {
-      final s = summarizeValues(_defs, {
-        'motion': 'flying',
-        'weight': 120.0,
-        'dial': {'min': 800, 'max': 1000},
-        'note': 'x',
-      });
-      expect(
-        s,
-        'L-weight 120 kg · L-dial 800–1000 mm · L-motion Flying · L-note x',
-      );
-    });
+    test(
+      'one line with units, option labels and ranges, in definition order',
+      () {
+        final s = summarizeValues(_defs, {
+          'motion': 'flying',
+          'weight': 120.0,
+          'dial': {'min': 800, 'max': 1000},
+          'note': 'x',
+        });
+        expect(
+          s,
+          'L-weight 120 kg · L-dial 800–1000 mm · L-motion Flying · L-note x',
+        );
+      },
+    );
 
     test('is empty without values and falls back to the raw key/value', () {
       expect(summarizeValues(_defs, const {}), '');
@@ -185,10 +192,16 @@ void main() {
 
   group('powerGridInput', () {
     test('sends the chosen grid, or a clear when a stored grid is removed', () {
-      expect(powerGridInput(stored: null, chosen: null), (id: null, clear: null));
+      expect(powerGridInput(stored: null, chosen: null), (
+        id: null,
+        clear: null,
+      ));
       expect(powerGridInput(stored: null, chosen: 'g'), (id: 'g', clear: null));
       expect(powerGridInput(stored: 'g', chosen: 'g'), (id: 'g', clear: null));
-      expect(powerGridInput(stored: 'g', chosen: null), (id: null, clear: true));
+      expect(powerGridInput(stored: 'g', chosen: null), (
+        id: null,
+        clear: true,
+      ));
     });
   });
 }

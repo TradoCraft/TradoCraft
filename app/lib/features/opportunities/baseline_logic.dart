@@ -130,10 +130,7 @@ String summarizeValues(List<AttributeDefinition> defs, Object? values) {
       }(),
       DefinitionKind.number => withUnit(_formatNumber(v), d),
       DefinitionKind.select =>
-        d.options
-            .where((o) => o.value == v)
-            .map((o) => o.label)
-            .firstOrNull ??
+        d.options.where((o) => o.value == v).map((o) => o.label).firstOrNull ??
             v.toString(),
       _ => v.toString(),
     };

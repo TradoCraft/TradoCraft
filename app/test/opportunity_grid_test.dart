@@ -36,7 +36,8 @@ Map<String, Object?> _grid(String id, int voltage) => {
 };
 
 FakeHttp _http({String? grid, Object? Function(Object?)? onPut}) => FakeHttp({
-  'GET /api/v1/me': (_) => meJson(['opportunities.read', 'opportunities.write']),
+  'GET /api/v1/me': (_) =>
+      meJson(['opportunities.read', 'opportunities.write']),
   'GET /api/v1/opportunities/o1': (_) => _opp(grid: grid),
   'PUT /api/v1/opportunities/o1': onPut ?? (_) => _opp(grid: grid),
   'GET /api/v1/customers/c2': (_) => customerJson(),

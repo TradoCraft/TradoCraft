@@ -73,10 +73,15 @@ final _types = [
 final _defs = [
   _def('clock_dial', 'size', 'range', unit: 'mm'),
   _def('bell', 'weight', 'number', unit: 'kg'),
-  _def('bell', 'motion', 'select', options: [
-    {'label': 'Flying', 'value': 'flying'},
-    {'label': 'Falling', 'value': 'falling'},
-  ]),
+  _def(
+    'bell',
+    'motion',
+    'select',
+    options: [
+      {'label': 'Flying', 'value': 'flying'},
+      {'label': 'Falling', 'value': 'falling'},
+    ],
+  ),
   _def('bell', 'note', 'text'),
   _def('bell', 'old', 'text', active: false),
 ];
@@ -97,7 +102,13 @@ List<Object?> _tree() => [
       ),
     ],
   ),
-  _item('d1', 'clock_dial', values: {'size': {'min': 800, 'max': 1000}}),
+  _item(
+    'd1',
+    'clock_dial',
+    values: {
+      'size': {'min': 800, 'max': 1000},
+    },
+  ),
 ];
 
 FakeHttp _http({
@@ -111,8 +122,7 @@ FakeHttp _http({
   'GET /api/v1/attribute-definitions': (_) => _defs,
   'POST /api/v1/opportunities/o1/baseline/items': (b) => _item('new', 'bell'),
   'PUT /api/v1/opportunities/o1/baseline/items/b1': (b) => _item('b1', 'bell'),
-  'DELETE /api/v1/opportunities/o1/baseline/items/b1':
-      onDelete ?? (_) => null,
+  'DELETE /api/v1/opportunities/o1/baseline/items/b1': onDelete ?? (_) => null,
 });
 
 Future<void> _pump(WidgetTester tester, FakeHttp h) async {
@@ -197,9 +207,18 @@ void main() {
     await _choose(tester, 'baseline-type', 'Clock dial');
     expect(find.byKey(const ValueKey('bl-attr-size-min')), findsOneWidget);
     expect(find.byKey(const ValueKey('bl-attr-weight')), findsNothing);
-    await tester.enterText(find.byKey(const ValueKey('bl-attr-size-min')), '800');
-    await tester.enterText(find.byKey(const ValueKey('bl-attr-size-max')), '1000');
-    await tester.enterText(find.byKey(const ValueKey('baseline-name')), 'North');
+    await tester.enterText(
+      find.byKey(const ValueKey('bl-attr-size-min')),
+      '800',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('bl-attr-size-max')),
+      '1000',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('baseline-name')),
+      'North',
+    );
     await tester.tap(find.byKey(const ValueKey('baseline-save')));
     await tester.pumpAndSettle();
     expect(h.bodies['POST /api/v1/opportunities/o1/baseline/items'], {

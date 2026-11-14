@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/api.dart';
 import '../../l10n/l10n.dart';
 import '../../shared/actions.dart';
+import 'baseline_types_page.dart';
 
 final attributeDefinitionsProvider =
     FutureProvider.autoDispose<List<AttributeDefinition>>(
@@ -172,7 +173,7 @@ class _OptionRow {
 final _keyPattern = RegExp(r'^[a-z][a-z0-9_]{0,63}$');
 
 /// Create ([definition] null) or edit dialog of an attribute definition; pops true when saved.
-/// Key and type are fixed once created, because stored values refer to them.
+/// Key, type and scope are fixed once created, because stored values refer to them.
 class AttributeDefinitionDialog extends ConsumerStatefulWidget {
   const AttributeDefinitionDialog({super.key, this.definition});
   final AttributeDefinition? definition;
@@ -187,9 +188,7 @@ class _AttributeDefinitionDialogState
   late final _key = TextEditingController(text: widget.definition?.key);
   late final _label = TextEditingController(text: widget.definition?.label);
   late final _unit = TextEditingController(text: widget.definition?.unit);
-  late final _scope = TextEditingController(
-    text: widget.definition?.scope ?? 'product',
-  );
+  late String _scope = widget.definition?.scope ?? 'product';
   late final _sort = TextEditingController(
     text: '${widget.definition?.sortOrder ?? 0}',
   );
@@ -208,7 +207,7 @@ class _AttributeDefinitionDialogState
 
   @override
   void dispose() {
-    for (final c in [_key, _label, _unit, _scope, _sort]) {
+    for (final c in [_key, _label, _unit, _sort]) {
       c.dispose();
     }
     for (final o in _options) {
@@ -261,7 +260,7 @@ class _AttributeDefinitionDialogState
                 ),
             ]
           : null,
-      scope: _scope.text.trim().isEmpty ? 'product' : _scope.text.trim(),
+      scope: _scope,
       sortOrder: int.parse(_sort.text.trim()),
       active: _active,
     );
@@ -291,6 +290,9 @@ class _AttributeDefinitionDialogState
       DefinitionKind.select: l.attrKindSelect,
       DefinitionKind.text: l.attrKindText,
     };
+    // The scopes on offer: product and the baseline item types (none when they cannot be read).
+    final types =
+        ref.watch(baselineTypesProvider).value ?? const <BaselineItemType>[];
     return AlertDialog(
       title: Text(_editing ? l.editAttrDef : l.newAttrDef),
       content: SizedBox(
@@ -332,10 +334,30 @@ class _AttributeDefinitionDialogState
                   controller: _unit,
                   decoration: InputDecoration(labelText: l.unit),
                 ),
-              TextField(
+              DropdownButtonFormField<String>(
                 key: const ValueKey('attrdef-scope'),
-                controller: _scope,
+                initialValue: _scope,
+                isExpanded: true,
                 decoration: InputDecoration(labelText: l.attrScope),
+                items: [
+                  DropdownMenuItem(
+                    value: 'product',
+                    child: Text(l.attrScopeProduct),
+                  ),
+                  for (final t in types)
+                    DropdownMenuItem(
+                      value: t.code,
+                      child: Text('${t.name} (${t.code})'),
+                    ),
+                  // A scope whose type is gone stays visible (and fixed) when editing.
+                  if (_scope != 'product' &&
+                      !types.any((t) => t.code == _scope))
+                    DropdownMenuItem(value: _scope, child: Text(_scope)),
+                ],
+                // Stored values refer to the scope, so it is fixed once created.
+                onChanged: _editing
+                    ? null
+                    : (v) => setState(() => _scope = v ?? _scope),
               ),
               TextField(
                 key: const ValueKey('attrdef-sort'),
