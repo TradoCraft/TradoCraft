@@ -84,6 +84,8 @@ class _OpportunityScreenState extends ConsumerState<OpportunityScreen> {
     void refresh() {
       ref.invalidate(_opportunityProvider(id));
       ref.invalidate(_quotationsProvider(id));
+      // Family-wide: also clears the per-item keys of the suggestion dialogs.
+      ref.invalidate(productMatchesProvider);
     }
 
     return Scaffold(
