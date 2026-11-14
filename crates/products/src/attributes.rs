@@ -174,13 +174,14 @@ pub async fn catalog_snapshot(conn: &mut sqlx::PgConnection) -> AppResult<Vec<Ca
 }
 
 /// An active product with the values of some of its attributes, for matching.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, FromRow)]
 pub struct AttributedProduct {
     pub id: Uuid,
     pub code: String,
     pub name: String,
     pub family_id: Option<Uuid>,
     pub family_code: Option<String>,
+    #[sqlx(skip)]
     pub attributes: HashMap<String, AttributeValue>,
 }
 
@@ -191,8 +192,8 @@ pub async fn active_products_with(
     keys: &[String],
     family_id: Option<Uuid>,
 ) -> AppResult<Vec<AttributedProduct>> {
-    let products: Vec<(Uuid, String, String, Option<Uuid>, Option<String>)> = sqlx::query_as(
-        "SELECT p.id, p.code, p.name, p.family_id, f.code
+    let products: Vec<AttributedProduct> = sqlx::query_as(
+        "SELECT p.id, p.code, p.name, p.family_id, f.code AS family_code
          FROM products.products p LEFT JOIN products.product_families f ON f.id = p.family_id
          WHERE p.active AND ($1::uuid IS NULL OR p.family_id = $1)
          ORDER BY p.code, p.id",
@@ -217,16 +218,10 @@ pub async fn active_products_with(
     }
     Ok(products
         .into_iter()
-        .map(
-            |(id, code, name, family_id, family_code)| AttributedProduct {
-                id,
-                code,
-                name,
-                family_id,
-                family_code,
-                attributes: attrs.remove(&id).unwrap_or_default(),
-            },
-        )
+        .map(|mut p| {
+            p.attributes = attrs.remove(&p.id).unwrap_or_default();
+            p
+        })
         .collect())
 }
 
