@@ -297,15 +297,21 @@ pub async fn import_request<E: Importable>(
     body: &[u8],
 ) -> AppResult<(StatusCode, Json<ImportReport>)> {
     user.require(E::WRITE)?;
-    let known = column_names::<E>();
-    let (format, table) = match read_table(
-        body,
-        params.sheet.as_deref(),
-        &Limits::request(),
-        &known,
-        &[E::KEY_COLUMN],
-        None,
-    ) {
+    let (bytes, sheet) = (body.to_vec(), params.sheet.clone());
+    // Parsing is CPU work on up to a request's worth of file: keep it off the async threads.
+    let read = tokio::task::spawn_blocking(move || {
+        read_table(
+            &bytes,
+            sheet.as_deref(),
+            &Limits::request(),
+            &column_names::<E>(),
+            &[E::KEY_COLUMN],
+            None,
+        )
+    })
+    .await
+    .map_err(|e| AppError::Internal(e.into()))?;
+    let (format, table) = match read {
         Ok(read) => read,
         Err(errors) => return Ok(ImportReport::failed(errors).into_response()),
     };
@@ -361,7 +367,11 @@ pub async fn export_request<E: Importable>(
 ) -> AppResult<(HeaderMap, Vec<u8>)> {
     let format = Format::from(params.format.unwrap_or_default());
     let rows = export_rows::<E>(pool, user).await?;
-    let body = write(format, E::FILE_STEM, &column_names::<E>(), rows)?;
+    let body = tokio::task::spawn_blocking(move || {
+        write(format, E::FILE_STEM, &column_names::<E>(), rows)
+    })
+    .await
+    .map_err(|e| AppError::Internal(e.into()))??;
     Ok(download(format, E::FILE_STEM, body))
 }
 
