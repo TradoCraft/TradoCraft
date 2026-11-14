@@ -91,14 +91,18 @@ Future<void> _save(WidgetTester tester) async {
 }
 
 void main() {
-  testWidgets('only active product-scope definitions are requested', (tester) async {
+  testWidgets('only active product-scope definitions are requested', (
+    tester,
+  ) async {
     final h = _http();
     await _pump(tester, h);
     final i = h.requests.indexOf('GET /api/v1/attribute-definitions');
     expect(h.queries[i]['scope'], 'product');
   });
 
-  testWidgets('shows an empty state when there are no definitions', (tester) async {
+  testWidgets('shows an empty state when there are no definitions', (
+    tester,
+  ) async {
     await _pump(tester, _http(defs: const []));
     expect(find.byKey(const ValueKey('suitability-empty')), findsOneWidget);
     expect(find.widgetWithText(FilledButton, 'Save'), findsNothing);
@@ -121,7 +125,9 @@ void main() {
     expect(find.byKey(const ValueKey('attr-note')), findsOneWidget);
   });
 
-  testWidgets('saves filled values and preserves unknown attributes', (tester) async {
+  testWidgets('saves filled values and preserves unknown attributes', (
+    tester,
+  ) async {
     final h = _http(
       attrs: [
         {'key': 'color', 'kind': 'text', 'value': 'red'},
@@ -160,7 +166,9 @@ void main() {
     ]);
   });
 
-  testWidgets('invalid values are refused inline and nothing is sent', (tester) async {
+  testWidgets('invalid values are refused inline and nothing is sent', (
+    tester,
+  ) async {
     final h = _http();
     await _pump(tester, h);
     await tester.enterText(find.byKey(const ValueKey('attr-weight')), 'abc');
@@ -168,7 +176,10 @@ void main() {
     await tester.enterText(find.byKey(const ValueKey('attr-dial-max')), '600');
     await _save(tester);
     expect(find.text('Enter a number.'), findsOneWidget);
-    expect(find.text('The minimum must not exceed the maximum.'), findsOneWidget);
+    expect(
+      find.text('The minimum must not exceed the maximum.'),
+      findsOneWidget,
+    );
     expect(h.requests, isNot(contains('PUT /api/v1/products/p1/attributes')));
   });
 
@@ -177,16 +188,54 @@ void main() {
     await _pump(tester, h);
     await tester.enterText(find.byKey(const ValueKey('attr-dial-min')), '900');
     await _save(tester);
-    expect(find.text('Enter both the minimum and the maximum, or neither.'), findsOneWidget);
+    expect(
+      find.text('Enter both the minimum and the maximum, or neither.'),
+      findsOneWidget,
+    );
     expect(h.requests, isNot(contains('PUT /api/v1/products/p1/attributes')));
   });
 
-  testWidgets('without products.write the inputs are read-only', (tester) async {
+  testWidgets('without products.write the inputs are read-only', (
+    tester,
+  ) async {
     await _pump(tester, _http(perms: ['products.read']));
     expect(
       tester.widget<TextField>(find.byKey(const ValueKey('attr-note'))).enabled,
       isFalse,
     );
     expect(find.widgetWithText(FilledButton, 'Save'), findsNothing);
+  });
+
+  testWidgets(
+    'a yes/no attribute is set with a dropdown and saved as a boolean',
+    (tester) async {
+      final h = _http(defs: [def('can_illuminate', 'boolean')]);
+      await _pump(tester, h);
+      await tester.tap(find.byKey(const ValueKey('attr-can_illuminate')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Yes').last);
+      await tester.pumpAndSettle();
+      await _save(tester);
+      expect(h.bodies['PUT /api/v1/products/p1/attributes'], [
+        {'key': 'can_illuminate', 'kind': 'boolean', 'value': 'true'},
+      ]);
+    },
+  );
+
+  testWidgets('a stored boolean is shown and can be cleared', (tester) async {
+    final h = _http(
+      defs: [def('can_illuminate', 'boolean')],
+      attrs: [
+        {'key': 'can_illuminate', 'kind': 'boolean', 'value': 'false'},
+      ],
+    );
+    await _pump(tester, h);
+    expect(find.text('No'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('attr-can_illuminate')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('None').last);
+    await tester.pumpAndSettle();
+    await _save(tester);
+    expect(h.bodies['PUT /api/v1/products/p1/attributes'], isEmpty);
   });
 }

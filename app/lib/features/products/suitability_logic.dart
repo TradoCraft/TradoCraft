@@ -119,6 +119,19 @@ AttrBuildResult buildAttributes({
             ),
           );
         }
+      case DefinitionKind.boolean:
+        if (at(0).isEmpty) break;
+        if (at(0) != 'true' && at(0) != 'false') {
+          errors[d.key] = AttrError.notInOptions;
+        } else {
+          out.add(
+            ProductAttribute(
+              key: d.key,
+              kind: AttributeKind.boolean,
+              value: at(0),
+            ),
+          );
+        }
       case DefinitionKind.text:
       case DefinitionKind.$unknown:
         if (at(0).isEmpty) break;

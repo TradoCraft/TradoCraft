@@ -235,4 +235,84 @@ void main() {
       ));
     });
   });
+
+  group('boolean attributes', () {
+    final defs = [_def('lit', 'boolean'), _def('weight', 'number', unit: 'kg')];
+
+    test('raw text is true, false or empty', () {
+      expect(rawFromValues(defs, {'lit': true})['lit'], ['true']);
+      expect(rawFromValues(defs, {'lit': false})['lit'], ['false']);
+      expect(rawFromValues(defs, const {})['lit'], ['']);
+    });
+
+    test('builds a bool, an empty input clears it, other text is refused', () {
+      Map<String, List<String>> raw(String lit) => {
+        'lit': [lit],
+        'weight': [''],
+      };
+      expect(
+        buildValues(defs: defs, existing: const {}, raw: raw('true')).values,
+        {'lit': true},
+      );
+      expect(
+        buildValues(defs: defs, existing: const {}, raw: raw('false')).values,
+        {'lit': false},
+      );
+      expect(
+        buildValues(defs: defs, existing: {'lit': true}, raw: raw('')).values,
+        isEmpty,
+      );
+      expect(
+        buildValues(defs: defs, existing: const {}, raw: raw('maybe')).errors,
+        {'lit': AttrError.notInOptions},
+      );
+    });
+
+    test('the summary shows the given yes and no words', () {
+      expect(
+        summarizeValues(defs, {'lit': true}, yes: 'Yes', no: 'No'),
+        'L-lit Yes',
+      );
+      expect(
+        summarizeValues(defs, {'lit': false}, yes: 'Ja', no: 'Nee'),
+        'L-lit Nee',
+      );
+    });
+  });
+
+  group('missingAttributes', () {
+    test('lists the active definitions that have no value, in order', () {
+      final defs = [
+        _def('a', 'number'),
+        _def('b', 'boolean'),
+        _def(
+          'c',
+          'select',
+          options: [
+            {'label': 'X', 'value': 'x'},
+          ],
+        ),
+        _def('d', 'range'),
+      ];
+      final missing = missingAttributes(defs, {
+        'b': false, // false is a value, not missing
+        'd': {'min': 1, 'max': 2},
+      });
+      expect([for (final d in missing) d.key], ['a', 'c']);
+    });
+
+    test('inactive definitions are not asked for', () {
+      final d = AttributeDefinition.fromJson({
+        'id': 'x',
+        'key': 'old',
+        'label': 'Old',
+        'kind': 'text',
+        'options': <Object?>[],
+        'scope': 'bell',
+        'sort_order': 0,
+        'active': false,
+      });
+      expect(missingAttributes([d], const {}), isEmpty);
+    });
+  });
 }

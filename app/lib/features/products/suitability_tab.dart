@@ -100,7 +100,7 @@ class _SuitabilityFormState extends ConsumerState<_SuitabilityForm> {
     _selected = {};
     for (final d in widget.defs) {
       final v = raw[d.key]!;
-      if (d.kind == DefinitionKind.select) {
+      if (d.kind == DefinitionKind.select || d.kind == DefinitionKind.boolean) {
         _selected[d.key] = v.first;
       } else {
         _c[d.key] = [for (final t in v) TextEditingController(text: t)];
@@ -131,7 +131,7 @@ class _SuitabilityFormState extends ConsumerState<_SuitabilityForm> {
   Future<void> _save() async {
     final raw = {
       for (final d in widget.defs)
-        d.key: d.kind == DefinitionKind.select
+        d.key: _selected.containsKey(d.key)
             ? [_selected[d.key] ?? '']
             : [for (final c in _c[d.key]!) c.text],
     };
@@ -239,6 +239,27 @@ class _SuitabilityFormState extends ConsumerState<_SuitabilityForm> {
               // A stored value that is no longer an option stays visible until changed.
               if (current.isNotEmpty && !known)
                 DropdownMenuItem(value: current, child: Text(current)),
+            ],
+            onChanged: canWrite
+                ? (v) => setState(() => _selected[d.key] = v ?? '')
+                : null,
+          ),
+        );
+      case DefinitionKind.boolean:
+        return SizedBox(
+          width: 292,
+          child: DropdownButtonFormField<String>(
+            key: ValueKey('attr-${d.key}'),
+            initialValue: _selected[d.key] ?? '',
+            isExpanded: true,
+            decoration: InputDecoration(
+              labelText: d.label,
+              errorText: err == null ? null : _message(err),
+            ),
+            items: [
+              DropdownMenuItem(value: '', child: Text(l.none)),
+              DropdownMenuItem(value: 'true', child: Text(l.yes)),
+              DropdownMenuItem(value: 'false', child: Text(l.no)),
             ],
             onChanged: canWrite
                 ? (v) => setState(() => _selected[d.key] = v ?? '')

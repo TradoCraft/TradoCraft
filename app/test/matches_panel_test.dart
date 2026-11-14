@@ -217,4 +217,53 @@ void main() {
     );
     expect(find.byKey(const ValueKey('baseline-suggest-d1')), findsNothing);
   });
+
+  testWidgets('setting an attribute in place refreshes the matches', (
+    tester,
+  ) async {
+    final h = FakeHttp({
+      ..._http().routes,
+      'GET /api/v1/opportunities/o1/baseline': (_) => [
+        {..._item('d1', 'clock_dial'), 'name': 'Dial'},
+      ],
+      'GET /api/v1/attribute-definitions': (_) => [
+        {
+          'id': 'x',
+          'key': 'lit',
+          'label': 'Lit',
+          'kind': 'boolean',
+          'unit': null,
+          'options': <Object?>[],
+          'scope': 'clock_dial',
+          'sort_order': 0,
+          'active': true,
+        },
+      ],
+      'PUT /api/v1/opportunities/o1/baseline/items/d1': (_) =>
+          _item('d1', 'clock_dial'),
+    });
+    await _pump(
+      tester,
+      h,
+      const Column(
+        children: [
+          BaselineSection(opportunityId: 'o1'),
+          MatchesPanel(opportunityId: 'o1'),
+        ],
+      ),
+    );
+    int loads() => h.requests
+        .where((r) => r == 'GET /api/v1/opportunities/o1/product-matches')
+        .length;
+    final before = loads();
+    await tester.tap(find.byKey(const ValueKey('baseline-chip-d1-lit')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('bl-attr-lit')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Yes').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('baseline-quick-save')));
+    await tester.pumpAndSettle();
+    expect(loads(), before + 1);
+  });
 }
