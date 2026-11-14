@@ -494,6 +494,16 @@ async fn update_opportunity(
     user.require(Permission::OpportunitiesWrite)?;
     input.validate()?;
     let mut tx = state.db.begin().await?;
+    // Serialise updates: the retained power grid (and other omitted fields) are read from the
+    // row as the previous update left it, never from a stale snapshot.
+    sqlx::query_scalar::<_, Uuid>(
+        "SELECT id FROM crm.opportunities WHERE id = $1 AND company_id = $2 FOR UPDATE",
+    )
+    .bind(id)
+    .bind(user.company_id)
+    .fetch_optional(&mut *tx)
+    .await?
+    .ok_or(AppError::NotFound("opportunity"))?;
     let current = load(&mut tx, user.company_id, id).await?;
     if current.customer_id != input.customer_id {
         // Quotations are linked by customer; changing it would orphan them.

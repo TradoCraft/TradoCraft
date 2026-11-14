@@ -1336,3 +1336,54 @@ async fn item_writes_wait_for_a_type_being_edited(db: PgPool) {
     assert_eq!(create.await.unwrap().0, StatusCode::UNPROCESSABLE_ENTITY);
     assert_eq!(update.await.unwrap().0, StatusCode::OK);
 }
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn an_update_without_a_grid_keeps_the_grid_a_concurrent_update_just_set(db: PgPool) {
+    let app = seeded(&db).await;
+    let be = grid_id(&app, "BE", 230, 1).await;
+    let be400 = grid_id(&app, "BE", 400, 3).await;
+    let (status, o) = api(
+        &app,
+        SALES,
+        Method::POST,
+        "/opportunities",
+        Some(opp_body(BETA, json!({ "power_grid_id": be }))),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{o}");
+    let id = o["id"].as_str().unwrap().to_string();
+
+    // A concurrent update holds the opportunity row and changes the grid before it commits.
+    let mut tx = db.begin().await.unwrap();
+    sqlx::query("SELECT 1 FROM crm.opportunities WHERE id = $1::uuid FOR UPDATE")
+        .bind(&id)
+        .execute(&mut *tx)
+        .await
+        .unwrap();
+    let (a, uri) = (app.clone(), format!("/opportunities/{id}"));
+    let put = tokio::spawn(async move {
+        api(
+            &a,
+            SALES,
+            Method::PUT,
+            &uri,
+            Some(opp_body(BETA, json!({}))),
+        )
+        .await
+    });
+    tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+    sqlx::query("UPDATE crm.opportunities SET power_grid_id = $2::uuid WHERE id = $1::uuid")
+        .bind(&id)
+        .bind(&be400)
+        .execute(&mut *tx)
+        .await
+        .unwrap();
+    tx.commit().await.unwrap();
+    let (status, o) = put.await.unwrap();
+    assert_eq!(status, StatusCode::OK, "{o}");
+    assert_eq!(
+        o["power_grid_id"],
+        be400.as_str(),
+        "the retained grid was stale"
+    );
+}
