@@ -19,6 +19,11 @@ Module overview: [ARCHITECTURE.md](ARCHITECTURE.md).
 | Helpdesk mailboxes: several per company, Microsoft 365 (Graph) or IMAP/SMTP, replies through the ticket's mailbox | Done, [ADR 0054](adr/0054-helpdesk-mailboxes.md) |
 | User-defined reports (customers, quotations, orders; joins, grouping, charts, CSV and PDF) | Done, [ADR 0042](adr/0042-report-builder.md) |
 | Environment awareness (`/meta/environment`, environment list, banner and switcher in the app) | Done, [ADR 0043](adr/0043-environments.md); clone script, bootstrap wizard and outbound-side-effect switch-off follow |
+| A5 Helpdesk customer mail: e-mail actions in automation rules, SLA notices to the customer, scheduled report mails | Open (builds on ADR 0021) |
+| A6 Helpdesk reply templates and language detection | Open |
+| A7 Helpdesk ticket checklists | Open |
+| A8 Helpdesk immediate change notification (concurrent updates seen by both people) | Open (shares its push channel with D3) |
+| A9 Helpdesk ticket bundles (linked tickets) | Open (merge and split are done, ADR 0017 and ADR 0021) |
 | B1 Inventory foundation | Done, [ADR 0019](adr/0019-inventory-stock-ledger.md) |
 | B2 Purchasing | In progress, [ADR 0031](adr/0031-purchasing.md) |
 | B2b Supplier invoices and three-way match (AP register, no ledger) | Backend done, [ADR 0046](adr/0046-supplier-invoices-and-three-way-match.md); Flutter screens follow |
@@ -35,6 +40,9 @@ Module overview: [ARCHITECTURE.md](ARCHITECTURE.md).
 | D5 Accent-insensitive search | Done for customers, contacts, suppliers and products, [ADR 0057](adr/0057-accent-insensitive-search.md); the other lists follow |
 | D6 Audit log viewer | Done, [ADR 0059](adr/0059-audit-trail-viewer.md); field-level changes are recorded for customers and suppliers, other modules adopt `audit::Changes` |
 | D7 Restrict CORS to configured origins | Done, [ADR 0050](adr/0050-portal-surface.md) |
+| D8 Draft autosave | Open |
+| D9 Two-factor authentication | Open |
+| D10 Data import framework (CSV, XLSX, ODS, Parquet) | Open (extends ADR 0029) |
 
 ## Sequencing
 
@@ -54,9 +62,53 @@ client, Flutter screens, five-language strings, tests and an ADR.
 
 Helpdesk follow-up, done ([ADR 0021](adr/0021-helpdesk-business-hours-automation-reporting.md)): business hours and holidays in the SLA, automation rules, ticket split, reporting with CSV export.
 Per-team business calendars are done (ADR 0021).
-Remaining helpdesk gaps: e-mail actions in automation rules, scheduled report mails, SLA notices to the customer.
+Remaining helpdesk gaps are planned as A5 to A9 below, inspired by Zammad.
 Remaining report builder gaps ([ADR 0042](adr/0042-report-builder.md)): more objects (products, stock, tickets), dashboards, report folders, scheduled report mails.
 Remaining knowledge base gaps (ADR 0018): non-image attachments, analytics, semantic search, a public web page.
+
+**A5 Helpdesk customer mail** (medium)
+- E-mail actions in automation rules (ADR 0021): a `send_email` action with a recipient (customer,
+  assignee, team, fixed address), a subject and body from a template (A6), through the outbox so the
+  environment switch-off ([ADR 0043](adr/0043-environments.md)) applies. A per-rule guard stops mail
+  loops (one mail per ticket and rule per period).
+- SLA notices to the customer: an acknowledgement on creation with the ticket number and the target
+  response time, and an optional "we are late" notice on breach; configurable per team and priority,
+  in the customer's language.
+- Scheduled report mails: a saved helpdesk report (ADR 0021) or user-defined report
+  ([ADR 0042](adr/0042-report-builder.md)) mailed on a schedule (daily, weekly, monthly) to users or
+  addresses as CSV or PDF, run by the worker. One scheduler serves both report kinds.
+
+**A6 Reply templates and language detection** (medium)
+- Templates (text modules): per company or team, with placeholders (customer, ticket number, agent,
+  order), one variant per language (nl, fr, en, de, es), a shortcut or search in the reply editor,
+  and optional keyword triggers. The same templates feed the A5 mails.
+- Language detection: the language of an incoming ticket or e-mail is detected, stored on the ticket
+  and proposed as the reply and notice language; the agent can override it. Falls back to the
+  customer's language, then the company default. Decide in the ADR between a small offline detector
+  crate and an external service (offline first, since customer text should not leave the system).
+- Optional automation condition `language` so tickets can route to a team by language.
+
+**A7 Ticket checklists** (small-medium)
+- A checklist per ticket (ordered items, done flag, who and when), applied from checklist templates
+  per team or ticket category, and added by an automation rule on a trigger.
+- Shown in the ticket and on the list (progress, for example 2/5); an optional rule blocks closing
+  while items are open. Reuse the field-service checklist model ([ADR 0020](adr/0020-field-service-reports-contracts.md))
+  where it fits.
+
+**A8 Immediate change notification** (medium)
+- When a ticket is updated while someone else has it open, both notice right away: the viewer sees
+  the change appear (or a banner naming who changed what) without a reload, and the person who made
+  the change sees who else is working on the ticket (builds on soft presence, ADR 0023).
+- A change that conflicts with an unsaved edit is flagged before it can overwrite anything; the
+  other person's change is shown next to the draft so it can be kept or reloaded.
+- Delivered through a server-sent events channel per ticket. D3 uses the same channel for the
+  conflict warning on other records.
+
+**A9 Ticket bundles** (small-medium)
+- Merge (ADR 0017) and split (ADR 0021) exist. Add links between tickets that stay separate: a
+  parent with child tickets ("bundle"), related, or duplicate-of; shown in both tickets.
+- A bundle shows its members' states; a reply or state change on the parent can be offered to all
+  children (mass update with a preview), for example one outage with many customer tickets.
 
 ## Track B - Supply chain (sequential)
 
@@ -138,6 +190,9 @@ production.
   order overwrite each other without a warning.
 - Decide in the ADR between optimistic concurrency (a row version checked on update, a 409 and a
   reload prompt in the app) and a short-lived edit lock that shows who has the record open.
+- Zammad-style editing-conflict warning: while a record is open, show when someone else changed it or
+  is editing it, and offer a reload or merge before saving. Tickets get this through A8; D3 covers
+  the other records and the 409 on the API.
 
 **D4 VAT number validation, registry lookup and duplicate warning** (small-medium)
 - `vat_number` on customers was stored unchecked; the supplier's `tax_id` (free text) was never looked at.
@@ -178,10 +233,53 @@ production.
   only with `AUTH_MODE=dev`); the customer portal server answers the companies' `portal_url`
   origins or `PORTAL_ALLOWED_ORIGINS`.
 
+**D8 Draft autosave** (small-medium)
+- A long text (ticket reply, internal note, knowledge base article, quotation remark) is saved as a
+  server-side draft every few seconds and on leaving the screen, per user and record, so a closed
+  tab, a crash or a lost connection loses nothing. The draft is offered again on return and removed
+  once the relevant action succeeds: a send for a reply or note, a save for a quotation remark, a
+  save or publish for a knowledge base article.
+- Between two server saves the app also keeps the text in a local copy on every keystroke batch
+  (reuse [ADR 0022](adr/0022-technician-offline-queue.md) storage), so a crash inside the save
+  interval loses nothing either. Offline, the local copy syncs when the connection is back. The
+  newer of the local and server draft is offered on return. Interacts with D3: a draft records the
+  record version it began on.
+
+**D9 Two-factor authentication** (medium)
+- [ADR 0004](adr/0004-authentication.md) lists MFA as a next step; nothing is built. Decide in the ADR
+  whether it is enforced by the identity provider or by the application: TOTP enrolment with a QR
+  code, single-use recovery codes, an administrator policy (off, optional, required per role) and a
+  reset by an administrator that is audited (D6).
+- Passkeys (WebAuthn) as a later second factor; the customer portal can opt in separately.
+
+**D10 Data import framework** (large)
+- Today only customers and products import, from CSV ([ADR 0029](adr/0029-csv-export-import.md)), with
+  the code duplicated per entity in `crates/crm/src/csv.rs` and `crates/products/src/csv.rs`.
+  Build one importer in `core` that other crates plug into with a small trait (columns, validation,
+  upsert key, write).
+- File formats behind one reader interface that yields rows of typed cells: CSV (existing), XLSX,
+  ODS and Parquet. XLSX and ODS: first sheet by default with a sheet picker, cell values read as
+  stored (dates, numbers) instead of display text, formulas read as their cached value, macros
+  ignored, and size limits checked before unpacking (zip bombs). Parquet: columnar types mapped to
+  the same cell types, read in row batches. Choose the crates in the ADR (candidates: `calamine`
+  for XLSX and ODS, `parquet`/`arrow` for Parquet).
+- Admin screen: upload, choose entity and sheet, map file columns to fields (remembered per entity as a
+  saved mapping), dry run with the per-row error report, then apply. Keep the ADR 0029 rules:
+  everything validates first, any error means nothing is written, one transaction, one audit event per
+  record with the source, upsert by code, nothing is deleted.
+- Larger files than the 5 MB / 20 000 row CSV limit: a background import job through the worker with
+  progress and a downloadable error report, instead of one request.
+- More entities, in order of onboarding value: contacts, suppliers (after B2), stock opening
+  balances through the stock ledger ([ADR 0019](adr/0019-inventory-stock-ledger.md)), open sales
+  orders and quotations, and helpdesk tickets from another system. Export gets the same formats
+  (XLSX and ODS) so a round trip works.
+- Permission `<entity>.write` per entity plus an administrator right for saved mappings and
+  background jobs.
+
 ## Working in parallel
 
-Items that can run at the same time on separate branches: A3, B1, the field-jobs half of C3, and the
-Track D items.
+Items that can run at the same time on separate branches: A3, A5 to A9, B1, the field-jobs half of C3, and the
+Track D items. A6 comes before A5's mail actions (shared templates); A8 and D3 share the live channel, so build it once.
 
 Shared files that will conflict between branches:
 - `crates/core/src/auth.rs` (permissions)
