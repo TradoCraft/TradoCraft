@@ -27,13 +27,14 @@ type ErrorBody = tradocraft_core::error::ErrorBody;
 
 pub const TRIGGERS: [&str; 3] = ["created", "updated", "customer_replied"];
 pub const CHANNELS: [&str; 5] = ["email", "portal", "phone", "manual", "internal"];
-pub const ACTION_KINDS: [&str; 6] = [
+pub const ACTION_KINDS: [&str; 7] = [
     "set_owner",
     "set_team",
     "set_priority",
     "set_category",
     "add_tag",
     "set_internal",
+    "send_email",
 ];
 
 // ---------------------------------------------------------------------------------------------
@@ -69,7 +70,8 @@ pub struct RuleConditions {
 
 /// One change a rule makes. `kind` decides which of the other fields is used:
 /// `set_owner` (`user_id`), `set_team` (`team_id`), `set_priority` (`value`), `set_category`
-/// (`value`), `add_tag` (`value`), `set_internal` (`flag`).
+/// (`value`), `add_tag` (`value`), `set_internal` (`flag`), `send_email` (`recipient`, `team_id` or
+/// `address`, `subject`, `body`, `period_hours`; ADR 0063).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 pub struct RuleAction {
     pub kind: String,
@@ -77,6 +79,21 @@ pub struct RuleAction {
     pub team_id: Option<Uuid>,
     pub value: Option<String>,
     pub flag: Option<bool>,
+    /// `send_email`: customer | assignee | team | address.
+    #[serde(default)]
+    pub recipient: Option<String>,
+    /// `send_email` to `address`: the fixed recipient.
+    #[serde(default)]
+    pub address: Option<String>,
+    /// `send_email`: one line; `{ticket_number}`, `{subject}`, `{customer}`, `{agent}` are replaced.
+    #[serde(default)]
+    pub subject: Option<String>,
+    /// `send_email`: the text, with the same placeholders.
+    #[serde(default)]
+    pub body: Option<String>,
+    /// `send_email`: at most one mail per ticket and rule in this many hours (default 24).
+    #[serde(default)]
+    pub period_hours: Option<i32>,
 }
 
 #[derive(Debug, Clone, Serialize, ToSchema)]
@@ -261,6 +278,11 @@ pub fn apply(a: &RuleAction, f: &mut Facts) -> Option<RuleChange> {
                 to: Some(f.internal.to_string()),
             })
         }
+        "send_email" => Some(RuleChange {
+            kind: a.kind.clone(),
+            from: None,
+            to: a.recipient.clone(),
+        }),
         _ => None,
     }
 }
@@ -429,7 +451,7 @@ pub async fn run(
     let mut sla_changed = false;
     for o in outcomes.iter().filter(|o| !o.changes.is_empty()) {
         let rule = rules.iter().find(|r| r.id == o.rule_id);
-        for change in &o.changes {
+        for change in o.changes.iter().filter(|c| c.kind != "send_email") {
             let applied = apply_change(conn, company_id, ticket_id, change, rule).await?;
             if !applied {
                 continue;
@@ -454,6 +476,18 @@ pub async fn run(
     }
     if sla_changed {
         crate::sla::sync(conn, ticket_id).await?;
+    }
+    // Mail last, so it describes the ticket as the rules left it. The loop guard keeps a rule from
+    // mailing the same ticket again within its period (ADR 0063).
+    for o in outcomes.iter().filter(|o| o.result == "matched") {
+        let Some(rule) = rules.iter().find(|r| r.id == o.rule_id) else {
+            continue;
+        };
+        for (no, a) in rule.actions.iter().enumerate() {
+            if a.kind == "send_email" {
+                crate::automail::send(conn, company_id, ticket_id, rule, no, a).await?;
+            }
+        }
     }
     Ok(outcomes)
 }
@@ -639,6 +673,7 @@ async fn validate(
                     a.value.as_deref().unwrap_or(""),
                 )?)
             }
+            "send_email" => crate::automail::validate_action(conn, company_id, a).await?,
             _ => {
                 if a.flag.is_none() {
                     return Err(AppError::Validation("set_internal needs flag".into()));
@@ -931,6 +966,11 @@ mod tests {
             team_id: None,
             value: None,
             flag: None,
+            recipient: None,
+            address: None,
+            subject: None,
+            body: None,
+            period_hours: None,
         }
     }
 

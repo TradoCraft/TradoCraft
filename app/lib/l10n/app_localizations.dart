@@ -15503,6 +15503,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'E-mail reminders'**
   String get todoEmailReminders;
+
+  /// No description provided for @actionSendEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Send e-mail'**
+  String get actionSendEmail;
+
+  /// No description provided for @mailRecipient.
+  ///
+  /// In en, this message translates to:
+  /// **'Recipient'**
+  String get mailRecipient;
+
+  /// No description provided for @mailRecipientCustomer.
+  ///
+  /// In en, this message translates to:
+  /// **'The customer'**
+  String get mailRecipientCustomer;
+
+  /// No description provided for @mailRecipientAssignee.
+  ///
+  /// In en, this message translates to:
+  /// **'The assignee'**
+  String get mailRecipientAssignee;
+
+  /// No description provided for @mailRecipientTeam.
+  ///
+  /// In en, this message translates to:
+  /// **'A team'**
+  String get mailRecipientTeam;
+
+  /// No description provided for @mailRecipientAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'A fixed address'**
+  String get mailRecipientAddress;
+
+  /// No description provided for @mailAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'E-mail address'**
+  String get mailAddress;
+
+  /// No description provided for @mailBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Message'**
+  String get mailBody;
+
+  /// No description provided for @mailPeriodHours.
+  ///
+  /// In en, this message translates to:
+  /// **'At most one mail per ticket in (hours)'**
+  String get mailPeriodHours;
+
+  /// No description provided for @mailPlaceholdersHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Placeholders: {placeholders}'**
+  String mailPlaceholdersHint(String placeholders);
+
+  /// No description provided for @actionSendEmailSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{recipient}: {subject}'**
+  String actionSendEmailSummary(String recipient, String subject);
 }
 
 class _AppLocalizationsDelegate

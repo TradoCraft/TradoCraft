@@ -2744,5 +2744,16 @@
   "@todoForObjectCount": {"placeholders": {"count": {"type": "int"}}},
   "todoForObjectEmpty": "Keine offenen Aufgaben zu diesem Datensatz.",
   "todoEmailReminders": "E-Mail-Erinnerungen",
-  "todoRemoveLink": "Verknüpfung aus meinen To-dos entfernen"
+  "todoRemoveLink": "Verknüpfung aus meinen To-dos entfernen",
+  "actionSendEmail": "E-Mail senden",
+  "mailRecipient": "Empfänger",
+  "mailRecipientCustomer": "Der Kunde",
+  "mailRecipientAssignee": "Der Bearbeiter",
+  "mailRecipientTeam": "Ein Team",
+  "mailRecipientAddress": "Eine feste Adresse",
+  "mailAddress": "E-Mail-Adresse",
+  "mailBody": "Nachricht",
+  "mailPeriodHours": "Höchstens eine Mail pro Ticket innerhalb von (Stunden)",
+  "mailPlaceholdersHint": "Platzhalter: {placeholders}",
+  "actionSendEmailSummary": "{recipient}: {subject}"
 }

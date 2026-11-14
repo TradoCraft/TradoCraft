@@ -5,6 +5,7 @@
 
 pub mod answers;
 pub mod attachments;
+pub mod automail;
 pub mod automation;
 pub mod calendar;
 pub mod classify;

@@ -41932,11 +41932,25 @@
       },
       "RuleAction": {
         "type": "object",
-        "description": "One change a rule makes. `kind` decides which of the other fields is used:\n`set_owner` (`user_id`), `set_team` (`team_id`), `set_priority` (`value`), `set_category`\n(`value`), `add_tag` (`value`), `set_internal` (`flag`).",
+        "description": "One change a rule makes. `kind` decides which of the other fields is used:\n`set_owner` (`user_id`), `set_team` (`team_id`), `set_priority` (`value`), `set_category`\n(`value`), `add_tag` (`value`), `set_internal` (`flag`), `send_email` (`recipient`, `team_id` or\n`address`, `subject`, `body`, `period_hours`; ADR 0063).",
         "required": [
           "kind"
         ],
         "properties": {
+          "address": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`send_email` to `address`: the fixed recipient."
+          },
+          "body": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`send_email`: the text, with the same placeholders."
+          },
           "flag": {
             "type": [
               "boolean",
@@ -41945,6 +41959,28 @@
           },
           "kind": {
             "type": "string"
+          },
+          "period_hours": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "`send_email`: at most one mail per ticket and rule in this many hours (default 24)."
+          },
+          "recipient": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`send_email`: customer | assignee | team | address."
+          },
+          "subject": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`send_email`: one line; `{ticket_number}`, `{subject}`, `{customer}`, `{agent}` are replaced."
           },
           "team_id": {
             "type": [

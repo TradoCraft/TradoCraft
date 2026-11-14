@@ -8704,4 +8704,41 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get todoEmailReminders => 'E-mailherinneringen';
+
+  @override
+  String get actionSendEmail => 'E-mail versturen';
+
+  @override
+  String get mailRecipient => 'Ontvanger';
+
+  @override
+  String get mailRecipientCustomer => 'De klant';
+
+  @override
+  String get mailRecipientAssignee => 'De behandelaar';
+
+  @override
+  String get mailRecipientTeam => 'Een team';
+
+  @override
+  String get mailRecipientAddress => 'Een vast adres';
+
+  @override
+  String get mailAddress => 'E-mailadres';
+
+  @override
+  String get mailBody => 'Bericht';
+
+  @override
+  String get mailPeriodHours => 'Hoogstens één mail per ticket binnen (uren)';
+
+  @override
+  String mailPlaceholdersHint(String placeholders) {
+    return 'Tijdelijke aanduidingen: $placeholders';
+  }
+
+  @override
+  String actionSendEmailSummary(String recipient, String subject) {
+    return '$recipient: $subject';
+  }
 }

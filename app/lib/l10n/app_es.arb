@@ -2744,5 +2744,16 @@
   "@todoForObjectCount": {"placeholders": {"count": {"type": "int"}}},
   "todoForObjectEmpty": "No hay tareas abiertas para este registro.",
   "todoEmailReminders": "Recordatorios por correo",
-  "todoRemoveLink": "Quitar el enlace de mis tareas"
+  "todoRemoveLink": "Quitar el enlace de mis tareas",
+  "actionSendEmail": "Enviar correo",
+  "mailRecipient": "Destinatario",
+  "mailRecipientCustomer": "El cliente",
+  "mailRecipientAssignee": "El responsable",
+  "mailRecipientTeam": "Un equipo",
+  "mailRecipientAddress": "Una dirección fija",
+  "mailAddress": "Dirección de correo",
+  "mailBody": "Mensaje",
+  "mailPeriodHours": "Como máximo un correo por ticket en (horas)",
+  "mailPlaceholdersHint": "Marcadores: {placeholders}",
+  "actionSendEmailSummary": "{recipient}: {subject}"
 }

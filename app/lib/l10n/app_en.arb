@@ -4086,5 +4086,18 @@
   "@todoForObjectCount": {"placeholders": {"count": {"type": "int"}}},
   "todoForObjectEmpty": "No open to-dos for this record.",
   "todoEmailReminders": "E-mail reminders",
-  "todoRemoveLink": "Remove link from my to-dos"
+  "todoRemoveLink": "Remove link from my to-dos",
+  "actionSendEmail": "Send e-mail",
+  "mailRecipient": "Recipient",
+  "mailRecipientCustomer": "The customer",
+  "mailRecipientAssignee": "The assignee",
+  "mailRecipientTeam": "A team",
+  "mailRecipientAddress": "A fixed address",
+  "mailAddress": "E-mail address",
+  "mailBody": "Message",
+  "mailPeriodHours": "At most one mail per ticket in (hours)",
+  "mailPlaceholdersHint": "Placeholders: {placeholders}",
+  "@mailPlaceholdersHint": {"placeholders": {"placeholders": {"type": "String"}}},
+  "actionSendEmailSummary": "{recipient}: {subject}",
+  "@actionSendEmailSummary": {"placeholders": {"recipient": {"type": "String"}, "subject": {"type": "String"}}}
 }

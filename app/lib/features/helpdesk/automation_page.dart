@@ -21,6 +21,7 @@ const actionKinds = [
   'set_category',
   'add_tag',
   'set_internal',
+  'send_email',
 ];
 
 final _rulesProvider = FutureProvider.autoDispose<List<Rule>>(
@@ -48,7 +49,15 @@ extension _RuleLabels on AppLocalizations {
     'set_priority' => actionSetPriority,
     'set_category' => actionSetCategory,
     'add_tag' => actionAddTag,
+    'send_email' => actionSendEmail,
     _ => actionSetInternal,
+  };
+
+  String mailRecipientName(String? r) => switch (r) {
+    'customer' => mailRecipientCustomer,
+    'assignee' => mailRecipientAssignee,
+    'team' => mailRecipientTeam,
+    _ => mailRecipientAddress,
   };
 
   String ruleResult(String r) => switch (r) {
@@ -98,6 +107,8 @@ List<String> ruleSummary(
         'set_category' =>
           '→ ${l.actionSetCategory}: ${l.ticketCategory(a.value ?? '')}',
         'add_tag' => '→ ${l.actionAddTag}: ${a.value}',
+        'send_email' =>
+          '→ ${l.actionSendEmail}: ${l.actionSendEmailSummary(l.mailRecipientName(a.recipient), a.subject ?? '')}',
         _ => '→ ${l.actionSetInternal}: ${a.flag == true ? l.yes : l.no}',
       },
   ];
@@ -326,6 +337,27 @@ class AutomationPage extends ConsumerWidget {
   }
 }
 
+/// The typed fields of a `send_email` action.
+class _MailTexts {
+  _MailTexts(RuleAction a)
+    : subject = TextEditingController(text: a.subject),
+      body = TextEditingController(text: a.body),
+      address = TextEditingController(text: a.address),
+      period = TextEditingController(text: '${a.periodHours ?? 24}');
+
+  final TextEditingController subject, body, address, period;
+
+  RuleAction build(RuleAction a) => RuleAction(
+    kind: 'send_email',
+    recipient: a.recipient ?? 'customer',
+    teamId: a.recipient == 'team' ? a.teamId : null,
+    address: a.recipient == 'address' ? address.text.trim() : null,
+    subject: subject.text.trim(),
+    body: body.text.trim(),
+    periodHours: int.tryParse(period.text.trim()),
+  );
+}
+
 /// Create or edit a rule. Returns true when it was saved.
 Future<bool?> showRuleEditor(BuildContext context, {Rule? rule}) =>
     showDialog<bool>(
@@ -366,18 +398,42 @@ class _RuleEditorState extends ConsumerState<RuleEditor> {
   String? _customerName;
   late final List<RuleAction> _actions = [...?widget.rule?.actions];
   final _actionTexts = <int, TextEditingController>{};
+  final _mailTexts = <int, _MailTexts>{};
   String? _error;
   bool _busy = false;
 
   @override
   void initState() {
     super.initState();
+    _rebuildTexts();
+  }
+
+  /// One text controller (or set of them) per action that has typed fields.
+  void _rebuildTexts() {
+    _actionTexts.clear();
+    _mailTexts.clear();
     for (var i = 0; i < _actions.length; i++) {
-      if (_actions[i].kind == 'add_tag') {
-        _actionTexts[i] = TextEditingController(text: _actions[i].value);
+      final a = _actions[i];
+      if (a.kind == 'add_tag') {
+        _actionTexts[i] = TextEditingController(text: a.value);
+      } else if (a.kind == 'send_email') {
+        _mailTexts[i] = _MailTexts(a);
       }
     }
   }
+
+  /// The actions with what has been typed so far.
+  List<RuleAction> _collect() => [
+    for (var i = 0; i < _actions.length; i++)
+      switch (_actions[i].kind) {
+        'add_tag' => RuleAction(
+          kind: 'add_tag',
+          value: _actionTexts[i]?.text.trim(),
+        ),
+        'send_email' => _mailTexts[i]!.build(_actions[i]),
+        _ => _actions[i],
+      },
+  ];
 
   Future<void> _save() async {
     final l = context.l10n;
@@ -385,15 +441,7 @@ class _RuleEditorState extends ConsumerState<RuleEditor> {
       setState(() => _error = l.ruleNameRequired);
       return;
     }
-    final actions = <RuleAction>[];
-    for (var i = 0; i < _actions.length; i++) {
-      final a = _actions[i];
-      actions.add(
-        a.kind == 'add_tag'
-            ? RuleAction(kind: a.kind, value: _actionTexts[i]?.text.trim())
-            : a,
-      );
-    }
+    final actions = _collect();
     String? text(TextEditingController c) =>
         c.text.trim().isEmpty ? null : c.text.trim();
     final body = RuleInput(
@@ -467,6 +515,97 @@ class _RuleEditorState extends ConsumerState<RuleEditor> {
     ),
   );
 
+  Widget _mailFields(int i, List<Team> teams) {
+    final l = context.l10n;
+    final a = _actions[i];
+    final t = _mailTexts.putIfAbsent(i, () => _MailTexts(a));
+    final recipient = a.recipient ?? 'customer';
+    RuleAction with_({String? r, String? team}) => RuleAction(
+      kind: a.kind,
+      recipient: r ?? recipient,
+      teamId: team ?? a.teamId,
+    );
+    return Column(
+      key: ValueKey('action-value-$i'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        DropdownButtonFormField<String>(
+          key: ValueKey('mail-recipient-$i'),
+          initialValue: recipient,
+          isExpanded: true,
+          decoration: InputDecoration(
+            labelText: l.mailRecipient,
+            isDense: true,
+          ),
+          items: [
+            for (final r in const ['customer', 'assignee', 'team', 'address'])
+              DropdownMenuItem(value: r, child: Text(l.mailRecipientName(r))),
+          ],
+          onChanged: (v) => setState(() {
+            final kept = _collect();
+            kept[i] = with_(r: v);
+            _actions
+              ..clear()
+              ..addAll(kept);
+            _rebuildTexts();
+          }),
+        ),
+        if (recipient == 'team')
+          DropdownButtonFormField<String>(
+            key: ValueKey('mail-team-$i'),
+            initialValue: teams.any((x) => x.id == a.teamId) ? a.teamId : null,
+            isExpanded: true,
+            decoration: InputDecoration(labelText: l.team, isDense: true),
+            items: [
+              for (final x in teams)
+                DropdownMenuItem(value: x.id, child: Text(x.name)),
+            ],
+            onChanged: (v) => setState(
+              () => _actions[i] = _mailTexts[i]!.build(with_(team: v)),
+            ),
+          ),
+        if (recipient == 'address')
+          TextField(
+            key: ValueKey('mail-address-$i'),
+            controller: t.address,
+            keyboardType: TextInputType.emailAddress,
+            decoration: InputDecoration(
+              labelText: l.mailAddress,
+              isDense: true,
+            ),
+          ),
+        TextField(
+          key: ValueKey('mail-subject-$i'),
+          controller: t.subject,
+          decoration: InputDecoration(labelText: l.subject, isDense: true),
+        ),
+        TextField(
+          key: ValueKey('mail-body-$i'),
+          controller: t.body,
+          minLines: 3,
+          maxLines: 8,
+          decoration: InputDecoration(
+            labelText: l.mailBody,
+            helperText: l.mailPlaceholdersHint(
+              '{ticket_number}, {subject}, {customer}, {agent}',
+            ),
+            helperMaxLines: 2,
+            isDense: true,
+          ),
+        ),
+        TextField(
+          key: ValueKey('mail-period-$i'),
+          controller: t.period,
+          keyboardType: TextInputType.number,
+          decoration: InputDecoration(
+            labelText: l.mailPeriodHours,
+            isDense: true,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _actionRow(int i, List<Team> teams, List<CompanyUser> users) {
     final l = context.l10n;
     final a = _actions[i];
@@ -531,6 +670,8 @@ class _RuleEditorState extends ConsumerState<RuleEditor> {
           ),
           decoration: InputDecoration(labelText: l.tag, isDense: true),
         );
+      case 'send_email':
+        value = _mailFields(i, teams);
       default:
         value = SwitchListTile(
           key: ValueKey('action-value-$i'),
@@ -558,11 +699,16 @@ class _RuleEditorState extends ConsumerState<RuleEditor> {
                   DropdownMenuItem(value: k, child: Text(l.actionKind(k))),
               ],
               onChanged: (k) => setState(() {
-                _actionTexts.remove(i);
-                _actions[i] = RuleAction(
+                final kept = _collect();
+                kept[i] = RuleAction(
                   kind: k!,
                   flag: k == 'set_internal' ? true : null,
+                  recipient: k == 'send_email' ? 'customer' : null,
                 );
+                _actions
+                  ..clear()
+                  ..addAll(kept);
+                _rebuildTexts();
               }),
             ),
           ),
@@ -572,15 +718,11 @@ class _RuleEditorState extends ConsumerState<RuleEditor> {
             tooltip: l.remove,
             icon: const Icon(AppIcons.close),
             onPressed: () => setState(() {
-              _actions.removeAt(i);
-              _actionTexts.clear();
-              for (var j = 0; j < _actions.length; j++) {
-                if (_actions[j].kind == 'add_tag') {
-                  _actionTexts[j] = TextEditingController(
-                    text: _actions[j].value,
-                  );
-                }
-              }
+              final kept = _collect()..removeAt(i);
+              _actions
+                ..clear()
+                ..addAll(kept);
+              _rebuildTexts();
             }),
           ),
         ],

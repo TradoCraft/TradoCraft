@@ -65,3 +65,4 @@ accepted one; mark superseded records as such.
 | [0060](0060-keyboard-shortcuts.md) | Keyboard shortcuts: common business-app chords (Alt, Ctrl on macOS), scoped handler registry, hint badges, web policy (Alt+Shift digits) | Accepted (phase A) |
 | [0061](0061-todo-items.md) | To-do items: private to owner and assignee, two levels, polymorphic link without foreign key (permission-gated label), completion rules, `todo` module and `todo.use` | Accepted |
 | [0062](0062-sales-favorites.md) | Sales favorites: company-wide main product with options and comments, no prices, customer remarks per language, line fields `customer_remark_language` and `favorite_item_id`, add-only translations | Accepted |
+| [0063](0063-helpdesk-send-email-action.md) | Helpdesk automation `send_email` action: inline subject and body with placeholders, recipients, queued in the outbox (environment switch-off applies), per rule and ticket loop guard | Accepted |

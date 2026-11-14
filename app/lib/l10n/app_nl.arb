@@ -2744,5 +2744,16 @@
   "@todoForObjectCount": {"placeholders": {"count": {"type": "int"}}},
   "todoForObjectEmpty": "Geen openstaande taken voor dit record.",
   "todoEmailReminders": "E-mailherinneringen",
-  "todoRemoveLink": "Koppeling uit mijn taken verwijderen"
+  "todoRemoveLink": "Koppeling uit mijn taken verwijderen",
+  "actionSendEmail": "E-mail versturen",
+  "mailRecipient": "Ontvanger",
+  "mailRecipientCustomer": "De klant",
+  "mailRecipientAssignee": "De behandelaar",
+  "mailRecipientTeam": "Een team",
+  "mailRecipientAddress": "Een vast adres",
+  "mailAddress": "E-mailadres",
+  "mailBody": "Bericht",
+  "mailPeriodHours": "Hoogstens één mail per ticket binnen (uren)",
+  "mailPlaceholdersHint": "Tijdelijke aanduidingen: {placeholders}",
+  "actionSendEmailSummary": "{recipient}: {subject}"
 }

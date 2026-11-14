@@ -2744,5 +2744,16 @@
   "@todoForObjectCount": {"placeholders": {"count": {"type": "int"}}},
   "todoForObjectEmpty": "Aucune tâche ouverte pour cet enregistrement.",
   "todoEmailReminders": "Rappels par e-mail",
-  "todoRemoveLink": "Retirer le lien de mes tâches"
+  "todoRemoveLink": "Retirer le lien de mes tâches",
+  "actionSendEmail": "Envoyer un e-mail",
+  "mailRecipient": "Destinataire",
+  "mailRecipientCustomer": "Le client",
+  "mailRecipientAssignee": "Le responsable",
+  "mailRecipientTeam": "Une équipe",
+  "mailRecipientAddress": "Une adresse fixe",
+  "mailAddress": "Adresse e-mail",
+  "mailBody": "Message",
+  "mailPeriodHours": "Au plus un e-mail par ticket sur (heures)",
+  "mailPlaceholdersHint": "Variables : {placeholders}",
+  "actionSendEmailSummary": "{recipient} : {subject}"
 }

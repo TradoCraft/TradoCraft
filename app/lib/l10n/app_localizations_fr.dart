@@ -8718,4 +8718,41 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get todoEmailReminders => 'Rappels par e-mail';
+
+  @override
+  String get actionSendEmail => 'Envoyer un e-mail';
+
+  @override
+  String get mailRecipient => 'Destinataire';
+
+  @override
+  String get mailRecipientCustomer => 'Le client';
+
+  @override
+  String get mailRecipientAssignee => 'Le responsable';
+
+  @override
+  String get mailRecipientTeam => 'Une équipe';
+
+  @override
+  String get mailRecipientAddress => 'Une adresse fixe';
+
+  @override
+  String get mailAddress => 'Adresse e-mail';
+
+  @override
+  String get mailBody => 'Message';
+
+  @override
+  String get mailPeriodHours => 'Au plus un e-mail par ticket sur (heures)';
+
+  @override
+  String mailPlaceholdersHint(String placeholders) {
+    return 'Variables : $placeholders';
+  }
+
+  @override
+  String actionSendEmailSummary(String recipient, String subject) {
+    return '$recipient : $subject';
+  }
 }
