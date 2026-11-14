@@ -630,7 +630,7 @@ mod tests {
             node("clock_dial", None, json!({ "dial_diameter_mm": 900 })),
         ] {
             for p in [Some(true), Some(false), None] {
-                let e = run(&[v.clone()], &rules, &lit_product(p));
+                let e = run(std::slice::from_ref(&v), &rules, &lit_product(p));
                 assert!(e.reasons.is_empty(), "{p:?}");
                 assert_eq!(e.status, MatchStatus::Suitable);
             }
