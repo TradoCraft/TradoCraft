@@ -429,6 +429,15 @@ async fn queue(
         .bind(format!("sla-notice:{}:{address}", t.company_id))
         .execute(&mut *conn)
         .await?;
+    // The wait for the lock can be long: a breach notice is only sent while the business is open
+    // now, so the calendar is read again before anything is claimed. An acknowledgement is not
+    // held back.
+    if kind == "breach" {
+        let open_now = crate::calendar::load_calendar(&mut *conn, t.company_id, t.team_id).await?;
+        if open_now.is_some_and(|c| !c.is_open_at(Utc::now())) {
+            return Ok(false);
+        }
+    }
     let recent: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM helpdesk.sla_notice_log
          WHERE company_id = $1 AND address = $2 AND sent_at > now() - interval '1 hour'",
