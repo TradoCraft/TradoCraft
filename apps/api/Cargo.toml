@@ -43,6 +43,8 @@ utoipa-scalar.workspace = true
 uuid.workspace = true
 
 [dev-dependencies]
+rust_xlsxwriter.workspace = true
+zip.workspace = true
 base64 = "0.22"
 tempfile.workspace = true
 chrono.workspace = true
