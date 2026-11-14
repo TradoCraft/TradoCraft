@@ -1,4 +1,4 @@
--- Work centres, routings and operations (ADR 0062): where and how a production order is built.
+-- Work centres, routings and operations (ADR 0063): where and how a production order is built.
 -- Work centres with their opening hours and closures, a routing (the operations) on a BOM
 -- revision, and the operations a production order snapshots from it at release.
 

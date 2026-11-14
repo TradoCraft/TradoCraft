@@ -4783,6 +4783,390 @@
         }
       }
     },
+    "/api/v1/favorites": {
+      "get": {
+        "tags": [
+          "favorites"
+        ],
+        "operationId": "list_favorites",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Searches the name and the code and name of the main product, ignoring case and accents.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Default 50, at most 200.",
+            "required": false,
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FavoriteSummary"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "favorites"
+        ],
+        "operationId": "create_favorite",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FavoriteInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Favorite"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/favorites/items/{item_id}/remarks/{language}": {
+      "put": {
+        "tags": [
+          "favorites"
+        ],
+        "summary": "Adds the customer remark of an item in one language (the typed translation of a remark that\ncame from a favorite). A language that already has a text answers 409 unless `overwrite`.",
+        "operationId": "put_remark",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "language",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FavoriteRemarkInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Favorite"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/favorites/{id}": {
+      "get": {
+        "tags": [
+          "favorites"
+        ],
+        "operationId": "get_favorite",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Favorite"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "favorites"
+        ],
+        "summary": "Renames the favorite and replaces its content. Items whose `id` is sent keep it (and the lines\nthat point at it); items without an id are new; stored items that are not sent are deleted.",
+        "operationId": "update_favorite",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FavoriteInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Favorite"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "favorites"
+        ],
+        "summary": "Deletes the favorite. Quotation lines loaded from it stay as they are and lose the link.",
+        "operationId": "delete_favorite",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/field/contracts": {
       "get": {
         "tags": [
@@ -32090,6 +32474,327 @@
           }
         }
       },
+      "Favorite": {
+        "type": "object",
+        "description": "A favorite with its items.",
+        "required": [
+          "id",
+          "name",
+          "created_by",
+          "created_at",
+          "updated_at",
+          "items"
+        ],
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "created_by": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FavoriteItem"
+            },
+            "description": "In loading order; the first item is the main item."
+          },
+          "name": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "FavoriteInput": {
+        "type": "object",
+        "required": [
+          "name",
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FavoriteItemInput"
+            },
+            "description": "The main item first, then its option lines; 1 to 40 items."
+          },
+          "name": {
+            "type": "string",
+            "description": "Unique in the company, ignoring case; at most 120 characters."
+          }
+        }
+      },
+      "FavoriteItem": {
+        "type": "object",
+        "description": "An item of a favorite as stored.",
+        "required": [
+          "id",
+          "position",
+          "product_id",
+          "product_code",
+          "product_name",
+          "unit",
+          "product_active",
+          "quantity",
+          "production_remark",
+          "remarks"
+        ],
+        "properties": {
+          "comment": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The small printed comment under the line (one text, no language)."
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Stable across edits that send it back; quotation lines loaded from this item point at it."
+          },
+          "parent_position": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Position of the parent item; absent for the single main item."
+          },
+          "percent_base": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PercentBase"
+              }
+            ]
+          },
+          "percent_of_parent": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "20"
+          },
+          "position": {
+            "type": "integer",
+            "format": "int32",
+            "description": "1-based, in the order the lines are loaded."
+          },
+          "product_active": {
+            "type": "boolean",
+            "description": "`false` when the product was deactivated after the favorite was saved: the item is kept,\nthe app flags it and does not load it."
+          },
+          "product_code": {
+            "type": "string"
+          },
+          "product_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "product_name": {
+            "type": "string",
+            "description": "The product's base name (the app shows the translated name when it has one)."
+          },
+          "production_remark": {
+            "type": "string",
+            "description": "Internal remark for production (one text, no language)."
+          },
+          "quantity": {
+            "type": "string",
+            "description": "Main item: the default quantity. Other items: the quantity per ONE unit of the main item.",
+            "example": "1"
+          },
+          "remarks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FavoriteRemark"
+            },
+            "description": "The customer remark per language, in the order nl, fr, en, de, es."
+          },
+          "section": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "unit": {
+            "type": "string"
+          }
+        }
+      },
+      "FavoriteItemInput": {
+        "type": "object",
+        "description": "An item as sent when creating or replacing a favorite. No prices.",
+        "required": [
+          "product_id",
+          "quantity"
+        ],
+        "properties": {
+          "comment": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "On `PUT`: the id of an existing item of this favorite, to keep it (and the lines that point\nat it). Omitted: a new item. `POST` takes no ids."
+          },
+          "parent_position": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Position (1-based, in this list) of an earlier item this one belongs to. Omitted: the main\nitem, which must be exactly one and first."
+          },
+          "percent_base": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PercentBase"
+              }
+            ]
+          },
+          "percent_of_parent": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "20"
+          },
+          "product_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "production_remark": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "string",
+            "example": "1"
+          },
+          "remarks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FavoriteRemark"
+            },
+            "description": "Customer remarks, at most one per language; blank texts are dropped."
+          },
+          "section": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "FavoriteRemark": {
+        "type": "object",
+        "description": "The customer remark of an item in one language.",
+        "required": [
+          "language",
+          "text"
+        ],
+        "properties": {
+          "language": {
+            "type": "string",
+            "description": "nl | fr | en | de | es"
+          },
+          "text": {
+            "type": "string"
+          }
+        }
+      },
+      "FavoriteRemarkInput": {
+        "type": "object",
+        "description": "The body of the call that adds a customer remark in one language.",
+        "required": [
+          "text"
+        ],
+        "properties": {
+          "overwrite": {
+            "type": "boolean",
+            "description": "Replace a text that already exists in that language. Default `false`: answer 409 instead."
+          },
+          "text": {
+            "type": "string",
+            "description": "The remark; not blank, at most 2000 characters."
+          }
+        }
+      },
+      "FavoriteSummary": {
+        "type": "object",
+        "description": "One row of the list.",
+        "required": [
+          "id",
+          "name",
+          "main_product_id",
+          "main_product_code",
+          "main_product_name",
+          "main_product_active",
+          "option_count",
+          "languages",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "languages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The languages (nl, fr, en, de, es) in which at least one customer remark exists."
+          },
+          "main_product_active": {
+            "type": "boolean",
+            "description": "Whether the main product is still active."
+          },
+          "main_product_code": {
+            "type": "string"
+          },
+          "main_product_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "main_product_name": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "option_count": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The number of lines below the main item."
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "FileInfo": {
         "type": "object",
         "required": [
@@ -40479,8 +41184,23 @@
             "type": "string",
             "description": "Remark printed under the description on the documents."
           },
+          "customer_remark_language": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Language the customer remark is written in; absent: the quotation language, or unknown."
+          },
           "description": {
             "type": "string"
+          },
+          "favorite_item_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "The favorite item the line was loaded from; absent when it was not, or the favorite was deleted."
           },
           "line_discount_percent": {
             "type": "string"
@@ -40590,12 +41310,27 @@
             "type": "string",
             "description": "Remark printed under the description on the quotation and order documents."
           },
+          "customer_remark_language": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The language (nl | fr | en | de | es) the customer remark is written in. Absent: it matches\nthe quotation language, or unknown. Ignored (stored empty) when the remark is empty."
+          },
           "description": {
             "type": [
               "string",
               "null"
             ],
             "description": "Overrides the product name on the document."
+          },
+          "favorite_item_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "The favorite item this line was loaded from (of the caller's company, else 422), so that a\ntranslation can be added to the favorite later. Copied by revisions, not by orders."
           },
           "line_discount_percent": {
             "type": "string",
@@ -47972,6 +48707,10 @@
     {
       "name": "sales",
       "description": "Quotations, pricing and orders"
+    },
+    {
+      "name": "favorites",
+      "description": "Company-wide favorites for sales lines: a main product with its options and comments, no prices"
     },
     {
       "name": "engineering",

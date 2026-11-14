@@ -1,4 +1,4 @@
-//! Cost of what production builds (ADR 0062). Two views, both only for users who may see cost
+//! Cost of what production builds (ADR 0063). Two views, both only for users who may see cost
 //! (`inventory.cost`; production planners may not):
 //!
 //! * the **roll-up** of a product: its BOM and routing walked through every level, material at the

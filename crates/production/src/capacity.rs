@@ -1,4 +1,4 @@
-//! Capacity of the work centres (ADR 0062): per day, the minutes a work centre can work against
+//! Capacity of the work centres (ADR 0063): per day, the minutes a work centre can work against
 //! the load that the open operations of production orders put on it. A view for planners to
 //! see overload and move work; loading the work centres finitely (and dragging operations on a
 //! board) is the planning board's work-centre half, C3.

@@ -1,4 +1,4 @@
-//! Scheduling routing operations onto work-centre calendars (ADR 0062). Everything here is pure:
+//! Scheduling routing operations onto work-centre calendars (ADR 0063). Everything here is pure:
 //! no database, no clock. Dates are whole days; an operation takes the working minutes of its
 //! work centre day by day.
 //!

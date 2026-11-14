@@ -1,5 +1,5 @@
 //! Work centres: the machines, benches and crews operations run on, with their opening hours and
-//! closures (ADR 0062). The administrator keeps work centres and hours (`production.admin`, like
+//! closures (ADR 0063). The administrator keeps work centres and hours (`production.admin`, like
 //! divisions); planners enter closures such as maintenance and holidays (`production.write`).
 
 use std::collections::HashMap;

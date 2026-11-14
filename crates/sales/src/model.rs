@@ -78,6 +78,14 @@ pub struct QuotationLineInput {
     /// Remark printed under the description on the quotation and order documents.
     #[serde(default)]
     pub customer_remark: String,
+    /// The language (nl | fr | en | de | es) the customer remark is written in. Absent: it matches
+    /// the quotation language, or unknown. Ignored (stored empty) when the remark is empty.
+    #[serde(default)]
+    pub customer_remark_language: Option<String>,
+    /// The favorite item this line was loaded from (of the caller's company, else 422), so that a
+    /// translation can be added to the favorite later. Copied by revisions, not by orders.
+    #[serde(default)]
+    pub favorite_item_id: Option<Uuid>,
     /// Also adds the required options of the product as option lines directly below this line
     /// (quantity: this line's quantity times the option's default quantity), unless the product is
     /// already an option line of this line. Not stored: send the resulting lines on later saves.
@@ -247,6 +255,12 @@ pub struct QuotationLine {
     /// Remark printed under the description on the documents.
     #[schema(required = false)]
     pub customer_remark: String,
+    /// Language the customer remark is written in; absent: the quotation language, or unknown.
+    #[schema(required = false)]
+    pub customer_remark_language: Option<String>,
+    /// The favorite item the line was loaded from; absent when it was not, or the favorite was deleted.
+    #[schema(required = false)]
+    pub favorite_item_id: Option<Uuid>,
 }
 
 #[derive(Debug, Clone, Serialize, ToSchema)]

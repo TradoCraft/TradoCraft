@@ -1,4 +1,4 @@
-# 0062 — Work centres, routings and operations: where and how a production order is built
+# 0063 — Work centres, routings and operations: where and how a production order is built
 
 **Status:** Accepted
 
@@ -8,7 +8,7 @@ labour, no capacity and no cost beyond the standard cost of the components. This
 The work-centre planning board (finite loading, drag and drop) is the work-centre half of C3 and stays
 open.
 
-**Decision.** Migration `20270204000001_production_routings.sql`, in schema `production` and crate
+**Decision.** Migration `20270205000001_production_routings.sql`, in schema `production` and crate
 `tradocraft-production`. No new module and **no new permissions**: the four `production.*` rights and
 `inventory.cost` cover everything (below). Every new top-level table carries `company_id`, with composite
 foreign keys `(x_id, company_id)` as in ADR 0049. Every change is audited.

@@ -1,4 +1,4 @@
-//! The production order as a traveller PDF for the shop floor (ADR 0062): data for
+//! The production order as a traveller PDF for the shop floor (ADR 0063): data for
 //! `templates/production_order.typ`. It lists what to build, the components to pick and the
 //! operations with room to write down the minutes and tick them off. The internal production
 //! remark of the order line is printed; cost never is.

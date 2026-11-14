@@ -72,7 +72,7 @@ work in progress and valuation at actual cost; phantoms and alternative componen
 production team; the portal showing the promised date; and the product's default division in the Flutter
 product screen (the API has it). Work centres, routings, operations, labour, capacity, multi-level
 auto-release, a production order PDF and the cost roll-up came with C1b
-([ADR 0062](0062-work-centres-routings-and-operations.md)); the work-centre planning board is the
+([ADR 0063](0063-work-centres-routings-and-operations.md)); the work-centre planning board is the
 work-centre half of C3.
 `ready_for_shipping` means every production order of the order is done: a planner must release all
 its manufactured lines first.
