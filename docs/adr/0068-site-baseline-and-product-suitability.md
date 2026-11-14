@@ -34,3 +34,26 @@ bell maker, but the model must stay general and tunable by an administrator.
 **Consequences.** Delivered in phases (definitions, product suitability, baseline backend and UI,
 matching, quotation integration), each with its own migration after `20270208000002`. DC ranges
 have no reference data and start empty.
+
+**Phase 3 notes (baseline backend).** Migrations `20270211000001` (types, items, seed function) and
+`20270211000002` (`crm.opportunities.power_grid_id`).
+
+* Types: `allowed_parent_codes` lists the parent types; because a bell may sit under a group and
+  also stand alone, the type also has `allow_top_level` (a type without allowed parents must have
+  it). The `code` is fixed after creation. Reading needs `opportunities.read`, administering
+  `products.write` (the permission of the attribute definitions they are edited with). A type with
+  items, attribute definitions or that another type allows as parent is refused with 409
+  ("deactivate instead"); a type update that would strand existing items is a 409 too.
+* Items: `GET /opportunities/{id}/baseline` returns the tree; `POST|PUT|DELETE
+  /opportunities/{id}/baseline/items[/{item_id}]` follow `opportunities.write`. A parent must be an
+  item of the same opportunity (composite foreign key), its type must be allowed, no cycles, at most
+  8 levels, 1000 items. The type of an item cannot change. Deleting an item that has children is a
+  409 (nothing is removed silently). Values are validated against the active definitions of the
+  item's type: unknown keys and wrong kinds are 422, missing keys are fine, null clears a value.
+  Deleting an attribute definition whose key is stored on baseline items is a 409.
+* Grid: `power_grid_id` on create/update, `clear_power_grid: true` to clear (ADR 0025 convention).
+  It must belong to the customer's country; on update a stored grid that no longer fits the
+  customer's country is dropped, as on quotations.
+* Seed: `crm.seed_baseline_defaults(company_id)` is idempotent and keeps existing rows. The
+  migration applies it to every company; company provisioning and the dev seed call it for new
+  ones.
