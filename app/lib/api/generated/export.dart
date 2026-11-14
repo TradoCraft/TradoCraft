@@ -445,6 +445,8 @@ export 'models/signature.dart';
 export 'models/site_phone.dart';
 export 'models/skill.dart';
 export 'models/skill_input.dart';
+export 'models/sla_notice_rule.dart';
+export 'models/sla_notice_settings.dart';
 export 'models/sla_policies_input.dart';
 export 'models/sla_policy.dart';
 export 'models/sla_stats.dart';

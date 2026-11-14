@@ -8755,4 +8755,29 @@ class AppLocalizationsFr extends AppLocalizations {
   String actionSendEmailSummary(String recipient, String subject) {
     return '$recipient : $subject';
   }
+
+  @override
+  String get slaNotices => 'Messages au client';
+
+  @override
+  String get slaNoticesHelp =>
+      'Envoyer au client un accusé de réception avec le numéro du ticket et le délai de réponse visé lorsqu\'une demande arrive par e-mail ou via le portail, et éventuellement un message lorsque le délai de première réponse est dépassé (uniquement pendant les heures d\'ouverture). La règle la plus précise l\'emporte : équipe et priorité, puis équipe, puis priorité, puis tout. Sans règle, rien n\'est envoyé. Les e-mails sont dans la langue du client.';
+
+  @override
+  String get slaNoticesNone => 'Aucun message n\'est envoyé aux clients.';
+
+  @override
+  String get slaNoticesAllTeams => 'Toutes les équipes';
+
+  @override
+  String get slaNoticesAllPriorities => 'Toutes les priorités';
+
+  @override
+  String get slaNoticeAck => 'Accusé de réception';
+
+  @override
+  String get slaNoticeBreach => 'Message de retard';
+
+  @override
+  String get slaNoticesAdd => 'Ajouter une règle';
 }

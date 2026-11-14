@@ -7,7 +7,8 @@
 //!   tickets.
 //! * `tradocraft-worker check-mailbox <name>` runs a real round trip with a Microsoft 365 mailbox
 //!   (sign in, the unread query, send to itself, compare the Message-ID) and exits.
-//! * Escalates tickets whose SLA ran out (one internal e-mail per ticket and kind of breach).
+//! * Escalates tickets whose SLA ran out (one internal e-mail per ticket and kind of breach) and,
+//!   when configured, tells the customer that the first response time has run out (ADR 0064).
 //! * Generates the planned jobs of active maintenance contracts before their visits are due.
 //! * Recomputes the "often bought together" table from confirmed installation orders (hourly, or
 //!   every COOCCURRENCE_SECONDS).
@@ -235,6 +236,11 @@ async fn main() -> anyhow::Result<()> {
             Ok(0) => {}
             Ok(n) => tracing::info!(n, "SLA breaches escalated"),
             Err(e) => tracing::error!(error = ?e, "SLA escalation failed"),
+        }
+        match tradocraft_helpdesk::sla_notice::send_breach_notices(&db).await {
+            Ok(0) => {}
+            Ok(n) => tracing::info!(n, "SLA breach notices queued for customers"),
+            Err(e) => tracing::error!(error = ?e, "SLA breach notices failed"),
         }
         if let Err(e) = tradocraft_helpdesk::collab::cleanup_presence(&db).await {
             tracing::error!(error = ?e, "presence cleanup failed");

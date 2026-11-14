@@ -15569,6 +15569,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{recipient}: {subject}'**
   String actionSendEmailSummary(String recipient, String subject);
+
+  /// No description provided for @slaNotices.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer notices'**
+  String get slaNotices;
+
+  /// No description provided for @slaNoticesHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Send the customer an acknowledgement with the ticket number and the target response time when a request arrives by e-mail or the portal, and optionally a notice when the first response time has run out (only during business hours). The most specific rule wins: team and priority, then team, then priority, then all. Nothing is sent without a rule. Mails are in the customer\'s language.'**
+  String get slaNoticesHelp;
+
+  /// No description provided for @slaNoticesNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No notices are sent to customers.'**
+  String get slaNoticesNone;
+
+  /// No description provided for @slaNoticesAllTeams.
+  ///
+  /// In en, this message translates to:
+  /// **'All teams'**
+  String get slaNoticesAllTeams;
+
+  /// No description provided for @slaNoticesAllPriorities.
+  ///
+  /// In en, this message translates to:
+  /// **'All priorities'**
+  String get slaNoticesAllPriorities;
+
+  /// No description provided for @slaNoticeAck.
+  ///
+  /// In en, this message translates to:
+  /// **'Acknowledgement'**
+  String get slaNoticeAck;
+
+  /// No description provided for @slaNoticeBreach.
+  ///
+  /// In en, this message translates to:
+  /// **'Late notice'**
+  String get slaNoticeBreach;
+
+  /// No description provided for @slaNoticesAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a rule'**
+  String get slaNoticesAdd;
 }
 
 class _AppLocalizationsDelegate

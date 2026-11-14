@@ -2755,5 +2755,13 @@
   "mailBody": "Message",
   "mailPeriodHours": "Au plus un e-mail par ticket sur (heures)",
   "mailPlaceholdersHint": "Variables : {placeholders}",
-  "actionSendEmailSummary": "{recipient} : {subject}"
+  "actionSendEmailSummary": "{recipient} : {subject}",
+  "slaNotices": "Messages au client",
+  "slaNoticesHelp": "Envoyer au client un accusé de réception avec le numéro du ticket et le délai de réponse visé lorsqu'une demande arrive par e-mail ou via le portail, et éventuellement un message lorsque le délai de première réponse est dépassé (uniquement pendant les heures d'ouverture). La règle la plus précise l'emporte : équipe et priorité, puis équipe, puis priorité, puis tout. Sans règle, rien n'est envoyé. Les e-mails sont dans la langue du client.",
+  "slaNoticesNone": "Aucun message n'est envoyé aux clients.",
+  "slaNoticesAllTeams": "Toutes les équipes",
+  "slaNoticesAllPriorities": "Toutes les priorités",
+  "slaNoticeAck": "Accusé de réception",
+  "slaNoticeBreach": "Message de retard",
+  "slaNoticesAdd": "Ajouter une règle"
 }

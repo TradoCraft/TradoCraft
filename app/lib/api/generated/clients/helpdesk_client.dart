@@ -39,6 +39,7 @@ import '../models/rule.dart';
 import '../models/rule_input.dart';
 import '../models/rule_order.dart';
 import '../models/settings_input.dart';
+import '../models/sla_notice_settings.dart';
 import '../models/sla_policies_input.dart';
 import '../models/sla_policy.dart';
 import '../models/split_input.dart';
@@ -218,6 +219,16 @@ abstract class HelpdeskClient {
   @PUT('/api/v1/helpdesk/settings')
   Future<HelpdeskSettings> putSettings({
     @Body() required SettingsInput body,
+  });
+
+  @GET('/api/v1/helpdesk/sla-notices')
+  Future<SlaNoticeSettings> getSlaNotices();
+
+  /// Replaces the rules. Tickets that were created earlier are not acknowledged afterwards; a breach.
+  /// notice can still go out for an open ticket that is late when its rule is switched on.
+  @PUT('/api/v1/helpdesk/sla-notices')
+  Future<SlaNoticeSettings> putSlaNotices({
+    @Body() required SlaNoticeSettings body,
   });
 
   @GET('/api/v1/helpdesk/sla-policies')

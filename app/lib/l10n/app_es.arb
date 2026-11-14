@@ -2755,5 +2755,13 @@
   "mailBody": "Mensaje",
   "mailPeriodHours": "Como máximo un correo por ticket en (horas)",
   "mailPlaceholdersHint": "Marcadores: {placeholders}",
-  "actionSendEmailSummary": "{recipient}: {subject}"
+  "actionSendEmailSummary": "{recipient}: {subject}",
+  "slaNotices": "Avisos al cliente",
+  "slaNoticesHelp": "Enviar al cliente un acuse de recibo con el número de ticket y el plazo de respuesta previsto cuando llega una solicitud por correo o por el portal, y opcionalmente un aviso cuando vence el plazo de primera respuesta (solo en horario de atención). Gana la regla más específica: equipo y prioridad, luego equipo, luego prioridad, luego todo. Sin regla no se envía nada. Los correos van en el idioma del cliente.",
+  "slaNoticesNone": "No se envían avisos a los clientes.",
+  "slaNoticesAllTeams": "Todos los equipos",
+  "slaNoticesAllPriorities": "Todas las prioridades",
+  "slaNoticeAck": "Acuse de recibo",
+  "slaNoticeBreach": "Aviso de retraso",
+  "slaNoticesAdd": "Añadir una regla"
 }

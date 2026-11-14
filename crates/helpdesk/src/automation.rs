@@ -435,8 +435,23 @@ async fn load_facts(
 }
 
 /// Runs the active rules of the company for this event on the ticket, in the caller's
-/// transaction. Every change is written and audited with the name of the rule.
+/// transaction. Every change is written and audited with the name of the rule. A new ticket is
+/// also acknowledged to the customer when the SLA notice settings ask for it (ADR 0064), after the
+/// rules, so the notice states the priority and team the rules left.
 pub async fn run(
+    conn: &mut PgConnection,
+    company_id: Uuid,
+    ticket_id: Uuid,
+    trigger: &str,
+) -> AppResult<Vec<RuleOutcome>> {
+    let outcomes = run_rules(conn, company_id, ticket_id, trigger).await?;
+    if trigger == "created" {
+        crate::sla_notice::acknowledge(conn, company_id, ticket_id).await?;
+    }
+    Ok(outcomes)
+}
+
+async fn run_rules(
     conn: &mut PgConnection,
     company_id: Uuid,
     ticket_id: Uuid,

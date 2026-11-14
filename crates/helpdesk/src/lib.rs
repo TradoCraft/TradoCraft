@@ -23,6 +23,7 @@ pub mod portal;
 pub mod render;
 pub mod reports;
 pub mod sla;
+pub mod sla_notice;
 pub mod split;
 pub mod teams;
 pub mod tickets;
@@ -34,6 +35,7 @@ pub fn router() -> OpenApiRouter<AppState> {
     tickets::router()
         .merge(answers::router())
         .merge(calendar::router())
+        .merge(sla_notice::router())
         .merge(automation::router())
         .merge(split::router())
         .merge(reports::router())

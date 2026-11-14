@@ -2755,5 +2755,13 @@
   "mailBody": "Bericht",
   "mailPeriodHours": "Hoogstens één mail per ticket binnen (uren)",
   "mailPlaceholdersHint": "Tijdelijke aanduidingen: {placeholders}",
-  "actionSendEmailSummary": "{recipient}: {subject}"
+  "actionSendEmailSummary": "{recipient}: {subject}",
+  "slaNotices": "Berichten aan de klant",
+  "slaNoticesHelp": "Stuur de klant een ontvangstbevestiging met het ticketnummer en de streeftermijn voor een antwoord wanneer een aanvraag per e-mail of via het portaal binnenkomt, en eventueel een bericht wanneer de termijn voor het eerste antwoord verstreken is (alleen tijdens de openingsuren). De meest specifieke regel wint: team en prioriteit, dan team, dan prioriteit, dan alles. Zonder regel wordt niets verstuurd. De mails zijn in de taal van de klant.",
+  "slaNoticesNone": "Er worden geen berichten naar klanten gestuurd.",
+  "slaNoticesAllTeams": "Alle teams",
+  "slaNoticesAllPriorities": "Alle prioriteiten",
+  "slaNoticeAck": "Ontvangstbevestiging",
+  "slaNoticeBreach": "Bericht bij te laat",
+  "slaNoticesAdd": "Regel toevoegen"
 }

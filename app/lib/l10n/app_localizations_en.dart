@@ -8708,4 +8708,29 @@ class AppLocalizationsEn extends AppLocalizations {
   String actionSendEmailSummary(String recipient, String subject) {
     return '$recipient: $subject';
   }
+
+  @override
+  String get slaNotices => 'Customer notices';
+
+  @override
+  String get slaNoticesHelp =>
+      'Send the customer an acknowledgement with the ticket number and the target response time when a request arrives by e-mail or the portal, and optionally a notice when the first response time has run out (only during business hours). The most specific rule wins: team and priority, then team, then priority, then all. Nothing is sent without a rule. Mails are in the customer\'s language.';
+
+  @override
+  String get slaNoticesNone => 'No notices are sent to customers.';
+
+  @override
+  String get slaNoticesAllTeams => 'All teams';
+
+  @override
+  String get slaNoticesAllPriorities => 'All priorities';
+
+  @override
+  String get slaNoticeAck => 'Acknowledgement';
+
+  @override
+  String get slaNoticeBreach => 'Late notice';
+
+  @override
+  String get slaNoticesAdd => 'Add a rule';
 }

@@ -4099,5 +4099,13 @@
   "mailPlaceholdersHint": "Placeholders: {placeholders}",
   "@mailPlaceholdersHint": {"placeholders": {"placeholders": {"type": "String"}}},
   "actionSendEmailSummary": "{recipient}: {subject}",
-  "@actionSendEmailSummary": {"placeholders": {"recipient": {"type": "String"}, "subject": {"type": "String"}}}
+  "@actionSendEmailSummary": {"placeholders": {"recipient": {"type": "String"}, "subject": {"type": "String"}}},
+  "slaNotices": "Customer notices",
+  "slaNoticesHelp": "Send the customer an acknowledgement with the ticket number and the target response time when a request arrives by e-mail or the portal, and optionally a notice when the first response time has run out (only during business hours). The most specific rule wins: team and priority, then team, then priority, then all. Nothing is sent without a rule. Mails are in the customer's language.",
+  "slaNoticesNone": "No notices are sent to customers.",
+  "slaNoticesAllTeams": "All teams",
+  "slaNoticesAllPriorities": "All priorities",
+  "slaNoticeAck": "Acknowledgement",
+  "slaNoticeBreach": "Late notice",
+  "slaNoticesAdd": "Add a rule"
 }

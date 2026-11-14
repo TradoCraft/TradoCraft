@@ -8186,6 +8186,95 @@
         }
       }
     },
+    "/api/v1/helpdesk/sla-notices": {
+      "get": {
+        "tags": [
+          "helpdesk"
+        ],
+        "operationId": "get_sla_notices",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SlaNoticeSettings"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "helpdesk"
+        ],
+        "summary": "Replaces the rules. Tickets that were created earlier are not acknowledged afterwards; a breach\nnotice can still go out for an open ticket that is late when its rule is switched on.",
+        "operationId": "put_sla_notices",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SlaNoticeSettings"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SlaNoticeSettings"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/helpdesk/sla-policies": {
       "get": {
         "tags": [
@@ -43073,6 +43162,53 @@
           },
           "name": {
             "type": "string"
+          }
+        }
+      },
+      "SlaNoticeRule": {
+        "type": "object",
+        "required": [
+          "ack_enabled",
+          "breach_enabled"
+        ],
+        "properties": {
+          "ack_enabled": {
+            "type": "boolean",
+            "description": "Send an acknowledgement (ticket number and target response time) on creation."
+          },
+          "breach_enabled": {
+            "type": "boolean",
+            "description": "Send a notice when the first response time has run out without an answer."
+          },
+          "priority": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "low | normal | high | urgent. Absent: every priority."
+          },
+          "team_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "Absent: every team."
+          }
+        }
+      },
+      "SlaNoticeSettings": {
+        "type": "object",
+        "required": [
+          "rules"
+        ],
+        "properties": {
+          "rules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SlaNoticeRule"
+            },
+            "description": "The most specific rule wins: team and priority, then team, then priority, then neither.\nA ticket that matches no rule gets no notice."
           }
         }
       },

@@ -8741,4 +8741,30 @@ class AppLocalizationsNl extends AppLocalizations {
   String actionSendEmailSummary(String recipient, String subject) {
     return '$recipient: $subject';
   }
+
+  @override
+  String get slaNotices => 'Berichten aan de klant';
+
+  @override
+  String get slaNoticesHelp =>
+      'Stuur de klant een ontvangstbevestiging met het ticketnummer en de streeftermijn voor een antwoord wanneer een aanvraag per e-mail of via het portaal binnenkomt, en eventueel een bericht wanneer de termijn voor het eerste antwoord verstreken is (alleen tijdens de openingsuren). De meest specifieke regel wint: team en prioriteit, dan team, dan prioriteit, dan alles. Zonder regel wordt niets verstuurd. De mails zijn in de taal van de klant.';
+
+  @override
+  String get slaNoticesNone =>
+      'Er worden geen berichten naar klanten gestuurd.';
+
+  @override
+  String get slaNoticesAllTeams => 'Alle teams';
+
+  @override
+  String get slaNoticesAllPriorities => 'Alle prioriteiten';
+
+  @override
+  String get slaNoticeAck => 'Ontvangstbevestiging';
+
+  @override
+  String get slaNoticeBreach => 'Bericht bij te laat';
+
+  @override
+  String get slaNoticesAdd => 'Regel toevoegen';
 }
