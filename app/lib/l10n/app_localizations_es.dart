@@ -8673,4 +8673,38 @@ class AppLocalizationsEs extends AppLocalizations {
   String sentWithNotApplicable(int count) {
     return 'Enviado con $count opción(es) que no se aplican a su producto principal.';
   }
+
+  @override
+  String get tabCustomer => 'Cliente';
+
+  @override
+  String get todoAdded => 'Tarea añadida';
+
+  @override
+  String get todoLinkToScreen => 'Vincular a la pantalla actual';
+
+  @override
+  String get todoLinkNotAvailable =>
+      'Esta pantalla no tiene ningún registro al que vincular.';
+
+  @override
+  String get todoOpenLink => 'Abrir el registro vinculado';
+
+  @override
+  String get todoRemoveLink => 'Quitar vínculo';
+
+  @override
+  String get recordNotFound =>
+      'No se encontró este registro. Puede que se haya eliminado o que no tengas acceso a él.';
+
+  @override
+  String get todoForObject => 'Tareas de este registro';
+
+  @override
+  String todoForObjectCount(int count) {
+    return 'Tareas de este registro ($count abiertas)';
+  }
+
+  @override
+  String get todoForObjectEmpty => 'No hay tareas abiertas para este registro.';
 }

@@ -1,6 +1,6 @@
 # 0061 — To-do items
 
-**Status:** Accepted (PR 1 of 3: backend and a minimal page; context capture, the jump and reminders follow)
+**Status:** Accepted (PR 1 of 3: backend and a minimal page. PR 2 of 3: context capture, the jump, the record button and `/customers/:id`, see below. Reminders and the badge follow)
 
 **Context.** The only list of things to do is `field.job_tasks`, the checklist of one field job. People
 keep their own to-dos elsewhere, away from the records the to-dos are about, and cannot hand one to a
@@ -117,10 +117,45 @@ later queue can retry safely. The Flutter page reloads after every change.
 stale labels (accepted), a private list that the owner alone can delete, and an audit trail that says
 little about content on purpose.
 
+*PR 2: context capture and jump (the app).*
+- **Link-kind registry** (`app/lib/features/todo/link_kinds.dart`). For each of the 16 kinds: the route
+  template (`/quotations/{id}`, `/helpdesk/{id}`, `/purchase-orders/{id}`, `/stock/counts/{id}`, `/kb/{id}`,
+  `/customers/{id}`, ...), the label (the workspace tab labels, singular), an icon and the read permission. The
+  permission column mirrors `LinkKind::read_permission` in `crates/todo/src/link.rs`; a unit test reads that Rust
+  file and fails when the two drift. Another test checks that every built location is accepted by
+  `isDetailLocation` and resolved by `detailScreen`, that `parse(build(kind, id))` round-trips, and that pages
+  of a section that are not records (`/helpdesk/answers`, `/jobs/contracts`, `/quotations/new`, ...) parse to null.
+- **The location is built, the stored one is a fallback.** A link is opened at the location the registry builds
+  from kind and id, so a route rename in the app does not strand old to-dos. `link_location` (stored at link
+  time) is used only when the kind has no template or the registry cannot build a route (a kind of a newer
+  server), and only if it is a path inside the app (one leading slash).
+- **Current context** (`currentContextProvider`): the focused workspace tab's location, else the main area's
+  (`WorkspaceNotifier.homeLocation`, kept by the shell), the same recipe as `TutorialHost._located` but not tied to
+  the tutorial; the title is `WorkTab.title` (what `TabScope.reportTitle` set), resolved through the registry to an
+  optional record (kind, id, label, location). A list or settings page has no object and is not linkable. A
+  popup (bottom sheet, menu) opened inside a tab no longer replaces the tab's location (`_TabObserver` tracks
+  page routes only).
+- **Quick add** replaces the PR 1 dialog: title, optional due date, and a "Link to current screen" switch that is
+  on by default when the current screen is linkable (kind icon, label) and off, disabled and explained when it is
+  not. Saving sends `link_kind`, `link_id`, `link_label` and `link_location` with a `client_id`. It opens from the
+  New to-do button of `/todo`, from Shift+T (ADR 0060; shell layer; needs `todo.use`, and the server drops that
+  permission when the module is off) and from the account menu (same gate), so it is always reachable. The
+  dialog is modal for shortcuts.
+- **The link chip** on `/todo` opens or focuses the record's tab (`context.push`). A link the viewer may not read
+  (only `link_kind` came back) shows "Linked item" and is not tappable. "Remove link" in the item menu clears a
+  link (`clear_link`).
+- **A missing target** has no server-side check. The jump lands on the record's screen, which answers 404:
+  the order, quotation, ticket, job and customer screens now show a clear "not found" state with a way back
+  (`LoadFailedView`, not a spinner or an error line). The to-do keeps its link until the owner removes it.
+- **To-dos for this record** (`ObjectTodosButton`) sits in the headers of quotations, orders, tickets, jobs and
+  customers: a button with the count of the caller's own open items for the record (`GET /todo/items?link_kind&link_id&done=false`,
+  the privacy rule unchanged: only the caller's items), and a sheet to complete them and add one that is already
+  linked. Hidden without `todo.use`.
+- **`/customers/:id`** is a workspace detail route (`CustomerScreen`) that loads the customer and shows the same
+  form as the list's dialog; the list still opens its dialog.
+
 **Follow-ups.**
-- PR 2: link-kind registry beside `detail_routes.dart` (a test that every kind resolves), a current-context
-  provider, a quick-add dialog with "link to current screen", the link chip that jumps, a "to-dos for this
-  object" chip on quotations, orders, tickets and jobs, and the `/customers/:id` route.
+- PR 2: done (see above).
 - PR 3: count badge on the shell, an overdue and due-today section, and a worker pass that claims
   `reminded_at` idempotently and mails the recipient in their language, respecting the outbound policy and
   a per-user opt-out.

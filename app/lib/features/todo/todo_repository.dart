@@ -28,14 +28,27 @@ class TodoRepository {
     required String title,
     String? parentId,
     DateTime? dueDate,
+    TodoLinkKind? linkKind,
+    String? linkId,
+    String? linkLabel,
+    String? linkLocation,
   }) => _api.todo.todoCreate(
     body: TodoCreate(
       clientId: newClientId(),
       title: title,
       parentId: parentId,
       dueDate: dueDate,
+      linkKind: linkKind,
+      linkId: linkId,
+      linkLabel: linkLabel,
+      linkLocation: linkLocation,
     ),
   );
+
+  /// My open items linked to one record, for the to-dos button on a detail screen. The list is the
+  /// caller's own (ADR 0061: privacy); finished items are left out.
+  Future<List<TodoItem>> openFor(TodoLinkKind kind, String id) =>
+      _api.todo.todoList(done: false, linkKind: kind, linkId: id);
 
   Future<TodoItem> update(String id, TodoPatch patch) =>
       _api.todo.todoUpdate(id: id, body: patch);
@@ -80,3 +93,9 @@ final todoItemsProvider = FutureProvider.autoDispose<List<TodoItem>>(
   (ref) =>
       ref.watch(todoRepositoryProvider).list(ref.watch(todoFilterProvider)),
 );
+
+/// My open items linked to a record (kind and id): the to-dos button of a detail screen.
+final objectTodosProvider = FutureProvider.autoDispose
+    .family<List<TodoItem>, ({TodoLinkKind kind, String id})>(
+      (ref, o) => ref.watch(todoRepositoryProvider).openFor(o.kind, o.id),
+    );

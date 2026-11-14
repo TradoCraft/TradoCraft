@@ -8635,4 +8635,37 @@ class AppLocalizationsEn extends AppLocalizations {
   String sentWithNotApplicable(int count) {
     return 'Sent with $count option(s) that do not apply to their main product.';
   }
+
+  @override
+  String get tabCustomer => 'Customer';
+
+  @override
+  String get todoAdded => 'To-do added';
+
+  @override
+  String get todoLinkToScreen => 'Link to current screen';
+
+  @override
+  String get todoLinkNotAvailable => 'This screen has no record to link to.';
+
+  @override
+  String get todoOpenLink => 'Open the linked record';
+
+  @override
+  String get todoRemoveLink => 'Remove link';
+
+  @override
+  String get recordNotFound =>
+      'This record was not found. It may have been deleted, or you may not have access to it.';
+
+  @override
+  String get todoForObject => 'To-dos for this record';
+
+  @override
+  String todoForObjectCount(int count) {
+    return 'To-dos for this record ($count open)';
+  }
+
+  @override
+  String get todoForObjectEmpty => 'No open to-dos for this record.';
 }

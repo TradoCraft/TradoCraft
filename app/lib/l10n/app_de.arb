@@ -2731,5 +2731,16 @@
   "optionNotOffered": "Nicht verfügbar mit {product}",
   "@optionNotOffered": {"placeholders": {"product": {"type": "String"}}},
   "sentWithNotApplicable": "Versendet mit {count} Option(en), die nicht zu ihrem Hauptprodukt passen.",
-  "@sentWithNotApplicable": {"placeholders": {"count": {"type": "int"}}}
+  "@sentWithNotApplicable": {"placeholders": {"count": {"type": "int"}}},
+  "tabCustomer": "Kunde",
+  "todoAdded": "Aufgabe hinzugefügt",
+  "todoLinkToScreen": "Mit aktuellem Bildschirm verknüpfen",
+  "todoLinkNotAvailable": "Dieser Bildschirm hat keinen Datensatz zum Verknüpfen.",
+  "todoOpenLink": "Verknüpften Datensatz öffnen",
+  "todoRemoveLink": "Verknüpfung entfernen",
+  "recordNotFound": "Dieser Datensatz wurde nicht gefunden. Er wurde möglicherweise gelöscht, oder Sie haben keinen Zugriff darauf.",
+  "todoForObject": "Aufgaben zu diesem Datensatz",
+  "todoForObjectCount": "Aufgaben zu diesem Datensatz ({count} offen)",
+  "@todoForObjectCount": {"placeholders": {"count": {"type": "int"}}},
+  "todoForObjectEmpty": "Keine offenen Aufgaben zu diesem Datensatz."
 }

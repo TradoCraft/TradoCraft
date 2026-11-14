@@ -8667,4 +8667,38 @@ class AppLocalizationsNl extends AppLocalizations {
   String sentWithNotApplicable(int count) {
     return 'Verzonden met $count optie(s) die niet bij hun hoofdproduct horen.';
   }
+
+  @override
+  String get tabCustomer => 'Klant';
+
+  @override
+  String get todoAdded => 'Taak toegevoegd';
+
+  @override
+  String get todoLinkToScreen => 'Koppelen aan huidig scherm';
+
+  @override
+  String get todoLinkNotAvailable =>
+      'Dit scherm heeft geen record om aan te koppelen.';
+
+  @override
+  String get todoOpenLink => 'Gekoppeld record openen';
+
+  @override
+  String get todoRemoveLink => 'Koppeling verwijderen';
+
+  @override
+  String get recordNotFound =>
+      'Dit record is niet gevonden. Het is misschien verwijderd, of je hebt er geen toegang toe.';
+
+  @override
+  String get todoForObject => 'Taken voor dit record';
+
+  @override
+  String todoForObjectCount(int count) {
+    return 'Taken voor dit record ($count open)';
+  }
+
+  @override
+  String get todoForObjectEmpty => 'Geen openstaande taken voor dit record.';
 }

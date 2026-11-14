@@ -2731,5 +2731,16 @@
   "optionNotOffered": "No se ofrece con {product}",
   "@optionNotOffered": {"placeholders": {"product": {"type": "String"}}},
   "sentWithNotApplicable": "Enviado con {count} opción(es) que no se aplican a su producto principal.",
-  "@sentWithNotApplicable": {"placeholders": {"count": {"type": "int"}}}
+  "@sentWithNotApplicable": {"placeholders": {"count": {"type": "int"}}},
+  "tabCustomer": "Cliente",
+  "todoAdded": "Tarea añadida",
+  "todoLinkToScreen": "Vincular a la pantalla actual",
+  "todoLinkNotAvailable": "Esta pantalla no tiene ningún registro al que vincular.",
+  "todoOpenLink": "Abrir el registro vinculado",
+  "todoRemoveLink": "Quitar vínculo",
+  "recordNotFound": "No se encontró este registro. Puede que se haya eliminado o que no tengas acceso a él.",
+  "todoForObject": "Tareas de este registro",
+  "todoForObjectCount": "Tareas de este registro ({count} abiertas)",
+  "@todoForObjectCount": {"placeholders": {"count": {"type": "int"}}},
+  "todoForObjectEmpty": "No hay tareas abiertas para este registro."
 }

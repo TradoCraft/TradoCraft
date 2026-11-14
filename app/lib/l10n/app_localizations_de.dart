@@ -8688,4 +8688,39 @@ class AppLocalizationsDe extends AppLocalizations {
   String sentWithNotApplicable(int count) {
     return 'Versendet mit $count Option(en), die nicht zu ihrem Hauptprodukt passen.';
   }
+
+  @override
+  String get tabCustomer => 'Kunde';
+
+  @override
+  String get todoAdded => 'Aufgabe hinzugefügt';
+
+  @override
+  String get todoLinkToScreen => 'Mit aktuellem Bildschirm verknüpfen';
+
+  @override
+  String get todoLinkNotAvailable =>
+      'Dieser Bildschirm hat keinen Datensatz zum Verknüpfen.';
+
+  @override
+  String get todoOpenLink => 'Verknüpften Datensatz öffnen';
+
+  @override
+  String get todoRemoveLink => 'Verknüpfung entfernen';
+
+  @override
+  String get recordNotFound =>
+      'Dieser Datensatz wurde nicht gefunden. Er wurde möglicherweise gelöscht, oder Sie haben keinen Zugriff darauf.';
+
+  @override
+  String get todoForObject => 'Aufgaben zu diesem Datensatz';
+
+  @override
+  String todoForObjectCount(int count) {
+    return 'Aufgaben zu diesem Datensatz ($count offen)';
+  }
+
+  @override
+  String get todoForObjectEmpty =>
+      'Keine offenen Aufgaben zu diesem Datensatz.';
 }

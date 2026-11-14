@@ -18,6 +18,7 @@ Map<String, Object?> _item(
   String? linkKind,
   String? linkLabel,
   bool mine = true,
+  bool unreadableLink = false,
 }) => {
   'id': id,
   'parent_id': parent,
@@ -35,7 +36,8 @@ Map<String, Object?> _item(
   'done_at': null,
   'done_by': null,
   'link_kind': linkKind,
-  'link_id': linkKind == null ? null : 'q1',
+  // The server omits the id of a link the viewer may not read.
+  'link_id': linkKind == null || unreadableLink ? null : 'q1',
   'link_label': linkLabel,
   'link_location': null,
   'client_id': null,
@@ -321,15 +323,16 @@ void main() {
         linkKind: 'quotation',
         linkLabel: 'Q-2027-001',
       ),
-      _item('b', 'Other', linkKind: 'quotation'),
+      _item('b', 'Other', linkKind: 'quotation', unreadableLink: true),
     ]);
     await _pump(tester, server);
     expect(find.textContaining('Overdue'), findsOneWidget);
     expect(find.textContaining('31/01/2020'), findsOneWidget);
     expect(find.text('Q-2027-001'), findsOneWidget);
     expect(find.text('Linked item'), findsOneWidget);
-    // The chip only names the record for now: nothing to tap.
-    expect(find.byType(ActionChip), findsNothing);
+    // Only the readable link can be tapped (the jump itself is tested in todo_context_test).
+    expect(find.byType(ActionChip), findsOneWidget);
+    expect(find.widgetWithText(ActionChip, 'Q-2027-001'), findsOneWidget);
   });
 
   group('navigation', () {

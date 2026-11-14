@@ -20,6 +20,8 @@ import '../../shared/remark_history.dart';
 import '../../shared/search_picker.dart';
 import '../../l10n/l10n.dart';
 import '../../shared/app_icons.dart';
+import '../../shared/load_failed.dart';
+import '../todo/object_todos_button.dart';
 import '../tutorial/targets.dart';
 
 /// An editable line of a draft. Prices are never computed here: they come from
@@ -209,6 +211,7 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
   bool _loading = false;
   bool _busy = false;
   String? _error;
+  bool _missing = false;
   bool _changed = false;
 
   TradocraftApi get _api => ref.read(apiProvider);
@@ -340,7 +343,10 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
         _loadCatalogues();
       }
     } catch (e) {
-      setState(() => _error = errorMessage(e));
+      setState(() {
+        _error = errorMessage(e);
+        _missing = errorStatus(e) == 404;
+      });
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -634,6 +640,15 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
         false;
     final theme = Theme.of(context);
     final q = _q;
+    if (q == null && _id != null && !_loading && _error != null) {
+      return Scaffold(
+        body: LoadFailedView(
+          message: _error!,
+          leaveTo: '/quotations',
+          notFound: _missing,
+        ),
+      );
+    }
     return Scaffold(
       body: _loading
           ? const Center(child: CircularProgressIndicator())
@@ -668,6 +683,12 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    if (q != null)
+                      ObjectTodosButton(
+                        kind: TodoLinkKind.quotation,
+                        id: q.id,
+                        label: q.number,
                       ),
                     ..._actions(canWrite),
                   ],
