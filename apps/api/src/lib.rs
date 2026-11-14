@@ -167,6 +167,9 @@ pub fn app_with_vies(
     vies: ViesConfig,
 ) -> Router {
     let (router, doc) = api();
+    // Bell motors for the product matching of the CRM come from the configurator tables.
+    let motors: tradocraft_crm::product_matches::BellMotors =
+        std::sync::Arc::new(tradocraft_configurator::motor::ConfiguratorMotors);
     router
         .route("/health", axum::routing::get(|| async { "ok" }))
         .merge(Scalar::with_url("/docs", doc.clone()))
@@ -178,6 +181,7 @@ pub fn app_with_vies(
         .layer(axum::Extension(bootstrap))
         .layer(axum::Extension(identity))
         .layer(axum::Extension(vies))
+        .layer(axum::Extension(motors))
         .layer(TraceLayer::new_for_http())
         .layer(cors.layer())
         .with_state(state)
