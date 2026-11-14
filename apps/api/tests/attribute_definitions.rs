@@ -387,3 +387,39 @@ async fn key_scope_and_kind_are_locked_while_baseline_values_exist(db: PgPool) {
     .await;
     assert_eq!(status, StatusCode::OK, "{u}");
 }
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn a_stored_select_value_survives_its_removal_from_the_options(db: PgPool) {
+    let app = setup(db.clone()).await;
+    let def = make(&app, select_body("motion_p", "product")).await;
+    let product: uuid::Uuid = sqlx::query_scalar("SELECT id FROM products.products LIMIT 1")
+        .fetch_one(&db)
+        .await
+        .unwrap();
+    let url = format!("/api/v1/products/{product}/attributes");
+    let attr = |v: &str| json!([{ "key": "motion_p", "kind": "text", "value": v }]);
+    let (status, r) = call(&app, ADMIN, Method::PUT, &url, Some(attr("flying"))).await;
+    assert_eq!(status, StatusCode::OK, "{r}");
+
+    // The option is removed from the definition afterwards.
+    let (status, r) = put(
+        &app,
+        &def,
+        json!({ "key": "motion_p", "label": "Motion", "kind": "select", "scope": "product",
+                "options": [{ "value": "falling", "label": "Falling" }] }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{r}");
+
+    // Saving the product's attributes again with the stored value is still accepted ...
+    let (status, r) = call(&app, ADMIN, Method::PUT, &url, Some(attr("flying"))).await;
+    assert_eq!(status, StatusCode::OK, "{r}");
+    // ... a new selection must be a current option, and a removed value cannot be picked again
+    // once the product holds another one.
+    let (status, _) = call(&app, ADMIN, Method::PUT, &url, Some(attr("balanced"))).await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+    let (status, _) = call(&app, ADMIN, Method::PUT, &url, Some(attr("falling"))).await;
+    assert_eq!(status, StatusCode::OK);
+    let (status, _) = call(&app, ADMIN, Method::PUT, &url, Some(attr("flying"))).await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+}

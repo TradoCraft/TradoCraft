@@ -316,18 +316,21 @@ fn parse(a: &ProductAttribute) -> AppResult<AttributeValue> {
 }
 
 /// Checks one typed attribute against the admin definition of its key (kind and select options).
+/// `stored` is the text the product already holds for the key: a select value that was removed
+/// from the options afterwards stays acceptable while it is unchanged.
 fn check_definition(
     key: &str,
     kind: AttributeKind,
     value: &AttributeValue,
     rule: &ProductRule,
+    stored: Option<&str>,
 ) -> AppResult<()> {
     let matches = match (rule.kind, value) {
         (DefinitionKind::Number, AttributeValue::Number(_))
         | (DefinitionKind::Range, AttributeValue::Range { .. })
         | (DefinitionKind::Text, AttributeValue::Text(_)) => true,
         (DefinitionKind::Select, AttributeValue::Text(t)) => {
-            if !rule.options.contains(t) {
+            if !rule.options.contains(t) && stored != Some(t.as_str()) {
                 return Err(AppError::Validation(format!(
                     "attribute {key}: '{t}' is not one of the options of its definition"
                 )));
@@ -400,12 +403,17 @@ async fn replace_attributes(
     ensure_product(&mut *tx, id).await?;
     // Keys with an admin definition must use its kind; keys without one stay free.
     let rules = product_rules(&mut tx, user.company_id).await?;
+    // Read in the same transaction as the replace below.
+    let before = load(&mut *tx, id).await?;
     for (key, kind, v, _) in &typed {
         if let Some(rule) = rules.get(key) {
-            check_definition(key, *kind, v, rule)?;
+            let stored = before
+                .iter()
+                .find(|a| a.key == *key && a.kind == AttributeKind::Text)
+                .map(|a| a.value.as_str());
+            check_definition(key, *kind, v, rule, stored)?;
         }
     }
-    let before = load(&mut *tx, id).await?;
     sqlx::query("DELETE FROM products.product_attributes WHERE product_id = $1")
         .bind(id)
         .execute(&mut *tx)
@@ -535,7 +543,7 @@ mod tests {
             max: "2".parse().unwrap(),
         };
         let b = AttributeValue::Boolean(true);
-        let ok = |k, v: &AttributeValue, d| check_definition("x", k, v, &d).is_ok();
+        let ok = |k, v: &AttributeValue, d| check_definition("x", k, v, &d, None).is_ok();
         assert!(ok(
             AttributeKind::Number,
             &n,
