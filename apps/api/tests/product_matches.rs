@@ -597,17 +597,21 @@ async fn full_scenario_grid_two_dials_and_products(db: PgPool) {
     assert_eq!(reasons(u200)[1].1, "ok", "800 is on the lower bound");
     assert_eq!(reasons(u200)[2].1, "ok", "1400 is on the upper bound");
 
-    // A DC product without a dial size: only the external supply note, still suitable.
+    // A DC product without a dial size: the external supply note, but the dial fit is unknown.
     let ctrl = of(&m, CTRL);
-    assert_eq!(ctrl["status"], "suitable");
+    assert_eq!(ctrl["status"], "unknown");
     assert_eq!(
-        reasons(ctrl),
-        [(
+        reasons(ctrl)[0],
+        (
             "power".to_string(),
             "ok".to_string(),
             "needs an external power supply".to_string()
-        )]
+        )
     );
+    assert_eq!(reasons(ctrl)[1].1, "unknown");
+    assert!(reasons(ctrl)[1]
+        .2
+        .contains("the product has no dial_size_mm"));
 
     // counts agree with the list; filters
     let all = m["items"].as_array().unwrap();
@@ -761,4 +765,122 @@ async fn items_nested_in_groups_count_and_the_family_filter_works(db: PgPool) {
         .unwrap()
         .iter()
         .any(|p| p["id"] == UNIT_100));
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn a_2000mm_dial_excludes_a_product_limited_to_1250_and_everything_is_listed_sorted(
+    db: PgPool,
+) {
+    let app = seeded(&db).await;
+    let be3 = grid_id(&app, "BE", 400, 3).await;
+    set_grid(&app, OPP, &be3).await;
+    add_item(
+        &app,
+        OPP,
+        json!({ "type_code": "clock_dial", "values": { "dial_diameter_mm": 2000 } }),
+    )
+    .await;
+    dial_size(&app, BOLT, "600", "1250").await; // too small
+    dial_size(&app, UNIT_100, "1500", "2500").await; // fits
+                                                     // CTRL has no dial_size_mm: unknown
+    let m = matches(&app, OPP, "limit=500").await;
+
+    let small = of(&m, BOLT);
+    assert_eq!(small["status"], "unsuitable");
+    let fail: Vec<_> = reasons(small)
+        .into_iter()
+        .filter(|r| r.1 == "fail")
+        .collect();
+    assert_eq!(fail.len(), 1, "{small}");
+    assert_eq!(fail[0].0, format!("rule:{RULE_NAME}"));
+    assert_eq!(
+        fail[0].2,
+        "clock_dial: dial_diameter_mm 2000 is outside dial_size_mm 600..1250"
+    );
+    assert_eq!(of(&m, UNIT_100)["status"], "suitable");
+    assert_eq!(of(&m, CTRL)["status"], "unknown");
+
+    // All active products are returned, suitable first, then unknown, then unsuitable, by name.
+    let n: i64 = sqlx::query_scalar("SELECT count(*) FROM products.products WHERE active")
+        .fetch_one(&db)
+        .await
+        .unwrap();
+    let items = m["items"].as_array().unwrap();
+    assert_eq!(items.len() as i64, n);
+    let rank = |s: &str| {
+        ["suitable", "unknown", "unsuitable"]
+            .iter()
+            .position(|x| *x == s)
+            .unwrap()
+    };
+    let keys: Vec<(usize, String)> = items
+        .iter()
+        .map(|p| {
+            (
+                rank(p["status"].as_str().unwrap()),
+                p["name"].as_str().unwrap().to_string(),
+            )
+        })
+        .collect();
+    let mut sorted = keys.clone();
+    sorted.sort();
+    assert_eq!(keys, sorted);
+    assert_eq!(items[0]["status"], "suitable");
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn matching_can_be_limited_to_one_baseline_item_and_its_children(db: PgPool) {
+    let app = seeded(&db).await;
+    let be3 = grid_id(&app, "BE", 400, 3).await;
+    set_grid(&app, OPP, &be3).await;
+    let small = add_item(
+        &app,
+        OPP,
+        json!({ "type_code": "clock_dial", "name": "small", "values": { "dial_diameter_mm": 800 } }),
+    )
+    .await;
+    let big = add_item(
+        &app,
+        OPP,
+        json!({ "type_code": "clock_dial", "name": "big", "values": { "dial_diameter_mm": 2000 } }),
+    )
+    .await;
+    dial_size(&app, UNIT_100, "600", "1250").await;
+
+    let all = matches(&app, OPP, "limit=500").await;
+    assert_eq!(of(&all, UNIT_100)["status"], "unsuitable");
+
+    let for_small = matches(&app, OPP, &format!("item_id={small}&limit=500")).await;
+    let p = of(&for_small, UNIT_100);
+    assert_eq!(p["status"], "suitable");
+    assert!(reasons(p).iter().all(|r| !r.2.contains("2000")));
+
+    let for_big = matches(&app, OPP, &format!("item_id={big}&limit=500")).await;
+    let p = of(&for_big, UNIT_100);
+    assert_eq!(p["status"], "unsuitable");
+    assert!(reasons(p).iter().any(|r| r.1 == "fail"
+        && r.2 == "clock_dial \"big\": dial_diameter_mm 2000 is outside dial_size_mm 600..1250"));
+
+    // A group stands for its children.
+    let group = add_item(&app, OPP, json!({ "type_code": "bell_group" })).await;
+    let for_group = matches(&app, OPP, &format!("item_id={group}&limit=500")).await;
+    assert!(reasons(of(&for_group, UNIT_100))
+        .iter()
+        .all(|r| !r.0.starts_with("rule:")));
+
+    // Unknown item and an item of another opportunity are 404.
+    for bad in ["00000000-0000-7000-8000-0000000fff99".to_string(), {
+        let other = add_item(&app, OPP2, json!({ "type_code": "clock_dial" })).await;
+        other
+    }] {
+        let (status, _) = api(
+            &app,
+            SALES,
+            Method::GET,
+            &format!("/opportunities/{OPP}/product-matches?item_id={bad}"),
+            None,
+        )
+        .await;
+        assert_eq!(status, StatusCode::NOT_FOUND);
+    }
 }

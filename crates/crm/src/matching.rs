@@ -266,18 +266,44 @@ pub fn node_label(n: &BaselineNode) -> String {
     }
 }
 
-/// The reason one baseline item gives for one rule, or `None` when the rule does not apply to the
-/// product (it lacks the attribute, or has it in a shape the operator cannot use).
+/// The reason one baseline item gives for one rule. A product that lacks the attribute (or has it
+/// in a shape the operator cannot use) cannot be judged: `unknown`, never `suitable` by silence.
 fn rule_reason(rule: &Rule, node: &BaselineNode, product: &ProductFacts) -> Option<Reason> {
-    let target = product.attributes.get(&rule.product_attribute_key)?;
     let (bk, pk) = (&rule.baseline_attribute_key, &rule.product_attribute_key);
     let label = node_label(node);
-    let shown = match (rule.operator, target) {
-        (Operator::WithinRange, ProductValue::Range { min, max }) => format!("{min}..{max}"),
-        (Operator::AtMost | Operator::AtLeast, ProductValue::Number(n)) => n.to_string(),
-        _ => return None,
-    };
     let check = format!("rule:{}", rule.name);
+    let usable = product.attributes.get(pk).filter(|t| {
+        matches!(
+            (rule.operator, t),
+            (Operator::WithinRange, ProductValue::Range { .. })
+                | (
+                    Operator::AtMost | Operator::AtLeast,
+                    ProductValue::Number(_)
+                )
+        )
+    });
+    let Some(target) = usable else {
+        let what = if product.attributes.contains_key(pk) {
+            format!("the product's {pk} cannot be compared this way")
+        } else {
+            format!("the product has no {pk}")
+        };
+        let have = node
+            .values
+            .get(bk)
+            .and_then(Value::as_f64)
+            .map(|v| format!(" of {bk} {v}"))
+            .unwrap_or_default();
+        return Some(Reason {
+            check,
+            status: CheckStatus::Unknown,
+            message: format!("{label}: {what}, the fit{have} is unknown"),
+        });
+    };
+    let shown = match target {
+        ProductValue::Range { min, max } => format!("{min}..{max}"),
+        ProductValue::Number(n) => n.to_string(),
+    };
     let Some(v) = node.values.get(bk).and_then(Value::as_f64) else {
         return Some(Reason {
             check,
@@ -507,24 +533,45 @@ mod tests {
     }
 
     #[test]
-    fn a_product_without_the_attribute_is_not_judged_by_the_rule() {
-        let e = run(
-            &[dial(5000.0)],
-            &[rule(Operator::WithinRange)],
-            &product(None),
+    fn a_dial_of_2000_does_not_fit_a_product_limited_to_1250() {
+        let rules = [rule(Operator::WithinRange)];
+        let e = run(&[dial(2000.0)], &rules, &product(range(600.0, 1250.0)));
+        assert_eq!(e.status, MatchStatus::Unsuitable);
+        assert_eq!(e.reasons.len(), 1);
+        assert_eq!(e.reasons[0].check, "rule:Dial size fits product");
+        assert_eq!(e.reasons[0].status, CheckStatus::Fail);
+        assert_eq!(
+            e.reasons[0].message,
+            "clock_dial: dial_diameter_mm 2000 is outside dial_size_mm 600..1250"
         );
+        let e = run(&[dial(2000.0)], &rules, &product(range(1500.0, 2500.0)));
         assert_eq!(e.status, MatchStatus::Suitable);
-        assert!(e.reasons.is_empty());
     }
 
     #[test]
-    fn a_product_attribute_of_the_wrong_shape_is_not_judged_either() {
+    fn a_product_without_the_attribute_is_unknown_not_suitable() {
+        let e = run(
+            &[dial(2000.0)],
+            &[rule(Operator::WithinRange)],
+            &product(None),
+        );
+        assert_eq!(e.status, MatchStatus::Unknown);
+        assert_eq!(e.reasons.len(), 1);
+        assert_eq!(e.reasons[0].status, CheckStatus::Unknown);
+        assert_eq!(
+            e.reasons[0].message,
+            "clock_dial: the product has no dial_size_mm, the fit of dial_diameter_mm 2000 is unknown"
+        );
+    }
+
+    #[test]
+    fn a_product_attribute_of_the_wrong_shape_is_unknown_too() {
         let p = product(Some(ProductValue::Number(1.0)));
         let e = run(&[dial(5000.0)], &[rule(Operator::WithinRange)], &p);
-        assert!(e.reasons.is_empty());
+        assert_eq!(e.status, MatchStatus::Unknown);
         let p = product(range(1.0, 2.0));
         let e = run(&[dial(5000.0)], &[rule(Operator::AtMost)], &p);
-        assert!(e.reasons.is_empty());
+        assert_eq!(e.status, MatchStatus::Unknown);
     }
 
     #[test]
