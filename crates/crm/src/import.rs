@@ -14,8 +14,8 @@ use sqlx::{PgConnection, PgPool};
 use tradocraft_core::csv_io::{self, ImportParams, ImportReport};
 use tradocraft_core::error::ErrorBody;
 use tradocraft_core::import::{
-    self, Cell, CellValue, Cells, Column, ColumnKind, ExportParams, ImportEntity, Importable, Row,
-    Table,
+    self, BinaryFile, Cell, CellValue, Cells, Column, ColumnKind, ExportParams, ImportEntity,
+    Importable, Row, Table,
 };
 use tradocraft_core::{AppResult, AppState, CurrentUser, Permission};
 use utoipa_axum::router::OpenApiRouter;
@@ -330,8 +330,8 @@ pub fn customers_import() -> ImportEntity {
     params(ExportParams),
     responses((status = 200, content(
             (String = "text/csv"),
-            (String = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
-            (String = "application/vnd.oasis.opendocument.spreadsheet"))),
+            (inline(BinaryFile) = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+            (inline(BinaryFile) = "application/vnd.oasis.opendocument.spreadsheet"))),
         (status = 403, body = ErrorBody)))]
 async fn export_customers(
     State(state): State<AppState>,
@@ -347,7 +347,7 @@ async fn export_customers(
 #[utoipa::path(post, path = "/customers/import", tag = "crm", operation_id = "import_customers",
     params(ImportParams),
     request_body(content(
-        (String = "application/octet-stream"),
+        (inline(BinaryFile) = "application/octet-stream"),
         (String = "text/csv"))),
     responses((status = 200, body = ImportReport), (status = 403, body = ErrorBody),
         (status = 413, description = "Body larger than 5 MB"), (status = 422, body = ImportReport)))]

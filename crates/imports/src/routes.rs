@@ -12,7 +12,9 @@ use sqlx::{FromRow, PgPool};
 use tradocraft_core::audit;
 use tradocraft_core::csv_io::{self, RowError};
 use tradocraft_core::files::clean_filename;
-use tradocraft_core::import::{read_raw, sheet_names, Format, ImportDescription, Limits};
+use tradocraft_core::import::{
+    read_raw, sheet_names, BinaryFile, Format, ImportDescription, Limits,
+};
 use tradocraft_core::{new_id, AppError, AppResult, AppState, CurrentUser, Permission};
 use utoipa::{IntoParams, ToSchema};
 use utoipa_axum::router::OpenApiRouter;
@@ -288,7 +290,7 @@ async fn list_entities(user: CurrentUser) -> AppResult<Json<Vec<ImportDescriptio
 /// of another type, or one that exceeds the archive limits, is refused and not stored.
 #[utoipa::path(post, path = "/imports/files", tag = "imports", operation_id = "upload_import_file",
     params(UploadParams),
-    request_body(content = String, content_type = "application/octet-stream"),
+    request_body(content = inline(BinaryFile), content_type = "application/octet-stream"),
     responses((status = 201, body = ImportFile), (status = 403, body = ErrorBody),
               (status = 413, description = "The file is larger than 50 MiB"),
               (status = 422, body = ErrorBody)))]

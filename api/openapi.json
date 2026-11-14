@@ -3294,12 +3294,16 @@
               },
               "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
                 "schema": {
-                  "type": "string"
+                  "type": "string",
+                  "format": "binary",
+                  "description": "The raw bytes of a file."
                 }
               },
               "application/vnd.oasis.opendocument.spreadsheet": {
                 "schema": {
-                  "type": "string"
+                  "type": "string",
+                  "format": "binary",
+                  "description": "The raw bytes of a file."
                 }
               }
             }
@@ -3351,7 +3355,9 @@
           "content": {
             "application/octet-stream": {
               "schema": {
-                "type": "string"
+                "type": "string",
+                "format": "binary",
+                "description": "The raw bytes of a file."
               }
             },
             "text/csv": {
@@ -8758,7 +8764,9 @@
           "content": {
             "application/octet-stream": {
               "schema": {
-                "type": "string"
+                "type": "string",
+                "format": "binary",
+                "description": "The raw bytes of a file."
               }
             }
           },
@@ -19653,12 +19661,16 @@
               },
               "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
                 "schema": {
-                  "type": "string"
+                  "type": "string",
+                  "format": "binary",
+                  "description": "The raw bytes of a file."
                 }
               },
               "application/vnd.oasis.opendocument.spreadsheet": {
                 "schema": {
-                  "type": "string"
+                  "type": "string",
+                  "format": "binary",
+                  "description": "The raw bytes of a file."
                 }
               }
             }
@@ -19710,7 +19722,9 @@
           "content": {
             "application/octet-stream": {
               "schema": {
-                "type": "string"
+                "type": "string",
+                "format": "binary",
+                "description": "The raw bytes of a file."
               }
             },
             "text/csv": {
@@ -45699,7 +45713,7 @@
       },
       "RuleAction": {
         "type": "object",
-        "description": "One change a rule makes. `kind` decides which of the other fields is used:\n`set_owner` (`user_id`), `set_team` (`team_id`), `set_priority` (`value`), `set_category`\n(`value`), `add_tag` (`value`), `set_internal` (`flag`), `send_email` (`recipient`, `team_id` or\n`address`, `subject`, `body`, `period_hours`; ADR 0066).",
+        "description": "One change a rule makes. `kind` decides which of the other fields is used:\n`set_owner` (`user_id`), `set_team` (`team_id`), `set_priority` (`value`), `set_category`\n(`value`), `add_tag` (`value`), `set_internal` (`flag`), `send_email` (`recipient`, `team_id` or\n`address`, `subject`, `body`, `period_hours`; ADR 0063).",
         "required": [
           "kind"
         ],
