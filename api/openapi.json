@@ -3257,13 +3257,47 @@
         "tags": [
           "crm"
         ],
-        "summary": "All customers (with the terms in the active company) as CSV, ordered by code.",
+        "summary": "All customers (with the terms in the active company) as CSV, XLSX or ODS, ordered by code.",
         "operationId": "export_customers",
+        "parameters": [
+          {
+            "name": "format",
+            "in": "query",
+            "description": "`csv` (default), `xlsx` or `ods`.",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string",
+                  "description": "The formats an export can be asked for.",
+                  "enum": [
+                    "csv",
+                    "xlsx",
+                    "ods"
+                  ]
+                }
+              ]
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "",
             "content": {
               "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/vnd.oasis.opendocument.spreadsheet": {
                 "schema": {
                   "type": "string"
                 }
@@ -3288,7 +3322,7 @@
         "tags": [
           "crm"
         ],
-        "summary": "Creates or updates customers from CSV, keyed by `code`. All-or-nothing: with any row error\nnothing is written (422 with every error); `dry_run=true` only reports.",
+        "summary": "Creates or updates customers from a CSV, XLSX or ODS file (detected from the content), keyed by\n`code`. All-or-nothing: with any row error nothing is written (422 with every error);\n`dry_run=true` only reports. `sheet` picks the sheet of a spreadsheet.",
         "operationId": "import_customers",
         "parameters": [
           {
@@ -3299,10 +3333,27 @@
             "schema": {
               "type": "boolean"
             }
+          },
+          {
+            "name": "sheet",
+            "in": "query",
+            "description": "The sheet to read from an XLSX or ODS file (the first sheet when absent); ignored for CSV.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
           }
         ],
         "requestBody": {
           "content": {
+            "application/octet-stream": {
+              "schema": {
+                "type": "string"
+              }
+            },
             "text/csv": {
               "schema": {
                 "type": "string"
@@ -18843,13 +18894,47 @@
         "tags": [
           "products"
         ],
-        "summary": "All products as CSV, ordered by code.",
+        "summary": "All products as CSV, XLSX or ODS, ordered by code.",
         "operationId": "export_products",
+        "parameters": [
+          {
+            "name": "format",
+            "in": "query",
+            "description": "`csv` (default), `xlsx` or `ods`.",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string",
+                  "description": "The formats an export can be asked for.",
+                  "enum": [
+                    "csv",
+                    "xlsx",
+                    "ods"
+                  ]
+                }
+              ]
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "",
             "content": {
               "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/vnd.oasis.opendocument.spreadsheet": {
                 "schema": {
                   "type": "string"
                 }
@@ -18874,7 +18959,7 @@
         "tags": [
           "products"
         ],
-        "summary": "Creates or updates products from CSV, keyed by `code`. All-or-nothing: with any row error\nnothing is written (422 with every error); `dry_run=true` only reports.",
+        "summary": "Creates or updates products from a CSV, XLSX or ODS file (detected from the content), keyed by\n`code`. All-or-nothing: with any row error nothing is written (422 with every error);\n`dry_run=true` only reports. `sheet` picks the sheet of a spreadsheet.",
         "operationId": "import_products",
         "parameters": [
           {
@@ -18885,10 +18970,27 @@
             "schema": {
               "type": "boolean"
             }
+          },
+          {
+            "name": "sheet",
+            "in": "query",
+            "description": "The sheet to read from an XLSX or ODS file (the first sheet when absent); ignored for CSV.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
           }
         ],
         "requestBody": {
           "content": {
+            "application/octet-stream": {
+              "schema": {
+                "type": "string"
+              }
+            },
             "text/csv": {
               "schema": {
                 "type": "string"
