@@ -2,14 +2,31 @@
 //! whose attribute values are validated against the admin-defined attribute definitions of the
 //! item's type.
 
+use axum::extract::{Path, State};
+use axum::http::StatusCode;
+use axum::Json;
 use chrono::{DateTime, Utc};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
-use sqlx::FromRow;
+use sqlx::{FromRow, PgConnection};
 use std::collections::HashMap;
-use tradocraft_products::attribute_definitions::{AttributeDefinition, DefinitionKind};
+use tradocraft_core::{audit, new_id, AppError, AppResult, AppState, CurrentUser, Permission};
+use tradocraft_products::attribute_definitions::{
+    active_for_scope, AttributeDefinition, DefinitionKind,
+};
 use utoipa::ToSchema;
+use utoipa_axum::router::OpenApiRouter;
+use utoipa_axum::routes;
 use uuid::Uuid;
+
+use crate::baseline_types;
+
+type ErrorBody = tradocraft_core::error::ErrorBody;
+
+/// An opportunity holds at most this many baseline items.
+pub const MAX_ITEMS: usize = 1000;
+const MAX_QUANTITY: i32 = 100_000;
+const MAX_NAME: usize = 200;
 
 /// Items nest at most this deep (a group holding bells is depth 2).
 pub const MAX_DEPTH: usize = 8;
@@ -208,6 +225,346 @@ pub fn build_tree(flat: Vec<BaselineItem>) -> Vec<BaselineItem> {
         items
     }
     attach(&mut by_parent, None)
+}
+
+fn default_quantity() -> i32 {
+    1
+}
+
+fn empty_object() -> Value {
+    Value::Object(Map::new())
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct BaselineItemInput {
+    /// Code of a baseline item type of the company (it must be active).
+    pub type_code: String,
+    /// An item of the same opportunity; omit for the top level.
+    #[serde(default)]
+    pub parent_id: Option<Uuid>,
+    /// Optional, e.g. the name of a bell.
+    #[serde(default)]
+    pub name: Option<String>,
+    /// At least 1.
+    #[serde(default = "default_quantity")]
+    pub quantity: i32,
+    /// Attribute values keyed by definition key; see the definitions of the item's type.
+    #[serde(default = "empty_object")]
+    #[schema(value_type = Object)]
+    pub values: Value,
+    #[serde(default)]
+    pub sort_order: i32,
+}
+
+/// Replaces an item: what is not sent falls back to its default (no parent, no name, quantity 1,
+/// no values); only `sort_order` keeps its stored value when omitted. The type cannot change.
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct BaselineItemUpdate {
+    /// Omit (null) to move the item to the top level.
+    #[serde(default)]
+    pub parent_id: Option<Uuid>,
+    #[serde(default)]
+    pub name: Option<String>,
+    #[serde(default = "default_quantity")]
+    pub quantity: i32,
+    #[serde(default = "empty_object")]
+    #[schema(value_type = Object)]
+    pub values: Value,
+    #[serde(default)]
+    pub sort_order: Option<i32>,
+}
+
+fn clean_name(name: &Option<String>) -> AppResult<Option<String>> {
+    let name = name.as_deref().map(str::trim).filter(|n| !n.is_empty());
+    match name {
+        Some(n) if n.chars().count() > MAX_NAME => Err(AppError::Validation(format!(
+            "name is at most {MAX_NAME} characters"
+        ))),
+        other => Ok(other.map(str::to_string)),
+    }
+}
+
+fn check_quantity(q: i32) -> AppResult<()> {
+    if (1..=MAX_QUANTITY).contains(&q) {
+        Ok(())
+    } else {
+        Err(AppError::Validation(format!(
+            "quantity must be between 1 and {MAX_QUANTITY}"
+        )))
+    }
+}
+
+const SELECT: &str = "SELECT id, parent_id, type_code, name, quantity, \"values\", sort_order,
+                             created_at, updated_at
+                      FROM crm.opportunity_baseline_items";
+
+/// 404 unless the opportunity belongs to the company; `lock` serialises concurrent tree edits.
+async fn check_opportunity(
+    conn: &mut PgConnection,
+    company_id: Uuid,
+    opportunity_id: Uuid,
+    lock: bool,
+) -> AppResult<()> {
+    let found: Option<i32> = sqlx::query_scalar(if lock {
+        "SELECT 1 FROM crm.opportunities WHERE id = $1 AND company_id = $2 FOR UPDATE"
+    } else {
+        "SELECT 1 FROM crm.opportunities WHERE id = $1 AND company_id = $2"
+    })
+    .bind(opportunity_id)
+    .bind(company_id)
+    .fetch_optional(conn)
+    .await?;
+    found.map(|_| ()).ok_or(AppError::NotFound("opportunity"))
+}
+
+/// (id, parent_id, type_code) of every item of the opportunity.
+async fn placements(
+    conn: &mut PgConnection,
+    opportunity_id: Uuid,
+) -> AppResult<Vec<(Uuid, Option<Uuid>, String)>> {
+    Ok(sqlx::query_as(
+        "SELECT id, parent_id, type_code FROM crm.opportunity_baseline_items WHERE opportunity_id = $1",
+    )
+    .bind(opportunity_id)
+    .fetch_all(conn)
+    .await?)
+}
+
+async fn load_item(
+    conn: &mut PgConnection,
+    opportunity_id: Uuid,
+    id: Uuid,
+) -> AppResult<BaselineItem> {
+    sqlx::query_as(&format!("{SELECT} WHERE id = $1 AND opportunity_id = $2"))
+        .bind(id)
+        .bind(opportunity_id)
+        .fetch_optional(conn)
+        .await?
+        .ok_or(AppError::NotFound("baseline item"))
+}
+
+/// Validates the placement and values of an item of type `type_code` and returns the normalised
+/// values. `moving` is the item itself when it already exists.
+async fn check_item(
+    conn: &mut PgConnection,
+    company_id: Uuid,
+    existing: &[(Uuid, Option<Uuid>, String)],
+    moving: Option<Uuid>,
+    ty: &baseline_types::BaselineItemType,
+    parent_id: Option<Uuid>,
+    values: &Value,
+) -> AppResult<Value> {
+    let parents = existing.iter().map(|(i, p, _)| (*i, *p)).collect();
+    check_placement(&parents, moving, parent_id).map_err(AppError::Validation)?;
+    let parent_type = parent_id.and_then(|p| {
+        existing
+            .iter()
+            .find(|(i, _, _)| *i == p)
+            .map(|(_, _, t)| t.as_str())
+    });
+    check_parent_type(&ty.allowed_parent_codes, ty.allow_top_level, parent_type)
+        .map_err(AppError::Validation)?;
+    let defs = active_for_scope(conn, company_id, &ty.code).await?;
+    validate_values(&defs, values)
+        .map(Value::Object)
+        .map_err(AppError::Validation)
+}
+
+/// The baseline of an opportunity as a tree (a group holds its bells).
+#[utoipa::path(get, path = "/opportunities/{id}/baseline", tag = "crm", params(("id" = Uuid, Path)),
+    responses((status = 200, body = Vec<BaselineItem>), (status = 404, body = ErrorBody)))]
+async fn get_baseline(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Path(id): Path<Uuid>,
+) -> AppResult<Json<Vec<BaselineItem>>> {
+    user.require(Permission::OpportunitiesRead)?;
+    let mut conn = state.db.acquire().await?;
+    check_opportunity(&mut conn, user.company_id, id, false).await?;
+    let flat: Vec<BaselineItem> = sqlx::query_as(&format!(
+        "{SELECT} WHERE opportunity_id = $1 ORDER BY sort_order, created_at, id"
+    ))
+    .bind(id)
+    .fetch_all(&mut *conn)
+    .await?;
+    Ok(Json(build_tree(flat)))
+}
+
+#[utoipa::path(post, path = "/opportunities/{id}/baseline/items", tag = "crm", params(("id" = Uuid, Path)),
+    request_body = BaselineItemInput,
+    responses((status = 201, body = BaselineItem), (status = 404, body = ErrorBody),
+        (status = 422, body = ErrorBody)))]
+async fn create_item(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Path(opportunity_id): Path<Uuid>,
+    Json(input): Json<BaselineItemInput>,
+) -> AppResult<(StatusCode, Json<BaselineItem>)> {
+    user.require(Permission::OpportunitiesWrite)?;
+    check_quantity(input.quantity)?;
+    let name = clean_name(&input.name)?;
+    let mut tx = state.db.begin().await?;
+    check_opportunity(&mut tx, user.company_id, opportunity_id, true).await?;
+    let type_code = input.type_code.trim();
+    let ty = baseline_types::find_by_code(&mut tx, user.company_id, type_code)
+        .await?
+        .ok_or_else(|| AppError::Validation(format!("unknown baseline item type {type_code}")))?;
+    if !ty.active {
+        return Err(AppError::Validation(format!(
+            "baseline item type {type_code} is inactive"
+        )));
+    }
+    let existing = placements(&mut tx, opportunity_id).await?;
+    if existing.len() >= MAX_ITEMS {
+        return Err(AppError::Validation(format!(
+            "an opportunity holds at most {MAX_ITEMS} baseline items"
+        )));
+    }
+    let values = check_item(
+        &mut tx,
+        user.company_id,
+        &existing,
+        None,
+        &ty,
+        input.parent_id,
+        &input.values,
+    )
+    .await?;
+    let id = new_id();
+    sqlx::query(
+        "INSERT INTO crm.opportunity_baseline_items
+            (id, company_id, opportunity_id, parent_id, type_code, name, quantity, \"values\", sort_order)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+    )
+    .bind(id)
+    .bind(user.company_id)
+    .bind(opportunity_id)
+    .bind(input.parent_id)
+    .bind(&ty.code)
+    .bind(&name)
+    .bind(input.quantity)
+    .bind(&values)
+    .bind(input.sort_order)
+    .execute(&mut *tx)
+    .await?;
+    audit::record(
+        &mut tx,
+        &user,
+        "baseline_item",
+        id,
+        "created",
+        serde_json::json!({ "opportunity_id": opportunity_id, "type_code": ty.code }),
+    )
+    .await?;
+    let item = load_item(&mut tx, opportunity_id, id).await?;
+    tx.commit().await?;
+    Ok((StatusCode::CREATED, Json(item)))
+}
+
+#[utoipa::path(put, path = "/opportunities/{id}/baseline/items/{item_id}", tag = "crm",
+    params(("id" = Uuid, Path), ("item_id" = Uuid, Path)), request_body = BaselineItemUpdate,
+    responses((status = 200, body = BaselineItem), (status = 404, body = ErrorBody),
+        (status = 422, body = ErrorBody)))]
+async fn update_item(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Path((opportunity_id, item_id)): Path<(Uuid, Uuid)>,
+    Json(input): Json<BaselineItemUpdate>,
+) -> AppResult<Json<BaselineItem>> {
+    user.require(Permission::OpportunitiesWrite)?;
+    check_quantity(input.quantity)?;
+    let name = clean_name(&input.name)?;
+    let mut tx = state.db.begin().await?;
+    check_opportunity(&mut tx, user.company_id, opportunity_id, true).await?;
+    let current = load_item(&mut tx, opportunity_id, item_id).await?;
+    let ty = baseline_types::find_by_code(&mut tx, user.company_id, &current.type_code)
+        .await?
+        .ok_or(AppError::NotFound("baseline item type"))?;
+    let existing = placements(&mut tx, opportunity_id).await?;
+    let values = check_item(
+        &mut tx,
+        user.company_id,
+        &existing,
+        Some(item_id),
+        &ty,
+        input.parent_id,
+        &input.values,
+    )
+    .await?;
+    sqlx::query(
+        "UPDATE crm.opportunity_baseline_items
+         SET parent_id = $2, name = $3, quantity = $4, \"values\" = $5, sort_order = $6, updated_at = now()
+         WHERE id = $1",
+    )
+    .bind(item_id)
+    .bind(input.parent_id)
+    .bind(&name)
+    .bind(input.quantity)
+    .bind(&values)
+    .bind(input.sort_order.unwrap_or(current.sort_order))
+    .execute(&mut *tx)
+    .await?;
+    audit::record(
+        &mut tx,
+        &user,
+        "baseline_item",
+        item_id,
+        "updated",
+        serde_json::json!({ "opportunity_id": opportunity_id, "type_code": ty.code }),
+    )
+    .await?;
+    let item = load_item(&mut tx, opportunity_id, item_id).await?;
+    tx.commit().await?;
+    Ok(Json(item))
+}
+
+/// Deletes one item. An item that still has children is refused with 409 rather than deleting the
+/// whole subtree silently: remove or move the children first.
+#[utoipa::path(delete, path = "/opportunities/{id}/baseline/items/{item_id}", tag = "crm",
+    params(("id" = Uuid, Path), ("item_id" = Uuid, Path)),
+    responses((status = 204), (status = 404, body = ErrorBody), (status = 409, body = ErrorBody)))]
+async fn delete_item(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Path((opportunity_id, item_id)): Path<(Uuid, Uuid)>,
+) -> AppResult<StatusCode> {
+    user.require(Permission::OpportunitiesWrite)?;
+    let mut tx = state.db.begin().await?;
+    check_opportunity(&mut tx, user.company_id, opportunity_id, true).await?;
+    let item = load_item(&mut tx, opportunity_id, item_id).await?;
+    let children: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM crm.opportunity_baseline_items WHERE parent_id = $1",
+    )
+    .bind(item_id)
+    .fetch_one(&mut *tx)
+    .await?;
+    if children > 0 {
+        return Err(AppError::Conflict(format!(
+            "the item has {children} child items; remove or move them first"
+        )));
+    }
+    sqlx::query("DELETE FROM crm.opportunity_baseline_items WHERE id = $1")
+        .bind(item_id)
+        .execute(&mut *tx)
+        .await?;
+    audit::record(
+        &mut tx,
+        &user,
+        "baseline_item",
+        item_id,
+        "deleted",
+        serde_json::json!({ "opportunity_id": opportunity_id, "type_code": item.type_code }),
+    )
+    .await?;
+    tx.commit().await?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
+pub fn router() -> OpenApiRouter<AppState> {
+    OpenApiRouter::new()
+        .routes(routes!(get_baseline))
+        .routes(routes!(create_item))
+        .routes(routes!(update_item, delete_item))
 }
 
 #[cfg(test)]

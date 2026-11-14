@@ -87,6 +87,8 @@ pub struct Opportunity {
     pub expected_close: Option<NaiveDate>,
     pub lost_reason: Option<String>,
     pub notes: String,
+    /// The power grid of the site; belongs to the customer's country (ADR 0068).
+    pub power_grid_id: Option<Uuid>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     pub closed_at: Option<DateTime<Utc>>,
@@ -107,6 +109,12 @@ pub struct OpportunityInput {
     pub expected_close: Option<NaiveDate>,
     #[serde(default)]
     pub notes: String,
+    /// A grid of the customer's country (422 otherwise). On update it is kept when omitted.
+    #[serde(default)]
+    pub power_grid_id: Option<Uuid>,
+    /// `true` clears the stored grid on update; combined with `power_grid_id` it is a 422.
+    #[serde(default)]
+    pub clear_power_grid: Option<bool>,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -151,7 +159,7 @@ pub struct ListParams {
 const SELECT: &str =
     "SELECT o.id, o.number, o.title, o.customer_id, c.name AS customer_name, o.owner_user_id,
         u.display_name AS owner_name, o.stage, o.expected_value, o.probability, o.expected_close,
-        o.lost_reason, o.notes, o.created_at, o.updated_at, o.closed_at
+        o.lost_reason, o.notes, o.power_grid_id, o.created_at, o.updated_at, o.closed_at
      FROM crm.opportunities o
      JOIN crm.customers c ON c.id = o.customer_id
      JOIN core.users u ON u.id = o.owner_user_id";
@@ -186,6 +194,35 @@ impl OpportunityInput {
         }
         validate_probability(self.probability)
     }
+}
+
+/// The grid to store: validated against the customer's country (422), see
+/// [`tradocraft_products::power::resolve_power_grid`]. `kept` is the stored grid on update.
+async fn resolve_grid(
+    conn: &mut PgConnection,
+    input: &OpportunityInput,
+    kept: Option<Uuid>,
+) -> AppResult<Option<Uuid>> {
+    tradocraft_products::power::check_grid_clear(input.clear_power_grid, input.power_grid_id)?;
+    if input.clear_power_grid == Some(true) {
+        return Ok(None);
+    }
+    if input.power_grid_id.is_none() && kept.is_none() {
+        return Ok(None);
+    }
+    let country: Option<String> =
+        sqlx::query_scalar("SELECT country_code::text FROM crm.customers WHERE id = $1")
+            .bind(input.customer_id)
+            .fetch_optional(&mut *conn)
+            .await?;
+    tradocraft_products::power::resolve_power_grid(
+        conn,
+        input.power_grid_id,
+        kept,
+        country.as_deref(),
+        "customer",
+    )
+    .await
 }
 
 async fn ensure_owner_in_company(
@@ -398,14 +435,15 @@ pub async fn create(
     input.validate()?;
     let owner = input.owner_user_id.unwrap_or(user.user_id);
     ensure_owner_in_company(conn, user.company_id, owner).await?;
+    let power_grid_id = resolve_grid(conn, input, None).await?;
     let year = Utc::now().year();
     let n = numbering::next_number(conn, user.company_id, "opportunity", year).await?;
     let number = format!("O{year}-{n:05}");
     let id = new_id();
     sqlx::query(
         "INSERT INTO crm.opportunities (id, company_id, number, title, customer_id, owner_user_id, expected_value,
-                                        probability, expected_close, notes)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+                                        probability, expected_close, notes, power_grid_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)",
     )
     .bind(id)
     .bind(user.company_id)
@@ -417,6 +455,7 @@ pub async fn create(
     .bind(input.probability.unwrap_or(OpportunityStage::Lead.default_probability()))
     .bind(input.expected_close)
     .bind(&input.notes)
+    .bind(power_grid_id)
     .execute(&mut *conn)
     .await?;
     audit::record(
@@ -464,9 +503,10 @@ async fn update_opportunity(
     }
     let owner = input.owner_user_id.unwrap_or(current.owner_user_id);
     ensure_owner_in_company(&mut tx, user.company_id, owner).await?;
+    let power_grid_id = resolve_grid(&mut tx, &input, current.power_grid_id).await?;
     sqlx::query(
         "UPDATE crm.opportunities SET title = $2, customer_id = $3, owner_user_id = $4, expected_value = $5,
-                probability = $6, expected_close = $7, notes = $8, updated_at = now()
+                probability = $6, expected_close = $7, notes = $8, power_grid_id = $9, updated_at = now()
          WHERE id = $1",
     )
     .bind(id)
@@ -477,6 +517,7 @@ async fn update_opportunity(
     .bind(input.probability.unwrap_or(current.probability))
     .bind(input.expected_close)
     .bind(&input.notes)
+    .bind(power_grid_id)
     .execute(&mut *tx)
     .await?;
     audit::record(
