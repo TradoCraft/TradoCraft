@@ -4411,6 +4411,8 @@
   "attrScopeProduct": "Product",
   "matchesTitle": "Product matches",
   "matchesEmpty": "No products to show.",
+  "matchesShowing": "Showing {shown} of {total} products",
+  "@matchesShowing": {"placeholders": {"shown": {"type": "int"}, "total": {"type": "int"}}},
   "matchesSuggest": "Suggest products",
   "matchesForItem": "Products for {name}",
   "@matchesForItem": {"placeholders": {"name": {"type": "String"}}},

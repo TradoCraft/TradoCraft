@@ -9713,6 +9713,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get matchesEmpty => 'Keine Produkte vorhanden.';
 
   @override
+  String matchesShowing(int shown, int total) {
+    return '$shown von $total Produkten angezeigt';
+  }
+
+  @override
   String get matchesSuggest => 'Produkte vorschlagen';
 
   @override

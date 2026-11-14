@@ -9690,6 +9690,11 @@ class AppLocalizationsNl extends AppLocalizations {
   String get matchesEmpty => 'Geen producten om te tonen.';
 
   @override
+  String matchesShowing(int shown, int total) {
+    return '$shown van $total producten getoond';
+  }
+
+  @override
   String get matchesSuggest => 'Producten voorstellen';
 
   @override

@@ -33,7 +33,7 @@ const _ok =
     'clock_dial: dial_diameter_mm 2000 is within dial_size_mm 1500..2500';
 
 // Deliberately not in display order.
-Map<String, Object?> _page({List<Object?>? items}) => {
+Map<String, Object?> _page({List<Object?>? items, int total = 3}) => {
   'items':
       items ??
       [
@@ -51,7 +51,7 @@ Map<String, Object?> _page({List<Object?>? items}) => {
           _reason('rule:Dial size fits product', 'ok', _ok),
         ]),
       ],
-  'total': 3,
+  'total': total,
   'counts': {'suitable': 1, 'unknown': 1, 'unsuitable': 1},
 };
 
@@ -265,5 +265,32 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('baseline-quick-save')));
     await tester.pumpAndSettle();
     expect(loads(), before + 1);
+  });
+
+  testWidgets('says how many of the products are shown when the list is cut', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      _http(page: () => _page(total: 700)),
+      const MatchesPanel(opportunityId: 'o1'),
+    );
+    expect(find.text('Showing 3 of 700 products'), findsOneWidget);
+  });
+
+  testWidgets('shows no count when every product is listed', (tester) async {
+    await _pump(tester, _http(), const MatchesPanel(opportunityId: 'o1'));
+    expect(find.textContaining('Showing'), findsNothing);
+  });
+
+  testWidgets('the suggestion dialog says it too', (tester) async {
+    await _pump(
+      tester,
+      _http(page: () => _page(total: 700)),
+      const BaselineSection(opportunityId: 'o1'),
+    );
+    await tester.tap(find.byKey(const ValueKey('baseline-suggest-d1')));
+    await tester.pumpAndSettle();
+    expect(find.text('Showing 3 of 700 products'), findsOneWidget);
   });
 }

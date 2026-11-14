@@ -17196,6 +17196,12 @@ abstract class AppLocalizations {
   /// **'No products to show.'**
   String get matchesEmpty;
 
+  /// No description provided for @matchesShowing.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing {shown} of {total} products'**
+  String matchesShowing(int shown, int total);
+
   /// No description provided for @matchesSuggest.
   ///
   /// In en, this message translates to:

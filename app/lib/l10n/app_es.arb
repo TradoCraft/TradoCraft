@@ -3030,6 +3030,8 @@
   "attrScopeProduct": "Producto",
   "matchesTitle": "Productos adecuados",
   "matchesEmpty": "No hay productos que mostrar.",
+  "matchesShowing": "Mostrando {shown} de {total} productos",
+  "@matchesShowing": {"placeholders": {"shown": {"type": "int"}, "total": {"type": "int"}}},
   "matchesSuggest": "Sugerir productos",
   "matchesForItem": "Productos para {name}",
   "@matchesForItem": {"placeholders": {"name": {"type": "String"}}},

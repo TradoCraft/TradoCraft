@@ -3030,6 +3030,8 @@
   "attrScopeProduct": "Product",
   "matchesTitle": "Productmatches",
   "matchesEmpty": "Geen producten om te tonen.",
+  "matchesShowing": "{shown} van {total} producten getoond",
+  "@matchesShowing": {"placeholders": {"shown": {"type": "int"}, "total": {"type": "int"}}},
   "matchesSuggest": "Producten voorstellen",
   "matchesForItem": "Producten voor {name}",
   "@matchesForItem": {"placeholders": {"name": {"type": "String"}}},

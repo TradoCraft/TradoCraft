@@ -87,7 +87,15 @@ class MatchesList extends ConsumerWidget {
       );
     }
     return Column(
-      children: [for (final m in orderMatches(value.items)) _MatchTile(m)],
+      children: [
+        if (value.total > value.items.length)
+          Padding(
+            key: const ValueKey('matches-showing'),
+            padding: const EdgeInsets.all(8),
+            child: Text(l.matchesShowing(value.items.length, value.total)),
+          ),
+        for (final m in orderMatches(value.items)) _MatchTile(m),
+      ],
     );
   }
 }

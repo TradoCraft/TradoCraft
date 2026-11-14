@@ -9694,6 +9694,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get matchesEmpty => 'No hay productos que mostrar.';
 
   @override
+  String matchesShowing(int shown, int total) {
+    return 'Mostrando $shown de $total productos';
+  }
+
+  @override
   String get matchesSuggest => 'Sugerir productos';
 
   @override

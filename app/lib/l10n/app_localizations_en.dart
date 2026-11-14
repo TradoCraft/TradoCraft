@@ -9648,6 +9648,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get matchesEmpty => 'No products to show.';
 
   @override
+  String matchesShowing(int shown, int total) {
+    return 'Showing $shown of $total products';
+  }
+
+  @override
   String get matchesSuggest => 'Suggest products';
 
   @override
