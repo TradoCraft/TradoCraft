@@ -3497,14 +3497,21 @@ async fn work_spread_from_before_the_period_respects_closures_before_it(db: PgPo
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
 async fn the_cost_rollup_refuses_a_structure_that_is_too_large_to_walk(db: PgPool) {
     let e = env(db).await;
-    // Every level uses the one below twice: the walk doubles at each level.
-    let mut below = BOLT.to_string();
+    // A subassembly listed twice on one line set is one need, so each level has two different
+    // products and each of them uses both products of the level below: the walk doubles at every
+    // level.
+    let mut below = [BOLT.to_string(), BOLT.to_string()];
     let mut tops = Vec::new();
     for i in 0..12 {
-        below = e
-            .make_product(&format!("D{i}"), "none", &[(&below, "1"), (&below, "1")])
-            .await;
-        tops.push(below.clone());
+        let parts = if i == 0 {
+            vec![(BOLT, "1")]
+        } else {
+            vec![(below[0].as_str(), "1"), (below[1].as_str(), "1")]
+        };
+        let a = e.make_product(&format!("D{i}A"), "none", &parts).await;
+        let b = e.make_product(&format!("D{i}B"), "none", &parts).await;
+        tops.push(a.clone());
+        below = [a, b];
     }
     // 2^5 - 1 built products is fine; 2^12 - 1 is too many.
     let (status, small) = e.rollup(ADMIN, &tops[4], "1").await;
