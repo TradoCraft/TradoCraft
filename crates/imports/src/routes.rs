@@ -524,14 +524,16 @@ async fn create_job(
         run::fits_one_request(bytes, sheet.clone()).await?
     };
     let id = new_id();
+    let claim = new_id();
     sqlx::query(
         "INSERT INTO core.import_jobs
             (id, company_id, entity, file_id, filename, format, sheet, columns, dry_run, status,
-             requested_by, started_at, heartbeat_at, attempts, phase)
+             requested_by, started_at, heartbeat_at, attempts, phase, inline, claim_token)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9,
                  CASE WHEN $10 THEN 'running' ELSE 'queued' END, $11,
                  CASE WHEN $10 THEN now() END, CASE WHEN $10 THEN now() END,
-                 CASE WHEN $10 THEN 1 ELSE 0 END, CASE WHEN $10 THEN 'reading' END)",
+                 CASE WHEN $10 THEN 1 ELSE 0 END, CASE WHEN $10 THEN 'reading' END,
+                 $10, CASE WHEN $10 THEN $12 END)",
     )
     .bind(id)
     .bind(user.company_id)
@@ -544,13 +546,20 @@ async fn create_job(
     .bind(input.dry_run)
     .bind(inline)
     .bind(user.user_id)
+    .bind(claim)
     .execute(&state.db)
     .await?;
     if !inline {
         let job = fetch_job(&state.db, user.company_id, id).await?;
         return Ok((StatusCode::ACCEPTED, Json(job)));
     }
-    run::run_job(&state.db, id, &user, &Limits::request()).await?;
+    // The run is a task of its own: a client that gives up (a closed tab, a timeout in front of
+    // the API) drops this request, and a run that stopped half way would leave the job `running`
+    // until the worker finds it. The task finishes and writes the outcome either way.
+    let (pool, runner) = (state.db.clone(), user.clone());
+    tokio::spawn(async move { run::run_job(&pool, id, claim, &runner, &Limits::request()).await })
+        .await
+        .map_err(blocking_failed)??;
     Ok((
         StatusCode::OK,
         Json(fetch_job(&state.db, user.company_id, id).await?),

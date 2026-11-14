@@ -15,7 +15,7 @@ use uuid::Uuid;
 
 use crate::auth::CurrentUser;
 use crate::csv_io::{self, ImportParams, ImportReport, RowError};
-use crate::error::AppResult;
+use crate::error::{AppError, AppResult};
 use crate::import::importable::{Importable, NoProgress, Phase, Progress};
 use crate::import::{download, read_table, write, CellValue, Cells, Format, Limits, Table};
 use crate::{audit, new_id};
@@ -31,6 +31,10 @@ pub struct RunOptions<'a> {
     pub dry_run: bool,
     /// The import job this run belongs to; added to every audit event as `data.import_job`.
     pub import_job: Option<Uuid>,
+    /// The claim (`core.import_jobs.claim_token`) the run of `import_job` was started under. When
+    /// set, the run checks before it writes and before it commits that the job is still running
+    /// under this claim; a run that was reclaimed meanwhile stops and writes nothing.
+    pub claim: Option<Uuid>,
     /// Told how far the run is (see [`Progress`]).
     pub progress: &'a dyn Progress,
 }
@@ -42,6 +46,7 @@ impl RunOptions<'static> {
             format,
             dry_run: false,
             import_job: None,
+            claim: None,
             progress: &NoProgress,
         }
     }
@@ -58,11 +63,17 @@ impl<'a> RunOptions<'a> {
         self
     }
 
+    pub fn claim(mut self, claim: Uuid) -> Self {
+        self.claim = Some(claim);
+        self
+    }
+
     pub fn progress<'b>(self, progress: &'b dyn Progress) -> RunOptions<'b> {
         RunOptions {
             format: self.format,
             dry_run: self.dry_run,
             import_job: self.import_job,
+            claim: self.claim,
             progress,
         }
     }
@@ -187,6 +198,29 @@ fn audit_data(options: &RunOptions<'_>, extra: Option<(&str, &str)>) -> serde_js
     data.into()
 }
 
+/// Fails when the run belongs to a job that is no longer running under its claim.
+async fn still_claimed(conn: &mut PgConnection, options: &RunOptions<'_>) -> AppResult<()> {
+    let (Some(job), Some(claim)) = (options.import_job, options.claim) else {
+        return Ok(());
+    };
+    let held: bool = sqlx::query_scalar(
+        "SELECT EXISTS (SELECT 1 FROM core.import_jobs
+                        WHERE id = $1 AND status = 'running' AND claim_token = $2)",
+    )
+    .bind(job)
+    .bind(claim)
+    .fetch_one(conn)
+    .await?;
+    if held {
+        Ok(())
+    } else {
+        Err(AppError::ConflictCode(
+            "import_claim_lost",
+            "the import was taken over by another run; nothing was written".into(),
+        ))
+    }
+}
+
 /// One attempt: plan in a transaction and, when the plan is clean and this is no dry run, write
 /// it. A unique-key conflict at write time (a concurrent creation of the same key or barcode)
 /// fails the attempt; [`csv_io::with_replan`] then plans again against the committed data.
@@ -209,6 +243,7 @@ async fn attempt<E: Importable>(
     if !report.errors.is_empty() || options.dry_run {
         return Ok(report);
     }
+    still_claimed(&mut tx, options).await?;
     let total = plan.actions.len();
     for (n, a) in plan.actions.into_iter().enumerate() {
         match a {
@@ -226,6 +261,7 @@ async fn attempt<E: Importable>(
         }
         tick(options.progress, Phase::Writing, n + 1, total);
     }
+    still_claimed(&mut tx, options).await?;
     tx.commit().await?;
     Ok(report)
 }

@@ -2,6 +2,10 @@
 //! HTTP handler runs a small job inline, the worker runs a queued one. A job row is in `running`
 //! when it gets here and leaves as `done` or `failed`.
 //!
+//! A run is tied to one claim: whoever sets `status = 'running'` also sets a fresh `claim_token`,
+//! and progress, heartbeat and outcome are written only while that token is on the row. A run that
+//! was reclaimed meanwhile therefore cannot overwrite the run that took its place.
+//!
 //! What a worker does:
 //!
 //! 1. [`claim_next`] a queued job (or any claim of its own that sets `status = 'running'`),
@@ -72,6 +76,8 @@ pub struct ClaimedJob {
     pub id: Uuid,
     pub company_id: Uuid,
     pub requested_by: Option<Uuid>,
+    /// The token of this claim; every write of the run is conditioned on it.
+    pub claim: Uuid,
 }
 
 /// Takes the oldest queued job and marks it running (`FOR UPDATE SKIP LOCKED`, so several workers
@@ -80,10 +86,10 @@ pub async fn claim_next(pool: &PgPool) -> AppResult<Option<ClaimedJob>> {
     Ok(sqlx::query_as(
         "UPDATE core.import_jobs
          SET status = 'running', phase = 'reading', started_at = now(), heartbeat_at = now(),
-             attempts = attempts + 1, processed_rows = 0
+             attempts = attempts + 1, processed_rows = 0, claim_token = gen_random_uuid()
          WHERE id = (SELECT id FROM core.import_jobs WHERE status = 'queued'
                      ORDER BY created_at LIMIT 1 FOR UPDATE SKIP LOCKED)
-         RETURNING id, company_id, requested_by",
+         RETURNING id, company_id, requested_by, claim_token AS claim",
     )
     .fetch_optional(pool)
     .await?)
@@ -96,13 +102,14 @@ pub async fn run_claimed(pool: &PgPool, job: &ClaimedJob, limits: &Limits) -> Ap
         return fail_job(
             pool,
             job.id,
+            job.claim,
             "the user who started the import no longer exists",
         )
         .await;
     };
     match CurrentUser::for_member(pool, requested_by, job.company_id).await {
-        Ok(user) => run_job(pool, job.id, &user, limits).await,
-        Err(AppError::Forbidden(message)) => fail_job(pool, job.id, &message).await,
+        Ok(user) => run_job(pool, job.id, job.claim, &user, limits).await,
+        Err(AppError::Forbidden(message)) => fail_job(pool, job.id, job.claim, &message).await,
         // The database is unreachable: leave the job running; its heartbeat goes stale and it is
         // queued again.
         Err(e) => Err(e),
@@ -148,7 +155,8 @@ struct Finished {
     report: ImportReport,
 }
 
-/// Runs the job `job_id` (status `running`, in `user`'s company) as `user` and writes its outcome:
+/// Runs the job `job_id` (status `running` under the token `claim`, in `user`'s company) as `user`
+/// and writes its outcome:
 /// `done` with the counts or the errors, or `failed` with a message. `Err` only when the job row
 /// could not be read or written at all (database trouble, no such running job, a user who is not
 /// the requester); the job then stays as it is and is picked up again by the heartbeat rule.
@@ -158,15 +166,18 @@ struct Finished {
 pub async fn run_job(
     pool: &PgPool,
     job_id: Uuid,
+    claim: Uuid,
     user: &CurrentUser,
     limits: &Limits,
 ) -> AppResult<()> {
     let job: JobToRun = sqlx::query_as(
         "SELECT entity, file_id, sheet, columns, dry_run, requested_by
-         FROM core.import_jobs WHERE id = $1 AND company_id = $2 AND status = 'running'",
+         FROM core.import_jobs
+         WHERE id = $1 AND company_id = $2 AND status = 'running' AND claim_token = $3",
     )
     .bind(job_id)
     .bind(user.company_id)
+    .bind(claim)
     .fetch_optional(pool)
     .await?
     .ok_or(AppError::NotFound("running import job"))?;
@@ -175,15 +186,16 @@ pub async fn run_job(
             "an import job runs as the user who requested it".into(),
         ));
     }
-    match execute(pool, job_id, &job, user, limits).await {
-        Ok(finished) => finish_done(pool, job_id, finished).await,
-        Err(Failure(message)) => fail_job(pool, job_id, &message).await,
+    match execute(pool, job_id, claim, &job, user, limits).await {
+        Ok(finished) => finish_done(pool, job_id, claim, finished).await,
+        Err(Failure(message)) => fail_job(pool, job_id, claim, &message).await,
     }
 }
 
 async fn execute(
     pool: &PgPool,
     job_id: Uuid,
+    claim: Uuid,
     job: &JobToRun,
     user: &CurrentUser,
     limits: &Limits,
@@ -194,11 +206,17 @@ async fn execute(
     user.require(entity.write_permission())?;
 
     sqlx::query(
-        "UPDATE core.import_jobs SET phase = 'reading', heartbeat_at = now() WHERE id = $1",
+        "UPDATE core.import_jobs SET phase = 'reading', heartbeat_at = now()
+         WHERE id = $1 AND claim_token = $2",
     )
     .bind(job_id)
+    .bind(claim)
     .execute(pool)
     .await?;
+    // The heartbeat runs from here to the end, reading the file included: reading 50 MiB takes
+    // long enough for the job to look dead to another worker.
+    let (sink, writer) = progress_writer(pool.clone(), job_id, claim);
+    let writer = StopOnDrop(writer);
     let file_id = job.file_id.ok_or_else(|| Failure(FILE_GONE.into()))?;
     let bytes: Vec<u8> =
         sqlx::query_scalar("SELECT data FROM core.import_files WHERE id = $1 AND company_id = $2")
@@ -243,22 +261,22 @@ async fn execute(
     let total_rows = table.rows.len() + table.failed_rows;
     sqlx::query(
         "UPDATE core.import_jobs SET phase = 'validating', total_rows = $2, processed_rows = 0,
-                heartbeat_at = now() WHERE id = $1",
+                heartbeat_at = now() WHERE id = $1 AND claim_token = $3",
     )
     .bind(job_id)
     .bind(clamp(total_rows))
+    .bind(claim)
     .execute(pool)
     .await?;
 
-    let (sink, writer) = progress_writer(pool.clone(), job_id);
     let options = RunOptions::new(format)
         .dry_run(job.dry_run)
         .import_job(job_id)
+        .claim(claim)
         .progress(&sink);
     let result = entity.run(pool, user, &table, &options).await;
     // Nothing may write the row after the outcome has been written.
-    writer.abort();
-    let _ = writer.await;
+    writer.stop().await;
     Ok(Finished {
         total_rows,
         report: result?,
@@ -267,6 +285,22 @@ async fn execute(
 
 fn clamp(n: usize) -> i32 {
     i32::try_from(n).unwrap_or(i32::MAX)
+}
+
+/// The progress task of a run; it ends with the run on every path, an early return included.
+struct StopOnDrop(JoinHandle<()>);
+
+impl StopOnDrop {
+    async fn stop(mut self) {
+        self.0.abort();
+        let _ = (&mut self.0).await;
+    }
+}
+
+impl Drop for StopOnDrop {
+    fn drop(&mut self) {
+        self.0.abort();
+    }
 }
 
 /// Hands the progress of the import, a synchronous callback inside its transaction, to a task that
@@ -282,7 +316,7 @@ impl Progress for JobProgress {
     }
 }
 
-fn progress_writer(pool: PgPool, job_id: Uuid) -> (JobProgress, JoinHandle<()>) {
+fn progress_writer(pool: PgPool, job_id: Uuid, claim: Uuid) -> (JobProgress, JoinHandle<()>) {
     let (tx, mut rx) = watch::channel((Phase::Validating, 0usize));
     let task = tokio::spawn(async move {
         let mut beat = tokio::time::interval_at(
@@ -299,11 +333,12 @@ fn progress_writer(pool: PgPool, job_id: Uuid) -> (JobProgress, JoinHandle<()>) 
                     let written = sqlx::query(
                         "UPDATE core.import_jobs SET phase = $2, processed_rows = $3,
                                 heartbeat_at = now()
-                         WHERE id = $1 AND status = 'running'",
+                         WHERE id = $1 AND status = 'running' AND claim_token = $4",
                     )
                     .bind(job_id)
                     .bind(phase.as_str())
                     .bind(clamp(processed))
+                    .bind(claim)
                     .execute(&pool)
                     .await;
                     if let Err(e) = written {
@@ -314,9 +349,10 @@ fn progress_writer(pool: PgPool, job_id: Uuid) -> (JobProgress, JoinHandle<()>) 
                 _ = beat.tick() => {
                     let _ = sqlx::query(
                         "UPDATE core.import_jobs SET heartbeat_at = now()
-                         WHERE id = $1 AND status = 'running'",
+                         WHERE id = $1 AND status = 'running' AND claim_token = $2",
                     )
                     .bind(job_id)
+                    .bind(claim)
                     .execute(&pool)
                     .await;
                 }
@@ -326,7 +362,12 @@ fn progress_writer(pool: PgPool, job_id: Uuid) -> (JobProgress, JoinHandle<()>) 
     (JobProgress { tx }, task)
 }
 
-async fn finish_done(pool: &PgPool, job_id: Uuid, finished: Finished) -> AppResult<()> {
+async fn finish_done(
+    pool: &PgPool,
+    job_id: Uuid,
+    claim: Uuid,
+    finished: Finished,
+) -> AppResult<()> {
     let Finished { total_rows, report } = finished;
     let (error_count, errors) = cap_errors(&report.errors, MAX_STORED_ERRORS);
     // A run with errors wrote nothing, whatever the engine counted on the way.
@@ -335,13 +376,13 @@ async fn finish_done(pool: &PgPool, job_id: Uuid, finished: Finished) -> AppResu
     } else {
         (report.created, report.updated, report.unchanged)
     };
-    sqlx::query(
+    let written = sqlx::query(
         "UPDATE core.import_jobs
          SET status = 'done', phase = NULL, total_rows = $2, processed_rows = $2,
              created_count = $3, updated_count = $4, unchanged_count = $5,
              error_count = $6, errors = $7, message = NULL,
              finished_at = now(), heartbeat_at = now()
-         WHERE id = $1 AND status = 'running'",
+         WHERE id = $1 AND status = 'running' AND claim_token = $8",
     )
     .bind(job_id)
     .bind(clamp(total_rows))
@@ -350,22 +391,33 @@ async fn finish_done(pool: &PgPool, job_id: Uuid, finished: Finished) -> AppResu
     .bind(clamp(unchanged))
     .bind(clamp(error_count))
     .bind(sqlx::types::Json(errors))
+    .bind(claim)
     .execute(pool)
     .await?;
+    lost_claim_notice(job_id, written.rows_affected());
     Ok(())
 }
 
-/// Ends a running job as `failed` with `message`.
-pub async fn fail_job(pool: &PgPool, job_id: Uuid, message: &str) -> AppResult<()> {
-    sqlx::query(
+/// A run whose claim is gone (the job was reclaimed or ended) writes nothing; say so in the log.
+fn lost_claim_notice(job_id: Uuid, rows_affected: u64) {
+    if rows_affected == 0 {
+        tracing::warn!(job = %job_id, "an import run lost its claim; its outcome was not stored");
+    }
+}
+
+/// Ends the job `job_id` as `failed` with `message`, if it is still running under `claim`.
+pub async fn fail_job(pool: &PgPool, job_id: Uuid, claim: Uuid, message: &str) -> AppResult<()> {
+    let written = sqlx::query(
         "UPDATE core.import_jobs
          SET status = 'failed', phase = NULL, message = $2, finished_at = now(), heartbeat_at = now()
-         WHERE id = $1 AND status = 'running'",
+         WHERE id = $1 AND status = 'running' AND claim_token = $3",
     )
     .bind(job_id)
     .bind(message)
+    .bind(claim)
     .execute(pool)
     .await?;
+    lost_claim_notice(job_id, written.rows_affected());
     Ok(())
 }
 

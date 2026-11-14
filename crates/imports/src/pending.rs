@@ -20,6 +20,8 @@ pub const FILE_KEEP_DAYS: i32 = 7;
 pub const MAX_JOBS_PER_PASS: usize = 10;
 
 const STOPPED_THREE_TIMES: &str = "the import stopped three times without finishing";
+const INLINE_INTERRUPTED: &str =
+    "the import was interrupted before it finished; check the data and run it again";
 
 /// What one pass did.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
@@ -55,14 +57,17 @@ pub async fn run_pending(pool: &PgPool) -> PassReport {
 }
 
 /// Puts running jobs with a stale heartbeat back in the queue, or fails them after
-/// [`MAX_ATTEMPTS`] attempts (the count is made at the claim). Returns (requeued, failed).
+/// [`MAX_ATTEMPTS`] attempts (the count is made at the claim). A job that was run inside a
+/// request (`inline`) is always failed: nobody is waiting for it any more and it must not be
+/// applied unattended later. The claim token is cleared, so the run that went quiet cannot write
+/// to the job again. Returns (requeued, failed).
 pub async fn reclaim_stale(pool: &PgPool) -> AppResult<(u64, u64)> {
     let secs = STALE_AFTER.as_secs_f64();
     let requeued = sqlx::query(
         "UPDATE core.import_jobs
          SET status = 'queued', phase = NULL, started_at = NULL, heartbeat_at = NULL,
-             processed_rows = 0
-         WHERE status = 'running' AND attempts < $1
+             processed_rows = 0, claim_token = NULL
+         WHERE status = 'running' AND attempts < $1 AND NOT inline
            AND coalesce(heartbeat_at, started_at, created_at) < now() - make_interval(secs => $2)",
     )
     .bind(MAX_ATTEMPTS)
@@ -72,14 +77,16 @@ pub async fn reclaim_stale(pool: &PgPool) -> AppResult<(u64, u64)> {
     .rows_affected();
     let abandoned = sqlx::query(
         "UPDATE core.import_jobs
-         SET status = 'failed', phase = NULL, message = $3, finished_at = now(),
-             heartbeat_at = now()
-         WHERE status = 'running' AND attempts >= $1
+         SET status = 'failed', phase = NULL, finished_at = now(), heartbeat_at = now(),
+             claim_token = NULL,
+             message = CASE WHEN inline THEN $4 ELSE $3 END
+         WHERE status = 'running' AND (attempts >= $1 OR inline)
            AND coalesce(heartbeat_at, started_at, created_at) < now() - make_interval(secs => $2)",
     )
     .bind(MAX_ATTEMPTS)
     .bind(secs)
     .bind(STOPPED_THREE_TIMES)
+    .bind(INLINE_INTERRUPTED)
     .execute(pool)
     .await?
     .rows_affected();

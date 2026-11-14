@@ -276,3 +276,76 @@ async fn seeded(db: &PgPool) -> i64 {
         .await
         .unwrap()
 }
+
+async fn set_inline(db: &PgPool, id: Uuid) {
+    sqlx::query(
+        "UPDATE core.import_jobs SET inline = true, claim_token = gen_random_uuid() WHERE id = $1",
+    )
+    .bind(id)
+    .execute(db)
+    .await
+    .unwrap();
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn a_stale_inline_job_is_failed_and_never_run_unattended(db: PgPool) {
+    let _ = setup(db.clone()).await;
+    let f = file(&db, csv("I", 5), 0).await;
+    let id = job(&db, Some(f), ADMIN_ID, false).await;
+    make_running(&db, id, 1, 6).await;
+    set_inline(&db, id).await;
+    let before = customers(&db).await;
+
+    let report = run_pending(&db).await;
+    assert_eq!((report.requeued, report.abandoned, report.ran), (0, 1, 0));
+    let (status, attempts, message) = state(&db, id).await;
+    assert_eq!((status.as_str(), attempts), ("failed", 1));
+    assert!(message.unwrap().contains("interrupted"));
+    assert_eq!(customers(&db).await, before);
+    // A second pass does not pick it up either.
+    assert_eq!(run_pending(&db).await.ran, 0);
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn a_run_that_lost_its_claim_cannot_write_the_job(db: PgPool) {
+    let _ = setup(db.clone()).await;
+    let f = file(&db, csv("K", 5), 0).await;
+    let id = job(&db, Some(f), ADMIN_ID, false).await;
+    let first = tradocraft_imports::claim_next(&db).await.unwrap().unwrap();
+    assert_eq!(first.id, id);
+    // It goes quiet, is reclaimed and claimed again by another worker.
+    sqlx::query(
+        "UPDATE core.import_jobs SET heartbeat_at = now() - interval '10 minutes' WHERE id = $1",
+    )
+    .bind(id)
+    .execute(&db)
+    .await
+    .unwrap();
+    assert_eq!(
+        tradocraft_imports::reclaim_stale(&db).await.unwrap(),
+        (1, 0)
+    );
+    let second = tradocraft_imports::claim_next(&db).await.unwrap().unwrap();
+    assert_ne!(first.claim, second.claim);
+
+    // The first run wakes up: it neither fails the job, nor runs it, nor stores an outcome.
+    tradocraft_imports::fail_job(&db, id, first.claim, "late")
+        .await
+        .unwrap();
+    let before = customers(&db).await;
+    let late =
+        tradocraft_imports::run_claimed(&db, &first, &tradocraft_core::import::Limits::job()).await;
+    assert!(
+        late.is_err(),
+        "a run under an old claim finds no running job"
+    );
+    assert_eq!(customers(&db).await, before);
+    assert_eq!(state(&db, id).await.0, "running");
+
+    // The second one finishes normally.
+    tradocraft_imports::run_claimed(&db, &second, &tradocraft_core::import::Limits::job())
+        .await
+        .unwrap();
+    assert_eq!(state(&db, id).await.0, "done");
+    assert_eq!(customers(&db).await, before + 5);
+}
