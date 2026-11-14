@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -9,6 +10,7 @@ import 'package:go_router/go_router.dart';
 import 'package:tradocraft_app/app/api.dart';
 import 'package:tradocraft_app/features/quotations/quotation_screen.dart';
 import 'package:tradocraft_app/l10n/app_localizations.dart';
+import 'package:tradocraft_app/shared/search_picker.dart';
 
 const _quotationId = 'q1';
 const _customerId = 'c1';
@@ -64,6 +66,23 @@ Map<String, Object?> _opportunity(String id, String stage) => {
   'owner_user_id': 'u',
   'created_at': '2026-11-01T10:00:00Z',
   'updated_at': '2026-11-01T10:00:00Z',
+};
+
+Map<String, Object?> _otherCustomer(String id) => {
+  'id': id,
+  'code': 'C-$id',
+  'name': 'Customer $id',
+  'vat_regime': 'domestic',
+  'street': 'Straat 1',
+  'postal_code': '2000',
+  'city': 'Antwerpen',
+  'country_code': 'BE',
+  'language': 'nl',
+  'active': true,
+  'price_zone_id': 'z2',
+  'price_zone_code': 'Z2',
+  'discount_percent': '5',
+  'payment_terms_days': 30,
 };
 
 Map<String, Object?> _quotation(
@@ -130,6 +149,10 @@ class FakeApi implements HttpClientAdapter {
   final requests = <String>[];
   final bodies = <String, Object?>{};
 
+  /// Per customer id: holds the open-opportunities answer until completed (that customer then
+  /// has the single opportunity `opp-<id>`).
+  final gates = <String, Completer<void>>{};
+
   @override
   Future<ResponseBody> fetch(
     RequestOptions o,
@@ -147,6 +170,23 @@ class FakeApi implements HttpClientAdapter {
           configured: configured,
           opportunityId: linkedOpportunity,
         );
+      case 'GET /api/v1/customers':
+        json = {
+          'items': [
+            for (final id in ['c2', 'c3']) _otherCustomer(id),
+          ],
+          'total': 2,
+        };
+      case 'GET /api/v1/opportunities'
+          when gates.containsKey(o.queryParameters['customer_id']):
+        final cid = o.queryParameters['customer_id'] as String;
+        await gates[cid]!.future;
+        json = {
+          'items': [
+            {..._opportunity('opp-$cid', 'proposal'), 'customer_id': cid},
+          ],
+          'total': 1,
+        };
       case 'GET /api/v1/opportunities':
         await Future<void>.delayed(const Duration(milliseconds: 100));
         json = {
@@ -414,7 +454,84 @@ Future<FakeApi> _pumpRouted(WidgetTester tester, String status) async {
   return fake;
 }
 
+Future<FakeApi> _pumpLinkedDraft(
+  WidgetTester tester,
+  List<String> gated,
+) async {
+  tester.view.physicalSize = const Size(1400, 1000);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+  final fake = FakeApi('draft', linkedOpportunity: 'opp-closed');
+  for (final id in gated) {
+    fake.gates[id] = Completer<void>();
+  }
+  final dio = Dio(BaseOptions(baseUrl: 'http://test'))
+    ..httpClientAdapter = fake;
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [dioProvider.overrideWithValue(dio)],
+      child: MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: [
+          AppLocalizations.delegate,
+          ...GlobalMaterialLocalizations.delegates,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: QuotationScreen(id: _quotationId),
+      ),
+    ),
+  );
+  await tester.pumpAndSettle();
+  return fake;
+}
+
+Future<void> _changeCustomer(WidgetTester tester, String id) async {
+  await tester.enterText(
+    find.descendant(
+      of: find.byType(SearchPicker<Customer>),
+      matching: find.byType(TextField),
+    ),
+    'c',
+  );
+  await tester.pumpAndSettle();
+  await tester.tap(find.textContaining('Customer $id').last);
+  await tester.pump();
+}
+
 void main() {
+  testWidgets(
+    'changing the customer hides the old customer opportunities while loading',
+    (tester) async {
+      await _pumpLinkedDraft(tester, ['c2']);
+      expect(find.textContaining('OPP-opp-closed'), findsOneWidget);
+      await _changeCustomer(tester, 'c2');
+      await tester.pump(const Duration(milliseconds: 10));
+      expect(tester.takeException(), isNull);
+      expect(find.textContaining('OPP-opp-closed'), findsNothing);
+    },
+  );
+
+  testWidgets('a late answer for a previous customer is ignored', (
+    tester,
+  ) async {
+    final fake = await _pumpLinkedDraft(tester, ['c2', 'c3']);
+    await _changeCustomer(tester, 'c2');
+    await _changeCustomer(tester, 'c3');
+    fake.gates['c3']!.complete();
+    await tester.pumpAndSettle();
+    fake.gates['c2']!.complete();
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    await tester.tap(
+      find.byWidgetPredicate(
+        (w) => w.key is ValueKey && '${(w.key as ValueKey).value}'.startsWith('opp-'),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.textContaining('OPP-opp-c3'), findsWidgets);
+    expect(find.textContaining('OPP-opp-c2'), findsNothing);
+  });
+
   testWidgets(
     'new quotation with a preselected opportunity builds while the list loads',
     (tester) async {

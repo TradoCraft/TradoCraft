@@ -393,10 +393,11 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
                       ),
                     // The stored zone is no longer offered (inactive or missing): keep it
                     // selectable so editing does not change the customer's zone.
-                    if (_zoneId != null && !list.any((z) => z.id == _zoneId))
+                    if (c?.priceZoneId != null &&
+                        !list.any((z) => z.id == c?.priceZoneId))
                       DropdownMenuItem(
-                        value: _zoneId,
-                        child: Text(c?.priceZoneCode ?? _zoneId!),
+                        value: c?.priceZoneId,
+                        child: Text(c?.priceZoneCode ?? c!.priceZoneId!),
                       ),
                   ],
                   onChanged: _locked

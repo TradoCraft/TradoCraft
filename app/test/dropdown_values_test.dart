@@ -104,4 +104,58 @@ void main() {
     expect(t.takeException(), isNull);
     expect(find.textContaining('Z9'), findsWidgets);
   });
+
+  testWidgets('customer form keeps the stored zone selectable after another pick', (
+    t,
+  ) async {
+    await _pump(t, CustomerForm(customer: customer, screen: true), {
+      'GET /api/v1/price-zones': (_) => [
+        {'id': 'z1', 'code': 'Z1', 'name': 'Zone', 'sort_order': 1},
+      ],
+    });
+    final zone = find.ancestor(
+      of: find.text('Price zone'),
+      matching: find.byType(DropdownButtonFormField<String>),
+    );
+    await t.ensureVisible(zone);
+    await t.tap(zone);
+    await t.pumpAndSettle();
+    await t.tap(find.text('Z1 – Zone').last);
+    await t.pumpAndSettle();
+    await t.tap(zone);
+    await t.pumpAndSettle();
+    expect(find.text('Z9'), findsWidgets);
+    await t.tap(find.text('Z9').last);
+    await t.pumpAndSettle();
+    expect(t.takeException(), isNull);
+    expect(find.text('Z9'), findsOneWidget);
+  });
+
+  testWidgets('repair dialog shows and clears a retained contact when the list is empty', (
+    t,
+  ) async {
+    final http = await _pump(
+      t,
+      NewRepairDialog(customer: customer, contactId: 'p1'),
+      {
+        'GET /api/v1/customers/c2/contacts': (_) => <Object?>[],
+        'GET /api/v1/contacts/p1': (_) =>
+            const FakeStatus(500, {'error': 'boom', 'message': 'x'}),
+        'POST /api/v1/repairs': (_) => <String, Object?>{},
+      },
+    );
+    expect(t.takeException(), isNull);
+    expect(find.text('No contact person linked'), findsNothing);
+    expect(find.text('p1'), findsOneWidget);
+    await t.tap(find.text('p1'));
+    await t.pumpAndSettle();
+    await t.tap(find.text('No contact person linked').last);
+    await t.pumpAndSettle();
+    await t.enterText(find.byType(TextField).at(0), 'Pump');
+    await t.tap(find.byType(FilledButton));
+    await t.pumpAndSettle();
+    final body = http.bodies['POST /api/v1/repairs'] as Map?;
+    expect(body, isNotNull);
+    expect(body!['contact_id'], isNull);
+  });
 }

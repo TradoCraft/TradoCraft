@@ -175,6 +175,7 @@ class _NewRepairDialogState extends ConsumerState<NewRepairDialog> {
   late final _reference = TextEditingController();
   late Customer? _customer = widget.customer;
   List<Contact> _contacts = [];
+  bool _contactsLoaded = false;
   late String? _contactId = widget.contactId;
   String _warranty = 'unknown';
   String _priority = 'normal';
@@ -223,6 +224,7 @@ class _NewRepairDialogState extends ConsumerState<NewRepairDialog> {
     // The customer was changed while loading: this answer is stale.
     if (_customer?.id != customerId) return;
     setState(() {
+      _contactsLoaded = true;
       _contacts = [...list, ?extra];
       if (drop && _contactId == linked) _contactId = null;
     });
@@ -289,6 +291,7 @@ class _NewRepairDialogState extends ConsumerState<NewRepairDialog> {
                       _customer = c;
                       _contactId = null;
                       _contacts = [];
+                      _contactsLoaded = false;
                     });
                     _loadContacts(c.id);
                   },
@@ -298,7 +301,7 @@ class _NewRepairDialogState extends ConsumerState<NewRepairDialog> {
                   widget.customer!.name,
                   style: Theme.of(context).textTheme.titleSmall,
                 ),
-              if (_contacts.isNotEmpty) ...[
+              if (_contactsLoaded && (_contacts.isNotEmpty || _contactId != null)) ...[
                 gap,
                 DropdownButtonFormField<String?>(
                   isExpanded: true,

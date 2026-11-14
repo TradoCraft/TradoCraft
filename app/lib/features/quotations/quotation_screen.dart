@@ -188,6 +188,9 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
   /// False until the opportunity list of the selected customer has been fetched.
   bool _opportunitiesLoaded = false;
 
+  /// Generation of the opportunity lookup: a late answer for an earlier customer is ignored.
+  int _oppSeq = 0;
+
   /// Price list date; null = the quote date (today for a new quotation).
   DateTime? _priceDate;
   final List<_Line> _lines = [];
@@ -243,13 +246,19 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
 
   /// Selects a customer and loads their open opportunities.
   Future<void> _selectCustomer(Customer c) async {
-    setState(() => _customer = c);
+    final seq = ++_oppSeq;
+    setState(() {
+      _customer = c;
+      // The previous customer's opportunities are not offered for the new one.
+      _opportunitiesLoaded = false;
+      _opportunities = [];
+    });
     _refreshPreview();
     // Linking an opportunity is optional: without access to opportunities, quoting still works.
     final opportunities = await _api.crm
         .listOpportunities(customerId: c.id, open: true, limit: 100)
         .then((p) => p.items, onError: (Object _) => <Opportunity>[]);
-    if (!mounted) return;
+    if (!mounted || seq != _oppSeq) return;
     // A linked opportunity that is no longer open (or beyond the first 100) must stay linked and
     // visible: fetch it instead of dropping the link.
     final linked = _opportunityId;
@@ -266,7 +275,7 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
       } catch (e) {
         drop = errorStatus(e) == 404;
       }
-      if (!mounted) return;
+      if (!mounted || seq != _oppSeq) return;
     }
     setState(() {
       _opportunities = [...opportunities, ?extra];
@@ -284,6 +293,7 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
     if (widget.id == old.id || widget.id == _id) return;
     _debounce?.cancel();
     _previewSeq++;
+    _oppSeq++;
     setState(() {
       for (final l in _lines) {
         l.dispose();
