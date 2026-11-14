@@ -20,6 +20,7 @@ class BaselineItem {
     required this.typeCode,
     required this.updatedAt,
     required this.values,
+    this.importSource,
     this.name,
     this.parentId,
   });
@@ -30,6 +31,11 @@ class BaselineItem {
   @JsonKey(name: 'created_at')
   final DateTime createdAt;
   final String id;
+
+  /// Id of the import that created the item (e.g. `tower_configurator`); `None` for items.
+  /// entered by hand. A re-import of the same source replaces these items and only these.
+  @JsonKey(includeIfNull: false,name: 'import_source')
+  final String? importSource;
   @JsonKey(includeIfNull: false)
   final String? name;
   @JsonKey(includeIfNull: false,name: 'parent_id')

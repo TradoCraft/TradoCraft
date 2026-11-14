@@ -1,0 +1,193 @@
+{
+  "customer": {
+    "name": "",
+    "language": "fr",
+    "rotary_motor": "MEZ 1000",
+    "linear_motor": "",
+    "wheel": "",
+    "inox": false,
+    "adjustable_chain_springs": false,
+    "previous_three_phase_brand": ""
+  },
+  "location": {
+    "name": "",
+    "country": "FR",
+    "power_grid": "3x380V ∿",
+    "frequency": "50Hz",
+    "sensor": "rotary perforated sensor wheel",
+    "environment": "",
+    "include_strikers": true,
+    "include_motors": true,
+    "include_wheels": true,
+    "serial_movotron": true,
+    "subdivisions_at_site": [
+      "Sacristy",
+      "Bell Tower"
+    ]
+  },
+  "bells": [
+    {
+      "identifier": "swinging_bell_1",
+      "properties": {
+        "note": "",
+        "weight": "1200.0 kg",
+        "weight_g": "1200000",
+        "weight_unit": "kg",
+        "diameter": "",
+        "diameter_mm": "0",
+        "diameter_unit": "mm",
+        "height": "",
+        "height_mm": "0",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "rotating",
+        "motor_ref": "NOT_SET",
+        "num_motors": "1",
+        "striker": "swinging",
+        "striker_ref": "NOT_SET"
+      },
+      "field_states": {},
+      "subdivision": "Bell Tower"
+    },
+    {
+      "identifier": "swinging_bell_2",
+      "properties": {
+        "note": "",
+        "weight": "900.0 kg",
+        "weight_g": "900000",
+        "weight_unit": "kg",
+        "diameter": "",
+        "diameter_mm": "0",
+        "diameter_unit": "mm",
+        "height": "",
+        "height_mm": "0",
+        "height_unit": "mm",
+        "motion": "balanced",
+        "motor": "rotating",
+        "motor_ref": "NOT_SET",
+        "num_motors": "1",
+        "striker": "swinging",
+        "striker_ref": "NOT_SET"
+      },
+      "field_states": {},
+      "subdivision": "Bell Tower"
+    },
+    {
+      "identifier": "swinging_bell_3",
+      "properties": {
+        "note": "",
+        "weight": "600.0 kg",
+        "weight_g": "600000",
+        "weight_unit": "kg",
+        "diameter": "",
+        "diameter_mm": "0",
+        "diameter_unit": "mm",
+        "height": "",
+        "height_mm": "0",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "rotating",
+        "motor_ref": "NOT_SET",
+        "num_motors": "1",
+        "striker": "swinging",
+        "striker_ref": "NOT_SET"
+      },
+      "field_states": {},
+      "subdivision": "Bell Tower"
+    },
+    {
+      "identifier": "swinging_bell_4",
+      "properties": {
+        "note": "",
+        "weight": "400.0 kg",
+        "weight_g": "400000",
+        "weight_unit": "kg",
+        "diameter": "",
+        "diameter_mm": "0",
+        "diameter_unit": "mm",
+        "height": "",
+        "height_mm": "0",
+        "height_unit": "mm",
+        "motion": "balanced",
+        "motor": "rotating",
+        "motor_ref": "NOT_SET",
+        "num_motors": "1",
+        "striker": "swinging",
+        "striker_ref": "III226F"
+      },
+      "field_states": {},
+      "subdivision": "Bell Tower"
+    },
+    {
+      "identifier": "swinging_bell_5",
+      "properties": {
+        "note": "",
+        "weight": "330.0 kg",
+        "weight_g": "330000",
+        "weight_unit": "kg",
+        "diameter": "",
+        "diameter_mm": "0",
+        "diameter_unit": "mm",
+        "height": "",
+        "height_mm": "0",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "rotating",
+        "motor_ref": "NOT_SET",
+        "num_motors": "1",
+        "striker": "swinging",
+        "striker_ref": "NOT_SET"
+      },
+      "field_states": {},
+      "subdivision": "Bell Tower"
+    }
+  ],
+  "topology": {
+    "nodes": [
+      {
+        "id": "subdivision_0",
+        "name": "Sacristy",
+        "position": { "x": 100.0, "y": 850.0 },
+        "size": { "width": 180.0, "height": 120.0 },
+        "category": "container",
+        "powerGrid": "v230",
+        "equipment": [],
+        "type": "sacristy",
+        "bells": [],
+        "clockFaceCount": 0,
+        "connectsToClockTower": false,
+        "designation": "masterClock",
+        "serialEnabled": true
+      },
+      {
+        "id": "subdivision_1",
+        "name": "Bell Tower",
+        "position": { "x": 400.0, "y": 150.0 },
+        "size": { "width": 180.0, "height": 120.0 },
+        "category": "container",
+        "powerGrid": "v230",
+        "equipment": [],
+        "type": "towerFloor",
+        "towerNumber": 1,
+        "floorNumber": 1,
+        "bells": [],
+        "clockFaceCount": 0,
+        "connectsToClockTower": false,
+        "designation": "none",
+        "serialEnabled": true
+      }
+    ],
+    "connections": [
+      {
+        "id": "subdivision_0_subdivision_1_cat5_email5bell",
+        "sourceNodeId": "subdivision_0",
+        "destNodeId": "subdivision_1",
+        "cableType": "cat5",
+        "lengthMeters": 15.0,
+        "calculatedCores": 0,
+        "exitSide": "center",
+        "entrySide": "center"
+      }
+    ]
+  }
+}

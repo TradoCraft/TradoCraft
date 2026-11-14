@@ -9676,4 +9676,55 @@ class AppLocalizationsEn extends AppLocalizations {
   String baselineUnknownSet(String label) {
     return '$label: unknown — set';
   }
+
+  @override
+  String get baselineImportTower => 'Import from tower configurator';
+
+  @override
+  String get baselineImportTitle => 'Import preview';
+
+  @override
+  String baselineImportCreates(int groups, int bells, int dials) {
+    return 'Creates $groups bell group(s), $bells bell(s) and $dials clock dial(s).';
+  }
+
+  @override
+  String baselineImportReplaces(int count) {
+    return 'This replaces $count item(s) from a previous import of the same source; items entered by hand are kept.';
+  }
+
+  @override
+  String get baselineImportFresh => 'There is no previous import to replace.';
+
+  @override
+  String get baselineImportWarnings => 'Warnings';
+
+  @override
+  String baselineImportWarning(String bell, String field, String message) {
+    return '$bell, $field: $message';
+  }
+
+  @override
+  String get baselineImportUnmapped =>
+      'Fields not mapped (kept with the imported item)';
+
+  @override
+  String baselineImportUnmappedRow(String field, int count) {
+    return '$field ($count)';
+  }
+
+  @override
+  String get baselineImportConfirm => 'Import';
+
+  @override
+  String get baselineImportDone => 'Baseline imported.';
+
+  @override
+  String get baselineImportBadFile => 'This file is not valid JSON.';
+
+  @override
+  String get baselineImportReadFailed => 'The file could not be read.';
+
+  @override
+  String get baselineImported => 'imported';
 }

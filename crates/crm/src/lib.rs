@@ -14,6 +14,7 @@ pub mod product_matches;
 pub use import::{customers_import, Customers};
 pub mod opportunities;
 pub mod rebates;
+pub mod tower_import;
 
 use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
@@ -565,6 +566,7 @@ pub fn router() -> OpenApiRouter<AppState> {
         .merge(contacts::router())
         .merge(opportunities::router())
         .merge(baseline::router())
+        .merge(tower_import::router())
         .merge(baseline_types::router())
         .merge(match_rules::router())
         .merge(product_matches::router())

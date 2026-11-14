@@ -43,6 +43,9 @@ pub struct BaselineItem {
     #[schema(value_type = Object)]
     pub values: Value,
     pub sort_order: i32,
+    /// Id of the import that created the item (e.g. `tower_configurator`); `None` for items
+    /// entered by hand. A re-import of the same source replaces these items and only these.
+    pub import_source: Option<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     #[sqlx(skip)]
@@ -299,11 +302,11 @@ fn check_quantity(q: i32) -> AppResult<()> {
 }
 
 const SELECT: &str = "SELECT id, parent_id, type_code, name, quantity, \"values\", sort_order,
-                             created_at, updated_at
+                             import_source, created_at, updated_at
                       FROM crm.opportunity_baseline_items";
 
 /// 404 unless the opportunity belongs to the company; `lock` serialises concurrent tree edits.
-async fn check_opportunity(
+pub(crate) async fn check_opportunity(
     conn: &mut PgConnection,
     company_id: Uuid,
     opportunity_id: Uuid,
@@ -799,6 +802,7 @@ mod tests {
             quantity: 1,
             values: json!({}),
             sort_order: 0,
+            import_source: None,
             created_at: Utc::now(),
             updated_at: Utc::now(),
             children: vec![],

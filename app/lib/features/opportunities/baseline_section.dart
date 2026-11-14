@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -5,6 +7,7 @@ import '../../app/api.dart';
 import '../../l10n/l10n.dart';
 import '../../shared/actions.dart';
 import '../../shared/app_icons.dart';
+import '../../shared/csv_transfer.dart';
 import '../products/suitability_logic.dart';
 import 'baseline_logic.dart';
 import 'matches_panel.dart';
@@ -42,6 +45,61 @@ class BaselineSection extends ConsumerWidget {
   void _refresh(WidgetRef ref) {
     ref.invalidate(_baselineProvider(opportunityId));
     ref.invalidate(productMatchesProvider);
+  }
+
+  /// Picks a tower configurator export, previews it with a dry run and imports it on confirm.
+  Future<void> _importTower(BuildContext context, WidgetRef ref) async {
+    final l = context.l10n;
+    final messenger = ScaffoldMessenger.of(context);
+    final PickedFile? file;
+    try {
+      file = await ref.read(jsonPickerProvider)();
+    } catch (_) {
+      // The picker or reading the chosen file failed (permissions, a file that vanished).
+      messenger.showSnackBar(
+        SnackBar(content: Text(l.baselineImportReadFailed)),
+      );
+      return;
+    }
+    if (file == null || !context.mounted) return;
+    final Object? doc;
+    try {
+      doc = jsonDecode(utf8.decode(file.bytes));
+    } on FormatException {
+      messenger.showSnackBar(SnackBar(content: Text(l.baselineImportBadFile)));
+      return;
+    }
+    final crm = ref.read(apiProvider).crm;
+    final BaselineImportReport preview;
+    try {
+      preview = await crm.importBaseline(
+        id: opportunityId,
+        body: doc,
+        dryRun: true,
+      );
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(errorMessage(e))));
+      return;
+    }
+    if (!context.mounted) return;
+    final done = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => _TowerImportDialog(
+        preview: preview,
+        run: () => crm.importBaseline(
+          id: opportunityId,
+          body: doc,
+          dryRun: false,
+          sourceId: preview.sourceId,
+        ),
+      ),
+    );
+    if (done == true) {
+      messenger.showSnackBar(SnackBar(content: Text(l.baselineImportDone)));
+      // The screen may have been closed while the import ran: then there is nothing to refresh.
+      if (context.mounted) _refresh(ref);
+    }
   }
 
   Future<void> _edit(
@@ -216,7 +274,11 @@ class BaselineSection extends ConsumerWidget {
             child: ListTile(
               key: ValueKey('baseline-item-${item.id}'),
               dense: true,
-              title: Text(label),
+              title: Text(
+                item.importSource == null
+                    ? label
+                    : '$label · ${l.baselineImported}',
+              ),
               subtitle: canWrite
                   ? _valueChips(context, ref, item, itemDefs)
                   : (summary.isEmpty ? null : Text(summary)),
@@ -268,24 +330,52 @@ class BaselineSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                l.baselineTitle,
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-            ),
-            if (canWrite)
-              FilledButton.tonalIcon(
-                key: const ValueKey('baseline-add'),
-                icon: const Icon(AppIcons.add),
-                label: Text(l.baselineAdd),
-                onPressed: !tree.hasValue || !types.hasValue
-                    ? null
-                    : () => _edit(context, ref, types: typeList, tree: items),
-              ),
-          ],
+        LayoutBuilder(
+          builder: (context, box) {
+            final title = Text(
+              l.baselineTitle,
+              style: Theme.of(context).textTheme.titleMedium,
+            );
+            if (!canWrite) return title;
+            final importButton = OutlinedButton.icon(
+              key: const ValueKey('baseline-import-tower'),
+              icon: const Icon(AppIcons.fileUpload),
+              label: Text(l.baselineImportTower),
+              onPressed: () => _importTower(context, ref),
+            );
+            final addButton = FilledButton.tonalIcon(
+              key: const ValueKey('baseline-add'),
+              icon: const Icon(AppIcons.add),
+              label: Text(l.baselineAdd),
+              onPressed: !tree.hasValue || !types.hasValue
+                  ? null
+                  : () => _edit(context, ref, types: typeList, tree: items),
+            );
+            // Title and both buttons fit on one line from about this width; on a narrow screen
+            // the buttons wrap onto their own line below the title.
+            if (box.maxWidth >= 560) {
+              return Row(
+                children: [
+                  Expanded(child: title),
+                  importButton,
+                  const SizedBox(width: 8),
+                  addButton,
+                ],
+              );
+            }
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                title,
+                const SizedBox(height: 4),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [importButton, addButton],
+                ),
+              ],
+            );
+          },
         ),
         if (tree.hasError || types.hasError)
           Row(
@@ -311,6 +401,123 @@ class BaselineSection extends ConsumerWidget {
         else
           for (final i in items) node(i, 0),
       ],
+    );
+  }
+}
+
+/// What an import would do (from its dry run), with Confirm and Cancel. The real import runs
+/// here; the dialog cannot be left while it runs. Pops true when the import went through.
+class _TowerImportDialog extends StatefulWidget {
+  const _TowerImportDialog({required this.preview, required this.run});
+  final BaselineImportReport preview;
+  final Future<BaselineImportReport> Function() run;
+
+  @override
+  State<_TowerImportDialog> createState() => _TowerImportDialogState();
+}
+
+class _TowerImportDialogState extends State<_TowerImportDialog> {
+  bool _busy = false;
+  String? _error;
+
+  Future<void> _confirm() async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await widget.run();
+      if (mounted) Navigator.pop(context, true);
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _error = errorMessage(e);
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final p = widget.preview;
+    return PopScope(
+      canPop: !_busy,
+      child: AlertDialog(
+        title: Text(l.baselineImportTitle),
+        content: SizedBox(
+          width: 480,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l.baselineImportCreates(
+                    p.created.bellGroup,
+                    p.created.bell,
+                    p.created.clockDial,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  p.replaced > 0
+                      ? l.baselineImportReplaces(p.replaced)
+                      : l.baselineImportFresh,
+                ),
+                if (p.warnings.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    l.baselineImportWarnings,
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  for (final w in p.warnings)
+                    Text(
+                      l.baselineImportWarning(w.bell ?? '', w.field, w.message),
+                    ),
+                ],
+                if (p.unmappedFields.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    l.baselineImportUnmapped,
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  Text(
+                    [
+                      for (final u in p.unmappedFields)
+                        l.baselineImportUnmappedRow(u.field, u.count),
+                    ].join(', '),
+                  ),
+                ],
+                if (_error != null) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    _error!,
+                    style: TextStyle(color: Theme.of(context).colorScheme.error),
+                  ),
+                ],
+                if (_busy) ...[
+                  const SizedBox(height: 12),
+                  const LinearProgressIndicator(),
+                ],
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            key: const ValueKey('baseline-import-cancel'),
+            onPressed: _busy ? null : () => Navigator.pop(context, false),
+            child: Text(l.cancel),
+          ),
+          FilledButton(
+            key: const ValueKey('baseline-import-confirm'),
+            onPressed: _busy ? null : _confirm,
+            child: Text(l.baselineImportConfirm),
+          ),
+        ],
+      ),
     );
   }
 }

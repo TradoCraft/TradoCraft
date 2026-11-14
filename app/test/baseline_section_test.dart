@@ -1,4 +1,7 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io' show FileSystemException;
+import 'dart:typed_data';
 
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tradocraft_app/app/api.dart';
 import 'package:tradocraft_app/features/opportunities/baseline_section.dart';
 import 'package:tradocraft_app/l10n/app_localizations.dart';
+import 'package:tradocraft_app/shared/csv_transfer.dart';
 
 import 'fake_http.dart';
 
@@ -118,7 +122,9 @@ FakeHttp _http({
   List<String> perms = const ['opportunities.read', 'opportunities.write'],
   List<Object?>? tree,
   Object? Function(Object?)? onDelete,
+  Object? Function(Object?)? onImport,
 }) => FakeHttp({
+  'POST /api/v1/opportunities/o1/baseline/import': ?onImport,
   'GET /api/v1/me': (_) => meJson(perms),
   'GET /api/v1/opportunities/o1/baseline': (_) => tree ?? _tree(),
   'GET /api/v1/baseline-item-types': (_) => _types,
@@ -128,13 +134,24 @@ FakeHttp _http({
   'DELETE /api/v1/opportunities/o1/baseline/items/b1': onDelete ?? (_) => null,
 });
 
-Future<void> _pump(WidgetTester tester, FakeHttp h) async {
-  tester.view.physicalSize = const Size(1400, 2400);
+Future<void> _pump(
+  WidgetTester tester,
+  FakeHttp h, {
+  CsvPicker? jsonPicker,
+  Size size = const Size(1400, 2400),
+
+  /// When given, the section is shown only while this is true (to unmount it under an open dialog).
+  ValueNotifier<bool>? shown,
+}) async {
+  tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [dioProvider.overrideWithValue(fakeDio(h))],
+      overrides: [
+        dioProvider.overrideWithValue(fakeDio(h)),
+        if (jsonPicker != null) jsonPickerProvider.overrideWithValue(jsonPicker),
+      ],
       child: MaterialApp(
         locale: const Locale('en'),
         localizationsDelegates: [
@@ -146,8 +163,13 @@ Future<void> _pump(WidgetTester tester, FakeHttp h) async {
           body: Consumer(
             builder: (context, ref, _) {
               ref.watch(meProvider);
-              return const SingleChildScrollView(
+              const section = SingleChildScrollView(
                 child: BaselineSection(opportunityId: 'o1'),
+              );
+              if (shown == null) return section;
+              return ValueListenableBuilder<bool>(
+                valueListenable: shown,
+                builder: (_, on, _) => on ? section : const SizedBox.shrink(),
               );
             },
           ),
@@ -534,4 +556,214 @@ void main() {
     // Never unscoped and never the product scope (both need products.read).
     expect(scopes, everyElement(isIn(['bell', 'bell_group', 'clock_dial'])));
   });
+
+  group('import from the tower configurator', () {
+    const importKey = ValueKey('baseline-import-tower');
+    const importPath = 'POST /api/v1/opportunities/o1/baseline/import';
+
+    Map<String, Object?> report({bool dry = true, int replaced = 0}) => {
+      'dry_run': dry,
+      'source_id': 'tower_configurator',
+      'replaced': replaced,
+      'created': {'bell_group': 1, 'bell': 3, 'clock_dial': 0},
+      'items': [],
+      'warnings': [
+        {
+          'bell': 'bell_2',
+          'field': 'motion',
+          'message': 'unknown motion swirling',
+        },
+      ],
+      'unmapped_fields': [
+        {'field': 'topology', 'count': 1},
+      ],
+    };
+
+    CsvPicker picks(String text) => () async =>
+        (name: 'tower.json', bytes: Uint8List.fromList(utf8.encode(text)));
+
+    List<Object?> importCalls(FakeHttp h) => [
+      for (final (i, r) in h.requests.indexed)
+        if (r == importPath) h.queries[i]['dry_run'],
+    ];
+
+    int baselineLoads(FakeHttp h) => h.requests
+        .where((r) => r == 'GET /api/v1/opportunities/o1/baseline')
+        .length;
+
+    testWidgets('marks the items that came from an import', (tester) async {
+      final tree = _tree();
+      ((tree[0]! as Map<String, Object?>)['children']! as List)
+          .cast<Map<String, Object?>>()
+          .first['import_source'] = 'tower_configurator';
+      await _pump(tester, _http(tree: tree));
+      expect(find.text('Bell · Big bell · imported'), findsOneWidget);
+      expect(find.text('Bell group · Tower bells'), findsOneWidget);
+    });
+
+    testWidgets('is only offered with opportunities.write', (tester) async {
+      await _pump(tester, _http(perms: const ['opportunities.read']));
+      expect(find.byKey(importKey), findsNothing);
+    });
+
+    testWidgets('previews with a dry run, then imports and refreshes', (
+      tester,
+    ) async {
+      var calls = 0;
+      final h = _http(onImport: (_) => report(dry: ++calls == 1, replaced: 2));
+      await _pump(tester, h, jsonPicker: picks('{"bells":[]}'));
+      final before = baselineLoads(h);
+      await tester.tap(find.byKey(importKey));
+      await tester.pumpAndSettle();
+      expect(importCalls(h), [true]);
+      expect(h.bodies[importPath], {'bells': []});
+      expect(find.text('Import preview'), findsOneWidget);
+      expect(find.textContaining('1 bell group'), findsOneWidget);
+      expect(find.textContaining('3 bell(s)'), findsOneWidget);
+      expect(find.textContaining('replaces 2'), findsOneWidget);
+      expect(find.textContaining('bell_2'), findsOneWidget);
+      expect(find.textContaining('unknown motion swirling'), findsOneWidget);
+      expect(find.textContaining('topology'), findsOneWidget);
+
+      await tester.tap(find.byKey(const ValueKey('baseline-import-confirm')));
+      await tester.pumpAndSettle();
+      expect(importCalls(h), [true, false]);
+      expect(find.text('Import preview'), findsNothing);
+      expect(baselineLoads(h), before + 1);
+    });
+
+    testWidgets('cancel imports nothing', (tester) async {
+      final h = _http(onImport: (_) => report());
+      await _pump(tester, h, jsonPicker: picks('{}'));
+      await tester.tap(find.byKey(importKey));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('baseline-import-cancel')));
+      await tester.pumpAndSettle();
+      expect(find.text('Import preview'), findsNothing);
+      expect(importCalls(h), [true]);
+    });
+
+    testWidgets('a cancelled file pick does nothing', (tester) async {
+      final h = _http(onImport: (_) => report());
+      await _pump(tester, h, jsonPicker: () async => null);
+      await tester.tap(find.byKey(importKey));
+      await tester.pumpAndSettle();
+      expect(importCalls(h), isEmpty);
+    });
+
+    testWidgets('a file that is not JSON is refused before any call', (
+      tester,
+    ) async {
+      final h = _http(onImport: (_) => report());
+      await _pump(tester, h, jsonPicker: picks('not json'));
+      await tester.tap(find.byKey(importKey));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('not valid JSON'), findsOneWidget);
+      expect(importCalls(h), isEmpty);
+    });
+
+    testWidgets('shows the server message for a 422', (tester) async {
+      final h = _http(
+        onImport: (_) => const FakeStatus(422, {
+          'error': 'validation',
+          'message': 'bells must be a list',
+        }),
+      );
+      await _pump(tester, h, jsonPicker: picks('{"bells":1}'));
+      await tester.tap(find.byKey(importKey));
+      await tester.pumpAndSettle();
+      expect(find.text('Import preview'), findsNothing);
+      expect(find.textContaining('bells must be a list'), findsOneWidget);
+    });
+
+    testWidgets('cannot be dismissed while the import is running', (
+      tester,
+    ) async {
+      final gate = Completer<void>();
+      var n = 0;
+      final h = _http(
+        onImport: (_) {
+          n++;
+          if (n == 1) return report();
+          return gate.future.then((_) => report(dry: false));
+        },
+      );
+      await _pump(tester, h, jsonPicker: picks('{}'));
+      await tester.tap(find.byKey(importKey));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('baseline-import-confirm')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(find.text('Import preview'), findsOneWidget);
+      final cancel = tester.widget<TextButton>(
+        find.byKey(const ValueKey('baseline-import-cancel')),
+      );
+      expect(cancel.onPressed, isNull);
+      await tester.tapAt(const Offset(5, 5)); // the barrier
+      await tester.pump();
+      await Navigator.of(
+        tester.element(find.text('Import preview')),
+      ).maybePop(); // what the system back does
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.text('Import preview'), findsOneWidget);
+      gate.complete();
+      await tester.pumpAndSettle();
+      expect(find.text('Import preview'), findsNothing);
+    });
+
+    testWidgets('keeps both actions reachable on a narrow screen', (
+      tester,
+    ) async {
+      await _pump(tester, _http(), size: const Size(320, 900));
+      expect(tester.takeException(), isNull, reason: 'no layout overflow');
+      for (final key in [importKey, const ValueKey('baseline-add')]) {
+        final r = tester.getRect(find.byKey(key));
+        expect(r.left, greaterThanOrEqualTo(0), reason: '$key');
+        expect(r.right, lessThanOrEqualTo(320), reason: '$key');
+      }
+    });
+
+    testWidgets('says so when the file cannot be read', (tester) async {
+      final h = _http(onImport: (_) => report());
+      await _pump(
+        tester,
+        h,
+        jsonPicker: () async => throw const FileSystemException('denied'),
+      );
+      await tester.tap(find.byKey(importKey));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.text('The file could not be read.'), findsOneWidget);
+      expect(find.text('Import preview'), findsNothing);
+      expect(importCalls(h), isEmpty, reason: 'nothing was sent');
+    });
+
+    testWidgets('does not touch a screen that was closed during the import', (
+      tester,
+    ) async {
+      final gate = Completer<void>();
+      var n = 0;
+      final shown = ValueNotifier(true);
+      final h = _http(
+        onImport: (_) {
+          n++;
+          if (n == 1) return report();
+          return gate.future.then((_) => report(dry: false));
+        },
+      );
+      await _pump(tester, h, jsonPicker: picks('{}'), shown: shown);
+      await tester.tap(find.byKey(importKey));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('baseline-import-confirm')));
+      await tester.pump();
+      shown.value = false; // the screen goes away while the import runs
+      await tester.pump();
+      gate.complete();
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.text('Import preview'), findsNothing);
+    });
+  });
 }
+

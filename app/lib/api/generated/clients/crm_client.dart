@@ -7,6 +7,7 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:retrofit/retrofit.dart';
 
+import '../models/baseline_import_report.dart';
 import '../models/baseline_item.dart';
 import '../models/baseline_item_input.dart';
 import '../models/baseline_item_type.dart';
@@ -320,6 +321,23 @@ abstract class CrmClient {
     @Path('id') required String id,
   });
 
+  /// Previews (`dry_run=true`) or runs the import of a tower configurator export (the JSON as the.
+  /// body) into the baseline: one bell group named from the source holding one bell per source.
+  /// bell. Items of the same source that an earlier import created are replaced; items entered by.
+  /// hand are never removed (those inside a replaced group move to the top level).
+  ///
+  /// [dryRun] - `true` returns the preview and writes nothing.
+  ///
+  /// [sourceId] - Identifies the source; an import replaces the items of the same source in the.
+  /// opportunity. Default `tower_configurator`, at most 100 characters.
+  @POST('/api/v1/opportunities/{id}/baseline/import')
+  Future<BaselineImportReport> importBaseline({
+    @Path('id') required String id,
+    @Body() required dynamic body,
+    @Query('dry_run') bool? dryRun,
+    @Query('source_id') String? sourceId,
+  });
+
   @POST('/api/v1/opportunities/{id}/baseline/items')
   Future<BaselineItem> createItem({
     @Path('id') required String id,
@@ -337,6 +355,14 @@ abstract class CrmClient {
   /// whole subtree silently: remove or move the children first.
   @DELETE('/api/v1/opportunities/{id}/baseline/items/{item_id}')
   Future<void> deleteItem({
+    @Path('id') required String id,
+    @Path('item_id') required String itemId,
+  });
+
+  /// The source of an imported item as it was received (the whole bell, or the document without.
+  /// its bells for the group). 404 for an item entered by hand.
+  @GET('/api/v1/opportunities/{id}/baseline/items/{item_id}/source')
+  Future<void> getSource({
     @Path('id') required String id,
     @Path('item_id') required String itemId,
   });

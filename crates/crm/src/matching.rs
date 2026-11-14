@@ -763,6 +763,7 @@ mod tests {
             quantity: 1,
             values,
             sort_order: 0,
+            import_source: None,
             created_at: Utc::now(),
             updated_at: Utc::now(),
             children,

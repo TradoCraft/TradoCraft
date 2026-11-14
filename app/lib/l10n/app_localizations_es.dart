@@ -9722,4 +9722,56 @@ class AppLocalizationsEs extends AppLocalizations {
   String baselineUnknownSet(String label) {
     return '$label: desconocido — completar';
   }
+
+  @override
+  String get baselineImportTower => 'Importar desde el configurador de torre';
+
+  @override
+  String get baselineImportTitle => 'Vista previa de la importación';
+
+  @override
+  String baselineImportCreates(int groups, int bells, int dials) {
+    return 'Crea $groups grupo(s) de campanas, $bells campana(s) y $dials esfera(s) de reloj.';
+  }
+
+  @override
+  String baselineImportReplaces(int count) {
+    return 'Esto sustituye $count elemento(s) de una importación anterior de la misma fuente; los elementos introducidos a mano se conservan.';
+  }
+
+  @override
+  String get baselineImportFresh =>
+      'No hay una importación anterior que sustituir.';
+
+  @override
+  String get baselineImportWarnings => 'Avisos';
+
+  @override
+  String baselineImportWarning(String bell, String field, String message) {
+    return '$bell, $field: $message';
+  }
+
+  @override
+  String get baselineImportUnmapped =>
+      'Campos sin asignar (se guardan con el elemento importado)';
+
+  @override
+  String baselineImportUnmappedRow(String field, int count) {
+    return '$field ($count)';
+  }
+
+  @override
+  String get baselineImportConfirm => 'Importar';
+
+  @override
+  String get baselineImportDone => 'Situación actual importada.';
+
+  @override
+  String get baselineImportBadFile => 'Este archivo no es un JSON válido.';
+
+  @override
+  String get baselineImportReadFailed => 'No se pudo leer el archivo.';
+
+  @override
+  String get baselineImported => 'importado';
 }

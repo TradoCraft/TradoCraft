@@ -1165,6 +1165,42 @@ class _CrmClient implements CrmClient {
   }
 
   @override
+  Future<BaselineImportReport> importBaseline({
+    required String id,
+    required dynamic body,
+    bool? dryRun,
+    String? sourceId,
+  }) async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{
+      r'dry_run': dryRun,
+      r'source_id': sourceId,
+    };
+    queryParameters.removeWhere((k, v) => v == null);
+    final _headers = <String, dynamic>{};
+    final _data = body;
+    final _options = _setStreamType<BaselineImportReport>(
+      Options(method: 'POST', headers: _headers, extra: _extra)
+          .compose(
+            _dio.options,
+            '/api/v1/opportunities/${id}/baseline/import',
+            queryParameters: queryParameters,
+            data: _data,
+          )
+          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
+    );
+    final _result = await _dio.fetch<Map<String, Object?>>(_options);
+    late BaselineImportReport _value;
+    try {
+      _value = BaselineImportReport.fromJson(_result.data!);
+    } on Object catch (e, s) {
+      errorLogger?.logError(e, s, _options, response: _result);
+      rethrow;
+    }
+    return _value;
+  }
+
+  @override
   Future<BaselineItem> createItem({
     required String id,
     required BaselineItemInput body,
@@ -1238,6 +1274,25 @@ class _CrmClient implements CrmClient {
           .compose(
             _dio.options,
             '/api/v1/opportunities/${id}/baseline/items/${itemId}',
+            queryParameters: queryParameters,
+            data: _data,
+          )
+          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
+    );
+    await _dio.fetch<void>(_options);
+  }
+
+  @override
+  Future<void> getSource({required String id, required String itemId}) async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{};
+    final _headers = <String, dynamic>{};
+    const Map<String, dynamic>? _data = null;
+    final _options = _setStreamType<void>(
+      Options(method: 'GET', headers: _headers, extra: _extra)
+          .compose(
+            _dio.options,
+            '/api/v1/opportunities/${id}/baseline/items/${itemId}/source',
             queryParameters: queryParameters,
             data: _data,
           )
