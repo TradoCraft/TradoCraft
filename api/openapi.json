@@ -44937,7 +44937,7 @@
         "properties": {
           "check": {
             "type": "string",
-            "description": "`power`, `baseline` or `rule:<rule name>`."
+            "description": "`power`, `baseline`, `motor` or `rule:<rule name>`."
           },
           "message": {
             "type": "string"

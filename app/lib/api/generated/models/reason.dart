@@ -18,7 +18,7 @@ class Reason {
   
   factory Reason.fromJson(Map<String, Object?> json) => _$ReasonFromJson(json);
   
-  /// `power`, `baseline` or `rule:<rule name>`.
+  /// `power`, `baseline`, `motor` or `rule:<rule name>`.
   final String check;
   final String message;
   final CheckStatus status;
