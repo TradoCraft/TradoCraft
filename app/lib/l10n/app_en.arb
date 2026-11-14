@@ -4057,5 +4057,16 @@
   "@todoFromOwner": {"placeholders": {"name": {"type": "String"}}},
   "todoSubProgress": "{done} of {total} sub-items done",
   "@todoSubProgress": {"placeholders": {"done": {"type": "int"}, "total": {"type": "int"}}},
-  "todoReorder": "Drag to reorder"
+  "todoReorder": "Drag to reorder",
+  "tabCustomer": "Customer",
+  "todoAdded": "To-do added",
+  "todoLinkToScreen": "Link to current screen",
+  "todoLinkNotAvailable": "This screen has no record to link to.",
+  "todoOpenLink": "Open the linked record",
+  "todoRemoveLink": "Remove link",
+  "recordNotFound": "This record was not found. It may have been deleted, or you may not have access to it.",
+  "todoForObject": "To-dos for this record",
+  "todoForObjectCount": "To-dos for this record ({count} open)",
+  "@todoForObjectCount": {"placeholders": {"count": {"type": "int"}}},
+  "todoForObjectEmpty": "No open to-dos for this record."
 }

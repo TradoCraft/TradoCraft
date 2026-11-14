@@ -8639,4 +8639,39 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get todoReorder => 'Glisser pour réordonner';
+
+  @override
+  String get tabCustomer => 'Client';
+
+  @override
+  String get todoAdded => 'Tâche ajoutée';
+
+  @override
+  String get todoLinkToScreen => 'Lier à l’écran actuel';
+
+  @override
+  String get todoLinkNotAvailable =>
+      'Cet écran n’a pas d’enregistrement à lier.';
+
+  @override
+  String get todoOpenLink => 'Ouvrir l’enregistrement lié';
+
+  @override
+  String get todoRemoveLink => 'Supprimer le lien';
+
+  @override
+  String get recordNotFound =>
+      'Cet enregistrement est introuvable. Il a peut-être été supprimé, ou vous n’y avez pas accès.';
+
+  @override
+  String get todoForObject => 'Tâches de cet enregistrement';
+
+  @override
+  String todoForObjectCount(int count) {
+    return 'Tâches de cet enregistrement ($count ouvertes)';
+  }
+
+  @override
+  String get todoForObjectEmpty =>
+      'Aucune tâche ouverte pour cet enregistrement.';
 }

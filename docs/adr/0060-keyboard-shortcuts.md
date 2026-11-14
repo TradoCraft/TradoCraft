@@ -27,7 +27,7 @@ Command palette and help always use Ctrl or Cmd.
 | J | Discard: reset the form if it can, else the unsaved-changes prompt | B |
 | Q | Focus the scope's search field | B |
 | N | Load more on lists (the previous-page key P is not implemented: no list pages yet) | B |
-| Shift+T | New to-do | D |
+| Shift+T | New to-do (live with to-do PR 2, ADR 0061; shell layer, needs `todo.use`) | D |
 | F / Shift+S | Search / share a knowledge-base article | D |
 | Ctrl/Cmd+K | Command palette | C |
 | Ctrl/Cmd+/ | Shortcut help | C |
@@ -96,4 +96,6 @@ registered by the tab). Existing `ValueKey`s stay.
 
 **Consequences.** Every screen can offer shortcuts by wrapping itself in a scope; the hint badges stay correct
 because they read the same registry the key handler uses. The web chords differ from desktop only for the menu
-digits. Previous page (P) and the to-do key stay hidden until their features exist.
+digits. Previous page (P) stays hidden until its feature exists. New to-do (Shift+T) is live: the shell scope offers it when the
+user holds `todo.use` (the server drops the permission when the module is off), the dialog it opens is modal for
+shortcuts, and the account menu offers the same action so it never depends on the keyboard.

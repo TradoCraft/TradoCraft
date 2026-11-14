@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 
+import '../features/customers/customer_screen.dart';
 import '../features/delivery/delivery_screen.dart';
 import '../features/field/contract_screen.dart';
 import '../features/field/job_screen.dart';
@@ -70,6 +71,8 @@ Widget? detailScreen(Uri uri) {
       return PurchaseOrderScreen(key: key, id: id);
     case 'goods-receipts' when s.length == 2:
       return GoodsReceiptScreen(key: key, id: id);
+    case 'customers' when s.length == 2:
+      return CustomerScreen(key: key, id: id);
     case 'products' when s.length == 2:
       return ProductScreen(key: key, id: id);
     case 'opportunities' when s.length == 2:

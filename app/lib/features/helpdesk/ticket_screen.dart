@@ -23,6 +23,8 @@ import 'ticket_extras.dart';
 import 'ticket_split.dart';
 import 'tickets_page.dart';
 import '../../shared/app_icons.dart';
+import '../../shared/load_failed.dart';
+import '../todo/object_todos_button.dart';
 import '../tutorial/targets.dart';
 
 final teamsProvider = FutureProvider.autoDispose<List<Team>>(
@@ -55,6 +57,7 @@ class TicketScreen extends ConsumerStatefulWidget {
 class _TicketScreenState extends ConsumerState<TicketScreen> {
   TicketDetail? _d;
   String? _error;
+  bool _missing = false;
   bool _busy = false;
 
   // Properties.
@@ -169,7 +172,10 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
         );
       }
     } catch (e) {
-      setState(() => _error = errorMessage(e));
+      setState(() {
+        _error = errorMessage(e);
+        _missing = errorStatus(e) == 404;
+      });
     }
   }
 
@@ -521,11 +527,13 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
     final d = _d;
     if (d == null) {
       return Scaffold(
-        body: Center(
-          child: _error != null
-              ? Text(_error!)
-              : const CircularProgressIndicator(),
-        ),
+        body: _error != null
+            ? LoadFailedView(
+                message: _error!,
+                leaveTo: '/helpdesk',
+                notFound: _missing,
+              )
+            : const Center(child: CircularProgressIndicator()),
       );
     }
     final perms = ref.watch(meProvider).value?.permissions ?? const [];
@@ -588,6 +596,11 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
                   style: theme.textTheme.titleLarge,
                   overflow: TextOverflow.ellipsis,
                 ),
+              ),
+              ObjectTodosButton(
+                kind: TodoLinkKind.ticket,
+                id: t.id,
+                label: t.number,
               ),
               if (canWrite && !t.internal)
                 TextButton.icon(

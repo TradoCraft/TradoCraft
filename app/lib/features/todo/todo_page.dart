@@ -1,10 +1,15 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../app/api.dart';
+import '../../app/shortcuts/actions.dart';
+import '../../app/shortcuts/key_hint.dart';
 import '../../l10n/l10n.dart';
 import '../../shared/app_icons.dart';
 import '../../shared/format.dart';
+import 'link_kinds.dart';
+import 'todo_quick_add.dart';
 import 'todo_repository.dart';
 
 /// A root item with the sub-items the list holds for it.
@@ -57,11 +62,14 @@ class TodoPage extends ConsumerWidget {
                 l.todoTitle,
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
-              FilledButton.icon(
-                key: const ValueKey('todo-add'),
-                icon: const Icon(AppIcons.add),
-                label: Text(l.todoAdd),
-                onPressed: () => _add(context, ref),
+              KeyHint(
+                action: ShortcutAction.newTodo,
+                child: FilledButton.icon(
+                  key: const ValueKey('todo-add'),
+                  icon: const Icon(AppIcons.add),
+                  label: Text(l.shortcutNewTodo),
+                  onPressed: () => showTodoQuickAdd(context, ref),
+                ),
               ),
               SegmentedButton<TodoFilter>(
                 key: const ValueKey('todo-filter'),
@@ -132,26 +140,11 @@ Future<void> _run(
   }
   if (!context.mounted) return;
   ref.invalidate(todoItemsProvider);
+  ref.invalidate(objectTodosProvider);
 }
 
-Future<void> _add(
-  BuildContext context,
-  WidgetRef ref, {
-  TodoItem? parent,
-}) async {
-  final input = await showDialog<_NewTodo>(
-    context: context,
-    builder: (_) => _AddDialog(sub: parent != null),
-  );
-  if (input == null || !context.mounted) return;
-  await _run(
-    context,
-    ref,
-    () => ref
-        .read(todoRepositoryProvider)
-        .add(title: input.title, parentId: parent?.id, dueDate: input.due),
-  );
-}
+Future<void> _add(BuildContext context, WidgetRef ref, {TodoItem? parent}) =>
+    showTodoQuickAdd(context, ref, parent: parent);
 
 /// Completes or reopens. Completing an item with open sub-items asks first.
 Future<void> _toggle(
@@ -460,14 +453,7 @@ class _Details extends StatelessWidget {
         ),
       if (!item.mine) Text(l.todoFromOwner(item.ownerName)),
       if (extra != null) Text(extra!),
-      if (item.linkKind != null)
-        // Jumping to the record comes with the next step; for now the chip only names it.
-        Chip(
-          key: ValueKey('todo-link-${item.id}'),
-          avatar: const Icon(AppIcons.link, size: 16),
-          label: Text(item.linkLabel ?? l.todoLinkedItem),
-          visualDensity: VisualDensity.compact,
-        ),
+      if (item.linkKind != null) _LinkChip(item),
     ];
     if (parts.isEmpty) return const SizedBox.shrink();
     return Wrap(
@@ -479,7 +465,48 @@ class _Details extends StatelessWidget {
   }
 }
 
-enum _Action { addSub, setDue, clearDue, reopen, delete }
+/// The link of an item. Tappable when the viewer may read the record (the server then sends its
+/// id): it opens or focuses the record's tab. The location is built from kind and id by the link
+/// registry; the stored `link_location` is only the fallback. A link the viewer may not read shows
+/// "Linked item" and does nothing. A record that is gone is not known here: its screen says so.
+class _LinkChip extends StatelessWidget {
+  const _LinkChip(this.item);
+
+  final TodoItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final info = linkKindInfo(item.linkKind);
+    final location = item.linkId == null
+        ? null
+        : resolveLinkLocation(
+            item.linkKind,
+            item.linkId,
+            stored: item.linkLocation,
+          );
+    final label = item.linkLabel ?? l.todoLinkedItem;
+    final avatar = Icon(info?.icon ?? AppIcons.link, size: 16);
+    if (location == null) {
+      return Chip(
+        key: ValueKey('todo-link-${item.id}'),
+        avatar: avatar,
+        label: Text(label),
+        visualDensity: VisualDensity.compact,
+      );
+    }
+    return ActionChip(
+      key: ValueKey('todo-link-${item.id}'),
+      avatar: avatar,
+      label: Text(label),
+      tooltip: l.todoOpenLink,
+      visualDensity: VisualDensity.compact,
+      onPressed: () => context.push(location),
+    );
+  }
+}
+
+enum _Action { addSub, setDue, clearDue, removeLink, reopen, delete }
 
 class _ItemMenu extends ConsumerWidget {
   const _ItemMenu({required this.item, required this.canAddSub});
@@ -506,6 +533,14 @@ class _ItemMenu extends ConsumerWidget {
                   .read(todoRepositoryProvider)
                   .update(item.id, const TodoPatch(clearDueDate: true)),
             );
+          case _Action.removeLink:
+            await _run(
+              context,
+              ref,
+              () => ref
+                  .read(todoRepositoryProvider)
+                  .update(item.id, const TodoPatch(clearLink: true)),
+            );
           case _Action.reopen:
             await _toggle(context, ref, item);
           case _Action.delete:
@@ -522,6 +557,12 @@ class _ItemMenu extends ConsumerWidget {
         PopupMenuItem(value: _Action.setDue, child: Text(l.todoSetDue)),
         if (item.dueDate != null)
           PopupMenuItem(value: _Action.clearDue, child: Text(l.todoClearDue)),
+        if (item.linkKind != null)
+          PopupMenuItem(
+            key: ValueKey('todo-remove-link-${item.id}'),
+            value: _Action.removeLink,
+            child: Text(l.todoRemoveLink),
+          ),
         if (item.done)
           PopupMenuItem(value: _Action.reopen, child: Text(l.todoReopen)),
         // Only the owner deletes an item.
@@ -531,99 +572,6 @@ class _ItemMenu extends ConsumerWidget {
             value: _Action.delete,
             child: Text(l.delete),
           ),
-      ],
-    );
-  }
-}
-
-class _NewTodo {
-  const _NewTodo(this.title, this.due);
-
-  final String title;
-  final DateTime? due;
-}
-
-class _AddDialog extends StatefulWidget {
-  const _AddDialog({required this.sub});
-
-  final bool sub;
-
-  @override
-  State<_AddDialog> createState() => _AddDialogState();
-}
-
-class _AddDialogState extends State<_AddDialog> {
-  final _title = TextEditingController();
-  DateTime? _due;
-
-  @override
-  void dispose() {
-    _title.dispose();
-    super.dispose();
-  }
-
-  Future<void> _pickDue() async {
-    final now = DateTime.now();
-    final d = await showDatePicker(
-      context: context,
-      initialDate: _due ?? now,
-      firstDate: DateTime(now.year - 1),
-      lastDate: DateTime(now.year + 10),
-    );
-    if (d != null) setState(() => _due = d);
-  }
-
-  void _submit() {
-    final title = _title.text.trim();
-    if (title.isEmpty) return;
-    Navigator.pop(context, _NewTodo(title, _due));
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l = context.l10n;
-    return AlertDialog(
-      title: Text(widget.sub ? l.todoAddSub : l.todoAdd),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          TextField(
-            key: const ValueKey('todo-title-field'),
-            controller: _title,
-            autofocus: true,
-            maxLength: 200,
-            decoration: InputDecoration(labelText: l.todoWhat),
-            onSubmitted: (_) => _submit(),
-          ),
-          Row(
-            children: [
-              TextButton.icon(
-                key: const ValueKey('todo-due-button'),
-                icon: const Icon(AppIcons.event),
-                label: Text(_due == null ? l.todoSetDue : date(_due)),
-                onPressed: _pickDue,
-              ),
-              if (_due != null)
-                IconButton(
-                  tooltip: l.todoClearDue,
-                  icon: const Icon(AppIcons.close),
-                  onPressed: () => setState(() => _due = null),
-                ),
-            ],
-          ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(l.cancel),
-        ),
-        FilledButton(
-          key: const ValueKey('todo-dialog-save'),
-          onPressed: _submit,
-          child: Text(l.add),
-        ),
       ],
     );
   }

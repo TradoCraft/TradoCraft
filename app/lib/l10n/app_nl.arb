@@ -2715,5 +2715,16 @@
   "todoLinkedItem": "Gekoppeld item",
   "todoFromOwner": "Van {name}",
   "todoSubProgress": "{done} van {total} subtaken afgerond",
-  "todoReorder": "Slepen om te ordenen"
+  "todoReorder": "Slepen om te ordenen",
+  "tabCustomer": "Klant",
+  "todoAdded": "Taak toegevoegd",
+  "todoLinkToScreen": "Koppelen aan huidig scherm",
+  "todoLinkNotAvailable": "Dit scherm heeft geen record om aan te koppelen.",
+  "todoOpenLink": "Gekoppeld record openen",
+  "todoRemoveLink": "Koppeling verwijderen",
+  "recordNotFound": "Dit record is niet gevonden. Het is misschien verwijderd, of je hebt er geen toegang toe.",
+  "todoForObject": "Taken voor dit record",
+  "todoForObjectCount": "Taken voor dit record ({count} open)",
+  "@todoForObjectCount": {"placeholders": {"count": {"type": "int"}}},
+  "todoForObjectEmpty": "Geen openstaande taken voor dit record."
 }

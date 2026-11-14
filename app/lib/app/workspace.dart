@@ -478,8 +478,12 @@ class _TabObserver extends NavigatorObserver {
     if (_stack.isNotEmpty) onLocation(_stack.last.settings.name ?? '');
   }
 
+  // Only screens have a location. A bottom sheet or a menu opened inside the tab lands on the
+  // same navigator but has no name: it must not replace the tab's location (which would make the
+  // shell lose the section, and the to-do context the record).
   @override
   void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    if (route is! PageRoute) return;
     _stack.add(route);
     _report();
   }
@@ -505,7 +509,7 @@ class _TabObserver extends NavigatorObserver {
       } else {
         _stack[i] = newRoute;
       }
-    } else if (newRoute != null) {
+    } else if (newRoute is PageRoute) {
       _stack.add(newRoute);
     }
     _report();
@@ -699,6 +703,7 @@ String tabLabel(AppLocalizations l, WorkTab tab) {
     'orders' => l.tabOrder,
     'repairs' => l.tabRepair,
     'jobs' => s.length == 3 ? l.tabContract : l.tabJob,
+    'customers' => l.tabCustomer,
     'products' => l.tabProduct,
     'opportunities' => l.tabOpportunity,
     'stock' => s.length > 1 && s[1] == 'counts' ? l.tabCount : l.tabStock,

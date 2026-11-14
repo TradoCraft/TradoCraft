@@ -15,6 +15,7 @@ import 'shortcuts/key_hint.dart';
 import 'shortcuts/registry.dart';
 import 'worker_ui.dart';
 import 'workspace.dart';
+import '../features/todo/todo_quick_add.dart';
 import '../features/tutorial/targets.dart';
 import '../l10n/l10n.dart';
 import '../shared/app_icons.dart';
@@ -232,8 +233,11 @@ class AppShell extends ConsumerWidget {
 
     // Menu 1-9 pick the n-th entry of the permission-filtered list; Home is the first one (the
     // main area of the first permitted section). Back lives in each tab (see workspace.dart).
+    // New to-do needs `todo.use` (the server also takes it away when the module is off).
+    final canTodo = perms?.contains('todo.use') ?? false;
     final shellActions = <ShortcutAction, VoidCallback?>{
       ShortcutAction.home: () => go(0),
+      if (canTodo) ShortcutAction.newTodo: () => showTodoQuickAdd(context, ref),
       for (
         var i = 0;
         i < destinations.length && i < ShortcutAction.menus.length;
@@ -269,6 +273,22 @@ class AppShell extends ConsumerWidget {
           ),
         ),
         const PopupMenuDivider(),
+        // Always reachable, whatever the keyboard offers.
+        if (canTodo)
+          PopupMenuItem(
+            key: const ValueKey('account-new-todo'),
+            value: 'todo',
+            child: Row(
+              children: [
+                Expanded(child: Text(context.l10n.shortcutNewTodo)),
+                const SizedBox(width: 16),
+                Text(
+                  ShortcutAction.newTodo.describe(),
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            ),
+          ),
         PopupMenuItem(value: 'tutorial', child: Text(context.l10n.tutTitle)),
         PopupMenuItem(
           value: 'env',
@@ -294,6 +314,7 @@ class AppShell extends ConsumerWidget {
         if (v == 'signout') ref.read(sessionProvider.notifier).signOut();
         if (v == 'env') showEnvironmentSwitcher(context);
         if (v == 'tutorial') context.push('/tutorial');
+        if (v == 'todo') showTodoQuickAdd(context, ref);
         if (v.startsWith('lang:')) {
           final code = v.substring(5);
           ref
