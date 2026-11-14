@@ -347,4 +347,20 @@ void main() {
     );
     expect(find.textContaining('item has children'), findsOneWidget);
   });
+
+  testWidgets('works with opportunities.read only and asks per type scope', (
+    tester,
+  ) async {
+    final h = _http(perms: const ['opportunities.read']);
+    await _pump(tester, h);
+    expect(find.byKey(const ValueKey('baseline-item-b1')), findsOneWidget);
+    expect(find.text('L-weight 120 kg · L-motion Flying'), findsOneWidget);
+    final scopes = [
+      for (final (i, r) in h.requests.indexed)
+        if (r == 'GET /api/v1/attribute-definitions') h.queries[i]['scope'],
+    ];
+    expect(scopes, isNotEmpty);
+    // Never unscoped and never the product scope (both need products.read).
+    expect(scopes, everyElement(isIn(['bell', 'bell_group', 'clock_dial'])));
+  });
 }
