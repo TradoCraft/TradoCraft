@@ -173,6 +173,63 @@ pub async fn catalog_snapshot(conn: &mut sqlx::PgConnection) -> AppResult<Vec<Ca
         .collect())
 }
 
+/// An active product with the values of some of its attributes, for matching.
+#[derive(Debug, Clone)]
+pub struct AttributedProduct {
+    pub id: Uuid,
+    pub code: String,
+    pub name: String,
+    pub family_id: Option<Uuid>,
+    pub family_code: Option<String>,
+    pub attributes: HashMap<String, AttributeValue>,
+}
+
+/// The active products (optionally of one family) with the attributes among `keys`, in code
+/// order. Two queries however many products there are.
+pub async fn active_products_with(
+    conn: &mut sqlx::PgConnection,
+    keys: &[String],
+    family_id: Option<Uuid>,
+) -> AppResult<Vec<AttributedProduct>> {
+    let products: Vec<(Uuid, String, String, Option<Uuid>, Option<String>)> = sqlx::query_as(
+        "SELECT p.id, p.code, p.name, p.family_id, f.code
+         FROM products.products p LEFT JOIN products.product_families f ON f.id = p.family_id
+         WHERE p.active AND ($1::uuid IS NULL OR p.family_id = $1)
+         ORDER BY p.code, p.id",
+    )
+    .bind(family_id)
+    .fetch_all(&mut *conn)
+    .await?;
+    let rows: Vec<Row> = if keys.is_empty() {
+        Vec::new()
+    } else {
+        sqlx::query_as(&format!("{SELECT} WHERE key = ANY($1)"))
+            .bind(keys)
+            .fetch_all(&mut *conn)
+            .await?
+    };
+    let mut attrs: HashMap<Uuid, HashMap<String, AttributeValue>> = HashMap::new();
+    for r in &rows {
+        attrs
+            .entry(r.product_id)
+            .or_default()
+            .insert(r.key.clone(), r.value());
+    }
+    Ok(products
+        .into_iter()
+        .map(
+            |(id, code, name, family_id, family_code)| AttributedProduct {
+                id,
+                code,
+                name,
+                family_id,
+                family_code,
+                attributes: attrs.remove(&id).unwrap_or_default(),
+            },
+        )
+        .collect())
+}
+
 async fn ensure_product<'e>(db: impl PgExecutor<'e>, id: Uuid) -> AppResult<()> {
     let exists: bool =
         sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM products.products WHERE id = $1)")

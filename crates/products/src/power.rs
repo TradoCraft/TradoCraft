@@ -580,19 +580,13 @@ pub struct PowerFinding {
     pub compatibility: PowerCompatibility,
 }
 
-/// Checks products against a country's active grids, or against one chosen grid. Returns only the
-/// products worth a warning (incompatible, needs an external supply, unknown grid). Used by sales
-/// so it does not read product tables itself.
-pub async fn check_products(
+/// The compatibility of every given product with `grids`, in one query. Products without a supply
+/// profile are included as [`PowerCompatibility::NotApplicable`].
+async fn compatibility_for(
     conn: &mut PgConnection,
     product_ids: &[Uuid],
-    country_code: &str,
-    grid_id: Option<Uuid>,
-) -> AppResult<Vec<PowerFinding>> {
-    if product_ids.is_empty() {
-        return Ok(vec![]);
-    }
-    let (_, grids) = grids_for(conn, Some(country_code), grid_id).await?;
+    grids: &[PowerGrid],
+) -> AppResult<std::collections::BTreeMap<Uuid, PowerCompatibility>> {
     #[derive(FromRow)]
     struct Row {
         product_id: Uuid,
@@ -607,24 +601,62 @@ pub async fn check_products(
     .bind(product_ids)
     .fetch_all(&mut *conn)
     .await?;
-    let mut by_product: std::collections::BTreeMap<Uuid, Vec<PowerSupply>> = Default::default();
+    let mut by_product: std::collections::BTreeMap<Uuid, Vec<PowerSupply>> =
+        product_ids.iter().map(|id| (*id, Vec::new())).collect();
     for r in rows {
         by_product.entry(r.product_id).or_default().push(r.supply);
     }
     Ok(by_product
         .into_iter()
-        .filter_map(|(product_id, supplies)| {
-            let compatibility = check(&supplies, &grids);
+        .map(|(id, supplies)| (id, check(&supplies, grids)))
+        .collect())
+}
+
+/// Checks products against one chosen grid, or, without a grid, against no grid at all: electrical
+/// products then come out as `UnknownGrid`. Unlike [`check_products`] every product is reported,
+/// including the compatible and the non-electrical ones. Used by the opportunity matching.
+pub async fn compatibility_with_grid(
+    conn: &mut PgConnection,
+    product_ids: &[Uuid],
+    grid_id: Option<Uuid>,
+) -> AppResult<std::collections::BTreeMap<Uuid, PowerCompatibility>> {
+    if product_ids.is_empty() {
+        return Ok(Default::default());
+    }
+    let grids = match grid_id {
+        Some(g) => grids_for(conn, None, Some(g)).await?.1,
+        None => Vec::new(),
+    };
+    compatibility_for(conn, product_ids, &grids).await
+}
+
+/// Checks products against a country's active grids, or against one chosen grid. Returns only the
+/// products worth a warning (incompatible, needs an external supply, unknown grid). Used by sales
+/// so it does not read product tables itself.
+pub async fn check_products(
+    conn: &mut PgConnection,
+    product_ids: &[Uuid],
+    country_code: &str,
+    grid_id: Option<Uuid>,
+) -> AppResult<Vec<PowerFinding>> {
+    if product_ids.is_empty() {
+        return Ok(vec![]);
+    }
+    let (_, grids) = grids_for(conn, Some(country_code), grid_id).await?;
+    Ok(compatibility_for(conn, product_ids, &grids)
+        .await?
+        .into_iter()
+        .filter(|(_, compatibility)| {
             matches!(
                 compatibility,
                 PowerCompatibility::Incompatible { .. }
                     | PowerCompatibility::NeedsExternalSupply
                     | PowerCompatibility::UnknownGrid
             )
-            .then_some(PowerFinding {
-                product_id,
-                compatibility,
-            })
+        })
+        .map(|(product_id, compatibility)| PowerFinding {
+            product_id,
+            compatibility,
         })
         .collect())
 }
