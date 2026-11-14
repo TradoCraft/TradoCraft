@@ -31,7 +31,7 @@ pub enum DefinitionKind {
 }
 
 impl DefinitionKind {
-    fn as_str(self) -> &'static str {
+    pub(crate) fn as_str(self) -> &'static str {
         match self {
             DefinitionKind::Number => "number",
             DefinitionKind::Range => "range",
@@ -169,6 +169,38 @@ pub fn validate(input: &AttributeDefinitionInput) -> Result<AttributeDefinitionI
         sort_order: input.sort_order,
         active: input.active,
     })
+}
+
+/// What an attribute with a product-scope definition must look like.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProductRule {
+    pub kind: DefinitionKind,
+    /// Allowed values for a `select`; empty otherwise.
+    pub options: Vec<String>,
+}
+
+/// The active product-scope definitions of a company by key, for validating product attributes.
+pub async fn product_rules(
+    conn: &mut sqlx::PgConnection,
+    company_id: Uuid,
+) -> AppResult<std::collections::HashMap<String, ProductRule>> {
+    let rows: Vec<Row> = sqlx::query_as(&format!(
+        "{SELECT} WHERE company_id = $1 AND scope = 'product' AND active"
+    ))
+    .bind(company_id)
+    .fetch_all(conn)
+    .await?;
+    Ok(rows
+        .into_iter()
+        .map(Row::into_api)
+        .map(|d| {
+            let rule = ProductRule {
+                kind: d.kind,
+                options: d.options.into_iter().map(|o| o.value).collect(),
+            };
+            (d.key, rule)
+        })
+        .collect())
 }
 
 #[derive(FromRow)]

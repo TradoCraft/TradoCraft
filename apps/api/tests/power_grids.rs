@@ -638,10 +638,26 @@ async fn voltage_bounds_roundtrip_validate_and_decide_compatibility(db: PgPool) 
     )
     .await;
     assert_eq!(status, StatusCode::OK, "{r}");
-    let ac = r.as_array().unwrap().iter().find(|s| s["current_type"] == "ac").unwrap();
-    assert_eq!((&ac["voltage_min_v"], &ac["voltage_max_v"]), (&json!(200), &json!(260)));
-    let dc = r.as_array().unwrap().iter().find(|s| s["current_type"] == "dc").unwrap();
-    assert_eq!((&dc["voltage_min_v"], &dc["voltage_max_v"]), (&json!(12), &json!(48)));
+    let ac = r
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|s| s["current_type"] == "ac")
+        .unwrap();
+    assert_eq!(
+        (&ac["voltage_min_v"], &ac["voltage_max_v"]),
+        (&json!(200), &json!(260))
+    );
+    let dc = r
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|s| s["current_type"] == "dc")
+        .unwrap();
+    assert_eq!(
+        (&dc["voltage_min_v"], &dc["voltage_max_v"]),
+        (&json!(12), &json!(48))
+    );
 
     // A 200 V grid is outside 230 +/- 10% but inside the explicit range.
     let (status, g) = api(
@@ -687,7 +703,13 @@ async fn voltage_bounds_roundtrip_validate_and_decide_compatibility(db: PgPool) 
     }
 
     // The database enforces the same rules.
-    for (lo, hi) in [("200", "NULL"), ("NULL", "260"), ("260", "200"), ("0", "260"), ("240", "260")] {
+    for (lo, hi) in [
+        ("200", "NULL"),
+        ("NULL", "260"),
+        ("260", "200"),
+        ("0", "260"),
+        ("240", "260"),
+    ] {
         let r = sqlx::query(&format!(
             "INSERT INTO products.product_power_supplies
                 (id, product_id, current_type, voltage_v, phases, voltage_min_v, voltage_max_v)

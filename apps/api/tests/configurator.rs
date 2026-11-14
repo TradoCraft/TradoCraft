@@ -897,3 +897,39 @@ async fn the_dev_seed_loads_the_demo_configurator(db: PgPool) {
         ("CONVEYOR-LINE", "active")
     );
 }
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn range_attributes_do_not_change_evaluation(db: PgPool) {
+    let app = setup(db.clone()).await;
+    let (_, rev) = import_and_activate(&app).await;
+    let uri = format!("/api/v1/configurator/revisions/{rev}/evaluate");
+    let (status, before) = post(&app, SALES, &uri, sample()).await;
+    assert_eq!(status, StatusCode::OK, "{before}");
+
+    // Add a suitability range next to the existing attributes of the motor.
+    let attrs = format!("/api/v1/products/{MOT_055}/attributes");
+    let (_, current) = get(&app, SALES, &attrs).await;
+    let mut all = current.as_array().unwrap().clone();
+    all.push(json!({ "key": "dial_size", "kind": "range", "value": "",
+                     "value_min": "600", "value_max": "1250", "unit": "mm" }));
+    let (status, saved) = call(&app, ADMIN, Method::PUT, &attrs, Some(json!(all))).await;
+    assert_eq!(status, StatusCode::OK, "{saved}");
+    assert!(saved
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|a| a["kind"] == "range"));
+
+    let (status, after) = post(&app, SALES, &uri, sample()).await;
+    assert_eq!(status, StatusCode::OK, "{after}");
+    assert_eq!(before, after, "a range row must not change the evaluation");
+
+    // Formulas see the other attributes of the product but never the range key.
+    let mut conn = db.acquire().await.unwrap();
+    let catalog = tradocraft_configurator::store::load_catalog(&mut conn)
+        .await
+        .unwrap();
+    let product = &catalog.products["MOT-055"];
+    assert!(product.attributes.contains_key("kw"));
+    assert!(!product.attributes.contains_key("dial_size"));
+}

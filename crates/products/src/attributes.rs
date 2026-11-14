@@ -1,9 +1,11 @@
-//! Typed product attributes (ADR 0034): key → number, text or boolean, with an optional unit.
+//! Typed product attributes (ADR 0034, 0068): key → number, text, boolean or range, with an
+//! optional unit.
 //! Configurator formulas read them (`product(code).attr('kw')`) and product pickers filter on
 //! them. Shared master data like the products themselves, so no `company_id`.
 
 use std::collections::HashMap;
 
+use crate::attribute_definitions::{product_rules, DefinitionKind, ProductRule};
 use axum::extract::{Path, State};
 use axum::Json;
 use rust_decimal::Decimal;
@@ -29,6 +31,8 @@ pub enum AttributeKind {
     Number,
     Text,
     Boolean,
+    /// A closed interval `[value_min, value_max]`, e.g. the dial sizes a product suits.
+    Range,
 }
 
 impl AttributeKind {
@@ -37,18 +41,26 @@ impl AttributeKind {
             AttributeKind::Number => "number",
             AttributeKind::Text => "text",
             AttributeKind::Boolean => "boolean",
+            AttributeKind::Range => "range",
         }
     }
 }
 
 /// One attribute. `value` is text in JSON: a decimal for `number` (e.g. `"0.55"`), `true` or
-/// `false` for `boolean`.
+/// `false` for `boolean`. A `range` uses `value_min` and `value_max` (decimals) instead; its
+/// `value` is ignored on input and shown as `min..max` on output.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToSchema)]
 pub struct ProductAttribute {
     /// Letters, digits and `_`, not starting with a digit, e.g. `kw`.
     pub key: String,
     pub kind: AttributeKind,
     pub value: String,
+    /// Lower bound of a `range`; must be absent for the other kinds.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub value_min: Option<String>,
+    /// Upper bound of a `range`; must be absent for the other kinds.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub value_max: Option<String>,
     /// Display unit, e.g. `kW`.
     #[serde(default)]
     pub unit: Option<String>,
@@ -60,6 +72,7 @@ pub enum AttributeValue {
     Number(Decimal),
     Text(String),
     Boolean(bool),
+    Range { min: Decimal, max: Decimal },
 }
 
 #[derive(FromRow)]
@@ -70,6 +83,8 @@ struct Row {
     value_number: Option<Decimal>,
     value_text: Option<String>,
     value_bool: Option<bool>,
+    value_min: Option<Decimal>,
+    value_max: Option<Decimal>,
     unit: Option<String>,
 }
 
@@ -78,26 +93,40 @@ impl Row {
         match self.kind.as_str() {
             "number" => AttributeValue::Number(self.value_number.unwrap_or_default()),
             "boolean" => AttributeValue::Boolean(self.value_bool.unwrap_or_default()),
+            "range" => AttributeValue::Range {
+                min: self.value_min.unwrap_or_default(),
+                max: self.value_max.unwrap_or_default(),
+            },
             _ => AttributeValue::Text(self.value_text.clone().unwrap_or_default()),
         }
     }
 
     fn to_api(&self) -> ProductAttribute {
+        let (mut min, mut max) = (None, None);
         let (kind, value) = match self.value() {
             AttributeValue::Number(d) => (AttributeKind::Number, d.normalize().to_string()),
             AttributeValue::Boolean(b) => (AttributeKind::Boolean, b.to_string()),
             AttributeValue::Text(t) => (AttributeKind::Text, t),
+            AttributeValue::Range { min: lo, max: hi } => {
+                let (lo, hi) = (lo.normalize().to_string(), hi.normalize().to_string());
+                let shown = format!("{lo}..{hi}");
+                (min, max) = (Some(lo), Some(hi));
+                (AttributeKind::Range, shown)
+            }
         };
         ProductAttribute {
             key: self.key.clone(),
             kind,
             value,
+            value_min: min,
+            value_max: max,
             unit: self.unit.clone(),
         }
     }
 }
 
-const SELECT: &str = "SELECT product_id, key, kind, value_number, value_text, value_bool, unit
+const SELECT: &str = "SELECT product_id, key, kind, value_number, value_text, value_bool,
+                             value_min, value_max, unit
                       FROM products.product_attributes";
 
 /// One product of the catalogue snapshot used by configurators.
@@ -182,7 +211,35 @@ fn parse(a: &ProductAttribute) -> AppResult<AttributeValue> {
         )));
     }
     let v = a.value.trim();
+    if a.kind != AttributeKind::Range && (a.value_min.is_some() || a.value_max.is_some()) {
+        return Err(AppError::Validation(format!(
+            "attribute {key}: value_min and value_max are only for range attributes"
+        )));
+    }
     Ok(match a.kind {
+        AttributeKind::Range => {
+            let bound = |name: &str, b: &Option<String>| -> AppResult<Decimal> {
+                b.as_deref()
+                    .map(str::trim)
+                    .ok_or_else(|| {
+                        AppError::Validation(format!("attribute {key}: a range needs {name}"))
+                    })?
+                    .parse()
+                    .map_err(|_| {
+                        AppError::Validation(format!("attribute {key}: {name} is not a number"))
+                    })
+            };
+            let (min, max) = (
+                bound("value_min", &a.value_min)?,
+                bound("value_max", &a.value_max)?,
+            );
+            if min > max {
+                return Err(AppError::Validation(format!(
+                    "attribute {key}: value_min must not exceed value_max"
+                )));
+            }
+            AttributeValue::Range { min, max }
+        }
         AttributeKind::Number => AttributeValue::Number(v.parse().map_err(|_| {
             AppError::Validation(format!("attribute {key}: '{v}' is not a number"))
         })?),
@@ -204,6 +261,38 @@ fn parse(a: &ProductAttribute) -> AppResult<AttributeValue> {
             AttributeValue::Text(v.to_string())
         }
     })
+}
+
+/// Checks one typed attribute against the admin definition of its key (kind and select options).
+fn check_definition(
+    key: &str,
+    kind: AttributeKind,
+    value: &AttributeValue,
+    rule: &ProductRule,
+) -> AppResult<()> {
+    let matches = match (rule.kind, value) {
+        (DefinitionKind::Number, AttributeValue::Number(_))
+        | (DefinitionKind::Range, AttributeValue::Range { .. })
+        | (DefinitionKind::Text, AttributeValue::Text(_)) => true,
+        (DefinitionKind::Select, AttributeValue::Text(t)) => {
+            if !rule.options.contains(t) {
+                return Err(AppError::Validation(format!(
+                    "attribute {key}: '{t}' is not one of the options of its definition"
+                )));
+            }
+            true
+        }
+        _ => false,
+    };
+    if matches {
+        Ok(())
+    } else {
+        Err(AppError::Validation(format!(
+            "attribute {key} is defined as {} but given as {}",
+            rule.kind.as_str(),
+            kind.as_str()
+        )))
+    }
 }
 
 /// The typed attributes of a product.
@@ -257,6 +346,13 @@ async fn replace_attributes(
     }
     let mut tx = state.db.begin().await?;
     ensure_product(&mut *tx, id).await?;
+    // Keys with an admin definition must use its kind; keys without one stay free.
+    let rules = product_rules(&mut tx, user.company_id).await?;
+    for (key, kind, v, _) in &typed {
+        if let Some(rule) = rules.get(key) {
+            check_definition(key, *kind, v, rule)?;
+        }
+    }
     let before = load(&mut *tx, id).await?;
     sqlx::query("DELETE FROM products.product_attributes WHERE product_id = $1")
         .bind(id)
@@ -267,11 +363,16 @@ async fn replace_attributes(
             AttributeValue::Number(d) => (Some(*d), None, None),
             AttributeValue::Text(s) => (None, Some(s.clone()), None),
             AttributeValue::Boolean(x) => (None, None, Some(*x)),
+            AttributeValue::Range { .. } => (None, None, None),
+        };
+        let (lo, hi) = match v {
+            AttributeValue::Range { min, max } => (Some(*min), Some(*max)),
+            _ => (None, None),
         };
         sqlx::query(
             "INSERT INTO products.product_attributes
-                 (product_id, key, kind, value_number, value_text, value_bool, unit)
-             VALUES ($1, $2, $3, $4, $5, $6, $7)",
+                 (product_id, key, kind, value_number, value_text, value_bool, value_min, value_max, unit)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
         )
         .bind(id)
         .bind(key)
@@ -279,6 +380,8 @@ async fn replace_attributes(
         .bind(n)
         .bind(t)
         .bind(b)
+        .bind(lo)
+        .bind(hi)
         .bind(unit)
         .execute(&mut *tx)
         .await?;
@@ -310,8 +413,124 @@ mod tests {
             key: key.into(),
             kind,
             value: value.into(),
+            value_min: None,
+            value_max: None,
             unit: None,
         }
+    }
+
+    fn range(min: Option<&str>, max: Option<&str>) -> ProductAttribute {
+        ProductAttribute {
+            value_min: min.map(Into::into),
+            value_max: max.map(Into::into),
+            ..a("dial", AttributeKind::Range, "")
+        }
+    }
+
+    fn rule(kind: DefinitionKind, options: &[&str]) -> ProductRule {
+        ProductRule {
+            kind,
+            options: options.iter().map(|o| o.to_string()).collect(),
+        }
+    }
+
+    #[test]
+    fn parses_ranges_and_rejects_bad_ones() {
+        let d = |s: &str| -> Decimal { s.parse().unwrap() };
+        assert_eq!(
+            parse(&range(Some("600"), Some("1250.5"))).unwrap(),
+            AttributeValue::Range {
+                min: d("600"),
+                max: d("1250.5")
+            }
+        );
+        // A single point is a valid range.
+        assert!(parse(&range(Some("5"), Some("5"))).is_ok());
+        assert!(parse(&range(Some("0"), Some("-1"))).is_ok() == false);
+        assert!(parse(&range(None, Some("10"))).is_err());
+        assert!(parse(&range(Some("10"), None)).is_err());
+        assert!(parse(&range(None, None)).is_err());
+        assert!(parse(&range(Some("20"), Some("10"))).is_err());
+        assert!(parse(&range(Some("a"), Some("10"))).is_err());
+        // The unit is allowed on a range.
+        let mut r = range(Some("1"), Some("2"));
+        r.unit = Some("mm".into());
+        assert!(parse(&r).is_ok());
+    }
+
+    #[test]
+    fn bounds_are_forbidden_on_other_kinds() {
+        for kind in [
+            AttributeKind::Number,
+            AttributeKind::Text,
+            AttributeKind::Boolean,
+        ] {
+            let mut x = a("k", kind, "1");
+            x.value_min = Some("1".into());
+            assert!(parse(&x).is_err(), "{kind:?} with value_min");
+            let mut x = a("k", kind, "1");
+            x.value_max = Some("1".into());
+            assert!(parse(&x).is_err(), "{kind:?} with value_max");
+        }
+    }
+
+    #[test]
+    fn definition_kind_must_match() {
+        let n = AttributeValue::Number("1".parse().unwrap());
+        let t = AttributeValue::Text("flying".into());
+        let r = AttributeValue::Range {
+            min: "1".parse().unwrap(),
+            max: "2".parse().unwrap(),
+        };
+        let b = AttributeValue::Boolean(true);
+        let ok = |k, v: &AttributeValue, d| check_definition("x", k, v, &d).is_ok();
+        assert!(ok(
+            AttributeKind::Number,
+            &n,
+            rule(DefinitionKind::Number, &[])
+        ));
+        assert!(ok(
+            AttributeKind::Range,
+            &r,
+            rule(DefinitionKind::Range, &[])
+        ));
+        assert!(ok(AttributeKind::Text, &t, rule(DefinitionKind::Text, &[])));
+        assert!(!ok(
+            AttributeKind::Number,
+            &n,
+            rule(DefinitionKind::Range, &[])
+        ));
+        assert!(!ok(
+            AttributeKind::Range,
+            &r,
+            rule(DefinitionKind::Number, &[])
+        ));
+        assert!(!ok(
+            AttributeKind::Text,
+            &t,
+            rule(DefinitionKind::Number, &[])
+        ));
+        assert!(!ok(
+            AttributeKind::Boolean,
+            &b,
+            rule(DefinitionKind::Text, &[])
+        ));
+        // A select is stored as text and must hold one of its options.
+        assert!(ok(
+            AttributeKind::Text,
+            &t,
+            rule(DefinitionKind::Select, &["flying", "falling"])
+        ));
+        assert!(!ok(
+            AttributeKind::Text,
+            &t,
+            rule(DefinitionKind::Select, &["falling"])
+        ));
+        assert!(!ok(
+            AttributeKind::Number,
+            &n,
+            rule(DefinitionKind::Select, &["1"])
+        ));
     }
 
     #[test]
