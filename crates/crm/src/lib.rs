@@ -7,6 +7,8 @@ pub mod closures;
 pub mod contacts;
 pub mod import;
 pub use import::{customers_import, Customers};
+pub mod baseline;
+pub mod baseline_types;
 pub mod opportunities;
 pub mod rebates;
 

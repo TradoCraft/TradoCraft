@@ -203,6 +203,23 @@ pub async fn product_rules(
         .collect())
 }
 
+/// The active definitions of one scope (`product` or a baseline item type code) of a company,
+/// in display order.
+pub async fn active_for_scope(
+    conn: &mut sqlx::PgConnection,
+    company_id: Uuid,
+    scope: &str,
+) -> AppResult<Vec<AttributeDefinition>> {
+    let rows: Vec<Row> = sqlx::query_as(&format!(
+        "{SELECT} WHERE company_id = $1 AND scope = $2 AND active ORDER BY sort_order, key"
+    ))
+    .bind(company_id)
+    .bind(scope)
+    .fetch_all(conn)
+    .await?;
+    Ok(rows.into_iter().map(Row::into_api).collect())
+}
+
 #[derive(FromRow)]
 struct Row {
     id: Uuid,

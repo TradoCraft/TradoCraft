@@ -3094,6 +3094,7 @@ dependencies = [
  "sqlx",
  "tradocraft-core",
  "tradocraft-pricing",
+ "tradocraft-products",
  "utoipa",
  "utoipa-axum",
  "uuid",
