@@ -12,6 +12,8 @@ ProductAttribute _$ProductAttributeFromJson(Map<String, dynamic> json) =>
       kind: AttributeKind.fromJson(json['kind'] as String),
       value: json['value'] as String,
       unit: json['unit'] as String?,
+      valueMax: json['value_max'] as String?,
+      valueMin: json['value_min'] as String?,
     );
 
 Map<String, dynamic> _$ProductAttributeToJson(ProductAttribute instance) =>
@@ -20,4 +22,6 @@ Map<String, dynamic> _$ProductAttributeToJson(ProductAttribute instance) =>
       'kind': instance.kind,
       'unit': ?instance.unit,
       'value': instance.value,
+      'value_max': ?instance.valueMax,
+      'value_min': ?instance.valueMin,
     };

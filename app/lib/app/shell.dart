@@ -183,7 +183,7 @@ final _allDestinations = [
     (l) => l.adminTitle,
     AppIcons.adminPanelSettings,
     'users.admin',
-    alsoFor: ['prices.write', 'imports.admin'],
+    alsoFor: ['prices.write', 'products.write', 'imports.admin'],
   ),
 ];
 

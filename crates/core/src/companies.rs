@@ -201,7 +201,7 @@ pub struct Provisioned {
 /// commits): the company; the administrator (an existing active user with that e-mail is reused)
 /// with a membership holding the role `admin`, the default one when the user has none yet; the
 /// numbering sequences of the current year; the warehouse `MAIN` with its location and the
-/// virtual locations; price zones Z1-Z5. The first company of an empty database becomes the
+/// virtual locations; price zones Z1-Z5; the baseline item types and attribute definitions of ADR 0068. The first company of an empty database becomes the
 /// primary company. Units of measure are global (created by migrations) and
 /// VAT is a rate per product, so neither needs rows. Refuses a name another company already has
 /// (409).
@@ -341,6 +341,13 @@ pub async fn provision(conn: &mut PgConnection, spec: &ProvisionSpec) -> AppResu
         .execute(&mut *conn)
         .await?;
     }
+
+    // The baseline item types and attribute definitions every company starts with (ADR 0068); the
+    // function is idempotent and defined by migration 20270211000001.
+    sqlx::query("SELECT crm.seed_baseline_defaults($1)")
+        .bind(company_id)
+        .execute(&mut *conn)
+        .await?;
 
     let company = get_company(&mut *conn, company_id).await?;
     Ok(Provisioned {

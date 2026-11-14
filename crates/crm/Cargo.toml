@@ -8,6 +8,7 @@ publish.workspace = true
 [dependencies]
 tradocraft-core.workspace = true
 tradocraft-pricing.workspace = true
+tradocraft-products.workspace = true
 axum.workspace = true
 chrono.workspace = true
 rust_decimal.workspace = true

@@ -356,18 +356,18 @@ pub async fn load_catalog(conn: &mut sqlx::PgConnection) -> AppResult<Catalog> {
             family: p.family_code,
             unit: p.unit,
             active: p.active,
+            // Suitability ranges (ADR 0068) are not formula values: the evaluator ignores them.
             attributes: p
                 .attributes
                 .into_iter()
-                .map(|(k, v)| {
-                    (
-                        k,
-                        match v {
-                            AttributeValue::Number(d) => Value::Dec(d),
-                            AttributeValue::Text(t) => Value::Str(t),
-                            AttributeValue::Boolean(b) => Value::Bool(b),
-                        },
-                    )
+                .filter_map(|(k, v)| {
+                    let value = match v {
+                        AttributeValue::Number(d) => Value::Dec(d),
+                        AttributeValue::Text(t) => Value::Str(t),
+                        AttributeValue::Boolean(b) => Value::Bool(b),
+                        AttributeValue::Range { .. } => return None,
+                    };
+                    Some((k, value))
                 })
                 .collect(),
         });

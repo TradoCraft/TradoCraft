@@ -9,6 +9,7 @@ import 'bom_tab.dart';
 import 'options_tab.dart';
 import 'prices_tab.dart';
 import 'power_tab.dart';
+import 'suitability_tab.dart';
 import 'product_form.dart';
 import 'related_tab.dart';
 import 'serials_tab.dart';
@@ -47,6 +48,7 @@ class ProductScreen extends ConsumerWidget {
             if (hasBom) Tab(text: context.l10n.billOfMaterials),
             if (serial) Tab(text: context.l10n.serialNumbers),
             Tab(text: context.l10n.powerTab),
+            Tab(text: context.l10n.suitabilityTab),
             Tab(text: context.l10n.relatedTab),
             Tab(text: context.l10n.optionsTab),
           ];
@@ -151,6 +153,7 @@ class ProductScreen extends ConsumerWidget {
                       if (hasBom) BomTab(product: p),
                       if (serial) SerialsTab(product: p),
                       PowerTab(product: p),
+                      SuitabilityTab(product: p),
                       RelatedTab(product: p),
                       OptionsTab(product: p),
                     ],

@@ -27,6 +27,7 @@ Opportunity _$OpportunityFromJson(Map<String, dynamic> json) => Opportunity(
       ? null
       : DateTime.parse(json['expected_close'] as String),
   lostReason: json['lost_reason'] as String?,
+  powerGridId: json['power_grid_id'] as String?,
 );
 
 Map<String, dynamic> _$OpportunityToJson(Opportunity instance) =>
@@ -43,6 +44,7 @@ Map<String, dynamic> _$OpportunityToJson(Opportunity instance) =>
       'number': instance.number,
       'owner_name': instance.ownerName,
       'owner_user_id': instance.ownerUserId,
+      'power_grid_id': ?instance.powerGridId,
       'probability': instance.probability,
       'stage': instance.stage,
       'title': instance.title,

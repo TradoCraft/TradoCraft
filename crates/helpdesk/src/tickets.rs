@@ -1140,6 +1140,8 @@ async fn create_lead(
             probability: None,
             expected_close: None,
             notes: format!("From ticket {}", ticket.number),
+            power_grid_id: None,
+            clear_power_grid: None,
         },
     )
     .await?;

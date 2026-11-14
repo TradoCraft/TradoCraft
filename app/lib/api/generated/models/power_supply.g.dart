@@ -13,6 +13,8 @@ PowerSupply _$PowerSupplyFromJson(Map<String, dynamic> json) => PowerSupply(
   voltageV: (json['voltage_v'] as num).toInt(),
   frequencyHz: (json['frequency_hz'] as num?)?.toInt(),
   phases: (json['phases'] as num?)?.toInt(),
+  voltageMaxV: (json['voltage_max_v'] as num?)?.toInt(),
+  voltageMinV: (json['voltage_min_v'] as num?)?.toInt(),
 );
 
 Map<String, dynamic> _$PowerSupplyToJson(PowerSupply instance) =>
@@ -22,5 +24,7 @@ Map<String, dynamic> _$PowerSupplyToJson(PowerSupply instance) =>
       'id': instance.id,
       'phases': ?instance.phases,
       'tolerance_pct': instance.tolerancePct,
+      'voltage_max_v': ?instance.voltageMaxV,
+      'voltage_min_v': ?instance.voltageMinV,
       'voltage_v': instance.voltageV,
     };

@@ -9410,4 +9410,231 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get rsNeedsRecipient => 'Choose at least one recipient.';
+
+  @override
+  String get powerVoltageMin => 'Min voltage (V)';
+
+  @override
+  String get powerVoltageMax => 'Max voltage (V)';
+
+  @override
+  String get powerBoundsHint =>
+      'Optional voltage range. Leave both empty to use the nominal voltage ± tolerance.';
+
+  @override
+  String get powerBoundsIncomplete =>
+      'Enter both the minimum and the maximum voltage, or neither.';
+
+  @override
+  String get powerBoundsInvalid =>
+      'Voltage bounds must be whole numbers from 1 to 100000.';
+
+  @override
+  String get powerBoundsOrder =>
+      'The minimum voltage must not exceed the maximum.';
+
+  @override
+  String get powerBoundsNominal =>
+      'The nominal voltage must lie within the minimum and maximum.';
+
+  @override
+  String get suitabilityTab => 'Suitability';
+
+  @override
+  String get suitabilityHelp =>
+      'What this product is suitable for. Empty fields are not stored.';
+
+  @override
+  String get suitabilityEmpty =>
+      'No product attributes are defined yet. An administrator can add them under Administration, Attributes.';
+
+  @override
+  String get attrMin => 'Min';
+
+  @override
+  String get attrMax => 'Max';
+
+  @override
+  String get attrEnterNumber => 'Enter a number.';
+
+  @override
+  String get attrRangeIncomplete =>
+      'Enter both the minimum and the maximum, or neither.';
+
+  @override
+  String get attrRangeOrder => 'The minimum must not exceed the maximum.';
+
+  @override
+  String get attrNotInOptions => 'Choose one of the listed options.';
+
+  @override
+  String get adminAttributes => 'Attributes';
+
+  @override
+  String get attrDefsTitle => 'Attribute definitions';
+
+  @override
+  String get attrDefsEmpty => 'No attribute definitions yet.';
+
+  @override
+  String get newAttrDef => 'New attribute';
+
+  @override
+  String get editAttrDef => 'Edit attribute';
+
+  @override
+  String get attrKey => 'Key';
+
+  @override
+  String get attrLabel => 'Label';
+
+  @override
+  String get attrScope => 'Scope';
+
+  @override
+  String get attrKindNumber => 'Number';
+
+  @override
+  String get attrKindRange => 'Range';
+
+  @override
+  String get attrKindSelect => 'Select';
+
+  @override
+  String get attrKindText => 'Text';
+
+  @override
+  String get attrOptions => 'Options';
+
+  @override
+  String get attrOptionValue => 'Value';
+
+  @override
+  String get attrOptionLabel => 'Option label';
+
+  @override
+  String get attrAddOption => 'Add option';
+
+  @override
+  String get attrKeyInvalid =>
+      'The key must be lowercase letters, digits and underscores, start with a letter and have at most 64 characters.';
+
+  @override
+  String get attrLabelRequired => 'A label is required.';
+
+  @override
+  String get attrSelectNeedsOptions => 'A select needs at least one option.';
+
+  @override
+  String get attrOptionBlank => 'Every option needs a value and a label.';
+
+  @override
+  String get attrOptionDuplicate => 'Option values must be unique.';
+
+  @override
+  String attrDefDeleteConfirm(String key) {
+    return 'Delete attribute $key? If it is in use, deactivate it instead.';
+  }
+
+  @override
+  String get attrDefDeleted => 'Attribute deleted.';
+
+  @override
+  String get baselineTitle => 'Site baseline';
+
+  @override
+  String get baselineEmpty =>
+      'Nothing recorded yet. Add the clock dials and bells at the site so suitable products can be found.';
+
+  @override
+  String get baselineAdd => 'Add item';
+
+  @override
+  String get baselineNewItem => 'New baseline item';
+
+  @override
+  String get baselineEditItem => 'Edit baseline item';
+
+  @override
+  String get baselineParent => 'Placed under';
+
+  @override
+  String get baselineTopLevel => 'Top level';
+
+  @override
+  String get baselineNoTypes =>
+      'No baseline item types are available. An administrator can add them under Administration, Baseline types.';
+
+  @override
+  String get baselineNoFields => 'This type has no attributes defined.';
+
+  @override
+  String get baselineTypeRequired => 'Choose an item type.';
+
+  @override
+  String get baselineParentRequired => 'Choose the item to place this under.';
+
+  @override
+  String get baselineQuantityInvalid =>
+      'Quantity must be a whole number of at least 1.';
+
+  @override
+  String baselineQty(int count) {
+    return 'Qty $count';
+  }
+
+  @override
+  String baselineDeleteConfirm(String name) {
+    return 'Delete $name?';
+  }
+
+  @override
+  String get baselineDeleted => 'Item deleted.';
+
+  @override
+  String get adminBaselineTypes => 'Baseline types';
+
+  @override
+  String get baselineTypesTitle => 'Baseline item types';
+
+  @override
+  String get baselineTypesEmpty => 'No baseline item types yet.';
+
+  @override
+  String get newBaselineType => 'New baseline type';
+
+  @override
+  String get editBaselineType => 'Edit baseline type';
+
+  @override
+  String get baselineTypeParents => 'Allowed parent types';
+
+  @override
+  String get baselineTypeTopLevel => 'Can stand at the top level';
+
+  @override
+  String get baselineTypeCodeInvalid =>
+      'The code must be lowercase letters, digits and underscores, start with a letter and have at most 64 characters.';
+
+  @override
+  String get baselineTypeCodeReserved =>
+      'The code product is reserved for the product attributes; choose another code.';
+
+  @override
+  String get baselineTypeNameRequired => 'A name is required.';
+
+  @override
+  String get baselineTypePlacement =>
+      'Choose at least one parent type or allow the top level, or items of this type could never be placed.';
+
+  @override
+  String baselineTypeDeleteConfirm(String code) {
+    return 'Delete type $code? If it is in use, deactivate it instead.';
+  }
+
+  @override
+  String get baselineTypeDeleted => 'Baseline type deleted.';
+
+  @override
+  String get attrScopeProduct => 'Product';
 }

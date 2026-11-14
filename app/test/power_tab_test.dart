@@ -27,6 +27,8 @@ Map<String, Object?> supply({
   int? phases = 1,
   int? frequency,
   int tolerance = 10,
+  int? min,
+  int? max,
 }) => {
   'id': id,
   'current_type': current,
@@ -34,6 +36,8 @@ Map<String, Object?> supply({
   'phases': phases,
   'frequency_hz': frequency,
   'tolerance_pct': tolerance,
+  'voltage_min_v': min,
+  'voltage_max_v': max,
 };
 
 Map<String, Object?> grid(
@@ -211,6 +215,74 @@ void main() {
     );
     // The check is still available.
     expect(find.text('Grid compatibility check'), findsOneWidget);
+  });
+
+  group('voltage range', () {
+    const put = 'PUT /api/v1/products/p1/power-supplies';
+
+    testWidgets('empty bounds are not sent and a hint explains them', (
+      tester,
+    ) async {
+      final h = http(supplies: [supply()]);
+      await pumpTab(tester, h);
+      expect(find.byKey(const ValueKey('vmin-0')), findsOneWidget);
+      expect(find.byKey(const ValueKey('vmax-0')), findsOneWidget);
+      expect(find.textContaining('nominal voltage'), findsWidgets);
+      await save(tester);
+      final body = h.bodies[put] as List;
+      expect((body.single as Map).containsKey('voltage_min_v'), isFalse);
+      expect((body.single as Map).containsKey('voltage_max_v'), isFalse);
+    });
+
+    testWidgets('bounds are loaded and sent for AC and DC rows', (
+      tester,
+    ) async {
+      final h = http(
+        supplies: [
+          supply(min: 200, max: 250),
+          supply(id: 's2', current: 'dc', voltage: 24, phases: null, min: 12, max: 30),
+        ],
+      );
+      await pumpTab(tester, h);
+      expect(
+        tester
+            .widget<TextField>(find.byKey(const ValueKey('vmin-1')))
+            .controller!
+            .text,
+        '12',
+      );
+      await save(tester);
+      final body = h.bodies[put] as List;
+      expect((body[0] as Map)['voltage_min_v'], 200);
+      expect((body[0] as Map)['voltage_max_v'], 250);
+      expect((body[1] as Map)['voltage_min_v'], 12);
+      expect((body[1] as Map)['voltage_max_v'], 30);
+    });
+
+    testWidgets('invalid combinations show an inline error and are not sent', (
+      tester,
+    ) async {
+      final h = http(supplies: [supply()]);
+      await pumpTab(tester, h);
+      await tester.enterText(find.byKey(const ValueKey('vmin-0')), '200');
+      await save(tester);
+      expect(find.textContaining('both the minimum and the maximum'), findsOneWidget);
+
+      await tester.enterText(find.byKey(const ValueKey('vmax-0')), '150');
+      await save(tester);
+      expect(find.textContaining('must not exceed'), findsOneWidget);
+
+      await tester.enterText(find.byKey(const ValueKey('vmin-0')), '100');
+      await tester.enterText(find.byKey(const ValueKey('vmax-0')), '120');
+      await save(tester);
+      expect(find.textContaining('nominal voltage must lie within'), findsOneWidget);
+
+      await tester.enterText(find.byKey(const ValueKey('vmin-0')), '0');
+      await tester.enterText(find.byKey(const ValueKey('vmax-0')), '250');
+      await save(tester);
+      expect(find.textContaining('from 1 to 100000'), findsOneWidget);
+      expect(h.requests, isNot(contains(put)));
+    });
   });
 
   group('compatibility check', () {

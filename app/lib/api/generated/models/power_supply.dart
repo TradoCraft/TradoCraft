@@ -16,6 +16,8 @@ class PowerSupply {
     required this.voltageV,
     this.frequencyHz,
     this.phases,
+    this.voltageMaxV,
+    this.voltageMinV,
   });
   
   factory PowerSupply.fromJson(Map<String, Object?> json) => _$PowerSupplyFromJson(json);
@@ -33,9 +35,19 @@ class PowerSupply {
   @JsonKey(includeIfNull: false)
   final int? phases;
 
-  /// Accepted deviation of the grid voltage from the nominal one, in percent.
+  /// Accepted deviation of the grid voltage from the nominal one, in percent. Ignored when.
+  /// explicit bounds are set.
   @JsonKey(name: 'tolerance_pct')
   final int tolerancePct;
+
+  /// Explicit upper voltage bound (see `voltage_min_v`).
+  @JsonKey(includeIfNull: false,name: 'voltage_max_v')
+  final int? voltageMaxV;
+
+  /// Explicit lower voltage bound; set together with `voltage_max_v`, or both null. With.
+  /// bounds the range is `[voltage_min_v, voltage_max_v]` instead of `voltage_v` +/- tolerance.
+  @JsonKey(includeIfNull: false,name: 'voltage_min_v')
+  final int? voltageMinV;
   @JsonKey(name: 'voltage_v')
   final int voltageV;
 

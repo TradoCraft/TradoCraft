@@ -3,9 +3,14 @@
 //! Other modules use the public service functions here (e.g. [`get_customer_for_quoting`])
 //! and never query `crm.*` tables directly.
 
+pub mod baseline;
+pub mod baseline_types;
 pub mod closures;
 pub mod contacts;
 pub mod import;
+pub mod match_rules;
+pub mod matching;
+pub mod product_matches;
 pub use import::{customers_import, Customers};
 pub mod opportunities;
 pub mod rebates;
@@ -559,6 +564,10 @@ pub fn router() -> OpenApiRouter<AppState> {
         .merge(import::router())
         .merge(contacts::router())
         .merge(opportunities::router())
+        .merge(baseline::router())
+        .merge(baseline_types::router())
+        .merge(match_rules::router())
+        .merge(product_matches::router())
         .merge(rebates::router())
         .merge(closures::router())
 }

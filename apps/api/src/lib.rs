@@ -167,6 +167,9 @@ pub fn app_with_vies(
     vies: ViesConfig,
 ) -> Router {
     let (router, doc) = api();
+    // Bell motors for the product matching of the CRM come from the configurator tables.
+    let motors: tradocraft_crm::product_matches::BellMotors =
+        std::sync::Arc::new(tradocraft_configurator::motor::ConfiguratorMotors);
     router
         .route("/health", axum::routing::get(|| async { "ok" }))
         .merge(Scalar::with_url("/docs", doc.clone()))
@@ -178,6 +181,7 @@ pub fn app_with_vies(
         .layer(axum::Extension(bootstrap))
         .layer(axum::Extension(identity))
         .layer(axum::Extension(vies))
+        .layer(axum::Extension(motors))
         .layer(TraceLayer::new_for_http())
         .layer(cors.layer())
         .with_state(state)
@@ -191,7 +195,16 @@ pub async fn seed_if_empty(db: &sqlx::PgPool) -> anyhow::Result<bool> {
     if companies > 0 {
         return Ok(false);
     }
-    sqlx::raw_sql(DEV_SEED_SQL).execute(db).await?;
+    // One transaction: a failing baseline-defaults step must not leave a company behind that
+    // would stop the next start from seeding.
+    let mut tx = db.begin().await?;
+    sqlx::raw_sql(DEV_SEED_SQL).execute(&mut *tx).await?;
+    // Companies created by provisioning get these themselves; the dev seed inserts its company
+    // directly.
+    sqlx::query("SELECT crm.seed_baseline_defaults(id) FROM core.companies")
+        .execute(&mut *tx)
+        .await?;
+    tx.commit().await?;
     seed_configurators(db).await?;
     Ok(true)
 }

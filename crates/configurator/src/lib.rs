@@ -11,6 +11,7 @@ pub mod compile;
 pub mod definition;
 pub mod engine;
 pub mod expr;
+pub mod motor;
 pub mod routes;
 pub mod store;
 pub mod tables;

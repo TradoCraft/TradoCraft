@@ -7,6 +7,12 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:retrofit/retrofit.dart';
 
+import '../models/baseline_item.dart';
+import '../models/baseline_item_input.dart';
+import '../models/baseline_item_type.dart';
+import '../models/baseline_item_type_input.dart';
+import '../models/baseline_item_type_update.dart';
+import '../models/baseline_item_update.dart';
 import '../models/closure.dart';
 import '../models/closure_input.dart';
 import '../models/contact.dart';
@@ -19,10 +25,13 @@ import '../models/delivery_check.dart';
 import '../models/format.dart';
 import '../models/import_report.dart';
 import '../models/lookup_result.dart';
+import '../models/match_rule.dart';
+import '../models/match_rule_input.dart';
 import '../models/opportunity.dart';
 import '../models/opportunity_input.dart';
 import '../models/opportunity_page.dart';
 import '../models/pipeline_stage.dart';
+import '../models/product_match_page.dart';
 import '../models/rebate_input.dart';
 import '../models/stage_input.dart';
 import '../models/vat_check.dart';
@@ -32,6 +41,32 @@ part 'crm_client.g.dart';
 @RestApi()
 abstract class CrmClient {
   factory CrmClient(Dio dio, {String? baseUrl}) = _CrmClient;
+
+  @GET('/api/v1/baseline-item-types')
+  Future<List<BaselineItemType>> listTypes();
+
+  @POST('/api/v1/baseline-item-types')
+  Future<BaselineItemType> createType({
+    @Body() required BaselineItemTypeInput body,
+  });
+
+  @GET('/api/v1/baseline-item-types/{id}')
+  Future<BaselineItemType> getType({
+    @Path('id') required String id,
+  });
+
+  @PUT('/api/v1/baseline-item-types/{id}')
+  Future<BaselineItemType> updateType({
+    @Path('id') required String id,
+    @Body() required BaselineItemTypeUpdate body,
+  });
+
+  /// Deletes an unused type. A type that has items, attribute definitions or that other types allow.
+  /// as a parent is refused with 409 (deactivate it with `active: false` instead).
+  @DELETE('/api/v1/baseline-item-types/{id}')
+  Future<void> deleteType({
+    @Path('id') required String id,
+  });
 
   /// Closures of all customers, e.g. to plan deliveries.
   ///
@@ -219,6 +254,33 @@ abstract class CrmClient {
     @Path('rebate_id') required String rebateId,
   });
 
+  @GET('/api/v1/match-rules')
+  Future<List<MatchRule>> list();
+
+  @POST('/api/v1/match-rules')
+  Future<MatchRule> create({
+    @Body() required MatchRuleInput body,
+  });
+
+  /// null.
+  ///
+  /// The name has been replaced because it contains a keyword. Original name: `get`.
+  @GET('/api/v1/match-rules/{id}')
+  Future<MatchRule> getApiV1MatchRulesId({
+    @Path('id') required String id,
+  });
+
+  @PUT('/api/v1/match-rules/{id}')
+  Future<MatchRule> update({
+    @Path('id') required String id,
+    @Body() required MatchRuleInput body,
+  });
+
+  @DELETE('/api/v1/match-rules/{id}')
+  Future<void> delete({
+    @Path('id') required String id,
+  });
+
   /// [q] - Searches number, title and customer name.
   ///
   /// [open] - Only open (not won or lost) opportunities.
@@ -250,6 +312,47 @@ abstract class CrmClient {
   Future<Opportunity> updateOpportunity({
     @Path('id') required String id,
     @Body() required OpportunityInput body,
+  });
+
+  /// The baseline of an opportunity as a tree (a group holds its bells).
+  @GET('/api/v1/opportunities/{id}/baseline')
+  Future<List<BaselineItem>> getBaseline({
+    @Path('id') required String id,
+  });
+
+  @POST('/api/v1/opportunities/{id}/baseline/items')
+  Future<BaselineItem> createItem({
+    @Path('id') required String id,
+    @Body() required BaselineItemInput body,
+  });
+
+  @PUT('/api/v1/opportunities/{id}/baseline/items/{item_id}')
+  Future<BaselineItem> updateItem({
+    @Path('id') required String id,
+    @Path('item_id') required String itemId,
+    @Body() required BaselineItemUpdate body,
+  });
+
+  /// Deletes one item. An item that still has children is refused with 409 rather than deleting the.
+  /// whole subtree silently: remove or move the children first.
+  @DELETE('/api/v1/opportunities/{id}/baseline/items/{item_id}')
+  Future<void> deleteItem({
+    @Path('id') required String id,
+    @Path('item_id') required String itemId,
+  });
+
+  /// [status] - Only products with this status: `suitable`, `unsuitable` or `unknown`.
+  ///
+  /// [familyId] - Only products of this family.
+  ///
+  /// [limit] - Default 100, at most 500.
+  @GET('/api/v1/opportunities/{id}/product-matches')
+  Future<ProductMatchPage> productMatches({
+    @Path('id') required String id,
+    @Query('status') String? status,
+    @Query('family_id') String? familyId,
+    @Query('limit') int? limit,
+    @Query('offset') int? offset,
   });
 
   /// Moves an opportunity through the pipeline. `won`/`lost` close it; any other stage reopens it.

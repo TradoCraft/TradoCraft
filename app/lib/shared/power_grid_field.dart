@@ -6,7 +6,7 @@ import '../l10n/l10n.dart';
 import 'power_text.dart';
 
 /// Picks the power grid of a delivery country. Shown only when [country] (ISO alpha-2) has at
-/// least two active grids; the first option, "any grid in this country", reports null.
+/// least [minGrids] (default two) active grids; the first option, "any grid in this country", reports null.
 ///
 /// Shared by the quotation editor and the order edit mode, so both behave the same.
 class PowerGridField extends ConsumerWidget {
@@ -15,11 +15,17 @@ class PowerGridField extends ConsumerWidget {
     required this.country,
     required this.selectedId,
     required this.onChanged,
+    this.minGrids = 2,
   });
 
   final String country;
   final String? selectedId;
   final ValueChanged<String?> onChanged;
+
+  /// The number of active grids from which the field is shown. The quotation and order screens
+  /// keep 2 (one grid is implied there); the opportunity form passes 1, because its grid is an
+  /// optional site fact that must be pickable even when the country has a single grid.
+  final int minGrids;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -27,7 +33,7 @@ class PowerGridField extends ConsumerWidget {
     final grids = (ref.watch(powerGridsProvider(country)).value ?? const [])
         .where((g) => g.active)
         .toList();
-    if (grids.length < 2) return const SizedBox.shrink();
+    if (grids.length < minGrids) return const SizedBox.shrink();
     return SizedBox(
       width: 300,
       child: DropdownButtonFormField<String?>(

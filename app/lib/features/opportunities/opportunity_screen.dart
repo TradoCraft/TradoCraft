@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../app/api.dart';
 import '../../shared/actions.dart';
 import '../../shared/format.dart';
+import '../../shared/power_text.dart';
+import 'baseline_section.dart';
 import 'opportunity_form.dart';
 import '../../l10n/l10n.dart';
 import '../../shared/app_icons.dart';
@@ -49,6 +51,20 @@ class _OpportunityScreenState extends ConsumerState<OpportunityScreen> {
       ref.invalidate(_opportunityProvider(id));
       ref.invalidate(_quotationsProvider(id));
     });
+  }
+
+  /// The profile of the opportunity's grid (all grids are cached, so no country is needed).
+  String _gridText(String gridId) {
+    final g = (ref.watch(powerGridsProvider('')).value ?? const [])
+        .where((g) => g.id == gridId)
+        .firstOrNull;
+    return g == null
+        ? ''
+        : powerProfileText(
+            voltage: g.voltageV,
+            phases: g.phases,
+            frequency: g.frequencyHz,
+          );
   }
 
   @override
@@ -154,6 +170,8 @@ class _OpportunityScreenState extends ConsumerState<OpportunityScreen> {
                   InfoItem(context.l10n.expectedClose, date(o.expectedClose)),
                   if (o.lostReason != null)
                     InfoItem(context.l10n.lostReason, o.lostReason!),
+                  if (o.powerGridId != null)
+                    InfoItem(context.l10n.powerGrid, _gridText(o.powerGridId!)),
                 ],
               ),
               if (o.notes.isNotEmpty) Text(o.notes),
@@ -208,6 +226,8 @@ class _OpportunityScreenState extends ConsumerState<OpportunityScreen> {
                   ],
                 ),
               ],
+              const SizedBox(height: 24),
+              BaselineSection(opportunityId: id),
               const SizedBox(height: 24),
               Text(
                 context.l10n.quotations,

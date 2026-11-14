@@ -795,6 +795,244 @@
         }
       }
     },
+    "/api/v1/attribute-definitions": {
+      "get": {
+        "tags": [
+          "products"
+        ],
+        "operationId": "list_definitions",
+        "parameters": [
+          {
+            "name": "scope",
+            "in": "query",
+            "description": "Only definitions of this scope (`product` or a baseline item type code).",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AttributeDefinition"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "products"
+        ],
+        "operationId": "create_definition",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AttributeDefinitionInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttributeDefinition"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/attribute-definitions/{id}": {
+      "get": {
+        "tags": [
+          "products"
+        ],
+        "operationId": "get_definition",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttributeDefinition"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "products"
+        ],
+        "operationId": "update_definition",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AttributeDefinitionInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttributeDefinition"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "products"
+        ],
+        "summary": "Deletes an unused definition. A definition whose key is stored on products (scope `product`) or\non baseline items of its type is refused with 409 (deactivate it with `active: false` instead,\nwhich keeps the stored values readable).",
+        "operationId": "delete_definition",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/audit/events": {
       "get": {
         "tags": [
@@ -1093,6 +1331,230 @@
         "security": [
           {}
         ]
+      }
+    },
+    "/api/v1/baseline-item-types": {
+      "get": {
+        "tags": [
+          "crm"
+        ],
+        "operationId": "list_types",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BaselineItemType"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "crm"
+        ],
+        "operationId": "create_type",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BaselineItemTypeInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaselineItemType"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/baseline-item-types/{id}": {
+      "get": {
+        "tags": [
+          "crm"
+        ],
+        "operationId": "get_type",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaselineItemType"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "crm"
+        ],
+        "operationId": "update_type",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BaselineItemTypeUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaselineItemType"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "crm"
+        ],
+        "summary": "Deletes an unused type. A type that has items, attribute definitions or that other types allow\nas a parent is refused with 409 (deactivate it with `active: false` instead).",
+        "operationId": "delete_type",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/boms/{id}": {
@@ -12043,6 +12505,219 @@
         }
       }
     },
+    "/api/v1/match-rules": {
+      "get": {
+        "tags": [
+          "crm"
+        ],
+        "operationId": "list",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MatchRule"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "crm"
+        ],
+        "operationId": "create",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MatchRuleInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatchRule"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/match-rules/{id}": {
+      "get": {
+        "tags": [
+          "crm"
+        ],
+        "operationId": "get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatchRule"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "crm"
+        ],
+        "operationId": "update",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MatchRuleInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatchRule"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "crm"
+        ],
+        "operationId": "delete",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/me": {
       "get": {
         "tags": [
@@ -12330,6 +13005,335 @@
             }
           },
           "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/opportunities/{id}/baseline": {
+      "get": {
+        "tags": [
+          "crm"
+        ],
+        "summary": "The baseline of an opportunity as a tree (a group holds its bells).",
+        "operationId": "get_baseline",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BaselineItem"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/opportunities/{id}/baseline/items": {
+      "post": {
+        "tags": [
+          "crm"
+        ],
+        "operationId": "create_item",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BaselineItemInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaselineItem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/opportunities/{id}/baseline/items/{item_id}": {
+      "put": {
+        "tags": [
+          "crm"
+        ],
+        "operationId": "update_item",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BaselineItemUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaselineItem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "crm"
+        ],
+        "summary": "Deletes one item. An item that still has children is refused with 409 rather than deleting the\nwhole subtree silently: remove or move the children first.",
+        "operationId": "delete_item",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/opportunities/{id}/product-matches": {
+      "get": {
+        "tags": [
+          "crm"
+        ],
+        "operationId": "product_matches",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Only products with this status: `suitable`, `unsuitable` or `unknown`.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "family_id",
+            "in": "query",
+            "description": "Only products of this family.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Default 100, at most 500.",
+            "required": false,
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductMatchPage"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "",
             "content": {
               "application/json": {
@@ -29015,12 +30019,107 @@
           }
         }
       },
+      "AttributeDefinition": {
+        "type": "object",
+        "required": [
+          "id",
+          "key",
+          "label",
+          "kind",
+          "options",
+          "scope",
+          "sort_order",
+          "active"
+        ],
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "key": {
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/DefinitionKind"
+          },
+          "label": {
+            "type": "string"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SelectOption"
+            }
+          },
+          "scope": {
+            "type": "string",
+            "description": "`product` or a baseline item type code."
+          },
+          "sort_order": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "unit": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "AttributeDefinitionInput": {
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "kind"
+        ],
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "key": {
+            "type": "string",
+            "description": "snake_case: lowercase letter first, then lowercase letters, digits and `_`."
+          },
+          "kind": {
+            "$ref": "#/components/schemas/DefinitionKind"
+          },
+          "label": {
+            "type": "string"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SelectOption"
+            },
+            "description": "Required (at least one) for `select`, forbidden for the other kinds."
+          },
+          "scope": {
+            "type": "string"
+          },
+          "sort_order": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "unit": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
       "AttributeKind": {
         "type": "string",
         "enum": [
           "number",
           "text",
-          "boolean"
+          "boolean",
+          "range"
         ]
       },
       "AuditEvent": {
@@ -29152,6 +30251,245 @@
           "product_id": {
             "type": "string",
             "format": "uuid"
+          }
+        }
+      },
+      "BaselineItem": {
+        "type": "object",
+        "description": "One baseline item. `children` is only filled in the tree returned by `GET .../baseline`.",
+        "required": [
+          "id",
+          "type_code",
+          "quantity",
+          "values",
+          "sort_order",
+          "created_at",
+          "updated_at",
+          "children"
+        ],
+        "properties": {
+          "children": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BaselineItem"
+            }
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "parent_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "quantity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sort_order": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "type_code": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "values": {
+            "type": "object",
+            "description": "Attribute values keyed by attribute definition key."
+          }
+        }
+      },
+      "BaselineItemInput": {
+        "type": "object",
+        "required": [
+          "type_code"
+        ],
+        "properties": {
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional, e.g. the name of a bell."
+          },
+          "parent_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "An item of the same opportunity; omit for the top level."
+          },
+          "quantity": {
+            "type": "integer",
+            "format": "int32",
+            "description": "At least 1."
+          },
+          "sort_order": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "type_code": {
+            "type": "string",
+            "description": "Code of a baseline item type of the company (it must be active)."
+          },
+          "values": {
+            "type": "object",
+            "description": "Attribute values keyed by definition key; see the definitions of the item's type."
+          }
+        }
+      },
+      "BaselineItemType": {
+        "type": "object",
+        "required": [
+          "id",
+          "code",
+          "name",
+          "allowed_parent_codes",
+          "allow_top_level",
+          "sort_order",
+          "active"
+        ],
+        "properties": {
+          "active": {
+            "type": "boolean",
+            "description": "Inactive types take no new items; existing items stay."
+          },
+          "allow_top_level": {
+            "type": "boolean",
+            "description": "Whether an item of this type may stand at the top level of the baseline."
+          },
+          "allowed_parent_codes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Type codes an item of this type may be nested under."
+          },
+          "code": {
+            "type": "string",
+            "description": "snake_case; the scope of this type's attribute definitions. Fixed once created."
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "sort_order": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "BaselineItemTypeInput": {
+        "type": "object",
+        "required": [
+          "code",
+          "name"
+        ],
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "allow_top_level": {
+            "type": "boolean"
+          },
+          "allowed_parent_codes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "sort_order": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "BaselineItemTypeUpdate": {
+        "type": "object",
+        "description": "Everything but the code, which cannot change.",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "allow_top_level": {
+            "type": "boolean"
+          },
+          "allowed_parent_codes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "name": {
+            "type": "string"
+          },
+          "sort_order": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "BaselineItemUpdate": {
+        "type": "object",
+        "description": "Replaces an item: what is not sent falls back to its default (no parent, no name, quantity 1,\nno values); only `sort_order` keeps its stored value when omitted. The type cannot change.",
+        "properties": {
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "parent_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "Omit (null) to move the item to the top level."
+          },
+          "quantity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sort_order": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "values": {
+            "type": "object"
           }
         }
       },
@@ -30064,6 +31402,14 @@
         "enum": [
           "percent",
           "amount"
+        ]
+      },
+      "CheckStatus": {
+        "type": "string",
+        "enum": [
+          "ok",
+          "fail",
+          "unknown"
         ]
       },
       "Closure": {
@@ -32142,6 +33488,15 @@
             "minimum": 0
           }
         }
+      },
+      "DefinitionKind": {
+        "type": "string",
+        "enum": [
+          "number",
+          "range",
+          "select",
+          "text"
+        ]
       },
       "DelegateInput": {
         "type": "object",
@@ -36966,6 +38321,104 @@
           }
         }
       },
+      "MatchRule": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "baseline_type_code",
+          "baseline_attribute_key",
+          "product_attribute_key",
+          "operator",
+          "active",
+          "sort_order",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "baseline_attribute_key": {
+            "type": "string",
+            "description": "A `number` attribute of that type."
+          },
+          "baseline_type_code": {
+            "type": "string",
+            "description": "Code of the baseline item type whose items the rule reads."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "operator": {
+            "$ref": "#/components/schemas/Operator"
+          },
+          "product_attribute_key": {
+            "type": "string",
+            "description": "A product attribute: `range` for `within_range`, `number` for `at_most` and `at_least`."
+          },
+          "sort_order": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "MatchRuleInput": {
+        "type": "object",
+        "description": "A rule is created and replaced with the same fields.",
+        "required": [
+          "name",
+          "baseline_type_code",
+          "baseline_attribute_key",
+          "product_attribute_key",
+          "operator"
+        ],
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "baseline_attribute_key": {
+            "type": "string"
+          },
+          "baseline_type_code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "description": "Unique per company."
+          },
+          "operator": {
+            "$ref": "#/components/schemas/Operator"
+          },
+          "product_attribute_key": {
+            "type": "string"
+          },
+          "sort_order": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "MatchStatus": {
+        "type": "string",
+        "enum": [
+          "suitable",
+          "unsuitable",
+          "unknown"
+        ]
+      },
       "Me": {
         "type": "object",
         "description": "The authenticated user, the active company and all companies they can switch to.",
@@ -37843,6 +39296,15 @@
           }
         }
       },
+      "Operator": {
+        "type": "string",
+        "description": "How a baseline value is compared with a product attribute.",
+        "enum": [
+          "within_range",
+          "at_most",
+          "at_least"
+        ]
+      },
       "Opportunity": {
         "type": "object",
         "required": [
@@ -37912,6 +39374,14 @@
             "type": "string",
             "format": "uuid"
           },
+          "power_grid_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "The power grid of the site; belongs to the customer's country (ADR 0068)."
+          },
           "probability": {
             "type": "integer",
             "format": "int32"
@@ -37935,6 +39405,13 @@
           "customer_id"
         ],
         "properties": {
+          "clear_power_grid": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "`true` clears the stored grid on update; combined with `power_grid_id` it is a 422."
+          },
           "customer_id": {
             "type": "string",
             "format": "uuid"
@@ -37960,6 +39437,14 @@
             ],
             "format": "uuid",
             "description": "Defaults to the current user."
+          },
+          "power_grid_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "A grid of the customer's country (422 otherwise). On update it is kept when omitted."
           },
           "probability": {
             "type": [
@@ -39824,7 +41309,23 @@
           "tolerance_pct": {
             "type": "integer",
             "format": "int32",
-            "description": "Accepted deviation of the grid voltage from the nominal one, in percent."
+            "description": "Accepted deviation of the grid voltage from the nominal one, in percent. Ignored when\nexplicit bounds are set."
+          },
+          "voltage_max_v": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Explicit upper voltage bound (see `voltage_min_v`)."
+          },
+          "voltage_min_v": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Explicit lower voltage bound; set together with `voltage_max_v`, or both null. With\nbounds the range is `[voltage_min_v, voltage_max_v]` instead of `voltage_v` +/- tolerance."
           },
           "voltage_v": {
             "type": "integer",
@@ -39863,6 +41364,21 @@
             ],
             "format": "int32",
             "description": "Defaults to 10."
+          },
+          "voltage_max_v": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "voltage_min_v": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Explicit voltage range; both or neither. `voltage_v` must lie within it."
           },
           "voltage_v": {
             "type": "integer",
@@ -40437,7 +41953,7 @@
       },
       "ProductAttribute": {
         "type": "object",
-        "description": "One attribute. `value` is text in JSON: a decimal for `number` (e.g. `\"0.55\"`), `true` or\n`false` for `boolean`.",
+        "description": "One attribute. `value` is text in JSON: a decimal for `number` (e.g. `\"0.55\"`), `true` or\n`false` for `boolean`. A `range` uses `value_min` and `value_max` (decimals) instead; its\n`value` is ignored on input and shown as `min..max` on output.",
         "required": [
           "key",
           "kind",
@@ -40460,6 +41976,20 @@
           },
           "value": {
             "type": "string"
+          },
+          "value_max": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Upper bound of a `range`; must be absent for the other kinds."
+          },
+          "value_min": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Lower bound of a `range`; must be absent for the other kinds."
           }
         }
       },
@@ -40644,6 +42174,76 @@
               "null"
             ],
             "format": "int32"
+          }
+        }
+      },
+      "ProductMatch": {
+        "type": "object",
+        "required": [
+          "id",
+          "code",
+          "name",
+          "status",
+          "reasons"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "family_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "family_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "reasons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Reason"
+            }
+          },
+          "status": {
+            "$ref": "#/components/schemas/MatchStatus"
+          }
+        }
+      },
+      "ProductMatchPage": {
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "counts"
+        ],
+        "properties": {
+          "counts": {
+            "$ref": "#/components/schemas/StatusCounts",
+            "description": "Products per status within the family filter, ignoring the status filter."
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductMatch"
+            },
+            "description": "The requested page of the products with the asked status, in product code order."
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Number of products with the asked status (all statuses without a filter)."
           }
         }
       },
@@ -43324,6 +44924,26 @@
           "updated_at": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "Reason": {
+        "type": "object",
+        "required": [
+          "check",
+          "status",
+          "message"
+        ],
+        "properties": {
+          "check": {
+            "type": "string",
+            "description": "`power`, `baseline`, `motor` or `rule:<rule name>`."
+          },
+          "message": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/CheckStatus"
           }
         }
       },
@@ -46184,6 +47804,21 @@
           }
         }
       },
+      "SelectOption": {
+        "type": "object",
+        "required": [
+          "value",
+          "label"
+        ],
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          }
+        }
+      },
       "SendNowResult": {
         "type": "object",
         "required": [
@@ -47030,6 +48665,28 @@
           },
           "stage": {
             "$ref": "#/components/schemas/OpportunityStage"
+          }
+        }
+      },
+      "StatusCounts": {
+        "type": "object",
+        "required": [
+          "suitable",
+          "unsuitable",
+          "unknown"
+        ],
+        "properties": {
+          "suitable": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "unknown": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "unsuitable": {
+            "type": "integer",
+            "format": "int64"
           }
         }
       },

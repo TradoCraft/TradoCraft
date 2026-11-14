@@ -577,12 +577,7 @@ pub fn resolve_delivery_country(
 
 /// `clear_power_grid: true` together with a `power_grid_id` contradicts itself (422).
 pub fn check_grid_clear(clear: Option<bool>, given: Option<Uuid>) -> AppResult<()> {
-    if clear == Some(true) && given.is_some() {
-        return Err(AppError::Validation(
-            "clear_power_grid cannot be combined with power_grid_id".into(),
-        ));
-    }
-    Ok(())
+    tradocraft_products::power::check_grid_clear(clear, given)
 }
 
 /// The grid to store on a quotation: a given grid must belong to the delivery country (422
@@ -593,24 +588,8 @@ pub async fn resolve_power_grid(
     kept: Option<Uuid>,
     delivery_country: Option<&str>,
 ) -> AppResult<Option<Uuid>> {
-    if let Some(g) = given {
-        let ok = match delivery_country {
-            Some(c) => tradocraft_products::power::grid_in_country(conn, g, c).await?,
-            None => false,
-        };
-        if !ok {
-            return Err(AppError::Validation(
-                "power_grid_id must be a grid of the delivery country".into(),
-            ));
-        }
-        return Ok(Some(g));
-    }
-    match (kept, delivery_country) {
-        (Some(g), Some(c)) if tradocraft_products::power::grid_in_country(conn, g, c).await? => {
-            Ok(Some(g))
-        }
-        _ => Ok(None),
-    }
+    tradocraft_products::power::resolve_power_grid(conn, given, kept, delivery_country, "delivery")
+        .await
 }
 
 fn describe_supply(s: &tradocraft_products::power::PowerSupply) -> String {

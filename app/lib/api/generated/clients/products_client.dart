@@ -7,6 +7,8 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:retrofit/retrofit.dart';
 
+import '../models/attribute_definition.dart';
+import '../models/attribute_definition_input.dart';
 import '../models/bulk_price_change_input.dart';
 import '../models/bulk_price_preview.dart';
 import '../models/format.dart';
@@ -40,6 +42,36 @@ part 'products_client.g.dart';
 @RestApi()
 abstract class ProductsClient {
   factory ProductsClient(Dio dio, {String? baseUrl}) = _ProductsClient;
+
+  /// [scope] - Only definitions of this scope (`product` or a baseline item type code).
+  @GET('/api/v1/attribute-definitions')
+  Future<List<AttributeDefinition>> listDefinitions({
+    @Query('scope') String? scope,
+  });
+
+  @POST('/api/v1/attribute-definitions')
+  Future<AttributeDefinition> createDefinition({
+    @Body() required AttributeDefinitionInput body,
+  });
+
+  @GET('/api/v1/attribute-definitions/{id}')
+  Future<AttributeDefinition> getDefinition({
+    @Path('id') required String id,
+  });
+
+  @PUT('/api/v1/attribute-definitions/{id}')
+  Future<AttributeDefinition> updateDefinition({
+    @Path('id') required String id,
+    @Body() required AttributeDefinitionInput body,
+  });
+
+  /// Deletes an unused definition. A definition whose key is stored on products (scope `product`) or.
+  /// on baseline items of its type is refused with 409 (deactivate it with `active: false` instead,.
+  /// which keeps the stored values readable).
+  @DELETE('/api/v1/attribute-definitions/{id}')
+  Future<void> deleteDefinition({
+    @Path('id') required String id,
+  });
 
   @GET('/api/v1/packaging-categories')
   Future<List<PackagingCategory>> listPackaging();

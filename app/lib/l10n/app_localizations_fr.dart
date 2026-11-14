@@ -9461,4 +9461,234 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get rsNeedsRecipient => 'Choisissez au moins un destinataire.';
+
+  @override
+  String get powerVoltageMin => 'Tension min. (V)';
+
+  @override
+  String get powerVoltageMax => 'Tension max. (V)';
+
+  @override
+  String get powerBoundsHint =>
+      'Plage de tension facultative. Laissez les deux vides pour utiliser la tension nominale ± tolérance.';
+
+  @override
+  String get powerBoundsIncomplete =>
+      'Saisissez la tension minimale et la tension maximale, ou aucune des deux.';
+
+  @override
+  String get powerBoundsInvalid =>
+      'Les bornes de tension doivent être des entiers de 1 à 100000.';
+
+  @override
+  String get powerBoundsOrder =>
+      'La tension minimale ne doit pas dépasser la maximale.';
+
+  @override
+  String get powerBoundsNominal =>
+      'La tension nominale doit se situer entre le minimum et le maximum.';
+
+  @override
+  String get suitabilityTab => 'Compatibilité';
+
+  @override
+  String get suitabilityHelp =>
+      'Pour quoi ce produit convient. Les champs vides ne sont pas enregistrés.';
+
+  @override
+  String get suitabilityEmpty =>
+      'Aucun attribut produit n’est encore défini. Un administrateur peut en ajouter sous Administration, Attributs.';
+
+  @override
+  String get attrMin => 'Min.';
+
+  @override
+  String get attrMax => 'Max.';
+
+  @override
+  String get attrEnterNumber => 'Saisissez un nombre.';
+
+  @override
+  String get attrRangeIncomplete =>
+      'Saisissez le minimum et le maximum, ou aucun des deux.';
+
+  @override
+  String get attrRangeOrder => 'Le minimum ne doit pas dépasser le maximum.';
+
+  @override
+  String get attrNotInOptions => 'Choisissez l’une des options proposées.';
+
+  @override
+  String get adminAttributes => 'Attributs';
+
+  @override
+  String get attrDefsTitle => 'Définitions d’attributs';
+
+  @override
+  String get attrDefsEmpty => 'Aucune définition d’attribut pour l’instant.';
+
+  @override
+  String get newAttrDef => 'Nouvel attribut';
+
+  @override
+  String get editAttrDef => 'Modifier l’attribut';
+
+  @override
+  String get attrKey => 'Clé';
+
+  @override
+  String get attrLabel => 'Libellé';
+
+  @override
+  String get attrScope => 'Portée';
+
+  @override
+  String get attrKindNumber => 'Nombre';
+
+  @override
+  String get attrKindRange => 'Plage';
+
+  @override
+  String get attrKindSelect => 'Liste';
+
+  @override
+  String get attrKindText => 'Texte';
+
+  @override
+  String get attrOptions => 'Options';
+
+  @override
+  String get attrOptionValue => 'Valeur';
+
+  @override
+  String get attrOptionLabel => 'Libellé de l’option';
+
+  @override
+  String get attrAddOption => 'Ajouter une option';
+
+  @override
+  String get attrKeyInvalid =>
+      'La clé doit contenir des minuscules, chiffres et underscores, commencer par une lettre et avoir au plus 64 caractères.';
+
+  @override
+  String get attrLabelRequired => 'Un libellé est obligatoire.';
+
+  @override
+  String get attrSelectNeedsOptions =>
+      'Une liste a besoin d’au moins une option.';
+
+  @override
+  String get attrOptionBlank =>
+      'Chaque option a besoin d’une valeur et d’un libellé.';
+
+  @override
+  String get attrOptionDuplicate =>
+      'Les valeurs d’option doivent être uniques.';
+
+  @override
+  String attrDefDeleteConfirm(String key) {
+    return 'Supprimer l’attribut $key ? S’il est utilisé, désactivez-le plutôt.';
+  }
+
+  @override
+  String get attrDefDeleted => 'Attribut supprimé.';
+
+  @override
+  String get baselineTitle => 'Existant sur site';
+
+  @override
+  String get baselineEmpty =>
+      'Rien n\'est encore enregistré. Ajoutez les cadrans et cloches du site pour trouver les produits adaptés.';
+
+  @override
+  String get baselineAdd => 'Ajouter un élément';
+
+  @override
+  String get baselineNewItem => 'Nouvel élément';
+
+  @override
+  String get baselineEditItem => 'Modifier l\'élément';
+
+  @override
+  String get baselineParent => 'Placé sous';
+
+  @override
+  String get baselineTopLevel => 'Niveau supérieur';
+
+  @override
+  String get baselineNoTypes =>
+      'Aucun type d\'élément n\'est disponible. Un administrateur peut en ajouter sous Administration, Types d\'existant.';
+
+  @override
+  String get baselineNoFields => 'Aucun attribut n\'est défini pour ce type.';
+
+  @override
+  String get baselineTypeRequired => 'Choisissez un type d\'élément.';
+
+  @override
+  String get baselineParentRequired => 'Choisissez l\'élément parent.';
+
+  @override
+  String get baselineQuantityInvalid =>
+      'La quantité doit être un entier d\'au moins 1.';
+
+  @override
+  String baselineQty(int count) {
+    return 'Qté $count';
+  }
+
+  @override
+  String baselineDeleteConfirm(String name) {
+    return 'Supprimer $name ?';
+  }
+
+  @override
+  String get baselineDeleted => 'Élément supprimé.';
+
+  @override
+  String get adminBaselineTypes => 'Types d\'existant';
+
+  @override
+  String get baselineTypesTitle => 'Types d\'élément de l\'existant';
+
+  @override
+  String get baselineTypesEmpty => 'Aucun type d\'élément pour l\'instant.';
+
+  @override
+  String get newBaselineType => 'Nouveau type d\'élément';
+
+  @override
+  String get editBaselineType => 'Modifier le type d\'élément';
+
+  @override
+  String get baselineTypeParents => 'Types parents autorisés';
+
+  @override
+  String get baselineTypeTopLevel => 'Peut être au niveau supérieur';
+
+  @override
+  String get baselineTypeCodeInvalid =>
+      'Le code doit contenir des minuscules, chiffres et tirets bas, commencer par une lettre et compter au plus 64 caractères.';
+
+  @override
+  String get baselineTypeCodeReserved =>
+      'Le code product est réservé aux attributs de produit ; choisissez un autre code.';
+
+  @override
+  String get baselineTypeNameRequired => 'Un nom est requis.';
+
+  @override
+  String get baselineTypePlacement =>
+      'Choisissez au moins un type parent ou autorisez le niveau supérieur, sinon les éléments de ce type ne pourraient jamais être placés.';
+
+  @override
+  String baselineTypeDeleteConfirm(String code) {
+    return 'Supprimer le type $code ? S\'il est utilisé, désactivez-le plutôt.';
+  }
+
+  @override
+  String get baselineTypeDeleted => 'Type d\'élément supprimé.';
+
+  @override
+  String get attrScopeProduct => 'Produit';
 }

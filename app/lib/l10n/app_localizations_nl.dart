@@ -9448,4 +9448,235 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get rsNeedsRecipient => 'Kies minstens één ontvanger.';
+
+  @override
+  String get powerVoltageMin => 'Min. spanning (V)';
+
+  @override
+  String get powerVoltageMax => 'Max. spanning (V)';
+
+  @override
+  String get powerBoundsHint =>
+      'Optioneel spanningsbereik. Laat beide leeg om de nominale spanning ± tolerantie te gebruiken.';
+
+  @override
+  String get powerBoundsIncomplete =>
+      'Vul zowel de minimale als de maximale spanning in, of geen van beide.';
+
+  @override
+  String get powerBoundsInvalid =>
+      'Spanningsgrenzen moeten gehele getallen van 1 tot 100000 zijn.';
+
+  @override
+  String get powerBoundsOrder =>
+      'De minimale spanning mag de maximale niet overschrijden.';
+
+  @override
+  String get powerBoundsNominal =>
+      'De nominale spanning moet binnen het minimum en maximum liggen.';
+
+  @override
+  String get suitabilityTab => 'Geschiktheid';
+
+  @override
+  String get suitabilityHelp =>
+      'Waarvoor dit product geschikt is. Lege velden worden niet opgeslagen.';
+
+  @override
+  String get suitabilityEmpty =>
+      'Er zijn nog geen productkenmerken gedefinieerd. Een beheerder kan ze toevoegen onder Beheer, Kenmerken.';
+
+  @override
+  String get attrMin => 'Min.';
+
+  @override
+  String get attrMax => 'Max.';
+
+  @override
+  String get attrEnterNumber => 'Vul een getal in.';
+
+  @override
+  String get attrRangeIncomplete =>
+      'Vul zowel het minimum als het maximum in, of geen van beide.';
+
+  @override
+  String get attrRangeOrder =>
+      'Het minimum mag het maximum niet overschrijden.';
+
+  @override
+  String get attrNotInOptions => 'Kies een van de opties in de lijst.';
+
+  @override
+  String get adminAttributes => 'Kenmerken';
+
+  @override
+  String get attrDefsTitle => 'Kenmerkdefinities';
+
+  @override
+  String get attrDefsEmpty => 'Nog geen kenmerkdefinities.';
+
+  @override
+  String get newAttrDef => 'Nieuw kenmerk';
+
+  @override
+  String get editAttrDef => 'Kenmerk bewerken';
+
+  @override
+  String get attrKey => 'Sleutel';
+
+  @override
+  String get attrLabel => 'Label';
+
+  @override
+  String get attrScope => 'Bereik';
+
+  @override
+  String get attrKindNumber => 'Getal';
+
+  @override
+  String get attrKindRange => 'Bereik';
+
+  @override
+  String get attrKindSelect => 'Keuzelijst';
+
+  @override
+  String get attrKindText => 'Tekst';
+
+  @override
+  String get attrOptions => 'Opties';
+
+  @override
+  String get attrOptionValue => 'Waarde';
+
+  @override
+  String get attrOptionLabel => 'Optielabel';
+
+  @override
+  String get attrAddOption => 'Optie toevoegen';
+
+  @override
+  String get attrKeyInvalid =>
+      'De sleutel moet uit kleine letters, cijfers en underscores bestaan, met een letter beginnen en maximaal 64 tekens hebben.';
+
+  @override
+  String get attrLabelRequired => 'Een label is verplicht.';
+
+  @override
+  String get attrSelectNeedsOptions =>
+      'Een keuzelijst heeft minstens één optie nodig.';
+
+  @override
+  String get attrOptionBlank =>
+      'Elke optie heeft een waarde en een label nodig.';
+
+  @override
+  String get attrOptionDuplicate => 'Optiewaarden moeten uniek zijn.';
+
+  @override
+  String attrDefDeleteConfirm(String key) {
+    return 'Kenmerk $key verwijderen? Is het in gebruik, deactiveer het dan.';
+  }
+
+  @override
+  String get attrDefDeleted => 'Kenmerk verwijderd.';
+
+  @override
+  String get baselineTitle => 'Uitgangssituatie ter plaatse';
+
+  @override
+  String get baselineEmpty =>
+      'Nog niets vastgelegd. Voeg de uurwerkwijzerplaten en klokken ter plaatse toe, zodat geschikte producten gevonden kunnen worden.';
+
+  @override
+  String get baselineAdd => 'Item toevoegen';
+
+  @override
+  String get baselineNewItem => 'Nieuw item';
+
+  @override
+  String get baselineEditItem => 'Item bewerken';
+
+  @override
+  String get baselineParent => 'Geplaatst onder';
+
+  @override
+  String get baselineTopLevel => 'Hoogste niveau';
+
+  @override
+  String get baselineNoTypes =>
+      'Er zijn geen itemtypes beschikbaar. Een beheerder kan ze toevoegen onder Beheer, Basistypes.';
+
+  @override
+  String get baselineNoFields =>
+      'Voor dit type zijn geen kenmerken gedefinieerd.';
+
+  @override
+  String get baselineTypeRequired => 'Kies een itemtype.';
+
+  @override
+  String get baselineParentRequired => 'Kies het item waaronder dit hoort.';
+
+  @override
+  String get baselineQuantityInvalid =>
+      'Het aantal moet een geheel getal van minimaal 1 zijn.';
+
+  @override
+  String baselineQty(int count) {
+    return 'Aantal $count';
+  }
+
+  @override
+  String baselineDeleteConfirm(String name) {
+    return '$name verwijderen?';
+  }
+
+  @override
+  String get baselineDeleted => 'Item verwijderd.';
+
+  @override
+  String get adminBaselineTypes => 'Basistypes';
+
+  @override
+  String get baselineTypesTitle => 'Itemtypes van de uitgangssituatie';
+
+  @override
+  String get baselineTypesEmpty => 'Nog geen itemtypes.';
+
+  @override
+  String get newBaselineType => 'Nieuw itemtype';
+
+  @override
+  String get editBaselineType => 'Itemtype bewerken';
+
+  @override
+  String get baselineTypeParents => 'Toegestane bovenliggende types';
+
+  @override
+  String get baselineTypeTopLevel => 'Mag op het hoogste niveau staan';
+
+  @override
+  String get baselineTypeCodeInvalid =>
+      'De code moet uit kleine letters, cijfers en underscores bestaan, met een letter beginnen en maximaal 64 tekens hebben.';
+
+  @override
+  String get baselineTypeCodeReserved =>
+      'De code product is gereserveerd voor de productkenmerken; kies een andere code.';
+
+  @override
+  String get baselineTypeNameRequired => 'Een naam is verplicht.';
+
+  @override
+  String get baselineTypePlacement =>
+      'Kies minstens één bovenliggend type of sta het hoogste niveau toe, anders kunnen items van dit type nooit geplaatst worden.';
+
+  @override
+  String baselineTypeDeleteConfirm(String code) {
+    return 'Type $code verwijderen? Is het in gebruik, deactiveer het dan.';
+  }
+
+  @override
+  String get baselineTypeDeleted => 'Itemtype verwijderd.';
+
+  @override
+  String get attrScopeProduct => 'Product';
 }

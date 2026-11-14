@@ -613,3 +613,110 @@ async fn grid_is_copied_to_revisions_and_orders_and_confirm_warns(db: PgPool) {
     );
     assert_eq!(c["warnings"][0]["kind"], "power_grid");
 }
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn voltage_bounds_roundtrip_validate_and_decide_compatibility(db: PgPool) {
+    let app = setup(db.clone()).await;
+    // Without bounds the fields are returned as null (backwards compatible).
+    let (_, list) = api(
+        &app,
+        SALES,
+        Method::GET,
+        &format!("/products/{UNIT_100}/power-supplies"),
+        None,
+    )
+    .await;
+    assert!(list[0]["voltage_min_v"].is_null() && list[0]["voltage_max_v"].is_null());
+
+    let (status, r) = put_supplies(
+        &app,
+        PUMP,
+        json!([
+            { "current_type": "ac", "voltage_v": 230, "phases": 1, "voltage_min_v": 200, "voltage_max_v": 260 },
+            { "current_type": "dc", "voltage_v": 24, "voltage_min_v": 12, "voltage_max_v": 48 },
+        ]),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{r}");
+    let ac = r
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|s| s["current_type"] == "ac")
+        .unwrap();
+    assert_eq!(
+        (&ac["voltage_min_v"], &ac["voltage_max_v"]),
+        (&json!(200), &json!(260))
+    );
+    let dc = r
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|s| s["current_type"] == "dc")
+        .unwrap();
+    assert_eq!(
+        (&dc["voltage_min_v"], &dc["voltage_max_v"]),
+        (&json!(12), &json!(48))
+    );
+
+    // A 200 V grid is outside 230 +/- 10% but inside the explicit range.
+    let (status, g) = api(
+        &app,
+        ADMIN,
+        Method::POST,
+        "/power-grids",
+        Some(json!({ "country_code": "BE", "voltage_v": 200, "phases": 1, "frequency_hz": 50 })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{g}");
+    let g200 = g["id"].as_str().unwrap().to_string();
+    assert_eq!(
+        compat(&app, PUMP, &format!("grid_id={g200}")).await["status"],
+        "compatible"
+    );
+    // Same product without the bounds is incompatible with that grid.
+    put_supplies(
+        &app,
+        PUMP,
+        json!([{ "current_type": "ac", "voltage_v": 230, "phases": 1 }]),
+    )
+    .await;
+    assert_eq!(
+        compat(&app, PUMP, &format!("grid_id={g200}")).await["status"],
+        "incompatible"
+    );
+
+    let base = json!({ "current_type": "ac", "voltage_v": 230, "phases": 1 });
+    for (lo, hi) in [
+        (json!(200), json!(null)),
+        (json!(null), json!(260)),
+        (json!(260), json!(200)),
+        (json!(0), json!(260)),
+        (json!(240), json!(260)),
+        (json!(200), json!(220)),
+    ] {
+        let mut s = base.clone();
+        s["voltage_min_v"] = lo.clone();
+        s["voltage_max_v"] = hi.clone();
+        let (status, r) = put_supplies(&app, PUMP, json!([s])).await;
+        assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{lo} {hi} -> {r}");
+    }
+
+    // The database enforces the same rules.
+    for (lo, hi) in [
+        ("200", "NULL"),
+        ("NULL", "260"),
+        ("260", "200"),
+        ("0", "260"),
+        ("240", "260"),
+    ] {
+        let r = sqlx::query(&format!(
+            "INSERT INTO products.product_power_supplies
+                (id, product_id, current_type, voltage_v, phases, voltage_min_v, voltage_max_v)
+             VALUES (gen_random_uuid(), '{BOLT}', 'ac', 230, 1, {lo}, {hi})"
+        ))
+        .execute(&db)
+        .await;
+        assert!(r.is_err(), "{lo}..{hi} should violate the check constraint");
+    }
+}
