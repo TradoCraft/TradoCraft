@@ -5,10 +5,12 @@
 -- * attribute definitions may now be `boolean` (baseline values and product attributes);
 -- * match rules may use the operator `requires_if_true`: when the baseline boolean is true the
 --   product's boolean must be true; false or unset on the baseline means the rule does not apply;
--- * crm.seed_baseline_defaults (same function as before, so existing companies, new companies and
---   the dev seed all get it) now also seeds the dial attributes mounting, wall_thickness_mm,
+-- * crm.seed_baseline_defaults (same function as before, used for new companies and the dev seed)
+--   now also seeds the dial attributes mounting, wall_thickness_mm,
 --   faces, movement, illumination_wanted, the product attribute can_illuminate and the rule
 --   "Illumination supported". Idempotent: ON CONFLICT DO NOTHING keeps what an admin changed.
+--   Existing companies get only these new rows (targeted backfill at the end), so defaults an
+--   administrator deleted earlier are not resurrected.
 
 ALTER TABLE products.attribute_definitions
     DROP CONSTRAINT attribute_definitions_kind_check,
@@ -83,4 +85,34 @@ LANGUAGE sql AS $$
     SELECT configurator.seed_bell_motors(p_company_id);
 $$;
 
-SELECT crm.seed_baseline_defaults(id) FROM core.companies;
+-- Backfill existing companies with ONLY what this migration introduces. The complete seeder is
+-- deliberately not called here: it would re-create earlier defaults an administrator deleted since.
+INSERT INTO products.attribute_definitions
+    (id, company_id, key, label, kind, unit, options, scope, sort_order)
+SELECT gen_random_uuid(), c.id, v.key, v.label, v.kind, v.unit, v.options::jsonb, v.scope, v.sort_order
+FROM core.companies c
+CROSS JOIN (VALUES
+    ('mounting', 'Mounting', 'select', NULL,
+     '[{"value": "wall", "label": "Wall"},
+       {"value": "on_dial", "label": "On the dial"}]', 'clock_dial', 2),
+    ('wall_thickness_mm', 'Wall thickness', 'number', 'mm', '[]', 'clock_dial', 3),
+    ('faces', 'Number of faces', 'select', NULL,
+     '[{"value": "1", "label": "1"},
+       {"value": "2", "label": "2"},
+       {"value": "3", "label": "3"},
+       {"value": "4", "label": "4"}]', 'clock_dial', 4),
+    ('movement', 'Movement', 'select', NULL,
+     '[{"value": "central", "label": "Central movement"},
+       {"value": "per_dial_motor", "label": "Motor per dial"}]', 'clock_dial', 5),
+    ('illumination_wanted', 'Illumination wanted', 'boolean', NULL, '[]', 'clock_dial', 6),
+    ('can_illuminate', 'Can be illuminated', 'boolean', NULL, '[]', 'product', 3)
+) AS v(key, label, kind, unit, options, scope, sort_order)
+ON CONFLICT (company_id, key) DO NOTHING;
+
+INSERT INTO crm.match_rules
+    (id, company_id, name, baseline_type_code, baseline_attribute_key, product_attribute_key,
+     operator, sort_order)
+SELECT gen_random_uuid(), c.id, 'Illumination supported', 'clock_dial',
+       'illumination_wanted', 'can_illuminate', 'requires_if_true', 2
+FROM core.companies c
+ON CONFLICT (company_id, name) DO NOTHING;
