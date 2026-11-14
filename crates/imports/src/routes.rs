@@ -346,11 +346,17 @@ async fn preview_file(
     let bytes = file_bytes(&state.db, user.company_id, id).await?;
     let wanted = trim_sheet(q.sheet);
     let asked = wanted.clone();
-    let (format, raw) =
-        tokio::task::spawn_blocking(move || read_raw(&bytes, wanted.as_deref(), &Limits::job()))
-            .await
-            .map_err(blocking_failed)?
-            .map_err(refused)?;
+    let (format, raw) = tokio::task::spawn_blocking(move || {
+        // Twenty rows are shown; the others are only counted, not held.
+        read_raw(
+            &bytes,
+            wanted.as_deref(),
+            &Limits::job().preview(PREVIEW_ROWS),
+        )
+    })
+    .await
+    .map_err(blocking_failed)?
+    .map_err(refused)?;
     let sheet = match format {
         Format::Csv => None,
         _ => asked.or_else(|| raw.sheets.first().cloned()),
@@ -361,7 +367,7 @@ async fn preview_file(
         sheet,
         header_row: raw.header_row,
         columns: raw.header,
-        row_count: raw.rows.len() + raw.failed_rows,
+        row_count: raw.rows.len() + raw.failed_rows + raw.dropped_rows,
         rows: raw
             .rows
             .iter()

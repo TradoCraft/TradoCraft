@@ -27,6 +27,8 @@ pub struct RawTable {
     /// Problems found in single rows while reading (a spreadsheet error cell, a number that has no
     /// exact decimal form). The row is left out of `rows`.
     pub errors: Vec<RowError>,
+    /// Data rows read but not kept (see [`crate::import::Limits::keep_rows`]); 0 otherwise.
+    pub dropped_rows: usize,
     /// How many rows `errors` stands for (a row with several error cells is one row).
     pub failed_rows: usize,
     /// The reader stopped listing errors at [`crate::csv_io::MAX_REPORTED_ERRORS`]; there are more.

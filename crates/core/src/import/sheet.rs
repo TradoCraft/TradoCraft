@@ -162,6 +162,8 @@ struct Builder<'a> {
     rows: Vec<RawRow>,
     errors: Vec<RowError>,
     errors_truncated: bool,
+    /// Data rows read but not kept ([`Limits::keep_rows`]).
+    dropped_rows: usize,
     /// Data rows seen, the ones with an error cell included.
     data_rows: usize,
     failed_rows: usize,
@@ -178,6 +180,7 @@ impl<'a> Builder<'a> {
             rows: Vec::new(),
             errors: Vec::new(),
             errors_truncated: false,
+            dropped_rows: 0,
             data_rows: 0,
             failed_rows: 0,
             total_cells: 0,
@@ -286,6 +289,10 @@ impl<'a> Builder<'a> {
                 ),
             )]);
         }
+        if self.limits.keep_rows.is_some_and(|k| self.rows.len() >= k) {
+            self.dropped_rows += 1;
+            return Ok(());
+        }
         let mut dense: Vec<CellValue> = Vec::new();
         let mut failed = false;
         for (col, value) in cells {
@@ -354,6 +361,7 @@ impl<'a> Builder<'a> {
             rows: self.rows,
             errors: self.errors,
             failed_rows: self.failed_rows,
+            dropped_rows: self.dropped_rows,
             errors_truncated: self.errors_truncated,
         })
     }

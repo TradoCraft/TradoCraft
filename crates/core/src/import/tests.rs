@@ -447,10 +447,7 @@ fn writers_refuse_what_they_cannot_hold() {
         Format::Ods,
         "Data",
         &["code", "name"],
-        vec![
-            vec![t("C1"), t("fine")],
-            vec![t("C2"), t("bad\u{1}name")],
-        ],
+        vec![vec![t("C1"), t("fine")], vec![t("C2"), t("bad\u{1}name")]],
     )
     .unwrap_err()
     .to_string();
@@ -1164,6 +1161,22 @@ fn a_report_lists_at_most_the_cap_and_says_so() {
             .len(),
         2
     );
+}
+
+#[test]
+fn a_preview_keeps_a_few_rows_and_counts_the_rest_in_every_format() {
+    for format in [Format::Csv, Format::Xlsx, Format::Ods] {
+        let file = grid(format, 50, 2);
+        let (_, all) = read_raw(&file, None, &Limits::request()).unwrap();
+        assert_eq!((all.rows.len(), all.dropped_rows), (50, 0), "{format:?}");
+        let (_, p) = read_raw(&file, None, &Limits::request().preview(5)).unwrap();
+        assert_eq!(p.rows.len(), 5, "{format:?}");
+        assert_eq!(p.dropped_rows, 45, "{format:?}");
+        assert_eq!(p.rows[0], all.rows[0], "{format:?}");
+        // The limits still apply to what is not kept.
+        let e = raw_err(&file, None, &small().preview(1));
+        assert!(e[0].message.contains("too many rows"), "{format:?} {e:?}");
+    }
 }
 
 #[test]

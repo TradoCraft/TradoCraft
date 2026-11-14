@@ -3,12 +3,22 @@
 use crate::csv_io::{detect_delimiter, format_error, limit_error, unquote_formula, RowError};
 use crate::import::{CellValue, Limits, RawRow, RawTable};
 
+/// The records of a text: those kept, and how many there were in all.
+#[derive(Default)]
+struct Records {
+    kept: Vec<(usize, Vec<String>)>,
+    /// Records read, the header included, the dropped ones too.
+    seen: usize,
+    /// Cells of the data rows.
+    cells: usize,
+}
+
 /// Ends the current record: pushes the last field and keeps the record unless the line is blank.
 /// Fails when this would be more records than the header plus `limits.rows` data rows, or more
-/// cells than `limits.total_cells`.
+/// cells than `limits.total_cells`. With [`Limits::keep_rows`] data rows beyond that many are
+/// counted and dropped.
 fn finish_record(
-    records: &mut Vec<(usize, Vec<String>)>,
-    cells: &mut usize,
+    records: &mut Records,
     fields: &mut Vec<String>,
     field: &mut String,
     start: usize,
@@ -20,17 +30,17 @@ fn finish_record(
     if blank {
         return Ok(());
     }
-    if records.len() > limits.rows {
+    if records.seen > limits.rows {
         return Err(limit_error(
             1,
             format!("too many rows: at most {} are accepted", limits.rows),
         ));
     }
     // The header is not counted: a file of `rows` x `cells_per_row` is within the limits.
-    if !records.is_empty() {
-        *cells += record.len();
+    if records.seen > 0 {
+        records.cells += record.len();
     }
-    if *cells > limits.total_cells {
+    if records.cells > limits.total_cells {
         return Err(limit_error(
             1,
             format!(
@@ -39,7 +49,11 @@ fn finish_record(
             ),
         ));
     }
-    records.push((start, record));
+    records.seen += 1;
+    // The header and `keep_rows` data rows are kept.
+    if limits.keep_rows.is_none_or(|k| records.kept.len() <= k) {
+        records.kept.push((start, record));
+    }
     Ok(())
 }
 
@@ -47,13 +61,8 @@ fn finish_record(
 /// skipped. The shape is checked while reading, before anything large is built: a quote inside an
 /// unquoted value, text after a closing quote, an unclosed quote, more data rows, cells in a
 /// record or cells in total than the limits allow end the parse with one error.
-fn parse_records(
-    text: &str,
-    delim: char,
-    limits: &Limits,
-) -> Result<Vec<(usize, Vec<String>)>, RowError> {
-    let mut records = Vec::new();
-    let mut cells = 0usize;
+fn parse_records(text: &str, delim: char, limits: &Limits) -> Result<Records, RowError> {
+    let mut records = Records::default();
     let mut fields: Vec<String> = Vec::new();
     let mut field = String::new();
     let (mut line, mut start, mut quoted, mut closed) = (1usize, 1usize, false, false);
@@ -103,7 +112,7 @@ fn parse_records(
             }
             '\r' => {}
             '\n' => {
-                finish_record(&mut records, &mut cells, &mut fields, &mut field, start, limits)?;
+                finish_record(&mut records, &mut fields, &mut field, start, limits)?;
                 closed = false;
                 line += 1;
                 start = line;
@@ -116,14 +125,7 @@ fn parse_records(
         return Err(format_error(start, "a quoted value is not closed"));
     }
     if !field.is_empty() || !fields.is_empty() {
-        finish_record(
-            &mut records,
-            &mut cells,
-            &mut fields,
-            &mut field,
-            start,
-            limits,
-        )?;
+        finish_record(&mut records, &mut fields, &mut field, start, limits)?;
     }
     Ok(records)
 }
@@ -137,7 +139,9 @@ pub fn read(body: &[u8], limits: &Limits) -> Result<RawTable, Vec<RowError>> {
         .map_err(|_| vec![format_error(1, "the file is not valid UTF-8")])?;
     let text = text.strip_prefix('\u{feff}').unwrap_or(text);
     let delim = detect_delimiter(text);
-    let mut records = parse_records(text, delim, limits).map_err(|e| vec![e])?;
+    let parsed = parse_records(text, delim, limits).map_err(|e| vec![e])?;
+    let dropped_rows = parsed.seen - parsed.kept.len();
+    let mut records = parsed.kept;
     if records.is_empty() {
         return Err(vec![format_error(1, "the file is empty")]);
     }
@@ -157,6 +161,7 @@ pub fn read(body: &[u8], limits: &Limits) -> Result<RawTable, Vec<RowError>> {
         header_row,
         header,
         rows,
+        dropped_rows,
         ..Default::default()
     })
 }

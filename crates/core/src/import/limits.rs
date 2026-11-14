@@ -21,6 +21,9 @@ pub struct Limits {
     pub unpacked_bytes: u64,
     /// Entries in the archive (XLSX and ODS only).
     pub archive_entries: usize,
+    /// A preview: keep only this many data rows. The others are still read, checked against the
+    /// limits and counted ([`crate::import::RawTable::dropped_rows`]), but not held in memory.
+    pub keep_rows: Option<usize>,
 }
 
 impl Limits {
@@ -33,6 +36,7 @@ impl Limits {
             total_cells: 2_000_000,
             unpacked_bytes: 64 * MIB,
             archive_entries: 1_000,
+            keep_rows: None,
         }
     }
 
@@ -45,6 +49,15 @@ impl Limits {
             total_cells: 5_000_000,
             unpacked_bytes: 512 * MIB,
             archive_entries: 1_000,
+            keep_rows: None,
+        }
+    }
+
+    /// These limits for a preview that keeps `rows` data rows.
+    pub const fn preview(self, rows: usize) -> Self {
+        Limits {
+            keep_rows: Some(rows),
+            ..self
         }
     }
 }
