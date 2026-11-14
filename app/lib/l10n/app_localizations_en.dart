@@ -9538,4 +9538,99 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get attrDefDeleted => 'Attribute deleted.';
+
+  @override
+  String get baselineTitle => 'Site baseline';
+
+  @override
+  String get baselineEmpty =>
+      'Nothing recorded yet. Add the clock dials and bells at the site so suitable products can be found.';
+
+  @override
+  String get baselineAdd => 'Add item';
+
+  @override
+  String get baselineNewItem => 'New baseline item';
+
+  @override
+  String get baselineEditItem => 'Edit baseline item';
+
+  @override
+  String get baselineParent => 'Placed under';
+
+  @override
+  String get baselineTopLevel => 'Top level';
+
+  @override
+  String get baselineNoTypes =>
+      'No baseline item types are available. An administrator can add them under Administration, Baseline types.';
+
+  @override
+  String get baselineNoFields => 'This type has no attributes defined.';
+
+  @override
+  String get baselineTypeRequired => 'Choose an item type.';
+
+  @override
+  String get baselineParentRequired => 'Choose the item to place this under.';
+
+  @override
+  String get baselineQuantityInvalid =>
+      'Quantity must be a whole number of at least 1.';
+
+  @override
+  String baselineQty(int count) {
+    return 'Qty $count';
+  }
+
+  @override
+  String baselineDeleteConfirm(String name) {
+    return 'Delete $name?';
+  }
+
+  @override
+  String get baselineDeleted => 'Item deleted.';
+
+  @override
+  String get adminBaselineTypes => 'Baseline types';
+
+  @override
+  String get baselineTypesTitle => 'Baseline item types';
+
+  @override
+  String get baselineTypesEmpty => 'No baseline item types yet.';
+
+  @override
+  String get newBaselineType => 'New baseline type';
+
+  @override
+  String get editBaselineType => 'Edit baseline type';
+
+  @override
+  String get baselineTypeParents => 'Allowed parent types';
+
+  @override
+  String get baselineTypeTopLevel => 'Can stand at the top level';
+
+  @override
+  String get baselineTypeCodeInvalid =>
+      'The code must be lowercase letters, digits and underscores, start with a letter and have at most 64 characters.';
+
+  @override
+  String get baselineTypeNameRequired => 'A name is required.';
+
+  @override
+  String get baselineTypePlacement =>
+      'Choose at least one parent type or allow the top level, or items of this type could never be placed.';
+
+  @override
+  String baselineTypeDeleteConfirm(String code) {
+    return 'Delete type $code? If it is in use, deactivate it instead.';
+  }
+
+  @override
+  String get baselineTypeDeleted => 'Baseline type deleted.';
+
+  @override
+  String get attrScopeProduct => 'Product';
 }

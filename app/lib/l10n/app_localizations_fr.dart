@@ -9592,4 +9592,99 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get attrDefDeleted => 'Attribut supprimé.';
+
+  @override
+  String get baselineTitle => 'Existant sur site';
+
+  @override
+  String get baselineEmpty =>
+      'Rien n\'est encore enregistré. Ajoutez les cadrans et cloches du site pour trouver les produits adaptés.';
+
+  @override
+  String get baselineAdd => 'Ajouter un élément';
+
+  @override
+  String get baselineNewItem => 'Nouvel élément';
+
+  @override
+  String get baselineEditItem => 'Modifier l\'élément';
+
+  @override
+  String get baselineParent => 'Placé sous';
+
+  @override
+  String get baselineTopLevel => 'Niveau supérieur';
+
+  @override
+  String get baselineNoTypes =>
+      'Aucun type d\'élément n\'est disponible. Un administrateur peut en ajouter sous Administration, Types d\'existant.';
+
+  @override
+  String get baselineNoFields => 'Aucun attribut n\'est défini pour ce type.';
+
+  @override
+  String get baselineTypeRequired => 'Choisissez un type d\'élément.';
+
+  @override
+  String get baselineParentRequired => 'Choisissez l\'élément parent.';
+
+  @override
+  String get baselineQuantityInvalid =>
+      'La quantité doit être un entier d\'au moins 1.';
+
+  @override
+  String baselineQty(int count) {
+    return 'Qté $count';
+  }
+
+  @override
+  String baselineDeleteConfirm(String name) {
+    return 'Supprimer $name ?';
+  }
+
+  @override
+  String get baselineDeleted => 'Élément supprimé.';
+
+  @override
+  String get adminBaselineTypes => 'Types d\'existant';
+
+  @override
+  String get baselineTypesTitle => 'Types d\'élément de l\'existant';
+
+  @override
+  String get baselineTypesEmpty => 'Aucun type d\'élément pour l\'instant.';
+
+  @override
+  String get newBaselineType => 'Nouveau type d\'élément';
+
+  @override
+  String get editBaselineType => 'Modifier le type d\'élément';
+
+  @override
+  String get baselineTypeParents => 'Types parents autorisés';
+
+  @override
+  String get baselineTypeTopLevel => 'Peut être au niveau supérieur';
+
+  @override
+  String get baselineTypeCodeInvalid =>
+      'Le code doit contenir des minuscules, chiffres et tirets bas, commencer par une lettre et compter au plus 64 caractères.';
+
+  @override
+  String get baselineTypeNameRequired => 'Un nom est requis.';
+
+  @override
+  String get baselineTypePlacement =>
+      'Choisissez au moins un type parent ou autorisez le niveau supérieur, sinon les éléments de ce type ne pourraient jamais être placés.';
+
+  @override
+  String baselineTypeDeleteConfirm(String code) {
+    return 'Supprimer le type $code ? S\'il est utilisé, désactivez-le plutôt.';
+  }
+
+  @override
+  String get baselineTypeDeleted => 'Type d\'élément supprimé.';
+
+  @override
+  String get attrScopeProduct => 'Produit';
 }

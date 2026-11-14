@@ -9602,4 +9602,100 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get attrDefDeleted => 'Attribut gelöscht.';
+
+  @override
+  String get baselineTitle => 'Bestand vor Ort';
+
+  @override
+  String get baselineEmpty =>
+      'Noch nichts erfasst. Erfassen Sie die Zifferblätter und Glocken vor Ort, damit passende Produkte gefunden werden können.';
+
+  @override
+  String get baselineAdd => 'Eintrag hinzufügen';
+
+  @override
+  String get baselineNewItem => 'Neuer Eintrag';
+
+  @override
+  String get baselineEditItem => 'Eintrag bearbeiten';
+
+  @override
+  String get baselineParent => 'Untergeordnet zu';
+
+  @override
+  String get baselineTopLevel => 'Oberste Ebene';
+
+  @override
+  String get baselineNoTypes =>
+      'Keine Eintragstypen verfügbar. Ein Administrator kann sie unter Verwaltung, Bestandstypen anlegen.';
+
+  @override
+  String get baselineNoFields =>
+      'Für diesen Typ sind keine Attribute definiert.';
+
+  @override
+  String get baselineTypeRequired => 'Wählen Sie einen Eintragstyp.';
+
+  @override
+  String get baselineParentRequired => 'Wählen Sie den übergeordneten Eintrag.';
+
+  @override
+  String get baselineQuantityInvalid =>
+      'Die Menge muss eine ganze Zahl von mindestens 1 sein.';
+
+  @override
+  String baselineQty(int count) {
+    return 'Menge $count';
+  }
+
+  @override
+  String baselineDeleteConfirm(String name) {
+    return '$name löschen?';
+  }
+
+  @override
+  String get baselineDeleted => 'Eintrag gelöscht.';
+
+  @override
+  String get adminBaselineTypes => 'Bestandstypen';
+
+  @override
+  String get baselineTypesTitle => 'Eintragstypen des Bestands';
+
+  @override
+  String get baselineTypesEmpty => 'Noch keine Eintragstypen.';
+
+  @override
+  String get newBaselineType => 'Neuer Eintragstyp';
+
+  @override
+  String get editBaselineType => 'Eintragstyp bearbeiten';
+
+  @override
+  String get baselineTypeParents => 'Erlaubte übergeordnete Typen';
+
+  @override
+  String get baselineTypeTopLevel => 'Darf auf oberster Ebene stehen';
+
+  @override
+  String get baselineTypeCodeInvalid =>
+      'Der Code darf nur Kleinbuchstaben, Ziffern und Unterstriche enthalten, muss mit einem Buchstaben beginnen und höchstens 64 Zeichen haben.';
+
+  @override
+  String get baselineTypeNameRequired => 'Ein Name ist erforderlich.';
+
+  @override
+  String get baselineTypePlacement =>
+      'Wählen Sie mindestens einen übergeordneten Typ oder erlauben Sie die oberste Ebene, sonst lassen sich Einträge dieses Typs nie platzieren.';
+
+  @override
+  String baselineTypeDeleteConfirm(String code) {
+    return 'Typ $code löschen? Wird er verwendet, deaktivieren Sie ihn stattdessen.';
+  }
+
+  @override
+  String get baselineTypeDeleted => 'Eintragstyp gelöscht.';
+
+  @override
+  String get attrScopeProduct => 'Produkt';
 }

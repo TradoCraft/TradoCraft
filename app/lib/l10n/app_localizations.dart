@@ -17003,6 +17003,174 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Attribute deleted.'**
   String get attrDefDeleted;
+
+  /// No description provided for @baselineTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Site baseline'**
+  String get baselineTitle;
+
+  /// No description provided for @baselineEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing recorded yet. Add the clock dials and bells at the site so suitable products can be found.'**
+  String get baselineEmpty;
+
+  /// No description provided for @baselineAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add item'**
+  String get baselineAdd;
+
+  /// No description provided for @baselineNewItem.
+  ///
+  /// In en, this message translates to:
+  /// **'New baseline item'**
+  String get baselineNewItem;
+
+  /// No description provided for @baselineEditItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit baseline item'**
+  String get baselineEditItem;
+
+  /// No description provided for @baselineParent.
+  ///
+  /// In en, this message translates to:
+  /// **'Placed under'**
+  String get baselineParent;
+
+  /// No description provided for @baselineTopLevel.
+  ///
+  /// In en, this message translates to:
+  /// **'Top level'**
+  String get baselineTopLevel;
+
+  /// No description provided for @baselineNoTypes.
+  ///
+  /// In en, this message translates to:
+  /// **'No baseline item types are available. An administrator can add them under Administration, Baseline types.'**
+  String get baselineNoTypes;
+
+  /// No description provided for @baselineNoFields.
+  ///
+  /// In en, this message translates to:
+  /// **'This type has no attributes defined.'**
+  String get baselineNoFields;
+
+  /// No description provided for @baselineTypeRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose an item type.'**
+  String get baselineTypeRequired;
+
+  /// No description provided for @baselineParentRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the item to place this under.'**
+  String get baselineParentRequired;
+
+  /// No description provided for @baselineQuantityInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Quantity must be a whole number of at least 1.'**
+  String get baselineQuantityInvalid;
+
+  /// No description provided for @baselineQty.
+  ///
+  /// In en, this message translates to:
+  /// **'Qty {count}'**
+  String baselineQty(int count);
+
+  /// No description provided for @baselineDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {name}?'**
+  String baselineDeleteConfirm(String name);
+
+  /// No description provided for @baselineDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Item deleted.'**
+  String get baselineDeleted;
+
+  /// No description provided for @adminBaselineTypes.
+  ///
+  /// In en, this message translates to:
+  /// **'Baseline types'**
+  String get adminBaselineTypes;
+
+  /// No description provided for @baselineTypesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Baseline item types'**
+  String get baselineTypesTitle;
+
+  /// No description provided for @baselineTypesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No baseline item types yet.'**
+  String get baselineTypesEmpty;
+
+  /// No description provided for @newBaselineType.
+  ///
+  /// In en, this message translates to:
+  /// **'New baseline type'**
+  String get newBaselineType;
+
+  /// No description provided for @editBaselineType.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit baseline type'**
+  String get editBaselineType;
+
+  /// No description provided for @baselineTypeParents.
+  ///
+  /// In en, this message translates to:
+  /// **'Allowed parent types'**
+  String get baselineTypeParents;
+
+  /// No description provided for @baselineTypeTopLevel.
+  ///
+  /// In en, this message translates to:
+  /// **'Can stand at the top level'**
+  String get baselineTypeTopLevel;
+
+  /// No description provided for @baselineTypeCodeInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'The code must be lowercase letters, digits and underscores, start with a letter and have at most 64 characters.'**
+  String get baselineTypeCodeInvalid;
+
+  /// No description provided for @baselineTypeNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'A name is required.'**
+  String get baselineTypeNameRequired;
+
+  /// No description provided for @baselineTypePlacement.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose at least one parent type or allow the top level, or items of this type could never be placed.'**
+  String get baselineTypePlacement;
+
+  /// No description provided for @baselineTypeDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete type {code}? If it is in use, deactivate it instead.'**
+  String baselineTypeDeleteConfirm(String code);
+
+  /// No description provided for @baselineTypeDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Baseline type deleted.'**
+  String get baselineTypeDeleted;
+
+  /// No description provided for @attrScopeProduct.
+  ///
+  /// In en, this message translates to:
+  /// **'Product'**
+  String get attrScopeProduct;
 }
 
 class _AppLocalizationsDelegate

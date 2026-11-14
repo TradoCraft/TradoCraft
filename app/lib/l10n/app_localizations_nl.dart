@@ -9579,4 +9579,100 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get attrDefDeleted => 'Kenmerk verwijderd.';
+
+  @override
+  String get baselineTitle => 'Uitgangssituatie ter plaatse';
+
+  @override
+  String get baselineEmpty =>
+      'Nog niets vastgelegd. Voeg de uurwerkwijzerplaten en klokken ter plaatse toe, zodat geschikte producten gevonden kunnen worden.';
+
+  @override
+  String get baselineAdd => 'Item toevoegen';
+
+  @override
+  String get baselineNewItem => 'Nieuw item';
+
+  @override
+  String get baselineEditItem => 'Item bewerken';
+
+  @override
+  String get baselineParent => 'Geplaatst onder';
+
+  @override
+  String get baselineTopLevel => 'Hoogste niveau';
+
+  @override
+  String get baselineNoTypes =>
+      'Er zijn geen itemtypes beschikbaar. Een beheerder kan ze toevoegen onder Beheer, Basistypes.';
+
+  @override
+  String get baselineNoFields =>
+      'Voor dit type zijn geen kenmerken gedefinieerd.';
+
+  @override
+  String get baselineTypeRequired => 'Kies een itemtype.';
+
+  @override
+  String get baselineParentRequired => 'Kies het item waaronder dit hoort.';
+
+  @override
+  String get baselineQuantityInvalid =>
+      'Het aantal moet een geheel getal van minimaal 1 zijn.';
+
+  @override
+  String baselineQty(int count) {
+    return 'Aantal $count';
+  }
+
+  @override
+  String baselineDeleteConfirm(String name) {
+    return '$name verwijderen?';
+  }
+
+  @override
+  String get baselineDeleted => 'Item verwijderd.';
+
+  @override
+  String get adminBaselineTypes => 'Basistypes';
+
+  @override
+  String get baselineTypesTitle => 'Itemtypes van de uitgangssituatie';
+
+  @override
+  String get baselineTypesEmpty => 'Nog geen itemtypes.';
+
+  @override
+  String get newBaselineType => 'Nieuw itemtype';
+
+  @override
+  String get editBaselineType => 'Itemtype bewerken';
+
+  @override
+  String get baselineTypeParents => 'Toegestane bovenliggende types';
+
+  @override
+  String get baselineTypeTopLevel => 'Mag op het hoogste niveau staan';
+
+  @override
+  String get baselineTypeCodeInvalid =>
+      'De code moet uit kleine letters, cijfers en underscores bestaan, met een letter beginnen en maximaal 64 tekens hebben.';
+
+  @override
+  String get baselineTypeNameRequired => 'Een naam is verplicht.';
+
+  @override
+  String get baselineTypePlacement =>
+      'Kies minstens één bovenliggend type of sta het hoogste niveau toe, anders kunnen items van dit type nooit geplaatst worden.';
+
+  @override
+  String baselineTypeDeleteConfirm(String code) {
+    return 'Type $code verwijderen? Is het in gebruik, deactiveer het dan.';
+  }
+
+  @override
+  String get baselineTypeDeleted => 'Itemtype verwijderd.';
+
+  @override
+  String get attrScopeProduct => 'Product';
 }
