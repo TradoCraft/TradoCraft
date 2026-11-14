@@ -56,6 +56,7 @@ class _Line {
 
   /// Confirmed price of an indicative product; empty while unconfirmed.
   final TextEditingController price;
+
   /// The stored name snapshot, re-sent as an override. Null lets the server name the line from
   /// its product in the customer's language (a new line, or a line whose product was changed).
   String? description;
@@ -184,6 +185,9 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
   late String? _opportunityId = widget.opportunityId;
   List<Opportunity> _opportunities = [];
 
+  /// False until the opportunity list of the selected customer has been fetched.
+  bool _opportunitiesLoaded = false;
+
   /// Price list date; null = the quote date (today for a new quotation).
   DateTime? _priceDate;
   final List<_Line> _lines = [];
@@ -215,6 +219,9 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
   bool _changed = false;
 
   TradocraftApi get _api => ref.read(apiProvider);
+
+  /// The dropdown value: the linked opportunity once the list is known, null while loading.
+  String? get _opportunityShown => _opportunitiesLoaded ? _opportunityId : null;
   bool get _editable => _id == null || _q?.status == QuotationStatus.draft;
 
   @override
@@ -243,11 +250,28 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
         .listOpportunities(customerId: c.id, open: true, limit: 100)
         .then((p) => p.items, onError: (Object _) => <Opportunity>[]);
     if (!mounted) return;
-    setState(() {
-      _opportunities = opportunities;
-      if (!_opportunities.any((o) => o.id == _opportunityId)) {
-        _opportunityId = null;
+    // A linked opportunity that is no longer open (or beyond the first 100) must stay linked and
+    // visible: fetch it instead of dropping the link.
+    final linked = _opportunityId;
+    Opportunity? extra;
+    var drop = false;
+    if (linked != null && !opportunities.any((o) => o.id == linked)) {
+      try {
+        final o = await _api.crm.getOpportunity(id: linked);
+        if (o.customerId == c.id) {
+          extra = o;
+        } else {
+          drop = true; // belongs to another customer
+        }
+      } catch (e) {
+        drop = errorStatus(e) == 404;
       }
+      if (!mounted) return;
+    }
+    setState(() {
+      _opportunities = [...opportunities, ?extra];
+      _opportunitiesLoaded = true;
+      if (drop && _opportunityId == linked) _opportunityId = null;
     });
   }
 
@@ -269,6 +293,7 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
       _q = null;
       _customer = null;
       _opportunities = [];
+      _opportunitiesLoaded = false;
       _opportunityId = widget.opportunityId;
       _priceDate = null;
       _notes.clear();
@@ -729,32 +754,44 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
     final s = q?.status;
     return [
       if (_editable)
-        TutorialTarget(id: 'quotation-save', child: FilledButton.icon(
-          onPressed: _busy ? null : _save,
-          icon: const Icon(AppIcons.save),
-          label: Text(context.l10n.saveDraft),
-        )),
+        TutorialTarget(
+          id: 'quotation-save',
+          child: FilledButton.icon(
+            onPressed: _busy ? null : _save,
+            icon: const Icon(AppIcons.save),
+            label: Text(context.l10n.saveDraft),
+          ),
+        ),
       if (q != null)
-        TutorialTarget(id: 'quotation-pdf', child: OutlinedButton.icon(
-          onPressed: _busy ? null : _pdf,
-          icon: const Icon(AppIcons.pictureAsPdf),
-          label: const Text('PDF'),
-        )),
+        TutorialTarget(
+          id: 'quotation-pdf',
+          child: OutlinedButton.icon(
+            onPressed: _busy ? null : _pdf,
+            icon: const Icon(AppIcons.pictureAsPdf),
+            label: const Text('PDF'),
+          ),
+        ),
       if (s == QuotationStatus.draft)
-        TutorialTarget(id: 'quotation-send', child: OutlinedButton.icon(
-          onPressed: _busy
-              ? null
-              : () => _send(canWrite && can(ref, 'shipping.manage')),
-          icon: const Icon(AppIcons.send),
-          label: Text(context.l10n.markAsSent),
-        )),
+        TutorialTarget(
+          id: 'quotation-send',
+          child: OutlinedButton.icon(
+            onPressed: _busy
+                ? null
+                : () => _send(canWrite && can(ref, 'shipping.manage')),
+            icon: const Icon(AppIcons.send),
+            label: Text(context.l10n.markAsSent),
+          ),
+        ),
       if (s == QuotationStatus.sent) ...[
-        TutorialTarget(id: 'quotation-accept', child: OutlinedButton(
-          onPressed: _busy
-              ? null
-              : () => _transition((id) => _api.sales.acceptQuotation(id: id)),
-          child: Text(context.l10n.accepted),
-        )),
+        TutorialTarget(
+          id: 'quotation-accept',
+          child: OutlinedButton(
+            onPressed: _busy
+                ? null
+                : () => _transition((id) => _api.sales.acceptQuotation(id: id)),
+            child: Text(context.l10n.accepted),
+          ),
+        ),
         OutlinedButton(
           onPressed: _busy
               ? null
@@ -763,17 +800,23 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
         ),
       ],
       if (s == QuotationStatus.sent || s == QuotationStatus.accepted)
-        TutorialTarget(id: 'quotation-convert', child: FilledButton.icon(
-          onPressed: _busy ? null : _convert,
-          icon: const Icon(AppIcons.shoppingCartCheckout),
-          label: Text(context.l10n.convertToOrder),
-        )),
+        TutorialTarget(
+          id: 'quotation-convert',
+          child: FilledButton.icon(
+            onPressed: _busy ? null : _convert,
+            icon: const Icon(AppIcons.shoppingCartCheckout),
+            label: Text(context.l10n.convertToOrder),
+          ),
+        ),
       if (s == QuotationStatus.sent || s == QuotationStatus.rejected)
-        TutorialTarget(id: 'quotation-revise', child: OutlinedButton.icon(
-          onPressed: _busy ? null : _revise,
-          icon: const Icon(AppIcons.editNote),
-          label: Text(context.l10n.newRevision),
-        )),
+        TutorialTarget(
+          id: 'quotation-revise',
+          child: OutlinedButton.icon(
+            onPressed: _busy ? null : _revise,
+            icon: const Icon(AppIcons.editNote),
+            label: Text(context.l10n.newRevision),
+          ),
+        ),
     ];
   }
 
@@ -815,7 +858,8 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
           width: 520,
           child: DropdownButtonFormField<String?>(
             key: ValueKey('opp-${_customer!.id}-${_opportunities.length}'),
-            initialValue: _opportunityId,
+            // The value must be among the items: null while the list is loading.
+            initialValue: _opportunityShown,
             decoration: InputDecoration(
               labelText: context.l10n.opportunityOptional,
             ),
@@ -830,6 +874,13 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
                   child: Text(
                     '${o.number} · ${o.title} (${context.l10n.opportunityStage(o.stage.json ?? '')})',
                   ),
+                ),
+              // Linked but unreadable (e.g. no access): still shown, and kept on save.
+              if (_opportunityShown != null &&
+                  !_opportunities.any((o) => o.id == _opportunityShown))
+                DropdownMenuItem<String?>(
+                  value: _opportunityShown,
+                  child: Text(_opportunityShown!),
                 ),
             ],
             onChanged: (v) {
@@ -1204,9 +1255,9 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
   /// The active options of a product, cached; null when the lookup failed.
   Future<List<ProductOption>?> _loadCatalogue(String productId) async {
     try {
-      final options = (await _api.products.listOptions(
-        id: productId,
-      )).where((o) => o.active && o.optionActive).toList();
+      final options = (await _api.products.listOptions(id: productId))
+          .where((o) => o.active && o.optionActive)
+          .toList();
       if (!mounted) return null;
       setState(() => _catalogues[productId] = options);
       return options;
@@ -1801,7 +1852,11 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(AppIcons.warningAmber, size: 14, color: scheme.onTertiaryContainer),
+          Icon(
+            AppIcons.warningAmber,
+            size: 14,
+            color: scheme.onTertiaryContainer,
+          ),
           const SizedBox(width: 4),
           Flexible(
             child: Text(
@@ -2059,10 +2114,13 @@ class RevisionDialog extends ConsumerWidget {
           onPressed: () => Navigator.pop(context),
           child: Text(context.l10n.cancel),
         ),
-        TutorialTarget(id: 'quotation-revise-keep', child: OutlinedButton(
-          onPressed: () => Navigator.pop(context, RevisionPricing.keep),
-          child: Text(context.l10n.keepAgreedPrices),
-        )),
+        TutorialTarget(
+          id: 'quotation-revise-keep',
+          child: OutlinedButton(
+            onPressed: () => Navigator.pop(context, RevisionPricing.keep),
+            child: Text(context.l10n.keepAgreedPrices),
+          ),
+        ),
         FilledButton(
           onPressed: () => Navigator.pop(context, RevisionPricing.current),
           child: Text(context.l10n.updateToCurrentPrices),

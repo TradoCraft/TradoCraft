@@ -50,7 +50,28 @@ Map<String, Object?> _optionLine() => {
   'percent_base': 'parent_list_unit_price',
 };
 
-Map<String, Object?> _quotation(String status, {bool configured = false}) => {
+Map<String, Object?> _opportunity(String id, String stage) => {
+  'id': id,
+  'number': 'OPP-$id',
+  'title': 'Deal $id',
+  'stage': stage,
+  'customer_id': _customerId,
+  'customer_name': 'Alpha Installaties NV',
+  'expected_value': '1000',
+  'probability': 50,
+  'notes': '',
+  'owner_name': 'Sales',
+  'owner_user_id': 'u',
+  'created_at': '2026-11-01T10:00:00Z',
+  'updated_at': '2026-11-01T10:00:00Z',
+};
+
+Map<String, Object?> _quotation(
+  String status, {
+  bool configured = false,
+  String? opportunityId,
+}) => {
+  'opportunity_id': opportunityId,
   'id': _quotationId,
   'company_id': 'co',
   'number': 'Q2026-00001',
@@ -92,9 +113,20 @@ Map<String, Object?> _quotation(String status, {bool configured = false}) => {
 
 /// Fake backend: records requests and answers like the Rust API would.
 class FakeApi implements HttpClientAdapter {
-  FakeApi(this.status, {this.configured = false});
+  FakeApi(
+    this.status, {
+    this.configured = false,
+    this.linkedOpportunity,
+    this.openOpportunities = const [],
+  });
   final String status;
   final bool configured;
+
+  /// Opportunity the stored quotation is linked to (may be closed, so not in the open list).
+  final String? linkedOpportunity;
+
+  /// Ids returned by the open-opportunities list (answered after a delay, like a slow network).
+  final List<String> openOpportunities;
   final requests = <String>[];
   final bodies = <String, Object?>{};
 
@@ -110,7 +142,23 @@ class FakeApi implements HttpClientAdapter {
     Object? json;
     switch (key) {
       case 'GET /api/v1/quotations/$_quotationId':
-        json = _quotation(status, configured: configured);
+        json = _quotation(
+          status,
+          configured: configured,
+          opportunityId: linkedOpportunity,
+        );
+      case 'GET /api/v1/opportunities':
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+        json = {
+          'items': [
+            for (final id in openOpportunities) _opportunity(id, 'proposal'),
+          ],
+          'total': openOpportunities.length,
+        };
+      case 'GET /api/v1/opportunities/opp-closed':
+        json = _opportunity('opp-closed', 'won');
+      case 'GET /api/v1/opportunities/opp1':
+        json = _opportunity('opp1', 'proposal');
       case 'GET /api/v1/customers/$_customerId':
         json = {
           'id': _customerId,
@@ -279,12 +327,51 @@ Future<FakeApi> _pump(
       overrides: [dioProvider.overrideWithValue(dio)],
       child: MaterialApp(
         locale: const Locale('en'),
-        localizationsDelegates: [AppLocalizations.delegate, ...GlobalMaterialLocalizations.delegates],
+        localizationsDelegates: [
+          AppLocalizations.delegate,
+          ...GlobalMaterialLocalizations.delegates,
+        ],
         supportedLocales: AppLocalizations.supportedLocales,
         home: QuotationScreen(id: _quotationId),
       ),
     ),
   );
+  await tester.pumpAndSettle();
+  return fake;
+}
+
+Future<FakeApi> _pumpNew(
+  WidgetTester tester, {
+  required String opportunityId,
+  List<String> open = const [],
+}) async {
+  tester.view.physicalSize = const Size(1400, 1000);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+  final fake = FakeApi('draft', openOpportunities: open);
+  final dio = Dio(BaseOptions(baseUrl: 'http://test'))
+    ..httpClientAdapter = fake;
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [dioProvider.overrideWithValue(dio)],
+      child: MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: [
+          AppLocalizations.delegate,
+          ...GlobalMaterialLocalizations.delegates,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: QuotationScreen(
+          customerId: _customerId,
+          opportunityId: opportunityId,
+        ),
+      ),
+    ),
+  );
+  // Small steps so frames are built while the opportunity list is still loading.
+  for (var i = 0; i < 5; i++) {
+    await tester.pump(const Duration(milliseconds: 10));
+  }
   await tester.pumpAndSettle();
   return fake;
 }
@@ -315,7 +402,10 @@ Future<FakeApi> _pumpRouted(WidgetTester tester, String status) async {
       child: MaterialApp.router(
         routerConfig: router,
         locale: const Locale('en'),
-        localizationsDelegates: [AppLocalizations.delegate, ...GlobalMaterialLocalizations.delegates],
+        localizationsDelegates: [
+          AppLocalizations.delegate,
+          ...GlobalMaterialLocalizations.delegates,
+        ],
         supportedLocales: AppLocalizations.supportedLocales,
       ),
     ),
@@ -325,6 +415,57 @@ Future<FakeApi> _pumpRouted(WidgetTester tester, String status) async {
 }
 
 void main() {
+  testWidgets(
+    'new quotation with a preselected opportunity builds while the list loads',
+    (tester) async {
+      await _pumpNew(tester, opportunityId: 'opp1', open: ['opp1']);
+      expect(tester.takeException(), isNull);
+      expect(find.textContaining('OPP-opp1'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'a preselected opportunity missing from the open list is fetched and kept',
+    (tester) async {
+      final fake = await _pumpNew(tester, opportunityId: 'opp-closed');
+      expect(tester.takeException(), isNull);
+      expect(fake.requests, contains('GET /api/v1/opportunities/opp-closed'));
+      expect(find.textContaining('OPP-opp-closed'), findsOneWidget);
+    },
+  );
+
+  testWidgets('a draft linked to a closed opportunity keeps the link on save', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1400, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final fake = FakeApi('draft', linkedOpportunity: 'opp-closed');
+    final dio = Dio(BaseOptions(baseUrl: 'http://test'))
+      ..httpClientAdapter = fake;
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [dioProvider.overrideWithValue(dio)],
+        child: MaterialApp(
+          locale: const Locale('en'),
+          localizationsDelegates: [
+            AppLocalizations.delegate,
+            ...GlobalMaterialLocalizations.delegates,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: QuotationScreen(id: _quotationId),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(find.textContaining('OPP-opp-closed'), findsOneWidget);
+    await tester.tap(find.text('Save draft'));
+    await tester.pumpAndSettle();
+    final body = fake.bodies['PUT /api/v1/quotations/$_quotationId'] as Map;
+    expect(body['opportunity_id'], 'opp-closed');
+  });
+
   testWidgets('draft totals come from the server pricing preview', (
     tester,
   ) async {
