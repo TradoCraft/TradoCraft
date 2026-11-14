@@ -153,6 +153,11 @@ class FakeApi implements HttpClientAdapter {
   /// has the single opportunity `opp-<id>`).
   final gates = <String, Completer<void>>{};
 
+  /// Holds the answer for customer c1 (quotation q1's customer) until completed; with
+  /// [failGatedCustomer] the answer is then a server error.
+  Completer<void>? customerGate;
+  bool failGatedCustomer = false;
+
   @override
   Future<ResponseBody> fetch(
     RequestOptions o,
@@ -199,7 +204,31 @@ class FakeApi implements HttpClientAdapter {
         json = _opportunity('opp-closed', 'won');
       case 'GET /api/v1/opportunities/opp1':
         json = _opportunity('opp1', 'proposal');
+      case 'GET /api/v1/quotations/q2':
+        json = {
+          ..._quotation(status),
+          'id': 'q2',
+          'number': 'Q-B',
+          'notes': 'Notes B',
+          'customer_id': 'c2',
+        };
+      case 'GET /api/v1/customers/c2':
+        json = _otherCustomer('c2');
+      case 'PUT /api/v1/quotations/q2':
+        json = {..._quotation(status), 'id': 'q2', 'number': 'Q-B'};
       case 'GET /api/v1/customers/$_customerId':
+        if (customerGate != null) {
+          await customerGate!.future;
+          if (failGatedCustomer) {
+            return ResponseBody.fromString(
+              '{"error":"internal","message":"boom"}',
+              500,
+              headers: {
+                Headers.contentTypeHeader: [Headers.jsonContentType],
+              },
+            );
+          }
+        }
         json = {
           'id': _customerId,
           'code': 'C0001',
@@ -498,7 +527,61 @@ Future<void> _changeCustomer(WidgetTester tester, String id) async {
   await tester.pump();
 }
 
+/// Opens q1 with its customer answer held back, then switches the same screen to q2.
+Future<FakeApi> _pumpSwitched(WidgetTester tester, {bool fail = false}) async {
+  tester.view.physicalSize = const Size(1400, 1000);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+  final fake = FakeApi('draft')
+    ..customerGate = Completer<void>()
+    ..failGatedCustomer = fail;
+  final dio = Dio(BaseOptions(baseUrl: 'http://test'))
+    ..httpClientAdapter = fake;
+  Widget app(String id) => ProviderScope(
+    overrides: [dioProvider.overrideWithValue(dio)],
+    child: MaterialApp(
+      locale: const Locale('en'),
+      localizationsDelegates: [
+        AppLocalizations.delegate,
+        ...GlobalMaterialLocalizations.delegates,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: QuotationScreen(id: id),
+    ),
+  );
+  await tester.pumpWidget(app(_quotationId));
+  await tester.pump(const Duration(milliseconds: 50));
+  await tester.pumpWidget(app('q2'));
+  await tester.pumpAndSettle();
+  fake.customerGate!.complete();
+  await tester.pumpAndSettle();
+  return fake;
+}
+
 void main() {
+  testWidgets('a slow load of the previous quotation does not overwrite the new one', (
+    tester,
+  ) async {
+    final fake = await _pumpSwitched(tester);
+    expect(tester.takeException(), isNull);
+    expect(find.textContaining('Q-B'), findsWidgets);
+    expect(find.textContaining('Q2026-00001'), findsNothing);
+    expect(find.text('Notes B'), findsOneWidget);
+    await tester.tap(find.text('Save draft'));
+    await tester.pumpAndSettle();
+    expect(fake.bodies.containsKey('PUT /api/v1/quotations/q2'), isTrue);
+    expect(fake.bodies.containsKey('PUT /api/v1/quotations/$_quotationId'), isFalse);
+  });
+
+  testWidgets('an error from the stale load shows no error banner', (
+    tester,
+  ) async {
+    await _pumpSwitched(tester, fail: true);
+    expect(tester.takeException(), isNull);
+    expect(find.textContaining('boom'), findsNothing);
+    expect(find.text('Notes B'), findsOneWidget);
+  });
+
   testWidgets(
     'changing the customer hides the old customer opportunities while loading',
     (tester) async {

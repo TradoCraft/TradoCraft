@@ -215,6 +215,9 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
   final List<_SwapNotice> _notices = [];
   Timer? _debounce;
   int _previewSeq = 0;
+
+  /// Generation of the running [_load]: a load that is no longer current must not apply anything.
+  int _loadSeq = 0;
   bool _loading = false;
   bool _busy = false;
   String? _error;
@@ -294,6 +297,7 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
     _debounce?.cancel();
     _previewSeq++;
     _oppSeq++;
+    _loadSeq++;
     setState(() {
       for (final l in _lines) {
         l.dispose();
@@ -349,18 +353,26 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
   }
 
   Future<void> _load() async {
+    final seq = ++_loadSeq;
+    bool stale() => !mounted || seq != _loadSeq;
     setState(() => _loading = true);
     try {
       final q = await _api.sales.getQuotation(id: _id!);
+      if (stale()) return;
       _apply(q);
       if (q.status == QuotationStatus.draft) {
         final customer = await _api.crm.getCustomer(id: q.customerId);
+        if (stale()) return;
         final ids = q.lines.map((l) => l.productId).whereType<String>().toSet();
-        final products = {
-          for (final id in ids) id: await _api.products.getProduct(id: id),
-        };
+        final products = <String, Product>{};
+        for (final id in ids) {
+          final product = await _api.products.getProduct(id: id);
+          if (stale()) return;
+          products[id] = product;
+        }
         _opportunityId = q.opportunityId;
         await _selectCustomer(customer);
+        if (stale()) return;
         setState(() {
           for (final l in _lines) {
             l.dispose();
@@ -378,12 +390,14 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
         _loadCatalogues();
       }
     } catch (e) {
-      setState(() {
-        _error = errorMessage(e);
-        _missing = errorStatus(e) == 404;
-      });
+      if (!stale()) {
+        setState(() {
+          _error = errorMessage(e);
+          _missing = errorStatus(e) == 404;
+        });
+      }
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (!stale()) setState(() => _loading = false);
     }
   }
 
