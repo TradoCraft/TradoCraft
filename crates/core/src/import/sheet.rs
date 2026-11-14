@@ -176,6 +176,14 @@ impl<'a> Builder<'a> {
         if cells.is_empty() {
             return Ok(());
         }
+        // The readers deliver a row's cells in column order; anything else would make the width
+        // arithmetic below meaningless.
+        if cells.windows(2).any(|w| w[0].0 >= w[1].0) {
+            return Err(fatal(format!(
+                "the cells of row {} are not in column order",
+                row.row
+            )));
+        }
         if self.header.is_none() {
             return self.push_header(row.row, cells);
         }

@@ -1038,6 +1038,51 @@ fn a_sparse_xlsx_cell_far_away_is_refused_without_allocating_its_bounding_box() 
     assert_eq!(raw(&xlsx).rows[0].row, 1_048_576);
 }
 
+fn xlsx_with_sheet_data(data: &str) -> Vec<u8> {
+    let base = xlsx_with(|s| {
+        s.write_string(0, 0, "code").unwrap();
+    });
+    rewrite_entry(&base, "xl/worksheets/sheet1.xml", |xml| {
+        let start = xml.find("<sheetData>").unwrap();
+        let end = xml.find("</sheetData>").unwrap();
+        format!("{}<sheetData>{data}{}", &xml[..start], &xml[end..])
+    })
+}
+
+fn inline(r: &str, text: &str) -> String {
+    format!(r#"<c r="{r}" t="inlineStr"><is><t>{text}</t></is></c>"#)
+}
+
+#[test]
+fn xlsx_cells_out_of_column_order_are_a_clean_error() {
+    // In a data row, and in the header row; neither panics or allocates for the gap.
+    let data = format!(
+        r#"<row r="1">{}{}</row><row r="2">{}{}</row>"#,
+        inline("A1", "a"),
+        inline("B1", "b"),
+        inline("XFD2", "x"),
+        inline("A2", "y"),
+    );
+    let e = raw_err(&xlsx_with_sheet_data(&data), None, &Limits::request());
+    assert!(e[0].message.contains("not in column order"), "{e:?}");
+    let header = format!(
+        r#"<row r="1">{}{}</row>"#,
+        inline("XFD1", "b"),
+        inline("A1", "a"),
+    );
+    let e = raw_err(&xlsx_with_sheet_data(&header), None, &Limits::request());
+    assert!(e[0].message.contains("not in column order"), "{e:?}");
+    // The same cells in order are read.
+    let ok = format!(
+        r#"<row r="1">{}{}</row><row r="2">{}{}</row>"#,
+        inline("A1", "a"),
+        inline("B1", "b"),
+        inline("A2", "x"),
+        inline("B2", "y"),
+    );
+    assert_eq!(raw(&xlsx_with_sheet_data(&ok)).rows.len(), 1);
+}
+
 #[test]
 fn ods_sheets_that_expand_beyond_the_limits_are_refused_before_calamine_builds_them() {
     // A value in a row repeated a million times, and in a cell repeated a million times.
