@@ -9461,4 +9461,135 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get rsNeedsRecipient => 'Choisissez au moins un destinataire.';
+
+  @override
+  String get powerVoltageMin => 'Tension min. (V)';
+
+  @override
+  String get powerVoltageMax => 'Tension max. (V)';
+
+  @override
+  String get powerBoundsHint =>
+      'Plage de tension facultative. Laissez les deux vides pour utiliser la tension nominale ± tolérance.';
+
+  @override
+  String get powerBoundsIncomplete =>
+      'Saisissez la tension minimale et la tension maximale, ou aucune des deux.';
+
+  @override
+  String get powerBoundsInvalid =>
+      'Les bornes de tension doivent être des entiers de 1 à 100000.';
+
+  @override
+  String get powerBoundsOrder =>
+      'La tension minimale ne doit pas dépasser la maximale.';
+
+  @override
+  String get powerBoundsNominal =>
+      'La tension nominale doit se situer entre le minimum et le maximum.';
+
+  @override
+  String get suitabilityTab => 'Compatibilité';
+
+  @override
+  String get suitabilityHelp =>
+      'Pour quoi ce produit convient. Les champs vides ne sont pas enregistrés.';
+
+  @override
+  String get suitabilityEmpty =>
+      'Aucun attribut produit n’est encore défini. Un administrateur peut en ajouter sous Administration, Attributs.';
+
+  @override
+  String get attrMin => 'Min.';
+
+  @override
+  String get attrMax => 'Max.';
+
+  @override
+  String get attrEnterNumber => 'Saisissez un nombre.';
+
+  @override
+  String get attrRangeIncomplete =>
+      'Saisissez le minimum et le maximum, ou aucun des deux.';
+
+  @override
+  String get attrRangeOrder => 'Le minimum ne doit pas dépasser le maximum.';
+
+  @override
+  String get attrNotInOptions => 'Choisissez l’une des options proposées.';
+
+  @override
+  String get adminAttributes => 'Attributs';
+
+  @override
+  String get attrDefsTitle => 'Définitions d’attributs';
+
+  @override
+  String get attrDefsEmpty => 'Aucune définition d’attribut pour l’instant.';
+
+  @override
+  String get newAttrDef => 'Nouvel attribut';
+
+  @override
+  String get editAttrDef => 'Modifier l’attribut';
+
+  @override
+  String get attrKey => 'Clé';
+
+  @override
+  String get attrLabel => 'Libellé';
+
+  @override
+  String get attrScope => 'Portée';
+
+  @override
+  String get attrKindNumber => 'Nombre';
+
+  @override
+  String get attrKindRange => 'Plage';
+
+  @override
+  String get attrKindSelect => 'Liste';
+
+  @override
+  String get attrKindText => 'Texte';
+
+  @override
+  String get attrOptions => 'Options';
+
+  @override
+  String get attrOptionValue => 'Valeur';
+
+  @override
+  String get attrOptionLabel => 'Libellé de l’option';
+
+  @override
+  String get attrAddOption => 'Ajouter une option';
+
+  @override
+  String get attrKeyInvalid =>
+      'La clé doit contenir des minuscules, chiffres et underscores, commencer par une lettre et avoir au plus 64 caractères.';
+
+  @override
+  String get attrLabelRequired => 'Un libellé est obligatoire.';
+
+  @override
+  String get attrSelectNeedsOptions =>
+      'Une liste a besoin d’au moins une option.';
+
+  @override
+  String get attrOptionBlank =>
+      'Chaque option a besoin d’une valeur et d’un libellé.';
+
+  @override
+  String get attrOptionDuplicate =>
+      'Les valeurs d’option doivent être uniques.';
+
+  @override
+  String attrDefDeleteConfirm(String key) {
+    return 'Supprimer l’attribut $key ? S’il est utilisé, désactivez-le plutôt.';
+  }
+
+  @override
+  String get attrDefDeleted => 'Attribut supprimé.';
 }
