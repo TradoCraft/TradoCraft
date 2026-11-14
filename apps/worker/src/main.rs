@@ -12,6 +12,8 @@
 //! * Recomputes the "often bought together" table from confirmed installation orders (hourly, or
 //!   every COOCCURRENCE_SECONDS).
 //! * Queues one digest e-mail per user for to-do items that are due or overdue (once per item).
+//! * Runs queued data imports, requeues the ones whose worker died and removes old uploaded files
+//!   (ADR 0064), in a task of its own so a long import does not delay the steps below.
 //! * Sends queued outgoing e-mails (ticket replies and system mail such as portal login links)
 //!   through the helpdesk mailbox they belong to, else over SMTP, or writes them as .eml files
 //!   when MAIL_TRANSPORT=files (development) and always outside a live environment.
@@ -175,6 +177,30 @@ async fn main() -> anyhow::Result<()> {
     // policy forces files. Fetching follows the same opt-in as IMAP_HOST.
     let live = environment.kind == tradocraft_core::environment::EnvKind::Live;
     let graph = GraphClient::new();
+    // Imports run in a task of their own (ADR 0064): a 200 000-row import takes minutes and would
+    // hold up the mail and the SLA escalation below. The task awaits each pass before it sleeps,
+    // so this process never runs two import passes at once. It does not beat: the heartbeat
+    // above stays the sign that the main loop is alive. When the process stops, an import that is
+    // running is cut off, its transaction rolls back and the job is queued again after five
+    // minutes.
+    tokio::spawn({
+        let db = db.clone();
+        async move {
+            loop {
+                let r = tradocraft_imports::run_pending(&db).await;
+                if r.ran > 0 || r.requeued > 0 || r.abandoned > 0 || r.files_removed > 0 {
+                    tracing::info!(
+                        ran = r.ran,
+                        requeued = r.requeued,
+                        abandoned = r.abandoned,
+                        files_removed = r.files_removed,
+                        "import pass"
+                    );
+                }
+                tokio::time::sleep(interval).await;
+            }
+        }
+    });
     tracing::info!(seconds = interval.as_secs(), "worker started");
     loop {
         // First, so that a pass that hangs (a stuck IMAP or SMTP server) stops the beat.
