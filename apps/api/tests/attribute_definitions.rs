@@ -166,13 +166,13 @@ async fn a_product_attribute_in_use_blocks_delete_but_not_deactivation(db: PgPoo
         ADMIN,
         Method::POST,
         URL,
-        Some(json!({ "key": "kw", "label": "Power", "kind": "number", "unit": "kW" })),
+        Some(json!({ "key": "kw_t", "label": "Power", "kind": "number", "unit": "kW" })),
     )
     .await;
     let id = d["id"].as_str().unwrap().to_string();
     sqlx::query(
         "INSERT INTO products.product_attributes (product_id, key, kind, value_number)
-         SELECT id, 'kw', 'number', 1 FROM products.products LIMIT 1",
+         SELECT id, 'kw_t', 'number', 1 FROM products.products LIMIT 1",
     )
     .execute(&db)
     .await
@@ -184,7 +184,7 @@ async fn a_product_attribute_in_use_blocks_delete_but_not_deactivation(db: PgPoo
         ADMIN,
         Method::PUT,
         &format!("{URL}/{id}"),
-        Some(json!({ "key": "kw", "label": "Power", "kind": "number", "unit": "kW", "active": false })),
+        Some(json!({ "key": "kw_t", "label": "Power", "kind": "number", "unit": "kW", "active": false })),
     )
     .await;
     assert_eq!(status, StatusCode::OK, "{u}");
@@ -422,4 +422,57 @@ async fn a_stored_select_value_survives_its_removal_from_the_options(db: PgPool)
     assert_eq!(status, StatusCode::OK);
     let (status, _) = call(&app, ADMIN, Method::PUT, &url, Some(attr("flying"))).await;
     assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn a_definition_cannot_be_created_over_stored_values_of_its_key(db: PgPool) {
+    let app = setup(db.clone()).await;
+    // A free-form product attribute that no definition governs yet.
+    sqlx::query(
+        "INSERT INTO products.product_attributes (product_id, key, kind, value_text)
+         SELECT id, 'free_t', 'text', 'x' FROM products.products LIMIT 1",
+    )
+    .execute(&db)
+    .await
+    .unwrap();
+    let range = json!({ "key": "free_t", "label": "Free", "kind": "range", "unit": "mm" });
+    let (status, e) = call(&app, ADMIN, Method::POST, URL, Some(range)).await;
+    assert_eq!(status, StatusCode::CONFLICT, "{e}");
+    // Another key is fine.
+    let (status, _) = call(
+        &app,
+        ADMIN,
+        Method::POST,
+        URL,
+        Some(json!({ "key": "free_u", "label": "Free", "kind": "range", "unit": "mm" })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED);
+
+    // The same holds for a baseline scope: an item of that type already stores the key.
+    sqlx::query(
+        "INSERT INTO crm.baseline_item_types (id, company_id, code, name, allowed_parent_codes, allow_top_level)
+         SELECT gen_random_uuid(), id, 'bell_t', 'Bell', '{}', true FROM core.companies LIMIT 1",
+    )
+    .execute(&db)
+    .await
+    .unwrap();
+    sqlx::query(
+        "INSERT INTO crm.opportunity_baseline_items
+            (id, company_id, opportunity_id, type_code, name, quantity, \"values\", sort_order)
+         SELECT gen_random_uuid(), company_id, id, 'bell_t', 'B', 1, '{\"w_t\": 5}', 0
+         FROM crm.opportunities LIMIT 1",
+    )
+    .execute(&db)
+    .await
+    .unwrap();
+    let (status, e) = call(
+        &app,
+        ADMIN,
+        Method::POST,
+        URL,
+        Some(json!({ "key": "w_t", "label": "W", "kind": "number", "scope": "bell_t" })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CONFLICT, "{e}");
 }

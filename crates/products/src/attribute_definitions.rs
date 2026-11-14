@@ -364,6 +364,14 @@ async fn create_definition(
     let input = checked(&input)?;
     let id = new_id();
     let mut tx = state.db.begin().await?;
+    // Values stored before the definition existed may have another shape than its kind.
+    let (used, what) = stored_uses(&mut tx, user.company_id, &input.scope, &input.key).await?;
+    if used > 0 {
+        return Err(AppError::Conflict(format!(
+            "attribute {} is already stored on {used} {what}; define it only once those values are cleared",
+            input.key
+        )));
+    }
     sqlx::query(
         "INSERT INTO products.attribute_definitions
             (id, company_id, key, label, kind, unit, options, scope, sort_order, active)
