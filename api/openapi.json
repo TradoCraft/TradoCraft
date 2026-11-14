@@ -12505,6 +12505,219 @@
         }
       }
     },
+    "/api/v1/match-rules": {
+      "get": {
+        "tags": [
+          "crm"
+        ],
+        "operationId": "list",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MatchRule"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "crm"
+        ],
+        "operationId": "create",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MatchRuleInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatchRule"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/match-rules/{id}": {
+      "get": {
+        "tags": [
+          "crm"
+        ],
+        "operationId": "get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatchRule"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "crm"
+        ],
+        "operationId": "update",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MatchRuleInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatchRule"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "crm"
+        ],
+        "operationId": "delete",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/me": {
       "get": {
         "tags": [
@@ -13020,6 +13233,107 @@
             }
           },
           "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/opportunities/{id}/product-matches": {
+      "get": {
+        "tags": [
+          "crm"
+        ],
+        "operationId": "product_matches",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Only products with this status: `suitable`, `unsuitable` or `unknown`.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "family_id",
+            "in": "query",
+            "description": "Only products of this family.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Default 100, at most 500.",
+            "required": false,
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductMatchPage"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "",
             "content": {
               "application/json": {
@@ -31090,6 +31404,14 @@
           "amount"
         ]
       },
+      "CheckStatus": {
+        "type": "string",
+        "enum": [
+          "ok",
+          "fail",
+          "unknown"
+        ]
+      },
       "Closure": {
         "type": "object",
         "required": [
@@ -37999,6 +38321,104 @@
           }
         }
       },
+      "MatchRule": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "baseline_type_code",
+          "baseline_attribute_key",
+          "product_attribute_key",
+          "operator",
+          "active",
+          "sort_order",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "baseline_attribute_key": {
+            "type": "string",
+            "description": "A `number` attribute of that type."
+          },
+          "baseline_type_code": {
+            "type": "string",
+            "description": "Code of the baseline item type whose items the rule reads."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "operator": {
+            "$ref": "#/components/schemas/Operator"
+          },
+          "product_attribute_key": {
+            "type": "string",
+            "description": "A product attribute: `range` for `within_range`, `number` for `at_most` and `at_least`."
+          },
+          "sort_order": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "MatchRuleInput": {
+        "type": "object",
+        "description": "A rule is created and replaced with the same fields.",
+        "required": [
+          "name",
+          "baseline_type_code",
+          "baseline_attribute_key",
+          "product_attribute_key",
+          "operator"
+        ],
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "baseline_attribute_key": {
+            "type": "string"
+          },
+          "baseline_type_code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "description": "Unique per company."
+          },
+          "operator": {
+            "$ref": "#/components/schemas/Operator"
+          },
+          "product_attribute_key": {
+            "type": "string"
+          },
+          "sort_order": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "MatchStatus": {
+        "type": "string",
+        "enum": [
+          "suitable",
+          "unsuitable",
+          "unknown"
+        ]
+      },
       "Me": {
         "type": "object",
         "description": "The authenticated user, the active company and all companies they can switch to.",
@@ -38875,6 +39295,15 @@
             "description": "The `sub` the provider uses for this person; none clears the binding."
           }
         }
+      },
+      "Operator": {
+        "type": "string",
+        "description": "How a baseline value is compared with a product attribute.",
+        "enum": [
+          "within_range",
+          "at_most",
+          "at_least"
+        ]
       },
       "Opportunity": {
         "type": "object",
@@ -41748,6 +42177,76 @@
           }
         }
       },
+      "ProductMatch": {
+        "type": "object",
+        "required": [
+          "id",
+          "code",
+          "name",
+          "status",
+          "reasons"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "family_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "family_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "reasons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Reason"
+            }
+          },
+          "status": {
+            "$ref": "#/components/schemas/MatchStatus"
+          }
+        }
+      },
+      "ProductMatchPage": {
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "counts"
+        ],
+        "properties": {
+          "counts": {
+            "$ref": "#/components/schemas/StatusCounts",
+            "description": "Products per status within the family filter, ignoring the status filter."
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductMatch"
+            },
+            "description": "The requested page of the products with the asked status, in product code order."
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Number of products with the asked status (all statuses without a filter)."
+          }
+        }
+      },
       "ProductOption": {
         "type": "object",
         "description": "An option of a product, with the option product's code and name.",
@@ -44425,6 +44924,26 @@
           "updated_at": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "Reason": {
+        "type": "object",
+        "required": [
+          "check",
+          "status",
+          "message"
+        ],
+        "properties": {
+          "check": {
+            "type": "string",
+            "description": "`power`, `baseline` or `rule:<rule name>`."
+          },
+          "message": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/CheckStatus"
           }
         }
       },
@@ -48146,6 +48665,28 @@
           },
           "stage": {
             "$ref": "#/components/schemas/OpportunityStage"
+          }
+        }
+      },
+      "StatusCounts": {
+        "type": "object",
+        "required": [
+          "suitable",
+          "unsuitable",
+          "unknown"
+        ],
+        "properties": {
+          "suitable": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "unknown": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "unsuitable": {
+            "type": "integer",
+            "format": "int64"
           }
         }
       },

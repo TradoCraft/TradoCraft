@@ -25,10 +25,13 @@ import '../models/delivery_check.dart';
 import '../models/format.dart';
 import '../models/import_report.dart';
 import '../models/lookup_result.dart';
+import '../models/match_rule.dart';
+import '../models/match_rule_input.dart';
 import '../models/opportunity.dart';
 import '../models/opportunity_input.dart';
 import '../models/opportunity_page.dart';
 import '../models/pipeline_stage.dart';
+import '../models/product_match_page.dart';
 import '../models/rebate_input.dart';
 import '../models/stage_input.dart';
 import '../models/vat_check.dart';
@@ -251,6 +254,33 @@ abstract class CrmClient {
     @Path('rebate_id') required String rebateId,
   });
 
+  @GET('/api/v1/match-rules')
+  Future<List<MatchRule>> list();
+
+  @POST('/api/v1/match-rules')
+  Future<MatchRule> create({
+    @Body() required MatchRuleInput body,
+  });
+
+  /// null.
+  ///
+  /// The name has been replaced because it contains a keyword. Original name: `get`.
+  @GET('/api/v1/match-rules/{id}')
+  Future<MatchRule> getApiV1MatchRulesId({
+    @Path('id') required String id,
+  });
+
+  @PUT('/api/v1/match-rules/{id}')
+  Future<MatchRule> update({
+    @Path('id') required String id,
+    @Body() required MatchRuleInput body,
+  });
+
+  @DELETE('/api/v1/match-rules/{id}')
+  Future<void> delete({
+    @Path('id') required String id,
+  });
+
   /// [q] - Searches number, title and customer name.
   ///
   /// [open] - Only open (not won or lost) opportunities.
@@ -309,6 +339,20 @@ abstract class CrmClient {
   Future<void> deleteItem({
     @Path('id') required String id,
     @Path('item_id') required String itemId,
+  });
+
+  /// [status] - Only products with this status: `suitable`, `unsuitable` or `unknown`.
+  ///
+  /// [familyId] - Only products of this family.
+  ///
+  /// [limit] - Default 100, at most 500.
+  @GET('/api/v1/opportunities/{id}/product-matches')
+  Future<ProductMatchPage> productMatches({
+    @Path('id') required String id,
+    @Query('status') String? status,
+    @Query('family_id') String? familyId,
+    @Query('limit') int? limit,
+    @Query('offset') int? offset,
   });
 
   /// Moves an opportunity through the pipeline. `won`/`lost` close it; any other stage reopens it.
