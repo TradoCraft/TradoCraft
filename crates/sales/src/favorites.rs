@@ -360,7 +360,9 @@ fn validate(input: &FavoriteInput) -> AppResult<Vec<Vec<FavoriteRemark>>> {
             }
             _ => {}
         }
-        if it.quantity <= Decimal::ZERO || it.quantity > Decimal::from(MAX_QUANTITY) {
+        // Judged as it will be stored: a quantity that rounds to 0 at four decimals is no quantity.
+        let quantity = it.quantity.round_dp(4);
+        if quantity <= Decimal::ZERO || quantity > Decimal::from(MAX_QUANTITY) {
             return Err(invalid(format!(
                 "item {pos}: quantity must be greater than 0 and at most {MAX_QUANTITY}"
             )));
@@ -646,8 +648,15 @@ async fn get_favorite(
     Path(id): Path<Uuid>,
 ) -> AppResult<Json<Favorite>> {
     user.require(Permission::QuotationsRead)?;
-    let mut conn = state.db.acquire().await?;
-    Ok(Json(load(&mut conn, user.company_id, id).await?))
+    // One snapshot for the header, the items and the remarks: a concurrent PUT replaces the items
+    // in its own transaction and must not show up half-way in this read.
+    let mut tx = state.db.begin().await?;
+    sqlx::query("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
+        .execute(&mut *tx)
+        .await?;
+    let out = load(&mut tx, user.company_id, id).await?;
+    tx.commit().await?;
+    Ok(Json(out))
 }
 
 fn product_ids(items: &[FavoriteItemInput]) -> Vec<Uuid> {

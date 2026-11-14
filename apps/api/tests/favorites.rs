@@ -349,6 +349,10 @@ async fn validation_and_limits(db: PgPool) {
         with(&|p| p["items"][1]["quantity"] = json!("0")),
     ));
     cases.push((
+        "quantity that rounds to zero",
+        with(&|p| p["items"][1]["quantity"] = json!("0.00001")),
+    ));
+    cases.push((
         "percent on main",
         with(&|p| p["items"][0]["percent_of_parent"] = json!("10")),
     ));
