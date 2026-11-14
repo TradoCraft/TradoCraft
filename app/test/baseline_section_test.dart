@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -420,6 +422,64 @@ void main() {
       });
     },
   );
+
+  testWidgets('stored values without a definition stay visible, read-only', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      _http(
+        tree: [
+          _item(
+            'b1',
+            'bell',
+            values: {'weight': 120.0, 'legacy_code': 'X-9'},
+          ),
+        ],
+      ),
+    );
+    expect(find.byKey(const ValueKey('baseline-chip-b1-weight')), findsOneWidget);
+    final undefined = find.byKey(const ValueKey('baseline-undefined-b1-legacy_code'));
+    expect(undefined, findsOneWidget);
+    expect(
+      find.descendant(of: undefined, matching: find.text('legacy_code: X-9')),
+      findsOneWidget,
+    );
+    expect(find.byType(ActionChip).evaluate().any((e) {
+      final k = (e.widget.key as ValueKey?)?.value;
+      return k == 'baseline-chip-b1-legacy_code';
+    }), isFalse);
+  });
+
+  testWidgets('the quick-edit dialog cannot be popped while saving', (
+    tester,
+  ) async {
+    final gate = Completer<void>();
+    final h = FakeHttp({
+      ..._http().routes,
+      'PUT /api/v1/opportunities/o1/baseline/items/b1': (_) async {
+        await gate.future;
+        return _item('b1', 'bell');
+      },
+    });
+    await _pump(tester, h);
+    await tester.tap(find.byKey(const ValueKey('baseline-chip-b1-note')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const ValueKey('bl-attr-note')), 'x');
+    await tester.tap(find.byKey(const ValueKey('baseline-quick-save')));
+    await tester.pump();
+    await tester.pump();
+    final nav = Navigator.of(
+      tester.element(find.byKey(const ValueKey('baseline-quick-save'))),
+    );
+    await nav.maybePop();
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.byKey(const ValueKey('baseline-quick-save')), findsOneWidget);
+    gate.complete();
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('baseline-quick-save')), findsNothing);
+  });
 
   testWidgets('a refused value stays in the dialog with the message', (
     tester,

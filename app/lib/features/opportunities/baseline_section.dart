@@ -163,6 +163,17 @@ class BaselineSection extends ConsumerWidget {
             ),
           ),
     ];
+    // Stored values without a (known) definition stay visible, read-only.
+    final known = {for (final d in itemDefs) d.key};
+    for (final e in stored.entries) {
+      if (e.value == null || known.contains(e.key)) continue;
+      chips.add(
+        Chip(
+          key: ValueKey('baseline-undefined-${item.id}-${e.key}'),
+          label: Text('${e.key}: ${e.value}'),
+        ),
+      );
+    }
     if (chips.isEmpty) return null;
     return Padding(
       padding: const EdgeInsets.only(top: 4),
@@ -384,42 +395,46 @@ class _BaselineQuickEditDialogState
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
-    return AlertDialog(
-      title: Text(widget.def.label),
-      content: SizedBox(
-        width: 360,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _Fields(
-                defs: [widget.def],
-                stored: widget.item.values,
-                handle: _handle,
-                errors: _errors,
-                message: _message,
-              ),
-              if (_error != null)
-                Text(
-                  _error!,
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+    // A route pop must not close the dialog while the save is under way.
+    return PopScope(
+      canPop: !_busy,
+      child: AlertDialog(
+        title: Text(widget.def.label),
+        content: SizedBox(
+          width: 360,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _Fields(
+                  defs: [widget.def],
+                  stored: widget.item.values,
+                  handle: _handle,
+                  errors: _errors,
+                  message: _message,
                 ),
-            ],
+                if (_error != null)
+                  Text(
+                    _error!,
+                    style: TextStyle(color: Theme.of(context).colorScheme.error),
+                  ),
+              ],
+            ),
           ),
         ),
+        actions: [
+          TextButton(
+            onPressed: _busy ? null : () => Navigator.pop(context, false),
+            child: Text(l.cancel),
+          ),
+          FilledButton(
+            key: const ValueKey('baseline-quick-save'),
+            onPressed: _busy ? null : _save,
+            child: Text(l.save),
+          ),
+        ],
       ),
-      actions: [
-        TextButton(
-          onPressed: _busy ? null : () => Navigator.pop(context, false),
-          child: Text(l.cancel),
-        ),
-        FilledButton(
-          key: const ValueKey('baseline-quick-save'),
-          onPressed: _busy ? null : _save,
-          child: Text(l.save),
-        ),
-      ],
     );
   }
 }
