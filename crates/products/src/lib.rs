@@ -22,6 +22,7 @@ const PRODUCT_TYPES: [&str; 4] = ["purchased", "manufactured", "configurable", "
 const TRACKING: [&str; 3] = ["none", "serial", "lot"];
 const PRICING_TYPES: [&str; 3] = ["list", "net", "indicative"];
 
+pub mod attribute_definitions;
 pub mod attributes;
 pub mod bulk;
 pub mod families;
