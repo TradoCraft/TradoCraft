@@ -219,3 +219,83 @@ attributes and the tables). Decision 6 is implemented without a second engine.
 * Follow-up: the quotation screen can show the baseline with the same chips by reusing
   `BaselineQuickEditDialog` (it needs only the opportunity id, the item and the definition); select
   option translations.
+
+**Tower configurator import (phase 0 design, then phases 1 and 2).** The tower configurator (a
+separate Flutter app) already holds the bell data of a project and exports it as JSON. We only
+read that file; nothing of its calculations is reimplemented.
+
+*Format studied (11 example files, `formatVersion` 1 or absent).* Top level: `customer` (name,
+language, `rotary_motor` brand text, `linear_motor`, `wheel` type, `inox`, ...), `location` (name,
+country, `power_grid` text, frequency, `subdivisions_at_site`, `dialGearSettings` in one file,
+...), `bells[]`, `topology` (controller/bus nodes and connections), and in newer files `products`,
+`serial_bus`, `system_configuration`, `selected_master_clock`, `io_configuration`. A bell is
+`{identifier, properties, field_states, subdivision}`. Properties: `note`, `weight` ("220.0 kg"),
+`weight_g`, `diameter`/`diameter_mm`, `height`/`height_mm` (+ unit fields), `motion` (`flying`,
+`falling`, `balanced`, `NOT_SET`), `motor` (`rotating`, `linear`, `NOT_SET`), `motor_ref`,
+`motor_size`, `motor_power`, `num_motors`, `pkz_trip_a`, wheel/chain/striker/clapper/yoke part
+references, `wheel`, `striker`. Numbers are strings. `NOT_SET` means "not chosen".
+
+*What is not in the format.* Dial diameter, number of faces, movement type, mounting and wall
+thickness are not carried: `dialGearSettings` configures a dial gear *unit* (its `diameter` code is
+a capacity class such as "up to 2.00 m", `illumination` an option of that unit), not the site's
+dial. No `clock_dial` item is therefore created, and those values stay to be entered in the app.
+The motor brand is a project-level setting (`customer.rotary_motor`), not per bell.
+
+*Mapping (one table in `crates/crm/src/tower_import.rs`, the only place that knows this format).*
+
+| Source | Baseline attribute | Rule |
+|---|---|---|
+| `identifier` | item name | trimmed |
+| `properties.note` | `note` | text |
+| `weight_g` (else `weight` + `weight_unit`) | `weight_kg` | grams / 1000; units kg, g, t, lb |
+| `diameter_mm` (else `diameter` + unit) | `diameter_mm` | units mm, cm, m |
+| `height_mm` (else `height` + unit) | `height_mm` | same |
+| `motion` | `motion` | matched case-insensitively against the options of the active `motion` definition |
+| `customer.rotary_motor`, bells with `motor` = `rotating` | `motor_brand` | matched against value or label of the active `motor_brand` options, ignoring case, spaces and a trailing "rpm" |
+
+Unset (`NOT_SET`, empty) gives an empty attribute (unknown) without a warning. A value that cannot
+be read (unparsable number, negative or non-finite size, motion or brand not among the options)
+leaves the attribute empty and gives a warning; the bell is still imported. A bell with a linear
+motor gets a warning, because the rotating-motor derivation does not apply to it. A bell without a
+`properties` object is imported by identifier with a warning; a document without a `bells` array,
+or with a non-object root, is refused (422). A mapped attribute that has no active definition is
+skipped with a warning, so an administrator who deleted a definition does not break the import.
+Everything is looked up in the company's definitions, so an administrator who adds a motion option
+extends what the import understands.
+
+*No data is lost: raw source on the item.* Migration `20270216000001` adds two nullable columns to
+`crm.opportunity_baseline_items`: `source_data jsonb` (the source as received: the whole bell object
+for a bell, the document without `bells` for the group) and `import_source text` (the tag). The
+alternative, creating an attribute definition per source property, would add about 40 admin-visible
+definitions (part references, PKZ currents) that no rule reads, and the typed attribute kinds do not
+fit them. The raw JSON is not validated, not editable in the app and not read by the matcher; it is
+returned on the item as `source_data` so nothing is hidden. Unmapped fields are reported in the
+preview as a list of property names with the number of bells carrying them.
+
+*Replace, not duplicate.* An import carries a source id (query parameter `source_id`, default
+`tower_configurator`, at most 100 characters). All items of the opportunity tagged with that source
+are deleted and recreated in one transaction; items without a tag (entered by hand) and items of
+other sources are never touched. Hand-added children under an imported group are detached to the
+top level instead of being deleted (a hand-entered item is never removed). Re-importing therefore
+changes ids; edits made by hand to imported items are lost by design (that is what replace means),
+and the preview says how many items will be replaced.
+
+*Endpoint.* `POST /opportunities/{id}/baseline/import?dry_run=&source_id=` with the JSON as body,
+`opportunities.write`, 404 for another company's opportunity. The response is the same for dry run
+and real import: `{dry_run, source_id, replaced, created: {bell_group, bell, clock_dial}, items
+(name, type_code, values), warnings [{bell, field, message}], unmapped_fields [{field, count}]}`. A real
+import is audited (`baseline_import`). The body limit is 4 MB.
+
+*Why not the D10 import framework.* It is on main (ADR 0067), but it is tabular: one row is one
+record upserted by a key, there is no nesting, no replace-by-source, and its dry run reports row
+errors, not a preview of a tree. The source here is one nested JSON document that becomes a
+group with children. A small dedicated endpoint on the baseline is simpler than a second entity
+shape in the framework, and uses the same `validate_values` as manual entry.
+
+*App.* An "Import from tower configurator" button in the Baseline section (needs
+`opportunities.write`) picks a `.json` file, calls the dry run, shows counts, warnings and unmapped
+fields in a dialog, and on Confirm calls the real import and reloads the baseline and the Matches
+panel.
+
+*Open.* A linear-motor bell still gets motor matching as if rotating (it has no `motor_brand`, so
+the weakest brand wins); a per-bell "motor type" attribute would be needed to exclude it.
