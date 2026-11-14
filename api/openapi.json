@@ -29352,7 +29352,8 @@
         "enum": [
           "number",
           "text",
-          "boolean"
+          "boolean",
+          "range"
         ]
       },
       "AuditEvent": {
@@ -40165,7 +40166,23 @@
           "tolerance_pct": {
             "type": "integer",
             "format": "int32",
-            "description": "Accepted deviation of the grid voltage from the nominal one, in percent."
+            "description": "Accepted deviation of the grid voltage from the nominal one, in percent. Ignored when\nexplicit bounds are set."
+          },
+          "voltage_max_v": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Explicit upper voltage bound (see `voltage_min_v`)."
+          },
+          "voltage_min_v": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Explicit lower voltage bound; set together with `voltage_max_v`, or both null. With\nbounds the range is `[voltage_min_v, voltage_max_v]` instead of `voltage_v` +/- tolerance."
           },
           "voltage_v": {
             "type": "integer",
@@ -40204,6 +40221,21 @@
             ],
             "format": "int32",
             "description": "Defaults to 10."
+          },
+          "voltage_max_v": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "voltage_min_v": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Explicit voltage range; both or neither. `voltage_v` must lie within it."
           },
           "voltage_v": {
             "type": "integer",
@@ -40778,7 +40810,7 @@
       },
       "ProductAttribute": {
         "type": "object",
-        "description": "One attribute. `value` is text in JSON: a decimal for `number` (e.g. `\"0.55\"`), `true` or\n`false` for `boolean`.",
+        "description": "One attribute. `value` is text in JSON: a decimal for `number` (e.g. `\"0.55\"`), `true` or\n`false` for `boolean`. A `range` uses `value_min` and `value_max` (decimals) instead; its\n`value` is ignored on input and shown as `min..max` on output.",
         "required": [
           "key",
           "kind",
@@ -40801,6 +40833,20 @@
           },
           "value": {
             "type": "string"
+          },
+          "value_max": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Upper bound of a `range`; must be absent for the other kinds."
+          },
+          "value_min": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Lower bound of a `range`; must be absent for the other kinds."
           }
         }
       },

@@ -9,7 +9,8 @@ import 'attribute_kind.dart';
 part 'product_attribute.g.dart';
 
 /// One attribute. `value` is text in JSON: a decimal for `number` (e.g. `"0.55"`), `true` or.
-/// `false` for `boolean`.
+/// `false` for `boolean`. A `range` uses `value_min` and `value_max` (decimals) instead; its.
+/// `value` is ignored on input and shown as `min..max` on output.
 @JsonSerializable()
 class ProductAttribute {
   const ProductAttribute({
@@ -17,6 +18,8 @@ class ProductAttribute {
     required this.kind,
     required this.value,
     this.unit,
+    this.valueMax,
+    this.valueMin,
   });
   
   factory ProductAttribute.fromJson(Map<String, Object?> json) => _$ProductAttributeFromJson(json);
@@ -29,6 +32,14 @@ class ProductAttribute {
   @JsonKey(includeIfNull: false)
   final String? unit;
   final String value;
+
+  /// Upper bound of a `range`; must be absent for the other kinds.
+  @JsonKey(includeIfNull: false,name: 'value_max')
+  final String? valueMax;
+
+  /// Lower bound of a `range`; must be absent for the other kinds.
+  @JsonKey(includeIfNull: false,name: 'value_min')
+  final String? valueMin;
 
   Map<String, Object?> toJson() => _$ProductAttributeToJson(this);
 }
