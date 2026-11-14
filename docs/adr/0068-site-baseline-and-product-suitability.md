@@ -103,3 +103,46 @@ have no reference data and start empty.
   within the family filter, ignoring the status filter. Products are catalogue-wide (they have no
   company), the opportunity, baseline and rules are the company's.
 * The matcher is the pure `crates/crm/src/matching.rs`; loading is `product_matches.rs`.
+
+**Phase 5b notes (bell motor derivation).** Migration `20270213000001`
+(`configurator.seed_bell_motors`; `crm.seed_baseline_defaults` now also seeds the motor
+attributes and the tables). Decision 6 is implemented without a second engine.
+
+* Storage: the rotating-motor tables of the reference project are the active revision of the
+  configurator model `bell_motors` (tables only, no fields or outputs), one per company, seeded
+  idempotently and edited through draft revisions like any configurator. Tables
+  (`crates/configurator/src/motor.rs`): `motion_rules` (motion to effective `falling`/`flying`),
+  `motion_bumps` (phases, brand, motion to weight classes to move up: volteo for every phases/brand
+  combination, balanced for 1-phase `mez_1000`), `phase_limits` (1-phase 0.55 kW, 3-phase none)
+  and `motors` (a range table over the weight per wheel, keys phases, brand, effective motion;
+  columns `kw` and `size`). The module reads them with `CompiledTable::lookup`, including its
+  `offset` for the bump; the shape (names, keys, columns) is checked when they are loaded.
+* `required_motor(bell, phases, brand, tables)` is pure. Weight per wheel is `weight_kg /
+  num_wheels` (one wheel when absent). The first class whose maximum is at or above the weight
+  wins (a class covers (previous maximum, own maximum]); above the largest, or when the bump runs
+  past it, the bell is too large. Without a brand every brand of the phases is tried and the
+  weakest motor wins; a brand (bell attribute `motor_brand`) restricts it. Errors:
+  `MissingData` (no weight, motion, grid phases, unknown motion, wheels < 1, no tables),
+  `TooLarge`, `NotAvailableForPhases` (no motor for the phases, brand or motion, or the phases
+  cap the power). The result carries kW, size, brand, weight per wheel, effective motion and the
+  bump.
+* Seeded attributes (bell scope): `num_wheels` (number) and `motor_brand` (select `mez_1000`,
+  `adda_750`, `de_coster_1000`); product scope: `motor_kw` (number, kW).
+* Matching: a product with a `motor_kw` attribute gets one `motor` reason per bell: `ok` when its
+  kW is at least the required kW, `fail` when smaller, `fail` for `TooLarge` and
+  `NotAvailableForPhases` (with the message), `unknown` for `MissingData`. Products without
+  `motor_kw` are not judged. Whether the motor runs on the site grid is the existing power check
+  (the product's supplies), not part of the motor check. The matcher stays pure
+  (`crm::matching`); because the configurator crate depends on the CRM, the endpoint gets the
+  derivation through the `BellMotorProvider` trait, installed by the API as an `Extension`
+  (`configurator::motor::ConfiguratorMotors`); without it bells are `unknown`.
+* Not ported from the Dart code: wheel, chain, striker and clapper lookups, motor reference codes
+  and PKZ/current ratings, sprocket and mounting chair data, starting current/torque, capacitor
+  and shaft columns (the `motors` table has only kW and size), the linear motors (their tables
+  are skipped; nothing selects between rotating and linear), the lookup cache, and the choice of
+  the number of wheels (it is an input, never derived). The Dart code throws for single phase
+  above 0.55 kW after the lookup; here that is the `phase_limits` table and gives
+  `NotAvailableForPhases`, but the seeded 1-phase classes never exceed 0.55 kW, so the cap only
+  bites when an administrator adds larger classes or lowers it. Hard-coded in Rust, not in tables:
+  the baseline type code `bell`, the bell attribute keys `weight_kg`, `motion`, `num_wheels`,
+  `motor_brand` and the product attribute `motor_kw`.
