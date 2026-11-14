@@ -178,6 +178,8 @@ pub fn flatten(lines: &[ConfiguredLineInput], resolve: &dyn Fn(&str) -> Option<U
                 percent_base: l.percent_base,
                 production_remark: String::new(),
                 customer_remark: String::new(),
+                customer_remark_language: None,
+                favorite_item_id: None,
                 add_options: false,
             });
             let me = out.lines.len() as i32;
