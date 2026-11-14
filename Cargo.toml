@@ -33,9 +33,12 @@ tradocraft-todo = { path = "crates/todo" }
 
 anyhow = "1"
 axum = { version = "0.8", features = ["macros"] }
+calamine = { version = "0.38", default-features = false, features = ["dates"] }
+quick-xml = "0.42"
 chrono = { version = "0.4", default-features = false, features = ["clock", "std", "serde"] }
 jsonwebtoken = "9"
 regex = "1"
+rust_xlsxwriter = { version = "0.102", default-features = false }
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 rust_decimal = { version = "1", features = ["serde-with-str", "db-postgres"] }
 rust_decimal_macros = "1"
@@ -52,4 +55,5 @@ tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
 utoipa = { version = "5", features = ["axum_extras", "chrono", "uuid", "decimal"] }
 utoipa-axum = "0.2"
 utoipa-scalar = { version = "0.3", features = ["axum"] }
+zip = { version = "9.5", default-features = false, features = ["deflate"] }
 uuid = { version = "1", features = ["v4", "v7", "serde"] }
