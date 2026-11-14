@@ -1,0 +1,6534 @@
+{
+  "customer": {
+    "name": "",
+    "language": "",
+    "rotary_motor": "ADDA 750",
+    "linear_motor": "linear",
+    "wheel": "",
+    "inox": false,
+    "adjustable_chain_springs": false,
+    "previous_three_phase_brand": "ADDA 750"
+  },
+  "location": {
+    "name": "",
+    "country": "DE",
+    "power_grid": "3x400V ∿",
+    "frequency": "50Hz",
+    "sensor": "",
+    "environment": "",
+    "include_strikers": true,
+    "include_motors": true,
+    "include_wheels": true,
+    "serial_movotron": true,
+    "subdivisions_at_site": [
+      "Sacristy",
+      "T1F1",
+      "T1F2",
+      "T1F3",
+      "T1F4",
+      "Clock Tower",
+      "T2F1",
+      "T2F2",
+      "T2F3",
+      "T3F1"
+    ]
+  },
+  "bells": [
+    {
+      "identifier": "bell_1",
+      "properties": {
+        "note": "Cis1",
+        "weight": "1840.0 kg",
+        "diameter": "1475 mm",
+        "height": "1185 mm",
+        "weight_g": "1840000",
+        "diameter_mm": "1475",
+        "height_mm": "1185",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "rotating",
+        "num_motors": "1",
+        "striker": "swinging",
+        "motor_ref": "IV236JNB",
+        "num_motors_source": "system",
+        "motor_size": "C90L-8",
+        "motor_power": "0.74",
+        "pkz_trip_a": "4.8",
+        "chain": "½× ³⁄₁₆\"",
+        "chain_springs_ref": "IV4KETTSP40",
+        "wheel_ref": "V208T",
+        "chain_length": "7.5m",
+        "striker_ref": "III228F",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III409",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "striker": {
+          "value": "swinging",
+          "source": "USER"
+        },
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV236JNB",
+          "source": "CALCULATED"
+        },
+        "pkz_trip_a": {
+          "value": "4.8",
+          "source": "CALCULATED"
+        },
+        "chain": {
+          "value": "½× ³⁄₁₆\"",
+          "source": "CALCULATED"
+        },
+        "chain_springs_ref": {
+          "value": "IV4KETTSP40",
+          "source": "CALCULATED"
+        },
+        "wheel_ref": {
+          "value": "V208T",
+          "source": "CALCULATED"
+        },
+        "chain_length": {
+          "value": "7.5m",
+          "source": "CALCULATED"
+        },
+        "motor": {
+          "value": "rotating",
+          "source": "USER"
+        },
+        "striker_ref": {
+          "value": "III228F",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III409",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "T1F1"
+    },
+    {
+      "identifier": "bell_2",
+      "properties": {
+        "note": "Cis1",
+        "weight": "1840.0 kg",
+        "diameter": "1475 mm",
+        "height": "1185 mm",
+        "weight_g": "1840000",
+        "diameter_mm": "1475",
+        "height_mm": "1185",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "rotating",
+        "num_motors": "1",
+        "striker": "swinging",
+        "motor_ref": "IV236JNB",
+        "num_motors_source": "system",
+        "motor_size": "C90L-8",
+        "motor_power": "0.74",
+        "pkz_trip_a": "4.8",
+        "chain": "½× ³⁄₁₆\"",
+        "chain_springs_ref": "IV4KETTSP40",
+        "wheel_ref": "V208T",
+        "chain_length": "7.5m",
+        "striker_ref": "III228F",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III409",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "striker": {
+          "value": "swinging",
+          "source": "USER"
+        },
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV236JNB",
+          "source": "CALCULATED"
+        },
+        "pkz_trip_a": {
+          "value": "4.8",
+          "source": "CALCULATED"
+        },
+        "chain": {
+          "value": "½× ³⁄₁₆\"",
+          "source": "CALCULATED"
+        },
+        "chain_springs_ref": {
+          "value": "IV4KETTSP40",
+          "source": "CALCULATED"
+        },
+        "wheel_ref": {
+          "value": "V208T",
+          "source": "CALCULATED"
+        },
+        "chain_length": {
+          "value": "7.5m",
+          "source": "CALCULATED"
+        },
+        "motor": {
+          "value": "rotating",
+          "source": "USER"
+        },
+        "striker_ref": {
+          "value": "III228F",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III409",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "T1F1"
+    },
+    {
+      "identifier": "bell_3",
+      "properties": {
+        "note": "Cis1",
+        "weight": "1840.0 kg",
+        "diameter": "1475 mm",
+        "height": "1185 mm",
+        "weight_g": "1840000",
+        "diameter_mm": "1475",
+        "height_mm": "1185",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "rotating",
+        "num_motors": "1",
+        "striker": "swinging",
+        "motor_ref": "IV236JNB",
+        "num_motors_source": "system",
+        "motor_size": "C90L-8",
+        "motor_power": "0.74",
+        "pkz_trip_a": "4.8",
+        "chain": "½× ³⁄₁₆\"",
+        "chain_springs_ref": "IV4KETTSP40",
+        "wheel_ref": "V208T",
+        "chain_length": "7.5m",
+        "striker_ref": "III228F",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III409",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "striker": {
+          "value": "swinging",
+          "source": "USER"
+        },
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV236JNB",
+          "source": "CALCULATED"
+        },
+        "pkz_trip_a": {
+          "value": "4.8",
+          "source": "CALCULATED"
+        },
+        "chain": {
+          "value": "½× ³⁄₁₆\"",
+          "source": "CALCULATED"
+        },
+        "chain_springs_ref": {
+          "value": "IV4KETTSP40",
+          "source": "CALCULATED"
+        },
+        "wheel_ref": {
+          "value": "V208T",
+          "source": "CALCULATED"
+        },
+        "chain_length": {
+          "value": "7.5m",
+          "source": "CALCULATED"
+        },
+        "motor": {
+          "value": "rotating",
+          "source": "USER"
+        },
+        "striker_ref": {
+          "value": "III228F",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III409",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "T1F1"
+    },
+    {
+      "identifier": "bell_4",
+      "properties": {
+        "note": "Cis1",
+        "weight": "1840.0 kg",
+        "diameter": "1475 mm",
+        "height": "1185 mm",
+        "weight_g": "1840000",
+        "diameter_mm": "1475",
+        "height_mm": "1185",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "rotating",
+        "num_motors": "1",
+        "striker": "swinging",
+        "motor_ref": "IV236JNB",
+        "num_motors_source": "system",
+        "motor_size": "C90L-8",
+        "motor_power": "0.74",
+        "pkz_trip_a": "4.8",
+        "chain": "½× ³⁄₁₆\"",
+        "chain_springs_ref": "IV4KETTSP40",
+        "wheel_ref": "V208T",
+        "chain_length": "7.5m",
+        "striker_ref": "III228F",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III409",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "striker": {
+          "value": "swinging",
+          "source": "USER"
+        },
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV236JNB",
+          "source": "CALCULATED"
+        },
+        "pkz_trip_a": {
+          "value": "4.8",
+          "source": "CALCULATED"
+        },
+        "chain": {
+          "value": "½× ³⁄₁₆\"",
+          "source": "CALCULATED"
+        },
+        "chain_springs_ref": {
+          "value": "IV4KETTSP40",
+          "source": "CALCULATED"
+        },
+        "wheel_ref": {
+          "value": "V208T",
+          "source": "CALCULATED"
+        },
+        "chain_length": {
+          "value": "7.5m",
+          "source": "CALCULATED"
+        },
+        "motor": {
+          "value": "rotating",
+          "source": "USER"
+        },
+        "striker_ref": {
+          "value": "III228F",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III409",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "T1F1"
+    },
+    {
+      "identifier": "bell_5",
+      "properties": {
+        "note": "Cis1",
+        "weight": "1840.0 kg",
+        "diameter": "1475 mm",
+        "height": "1185 mm",
+        "weight_g": "1840000",
+        "diameter_mm": "1475",
+        "height_mm": "1185",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "rotating",
+        "num_motors": "1",
+        "striker": "swinging",
+        "motor_ref": "IV236JNB",
+        "num_motors_source": "system",
+        "motor_size": "C90L-8",
+        "motor_power": "0.74",
+        "pkz_trip_a": "4.8",
+        "chain": "½× ³⁄₁₆\"",
+        "chain_springs_ref": "IV4KETTSP40",
+        "wheel_ref": "V208T",
+        "chain_length": "7.5m",
+        "striker_ref": "III228F",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III409",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "striker": {
+          "value": "swinging",
+          "source": "USER"
+        },
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV236JNB",
+          "source": "CALCULATED"
+        },
+        "pkz_trip_a": {
+          "value": "4.8",
+          "source": "CALCULATED"
+        },
+        "chain": {
+          "value": "½× ³⁄₁₆\"",
+          "source": "CALCULATED"
+        },
+        "chain_springs_ref": {
+          "value": "IV4KETTSP40",
+          "source": "CALCULATED"
+        },
+        "wheel_ref": {
+          "value": "V208T",
+          "source": "CALCULATED"
+        },
+        "chain_length": {
+          "value": "7.5m",
+          "source": "CALCULATED"
+        },
+        "motor": {
+          "value": "rotating",
+          "source": "USER"
+        },
+        "striker_ref": {
+          "value": "III228F",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III409",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "T1F1"
+    },
+    {
+      "identifier": "bell_6",
+      "properties": {
+        "note": "Cis1",
+        "weight": "1840.0 kg",
+        "diameter": "1475 mm",
+        "height": "1185 mm",
+        "weight_g": "1840000",
+        "diameter_mm": "1475",
+        "height_mm": "1185",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "rotating",
+        "num_motors": "1",
+        "striker": "swinging",
+        "motor_ref": "IV236JNB",
+        "num_motors_source": "system",
+        "motor_size": "C90L-8",
+        "motor_power": "0.74",
+        "pkz_trip_a": "4.8",
+        "chain": "½× ³⁄₁₆\"",
+        "chain_springs_ref": "IV4KETTSP40",
+        "wheel_ref": "V208T",
+        "chain_length": "7.5m",
+        "striker_ref": "III228F",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III409",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "striker": {
+          "value": "swinging",
+          "source": "USER"
+        },
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV236JNB",
+          "source": "CALCULATED"
+        },
+        "pkz_trip_a": {
+          "value": "4.8",
+          "source": "CALCULATED"
+        },
+        "chain": {
+          "value": "½× ³⁄₁₆\"",
+          "source": "CALCULATED"
+        },
+        "chain_springs_ref": {
+          "value": "IV4KETTSP40",
+          "source": "CALCULATED"
+        },
+        "wheel_ref": {
+          "value": "V208T",
+          "source": "CALCULATED"
+        },
+        "chain_length": {
+          "value": "7.5m",
+          "source": "CALCULATED"
+        },
+        "motor": {
+          "value": "rotating",
+          "source": "USER"
+        },
+        "striker_ref": {
+          "value": "III228F",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III409",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "T1F1"
+    },
+    {
+      "identifier": "bell_7",
+      "properties": {
+        "note": "Cis1",
+        "weight": "1840.0 kg",
+        "diameter": "1475 mm",
+        "height": "1185 mm",
+        "weight_g": "1840000",
+        "diameter_mm": "1475",
+        "height_mm": "1185",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "rotating",
+        "num_motors": "1",
+        "striker": "swinging",
+        "motor_ref": "IV236JNB",
+        "num_motors_source": "system",
+        "motor_size": "C90L-8",
+        "motor_power": "0.74",
+        "pkz_trip_a": "4.8",
+        "chain": "½× ³⁄₁₆\"",
+        "chain_springs_ref": "IV4KETTSP40",
+        "wheel_ref": "V208T",
+        "chain_length": "7.5m",
+        "striker_ref": "III228F",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III409",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "striker": {
+          "value": "swinging",
+          "source": "USER"
+        },
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV236JNB",
+          "source": "CALCULATED"
+        },
+        "pkz_trip_a": {
+          "value": "4.8",
+          "source": "CALCULATED"
+        },
+        "chain": {
+          "value": "½× ³⁄₁₆\"",
+          "source": "CALCULATED"
+        },
+        "chain_springs_ref": {
+          "value": "IV4KETTSP40",
+          "source": "CALCULATED"
+        },
+        "wheel_ref": {
+          "value": "V208T",
+          "source": "CALCULATED"
+        },
+        "chain_length": {
+          "value": "7.5m",
+          "source": "CALCULATED"
+        },
+        "motor": {
+          "value": "rotating",
+          "source": "USER"
+        },
+        "striker_ref": {
+          "value": "III228F",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III409",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "T1F1"
+    },
+    {
+      "identifier": "bell_8",
+      "properties": {
+        "note": "Cis1",
+        "weight": "1840.0 kg",
+        "diameter": "1475 mm",
+        "height": "1185 mm",
+        "weight_g": "1840000",
+        "diameter_mm": "1475",
+        "height_mm": "1185",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "rotating",
+        "num_motors": "1",
+        "striker": "swinging",
+        "motor_ref": "IV236JNB",
+        "num_motors_source": "system",
+        "motor_size": "C90L-8",
+        "motor_power": "0.74",
+        "pkz_trip_a": "4.8",
+        "chain": "½× ³⁄₁₆\"",
+        "chain_springs_ref": "IV4KETTSP40",
+        "wheel_ref": "V208T",
+        "chain_length": "7.5m",
+        "striker_ref": "III228F",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III409",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "striker": {
+          "value": "swinging",
+          "source": "USER"
+        },
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV236JNB",
+          "source": "CALCULATED"
+        },
+        "pkz_trip_a": {
+          "value": "4.8",
+          "source": "CALCULATED"
+        },
+        "chain": {
+          "value": "½× ³⁄₁₆\"",
+          "source": "CALCULATED"
+        },
+        "chain_springs_ref": {
+          "value": "IV4KETTSP40",
+          "source": "CALCULATED"
+        },
+        "wheel_ref": {
+          "value": "V208T",
+          "source": "CALCULATED"
+        },
+        "chain_length": {
+          "value": "7.5m",
+          "source": "CALCULATED"
+        },
+        "motor": {
+          "value": "rotating",
+          "source": "USER"
+        },
+        "striker_ref": {
+          "value": "III228F",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III409",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "T1F1"
+    },
+    {
+      "identifier": "bell_9",
+      "properties": {
+        "note": "D1",
+        "weight": "1535.0 kg",
+        "diameter": "1390 mm",
+        "height": "1118 mm",
+        "weight_g": "1535000",
+        "diameter_mm": "1390",
+        "height_mm": "1118",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "rotating",
+        "num_motors": "1",
+        "striker": "swinging",
+        "motor_ref": "IV236JNB",
+        "num_motors_source": "system",
+        "motor_size": "C90L-8",
+        "motor_power": "0.74",
+        "pkz_trip_a": "4.8",
+        "chain": "½× ³⁄₁₆\"",
+        "chain_springs_ref": "IV4KETTSP40",
+        "wheel_ref": "V207T",
+        "chain_length": "6.6m",
+        "striker_ref": "III228F",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III409",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "striker": {
+          "value": "swinging",
+          "source": "USER"
+        },
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV236JNB",
+          "source": "CALCULATED"
+        },
+        "pkz_trip_a": {
+          "value": "4.8",
+          "source": "CALCULATED"
+        },
+        "chain": {
+          "value": "½× ³⁄₁₆\"",
+          "source": "CALCULATED"
+        },
+        "chain_springs_ref": {
+          "value": "IV4KETTSP40",
+          "source": "CALCULATED"
+        },
+        "wheel_ref": {
+          "value": "V207T",
+          "source": "CALCULATED"
+        },
+        "chain_length": {
+          "value": "6.6m",
+          "source": "CALCULATED"
+        },
+        "motor": {
+          "value": "rotating",
+          "source": "USER"
+        },
+        "striker_ref": {
+          "value": "III228F",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III409",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "T1F2"
+    },
+    {
+      "identifier": "bell_10",
+      "properties": {
+        "note": "D1",
+        "weight": "1535.0 kg",
+        "diameter": "1390 mm",
+        "height": "1118 mm",
+        "weight_g": "1535000",
+        "diameter_mm": "1390",
+        "height_mm": "1118",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "rotating",
+        "num_motors": "1",
+        "striker": "swinging",
+        "motor_ref": "IV236JNB",
+        "num_motors_source": "system",
+        "motor_size": "C90L-8",
+        "motor_power": "0.74",
+        "pkz_trip_a": "4.8",
+        "chain": "½× ³⁄₁₆\"",
+        "chain_springs_ref": "IV4KETTSP40",
+        "wheel_ref": "V207T",
+        "chain_length": "6.6m",
+        "striker_ref": "III228F",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III409",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "striker": {
+          "value": "swinging",
+          "source": "USER"
+        },
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV236JNB",
+          "source": "CALCULATED"
+        },
+        "pkz_trip_a": {
+          "value": "4.8",
+          "source": "CALCULATED"
+        },
+        "chain": {
+          "value": "½× ³⁄₁₆\"",
+          "source": "CALCULATED"
+        },
+        "chain_springs_ref": {
+          "value": "IV4KETTSP40",
+          "source": "CALCULATED"
+        },
+        "wheel_ref": {
+          "value": "V207T",
+          "source": "CALCULATED"
+        },
+        "chain_length": {
+          "value": "6.6m",
+          "source": "CALCULATED"
+        },
+        "motor": {
+          "value": "rotating",
+          "source": "USER"
+        },
+        "striker_ref": {
+          "value": "III228F",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III409",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "T1F2"
+    },
+    {
+      "identifier": "bell_11",
+      "properties": {
+        "note": "D1",
+        "weight": "1535.0 kg",
+        "diameter": "1390 mm",
+        "height": "1118 mm",
+        "weight_g": "1535000",
+        "diameter_mm": "1390",
+        "height_mm": "1118",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "rotating",
+        "num_motors": "1",
+        "striker": "swinging",
+        "motor_ref": "IV236JNB",
+        "num_motors_source": "system",
+        "motor_size": "C90L-8",
+        "motor_power": "0.74",
+        "pkz_trip_a": "4.8",
+        "chain": "½× ³⁄₁₆\"",
+        "chain_springs_ref": "IV4KETTSP40",
+        "wheel_ref": "V207T",
+        "chain_length": "6.6m",
+        "striker_ref": "III228F",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III409",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "striker": {
+          "value": "swinging",
+          "source": "USER"
+        },
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV236JNB",
+          "source": "CALCULATED"
+        },
+        "pkz_trip_a": {
+          "value": "4.8",
+          "source": "CALCULATED"
+        },
+        "chain": {
+          "value": "½× ³⁄₁₆\"",
+          "source": "CALCULATED"
+        },
+        "chain_springs_ref": {
+          "value": "IV4KETTSP40",
+          "source": "CALCULATED"
+        },
+        "wheel_ref": {
+          "value": "V207T",
+          "source": "CALCULATED"
+        },
+        "chain_length": {
+          "value": "6.6m",
+          "source": "CALCULATED"
+        },
+        "motor": {
+          "value": "rotating",
+          "source": "USER"
+        },
+        "striker_ref": {
+          "value": "III228F",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III409",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "T1F2"
+    },
+    {
+      "identifier": "bell_12",
+      "properties": {
+        "note": "D1",
+        "weight": "1535.0 kg",
+        "diameter": "1390 mm",
+        "height": "1118 mm",
+        "weight_g": "1535000",
+        "diameter_mm": "1390",
+        "height_mm": "1118",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "rotating",
+        "num_motors": "1",
+        "striker": "swinging",
+        "motor_ref": "IV236JNB",
+        "num_motors_source": "system",
+        "motor_size": "C90L-8",
+        "motor_power": "0.74",
+        "pkz_trip_a": "4.8",
+        "chain": "½× ³⁄₁₆\"",
+        "chain_springs_ref": "IV4KETTSP40",
+        "wheel_ref": "V207T",
+        "chain_length": "6.6m",
+        "striker_ref": "III228F",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III409",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "striker": {
+          "value": "swinging",
+          "source": "USER"
+        },
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV236JNB",
+          "source": "CALCULATED"
+        },
+        "pkz_trip_a": {
+          "value": "4.8",
+          "source": "CALCULATED"
+        },
+        "chain": {
+          "value": "½× ³⁄₁₆\"",
+          "source": "CALCULATED"
+        },
+        "chain_springs_ref": {
+          "value": "IV4KETTSP40",
+          "source": "CALCULATED"
+        },
+        "wheel_ref": {
+          "value": "V207T",
+          "source": "CALCULATED"
+        },
+        "chain_length": {
+          "value": "6.6m",
+          "source": "CALCULATED"
+        },
+        "motor": {
+          "value": "rotating",
+          "source": "USER"
+        },
+        "striker_ref": {
+          "value": "III228F",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III409",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "T1F2"
+    },
+    {
+      "identifier": "bell_13",
+      "properties": {
+        "note": "D1",
+        "weight": "1535.0 kg",
+        "diameter": "1390 mm",
+        "height": "1118 mm",
+        "weight_g": "1535000",
+        "diameter_mm": "1390",
+        "height_mm": "1118",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "rotating",
+        "num_motors": "1",
+        "striker": "swinging",
+        "motor_ref": "IV236JNB",
+        "num_motors_source": "system",
+        "motor_size": "C90L-8",
+        "motor_power": "0.74",
+        "pkz_trip_a": "4.8",
+        "chain": "½× ³⁄₁₆\"",
+        "chain_springs_ref": "IV4KETTSP40",
+        "wheel_ref": "V207T",
+        "chain_length": "6.6m",
+        "striker_ref": "III228F",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III409",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "striker": {
+          "value": "swinging",
+          "source": "USER"
+        },
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV236JNB",
+          "source": "CALCULATED"
+        },
+        "pkz_trip_a": {
+          "value": "4.8",
+          "source": "CALCULATED"
+        },
+        "chain": {
+          "value": "½× ³⁄₁₆\"",
+          "source": "CALCULATED"
+        },
+        "chain_springs_ref": {
+          "value": "IV4KETTSP40",
+          "source": "CALCULATED"
+        },
+        "wheel_ref": {
+          "value": "V207T",
+          "source": "CALCULATED"
+        },
+        "chain_length": {
+          "value": "6.6m",
+          "source": "CALCULATED"
+        },
+        "motor": {
+          "value": "rotating",
+          "source": "USER"
+        },
+        "striker_ref": {
+          "value": "III228F",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III409",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "T1F2"
+    },
+    {
+      "identifier": "bell_14",
+      "properties": {
+        "note": "D1",
+        "weight": "1535.0 kg",
+        "diameter": "1390 mm",
+        "height": "1118 mm",
+        "weight_g": "1535000",
+        "diameter_mm": "1390",
+        "height_mm": "1118",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "rotating",
+        "num_motors": "1",
+        "striker": "swinging",
+        "motor_ref": "IV236JNB",
+        "num_motors_source": "system",
+        "motor_size": "C90L-8",
+        "motor_power": "0.74",
+        "pkz_trip_a": "4.8",
+        "chain": "½× ³⁄₁₆\"",
+        "chain_springs_ref": "IV4KETTSP40",
+        "wheel_ref": "V207T",
+        "chain_length": "6.6m",
+        "striker_ref": "III228F",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III409",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "striker": {
+          "value": "swinging",
+          "source": "USER"
+        },
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV236JNB",
+          "source": "CALCULATED"
+        },
+        "pkz_trip_a": {
+          "value": "4.8",
+          "source": "CALCULATED"
+        },
+        "chain": {
+          "value": "½× ³⁄₁₆\"",
+          "source": "CALCULATED"
+        },
+        "chain_springs_ref": {
+          "value": "IV4KETTSP40",
+          "source": "CALCULATED"
+        },
+        "wheel_ref": {
+          "value": "V207T",
+          "source": "CALCULATED"
+        },
+        "chain_length": {
+          "value": "6.6m",
+          "source": "CALCULATED"
+        },
+        "motor": {
+          "value": "rotating",
+          "source": "USER"
+        },
+        "striker_ref": {
+          "value": "III228F",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III409",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "T1F2"
+    },
+    {
+      "identifier": "bell_15",
+      "properties": {
+        "note": "D1",
+        "weight": "1535.0 kg",
+        "diameter": "1390 mm",
+        "height": "1118 mm",
+        "weight_g": "1535000",
+        "diameter_mm": "1390",
+        "height_mm": "1118",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "rotating",
+        "num_motors": "1",
+        "striker": "swinging",
+        "motor_ref": "IV236JNB",
+        "num_motors_source": "system",
+        "motor_size": "C90L-8",
+        "motor_power": "0.74",
+        "pkz_trip_a": "4.8",
+        "chain": "½× ³⁄₁₆\"",
+        "chain_springs_ref": "IV4KETTSP40",
+        "wheel_ref": "V207T",
+        "chain_length": "6.6m",
+        "striker_ref": "III228F",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III409",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "striker": {
+          "value": "swinging",
+          "source": "USER"
+        },
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV236JNB",
+          "source": "CALCULATED"
+        },
+        "pkz_trip_a": {
+          "value": "4.8",
+          "source": "CALCULATED"
+        },
+        "chain": {
+          "value": "½× ³⁄₁₆\"",
+          "source": "CALCULATED"
+        },
+        "chain_springs_ref": {
+          "value": "IV4KETTSP40",
+          "source": "CALCULATED"
+        },
+        "wheel_ref": {
+          "value": "V207T",
+          "source": "CALCULATED"
+        },
+        "chain_length": {
+          "value": "6.6m",
+          "source": "CALCULATED"
+        },
+        "motor": {
+          "value": "rotating",
+          "source": "USER"
+        },
+        "striker_ref": {
+          "value": "III228F",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III409",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "T1F3"
+    },
+    {
+      "identifier": "bell_16",
+      "properties": {
+        "note": "Dis1",
+        "weight": "1285.0 kg",
+        "diameter": "1310 mm",
+        "height": "1050 mm",
+        "weight_g": "1285000",
+        "diameter_mm": "1310",
+        "height_mm": "1050",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "rotating",
+        "num_motors": "1",
+        "striker": "swinging",
+        "motor_ref": "IV236JNB",
+        "num_motors_source": "system",
+        "motor_size": "C90L-8",
+        "motor_power": "0.74",
+        "pkz_trip_a": "4.8",
+        "chain": "½× ³⁄₁₆\"",
+        "chain_springs_ref": "IV4KETTSP40",
+        "wheel_ref": "V207T",
+        "chain_length": "6.6m",
+        "striker_ref": "III227F",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III407",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "striker": {
+          "value": "swinging",
+          "source": "USER"
+        },
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV236JNB",
+          "source": "CALCULATED"
+        },
+        "pkz_trip_a": {
+          "value": "4.8",
+          "source": "CALCULATED"
+        },
+        "chain": {
+          "value": "½× ³⁄₁₆\"",
+          "source": "CALCULATED"
+        },
+        "chain_springs_ref": {
+          "value": "IV4KETTSP40",
+          "source": "CALCULATED"
+        },
+        "wheel_ref": {
+          "value": "V207T",
+          "source": "CALCULATED"
+        },
+        "chain_length": {
+          "value": "6.6m",
+          "source": "CALCULATED"
+        },
+        "motor": {
+          "value": "rotating",
+          "source": "USER"
+        },
+        "striker_ref": {
+          "value": "III227F",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III407",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "T1F3"
+    },
+    {
+      "identifier": "bell_17",
+      "properties": {
+        "note": "Dis1",
+        "weight": "1285.0 kg",
+        "diameter": "1310 mm",
+        "height": "1050 mm",
+        "weight_g": "1285000",
+        "diameter_mm": "1310",
+        "height_mm": "1050",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "rotating",
+        "num_motors": "1",
+        "striker": "swinging",
+        "motor_ref": "IV236JNB",
+        "num_motors_source": "system",
+        "motor_size": "C90L-8",
+        "motor_power": "0.74",
+        "pkz_trip_a": "4.8",
+        "chain": "½× ³⁄₁₆\"",
+        "chain_springs_ref": "IV4KETTSP40",
+        "wheel_ref": "V207T",
+        "chain_length": "6.6m",
+        "striker_ref": "III227F",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III407",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "striker": {
+          "value": "swinging",
+          "source": "USER"
+        },
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV236JNB",
+          "source": "CALCULATED"
+        },
+        "pkz_trip_a": {
+          "value": "4.8",
+          "source": "CALCULATED"
+        },
+        "chain": {
+          "value": "½× ³⁄₁₆\"",
+          "source": "CALCULATED"
+        },
+        "chain_springs_ref": {
+          "value": "IV4KETTSP40",
+          "source": "CALCULATED"
+        },
+        "wheel_ref": {
+          "value": "V207T",
+          "source": "CALCULATED"
+        },
+        "chain_length": {
+          "value": "6.6m",
+          "source": "CALCULATED"
+        },
+        "motor": {
+          "value": "rotating",
+          "source": "USER"
+        },
+        "striker_ref": {
+          "value": "III227F",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III407",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "T1F3"
+    },
+    {
+      "identifier": "bell_18",
+      "properties": {
+        "note": "Dis1",
+        "weight": "1285.0 kg",
+        "diameter": "1310 mm",
+        "height": "1050 mm",
+        "weight_g": "1285000",
+        "diameter_mm": "1310",
+        "height_mm": "1050",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "rotating",
+        "num_motors": "1",
+        "striker": "swinging",
+        "motor_ref": "IV236JNB",
+        "num_motors_source": "system",
+        "motor_size": "C90L-8",
+        "motor_power": "0.74",
+        "pkz_trip_a": "4.8",
+        "chain": "½× ³⁄₁₆\"",
+        "chain_springs_ref": "IV4KETTSP40",
+        "wheel_ref": "V207T",
+        "chain_length": "6.6m",
+        "striker_ref": "III227F",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III407",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "striker": {
+          "value": "swinging",
+          "source": "USER"
+        },
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV236JNB",
+          "source": "CALCULATED"
+        },
+        "pkz_trip_a": {
+          "value": "4.8",
+          "source": "CALCULATED"
+        },
+        "chain": {
+          "value": "½× ³⁄₁₆\"",
+          "source": "CALCULATED"
+        },
+        "chain_springs_ref": {
+          "value": "IV4KETTSP40",
+          "source": "CALCULATED"
+        },
+        "wheel_ref": {
+          "value": "V207T",
+          "source": "CALCULATED"
+        },
+        "chain_length": {
+          "value": "6.6m",
+          "source": "CALCULATED"
+        },
+        "motor": {
+          "value": "rotating",
+          "source": "USER"
+        },
+        "striker_ref": {
+          "value": "III227F",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III407",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "T1F3"
+    },
+    {
+      "identifier": "bell_19",
+      "properties": {
+        "note": "Dis1",
+        "weight": "1285.0 kg",
+        "diameter": "1310 mm",
+        "height": "1050 mm",
+        "weight_g": "1285000",
+        "diameter_mm": "1310",
+        "height_mm": "1050",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "rotating",
+        "num_motors": "1",
+        "striker": "swinging",
+        "motor_ref": "IV236JNB",
+        "num_motors_source": "system",
+        "motor_size": "C90L-8",
+        "motor_power": "0.74",
+        "pkz_trip_a": "4.8",
+        "chain": "½× ³⁄₁₆\"",
+        "chain_springs_ref": "IV4KETTSP40",
+        "wheel_ref": "V207T",
+        "chain_length": "6.6m",
+        "striker_ref": "III227F",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III407",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "striker": {
+          "value": "swinging",
+          "source": "USER"
+        },
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV236JNB",
+          "source": "CALCULATED"
+        },
+        "pkz_trip_a": {
+          "value": "4.8",
+          "source": "CALCULATED"
+        },
+        "chain": {
+          "value": "½× ³⁄₁₆\"",
+          "source": "CALCULATED"
+        },
+        "chain_springs_ref": {
+          "value": "IV4KETTSP40",
+          "source": "CALCULATED"
+        },
+        "wheel_ref": {
+          "value": "V207T",
+          "source": "CALCULATED"
+        },
+        "chain_length": {
+          "value": "6.6m",
+          "source": "CALCULATED"
+        },
+        "motor": {
+          "value": "rotating",
+          "source": "USER"
+        },
+        "striker_ref": {
+          "value": "III227F",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III407",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "T1F4"
+    },
+    {
+      "identifier": "bell_20",
+      "properties": {
+        "note": "Dis1",
+        "weight": "1285.0 kg",
+        "diameter": "1310 mm",
+        "height": "1050 mm",
+        "weight_g": "1285000",
+        "diameter_mm": "1310",
+        "height_mm": "1050",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "rotating",
+        "num_motors": "1",
+        "striker": "swinging",
+        "motor_ref": "IV236JNB",
+        "num_motors_source": "system",
+        "motor_size": "C90L-8",
+        "motor_power": "0.74",
+        "pkz_trip_a": "4.8",
+        "chain": "½× ³⁄₁₆\"",
+        "chain_springs_ref": "IV4KETTSP40",
+        "wheel_ref": "V207T",
+        "chain_length": "6.6m",
+        "striker_ref": "III227F",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III407",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "striker": {
+          "value": "swinging",
+          "source": "USER"
+        },
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV236JNB",
+          "source": "CALCULATED"
+        },
+        "pkz_trip_a": {
+          "value": "4.8",
+          "source": "CALCULATED"
+        },
+        "chain": {
+          "value": "½× ³⁄₁₆\"",
+          "source": "CALCULATED"
+        },
+        "chain_springs_ref": {
+          "value": "IV4KETTSP40",
+          "source": "CALCULATED"
+        },
+        "wheel_ref": {
+          "value": "V207T",
+          "source": "CALCULATED"
+        },
+        "chain_length": {
+          "value": "6.6m",
+          "source": "CALCULATED"
+        },
+        "motor": {
+          "value": "rotating",
+          "source": "USER"
+        },
+        "striker_ref": {
+          "value": "III227F",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III407",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "T1F4"
+    },
+    {
+      "identifier": "bell_21",
+      "properties": {
+        "note": "Dis1",
+        "weight": "1285.0 kg",
+        "diameter": "1310 mm",
+        "height": "1050 mm",
+        "weight_g": "1285000",
+        "diameter_mm": "1310",
+        "height_mm": "1050",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "rotating",
+        "num_motors": "1",
+        "striker": "swinging",
+        "motor_ref": "IV236JNB",
+        "num_motors_source": "system",
+        "motor_size": "C90L-8",
+        "motor_power": "0.74",
+        "pkz_trip_a": "4.8",
+        "chain": "½× ³⁄₁₆\"",
+        "chain_springs_ref": "IV4KETTSP40",
+        "wheel_ref": "V207T",
+        "chain_length": "6.6m",
+        "striker_ref": "III227F",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III407",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "striker": {
+          "value": "swinging",
+          "source": "USER"
+        },
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV236JNB",
+          "source": "CALCULATED"
+        },
+        "pkz_trip_a": {
+          "value": "4.8",
+          "source": "CALCULATED"
+        },
+        "chain": {
+          "value": "½× ³⁄₁₆\"",
+          "source": "CALCULATED"
+        },
+        "chain_springs_ref": {
+          "value": "IV4KETTSP40",
+          "source": "CALCULATED"
+        },
+        "wheel_ref": {
+          "value": "V207T",
+          "source": "CALCULATED"
+        },
+        "chain_length": {
+          "value": "6.6m",
+          "source": "CALCULATED"
+        },
+        "motor": {
+          "value": "rotating",
+          "source": "USER"
+        },
+        "striker_ref": {
+          "value": "III227F",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III407",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "T1F4"
+    },
+    {
+      "identifier": "bell_22",
+      "properties": {
+        "note": "E1",
+        "weight": "1075.0 kg",
+        "diameter": "1235 mm",
+        "height": "990 mm",
+        "weight_g": "1075000",
+        "diameter_mm": "1235",
+        "height_mm": "990",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "rotating",
+        "num_motors": "1",
+        "striker": "swinging",
+        "motor_ref": "IV235JNB",
+        "num_motors_source": "system",
+        "motor_size": "C90S-8",
+        "motor_power": "0.55",
+        "pkz_trip_a": "3.2",
+        "chain": "½× ³⁄₁₆\"",
+        "chain_springs_ref": "IV4KETTSP40",
+        "wheel_ref": "V207T",
+        "chain_length": "6.6m",
+        "striker_ref": "III227F",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III407",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "striker": {
+          "value": "swinging",
+          "source": "USER"
+        },
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV235JNB",
+          "source": "CALCULATED"
+        },
+        "pkz_trip_a": {
+          "value": "3.2",
+          "source": "CALCULATED"
+        },
+        "chain": {
+          "value": "½× ³⁄₁₆\"",
+          "source": "CALCULATED"
+        },
+        "chain_springs_ref": {
+          "value": "IV4KETTSP40",
+          "source": "CALCULATED"
+        },
+        "wheel_ref": {
+          "value": "V207T",
+          "source": "CALCULATED"
+        },
+        "chain_length": {
+          "value": "6.6m",
+          "source": "CALCULATED"
+        },
+        "motor": {
+          "value": "rotating",
+          "source": "USER"
+        },
+        "striker_ref": {
+          "value": "III227F",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III407",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "T2F1"
+    },
+    {
+      "identifier": "bell_23",
+      "properties": {
+        "note": "E1",
+        "weight": "1075.0 kg",
+        "diameter": "1235 mm",
+        "height": "990 mm",
+        "weight_g": "1075000",
+        "diameter_mm": "1235",
+        "height_mm": "990",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "rotating",
+        "num_motors": "1",
+        "striker": "swinging",
+        "motor_ref": "IV235JNB",
+        "num_motors_source": "system",
+        "motor_size": "C90S-8",
+        "motor_power": "0.55",
+        "pkz_trip_a": "3.2",
+        "chain": "½× ³⁄₁₆\"",
+        "chain_springs_ref": "IV4KETTSP40",
+        "wheel_ref": "V207T",
+        "chain_length": "6.6m",
+        "striker_ref": "III227F",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III407",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "striker": {
+          "value": "swinging",
+          "source": "USER"
+        },
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV235JNB",
+          "source": "CALCULATED"
+        },
+        "pkz_trip_a": {
+          "value": "3.2",
+          "source": "CALCULATED"
+        },
+        "chain": {
+          "value": "½× ³⁄₁₆\"",
+          "source": "CALCULATED"
+        },
+        "chain_springs_ref": {
+          "value": "IV4KETTSP40",
+          "source": "CALCULATED"
+        },
+        "wheel_ref": {
+          "value": "V207T",
+          "source": "CALCULATED"
+        },
+        "chain_length": {
+          "value": "6.6m",
+          "source": "CALCULATED"
+        },
+        "motor": {
+          "value": "rotating",
+          "source": "USER"
+        },
+        "striker_ref": {
+          "value": "III227F",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III407",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "T2F1"
+    },
+    {
+      "identifier": "bell_24",
+      "properties": {
+        "note": "E1",
+        "weight": "1075.0 kg",
+        "diameter": "1235 mm",
+        "height": "990 mm",
+        "weight_g": "1075000",
+        "diameter_mm": "1235",
+        "height_mm": "990",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "rotating",
+        "num_motors": "1",
+        "striker": "swinging",
+        "motor_ref": "IV235JNB",
+        "num_motors_source": "system",
+        "motor_size": "C90S-8",
+        "motor_power": "0.55",
+        "pkz_trip_a": "3.2",
+        "chain": "½× ³⁄₁₆\"",
+        "chain_springs_ref": "IV4KETTSP40",
+        "wheel_ref": "V207T",
+        "chain_length": "6.6m",
+        "striker_ref": "III227F",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III407",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "striker": {
+          "value": "swinging",
+          "source": "USER"
+        },
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV235JNB",
+          "source": "CALCULATED"
+        },
+        "pkz_trip_a": {
+          "value": "3.2",
+          "source": "CALCULATED"
+        },
+        "chain": {
+          "value": "½× ³⁄₁₆\"",
+          "source": "CALCULATED"
+        },
+        "chain_springs_ref": {
+          "value": "IV4KETTSP40",
+          "source": "CALCULATED"
+        },
+        "wheel_ref": {
+          "value": "V207T",
+          "source": "CALCULATED"
+        },
+        "chain_length": {
+          "value": "6.6m",
+          "source": "CALCULATED"
+        },
+        "motor": {
+          "value": "rotating",
+          "source": "USER"
+        },
+        "striker_ref": {
+          "value": "III227F",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III407",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "T2F1"
+    },
+    {
+      "identifier": "bell_25",
+      "properties": {
+        "note": "E1",
+        "weight": "1075.0 kg",
+        "diameter": "1235 mm",
+        "height": "990 mm",
+        "weight_g": "1075000",
+        "diameter_mm": "1235",
+        "height_mm": "990",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "rotating",
+        "num_motors": "1",
+        "striker": "swinging",
+        "motor_ref": "IV235JNB",
+        "num_motors_source": "system",
+        "motor_size": "C90S-8",
+        "motor_power": "0.55",
+        "pkz_trip_a": "3.2",
+        "chain": "½× ³⁄₁₆\"",
+        "chain_springs_ref": "IV4KETTSP40",
+        "wheel_ref": "V207T",
+        "chain_length": "6.6m",
+        "striker_ref": "III227F",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III407",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "striker": {
+          "value": "swinging",
+          "source": "USER"
+        },
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV235JNB",
+          "source": "CALCULATED"
+        },
+        "pkz_trip_a": {
+          "value": "3.2",
+          "source": "CALCULATED"
+        },
+        "chain": {
+          "value": "½× ³⁄₁₆\"",
+          "source": "CALCULATED"
+        },
+        "chain_springs_ref": {
+          "value": "IV4KETTSP40",
+          "source": "CALCULATED"
+        },
+        "wheel_ref": {
+          "value": "V207T",
+          "source": "CALCULATED"
+        },
+        "chain_length": {
+          "value": "6.6m",
+          "source": "CALCULATED"
+        },
+        "motor": {
+          "value": "rotating",
+          "source": "USER"
+        },
+        "striker_ref": {
+          "value": "III227F",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III407",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "T2F1"
+    },
+    {
+      "identifier": "bell_26",
+      "properties": {
+        "note": "E1",
+        "weight": "1075.0 kg",
+        "diameter": "1235 mm",
+        "height": "990 mm",
+        "weight_g": "1075000",
+        "diameter_mm": "1235",
+        "height_mm": "990",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "rotating",
+        "num_motors": "1",
+        "striker": "swinging",
+        "motor_ref": "IV235JNB",
+        "num_motors_source": "system",
+        "motor_size": "C90S-8",
+        "motor_power": "0.55",
+        "pkz_trip_a": "3.2",
+        "chain": "½× ³⁄₁₆\"",
+        "chain_springs_ref": "IV4KETTSP40",
+        "wheel_ref": "V207T",
+        "chain_length": "6.6m",
+        "striker_ref": "III227F",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III407",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "striker": {
+          "value": "swinging",
+          "source": "USER"
+        },
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV235JNB",
+          "source": "CALCULATED"
+        },
+        "pkz_trip_a": {
+          "value": "3.2",
+          "source": "CALCULATED"
+        },
+        "chain": {
+          "value": "½× ³⁄₁₆\"",
+          "source": "CALCULATED"
+        },
+        "chain_springs_ref": {
+          "value": "IV4KETTSP40",
+          "source": "CALCULATED"
+        },
+        "wheel_ref": {
+          "value": "V207T",
+          "source": "CALCULATED"
+        },
+        "chain_length": {
+          "value": "6.6m",
+          "source": "CALCULATED"
+        },
+        "motor": {
+          "value": "rotating",
+          "source": "USER"
+        },
+        "striker_ref": {
+          "value": "III227F",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III407",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "T2F1"
+    },
+    {
+      "identifier": "bell_27",
+      "properties": {
+        "note": "F1",
+        "weight": "905.0 kg",
+        "diameter": "1166 mm",
+        "height": "930 mm",
+        "weight_g": "905000",
+        "diameter_mm": "1166",
+        "height_mm": "930",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "rotating",
+        "num_motors": "1",
+        "striker": "swinging",
+        "motor_ref": "IV235JNB",
+        "num_motors_source": "system",
+        "motor_size": "C90S-8",
+        "motor_power": "0.55",
+        "pkz_trip_a": "3.2",
+        "chain": "½× ³⁄₁₆\"",
+        "chain_springs_ref": "IV4KETTSP40",
+        "wheel_ref": "V206T",
+        "chain_length": "5.7m",
+        "striker_ref": "III227F",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III407",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "striker": {
+          "value": "swinging",
+          "source": "USER"
+        },
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV235JNB",
+          "source": "CALCULATED"
+        },
+        "pkz_trip_a": {
+          "value": "3.2",
+          "source": "CALCULATED"
+        },
+        "chain": {
+          "value": "½× ³⁄₁₆\"",
+          "source": "CALCULATED"
+        },
+        "chain_springs_ref": {
+          "value": "IV4KETTSP40",
+          "source": "CALCULATED"
+        },
+        "wheel_ref": {
+          "value": "V206T",
+          "source": "CALCULATED"
+        },
+        "chain_length": {
+          "value": "5.7m",
+          "source": "CALCULATED"
+        },
+        "motor": {
+          "value": "rotating",
+          "source": "USER"
+        },
+        "striker_ref": {
+          "value": "III227F",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III407",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "T2F1"
+    },
+    {
+      "identifier": "bell_28",
+      "properties": {
+        "note": "F1",
+        "weight": "905.0 kg",
+        "diameter": "1166 mm",
+        "height": "930 mm",
+        "weight_g": "905000",
+        "diameter_mm": "1166",
+        "height_mm": "930",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "rotating",
+        "num_motors": "1",
+        "striker": "swinging",
+        "motor_ref": "IV235JNB",
+        "num_motors_source": "system",
+        "motor_size": "C90S-8",
+        "motor_power": "0.55",
+        "pkz_trip_a": "3.2",
+        "chain": "½× ³⁄₁₆\"",
+        "chain_springs_ref": "IV4KETTSP40",
+        "wheel_ref": "V206T",
+        "chain_length": "5.7m",
+        "striker_ref": "III227F",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III407",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "striker": {
+          "value": "swinging",
+          "source": "USER"
+        },
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV235JNB",
+          "source": "CALCULATED"
+        },
+        "pkz_trip_a": {
+          "value": "3.2",
+          "source": "CALCULATED"
+        },
+        "chain": {
+          "value": "½× ³⁄₁₆\"",
+          "source": "CALCULATED"
+        },
+        "chain_springs_ref": {
+          "value": "IV4KETTSP40",
+          "source": "CALCULATED"
+        },
+        "wheel_ref": {
+          "value": "V206T",
+          "source": "CALCULATED"
+        },
+        "chain_length": {
+          "value": "5.7m",
+          "source": "CALCULATED"
+        },
+        "motor": {
+          "value": "rotating",
+          "source": "USER"
+        },
+        "striker_ref": {
+          "value": "III227F",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III407",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "T2F1"
+    },
+    {
+      "identifier": "bell_29",
+      "properties": {
+        "note": "F1",
+        "weight": "905.0 kg",
+        "diameter": "1166 mm",
+        "height": "930 mm",
+        "weight_g": "905000",
+        "diameter_mm": "1166",
+        "height_mm": "930",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "rotating",
+        "num_motors": "1",
+        "striker": "swinging",
+        "motor_ref": "IV235JNB",
+        "num_motors_source": "system",
+        "motor_size": "C90S-8",
+        "motor_power": "0.55",
+        "pkz_trip_a": "3.2",
+        "chain": "½× ³⁄₁₆\"",
+        "chain_springs_ref": "IV4KETTSP40",
+        "wheel_ref": "V206T",
+        "chain_length": "5.7m",
+        "striker_ref": "III227F",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III407",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "striker": {
+          "value": "swinging",
+          "source": "USER"
+        },
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV235JNB",
+          "source": "CALCULATED"
+        },
+        "pkz_trip_a": {
+          "value": "3.2",
+          "source": "CALCULATED"
+        },
+        "chain": {
+          "value": "½× ³⁄₁₆\"",
+          "source": "CALCULATED"
+        },
+        "chain_springs_ref": {
+          "value": "IV4KETTSP40",
+          "source": "CALCULATED"
+        },
+        "wheel_ref": {
+          "value": "V206T",
+          "source": "CALCULATED"
+        },
+        "chain_length": {
+          "value": "5.7m",
+          "source": "CALCULATED"
+        },
+        "motor": {
+          "value": "rotating",
+          "source": "USER"
+        },
+        "striker_ref": {
+          "value": "III227F",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III407",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "T2F1"
+    },
+    {
+      "identifier": "bell_30",
+      "properties": {
+        "note": "F1",
+        "weight": "905.0 kg",
+        "diameter": "1166 mm",
+        "height": "930 mm",
+        "weight_g": "905000",
+        "diameter_mm": "1166",
+        "height_mm": "930",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "rotating",
+        "num_motors": "1",
+        "striker": "swinging",
+        "motor_ref": "IV235JNB",
+        "num_motors_source": "system",
+        "motor_size": "C90S-8",
+        "motor_power": "0.55",
+        "pkz_trip_a": "3.2",
+        "chain": "½× ³⁄₁₆\"",
+        "chain_springs_ref": "IV4KETTSP40",
+        "wheel_ref": "V206T",
+        "chain_length": "5.7m",
+        "striker_ref": "III227F",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III407",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "striker": {
+          "value": "swinging",
+          "source": "USER"
+        },
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV235JNB",
+          "source": "CALCULATED"
+        },
+        "pkz_trip_a": {
+          "value": "3.2",
+          "source": "CALCULATED"
+        },
+        "chain": {
+          "value": "½× ³⁄₁₆\"",
+          "source": "CALCULATED"
+        },
+        "chain_springs_ref": {
+          "value": "IV4KETTSP40",
+          "source": "CALCULATED"
+        },
+        "wheel_ref": {
+          "value": "V206T",
+          "source": "CALCULATED"
+        },
+        "chain_length": {
+          "value": "5.7m",
+          "source": "CALCULATED"
+        },
+        "motor": {
+          "value": "rotating",
+          "source": "USER"
+        },
+        "striker_ref": {
+          "value": "III227F",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III407",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "T2F1"
+    },
+    {
+      "identifier": "bell_31",
+      "properties": {
+        "note": "Fis1",
+        "weight": "760.0 kg",
+        "diameter": "1100 mm",
+        "height": "873 mm",
+        "weight_g": "760000",
+        "diameter_mm": "1100",
+        "height_mm": "873",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "rotating",
+        "num_motors": "1",
+        "striker": "swinging",
+        "motor_ref": "IV234JNB",
+        "num_motors_source": "system",
+        "motor_size": "C80-8",
+        "motor_power": "0.37",
+        "pkz_trip_a": "2.1",
+        "chain": "½× ³⁄₁₆\"",
+        "chain_springs_ref": "IV4KETTSP40",
+        "wheel_ref": "V206T",
+        "chain_length": "5.7m",
+        "striker_ref": "III227F",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III407",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "striker": {
+          "value": "swinging",
+          "source": "USER"
+        },
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV234JNB",
+          "source": "CALCULATED"
+        },
+        "pkz_trip_a": {
+          "value": "2.1",
+          "source": "CALCULATED"
+        },
+        "chain": {
+          "value": "½× ³⁄₁₆\"",
+          "source": "CALCULATED"
+        },
+        "chain_springs_ref": {
+          "value": "IV4KETTSP40",
+          "source": "CALCULATED"
+        },
+        "wheel_ref": {
+          "value": "V206T",
+          "source": "CALCULATED"
+        },
+        "chain_length": {
+          "value": "5.7m",
+          "source": "CALCULATED"
+        },
+        "motor": {
+          "value": "rotating",
+          "source": "USER"
+        },
+        "striker_ref": {
+          "value": "III227F",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III407",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "T2F1"
+    },
+    {
+      "identifier": "bell_32",
+      "properties": {
+        "note": "Fis1",
+        "weight": "760.0 kg",
+        "diameter": "1100 mm",
+        "height": "873 mm",
+        "weight_g": "760000",
+        "diameter_mm": "1100",
+        "height_mm": "873",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "rotating",
+        "num_motors": "1",
+        "striker": "swinging",
+        "motor_ref": "IV234JNB",
+        "num_motors_source": "system",
+        "motor_size": "C80-8",
+        "motor_power": "0.37",
+        "pkz_trip_a": "2.1",
+        "chain": "½× ³⁄₁₆\"",
+        "chain_springs_ref": "IV4KETTSP40",
+        "wheel_ref": "V206T",
+        "chain_length": "5.7m",
+        "striker_ref": "III227F",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III407",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "striker": {
+          "value": "swinging",
+          "source": "USER"
+        },
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV234JNB",
+          "source": "CALCULATED"
+        },
+        "pkz_trip_a": {
+          "value": "2.1",
+          "source": "CALCULATED"
+        },
+        "chain": {
+          "value": "½× ³⁄₁₆\"",
+          "source": "CALCULATED"
+        },
+        "chain_springs_ref": {
+          "value": "IV4KETTSP40",
+          "source": "CALCULATED"
+        },
+        "wheel_ref": {
+          "value": "V206T",
+          "source": "CALCULATED"
+        },
+        "chain_length": {
+          "value": "5.7m",
+          "source": "CALCULATED"
+        },
+        "motor": {
+          "value": "rotating",
+          "source": "USER"
+        },
+        "striker_ref": {
+          "value": "III227F",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III407",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "T2F2"
+    },
+    {
+      "identifier": "bell_33",
+      "properties": {
+        "note": "Fis1",
+        "weight": "760.0 kg",
+        "diameter": "1100 mm",
+        "height": "873 mm",
+        "weight_g": "760000",
+        "diameter_mm": "1100",
+        "height_mm": "873",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "rotating",
+        "num_motors": "1",
+        "striker": "swinging",
+        "motor_ref": "IV234JNB",
+        "num_motors_source": "system",
+        "motor_size": "C80-8",
+        "motor_power": "0.37",
+        "pkz_trip_a": "2.1",
+        "chain": "½× ³⁄₁₆\"",
+        "chain_springs_ref": "IV4KETTSP40",
+        "wheel_ref": "V206T",
+        "chain_length": "5.7m",
+        "striker_ref": "III227F",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III407",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "striker": {
+          "value": "swinging",
+          "source": "USER"
+        },
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV234JNB",
+          "source": "CALCULATED"
+        },
+        "pkz_trip_a": {
+          "value": "2.1",
+          "source": "CALCULATED"
+        },
+        "chain": {
+          "value": "½× ³⁄₁₆\"",
+          "source": "CALCULATED"
+        },
+        "chain_springs_ref": {
+          "value": "IV4KETTSP40",
+          "source": "CALCULATED"
+        },
+        "wheel_ref": {
+          "value": "V206T",
+          "source": "CALCULATED"
+        },
+        "chain_length": {
+          "value": "5.7m",
+          "source": "CALCULATED"
+        },
+        "motor": {
+          "value": "rotating",
+          "source": "USER"
+        },
+        "striker_ref": {
+          "value": "III227F",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III407",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "T2F2"
+    },
+    {
+      "identifier": "bell_34",
+      "properties": {
+        "note": "Fis1",
+        "weight": "760.0 kg",
+        "diameter": "1100 mm",
+        "height": "873 mm",
+        "weight_g": "760000",
+        "diameter_mm": "1100",
+        "height_mm": "873",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "rotating",
+        "num_motors": "1",
+        "striker": "swinging",
+        "motor_ref": "IV234JNB",
+        "num_motors_source": "system",
+        "motor_size": "C80-8",
+        "motor_power": "0.37",
+        "pkz_trip_a": "2.1",
+        "chain": "½× ³⁄₁₆\"",
+        "chain_springs_ref": "IV4KETTSP40",
+        "wheel_ref": "V206T",
+        "chain_length": "5.7m",
+        "striker_ref": "III227F",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III407",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "striker": {
+          "value": "swinging",
+          "source": "USER"
+        },
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV234JNB",
+          "source": "CALCULATED"
+        },
+        "pkz_trip_a": {
+          "value": "2.1",
+          "source": "CALCULATED"
+        },
+        "chain": {
+          "value": "½× ³⁄₁₆\"",
+          "source": "CALCULATED"
+        },
+        "chain_springs_ref": {
+          "value": "IV4KETTSP40",
+          "source": "CALCULATED"
+        },
+        "wheel_ref": {
+          "value": "V206T",
+          "source": "CALCULATED"
+        },
+        "chain_length": {
+          "value": "5.7m",
+          "source": "CALCULATED"
+        },
+        "motor": {
+          "value": "rotating",
+          "source": "USER"
+        },
+        "striker_ref": {
+          "value": "III227F",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III407",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "T2F2"
+    },
+    {
+      "identifier": "bell_35",
+      "properties": {
+        "note": "G1",
+        "weight": "640.0 kg",
+        "diameter": "1038 mm",
+        "height": "821 mm",
+        "weight_g": "640000",
+        "diameter_mm": "1038",
+        "height_mm": "821",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "rotating",
+        "num_motors": "1",
+        "striker": "swinging",
+        "motor_ref": "IV234JNB",
+        "num_motors_source": "system",
+        "motor_size": "C80-8",
+        "motor_power": "0.37",
+        "pkz_trip_a": "2.1",
+        "chain": "½× ³⁄₁₆\"",
+        "chain_springs_ref": "IV4KETTSP40",
+        "wheel_ref": "V206T",
+        "chain_length": "5.7m",
+        "striker_ref": "III227F",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III407",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "striker": {
+          "value": "swinging",
+          "source": "USER"
+        },
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV234JNB",
+          "source": "CALCULATED"
+        },
+        "pkz_trip_a": {
+          "value": "2.1",
+          "source": "CALCULATED"
+        },
+        "chain": {
+          "value": "½× ³⁄₁₆\"",
+          "source": "CALCULATED"
+        },
+        "chain_springs_ref": {
+          "value": "IV4KETTSP40",
+          "source": "CALCULATED"
+        },
+        "wheel_ref": {
+          "value": "V206T",
+          "source": "CALCULATED"
+        },
+        "chain_length": {
+          "value": "5.7m",
+          "source": "CALCULATED"
+        },
+        "motor": {
+          "value": "rotating",
+          "source": "USER"
+        },
+        "striker_ref": {
+          "value": "III227F",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III407",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "T2F2"
+    },
+    {
+      "identifier": "bell_36",
+      "properties": {
+        "note": "G1",
+        "weight": "640.0 kg",
+        "diameter": "1038 mm",
+        "height": "821 mm",
+        "weight_g": "640000",
+        "diameter_mm": "1038",
+        "height_mm": "821",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "rotating",
+        "num_motors": "1",
+        "striker": "swinging",
+        "motor_ref": "IV234JNB",
+        "num_motors_source": "system",
+        "motor_size": "C80-8",
+        "motor_power": "0.37",
+        "pkz_trip_a": "2.1",
+        "chain": "½× ³⁄₁₆\"",
+        "chain_springs_ref": "IV4KETTSP40",
+        "wheel_ref": "V206T",
+        "chain_length": "5.7m",
+        "striker_ref": "III227F",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III407",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "striker": {
+          "value": "swinging",
+          "source": "USER"
+        },
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV234JNB",
+          "source": "CALCULATED"
+        },
+        "pkz_trip_a": {
+          "value": "2.1",
+          "source": "CALCULATED"
+        },
+        "chain": {
+          "value": "½× ³⁄₁₆\"",
+          "source": "CALCULATED"
+        },
+        "chain_springs_ref": {
+          "value": "IV4KETTSP40",
+          "source": "CALCULATED"
+        },
+        "wheel_ref": {
+          "value": "V206T",
+          "source": "CALCULATED"
+        },
+        "chain_length": {
+          "value": "5.7m",
+          "source": "CALCULATED"
+        },
+        "motor": {
+          "value": "rotating",
+          "source": "USER"
+        },
+        "striker_ref": {
+          "value": "III227F",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III407",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "T2F2"
+    },
+    {
+      "identifier": "bell_37",
+      "properties": {
+        "note": "G1",
+        "weight": "640.0 kg",
+        "diameter": "1038 mm",
+        "height": "821 mm",
+        "weight_g": "640000",
+        "diameter_mm": "1038",
+        "height_mm": "821",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "rotating",
+        "num_motors": "1",
+        "striker": "swinging",
+        "motor_ref": "IV234JNB",
+        "num_motors_source": "system",
+        "motor_size": "C80-8",
+        "motor_power": "0.37",
+        "pkz_trip_a": "2.1",
+        "chain": "½× ³⁄₁₆\"",
+        "chain_springs_ref": "IV4KETTSP40",
+        "wheel_ref": "V206T",
+        "chain_length": "5.7m",
+        "striker_ref": "III227F",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III407",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "striker": {
+          "value": "swinging",
+          "source": "USER"
+        },
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV234JNB",
+          "source": "CALCULATED"
+        },
+        "pkz_trip_a": {
+          "value": "2.1",
+          "source": "CALCULATED"
+        },
+        "chain": {
+          "value": "½× ³⁄₁₆\"",
+          "source": "CALCULATED"
+        },
+        "chain_springs_ref": {
+          "value": "IV4KETTSP40",
+          "source": "CALCULATED"
+        },
+        "wheel_ref": {
+          "value": "V206T",
+          "source": "CALCULATED"
+        },
+        "chain_length": {
+          "value": "5.7m",
+          "source": "CALCULATED"
+        },
+        "motor": {
+          "value": "rotating",
+          "source": "USER"
+        },
+        "striker_ref": {
+          "value": "III227F",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III407",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "T2F2"
+    },
+    {
+      "identifier": "bell_38",
+      "properties": {
+        "note": "Gis1",
+        "weight": "535.0 kg",
+        "diameter": "980 mm",
+        "height": "771 mm",
+        "weight_g": "535000",
+        "diameter_mm": "980",
+        "height_mm": "771",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "rotating",
+        "num_motors": "1",
+        "striker": "swinging",
+        "motor_ref": "IV234JNB",
+        "num_motors_source": "system",
+        "motor_size": "C80-8",
+        "motor_power": "0.37",
+        "pkz_trip_a": "2.1",
+        "chain": "½× ³⁄₁₆\"",
+        "chain_springs_ref": "IV4KETTSP40",
+        "wheel_ref": "V205T",
+        "chain_length": "4.7m",
+        "striker_ref": "III226F",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III407",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "striker": {
+          "value": "swinging",
+          "source": "USER"
+        },
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV234JNB",
+          "source": "CALCULATED"
+        },
+        "pkz_trip_a": {
+          "value": "2.1",
+          "source": "CALCULATED"
+        },
+        "chain": {
+          "value": "½× ³⁄₁₆\"",
+          "source": "CALCULATED"
+        },
+        "chain_springs_ref": {
+          "value": "IV4KETTSP40",
+          "source": "CALCULATED"
+        },
+        "wheel_ref": {
+          "value": "V205T",
+          "source": "CALCULATED"
+        },
+        "chain_length": {
+          "value": "4.7m",
+          "source": "CALCULATED"
+        },
+        "motor": {
+          "value": "rotating",
+          "source": "USER"
+        },
+        "striker_ref": {
+          "value": "III226F",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III407",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "T2F2"
+    },
+    {
+      "identifier": "bell_39",
+      "properties": {
+        "note": "Gis1",
+        "weight": "535.0 kg",
+        "diameter": "980 mm",
+        "height": "771 mm",
+        "weight_g": "535000",
+        "diameter_mm": "980",
+        "height_mm": "771",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "rotating",
+        "num_motors": "1",
+        "striker": "swinging",
+        "motor_ref": "IV234JNB",
+        "num_motors_source": "system",
+        "motor_size": "C80-8",
+        "motor_power": "0.37",
+        "pkz_trip_a": "2.1",
+        "chain": "½× ³⁄₁₆\"",
+        "chain_springs_ref": "IV4KETTSP40",
+        "wheel_ref": "V205T",
+        "chain_length": "4.7m",
+        "striker_ref": "III226F",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III407",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "striker": {
+          "value": "swinging",
+          "source": "USER"
+        },
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV234JNB",
+          "source": "CALCULATED"
+        },
+        "pkz_trip_a": {
+          "value": "2.1",
+          "source": "CALCULATED"
+        },
+        "chain": {
+          "value": "½× ³⁄₁₆\"",
+          "source": "CALCULATED"
+        },
+        "chain_springs_ref": {
+          "value": "IV4KETTSP40",
+          "source": "CALCULATED"
+        },
+        "wheel_ref": {
+          "value": "V205T",
+          "source": "CALCULATED"
+        },
+        "chain_length": {
+          "value": "4.7m",
+          "source": "CALCULATED"
+        },
+        "motor": {
+          "value": "rotating",
+          "source": "USER"
+        },
+        "striker_ref": {
+          "value": "III226F",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III407",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "T2F3"
+    },
+    {
+      "identifier": "bell_40",
+      "properties": {
+        "note": "A1",
+        "weight": "450.0 kg",
+        "diameter": "925 mm",
+        "height": "726 mm",
+        "weight_g": "450000",
+        "diameter_mm": "925",
+        "height_mm": "726",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "rotating",
+        "num_motors": "1",
+        "striker": "swinging",
+        "motor_ref": "IV233JNB",
+        "num_motors_source": "system",
+        "motor_size": "C80-8",
+        "motor_power": "0.25",
+        "pkz_trip_a": "1.8",
+        "chain": "½× ³⁄₁₆\"",
+        "chain_springs_ref": "IV4KETTSP35",
+        "wheel_ref": "V205T",
+        "chain_length": "4.7m",
+        "striker_ref": "III226F",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III407",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "striker": {
+          "value": "swinging",
+          "source": "USER"
+        },
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV233JNB",
+          "source": "CALCULATED"
+        },
+        "pkz_trip_a": {
+          "value": "1.8",
+          "source": "CALCULATED"
+        },
+        "chain": {
+          "value": "½× ³⁄₁₆\"",
+          "source": "CALCULATED"
+        },
+        "chain_springs_ref": {
+          "value": "IV4KETTSP35",
+          "source": "CALCULATED"
+        },
+        "wheel_ref": {
+          "value": "V205T",
+          "source": "CALCULATED"
+        },
+        "chain_length": {
+          "value": "4.7m",
+          "source": "CALCULATED"
+        },
+        "motor": {
+          "value": "rotating",
+          "source": "USER"
+        },
+        "striker_ref": {
+          "value": "III226F",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III407",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "T2F3"
+    },
+    {
+      "identifier": "bell_41",
+      "properties": {
+        "note": "A1",
+        "weight": "450.0 kg",
+        "diameter": "925 mm",
+        "height": "726 mm",
+        "weight_g": "450000",
+        "diameter_mm": "925",
+        "height_mm": "726",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "rotating",
+        "num_motors": "1",
+        "striker": "swinging",
+        "motor_ref": "IV233JNB",
+        "num_motors_source": "system",
+        "motor_size": "C80-8",
+        "motor_power": "0.25",
+        "pkz_trip_a": "1.8",
+        "chain": "½× ³⁄₁₆\"",
+        "chain_springs_ref": "IV4KETTSP35",
+        "wheel_ref": "V205T",
+        "chain_length": "4.7m",
+        "striker_ref": "III226F",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III407",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "striker": {
+          "value": "swinging",
+          "source": "USER"
+        },
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV233JNB",
+          "source": "CALCULATED"
+        },
+        "pkz_trip_a": {
+          "value": "1.8",
+          "source": "CALCULATED"
+        },
+        "chain": {
+          "value": "½× ³⁄₁₆\"",
+          "source": "CALCULATED"
+        },
+        "chain_springs_ref": {
+          "value": "IV4KETTSP35",
+          "source": "CALCULATED"
+        },
+        "wheel_ref": {
+          "value": "V205T",
+          "source": "CALCULATED"
+        },
+        "chain_length": {
+          "value": "4.7m",
+          "source": "CALCULATED"
+        },
+        "motor": {
+          "value": "rotating",
+          "source": "USER"
+        },
+        "striker_ref": {
+          "value": "III226F",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III407",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "T2F3"
+    },
+    {
+      "identifier": "bell_42",
+      "properties": {
+        "note": "Ais1",
+        "weight": "375.0 kg",
+        "diameter": "873 mm",
+        "height": "685 mm",
+        "weight_g": "375000",
+        "diameter_mm": "873",
+        "height_mm": "685",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "rotating",
+        "num_motors": "1",
+        "striker": "swinging",
+        "motor_ref": "IV233JNB",
+        "num_motors_source": "system",
+        "motor_size": "C80-8",
+        "motor_power": "0.25",
+        "pkz_trip_a": "1.8",
+        "chain": "½× ³⁄₁₆\"",
+        "chain_springs_ref": "IV4KETTSP35",
+        "wheel_ref": "V204T",
+        "chain_length": "4.2m",
+        "striker_ref": "III226F",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III407",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "striker": {
+          "value": "swinging",
+          "source": "USER"
+        },
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV233JNB",
+          "source": "CALCULATED"
+        },
+        "pkz_trip_a": {
+          "value": "1.8",
+          "source": "CALCULATED"
+        },
+        "chain": {
+          "value": "½× ³⁄₁₆\"",
+          "source": "CALCULATED"
+        },
+        "chain_springs_ref": {
+          "value": "IV4KETTSP35",
+          "source": "CALCULATED"
+        },
+        "wheel_ref": {
+          "value": "V204T",
+          "source": "CALCULATED"
+        },
+        "chain_length": {
+          "value": "4.2m",
+          "source": "CALCULATED"
+        },
+        "motor": {
+          "value": "rotating",
+          "source": "USER"
+        },
+        "striker_ref": {
+          "value": "III226F",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III407",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "T2F3"
+    },
+    {
+      "identifier": "bell_43",
+      "properties": {
+        "note": "Ais1",
+        "weight": "375.0 kg",
+        "diameter": "873 mm",
+        "height": "685 mm",
+        "weight_g": "375000",
+        "diameter_mm": "873",
+        "height_mm": "685",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "rotating",
+        "num_motors": "1",
+        "striker": "swinging",
+        "motor_ref": "IV233JNB",
+        "num_motors_source": "system",
+        "motor_size": "C80-8",
+        "motor_power": "0.25",
+        "pkz_trip_a": "1.8",
+        "chain": "½× ³⁄₁₆\"",
+        "chain_springs_ref": "IV4KETTSP35",
+        "wheel_ref": "V204T",
+        "chain_length": "4.2m",
+        "striker_ref": "III226F",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III407",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "striker": {
+          "value": "swinging",
+          "source": "USER"
+        },
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV233JNB",
+          "source": "CALCULATED"
+        },
+        "pkz_trip_a": {
+          "value": "1.8",
+          "source": "CALCULATED"
+        },
+        "chain": {
+          "value": "½× ³⁄₁₆\"",
+          "source": "CALCULATED"
+        },
+        "chain_springs_ref": {
+          "value": "IV4KETTSP35",
+          "source": "CALCULATED"
+        },
+        "wheel_ref": {
+          "value": "V204T",
+          "source": "CALCULATED"
+        },
+        "chain_length": {
+          "value": "4.2m",
+          "source": "CALCULATED"
+        },
+        "motor": {
+          "value": "rotating",
+          "source": "USER"
+        },
+        "striker_ref": {
+          "value": "III226F",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III407",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "T2F3"
+    },
+    {
+      "identifier": "bell_44",
+      "properties": {
+        "note": "B1",
+        "weight": "320.0 kg",
+        "diameter": "824 mm",
+        "height": "646 mm",
+        "weight_g": "320000",
+        "diameter_mm": "824",
+        "height_mm": "646",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "rotating",
+        "num_motors": "1",
+        "striker": "swinging",
+        "motor_ref": "IV233JNB",
+        "num_motors_source": "system",
+        "motor_size": "C80-8",
+        "motor_power": "0.25",
+        "pkz_trip_a": "1.8",
+        "chain": "½× ³⁄₁₆\"",
+        "chain_springs_ref": "IV4KETTSP35",
+        "wheel_ref": "V204T",
+        "chain_length": "4.2m",
+        "striker_ref": "III226F",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III407",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "striker": {
+          "value": "swinging",
+          "source": "USER"
+        },
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV233JNB",
+          "source": "CALCULATED"
+        },
+        "pkz_trip_a": {
+          "value": "1.8",
+          "source": "CALCULATED"
+        },
+        "chain": {
+          "value": "½× ³⁄₁₆\"",
+          "source": "CALCULATED"
+        },
+        "chain_springs_ref": {
+          "value": "IV4KETTSP35",
+          "source": "CALCULATED"
+        },
+        "wheel_ref": {
+          "value": "V204T",
+          "source": "CALCULATED"
+        },
+        "chain_length": {
+          "value": "4.2m",
+          "source": "CALCULATED"
+        },
+        "motor": {
+          "value": "rotating",
+          "source": "USER"
+        },
+        "striker_ref": {
+          "value": "III226F",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III407",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "T3F1"
+    },
+    {
+      "identifier": "bell_45",
+      "properties": {
+        "note": "C2",
+        "weight": "263.0 kg",
+        "diameter": "774 mm",
+        "height": "611 mm",
+        "weight_g": "263000",
+        "diameter_mm": "774",
+        "height_mm": "611",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "rotating",
+        "num_motors": "1",
+        "striker": "swinging",
+        "motor_ref": "IV233JNB",
+        "num_motors_source": "system",
+        "motor_size": "C80-8",
+        "motor_power": "0.25",
+        "pkz_trip_a": "1.8",
+        "chain": "½× ³⁄₁₆\"",
+        "chain_springs_ref": "IV4KETTSP35",
+        "wheel_ref": "V203T",
+        "chain_length": "3.8m",
+        "striker_ref": "III226F",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III407",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "striker": {
+          "value": "swinging",
+          "source": "USER"
+        },
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV233JNB",
+          "source": "CALCULATED"
+        },
+        "pkz_trip_a": {
+          "value": "1.8",
+          "source": "CALCULATED"
+        },
+        "chain": {
+          "value": "½× ³⁄₁₆\"",
+          "source": "CALCULATED"
+        },
+        "chain_springs_ref": {
+          "value": "IV4KETTSP35",
+          "source": "CALCULATED"
+        },
+        "wheel_ref": {
+          "value": "V203T",
+          "source": "CALCULATED"
+        },
+        "chain_length": {
+          "value": "3.8m",
+          "source": "CALCULATED"
+        },
+        "motor": {
+          "value": "rotating",
+          "source": "USER"
+        },
+        "striker_ref": {
+          "value": "III226F",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III407",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "T3F1"
+    },
+    {
+      "identifier": "bell_46",
+      "properties": {
+        "note": "C2",
+        "weight": "263.0 kg",
+        "diameter": "774 mm",
+        "height": "611 mm",
+        "weight_g": "263000",
+        "diameter_mm": "774",
+        "height_mm": "611",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "rotating",
+        "num_motors": "1",
+        "striker": "swinging",
+        "motor_ref": "IV233JNB",
+        "num_motors_source": "system",
+        "motor_size": "C80-8",
+        "motor_power": "0.25",
+        "pkz_trip_a": "1.8",
+        "chain": "½× ³⁄₁₆\"",
+        "chain_springs_ref": "IV4KETTSP35",
+        "wheel_ref": "V203T",
+        "chain_length": "3.8m",
+        "striker_ref": "III226F",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III407",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "striker": {
+          "value": "swinging",
+          "source": "USER"
+        },
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV233JNB",
+          "source": "CALCULATED"
+        },
+        "pkz_trip_a": {
+          "value": "1.8",
+          "source": "CALCULATED"
+        },
+        "chain": {
+          "value": "½× ³⁄₁₆\"",
+          "source": "CALCULATED"
+        },
+        "chain_springs_ref": {
+          "value": "IV4KETTSP35",
+          "source": "CALCULATED"
+        },
+        "wheel_ref": {
+          "value": "V203T",
+          "source": "CALCULATED"
+        },
+        "chain_length": {
+          "value": "3.8m",
+          "source": "CALCULATED"
+        },
+        "motor": {
+          "value": "rotating",
+          "source": "USER"
+        },
+        "striker_ref": {
+          "value": "III226F",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III407",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "T3F1"
+    },
+    {
+      "identifier": "bell_47",
+      "properties": {
+        "note": "D2",
+        "weight": "188.0 kg",
+        "diameter": "690 mm",
+        "height": "549 mm",
+        "weight_g": "188000",
+        "diameter_mm": "690",
+        "height_mm": "549",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "rotating",
+        "num_motors": "1",
+        "striker": "swinging",
+        "motor_ref": "IV232JNB",
+        "num_motors_source": "system",
+        "motor_size": "C71-8",
+        "motor_power": "0.18",
+        "pkz_trip_a": "1",
+        "chain": "½× ³⁄₁₆\"",
+        "chain_springs_ref": "IV4KETTSP35",
+        "wheel_ref": "V202T",
+        "chain_length": "3.3m",
+        "striker_ref": "III225F",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III405",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "striker": {
+          "value": "swinging",
+          "source": "USER"
+        },
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV232JNB",
+          "source": "CALCULATED"
+        },
+        "pkz_trip_a": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "chain": {
+          "value": "½× ³⁄₁₆\"",
+          "source": "CALCULATED"
+        },
+        "chain_springs_ref": {
+          "value": "IV4KETTSP35",
+          "source": "CALCULATED"
+        },
+        "wheel_ref": {
+          "value": "V202T",
+          "source": "CALCULATED"
+        },
+        "chain_length": {
+          "value": "3.3m",
+          "source": "CALCULATED"
+        },
+        "motor": {
+          "value": "rotating",
+          "source": "USER"
+        },
+        "striker_ref": {
+          "value": "III225F",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III405",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "T3F1"
+    },
+    {
+      "identifier": "bell_48",
+      "properties": {
+        "note": "Dis2",
+        "weight": "160.0 kg",
+        "diameter": "654 mm",
+        "height": "521 mm",
+        "weight_g": "160000",
+        "diameter_mm": "654",
+        "height_mm": "521",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "rotating",
+        "num_motors": "1",
+        "striker": "swinging",
+        "motor_ref": "IV232JNB",
+        "num_motors_source": "system",
+        "motor_size": "C71-8",
+        "motor_power": "0.18",
+        "pkz_trip_a": "1",
+        "chain": "½× ³⁄₁₆\"",
+        "chain_springs_ref": "IV4KETTSP35",
+        "wheel_ref": "V202T",
+        "chain_length": "3.3m",
+        "striker_ref": "III225F",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III405",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "striker": {
+          "value": "swinging",
+          "source": "USER"
+        },
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV232JNB",
+          "source": "CALCULATED"
+        },
+        "pkz_trip_a": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "chain": {
+          "value": "½× ³⁄₁₆\"",
+          "source": "CALCULATED"
+        },
+        "chain_springs_ref": {
+          "value": "IV4KETTSP35",
+          "source": "CALCULATED"
+        },
+        "wheel_ref": {
+          "value": "V202T",
+          "source": "CALCULATED"
+        },
+        "chain_length": {
+          "value": "3.3m",
+          "source": "CALCULATED"
+        },
+        "motor": {
+          "value": "rotating",
+          "source": "USER"
+        },
+        "striker_ref": {
+          "value": "III225F",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III405",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "T3F1"
+    },
+    {
+      "identifier": "bell_49",
+      "properties": {
+        "note": "F2",
+        "weight": "117.0 kg",
+        "diameter": "588 mm",
+        "height": "471 mm",
+        "weight_g": "117000",
+        "diameter_mm": "588",
+        "height_mm": "471",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "rotating",
+        "num_motors": "1",
+        "striker": "swinging",
+        "motor_ref": "IV231JNB",
+        "num_motors_source": "system",
+        "motor_size": "C63-8",
+        "motor_power": "0.12",
+        "pkz_trip_a": "0.9",
+        "chain": "½× ³⁄₁₆\"",
+        "chain_springs_ref": "IV4KETTSP30",
+        "wheel_ref": "V201T",
+        "chain_length": "2.8m",
+        "striker_ref": "III225F",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III405",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "striker": {
+          "value": "swinging",
+          "source": "USER"
+        },
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV231JNB",
+          "source": "CALCULATED"
+        },
+        "pkz_trip_a": {
+          "value": "0.9",
+          "source": "CALCULATED"
+        },
+        "chain": {
+          "value": "½× ³⁄₁₆\"",
+          "source": "CALCULATED"
+        },
+        "chain_springs_ref": {
+          "value": "IV4KETTSP30",
+          "source": "CALCULATED"
+        },
+        "wheel_ref": {
+          "value": "V201T",
+          "source": "CALCULATED"
+        },
+        "chain_length": {
+          "value": "2.8m",
+          "source": "CALCULATED"
+        },
+        "motor": {
+          "value": "rotating",
+          "source": "USER"
+        },
+        "striker_ref": {
+          "value": "III225F",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III405",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "T3F1"
+    },
+    {
+      "identifier": "bell_50",
+      "properties": {
+        "note": "G2",
+        "weight": "87.0 kg",
+        "diameter": "530 mm",
+        "height": "482 mm",
+        "weight_g": "87000",
+        "diameter_mm": "530",
+        "height_mm": "482",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "rotating",
+        "num_motors": "1",
+        "striker": "swinging",
+        "motor_ref": "IV231JNB",
+        "num_motors_source": "system",
+        "motor_size": "C63-8",
+        "motor_power": "0.12",
+        "pkz_trip_a": "0.9",
+        "chain": "½× ³⁄₁₆\"",
+        "chain_springs_ref": "IV4KETTSP30",
+        "wheel_ref": "V201T",
+        "chain_length": "2.8m",
+        "striker_ref": "III224F",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III405",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "striker": {
+          "value": "swinging",
+          "source": "USER"
+        },
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV231JNB",
+          "source": "CALCULATED"
+        },
+        "pkz_trip_a": {
+          "value": "0.9",
+          "source": "CALCULATED"
+        },
+        "chain": {
+          "value": "½× ³⁄₁₆\"",
+          "source": "CALCULATED"
+        },
+        "chain_springs_ref": {
+          "value": "IV4KETTSP30",
+          "source": "CALCULATED"
+        },
+        "wheel_ref": {
+          "value": "V201T",
+          "source": "CALCULATED"
+        },
+        "chain_length": {
+          "value": "2.8m",
+          "source": "CALCULATED"
+        },
+        "motor": {
+          "value": "rotating",
+          "source": "USER"
+        },
+        "striker_ref": {
+          "value": "III224F",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III405",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "T3F1"
+    }
+  ],
+  "topology": {
+    "nodes": [
+      {
+        "id": "subdivision_0",
+        "name": "Sacristy",
+        "position": {
+          "x": 14.714,
+          "y": 1370.068
+        },
+        "size": {
+          "width": 180.0,
+          "height": 120.0
+        },
+        "category": "container",
+        "powerGrid": "v400",
+        "equipment": [],
+        "type": "towerFloor",
+        "bells": [],
+        "clockFaceCount": 0,
+        "connectsToClockTower": false,
+        "designation": "none",
+        "serialEnabled": false
+      },
+      {
+        "id": "subdivision_1",
+        "name": "T1F1",
+        "position": {
+          "x": 146.664,
+          "y": 857.603
+        },
+        "size": {
+          "width": 180.0,
+          "height": 120.0
+        },
+        "category": "container",
+        "powerGrid": "v400",
+        "equipment": [],
+        "type": "towerFloor",
+        "towerNumber": 1,
+        "floorNumber": 1,
+        "bells": [],
+        "clockFaceCount": 0,
+        "connectsToClockTower": false,
+        "designation": "none",
+        "serialEnabled": false
+      },
+      {
+        "id": "subdivision_2",
+        "name": "T1F2",
+        "position": {
+          "x": 208.271,
+          "y": 518.33
+        },
+        "size": {
+          "width": 180.0,
+          "height": 120.0
+        },
+        "category": "container",
+        "powerGrid": "v400",
+        "equipment": [],
+        "type": "towerFloor",
+        "towerNumber": 1,
+        "floorNumber": 2,
+        "bells": [],
+        "clockFaceCount": 0,
+        "connectsToClockTower": false,
+        "designation": "none",
+        "serialEnabled": false
+      },
+      {
+        "id": "subdivision_3",
+        "name": "T1F3",
+        "position": {
+          "x": 239.031,
+          "y": 269.27
+        },
+        "size": {
+          "width": 180.0,
+          "height": 120.0
+        },
+        "category": "container",
+        "powerGrid": "v400",
+        "equipment": [],
+        "type": "towerFloor",
+        "towerNumber": 1,
+        "floorNumber": 3,
+        "bells": [],
+        "clockFaceCount": 0,
+        "connectsToClockTower": false,
+        "designation": "none",
+        "serialEnabled": false
+      },
+      {
+        "id": "subdivision_4",
+        "name": "T1F4",
+        "position": {
+          "x": 247.281,
+          "y": 24.867
+        },
+        "size": {
+          "width": 180.0,
+          "height": 120.0
+        },
+        "category": "container",
+        "powerGrid": "v400",
+        "equipment": [],
+        "type": "towerFloor",
+        "towerNumber": 1,
+        "floorNumber": 4,
+        "bells": [],
+        "clockFaceCount": 0,
+        "connectsToClockTower": false,
+        "designation": "none",
+        "serialEnabled": false
+      },
+      {
+        "id": "subdivision_5",
+        "name": "Clock Tower",
+        "position": {
+          "x": 735.309,
+          "y": -16.4
+        },
+        "size": {
+          "width": 180.0,
+          "height": 120.0
+        },
+        "category": "container",
+        "powerGrid": "v230",
+        "equipment": [],
+        "type": "clockTower",
+        "bells": [],
+        "clockFaceCount": 0,
+        "connectsToClockTower": false,
+        "designation": "towerClock",
+        "serialEnabled": false
+      },
+      {
+        "id": "subdivision_6",
+        "name": "T2F1",
+        "position": {
+          "x": 929.325,
+          "y": 903.697
+        },
+        "size": {
+          "width": 180.0,
+          "height": 120.0
+        },
+        "category": "container",
+        "powerGrid": "v400",
+        "equipment": [],
+        "type": "towerFloor",
+        "towerNumber": 2,
+        "floorNumber": 1,
+        "bells": [],
+        "clockFaceCount": 0,
+        "connectsToClockTower": false,
+        "designation": "none",
+        "serialEnabled": false
+      },
+      {
+        "id": "subdivision_7",
+        "name": "T2F2",
+        "position": {
+          "x": 986.61,
+          "y": 586.405
+        },
+        "size": {
+          "width": 180.0,
+          "height": 120.0
+        },
+        "category": "container",
+        "powerGrid": "v400",
+        "equipment": [],
+        "type": "towerFloor",
+        "towerNumber": 2,
+        "floorNumber": 2,
+        "bells": [],
+        "clockFaceCount": 0,
+        "connectsToClockTower": false,
+        "designation": "none",
+        "serialEnabled": false
+      },
+      {
+        "id": "subdivision_8",
+        "name": "T2F3",
+        "position": {
+          "x": 1015.623,
+          "y": 281.924
+        },
+        "size": {
+          "width": 180.0,
+          "height": 120.0
+        },
+        "category": "container",
+        "powerGrid": "v400",
+        "equipment": [],
+        "type": "towerFloor",
+        "towerNumber": 2,
+        "floorNumber": 3,
+        "bells": [],
+        "clockFaceCount": 0,
+        "connectsToClockTower": false,
+        "designation": "none",
+        "serialEnabled": false
+      },
+      {
+        "id": "subdivision_9",
+        "name": "T3F1",
+        "position": {
+          "x": 1560.427,
+          "y": 1017.061
+        },
+        "size": {
+          "width": 180.0,
+          "height": 120.0
+        },
+        "category": "container",
+        "powerGrid": "v400",
+        "equipment": [],
+        "type": "towerFloor",
+        "towerNumber": 3,
+        "floorNumber": 1,
+        "bells": [],
+        "clockFaceCount": 0,
+        "connectsToClockTower": false,
+        "designation": "none",
+        "serialEnabled": false
+      },
+      {
+        "id": "via3fosrl_subdivision_0_subdivision_9_dualFiber_1794157923795_source",
+        "name": "VIA3FOSRL (T3F1 side)",
+        "position": {
+          "x": 1460.427,
+          "y": 1388.5610000000001
+        },
+        "size": {
+          "width": 140.0,
+          "height": 80.0
+        },
+        "category": "device",
+        "groupId": "via_group_via3fosrl_subdivision_0_subdivision_9_dualFiber_1794157923795_source",
+        "deviceType": "via3fosrl",
+        "powerGrid": "v230",
+        "equipment": [],
+        "type": "towerFloor",
+        "bells": [],
+        "clockFaceCount": 0,
+        "connectsToClockTower": false,
+        "designation": "none",
+        "serialEnabled": false
+      },
+      {
+        "id": "via3fosrl_subdivision_0_subdivision_9_dualFiber_1794157923795_dest",
+        "name": "VIA3FOSRL (Sacristy side)",
+        "position": {
+          "x": 331.314,
+          "y": 1424.568
+        },
+        "size": {
+          "width": 140.0,
+          "height": 80.0
+        },
+        "category": "device",
+        "groupId": "via_group_via3fosrl_subdivision_0_subdivision_9_dualFiber_1794157923795_dest",
+        "deviceType": "via3fosrl",
+        "powerGrid": "v230",
+        "equipment": [],
+        "type": "towerFloor",
+        "bells": [],
+        "clockFaceCount": 0,
+        "connectsToClockTower": false,
+        "designation": "none",
+        "serialEnabled": false
+      }
+    ],
+    "connections": [
+      {
+        "id": "subdivision_0_subdivision_3",
+        "sourceNodeId": "subdivision_0",
+        "destNodeId": "subdivision_3",
+        "cableType": "cat5",
+        "lengthMeters": 30.0,
+        "calculatedCores": 0,
+        "busType": "apollo2bus",
+        "exitSide": "center",
+        "entrySide": "center"
+      },
+      {
+        "id": "subdivision_3_subdivision_5",
+        "sourceNodeId": "subdivision_3",
+        "destNodeId": "subdivision_5",
+        "cableType": "multicore",
+        "lengthMeters": 30.0,
+        "calculatedCores": 0,
+        "exitSide": "center",
+        "entrySide": "center"
+      },
+      {
+        "id": "subdivision_3_subdivision_4",
+        "sourceNodeId": "subdivision_3",
+        "destNodeId": "subdivision_4",
+        "cableType": "cat5",
+        "lengthMeters": 30.0,
+        "calculatedCores": 0,
+        "busType": "apollo2bus",
+        "exitSide": "center",
+        "entrySide": "center"
+      },
+      {
+        "id": "subdivision_4_subdivision_2",
+        "sourceNodeId": "subdivision_4",
+        "destNodeId": "subdivision_2",
+        "cableType": "cat5",
+        "lengthMeters": 30.0,
+        "calculatedCores": 0,
+        "busType": "apollo2bus",
+        "exitSide": "center",
+        "entrySide": "center"
+      },
+      {
+        "id": "subdivision_2_subdivision_1",
+        "sourceNodeId": "subdivision_2",
+        "destNodeId": "subdivision_1",
+        "cableType": "cat5",
+        "lengthMeters": 30.0,
+        "calculatedCores": 0,
+        "busType": "apollo2bus",
+        "exitSide": "center",
+        "entrySide": "center"
+      },
+      {
+        "id": "subdivision_0_subdivision_6",
+        "sourceNodeId": "subdivision_0",
+        "destNodeId": "subdivision_6",
+        "cableType": "cat5",
+        "lengthMeters": 30.0,
+        "calculatedCores": 0,
+        "busType": "apollo3bus",
+        "exitSide": "center",
+        "entrySide": "center"
+      },
+      {
+        "id": "subdivision_6_subdivision_7",
+        "sourceNodeId": "subdivision_6",
+        "destNodeId": "subdivision_7",
+        "cableType": "cat5",
+        "lengthMeters": 30.0,
+        "calculatedCores": 0,
+        "busType": "apollo3bus",
+        "exitSide": "center",
+        "entrySide": "center"
+      },
+      {
+        "id": "subdivision_7_subdivision_8",
+        "sourceNodeId": "subdivision_7",
+        "destNodeId": "subdivision_8",
+        "cableType": "cat5",
+        "lengthMeters": 30.0,
+        "calculatedCores": 0,
+        "busType": "apollo3bus",
+        "exitSide": "center",
+        "entrySide": "center"
+      },
+      {
+        "id": "subdivision_0_subdivision_9_dualFiber_1794157923795_cat5_source",
+        "sourceNodeId": "subdivision_9",
+        "destNodeId": "via3fosrl_subdivision_0_subdivision_9_dualFiber_1794157923795_source",
+        "cableType": "cat5",
+        "lengthMeters": 1.0,
+        "calculatedCores": 0,
+        "exitSide": "center",
+        "entrySide": "center"
+      },
+      {
+        "id": "subdivision_0_subdivision_9_dualFiber_1794157923795",
+        "sourceNodeId": "via3fosrl_subdivision_0_subdivision_9_dualFiber_1794157923795_source",
+        "destNodeId": "via3fosrl_subdivision_0_subdivision_9_dualFiber_1794157923795_dest",
+        "cableType": "dualFiber",
+        "lengthMeters": 100.0,
+        "calculatedCores": 0,
+        "busType": "apollo3bus",
+        "exitSide": "center",
+        "entrySide": "center"
+      },
+      {
+        "id": "subdivision_0_subdivision_9_dualFiber_1794157923795_cat5_dest",
+        "sourceNodeId": "via3fosrl_subdivision_0_subdivision_9_dualFiber_1794157923795_dest",
+        "destNodeId": "subdivision_0",
+        "cableType": "cat5",
+        "lengthMeters": 1.0,
+        "calculatedCores": 0,
+        "exitSide": "center",
+        "entrySide": "center"
+      }
+    ]
+  }
+}

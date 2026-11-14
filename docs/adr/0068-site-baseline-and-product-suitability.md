@@ -269,7 +269,7 @@ for a bell, the document without `bells` for the group) and `import_source text`
 alternative, creating an attribute definition per source property, would add about 40 admin-visible
 definitions (part references, PKZ currents) that no rule reads, and the typed attribute kinds do not
 fit them. The raw JSON is not validated, not editable in the app and not read by the matcher; it is
-returned on the item as `source_data` so nothing is hidden. Unmapped fields are reported in the
+read back with `GET /opportunities/{id}/baseline/items/{item_id}/source` (`opportunities.read`, 404 for an item entered by hand) so nothing is hidden; the item tree only carries `import_source`, to keep it small. Unmapped fields are reported in the
 preview as a list of property names with the number of bells carrying them.
 
 *Replace, not duplicate.* An import carries a source id (query parameter `source_id`, default
@@ -284,7 +284,7 @@ and the preview says how many items will be replaced.
 `opportunities.write`, 404 for another company's opportunity. The response is the same for dry run
 and real import: `{dry_run, source_id, replaced, created: {bell_group, bell, clock_dial}, items
 (name, type_code, values), warnings [{bell, field, message}], unmapped_fields [{field, count}]}`. A real
-import is audited (`baseline_import`). The body limit is 4 MB.
+import is audited (`opportunity` / `baseline_imported`). The body limit is 4 MB.
 
 *Why not the D10 import framework.* It is on main (ADR 0067), but it is tabular: one row is one
 record upserted by a key, there is no nesting, no replace-by-source, and its dry run reports row

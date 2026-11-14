@@ -1,0 +1,787 @@
+{
+  "customer": {
+    "name": "",
+    "language": "",
+    "rotary_motor": "",
+    "linear_motor": "linear",
+    "wheel": "",
+    "inox": false,
+    "adjustable_chain_springs": false,
+    "previous_three_phase_brand": ""
+  },
+  "location": {
+    "name": "",
+    "country": "BE",
+    "power_grid": "1x230V ∿",
+    "frequency": "50Hz",
+    "sensor": "",
+    "environment": "",
+    "include_strikers": true,
+    "include_motors": true,
+    "include_wheels": true,
+    "serial_movotron": true,
+    "subdivisions_at_site": [
+      "Sacristy",
+      "Bell Tower"
+    ]
+  },
+  "bells": [
+    {
+      "identifier": "swinging_bell_1",
+      "properties": {
+        "note": "B1",
+        "weight": "320.0 kg",
+        "diameter": "824 mm",
+        "height": "646 mm",
+        "weight_g": "320000",
+        "diameter_mm": "824",
+        "height_mm": "646",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "linear",
+        "motor_ref": "IV714C",
+        "motor_size": "",
+        "num_motors": "1",
+        "wheel_ref": "NOT_SET",
+        "chain": "NOT_SET",
+        "chain_length": "",
+        "striker": "swinging",
+        "striker_ref": "III226F",
+        "num_motors_source": "system",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III407",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV714C",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III407",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "Bell Tower"
+    },
+    {
+      "identifier": "swinging_bell_2",
+      "properties": {
+        "note": "C2",
+        "weight": "263.0 kg",
+        "diameter": "774 mm",
+        "height": "611 mm",
+        "weight_g": "263000",
+        "diameter_mm": "774",
+        "height_mm": "611",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "linear",
+        "motor_ref": "IV714C",
+        "motor_size": "",
+        "num_motors": "1",
+        "wheel_ref": "NOT_SET",
+        "chain": "NOT_SET",
+        "chain_length": "",
+        "striker": "swinging",
+        "striker_ref": "III226F",
+        "num_motors_source": "system",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III407",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV714C",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III407",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "Bell Tower"
+    },
+    {
+      "identifier": "swinging_bell_3",
+      "properties": {
+        "note": "Cis2",
+        "weight": "220.0 kg",
+        "diameter": "727 mm",
+        "height": "579 mm",
+        "weight_g": "220000",
+        "diameter_mm": "727",
+        "height_mm": "579",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "linear",
+        "motor_ref": "IV714C",
+        "motor_size": "",
+        "num_motors": "1",
+        "wheel_ref": "NOT_SET",
+        "chain": "NOT_SET",
+        "chain_length": "",
+        "striker": "swinging",
+        "striker_ref": "III225F",
+        "num_motors_source": "system",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III405",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV714C",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III405",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "Bell Tower"
+    },
+    {
+      "identifier": "swinging_bell_4",
+      "properties": {
+        "note": "Dis2",
+        "weight": "160.0 kg",
+        "diameter": "654 mm",
+        "height": "521 mm",
+        "weight_g": "160000",
+        "diameter_mm": "654",
+        "height_mm": "521",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "linear",
+        "motor_ref": "IV713C",
+        "motor_size": "",
+        "num_motors": "1",
+        "wheel_ref": "NOT_SET",
+        "chain": "NOT_SET",
+        "chain_length": "",
+        "striker": "swinging",
+        "striker_ref": "III225F",
+        "num_motors_source": "system",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III405",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV713C",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III405",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "Bell Tower"
+    },
+    {
+      "identifier": "swinging_bell_5",
+      "properties": {
+        "note": "E2",
+        "weight": "137.0 kg",
+        "diameter": "620 mm",
+        "height": "496 mm",
+        "weight_g": "137000",
+        "diameter_mm": "620",
+        "height_mm": "496",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "linear",
+        "motor_ref": "IV713C",
+        "motor_size": "",
+        "num_motors": "1",
+        "wheel_ref": "NOT_SET",
+        "chain": "NOT_SET",
+        "chain_length": "",
+        "striker": "swinging",
+        "striker_ref": "III225F",
+        "num_motors_source": "system",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III405",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV713C",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III405",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "Bell Tower"
+    },
+    {
+      "identifier": "swinging_bell_6",
+      "properties": {
+        "note": "Fis2",
+        "weight": "101.0 kg",
+        "diameter": "558 mm",
+        "height": "444 mm",
+        "weight_g": "101000",
+        "diameter_mm": "558",
+        "height_mm": "444",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "linear",
+        "motor_ref": "IV712C",
+        "motor_size": "",
+        "num_motors": "1",
+        "wheel_ref": "NOT_SET",
+        "chain": "NOT_SET",
+        "chain_length": "",
+        "striker": "swinging",
+        "striker_ref": "III225F",
+        "num_motors_source": "system",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III405",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV712C",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III405",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "Bell Tower"
+    },
+    {
+      "identifier": "swinging_bell_7",
+      "properties": {
+        "note": "G2",
+        "weight": "87.0 kg",
+        "diameter": "530 mm",
+        "height": "482 mm",
+        "weight_g": "87000",
+        "diameter_mm": "530",
+        "height_mm": "482",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "linear",
+        "motor_ref": "IV712C",
+        "motor_size": "",
+        "num_motors": "1",
+        "wheel_ref": "NOT_SET",
+        "chain": "NOT_SET",
+        "chain_length": "",
+        "striker": "swinging",
+        "striker_ref": "III224F",
+        "num_motors_source": "system",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III405",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV712C",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III405",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "Bell Tower"
+    },
+    {
+      "identifier": "swinging_bell_8",
+      "properties": {
+        "note": "A2",
+        "weight": "66.0 kg",
+        "diameter": "480 mm",
+        "height": "435 mm",
+        "weight_g": "66000",
+        "diameter_mm": "480",
+        "height_mm": "435",
+        "weight_unit": "kg",
+        "diameter_unit": "mm",
+        "height_unit": "mm",
+        "motion": "flying",
+        "motor": "linear",
+        "motor_ref": "IV712C",
+        "motor_size": "",
+        "num_motors": "1",
+        "wheel_ref": "NOT_SET",
+        "chain": "NOT_SET",
+        "chain_length": "",
+        "striker": "swinging",
+        "striker_ref": "III224F",
+        "num_motors_source": "system",
+        "striker_rust_protection_ref": "NOT_SET",
+        "striker_pin_ref": "NOT_SET",
+        "striker_stainless_ref": "NOT_SET",
+        "striker_bronze_bearings_ref": "NOT_SET",
+        "striker_support_ref": "III405",
+        "striker_support_epoxy_ref": "NOT_SET",
+        "striker_mounting_ref": "NOT_SET",
+        "striker_fixing_plate_ref": "NOT_SET",
+        "striker_mounting_epoxy_ref": "NOT_SET",
+        "adjusting_bolt_ref": "NOT_SET"
+      },
+      "field_states": {
+        "num_motors": {
+          "value": "1",
+          "source": "CALCULATED"
+        },
+        "motor_ref": {
+          "value": "IV712C",
+          "source": "CALCULATED"
+        },
+        "striker_rust_protection_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_pin_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_stainless_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_bronze_bearings_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_support_ref": {
+          "value": "III405",
+          "source": "CALCULATED"
+        },
+        "striker_support_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_fixing_plate_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "striker_mounting_epoxy_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        },
+        "adjusting_bolt_ref": {
+          "value": "NOT_SET",
+          "source": "CALCULATED"
+        }
+      },
+      "subdivision": "Bell Tower"
+    }
+  ],
+  "topology": {
+    "nodes": [
+      {
+        "id": "subdivision_0",
+        "name": "Sacristy",
+        "position": {
+          "x": 100.0,
+          "y": 850.0
+        },
+        "size": {
+          "width": 180.0,
+          "height": 120.0
+        },
+        "category": "container",
+        "powerGrid": "v230",
+        "equipment": [],
+        "type": "sacristy",
+        "bells": [],
+        "clockFaceCount": 0,
+        "connectsToClockTower": false,
+        "designation": "masterClock",
+        "serialEnabled": false
+      },
+      {
+        "id": "subdivision_1",
+        "name": "Bell Tower",
+        "position": {
+          "x": 400.0,
+          "y": 150.0
+        },
+        "size": {
+          "width": 180.0,
+          "height": 120.0
+        },
+        "category": "container",
+        "powerGrid": "v230",
+        "equipment": [],
+        "type": "towerFloor",
+        "towerNumber": 1,
+        "floorNumber": 1,
+        "bells": [],
+        "clockFaceCount": 0,
+        "connectsToClockTower": false,
+        "designation": "none",
+        "serialEnabled": false
+      }
+    ],
+    "connections": [
+      {
+        "id": "subdivision_0_subdivision_1_cat5_1794157920051",
+        "sourceNodeId": "subdivision_0",
+        "destNodeId": "subdivision_1",
+        "cableType": "cat5",
+        "lengthMeters": 15.0,
+        "calculatedCores": 0,
+        "busType": "apollo3bus",
+        "exitSide": "center",
+        "entrySide": "center"
+      }
+    ]
+  }
+}

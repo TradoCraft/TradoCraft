@@ -566,6 +566,7 @@ pub fn router() -> OpenApiRouter<AppState> {
         .merge(contacts::router())
         .merge(opportunities::router())
         .merge(baseline::router())
+        .merge(tower_import::router())
         .merge(baseline_types::router())
         .merge(match_rules::router())
         .merge(product_matches::router())

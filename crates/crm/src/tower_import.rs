@@ -5,13 +5,28 @@
 //! module is the one place that knows that format; the pure part (`plan`) maps a document to a
 //! plan without touching the database, the handlers further down write or preview the plan.
 
-use serde::Serialize;
+use axum::body::Bytes;
+use axum::extract::{Path, Query, State};
+use axum::Json;
+use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::collections::BTreeMap;
-use tradocraft_products::attribute_definitions::{AttributeDefinition, DefinitionKind};
-use utoipa::ToSchema;
+use tradocraft_core::{audit, new_id, AppError, AppResult, AppState, CurrentUser, Permission};
+use tradocraft_products::attribute_definitions::{active_for_scope, AttributeDefinition};
+use utoipa::{IntoParams, ToSchema};
+use utoipa_axum::router::OpenApiRouter;
+use utoipa_axum::routes;
+use uuid::Uuid;
 
-use crate::baseline::validate_values;
+use crate::baseline::{check_opportunity, check_parent_type, validate_values, MAX_ITEMS};
+use crate::baseline_types;
+
+type ErrorBody = tradocraft_core::error::ErrorBody;
+
+const DEFAULT_SOURCE_ID: &str = "tower_configurator";
+const MAX_SOURCE_ID: usize = 100;
+/// A tower configurator export with a few hundred bells is well below this.
+const MAX_BODY_BYTES: usize = 4 * 1024 * 1024;
 
 /// Something in the source that could not be used as is. The import carries on.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, ToSchema)]
@@ -298,17 +313,17 @@ pub fn plan(doc: &Value, defs: &[AttributeDefinition]) -> Result<ImportPlan, Str
                     ),
                     Some("rotating") => {
                         if let Some(brand) = &brand_text {
-                            let value = defs
-                                .iter()
-                                .find(|d| d.key == "motor_brand")
-                                .and_then(|d| match_option(d, brand));
-                            match value {
-                                Some(v) => candidates.push(("motor_brand", Value::String(v))),
-                                None if defs.iter().any(|d| d.key == "motor_brand") => warn(
-                                    "customer.rotary_motor",
-                                    format!("motor brand \"{brand}\" is not one of the known brands"),
-                                ),
-                                None => {}
+                            // Without a definition the raw text is offered, so the missing
+                            // definition is reported like for every other attribute.
+                            match defs.iter().find(|d| d.key == "motor_brand") {
+                                None => candidates.push(("motor_brand", Value::String(brand.clone()))),
+                                Some(d) => match match_option(d, brand) {
+                                    Some(v) => candidates.push(("motor_brand", Value::String(v))),
+                                    None => warn(
+                                        "customer.rotary_motor",
+                                        format!("motor brand \"{brand}\" is not one of the known brands"),
+                                    ),
+                                },
                             }
                         }
                     }
@@ -369,11 +384,270 @@ pub fn plan(doc: &Value, defs: &[AttributeDefinition]) -> Result<ImportPlan, Str
     })
 }
 
+#[derive(Debug, Deserialize, IntoParams)]
+struct ImportQuery {
+    /// `true` returns the preview and writes nothing.
+    #[serde(default)]
+    dry_run: bool,
+    /// Identifies the source; an import replaces the items of the same source in the
+    /// opportunity. Default `tower_configurator`, at most 100 characters.
+    source_id: Option<String>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct ImportCounts {
+    pub bell_group: usize,
+    pub bell: usize,
+    pub clock_dial: usize,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct ImportPreviewItem {
+    pub type_code: String,
+    pub name: String,
+    /// Mapped attribute values keyed by definition key.
+    #[schema(value_type = Object)]
+    pub values: Value,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct ImportReport {
+    pub dry_run: bool,
+    pub source_id: String,
+    /// Items of the same source that are (dry run) or were replaced.
+    pub replaced: usize,
+    pub created: ImportCounts,
+    /// The group first, then its bells.
+    pub items: Vec<ImportPreviewItem>,
+    pub warnings: Vec<ImportWarning>,
+    pub unmapped_fields: Vec<UnmappedField>,
+}
+
+fn source_id(q: &Option<String>) -> AppResult<String> {
+    let Some(raw) = q else {
+        return Ok(DEFAULT_SOURCE_ID.to_string());
+    };
+    let id = raw.trim();
+    if id.is_empty() || id.chars().count() > MAX_SOURCE_ID {
+        return Err(AppError::Validation(format!(
+            "source_id must be 1 to {MAX_SOURCE_ID} characters"
+        )));
+    }
+    Ok(id.to_string())
+}
+
+async fn active_type(
+    conn: &mut sqlx::PgConnection,
+    company_id: Uuid,
+    code: &str,
+) -> AppResult<baseline_types::BaselineItemType> {
+    let ty = baseline_types::find_by_code_shared(conn, company_id, code)
+        .await?
+        .filter(|t| t.active)
+        .ok_or_else(|| {
+            AppError::Validation(format!("baseline item type {code} is missing or inactive"))
+        })?;
+    Ok(ty)
+}
+
+/// Previews (`dry_run=true`) or runs the import of a tower configurator export (the JSON as the
+/// body) into the baseline: one bell group named from the source holding one bell per source
+/// bell. Items of the same source that an earlier import created are replaced; items entered by
+/// hand are never removed (those inside a replaced group move to the top level).
+#[utoipa::path(post, path = "/opportunities/{id}/baseline/import", tag = "crm",
+    params(("id" = Uuid, Path), ImportQuery),
+    request_body(content = Value, content_type = "application/json"),
+    responses((status = 200, body = ImportReport), (status = 404, body = ErrorBody),
+        (status = 422, body = ErrorBody)))]
+async fn import_baseline(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Path(opportunity_id): Path<Uuid>,
+    Query(q): Query<ImportQuery>,
+    body: Bytes,
+) -> AppResult<Json<ImportReport>> {
+    user.require(Permission::OpportunitiesWrite)?;
+    let source = source_id(&q.source_id)?;
+    let doc: Value = serde_json::from_slice(&body)
+        .map_err(|e| AppError::Validation(format!("the file is not valid JSON: {e}")))?;
+
+    let mut tx = state.db.begin().await?;
+    check_opportunity(&mut tx, user.company_id, opportunity_id, !q.dry_run).await?;
+    let group_type = active_type(&mut tx, user.company_id, "bell_group").await?;
+    let bell_type = active_type(&mut tx, user.company_id, "bell").await?;
+    check_parent_type(&[], group_type.allow_top_level, None).map_err(AppError::Validation)?;
+    check_parent_type(
+        &bell_type.allowed_parent_codes,
+        bell_type.allow_top_level,
+        Some("bell_group"),
+    )
+    .map_err(AppError::Validation)?;
+    let defs = active_for_scope(&mut tx, user.company_id, "bell").await?;
+    let plan = plan(&doc, &defs).map_err(AppError::Validation)?;
+
+    let (total, replaced): (i64, i64) = sqlx::query_as(
+        "SELECT count(*), count(*) FILTER (WHERE import_source = $2)
+         FROM crm.opportunity_baseline_items WHERE opportunity_id = $1",
+    )
+    .bind(opportunity_id)
+    .bind(&source)
+    .fetch_one(&mut *tx)
+    .await?;
+    let (total, replaced) = (total as usize, replaced as usize);
+    if total - replaced + 1 + plan.bells.len() > MAX_ITEMS {
+        return Err(AppError::Validation(format!(
+            "an opportunity holds at most {MAX_ITEMS} baseline items; the import would exceed it"
+        )));
+    }
+
+    let mut items = vec![ImportPreviewItem {
+        type_code: group_type.code.clone(),
+        name: plan.group_name.clone(),
+        values: Value::Object(Map::new()),
+    }];
+    items.extend(plan.bells.iter().map(|b| ImportPreviewItem {
+        type_code: bell_type.code.clone(),
+        name: b.name.clone(),
+        values: Value::Object(b.values.clone()),
+    }));
+    let report = ImportReport {
+        dry_run: q.dry_run,
+        source_id: source.clone(),
+        replaced,
+        created: ImportCounts {
+            bell_group: 1,
+            bell: plan.bells.len(),
+            clock_dial: 0,
+        },
+        items,
+        warnings: plan.warnings.clone(),
+        unmapped_fields: plan.unmapped.clone(),
+    };
+    if q.dry_run {
+        return Ok(Json(report));
+    }
+
+    // Hand-entered items inside a replaced item move to the top level; they are never deleted.
+    let stuck: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM crm.opportunity_baseline_items c
+         JOIN crm.opportunity_baseline_items p ON p.opportunity_id = c.opportunity_id AND p.id = c.parent_id
+         JOIN crm.baseline_item_types t ON t.company_id = c.company_id AND t.code = c.type_code
+         WHERE c.opportunity_id = $1 AND p.import_source = $2 AND c.import_source IS DISTINCT FROM $2
+           AND NOT t.allow_top_level",
+    )
+    .bind(opportunity_id)
+    .bind(&source)
+    .fetch_one(&mut *tx)
+    .await?;
+    if stuck > 0 {
+        return Err(AppError::Validation(
+            "items entered by hand inside the imported items cannot move to the top level; \
+             move or delete them first"
+                .into(),
+        ));
+    }
+    sqlx::query(
+        "UPDATE crm.opportunity_baseline_items c SET parent_id = NULL, updated_at = now()
+         FROM crm.opportunity_baseline_items p
+         WHERE c.opportunity_id = $1 AND p.opportunity_id = c.opportunity_id AND p.id = c.parent_id
+           AND p.import_source = $2 AND c.import_source IS DISTINCT FROM $2",
+    )
+    .bind(opportunity_id)
+    .bind(&source)
+    .execute(&mut *tx)
+    .await?;
+    sqlx::query(
+        "DELETE FROM crm.opportunity_baseline_items WHERE opportunity_id = $1 AND import_source = $2",
+    )
+    .bind(opportunity_id)
+    .bind(&source)
+    .execute(&mut *tx)
+    .await?;
+
+    let insert = "INSERT INTO crm.opportunity_baseline_items
+            (id, company_id, opportunity_id, parent_id, type_code, name, quantity, \"values\",
+             sort_order, import_source, source_data)
+         VALUES ($1, $2, $3, $4, $5, $6, 1, $7, $8, $9, $10)";
+    let group_id = new_id();
+    sqlx::query(insert)
+        .bind(group_id)
+        .bind(user.company_id)
+        .bind(opportunity_id)
+        .bind(None::<Uuid>)
+        .bind(&group_type.code)
+        .bind(&plan.group_name)
+        .bind(Value::Object(Map::new()))
+        .bind(0)
+        .bind(&source)
+        .bind(&plan.group_source)
+        .execute(&mut *tx)
+        .await?;
+    for (i, bell) in plan.bells.iter().enumerate() {
+        sqlx::query(insert)
+            .bind(new_id())
+            .bind(user.company_id)
+            .bind(opportunity_id)
+            .bind(Some(group_id))
+            .bind(&bell_type.code)
+            .bind(&bell.name)
+            .bind(Value::Object(bell.values.clone()))
+            .bind(i as i32)
+            .bind(&source)
+            .bind(&bell.source)
+            .execute(&mut *tx)
+            .await?;
+    }
+    audit::record(
+        &mut tx,
+        &user,
+        "opportunity",
+        opportunity_id,
+        "baseline_imported",
+        serde_json::json!({ "source_id": source, "replaced": replaced,
+            "bells": plan.bells.len(), "warnings": plan.warnings.len() }),
+    )
+    .await?;
+    tx.commit().await?;
+    Ok(Json(report))
+}
+
+/// The source of an imported item as it was received (the whole bell, or the document without
+/// its bells for the group). 404 for an item entered by hand.
+#[utoipa::path(get, path = "/opportunities/{id}/baseline/items/{item_id}/source", tag = "crm",
+    params(("id" = Uuid, Path), ("item_id" = Uuid, Path)),
+    responses((status = 200, body = Object), (status = 404, body = ErrorBody)))]
+async fn get_source(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Path((opportunity_id, item_id)): Path<(Uuid, Uuid)>,
+) -> AppResult<Json<Value>> {
+    user.require(Permission::OpportunitiesRead)?;
+    let mut conn = state.db.acquire().await?;
+    check_opportunity(&mut conn, user.company_id, opportunity_id, false).await?;
+    let data: Option<Option<Value>> = sqlx::query_scalar(
+        "SELECT source_data FROM crm.opportunity_baseline_items WHERE id = $1 AND opportunity_id = $2",
+    )
+    .bind(item_id)
+    .bind(opportunity_id)
+    .fetch_optional(&mut *conn)
+    .await?;
+    data.flatten()
+        .map(Json)
+        .ok_or(AppError::NotFound("imported source"))
+}
+
+pub fn router() -> OpenApiRouter<AppState> {
+    OpenApiRouter::new()
+        .routes(routes!(import_baseline))
+        .layer(axum::extract::DefaultBodyLimit::max(MAX_BODY_BYTES))
+        .routes(routes!(get_source))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use serde_json::json;
-    use tradocraft_products::attribute_definitions::SelectOption;
+    use tradocraft_products::attribute_definitions::{DefinitionKind, SelectOption};
     use uuid::Uuid;
 
     fn def(key: &str, kind: DefinitionKind, options: &[(&str, &str)]) -> AttributeDefinition {
