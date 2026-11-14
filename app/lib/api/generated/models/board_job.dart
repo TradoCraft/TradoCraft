@@ -25,15 +25,16 @@ class BoardJob {
     this.scheduledEnd,
     this.scheduledStart,
   });
-  
-  factory BoardJob.fromJson(Map<String, Object?> json) => _$BoardJobFromJson(json);
-  
+
+  factory BoardJob.fromJson(Map<String, Object?> json) =>
+      _$BoardJobFromJson(json);
+
   final String city;
   @JsonKey(name: 'customer_id')
   final String customerId;
   @JsonKey(name: 'customer_name')
   final String customerName;
-  @JsonKey(includeIfNull: false,name: 'due_date')
+  @JsonKey(includeIfNull: false, name: 'due_date')
   final DateTime? dueDate;
   final String id;
 
@@ -45,9 +46,9 @@ class BoardJob {
   final String priority;
   @JsonKey(name: 'required_skill_ids')
   final List<String> requiredSkillIds;
-  @JsonKey(includeIfNull: false,name: 'scheduled_end')
+  @JsonKey(includeIfNull: false, name: 'scheduled_end')
   final DateTime? scheduledEnd;
-  @JsonKey(includeIfNull: false,name: 'scheduled_start')
+  @JsonKey(includeIfNull: false, name: 'scheduled_start')
   final DateTime? scheduledStart;
 
   /// planned | in_progress | completed | cancelled

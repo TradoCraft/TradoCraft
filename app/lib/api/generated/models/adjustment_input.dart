@@ -19,26 +19,27 @@ class AdjustmentInput {
     this.lotNumber,
     this.newQuantity,
   });
-  
-  factory AdjustmentInput.fromJson(Map<String, Object?> json) => _$AdjustmentInputFromJson(json);
-  
+
+  factory AdjustmentInput.fromJson(Map<String, Object?> json) =>
+      _$AdjustmentInputFromJson(json);
+
   /// ...or change it by this much (negative takes stock away).
   @JsonKey(includeIfNull: false)
   final String? delta;
-  @JsonKey(includeIfNull: false,name: 'expiry_date')
+  @JsonKey(includeIfNull: false, name: 'expiry_date')
   final DateTime? expiryDate;
   final String id;
   @JsonKey(name: 'location_id')
   final String locationId;
-  @JsonKey(includeIfNull: false,name: 'lot_id')
+  @JsonKey(includeIfNull: false, name: 'lot_id')
   final String? lotId;
 
   /// Lot-tracked stock that was found: the lot number (created if new).
-  @JsonKey(includeIfNull: false,name: 'lot_number')
+  @JsonKey(includeIfNull: false, name: 'lot_number')
   final String? lotNumber;
 
   /// Set the stock at the location to this quantity...
-  @JsonKey(includeIfNull: false,name: 'new_quantity')
+  @JsonKey(includeIfNull: false, name: 'new_quantity')
   final String? newQuantity;
 
   /// Why; required.

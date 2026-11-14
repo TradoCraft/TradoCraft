@@ -20,13 +20,14 @@ class TransferInput {
     this.serialUnitId,
     this.uom,
   });
-  
-  factory TransferInput.fromJson(Map<String, Object?> json) => _$TransferInputFromJson(json);
-  
+
+  factory TransferInput.fromJson(Map<String, Object?> json) =>
+      _$TransferInputFromJson(json);
+
   @JsonKey(name: 'from_location_id')
   final String fromLocationId;
   final String id;
-  @JsonKey(includeIfNull: false,name: 'lot_id')
+  @JsonKey(includeIfNull: false, name: 'lot_id')
   final String? lotId;
   @JsonKey(includeIfNull: false)
   final String? note;
@@ -37,7 +38,7 @@ class TransferInput {
   /// transfer (default) | van_replenishment
   @JsonKey(includeIfNull: false)
   final String? reason;
-  @JsonKey(includeIfNull: false,name: 'serial_unit_id')
+  @JsonKey(includeIfNull: false, name: 'serial_unit_id')
   final String? serialUnitId;
   @JsonKey(name: 'to_location_id')
   final String toLocationId;

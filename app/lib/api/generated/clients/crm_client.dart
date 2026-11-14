@@ -56,9 +56,7 @@ abstract class CrmClient {
   });
 
   @GET('/api/v1/contacts/{id}')
-  Future<Contact> getContact({
-    @Path('id') required String id,
-  });
+  Future<Contact> getContact({@Path('id') required String id});
 
   @PUT('/api/v1/contacts/{id}')
   Future<Contact> updateContact({
@@ -75,9 +73,7 @@ abstract class CrmClient {
   });
 
   @POST('/api/v1/customers')
-  Future<Customer> createCustomer({
-    @Body() required CustomerInput body,
-  });
+  Future<Customer> createCustomer({@Body() required CustomerInput body});
 
   /// All customers (with the terms in the active company) as CSV, ordered by code.
   @GET('/api/v1/customers/export')
@@ -114,9 +110,7 @@ abstract class CrmClient {
   });
 
   @GET('/api/v1/customers/{id}')
-  Future<Customer> getCustomer({
-    @Path('id') required String id,
-  });
+  Future<Customer> getCustomer({@Path('id') required String id});
 
   @PUT('/api/v1/customers/{id}')
   Future<Customer> updateCustomer({
@@ -182,9 +176,7 @@ abstract class CrmClient {
   });
 
   @GET('/api/v1/customers/{id}/rebates')
-  Future<List<CustomerRebate>> listRebates({
-    @Path('id') required String id,
-  });
+  Future<List<CustomerRebate>> listRebates({@Path('id') required String id});
 
   @POST('/api/v1/customers/{id}/rebates')
   Future<CustomerRebate> createRebate({
@@ -229,9 +221,7 @@ abstract class CrmClient {
   Future<List<PipelineStage>> pipeline();
 
   @GET('/api/v1/opportunities/{id}')
-  Future<Opportunity> getOpportunity({
-    @Path('id') required String id,
-  });
+  Future<Opportunity> getOpportunity({@Path('id') required String id});
 
   @PUT('/api/v1/opportunities/{id}')
   Future<Opportunity> updateOpportunity({

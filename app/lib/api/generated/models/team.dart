@@ -17,9 +17,9 @@ class Team {
     required this.members,
     required this.name,
   });
-  
+
   factory Team.fromJson(Map<String, Object?> json) => _$TeamFromJson(json);
-  
+
   final bool active;
   @JsonKey(name: 'created_at')
   final DateTime createdAt;

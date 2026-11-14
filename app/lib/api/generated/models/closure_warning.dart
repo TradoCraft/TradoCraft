@@ -11,13 +11,11 @@ part 'closure_warning.g.dart';
 /// The customer is closed on the planned date.
 @JsonSerializable()
 class ClosureWarning {
-  const ClosureWarning({
-    required this.closure,
-    required this.nextOpenDay,
-  });
-  
-  factory ClosureWarning.fromJson(Map<String, Object?> json) => _$ClosureWarningFromJson(json);
-  
+  const ClosureWarning({required this.closure, required this.nextOpenDay});
+
+  factory ClosureWarning.fromJson(Map<String, Object?> json) =>
+      _$ClosureWarningFromJson(json);
+
   /// The closure that covers the planned date.
   final Closure closure;
 

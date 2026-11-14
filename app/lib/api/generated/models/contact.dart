@@ -36,9 +36,10 @@ class Contact {
     required this.updatedAt,
     this.language,
   });
-  
-  factory Contact.fromJson(Map<String, Object?> json) => _$ContactFromJson(json);
-  
+
+  factory Contact.fromJson(Map<String, Object?> json) =>
+      _$ContactFromJson(json);
+
   final bool active;
 
   /// formal | informal

@@ -15,9 +15,10 @@ class TimeEntries {
     required this.items,
     required this.totalMinutes,
   });
-  
-  factory TimeEntries.fromJson(Map<String, Object?> json) => _$TimeEntriesFromJson(json);
-  
+
+  factory TimeEntries.fromJson(Map<String, Object?> json) =>
+      _$TimeEntriesFromJson(json);
+
   @JsonKey(name: 'billable_minutes')
   final int billableMinutes;
   final List<TimeEntry> items;

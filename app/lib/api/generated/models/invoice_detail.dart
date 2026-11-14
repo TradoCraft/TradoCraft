@@ -41,15 +41,16 @@ class InvoiceDetail {
     this.purchaseOrderId,
     this.purchaseOrderNumber,
   });
-  
-  factory InvoiceDetail.fromJson(Map<String, Object?> json) => _$InvoiceDetailFromJson(json);
-  
+
+  factory InvoiceDetail.fromJson(Map<String, Object?> json) =>
+      _$InvoiceDetailFromJson(json);
+
   /// When it was approved.
-  @JsonKey(includeIfNull: false,name: 'approved_at')
+  @JsonKey(includeIfNull: false, name: 'approved_at')
   final DateTime? approvedAt;
 
   /// Who approved it.
-  @JsonKey(includeIfNull: false,name: 'approved_by_user_id')
+  @JsonKey(includeIfNull: false, name: 'approved_by_user_id')
   final String? approvedByUserId;
 
   /// Owning company.
@@ -105,7 +106,7 @@ class InvoiceDetail {
   final String overrideReason;
 
   /// Payment date, once paid.
-  @JsonKey(includeIfNull: false,name: 'paid_at')
+  @JsonKey(includeIfNull: false, name: 'paid_at')
   final DateTime? paidAt;
 
   /// Bank or payment reference, once paid.
@@ -113,11 +114,11 @@ class InvoiceDetail {
   final String paymentReference;
 
   /// The purchase order the invoice is matched against, if any.
-  @JsonKey(includeIfNull: false,name: 'purchase_order_id')
+  @JsonKey(includeIfNull: false, name: 'purchase_order_id')
   final String? purchaseOrderId;
 
   /// Number of that purchase order, read through purchasing.
-  @JsonKey(includeIfNull: false,name: 'purchase_order_number')
+  @JsonKey(includeIfNull: false, name: 'purchase_order_number')
   final String? purchaseOrderNumber;
 
   /// draft | matched | disputed | approved | paid

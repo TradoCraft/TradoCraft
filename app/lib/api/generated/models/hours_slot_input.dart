@@ -13,9 +13,10 @@ class HoursSlotInput {
     required this.startTime,
     required this.weekday,
   });
-  
-  factory HoursSlotInput.fromJson(Map<String, Object?> json) => _$HoursSlotInputFromJson(json);
-  
+
+  factory HoursSlotInput.fromJson(Map<String, Object?> json) =>
+      _$HoursSlotInputFromJson(json);
+
   @JsonKey(name: 'end_time')
   final String endTime;
   @JsonKey(name: 'start_time')

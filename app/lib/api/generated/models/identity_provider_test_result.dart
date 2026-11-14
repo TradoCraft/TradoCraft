@@ -21,15 +21,16 @@ class IdentityProviderTestResult {
     this.error,
     this.token,
   });
-  
-  factory IdentityProviderTestResult.fromJson(Map<String, Object?> json) => _$IdentityProviderTestResultFromJson(json);
-  
+
+  factory IdentityProviderTestResult.fromJson(Map<String, Object?> json) =>
+      _$IdentityProviderTestResultFromJson(json);
+
   /// `claims_supported` if the provider advertises it.
-  @JsonKey(includeIfNull: false,name: 'claims_supported')
+  @JsonKey(includeIfNull: false, name: 'claims_supported')
   final List<String>? claimsSupported;
 
   /// The issuer the discovery document names.
-  @JsonKey(includeIfNull: false,name: 'discovery_issuer')
+  @JsonKey(includeIfNull: false, name: 'discovery_issuer')
   final String? discoveryIssuer;
 
   /// Discovery document and keys could be read.

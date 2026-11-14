@@ -20,9 +20,10 @@ class ViesLookup {
     this.reason,
     this.street,
   });
-  
-  factory ViesLookup.fromJson(Map<String, Object?> json) => _$ViesLookupFromJson(json);
-  
+
+  factory ViesLookup.fromJson(Map<String, Object?> json) =>
+      _$ViesLookupFromJson(json);
+
   /// The registered address as VIES wrote it, lines joined by a line break.
   @JsonKey(includeIfNull: false)
   final String? address;
@@ -32,7 +33,7 @@ class ViesLookup {
   /// The registered name; absent when VIES does not disclose it.
   @JsonKey(includeIfNull: false)
   final String? name;
-  @JsonKey(includeIfNull: false,name: 'postal_code')
+  @JsonKey(includeIfNull: false, name: 'postal_code')
   final String? postalCode;
 
   /// Why `state` is `unavailable`: `disabled`, `timeout`, `network`, `bad_response`, `http_NNN`,.

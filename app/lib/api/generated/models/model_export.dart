@@ -17,9 +17,10 @@ class ModelExport {
     required this.formatVersion,
     required this.model,
   });
-  
-  factory ModelExport.fromJson(Map<String, Object?> json) => _$ModelExportFromJson(json);
-  
+
+  factory ModelExport.fromJson(Map<String, Object?> json) =>
+      _$ModelExportFromJson(json);
+
   final dynamic definition;
 
   /// Always `tradocraft.configurator`.

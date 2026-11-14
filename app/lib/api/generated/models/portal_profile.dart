@@ -26,9 +26,10 @@ class PortalProfile {
     this.email,
     this.language,
   });
-  
-  factory PortalProfile.fromJson(Map<String, Object?> json) => _$PortalProfileFromJson(json);
-  
+
+  factory PortalProfile.fromJson(Map<String, Object?> json) =>
+      _$PortalProfileFromJson(json);
+
   /// formal | informal
   @JsonKey(name: 'address_form')
   final String addressForm;

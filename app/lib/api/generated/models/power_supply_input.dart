@@ -15,18 +15,19 @@ class PowerSupplyInput {
     this.phases,
     this.tolerancePct,
   });
-  
-  factory PowerSupplyInput.fromJson(Map<String, Object?> json) => _$PowerSupplyInputFromJson(json);
-  
+
+  factory PowerSupplyInput.fromJson(Map<String, Object?> json) =>
+      _$PowerSupplyInputFromJson(json);
+
   @JsonKey(name: 'current_type')
   final String currentType;
-  @JsonKey(includeIfNull: false,name: 'frequency_hz')
+  @JsonKey(includeIfNull: false, name: 'frequency_hz')
   final int? frequencyHz;
   @JsonKey(includeIfNull: false)
   final int? phases;
 
   /// Defaults to 10.
-  @JsonKey(includeIfNull: false,name: 'tolerance_pct')
+  @JsonKey(includeIfNull: false, name: 'tolerance_pct')
   final int? tolerancePct;
   @JsonKey(name: 'voltage_v')
   final int voltageV;

@@ -17,10 +17,11 @@ class RevisionSummary {
     required this.status,
     this.activatedAt,
   });
-  
-  factory RevisionSummary.fromJson(Map<String, Object?> json) => _$RevisionSummaryFromJson(json);
-  
-  @JsonKey(includeIfNull: false,name: 'activated_at')
+
+  factory RevisionSummary.fromJson(Map<String, Object?> json) =>
+      _$RevisionSummaryFromJson(json);
+
+  @JsonKey(includeIfNull: false, name: 'activated_at')
   final DateTime? activatedAt;
   @JsonKey(name: 'created_at')
   final DateTime createdAt;

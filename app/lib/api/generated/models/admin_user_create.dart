@@ -14,10 +14,11 @@ class AdminUserCreate {
     required this.roles,
     this.disabledModules,
   });
-  
-  factory AdminUserCreate.fromJson(Map<String, Object?> json) => _$AdminUserCreateFromJson(json);
-  
-  @JsonKey(includeIfNull: false,name: 'disabled_modules')
+
+  factory AdminUserCreate.fromJson(Map<String, Object?> json) =>
+      _$AdminUserCreateFromJson(json);
+
+  @JsonKey(includeIfNull: false, name: 'disabled_modules')
   final List<String>? disabledModules;
   @JsonKey(name: 'display_name')
   final String displayName;

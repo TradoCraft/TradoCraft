@@ -178,14 +178,32 @@ pub fn buckets(from: NaiveDate, to: NaiveDate, group: &str) -> Vec<NaiveDate> {
 
 use tradocraft_core::csv_io::quote_cell as csv_cell;
 
-fn csv(header: &[&str], rows: Vec<Vec<String>>) -> String {
-    let mut out = header.join(",");
-    out.push_str("\r\n");
-    for r in rows {
-        out.push_str(&r.iter().map(|c| csv_cell(c)).collect::<Vec<_>>().join(","));
+/// One table of the report: a header and its rows.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Table {
+    pub header: Vec<String>,
+    pub rows: Vec<Vec<String>>,
+}
+
+impl Table {
+    /// Comma separated, CRLF lines, cells that start with `= + - @` quoted so a spreadsheet does not
+    /// run them.
+    pub fn to_csv(&self) -> String {
+        let mut out = self.header.join(",");
         out.push_str("\r\n");
+        for r in &self.rows {
+            out.push_str(&r.iter().map(|c| csv_cell(c)).collect::<Vec<_>>().join(","));
+            out.push_str("\r\n");
+        }
+        out
     }
-    out
+}
+
+fn csv(header: &[&str], rows: Vec<Vec<String>>) -> Table {
+    Table {
+        header: header.iter().map(|h| h.to_string()).collect(),
+        rows,
+    }
 }
 
 /// The names of the exportable tables.
@@ -215,6 +233,11 @@ fn opt(v: Option<f64>) -> String {
 
 /// One table of the report as CSV (comma separated, CRLF lines, header row first).
 pub fn csv_table(r: &Report, table: &str) -> Option<String> {
+    self::table(r, table).map(|t| t.to_csv())
+}
+
+/// One table of the report by name (see [`TABLES`]).
+pub fn table(r: &Report, table: &str) -> Option<Table> {
     Some(match table {
         "volume" => csv(
             &["period", "created", "closed"],
@@ -424,7 +447,7 @@ struct TimedTicket {
     sla_paused_seconds: i64,
 }
 
-async fn build(
+pub async fn build(
     conn: &mut PgConnection,
     company_id: Uuid,
     p: &ReportParams,
@@ -795,7 +818,8 @@ mod tests {
             csv(
                 "a,b".split(',').collect::<Vec<_>>().as_slice(),
                 vec![vec!["1".into(), "x,y".into()]]
-            ),
+            )
+            .to_csv(),
             "a,b\r\n1,\"x,y\"\r\n"
         );
     }

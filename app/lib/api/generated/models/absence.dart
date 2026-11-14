@@ -17,9 +17,10 @@ class Absence {
     required this.userId,
     required this.userName,
   });
-  
-  factory Absence.fromJson(Map<String, Object?> json) => _$AbsenceFromJson(json);
-  
+
+  factory Absence.fromJson(Map<String, Object?> json) =>
+      _$AbsenceFromJson(json);
+
   @JsonKey(name: 'from_date')
   final DateTime fromDate;
   final String id;

@@ -19,9 +19,10 @@ class LineReservation {
     required this.productId,
     required this.reserved,
   });
-  
-  factory LineReservation.fromJson(Map<String, Object?> json) => _$LineReservationFromJson(json);
-  
+
+  factory LineReservation.fromJson(Map<String, Object?> json) =>
+      _$LineReservationFromJson(json);
+
   final List<Allocation> allocations;
 
   /// Already shipped from reservations of this line, in the stock unit. What is still to be.

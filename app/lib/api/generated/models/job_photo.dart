@@ -15,9 +15,10 @@ class JobPhoto {
     required this.id,
     required this.uploaderName,
   });
-  
-  factory JobPhoto.fromJson(Map<String, Object?> json) => _$JobPhotoFromJson(json);
-  
+
+  factory JobPhoto.fromJson(Map<String, Object?> json) =>
+      _$JobPhotoFromJson(json);
+
   final String caption;
   @JsonKey(name: 'created_at')
   final DateTime createdAt;

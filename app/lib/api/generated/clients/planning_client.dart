@@ -39,9 +39,7 @@ abstract class PlanningClient {
   });
 
   @POST('/api/v1/planning/absences')
-  Future<Absence> createAbsence({
-    @Body() required AbsenceInput body,
-  });
+  Future<Absence> createAbsence({@Body() required AbsenceInput body});
 
   @PUT('/api/v1/planning/absences/{id}')
   Future<Absence> updateAbsence({
@@ -50,9 +48,7 @@ abstract class PlanningClient {
   });
 
   @DELETE('/api/v1/planning/absences/{id}')
-  Future<void> deleteAbsence({
-    @Path('id') required String id,
-  });
+  Future<void> deleteAbsence({@Path('id') required String id});
 
   /// Technicians with skills, working hours and absences, the jobs scheduled in the period, and the.
   /// backlog of jobs still to plan.
@@ -84,9 +80,7 @@ abstract class PlanningClient {
 
   /// The skills a field job requires.
   @GET('/api/v1/planning/jobs/{id}/skills')
-  Future<List<Skill>> getJobSkills({
-    @Path('id') required String id,
-  });
+  Future<List<Skill>> getJobSkills({@Path('id') required String id});
 
   @PUT('/api/v1/planning/jobs/{id}/skills')
   Future<List<Skill>> setJobSkills({
@@ -99,18 +93,14 @@ abstract class PlanningClient {
   Future<Settings> getPlanningSettings();
 
   @PUT('/api/v1/planning/settings')
-  Future<Settings> updatePlanningSettings({
-    @Body() required Settings body,
-  });
+  Future<Settings> updatePlanningSettings({@Body() required Settings body});
 
   /// The skills catalogue of the company.
   @GET('/api/v1/planning/skills')
   Future<List<Skill>> listSkills();
 
   @POST('/api/v1/planning/skills')
-  Future<Skill> createSkill({
-    @Body() required SkillInput body,
-  });
+  Future<Skill> createSkill({@Body() required SkillInput body});
 
   @PUT('/api/v1/planning/skills/{id}')
   Future<Skill> updateSkill({
@@ -120,9 +110,7 @@ abstract class PlanningClient {
 
   /// Deleting a skill removes it from technicians and jobs.
   @DELETE('/api/v1/planning/skills/{id}')
-  Future<void> deleteSkill({
-    @Path('id') required String id,
-  });
+  Future<void> deleteSkill({@Path('id') required String id});
 
   /// Ranked technician and slot suggestions for a job: technicians with the required skills first,.
   /// then the earliest day, then the slot that leaves the least unused time in its gap. Slots lie.
@@ -140,9 +128,7 @@ abstract class PlanningClient {
 
   /// The skills of a technician (planners, or the technician themselves).
   @GET('/api/v1/planning/users/{id}/skills')
-  Future<List<UserSkill>> getUserSkills({
-    @Path('id') required String id,
-  });
+  Future<List<UserSkill>> getUserSkills({@Path('id') required String id});
 
   @PUT('/api/v1/planning/users/{id}/skills')
   Future<List<UserSkill>> setUserSkills({

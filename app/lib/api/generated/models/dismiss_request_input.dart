@@ -8,12 +8,11 @@ part 'dismiss_request_input.g.dart';
 
 @JsonSerializable()
 class DismissRequestInput {
-  const DismissRequestInput({
-    this.note,
-  });
-  
-  factory DismissRequestInput.fromJson(Map<String, Object?> json) => _$DismissRequestInputFromJson(json);
-  
+  const DismissRequestInput({this.note});
+
+  factory DismissRequestInput.fromJson(Map<String, Object?> json) =>
+      _$DismissRequestInputFromJson(json);
+
   @JsonKey(includeIfNull: false)
   final String? note;
 

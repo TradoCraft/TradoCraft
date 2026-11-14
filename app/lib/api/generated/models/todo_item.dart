@@ -35,40 +35,41 @@ class TodoItem {
     this.linkLocation,
     this.parentId,
   });
-  
-  factory TodoItem.fromJson(Map<String, Object?> json) => _$TodoItemFromJson(json);
-  
+
+  factory TodoItem.fromJson(Map<String, Object?> json) =>
+      _$TodoItemFromJson(json);
+
   /// The colleague the item is handed to; absent when it stays with the owner.
-  @JsonKey(includeIfNull: false,name: 'assignee_id')
+  @JsonKey(includeIfNull: false, name: 'assignee_id')
   final String? assigneeId;
-  @JsonKey(includeIfNull: false,name: 'assignee_name')
+  @JsonKey(includeIfNull: false, name: 'assignee_name')
   final String? assigneeName;
-  @JsonKey(includeIfNull: false,name: 'client_id')
+  @JsonKey(includeIfNull: false, name: 'client_id')
   final String? clientId;
   @JsonKey(name: 'created_at')
   final DateTime createdAt;
   @JsonKey(name: 'created_by')
   final String createdBy;
   final bool done;
-  @JsonKey(includeIfNull: false,name: 'done_at')
+  @JsonKey(includeIfNull: false, name: 'done_at')
   final DateTime? doneAt;
-  @JsonKey(includeIfNull: false,name: 'done_by')
+  @JsonKey(includeIfNull: false, name: 'done_by')
   final String? doneBy;
-  @JsonKey(includeIfNull: false,name: 'due_date')
+  @JsonKey(includeIfNull: false, name: 'due_date')
   final DateTime? dueDate;
   final String id;
-  @JsonKey(includeIfNull: false,name: 'link_id')
+  @JsonKey(includeIfNull: false, name: 'link_id')
   final String? linkId;
-  @JsonKey(includeIfNull: false,name: 'link_kind')
+  @JsonKey(includeIfNull: false, name: 'link_kind')
   final TodoLinkKind? linkKind;
 
   /// What the linked record was called when it was linked. Absent when the caller may not read.
   /// records of that kind (the app then shows "Linked item").
-  @JsonKey(includeIfNull: false,name: 'link_label')
+  @JsonKey(includeIfNull: false, name: 'link_label')
   final String? linkLabel;
 
   /// Where the app jumps to for the linked record, e.g. `/quotations/<id>`.
-  @JsonKey(includeIfNull: false,name: 'link_location')
+  @JsonKey(includeIfNull: false, name: 'link_location')
   final String? linkLocation;
 
   /// Whether the caller is the owner (only the owner reassigns and deletes).
@@ -80,7 +81,7 @@ class TodoItem {
   final String ownerName;
 
   /// The root item this is a sub-item of; absent for a root item.
-  @JsonKey(includeIfNull: false,name: 'parent_id')
+  @JsonKey(includeIfNull: false, name: 'parent_id')
   final String? parentId;
   final int position;
   final String title;

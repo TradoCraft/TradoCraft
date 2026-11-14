@@ -13,9 +13,10 @@ class Settings {
     required this.timezone,
     required this.travelBufferMinutes,
   });
-  
-  factory Settings.fromJson(Map<String, Object?> json) => _$SettingsFromJson(json);
-  
+
+  factory Settings.fromJson(Map<String, Object?> json) =>
+      _$SettingsFromJson(json);
+
   /// Length assumed for a job without an end time.
   @JsonKey(name: 'default_job_minutes')
   final int defaultJobMinutes;

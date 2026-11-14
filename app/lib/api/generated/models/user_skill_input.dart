@@ -8,13 +8,11 @@ part 'user_skill_input.g.dart';
 
 @JsonSerializable()
 class UserSkillInput {
-  const UserSkillInput({
-    required this.level,
-    required this.skillId,
-  });
-  
-  factory UserSkillInput.fromJson(Map<String, Object?> json) => _$UserSkillInputFromJson(json);
-  
+  const UserSkillInput({required this.level, required this.skillId});
+
+  factory UserSkillInput.fromJson(Map<String, Object?> json) =>
+      _$UserSkillInputFromJson(json);
+
   final int level;
   @JsonKey(name: 'skill_id')
   final String skillId;

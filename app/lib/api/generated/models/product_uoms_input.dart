@@ -10,12 +10,11 @@ part 'product_uoms_input.g.dart';
 
 @JsonSerializable()
 class ProductUomsInput {
-  const ProductUomsInput({
-    required this.uoms,
-  });
-  
-  factory ProductUomsInput.fromJson(Map<String, Object?> json) => _$ProductUomsInputFromJson(json);
-  
+  const ProductUomsInput({required this.uoms});
+
+  factory ProductUomsInput.fromJson(Map<String, Object?> json) =>
+      _$ProductUomsInputFromJson(json);
+
   final List<ProductUom> uoms;
 
   Map<String, Object?> toJson() => _$ProductUomsInputToJson(this);

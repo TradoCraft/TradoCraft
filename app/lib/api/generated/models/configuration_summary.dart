@@ -22,12 +22,13 @@ class ConfigurationSummary {
     this.quotationId,
     this.quotationNumber,
   });
-  
-  factory ConfigurationSummary.fromJson(Map<String, Object?> json) => _$ConfigurationSummaryFromJson(json);
-  
-  @JsonKey(includeIfNull: false,name: 'customer_id')
+
+  factory ConfigurationSummary.fromJson(Map<String, Object?> json) =>
+      _$ConfigurationSummaryFromJson(json);
+
+  @JsonKey(includeIfNull: false, name: 'customer_id')
   final String? customerId;
-  @JsonKey(includeIfNull: false,name: 'customer_name')
+  @JsonKey(includeIfNull: false, name: 'customer_name')
   final String? customerName;
   final String id;
   @JsonKey(name: 'model_code')
@@ -39,11 +40,11 @@ class ConfigurationSummary {
   final String name;
 
   /// The number of the model's active revision when it is newer (an upgrade is available).
-  @JsonKey(includeIfNull: false,name: 'newer_revision')
+  @JsonKey(includeIfNull: false, name: 'newer_revision')
   final int? newerRevision;
-  @JsonKey(includeIfNull: false,name: 'quotation_id')
+  @JsonKey(includeIfNull: false, name: 'quotation_id')
   final String? quotationId;
-  @JsonKey(includeIfNull: false,name: 'quotation_number')
+  @JsonKey(includeIfNull: false, name: 'quotation_number')
   final String? quotationNumber;
 
   /// The revision it was made with.

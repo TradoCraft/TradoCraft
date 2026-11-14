@@ -28,10 +28,11 @@ class Opportunity {
     this.expectedClose,
     this.lostReason,
   });
-  
-  factory Opportunity.fromJson(Map<String, Object?> json) => _$OpportunityFromJson(json);
-  
-  @JsonKey(includeIfNull: false,name: 'closed_at')
+
+  factory Opportunity.fromJson(Map<String, Object?> json) =>
+      _$OpportunityFromJson(json);
+
+  @JsonKey(includeIfNull: false, name: 'closed_at')
   final DateTime? closedAt;
   @JsonKey(name: 'created_at')
   final DateTime createdAt;
@@ -39,12 +40,12 @@ class Opportunity {
   final String customerId;
   @JsonKey(name: 'customer_name')
   final String customerName;
-  @JsonKey(includeIfNull: false,name: 'expected_close')
+  @JsonKey(includeIfNull: false, name: 'expected_close')
   final DateTime? expectedClose;
   @JsonKey(name: 'expected_value')
   final String expectedValue;
   final String id;
-  @JsonKey(includeIfNull: false,name: 'lost_reason')
+  @JsonKey(includeIfNull: false, name: 'lost_reason')
   final String? lostReason;
   final String notes;
   final String number;

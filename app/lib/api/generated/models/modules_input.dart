@@ -8,12 +8,11 @@ part 'modules_input.g.dart';
 
 @JsonSerializable()
 class ModulesInput {
-  const ModulesInput({
-    required this.disabledModules,
-  });
-  
-  factory ModulesInput.fromJson(Map<String, Object?> json) => _$ModulesInputFromJson(json);
-  
+  const ModulesInput({required this.disabledModules});
+
+  factory ModulesInput.fromJson(Map<String, Object?> json) =>
+      _$ModulesInputFromJson(json);
+
   /// The modules to switch off for the whole company; all others are on.
   @JsonKey(name: 'disabled_modules')
   final List<String> disabledModules;

@@ -34,9 +34,10 @@ class Package {
     this.openedBy,
     this.openedByName,
   });
-  
-  factory Package.fromJson(Map<String, Object?> json) => _$PackageFromJson(json);
-  
+
+  factory Package.fromJson(Map<String, Object?> json) =>
+      _$PackageFromJson(json);
+
   final String carrier;
 
   /// intact | damaged | opened | wet
@@ -47,9 +48,9 @@ class Package {
   final DateTime createdAt;
 
   /// The sender, when known. Resolved at triage if the label only had a name.
-  @JsonKey(includeIfNull: false,name: 'customer_id')
+  @JsonKey(includeIfNull: false, name: 'customer_id')
   final String? customerId;
-  @JsonKey(includeIfNull: false,name: 'customer_name')
+  @JsonKey(includeIfNull: false, name: 'customer_name')
   final String? customerName;
 
   /// The customer's RMA number or the reference on their slip.
@@ -64,11 +65,11 @@ class Package {
 
   /// PK-2027-00001
   final String number;
-  @JsonKey(includeIfNull: false,name: 'opened_at')
+  @JsonKey(includeIfNull: false, name: 'opened_at')
   final DateTime? openedAt;
-  @JsonKey(includeIfNull: false,name: 'opened_by')
+  @JsonKey(includeIfNull: false, name: 'opened_by')
   final String? openedBy;
-  @JsonKey(includeIfNull: false,name: 'opened_by_name')
+  @JsonKey(includeIfNull: false, name: 'opened_by_name')
   final String? openedByName;
   @JsonKey(name: 'parcel_count')
   final int parcelCount;

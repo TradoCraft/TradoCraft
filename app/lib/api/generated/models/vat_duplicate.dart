@@ -15,9 +15,10 @@ class VatDuplicate {
     required this.id,
     required this.name,
   });
-  
-  factory VatDuplicate.fromJson(Map<String, Object?> json) => _$VatDuplicateFromJson(json);
-  
+
+  factory VatDuplicate.fromJson(Map<String, Object?> json) =>
+      _$VatDuplicateFromJson(json);
+
   final bool active;
   final String code;
   final String id;

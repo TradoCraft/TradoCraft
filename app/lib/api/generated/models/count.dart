@@ -24,10 +24,10 @@ class Count {
     this.locationId,
     this.productId,
   });
-  
+
   factory Count.fromJson(Map<String, Object?> json) => _$CountFromJson(json);
-  
-  @JsonKey(includeIfNull: false,name: 'closed_at')
+
+  @JsonKey(includeIfNull: false, name: 'closed_at')
   final DateTime? closedAt;
 
   /// Lines with a counted quantity.
@@ -40,13 +40,13 @@ class Count {
   final String id;
   @JsonKey(name: 'line_count')
   final int lineCount;
-  @JsonKey(includeIfNull: false,name: 'location_code')
+  @JsonKey(includeIfNull: false, name: 'location_code')
   final String? locationCode;
-  @JsonKey(includeIfNull: false,name: 'location_id')
+  @JsonKey(includeIfNull: false, name: 'location_id')
   final String? locationId;
   final String note;
   final String number;
-  @JsonKey(includeIfNull: false,name: 'product_id')
+  @JsonKey(includeIfNull: false, name: 'product_id')
   final String? productId;
 
   /// counting | posted | cancelled

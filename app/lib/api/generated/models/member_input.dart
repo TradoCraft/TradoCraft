@@ -8,14 +8,12 @@ part 'member_input.g.dart';
 
 @JsonSerializable()
 class MemberInput {
-  const MemberInput({
-    required this.userId,
-    this.isLead,
-  });
-  
-  factory MemberInput.fromJson(Map<String, Object?> json) => _$MemberInputFromJson(json);
-  
-  @JsonKey(includeIfNull: false,name: 'is_lead')
+  const MemberInput({required this.userId, this.isLead});
+
+  factory MemberInput.fromJson(Map<String, Object?> json) =>
+      _$MemberInputFromJson(json);
+
+  @JsonKey(includeIfNull: false, name: 'is_lead')
   final bool? isLead;
   @JsonKey(name: 'user_id')
   final String userId;

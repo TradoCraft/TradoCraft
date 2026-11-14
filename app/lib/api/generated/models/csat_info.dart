@@ -16,9 +16,10 @@ class CsatInfo {
     required this.ticketNumber,
     this.rating,
   });
-  
-  factory CsatInfo.fromJson(Map<String, Object?> json) => _$CsatInfoFromJson(json);
-  
+
+  factory CsatInfo.fromJson(Map<String, Object?> json) =>
+      _$CsatInfoFromJson(json);
+
   @JsonKey(name: 'company_name')
   final String companyName;
 

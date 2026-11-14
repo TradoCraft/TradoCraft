@@ -14,9 +14,10 @@ class InboundResult {
     required this.ticketId,
     required this.ticketNumber,
   });
-  
-  factory InboundResult.fromJson(Map<String, Object?> json) => _$InboundResultFromJson(json);
-  
+
+  factory InboundResult.fromJson(Map<String, Object?> json) =>
+      _$InboundResultFromJson(json);
+
   final bool duplicate;
   @JsonKey(name: 'new_ticket')
   final bool newTicket;

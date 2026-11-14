@@ -13,9 +13,10 @@ class Watcher {
     required this.userId,
     required this.userName,
   });
-  
-  factory Watcher.fromJson(Map<String, Object?> json) => _$WatcherFromJson(json);
-  
+
+  factory Watcher.fromJson(Map<String, Object?> json) =>
+      _$WatcherFromJson(json);
+
   @JsonKey(name: 'created_at')
   final DateTime createdAt;
   @JsonKey(name: 'user_id')

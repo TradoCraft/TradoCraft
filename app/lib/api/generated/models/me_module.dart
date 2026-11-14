@@ -8,13 +8,11 @@ part 'me_module.g.dart';
 
 @JsonSerializable()
 class MeModule {
-  const MeModule({
-    required this.code,
-    required this.enabled,
-  });
-  
-  factory MeModule.fromJson(Map<String, Object?> json) => _$MeModuleFromJson(json);
-  
+  const MeModule({required this.code, required this.enabled});
+
+  factory MeModule.fromJson(Map<String, Object?> json) =>
+      _$MeModuleFromJson(json);
+
   final String code;
   final bool enabled;
 

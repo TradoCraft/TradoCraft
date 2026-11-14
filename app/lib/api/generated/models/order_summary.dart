@@ -31,9 +31,10 @@ class OrderSummary {
     this.powerGridId,
     this.promisedDate,
   });
-  
-  factory OrderSummary.fromJson(Map<String, Object?> json) => _$OrderSummaryFromJson(json);
-  
+
+  factory OrderSummary.fromJson(Map<String, Object?> json) =>
+      _$OrderSummaryFromJson(json);
+
   final String currency;
 
   /// The latest revision.
@@ -47,7 +48,7 @@ class OrderSummary {
   final String customerReference;
 
   /// Country the goods are delivered to (ISO alpha-2).
-  @JsonKey(includeIfNull: false,name: 'delivery_country_code')
+  @JsonKey(includeIfNull: false, name: 'delivery_country_code')
   final String? deliveryCountryCode;
   final String id;
   final String number;
@@ -55,7 +56,7 @@ class OrderSummary {
   final DateTime orderDate;
 
   /// The grid at the delivery country the goods are connected to (copied from the quotation).
-  @JsonKey(includeIfNull: false,name: 'power_grid_id')
+  @JsonKey(includeIfNull: false, name: 'power_grid_id')
   final String? powerGridId;
 
   /// low | normal | expedite
@@ -63,7 +64,7 @@ class OrderSummary {
 
   /// When production expects the goods to be ready: the latest planned-ready date of the order's.
   /// production orders (ADR 0036). Empty until production has planned it.
-  @JsonKey(includeIfNull: false,name: 'promised_date')
+  @JsonKey(includeIfNull: false, name: 'promised_date')
   final DateTime? promisedDate;
 
   /// installation | stock. Locked once the order is confirmed.

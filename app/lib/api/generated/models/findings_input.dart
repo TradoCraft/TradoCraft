@@ -8,13 +8,11 @@ part 'findings_input.g.dart';
 
 @JsonSerializable()
 class FindingsInput {
-  const FindingsInput({
-    required this.findings,
-    this.diagnosis,
-  });
-  
-  factory FindingsInput.fromJson(Map<String, Object?> json) => _$FindingsInputFromJson(json);
-  
+  const FindingsInput({required this.findings, this.diagnosis});
+
+  factory FindingsInput.fromJson(Map<String, Object?> json) =>
+      _$FindingsInputFromJson(json);
+
   /// The department's conclusion; leave out to keep it as it is.
   @JsonKey(includeIfNull: false)
   final String? diagnosis;

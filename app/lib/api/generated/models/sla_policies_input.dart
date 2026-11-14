@@ -10,12 +10,11 @@ part 'sla_policies_input.g.dart';
 
 @JsonSerializable()
 class SlaPoliciesInput {
-  const SlaPoliciesInput({
-    required this.policies,
-  });
-  
-  factory SlaPoliciesInput.fromJson(Map<String, Object?> json) => _$SlaPoliciesInputFromJson(json);
-  
+  const SlaPoliciesInput({required this.policies});
+
+  factory SlaPoliciesInput.fromJson(Map<String, Object?> json) =>
+      _$SlaPoliciesInputFromJson(json);
+
   final List<SlaPolicy> policies;
 
   Map<String, Object?> toJson() => _$SlaPoliciesInputToJson(this);

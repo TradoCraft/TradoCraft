@@ -19,16 +19,17 @@ class RuleInput {
     this.conditions,
     this.stopOnMatch,
   });
-  
-  factory RuleInput.fromJson(Map<String, Object?> json) => _$RuleInputFromJson(json);
-  
+
+  factory RuleInput.fromJson(Map<String, Object?> json) =>
+      _$RuleInputFromJson(json);
+
   final List<RuleAction> actions;
   @JsonKey(includeIfNull: false)
   final bool? active;
   @JsonKey(includeIfNull: false)
   final RuleConditions? conditions;
   final String name;
-  @JsonKey(includeIfNull: false,name: 'stop_on_match')
+  @JsonKey(includeIfNull: false, name: 'stop_on_match')
   final bool? stopOnMatch;
   final String trigger;
 

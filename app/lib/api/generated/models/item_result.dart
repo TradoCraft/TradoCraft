@@ -16,9 +16,10 @@ class ItemResult {
     required this.label,
     required this.values,
   });
-  
-  factory ItemResult.fromJson(Map<String, Object?> json) => _$ItemResultFromJson(json);
-  
+
+  factory ItemResult.fromJson(Map<String, Object?> json) =>
+      _$ItemResultFromJson(json);
+
   final String group;
 
   /// 1-based row number.

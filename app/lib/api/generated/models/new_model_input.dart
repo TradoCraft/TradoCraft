@@ -16,9 +16,10 @@ class NewModelInput {
     this.productId,
     this.translations,
   });
-  
-  factory NewModelInput.fromJson(Map<String, Object?> json) => _$NewModelInputFromJson(json);
-  
+
+  factory NewModelInput.fromJson(Map<String, Object?> json) =>
+      _$NewModelInputFromJson(json);
+
   final String code;
 
   /// The first draft's definition; an empty one when left out.
@@ -27,7 +28,7 @@ class NewModelInput {
   @JsonKey(includeIfNull: false)
   final String? description;
   final String name;
-  @JsonKey(includeIfNull: false,name: 'product_id')
+  @JsonKey(includeIfNull: false, name: 'product_id')
   final String? productId;
   @JsonKey(includeIfNull: false)
   final dynamic translations;

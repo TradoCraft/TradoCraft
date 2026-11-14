@@ -11,13 +11,11 @@ part 'count_page.g.dart';
 /// A page of counts, newest first, with the number of counts that match.
 @JsonSerializable()
 class CountPage {
-  const CountPage({
-    required this.items,
-    required this.total,
-  });
-  
-  factory CountPage.fromJson(Map<String, Object?> json) => _$CountPageFromJson(json);
-  
+  const CountPage({required this.items, required this.total});
+
+  factory CountPage.fromJson(Map<String, Object?> json) =>
+      _$CountPageFromJson(json);
+
   final List<Count> items;
   final int total;
 

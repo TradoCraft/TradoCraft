@@ -23,9 +23,10 @@ class ProductionComponent {
     required this.tracking,
     required this.unit,
   });
-  
-  factory ProductionComponent.fromJson(Map<String, Object?> json) => _$ProductionComponentFromJson(json);
-  
+
+  factory ProductionComponent.fromJson(Map<String, Object?> json) =>
+      _$ProductionComponentFromJson(json);
+
   @JsonKey(name: 'component_code')
   final String componentCode;
   @JsonKey(name: 'component_name')

@@ -8,13 +8,11 @@ part 'site_phone.g.dart';
 
 @JsonSerializable()
 class SitePhone {
-  const SitePhone({
-    required this.label,
-    required this.number,
-  });
-  
-  factory SitePhone.fromJson(Map<String, Object?> json) => _$SitePhoneFromJson(json);
-  
+  const SitePhone({required this.label, required this.number});
+
+  factory SitePhone.fromJson(Map<String, Object?> json) =>
+      _$SitePhoneFromJson(json);
+
   final String label;
   final String number;
 

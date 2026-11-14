@@ -10,13 +10,11 @@ part 'stock_row_page.g.dart';
 
 @JsonSerializable()
 class StockRowPage {
-  const StockRowPage({
-    required this.items,
-    required this.total,
-  });
-  
-  factory StockRowPage.fromJson(Map<String, Object?> json) => _$StockRowPageFromJson(json);
-  
+  const StockRowPage({required this.items, required this.total});
+
+  factory StockRowPage.fromJson(Map<String, Object?> json) =>
+      _$StockRowPageFromJson(json);
+
   final List<StockRow> items;
   final int total;
 

@@ -10,13 +10,11 @@ part 'move_page.g.dart';
 
 @JsonSerializable()
 class MovePage {
-  const MovePage({
-    required this.items,
-    required this.total,
-  });
-  
-  factory MovePage.fromJson(Map<String, Object?> json) => _$MovePageFromJson(json);
-  
+  const MovePage({required this.items, required this.total});
+
+  factory MovePage.fromJson(Map<String, Object?> json) =>
+      _$MovePageFromJson(json);
+
   final List<StockMove> items;
   final int total;
 

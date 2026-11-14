@@ -27,15 +27,16 @@ class VisitTemplate {
     this.estimatedMinutes,
     this.nextDue,
   });
-  
-  factory VisitTemplate.fromJson(Map<String, Object?> json) => _$VisitTemplateFromJson(json);
-  
+
+  factory VisitTemplate.fromJson(Map<String, Object?> json) =>
+      _$VisitTemplateFromJson(json);
+
   final bool active;
 
   /// The first due date (and the day of the month for `months_list`).
   @JsonKey(name: 'anchor_date')
   final DateTime anchorDate;
-  @JsonKey(includeIfNull: false,name: 'estimated_minutes')
+  @JsonKey(includeIfNull: false, name: 'estimated_minutes')
   final int? estimatedMinutes;
   final String id;
   final String instructions;
@@ -53,7 +54,7 @@ class VisitTemplate {
   final List<int> months;
 
   /// The next due date from today on, within the contract's term.
-  @JsonKey(includeIfNull: false,name: 'next_due')
+  @JsonKey(includeIfNull: false, name: 'next_due')
   final DateTime? nextDue;
   final int position;
 

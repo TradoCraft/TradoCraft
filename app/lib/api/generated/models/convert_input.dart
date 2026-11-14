@@ -8,15 +8,13 @@ part 'convert_input.g.dart';
 
 @JsonSerializable()
 class ConvertInput {
-  const ConvertInput({
-    this.customerReference,
-    this.notes,
-  });
-  
-  factory ConvertInput.fromJson(Map<String, Object?> json) => _$ConvertInputFromJson(json);
-  
+  const ConvertInput({this.customerReference, this.notes});
+
+  factory ConvertInput.fromJson(Map<String, Object?> json) =>
+      _$ConvertInputFromJson(json);
+
   /// The customer's purchase order number or reference.
-  @JsonKey(includeIfNull: false,name: 'customer_reference')
+  @JsonKey(includeIfNull: false, name: 'customer_reference')
   final String? customerReference;
   @JsonKey(includeIfNull: false)
   final String? notes;

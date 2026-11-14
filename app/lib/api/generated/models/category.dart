@@ -18,9 +18,10 @@ class Category {
     required this.sortOrder,
     this.parentId,
   });
-  
-  factory Category.fromJson(Map<String, Object?> json) => _$CategoryFromJson(json);
-  
+
+  factory Category.fromJson(Map<String, Object?> json) =>
+      _$CategoryFromJson(json);
+
   final bool active;
 
   /// Entries in this category (not counting its sub-categories).
@@ -30,7 +31,7 @@ class Category {
   final List<CategoryName> names;
 
   /// Only one level of nesting: the parent has no parent itself.
-  @JsonKey(includeIfNull: false,name: 'parent_id')
+  @JsonKey(includeIfNull: false, name: 'parent_id')
   final String? parentId;
   @JsonKey(name: 'sort_order')
   final int sortOrder;

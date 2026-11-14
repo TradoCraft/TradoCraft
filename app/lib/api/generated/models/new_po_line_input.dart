@@ -16,15 +16,16 @@ class NewPoLineInput {
     this.description,
     this.supplierProductCode,
   });
-  
-  factory NewPoLineInput.fromJson(Map<String, Object?> json) => _$NewPoLineInputFromJson(json);
-  
+
+  factory NewPoLineInput.fromJson(Map<String, Object?> json) =>
+      _$NewPoLineInputFromJson(json);
+
   @JsonKey(includeIfNull: false)
   final String? description;
   @JsonKey(name: 'product_id')
   final String productId;
   final String quantity;
-  @JsonKey(includeIfNull: false,name: 'supplier_product_code')
+  @JsonKey(includeIfNull: false, name: 'supplier_product_code')
   final String? supplierProductCode;
   @JsonKey(name: 'unit_price')
   final String unitPrice;

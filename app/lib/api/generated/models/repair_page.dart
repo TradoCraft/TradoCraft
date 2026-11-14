@@ -10,13 +10,11 @@ part 'repair_page.g.dart';
 
 @JsonSerializable()
 class RepairPage {
-  const RepairPage({
-    required this.items,
-    required this.total,
-  });
-  
-  factory RepairPage.fromJson(Map<String, Object?> json) => _$RepairPageFromJson(json);
-  
+  const RepairPage({required this.items, required this.total});
+
+  factory RepairPage.fromJson(Map<String, Object?> json) =>
+      _$RepairPageFromJson(json);
+
   final List<Repair> items;
   final int total;
 

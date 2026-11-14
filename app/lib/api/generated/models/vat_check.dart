@@ -20,9 +20,10 @@ class VatCheck {
     this.normalized,
     this.vies,
   });
-  
-  factory VatCheck.fromJson(Map<String, Object?> json) => _$VatCheckFromJson(json);
-  
+
+  factory VatCheck.fromJson(Map<String, Object?> json) =>
+      _$VatCheckFromJson(json);
+
   /// Other records with the same number (at most 10). A warning only: two branches of one.
   /// company share a number legitimately.
   final List<VatDuplicate> duplicates;

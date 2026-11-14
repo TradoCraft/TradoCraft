@@ -27,16 +27,17 @@ class DeliveryNoteLine {
     this.serialUnitId,
     this.stockMoveId,
   });
-  
-  factory DeliveryNoteLine.fromJson(Map<String, Object?> json) => _$DeliveryNoteLineFromJson(json);
-  
+
+  factory DeliveryNoteLine.fromJson(Map<String, Object?> json) =>
+      _$DeliveryNoteLineFromJson(json);
+
   final String id;
   final String location;
   @JsonKey(name: 'location_id')
   final String locationId;
-  @JsonKey(includeIfNull: false,name: 'lot_id')
+  @JsonKey(includeIfNull: false, name: 'lot_id')
   final String? lotId;
-  @JsonKey(includeIfNull: false,name: 'lot_number')
+  @JsonKey(includeIfNull: false, name: 'lot_number')
   final String? lotNumber;
   @JsonKey(name: 'order_line_id')
   final String orderLineId;
@@ -54,13 +55,13 @@ class DeliveryNoteLine {
 
   /// In the stock unit of the product.
   final String quantity;
-  @JsonKey(includeIfNull: false,name: 'serial_number')
+  @JsonKey(includeIfNull: false, name: 'serial_number')
   final String? serialNumber;
-  @JsonKey(includeIfNull: false,name: 'serial_unit_id')
+  @JsonKey(includeIfNull: false, name: 'serial_unit_id')
   final String? serialUnitId;
 
   /// The stock move that took the goods out, once shipped.
-  @JsonKey(includeIfNull: false,name: 'stock_move_id')
+  @JsonKey(includeIfNull: false, name: 'stock_move_id')
   final String? stockMoveId;
 
   /// none | serial | lot: serial-tracked lines need a serial number before shipping.

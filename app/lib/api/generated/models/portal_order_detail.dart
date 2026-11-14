@@ -11,13 +11,11 @@ part 'portal_order_detail.g.dart';
 
 @JsonSerializable()
 class PortalOrderDetail {
-  const PortalOrderDetail({
-    required this.lines,
-    required this.order,
-  });
-  
-  factory PortalOrderDetail.fromJson(Map<String, Object?> json) => _$PortalOrderDetailFromJson(json);
-  
+  const PortalOrderDetail({required this.lines, required this.order});
+
+  factory PortalOrderDetail.fromJson(Map<String, Object?> json) =>
+      _$PortalOrderDetailFromJson(json);
+
   final List<PortalOrderLine> lines;
   final PortalOrder order;
 

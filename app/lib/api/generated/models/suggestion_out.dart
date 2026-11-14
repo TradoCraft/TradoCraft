@@ -17,9 +17,10 @@ class SuggestionOut {
     required this.technicianId,
     required this.technicianName,
   });
-  
-  factory SuggestionOut.fromJson(Map<String, Object?> json) => _$SuggestionOutFromJson(json);
-  
+
+  factory SuggestionOut.fromJson(Map<String, Object?> json) =>
+      _$SuggestionOutFromJson(json);
+
   @JsonKey(name: 'missing_skill_ids')
   final List<String> missingSkillIds;
   @JsonKey(name: 'scheduled_end')

@@ -20,15 +20,16 @@ class GoodsReceiptLine {
     required this.quantityReceived,
     this.lotNumber,
   });
-  
-  factory GoodsReceiptLine.fromJson(Map<String, Object?> json) => _$GoodsReceiptLineFromJson(json);
-  
+
+  factory GoodsReceiptLine.fromJson(Map<String, Object?> json) =>
+      _$GoodsReceiptLineFromJson(json);
+
   @JsonKey(name: 'created_at')
   final DateTime createdAt;
   @JsonKey(name: 'goods_receipt_id')
   final String goodsReceiptId;
   final String id;
-  @JsonKey(includeIfNull: false,name: 'lot_number')
+  @JsonKey(includeIfNull: false, name: 'lot_number')
   final String? lotNumber;
   @JsonKey(name: 'po_line_id')
   final String poLineId;

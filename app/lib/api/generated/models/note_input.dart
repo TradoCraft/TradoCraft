@@ -8,16 +8,13 @@ part 'note_input.g.dart';
 
 @JsonSerializable()
 class NoteInput {
-  const NoteInput({
-    required this.body,
-    this.attachmentIds,
-    this.status,
-  });
-  
-  factory NoteInput.fromJson(Map<String, Object?> json) => _$NoteInputFromJson(json);
-  
+  const NoteInput({required this.body, this.attachmentIds, this.status});
+
+  factory NoteInput.fromJson(Map<String, Object?> json) =>
+      _$NoteInputFromJson(json);
+
   /// Files uploaded to the ticket (`POST /tickets/{id}/attachments`) to attach to this note.
-  @JsonKey(includeIfNull: false,name: 'attachment_ids')
+  @JsonKey(includeIfNull: false, name: 'attachment_ids')
   final List<String>? attachmentIds;
   final String body;
 

@@ -22,9 +22,9 @@ class Board {
     required this.technicians,
     required this.to,
   });
-  
+
   factory Board.fromJson(Map<String, Object?> json) => _$BoardFromJson(json);
-  
+
   /// Open jobs without a schedule or without a technician, most urgent first.
   final List<BoardJob> backlog;
   final DateTime from;

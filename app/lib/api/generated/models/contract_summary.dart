@@ -22,16 +22,17 @@ class ContractSummary {
     this.resolutionHours,
     this.responseHours,
   });
-  
-  factory ContractSummary.fromJson(Map<String, Object?> json) => _$ContractSummaryFromJson(json);
-  
+
+  factory ContractSummary.fromJson(Map<String, Object?> json) =>
+      _$ContractSummaryFromJson(json);
+
   @JsonKey(name: 'auto_renew')
   final bool autoRenew;
   @JsonKey(name: 'customer_id')
   final String customerId;
   @JsonKey(name: 'customer_name')
   final String customerName;
-  @JsonKey(includeIfNull: false,name: 'end_date')
+  @JsonKey(includeIfNull: false, name: 'end_date')
   final DateTime? endDate;
   final String id;
   final String number;
@@ -39,9 +40,9 @@ class ContractSummary {
   /// Generated jobs that are not finished.
   @JsonKey(name: 'open_jobs')
   final int openJobs;
-  @JsonKey(includeIfNull: false,name: 'resolution_hours')
+  @JsonKey(includeIfNull: false, name: 'resolution_hours')
   final int? resolutionHours;
-  @JsonKey(includeIfNull: false,name: 'response_hours')
+  @JsonKey(includeIfNull: false, name: 'response_hours')
   final int? responseHours;
   @JsonKey(name: 'start_date')
   final DateTime startDate;

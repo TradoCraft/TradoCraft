@@ -9,13 +9,11 @@ part 'division_member.g.dart';
 /// A user who works in a division.
 @JsonSerializable()
 class DivisionMember {
-  const DivisionMember({
-    required this.displayName,
-    required this.userId,
-  });
-  
-  factory DivisionMember.fromJson(Map<String, Object?> json) => _$DivisionMemberFromJson(json);
-  
+  const DivisionMember({required this.displayName, required this.userId});
+
+  factory DivisionMember.fromJson(Map<String, Object?> json) =>
+      _$DivisionMemberFromJson(json);
+
   /// The name shown for the user.
   @JsonKey(name: 'display_name')
   final String displayName;

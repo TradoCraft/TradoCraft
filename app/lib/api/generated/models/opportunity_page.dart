@@ -10,13 +10,11 @@ part 'opportunity_page.g.dart';
 
 @JsonSerializable()
 class OpportunityPage {
-  const OpportunityPage({
-    required this.items,
-    required this.total,
-  });
-  
-  factory OpportunityPage.fromJson(Map<String, Object?> json) => _$OpportunityPageFromJson(json);
-  
+  const OpportunityPage({required this.items, required this.total});
+
+  factory OpportunityPage.fromJson(Map<String, Object?> json) =>
+      _$OpportunityPageFromJson(json);
+
   final List<Opportunity> items;
   final int total;
 

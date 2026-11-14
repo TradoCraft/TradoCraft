@@ -16,17 +16,18 @@ class CategoryInput {
     this.parentId,
     this.sortOrder,
   });
-  
-  factory CategoryInput.fromJson(Map<String, Object?> json) => _$CategoryInputFromJson(json);
-  
+
+  factory CategoryInput.fromJson(Map<String, Object?> json) =>
+      _$CategoryInputFromJson(json);
+
   @JsonKey(includeIfNull: false)
   final bool? active;
 
   /// At least one language; the others fall back to English.
   final List<CategoryName> names;
-  @JsonKey(includeIfNull: false,name: 'parent_id')
+  @JsonKey(includeIfNull: false, name: 'parent_id')
   final String? parentId;
-  @JsonKey(includeIfNull: false,name: 'sort_order')
+  @JsonKey(includeIfNull: false, name: 'sort_order')
   final int? sortOrder;
 
   Map<String, Object?> toJson() => _$CategoryInputToJson(this);

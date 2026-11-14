@@ -19,9 +19,10 @@ class BulkPriceLine {
     required this.zoneCode,
     required this.zoneId,
   });
-  
-  factory BulkPriceLine.fromJson(Map<String, Object?> json) => _$BulkPriceLineFromJson(json);
-  
+
+  factory BulkPriceLine.fromJson(Map<String, Object?> json) =>
+      _$BulkPriceLineFromJson(json);
+
   /// A price starting on exactly `valid_from` already exists.
   final bool conflict;
 

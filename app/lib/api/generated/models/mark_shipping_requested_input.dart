@@ -8,13 +8,11 @@ part 'mark_shipping_requested_input.g.dart';
 
 @JsonSerializable()
 class MarkShippingRequestedInput {
-  const MarkShippingRequestedInput({
-    required this.carrier,
-    this.notes,
-  });
-  
-  factory MarkShippingRequestedInput.fromJson(Map<String, Object?> json) => _$MarkShippingRequestedInputFromJson(json);
-  
+  const MarkShippingRequestedInput({required this.carrier, this.notes});
+
+  factory MarkShippingRequestedInput.fromJson(Map<String, Object?> json) =>
+      _$MarkShippingRequestedInputFromJson(json);
+
   /// The carrier(s) asked for a price.
   final String carrier;
   @JsonKey(includeIfNull: false)

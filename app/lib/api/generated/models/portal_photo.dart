@@ -15,9 +15,10 @@ class PortalPhoto {
     required this.id,
     required this.uploaderName,
   });
-  
-  factory PortalPhoto.fromJson(Map<String, Object?> json) => _$PortalPhotoFromJson(json);
-  
+
+  factory PortalPhoto.fromJson(Map<String, Object?> json) =>
+      _$PortalPhotoFromJson(json);
+
   final String caption;
   @JsonKey(name: 'created_at')
   final DateTime createdAt;

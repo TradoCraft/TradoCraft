@@ -12,13 +12,11 @@ part 'related_products.g.dart';
 /// What the rules and the order history say about one product.
 @JsonSerializable()
 class RelatedProducts {
-  const RelatedProducts({
-    required this.rules,
-    required this.suggestions,
-  });
-  
-  factory RelatedProducts.fromJson(Map<String, Object?> json) => _$RelatedProductsFromJson(json);
-  
+  const RelatedProducts({required this.rules, required this.suggestions});
+
+  factory RelatedProducts.fromJson(Map<String, Object?> json) =>
+      _$RelatedProductsFromJson(json);
+
   /// Active rules that apply to the product, directly or through its family.
   final List<ProductRelation> rules;
 

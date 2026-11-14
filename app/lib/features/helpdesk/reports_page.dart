@@ -108,6 +108,14 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
                 icon: const Icon(AppIcons.arrowBack),
               ),
               Text(l.helpdeskReports, style: theme.textTheme.headlineSmall),
+              const SizedBox(width: 12),
+              if (can(ref, 'reports.schedule'))
+                OutlinedButton.icon(
+                  key: const ValueKey('open-schedules'),
+                  icon: const Icon(AppIcons.schedule),
+                  label: Text(l.rsOpen),
+                  onPressed: () => context.push('/reports/schedules'),
+                ),
             ],
           ),
           const SizedBox(height: 8),

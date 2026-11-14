@@ -22,9 +22,7 @@ abstract class AdminClient {
   /// identity providers). Only an active administrator of the current primary company may do this;.
   /// the flag moves in one transaction, so there is always exactly one primary company.
   @POST('/api/v1/admin/companies/{id}/make-primary')
-  Future<MakePrimaryResult> makePrimary({
-    @Path('id') required String id,
-  });
+  Future<MakePrimaryResult> makePrimary({@Path('id') required String id});
 
   /// The identity providers: the database ones and, read-only, the one from the environment.
   @GET('/api/v1/admin/identity-providers')

@@ -24,9 +24,10 @@ class ConfiguredQuotationInput {
     this.strict,
     this.validDays,
   });
-  
-  factory ConfiguredQuotationInput.fromJson(Map<String, Object?> json) => _$ConfiguredQuotationInputFromJson(json);
-  
+
+  factory ConfiguredQuotationInput.fromJson(Map<String, Object?> json) =>
+      _$ConfiguredQuotationInputFromJson(json);
+
   /// The configurator's own payload, stored verbatim on the quotation for traceability.
   @JsonKey(includeIfNull: false)
   final dynamic configuration;
@@ -34,7 +35,7 @@ class ConfiguredQuotationInput {
   final String customerId;
 
   /// Defaults to the customer's country for an installation.
-  @JsonKey(includeIfNull: false,name: 'delivery_country_code')
+  @JsonKey(includeIfNull: false, name: 'delivery_country_code')
   final String? deliveryCountryCode;
 
   /// The configuration's identifier in that system. Importing the same source and reference.
@@ -44,12 +45,12 @@ class ConfiguredQuotationInput {
   final List<ConfiguredLineInput> lines;
   @JsonKey(includeIfNull: false)
   final String? notes;
-  @JsonKey(includeIfNull: false,name: 'power_grid_id')
+  @JsonKey(includeIfNull: false, name: 'power_grid_id')
   final String? powerGridId;
 
   /// The price zone the configurator expects. Prices always come from the customer's own zone;.
   /// a different value only adds a `price_zone_mismatch` warning (422 when `strict`).
-  @JsonKey(includeIfNull: false,name: 'price_zone_code')
+  @JsonKey(includeIfNull: false, name: 'price_zone_code')
   final String? priceZoneCode;
 
   /// `installation` (default) or `stock`. On a re-import: unchanged when omitted.
@@ -65,7 +66,7 @@ class ConfiguredQuotationInput {
   final bool? strict;
 
   /// Defaults to 30 days.
-  @JsonKey(includeIfNull: false,name: 'valid_days')
+  @JsonKey(includeIfNull: false, name: 'valid_days')
   final int? validDays;
 
   Map<String, Object?> toJson() => _$ConfiguredQuotationInputToJson(this);

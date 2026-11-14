@@ -14,9 +14,10 @@ class EntryText {
     this.body,
     this.summary,
   });
-  
-  factory EntryText.fromJson(Map<String, Object?> json) => _$EntryTextFromJson(json);
-  
+
+  factory EntryText.fromJson(Map<String, Object?> json) =>
+      _$EntryTextFromJson(json);
+
   /// Simple Markdown: headings, bold, italics, lists, links and images (`image:<file id>`).
   @JsonKey(includeIfNull: false)
   final String? body;

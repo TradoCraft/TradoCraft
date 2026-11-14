@@ -14,13 +14,14 @@ class SlaStats {
     required this.tickets,
     this.compliancePercent,
   });
-  
-  factory SlaStats.fromJson(Map<String, Object?> json) => _$SlaStatsFromJson(json);
-  
+
+  factory SlaStats.fromJson(Map<String, Object?> json) =>
+      _$SlaStatsFromJson(json);
+
   final int breached;
 
   /// Share of tickets that did not breach, 0-100.
-  @JsonKey(includeIfNull: false,name: 'compliance_percent')
+  @JsonKey(includeIfNull: false, name: 'compliance_percent')
   final double? compliancePercent;
   final int compliant;
 

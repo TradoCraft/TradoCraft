@@ -15,9 +15,10 @@ class RenderedAnswer {
     required this.language,
     required this.subject,
   });
-  
-  factory RenderedAnswer.fromJson(Map<String, Object?> json) => _$RenderedAnswerFromJson(json);
-  
+
+  factory RenderedAnswer.fromJson(Map<String, Object?> json) =>
+      _$RenderedAnswerFromJson(json);
+
   @JsonKey(name: 'answer_id')
   final String answerId;
   final String body;

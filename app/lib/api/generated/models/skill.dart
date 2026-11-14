@@ -8,14 +8,10 @@ part 'skill.g.dart';
 
 @JsonSerializable()
 class Skill {
-  const Skill({
-    required this.code,
-    required this.id,
-    required this.name,
-  });
-  
+  const Skill({required this.code, required this.id, required this.name});
+
   factory Skill.fromJson(Map<String, Object?> json) => _$SkillFromJson(json);
-  
+
   final String code;
   final String id;
   final String name;

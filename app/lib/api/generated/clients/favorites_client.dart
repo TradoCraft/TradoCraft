@@ -27,9 +27,7 @@ abstract class FavoritesClient {
   });
 
   @POST('/api/v1/favorites')
-  Future<Favorite> createFavorite({
-    @Body() required FavoriteInput body,
-  });
+  Future<Favorite> createFavorite({@Body() required FavoriteInput body});
 
   /// Adds the customer remark of an item in one language (the typed translation of a remark that.
   /// came from a favorite). A language that already has a text answers 409 unless `overwrite`.
@@ -41,9 +39,7 @@ abstract class FavoritesClient {
   });
 
   @GET('/api/v1/favorites/{id}')
-  Future<Favorite> getFavorite({
-    @Path('id') required String id,
-  });
+  Future<Favorite> getFavorite({@Path('id') required String id});
 
   /// Renames the favorite and replaces its content. Items whose `id` is sent keep it (and the lines.
   /// that point at it); items without an id are new; stored items that are not sent are deleted.
@@ -55,7 +51,5 @@ abstract class FavoritesClient {
 
   /// Deletes the favorite. Quotation lines loaded from it stay as they are and lose the link.
   @DELETE('/api/v1/favorites/{id}')
-  Future<void> deleteFavorite({
-    @Path('id') required String id,
-  });
+  Future<void> deleteFavorite({@Path('id') required String id});
 }

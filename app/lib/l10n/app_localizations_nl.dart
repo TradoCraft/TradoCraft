@@ -8767,4 +8767,141 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get slaNoticesAdd => 'Regel toevoegen';
+
+  @override
+  String get rsTitle => 'Geplande rapportmails';
+
+  @override
+  String get rsOpen => 'Geplande mails';
+
+  @override
+  String get rsHelp =>
+      'Mail een opgeslagen rapport of een helpdeskrapport volgens een schema, als CSV of PDF, naar collega\'s en andere adressen. Elke mail wordt opgebouwd met de rechten die de eigenaar van het schema op dat moment heeft.';
+
+  @override
+  String get rsNew => 'Nieuw schema';
+
+  @override
+  String get rsEdit => 'Schema';
+
+  @override
+  String get rsEmpty => 'Er zijn geen rapporten gepland.';
+
+  @override
+  String get rsSource => 'Soort rapport';
+
+  @override
+  String get rsSourceCustom => 'Opgeslagen rapport';
+
+  @override
+  String get rsSourceHelpdesk => 'Helpdeskrapport';
+
+  @override
+  String get rsReport => 'Rapport';
+
+  @override
+  String get rsTable => 'Tabel';
+
+  @override
+  String get rsPeriod => 'Periode';
+
+  @override
+  String get rsPeriodYesterday => 'Gisteren';
+
+  @override
+  String get rsPeriodLast7 => 'De laatste 7 dagen';
+
+  @override
+  String get rsPeriodLastWeek => 'Vorige week (maandag tot zondag)';
+
+  @override
+  String get rsPeriodLast30 => 'De laatste 30 dagen';
+
+  @override
+  String get rsPeriodLastMonth => 'Vorige kalendermaand';
+
+  @override
+  String get rsFrequency => 'Frequentie';
+
+  @override
+  String get rsDaily => 'Dagelijks';
+
+  @override
+  String get rsWeekly => 'Wekelijks';
+
+  @override
+  String get rsMonthly => 'Maandelijks';
+
+  @override
+  String get rsWeekday => 'Weekdag';
+
+  @override
+  String get rsDayOfMonth => 'Dag van de maand (1-28)';
+
+  @override
+  String get rsTime => 'Uur (UU:MM)';
+
+  @override
+  String get rsFormat => 'Formaat';
+
+  @override
+  String get rsColleagues => 'Collega\'s';
+
+  @override
+  String get rsAddresses => 'Andere e-mailadressen (gescheiden door komma\'s)';
+
+  @override
+  String get rsMon => 'Maandag';
+
+  @override
+  String get rsTue => 'Dinsdag';
+
+  @override
+  String get rsWed => 'Woensdag';
+
+  @override
+  String get rsThu => 'Donderdag';
+
+  @override
+  String get rsFri => 'Vrijdag';
+
+  @override
+  String get rsSat => 'Zaterdag';
+
+  @override
+  String get rsSun => 'Zondag';
+
+  @override
+  String rsSummary(String when, String format, int recipients) {
+    return '$when · $format · $recipients ontvangers';
+  }
+
+  @override
+  String rsNextRun(String when) {
+    return 'Volgende mail: $when';
+  }
+
+  @override
+  String rsLastSent(String when) {
+    return 'Laatste keer: verstuurd $when';
+  }
+
+  @override
+  String rsLastFailed(String when, String reason) {
+    return 'Laatste keer mislukt ($when): $reason';
+  }
+
+  @override
+  String get rsSendNow => 'Nu versturen';
+
+  @override
+  String rsQueued(int count) {
+    return '$count mails in de wachtrij gezet.';
+  }
+
+  @override
+  String get rsPaused => 'Gepauzeerd';
+
+  @override
+  String get rsNeedsRecipient => 'Kies minstens één ontvanger.';
 }

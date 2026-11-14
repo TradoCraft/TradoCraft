@@ -8,15 +8,13 @@ part 'new_revision_input.g.dart';
 
 @JsonSerializable()
 class NewRevisionInput {
-  const NewRevisionInput({
-    this.copyFrom,
-    this.notes,
-  });
-  
-  factory NewRevisionInput.fromJson(Map<String, Object?> json) => _$NewRevisionInputFromJson(json);
-  
+  const NewRevisionInput({this.copyFrom, this.notes});
+
+  factory NewRevisionInput.fromJson(Map<String, Object?> json) =>
+      _$NewRevisionInputFromJson(json);
+
   /// A revision of the same model to copy; the active one when left out.
-  @JsonKey(includeIfNull: false,name: 'copy_from')
+  @JsonKey(includeIfNull: false, name: 'copy_from')
   final String? copyFrom;
   @JsonKey(includeIfNull: false)
   final String? notes;

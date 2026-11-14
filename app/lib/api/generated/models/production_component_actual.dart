@@ -16,28 +16,29 @@ class ProductionComponentActual {
     this.scrapQuantity,
     this.serialUnitIds,
   });
-  
-  factory ProductionComponentActual.fromJson(Map<String, Object?> json) => _$ProductionComponentActualFromJson(json);
-  
+
+  factory ProductionComponentActual.fromJson(Map<String, Object?> json) =>
+      _$ProductionComponentActualFromJson(json);
+
   @JsonKey(name: 'component_id')
   final String componentId;
 
   /// What was really consumed; defaults to what the BOM required.
-  @JsonKey(includeIfNull: false,name: 'consumed_quantity')
+  @JsonKey(includeIfNull: false, name: 'consumed_quantity')
   final String? consumedQuantity;
 
   /// Where stock beyond the reservation is taken from (needed when more was used than reserved).
-  @JsonKey(includeIfNull: false,name: 'extra_location_id')
+  @JsonKey(includeIfNull: false, name: 'extra_location_id')
   final String? extraLocationId;
-  @JsonKey(includeIfNull: false,name: 'extra_lot_id')
+  @JsonKey(includeIfNull: false, name: 'extra_lot_id')
   final String? extraLotId;
 
   /// Lost on top of the consumption (not for serial-tracked components).
-  @JsonKey(includeIfNull: false,name: 'scrap_quantity')
+  @JsonKey(includeIfNull: false, name: 'scrap_quantity')
   final String? scrapQuantity;
 
   /// The serial units that were built in (needed for serial-tracked components, one per unit).
-  @JsonKey(includeIfNull: false,name: 'serial_unit_ids')
+  @JsonKey(includeIfNull: false, name: 'serial_unit_ids')
   final List<String>? serialUnitIds;
 
   Map<String, Object?> toJson() => _$ProductionComponentActualToJson(this);

@@ -25,9 +25,10 @@ class ProductStock {
     this.reorderMax,
     this.reorderMin,
   });
-  
-  factory ProductStock.fromJson(Map<String, Object?> json) => _$ProductStockFromJson(json);
-  
+
+  factory ProductStock.fromJson(Map<String, Object?> json) =>
+      _$ProductStockFromJson(json);
+
   final String available;
   @JsonKey(includeIfNull: false)
   final String? barcode;
@@ -40,7 +41,7 @@ class ProductStock {
   /// In service vans; not part of the other numbers unless a van is chosen.
   @JsonKey(name: 'in_vans')
   final String inVans;
-  @JsonKey(includeIfNull: false,name: 'lead_time_days')
+  @JsonKey(includeIfNull: false, name: 'lead_time_days')
   final int? leadTimeDays;
   final String name;
 
@@ -49,9 +50,9 @@ class ProductStock {
   final String onHand;
   @JsonKey(name: 'product_id')
   final String productId;
-  @JsonKey(includeIfNull: false,name: 'reorder_max')
+  @JsonKey(includeIfNull: false, name: 'reorder_max')
   final String? reorderMax;
-  @JsonKey(includeIfNull: false,name: 'reorder_min')
+  @JsonKey(includeIfNull: false, name: 'reorder_min')
   final String? reorderMin;
   final String reserved;
   final String tracking;

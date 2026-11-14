@@ -20,23 +20,24 @@ class NewTicketInput {
     this.internal,
     this.language,
   });
-  
-  factory NewTicketInput.fromJson(Map<String, Object?> json) => _$NewTicketInputFromJson(json);
-  
+
+  factory NewTicketInput.fromJson(Map<String, Object?> json) =>
+      _$NewTicketInputFromJson(json);
+
   /// First internal note (what was asked).
   final String body;
   @JsonKey(includeIfNull: false)
   final String? category;
-  @JsonKey(includeIfNull: false,name: 'contact_email')
+  @JsonKey(includeIfNull: false, name: 'contact_email')
   final String? contactEmail;
 
   /// The person; fills in customer, name, e-mail address and language (their own, else the.
   /// customer's) unless given.
-  @JsonKey(includeIfNull: false,name: 'contact_id')
+  @JsonKey(includeIfNull: false, name: 'contact_id')
   final String? contactId;
-  @JsonKey(includeIfNull: false,name: 'contact_name')
+  @JsonKey(includeIfNull: false, name: 'contact_name')
   final String? contactName;
-  @JsonKey(includeIfNull: false,name: 'customer_id')
+  @JsonKey(includeIfNull: false, name: 'customer_id')
   final String? customerId;
   @JsonKey(includeIfNull: false)
   final bool? internal;

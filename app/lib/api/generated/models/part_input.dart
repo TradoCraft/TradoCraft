@@ -17,9 +17,10 @@ class PartInput {
     this.serialUnitId,
     this.unit,
   });
-  
-  factory PartInput.fromJson(Map<String, Object?> json) => _$PartInputFromJson(json);
-  
+
+  factory PartInput.fromJson(Map<String, Object?> json) =>
+      _$PartInputFromJson(json);
+
   /// Is the part charged to the customer? Default yes.
   @JsonKey(includeIfNull: false)
   final bool? billable;
@@ -33,12 +34,12 @@ class PartInput {
   final String? id;
 
   /// A product from the catalogue; leave empty for free text.
-  @JsonKey(includeIfNull: false,name: 'product_id')
+  @JsonKey(includeIfNull: false, name: 'product_id')
   final String? productId;
   final String quantity;
 
   /// The unit (serial number) the part went into.
-  @JsonKey(includeIfNull: false,name: 'serial_unit_id')
+  @JsonKey(includeIfNull: false, name: 'serial_unit_id')
   final String? serialUnitId;
 
   /// Defaults to the product's unit, or `pcs`.

@@ -21,18 +21,19 @@ class OrderEditInput {
     this.powerGridId,
     this.purpose,
   });
-  
-  factory OrderEditInput.fromJson(Map<String, Object?> json) => _$OrderEditInputFromJson(json);
-  
+
+  factory OrderEditInput.fromJson(Map<String, Object?> json) =>
+      _$OrderEditInputFromJson(json);
+
   /// `true` clears the grid ("any grid of the delivery country"); it wins over keeping the stored.
   /// one and is refused (422) together with a `power_grid_id`. Absent or `false`: no effect.
-  @JsonKey(includeIfNull: false,name: 'clear_power_grid')
+  @JsonKey(includeIfNull: false, name: 'clear_power_grid')
   final bool? clearPowerGrid;
-  @JsonKey(includeIfNull: false,name: 'customer_reference')
+  @JsonKey(includeIfNull: false, name: 'customer_reference')
   final String? customerReference;
 
   /// Delivery country (ISO alpha-2); unchanged when omitted.
-  @JsonKey(includeIfNull: false,name: 'delivery_country_code')
+  @JsonKey(includeIfNull: false, name: 'delivery_country_code')
   final String? deliveryCountryCode;
   final List<OrderLineEdit> lines;
   @JsonKey(includeIfNull: false)
@@ -41,7 +42,7 @@ class OrderEditInput {
   /// The power grid at the delivery country (the new one when it changes, else the stored one);.
   /// it must belong to it (422). Unchanged when omitted, except that a grid the new delivery.
   /// country does not have is cleared.
-  @JsonKey(includeIfNull: false,name: 'power_grid_id')
+  @JsonKey(includeIfNull: false, name: 'power_grid_id')
   final String? powerGridId;
 
   /// `installation` or `stock`; unchanged when omitted. Cannot be changed after confirmation.

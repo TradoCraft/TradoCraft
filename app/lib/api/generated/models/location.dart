@@ -15,9 +15,10 @@ class Location {
     required this.name,
     required this.warehouseId,
   });
-  
-  factory Location.fromJson(Map<String, Object?> json) => _$LocationFromJson(json);
-  
+
+  factory Location.fromJson(Map<String, Object?> json) =>
+      _$LocationFromJson(json);
+
   final bool active;
   final String code;
   final String id;

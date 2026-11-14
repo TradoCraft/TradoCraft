@@ -17,9 +17,10 @@ class MatchReport {
     required this.priceTolerancePct,
     required this.quantityTolerancePct,
   });
-  
-  factory MatchReport.fromJson(Map<String, Object?> json) => _$MatchReportFromJson(json);
-  
+
+  factory MatchReport.fromJson(Map<String, Object?> json) =>
+      _$MatchReportFromJson(json);
+
   /// One entry per invoice line, in line order.
   final List<LineMatch> lines;
 

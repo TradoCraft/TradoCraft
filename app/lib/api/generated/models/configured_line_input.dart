@@ -23,9 +23,10 @@ class ConfiguredLineInput {
     this.section,
     this.unitPrice,
   });
-  
-  factory ConfiguredLineInput.fromJson(Map<String, Object?> json) => _$ConfiguredLineInputFromJson(json);
-  
+
+  factory ConfiguredLineInput.fromJson(Map<String, Object?> json) =>
+      _$ConfiguredLineInputFromJson(json);
+
   @JsonKey(includeIfNull: false)
   final List<ConfiguredLineInput>? children;
 
@@ -41,11 +42,11 @@ class ConfiguredLineInput {
   final String? description;
 
   /// Defaults to `parent_list_unit_price`.
-  @JsonKey(includeIfNull: false,name: 'percent_base')
+  @JsonKey(includeIfNull: false, name: 'percent_base')
   final PercentBase? percentBase;
 
   /// Prices the line as this percentage of its parent line's unit price (only on children).
-  @JsonKey(includeIfNull: false,name: 'percent_of_parent')
+  @JsonKey(includeIfNull: false, name: 'percent_of_parent')
   final String? percentOfParent;
   final String quantity;
 
@@ -54,7 +55,7 @@ class ConfiguredLineInput {
   final String? section;
 
   /// Confirmed unit price for an indicative product (as on `QuotationLineInput`).
-  @JsonKey(includeIfNull: false,name: 'unit_price')
+  @JsonKey(includeIfNull: false, name: 'unit_price')
   final String? unitPrice;
 
   Map<String, Object?> toJson() => _$ConfiguredLineInputToJson(this);

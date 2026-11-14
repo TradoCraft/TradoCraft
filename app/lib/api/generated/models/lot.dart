@@ -17,10 +17,10 @@ class Lot {
     required this.productId,
     this.expiryDate,
   });
-  
+
   factory Lot.fromJson(Map<String, Object?> json) => _$LotFromJson(json);
-  
-  @JsonKey(includeIfNull: false,name: 'expiry_date')
+
+  @JsonKey(includeIfNull: false, name: 'expiry_date')
   final DateTime? expiryDate;
   final String id;
   @JsonKey(name: 'lot_number')

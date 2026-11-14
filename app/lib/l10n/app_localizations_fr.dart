@@ -8780,4 +8780,142 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get slaNoticesAdd => 'Ajouter une règle';
+
+  @override
+  String get rsTitle => 'Rapports envoyés par e-mail';
+
+  @override
+  String get rsOpen => 'Envois planifiés';
+
+  @override
+  String get rsHelp =>
+      'Envoyer un rapport enregistré ou un rapport du helpdesk selon un calendrier, en CSV ou PDF, à des collègues et à d\'autres adresses. Chaque envoi est généré avec les droits du propriétaire du calendrier au moment de l\'envoi.';
+
+  @override
+  String get rsNew => 'Nouveau calendrier';
+
+  @override
+  String get rsEdit => 'Calendrier';
+
+  @override
+  String get rsEmpty => 'Aucun rapport n\'est planifié.';
+
+  @override
+  String get rsSource => 'Type de rapport';
+
+  @override
+  String get rsSourceCustom => 'Rapport enregistré';
+
+  @override
+  String get rsSourceHelpdesk => 'Rapport du helpdesk';
+
+  @override
+  String get rsReport => 'Rapport';
+
+  @override
+  String get rsTable => 'Tableau';
+
+  @override
+  String get rsPeriod => 'Période';
+
+  @override
+  String get rsPeriodYesterday => 'Hier';
+
+  @override
+  String get rsPeriodLast7 => 'Les 7 derniers jours';
+
+  @override
+  String get rsPeriodLastWeek => 'La semaine dernière (lundi à dimanche)';
+
+  @override
+  String get rsPeriodLast30 => 'Les 30 derniers jours';
+
+  @override
+  String get rsPeriodLastMonth => 'Le mois calendrier dernier';
+
+  @override
+  String get rsFrequency => 'Fréquence';
+
+  @override
+  String get rsDaily => 'Chaque jour';
+
+  @override
+  String get rsWeekly => 'Chaque semaine';
+
+  @override
+  String get rsMonthly => 'Chaque mois';
+
+  @override
+  String get rsWeekday => 'Jour de la semaine';
+
+  @override
+  String get rsDayOfMonth => 'Jour du mois (1-28)';
+
+  @override
+  String get rsTime => 'Heure (HH:MM)';
+
+  @override
+  String get rsFormat => 'Format';
+
+  @override
+  String get rsColleagues => 'Collègues';
+
+  @override
+  String get rsAddresses =>
+      'Autres adresses e-mail (séparées par des virgules)';
+
+  @override
+  String get rsMon => 'Lundi';
+
+  @override
+  String get rsTue => 'Mardi';
+
+  @override
+  String get rsWed => 'Mercredi';
+
+  @override
+  String get rsThu => 'Jeudi';
+
+  @override
+  String get rsFri => 'Vendredi';
+
+  @override
+  String get rsSat => 'Samedi';
+
+  @override
+  String get rsSun => 'Dimanche';
+
+  @override
+  String rsSummary(String when, String format, int recipients) {
+    return '$when · $format · $recipients destinataires';
+  }
+
+  @override
+  String rsNextRun(String when) {
+    return 'Prochain envoi : $when';
+  }
+
+  @override
+  String rsLastSent(String when) {
+    return 'Dernier envoi : $when';
+  }
+
+  @override
+  String rsLastFailed(String when, String reason) {
+    return 'Dernier envoi échoué ($when) : $reason';
+  }
+
+  @override
+  String get rsSendNow => 'Envoyer maintenant';
+
+  @override
+  String rsQueued(int count) {
+    return '$count e-mails mis en file d\'attente.';
+  }
+
+  @override
+  String get rsPaused => 'En pause';
+
+  @override
+  String get rsNeedsRecipient => 'Choisissez au moins un destinataire.';
 }

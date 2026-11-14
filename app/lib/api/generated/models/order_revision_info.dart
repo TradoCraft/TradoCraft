@@ -17,17 +17,18 @@ class OrderRevisionInfo {
     this.sentAt,
     this.sentTo,
   });
-  
-  factory OrderRevisionInfo.fromJson(Map<String, Object?> json) => _$OrderRevisionInfoFromJson(json);
-  
+
+  factory OrderRevisionInfo.fromJson(Map<String, Object?> json) =>
+      _$OrderRevisionInfoFromJson(json);
+
   @JsonKey(name: 'created_at')
   final DateTime createdAt;
   final int revision;
-  @JsonKey(includeIfNull: false,name: 'sent_at')
+  @JsonKey(includeIfNull: false, name: 'sent_at')
   final DateTime? sentAt;
 
   /// The address the order confirmation was e-mailed to.
-  @JsonKey(includeIfNull: false,name: 'sent_to')
+  @JsonKey(includeIfNull: false, name: 'sent_to')
   final String? sentTo;
 
   /// draft | sent | confirmed | superseded

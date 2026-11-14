@@ -20,9 +20,10 @@ class BootstrapRequest {
     this.vatNumber,
     this.token,
   });
-  
-  factory BootstrapRequest.fromJson(Map<String, Object?> json) => _$BootstrapRequestFromJson(json);
-  
+
+  factory BootstrapRequest.fromJson(Map<String, Object?> json) =>
+      _$BootstrapRequestFromJson(json);
+
   /// Display name of the first administrator.
   @JsonKey(name: 'admin_display_name')
   final String adminDisplayName;
@@ -43,14 +44,14 @@ class BootstrapRequest {
   final String defaultLanguage;
 
   /// Registered name when it differs from `name`.
-  @JsonKey(includeIfNull: false,name: 'legal_name')
+  @JsonKey(includeIfNull: false, name: 'legal_name')
   final String? legalName;
 
   /// Trading name; must be unique (case-insensitive).
   final String name;
 
   /// VAT number, for example `BE0123456749`.
-  @JsonKey(includeIfNull: false,name: 'vat_number')
+  @JsonKey(includeIfNull: false, name: 'vat_number')
   final String? vatNumber;
 
   /// The `BOOTSTRAP_TOKEN`; required whenever the server has one.

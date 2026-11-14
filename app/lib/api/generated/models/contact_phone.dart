@@ -13,9 +13,10 @@ class ContactPhone {
     required this.normalized,
     required this.number,
   });
-  
-  factory ContactPhone.fromJson(Map<String, Object?> json) => _$ContactPhoneFromJson(json);
-  
+
+  factory ContactPhone.fromJson(Map<String, Object?> json) =>
+      _$ContactPhoneFromJson(json);
+
   /// work | mobile | direct | other
   final String label;
 

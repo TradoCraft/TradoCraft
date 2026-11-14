@@ -10,13 +10,11 @@ part 'package_page.g.dart';
 
 @JsonSerializable()
 class PackagePage {
-  const PackagePage({
-    required this.items,
-    required this.total,
-  });
-  
-  factory PackagePage.fromJson(Map<String, Object?> json) => _$PackagePageFromJson(json);
-  
+  const PackagePage({required this.items, required this.total});
+
+  factory PackagePage.fromJson(Map<String, Object?> json) =>
+      _$PackagePageFromJson(json);
+
   final List<Package> items;
   final int total;
 

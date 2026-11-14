@@ -825,14 +825,11 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
                   ),
                 ),
                 const Spacer(),
-                TutorialTarget(
-                  id: 'ticket-send',
-                  child: FilledButton.icon(
-                    onPressed: _busy ? null : _send,
-                    icon: Icon(_reply ? AppIcons.send : AppIcons.noteAdd),
-                    label: Text(_reply ? l.send : l.addNote),
-                  ),
-                ),
+                TutorialTarget(id: 'ticket-send', child: FilledButton.icon(
+                  onPressed: _busy ? null : _send,
+                  icon: Icon(_reply ? AppIcons.send : AppIcons.noteAdd),
+                  label: Text(_reply ? l.send : l.addNote),
+                )),
               ],
             ),
           ],
@@ -1028,14 +1025,11 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
                 ),
               ),
               if (_customerId == null && canWrite)
-                TutorialTarget(
-                  id: 'ticket-new-customer',
-                  child: TextButton.icon(
-                    onPressed: _newCustomer,
-                    icon: const Icon(AppIcons.personAddAlt),
-                    label: Text(l.newCustomer),
-                  ),
-                ),
+                TutorialTarget(id: 'ticket-new-customer', child: TextButton.icon(
+                  onPressed: _newCustomer,
+                  icon: const Icon(AppIcons.personAddAlt),
+                  label: Text(l.newCustomer),
+                )),
             ],
           ),
         ),
@@ -1236,22 +1230,19 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
                 },
               ),
             if (t.customerId != null && perms.contains('quotations.write'))
-              TutorialTarget(
-                id: 'ticket-new-quotation',
-                child: OutlinedButton.icon(
-                  icon: const Icon(AppIcons.add),
-                  label: Text(l.newQuotation),
-                  onPressed: () async {
-                    final opp = t.opportunityId == null
-                        ? ''
-                        : '&opportunity=${t.opportunityId}';
-                    await context.push(
-                      '/quotations/new?customer=${t.customerId}$opp',
-                    );
-                    _loadLinks();
-                  },
-                ),
-              ),
+              TutorialTarget(id: 'ticket-new-quotation', child: OutlinedButton.icon(
+                icon: const Icon(AppIcons.add),
+                label: Text(l.newQuotation),
+                onPressed: () async {
+                  final opp = t.opportunityId == null
+                      ? ''
+                      : '&opportunity=${t.opportunityId}';
+                  await context.push(
+                    '/quotations/new?customer=${t.customerId}$opp',
+                  );
+                  _loadLinks();
+                },
+              )),
             if (t.orderId != null)
               OutlinedButton.icon(
                 icon: const Icon(AppIcons.inventory),

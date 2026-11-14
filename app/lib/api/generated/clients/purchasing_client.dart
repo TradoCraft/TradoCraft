@@ -27,9 +27,7 @@ abstract class PurchasingClient {
 
   /// [id] - Goods Receipt ID
   @GET('/api/v1/goods-receipts/{id}')
-  Future<GoodsReceiptDetail> getReceipt({
-    @Path('id') required String id,
-  });
+  Future<GoodsReceiptDetail> getReceipt({@Path('id') required String id});
 
   /// [id] - Product ID
   @GET('/api/v1/products/{id}/suppliers')
@@ -50,9 +48,7 @@ abstract class PurchasingClient {
 
   /// [id] - Purchase Order ID
   @GET('/api/v1/purchase-orders/{id}')
-  Future<PurchaseOrderDetail> getOrder({
-    @Path('id') required String id,
-  });
+  Future<PurchaseOrderDetail> getOrder({@Path('id') required String id});
 
   /// [id] - Purchase Order ID
   @PUT('/api/v1/purchase-orders/{id}')
@@ -63,15 +59,11 @@ abstract class PurchasingClient {
 
   /// [id] - Purchase Order ID
   @POST('/api/v1/purchase-orders/{id}/approve')
-  Future<PurchaseOrderDetail> approveOrder({
-    @Path('id') required String id,
-  });
+  Future<PurchaseOrderDetail> approveOrder({@Path('id') required String id});
 
   /// [id] - Purchase Order ID
   @POST('/api/v1/purchase-orders/{id}/cancel')
-  Future<PurchaseOrderDetail> cancelOrder({
-    @Path('id') required String id,
-  });
+  Future<PurchaseOrderDetail> cancelOrder({@Path('id') required String id});
 
   /// [id] - Purchase Order ID
   @GET('/api/v1/purchase-orders/{id}/receipts')
@@ -88,9 +80,7 @@ abstract class PurchasingClient {
 
   /// [id] - Purchase Order ID
   @POST('/api/v1/purchase-orders/{id}/send')
-  Future<PurchaseOrderDetail> sendOrder({
-    @Path('id') required String id,
-  });
+  Future<PurchaseOrderDetail> sendOrder({@Path('id') required String id});
 
   /// [q] - Searches name, code, e-mail address and contact person, ignoring case and accents.
   @GET('/api/v1/suppliers')
@@ -100,9 +90,7 @@ abstract class PurchasingClient {
   });
 
   @POST('/api/v1/suppliers')
-  Future<Supplier> createSupplier({
-    @Body() required NewSupplierInput body,
-  });
+  Future<Supplier> createSupplier({@Body() required NewSupplierInput body});
 
   /// Checks a supplier's VAT number for the supplier form: the format and check digits, other.
   /// suppliers of the company with the same number, and with `lookup=true` the name and address VIES.
@@ -126,9 +114,7 @@ abstract class PurchasingClient {
 
   /// [id] - Supplier ID
   @GET('/api/v1/suppliers/{id}')
-  Future<Supplier> getSupplier({
-    @Path('id') required String id,
-  });
+  Future<Supplier> getSupplier({@Path('id') required String id});
 
   /// [id] - Supplier ID
   @PUT('/api/v1/suppliers/{id}')

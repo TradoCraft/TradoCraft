@@ -17,9 +17,10 @@ class BulkPricePreview {
     required this.validFrom,
     required this.withoutPrice,
   });
-  
-  factory BulkPricePreview.fromJson(Map<String, Object?> json) => _$BulkPricePreviewFromJson(json);
-  
+
+  factory BulkPricePreview.fromJson(Map<String, Object?> json) =>
+      _$BulkPricePreviewFromJson(json);
+
   /// Number of prices created (0 for a preview).
   final int applied;
   final int conflicts;

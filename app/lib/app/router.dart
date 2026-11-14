@@ -19,6 +19,7 @@ import '../features/helpdesk/calendar_page.dart';
 import '../features/helpdesk/helpdesk_settings_page.dart';
 import '../features/helpdesk/reports_page.dart';
 import '../features/reports/report_builder_page.dart';
+import '../features/reports/report_schedules_page.dart';
 import '../features/reports/report_screen.dart';
 import '../features/reports/reports_page.dart';
 import '../features/todo/todo_page.dart';
@@ -50,7 +51,8 @@ import '../features/tutorial/chapter_map_page.dart';
 import 'session.dart';
 import '../features/field/offline/offline_ui.dart' show OfflineSyncHost;
 import 'shell.dart';
-import 'shortcuts/registry.dart' show ModalShortcutObserver, shortcutRegistryProvider;
+import 'shortcuts/registry.dart'
+    show ModalShortcutObserver, shortcutRegistryProvider;
 import 'workspace.dart' show DetailPortal;
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -161,6 +163,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/reports/new',
             builder: (_, _) => const ReportBuilderPage(),
+          ),
+          GoRoute(
+            path: '/reports/schedules',
+            builder: (_, _) => const ReportSchedulesPage(),
           ),
           GoRoute(
             path: '/reports/:id',

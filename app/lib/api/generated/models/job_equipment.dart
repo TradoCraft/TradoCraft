@@ -18,9 +18,10 @@ class JobEquipment {
     required this.warrantyStatus,
     this.warrantyUntil,
   });
-  
-  factory JobEquipment.fromJson(Map<String, Object?> json) => _$JobEquipmentFromJson(json);
-  
+
+  factory JobEquipment.fromJson(Map<String, Object?> json) =>
+      _$JobEquipmentFromJson(json);
+
   @JsonKey(name: 'product_code')
   final String productCode;
   @JsonKey(name: 'product_name')
@@ -36,7 +37,7 @@ class JobEquipment {
   /// in_warranty | expired | unknown
   @JsonKey(name: 'warranty_status')
   final String warrantyStatus;
-  @JsonKey(includeIfNull: false,name: 'warranty_until')
+  @JsonKey(includeIfNull: false, name: 'warranty_until')
   final DateTime? warrantyUntil;
 
   Map<String, Object?> toJson() => _$JobEquipmentToJson(this);

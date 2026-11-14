@@ -15,9 +15,10 @@ class TechnicianHours {
     required this.weekday,
     this.userId,
   });
-  
-  factory TechnicianHours.fromJson(Map<String, Object?> json) => _$TechnicianHoursFromJson(json);
-  
+
+  factory TechnicianHours.fromJson(Map<String, Object?> json) =>
+      _$TechnicianHoursFromJson(json);
+
   @JsonKey(name: 'end_time')
   final String endTime;
   final String id;
@@ -25,7 +26,7 @@ class TechnicianHours {
   final String startTime;
 
   /// Empty for the company default.
-  @JsonKey(includeIfNull: false,name: 'user_id')
+  @JsonKey(includeIfNull: false, name: 'user_id')
   final String? userId;
 
   /// 1 = Monday ... 7 = Sunday.

@@ -29,9 +29,10 @@ class JobDetail {
     required this.workMinutes,
     this.signature,
   });
-  
-  factory JobDetail.fromJson(Map<String, Object?> json) => _$JobDetailFromJson(json);
-  
+
+  factory JobDetail.fromJson(Map<String, Object?> json) =>
+      _$JobDetailFromJson(json);
+
   /// Phone numbers of the person to meet, to call when arriving.
   @JsonKey(name: 'contact_phones')
   final List<SitePhone> contactPhones;

@@ -51,9 +51,7 @@ abstract class ProductionClient {
 
   /// One production order with its components and outputs.
   @GET('/api/v1/production-orders/{id}')
-  Future<ProductionOrder> getOrder({
-    @Path('id') required String id,
-  });
+  Future<ProductionOrder> getOrder({@Path('id') required String id});
 
   /// Changes the division, the planned-ready date and the notes of an open production order.
   @PUT('/api/v1/production-orders/{id}')
@@ -89,15 +87,11 @@ abstract class ProductionClient {
 
   /// Tries again to reserve the components that were short at release.
   @POST('/api/v1/production-orders/{id}/reserve')
-  Future<ProductionOrder> reserveComponents({
-    @Path('id') required String id,
-  });
+  Future<ProductionOrder> reserveComponents({@Path('id') required String id});
 
   /// Starts a production order: the order is being built.
   @POST('/api/v1/production-orders/{id}/start')
-  Future<ProductionOrder> startOrder({
-    @Path('id') required String id,
-  });
+  Future<ProductionOrder> startOrder({@Path('id') required String id});
 
   /// The divisions of the company, in their sort order.
   @GET('/api/v1/production/divisions')
@@ -105,9 +99,7 @@ abstract class ProductionClient {
 
   /// Adds a division.
   @POST('/api/v1/production/divisions')
-  Future<Division> createDivision({
-    @Body() required DivisionInput body,
-  });
+  Future<Division> createDivision({@Body() required DivisionInput body});
 
   /// Changes a division.
   @PUT('/api/v1/production/divisions/{id}')
@@ -119,15 +111,11 @@ abstract class ProductionClient {
   /// Removes a division that nothing uses. One that has production orders is refused with 409.
   /// Conflict: deactivate it instead.
   @DELETE('/api/v1/production/divisions/{id}')
-  Future<void> deleteDivision({
-    @Path('id') required String id,
-  });
+  Future<void> deleteDivision({@Path('id') required String id});
 
   /// The division that normally builds a product.
   @GET('/api/v1/production/products/{id}/division')
-  Future<ProductDivision> getProductDivision({
-    @Path('id') required String id,
-  });
+  Future<ProductDivision> getProductDivision({@Path('id') required String id});
 
   /// Sets (or clears) the division that normally builds a product.
   @PUT('/api/v1/production/products/{id}/division')

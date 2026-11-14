@@ -33,24 +33,24 @@ class Order {
     this.confirmedRevision,
     this.confirmedVia,
   });
-  
+
   factory Order.fromJson(Map<String, Object?> json) => _$OrderFromJson(json);
-  
+
   @JsonKey(name: 'cancel_reason')
   final String cancelReason;
   @JsonKey(name: 'confirmation_note')
   final String confirmationNote;
-  @JsonKey(includeIfNull: false,name: 'confirmed_at')
+  @JsonKey(includeIfNull: false, name: 'confirmed_at')
   final DateTime? confirmedAt;
 
   /// A staff user id (`confirmed_via` = staff) or a contact id (portal).
-  @JsonKey(includeIfNull: false,name: 'confirmed_by')
+  @JsonKey(includeIfNull: false, name: 'confirmed_by')
   final String? confirmedBy;
-  @JsonKey(includeIfNull: false,name: 'confirmed_revision')
+  @JsonKey(includeIfNull: false, name: 'confirmed_revision')
   final int? confirmedRevision;
 
   /// staff | portal
-  @JsonKey(includeIfNull: false,name: 'confirmed_via')
+  @JsonKey(includeIfNull: false, name: 'confirmed_via')
   final String? confirmedVia;
   @JsonKey(name: 'created_at')
   final DateTime createdAt;

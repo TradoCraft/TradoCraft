@@ -17,9 +17,10 @@ class OrderAvailability {
     required this.orderStatus,
     required this.reservable,
   });
-  
-  factory OrderAvailability.fromJson(Map<String, Object?> json) => _$OrderAvailabilityFromJson(json);
-  
+
+  factory OrderAvailability.fromJson(Map<String, Object?> json) =>
+      _$OrderAvailabilityFromJson(json);
+
   final List<LineAvailability> lines;
   @JsonKey(name: 'order_id')
   final String orderId;

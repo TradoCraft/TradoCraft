@@ -10,16 +10,13 @@ part 'stage_input.g.dart';
 
 @JsonSerializable()
 class StageInput {
-  const StageInput({
-    required this.stage,
-    this.lostReason,
-    this.probability,
-  });
-  
-  factory StageInput.fromJson(Map<String, Object?> json) => _$StageInputFromJson(json);
-  
+  const StageInput({required this.stage, this.lostReason, this.probability});
+
+  factory StageInput.fromJson(Map<String, Object?> json) =>
+      _$StageInputFromJson(json);
+
   /// Required when the stage is `lost`.
-  @JsonKey(includeIfNull: false,name: 'lost_reason')
+  @JsonKey(includeIfNull: false, name: 'lost_reason')
   final String? lostReason;
 
   /// Defaults to the stage's default probability.

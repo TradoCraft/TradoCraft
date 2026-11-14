@@ -9,14 +9,13 @@ part 'approve_invoice_input.g.dart';
 /// Payload to approve an invoice.
 @JsonSerializable()
 class ApproveInvoiceInput {
-  const ApproveInvoiceInput({
-    this.overrideReason,
-  });
-  
-  factory ApproveInvoiceInput.fromJson(Map<String, Object?> json) => _$ApproveInvoiceInputFromJson(json);
-  
+  const ApproveInvoiceInput({this.overrideReason});
+
+  factory ApproveInvoiceInput.fromJson(Map<String, Object?> json) =>
+      _$ApproveInvoiceInputFromJson(json);
+
   /// Required to approve an invoice whose match is not clean; recorded and audited.
-  @JsonKey(includeIfNull: false,name: 'override_reason')
+  @JsonKey(includeIfNull: false, name: 'override_reason')
   final String? overrideReason;
 
   Map<String, Object?> toJson() => _$ApproveInvoiceInputToJson(this);

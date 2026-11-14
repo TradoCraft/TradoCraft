@@ -8,14 +8,13 @@ part 'detach_input.g.dart';
 
 @JsonSerializable()
 class DetachInput {
-  const DetachInput({
-    this.childStatus,
-  });
-  
-  factory DetachInput.fromJson(Map<String, Object?> json) => _$DetachInputFromJson(json);
-  
+  const DetachInput({this.childStatus});
+
+  factory DetachInput.fromJson(Map<String, Object?> json) =>
+      _$DetachInputFromJson(json);
+
   /// What happens to the removed component: in_stock (default) or scrapped.
-  @JsonKey(includeIfNull: false,name: 'child_status')
+  @JsonKey(includeIfNull: false, name: 'child_status')
   final String? childStatus;
 
   Map<String, Object?> toJson() => _$DetachInputToJson(this);

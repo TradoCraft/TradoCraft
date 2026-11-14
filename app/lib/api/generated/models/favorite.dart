@@ -19,9 +19,10 @@ class Favorite {
     required this.name,
     required this.updatedAt,
   });
-  
-  factory Favorite.fromJson(Map<String, Object?> json) => _$FavoriteFromJson(json);
-  
+
+  factory Favorite.fromJson(Map<String, Object?> json) =>
+      _$FavoriteFromJson(json);
+
   @JsonKey(name: 'created_at')
   final DateTime createdAt;
   @JsonKey(name: 'created_by')

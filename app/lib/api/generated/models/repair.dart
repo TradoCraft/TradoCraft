@@ -42,18 +42,18 @@ class Repair {
     this.ticketId,
     this.ticketNumber,
   });
-  
+
   factory Repair.fromJson(Map<String, Object?> json) => _$RepairFromJson(json);
-  
-  @JsonKey(includeIfNull: false,name: 'assigned_name')
+
+  @JsonKey(includeIfNull: false, name: 'assigned_name')
   final String? assignedName;
-  @JsonKey(includeIfNull: false,name: 'assigned_user_id')
+  @JsonKey(includeIfNull: false, name: 'assigned_user_id')
   final String? assignedUserId;
-  @JsonKey(includeIfNull: false,name: 'completed_at')
+  @JsonKey(includeIfNull: false, name: 'completed_at')
   final DateTime? completedAt;
-  @JsonKey(includeIfNull: false,name: 'contact_id')
+  @JsonKey(includeIfNull: false, name: 'contact_id')
   final String? contactId;
-  @JsonKey(includeIfNull: false,name: 'contact_name')
+  @JsonKey(includeIfNull: false, name: 'contact_name')
   final String? contactName;
   @JsonKey(name: 'created_at')
   final DateTime createdAt;
@@ -63,9 +63,9 @@ class Repair {
   final String customerName;
   @JsonKey(name: 'customer_reference')
   final String customerReference;
-  @JsonKey(includeIfNull: false,name: 'department_id')
+  @JsonKey(includeIfNull: false, name: 'department_id')
   final String? departmentId;
-  @JsonKey(includeIfNull: false,name: 'department_name')
+  @JsonKey(includeIfNull: false, name: 'department_name')
   final String? departmentName;
 
   /// The department's conclusion.
@@ -80,21 +80,21 @@ class Repair {
   @JsonKey(name: 'photo_count')
   final int photoCount;
   final String priority;
-  @JsonKey(includeIfNull: false,name: 'product_code')
+  @JsonKey(includeIfNull: false, name: 'product_code')
   final String? productCode;
 
   /// The product as the customer describes it.
   @JsonKey(name: 'product_description')
   final String productDescription;
-  @JsonKey(includeIfNull: false,name: 'product_id')
+  @JsonKey(includeIfNull: false, name: 'product_id')
   final String? productId;
-  @JsonKey(includeIfNull: false,name: 'received_at')
+  @JsonKey(includeIfNull: false, name: 'received_at')
   final DateTime? receivedAt;
   @JsonKey(name: 'serial_number')
   final String serialNumber;
 
   /// The serial unit (engineering) the warranty was looked up from.
-  @JsonKey(includeIfNull: false,name: 'serial_unit_id')
+  @JsonKey(includeIfNull: false, name: 'serial_unit_id')
   final String? serialUnitId;
 
   /// staff | portal | package
@@ -104,9 +104,9 @@ class Repair {
   final String status;
 
   /// The ticket where the repair was announced or discussed.
-  @JsonKey(includeIfNull: false,name: 'ticket_id')
+  @JsonKey(includeIfNull: false, name: 'ticket_id')
   final String? ticketId;
-  @JsonKey(includeIfNull: false,name: 'ticket_number')
+  @JsonKey(includeIfNull: false, name: 'ticket_number')
   final String? ticketNumber;
   @JsonKey(name: 'updated_at')
   final DateTime updatedAt;

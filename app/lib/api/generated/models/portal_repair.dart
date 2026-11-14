@@ -21,9 +21,10 @@ class PortalRepair {
     required this.status,
     required this.updatedAt,
   });
-  
-  factory PortalRepair.fromJson(Map<String, Object?> json) => _$PortalRepairFromJson(json);
-  
+
+  factory PortalRepair.fromJson(Map<String, Object?> json) =>
+      _$PortalRepairFromJson(json);
+
   /// Who registered it (colleagues' repairs are visible with the `customer` scope).
   @JsonKey(name: 'contact_name')
   final String contactName;

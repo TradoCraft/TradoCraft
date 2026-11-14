@@ -8,14 +8,11 @@ part 'new_ticket.g.dart';
 
 @JsonSerializable()
 class NewTicket {
-  const NewTicket({
-    required this.body,
-    required this.subject,
-    this.category,
-  });
-  
-  factory NewTicket.fromJson(Map<String, Object?> json) => _$NewTicketFromJson(json);
-  
+  const NewTicket({required this.body, required this.subject, this.category});
+
+  factory NewTicket.fromJson(Map<String, Object?> json) =>
+      _$NewTicketFromJson(json);
+
   final String body;
 
   /// question | service | complaint | other

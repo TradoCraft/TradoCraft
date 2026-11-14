@@ -203,9 +203,8 @@ class _MailboxEditorState extends ConsumerState<MailboxEditor> {
 
   Future<void> _save() async {
     final graph = _kind == 'graph';
-    final activeTeams = (ref.read(teamsProvider).value ?? const <Team>[]).where(
-      (t) => t.active,
-    );
+    final activeTeams = (ref.read(teamsProvider).value ?? const <Team>[])
+        .where((t) => t.active);
     final teamId = activeTeams.any((t) => t.id == _team) ? _team : null;
     final input = MailboxInput(
       name: _name.text.trim(),

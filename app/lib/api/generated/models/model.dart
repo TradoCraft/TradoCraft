@@ -22,9 +22,9 @@ class Model {
     required this.updatedAt,
     this.productId,
   });
-  
+
   factory Model.fromJson(Map<String, Object?> json) => _$ModelFromJson(json);
-  
+
   final bool active;
   final String code;
   @JsonKey(name: 'created_at')
@@ -32,7 +32,7 @@ class Model {
   final String description;
   final String id;
   final String name;
-  @JsonKey(includeIfNull: false,name: 'product_id')
+  @JsonKey(includeIfNull: false, name: 'product_id')
   final String? productId;
 
   /// Newest first.

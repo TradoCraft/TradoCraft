@@ -23,9 +23,10 @@ class InvoiceLine {
     this.productId,
     this.purchaseOrderLineId,
   });
-  
-  factory InvoiceLine.fromJson(Map<String, Object?> json) => _$InvoiceLineFromJson(json);
-  
+
+  factory InvoiceLine.fromJson(Map<String, Object?> json) =>
+      _$InvoiceLineFromJson(json);
+
   /// Description.
   final String description;
 
@@ -53,11 +54,11 @@ class InvoiceLine {
   final String lineVat;
 
   /// Product, when known.
-  @JsonKey(includeIfNull: false,name: 'product_id')
+  @JsonKey(includeIfNull: false, name: 'product_id')
   final String? productId;
 
   /// The purchase order line this line bills; `None` for a free-text line.
-  @JsonKey(includeIfNull: false,name: 'purchase_order_line_id')
+  @JsonKey(includeIfNull: false, name: 'purchase_order_line_id')
   final String? purchaseOrderLineId;
 
   /// Invoiced quantity.

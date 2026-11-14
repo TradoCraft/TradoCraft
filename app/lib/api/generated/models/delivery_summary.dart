@@ -24,9 +24,10 @@ class DeliverySummary {
     this.plannedDate,
     this.shippedAt,
   });
-  
-  factory DeliverySummary.fromJson(Map<String, Object?> json) => _$DeliverySummaryFromJson(json);
-  
+
+  factory DeliverySummary.fromJson(Map<String, Object?> json) =>
+      _$DeliverySummaryFromJson(json);
+
   final String carrier;
   @JsonKey(name: 'created_at')
   final DateTime createdAt;
@@ -42,11 +43,11 @@ class DeliverySummary {
   final String orderId;
   @JsonKey(name: 'order_number')
   final String orderNumber;
-  @JsonKey(includeIfNull: false,name: 'planned_date')
+  @JsonKey(includeIfNull: false, name: 'planned_date')
   final DateTime? plannedDate;
   @JsonKey(name: 'planned_on_closure')
   final bool plannedOnClosure;
-  @JsonKey(includeIfNull: false,name: 'shipped_at')
+  @JsonKey(includeIfNull: false, name: 'shipped_at')
   final DateTime? shippedAt;
 
   /// planned | shipped | cancelled

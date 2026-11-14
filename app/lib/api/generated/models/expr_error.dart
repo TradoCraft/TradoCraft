@@ -14,9 +14,10 @@ class ExprError {
     required this.message,
     required this.start,
   });
-  
-  factory ExprError.fromJson(Map<String, Object?> json) => _$ExprErrorFromJson(json);
-  
+
+  factory ExprError.fromJson(Map<String, Object?> json) =>
+      _$ExprErrorFromJson(json);
+
   /// Character offset just after the problem.
   final int end;
   final String message;

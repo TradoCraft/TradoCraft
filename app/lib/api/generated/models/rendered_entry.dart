@@ -17,9 +17,10 @@ class RenderedEntry {
     required this.title,
     this.link,
   });
-  
-  factory RenderedEntry.fromJson(Map<String, Object?> json) => _$RenderedEntryFromJson(json);
-  
+
+  factory RenderedEntry.fromJson(Map<String, Object?> json) =>
+      _$RenderedEntryFromJson(json);
+
   @JsonKey(name: 'entry_id')
   final String entryId;
 

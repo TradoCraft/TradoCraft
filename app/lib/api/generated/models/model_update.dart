@@ -15,14 +15,15 @@ class ModelUpdate {
     this.productId,
     this.translations,
   });
-  
-  factory ModelUpdate.fromJson(Map<String, Object?> json) => _$ModelUpdateFromJson(json);
-  
+
+  factory ModelUpdate.fromJson(Map<String, Object?> json) =>
+      _$ModelUpdateFromJson(json);
+
   final bool active;
   @JsonKey(includeIfNull: false)
   final String? description;
   final String name;
-  @JsonKey(includeIfNull: false,name: 'product_id')
+  @JsonKey(includeIfNull: false, name: 'product_id')
   final String? productId;
   @JsonKey(includeIfNull: false)
   final dynamic translations;

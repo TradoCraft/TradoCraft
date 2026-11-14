@@ -21,15 +21,16 @@ class NewInvoiceInput {
     this.purchaseOrderId,
     this.supplierId,
   });
-  
-  factory NewInvoiceInput.fromJson(Map<String, Object?> json) => _$NewInvoiceInputFromJson(json);
-  
+
+  factory NewInvoiceInput.fromJson(Map<String, Object?> json) =>
+      _$NewInvoiceInputFromJson(json);
+
   /// Currency; defaults to the order's (or the supplier's) and must equal the order's.
   @JsonKey(includeIfNull: false)
   final String? currency;
 
   /// Due date; default invoice date plus the supplier's payment terms.
-  @JsonKey(includeIfNull: false,name: 'due_date')
+  @JsonKey(includeIfNull: false, name: 'due_date')
   final DateTime? dueDate;
 
   /// Date on the invoice.
@@ -50,11 +51,11 @@ class NewInvoiceInput {
 
   /// Purchase order to match against. Without `lines` the lines are prefilled from what was.
   /// received and not yet invoiced.
-  @JsonKey(includeIfNull: false,name: 'purchase_order_id')
+  @JsonKey(includeIfNull: false, name: 'purchase_order_id')
   final String? purchaseOrderId;
 
   /// Supplier; may be left out when a purchase order is given.
-  @JsonKey(includeIfNull: false,name: 'supplier_id')
+  @JsonKey(includeIfNull: false, name: 'supplier_id')
   final String? supplierId;
 
   Map<String, Object?> toJson() => _$NewInvoiceInputToJson(this);

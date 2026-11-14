@@ -91,26 +91,20 @@ abstract class PortalClient {
   /// Always answers 202, whether or not the address belongs to a portal user, so the endpoint.
   /// cannot be used to find out who is a customer.
   @POST('/api/v1/portal/login-links')
-  Future<void> requestLoginLink({
-    @Body() required LoginLinkInput body,
-  });
+  Future<void> requestLoginLink({@Body() required LoginLinkInput body});
 
   @GET('/api/v1/portal/me')
   Future<PortalProfile> getMe();
 
   @PUT('/api/v1/portal/me')
-  Future<PortalProfile> updateMe({
-    @Body() required ProfileInput body,
-  });
+  Future<PortalProfile> updateMe({@Body() required ProfileInput body});
 
   /// Orders of the customer: the latest revision that was sent or confirmed, never a draft.
   @GET('/api/v1/portal/orders')
   Future<List<PortalOrder>> listPortalOrders();
 
   @GET('/api/v1/portal/orders/{id}')
-  Future<PortalOrderDetail> getPortalOrder({
-    @Path('id') required String id,
-  });
+  Future<PortalOrderDetail> getPortalOrder({@Path('id') required String id});
 
   /// The customer confirms their order. Only the latest sent revision can be confirmed.
   @POST('/api/v1/portal/orders/{id}/confirm')
@@ -136,9 +130,7 @@ abstract class PortalClient {
   });
 
   @GET('/api/v1/portal/repairs/{id}')
-  Future<PortalRepairDetail> getPortalRepair({
-    @Path('id') required String id,
-  });
+  Future<PortalRepairDetail> getPortalRepair({@Path('id') required String id});
 
   /// Adds a photo to a repair: the request body is the image (JPEG, PNG or WebP, at most 12 MB).
   ///
@@ -164,9 +156,7 @@ abstract class PortalClient {
 
   /// Exchanges a login link for a session. A link works once.
   @POST('/api/v1/portal/sessions')
-  Future<PortalSession> createSession({
-    @Body() required SessionInput body,
-  });
+  Future<PortalSession> createSession({@Body() required SessionInput body});
 
   @GET('/api/v1/portal/tickets')
   Future<List<PortalTicket>> listPortalTickets();
@@ -177,9 +167,7 @@ abstract class PortalClient {
   });
 
   @GET('/api/v1/portal/tickets/{id}')
-  Future<PortalTicketDetail> getPortalTicket({
-    @Path('id') required String id,
-  });
+  Future<PortalTicketDetail> getPortalTicket({@Path('id') required String id});
 
   /// Uploads a file to a ticket: the request body is the file (JPEG, PNG, WebP or PDF, at most.
   /// 12 MB). Send its id in `attachment_ids` with the next message.

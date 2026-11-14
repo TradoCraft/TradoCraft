@@ -14,15 +14,16 @@ class BomLineInput {
     this.notes,
     this.scrapPercent,
   });
-  
-  factory BomLineInput.fromJson(Map<String, Object?> json) => _$BomLineInputFromJson(json);
-  
+
+  factory BomLineInput.fromJson(Map<String, Object?> json) =>
+      _$BomLineInputFromJson(json);
+
   @JsonKey(name: 'component_product_id')
   final String componentProductId;
   @JsonKey(includeIfNull: false)
   final String? notes;
   final String quantity;
-  @JsonKey(includeIfNull: false,name: 'scrap_percent')
+  @JsonKey(includeIfNull: false, name: 'scrap_percent')
   final String? scrapPercent;
 
   Map<String, Object?> toJson() => _$BomLineInputToJson(this);

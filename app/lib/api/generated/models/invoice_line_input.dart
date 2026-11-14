@@ -17,19 +17,20 @@ class InvoiceLineInput {
     this.purchaseOrderLineId,
     this.vatRate,
   });
-  
-  factory InvoiceLineInput.fromJson(Map<String, Object?> json) => _$InvoiceLineInputFromJson(json);
-  
+
+  factory InvoiceLineInput.fromJson(Map<String, Object?> json) =>
+      _$InvoiceLineInputFromJson(json);
+
   /// Description; required for a free-text line, defaults to the product name otherwise.
   @JsonKey(includeIfNull: false)
   final String? description;
 
   /// Product for a free-text line; taken from the order line otherwise.
-  @JsonKey(includeIfNull: false,name: 'product_id')
+  @JsonKey(includeIfNull: false, name: 'product_id')
   final String? productId;
 
   /// The purchase order line billed; requires the invoice to have a purchase order.
-  @JsonKey(includeIfNull: false,name: 'purchase_order_line_id')
+  @JsonKey(includeIfNull: false, name: 'purchase_order_line_id')
   final String? purchaseOrderLineId;
 
   /// Invoiced quantity (greater than zero, at most 4 decimals).
@@ -40,7 +41,7 @@ class InvoiceLineInput {
   final String unitPrice;
 
   /// VAT rate in percent, default 0.
-  @JsonKey(includeIfNull: false,name: 'vat_rate')
+  @JsonKey(includeIfNull: false, name: 'vat_rate')
   final String? vatRate;
 
   Map<String, Object?> toJson() => _$InvoiceLineInputToJson(this);

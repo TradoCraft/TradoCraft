@@ -20,21 +20,22 @@ class PricingPreviewInput {
     this.quotationId,
     this.quoteDate,
   });
-  
-  factory PricingPreviewInput.fromJson(Map<String, Object?> json) => _$PricingPreviewInputFromJson(json);
-  
+
+  factory PricingPreviewInput.fromJson(Map<String, Object?> json) =>
+      _$PricingPreviewInputFromJson(json);
+
   @JsonKey(name: 'customer_id')
   final String customerId;
 
   /// Defaults to the customer's country.
-  @JsonKey(includeIfNull: false,name: 'delivery_country_code')
+  @JsonKey(includeIfNull: false, name: 'delivery_country_code')
   final String? deliveryCountryCode;
   final List<QuotationLineInput> lines;
-  @JsonKey(includeIfNull: false,name: 'power_grid_id')
+  @JsonKey(includeIfNull: false, name: 'power_grid_id')
   final String? powerGridId;
 
   /// Price list date; defaults to the quote date.
-  @JsonKey(includeIfNull: false,name: 'price_date')
+  @JsonKey(includeIfNull: false, name: 'price_date')
   final DateTime? priceDate;
 
   /// `installation` (default) or `stock`; a stock purpose skips the power grid warnings.
@@ -45,9 +46,9 @@ class PricingPreviewInput {
   /// and is a draft with a quoted shipping cost, and a product line still needs a shipping quote,.
   /// the preview also contains the `SHIPPING` line (as `shipping::shipping_line` builds it) in.
   /// `lines`, `vat_groups` and the totals. Ignored for quotations that are not drafts.
-  @JsonKey(includeIfNull: false,name: 'quotation_id')
+  @JsonKey(includeIfNull: false, name: 'quotation_id')
   final String? quotationId;
-  @JsonKey(includeIfNull: false,name: 'quote_date')
+  @JsonKey(includeIfNull: false, name: 'quote_date')
   final DateTime? quoteDate;
 
   Map<String, Object?> toJson() => _$PricingPreviewInputToJson(this);

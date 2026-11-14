@@ -8,13 +8,10 @@ part 'member.g.dart';
 
 @JsonSerializable()
 class Member {
-  const Member({
-    required this.displayName,
-    required this.userId,
-  });
-  
+  const Member({required this.displayName, required this.userId});
+
   factory Member.fromJson(Map<String, Object?> json) => _$MemberFromJson(json);
-  
+
   @JsonKey(name: 'display_name')
   final String displayName;
   @JsonKey(name: 'user_id')

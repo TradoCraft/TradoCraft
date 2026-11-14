@@ -23,9 +23,10 @@ class SavedReport {
     required this.shared,
     required this.updatedAt,
   });
-  
-  factory SavedReport.fromJson(Map<String, Object?> json) => _$SavedReportFromJson(json);
-  
+
+  factory SavedReport.fromJson(Map<String, Object?> json) =>
+      _$SavedReportFromJson(json);
+
   @JsonKey(name: 'created_at')
   final DateTime createdAt;
   final ReportDefinition definition;

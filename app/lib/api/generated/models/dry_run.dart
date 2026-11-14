@@ -15,9 +15,9 @@ class DryRun {
     required this.ticketNumber,
     required this.trigger,
   });
-  
+
   factory DryRun.fromJson(Map<String, Object?> json) => _$DryRunFromJson(json);
-  
+
   /// One entry per rule, in running order. Nothing was changed.
   final List<RuleOutcome> rules;
   @JsonKey(name: 'ticket_number')

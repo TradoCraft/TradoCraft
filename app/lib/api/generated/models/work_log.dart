@@ -18,9 +18,10 @@ class WorkLog {
     required this.userId,
     required this.userName,
   });
-  
-  factory WorkLog.fromJson(Map<String, Object?> json) => _$WorkLogFromJson(json);
-  
+
+  factory WorkLog.fromJson(Map<String, Object?> json) =>
+      _$WorkLogFromJson(json);
+
   @JsonKey(name: 'ended_at')
   final DateTime endedAt;
   final String id;

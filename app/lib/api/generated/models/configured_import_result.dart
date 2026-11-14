@@ -10,13 +10,11 @@ part 'configured_import_result.g.dart';
 
 @JsonSerializable()
 class ConfiguredImportResult {
-  const ConfiguredImportResult({
-    required this.action,
-    required this.quotation,
-  });
-  
-  factory ConfiguredImportResult.fromJson(Map<String, Object?> json) => _$ConfiguredImportResultFromJson(json);
-  
+  const ConfiguredImportResult({required this.action, required this.quotation});
+
+  factory ConfiguredImportResult.fromJson(Map<String, Object?> json) =>
+      _$ConfiguredImportResultFromJson(json);
+
   /// created (new quotation) | updated (the draft was replaced) | revised (a new revision of a.
   /// sent or rejected quotation).
   final String action;

@@ -17,9 +17,9 @@ class Photo {
     required this.sizeBytes,
     required this.uploaderName,
   });
-  
+
   factory Photo.fromJson(Map<String, Object?> json) => _$PhotoFromJson(json);
-  
+
   final String caption;
   @JsonKey(name: 'content_type')
   final String contentType;

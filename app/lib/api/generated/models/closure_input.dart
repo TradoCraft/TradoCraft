@@ -14,11 +14,12 @@ class ClosureInput {
     this.kind,
     this.notes,
   });
-  
-  factory ClosureInput.fromJson(Map<String, Object?> json) => _$ClosureInputFromJson(json);
-  
+
+  factory ClosureInput.fromJson(Map<String, Object?> json) =>
+      _$ClosureInputFromJson(json);
+
   /// Last closed day; defaults to `starts_on` (a single day).
-  @JsonKey(includeIfNull: false,name: 'ends_on')
+  @JsonKey(includeIfNull: false, name: 'ends_on')
   final DateTime? endsOn;
 
   /// holiday | collective_leave | inventory | works | other (default other)

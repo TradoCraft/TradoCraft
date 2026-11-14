@@ -22,9 +22,10 @@ class Evaluation {
     required this.project,
     required this.steps,
   });
-  
-  factory Evaluation.fromJson(Map<String, Object?> json) => _$EvaluationFromJson(json);
-  
+
+  factory Evaluation.fromJson(Map<String, Object?> json) =>
+      _$EvaluationFromJson(json);
+
   final List<GroupResult> groups;
   final List<Issue> issues;
   final List<ItemTableResult> items;

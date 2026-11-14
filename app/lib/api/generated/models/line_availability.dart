@@ -26,9 +26,10 @@ class LineAvailability {
     required this.unit,
     this.productId,
   });
-  
-  factory LineAvailability.fromJson(Map<String, Object?> json) => _$LineAvailabilityFromJson(json);
-  
+
+  factory LineAvailability.fromJson(Map<String, Object?> json) =>
+      _$LineAvailabilityFromJson(json);
+
   /// Available to promise: on hand minus expired stock minus what is reserved in good lots.
   final String available;
 
@@ -54,7 +55,7 @@ class LineAvailability {
   final int position;
   @JsonKey(name: 'product_code')
   final String productCode;
-  @JsonKey(includeIfNull: false,name: 'product_id')
+  @JsonKey(includeIfNull: false, name: 'product_id')
   final String? productId;
 
   /// Reserved for this line, in the stock unit.

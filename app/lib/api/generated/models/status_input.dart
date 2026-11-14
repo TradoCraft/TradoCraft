@@ -8,13 +8,11 @@ part 'status_input.g.dart';
 
 @JsonSerializable()
 class StatusInput {
-  const StatusInput({
-    required this.status,
-    this.note,
-  });
-  
-  factory StatusInput.fromJson(Map<String, Object?> json) => _$StatusInputFromJson(json);
-  
+  const StatusInput({required this.status, this.note});
+
+  factory StatusInput.fromJson(Map<String, Object?> json) =>
+      _$StatusInputFromJson(json);
+
   @JsonKey(includeIfNull: false)
   final String? note;
   final String status;

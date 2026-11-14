@@ -8,13 +8,11 @@ part 'tag_count.g.dart';
 
 @JsonSerializable()
 class TagCount {
-  const TagCount({
-    required this.count,
-    required this.tag,
-  });
-  
-  factory TagCount.fromJson(Map<String, Object?> json) => _$TagCountFromJson(json);
-  
+  const TagCount({required this.count, required this.tag});
+
+  factory TagCount.fromJson(Map<String, Object?> json) =>
+      _$TagCountFromJson(json);
+
   final int count;
   final String tag;
 

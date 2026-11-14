@@ -13,9 +13,10 @@ class VolumePoint {
     required this.created,
     required this.period,
   });
-  
-  factory VolumePoint.fromJson(Map<String, Object?> json) => _$VolumePointFromJson(json);
-  
+
+  factory VolumePoint.fromJson(Map<String, Object?> json) =>
+      _$VolumePointFromJson(json);
+
   final int closed;
   final int created;
 

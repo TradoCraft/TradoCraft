@@ -21,9 +21,10 @@ class Division {
     required this.openOrders,
     required this.sortOrder,
   });
-  
-  factory Division.fromJson(Map<String, Object?> json) => _$DivisionFromJson(json);
-  
+
+  factory Division.fromJson(Map<String, Object?> json) =>
+      _$DivisionFromJson(json);
+
   final bool active;
   final String code;
   final String id;

@@ -13,9 +13,10 @@ class ProductTranslation {
     required this.name,
     this.description,
   });
-  
-  factory ProductTranslation.fromJson(Map<String, Object?> json) => _$ProductTranslationFromJson(json);
-  
+
+  factory ProductTranslation.fromJson(Map<String, Object?> json) =>
+      _$ProductTranslationFromJson(json);
+
   @JsonKey(includeIfNull: false)
   final String? description;
 

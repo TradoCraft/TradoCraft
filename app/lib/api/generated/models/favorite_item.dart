@@ -29,9 +29,10 @@ class FavoriteItem {
     this.percentOfParent,
     this.section,
   });
-  
-  factory FavoriteItem.fromJson(Map<String, Object?> json) => _$FavoriteItemFromJson(json);
-  
+
+  factory FavoriteItem.fromJson(Map<String, Object?> json) =>
+      _$FavoriteItemFromJson(json);
+
   /// The small printed comment under the line (one text, no language).
   @JsonKey(includeIfNull: false)
   final String? comment;
@@ -40,11 +41,11 @@ class FavoriteItem {
   final String id;
 
   /// Position of the parent item; absent for the single main item.
-  @JsonKey(includeIfNull: false,name: 'parent_position')
+  @JsonKey(includeIfNull: false, name: 'parent_position')
   final int? parentPosition;
-  @JsonKey(includeIfNull: false,name: 'percent_base')
+  @JsonKey(includeIfNull: false, name: 'percent_base')
   final PercentBase? percentBase;
-  @JsonKey(includeIfNull: false,name: 'percent_of_parent')
+  @JsonKey(includeIfNull: false, name: 'percent_of_parent')
   final String? percentOfParent;
 
   /// 1-based, in the order the lines are loaded.

@@ -8,16 +8,13 @@ part 'package_open_input.g.dart';
 
 @JsonSerializable()
 class PackageOpenInput {
-  const PackageOpenInput({
-    required this.kind,
-    this.customerId,
-    this.note,
-  });
-  
-  factory PackageOpenInput.fromJson(Map<String, Object?> json) => _$PackageOpenInputFromJson(json);
-  
+  const PackageOpenInput({required this.kind, this.customerId, this.note});
+
+  factory PackageOpenInput.fromJson(Map<String, Object?> json) =>
+      _$PackageOpenInputFromJson(json);
+
   /// Set or correct the sender now that the parcel is open.
-  @JsonKey(includeIfNull: false,name: 'customer_id')
+  @JsonKey(includeIfNull: false, name: 'customer_id')
   final String? customerId;
 
   /// What the parcel is: repair | other | return_to_sender.

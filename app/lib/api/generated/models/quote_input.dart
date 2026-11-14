@@ -8,14 +8,11 @@ part 'quote_input.g.dart';
 
 @JsonSerializable()
 class QuoteInput {
-  const QuoteInput({
-    this.notes,
-    this.purpose,
-    this.validDays,
-  });
-  
-  factory QuoteInput.fromJson(Map<String, Object?> json) => _$QuoteInputFromJson(json);
-  
+  const QuoteInput({this.notes, this.purpose, this.validDays});
+
+  factory QuoteInput.fromJson(Map<String, Object?> json) =>
+      _$QuoteInputFromJson(json);
+
   /// Notes on the quotation.
   @JsonKey(includeIfNull: false)
   final String? notes;
@@ -23,7 +20,7 @@ class QuoteInput {
   /// `installation` (default) or `stock`.
   @JsonKey(includeIfNull: false)
   final String? purpose;
-  @JsonKey(includeIfNull: false,name: 'valid_days')
+  @JsonKey(includeIfNull: false, name: 'valid_days')
   final int? validDays;
 
   Map<String, Object?> toJson() => _$QuoteInputToJson(this);

@@ -24,11 +24,12 @@ class TokenTestResult {
     this.reason,
     this.subject,
   });
-  
-  factory TokenTestResult.fromJson(Map<String, Object?> json) => _$TokenTestResultFromJson(json);
-  
+
+  factory TokenTestResult.fromJson(Map<String, Object?> json) =>
+      _$TokenTestResultFromJson(json);
+
   /// `aud` contains the configured audience.
-  @JsonKey(includeIfNull: false,name: 'audience_ok')
+  @JsonKey(includeIfNull: false, name: 'audience_ok')
   final bool? audienceOk;
 
   /// What a sign-in would do; only for a valid token.
@@ -40,19 +41,19 @@ class TokenTestResult {
   final String? email;
 
   /// The value of the configured verification claim, read as a boolean.
-  @JsonKey(includeIfNull: false,name: 'email_verified')
+  @JsonKey(includeIfNull: false, name: 'email_verified')
   final bool? emailVerified;
 
   /// `exp` is in the future.
-  @JsonKey(includeIfNull: false,name: 'expiry_ok')
+  @JsonKey(includeIfNull: false, name: 'expiry_ok')
   final bool? expiryOk;
 
   /// `iss` equals the configured issuer.
-  @JsonKey(includeIfNull: false,name: 'issuer_ok')
+  @JsonKey(includeIfNull: false, name: 'issuer_ok')
   final bool? issuerOk;
 
   /// `nbf` is not in the future.
-  @JsonKey(includeIfNull: false,name: 'not_before_ok')
+  @JsonKey(includeIfNull: false, name: 'not_before_ok')
   final bool? notBeforeOk;
 
   /// Why the token is not valid.

@@ -14,9 +14,10 @@ class PriceZone {
     required this.name,
     required this.sortOrder,
   });
-  
-  factory PriceZone.fromJson(Map<String, Object?> json) => _$PriceZoneFromJson(json);
-  
+
+  factory PriceZone.fromJson(Map<String, Object?> json) =>
+      _$PriceZoneFromJson(json);
+
   final String code;
   final String id;
   final String name;

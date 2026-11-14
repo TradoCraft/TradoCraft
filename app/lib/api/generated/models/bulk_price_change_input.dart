@@ -19,16 +19,17 @@ class BulkPriceChangeInput {
     this.rounding,
     this.zoneIds,
   });
-  
-  factory BulkPriceChangeInput.fromJson(Map<String, Object?> json) => _$BulkPriceChangeInputFromJson(json);
-  
+
+  factory BulkPriceChangeInput.fromJson(Map<String, Object?> json) =>
+      _$BulkPriceChangeInputFromJson(json);
+
   /// Limit to one product family.
-  @JsonKey(includeIfNull: false,name: 'family_id')
+  @JsonKey(includeIfNull: false, name: 'family_id')
   final String? familyId;
   final ChangeKind kind;
 
   /// Limit to these products (combined with the family filter, if any).
-  @JsonKey(includeIfNull: false,name: 'product_ids')
+  @JsonKey(includeIfNull: false, name: 'product_ids')
   final List<String>? productIds;
 
   /// Round new prices to a multiple of this step, e.g. 0.01, 0.05 or 1. Default 0.01.
@@ -41,7 +42,7 @@ class BulkPriceChangeInput {
   final String value;
 
   /// Zones to change; empty = all zones of the active company.
-  @JsonKey(includeIfNull: false,name: 'zone_ids')
+  @JsonKey(includeIfNull: false, name: 'zone_ids')
   final List<String>? zoneIds;
 
   Map<String, Object?> toJson() => _$BulkPriceChangeInputToJson(this);

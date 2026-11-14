@@ -14,9 +14,10 @@ class RelatedEntry {
     required this.status,
     required this.title,
   });
-  
-  factory RelatedEntry.fromJson(Map<String, Object?> json) => _$RelatedEntryFromJson(json);
-  
+
+  factory RelatedEntry.fromJson(Map<String, Object?> json) =>
+      _$RelatedEntryFromJson(json);
+
   final String id;
   final String number;
   final String status;

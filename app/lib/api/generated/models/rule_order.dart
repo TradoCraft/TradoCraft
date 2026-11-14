@@ -8,12 +8,11 @@ part 'rule_order.g.dart';
 
 @JsonSerializable()
 class RuleOrder {
-  const RuleOrder({
-    required this.ids,
-  });
-  
-  factory RuleOrder.fromJson(Map<String, Object?> json) => _$RuleOrderFromJson(json);
-  
+  const RuleOrder({required this.ids});
+
+  factory RuleOrder.fromJson(Map<String, Object?> json) =>
+      _$RuleOrderFromJson(json);
+
   /// Every rule of the company, in the wanted order.
   final List<String> ids;
 

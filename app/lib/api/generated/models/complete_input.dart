@@ -8,12 +8,11 @@ part 'complete_input.g.dart';
 
 @JsonSerializable()
 class CompleteInput {
-  const CompleteInput({
-    required this.notes,
-  });
-  
-  factory CompleteInput.fromJson(Map<String, Object?> json) => _$CompleteInputFromJson(json);
-  
+  const CompleteInput({required this.notes});
+
+  factory CompleteInput.fromJson(Map<String, Object?> json) =>
+      _$CompleteInputFromJson(json);
+
   /// What was done, and anything left open.
   final String notes;
 

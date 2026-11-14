@@ -15,15 +15,16 @@ class DeliveryShipToInput {
     this.postalCode,
     this.street,
   });
-  
-  factory DeliveryShipToInput.fromJson(Map<String, Object?> json) => _$DeliveryShipToInputFromJson(json);
-  
+
+  factory DeliveryShipToInput.fromJson(Map<String, Object?> json) =>
+      _$DeliveryShipToInputFromJson(json);
+
   @JsonKey(includeIfNull: false)
   final String? city;
   @JsonKey(name: 'country_code')
   final String countryCode;
   final String name;
-  @JsonKey(includeIfNull: false,name: 'postal_code')
+  @JsonKey(includeIfNull: false, name: 'postal_code')
   final String? postalCode;
   @JsonKey(includeIfNull: false)
   final String? street;

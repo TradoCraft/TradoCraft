@@ -9,14 +9,11 @@ part 'rule_change.g.dart';
 /// A change a rule made (or, in a dry run, would make).
 @JsonSerializable()
 class RuleChange {
-  const RuleChange({
-    required this.kind,
-    this.from,
-    this.to,
-  });
-  
-  factory RuleChange.fromJson(Map<String, Object?> json) => _$RuleChangeFromJson(json);
-  
+  const RuleChange({required this.kind, this.from, this.to});
+
+  factory RuleChange.fromJson(Map<String, Object?> json) =>
+      _$RuleChangeFromJson(json);
+
   @JsonKey(includeIfNull: false)
   final String? from;
   final String kind;

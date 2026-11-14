@@ -16,9 +16,10 @@ class CountDetail {
     required this.lines,
     required this.movedDuringCount,
   });
-  
-  factory CountDetail.fromJson(Map<String, Object?> json) => _$CountDetailFromJson(json);
-  
+
+  factory CountDetail.fromJson(Map<String, Object?> json) =>
+      _$CountDetailFromJson(json);
+
   final Count count;
   final List<CountLine> lines;
 

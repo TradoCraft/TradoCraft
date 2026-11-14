@@ -47,9 +47,7 @@ abstract class SalesClient {
 
   /// The latest revision of an order.
   @GET('/api/v1/orders/{id}')
-  Future<Order> getOrder({
-    @Path('id') required String id,
-  });
+  Future<Order> getOrder({@Path('id') required String id});
 
   /// Edits the draft revision: quantities, discounts, descriptions and notes. Prices and rebates.
   /// stay as agreed on the quotation; totals are recomputed here.
@@ -88,9 +86,7 @@ abstract class SalesClient {
 
   /// Customer requests to change the priority, newest first.
   @GET('/api/v1/orders/{id}/priority-requests')
-  Future<List<PriorityRequest>> listRequests({
-    @Path('id') required String id,
-  });
+  Future<List<PriorityRequest>> listRequests({@Path('id') required String id});
 
   /// Turns a customer request down without changing the priority.
   @POST('/api/v1/orders/{id}/priority-requests/{request_id}/dismiss')
@@ -103,9 +99,7 @@ abstract class SalesClient {
   /// Starts the next revision as a draft, copying the latest one. The sent revision is kept and.
   /// marked superseded: the customer can no longer confirm it.
   @POST('/api/v1/orders/{id}/revisions')
-  Future<Order> newRevision({
-    @Path('id') required String id,
-  });
+  Future<Order> newRevision({@Path('id') required String id});
 
   /// A specific revision of an order, e.g. an older one that was sent.
   @GET('/api/v1/orders/{id}/revisions/{revision}')
@@ -125,16 +119,12 @@ abstract class SalesClient {
   /// customer's language and queued as an e-mail for the worker. Refused (409) when there is no.
   /// address to send it to.
   @POST('/api/v1/orders/{id}/send')
-  Future<Order> sendOrder({
-    @Path('id') required String id,
-  });
+  Future<Order> sendOrder({@Path('id') required String id});
 
   /// Prices lines for a customer without saving. The app calls this while the user edits,.
   /// so every number on screen comes from the server's pricing engine.
   @POST('/api/v1/pricing/preview')
-  Future<PricingPreview> preview({
-    @Body() required PricingPreviewInput body,
-  });
+  Future<PricingPreview> preview({@Body() required PricingPreviewInput body});
 
   /// The distinct production or customer remarks used on earlier quotation lines of a product, newest.
   /// first, limited to the caller's company. Scope `customer` looks at the given customer, `language`.
@@ -169,9 +159,7 @@ abstract class SalesClient {
   });
 
   @POST('/api/v1/quotations')
-  Future<Quotation> createQuotation({
-    @Body() required QuotationInput body,
-  });
+  Future<Quotation> createQuotation({@Body() required QuotationInput body});
 
   /// Imports a configured quotation, or re-imports it.
   ///
@@ -189,9 +177,7 @@ abstract class SalesClient {
   });
 
   @GET('/api/v1/quotations/{id}')
-  Future<Quotation> getQuotation({
-    @Path('id') required String id,
-  });
+  Future<Quotation> getQuotation({@Path('id') required String id});
 
   /// Replaces customer, dates, notes and lines of a draft, repricing everything at its price date.
   @PUT('/api/v1/quotations/{id}')
@@ -201,9 +187,7 @@ abstract class SalesClient {
   });
 
   @POST('/api/v1/quotations/{id}/accept')
-  Future<Quotation> acceptQuotation({
-    @Path('id') required String id,
-  });
+  Future<Quotation> acceptQuotation({@Path('id') required String id});
 
   /// Converts a sent or accepted quotation revision into a draft sales order (revision 1).
   @POST('/api/v1/quotations/{id}/convert')
@@ -213,20 +197,14 @@ abstract class SalesClient {
   });
 
   @GET('/api/v1/quotations/{id}/pdf')
-  Future<List<int>> quotationPdf({
-    @Path('id') required String id,
-  });
+  Future<List<int>> quotationPdf({@Path('id') required String id});
 
   @POST('/api/v1/quotations/{id}/reject')
-  Future<Quotation> rejectQuotation({
-    @Path('id') required String id,
-  });
+  Future<Quotation> rejectQuotation({@Path('id') required String id});
 
   /// Compares a quotation with today's price list and rebates, line by line. Changes nothing.
   @GET('/api/v1/quotations/{id}/repricing')
-  Future<RepricingComparison> repricing({
-    @Path('id') required String id,
-  });
+  Future<RepricingComparison> repricing({@Path('id') required String id});
 
   /// Creates the next revision as a new draft with the same number; the revised quotation becomes.
   /// `superseded`. `keep` copies the agreed prices and price list date unchanged; `current` reprices.

@@ -18,9 +18,10 @@ class ReportRunColumn {
     required this.label,
     required this.type,
   });
-  
-  factory ReportRunColumn.fromJson(Map<String, Object?> json) => _$ReportRunColumnFromJson(json);
-  
+
+  factory ReportRunColumn.fromJson(Map<String, Object?> json) =>
+      _$ReportRunColumnFromJson(json);
+
   /// Key to use in `sort` and `chart`.
   final String key;
   final ReportColumnKind kind;

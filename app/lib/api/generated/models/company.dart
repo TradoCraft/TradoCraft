@@ -24,9 +24,10 @@ class Company {
     this.phone,
     this.vatNumber,
   });
-  
-  factory Company.fromJson(Map<String, Object?> json) => _$CompanyFromJson(json);
-  
+
+  factory Company.fromJson(Map<String, Object?> json) =>
+      _$CompanyFromJson(json);
+
   final String city;
   @JsonKey(name: 'country_code')
   final String countryCode;
@@ -49,7 +50,7 @@ class Company {
   @JsonKey(name: 'postal_code')
   final String postalCode;
   final String street;
-  @JsonKey(includeIfNull: false,name: 'vat_number')
+  @JsonKey(includeIfNull: false, name: 'vat_number')
   final String? vatNumber;
 
   Map<String, Object?> toJson() => _$CompanyToJson(this);

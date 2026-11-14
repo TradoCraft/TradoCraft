@@ -17,12 +17,13 @@ class UpdatePurchaseOrderInput {
     this.lines,
     this.notes,
   });
-  
-  factory UpdatePurchaseOrderInput.fromJson(Map<String, Object?> json) => _$UpdatePurchaseOrderInputFromJson(json);
-  
+
+  factory UpdatePurchaseOrderInput.fromJson(Map<String, Object?> json) =>
+      _$UpdatePurchaseOrderInputFromJson(json);
+
   @JsonKey(includeIfNull: false)
   final String? currency;
-  @JsonKey(includeIfNull: false,name: 'expected_delivery_date')
+  @JsonKey(includeIfNull: false, name: 'expected_delivery_date')
   final DateTime? expectedDeliveryDate;
   @JsonKey(includeIfNull: false)
   final List<NewPoLineInput>? lines;

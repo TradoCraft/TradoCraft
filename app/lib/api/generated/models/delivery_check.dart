@@ -16,9 +16,10 @@ class DeliveryCheck {
     required this.nextOpenDay,
     this.closure,
   });
-  
-  factory DeliveryCheck.fromJson(Map<String, Object?> json) => _$DeliveryCheckFromJson(json);
-  
+
+  factory DeliveryCheck.fromJson(Map<String, Object?> json) =>
+      _$DeliveryCheckFromJson(json);
+
   /// True when the customer cannot receive a delivery on `date`.
   final bool closed;
 

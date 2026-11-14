@@ -15617,6 +15617,258 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add a rule'**
   String get slaNoticesAdd;
+
+  /// No description provided for @rsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheduled report mails'**
+  String get rsTitle;
+
+  /// No description provided for @rsOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheduled mails'**
+  String get rsOpen;
+
+  /// No description provided for @rsHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Mail a saved report or a helpdesk report on a schedule, as CSV or PDF, to colleagues and other addresses. Each mail is built with the permissions of the schedule\'s owner at the time it is sent.'**
+  String get rsHelp;
+
+  /// No description provided for @rsNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New schedule'**
+  String get rsNew;
+
+  /// No description provided for @rsEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule'**
+  String get rsEdit;
+
+  /// No description provided for @rsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No reports are scheduled.'**
+  String get rsEmpty;
+
+  /// No description provided for @rsSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Kind of report'**
+  String get rsSource;
+
+  /// No description provided for @rsSourceCustom.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved report'**
+  String get rsSourceCustom;
+
+  /// No description provided for @rsSourceHelpdesk.
+  ///
+  /// In en, this message translates to:
+  /// **'Helpdesk report'**
+  String get rsSourceHelpdesk;
+
+  /// No description provided for @rsReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Report'**
+  String get rsReport;
+
+  /// No description provided for @rsTable.
+  ///
+  /// In en, this message translates to:
+  /// **'Table'**
+  String get rsTable;
+
+  /// No description provided for @rsPeriod.
+  ///
+  /// In en, this message translates to:
+  /// **'Period'**
+  String get rsPeriod;
+
+  /// No description provided for @rsPeriodYesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday'**
+  String get rsPeriodYesterday;
+
+  /// No description provided for @rsPeriodLast7.
+  ///
+  /// In en, this message translates to:
+  /// **'The last 7 days'**
+  String get rsPeriodLast7;
+
+  /// No description provided for @rsPeriodLastWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'Last week (Monday to Sunday)'**
+  String get rsPeriodLastWeek;
+
+  /// No description provided for @rsPeriodLast30.
+  ///
+  /// In en, this message translates to:
+  /// **'The last 30 days'**
+  String get rsPeriodLast30;
+
+  /// No description provided for @rsPeriodLastMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Last calendar month'**
+  String get rsPeriodLastMonth;
+
+  /// No description provided for @rsFrequency.
+  ///
+  /// In en, this message translates to:
+  /// **'Frequency'**
+  String get rsFrequency;
+
+  /// No description provided for @rsDaily.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily'**
+  String get rsDaily;
+
+  /// No description provided for @rsWeekly.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly'**
+  String get rsWeekly;
+
+  /// No description provided for @rsMonthly.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly'**
+  String get rsMonthly;
+
+  /// No description provided for @rsWeekday.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekday'**
+  String get rsWeekday;
+
+  /// No description provided for @rsDayOfMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Day of the month (1-28)'**
+  String get rsDayOfMonth;
+
+  /// No description provided for @rsTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Time (HH:MM)'**
+  String get rsTime;
+
+  /// No description provided for @rsFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'Format'**
+  String get rsFormat;
+
+  /// No description provided for @rsColleagues.
+  ///
+  /// In en, this message translates to:
+  /// **'Colleagues'**
+  String get rsColleagues;
+
+  /// No description provided for @rsAddresses.
+  ///
+  /// In en, this message translates to:
+  /// **'Other e-mail addresses (separated by commas)'**
+  String get rsAddresses;
+
+  /// No description provided for @rsMon.
+  ///
+  /// In en, this message translates to:
+  /// **'Monday'**
+  String get rsMon;
+
+  /// No description provided for @rsTue.
+  ///
+  /// In en, this message translates to:
+  /// **'Tuesday'**
+  String get rsTue;
+
+  /// No description provided for @rsWed.
+  ///
+  /// In en, this message translates to:
+  /// **'Wednesday'**
+  String get rsWed;
+
+  /// No description provided for @rsThu.
+  ///
+  /// In en, this message translates to:
+  /// **'Thursday'**
+  String get rsThu;
+
+  /// No description provided for @rsFri.
+  ///
+  /// In en, this message translates to:
+  /// **'Friday'**
+  String get rsFri;
+
+  /// No description provided for @rsSat.
+  ///
+  /// In en, this message translates to:
+  /// **'Saturday'**
+  String get rsSat;
+
+  /// No description provided for @rsSun.
+  ///
+  /// In en, this message translates to:
+  /// **'Sunday'**
+  String get rsSun;
+
+  /// No description provided for @rsSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{when} · {format} · {recipients} recipients'**
+  String rsSummary(String when, String format, int recipients);
+
+  /// No description provided for @rsNextRun.
+  ///
+  /// In en, this message translates to:
+  /// **'Next mail: {when}'**
+  String rsNextRun(String when);
+
+  /// No description provided for @rsLastSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Last run: sent {when}'**
+  String rsLastSent(String when);
+
+  /// No description provided for @rsLastFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Last run failed ({when}): {reason}'**
+  String rsLastFailed(String when, String reason);
+
+  /// No description provided for @rsSendNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Send now'**
+  String get rsSendNow;
+
+  /// No description provided for @rsQueued.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} mails queued.'**
+  String rsQueued(int count);
+
+  /// No description provided for @rsPaused.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused'**
+  String get rsPaused;
+
+  /// No description provided for @rsNeedsRecipient.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose at least one recipient.'**
+  String get rsNeedsRecipient;
 }
 
 class _AppLocalizationsDelegate

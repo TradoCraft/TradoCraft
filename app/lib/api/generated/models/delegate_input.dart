@@ -8,13 +8,11 @@ part 'delegate_input.g.dart';
 
 @JsonSerializable()
 class DelegateInput {
-  const DelegateInput({
-    required this.toUserId,
-    this.comment,
-  });
-  
-  factory DelegateInput.fromJson(Map<String, Object?> json) => _$DelegateInputFromJson(json);
-  
+  const DelegateInput({required this.toUserId, this.comment});
+
+  factory DelegateInput.fromJson(Map<String, Object?> json) =>
+      _$DelegateInputFromJson(json);
+
   /// Internal comment for the new owner; never sent to the customer.
   @JsonKey(includeIfNull: false)
   final String? comment;

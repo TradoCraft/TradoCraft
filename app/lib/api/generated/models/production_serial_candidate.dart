@@ -14,9 +14,10 @@ class ProductionSerialCandidate {
     required this.locationId,
     required this.serialNumber,
   });
-  
-  factory ProductionSerialCandidate.fromJson(Map<String, Object?> json) => _$ProductionSerialCandidateFromJson(json);
-  
+
+  factory ProductionSerialCandidate.fromJson(Map<String, Object?> json) =>
+      _$ProductionSerialCandidateFromJson(json);
+
   final String id;
   final String location;
   @JsonKey(name: 'location_id')

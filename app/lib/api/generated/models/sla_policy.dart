@@ -13,9 +13,10 @@ class SlaPolicy {
     required this.priority,
     required this.resolutionMinutes,
   });
-  
-  factory SlaPolicy.fromJson(Map<String, Object?> json) => _$SlaPolicyFromJson(json);
-  
+
+  factory SlaPolicy.fromJson(Map<String, Object?> json) =>
+      _$SlaPolicyFromJson(json);
+
   @JsonKey(name: 'first_response_minutes')
   final int firstResponseMinutes;
 

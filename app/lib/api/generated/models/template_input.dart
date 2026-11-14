@@ -23,16 +23,17 @@ class TemplateInput {
     this.tasks,
     this.technicianIds,
   });
-  
-  factory TemplateInput.fromJson(Map<String, Object?> json) => _$TemplateInputFromJson(json);
-  
+
+  factory TemplateInput.fromJson(Map<String, Object?> json) =>
+      _$TemplateInputFromJson(json);
+
   @JsonKey(includeIfNull: false)
   final bool? active;
 
   /// The first due date; defaults to the start of the contract.
-  @JsonKey(includeIfNull: false,name: 'anchor_date')
+  @JsonKey(includeIfNull: false, name: 'anchor_date')
   final DateTime? anchorDate;
-  @JsonKey(includeIfNull: false,name: 'estimated_minutes')
+  @JsonKey(includeIfNull: false, name: 'estimated_minutes')
   final int? estimatedMinutes;
 
   /// Give the id of an existing template to change it; without one a new template is made.
@@ -40,18 +41,18 @@ class TemplateInput {
   final String? id;
   @JsonKey(includeIfNull: false)
   final String? instructions;
-  @JsonKey(includeIfNull: false,name: 'interval_n')
+  @JsonKey(includeIfNull: false, name: 'interval_n')
   final int? intervalN;
   @JsonKey(includeIfNull: false)
   final String? kind;
-  @JsonKey(includeIfNull: false,name: 'lead_days')
+  @JsonKey(includeIfNull: false, name: 'lead_days')
   final int? leadDays;
   @JsonKey(includeIfNull: false)
   final List<int>? months;
   final String recurrence;
   @JsonKey(includeIfNull: false)
   final List<String>? tasks;
-  @JsonKey(includeIfNull: false,name: 'technician_ids')
+  @JsonKey(includeIfNull: false, name: 'technician_ids')
   final List<String>? technicianIds;
   final String title;
 

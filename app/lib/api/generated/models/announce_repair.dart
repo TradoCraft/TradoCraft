@@ -14,19 +14,20 @@ class AnnounceRepair {
     this.productDescription,
     this.serialNumber,
   });
-  
-  factory AnnounceRepair.fromJson(Map<String, Object?> json) => _$AnnounceRepairFromJson(json);
-  
+
+  factory AnnounceRepair.fromJson(Map<String, Object?> json) =>
+      _$AnnounceRepairFromJson(json);
+
   /// The customer's own reference (RMA or purchase order).
-  @JsonKey(includeIfNull: false,name: 'customer_reference')
+  @JsonKey(includeIfNull: false, name: 'customer_reference')
   final String? customerReference;
   @JsonKey(name: 'fault_description')
   final String faultDescription;
 
   /// The product in the customer's words, e.g. "Pump 5 kW, blue".
-  @JsonKey(includeIfNull: false,name: 'product_description')
+  @JsonKey(includeIfNull: false, name: 'product_description')
   final String? productDescription;
-  @JsonKey(includeIfNull: false,name: 'serial_number')
+  @JsonKey(includeIfNull: false, name: 'serial_number')
   final String? serialNumber;
 
   Map<String, Object?> toJson() => _$AnnounceRepairToJson(this);

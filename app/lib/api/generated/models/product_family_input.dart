@@ -13,9 +13,10 @@ class ProductFamilyInput {
     required this.name,
     this.active,
   });
-  
-  factory ProductFamilyInput.fromJson(Map<String, Object?> json) => _$ProductFamilyInputFromJson(json);
-  
+
+  factory ProductFamilyInput.fromJson(Map<String, Object?> json) =>
+      _$ProductFamilyInputFromJson(json);
+
   @JsonKey(includeIfNull: false)
   final bool? active;
   final String code;

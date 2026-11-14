@@ -8,13 +8,11 @@ part 'serial_choice.g.dart';
 
 @JsonSerializable()
 class SerialChoice {
-  const SerialChoice({
-    required this.id,
-    required this.serialNumber,
-  });
-  
-  factory SerialChoice.fromJson(Map<String, Object?> json) => _$SerialChoiceFromJson(json);
-  
+  const SerialChoice({required this.id, required this.serialNumber});
+
+  factory SerialChoice.fromJson(Map<String, Object?> json) =>
+      _$SerialChoiceFromJson(json);
+
   final String id;
   @JsonKey(name: 'serial_number')
   final String serialNumber;

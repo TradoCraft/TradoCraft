@@ -17,9 +17,10 @@ class BootstrapResult {
     required this.authMode,
     required this.company,
   });
-  
-  factory BootstrapResult.fromJson(Map<String, Object?> json) => _$BootstrapResultFromJson(json);
-  
+
+  factory BootstrapResult.fromJson(Map<String, Object?> json) =>
+      _$BootstrapResultFromJson(json);
+
   /// Its first administrator.
   final AdminSummary admin;
 

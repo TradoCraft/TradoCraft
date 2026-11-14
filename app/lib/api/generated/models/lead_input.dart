@@ -8,14 +8,12 @@ part 'lead_input.g.dart';
 
 @JsonSerializable()
 class LeadInput {
-  const LeadInput({
-    this.expectedValue,
-    this.title,
-  });
-  
-  factory LeadInput.fromJson(Map<String, Object?> json) => _$LeadInputFromJson(json);
-  
-  @JsonKey(includeIfNull: false,name: 'expected_value')
+  const LeadInput({this.expectedValue, this.title});
+
+  factory LeadInput.fromJson(Map<String, Object?> json) =>
+      _$LeadInputFromJson(json);
+
+  @JsonKey(includeIfNull: false, name: 'expected_value')
   final String? expectedValue;
 
   /// Defaults to the ticket subject.

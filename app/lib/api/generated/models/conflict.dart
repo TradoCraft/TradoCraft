@@ -19,9 +19,10 @@ class Conflict {
     this.skillId,
     this.technicianId,
   });
-  
-  factory Conflict.fromJson(Map<String, Object?> json) => _$ConflictFromJson(json);
-  
+
+  factory Conflict.fromJson(Map<String, Object?> json) =>
+      _$ConflictFromJson(json);
+
   final ConflictKind kind;
 
   /// Translation key for the message, e.g. `planning.conflict.double_booked`.
@@ -29,16 +30,16 @@ class Conflict {
   final String messageKey;
 
   /// The other job, for a double booking.
-  @JsonKey(includeIfNull: false,name: 'other_job_id')
+  @JsonKey(includeIfNull: false, name: 'other_job_id')
   final String? otherJobId;
   final Severity severity;
 
   /// The missing skill, for a missing-skill conflict.
-  @JsonKey(includeIfNull: false,name: 'skill_id')
+  @JsonKey(includeIfNull: false, name: 'skill_id')
   final String? skillId;
 
   /// The technician concerned; empty for conflicts of the job itself.
-  @JsonKey(includeIfNull: false,name: 'technician_id')
+  @JsonKey(includeIfNull: false, name: 'technician_id')
   final String? technicianId;
 
   Map<String, Object?> toJson() => _$ConflictToJson(this);

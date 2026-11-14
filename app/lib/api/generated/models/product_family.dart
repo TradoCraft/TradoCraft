@@ -15,9 +15,10 @@ class ProductFamily {
     required this.name,
     required this.productCount,
   });
-  
-  factory ProductFamily.fromJson(Map<String, Object?> json) => _$ProductFamilyFromJson(json);
-  
+
+  factory ProductFamily.fromJson(Map<String, Object?> json) =>
+      _$ProductFamilyFromJson(json);
+
   final bool active;
   final String code;
   final String id;

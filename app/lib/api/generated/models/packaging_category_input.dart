@@ -15,16 +15,17 @@ class PackagingCategoryInput {
     this.description,
     this.requiresShippingQuote,
   });
-  
-  factory PackagingCategoryInput.fromJson(Map<String, Object?> json) => _$PackagingCategoryInputFromJson(json);
-  
+
+  factory PackagingCategoryInput.fromJson(Map<String, Object?> json) =>
+      _$PackagingCategoryInputFromJson(json);
+
   @JsonKey(includeIfNull: false)
   final bool? active;
   final String code;
   @JsonKey(includeIfNull: false)
   final String? description;
   final String name;
-  @JsonKey(includeIfNull: false,name: 'requires_shipping_quote')
+  @JsonKey(includeIfNull: false, name: 'requires_shipping_quote')
   final bool? requiresShippingQuote;
 
   Map<String, Object?> toJson() => _$PackagingCategoryInputToJson(this);

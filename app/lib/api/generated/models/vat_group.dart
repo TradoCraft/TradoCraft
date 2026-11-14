@@ -13,9 +13,10 @@ class VatGroup {
     required this.vat,
     required this.vatRate,
   });
-  
-  factory VatGroup.fromJson(Map<String, Object?> json) => _$VatGroupFromJson(json);
-  
+
+  factory VatGroup.fromJson(Map<String, Object?> json) =>
+      _$VatGroupFromJson(json);
+
   /// The name has been replaced because it contains a keyword. Original name: `base`.
   @JsonKey(name: 'base')
   final String baseValue;

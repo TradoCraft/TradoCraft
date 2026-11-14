@@ -9,13 +9,11 @@ part 'make_primary_result.g.dart';
 /// The company that was made primary.
 @JsonSerializable()
 class MakePrimaryResult {
-  const MakePrimaryResult({
-    required this.companyId,
-    required this.name,
-  });
-  
-  factory MakePrimaryResult.fromJson(Map<String, Object?> json) => _$MakePrimaryResultFromJson(json);
-  
+  const MakePrimaryResult({required this.companyId, required this.name});
+
+  factory MakePrimaryResult.fromJson(Map<String, Object?> json) =>
+      _$MakePrimaryResultFromJson(json);
+
   /// The new primary company.
   @JsonKey(name: 'company_id')
   final String companyId;

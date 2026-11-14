@@ -15,15 +15,16 @@ class ReceiveGoodsLineInput {
     this.lotNumber,
     this.serialNumbers,
   });
-  
-  factory ReceiveGoodsLineInput.fromJson(Map<String, Object?> json) => _$ReceiveGoodsLineInputFromJson(json);
-  
-  @JsonKey(includeIfNull: false,name: 'lot_number')
+
+  factory ReceiveGoodsLineInput.fromJson(Map<String, Object?> json) =>
+      _$ReceiveGoodsLineInputFromJson(json);
+
+  @JsonKey(includeIfNull: false, name: 'lot_number')
   final String? lotNumber;
   @JsonKey(name: 'po_line_id')
   final String poLineId;
   final String quantity;
-  @JsonKey(includeIfNull: false,name: 'serial_numbers')
+  @JsonKey(includeIfNull: false, name: 'serial_numbers')
   final List<String>? serialNumbers;
 
   Map<String, Object?> toJson() => _$ReceiveGoodsLineInputToJson(this);

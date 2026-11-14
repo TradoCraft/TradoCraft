@@ -19,9 +19,10 @@ class ProvisionSpec {
     this.legalName,
     this.vatNumber,
   });
-  
-  factory ProvisionSpec.fromJson(Map<String, Object?> json) => _$ProvisionSpecFromJson(json);
-  
+
+  factory ProvisionSpec.fromJson(Map<String, Object?> json) =>
+      _$ProvisionSpecFromJson(json);
+
   /// Display name of the first administrator.
   @JsonKey(name: 'admin_display_name')
   final String adminDisplayName;
@@ -42,14 +43,14 @@ class ProvisionSpec {
   final String defaultLanguage;
 
   /// Registered name when it differs from `name`.
-  @JsonKey(includeIfNull: false,name: 'legal_name')
+  @JsonKey(includeIfNull: false, name: 'legal_name')
   final String? legalName;
 
   /// Trading name; must be unique (case-insensitive).
   final String name;
 
   /// VAT number, for example `BE0123456749`.
-  @JsonKey(includeIfNull: false,name: 'vat_number')
+  @JsonKey(includeIfNull: false, name: 'vat_number')
   final String? vatNumber;
 
   Map<String, Object?> toJson() => _$ProvisionSpecToJson(this);

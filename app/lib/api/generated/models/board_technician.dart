@@ -20,9 +20,10 @@ class BoardTechnician {
     required this.userId,
     required this.workingHours,
   });
-  
-  factory BoardTechnician.fromJson(Map<String, Object?> json) => _$BoardTechnicianFromJson(json);
-  
+
+  factory BoardTechnician.fromJson(Map<String, Object?> json) =>
+      _$BoardTechnicianFromJson(json);
+
   /// Absences touching the requested period.
   final List<Absence> absences;
   @JsonKey(name: 'display_name')

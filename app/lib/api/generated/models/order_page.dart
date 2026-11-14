@@ -10,13 +10,11 @@ part 'order_page.g.dart';
 
 @JsonSerializable()
 class OrderPage {
-  const OrderPage({
-    required this.items,
-    required this.total,
-  });
-  
-  factory OrderPage.fromJson(Map<String, Object?> json) => _$OrderPageFromJson(json);
-  
+  const OrderPage({required this.items, required this.total});
+
+  factory OrderPage.fromJson(Map<String, Object?> json) =>
+      _$OrderPageFromJson(json);
+
   final List<OrderSummary> items;
   final int total;
 

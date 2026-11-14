@@ -8,12 +8,11 @@ part 'cancel_delivery_input.g.dart';
 
 @JsonSerializable()
 class CancelDeliveryInput {
-  const CancelDeliveryInput({
-    required this.reason,
-  });
-  
-  factory CancelDeliveryInput.fromJson(Map<String, Object?> json) => _$CancelDeliveryInputFromJson(json);
-  
+  const CancelDeliveryInput({required this.reason});
+
+  factory CancelDeliveryInput.fromJson(Map<String, Object?> json) =>
+      _$CancelDeliveryInputFromJson(json);
+
   final String reason;
 
   Map<String, Object?> toJson() => _$CancelDeliveryInputToJson(this);

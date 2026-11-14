@@ -14,9 +14,10 @@ class ProfileInput {
     required this.title,
     this.language,
   });
-  
-  factory ProfileInput.fromJson(Map<String, Object?> json) => _$ProfileInputFromJson(json);
-  
+
+  factory ProfileInput.fromJson(Map<String, Object?> json) =>
+      _$ProfileInputFromJson(json);
+
   /// formal | informal
   @JsonKey(name: 'address_form')
   final String addressForm;

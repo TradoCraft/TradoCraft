@@ -14,12 +14,13 @@ class PriceZoneInput {
     required this.name,
     this.sortOrder,
   });
-  
-  factory PriceZoneInput.fromJson(Map<String, Object?> json) => _$PriceZoneInputFromJson(json);
-  
+
+  factory PriceZoneInput.fromJson(Map<String, Object?> json) =>
+      _$PriceZoneInputFromJson(json);
+
   final String code;
   final String name;
-  @JsonKey(includeIfNull: false,name: 'sort_order')
+  @JsonKey(includeIfNull: false, name: 'sort_order')
   final int? sortOrder;
 
   Map<String, Object?> toJson() => _$PriceZoneInputToJson(this);

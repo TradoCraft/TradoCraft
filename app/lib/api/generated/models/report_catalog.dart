@@ -11,13 +11,11 @@ part 'report_catalog.g.dart';
 
 @JsonSerializable()
 class ReportCatalog {
-  const ReportCatalog({
-    required this.links,
-    required this.objects,
-  });
-  
-  factory ReportCatalog.fromJson(Map<String, Object?> json) => _$ReportCatalogFromJson(json);
-  
+  const ReportCatalog({required this.links, required this.objects});
+
+  factory ReportCatalog.fromJson(Map<String, Object?> json) =>
+      _$ReportCatalogFromJson(json);
+
   /// Pairs of objects that can be joined in one report.
   final List<ReportCatalogLink> links;
 

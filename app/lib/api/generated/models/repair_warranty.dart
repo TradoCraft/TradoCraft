@@ -26,19 +26,20 @@ class RepairWarranty {
     this.overrideByName,
     this.serialUnit,
   });
-  
-  factory RepairWarranty.fromJson(Map<String, Object?> json) => _$RepairWarrantyFromJson(json);
-  
+
+  factory RepairWarranty.fromJson(Map<String, Object?> json) =>
+      _$RepairWarrantyFromJson(json);
+
   /// False while the repair has not been received yet; the result is provisional then.
   final bool arrived;
 
   /// The automatic result: unknown | in_warranty | out_of_warranty
   final String auto;
-  @JsonKey(includeIfNull: false,name: 'auto_at')
+  @JsonKey(includeIfNull: false, name: 'auto_at')
   final DateTime? autoAt;
 
   /// The `warranty_until` the automatic result was based on.
-  @JsonKey(includeIfNull: false,name: 'auto_until')
+  @JsonKey(includeIfNull: false, name: 'auto_until')
   final DateTime? autoUntil;
 
   /// Several serial units match the serial number: the intake person picks one.
@@ -48,17 +49,17 @@ class RepairWarranty {
   @JsonKey(name: 'compared_with')
   final DateTime comparedWith;
   final bool overridden;
-  @JsonKey(includeIfNull: false,name: 'override_at')
+  @JsonKey(includeIfNull: false, name: 'override_at')
   final DateTime? overrideAt;
-  @JsonKey(includeIfNull: false,name: 'override_by')
+  @JsonKey(includeIfNull: false, name: 'override_by')
   final String? overrideBy;
-  @JsonKey(includeIfNull: false,name: 'override_by_name')
+  @JsonKey(includeIfNull: false, name: 'override_by_name')
   final String? overrideByName;
   @JsonKey(name: 'override_reason')
   final String overrideReason;
   @JsonKey(name: 'repair_id')
   final String repairId;
-  @JsonKey(includeIfNull: false,name: 'serial_unit')
+  @JsonKey(includeIfNull: false, name: 'serial_unit')
   final SerialUnitRef? serialUnit;
 
   /// The final status: unknown | in_warranty | out_of_warranty | void

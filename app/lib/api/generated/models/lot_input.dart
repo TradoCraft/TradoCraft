@@ -8,14 +8,12 @@ part 'lot_input.g.dart';
 
 @JsonSerializable()
 class LotInput {
-  const LotInput({
-    this.expiryDate,
-    this.notes,
-  });
-  
-  factory LotInput.fromJson(Map<String, Object?> json) => _$LotInputFromJson(json);
-  
-  @JsonKey(includeIfNull: false,name: 'expiry_date')
+  const LotInput({this.expiryDate, this.notes});
+
+  factory LotInput.fromJson(Map<String, Object?> json) =>
+      _$LotInputFromJson(json);
+
+  @JsonKey(includeIfNull: false, name: 'expiry_date')
   final DateTime? expiryDate;
   @JsonKey(includeIfNull: false)
   final String? notes;

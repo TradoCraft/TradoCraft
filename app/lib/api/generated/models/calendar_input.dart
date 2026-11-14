@@ -15,9 +15,10 @@ class CalendarInput {
     required this.hours,
     required this.timeZone,
   });
-  
-  factory CalendarInput.fromJson(Map<String, Object?> json) => _$CalendarInputFromJson(json);
-  
+
+  factory CalendarInput.fromJson(Map<String, Object?> json) =>
+      _$CalendarInputFromJson(json);
+
   final bool enabled;
   final List<WorkingHours> hours;
   @JsonKey(name: 'time_zone')

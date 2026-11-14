@@ -11,13 +11,11 @@ part 'report_group_by.g.dart';
 /// A grouping, optionally bucketed by date.
 @JsonSerializable()
 class ReportGroupBy {
-  const ReportGroupBy({
-    required this.field,
-    this.bucket,
-  });
-  
-  factory ReportGroupBy.fromJson(Map<String, Object?> json) => _$ReportGroupByFromJson(json);
-  
+  const ReportGroupBy({required this.field, this.bucket});
+
+  factory ReportGroupBy.fromJson(Map<String, Object?> json) =>
+      _$ReportGroupByFromJson(json);
+
   /// For date fields: group by day, month or year.
   @JsonKey(includeIfNull: false)
   final ReportBucket? bucket;

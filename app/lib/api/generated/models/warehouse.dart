@@ -20,15 +20,16 @@ class Warehouse {
     this.assignedUserId,
     this.assignedUserName,
   });
-  
-  factory Warehouse.fromJson(Map<String, Object?> json) => _$WarehouseFromJson(json);
-  
+
+  factory Warehouse.fromJson(Map<String, Object?> json) =>
+      _$WarehouseFromJson(json);
+
   final bool active;
 
   /// The technician a service van belongs to.
-  @JsonKey(includeIfNull: false,name: 'assigned_user_id')
+  @JsonKey(includeIfNull: false, name: 'assigned_user_id')
   final String? assignedUserId;
-  @JsonKey(includeIfNull: false,name: 'assigned_user_name')
+  @JsonKey(includeIfNull: false, name: 'assigned_user_name')
   final String? assignedUserName;
   final String code;
   final String id;

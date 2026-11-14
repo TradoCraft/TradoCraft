@@ -10,12 +10,11 @@ part 'count_entries.g.dart';
 
 @JsonSerializable()
 class CountEntries {
-  const CountEntries({
-    required this.entries,
-  });
-  
-  factory CountEntries.fromJson(Map<String, Object?> json) => _$CountEntriesFromJson(json);
-  
+  const CountEntries({required this.entries});
+
+  factory CountEntries.fromJson(Map<String, Object?> json) =>
+      _$CountEntriesFromJson(json);
+
   final List<CountEntry> entries;
 
   Map<String, Object?> toJson() => _$CountEntriesToJson(this);

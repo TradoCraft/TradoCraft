@@ -17,9 +17,10 @@ class RepairDetail {
     required this.photos,
     required this.repair,
   });
-  
-  factory RepairDetail.fromJson(Map<String, Object?> json) => _$RepairDetailFromJson(json);
-  
+
+  factory RepairDetail.fromJson(Map<String, Object?> json) =>
+      _$RepairDetailFromJson(json);
+
   final List<RepairEvent> events;
   final List<Photo> photos;
   final Repair repair;

@@ -43,9 +43,7 @@ abstract class ConfiguratorClient {
   });
 
   @GET('/api/v1/configurator/configurations/{id}')
-  Future<Configuration> getConfiguration({
-    @Path('id') required String id,
-  });
+  Future<Configuration> getConfiguration({@Path('id') required String id});
 
   /// Saves new inputs (and name and customer). The configuration stays on its revision unless.
   /// `revision_id` names the model's active revision (the upgrade).
@@ -57,9 +55,7 @@ abstract class ConfiguratorClient {
 
   /// Deletes a saved configuration. Quotations made from it stay.
   @DELETE('/api/v1/configurator/configurations/{id}')
-  Future<void> deleteConfiguration({
-    @Path('id') required String id,
-  });
+  Future<void> deleteConfiguration({@Path('id') required String id});
 
   /// Creates or updates the quotation of a configuration: evaluates it on its own revision.
   /// (refused while it has errors) and imports the lines with source `configurator` and the.
@@ -87,21 +83,15 @@ abstract class ConfiguratorClient {
 
   /// Creates a configurator with a first draft revision.
   @POST('/api/v1/configurator/models')
-  Future<Model> createModel({
-    @Body() required NewModelInput body,
-  });
+  Future<Model> createModel({@Body() required NewModelInput body});
 
   /// Imports an export as a new draft: of the configurator with the same code (409 if it already.
   /// has a draft), or of a new configurator.
   @POST('/api/v1/configurator/models/import')
-  Future<Revision> importModel({
-    @Body() required ModelExport body,
-  });
+  Future<Revision> importModel({@Body() required ModelExport body});
 
   @GET('/api/v1/configurator/models/{id}')
-  Future<Model> getModel({
-    @Path('id') required String id,
-  });
+  Future<Model> getModel({@Path('id') required String id});
 
   /// Changes the name, description, translations, product and active flag of a configurator.
   @PUT('/api/v1/configurator/models/{id}')
@@ -119,9 +109,7 @@ abstract class ConfiguratorClient {
 
   /// A revision with its definition and the problems that block its activation.
   @GET('/api/v1/configurator/revisions/{id}')
-  Future<Revision> getRevision({
-    @Path('id') required String id,
-  });
+  Future<Revision> getRevision({@Path('id') required String id});
 
   /// Replaces the definition of a draft. A definition with problems is saved (they are listed in.
   /// `errors`) so work in progress is never lost; it only cannot be activated. It must be a.
@@ -135,9 +123,7 @@ abstract class ConfiguratorClient {
   /// Makes a draft the active revision (refused while the definition has problems). The previous.
   /// active revision becomes obsolete; saved configurations stay on the revision they were made with.
   @POST('/api/v1/configurator/revisions/{id}/activate')
-  Future<Revision> activateRevision({
-    @Path('id') required String id,
-  });
+  Future<Revision> activateRevision({@Path('id') required String id});
 
   /// Evaluates a revision with the given inputs: values, visibility, lines (with their products),.
   /// issues and traces. Drafts can only be evaluated by designers (the builder's test panel).
@@ -153,7 +139,5 @@ abstract class ConfiguratorClient {
 
   /// A revision as a JSON file for another installation or the private repository.
   @GET('/api/v1/configurator/revisions/{id}/export')
-  Future<ModelExport> exportRevision({
-    @Path('id') required String id,
-  });
+  Future<ModelExport> exportRevision({@Path('id') required String id});
 }

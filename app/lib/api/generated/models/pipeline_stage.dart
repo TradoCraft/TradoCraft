@@ -16,9 +16,10 @@ class PipelineStage {
     required this.totalValue,
     required this.weightedValue,
   });
-  
-  factory PipelineStage.fromJson(Map<String, Object?> json) => _$PipelineStageFromJson(json);
-  
+
+  factory PipelineStage.fromJson(Map<String, Object?> json) =>
+      _$PipelineStageFromJson(json);
+
   final int count;
   final OpportunityStage stage;
   @JsonKey(name: 'total_value')

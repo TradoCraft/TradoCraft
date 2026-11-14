@@ -20,9 +20,10 @@ class Suggestion {
     this.confidence,
     this.strength,
   });
-  
-  factory Suggestion.fromJson(Map<String, Object?> json) => _$SuggestionFromJson(json);
-  
+
+  factory Suggestion.fromJson(Map<String, Object?> json) =>
+      _$SuggestionFromJson(json);
+
   /// The product of the set that triggered the suggestion.
   @JsonKey(name: 'because_of_code')
   final String becauseOfCode;

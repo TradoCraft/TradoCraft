@@ -14,9 +14,10 @@ class SlaNoticeRule {
     this.priority,
     this.teamId,
   });
-  
-  factory SlaNoticeRule.fromJson(Map<String, Object?> json) => _$SlaNoticeRuleFromJson(json);
-  
+
+  factory SlaNoticeRule.fromJson(Map<String, Object?> json) =>
+      _$SlaNoticeRuleFromJson(json);
+
   /// Send an acknowledgement (ticket number and target response time) on creation.
   @JsonKey(name: 'ack_enabled')
   final bool ackEnabled;
@@ -30,7 +31,7 @@ class SlaNoticeRule {
   final String? priority;
 
   /// Absent: every team.
-  @JsonKey(includeIfNull: false,name: 'team_id')
+  @JsonKey(includeIfNull: false, name: 'team_id')
   final String? teamId;
 
   Map<String, Object?> toJson() => _$SlaNoticeRuleToJson(this);

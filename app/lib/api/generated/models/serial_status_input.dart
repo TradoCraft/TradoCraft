@@ -8,15 +8,13 @@ part 'serial_status_input.g.dart';
 
 @JsonSerializable()
 class SerialStatusInput {
-  const SerialStatusInput({
-    required this.status,
-    this.customerId,
-  });
-  
-  factory SerialStatusInput.fromJson(Map<String, Object?> json) => _$SerialStatusInputFromJson(json);
-  
+  const SerialStatusInput({required this.status, this.customerId});
+
+  factory SerialStatusInput.fromJson(Map<String, Object?> json) =>
+      _$SerialStatusInputFromJson(json);
+
   /// Required for delivered and installed, unless the unit already has a customer.
-  @JsonKey(includeIfNull: false,name: 'customer_id')
+  @JsonKey(includeIfNull: false, name: 'customer_id')
   final String? customerId;
 
   /// in_stock | delivered | installed | scrapped (built_in is set by attaching to another unit)

@@ -20,9 +20,10 @@ class BusinessCalendar {
     required this.timeZone,
     this.teamId,
   });
-  
-  factory BusinessCalendar.fromJson(Map<String, Object?> json) => _$BusinessCalendarFromJson(json);
-  
+
+  factory BusinessCalendar.fromJson(Map<String, Object?> json) =>
+      _$BusinessCalendarFromJson(json);
+
   /// When off, SLA times are plain elapsed time.
   final bool enabled;
   final List<Holiday> holidays;
@@ -36,7 +37,7 @@ class BusinessCalendar {
   final bool inherited;
 
   /// The team this calendar is for; absent for the company calendar.
-  @JsonKey(includeIfNull: false,name: 'team_id')
+  @JsonKey(includeIfNull: false, name: 'team_id')
   final String? teamId;
 
   /// An IANA name such as `Europe/Brussels`.

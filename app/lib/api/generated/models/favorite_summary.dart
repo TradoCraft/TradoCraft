@@ -20,9 +20,10 @@ class FavoriteSummary {
     required this.optionCount,
     required this.updatedAt,
   });
-  
-  factory FavoriteSummary.fromJson(Map<String, Object?> json) => _$FavoriteSummaryFromJson(json);
-  
+
+  factory FavoriteSummary.fromJson(Map<String, Object?> json) =>
+      _$FavoriteSummaryFromJson(json);
+
   final String id;
 
   /// The languages (nl, fr, en, de, es) in which at least one customer remark exists.

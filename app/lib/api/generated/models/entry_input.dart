@@ -19,21 +19,22 @@ class EntryInput {
     this.tags,
     this.ticketCategories,
   });
-  
-  factory EntryInput.fromJson(Map<String, Object?> json) => _$EntryInputFromJson(json);
-  
-  @JsonKey(includeIfNull: false,name: 'category_id')
+
+  factory EntryInput.fromJson(Map<String, Object?> json) =>
+      _$EntryInputFromJson(json);
+
+  @JsonKey(includeIfNull: false, name: 'category_id')
   final String? categoryId;
-  @JsonKey(includeIfNull: false,name: 'product_ids')
+  @JsonKey(includeIfNull: false, name: 'product_ids')
   final List<String>? productIds;
-  @JsonKey(includeIfNull: false,name: 'related_ids')
+  @JsonKey(includeIfNull: false, name: 'related_ids')
   final List<String>? relatedIds;
   @JsonKey(includeIfNull: false)
   final List<String>? tags;
 
   /// At least one language with a title; others fall back to English.
   final List<EntryText> texts;
-  @JsonKey(includeIfNull: false,name: 'ticket_categories')
+  @JsonKey(includeIfNull: false, name: 'ticket_categories')
   final List<String>? ticketCategories;
 
   /// internal | portal | public

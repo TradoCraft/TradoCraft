@@ -56,17 +56,13 @@ abstract class FinanceClient {
 
   /// Registers a draft supplier invoice, optionally prefilled from a purchase order.
   @POST('/api/v1/supplier-invoices')
-  Future<InvoiceDetail> createInvoice({
-    @Body() required NewInvoiceInput body,
-  });
+  Future<InvoiceDetail> createInvoice({@Body() required NewInvoiceInput body});
 
   /// Returns a supplier invoice with its lines and the live three-way match report.
   ///
   /// [id] - Supplier invoice ID.
   @GET('/api/v1/supplier-invoices/{id}')
-  Future<InvoiceDetail> getInvoice({
-    @Path('id') required String id,
-  });
+  Future<InvoiceDetail> getInvoice({@Path('id') required String id});
 
   /// Changes a draft supplier invoice and replaces its lines.
   ///
@@ -81,9 +77,7 @@ abstract class FinanceClient {
   ///
   /// [id] - Supplier invoice ID.
   @DELETE('/api/v1/supplier-invoices/{id}')
-  Future<void> deleteInvoice({
-    @Path('id') required String id,
-  });
+  Future<void> deleteInvoice({@Path('id') required String id});
 
   /// Approves a matched invoice, or any draft or matched one with an override reason.
   ///
@@ -116,15 +110,11 @@ abstract class FinanceClient {
   ///
   /// [id] - Supplier invoice ID.
   @POST('/api/v1/supplier-invoices/{id}/reopen')
-  Future<InvoiceDetail> reopenInvoice({
-    @Path('id') required String id,
-  });
+  Future<InvoiceDetail> reopenInvoice({@Path('id') required String id});
 
   /// Re-evaluates the match: all lines ok makes the invoice matched, otherwise it stays draft.
   ///
   /// [id] - Supplier invoice ID.
   @POST('/api/v1/supplier-invoices/{id}/submit-match')
-  Future<InvoiceDetail> submitMatch({
-    @Path('id') required String id,
-  });
+  Future<InvoiceDetail> submitMatch({@Path('id') required String id});
 }

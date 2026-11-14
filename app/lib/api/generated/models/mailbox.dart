@@ -34,23 +34,24 @@ class Mailbox {
     this.tenantId,
     this.username,
   });
-  
-  factory Mailbox.fromJson(Map<String, Object?> json) => _$MailboxFromJson(json);
-  
+
+  factory Mailbox.fromJson(Map<String, Object?> json) =>
+      _$MailboxFromJson(json);
+
   final bool active;
 
   /// The address customers write to and replies are sent from.
   final String address;
-  @JsonKey(includeIfNull: false,name: 'client_id')
+  @JsonKey(includeIfNull: false, name: 'client_id')
   final String? clientId;
   @JsonKey(name: 'created_at')
   final DateTime createdAt;
   final String id;
   @JsonKey(name: 'imap_folder')
   final String imapFolder;
-  @JsonKey(includeIfNull: false,name: 'imap_host')
+  @JsonKey(includeIfNull: false, name: 'imap_host')
   final String? imapHost;
-  @JsonKey(includeIfNull: false,name: 'imap_port')
+  @JsonKey(includeIfNull: false, name: 'imap_port')
   final int? imapPort;
   @JsonKey(name: 'imap_tls')
   final bool imapTls;
@@ -67,13 +68,13 @@ class Mailbox {
   final String kind;
 
   /// Why the last attempt failed; empty after a success.
-  @JsonKey(includeIfNull: false,name: 'last_error')
+  @JsonKey(includeIfNull: false, name: 'last_error')
   final String? lastError;
-  @JsonKey(includeIfNull: false,name: 'last_ok_at')
+  @JsonKey(includeIfNull: false, name: 'last_ok_at')
   final DateTime? lastOkAt;
 
   /// When the worker last tried to fetch mail, and when that last succeeded.
-  @JsonKey(includeIfNull: false,name: 'last_poll_at')
+  @JsonKey(includeIfNull: false, name: 'last_poll_at')
   final DateTime? lastPollAt;
   final String name;
 
@@ -81,9 +82,9 @@ class Mailbox {
   /// stored or returned.
   @JsonKey(name: 'secret_ref')
   final String secretRef;
-  @JsonKey(includeIfNull: false,name: 'smtp_host')
+  @JsonKey(includeIfNull: false, name: 'smtp_host')
   final String? smtpHost;
-  @JsonKey(includeIfNull: false,name: 'smtp_port')
+  @JsonKey(includeIfNull: false, name: 'smtp_port')
   final int? smtpPort;
 
   /// starttls | tls | none
@@ -91,11 +92,11 @@ class Mailbox {
   final String smtpSecurity;
 
   /// New tickets from this mailbox start in this team (else the default team).
-  @JsonKey(includeIfNull: false,name: 'team_id')
+  @JsonKey(includeIfNull: false, name: 'team_id')
   final String? teamId;
-  @JsonKey(includeIfNull: false,name: 'team_name')
+  @JsonKey(includeIfNull: false, name: 'team_name')
   final String? teamName;
-  @JsonKey(includeIfNull: false,name: 'tenant_id')
+  @JsonKey(includeIfNull: false, name: 'tenant_id')
   final String? tenantId;
   @JsonKey(includeIfNull: false)
   final String? username;

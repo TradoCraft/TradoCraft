@@ -13,9 +13,10 @@ class PriorityInput {
     required this.reason,
     this.requestId,
   });
-  
-  factory PriorityInput.fromJson(Map<String, Object?> json) => _$PriorityInputFromJson(json);
-  
+
+  factory PriorityInput.fromJson(Map<String, Object?> json) =>
+      _$PriorityInputFromJson(json);
+
   /// low | normal | expedite
   final String priority;
 
@@ -23,7 +24,7 @@ class PriorityInput {
   final String reason;
 
   /// The customer request this change answers; it is marked applied.
-  @JsonKey(includeIfNull: false,name: 'request_id')
+  @JsonKey(includeIfNull: false, name: 'request_id')
   final String? requestId;
 
   Map<String, Object?> toJson() => _$PriorityInputToJson(this);

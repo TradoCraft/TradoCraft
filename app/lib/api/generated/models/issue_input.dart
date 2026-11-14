@@ -21,22 +21,23 @@ class IssueInput {
     this.serialUnitId,
     this.uom,
   });
-  
-  factory IssueInput.fromJson(Map<String, Object?> json) => _$IssueInputFromJson(json);
-  
+
+  factory IssueInput.fromJson(Map<String, Object?> json) =>
+      _$IssueInputFromJson(json);
+
   /// Ship or consume the stock reserved for this sales order line: only that reservation is.
   /// exempt from the "reserved for orders" check, at most its quantity can be taken, and it.
   /// shrinks (or closes as consumed) in the same transaction.
-  @JsonKey(includeIfNull: false,name: 'consume_reservation_line')
+  @JsonKey(includeIfNull: false, name: 'consume_reservation_line')
   final String? consumeReservationLine;
 
   /// Serial units shipped: the customer (unless the unit has one).
-  @JsonKey(includeIfNull: false,name: 'customer_id')
+  @JsonKey(includeIfNull: false, name: 'customer_id')
   final String? customerId;
   final String id;
   @JsonKey(name: 'location_id')
   final String locationId;
-  @JsonKey(includeIfNull: false,name: 'lot_id')
+  @JsonKey(includeIfNull: false, name: 'lot_id')
   final String? lotId;
   @JsonKey(includeIfNull: false)
   final String? note;
@@ -47,7 +48,7 @@ class IssueInput {
   /// consumption (default) | shipment | scrap | repair_use
   @JsonKey(includeIfNull: false)
   final String? reason;
-  @JsonKey(includeIfNull: false,name: 'serial_unit_id')
+  @JsonKey(includeIfNull: false, name: 'serial_unit_id')
   final String? serialUnitId;
   @JsonKey(includeIfNull: false)
   final String? uom;

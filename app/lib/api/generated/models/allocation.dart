@@ -17,18 +17,19 @@ class Allocation {
     this.lotId,
     this.lotNumber,
   });
-  
-  factory Allocation.fromJson(Map<String, Object?> json) => _$AllocationFromJson(json);
-  
+
+  factory Allocation.fromJson(Map<String, Object?> json) =>
+      _$AllocationFromJson(json);
+
   @JsonKey(name: 'created_at')
   final DateTime createdAt;
   final String id;
   final String location;
   @JsonKey(name: 'location_id')
   final String locationId;
-  @JsonKey(includeIfNull: false,name: 'lot_id')
+  @JsonKey(includeIfNull: false, name: 'lot_id')
   final String? lotId;
-  @JsonKey(includeIfNull: false,name: 'lot_number')
+  @JsonKey(includeIfNull: false, name: 'lot_number')
   final String? lotNumber;
   final String quantity;
 

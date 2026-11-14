@@ -17,9 +17,10 @@ class PackagingCategory {
     required this.productCount,
     required this.requiresShippingQuote,
   });
-  
-  factory PackagingCategory.fromJson(Map<String, Object?> json) => _$PackagingCategoryFromJson(json);
-  
+
+  factory PackagingCategory.fromJson(Map<String, Object?> json) =>
+      _$PackagingCategoryFromJson(json);
+
   final bool active;
   final String code;
   final String description;

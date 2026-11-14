@@ -21,9 +21,10 @@ class BomLine {
     required this.quantity,
     required this.scrapPercent,
   });
-  
-  factory BomLine.fromJson(Map<String, Object?> json) => _$BomLineFromJson(json);
-  
+
+  factory BomLine.fromJson(Map<String, Object?> json) =>
+      _$BomLineFromJson(json);
+
   @JsonKey(name: 'component_code')
   final String componentCode;
 

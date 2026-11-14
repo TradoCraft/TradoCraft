@@ -8,13 +8,11 @@ part 'confirm_order_input.g.dart';
 
 @JsonSerializable()
 class ConfirmOrderInput {
-  const ConfirmOrderInput({
-    this.note,
-    this.revision,
-  });
-  
-  factory ConfirmOrderInput.fromJson(Map<String, Object?> json) => _$ConfirmOrderInputFromJson(json);
-  
+  const ConfirmOrderInput({this.note, this.revision});
+
+  factory ConfirmOrderInput.fromJson(Map<String, Object?> json) =>
+      _$ConfirmOrderInputFromJson(json);
+
   @JsonKey(includeIfNull: false)
   final String? note;
 

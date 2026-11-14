@@ -13,11 +13,12 @@ class RouteInput {
     this.assignedUserId,
     this.note,
   });
-  
-  factory RouteInput.fromJson(Map<String, Object?> json) => _$RouteInputFromJson(json);
-  
+
+  factory RouteInput.fromJson(Map<String, Object?> json) =>
+      _$RouteInputFromJson(json);
+
   /// A member of the department who should do it; leave empty to let the department pick it up.
-  @JsonKey(includeIfNull: false,name: 'assigned_user_id')
+  @JsonKey(includeIfNull: false, name: 'assigned_user_id')
   final String? assignedUserId;
   @JsonKey(name: 'department_id')
   final String departmentId;

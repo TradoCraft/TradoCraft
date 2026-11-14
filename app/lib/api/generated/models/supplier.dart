@@ -26,9 +26,10 @@ class Supplier {
     required this.taxId,
     required this.updatedAt,
   });
-  
-  factory Supplier.fromJson(Map<String, Object?> json) => _$SupplierFromJson(json);
-  
+
+  factory Supplier.fromJson(Map<String, Object?> json) =>
+      _$SupplierFromJson(json);
+
   final bool active;
   final String code;
   @JsonKey(name: 'company_id')

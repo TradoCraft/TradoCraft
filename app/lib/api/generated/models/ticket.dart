@@ -56,47 +56,47 @@ class Ticket {
     this.closedAt,
     this.csatComment,
   });
-  
+
   factory Ticket.fromJson(Map<String, Object?> json) => _$TicketFromJson(json);
-  
+
   @JsonKey(name: 'article_count')
   final int articleCount;
 
   /// question | lead | quote_change | order_confirmation | production_question | service | complaint | other
   final String category;
-  @JsonKey(includeIfNull: false,name: 'closed_at')
+  @JsonKey(includeIfNull: false, name: 'closed_at')
   final DateTime? closedAt;
   @JsonKey(name: 'contact_email')
   final String contactEmail;
 
   /// The person at the customer this ticket is about (see the contacts of the customer).
-  @JsonKey(includeIfNull: false,name: 'contact_id')
+  @JsonKey(includeIfNull: false, name: 'contact_id')
   final String? contactId;
   @JsonKey(name: 'contact_name')
   final String contactName;
   @JsonKey(name: 'created_at')
   final DateTime createdAt;
-  @JsonKey(includeIfNull: false,name: 'csat_comment')
+  @JsonKey(includeIfNull: false, name: 'csat_comment')
   final String? csatComment;
-  @JsonKey(includeIfNull: false,name: 'csat_rated_at')
+  @JsonKey(includeIfNull: false, name: 'csat_rated_at')
   final DateTime? csatRatedAt;
 
   /// The customer's latest satisfaction rating: good | bad.
-  @JsonKey(includeIfNull: false,name: 'csat_rating')
+  @JsonKey(includeIfNull: false, name: 'csat_rating')
   final String? csatRating;
-  @JsonKey(includeIfNull: false,name: 'customer_id')
+  @JsonKey(includeIfNull: false, name: 'customer_id')
   final String? customerId;
-  @JsonKey(includeIfNull: false,name: 'customer_name')
+  @JsonKey(includeIfNull: false, name: 'customer_name')
   final String? customerName;
 
   /// Set when a colleague escalated the ticket by hand.
-  @JsonKey(includeIfNull: false,name: 'escalated_at')
+  @JsonKey(includeIfNull: false, name: 'escalated_at')
   final DateTime? escalatedAt;
-  @JsonKey(includeIfNull: false,name: 'escalated_by')
+  @JsonKey(includeIfNull: false, name: 'escalated_by')
   final String? escalatedBy;
-  @JsonKey(includeIfNull: false,name: 'escalated_by_name')
+  @JsonKey(includeIfNull: false, name: 'escalated_by_name')
   final String? escalatedByName;
-  @JsonKey(includeIfNull: false,name: 'first_response_at')
+  @JsonKey(includeIfNull: false, name: 'first_response_at')
   final DateTime? firstResponseAt;
   final String id;
   final bool internal;
@@ -105,33 +105,33 @@ class Ticket {
   final String language;
 
   /// Set when this ticket was merged into another one (it is closed).
-  @JsonKey(includeIfNull: false,name: 'merged_into_id')
+  @JsonKey(includeIfNull: false, name: 'merged_into_id')
   final String? mergedIntoId;
-  @JsonKey(includeIfNull: false,name: 'merged_into_number')
+  @JsonKey(includeIfNull: false, name: 'merged_into_number')
   final String? mergedIntoNumber;
   final String number;
-  @JsonKey(includeIfNull: false,name: 'opportunity_id')
+  @JsonKey(includeIfNull: false, name: 'opportunity_id')
   final String? opportunityId;
-  @JsonKey(includeIfNull: false,name: 'opportunity_number')
+  @JsonKey(includeIfNull: false, name: 'opportunity_number')
   final String? opportunityNumber;
-  @JsonKey(includeIfNull: false,name: 'order_id')
+  @JsonKey(includeIfNull: false, name: 'order_id')
   final String? orderId;
-  @JsonKey(includeIfNull: false,name: 'order_number')
+  @JsonKey(includeIfNull: false, name: 'order_number')
   final String? orderNumber;
-  @JsonKey(includeIfNull: false,name: 'owner_name')
+  @JsonKey(includeIfNull: false, name: 'owner_name')
   final String? ownerName;
-  @JsonKey(includeIfNull: false,name: 'owner_user_id')
+  @JsonKey(includeIfNull: false, name: 'owner_user_id')
   final String? ownerUserId;
 
   /// low | normal | high | urgent
   final String priority;
-  @JsonKey(includeIfNull: false,name: 'quotation_id')
+  @JsonKey(includeIfNull: false, name: 'quotation_id')
   final String? quotationId;
-  @JsonKey(includeIfNull: false,name: 'quotation_number')
+  @JsonKey(includeIfNull: false, name: 'quotation_number')
   final String? quotationNumber;
-  @JsonKey(includeIfNull: false,name: 'quotation_revision')
+  @JsonKey(includeIfNull: false, name: 'quotation_revision')
   final int? quotationRevision;
-  @JsonKey(includeIfNull: false,name: 'quotation_status')
+  @JsonKey(includeIfNull: false, name: 'quotation_status')
   final String? quotationStatus;
 
   /// Due times, breach flags and minutes remaining.
@@ -142,14 +142,14 @@ class Ticket {
   final String subject;
 
   /// What the system guessed from the last incoming e-mail.
-  @JsonKey(includeIfNull: false,name: 'suggested_category')
+  @JsonKey(includeIfNull: false, name: 'suggested_category')
   final String? suggestedCategory;
   final List<String> tags;
 
   /// The queue the ticket waits in (the owner is the person working on it).
-  @JsonKey(includeIfNull: false,name: 'team_id')
+  @JsonKey(includeIfNull: false, name: 'team_id')
   final String? teamId;
-  @JsonKey(includeIfNull: false,name: 'team_name')
+  @JsonKey(includeIfNull: false, name: 'team_name')
   final String? teamName;
 
   /// Total logged time in minutes.

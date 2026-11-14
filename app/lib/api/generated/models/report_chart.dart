@@ -11,14 +11,11 @@ part 'report_chart.g.dart';
 /// The chart of a report: kind, x column and y column.
 @JsonSerializable()
 class ReportChart {
-  const ReportChart({
-    required this.kind,
-    required this.x,
-    required this.y,
-  });
-  
-  factory ReportChart.fromJson(Map<String, Object?> json) => _$ReportChartFromJson(json);
-  
+  const ReportChart({required this.kind, required this.x, required this.y});
+
+  factory ReportChart.fromJson(Map<String, Object?> json) =>
+      _$ReportChartFromJson(json);
+
   final ReportChartKind kind;
 
   /// Key of a grouping column.

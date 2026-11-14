@@ -15,9 +15,10 @@ class WorkLogInput {
     this.kind,
     this.notes,
   });
-  
-  factory WorkLogInput.fromJson(Map<String, Object?> json) => _$WorkLogInputFromJson(json);
-  
+
+  factory WorkLogInput.fromJson(Map<String, Object?> json) =>
+      _$WorkLogInputFromJson(json);
+
   @JsonKey(name: 'ended_at')
   final DateTime endedAt;
 

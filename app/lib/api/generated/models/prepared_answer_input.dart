@@ -17,9 +17,10 @@ class PreparedAnswerInput {
     this.active,
     this.category,
   });
-  
-  factory PreparedAnswerInput.fromJson(Map<String, Object?> json) => _$PreparedAnswerInputFromJson(json);
-  
+
+  factory PreparedAnswerInput.fromJson(Map<String, Object?> json) =>
+      _$PreparedAnswerInputFromJson(json);
+
   @JsonKey(includeIfNull: false)
   final bool? active;
   @JsonKey(includeIfNull: false)

@@ -10,13 +10,11 @@ part 'favorite_input.g.dart';
 
 @JsonSerializable()
 class FavoriteInput {
-  const FavoriteInput({
-    required this.items,
-    required this.name,
-  });
-  
-  factory FavoriteInput.fromJson(Map<String, Object?> json) => _$FavoriteInputFromJson(json);
-  
+  const FavoriteInput({required this.items, required this.name});
+
+  factory FavoriteInput.fromJson(Map<String, Object?> json) =>
+      _$FavoriteInputFromJson(json);
+
   /// The main item first, then its option lines; 1 to 40 items.
   final List<FavoriteItemInput> items;
 

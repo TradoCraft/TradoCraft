@@ -25,38 +25,39 @@ class CustomerInput {
     this.vatNumber,
     this.vatRegime,
   });
-  
-  factory CustomerInput.fromJson(Map<String, Object?> json) => _$CustomerInputFromJson(json);
-  
+
+  factory CustomerInput.fromJson(Map<String, Object?> json) =>
+      _$CustomerInputFromJson(json);
+
   @JsonKey(includeIfNull: false)
   final bool? active;
   @JsonKey(includeIfNull: false)
   final String? city;
   final String code;
-  @JsonKey(includeIfNull: false,name: 'country_code')
+  @JsonKey(includeIfNull: false, name: 'country_code')
   final String? countryCode;
-  @JsonKey(includeIfNull: false,name: 'discount_percent')
+  @JsonKey(includeIfNull: false, name: 'discount_percent')
   final String? discountPercent;
   @JsonKey(includeIfNull: false)
   final String? email;
   @JsonKey(includeIfNull: false)
   final String? language;
   final String name;
-  @JsonKey(includeIfNull: false,name: 'payment_terms_days')
+  @JsonKey(includeIfNull: false, name: 'payment_terms_days')
   final int? paymentTermsDays;
   @JsonKey(includeIfNull: false)
   final String? phone;
-  @JsonKey(includeIfNull: false,name: 'postal_code')
+  @JsonKey(includeIfNull: false, name: 'postal_code')
   final String? postalCode;
   @JsonKey(name: 'price_zone_id')
   final String priceZoneId;
   @JsonKey(includeIfNull: false)
   final String? street;
-  @JsonKey(includeIfNull: false,name: 'vat_number')
+  @JsonKey(includeIfNull: false, name: 'vat_number')
   final String? vatNumber;
 
   /// `domestic` (default), `intra_eu` or `outside_eu`.
-  @JsonKey(includeIfNull: false,name: 'vat_regime')
+  @JsonKey(includeIfNull: false, name: 'vat_regime')
   final String? vatRegime;
 
   Map<String, Object?> toJson() => _$CustomerInputToJson(this);

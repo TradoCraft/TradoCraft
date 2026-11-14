@@ -20,9 +20,10 @@ class ReportRunResult {
     this.chart,
     this.totals,
   });
-  
-  factory ReportRunResult.fromJson(Map<String, Object?> json) => _$ReportRunResultFromJson(json);
-  
+
+  factory ReportRunResult.fromJson(Map<String, Object?> json) =>
+      _$ReportRunResultFromJson(json);
+
   /// The date (`YYYY-MM-DD`) relative dates were resolved against. Send it back as `as_of`.
   /// when fetching further pages so every page comes from the same range, even across midnight.
   @JsonKey(name: 'as_of')

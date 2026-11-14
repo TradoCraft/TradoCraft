@@ -14,9 +14,10 @@ class Membership {
     required this.isDefault,
     required this.roles,
   });
-  
-  factory Membership.fromJson(Map<String, Object?> json) => _$MembershipFromJson(json);
-  
+
+  factory Membership.fromJson(Map<String, Object?> json) =>
+      _$MembershipFromJson(json);
+
   @JsonKey(name: 'company_id')
   final String companyId;
   @JsonKey(name: 'company_name')

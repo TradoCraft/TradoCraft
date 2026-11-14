@@ -19,9 +19,10 @@ class SalesSuggestion {
     this.confidence,
     this.strength,
   });
-  
-  factory SalesSuggestion.fromJson(Map<String, Object?> json) => _$SalesSuggestionFromJson(json);
-  
+
+  factory SalesSuggestion.fromJson(Map<String, Object?> json) =>
+      _$SalesSuggestionFromJson(json);
+
   /// The product on the quotation that triggered the suggestion.
   @JsonKey(name: 'because_of_code')
   final String becauseOfCode;

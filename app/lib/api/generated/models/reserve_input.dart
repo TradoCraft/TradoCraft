@@ -14,15 +14,16 @@ class ReserveInput {
     this.lotId,
     this.warehouseId,
   });
-  
-  factory ReserveInput.fromJson(Map<String, Object?> json) => _$ReserveInputFromJson(json);
-  
+
+  factory ReserveInput.fromJson(Map<String, Object?> json) =>
+      _$ReserveInputFromJson(json);
+
   /// ...or this location...
-  @JsonKey(includeIfNull: false,name: 'location_id')
+  @JsonKey(includeIfNull: false, name: 'location_id')
   final String? locationId;
 
   /// ...or this lot.
-  @JsonKey(includeIfNull: false,name: 'lot_id')
+  @JsonKey(includeIfNull: false, name: 'lot_id')
   final String? lotId;
 
   /// The quantity that should be reserved for the line in total, in the stock unit of the.
@@ -30,7 +31,7 @@ class ReserveInput {
   final String quantity;
 
   /// Take additional stock only from this warehouse...
-  @JsonKey(includeIfNull: false,name: 'warehouse_id')
+  @JsonKey(includeIfNull: false, name: 'warehouse_id')
   final String? warehouseId;
 
   Map<String, Object?> toJson() => _$ReserveInputToJson(this);

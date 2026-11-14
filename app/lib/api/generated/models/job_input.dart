@@ -29,14 +29,15 @@ class JobInput {
     this.technicianIds,
     this.ticketId,
   });
-  
-  factory JobInput.fromJson(Map<String, Object?> json) => _$JobInputFromJson(json);
-  
+
+  factory JobInput.fromJson(Map<String, Object?> json) =>
+      _$JobInputFromJson(json);
+
   @JsonKey(includeIfNull: false)
   final String? city;
-  @JsonKey(includeIfNull: false,name: 'contact_id')
+  @JsonKey(includeIfNull: false, name: 'contact_id')
   final String? contactId;
-  @JsonKey(includeIfNull: false,name: 'country_code')
+  @JsonKey(includeIfNull: false, name: 'country_code')
   final String? countryCode;
   @JsonKey(name: 'customer_id')
   final String customerId;
@@ -48,19 +49,19 @@ class JobInput {
   final double? latitude;
   @JsonKey(includeIfNull: false)
   final double? longitude;
-  @JsonKey(includeIfNull: false,name: 'postal_code')
+  @JsonKey(includeIfNull: false, name: 'postal_code')
   final String? postalCode;
   @JsonKey(includeIfNull: false)
   final String? priority;
-  @JsonKey(includeIfNull: false,name: 'repair_id')
+  @JsonKey(includeIfNull: false, name: 'repair_id')
   final String? repairId;
-  @JsonKey(includeIfNull: false,name: 'scheduled_end')
+  @JsonKey(includeIfNull: false, name: 'scheduled_end')
   final DateTime? scheduledEnd;
-  @JsonKey(includeIfNull: false,name: 'scheduled_start')
+  @JsonKey(includeIfNull: false, name: 'scheduled_start')
   final DateTime? scheduledStart;
 
   /// Where to go. Left empty, the customer's address is used.
-  @JsonKey(includeIfNull: false,name: 'site_name')
+  @JsonKey(includeIfNull: false, name: 'site_name')
   final String? siteName;
   @JsonKey(includeIfNull: false)
   final String? street;
@@ -68,9 +69,9 @@ class JobInput {
   /// The checklist; only used when creating (change it with the task endpoints).
   @JsonKey(includeIfNull: false)
   final List<String>? tasks;
-  @JsonKey(includeIfNull: false,name: 'technician_ids')
+  @JsonKey(includeIfNull: false, name: 'technician_ids')
   final List<String>? technicianIds;
-  @JsonKey(includeIfNull: false,name: 'ticket_id')
+  @JsonKey(includeIfNull: false, name: 'ticket_id')
   final String? ticketId;
   final String title;
 

@@ -15,9 +15,10 @@ class PortalSession {
     required this.profile,
     required this.token,
   });
-  
-  factory PortalSession.fromJson(Map<String, Object?> json) => _$PortalSessionFromJson(json);
-  
+
+  factory PortalSession.fromJson(Map<String, Object?> json) =>
+      _$PortalSessionFromJson(json);
+
   @JsonKey(name: 'expires_at')
   final DateTime expiresAt;
   final PortalProfile profile;

@@ -14,9 +14,10 @@ class Signature {
     required this.name,
     required this.usage,
   });
-  
-  factory Signature.fromJson(Map<String, Object?> json) => _$SignatureFromJson(json);
-  
+
+  factory Signature.fromJson(Map<String, Object?> json) =>
+      _$SignatureFromJson(json);
+
   final String description;
   final String group;
   final String name;

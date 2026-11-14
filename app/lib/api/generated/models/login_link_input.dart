@@ -8,13 +8,11 @@ part 'login_link_input.g.dart';
 
 @JsonSerializable()
 class LoginLinkInput {
-  const LoginLinkInput({
-    required this.companyId,
-    required this.email,
-  });
-  
-  factory LoginLinkInput.fromJson(Map<String, Object?> json) => _$LoginLinkInputFromJson(json);
-  
+  const LoginLinkInput({required this.companyId, required this.email});
+
+  factory LoginLinkInput.fromJson(Map<String, Object?> json) =>
+      _$LoginLinkInputFromJson(json);
+
   /// The company whose portal this is.
   @JsonKey(name: 'company_id')
   final String companyId;

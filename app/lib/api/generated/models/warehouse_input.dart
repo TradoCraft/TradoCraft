@@ -15,12 +15,13 @@ class WarehouseInput {
     this.assignedUserId,
     this.kind,
   });
-  
-  factory WarehouseInput.fromJson(Map<String, Object?> json) => _$WarehouseInputFromJson(json);
-  
+
+  factory WarehouseInput.fromJson(Map<String, Object?> json) =>
+      _$WarehouseInputFromJson(json);
+
   @JsonKey(includeIfNull: false)
   final bool? active;
-  @JsonKey(includeIfNull: false,name: 'assigned_user_id')
+  @JsonKey(includeIfNull: false, name: 'assigned_user_id')
   final String? assignedUserId;
   final String code;
 

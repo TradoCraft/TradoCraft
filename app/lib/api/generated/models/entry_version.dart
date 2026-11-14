@@ -18,18 +18,19 @@ class EntryVersion {
     this.editorName,
     this.restoredFrom,
   });
-  
-  factory EntryVersion.fromJson(Map<String, Object?> json) => _$EntryVersionFromJson(json);
-  
+
+  factory EntryVersion.fromJson(Map<String, Object?> json) =>
+      _$EntryVersionFromJson(json);
+
   @JsonKey(name: 'edited_at')
   final DateTime editedAt;
-  @JsonKey(includeIfNull: false,name: 'editor_id')
+  @JsonKey(includeIfNull: false, name: 'editor_id')
   final String? editorId;
-  @JsonKey(includeIfNull: false,name: 'editor_name')
+  @JsonKey(includeIfNull: false, name: 'editor_name')
   final String? editorName;
 
   /// Set when this version was made by restoring an earlier one.
-  @JsonKey(includeIfNull: false,name: 'restored_from')
+  @JsonKey(includeIfNull: false, name: 'restored_from')
   final int? restoredFrom;
   final List<EntryText> texts;
   final int version;

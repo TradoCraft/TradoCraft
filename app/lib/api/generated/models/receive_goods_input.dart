@@ -20,9 +20,10 @@ class ReceiveGoodsInput {
     this.supplierDeliveryNote,
     this.trackingNumber,
   });
-  
-  factory ReceiveGoodsInput.fromJson(Map<String, Object?> json) => _$ReceiveGoodsInputFromJson(json);
-  
+
+  factory ReceiveGoodsInput.fromJson(Map<String, Object?> json) =>
+      _$ReceiveGoodsInputFromJson(json);
+
   @JsonKey(includeIfNull: false)
   final String? carrier;
   final List<ReceiveGoodsLineInput> lines;
@@ -30,9 +31,9 @@ class ReceiveGoodsInput {
   final String locationId;
   @JsonKey(includeIfNull: false)
   final String? notes;
-  @JsonKey(includeIfNull: false,name: 'supplier_delivery_note')
+  @JsonKey(includeIfNull: false, name: 'supplier_delivery_note')
   final String? supplierDeliveryNote;
-  @JsonKey(includeIfNull: false,name: 'tracking_number')
+  @JsonKey(includeIfNull: false, name: 'tracking_number')
   final String? trackingNumber;
   @JsonKey(name: 'warehouse_id')
   final String warehouseId;

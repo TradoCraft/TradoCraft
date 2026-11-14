@@ -19,7 +19,7 @@ Module overview: [ARCHITECTURE.md](ARCHITECTURE.md).
 | Helpdesk mailboxes: several per company, Microsoft 365 (Graph) or IMAP/SMTP, replies through the ticket's mailbox | Done, [ADR 0054](adr/0054-helpdesk-mailboxes.md) |
 | User-defined reports (customers, quotations, orders; joins, grouping, charts, CSV and PDF) | Done, [ADR 0042](adr/0042-report-builder.md) |
 | Environment awareness (`/meta/environment`, environment list, banner and switcher in the app) | Done, [ADR 0043](adr/0043-environments.md); clone script, bootstrap wizard and outbound-side-effect switch-off follow |
-| A5 Helpdesk customer mail (`send_email` automation action, SLA notices to the customer, scheduled report mails) | In progress: `send_email` done ([ADR 0063](adr/0063-helpdesk-send-email-action.md)), SLA notices to the customer done ([ADR 0064](adr/0064-helpdesk-sla-customer-notices.md)); scheduled report mails follow |
+| A5 Helpdesk customer mail (`send_email` automation action, SLA notices to the customer, scheduled report mails) | Done, [ADR 0063](adr/0063-helpdesk-send-email-action.md), [ADR 0064](adr/0064-helpdesk-sla-customer-notices.md), [ADR 0065](adr/0065-scheduled-report-mails.md); mail templates are A6 |
 | B1 Inventory foundation | Done, [ADR 0019](adr/0019-inventory-stock-ledger.md) |
 | B2 Purchasing | In progress, [ADR 0031](adr/0031-purchasing.md) |
 | B2b Supplier invoices and three-way match (AP register, no ledger) | Backend done, [ADR 0046](adr/0046-supplier-invoices-and-three-way-match.md); Flutter screens follow |
@@ -55,8 +55,8 @@ client, Flutter screens, five-language strings, tests and an ADR.
 
 Helpdesk follow-up, done ([ADR 0021](adr/0021-helpdesk-business-hours-automation-reporting.md)): business hours and holidays in the SLA, automation rules, ticket split, reporting with CSV export.
 Per-team business calendars are done (ADR 0021).
-Remaining helpdesk gaps (A5): scheduled report mails; mail templates are A6.
-Remaining report builder gaps ([ADR 0042](adr/0042-report-builder.md)): more objects (products, stock, tickets), dashboards, report folders; scheduled report mails are in A5.
+Helpdesk customer mail (A5) is done: `send_email` in automation rules, SLA notices to the customer and scheduled report mails (ADR 0063 to 0065). Remaining: mail templates (A6), which replace the inline text of `send_email`.
+Remaining report builder gaps ([ADR 0042](adr/0042-report-builder.md)): more objects (products, stock, tickets), dashboards, report folders. Scheduled report mails are done (ADR 0065).
 Remaining knowledge base gaps (ADR 0018): non-image attachments, analytics, semantic search, a public web page.
 
 ## Track B - Supply chain (sequential)

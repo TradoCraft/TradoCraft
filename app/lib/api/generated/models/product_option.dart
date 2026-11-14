@@ -19,9 +19,10 @@ class ProductOption {
     required this.requiredValue,
     required this.sortOrder,
   });
-  
-  factory ProductOption.fromJson(Map<String, Object?> json) => _$ProductOptionFromJson(json);
-  
+
+  factory ProductOption.fromJson(Map<String, Object?> json) =>
+      _$ProductOptionFromJson(json);
+
   final bool active;
 
   /// Quantity of the option per unit of the parent.

@@ -17,9 +17,9 @@ class Pin {
     this.row,
     this.table,
   });
-  
+
   factory Pin.fromJson(Map<String, Object?> json) => _$PinFromJson(json);
-  
+
   /// The calculated value when the pin was made; when the calculation now differs the pin is.
   /// reported as stale.
   @JsonKey(includeIfNull: false)

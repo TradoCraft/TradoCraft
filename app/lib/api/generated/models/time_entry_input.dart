@@ -8,14 +8,11 @@ part 'time_entry_input.g.dart';
 
 @JsonSerializable()
 class TimeEntryInput {
-  const TimeEntryInput({
-    required this.minutes,
-    this.billable,
-    this.note,
-  });
-  
-  factory TimeEntryInput.fromJson(Map<String, Object?> json) => _$TimeEntryInputFromJson(json);
-  
+  const TimeEntryInput({required this.minutes, this.billable, this.note});
+
+  factory TimeEntryInput.fromJson(Map<String, Object?> json) =>
+      _$TimeEntryInputFromJson(json);
+
   @JsonKey(includeIfNull: false)
   final bool? billable;
 

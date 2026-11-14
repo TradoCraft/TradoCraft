@@ -8,14 +8,11 @@ part 'count_row.g.dart';
 
 @JsonSerializable()
 class CountRow {
-  const CountRow({
-    required this.count,
-    required this.key,
-    required this.label,
-  });
-  
-  factory CountRow.fromJson(Map<String, Object?> json) => _$CountRowFromJson(json);
-  
+  const CountRow({required this.count, required this.key, required this.label});
+
+  factory CountRow.fromJson(Map<String, Object?> json) =>
+      _$CountRowFromJson(json);
+
   final int count;
 
   /// The value (status, priority, category, tag) or an id for teams and owners; empty = none.

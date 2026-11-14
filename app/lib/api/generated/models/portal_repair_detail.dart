@@ -11,13 +11,11 @@ part 'portal_repair_detail.g.dart';
 
 @JsonSerializable()
 class PortalRepairDetail {
-  const PortalRepairDetail({
-    required this.photos,
-    required this.repair,
-  });
-  
-  factory PortalRepairDetail.fromJson(Map<String, Object?> json) => _$PortalRepairDetailFromJson(json);
-  
+  const PortalRepairDetail({required this.photos, required this.repair});
+
+  factory PortalRepairDetail.fromJson(Map<String, Object?> json) =>
+      _$PortalRepairDetailFromJson(json);
+
   final List<PortalPhoto> photos;
   final PortalRepair repair;
 

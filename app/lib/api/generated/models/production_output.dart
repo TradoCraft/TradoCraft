@@ -15,14 +15,15 @@ class ProductionOutput {
     this.lotNumber,
     this.serialNumber,
   });
-  
-  factory ProductionOutput.fromJson(Map<String, Object?> json) => _$ProductionOutputFromJson(json);
-  
+
+  factory ProductionOutput.fromJson(Map<String, Object?> json) =>
+      _$ProductionOutputFromJson(json);
+
   final String id;
-  @JsonKey(includeIfNull: false,name: 'lot_number')
+  @JsonKey(includeIfNull: false, name: 'lot_number')
   final String? lotNumber;
   final String quantity;
-  @JsonKey(includeIfNull: false,name: 'serial_number')
+  @JsonKey(includeIfNull: false, name: 'serial_number')
   final String? serialNumber;
   @JsonKey(name: 'stock_move_id')
   final String stockMoveId;

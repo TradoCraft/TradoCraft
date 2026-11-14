@@ -10,14 +10,11 @@ part 'team_input.g.dart';
 
 @JsonSerializable()
 class TeamInput {
-  const TeamInput({
-    required this.name,
-    this.active,
-    this.members,
-  });
-  
-  factory TeamInput.fromJson(Map<String, Object?> json) => _$TeamInputFromJson(json);
-  
+  const TeamInput({required this.name, this.active, this.members});
+
+  factory TeamInput.fromJson(Map<String, Object?> json) =>
+      _$TeamInputFromJson(json);
+
   @JsonKey(includeIfNull: false)
   final bool? active;
 

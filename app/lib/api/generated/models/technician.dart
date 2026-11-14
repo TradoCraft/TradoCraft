@@ -8,13 +8,11 @@ part 'technician.g.dart';
 
 @JsonSerializable()
 class Technician {
-  const Technician({
-    required this.displayName,
-    required this.userId,
-  });
-  
-  factory Technician.fromJson(Map<String, Object?> json) => _$TechnicianFromJson(json);
-  
+  const Technician({required this.displayName, required this.userId});
+
+  factory Technician.fromJson(Map<String, Object?> json) =>
+      _$TechnicianFromJson(json);
+
   @JsonKey(name: 'display_name')
   final String displayName;
   @JsonKey(name: 'user_id')

@@ -19,9 +19,10 @@ class PortalOrderLine {
     required this.unit,
     required this.vatRate,
   });
-  
-  factory PortalOrderLine.fromJson(Map<String, Object?> json) => _$PortalOrderLineFromJson(json);
-  
+
+  factory PortalOrderLine.fromJson(Map<String, Object?> json) =>
+      _$PortalOrderLineFromJson(json);
+
   final String description;
   @JsonKey(name: 'line_total')
   final String lineTotal;

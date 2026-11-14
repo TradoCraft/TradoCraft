@@ -26,11 +26,12 @@ class OrderLine {
     this.productId,
     this.productionRemark,
   });
-  
-  factory OrderLine.fromJson(Map<String, Object?> json) => _$OrderLineFromJson(json);
-  
+
+  factory OrderLine.fromJson(Map<String, Object?> json) =>
+      _$OrderLineFromJson(json);
+
   /// Remark printed under the description on the order confirmation.
-  @JsonKey(includeIfNull: false,name: 'customer_remark')
+  @JsonKey(includeIfNull: false, name: 'customer_remark')
   final String? customerRemark;
   final String description;
 
@@ -51,11 +52,11 @@ class OrderLine {
   final String pricingType;
   @JsonKey(name: 'product_code')
   final String productCode;
-  @JsonKey(includeIfNull: false,name: 'product_id')
+  @JsonKey(includeIfNull: false, name: 'product_id')
   final String? productId;
 
   /// Internal remark for production (never printed for or shown to the customer).
-  @JsonKey(includeIfNull: false,name: 'production_remark')
+  @JsonKey(includeIfNull: false, name: 'production_remark')
   final String? productionRemark;
   final String quantity;
   @JsonKey(name: 'rebate_percent')

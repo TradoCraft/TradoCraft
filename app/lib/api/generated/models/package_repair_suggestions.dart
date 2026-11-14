@@ -15,13 +15,14 @@ class PackageRepairSuggestions {
     this.proposedCustomerId,
     this.proposedCustomerName,
   });
-  
-  factory PackageRepairSuggestions.fromJson(Map<String, Object?> json) => _$PackageRepairSuggestionsFromJson(json);
-  
+
+  factory PackageRepairSuggestions.fromJson(Map<String, Object?> json) =>
+      _$PackageRepairSuggestionsFromJson(json);
+
   /// When the parcel has no customer yet: the customer of the best suggestion.
-  @JsonKey(includeIfNull: false,name: 'proposed_customer_id')
+  @JsonKey(includeIfNull: false, name: 'proposed_customer_id')
   final String? proposedCustomerId;
-  @JsonKey(includeIfNull: false,name: 'proposed_customer_name')
+  @JsonKey(includeIfNull: false, name: 'proposed_customer_name')
   final String? proposedCustomerName;
 
   /// At most 10, best first. Never applied automatically: confirm with `POST /packages/{id}/repairs`.

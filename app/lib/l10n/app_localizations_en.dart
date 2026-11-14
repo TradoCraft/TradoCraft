@@ -8733,4 +8733,141 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get slaNoticesAdd => 'Add a rule';
+
+  @override
+  String get rsTitle => 'Scheduled report mails';
+
+  @override
+  String get rsOpen => 'Scheduled mails';
+
+  @override
+  String get rsHelp =>
+      'Mail a saved report or a helpdesk report on a schedule, as CSV or PDF, to colleagues and other addresses. Each mail is built with the permissions of the schedule\'s owner at the time it is sent.';
+
+  @override
+  String get rsNew => 'New schedule';
+
+  @override
+  String get rsEdit => 'Schedule';
+
+  @override
+  String get rsEmpty => 'No reports are scheduled.';
+
+  @override
+  String get rsSource => 'Kind of report';
+
+  @override
+  String get rsSourceCustom => 'Saved report';
+
+  @override
+  String get rsSourceHelpdesk => 'Helpdesk report';
+
+  @override
+  String get rsReport => 'Report';
+
+  @override
+  String get rsTable => 'Table';
+
+  @override
+  String get rsPeriod => 'Period';
+
+  @override
+  String get rsPeriodYesterday => 'Yesterday';
+
+  @override
+  String get rsPeriodLast7 => 'The last 7 days';
+
+  @override
+  String get rsPeriodLastWeek => 'Last week (Monday to Sunday)';
+
+  @override
+  String get rsPeriodLast30 => 'The last 30 days';
+
+  @override
+  String get rsPeriodLastMonth => 'Last calendar month';
+
+  @override
+  String get rsFrequency => 'Frequency';
+
+  @override
+  String get rsDaily => 'Daily';
+
+  @override
+  String get rsWeekly => 'Weekly';
+
+  @override
+  String get rsMonthly => 'Monthly';
+
+  @override
+  String get rsWeekday => 'Weekday';
+
+  @override
+  String get rsDayOfMonth => 'Day of the month (1-28)';
+
+  @override
+  String get rsTime => 'Time (HH:MM)';
+
+  @override
+  String get rsFormat => 'Format';
+
+  @override
+  String get rsColleagues => 'Colleagues';
+
+  @override
+  String get rsAddresses => 'Other e-mail addresses (separated by commas)';
+
+  @override
+  String get rsMon => 'Monday';
+
+  @override
+  String get rsTue => 'Tuesday';
+
+  @override
+  String get rsWed => 'Wednesday';
+
+  @override
+  String get rsThu => 'Thursday';
+
+  @override
+  String get rsFri => 'Friday';
+
+  @override
+  String get rsSat => 'Saturday';
+
+  @override
+  String get rsSun => 'Sunday';
+
+  @override
+  String rsSummary(String when, String format, int recipients) {
+    return '$when · $format · $recipients recipients';
+  }
+
+  @override
+  String rsNextRun(String when) {
+    return 'Next mail: $when';
+  }
+
+  @override
+  String rsLastSent(String when) {
+    return 'Last run: sent $when';
+  }
+
+  @override
+  String rsLastFailed(String when, String reason) {
+    return 'Last run failed ($when): $reason';
+  }
+
+  @override
+  String get rsSendNow => 'Send now';
+
+  @override
+  String rsQueued(int count) {
+    return '$count mails queued.';
+  }
+
+  @override
+  String get rsPaused => 'Paused';
+
+  @override
+  String get rsNeedsRecipient => 'Choose at least one recipient.';
 }

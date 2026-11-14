@@ -8,12 +8,11 @@ part 'todo_settings.g.dart';
 
 @JsonSerializable()
 class TodoSettings {
-  const TodoSettings({
-    required this.emailReminders,
-  });
-  
-  factory TodoSettings.fromJson(Map<String, Object?> json) => _$TodoSettingsFromJson(json);
-  
+  const TodoSettings({required this.emailReminders});
+
+  factory TodoSettings.fromJson(Map<String, Object?> json) =>
+      _$TodoSettingsFromJson(json);
+
   /// Whether a digest mail is sent when items are due or overdue. On by default.
   @JsonKey(name: 'email_reminders')
   final bool emailReminders;

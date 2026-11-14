@@ -28,9 +28,10 @@ class IdentityProviderInfo {
     this.id,
     this.updatedAt,
   });
-  
-  factory IdentityProviderInfo.fromJson(Map<String, Object?> json) => _$IdentityProviderInfoFromJson(json);
-  
+
+  factory IdentityProviderInfo.fromJson(Map<String, Object?> json) =>
+      _$IdentityProviderInfoFromJson(json);
+
   /// Accepted JWS algorithms.
   final List<String> algorithms;
 
@@ -42,11 +43,11 @@ class IdentityProviderInfo {
   final String audience;
 
   /// Public client id for the interactive sign-in.
-  @JsonKey(includeIfNull: false,name: 'client_id')
+  @JsonKey(includeIfNull: false, name: 'client_id')
   final String? clientId;
 
   /// When the provider was created.
-  @JsonKey(includeIfNull: false,name: 'created_at')
+  @JsonKey(includeIfNull: false, name: 'created_at')
   final DateTime? createdAt;
 
   /// Claim holding the e-mail address.
@@ -85,7 +86,7 @@ class IdentityProviderInfo {
   final String tokenUse;
 
   /// When it was last changed.
-  @JsonKey(includeIfNull: false,name: 'updated_at')
+  @JsonKey(includeIfNull: false, name: 'updated_at')
   final DateTime? updatedAt;
 
   /// Boolean claim used by `require_verified_claim`.

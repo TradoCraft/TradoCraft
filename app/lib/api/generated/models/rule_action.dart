@@ -24,9 +24,10 @@ class RuleAction {
     this.userId,
     this.value,
   });
-  
-  factory RuleAction.fromJson(Map<String, Object?> json) => _$RuleActionFromJson(json);
-  
+
+  factory RuleAction.fromJson(Map<String, Object?> json) =>
+      _$RuleActionFromJson(json);
+
   /// `send_email` to `address`: the fixed recipient.
   @JsonKey(includeIfNull: false)
   final String? address;
@@ -39,7 +40,7 @@ class RuleAction {
   final String kind;
 
   /// `send_email`: at most one mail per ticket and rule in this many hours (default 24).
-  @JsonKey(includeIfNull: false,name: 'period_hours')
+  @JsonKey(includeIfNull: false, name: 'period_hours')
   final int? periodHours;
 
   /// `send_email`: customer | assignee | team | address.
@@ -49,9 +50,9 @@ class RuleAction {
   /// `send_email`: one line; `{ticket_number}`, `{subject}`, `{customer}`, `{agent}` are replaced.
   @JsonKey(includeIfNull: false)
   final String? subject;
-  @JsonKey(includeIfNull: false,name: 'team_id')
+  @JsonKey(includeIfNull: false, name: 'team_id')
   final String? teamId;
-  @JsonKey(includeIfNull: false,name: 'user_id')
+  @JsonKey(includeIfNull: false, name: 'user_id')
   final String? userId;
   @JsonKey(includeIfNull: false)
   final String? value;

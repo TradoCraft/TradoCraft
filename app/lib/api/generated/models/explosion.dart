@@ -18,9 +18,10 @@ class Explosion {
     required this.quantity,
     required this.requirements,
   });
-  
-  factory Explosion.fromJson(Map<String, Object?> json) => _$ExplosionFromJson(json);
-  
+
+  factory Explosion.fromJson(Map<String, Object?> json) =>
+      _$ExplosionFromJson(json);
+
   @JsonKey(name: 'bom_revision')
   final int bomRevision;
   final List<ExplosionNode> nodes;

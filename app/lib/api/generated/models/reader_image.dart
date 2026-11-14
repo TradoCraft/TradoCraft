@@ -8,13 +8,11 @@ part 'reader_image.g.dart';
 
 @JsonSerializable()
 class ReaderImage {
-  const ReaderImage({
-    required this.filename,
-    required this.id,
-  });
-  
-  factory ReaderImage.fromJson(Map<String, Object?> json) => _$ReaderImageFromJson(json);
-  
+  const ReaderImage({required this.filename, required this.id});
+
+  factory ReaderImage.fromJson(Map<String, Object?> json) =>
+      _$ReaderImageFromJson(json);
+
   final String filename;
   final String id;
 

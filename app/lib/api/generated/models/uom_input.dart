@@ -14,9 +14,10 @@ class UomInput {
     required this.factor,
     required this.name,
   });
-  
-  factory UomInput.fromJson(Map<String, Object?> json) => _$UomInputFromJson(json);
-  
+
+  factory UomInput.fromJson(Map<String, Object?> json) =>
+      _$UomInputFromJson(json);
+
   final String category;
   final String code;
   final String factor;

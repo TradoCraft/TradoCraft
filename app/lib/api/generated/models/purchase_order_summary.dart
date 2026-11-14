@@ -28,10 +28,11 @@ class PurchaseOrderSummary {
     this.approvedByUserId,
     this.expectedDeliveryDate,
   });
-  
-  factory PurchaseOrderSummary.fromJson(Map<String, Object?> json) => _$PurchaseOrderSummaryFromJson(json);
-  
-  @JsonKey(includeIfNull: false,name: 'approved_by_user_id')
+
+  factory PurchaseOrderSummary.fromJson(Map<String, Object?> json) =>
+      _$PurchaseOrderSummaryFromJson(json);
+
+  @JsonKey(includeIfNull: false, name: 'approved_by_user_id')
   final String? approvedByUserId;
   @JsonKey(name: 'company_id')
   final String companyId;
@@ -40,7 +41,7 @@ class PurchaseOrderSummary {
   @JsonKey(name: 'created_by_user_id')
   final String createdByUserId;
   final String currency;
-  @JsonKey(includeIfNull: false,name: 'expected_delivery_date')
+  @JsonKey(includeIfNull: false, name: 'expected_delivery_date')
   final DateTime? expectedDeliveryDate;
   final String id;
   final String notes;

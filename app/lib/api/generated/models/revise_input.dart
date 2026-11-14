@@ -10,12 +10,11 @@ part 'revise_input.g.dart';
 
 @JsonSerializable()
 class ReviseInput {
-  const ReviseInput({
-    required this.pricing,
-  });
-  
-  factory ReviseInput.fromJson(Map<String, Object?> json) => _$ReviseInputFromJson(json);
-  
+  const ReviseInput({required this.pricing});
+
+  factory ReviseInput.fromJson(Map<String, Object?> json) =>
+      _$ReviseInputFromJson(json);
+
   final RevisionPricing pricing;
 
   Map<String, Object?> toJson() => _$ReviseInputToJson(this);

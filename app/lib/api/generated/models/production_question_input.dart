@@ -14,9 +14,10 @@ class ProductionQuestionInput {
     required this.orderId,
     required this.subject,
   });
-  
-  factory ProductionQuestionInput.fromJson(Map<String, Object?> json) => _$ProductionQuestionInputFromJson(json);
-  
+
+  factory ProductionQuestionInput.fromJson(Map<String, Object?> json) =>
+      _$ProductionQuestionInputFromJson(json);
+
   final String body;
   @JsonKey(name: 'order_id')
   final String orderId;

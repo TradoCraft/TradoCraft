@@ -10,12 +10,11 @@ part 'user_skills_input.g.dart';
 
 @JsonSerializable()
 class UserSkillsInput {
-  const UserSkillsInput({
-    required this.skills,
-  });
-  
-  factory UserSkillsInput.fromJson(Map<String, Object?> json) => _$UserSkillsInputFromJson(json);
-  
+  const UserSkillsInput({required this.skills});
+
+  factory UserSkillsInput.fromJson(Map<String, Object?> json) =>
+      _$UserSkillsInputFromJson(json);
+
   /// Replaces the technician's skills.
   final List<UserSkillInput> skills;
 

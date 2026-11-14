@@ -13,13 +13,14 @@ class DurationStats {
     this.averageMinutes,
     this.p90Minutes,
   });
-  
-  factory DurationStats.fromJson(Map<String, Object?> json) => _$DurationStatsFromJson(json);
-  
-  @JsonKey(includeIfNull: false,name: 'average_minutes')
+
+  factory DurationStats.fromJson(Map<String, Object?> json) =>
+      _$DurationStatsFromJson(json);
+
+  @JsonKey(includeIfNull: false, name: 'average_minutes')
   final double? averageMinutes;
   final int count;
-  @JsonKey(includeIfNull: false,name: 'p90_minutes')
+  @JsonKey(includeIfNull: false, name: 'p90_minutes')
   final double? p90Minutes;
 
   Map<String, Object?> toJson() => _$DurationStatsToJson(this);

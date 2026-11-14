@@ -16,9 +16,10 @@ class CompleteProductionInput {
     this.components,
     this.note,
   });
-  
-  factory CompleteProductionInput.fromJson(Map<String, Object?> json) => _$CompleteProductionInputFromJson(json);
-  
+
+  factory CompleteProductionInput.fromJson(Map<String, Object?> json) =>
+      _$CompleteProductionInputFromJson(json);
+
   /// Actual consumption per component; components that are left out use the BOM quantity.
   @JsonKey(includeIfNull: false)
   final List<ProductionComponentActual>? components;

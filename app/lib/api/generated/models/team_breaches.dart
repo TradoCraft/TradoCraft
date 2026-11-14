@@ -14,12 +14,13 @@ class TeamBreaches {
     required this.tickets,
     this.teamId,
   });
-  
-  factory TeamBreaches.fromJson(Map<String, Object?> json) => _$TeamBreachesFromJson(json);
-  
+
+  factory TeamBreaches.fromJson(Map<String, Object?> json) =>
+      _$TeamBreachesFromJson(json);
+
   final int breached;
   final String team;
-  @JsonKey(includeIfNull: false,name: 'team_id')
+  @JsonKey(includeIfNull: false, name: 'team_id')
   final String? teamId;
   final int tickets;
 

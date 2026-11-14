@@ -19,25 +19,26 @@ class PackageEvent {
     this.repairNumber,
     this.toStatus,
   });
-  
-  factory PackageEvent.fromJson(Map<String, Object?> json) => _$PackageEventFromJson(json);
-  
+
+  factory PackageEvent.fromJson(Map<String, Object?> json) =>
+      _$PackageEventFromJson(json);
+
   @JsonKey(name: 'actor_name')
   final String actorName;
   @JsonKey(name: 'created_at')
   final DateTime createdAt;
-  @JsonKey(includeIfNull: false,name: 'from_status')
+  @JsonKey(includeIfNull: false, name: 'from_status')
   final String? fromStatus;
   final String id;
 
   /// registered | status | note | photo | linked | unlinked
   final String kind;
   final String note;
-  @JsonKey(includeIfNull: false,name: 'repair_id')
+  @JsonKey(includeIfNull: false, name: 'repair_id')
   final String? repairId;
-  @JsonKey(includeIfNull: false,name: 'repair_number')
+  @JsonKey(includeIfNull: false, name: 'repair_number')
   final String? repairNumber;
-  @JsonKey(includeIfNull: false,name: 'to_status')
+  @JsonKey(includeIfNull: false, name: 'to_status')
   final String? toStatus;
 
   Map<String, Object?> toJson() => _$PackageEventToJson(this);

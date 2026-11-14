@@ -28,15 +28,16 @@ class ReaderEntry {
     this.categoryId,
     this.myVote,
   });
-  
-  factory ReaderEntry.fromJson(Map<String, Object?> json) => _$ReaderEntryFromJson(json);
-  
+
+  factory ReaderEntry.fromJson(Map<String, Object?> json) =>
+      _$ReaderEntryFromJson(json);
+
   @JsonKey(name: 'available_languages')
   final List<String> availableLanguages;
 
   /// Simple Markdown. Images are written as `image:<id>` and listed in `images`.
   final String body;
-  @JsonKey(includeIfNull: false,name: 'category_id')
+  @JsonKey(includeIfNull: false, name: 'category_id')
   final String? categoryId;
 
   /// True when the text is not in the language asked for.
@@ -48,7 +49,7 @@ class ReaderEntry {
   final String language;
 
   /// The vote of the logged-in contact (portal only): true = helpful.
-  @JsonKey(includeIfNull: false,name: 'my_vote')
+  @JsonKey(includeIfNull: false, name: 'my_vote')
   final bool? myVote;
   final String number;
   final List<ReaderLink> related;

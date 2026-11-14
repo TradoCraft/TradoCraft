@@ -15,9 +15,10 @@ class TimeRow {
     required this.totalMinutes,
     required this.userId,
   });
-  
-  factory TimeRow.fromJson(Map<String, Object?> json) => _$TimeRowFromJson(json);
-  
+
+  factory TimeRow.fromJson(Map<String, Object?> json) =>
+      _$TimeRowFromJson(json);
+
   @JsonKey(name: 'billable_minutes')
   final int billableMinutes;
   final String name;

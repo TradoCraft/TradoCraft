@@ -8,15 +8,14 @@ part 'todo_complete_input.g.dart';
 
 @JsonSerializable()
 class TodoCompleteInput {
-  const TodoCompleteInput({
-    this.completeChildren,
-  });
-  
-  factory TodoCompleteInput.fromJson(Map<String, Object?> json) => _$TodoCompleteInputFromJson(json);
-  
+  const TodoCompleteInput({this.completeChildren});
+
+  factory TodoCompleteInput.fromJson(Map<String, Object?> json) =>
+      _$TodoCompleteInputFromJson(json);
+
   /// Also complete the open sub-items. Without it, completing an item that still has open.
   /// sub-items is refused with 409.
-  @JsonKey(includeIfNull: false,name: 'complete_children')
+  @JsonKey(includeIfNull: false, name: 'complete_children')
   final bool? completeChildren;
 
   Map<String, Object?> toJson() => _$TodoCompleteInputToJson(this);
