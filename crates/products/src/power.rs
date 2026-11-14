@@ -644,6 +644,45 @@ pub async fn grid_in_country(
     .await?)
 }
 
+/// `clear_power_grid: true` together with a `power_grid_id` contradicts itself (422). Shared by
+/// quotations, orders and opportunities.
+pub fn check_grid_clear(clear: Option<bool>, given: Option<Uuid>) -> AppResult<()> {
+    if clear == Some(true) && given.is_some() {
+        return Err(AppError::Validation(
+            "clear_power_grid cannot be combined with power_grid_id".into(),
+        ));
+    }
+    Ok(())
+}
+
+/// The grid to store next to a country (`label` names it in the error, e.g. "delivery" or
+/// "customer"): a given grid must belong to the country (422 otherwise); without a given one the
+/// `kept` grid stays only while it fits the country.
+pub async fn resolve_power_grid(
+    conn: &mut PgConnection,
+    given: Option<Uuid>,
+    kept: Option<Uuid>,
+    country: Option<&str>,
+    label: &str,
+) -> AppResult<Option<Uuid>> {
+    if let Some(g) = given {
+        let ok = match country {
+            Some(c) => grid_in_country(conn, g, c).await?,
+            None => false,
+        };
+        if !ok {
+            return Err(AppError::Validation(format!(
+                "power_grid_id must be a grid of the {label} country"
+            )));
+        }
+        return Ok(Some(g));
+    }
+    match (kept, country) {
+        (Some(g), Some(c)) if grid_in_country(conn, g, c).await? => Ok(Some(g)),
+        _ => Ok(None),
+    }
+}
+
 pub fn router() -> OpenApiRouter<AppState> {
     OpenApiRouter::new()
         .routes(routes!(list_power_grids, create_power_grid))

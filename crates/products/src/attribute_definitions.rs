@@ -203,6 +203,21 @@ pub async fn product_rules(
         .collect())
 }
 
+/// How many definitions of a company have this scope (a baseline item type code).
+pub async fn count_in_scope(
+    conn: &mut sqlx::PgConnection,
+    company_id: Uuid,
+    scope: &str,
+) -> AppResult<i64> {
+    Ok(sqlx::query_scalar(
+        "SELECT count(*) FROM products.attribute_definitions WHERE company_id = $1 AND scope = $2",
+    )
+    .bind(company_id)
+    .bind(scope)
+    .fetch_one(conn)
+    .await?)
+}
+
 /// The active definitions of one scope (`product` or a baseline item type code) of a company,
 /// in display order.
 pub async fn active_for_scope(
@@ -395,8 +410,9 @@ async fn update_definition(
     Ok(Json(load(&state.db, user.company_id, id).await?))
 }
 
-/// Deletes an unused definition. A definition whose key is stored on products is refused with 409
-/// (deactivate it with `active: false` instead, which keeps the stored values readable).
+/// Deletes an unused definition. A definition whose key is stored on products (scope `product`) or
+/// on baseline items of its type is refused with 409 (deactivate it with `active: false` instead,
+/// which keeps the stored values readable).
 #[utoipa::path(delete, path = "/attribute-definitions/{id}", tag = "products", params(("id" = Uuid, Path)),
     responses((status = 204), (status = 404, body = ErrorBody), (status = 409, body = ErrorBody)))]
 async fn delete_definition(
@@ -415,19 +431,34 @@ async fn delete_definition(
     .fetch_optional(&mut *tx)
     .await?
     .ok_or(AppError::NotFound("attribute definition"))?;
-    // Product attributes are shared master data keyed by `key`; baseline values (later phases)
-    // add their own usage check next to this one.
-    let used: i64 = if scope == "product" {
-        sqlx::query_scalar("SELECT count(*) FROM products.product_attributes WHERE key = $1")
+    // Product attributes are shared master data keyed by `key`. A baseline definition (any other
+    // scope) is in use while an item of that type stores its key. crm depends on this crate, so
+    // the baseline table is read here directly rather than through a crm function.
+    let (used, what): (i64, &str) = if scope == "product" {
+        (
+            sqlx::query_scalar("SELECT count(*) FROM products.product_attributes WHERE key = $1")
+                .bind(&key)
+                .fetch_one(&mut *tx)
+                .await?,
+            "products",
+        )
+    } else {
+        (
+            sqlx::query_scalar(
+                "SELECT count(*) FROM crm.opportunity_baseline_items
+                 WHERE company_id = $1 AND type_code = $2 AND jsonb_exists(\"values\", $3)",
+            )
+            .bind(user.company_id)
+            .bind(&scope)
             .bind(&key)
             .fetch_one(&mut *tx)
-            .await?
-    } else {
-        0
+            .await?,
+            "baseline items",
+        )
     };
     if used > 0 {
         return Err(AppError::Conflict(format!(
-            "attribute {key} is in use on {used} products and cannot be deleted; deactivate it instead"
+            "attribute {key} is in use on {used} {what} and cannot be deleted; deactivate it instead"
         )));
     }
     sqlx::query("DELETE FROM products.attribute_definitions WHERE id = $1")
