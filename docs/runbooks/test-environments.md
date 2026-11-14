@@ -78,6 +78,8 @@ environments it created, and only when `DATABASE_URL` points to the server it wa
 - Always: portal login links and sessions and CSAT links deleted; OIDC bindings cleared; queued
   mail cancelled. Mail is written to `ENVCTL_DIR/envs/<name>/outbox/*.eml`; the worker does not
   poll the mailbox (override only with a dedicated mailbox: `ALLOW_INBOUND_MAIL_IN_NON_LIVE=1`).
+  To-do reminders (ADR 0061) are ordinary system mail: in a clone's worker they too are only
+  written as files, for items that were not yet reminded when the clone was taken.
 - `--anonymize` additionally: e-mail addresses and phone numbers of customers, suppliers, company,
   contacts, tickets and queued mail; raw e-mails and mail attachments; non-admin users.
 - Not scrubbed, even with `--anonymize`: names, postal addresses, VAT numbers, IBANs, free text,

@@ -13,6 +13,8 @@ import '../models/todo_link_kind.dart';
 import '../models/todo_patch.dart';
 import '../models/todo_reorder_input.dart';
 import '../models/todo_scope.dart';
+import '../models/todo_settings.dart';
+import '../models/todo_settings_input.dart';
 
 part 'todo_client.g.dart';
 
@@ -69,5 +71,13 @@ abstract class TodoClient {
   @POST('/api/v1/todo/items/{id}/reopen')
   Future<TodoItem> todoReopen({
     @Path('id') required String id,
+  });
+
+  @GET('/api/v1/todo/settings')
+  Future<TodoSettings> todoSettingsGet();
+
+  @PUT('/api/v1/todo/settings')
+  Future<TodoSettings> todoSettingsPut({
+    @Body() required TodoSettingsInput body,
   });
 }

@@ -1,6 +1,6 @@
 # 0061 — To-do items
 
-**Status:** Accepted (PR 1 of 3: backend and a minimal page. PR 2 of 3: context capture, the jump, the record button and `/customers/:id`, see below. Reminders and the badge follow)
+**Status:** Accepted (PR 1 of 3: backend and a minimal page. PR 2 of 3: context capture, the jump, the record button and `/customers/:id`, see below. PR 3 of 3: the badge, reminders by e-mail and removing a dead link, see below)
 
 **Context.** The only list of things to do is `field.job_tasks`, the checklist of one field job. People
 keep their own to-dos elsewhere, away from the records the to-dos are about, and cannot hand one to a
@@ -13,7 +13,7 @@ permission `todo.use`, and a page `/todo`.
 *Data model* (migration `20270202000001_todo.sql`). `id`, `company_id` (not null), `parent_id` (self
 foreign key, `ON DELETE CASCADE`), `position`, `title`, `notes`, `owner_id`, `assignee_id` (nullable),
 `created_by`, `due_date` (a date), `done`, `done_at`, `done_by`, the link (`link_kind`, `link_id`,
-`link_label`, `link_location`), `reminded_at` (unused until PR 3), `client_id`, timestamps.
+`link_label`, `link_location`), `reminded_at` (set by the reminder pass, PR 3), `client_id`, timestamps.
 - Two levels: a trigger requires the parent to be an item of the same company that is itself a root, and
   forbids an item with sub-items from becoming a sub-item. A sub-item always shares owner and assignee
   with its root; moving an item under another root requires the same owner.
@@ -101,7 +101,7 @@ says. Rows are locked with `SELECT .. FOR UPDATE` before they change; related ro
 
 *Endpoints* (tag `todo`; all need `todo.use`): `GET /todo/items` (filters `scope`, `done`, `link_kind` with
 `link_id`, `due_before`; a flat list ordered by parent, then position), `GET /todo/items/counts` (open,
-overdue and due today on my plate), `POST /todo/items`, `PATCH /todo/items/{id}` (title, notes, due date,
+overdue and due today on my plate, root items only since PR 3), `POST /todo/items`, `PATCH /todo/items/{id}` (title, notes, due date,
 assignee, move between parents, position, link; `clear_*` flags clear a value), `POST
 /todo/items/{id}/complete`, `POST /todo/items/{id}/reopen`, `POST /todo/items/reorder` (an ordered list
 of siblings, which take the positions the same items had), `DELETE /todo/items/{id}` (cascades).
@@ -154,9 +154,63 @@ little about content on purpose.
 - **`/customers/:id`** is a workspace detail route (`CustomerScreen`) that loads the customer and shows the same
   form as the list's dialog; the list still opens its dialog.
 
+*PR 3: the badge, reminders and removing a dead link* (migration `20270203000001_todo_reminders.sql`).
+- **Counts are roots only.** `GET /todo/items/counts` now counts open root items on my plate (handed to me, or
+  mine and not handed on), so the number equals what the page lists by default; sub-items are not counted. The
+  response shape (`open`, `overdue`, `due_today`) is unchanged; overdue and due today use the database date
+  (`CURRENT_DATE`), as the reminder pass does. Before PR 3 it counted sub-items too; the app did not use it.
+- **The shell badge.** The `/todo` destination (rail and narrow bar) shows `open`; it turns red when `overdue > 0`
+  and is hidden at zero and without `todo.use` (nothing is requested then). A tap is the normal destination tap.
+  It is kept fresh cheaply: one provider on the counts endpoint, invalidated (debounced, 500 ms) after every
+  change made in the app (the repository calls back after each create, update, complete, reopen, delete and
+  reorder, so link, due date and assignee changes are covered), refreshed every 3 minutes while the app is in
+  the foreground, and on resume. It stops when the user signs out. Changes made elsewhere show up at the next
+  refresh. The per-record button turns its count badge red when a listed item is overdue.
+- **Remove link on "not found".** When a record screen shows its not-found state (HTTP 404, `LoadFailedView`)
+  and the caller holds linked to-dos for that kind and id (`GET /todo/items?scope=all-mine&link_kind&link_id`),
+  one button "Remove link from my to-dos" clears the link (`PATCH clear_link`) of all of them. Hidden for other
+  errors, without linked items and without `todo.use`.
+- **Reminder opt-out, on the server.** `todo.user_settings (user_id, company_id, email_reminders default true,
+  updated_at)`, primary key `(user_id, company_id)`; no row means on. `GET /todo/settings` and `PUT
+  /todo/settings` (both `todo.use`, own row only) back the switch "E-mail reminders" on the page, so the choice
+  follows the user to other devices. A change is audited (entity `todo_settings`, entity id the user, data
+  `{"email_reminders": bool}` only; an unchanged value writes nothing).
+- **Reminder rules** (`tradocraft_todo::send_due_reminders`, one idempotent pass of the worker loop). An item is
+  reminded once, when it is open, `due_date <= CURRENT_DATE` and `reminded_at IS NULL`. The recipient is the
+  assignee when the item is handed on, else the owner. Done items and sub-items of a done parent are never
+  reminded; sub-items of an open parent are, like any item. All of one person's items in one pass make one
+  digest mail (one per company when a person works in two). Changing an item's due date resets `reminded_at`
+  (a new date is a new deadline); other edits, reopening and handing it over do not.
+- **Who is skipped, and the opt-in rule.** Recipients who are inactive, no longer active members of the company,
+  lack `todo.use` (role) or have the module off, and recipients who switched reminders off, are skipped and
+  their items are left unreminded (`reminded_at` stays NULL). The rule for switching reminders on again is the
+  simplest correct one: nothing is marked while opted out, so the next pass reminds the items that are due or
+  overdue at that moment, in one digest. A single mail is not a flood, and an item that is still overdue is
+  still something to act on; the alternative (marking items at opt-out time) needs a second state and a
+  background write for every opt-out.
+- **Claiming.** The pass runs in one transaction. It takes a transaction advisory lock (a worker that does not
+  get it skips the pass, so a person's items are claimed by one worker and make one digest), selects the due
+  rows with `FOR UPDATE OF i SKIP LOCKED` (rows an editor holds are left to the next pass), queues the digests
+  with `core::mail::enqueue`, then sets `reminded_at = now()` on the claimed rows, and commits. A crash rolls
+  all of it back: nothing is sent twice and no reminder is lost. The permission check (role and modules) is done
+  in Rust with `CurrentUser::can`, the same code as the API, not repeated in SQL.
+- **Outbound policy (ADR 0048).** The pass only queues mail in `core.mail_outbox`, like every other system mail;
+  what happens to it is decided where the outbox is emptied: outside a live environment the worker's transport
+  is forced to files, so test and tutorial environments never send a real reminder. The item is claimed when the
+  mail is queued, not when it is delivered, so in such an environment the reminder exists as a file and is not
+  repeated.
+- **The mail.** In the recipient's `core.users.language` (the company's default when empty), in English, German,
+  Spanish, French and Dutch. Subject "To-do reminder: N items are due"; the body lists one line per item with
+  title, due today or "overdue since DATE" and, only when the recipient may read the linked record (the same
+  rule as the API), "about LABEL", and ends with a footer on how to switch reminders off in the app. Notes are
+  never included. A title is the owner's content, mailed to the owner (or to the person it was handed to).
+- **Worker.** The pass runs once per loop next to the other passes, errors are logged and do not stop the loop.
+  It is not part of the heartbeat (ADR 0052 records liveness of the loop, not per-pass results); a stopped
+  worker is announced by the heartbeat as before, and reminders resume when it runs again.
+- **Not done.** An overdue and due-today section on the page (the badge and the existing due-date display
+  carry it); a time of day for reminders (the digest goes out in the first pass of the day the item is due,
+  by database date).
+
 **Follow-ups.**
-- PR 2: done (see above).
-- PR 3: count badge on the shell, an overdue and due-today section, and a worker pass that claims
-  `reminded_at` idempotently and mails the recipient in their language, respecting the outbound policy and
-  a per-user opt-out.
+- PR 2 and PR 3: done (see above).
 - Later: company-wide sharing, comments on an item, an offline queue.

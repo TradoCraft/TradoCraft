@@ -8698,7 +8698,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get todoOpenLink => 'Ouvrir l’enregistrement lié';
 
   @override
-  String get todoRemoveLink => 'Supprimer le lien';
+  String get todoRemoveLink => 'Retirer le lien de mes tâches';
 
   @override
   String get recordNotFound =>
@@ -8715,4 +8715,7 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get todoForObjectEmpty =>
       'Aucune tâche ouverte pour cet enregistrement.';
+
+  @override
+  String get todoEmailReminders => 'Rappels par e-mail';
 }

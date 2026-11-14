@@ -8691,7 +8691,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get todoOpenLink => 'Abrir el registro vinculado';
 
   @override
-  String get todoRemoveLink => 'Quitar vínculo';
+  String get todoRemoveLink => 'Quitar el enlace de mis tareas';
 
   @override
   String get recordNotFound =>
@@ -8707,4 +8707,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get todoForObjectEmpty => 'No hay tareas abiertas para este registro.';
+
+  @override
+  String get todoEmailReminders => 'Recordatorios por correo';
 }

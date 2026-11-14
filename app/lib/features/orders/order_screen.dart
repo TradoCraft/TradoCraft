@@ -810,6 +810,8 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
                 message: _error!,
                 leaveTo: '/orders',
                 notFound: _missing,
+                todoKind: TodoLinkKind.order,
+                todoId: widget.id,
               ),
       );
     }

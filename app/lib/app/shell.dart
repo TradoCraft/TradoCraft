@@ -15,7 +15,9 @@ import 'shortcuts/key_hint.dart';
 import 'shortcuts/registry.dart';
 import 'worker_ui.dart';
 import 'workspace.dart';
+import '../features/todo/todo_badge.dart';
 import '../features/todo/todo_quick_add.dart';
+import '../features/todo/todo_repository.dart';
 import '../features/tutorial/targets.dart';
 import '../l10n/l10n.dart';
 import '../shared/app_icons.dart';
@@ -88,7 +90,11 @@ const _sectionArt = {
 Widget _destIcon(_Dest d) {
   final art = _sectionArt[d.path];
   // The label of the destination names it; the file name of the artwork must not add to it.
-  return art == null ? Icon(d.icon) : ExcludeSemantics(child: ModuleIcon(art));
+  final icon = art == null
+      ? Icon(d.icon)
+      : ExcludeSemantics(child: ModuleIcon(art));
+  // The to-do entry carries the number of open to-dos on the plate of the user.
+  return d.path == '/todo' ? TodoNavBadge(child: icon) : icon;
 }
 
 final _allDestinations = [
@@ -193,6 +199,8 @@ class AppShell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final wide = MediaQuery.sizeOf(context).width >= 800;
     final me = ref.watch(meProvider);
+    // Keeps the to-do badge fresh (only while signed in and holding todo.use).
+    ref.watch(todoBadgeSyncProvider);
     // Show the sections the user has rights for (all, while the user is still loading), so a
     // technician sees "My jobs" and not a row of tabs that answer "forbidden".
     final perms = me.value?.permissions;

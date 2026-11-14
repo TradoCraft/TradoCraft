@@ -8685,7 +8685,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get todoOpenLink => 'Gekoppeld record openen';
 
   @override
-  String get todoRemoveLink => 'Koppeling verwijderen';
+  String get todoRemoveLink => 'Koppeling uit mijn taken verwijderen';
 
   @override
   String get recordNotFound =>
@@ -8701,4 +8701,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get todoForObjectEmpty => 'Geen openstaande taken voor dit record.';
+
+  @override
+  String get todoEmailReminders => 'E-mailherinneringen';
 }

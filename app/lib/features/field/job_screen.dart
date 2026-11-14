@@ -254,6 +254,8 @@ class _JobScreenState extends ConsumerState<JobScreen> {
                 message: _error!,
                 leaveTo: '/jobs',
                 notFound: _missing,
+                todoKind: TodoLinkKind.job,
+                todoId: widget.id,
               )
             : const Center(child: CircularProgressIndicator()),
       );

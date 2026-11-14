@@ -2742,5 +2742,7 @@
   "todoForObject": "Aufgaben zu diesem Datensatz",
   "todoForObjectCount": "Aufgaben zu diesem Datensatz ({count} offen)",
   "@todoForObjectCount": {"placeholders": {"count": {"type": "int"}}},
-  "todoForObjectEmpty": "Keine offenen Aufgaben zu diesem Datensatz."
+  "todoForObjectEmpty": "Keine offenen Aufgaben zu diesem Datensatz.",
+  "todoEmailReminders": "E-Mail-Erinnerungen",
+  "todoRemoveLink": "Verknüpfung aus meinen To-dos entfernen"
 }

@@ -4084,5 +4084,7 @@
   "todoForObject": "To-dos for this record",
   "todoForObjectCount": "To-dos for this record ({count} open)",
   "@todoForObjectCount": {"placeholders": {"count": {"type": "int"}}},
-  "todoForObjectEmpty": "No open to-dos for this record."
+  "todoForObjectEmpty": "No open to-dos for this record.",
+  "todoEmailReminders": "E-mail reminders",
+  "todoRemoveLink": "Remove link from my to-dos"
 }

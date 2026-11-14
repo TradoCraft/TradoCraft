@@ -2742,5 +2742,7 @@
   "todoForObject": "Taken voor dit record",
   "todoForObjectCount": "Taken voor dit record ({count} open)",
   "@todoForObjectCount": {"placeholders": {"count": {"type": "int"}}},
-  "todoForObjectEmpty": "Geen openstaande taken voor dit record."
+  "todoForObjectEmpty": "Geen openstaande taken voor dit record.",
+  "todoEmailReminders": "E-mailherinneringen",
+  "todoRemoveLink": "Koppeling uit mijn taken verwijderen"
 }

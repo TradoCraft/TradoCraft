@@ -2742,5 +2742,7 @@
   "todoForObject": "Tâches de cet enregistrement",
   "todoForObjectCount": "Tâches de cet enregistrement ({count} ouvertes)",
   "@todoForObjectCount": {"placeholders": {"count": {"type": "int"}}},
-  "todoForObjectEmpty": "Aucune tâche ouverte pour cet enregistrement."
+  "todoForObjectEmpty": "Aucune tâche ouverte pour cet enregistrement.",
+  "todoEmailReminders": "Rappels par e-mail",
+  "todoRemoveLink": "Retirer le lien de mes tâches"
 }

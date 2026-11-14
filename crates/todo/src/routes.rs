@@ -106,7 +106,7 @@ const VISIBLE: &str = "i.company_id = $1 AND (i.owner_id = $2 OR i.assignee_id =
 /// Whether the viewer may read the record a link points at: the kind's read permission and, for
 /// jobs, the field module's own rule (a technician reads only the jobs they are assigned to).
 /// `readable_jobs` holds the job ids of the batch that passed that rule.
-fn link_readable(
+pub(crate) fn link_readable(
     user: &CurrentUser,
     kind: Option<TodoLinkKind>,
     id: Option<Uuid>,
@@ -134,7 +134,7 @@ async fn readable_jobs(
     readable_job_ids(conn, user, &ids).await
 }
 
-async fn readable_job_ids(
+pub(crate) async fn readable_job_ids(
     conn: &mut PgConnection,
     user: &CurrentUser,
     ids: &[Uuid],
@@ -556,11 +556,11 @@ pub struct TodoQuery {
 
 #[derive(Debug, Serialize, FromRow, ToSchema)]
 pub struct TodoCounts {
-    /// Open items on my plate, sub-items included.
+    /// Open root items on my plate (the list the page shows by default); sub-items are not counted.
     pub open: i64,
-    /// Open items on my plate that were due before today.
+    /// Open root items on my plate that were due before today (the database date).
     pub overdue: i64,
-    /// Open items on my plate that are due today.
+    /// Open root items on my plate that are due today.
     pub due_today: i64,
 }
 
@@ -572,6 +572,7 @@ pub fn router() -> OpenApiRouter<AppState> {
     OpenApiRouter::new()
         .routes(routes!(list_items, create_item))
         .routes(routes!(counts))
+        .routes(routes!(get_settings, put_settings))
         .routes(routes!(reorder))
         .routes(routes!(update_item, delete_item))
         .routes(routes!(complete_item))
@@ -631,7 +632,7 @@ async fn counts(State(state): State<AppState>, user: CurrentUser) -> AppResult<J
                 count(*) FILTER (WHERE due_date < CURRENT_DATE) AS overdue,
                 count(*) FILTER (WHERE due_date = CURRENT_DATE) AS due_today
          FROM todo.items
-         WHERE company_id = $1 AND NOT done
+         WHERE company_id = $1 AND NOT done AND parent_id IS NULL
            AND (assignee_id = $2 OR (owner_id = $2 AND assignee_id IS NULL))",
     )
     .bind(user.company_id)
@@ -639,6 +640,97 @@ async fn counts(State(state): State<AppState>, user: CurrentUser) -> AppResult<J
     .fetch_one(&state.db)
     .await?;
     Ok(Json(counts))
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct TodoSettings {
+    /// Whether a digest mail is sent when items are due or overdue. On by default.
+    pub email_reminders: bool,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct TodoSettingsInput {
+    pub email_reminders: bool,
+}
+
+async fn email_reminders(
+    conn: &mut PgConnection,
+    user: &CurrentUser,
+) -> Result<Option<bool>, sqlx::Error> {
+    sqlx::query_scalar(
+        "SELECT email_reminders FROM todo.user_settings WHERE user_id = $1 AND company_id = $2",
+    )
+    .bind(user.user_id)
+    .bind(user.company_id)
+    .fetch_optional(conn)
+    .await
+}
+
+#[utoipa::path(get, path = "/todo/settings", tag = "todo", operation_id = "todo_settings_get",
+    responses((status = 200, body = TodoSettings), (status = 403, body = ErrorBody)))]
+async fn get_settings(
+    State(state): State<AppState>,
+    user: CurrentUser,
+) -> AppResult<Json<TodoSettings>> {
+    user.require(Permission::TodoUse)?;
+    let mut conn = state.db.acquire().await?;
+    let on = email_reminders(&mut conn, &user).await?.unwrap_or(true);
+    Ok(Json(TodoSettings {
+        email_reminders: on,
+    }))
+}
+
+#[utoipa::path(put, path = "/todo/settings", tag = "todo", operation_id = "todo_settings_put",
+    request_body = TodoSettingsInput,
+    responses((status = 200, body = TodoSettings), (status = 403, body = ErrorBody)))]
+async fn put_settings(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Json(input): Json<TodoSettingsInput>,
+) -> AppResult<Json<TodoSettings>> {
+    user.require(Permission::TodoUse)?;
+    let mut tx = state.db.begin().await?;
+    // Serialise concurrent changes of the same row; the audit row says only the boolean.
+    sqlx::query(
+        "INSERT INTO todo.user_settings (user_id, company_id) VALUES ($1, $2)
+         ON CONFLICT (user_id, company_id) DO NOTHING",
+    )
+    .bind(user.user_id)
+    .bind(user.company_id)
+    .execute(&mut *tx)
+    .await?;
+    let old: bool = sqlx::query_scalar(
+        "SELECT email_reminders FROM todo.user_settings
+         WHERE user_id = $1 AND company_id = $2 FOR UPDATE",
+    )
+    .bind(user.user_id)
+    .bind(user.company_id)
+    .fetch_one(&mut *tx)
+    .await?;
+    if old != input.email_reminders {
+        sqlx::query(
+            "UPDATE todo.user_settings SET email_reminders = $3, updated_at = now()
+             WHERE user_id = $1 AND company_id = $2",
+        )
+        .bind(user.user_id)
+        .bind(user.company_id)
+        .bind(input.email_reminders)
+        .execute(&mut *tx)
+        .await?;
+        audit::record(
+            &mut tx,
+            &user,
+            "todo_settings",
+            user.user_id,
+            "updated",
+            serde_json::json!({ "email_reminders": input.email_reminders }),
+        )
+        .await?;
+    }
+    tx.commit().await?;
+    Ok(Json(TodoSettings {
+        email_reminders: input.email_reminders,
+    }))
 }
 
 #[utoipa::path(post, path = "/todo/items", tag = "todo", operation_id = "todo_create",
@@ -941,7 +1033,8 @@ async fn update_item(
     sqlx::query(
         "UPDATE todo.items SET title = $2, notes = $3, due_date = $4, position = $5,
                 parent_id = $6, assignee_id = $7, link_kind = $8, link_id = $9, link_label = $10,
-                link_location = $11, updated_at = now()
+                link_location = $11, updated_at = now(),
+                reminded_at = CASE WHEN due_date IS DISTINCT FROM $4 THEN NULL ELSE reminded_at END
          WHERE id = $1",
     )
     .bind(id)

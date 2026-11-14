@@ -2,7 +2,9 @@
 //! same company, two levels deep, optionally linked to the record the user was working on.
 
 mod link;
+mod reminders;
 mod routes;
 
 pub use link::TodoLinkKind;
+pub use reminders::send_due_reminders;
 pub use routes::{router, TodoScope};

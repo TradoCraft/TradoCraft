@@ -8706,7 +8706,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get todoOpenLink => 'Verknüpften Datensatz öffnen';
 
   @override
-  String get todoRemoveLink => 'Verknüpfung entfernen';
+  String get todoRemoveLink => 'Verknüpfung aus meinen To-dos entfernen';
 
   @override
   String get recordNotFound =>
@@ -8723,4 +8723,7 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get todoForObjectEmpty =>
       'Keine offenen Aufgaben zu diesem Datensatz.';
+
+  @override
+  String get todoEmailReminders => 'E-Mail-Erinnerungen';
 }

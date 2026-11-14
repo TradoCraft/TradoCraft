@@ -25687,6 +25687,74 @@
         }
       }
     },
+    "/api/v1/todo/settings": {
+      "get": {
+        "tags": [
+          "todo"
+        ],
+        "operationId": "todo_settings_get",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TodoSettings"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "todo"
+        ],
+        "operationId": "todo_settings_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TodoSettingsInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TodoSettings"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/users": {
       "get": {
         "tags": [
@@ -43897,17 +43965,17 @@
           "due_today": {
             "type": "integer",
             "format": "int64",
-            "description": "Open items on my plate that are due today."
+            "description": "Open root items on my plate that are due today."
           },
           "open": {
             "type": "integer",
             "format": "int64",
-            "description": "Open items on my plate, sub-items included."
+            "description": "Open root items on my plate (the list the page shows by default); sub-items are not counted."
           },
           "overdue": {
             "type": "integer",
             "format": "int64",
-            "description": "Open items on my plate that were due before today."
+            "description": "Open root items on my plate that were due before today (the database date)."
           }
         }
       },
@@ -44275,6 +44343,29 @@
           "assigned",
           "all-mine"
         ]
+      },
+      "TodoSettings": {
+        "type": "object",
+        "required": [
+          "email_reminders"
+        ],
+        "properties": {
+          "email_reminders": {
+            "type": "boolean",
+            "description": "Whether a digest mail is sent when items are due or overdue. On by default."
+          }
+        }
+      },
+      "TodoSettingsInput": {
+        "type": "object",
+        "required": [
+          "email_reminders"
+        ],
+        "properties": {
+          "email_reminders": {
+            "type": "boolean"
+          }
+        }
       },
       "TokenTestResult": {
         "type": "object",
