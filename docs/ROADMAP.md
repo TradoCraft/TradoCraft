@@ -40,6 +40,7 @@ Module overview: [ARCHITECTURE.md](ARCHITECTURE.md).
 | D7 Restrict CORS to configured origins | Open |
 | D8 Draft autosave | Open |
 | D9 Two-factor authentication | Open |
+| D10 Data import framework (CSV, XLSX, ODS, Parquet) | Open (extends ADR 0029) |
 
 ## Sequencing
 
@@ -214,6 +215,30 @@ production.
   code, single-use recovery codes, an administrator policy (off, optional, required per role) and a
   reset by an administrator that is audited (D6).
 - Passkeys (WebAuthn) as a later second factor; the customer portal can opt in separately.
+
+**D10 Data import framework** (large)
+- Today only customers and products import, from CSV ([ADR 0029](adr/0029-csv-export-import.md)), with
+  the code duplicated per entity in `crates/crm/src/csv.rs` and `crates/products/src/csv.rs`.
+  Build one importer in `core` that other crates plug into with a small trait (columns, validation,
+  upsert key, write).
+- File formats behind one reader interface that yields rows of typed cells: CSV (existing), XLSX,
+  ODS and Parquet. XLSX and ODS: first sheet by default with a sheet picker, cell values read as
+  stored (dates, numbers) instead of display text, formulas read as their cached value, macros
+  ignored, and size limits checked before unpacking (zip bombs). Parquet: columnar types mapped to
+  the same cell types, read in row batches. Choose the crates in the ADR (candidates: `calamine`
+  for XLSX and ODS, `parquet`/`arrow` for Parquet).
+- Admin screen: upload, choose entity and sheet, map file columns to fields (remembered per entity as a
+  saved mapping), dry run with the per-row error report, then apply. Keep the ADR 0029 rules:
+  everything validates first, any error means nothing is written, one transaction, one audit event per
+  record with the source, upsert by code, nothing is deleted.
+- Larger files than the 5 MB / 20 000 row CSV limit: a background import job through the worker with
+  progress and a downloadable error report, instead of one request.
+- More entities, in order of onboarding value: contacts, suppliers (after B2), stock opening
+  balances through the stock ledger ([ADR 0019](adr/0019-inventory-stock-ledger.md)), open sales
+  orders and quotations, and helpdesk tickets from another system. Export gets the same formats
+  (XLSX and ODS) so a round trip works.
+- Permission `<entity>.write` per entity plus an administrator right for saved mappings and
+  background jobs.
 
 ## Working in parallel
 
