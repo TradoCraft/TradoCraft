@@ -1,4 +1,4 @@
-//! Work centres, routings and operations (ADR 0060): work centres with their hours and closures,
+//! Work centres, routings and operations (ADR 0062): work centres with their hours and closures,
 //! the routing on a BOM revision, the operations a production order snapshots from it, capacity,
 //! auto-release of subassemblies and the cost roll-up.
 
@@ -679,7 +679,7 @@ async fn work_centres_and_closures_stay_within_their_company(db: PgPool) {
     assert_eq!(ours[0]["name"], "Work centre CNC1");
 }
 
-// ---- Routings on the BOM (ADR 0060) ----
+// ---- Routings on the BOM (ADR 0062) ----
 
 const FRAME: &str = "00000000-0000-7000-8000-000000000307"; // manufactured, active BOM revision 1
 const FRAME_BOM: &str = "00000000-0000-7000-8000-000000000502";
@@ -1111,7 +1111,7 @@ async fn routings_are_off_with_the_production_module(db: PgPool) {
     assert_eq!(copied, 1);
 }
 
-// ---- Operations on production orders (ADR 0060) ----
+// ---- Operations on production orders (ADR 0062) ----
 
 const ALPHA: &str = "00000000-0000-7000-8000-000000000401";
 const PROFILE: &str = "00000000-0000-7000-8000-000000000308";
@@ -2009,7 +2009,7 @@ async fn operations_stay_within_their_company(db: PgPool) {
     );
 }
 
-// ---- Capacity (ADR 0060) ----
+// ---- Capacity (ADR 0062) ----
 
 /// The days of a capacity answer for one work centre as (date, available, load, overloaded).
 fn capacity_days(cap: &Value, code: &str) -> Vec<(String, i64, i64, bool)> {
@@ -2347,7 +2347,7 @@ async fn capacity_stays_within_the_company(db: PgPool) {
     assert_eq!(cap["centres"], json!([]));
 }
 
-// ---- Multi-level auto-release (ADR 0060) ----
+// ---- Multi-level auto-release (ADR 0062) ----
 
 const UNIT_100: &str = "00000000-0000-7000-8000-000000000301"; // serial; frame, 2 pumps, controller, 8 bolts
 
@@ -2756,7 +2756,7 @@ async fn building_a_component_can_release_its_own_subassemblies(db: PgPool) {
     assert_eq!(e.production_orders().await["total"], 3);
 }
 
-// ---- Cost roll-up and order costs (ADR 0060) ----
+// ---- Cost roll-up and order costs (ADR 0062) ----
 
 const PUMP: &str = "00000000-0000-7000-8000-000000000303"; // serial, bought
 const CTRL: &str = "00000000-0000-7000-8000-000000000310"; // serial, bought
@@ -3103,7 +3103,7 @@ async fn an_order_says_when_a_cost_is_missing(db: PgPool) {
     assert_eq!(c.1, q("0"));
 }
 
-// ---- The traveller PDF (ADR 0060) ----
+// ---- The traveller PDF (ADR 0062) ----
 
 async fn pdf(
     e: &Env,
@@ -3375,7 +3375,7 @@ async fn the_traveller_of_another_company_is_not_found(db: PgPool) {
     );
 }
 
-// ---- The API contract (ADR 0060) ----
+// ---- The API contract (ADR 0062) ----
 
 #[test]
 fn the_new_endpoints_are_in_the_api_contract_without_name_clashes() {
@@ -3465,7 +3465,7 @@ fn the_new_endpoints_are_in_the_api_contract_without_name_clashes() {
     }
 }
 
-// ---- Review follow-ups (ADR 0060) ----
+// ---- Review follow-ups (ADR 0062) ----
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
 async fn work_spread_from_before_the_period_respects_closures_before_it(db: PgPool) {

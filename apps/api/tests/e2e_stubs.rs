@@ -1,5 +1,5 @@
 //! Boundaries of modules that do not exist yet: quality, finance and profitability reporting (and
-//! the automatic purchase of shortfalls). Production exists (ADR 0036, 0060) but has no endpoint called
+//! the automatic purchase of shortfalls). Production exists (ADR 0036, 0062) but has no endpoint called
 //! a work order. Each stub asserts only what is honestly observable today (the
 //! endpoints are absent, state does not advance, no such data appears) and says what concrete
 //! step replaces it when the module ships.
@@ -141,7 +141,7 @@ async fn purchasing_stub_a_shortfall_creates_no_purchase(db: PgPool) {
 
 /// Production ships (ADR 0036, tests/production.rs): a confirmed order does not advance by itself,
 /// a planner releases it, and building it makes it ready for shipping. Routings and operations
-/// (C1b, ADR 0060, tests/production_routing.rs) are optional on top of that and live under other paths:
+/// (C1b, ADR 0062, tests/production_routing.rs) are optional on top of that and live under other paths:
 /// there is still no `/work-orders` or `/production/orders`.
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
 async fn production_a_confirmed_order_is_built_before_it_is_ready_for_shipping(db: PgPool) {

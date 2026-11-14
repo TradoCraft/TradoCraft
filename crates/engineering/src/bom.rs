@@ -442,7 +442,7 @@ async fn create_bom(
         .bind(src)
         .execute(&mut *tx)
         .await?;
-        // The routing (ADR 0060) is part of a revision just as the lines are, so the new draft
+        // The routing (ADR 0062) is part of a revision just as the lines are, so the new draft
         // starts with the one of the revision it was copied from, in the same transaction.
         // This is a deliberate exception to the layering: production depends on engineering, so
         // engineering cannot call it, and a revision that silently lost its routing when it was

@@ -5,7 +5,7 @@
 //! (backflush) and puts the output into stock. The sales order follows: `in_planning`, `planned`,
 //! `in_production`, `ready_for_shipping`, with a promised date.
 //!
-//! Work centres, routings and operations (ADR 0060) say where and how it is built: a routing on a
+//! Work centres, routings and operations (ADR 0062) say where and how it is built: a routing on a
 //! BOM revision is frozen onto the production order as operations, scheduled on the work centres'
 //! calendars, finished with the minutes worked, and shown against capacity.
 

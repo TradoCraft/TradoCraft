@@ -1,5 +1,5 @@
 //! The routing of a BOM revision: the operations that build the product, in order, each on a
-//! work centre (ADR 0060). It is edited while the BOM revision is a draft and frozen with it; a
+//! work centre (ADR 0062). It is edited while the BOM revision is a draft and frozen with it; a
 //! new revision starts from a copy (`engineering::bom::create_bom`). A production order
 //! snapshots it at release.
 

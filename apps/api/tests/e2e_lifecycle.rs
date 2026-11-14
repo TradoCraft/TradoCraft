@@ -611,7 +611,7 @@ async fn step_assert_confirmation_email(app: &axum::Router, db: &PgPool, flow: &
 }
 
 async fn step_stub_production_planning(app: &axum::Router, flow: &E2eFlow) {
-    // Boundary: production exists (ADR 0036, 0060, driven in tests/production.rs and
+    // Boundary: production exists (ADR 0036, 0062, driven in tests/production.rs and
     // tests/production_routing.rs) but is manual: a planner releases a confirmed order. Nobody
     // does in this flow, so the order stays confirmed.
     let (status, o) = call(

@@ -1,4 +1,4 @@
-//! Operations of a production order (ADR 0060): the routing as it was at release, scheduled on
+//! Operations of a production order (ADR 0062): the routing as it was at release, scheduled on
 //! the work centres' calendars, started and finished on the shop floor with the total minutes
 //! worked, and closed when the order is completed. Labour is a completion total per operation
 //! and who finished it, not time entries per person.
