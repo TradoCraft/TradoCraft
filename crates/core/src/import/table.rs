@@ -20,6 +20,10 @@ pub struct Table {
     /// holds an error. The importers check the other rows anyway and report these together with
     /// their own errors.
     pub width_errors: Vec<RowError>,
+    /// How many rows `width_errors` stands for (a row with several error cells is one row).
+    pub failed_rows: usize,
+    /// The reader stopped listing errors; there are more than `width_errors` holds.
+    pub errors_truncated: bool,
 }
 
 impl Table {
@@ -96,6 +100,7 @@ pub fn bind(
     let columns: Vec<String> = fields.iter().flatten().cloned().collect();
     let mut rows = Vec::with_capacity(raw.rows.len());
     let mut width_errors = raw.errors;
+    let mut failed_rows = raw.failed_rows;
     for r in raw.rows {
         let wrong_width = r.cells.len() < width || r.cells[width..].iter().any(|c| !c.is_blank());
         if wrong_width {
@@ -107,6 +112,7 @@ pub fn bind(
                     width
                 ),
             ));
+            failed_rows += 1;
             continue;
         }
         let mut cells = HashMap::new();
@@ -131,6 +137,8 @@ pub fn bind(
         columns,
         rows,
         width_errors,
+        failed_rows,
+        errors_truncated: raw.errors_truncated,
     })
 }
 
@@ -470,7 +478,7 @@ mod tests {
                 .into_iter()
                 .map(|(row, cells)| RawRow { row, cells })
                 .collect(),
-            errors: vec![],
+            ..Default::default()
         }
     }
 

@@ -14,7 +14,7 @@ use chrono::{NaiveDate, NaiveDateTime};
 use quick_xml::events::{BytesStart, Event};
 use zip::ZipArchive;
 
-use crate::csv_io::{format_error, limit_error, RowError};
+use crate::csv_io::{format_error, limit_error, RowError, MAX_REPORTED_ERRORS};
 use crate::import::{CellValue, Limits, RawRow, RawTable};
 
 /// Which spreadsheet format to read.
@@ -142,6 +142,16 @@ struct SheetRow {
     cells: Vec<(usize, Result<CellValue, String>)>,
 }
 
+/// Keeps `error` unless [`MAX_REPORTED_ERRORS`] are kept already; then only notes that some were
+/// left out.
+fn record(errors: &mut Vec<RowError>, truncated: &mut bool, error: RowError) {
+    if errors.len() < MAX_REPORTED_ERRORS {
+        errors.push(error);
+    } else {
+        *truncated = true;
+    }
+}
+
 /// Turns sheet rows into a [`RawTable`] and enforces the limits as the rows arrive. The header is
 /// the first row with a cell; its first cell's column starts the table. Fully empty rows are
 /// skipped.
@@ -151,6 +161,11 @@ struct Builder<'a> {
     first_col: usize,
     rows: Vec<RawRow>,
     errors: Vec<RowError>,
+    errors_truncated: bool,
+    /// Data rows seen, the ones with an error cell included.
+    data_rows: usize,
+    failed_rows: usize,
+    /// Cells of the data rows (the header is not counted), the failed rows included.
     total_cells: usize,
 }
 
@@ -162,6 +177,9 @@ impl<'a> Builder<'a> {
             first_col: 0,
             rows: Vec::new(),
             errors: Vec::new(),
+            errors_truncated: false,
+            data_rows: 0,
+            failed_rows: 0,
             total_cells: 0,
         }
     }
@@ -222,7 +240,6 @@ impl<'a> Builder<'a> {
         if !errors.is_empty() {
             return Err(errors);
         }
-        self.total_cells += names.len();
         self.first_col = first;
         self.header = Some((row, names));
         Ok(())
@@ -247,22 +264,42 @@ impl<'a> Builder<'a> {
                 ),
             )]);
         }
-        if self.rows.len() >= self.limits.rows {
+        // A row counts against the limits whether or not it can be used.
+        if self.data_rows >= self.limits.rows {
             return Err(vec![limit_error(
                 1,
                 format!("too many rows: at most {} are accepted", self.limits.rows),
+            )]);
+        }
+        self.data_rows += 1;
+        self.total_cells += width.max(if last >= self.first_col {
+            last - self.first_col + 1
+        } else {
+            0
+        });
+        if self.total_cells > self.limits.total_cells {
+            return Err(vec![limit_error(
+                1,
+                format!(
+                    "too many cells: at most {} are accepted",
+                    self.limits.total_cells
+                ),
             )]);
         }
         let mut dense: Vec<CellValue> = Vec::new();
         let mut failed = false;
         for (col, value) in cells {
             if col < self.first_col {
-                self.errors.push(RowError {
-                    row,
-                    column: None,
-                    message: "a value to the left of the first header column".into(),
-                    limit: false,
-                });
+                record(
+                    &mut self.errors,
+                    &mut self.errors_truncated,
+                    RowError {
+                        row,
+                        column: None,
+                        message: "a value to the left of the first header column".into(),
+                        limit: false,
+                    },
+                );
                 failed = true;
                 continue;
             }
@@ -281,31 +318,26 @@ impl<'a> Builder<'a> {
                         .filter(|n| !n.is_empty())
                         .map(str::to_string)
                         .unwrap_or_else(|| column_letters(col));
-                    self.errors.push(RowError {
-                        row,
-                        column: Some(column),
-                        message,
-                        limit: false,
-                    });
+                    record(
+                        &mut self.errors,
+                        &mut self.errors_truncated,
+                        RowError {
+                            row,
+                            column: Some(column),
+                            message,
+                            limit: false,
+                        },
+                    );
                     failed = true;
                 }
             }
         }
         if failed {
+            self.failed_rows += 1;
             return Ok(());
         }
         if dense.len() < width {
             dense.resize(width, CellValue::Empty);
-        }
-        self.total_cells += dense.len();
-        if self.total_cells > self.limits.total_cells {
-            return Err(vec![limit_error(
-                1,
-                format!(
-                    "too many cells: at most {} are accepted",
-                    self.limits.total_cells
-                ),
-            )]);
         }
         self.rows.push(RawRow { row, cells: dense });
         Ok(())
@@ -321,6 +353,8 @@ impl<'a> Builder<'a> {
             header,
             rows: self.rows,
             errors: self.errors,
+            failed_rows: self.failed_rows,
+            errors_truncated: self.errors_truncated,
         })
     }
 }
@@ -520,13 +554,9 @@ fn cell_attrs(e: &BytesStart<'_>) -> Result<CellAttrs, Vec<RowError>> {
         let a = a.map_err(|_| fatal("the file has a malformed attribute"))?;
         match a.key.as_ref() {
             "table:number-columns-repeated" => {
-                out.repeat = a.value
-                    .trim()
-                    .parse::<u64>()
-                    .ok()
-                    .ok_or_else(|| {
-                        fatal("the file has an invalid table:number-columns-repeated value")
-                    })?;
+                out.repeat = a.value.trim().parse::<u64>().ok().ok_or_else(|| {
+                    fatal("the file has an invalid table:number-columns-repeated value")
+                })?;
             }
             "office:value"
             | "office:date-value"
@@ -558,8 +588,8 @@ fn scan_ods_content(
     let mut reader = quick_xml::Reader::from_reader(BufReader::new(input));
     let mut buf = Vec::new();
     let mut depth = 0u32; // nesting of table:table
-    // Current table: the row cursor, the used rectangle (rows `first_row..end_row`, columns
-    // `first_col..end_col`, both counted from the sheet origin).
+                          // Current table: the row cursor, the used rectangle (rows `first_row..end_row`, columns
+                          // `first_col..end_col`, both counted from the sheet origin).
     let (mut cursor, mut first_row, mut end_row) = (0u64, None::<u64>, 0u64);
     let (mut first_col, mut end_col) = (u64::MAX, 0u64);
     // Current row: its repeat count, the column cursor, the first and last stored column.
@@ -573,6 +603,8 @@ fn scan_ods_content(
     let mut table_name = String::new();
     let mut error_cells: std::collections::HashMap<String, Vec<ErrorCells>> = Default::default();
     let mut errors_seen = 0usize;
+    // The limit counts the data rows; the header row is allowed on top.
+    let allowed_cells = (limits.total_cells + limits.cells_per_row) as u128;
     let too_many_cells = || {
         over_limit(format!(
             "too many cells: at most {} are accepted in the workbook's sheets together",
@@ -690,7 +722,7 @@ fn scan_ods_content(
                                 limits.cells_per_row
                             )));
                         }
-                        if stored > limits.total_cells as u128 {
+                        if stored > allowed_cells {
                             return Err(too_many_cells());
                         }
                         // The header is a row too; a repeated row is one element but many rows.
@@ -710,7 +742,7 @@ fn scan_ods_content(
                             dense += u128::from(end_row - first)
                                 * u128::from(end_col.saturating_sub(first_col));
                         }
-                        if dense > limits.total_cells as u128 {
+                        if dense > allowed_cells {
                             return Err(too_many_cells());
                         }
                     }
@@ -799,7 +831,10 @@ mod scan_tests {
     #[test]
     fn a_huge_space_run_in_a_text_is_refused() {
         let cell = r#"<table:table-cell office:value-type="string"><text:p>a<text:s text:c="4000000000"/></text:p></table:table-cell>"#;
-        let e = scan(&sheet(&format!("<table:table-row>{cell}</table:table-row>"))).unwrap_err();
+        let e = scan(&sheet(&format!(
+            "<table:table-row>{cell}</table:table-row>"
+        )))
+        .unwrap_err();
         assert!(e.contains("too much text"), "{e}");
     }
 

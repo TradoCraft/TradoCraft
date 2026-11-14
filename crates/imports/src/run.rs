@@ -240,7 +240,7 @@ async fn execute(
         }
     };
 
-    let total_rows = table.rows.len() + table.width_errors.len();
+    let total_rows = table.rows.len() + table.failed_rows;
     sqlx::query(
         "UPDATE core.import_jobs SET phase = 'validating', total_rows = $2, processed_rows = 0,
                 heartbeat_at = now() WHERE id = $1",

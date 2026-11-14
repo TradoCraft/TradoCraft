@@ -26,7 +26,10 @@ fn finish_record(
             format!("too many rows: at most {} are accepted", limits.rows),
         ));
     }
-    *cells += record.len();
+    // The header is not counted: a file of `rows` x `cells_per_row` is within the limits.
+    if !records.is_empty() {
+        *cells += record.len();
+    }
     if *cells > limits.total_cells {
         return Err(limit_error(
             1,
@@ -154,6 +157,26 @@ pub fn read(body: &[u8], limits: &Limits) -> Result<RawTable, Vec<RowError>> {
         header_row,
         header,
         rows,
-        errors: Vec::new(),
+        ..Default::default()
     })
+}
+
+#[cfg(test)]
+mod limit_tests {
+    use super::*;
+
+    #[test]
+    fn a_file_exactly_at_the_row_and_column_limits_is_read() {
+        let limits = Limits::request();
+        let header = vec!["c"; limits.cells_per_row].join(",");
+        let row = vec!["x"; limits.cells_per_row].join(",");
+        let mut body = format!("{header}\n");
+        for _ in 0..limits.rows {
+            body.push_str(&row);
+            body.push('\n');
+        }
+        let t = read(body.as_bytes(), &limits).unwrap();
+        assert_eq!(t.rows.len(), limits.rows);
+        assert_eq!(t.header.len(), limits.cells_per_row);
+    }
 }

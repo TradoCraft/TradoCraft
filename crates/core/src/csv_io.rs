@@ -98,6 +98,10 @@ pub fn download(filename: &str, body: String) -> (HeaderMap, String) {
 // Report
 // ---------------------------------------------------------------------------------------------
 
+/// How many problems an import reports; the rest are left out and the report says so
+/// ([`ImportReport::planned`]).
+pub const MAX_REPORTED_ERRORS: usize = 1_000;
+
 /// One problem in an import file.
 #[derive(Debug, Clone, Serialize, ToSchema, PartialEq, Eq)]
 pub struct RowError {
@@ -127,14 +131,29 @@ impl ImportReport {
     /// The report of a planned import: the counts are filled in by the caller. `width_errors` (rows
     /// the parser could not use) and `plan_errors` (found while checking the other rows) are
     /// combined in file order.
+    ///
+    /// At most [`MAX_REPORTED_ERRORS`] errors are listed (the first in file order); when there are
+    /// more, or `more` says the reader or the planner stopped listing, a last error without a
+    /// column says that others exist.
     pub fn planned(
         unchanged: usize,
         width_errors: &[RowError],
         plan_errors: Vec<RowError>,
+        more: bool,
     ) -> Self {
         let mut errors = width_errors.to_vec();
         errors.extend(plan_errors);
         errors.sort_by_key(|e| e.row);
+        if errors.len() > MAX_REPORTED_ERRORS || more {
+            errors.truncate(MAX_REPORTED_ERRORS);
+            let row = errors.last().map_or(1, |e| e.row);
+            errors.push(format_error(
+                row,
+                format!(
+                    "more problems were found than are listed: only the first {MAX_REPORTED_ERRORS} are shown, fix these and run again"
+                ),
+            ));
+        }
         ImportReport {
             unchanged,
             errors,

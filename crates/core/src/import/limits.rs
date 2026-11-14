@@ -14,7 +14,8 @@ pub struct Limits {
     pub rows: usize,
     /// Cells in one row, the header included.
     pub cells_per_row: usize,
-    /// Cells in the whole sheet.
+    /// Cells of the data rows of the sheet (the header is not counted, so a file of `rows` x
+    /// `cells_per_row` is within the limits).
     pub total_cells: usize,
     /// Sum of the uncompressed sizes an archive declares (XLSX and ODS only).
     pub unpacked_bytes: u64,

@@ -361,7 +361,7 @@ async fn preview_file(
         sheet,
         header_row: raw.header_row,
         columns: raw.header,
-        row_count: raw.rows.len() + raw.errors.len(),
+        row_count: raw.rows.len() + raw.failed_rows,
         rows: raw
             .rows
             .iter()

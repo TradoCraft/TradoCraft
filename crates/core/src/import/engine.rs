@@ -86,6 +86,8 @@ struct Plan<E: Importable> {
     actions: Vec<Action<E>>,
     unchanged: usize,
     errors: Vec<RowError>,
+    /// Planning stopped at [`csv_io::MAX_REPORTED_ERRORS`] errors; later rows were not checked.
+    stopped: bool,
 }
 
 /// Checks every row against the database and decides what each one would do.
@@ -109,12 +111,20 @@ async fn plan<E: Importable>(
         actions: Vec::new(),
         unchanged: 0,
         errors: Vec::new(),
+        stopped: false,
     };
     let mut seen: HashMap<String, usize> = HashMap::new();
     let total = table.rows.len();
     for (n, row) in table.rows.iter().enumerate() {
         plan_one::<E>(conn, user, &mut context, &stored, &mut seen, row, &mut plan).await?;
         tick(progress, Phase::Validating, n + 1, total);
+        // A file this wrong is refused whatever else is in it; do not keep collecting.
+        if plan.errors.len() + table.width_errors.len() >= csv_io::MAX_REPORTED_ERRORS
+            && n + 1 < total
+        {
+            plan.stopped = true;
+            break;
+        }
     }
     Ok(plan)
 }
@@ -188,7 +198,8 @@ async fn attempt<E: Importable>(
 ) -> AppResult<ImportReport> {
     let mut tx = pool.begin().await?;
     let plan = plan::<E>(&mut tx, user, table, options.progress).await?;
-    let mut report = ImportReport::planned(plan.unchanged, &table.width_errors, plan.errors);
+    let more = plan.stopped || table.errors_truncated;
+    let mut report = ImportReport::planned(plan.unchanged, &table.width_errors, plan.errors, more);
     for a in &plan.actions {
         match a {
             Action::Create { .. } => report.created += 1,

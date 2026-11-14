@@ -913,7 +913,7 @@ fn small() -> Limits {
     Limits {
         rows: 3,
         cells_per_row: 4,
-        total_cells: 14,
+        total_cells: 11,
         ..Limits::request()
     }
 }
@@ -930,7 +930,7 @@ fn grid(format: Format, rows: usize, cols: usize) -> Vec<u8> {
 #[test]
 fn row_cell_and_total_limits_stop_every_format() {
     for format in [Format::Csv, Format::Xlsx, Format::Ods] {
-        // 3 rows x 4 cells + header = 16 cells; the limit is 14 in total.
+        // 3 rows x 4 cells = 12 data cells; the limit is 11 (the header is not counted).
         assert!(
             read_raw(&grid(format, 3, 3), None, &small()).is_ok(),
             "{format:?}"
@@ -1081,6 +1081,73 @@ fn xlsx_cells_out_of_column_order_are_a_clean_error() {
         inline("B2", "y"),
     );
     assert_eq!(raw(&xlsx_with_sheet_data(&ok)).rows.len(), 1);
+}
+
+fn error_cell(r: &str) -> String {
+    format!(r#"<c r="{r}" t="e"><v>#N/A</v></c>"#)
+}
+
+#[test]
+fn rows_with_error_cells_count_against_the_limits() {
+    let header = format!(
+        r#"<row r="1">{}{}</row>"#,
+        inline("A1", "a"),
+        inline("B1", "b")
+    );
+    let rows: String = (2..=5)
+        .map(|r| format!(r#"<row r="{r}">{}</row>"#, error_cell(&format!("A{r}"))))
+        .collect();
+    let e = raw_err(&xlsx_with_sheet_data(&(header + &rows)), None, &small());
+    assert!(e[0].message.contains("too many rows"), "{e:?}");
+}
+
+#[test]
+fn the_error_list_of_a_sheet_is_capped_and_rows_are_counted_once() {
+    let header = format!(
+        r#"<row r="1">{}{}{}</row>"#,
+        inline("A1", "a"),
+        inline("B1", "b"),
+        inline("C1", "c")
+    );
+    // Three error cells in each of 1 500 rows.
+    let rows: String = (2..=1501)
+        .map(|r| {
+            format!(
+                r#"<row r="{r}">{}{}{}</row>"#,
+                error_cell(&format!("A{r}")),
+                error_cell(&format!("B{r}")),
+                error_cell(&format!("C{r}"))
+            )
+        })
+        .collect();
+    let t = raw(&xlsx_with_sheet_data(&(header + &rows)));
+    assert_eq!(t.errors.len(), crate::csv_io::MAX_REPORTED_ERRORS);
+    assert!(t.errors_truncated);
+    assert_eq!(t.failed_rows, 1500);
+    assert!(t.rows.is_empty());
+}
+
+#[test]
+fn a_report_lists_at_most_the_cap_and_says_so() {
+    let many: Vec<RowError> = (0..crate::csv_io::MAX_REPORTED_ERRORS + 5)
+        .map(|i| crate::csv_io::format_error(i + 2, "bad"))
+        .collect();
+    let r = crate::csv_io::ImportReport::planned(0, &[], many, false);
+    assert_eq!(r.errors.len(), crate::csv_io::MAX_REPORTED_ERRORS + 1);
+    assert!(r.errors.last().unwrap().message.contains("more problems"));
+    let few = vec![crate::csv_io::format_error(2, "bad")];
+    assert_eq!(
+        crate::csv_io::ImportReport::planned(0, &[], few.clone(), false)
+            .errors
+            .len(),
+        1
+    );
+    assert_eq!(
+        crate::csv_io::ImportReport::planned(0, &[], few, true)
+            .errors
+            .len(),
+        2
+    );
 }
 
 #[test]
