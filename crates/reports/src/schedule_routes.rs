@@ -491,7 +491,15 @@ async fn update_schedule(
             b.sort();
             a == b
         };
-    if !input.active && existing.owner_id == user.user_id && same_access {
+    // Only a pause: any other change goes through the full validation and is saved.
+    let pause_only = input.name.trim() == existing.name
+        && input.frequency == existing.frequency
+        && input.weekday == existing.weekday
+        && input.day_of_month == existing.day_of_month
+        && input.send_time.as_deref().unwrap_or("07:00") == existing.send_time
+        && input.time_zone.as_deref().unwrap_or("Europe/Brussels") == existing.time_zone
+        && input.format == existing.format;
+    if !input.active && existing.owner_id == user.user_id && same_access && pause_only {
         sqlx::query(
             "UPDATE reports.schedules SET active = false, updated_at = now()
              WHERE id = $1 AND company_id = $2",
