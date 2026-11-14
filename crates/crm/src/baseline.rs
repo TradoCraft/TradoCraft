@@ -381,13 +381,21 @@ async fn get_baseline(
     user.require(Permission::OpportunitiesRead)?;
     let mut conn = state.db.acquire().await?;
     check_opportunity(&mut conn, user.company_id, id, false).await?;
+    Ok(Json(load_tree(&mut conn, id).await?))
+}
+
+/// The baseline of an opportunity as a tree; the caller has checked the opportunity.
+pub async fn load_tree(
+    conn: &mut PgConnection,
+    opportunity_id: Uuid,
+) -> AppResult<Vec<BaselineItem>> {
     let flat: Vec<BaselineItem> = sqlx::query_as(&format!(
         "{SELECT} WHERE opportunity_id = $1 ORDER BY sort_order, created_at, id"
     ))
-    .bind(id)
-    .fetch_all(&mut *conn)
+    .bind(opportunity_id)
+    .fetch_all(conn)
     .await?;
-    Ok(Json(build_tree(flat)))
+    Ok(build_tree(flat))
 }
 
 #[utoipa::path(post, path = "/opportunities/{id}/baseline/items", tag = "crm", params(("id" = Uuid, Path)),

@@ -8,7 +8,9 @@ pub mod baseline_types;
 pub mod closures;
 pub mod contacts;
 pub mod import;
+pub mod match_rules;
 pub mod matching;
+pub mod product_matches;
 pub use import::{customers_import, Customers};
 pub mod opportunities;
 pub mod rebates;
@@ -564,6 +566,8 @@ pub fn router() -> OpenApiRouter<AppState> {
         .merge(opportunities::router())
         .merge(baseline::router())
         .merge(baseline_types::router())
+        .merge(match_rules::router())
+        .merge(product_matches::router())
         .merge(rebates::router())
         .merge(closures::router())
 }

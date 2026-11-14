@@ -175,9 +175,10 @@ fn join<T>(items: &[T], f: impl Fn(&T) -> String) -> String {
 fn power_reason(power: &PowerCompatibility, has_grid: bool) -> Option<Reason> {
     let (status, message) = match power {
         PowerCompatibility::NotApplicable => return None,
-        PowerCompatibility::NeedsExternalSupply => {
-            (CheckStatus::Ok, "needs an external power supply".to_string())
-        }
+        PowerCompatibility::NeedsExternalSupply => (
+            CheckStatus::Ok,
+            "needs an external power supply".to_string(),
+        ),
         PowerCompatibility::Compatible => (
             CheckStatus::Ok,
             "runs on the power grid of the site".to_string(),
@@ -255,7 +256,11 @@ fn rule_reason(rule: &Rule, node: &BaselineNode, product: &ProductFacts) -> Opti
     };
     Some(Reason {
         check,
-        status: if fits { CheckStatus::Ok } else { CheckStatus::Fail },
+        status: if fits {
+            CheckStatus::Ok
+        } else {
+            CheckStatus::Fail
+        },
         message: format!("{label}: {bk} {v} {text}"),
     })
 }
@@ -387,10 +392,22 @@ mod tests {
         let most = [rule(Operator::AtMost)];
         let least = [rule(Operator::AtLeast)];
         let p = product(Some(ProductValue::Number(1000.0)));
-        assert_eq!(run(&[dial(1000.0)], &most, &p).status, MatchStatus::Suitable);
-        assert_eq!(run(&[dial(1000.1)], &most, &p).status, MatchStatus::Unsuitable);
-        assert_eq!(run(&[dial(1000.0)], &least, &p).status, MatchStatus::Suitable);
-        assert_eq!(run(&[dial(999.9)], &least, &p).status, MatchStatus::Unsuitable);
+        assert_eq!(
+            run(&[dial(1000.0)], &most, &p).status,
+            MatchStatus::Suitable
+        );
+        assert_eq!(
+            run(&[dial(1000.1)], &most, &p).status,
+            MatchStatus::Unsuitable
+        );
+        assert_eq!(
+            run(&[dial(1000.0)], &least, &p).status,
+            MatchStatus::Suitable
+        );
+        assert_eq!(
+            run(&[dial(999.9)], &least, &p).status,
+            MatchStatus::Unsuitable
+        );
         let e = run(&[dial(1200.0)], &most, &p);
         assert_eq!(
             e.reasons[0].message,
@@ -405,7 +422,11 @@ mod tests {
 
     #[test]
     fn a_product_without_the_attribute_is_not_judged_by_the_rule() {
-        let e = run(&[dial(5000.0)], &[rule(Operator::WithinRange)], &product(None));
+        let e = run(
+            &[dial(5000.0)],
+            &[rule(Operator::WithinRange)],
+            &product(None),
+        );
         assert_eq!(e.status, MatchStatus::Suitable);
         assert!(e.reasons.is_empty());
     }
@@ -423,7 +444,11 @@ mod tests {
     #[test]
     fn a_baseline_without_an_item_of_the_type_makes_the_rule_not_applicable() {
         let bell = node("bell", None, json!({ "weight_kg": 100 }));
-        let e = run(&[bell], &[rule(Operator::WithinRange)], &product(range(1.0, 2.0)));
+        let e = run(
+            &[bell],
+            &[rule(Operator::WithinRange)],
+            &product(range(1.0, 2.0)),
+        );
         assert_eq!(e.status, MatchStatus::Suitable);
         assert!(e.reasons.is_empty());
     }
@@ -431,7 +456,11 @@ mod tests {
     #[test]
     fn a_missing_baseline_value_is_unknown_not_unsuitable() {
         let blank = node("clock_dial", Some("south face"), json!({}));
-        let e = run(&[blank], &[rule(Operator::WithinRange)], &product(range(1.0, 2.0)));
+        let e = run(
+            &[blank],
+            &[rule(Operator::WithinRange)],
+            &product(range(1.0, 2.0)),
+        );
         assert_eq!(e.status, MatchStatus::Unknown);
         assert_eq!(e.reasons[0].status, CheckStatus::Unknown);
         assert_eq!(
@@ -456,7 +485,11 @@ mod tests {
     fn a_failure_outweighs_an_unknown() {
         let rules = [rule(Operator::WithinRange)];
         let blank = node("clock_dial", None, json!({}));
-        let e = run(&[blank, dial(1400.0)], &rules, &product(range(600.0, 1000.0)));
+        let e = run(
+            &[blank, dial(1400.0)],
+            &rules,
+            &product(range(600.0, 1000.0)),
+        );
         assert_eq!(e.status, MatchStatus::Unsuitable);
         assert_eq!(statuses(&e), [CheckStatus::Unknown, CheckStatus::Fail]);
     }
@@ -481,7 +514,11 @@ mod tests {
         let tree = vec![item(
             "assembly",
             json!({}),
-            vec![item("clock_dial", json!({ "dial_diameter_mm": 1400 }), vec![])],
+            vec![item(
+                "clock_dial",
+                json!({ "dial_diameter_mm": 1400 }),
+                vec![],
+            )],
         )];
         let flat = flatten(&tree);
         assert_eq!(flat.len(), 2);
@@ -542,7 +579,10 @@ mod tests {
         let cases = [
             (PowerCompatibility::Compatible, Some(CheckStatus::Ok)),
             (PowerCompatibility::UnknownGrid, Some(CheckStatus::Unknown)),
-            (PowerCompatibility::NeedsExternalSupply, Some(CheckStatus::Ok)),
+            (
+                PowerCompatibility::NeedsExternalSupply,
+                Some(CheckStatus::Ok),
+            ),
             (PowerCompatibility::NotApplicable, None),
         ];
         for (power, expected) in cases {
@@ -632,6 +672,9 @@ mod tests {
         use CheckStatus::*;
         assert_eq!(overall(&[]), MatchStatus::Suitable);
         assert_eq!(overall(&[r(Ok), r(Unknown)]), MatchStatus::Unknown);
-        assert_eq!(overall(&[r(Unknown), r(Fail), r(Ok)]), MatchStatus::Unsuitable);
+        assert_eq!(
+            overall(&[r(Unknown), r(Fail), r(Ok)]),
+            MatchStatus::Unsuitable
+        );
     }
 }
