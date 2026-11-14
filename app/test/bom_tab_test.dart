@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tradocraft_app/app/api.dart';
@@ -148,6 +148,7 @@ class _FakeApi implements HttpClientAdapter {
           'country_code': 'BE',
           'currency': 'EUR',
           'default_language': 'nl',
+          'is_primary': true,
         },
       },
       _ => null,
@@ -189,7 +190,7 @@ void main() {
           overrides: [dioProvider.overrideWithValue(dio)],
           child: MaterialApp(
             locale: const Locale('en'),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            localizationsDelegates: [AppLocalizations.delegate, ...GlobalMaterialLocalizations.delegates],
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: BomTab(product: _product)),
           ),

@@ -8,12 +8,17 @@ import 'package:retrofit/retrofit.dart';
 import '../models/admin_user.dart';
 import '../models/admin_user_create.dart';
 import '../models/admin_user_update.dart';
+import '../models/bootstrap_request.dart';
+import '../models/bootstrap_result.dart';
 import '../models/company_user.dart';
 import '../models/environment_info.dart';
 import '../models/me.dart';
 import '../models/module_info.dart';
 import '../models/modules_input.dart';
+import '../models/public_provider.dart';
 import '../models/role_info.dart';
+import '../models/setup_status.dart';
+import '../models/worker_status.dart';
 
 part 'core_client.g.dart';
 
@@ -60,6 +65,15 @@ abstract class CoreClient {
     @Path('id') required String id,
   });
 
+  /// The background worker's heartbeat: whether it is running, and its last outage.
+  @GET('/api/v1/admin/worker')
+  Future<WorkerStatus> getWorker();
+
+  /// The enabled identity providers, for the sign-in page. No sign-in needed; only these six.
+  /// fields are exposed. Empty in dev mode.
+  @GET('/api/v1/auth/providers')
+  Future<List<PublicProvider>> publicProviders();
+
   @GET('/api/v1/me')
   Future<Me> me();
 
@@ -70,6 +84,16 @@ abstract class CoreClient {
   /// The roles that exist, with what each grants. Drives the role pickers of the user admin.
   @GET('/api/v1/roles')
   Future<List<RoleInfo>> listRoles();
+
+  /// `POST /setup/bootstrap`: creates the first company of an empty database.
+  @POST('/api/v1/setup/bootstrap')
+  Future<BootstrapResult> bootstrap({
+    @Body() required BootstrapRequest body,
+  });
+
+  /// `GET /setup/status`: no sign-in needed.
+  @GET('/api/v1/setup/status')
+  Future<SetupStatus> setupStatus();
 
   @GET('/api/v1/users')
   Future<List<CompanyUser>> listUsers();

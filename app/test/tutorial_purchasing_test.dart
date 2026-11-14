@@ -1,0 +1,817 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:typed_data';
+
+import 'package:dio/dio.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/widgets.dart' show Locale;
+import 'package:flutter_test/flutter_test.dart';
+import 'package:tradocraft_app/app/api.dart';
+import 'package:tradocraft_app/app/environments.dart';
+import 'package:tradocraft_app/features/field/offline/kv_store.dart';
+import 'package:tradocraft_app/features/tutorial/api_events.dart';
+import 'package:tradocraft_app/features/tutorial/controller.dart';
+import 'package:tradocraft_app/features/tutorial/missions_purchasing.dart';
+import 'package:tradocraft_app/features/tutorial/model.dart';
+import 'package:tradocraft_app/features/tutorial/strings.dart';
+import 'package:tradocraft_app/l10n/app_localizations.dart';
+
+import 'fake_http.dart';
+
+const _ids = {
+  'motorId': 'm1',
+  'frameId': 'f1',
+  'controllerId': 'c1',
+  'cartId': 'k1',
+};
+
+/// A container whose stored progress says: these chapters are done, [active] is at step 0, and
+/// the story already captured [values].
+ProviderContainer _boot(
+  FakeHttp http, {
+  required List<String> completed,
+  required String active,
+  Map<String, String> values = const {},
+  int step = 0,
+  List<Mission>? missions,
+}) {
+  final kv = MemoryKvStore()
+    ..data['tutorial.v1.e1.dev:a@x.test'] = jsonEncode({
+      'completed': completed,
+      'active': active,
+      'step': step,
+      'values': {..._ids, ...values},
+    });
+  final c = ProviderContainer(
+    retry: (_, _) => null,
+    overrides: [
+      if (missions != null) tutorialMissionsProvider.overrideWithValue(missions),
+      kvStoreProvider.overrideWithValue(kv),
+      tutorialScopeProvider.overrideWithValue(
+        const TutorialScope(
+          envId: 'e1',
+          kind: EnvironmentKind.tutorial,
+          who: 'dev:a@x.test',
+        ),
+      ),
+      dioProvider.overrideWith((ref) {
+        final d = fakeDio(http);
+        d.interceptors.add(ApiEventInterceptor(ref.read(apiEventBusProvider)));
+        return d;
+      }),
+    ],
+  );
+  addTearDown(c.dispose);
+  return c;
+}
+
+Map<String, Object?> _product(String id, String code, String type) => {
+  'id': id,
+  'code': code,
+  'product_type': type,
+};
+
+FakeHttp _withProducts(Map<String, Object? Function(Object?)> routes) =>
+    FakeHttp({
+      'GET /api/v1/products': (_) => {
+        'items': [
+          _product('m1', 'TUT-MOTOR', 'purchased'),
+          _product('f1', 'TUT-FRAME', 'purchased'),
+          _product('c1', 'TUT-CTRL', 'purchased'),
+          _product('k1', 'TUT-CART', 'manufactured'),
+        ],
+      },
+      ...routes,
+    });
+
+Map<String, Object?> _warehouse({
+  String code = 'MAIN',
+  String kind = 'warehouse',
+  bool active = true,
+  String location = 'MAIN',
+  bool locationActive = true,
+}) => {
+  'id': 'w1',
+  'code': code,
+  'name': 'Main warehouse',
+  'kind': kind,
+  'active': active,
+  'locations': [
+    {'id': 'l1', 'code': location, 'active': locationActive},
+  ],
+};
+
+/// A [FakeHttp] whose answers to `GET /api/v1/inventory/warehouses` are computed when the request
+/// arrives but delivered only once the gate for that request number (counted from 0) is opened.
+class _GatedHttp extends FakeHttp {
+  _GatedHttp(super.routes);
+  final gates = <int, Completer<void>>{};
+  int _gets = 0;
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions o,
+    Stream<Uint8List>? body,
+    Future<void>? cancel,
+  ) async {
+    final gate = o.method == 'GET' && o.path == '/api/v1/inventory/warehouses'
+        ? gates[_gets++]
+        : null;
+    final r = await super.fetch(o, body, cancel);
+    if (gate != null) await gate.future;
+    return r;
+  }
+}
+
+void main() {
+  group('chapter 2: suppliers', () {
+    test('creating suppliers and price entries finishes the steps', () async {
+      final http = FakeHttp({
+        'POST /api/v1/suppliers': (b) => {
+          'id': 's-${(b as Map)['code']}',
+          'code': b['code'],
+        },
+        'POST /api/v1/suppliers/s-TUT-SUP-A/products/m1': (_) => {'id': 'x'},
+        'POST /api/v1/suppliers/s-TUT-SUP-A/products/f1': (_) => {'id': 'x'},
+        'POST /api/v1/suppliers/s-TUT-SUP-A/products/c1': (_) => {'id': 'x'},
+        'POST /api/v1/suppliers/s-TUT-SUP-B/products/m1': (_) => {'id': 'x'},
+        'POST /api/v1/suppliers/s-TUT-SUP-B/products/f1': (_) => {'id': 'x'},
+      });
+      final c = _boot(http, completed: ['welcome', 'product'], active: 'suppliers');
+      final t = c.read(tutorialProvider.notifier);
+      await t.ready;
+      await t.resume();
+      final dio = c.read(dioProvider);
+      int step() => c.read(tutorialProvider).stepIndex;
+      expect(step(), 0, reason: 'products not found: the needs step waits');
+      t.next();
+      t.routeChanged('/purchasing');
+      expect(step(), 2);
+      Future<void> sup(String code) => dio.post<Object?>(
+        '/api/v1/suppliers',
+        data: {'code': code, 'name': code},
+      );
+      await sup('OTHER');
+      expect(step(), 2);
+      await sup('TUT-SUP-A');
+      expect(step(), 3);
+      await sup('TUT-SUP-B');
+      expect(step(), 4);
+      expect(c.read(tutorialProvider).values['supplierBId'], 's-TUT-SUP-B');
+      t.routeChanged('/suppliers/s-TUT-SUP-A');
+      expect(step(), 5);
+      Future<void> price(String s, String p) =>
+          dio.post<Object?>('/api/v1/suppliers/$s/products/$p', data: {
+            'unit_price': '1',
+          });
+      await price('s-TUT-SUP-B', 'm1'); // wrong supplier
+      expect(step(), 5);
+      await price('s-TUT-SUP-A', 'm1');
+      await price('s-TUT-SUP-A', 'f1');
+      await price('s-TUT-SUP-A', 'c1');
+      expect(step(), 8);
+      t.routeChanged('/suppliers/s-TUT-SUP-B');
+      expect(step(), 9);
+      await price('s-TUT-SUP-B', 'm1');
+      expect(step(), 10);
+      t.next();
+      expect(c.read(tutorialProvider).completed, contains('suppliers'));
+    });
+
+    test('probes skip the needs step and existing suppliers and prices', () async {
+      final http = _withProducts({
+        'GET /api/v1/suppliers': (_) => [
+          {'id': 'sa', 'code': 'TUT-SUP-A'},
+          {'id': 'sb', 'code': 'TUT-SUP-B'},
+        ],
+        'GET /api/v1/suppliers/sa/products': (_) => [
+          {'product_id': 'm1'},
+          {'product_id': 'f1'},
+          {'product_id': 'c1'},
+        ],
+        'GET /api/v1/suppliers/sb/products': (_) => [
+          {'product_id': 'm1'},
+        ],
+      });
+      final c = _boot(
+        http,
+        completed: ['welcome', 'product'],
+        active: 'suppliers',
+      );
+      final t = c.read(tutorialProvider.notifier);
+      await t.ready;
+      await t.resume();
+      await pumpEventQueue(times: 100);
+      expect(c.read(tutorialProvider).stepIndex, 1, reason: 'needs skipped');
+      t.routeChanged('/purchasing');
+      await pumpEventQueue(times: 100);
+      // both suppliers exist: openA is next (an OnRoute step)
+      expect(c.read(tutorialProvider).stepIndex, 4);
+      expect(c.read(tutorialProvider).values['supplierAId'], 'sa');
+      t.routeChanged('/suppliers/sa');
+      await pumpEventQueue(times: 100);
+      expect(c.read(tutorialProvider).stepIndex, 8, reason: 'prices exist');
+    });
+  });
+
+  group('chapter 3: buying and receiving', () {
+    String status = 'draft';
+    Map<String, Object?> po() => {
+      'id': 'po1',
+      'supplier_id': 'sa',
+      'status': status,
+      'lines': [
+        for (final p in ['m1', 'f1', 'c1']) {'product_id': p},
+      ],
+    };
+
+    test('order, approve, send, two receipts, stock', () async {
+      status = 'draft';
+      final http = FakeHttp({
+        'POST /api/v1/purchase-orders': (_) => po(),
+        'POST /api/v1/purchase-orders/po1/approve': (_) => po(),
+        'POST /api/v1/purchase-orders/po1/send': (_) => po(),
+        'POST /api/v1/purchase-orders/po1/receipts': (_) => {'id': 'g'},
+        'POST /api/v1/inventory/warehouses': (_) => _warehouse(),
+      });
+      final c = _boot(
+        http,
+        completed: ['welcome', 'product', 'suppliers'],
+        active: 'buying',
+        values: {'supplierAId': 'sa'},
+      );
+      final t = c.read(tutorialProvider.notifier);
+      await t.ready;
+      await t.resume();
+      final dio = c.read(dioProvider);
+      int step() => c.read(tutorialProvider).stepIndex;
+      t.next(); // needs
+      t.routeChanged('/purchasing');
+      expect(step(), 2);
+      Future<void> order(String supplier, List<String> products) =>
+          dio.post<Object?>('/api/v1/purchase-orders', data: {
+            'supplier_id': supplier,
+            'lines': [
+              for (final p in products) {'product_id': p},
+            ],
+          });
+      await order('sa', ['m1', 'f1', 'c1']);
+      expect(step(), 3);
+      expect(c.read(tutorialProvider).values['poId'], 'po1');
+      t.routeChanged('/purchase-orders/po1');
+      expect(step(), 4);
+      await dio.post<Object?>('/api/v1/purchase-orders/po1/approve');
+      await dio.post<Object?>('/api/v1/purchase-orders/po1/send');
+      expect(step(), 6, reason: 'where do the goods go?');
+      t.routeChanged('/purchasing');
+      expect(step(), 6, reason: 'another page is not the warehouses page');
+      t.routeChanged('/stock/warehouses');
+      expect(step(), 7);
+      await dio.post<Object?>('/api/v1/inventory/warehouses');
+      expect(step(), 8, reason: 'the warehouse with its location MAIN exists');
+      t.routeChanged('/purchase-orders/po1'); // back to the order
+      await dio.post<Object?>('/api/v1/purchase-orders/po1/receipts');
+      expect(step(), 9);
+      await dio.post<Object?>('/api/v1/purchase-orders/po1/receipts');
+      expect(step(), 10);
+      t.routeChanged('/stock');
+      expect(step(), 11);
+      t.next();
+      expect(c.read(tutorialProvider).completed, contains('buying'));
+    });
+
+    test('the order step ignores another supplier and short orders', () async {
+      var sup = 'sb';
+      var lines = ['m1', 'f1', 'c1'];
+      final http = FakeHttp({
+        'POST /api/v1/purchase-orders': (_) => {
+          'id': 'po9',
+          'supplier_id': sup,
+          'status': 'draft',
+          'lines': [
+            for (final p in lines) {'product_id': p},
+          ],
+        },
+      });
+      final c = _boot(
+        http,
+        completed: ['welcome', 'product', 'suppliers'],
+        active: 'buying',
+        values: {'supplierAId': 'sa'},
+      );
+      final t = c.read(tutorialProvider.notifier);
+      await t.ready;
+      await t.resume();
+      t.next();
+      t.routeChanged('/purchasing');
+      final dio = c.read(dioProvider);
+      await dio.post<Object?>('/api/v1/purchase-orders');
+      expect(c.read(tutorialProvider).stepIndex, 2, reason: 'wrong supplier');
+      sup = 'sa';
+      lines = ['m1'];
+      await dio.post<Object?>('/api/v1/purchase-orders');
+      expect(c.read(tutorialProvider).stepIndex, 2, reason: 'one line only');
+    });
+
+    test('a probe with a missing placeholder sends no request', () async {
+      final http = _withProducts({
+        'GET /api/v1/purchase-orders': (_) => [
+          {'id': 'po2', 'status': 'received'},
+        ],
+      });
+      final c = _boot(
+        http,
+        completed: ['welcome', 'product', 'suppliers'],
+        active: 'buying',
+      ); // no supplierAId captured
+      final t = c.read(tutorialProvider.notifier);
+      await t.ready;
+      await t.resume();
+      await pumpEventQueue(times: 100);
+      t.routeChanged('/purchasing');
+      await pumpEventQueue(times: 100);
+      expect(http.requests, isNot(contains('GET /api/v1/purchase-orders')));
+      expect(c.read(tutorialProvider).stepIndex, 2);
+    });
+
+    test('probes fast-forward over a received order', () async {
+      final http = _withProducts({
+        'GET /api/v1/purchase-orders': (_) => [
+          {'id': 'po1', 'status': 'cancelled'},
+          {'id': 'po2', 'status': 'received'},
+        ],
+        'GET /api/v1/purchase-orders/po2': (_) => {'status': 'received'},
+        'GET /api/v1/inventory/warehouses': (_) => [_warehouse()],
+      });
+      final c = _boot(
+        http,
+        completed: ['welcome', 'product', 'suppliers'],
+        active: 'buying',
+        values: {'supplierAId': 'sa'},
+      );
+      final t = c.read(tutorialProvider.notifier);
+      await t.ready;
+      await t.resume();
+      await pumpEventQueue(times: 100);
+      t.routeChanged('/purchasing');
+      await pumpEventQueue(times: 100);
+      expect(c.read(tutorialProvider).values['poId'], 'po2');
+      expect(
+        http.queries.any((q) => q['supplier_id'] == 'sa'),
+        isTrue,
+        reason: '{supplierAId} is resolved in the probe query',
+      );
+      expect(c.read(tutorialProvider).stepIndex, 3);
+      t.routeChanged('/purchase-orders/po2');
+      await pumpEventQueue(times: 200);
+      expect(c.read(tutorialProvider).stepIndex, 10, reason: 'only stock is left');
+    });
+
+    group('the warehouse step', () {
+      const openWarehouses = 6, warehouse = 7, receivePart = 8;
+
+      ProviderContainer atTheStep(FakeHttp http) => _boot(
+        http,
+        completed: ['welcome', 'product', 'suppliers'],
+        active: 'buying',
+        values: {'supplierAId': 'sa', 'poId': 'po1'},
+        step: openWarehouses,
+      );
+
+      test('is taught when no warehouse exists: open the page, create it, then receive', () async {
+        final http = FakeHttp({
+          'GET /api/v1/inventory/warehouses': (_) => [],
+          'POST /api/v1/inventory/warehouses': (_) => _warehouse(),
+          'POST /api/v1/purchase-orders/po1/receipts': (_) => {'id': 'g'},
+        });
+        final c = atTheStep(http);
+        final t = c.read(tutorialProvider.notifier);
+        await t.ready;
+        await t.resume();
+        await pumpEventQueue(times: 100);
+        int step() => c.read(tutorialProvider).stepIndex;
+        expect(http.requests, contains('GET /api/v1/inventory/warehouses'));
+        expect(step(), openWarehouses, reason: 'nothing to skip');
+        final mission = c.read(tutorialProvider.notifier).mission!;
+        expect(mission.steps[openWarehouses].id, 'openWarehouses');
+        expect(mission.steps[warehouse].id, 'warehouse');
+        expect(mission.steps[warehouse].targets, contains('warehouse-new'));
+        t.routeChanged('/stock/warehouses');
+        await pumpEventQueue(times: 100);
+        expect(step(), warehouse, reason: 'still nothing to skip');
+        final dio = c.read(dioProvider);
+        await dio.post<Object?>('/api/v1/inventory/warehouses');
+        expect(step(), receivePart);
+        await dio.post<Object?>('/api/v1/purchase-orders/po1/receipts');
+        expect(step(), receivePart + 1, reason: 'the receipt after it counts');
+      });
+
+      test('a refused creation (code taken) does not finish the step', () async {
+        final http = FakeHttp({
+          'GET /api/v1/inventory/warehouses': (_) => [],
+          'POST /api/v1/inventory/warehouses': (_) =>
+              FakeStatus(409, {'error': 'conflict', 'message': 'exists'}),
+        });
+        final c = atTheStep(http);
+        final t = c.read(tutorialProvider.notifier);
+        await t.ready;
+        await t.resume();
+        t.routeChanged('/stock/warehouses');
+        expect(c.read(tutorialProvider).stepIndex, warehouse);
+        try {
+          await c.read(dioProvider).post<Object?>('/api/v1/inventory/warehouses');
+        } on DioException catch (_) {}
+        expect(c.read(tutorialProvider).stepIndex, warehouse);
+      });
+
+      test('is skipped when a warehouse with a location exists', () async {
+        final http = FakeHttp({
+          'GET /api/v1/inventory/warehouses': (_) => [_warehouse()],
+        });
+        final c = atTheStep(http);
+        final t = c.read(tutorialProvider.notifier);
+        await t.ready;
+        await t.resume();
+        await pumpEventQueue(times: 100);
+        expect(
+          c.read(tutorialProvider).stepIndex,
+          receivePart,
+          reason: 'both warehouse steps are skipped, the receipt is next',
+        );
+        expect(http.requests, isNot(contains('POST /api/v1/inventory/warehouses')));
+      });
+
+      test('only an active warehouse MAIN with an active location MAIN is skipped', () async {
+        final cases = <String, (Map<String, Object?>, bool)>{
+          'MAIN exists': (_warehouse(), true),
+          'only BIN-01 in another warehouse': (_warehouse(code: 'WH1', location: 'BIN-01'), false),
+          'warehouse MAIN holds only BIN-01': (_warehouse(location: 'BIN-01'), false),
+          'inactive warehouse MAIN': (_warehouse(active: false), false),
+          'inactive location MAIN': (_warehouse(locationActive: false), false),
+          'a van': (_warehouse(kind: 'van'), false),
+        };
+        for (final e in cases.entries) {
+          final w = e.value.$1;
+          final http = FakeHttp({'GET /api/v1/inventory/warehouses': (_) => [w]});
+          final c = atTheStep(http);
+          final t = c.read(tutorialProvider.notifier);
+          await t.ready;
+          await t.resume();
+          await pumpEventQueue(times: 100);
+          expect(
+            c.read(tutorialProvider).stepIndex,
+            e.value.$2 ? receivePart : openWarehouses,
+            reason: e.key,
+          );
+        }
+      });
+
+      test('a warehouse with another code does not finish the step', () async {
+        final http = FakeHttp({
+          'GET /api/v1/inventory/warehouses': (_) => [],
+          'POST /api/v1/inventory/warehouses': (_) => _warehouse(code: 'WH2'),
+        });
+        final c = atTheStep(http);
+        final t = c.read(tutorialProvider.notifier);
+        await t.ready;
+        await t.resume();
+        t.routeChanged('/stock/warehouses');
+        await c.read(dioProvider).post<Object?>('/api/v1/inventory/warehouses');
+        expect(c.read(tutorialProvider).stepIndex, warehouse);
+      });
+
+      group('reactivating MAIN', () {
+        /// The warehouse list the GET route answers with, and the PUT routes that change it.
+        late Map<String, Object?> now;
+        late FakeHttp http;
+        late ProviderContainer c;
+
+        Future<void> startInactive(Map<String, Object?> start, {Map<String, Object? Function(Object?)> routes = const {}}) async {
+          now = start;
+          http = FakeHttp({
+            'GET /api/v1/inventory/warehouses': (_) => [now],
+            'PUT /api/v1/inventory/warehouses/w1': (_) {
+              now = {...now, 'active': true};
+              return now;
+            },
+            'PUT /api/v1/inventory/locations/l1': (_) {
+              now = {
+                ...now,
+                'locations': [
+                  {'id': 'l1', 'code': 'MAIN', 'active': true},
+                ],
+              };
+              return (now['locations'] as List).first;
+            },
+            ...routes,
+          });
+          c = atTheStep(http);
+          final t = c.read(tutorialProvider.notifier);
+          await t.ready;
+          await t.resume();
+          t.routeChanged('/stock/warehouses');
+          await pumpEventQueue(times: 100);
+          expect(c.read(tutorialProvider).stepIndex, warehouse, reason: 'inactive MAIN: not done');
+        }
+
+        int step() => c.read(tutorialProvider).stepIndex;
+        Future<void> put(String path, [Object? body]) async {
+          try {
+            await c.read(dioProvider).put<Object?>('/api/v1$path', data: body ?? {});
+          } on DioException catch (_) {}
+          await pumpEventQueue(times: 100);
+        }
+
+        test('reactivating the warehouse (location active) advances', () async {
+          await startInactive(_warehouse(active: false));
+          await put('/inventory/warehouses/w1');
+          expect(step(), receivePart);
+        });
+
+        test('warehouse first, then the location', () async {
+          await startInactive(_warehouse(active: false, locationActive: false));
+          await put('/inventory/warehouses/w1');
+          expect(step(), warehouse, reason: 'the location is still inactive');
+          await put('/inventory/locations/l1');
+          expect(step(), receivePart);
+        });
+
+        test('location first, then the warehouse', () async {
+          await startInactive(_warehouse(active: false, locationActive: false));
+          await put('/inventory/locations/l1');
+          expect(step(), warehouse, reason: 'the warehouse is still inactive');
+          await put('/inventory/warehouses/w1');
+          expect(step(), receivePart);
+        });
+
+        test('a PUT that renames the warehouse away from MAIN does not advance', () async {
+          await startInactive(
+            _warehouse(active: false),
+            routes: {
+              'PUT /api/v1/inventory/warehouses/w1': (_) {
+                now = {...now, 'active': true, 'code': 'WH2'};
+                return now;
+              },
+            },
+          );
+          await put('/inventory/warehouses/w1');
+          expect(step(), warehouse);
+        });
+
+        test('a refused PUT (409) does not advance', () async {
+          await startInactive(
+            _warehouse(active: false),
+            routes: {
+              'PUT /api/v1/inventory/warehouses/w1': (_) {
+                now = {...now, 'active': true};
+                return FakeStatus(409, {'error': 'conflict', 'message': 'no'});
+              },
+            },
+          );
+          await put('/inventory/warehouses/w1');
+          expect(step(), warehouse);
+        });
+
+        test('a step without a probe ignores the triggers', () async {
+          const trigger = OnApi('PUT', '/inventory/warehouses/[^/]+');
+          final http = FakeHttp({'PUT /api/v1/inventory/warehouses/w1': (_) => {}});
+          final c = _boot(
+            http,
+            completed: [],
+            active: 'buying',
+            step: 0,
+            missions: const [
+              Mission(
+                id: 'buying',
+                steps: [
+                  MissionStep(id: 'a', recheckOn: [trigger]),
+                  MissionStep(id: 'b'),
+                ],
+              ),
+            ],
+          );
+          final t = c.read(tutorialProvider.notifier);
+          await t.ready;
+          await t.resume();
+          await c.read(dioProvider).put<Object?>('/api/v1/inventory/warehouses/w1', data: {});
+          await pumpEventQueue(times: 100);
+          expect(c.read(tutorialProvider).stepIndex, 0);
+        });
+      });
+
+      group('overlapping probes', () {
+        // GET 0 is the probe of the resume, GET 1 the entry probe of the warehouse step (held),
+        // GET 2 the recheck after the PUT (held). Each answer shows the state at request time.
+        Future<void> run({required bool olderDone, required bool newerFirst}) async {
+          var active = !olderDone ? false : true;
+          var open = false;
+          final http = _GatedHttp({
+            'GET /api/v1/inventory/warehouses': (_) => [_warehouse(active: open ? active : false)],
+            'PUT /api/v1/inventory/warehouses/w1': (_) => {},
+          });
+          http.gates[1] = Completer<void>();
+          http.gates[2] = Completer<void>();
+          final c = atTheStep(http);
+          final t = c.read(tutorialProvider.notifier);
+          await t.ready;
+          await t.resume();
+          await pumpEventQueue(times: 100);
+          open = true;
+          t.routeChanged('/stock/warehouses');
+          await pumpEventQueue(times: 100);
+          active = !olderDone;
+          await c.read(dioProvider).put<Object?>('/api/v1/inventory/warehouses/w1', data: {});
+          await pumpEventQueue(times: 100);
+          int step() => c.read(tutorialProvider).stepIndex;
+          expect(step(), warehouse, reason: 'both answers held back');
+          final first = newerFirst ? http.gates[2]! : http.gates[1]!;
+          final second = newerFirst ? http.gates[1]! : http.gates[2]!;
+          first.complete();
+          await pumpEventQueue(times: 100);
+          // The newer probe (the recheck) decides; an older answer is ignored either way.
+          final expected = newerFirst ? (olderDone ? warehouse : receivePart) : warehouse;
+          expect(step(), expected);
+          second.complete();
+          await pumpEventQueue(times: 100);
+          expect(step(), olderDone ? warehouse : receivePart, reason: 'the newest state wins, once');
+        }
+
+        test('an older "done" answer arriving after a newer "not done" does not advance', () async {
+          await run(olderDone: true, newerFirst: true);
+        });
+
+        test('a newer "done" advances once; the late older "not done" changes nothing', () async {
+          await run(olderDone: false, newerFirst: true);
+        });
+      });
+
+      test('the recheck triggers match mutations of warehouses and locations only', () {
+        final triggers = warehouseStep.recheckOn;
+        bool any(String m, String path, [int status = 200]) =>
+            triggers.any((t) => t.matches(ApiEvent(m, path, status, null), MissionContext()));
+        expect(any('PUT', '/inventory/warehouses/w1'), isTrue);
+        expect(any('PUT', '/inventory/locations/l1'), isTrue);
+        expect(any('POST', '/inventory/locations'), isTrue);
+        expect(any('PUT', '/inventory/locations/l1', 204), isTrue);
+        expect(any('PUT', '/inventory/locations/l1', 409), isFalse);
+        expect(any('GET', '/inventory/warehouses/w1'), isFalse);
+        expect(any('POST', '/inventory/warehouses/w1'), isFalse);
+        expect(any('PUT', '/inventory/warehouses'), isFalse);
+        expect(any('PUT', '/inventory/warehouses/w1/locations'), isFalse);
+        expect(any('PUT', '/x/inventory/locations/l1'), isFalse);
+        expect(any('DELETE', '/inventory/locations/l1'), isFalse);
+      });
+
+      test('the warehouse texts tell what to do when an inactive MAIN holds the code', () {
+        for (final code in ['en', 'de', 'es', 'fr', 'nl']) {
+          final l = lookupAppLocalizations(Locale(code));
+          for (final key in [
+            'tutBuyingWarehouseBody',
+            'tutManufacturingWarehouseBody',
+            'tutChangeWarehouseBody',
+          ]) {
+            final text = tutorialText(l, key);
+            expect(text, contains('MAIN'), reason: '$key $code');
+            expect(text.split('MAIN').length, greaterThanOrEqualTo(3), reason: '$key $code mentions the taken code');
+          }
+        }
+      });
+    });
+  });
+
+  group('chapter 4: invoices', () {
+    test('create, approve, second invoice, dispute, pay', () async {
+      final http = FakeHttp({
+        'POST /api/v1/supplier-invoices': (b) =>
+            (b as Map)['purchase_order_id'] == null
+            ? {
+                'id': 'i2',
+                'invoice_number': (b)['invoice_number'],
+                'purchase_order_id': null,
+                'supplier_id': 'sa',
+              }
+            : {
+                'id': 'i1',
+                'invoice_number': 'ACME-1',
+                'purchase_order_id': 'po1',
+                'supplier_id': 'sa',
+              },
+        'POST /api/v1/supplier-invoices/i1/approve': (_) => {'id': 'i1'},
+        'POST /api/v1/supplier-invoices/i2/dispute': (_) => {'id': 'i2'},
+        'POST /api/v1/supplier-invoices/i1/mark-paid': (_) => {'id': 'i1'},
+      });
+      final c = _boot(
+        http,
+        completed: ['welcome', 'product', 'suppliers', 'buying'],
+        active: 'invoices',
+        values: {'supplierAId': 'sa', 'poId': 'po1'},
+      );
+      final t = c.read(tutorialProvider.notifier);
+      await t.ready;
+      await t.resume();
+      final dio = c.read(dioProvider);
+      int step() => c.read(tutorialProvider).stepIndex;
+      t.next();
+      t.routeChanged('/purchase-orders/po1');
+      expect(step(), 2);
+      await dio.post<Object?>(
+        '/api/v1/supplier-invoices',
+        data: {'purchase_order_id': 'po1'},
+      );
+      expect(step(), 3);
+      t.next(); // match
+      await dio.post<Object?>('/api/v1/supplier-invoices/i1/approve');
+      expect(step(), 5);
+      // Only the invoice numbered TUT-INV-002 counts as the second one.
+      await dio.post<Object?>(
+        '/api/v1/supplier-invoices',
+        data: {'purchase_order_id': 'po1'},
+      );
+      expect(step(), 5);
+      await dio.post<Object?>(
+        '/api/v1/supplier-invoices',
+        data: {'purchase_order_id': null, 'invoice_number': 'OTHER-9'},
+      );
+      expect(step(), 5);
+      await dio.post<Object?>(
+        '/api/v1/supplier-invoices',
+        data: {'purchase_order_id': null, 'invoice_number': 'TUT-INV-002'},
+      );
+      expect(step(), 6);
+      expect(c.read(tutorialProvider).values['invoice2Id'], 'i2');
+      t.routeChanged('/supplier-invoices/i1');
+      expect(step(), 6, reason: 'the second invoice must be opened, not the first');
+      t.routeChanged('/supplier-invoices/i2');
+      expect(step(), 7);
+      t.next(); // mismatch
+      await dio.post<Object?>('/api/v1/supplier-invoices/i2/dispute');
+      expect(step(), 9);
+      t.next(); // tolerances
+      await dio.post<Object?>('/api/v1/supplier-invoices/i1/mark-paid');
+      expect(step(), 11);
+      t.next();
+      expect(c.read(tutorialProvider).completed, contains('invoices'));
+    });
+
+    test('probes skip finished work', () async {
+      final http = FakeHttp({
+        'GET /api/v1/purchase-orders/po1': (_) => {'status': 'received'},
+        'GET /api/v1/supplier-invoices': (_) => {
+          'items': [
+            {'id': 'i1', 'invoice_number': 'ACME-1', 'purchase_order_id': 'po1'},
+            {'id': 'x', 'invoice_number': 'OTHER-9', 'purchase_order_id': null},
+            {'id': 'i2', 'invoice_number': 'TUT-INV-002', 'purchase_order_id': null},
+          ],
+        },
+        'GET /api/v1/supplier-invoices/i1': (_) => {'status': 'paid'},
+        'GET /api/v1/supplier-invoices/i2': (_) => {'status': 'disputed'},
+      });
+      final c = _boot(
+        http,
+        completed: ['welcome', 'product', 'suppliers', 'buying'],
+        active: 'invoices',
+        values: {'supplierAId': 'sa', 'poId': 'po1'},
+      );
+      final t = c.read(tutorialProvider.notifier);
+      await t.ready;
+      await t.resume();
+      await pumpEventQueue(times: 100);
+      expect(c.read(tutorialProvider).stepIndex, 1, reason: 'needs skipped');
+      t.routeChanged('/purchase-orders/po1');
+      await pumpEventQueue(times: 200);
+      // create, approve (paid counts), second and dispute are done; the match explanations
+      // and the tolerances wait for Next.
+      expect(c.read(tutorialProvider).stepIndex, 3);
+      t.next(); // match
+      await pumpEventQueue(times: 200);
+      expect(c.read(tutorialProvider).stepIndex, 6, reason: 'approve and second are done');
+      t.next();
+      await pumpEventQueue(times: 200);
+      expect(c.read(tutorialProvider).values['invoice2Id'], 'i2');
+      t.routeChanged('/supplier-invoices/i2');
+      await pumpEventQueue(times: 200);
+      expect(c.read(tutorialProvider).stepIndex, 7);
+      t.next(); // mismatch -> dispute done -> tolerances
+      await pumpEventQueue(times: 200);
+      expect(c.read(tutorialProvider).stepIndex, 9, reason: 'dispute is done');
+      t.next(); // tolerances
+      await pumpEventQueue(times: 200);
+      expect(c.read(tutorialProvider).stepIndex, 11, reason: 'paid is done');
+      expect(
+        http.queries.any((q) => q['purchase_order_id'] == 'po1'),
+        isTrue,
+        reason: '{poId} is resolved in the probe query',
+      );
+      expect(
+        http.queries.any((q) => q['supplier_id'] == 'sa'),
+        isTrue,
+        reason: '{supplierAId} is resolved in the probe query',
+      );
+      expect(
+        http.queries.any((q) => q.values.any((v) => '$v'.contains('{'))),
+        isFalse,
+        reason: 'no unresolved placeholder is sent',
+      );
+    });
+  });
+}

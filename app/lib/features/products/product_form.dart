@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/api.dart';
@@ -6,6 +6,7 @@ import '../../shared/format.dart';
 import 'families_dialog.dart';
 import 'packaging_dialog.dart';
 import '../../l10n/l10n.dart';
+import '../tutorial/targets.dart';
 
 const productTypes = ['purchased', 'manufactured', 'configurable', 'service'];
 
@@ -409,7 +410,10 @@ class _ProductFormState extends ConsumerState<ProductForm> {
           onPressed: () => Navigator.pop(context),
           child: Text(context.l10n.cancel),
         ),
-        FilledButton(onPressed: _save, child: Text(context.l10n.save)),
+        TutorialTarget(
+          id: 'product-form-save',
+          child: FilledButton(onPressed: _save, child: Text(context.l10n.save)),
+        ),
       ],
     );
   }

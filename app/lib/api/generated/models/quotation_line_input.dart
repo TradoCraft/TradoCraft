@@ -16,7 +16,9 @@ class QuotationLineInput {
     this.addOptions,
     this.comment,
     this.customerRemark,
+    this.customerRemarkLanguage,
     this.description,
+    this.favoriteItemId,
     this.lineDiscountPercent,
     this.parentPosition,
     this.percentBase,
@@ -42,9 +44,19 @@ class QuotationLineInput {
   @JsonKey(includeIfNull: false,name: 'customer_remark')
   final String? customerRemark;
 
+  /// The language (nl | fr | en | de | es) the customer remark is written in. Absent: it matches.
+  /// the quotation language, or unknown. Ignored (stored empty) when the remark is empty.
+  @JsonKey(includeIfNull: false,name: 'customer_remark_language')
+  final String? customerRemarkLanguage;
+
   /// Overrides the product name on the document.
   @JsonKey(includeIfNull: false)
   final String? description;
+
+  /// The favorite item this line was loaded from (of the caller's company, else 422), so that a.
+  /// translation can be added to the favorite later. Copied by revisions, not by orders.
+  @JsonKey(includeIfNull: false,name: 'favorite_item_id')
+  final String? favoriteItemId;
   @JsonKey(includeIfNull: false,name: 'line_discount_percent')
   final String? lineDiscountPercent;
 

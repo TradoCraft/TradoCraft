@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -6,11 +6,14 @@ import '../../app/api.dart';
 import '../../shared/app_icons.dart';
 
 import '../../l10n/l10n.dart';
+import 'audit_trail_page.dart';
+import 'identity_providers_page.dart';
 import 'modules_page.dart';
 import 'price_zones_page.dart';
 import 'users_page.dart';
 
-/// User and module administration: one destination with a switch between the two tables.
+/// Administration: one destination with a switch between users, modules, price zones,
+/// identity providers and the audit trail (each shown with its own permission).
 class AdminPage extends ConsumerStatefulWidget {
   const AdminPage({super.key});
 
@@ -30,6 +33,8 @@ class _AdminPageState extends ConsumerState<AdminPage> {
       if (isAdmin) 'users',
       if (isAdmin) 'modules',
       if (can(ref, 'prices.write')) 'zones',
+      if (can(ref, 'identity.admin')) 'identity',
+      if (can(ref, 'audit.view')) 'audit',
     ];
     final tab = tabs.contains(_tab) ? _tab! : (tabs.isEmpty ? '' : tabs.first);
     return Column(
@@ -53,6 +58,8 @@ class _AdminPageState extends ConsumerState<AdminPage> {
                           label: Text(switch (t) {
                             'users' => l.adminUsers,
                             'modules' => l.adminModules,
+                            'identity' => l.adminIdentityProviders,
+                            'audit' => l.adminAuditTrail,
                             _ => l.adminPriceZones,
                           }),
                         ),
@@ -76,6 +83,8 @@ class _AdminPageState extends ConsumerState<AdminPage> {
           child: switch (tab) {
             'modules' => const ModulesPage(),
             'zones' => const PriceZonesPage(),
+            'identity' => const IdentityProvidersPage(),
+            'audit' => const AuditTrailPage(),
             'users' => const UsersPage(),
             _ => const SizedBox.shrink(),
           },

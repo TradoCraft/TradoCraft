@@ -724,6 +724,45 @@ async fn currency_must_be_three_letters(db: PgPool) {
 }
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn draft_purchase_order_can_be_edited_until_approved(db: PgPool) {
+    let e = env(db).await;
+    let s = e.supplier("One", "S1").await;
+    let po = e.draft(&s).await;
+    let id = po["id"].as_str().unwrap().to_string();
+    let uri = format!("/purchase-orders/{id}");
+
+    let (status, u) = put(
+        &e.app,
+        BUYER,
+        &uri,
+        json!({
+            "notes": "rush",
+            "expected_delivery_date": "2030-01-15T00:00:00.000",
+            "lines": [{ "product_id": FRAME, "quantity": "2", "unit_price": "5" }]
+        }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{u}");
+    assert_eq!(u["expected_delivery_date"], "2030-01-15");
+    assert_eq!(u["notes"], "rush");
+    assert_eq!(u["lines"].as_array().unwrap().len(), 1);
+    assert_eq!(q(u["total"].as_str().unwrap()), q("10"));
+
+    // Header-only change keeps the lines; invalid lines are rejected.
+    let (status, u) = put(&e.app, BUYER, &uri, json!({ "notes": "again" })).await;
+    assert_eq!(status, StatusCode::OK, "{u}");
+    assert_eq!(u["lines"].as_array().unwrap().len(), 1);
+    let (status, err) = put(&e.app, BUYER, &uri, json!({ "lines": [] })).await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{err}");
+
+    // Approved orders are frozen.
+    let (status, _) = post(&e.app, BUYER, &format!("{uri}/approve"), json!({})).await;
+    assert_eq!(status, StatusCode::OK);
+    let (status, err) = put(&e.app, BUYER, &uri, json!({ "notes": "late" })).await;
+    assert_eq!(status, StatusCode::CONFLICT, "{err}");
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
 async fn purchase_order_status_transitions(db: PgPool) {
     let e = env(db).await;
     let s = e.supplier("One", "S1").await;

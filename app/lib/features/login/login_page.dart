@@ -1,5 +1,8 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
+
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../app/api.dart';
 import '../../app/brand.dart';
@@ -7,6 +10,7 @@ import '../../app/environment_ui.dart';
 import '../../app/profile.dart';
 import '../../app/session.dart';
 import '../field/offline/kv_store.dart';
+import '../setup/setup_api.dart';
 import '../../l10n/l10n.dart';
 
 /// Seeded demo users (SEED_DEV_DATA=true), one per role, for quick switching in dev mode.
@@ -36,9 +40,56 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   bool _busy = false;
   String? _error;
 
+  /// Whether the server in the address field has no company yet (offers the setup wizard).
+  bool _needsSetup = false;
+
+  /// The address [_needsSetup] was asked for, so a late answer for another address is ignored.
+  String? _setupAskedFor;
+
+  /// Pending timer of the debounced setup check.
+  Timer? _setupDebounce;
+
+  /// Counts address edits and setup checks; an answer counts only while its number is current,
+  /// so a slow answer for an earlier address (even one typed again later) is dropped.
+  int _setupGeneration = 0;
+
+  /// The address was edited: the earlier answer no longer applies, so the offer goes away and the
+  /// new address is asked after a short pause. A late answer for an older address is ignored.
+  void _serverEdited(String _) {
+    _setupDebounce?.cancel();
+    _setupAskedFor = null;
+    _setupGeneration++;
+    if (_needsSetup) setState(() => _needsSetup = false);
+    _setupDebounce = Timer(const Duration(milliseconds: 500), _checkSetup);
+  }
+
+  @override
+  void dispose() {
+    _setupDebounce?.cancel();
+    super.dispose();
+  }
+
+  /// Asks the server in the address field whether it needs setting up. Failures (unreachable,
+  /// not a TradoCraft server) just mean no offer.
+  Future<void> _checkSetup() async {
+    final url = _server.text.trim();
+    _setupAskedFor = url;
+    final generation = ++_setupGeneration;
+    var needs = false;
+    if (url.isNotEmpty) {
+      try {
+        needs = (await ref.read(setupStatusProvider)(url)).needsSetup;
+      } catch (_) {}
+    }
+    if (mounted && generation == _setupGeneration && _setupAskedFor == url) {
+      setState(() => _needsSetup = needs);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
+    _checkSetup();
     // A named profile remembers who signed in last, so a window per role opens ready to go.
     if (ref.read(profileProvider) != null) {
       ref.read(kvStoreProvider).get(SessionStore.lastDevUserKey).then((u) {
@@ -84,7 +135,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   @override
   Widget build(BuildContext context) {
     // Another environment chosen in the switcher: show its address.
-    ref.listen(sessionProvider, (_, s) => _server.text = s.serverUrl);
+    ref.listen(sessionProvider, (_, s) {
+      _server.text = s.serverUrl;
+      _checkSetup();
+    });
     return Scaffold(
       body: Column(
         children: [
@@ -116,6 +170,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   TextField(
                     controller: _server,
                     decoration: InputDecoration(labelText: context.l10n.server),
+                    onChanged: _serverEdited,
+                    onSubmitted: (_) => _checkSetup(),
                   ),
                   SizedBox(height: 12),
                   SegmentedButton<bool>(
@@ -187,6 +243,24 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     onPressed: _busy ? null : _signIn,
                     child: Text(context.l10n.signIn),
                   ),
+                  if (_needsSetup) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      context.l10n.setupOfferHint,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    OutlinedButton.icon(
+                      key: const ValueKey('login-setup'),
+                      icon: const Icon(Icons.add_business),
+                      label: Text(context.l10n.setupOffer),
+                      onPressed: _busy
+                          ? null
+                          : () => context.go(
+                              '/setup?server=${Uri.encodeQueryComponent(_server.text.trim())}',
+                            ),
+                    ),
+                  ],
                   const SizedBox(height: 8),
                   TextButton.icon(
                     key: const ValueKey('login-environments'),

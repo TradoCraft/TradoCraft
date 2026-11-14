@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -238,6 +238,7 @@ class FakeApi implements HttpClientAdapter {
             'country_code': 'BE',
             'currency': 'EUR',
             'default_language': 'nl',
+            'is_primary': true,
           },
         };
       default:
@@ -278,7 +279,7 @@ Future<FakeApi> _pump(
       overrides: [dioProvider.overrideWithValue(dio)],
       child: MaterialApp(
         locale: const Locale('en'),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localizationsDelegates: [AppLocalizations.delegate, ...GlobalMaterialLocalizations.delegates],
         supportedLocales: AppLocalizations.supportedLocales,
         home: QuotationScreen(id: _quotationId),
       ),
@@ -314,7 +315,7 @@ Future<FakeApi> _pumpRouted(WidgetTester tester, String status) async {
       child: MaterialApp.router(
         routerConfig: router,
         locale: const Locale('en'),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localizationsDelegates: [AppLocalizations.delegate, ...GlobalMaterialLocalizations.delegates],
         supportedLocales: AppLocalizations.supportedLocales,
       ),
     ),
@@ -338,6 +339,22 @@ void main() {
     expect((body['lines'] as List).first['quantity'], '2');
     expect(find.text('€ 8.920,12'), findsOneWidget);
     expect(find.text('€ 7.372,00'), findsWidgets);
+  });
+
+  testWidgets('the number inputs of a line have accessible names', (
+    tester,
+  ) async {
+    final handle = tester.ensureSemantics();
+    await _pump(tester, 'draft');
+    // The column headers are the only visible labels, so each input carries its header as its name.
+    final quantity = tester.getSemantics(find.widgetWithText(TextField, '1'));
+    expect(quantity.label, contains('Quantity'));
+    expect(quantity.flagsCollection.isTextField, isTrue);
+    expect(
+      tester.getSemantics(find.widgetWithText(TextField, '0')).label,
+      contains('Extra disc.'),
+    );
+    handle.dispose();
   });
 
   testWidgets('remarks are loaded, edited and saved with the draft', (

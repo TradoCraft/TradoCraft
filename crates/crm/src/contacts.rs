@@ -745,7 +745,7 @@ pub struct LookupParams {
     pub phone: Option<String>,
     /// An e-mail address.
     pub email: Option<String>,
-    /// Part of a name (first, last or customer).
+    /// Part of a name (first, last or customer), ignoring case and accents.
     pub q: Option<String>,
 }
 
@@ -825,12 +825,13 @@ async fn lookup(
         .await?;
         customers.extend(by_email);
     }
-    if let Some(q) = q {
-        let pattern = format!("%{}%", q.to_lowercase());
+    if let Some(pattern) = tradocraft_core::search::pattern(q) {
         let rows: Vec<ContactRow> = sqlx::query_as(&format!(
-            "{SELECT} WHERE lower(c.first_name || ' ' || c.last_name) LIKE $1
-                OR lower(c.last_name || ' ' || c.first_name) LIKE $1 OR lower(cu.name) LIKE $1
-             ORDER BY c.active DESC, c.last_name, c.first_name LIMIT 20"
+            "{SELECT} WHERE {} OR {} OR {}
+             ORDER BY c.active DESC, c.last_name, c.first_name LIMIT 20",
+            tradocraft_core::search::matches("c.first_name || ' ' || c.last_name", "$1"),
+            tradocraft_core::search::matches("c.last_name || ' ' || c.first_name", "$1"),
+            tradocraft_core::search::matches("cu.name", "$1"),
         ))
         .bind(pattern)
         .fetch_all(&mut *conn)

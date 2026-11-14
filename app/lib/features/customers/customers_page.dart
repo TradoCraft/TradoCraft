@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/api.dart';
@@ -56,6 +56,7 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
           onImported: () => _list.currentState?.reload(),
         ),
       ],
+      createTargetId: 'customers-create',
       createLabel: context.l10n.newCustomer,
       onCreate: canWrite ? () => showCustomerForm(context) : null,
       onOpen: (c) =>

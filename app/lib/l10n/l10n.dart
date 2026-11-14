@@ -258,6 +258,14 @@ extension CodeLabels on AppLocalizations {
     _ => s,
   };
 
+  String productionOperationStatus(String s) => switch (s) {
+    'pending' => productionOperationPending,
+    'in_progress' => productionStatusInProgress,
+    'done' => productionOperationDone,
+    'skipped' => productionOperationSkipped,
+    _ => s,
+  };
+
   String contactRole(String s) => switch (s) {
     'sales_contact' => roleSalesContact,
     'technical' => roleTechnical,
@@ -380,6 +388,7 @@ extension CodeLabels on AppLocalizations {
     'dispatcher' => userRoleDispatcher,
     'logistics' => userRoleLogistics,
     'viewer' => userRoleViewer,
+    'finance' => userRoleFinance,
     _ => code,
   };
 
@@ -396,6 +405,8 @@ extension CodeLabels on AppLocalizations {
     'field' => moduleField,
     'delivery' => moduleDelivery,
     'production' => moduleProduction,
+    'finance' => moduleFinance,
+    'todo' => moduleTodo,
     _ => code,
   };
 }

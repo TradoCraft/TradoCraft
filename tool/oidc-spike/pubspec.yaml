@@ -1,0 +1,23 @@
+name: oidc_spike
+description: Throw-away spike comparing the oidc package family with an in-house loopback flow, against a local Keycloak.
+publish_to: none
+environment:
+  sdk: ^3.14.0
+  flutter: ">=3.50.0"
+dependencies:
+  flutter:
+    sdk: flutter
+  oidc: 5.0.2
+  oidc_core: 4.0.0
+  oidc_linux: 1.0.4
+  oidc_default_store: 2.0.0
+  dio: ^5.9.0
+  crypto: ^3.0.6
+  http: ^1.2.0
+  logging: ^1.3.0
+dev_dependencies:
+  test: any
+  integration_test:
+    sdk: flutter
+  flutter_test:
+    sdk: flutter

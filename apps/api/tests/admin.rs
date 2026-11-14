@@ -107,7 +107,7 @@ async fn only_the_admin_reaches_the_administration(db: PgPool) {
     }
     let (status, roles) = get(&app, ADMIN, "/api/v1/roles").await;
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(roles.as_array().unwrap().len(), 16);
+    assert_eq!(roles.as_array().unwrap().len(), 17);
     let admin = &roles[0];
     assert_eq!(admin["role"], "admin");
     // The roles of the parcel hand-over come last, with their permissions.
@@ -124,9 +124,9 @@ async fn only_the_admin_reaches_the_administration(db: PgPool) {
             .map(|p| p.as_str().unwrap().to_string())
             .collect()
     };
-    assert_eq!(roles[13]["role"], "goods_in");
-    assert_eq!(roles[14]["role"], "repair_intake");
-    assert_eq!(roles[15]["role"], "integration");
+    assert_eq!(roles[14]["role"], "goods_in");
+    assert_eq!(roles[15]["role"], "repair_intake");
+    assert_eq!(roles[16]["role"], "integration");
     assert_eq!(
         role_perms("integration"),
         [
@@ -479,7 +479,9 @@ async fn a_module_the_company_switches_off_is_gone_for_everyone(db: PgPool) {
             "configurator",
             "delivery",
             "production",
-            "reports"
+            "reports",
+            "finance",
+            "todo"
         ]
     );
     assert!(mods

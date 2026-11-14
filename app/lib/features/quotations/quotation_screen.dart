@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:decimal/decimal.dart';
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -20,6 +20,9 @@ import '../../shared/remark_history.dart';
 import '../../shared/search_picker.dart';
 import '../../l10n/l10n.dart';
 import '../../shared/app_icons.dart';
+import '../../shared/load_failed.dart';
+import '../todo/object_todos_button.dart';
+import '../tutorial/targets.dart';
 
 /// An editable line of a draft. Prices are never computed here: they come from
 /// the server's pricing preview, matched by position.
@@ -46,13 +49,16 @@ class _Line {
        ),
        customerRemark = TextEditingController(text: customerRemark);
 
-  final Product product;
+  /// Mutable: changing the main product of a line keeps the line and swaps the product.
+  Product product;
   final TextEditingController quantity;
   final TextEditingController discount;
 
   /// Confirmed price of an indicative product; empty while unconfirmed.
   final TextEditingController price;
-  final String? description;
+  /// The stored name snapshot, re-sent as an override. Null lets the server name the line from
+  /// its product in the customer's language (a new line, or a line whose product was changed).
+  String? description;
 
   /// Internal remark for production (never printed for the customer) and the remark printed under
   /// the description.
@@ -193,11 +199,19 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
   String? _gridId;
   PricingPreview? _preview;
   String? _previewError;
+
+  /// Active option catalogue per product id, fetched on demand and cached for this screen. A
+  /// failed fetch is not cached (nothing is marked then).
+  final Map<String, List<ProductOption>> _catalogues = {};
+
+  /// Notes shown after a main product was changed (what was cleared, which options do not apply).
+  final List<_SwapNotice> _notices = [];
   Timer? _debounce;
   int _previewSeq = 0;
   bool _loading = false;
   bool _busy = false;
   String? _error;
+  bool _missing = false;
   bool _changed = false;
 
   TradocraftApi get _api => ref.read(apiProvider);
@@ -263,6 +277,8 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
       _purpose = 'installation';
       _preview = null;
       _previewError = null;
+      _catalogues.clear();
+      _notices.clear();
       _error = null;
       _changed = false;
     });
@@ -324,9 +340,13 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
           _gridId = q.powerGridId;
         });
         _refreshPreview();
+        _loadCatalogues();
       }
     } catch (e) {
-      setState(() => _error = errorMessage(e));
+      setState(() {
+        _error = errorMessage(e);
+        _missing = errorStatus(e) == 404;
+      });
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -334,6 +354,7 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
 
   /// Removes a line and its sub-lines (an option cannot stay without its parent).
   void _removeLine(_Line l) {
+    _notices.removeWhere((n) => n.line == l);
     for (final c in _lines.where((c) => c.parent == l).toList()) {
       _removeLine(c);
     }
@@ -500,7 +521,18 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
 
   /// Sends the draft. While the shipping cost is still to be quoted the server answers 409; people
   /// who may override that (logistics) are offered "send anyway", others see the message.
-  Future<void> _send(bool canOverride) => _run(() async {
+  Future<void> _send(bool canOverride) async {
+    // Sending is never blocked by marked options; the user is only told afterwards.
+    final marked = _markedCount;
+    await _doSend(canOverride);
+    if (marked > 0 && mounted && _q?.status == QuotationStatus.sent) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.sentWithNotApplicable(marked))),
+      );
+    }
+  }
+
+  Future<void> _doSend(bool canOverride) => _run(() async {
     try {
       _apply(await _api.sales.sendQuotation(id: _id!));
     } on DioException catch (e) {
@@ -608,6 +640,17 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
         false;
     final theme = Theme.of(context);
     final q = _q;
+    if (q == null && _id != null && !_loading && _error != null) {
+      return Scaffold(
+        body: LoadFailedView(
+          message: _error!,
+          leaveTo: '/quotations',
+          notFound: _missing,
+          todoKind: TodoLinkKind.quotation,
+          todoId: _id,
+        ),
+      );
+    }
     return Scaffold(
       body: _loading
           ? const Center(child: CircularProgressIndicator())
@@ -642,6 +685,12 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    if (q != null)
+                      ObjectTodosButton(
+                        kind: TodoLinkKind.quotation,
+                        id: q.id,
+                        label: q.number,
                       ),
                     ..._actions(canWrite),
                   ],
@@ -680,32 +729,32 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
     final s = q?.status;
     return [
       if (_editable)
-        FilledButton.icon(
+        TutorialTarget(id: 'quotation-save', child: FilledButton.icon(
           onPressed: _busy ? null : _save,
           icon: const Icon(AppIcons.save),
           label: Text(context.l10n.saveDraft),
-        ),
+        )),
       if (q != null)
-        OutlinedButton.icon(
+        TutorialTarget(id: 'quotation-pdf', child: OutlinedButton.icon(
           onPressed: _busy ? null : _pdf,
           icon: const Icon(AppIcons.pictureAsPdf),
           label: const Text('PDF'),
-        ),
+        )),
       if (s == QuotationStatus.draft)
-        OutlinedButton.icon(
+        TutorialTarget(id: 'quotation-send', child: OutlinedButton.icon(
           onPressed: _busy
               ? null
               : () => _send(canWrite && can(ref, 'shipping.manage')),
           icon: const Icon(AppIcons.send),
           label: Text(context.l10n.markAsSent),
-        ),
+        )),
       if (s == QuotationStatus.sent) ...[
-        OutlinedButton(
+        TutorialTarget(id: 'quotation-accept', child: OutlinedButton(
           onPressed: _busy
               ? null
               : () => _transition((id) => _api.sales.acceptQuotation(id: id)),
           child: Text(context.l10n.accepted),
-        ),
+        )),
         OutlinedButton(
           onPressed: _busy
               ? null
@@ -714,17 +763,17 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
         ),
       ],
       if (s == QuotationStatus.sent || s == QuotationStatus.accepted)
-        FilledButton.icon(
+        TutorialTarget(id: 'quotation-convert', child: FilledButton.icon(
           onPressed: _busy ? null : _convert,
           icon: const Icon(AppIcons.shoppingCartCheckout),
           label: Text(context.l10n.convertToOrder),
-        ),
+        )),
       if (s == QuotationStatus.sent || s == QuotationStatus.rejected)
-        OutlinedButton.icon(
+        TutorialTarget(id: 'quotation-revise', child: OutlinedButton.icon(
           onPressed: _busy ? null : _revise,
           icon: const Icon(AppIcons.editNote),
           label: Text(context.l10n.newRevision),
-        ),
+        )),
     ];
   }
 
@@ -875,6 +924,7 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
           actions: const [SizedBox.shrink()],
         ),
       const SizedBox(height: 8),
+      for (final n in _notices) _swapNotice(theme, n),
       _linesTable(
         theme,
         rows: [
@@ -884,11 +934,16 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
               level: l.level,
               description: l.description ?? l.product.name,
               detail: l.sectionAndComment,
-              quantity: _numField(l.quantity, l.product.unit),
+              quantity: _numField(
+                l.quantity,
+                l.product.unit,
+                semanticLabel: context.l10n.quantity,
+              ),
               listPrice: l.hasConfirmablePrice
                   ? _numField(
                       l.price,
                       '€',
+                      semanticLabel: context.l10n.listPrice,
                       hint: number(
                         preview?.lines.elementAtOrNull(i)?.listUnitPrice,
                       ),
@@ -902,7 +957,12 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
               rebate: _rebateText(preview?.lines.elementAtOrNull(i)),
               discount: l.isNet
                   ? Text(context.l10n.pricingNet)
-                  : _numField(l.discount, '%', signed: true),
+                  : _numField(
+                      l.discount,
+                      '%',
+                      signed: true,
+                      semanticLabel: context.l10n.lineDiscount,
+                    ),
               netPrice: money(preview?.lines.elementAtOrNull(i)?.netUnitPrice),
               total: money(preview?.lines.elementAtOrNull(i)?.lineTotal),
               onRemove: () {
@@ -911,6 +971,12 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
                 _refreshPreview();
               },
               onAddSub: l.isPercent ? null : () => _addSubItem(l),
+              onChangeProduct: l.parent == null
+                  ? () => _changeProduct(l)
+                  : null,
+              warning: _notOffered(l)
+                  ? context.l10n.optionNotOffered(l.parent!.product.code)
+                  : null,
               extra: _remarkFields(l),
             ),
           // Added by logistics (no product); the server keeps it, so it is never sent back. Once the
@@ -931,11 +997,7 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
             label: context.l10n.addProduct,
             clearOnSelect: true,
             display: (p) => '${p.code} · ${p.name}',
-            search: (q) async => (await _api.products.listProducts(
-              q: q,
-              active: true,
-              limit: 20,
-            )).items,
+            search: _searchProducts,
             onSelected: _addProduct,
           ),
         ),
@@ -1022,6 +1084,7 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
       // Options are a convenience: a failed lookup never blocks adding the product.
       return;
     }
+    if (mounted) setState(() => _catalogues[p.id] = options);
     if (options.isEmpty || !mounted || !_lines.contains(line)) return;
     final optional = options.where((o) => !o.requiredValue).toList();
     var chosen = options.where((o) => o.requiredValue).toList();
@@ -1035,6 +1098,12 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
       chosen = picked ?? chosen;
       if (!mounted || !_lines.contains(line)) return;
     }
+    await _addOptionLines(line, chosen);
+  }
+
+  /// Adds the [chosen] options as child lines after the parent and the sub-lines it already has,
+  /// then reprices.
+  Future<void> _addOptionLines(_Line line, List<ProductOption> chosen) async {
     if (chosen.isEmpty) return;
     try {
       final products = [
@@ -1057,6 +1126,7 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
           _lines.insert(at++, _Line(products[i], quantity: qty, parent: line));
         }
       });
+      _setDirty(true);
       _refreshPreview();
     } catch (e) {
       if (mounted) setState(() => _previewError = errorMessage(e));
@@ -1075,6 +1145,9 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
     } catch (_) {
       // Options are a convenience: the search still works without them.
       options = const [];
+    }
+    if (mounted && options.isNotEmpty) {
+      setState(() => _catalogues[parent.product.id] = options);
     }
     if (!mounted || !_lines.contains(parent)) return;
     final picks = await showSubItemChooser(
@@ -1119,6 +1192,199 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
     }
   }
 
+  /// Fetches the option catalogues of every product that has sub-lines (cached; failures are
+  /// ignored: without a catalogue nothing is marked).
+  void _loadCatalogues() {
+    final ids = {for (final l in _lines) ?l.parent?.product.id};
+    for (final id in ids) {
+      if (!_catalogues.containsKey(id)) _loadCatalogue(id);
+    }
+  }
+
+  /// The active options of a product, cached; null when the lookup failed.
+  Future<List<ProductOption>?> _loadCatalogue(String productId) async {
+    try {
+      final options = (await _api.products.listOptions(
+        id: productId,
+      )).where((o) => o.active && o.optionActive).toList();
+      if (!mounted) return null;
+      setState(() => _catalogues[productId] = options);
+      return options;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// A sub-line whose product is not in the option catalogue of its parent: only judged while
+  /// that catalogue is known and non-empty (a product without options leaves its sub-items free),
+  /// and never for percent-of-parent lines.
+  bool _notOffered(_Line l) {
+    final parent = l.parent;
+    if (parent == null || l.isPercent) return false;
+    final catalogue = _catalogues[parent.product.id];
+    if (catalogue == null || catalogue.isEmpty) return false;
+    return !catalogue.any((o) => o.optionProductId == l.product.id);
+  }
+
+  List<_Line> _markedChildren(_Line main) => [
+    for (final l in _lines)
+      if (l.parent == main && _notOffered(l)) l,
+  ];
+
+  int get _markedCount => _lines.where(_notOffered).length;
+
+  /// Picks another main product for [line] and swaps it in place. The structure, quantity,
+  /// discount (unless the new product is net priced), section, comment and remarks stay; prices
+  /// are never kept (the preview reprices) and the stored name is dropped so that the server names
+  /// the line from the new product. Options stay too: the ones that do not apply are marked.
+  Future<void> _changeProduct(_Line line) async {
+    final p = await showDialog<Product>(
+      context: context,
+      builder: (_) => AlertDialog(
+        key: const ValueKey('change-product-dialog'),
+        title: Text(
+          context.l10n.changeProductOf(
+            '${line.product.code} · ${line.product.name}',
+          ),
+        ),
+        content: SizedBox(
+          width: 420,
+          child: SearchPicker<Product>(
+            label: context.l10n.changeProductNew,
+            display: (p) => '${p.code} · ${p.name}',
+            search: _searchProducts,
+            onSelected: (p) => Navigator.pop(context, p),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(context.l10n.cancel),
+          ),
+        ],
+      ),
+    );
+    if (p == null || !mounted || !_lines.contains(line)) return;
+    if (p.id == line.product.id) return;
+    final l10n = context.l10n;
+    final notes = <String>[];
+    setState(() {
+      // An empty remark, or the old product's unedited default, becomes the new product's
+      // default, so that the field shows what will be saved; a remark the user edited stays.
+      final remark = line.productionRemark.text.trim();
+      final oldDefault = line.product.defaultProductionRemark?.trim() ?? '';
+      if (remark.isEmpty || remark == oldDefault) {
+        line.productionRemark.text = p.defaultProductionRemark?.trim() ?? '';
+      }
+      line.product = p;
+      // The server names the line from the new product, in the customer's language.
+      line.description = null;
+      line.price.text = '';
+      if (p.pricingType == 'net') {
+        final d = Decimal.tryParse(
+          parseDecimalInput(line.discount.text) ?? '0',
+        );
+        if (d != null && d != Decimal.zero) {
+          notes.add(l10n.changeProductNetNote(p.code));
+        }
+        line.discount.text = '0';
+      }
+      if (line.hasConfirmablePrice) {
+        notes.add(l10n.changeProductIndicativeNote(p.code));
+      }
+      _notices.removeWhere((n) => n.line == line);
+      _notices.add(_SwapNotice(line, notes));
+      _catalogues.remove(p.id);
+    });
+    _setDirty(true);
+    _refreshPreview();
+    final catalogue = await _loadCatalogue(p.id);
+    if (catalogue == null || !mounted || !_lines.contains(line)) return;
+    // Offer the options of the new product that are not on the line yet (required ones ticked).
+    final present = {
+      for (final l in _lines)
+        if (l.parent == line) l.product.id,
+    };
+    final missing = catalogue
+        .where((o) => !present.contains(o.optionProductId))
+        .toList();
+    if (missing.isEmpty) return;
+    final picked = await showOptionsChooser(
+      context,
+      product: p,
+      options: missing,
+    );
+    if (picked == null || !mounted || !_lines.contains(line)) return;
+    await _addOptionLines(line, picked);
+  }
+
+  Future<List<Product>> _searchProducts(String q) async =>
+      (await _api.products.listProducts(q: q, active: true, limit: 20)).items;
+
+  /// The note under the table after a product change: what was cleared, and the options that do
+  /// not apply to the new product, each with a Remove button (removal is always the user's act).
+  Widget _swapNotice(ThemeData theme, _SwapNotice n) {
+    final marked = _markedChildren(n.line);
+    if (n.notes.isEmpty && marked.isEmpty) return const SizedBox.shrink();
+    final scheme = theme.colorScheme;
+    final style = TextStyle(color: scheme.onTertiaryContainer);
+    return Card(
+      key: ValueKey('swap-notice-${n.line.product.id}'),
+      color: scheme.tertiaryContainer,
+      margin: const EdgeInsets.only(bottom: 8),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(AppIcons.warningAmber, color: scheme.onTertiaryContainer),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (final t in n.notes) Text(t, style: style),
+                  if (marked.isNotEmpty) ...[
+                    Text(
+                      context.l10n.optionsNotApplicable(
+                        marked.length,
+                        n.line.product.code,
+                      ),
+                      style: style,
+                    ),
+                    Wrap(
+                      spacing: 8,
+                      children: [
+                        for (final c in marked)
+                          TextButton.icon(
+                            key: ValueKey('remove-marked-${c.product.id}'),
+                            onPressed: () {
+                              setState(() => _removeLine(c));
+                              _setDirty(true);
+                              _refreshPreview();
+                            },
+                            icon: const Icon(AppIcons.close, size: 16),
+                            label: Text(
+                              context.l10n.removeNamedLine(c.product.code),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            IconButton(
+              tooltip: context.l10n.close,
+              onPressed: () => setState(() => _notices.remove(n)),
+              icon: const Icon(AppIcons.close),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   /// Appends a quantity-1 line for a suggested product; the preview then prices it.
   Future<void> _addSuggestion(SalesSuggestion s) async {
     try {
@@ -1130,31 +1396,37 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
     }
   }
 
+  /// A number input of a line. The column header is the only visible label, so [semanticLabel]
+  /// gives the input the name screen readers (and browser tests) find it by.
   Widget _numField(
     TextEditingController c,
     String suffix, {
     String? hint,
     String? label,
+    String? semanticLabel,
     bool signed = false,
   }) => SizedBox(
     width: 104,
-    child: TextField(
-      controller: c,
-      textAlign: TextAlign.right,
-      keyboardType: TextInputType.numberWithOptions(
-        decimal: true,
-        signed: signed,
+    child: Semantics(
+      label: semanticLabel,
+      child: TextField(
+        controller: c,
+        textAlign: TextAlign.right,
+        keyboardType: TextInputType.numberWithOptions(
+          decimal: true,
+          signed: signed,
+        ),
+        decoration: InputDecoration(
+          suffixText: suffix,
+          hintText: hint,
+          labelText: label,
+          floatingLabelBehavior: FloatingLabelBehavior.always,
+        ),
+        onChanged: (_) {
+          _onEdited();
+          if (label != null) setState(() {});
+        },
       ),
-      decoration: InputDecoration(
-        suffixText: suffix,
-        hintText: hint,
-        labelText: label,
-        floatingLabelBehavior: FloatingLabelBehavior.always,
-      ),
-      onChanged: (_) {
-        _onEdited();
-        if (label != null) setState(() {});
-      },
     ),
   );
 
@@ -1385,7 +1657,7 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
       110.0,
       110.0,
       120.0,
-      96.0,
+      144.0,
     ];
     Widget cell(int i, Widget child, {bool right = false}) => SizedBox(
       width: widths[i],
@@ -1443,27 +1715,24 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
                                   ),
                                 ),
                               Flexible(
-                                child: r.detail == null
-                                    ? Text(
-                                        r.description,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      r.description,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    if (r.detail != null)
+                                      Text(
+                                        r.detail!,
                                         overflow: TextOverflow.ellipsis,
-                                      )
-                                    : Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Text(
-                                            r.description,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                          Text(
-                                            r.detail!,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: theme.textTheme.bodySmall,
-                                          ),
-                                        ],
+                                        style: theme.textTheme.bodySmall,
                                       ),
+                                    if (r.warning != null)
+                                      _notOfferedChip(theme, r.warning!),
+                                  ],
+                                ),
                               ),
                             ],
                           ),
@@ -1481,6 +1750,12 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
+                              if (r.onChangeProduct != null)
+                                IconButton(
+                                  tooltip: context.l10n.changeProduct,
+                                  onPressed: r.onChangeProduct,
+                                  icon: const Icon(AppIcons.swapHoriz),
+                                ),
                               if (r.onAddSub != null)
                                 IconButton(
                                   tooltip: context.l10n.addSubItem,
@@ -1506,6 +1781,38 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
               padding: EdgeInsets.all(8),
               child: Text(context.l10n.noLines),
             ),
+        ],
+      ),
+    );
+  }
+
+  /// The mark of an option that its main product does not offer: gentle, theme-based colours
+  /// (tertiary container), readable in light and dark.
+  Widget _notOfferedChip(ThemeData theme, String text) {
+    final scheme = theme.colorScheme;
+    return Container(
+      key: const ValueKey('not-offered'),
+      margin: const EdgeInsets.only(top: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: scheme.tertiaryContainer,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(AppIcons.warningAmber, size: 14, color: scheme.onTertiaryContainer),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              text,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: scheme.onTertiaryContainer,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -1569,6 +1876,8 @@ class _TableRow {
     required this.total,
     this.onRemove,
     this.onAddSub,
+    this.onChangeProduct,
+    this.warning,
     this.detail,
     this.extra,
     this.level = 0,
@@ -1595,6 +1904,19 @@ class _TableRow {
 
   /// Attaches a product below this line as a sub-item (null: not offered, e.g. percent lines).
   final VoidCallback? onAddSub;
+
+  /// Swaps the main product of this line (null: not offered, e.g. on sub-lines).
+  final VoidCallback? onChangeProduct;
+
+  /// Marks a sub-line that its parent product does not offer.
+  final String? warning;
+}
+
+/// A note about a line whose main product was changed.
+class _SwapNotice {
+  _SwapNotice(this.line, this.notes);
+  final _Line line;
+  final List<String> notes;
 }
 
 /// Compares a quotation with today's prices and asks whether to keep or update them.
@@ -1737,10 +2059,10 @@ class RevisionDialog extends ConsumerWidget {
           onPressed: () => Navigator.pop(context),
           child: Text(context.l10n.cancel),
         ),
-        OutlinedButton(
+        TutorialTarget(id: 'quotation-revise-keep', child: OutlinedButton(
           onPressed: () => Navigator.pop(context, RevisionPricing.keep),
           child: Text(context.l10n.keepAgreedPrices),
-        ),
+        )),
         FilledButton(
           onPressed: () => Navigator.pop(context, RevisionPricing.current),
           child: Text(context.l10n.updateToCurrentPrices),

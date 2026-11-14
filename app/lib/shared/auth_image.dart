@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A picture behind a login: fetched with the session's credentials (a plain network image
 /// would not send them) and shown from memory.

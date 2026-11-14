@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -8,6 +8,8 @@ import '../../shared/app_icons.dart';
 import '../../shared/entity_list.dart';
 import '../../shared/format.dart';
 import '../../shared/search_picker.dart';
+import '../field/offline/kv_store.dart';
+import '../tutorial/targets.dart';
 
 /// The states a production order can be filtered on.
 const productionStatuses = [
@@ -21,6 +23,13 @@ const productionStatuses = [
 final divisionsProvider = FutureProvider.autoDispose<List<Division>>(
   (ref) => ref.watch(apiProvider).production.listDivisions(),
 );
+
+/// Storage key (per user) of the remembered queue scope: `mine` or `all`.
+const productionScopeKey = 'production.queue_scope';
+
+/// The divisions the signed-in user is a member of.
+List<Division> myDivisions(List<Division> all) =>
+    all.where((d) => d.isMember).toList();
 
 /// The production queue: most urgent first, with what is short of stock flagged.
 class ProductionQueuePage extends ConsumerStatefulWidget {
@@ -36,6 +45,34 @@ class _ProductionQueuePageState extends ConsumerState<ProductionQueuePage> {
   String? _status;
   String? _division;
 
+  /// The user's own choice of scope (`true`: my divisions); null until chosen or restored.
+  bool? _mineChoice;
+  bool _scopeRestored = false;
+
+  @override
+  void initState() {
+    super.initState();
+    ref.read(userKvStoreProvider).get(productionScopeKey).then((v) {
+      if (!mounted) return;
+      setState(() {
+        _scopeRestored = true;
+        if (v == 'mine') _mineChoice = true;
+        if (v == 'all') _mineChoice = false;
+      });
+    });
+  }
+
+  void _setScope(bool mine) {
+    setState(() => _mineChoice = mine);
+    ref
+        .read(userKvStoreProvider)
+        .set(productionScopeKey, mine ? 'mine' : 'all');
+    // The loader is rebuilt with the new scope first; then the list reloads.
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _list.currentState?.reload(),
+    );
+  }
+
   Future<bool?> _buildForStock() => showDialog<bool>(
     context: context,
     builder: (_) => const _StockOrderDialog(),
@@ -48,6 +85,19 @@ class _ProductionQueuePageState extends ConsumerState<ProductionQueuePage> {
     final perms = ref.watch(meProvider).value?.permissions ?? const [];
     final divisionsAsync = ref.watch(divisionsProvider);
     final divisions = divisionsAsync.value ?? const <Division>[];
+    final mine = myDivisions(divisions);
+    // Workers default to their own divisions; planners, sales and admins (who can write or
+    // administer production) to everything. Without a division there is no scope at all.
+    final defaultMine =
+        mine.isNotEmpty &&
+        !perms.contains('production.write') &&
+        !perms.contains('production.admin');
+    final scopeMine = mine.isNotEmpty && (_mineChoice ?? defaultMine);
+    if (!_scopeRestored ||
+        ref.watch(meProvider).isLoading ||
+        divisionsAsync.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
     // A division that no longer exists is not a valid filter: drop it, so it is not sent either.
     if (_division != null &&
         divisionsAsync.hasValue &&
@@ -65,14 +115,51 @@ class _ProductionQueuePageState extends ConsumerState<ProductionQueuePage> {
           q: q,
           status: _status,
           divisionId: _division,
+          mine: scopeMine ? true : null,
           offset: offset,
           limit: limit,
         );
         return (page.items, page.total);
       },
+      emptyText: scopeMine ? l.productionScopeEmpty : null,
+      emptyAction: scopeMine
+          ? TextButton(
+              key: const ValueKey('scope-show-all'),
+              onPressed: () => _setScope(false),
+              child: Text(l.productionShowAllDivisions),
+            )
+          : null,
       filters: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (mine.isNotEmpty) ...[
+            TutorialTarget(id: 'production-scope', child: SegmentedButton<bool>(
+              key: const ValueKey('queue-scope'),
+              showSelectedIcon: false,
+              segments: [
+                ButtonSegment(value: true, label: Text(l.productionScopeMine)),
+                ButtonSegment(value: false, label: Text(l.productionScopeAll)),
+              ],
+              selected: {scopeMine},
+              onSelectionChanged: (s) => _setScope(s.first),
+            )),
+            const SizedBox(width: 12),
+            Tooltip(
+              message: l.productionYourDivisions,
+              child: Wrap(
+                key: const ValueKey('my-divisions'),
+                spacing: 4,
+                children: [
+                  for (final d in mine)
+                    Chip(
+                      visualDensity: VisualDensity.compact,
+                      label: Text(d.name),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+          ],
           DropdownButton<String?>(
             value: _status,
             hint: Text(l.allStatuses),
@@ -112,15 +199,28 @@ class _ProductionQueuePageState extends ConsumerState<ProductionQueuePage> {
             _list.currentState?.reload();
           },
         ),
+        IconButton(
+          key: const ValueKey('capacity'),
+          tooltip: l.productionCapacity,
+          icon: const Icon(AppIcons.barChart),
+          onPressed: () => context.push('/production/capacity'),
+        ),
+        IconButton(
+          key: const ValueKey('work-centres'),
+          tooltip: l.productionWorkCentres,
+          icon: const Icon(AppIcons.precisionManufacturing),
+          onPressed: () => context.push('/production/work-centres'),
+        ),
         if (perms.contains('production.admin'))
-          IconButton(
+          TutorialTarget(id: 'production-divisions', child: IconButton(
             key: const ValueKey('divisions'),
             tooltip: l.productionDivisions,
             icon: const Icon(AppIcons.settings),
             onPressed: () => context.push('/production/divisions'),
-          ),
+          )),
       ],
       onCreate: perms.contains('production.write') ? _buildForStock : null,
+      createTargetId: 'production-build',
       createLabel: l.productionBuildForStock,
       columns: [
         EntityColumn(l.number, (o) => o.number, flex: 2),
@@ -158,11 +258,37 @@ class _ProductionQueuePageState extends ConsumerState<ProductionQueuePage> {
           l.status,
           (o) =>
               l.productionStatus(o.status) +
+              (o.operationCount > 0
+                  ? ' · ${o.operationsDone}/${o.operationCount}'
+                  : '') +
               (o.shortComponents > 0 ? ' · ${l.productionShort}' : ''),
           flex: 3,
           cell: (context, o) => Row(
             children: [
               Flexible(child: Text(l.productionStatus(o.status))),
+              if (o.operationCount > 0) ...[
+                const SizedBox(width: 6),
+                Tooltip(
+                  message: l.productionOperations,
+                  child: Text(
+                    '${o.operationsDone}/${o.operationCount}',
+                    key: ValueKey('ops-${o.id}'),
+                    style: Theme.of(context).textTheme.labelSmall,
+                  ),
+                ),
+              ],
+              if (o.behindSchedule) ...[
+                const SizedBox(width: 6),
+                Tooltip(
+                  message: l.productionBehindScheduleShort,
+                  child: Icon(
+                    AppIcons.schedule,
+                    key: ValueKey('behind-${o.id}'),
+                    size: 18,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                ),
+              ],
               if (o.shortComponents > 0 || o.orderCancelled) ...[
                 const SizedBox(width: 6),
                 Tooltip(
@@ -198,6 +324,7 @@ class _StockOrderDialog extends ConsumerStatefulWidget {
 class _StockOrderDialogState extends ConsumerState<_StockOrderDialog> {
   Product? _product;
   final _quantity = TextEditingController(text: '1');
+  bool _auto = false;
   String? _error;
   bool _saving = false;
 
@@ -225,6 +352,7 @@ class _StockOrderDialogState extends ConsumerState<_StockOrderDialog> {
             body: ReleaseProductionInput(
               productId: _product!.id,
               quantity: quantity,
+              autoReleaseSubassemblies: _auto ? true : null,
             ),
           );
       if (!mounted) return;
@@ -276,6 +404,13 @@ class _StockOrderDialogState extends ConsumerState<_StockOrderDialog> {
               ),
               decoration: InputDecoration(labelText: l.quantity),
             ),
+            SwitchListTile(
+              key: const ValueKey('stock-auto-release'),
+              contentPadding: EdgeInsets.zero,
+              title: Text(l.productionAutoRelease),
+              value: _auto,
+              onChanged: (v) => setState(() => _auto = v),
+            ),
             if (_error != null) ...[
               const SizedBox(height: 12),
               Text(
@@ -291,11 +426,11 @@ class _StockOrderDialogState extends ConsumerState<_StockOrderDialog> {
           onPressed: () => Navigator.pop(context),
           child: Text(l.cancel),
         ),
-        FilledButton(
+        TutorialTarget(id: 'production-build-save', child: FilledButton(
           key: const ValueKey('stock-save'),
           onPressed: _saving ? null : _save,
           child: Text(l.productionRelease),
-        ),
+        )),
       ],
     );
   }

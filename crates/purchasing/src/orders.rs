@@ -79,7 +79,9 @@ pub struct NewPoLineInput {
 #[derive(Debug, Clone, Deserialize, ToSchema)]
 pub struct NewPurchaseOrderInput {
     pub supplier_id: Uuid,
+    #[serde(default, deserialize_with = "tradocraft_core::serde_util::opt_date")]
     pub order_date: Option<NaiveDate>,
+    #[serde(default, deserialize_with = "tradocraft_core::serde_util::opt_date")]
     pub expected_delivery_date: Option<NaiveDate>,
     pub currency: Option<String>,
     pub notes: Option<String>,
@@ -89,6 +91,7 @@ pub struct NewPurchaseOrderInput {
 /// Payload to change a draft purchase order.
 #[derive(Debug, Clone, Deserialize, ToSchema)]
 pub struct UpdatePurchaseOrderInput {
+    #[serde(default, deserialize_with = "tradocraft_core::serde_util::opt_date")]
     pub expected_delivery_date: Option<NaiveDate>,
     pub currency: Option<String>,
     pub notes: Option<String>,
@@ -215,10 +218,70 @@ pub async fn create(
     let number = format!("PO{order_year}-{seq:05}");
     let id = new_id();
 
+    let (subtotal, validated_lines) = validate_lines(conn, input.lines).await?;
+
+    // For POs, tax_total defaults to zero unless explicit tax calculation is wired
+    let tax_total = Decimal::ZERO;
+    let total = subtotal + tax_total;
+
+    sqlx::query(
+        "INSERT INTO purchasing.purchase_orders (
+            id, company_id, number, supplier_id, status, order_date, expected_delivery_date,
+            currency, subtotal, tax_total, total, notes, created_by_user_id, created_at, updated_at
+         )
+         VALUES ($1, $2, $3, $4, 'draft', $5, $6, $7, $8, $9, $10, $11, $12, now(), now())",
+    )
+    .bind(id)
+    .bind(user.company_id)
+    .bind(&number)
+    .bind(input.supplier_id)
+    .bind(order_date)
+    .bind(input.expected_delivery_date)
+    .bind(&currency)
+    .bind(subtotal)
+    .bind(tax_total)
+    .bind(total)
+    .bind(input.notes.unwrap_or_default().trim())
+    .bind(user.user_id)
+    .execute(&mut *conn)
+    .await?;
+
+    insert_lines(conn, id, validated_lines).await?;
+
+    audit::record(
+        conn,
+        user,
+        "purchase_order",
+        id,
+        "created",
+        serde_json::json!({
+            "number": number,
+            "supplier_id": input.supplier_id,
+            "total": total.to_string(),
+        }),
+    )
+    .await?;
+
+    load(conn, user.company_id, id).await
+}
+
+/// A validated line: line number, input and rounded line total.
+type ValidatedLine = (i32, NewPoLineInput, Decimal);
+
+/// Validates the lines of a purchase order and returns their subtotal.
+async fn validate_lines(
+    conn: &mut PgConnection,
+    lines: Vec<NewPoLineInput>,
+) -> AppResult<(Decimal, Vec<ValidatedLine>)> {
+    if lines.is_empty() {
+        return Err(AppError::Validation(
+            "purchase order must contain at least one line".into(),
+        ));
+    }
     let mut subtotal = Decimal::ZERO;
     let mut validated_lines = Vec::new();
 
-    for (idx, line) in input.lines.into_iter().enumerate() {
+    for (idx, line) in lines.into_iter().enumerate() {
         if line.quantity <= Decimal::ZERO {
             return Err(AppError::Validation(format!(
                 "line {}: quantity must be greater than zero",
@@ -261,32 +324,15 @@ pub async fn create(
         validated_lines.push((idx as i32 + 1, line, line_total));
     }
 
-    // For POs, tax_total defaults to zero unless explicit tax calculation is wired
-    let tax_total = Decimal::ZERO;
-    let total = subtotal + tax_total;
+    Ok((subtotal, validated_lines))
+}
 
-    sqlx::query(
-        "INSERT INTO purchasing.purchase_orders (
-            id, company_id, number, supplier_id, status, order_date, expected_delivery_date,
-            currency, subtotal, tax_total, total, notes, created_by_user_id, created_at, updated_at
-         )
-         VALUES ($1, $2, $3, $4, 'draft', $5, $6, $7, $8, $9, $10, $11, $12, now(), now())",
-    )
-    .bind(id)
-    .bind(user.company_id)
-    .bind(&number)
-    .bind(input.supplier_id)
-    .bind(order_date)
-    .bind(input.expected_delivery_date)
-    .bind(&currency)
-    .bind(subtotal)
-    .bind(tax_total)
-    .bind(total)
-    .bind(input.notes.unwrap_or_default().trim())
-    .bind(user.user_id)
-    .execute(&mut *conn)
-    .await?;
-
+/// Inserts validated lines for a purchase order.
+async fn insert_lines(
+    conn: &mut PgConnection,
+    id: Uuid,
+    validated_lines: Vec<ValidatedLine>,
+) -> AppResult<()> {
     for (line_num, line, line_total) in validated_lines {
         let line_id = new_id();
         sqlx::query(
@@ -309,20 +355,70 @@ pub async fn create(
         .await?;
     }
 
+    Ok(())
+}
+
+/// Changes a draft purchase order (header fields and, when given, all lines).
+pub async fn update(
+    conn: &mut PgConnection,
+    user: &CurrentUser,
+    id: Uuid,
+    input: UpdatePurchaseOrderInput,
+) -> AppResult<PurchaseOrderDetail> {
+    lock(conn, user.company_id, id).await?;
+    let po = load(conn, user.company_id, id).await?;
+    if po.summary.status != "draft" {
+        return Err(AppError::Conflict(format!(
+            "only draft purchase orders can be changed (current status: {})",
+            po.summary.status
+        )));
+    }
+    let currency = match input.currency {
+        Some(c) => normalize_currency(&c)?,
+        None => po.summary.currency.clone(),
+    };
+    let expected = input
+        .expected_delivery_date
+        .or(po.summary.expected_delivery_date);
+    let notes = match input.notes {
+        Some(n) => n.trim().to_string(),
+        None => po.summary.notes.clone(),
+    };
+    let mut subtotal = po.summary.subtotal;
+    if let Some(lines) = input.lines {
+        let (st, validated) = validate_lines(conn, lines).await?;
+        sqlx::query("DELETE FROM purchasing.purchase_order_lines WHERE purchase_order_id = $1")
+            .bind(id)
+            .execute(&mut *conn)
+            .await?;
+        insert_lines(conn, id, validated).await?;
+        subtotal = st;
+    }
+    let total = subtotal + po.summary.tax_total;
+    sqlx::query(
+        "UPDATE purchasing.purchase_orders
+         SET expected_delivery_date = $3, currency = $4, notes = $5,
+             subtotal = $6, total = $7, updated_at = now()
+         WHERE company_id = $1 AND id = $2",
+    )
+    .bind(user.company_id)
+    .bind(id)
+    .bind(expected)
+    .bind(&currency)
+    .bind(&notes)
+    .bind(subtotal)
+    .bind(total)
+    .execute(&mut *conn)
+    .await?;
     audit::record(
         conn,
         user,
         "purchase_order",
         id,
-        "created",
-        serde_json::json!({
-            "number": number,
-            "supplier_id": input.supplier_id,
-            "total": total.to_string(),
-        }),
+        "updated",
+        serde_json::json!({ "number": po.summary.number, "total": total.to_string() }),
     )
     .await?;
-
     load(conn, user.company_id, id).await
 }
 
@@ -442,4 +538,22 @@ pub async fn cancel(
     .await?;
 
     load(conn, user.company_id, id).await
+}
+
+/// Looks up the numbers of purchase orders by id (for modules that only hold the id, such as
+/// finance). Unknown or foreign ids are simply absent from the result.
+pub async fn numbers_by_id(
+    conn: &mut PgConnection,
+    company_id: Uuid,
+    ids: &[Uuid],
+) -> AppResult<Vec<(Uuid, String)>> {
+    sqlx::query_as::<_, (Uuid, String)>(
+        "SELECT id, number FROM purchasing.purchase_orders
+         WHERE company_id = $1 AND id = ANY($2)",
+    )
+    .bind(company_id)
+    .bind(ids)
+    .fetch_all(conn)
+    .await
+    .map_err(Into::into)
 }

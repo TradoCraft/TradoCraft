@@ -2,6 +2,8 @@
 #![allow(dead_code)]
 
 pub mod e2e;
+pub mod graph;
+pub mod idp;
 
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -17,6 +19,24 @@ use tradocraft_core::auth::AuthConfig;
 use tradocraft_core::{AppState, DocumentConfig};
 
 pub async fn setup(db: PgPool) -> axum::Router {
+    let state = seeded_state(db).await;
+    tradocraft_api::app(state)
+}
+
+/// Like [`setup`], with the VIES lookup (ADR 0058) pointed at `vies`, e.g. a local stand-in.
+pub async fn setup_with_vies(db: PgPool, vies: tradocraft_core::vies::ViesConfig) -> axum::Router {
+    let state = seeded_state(db).await;
+    tradocraft_api::app_with_vies(
+        state,
+        Default::default(),
+        Default::default(),
+        &tradocraft_core::cors::CorsConfig::Any,
+        Default::default(),
+        vies,
+    )
+}
+
+async fn seeded_state(db: PgPool) -> AppState {
     let _ = tracing_subscriber::fmt()
         .with_test_writer()
         .with_env_filter("error")
@@ -26,7 +46,7 @@ pub async fn setup(db: PgPool) -> axum::Router {
         .await
         .unwrap();
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
-    tradocraft_api::app(AppState {
+    AppState {
         db,
         auth: Arc::new(AuthConfig::Dev {
             default_email: None,
@@ -37,7 +57,7 @@ pub async fn setup(db: PgPool) -> axum::Router {
                 .into(),
             template_dir: root.join("templates"),
         }),
-    })
+    }
 }
 
 pub async fn call(

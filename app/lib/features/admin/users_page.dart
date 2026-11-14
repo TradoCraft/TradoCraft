@@ -1,9 +1,10 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/api.dart';
 import '../../l10n/l10n.dart';
 import '../../shared/entity_list.dart';
+import 'link_identity_dialog.dart';
 import 'user_dialog.dart';
 import '../../shared/app_icons.dart';
 
@@ -119,6 +120,18 @@ class _UsersPageState extends ConsumerState<UsersPage> {
             ],
           ),
         ),
+        if (can(ref, 'identity.admin'))
+          EntityColumn(
+            '',
+            (u) => '',
+            flex: 2,
+            cell: (_, u) => TextButton.icon(
+              key: ValueKey('link-identity-${u.userId}'),
+              onPressed: () => showLinkIdentityDialog(context, u),
+              icon: const Icon(Icons.link, size: 18),
+              label: Text(l.idpLinkIdentity),
+            ),
+          ),
       ],
       onCreate: () => showUserDialog(context),
       onOpen: (u) => showUserDialog(context, user: u),

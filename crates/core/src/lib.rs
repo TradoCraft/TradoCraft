@@ -2,17 +2,27 @@
 
 pub mod admin;
 pub mod audit;
+pub mod audit_log;
 pub mod auth;
+pub mod companies;
 pub mod company;
+pub mod cors;
 pub mod csv_io;
 pub mod environment;
 pub mod error;
 pub mod files;
+pub mod identity;
+pub mod identity_admin;
 pub mod mail;
 pub mod modules;
 pub mod numbering;
+pub mod search;
 pub mod serde_util;
 pub mod state;
+pub mod vat;
+pub mod vat_check;
+pub mod vies;
+pub mod worker;
 
 pub use auth::{CurrentUser, Permission};
 pub use error::{AppError, AppResult};

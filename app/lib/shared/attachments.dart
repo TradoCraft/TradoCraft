@@ -2,7 +2,7 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:file_selector/file_selector.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:printing/printing.dart';
 
 import '../api/generated/export.dart';

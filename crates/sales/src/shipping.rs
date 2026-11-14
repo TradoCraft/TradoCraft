@@ -263,6 +263,8 @@ pub fn shipping_line(lines: &[QuotationLine], amount: Decimal) -> AppResult<Quot
         percent_base: None,
         production_remark: String::new(),
         customer_remark: String::new(),
+        customer_remark_language: None,
+        favorite_item_id: None,
     })
 }
 

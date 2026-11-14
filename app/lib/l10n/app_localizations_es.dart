@@ -2707,6 +2707,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get stockNoMoves => 'Aún no hay movimientos';
 
   @override
+  String get stockNoLocationsHint =>
+      'Aún no hay ubicaciones. Un administrador crea un almacén y una ubicación en Existencias > Almacenes.';
+
+  @override
   String get stockNoWarehouses =>
       'Aún no hay almacenes. Un administrador los crea aquí.';
 
@@ -3975,6 +3979,42 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get modulesSaved => 'Módulos guardados';
+
+  @override
+  String moduleAlsoRequires(String modules) {
+    return 'También necesita $modules';
+  }
+
+  @override
+  String moduleAlsoSwitchedOff(String modules) {
+    return 'También desactiva: $modules';
+  }
+
+  @override
+  String moduleAlsoSwitchedOn(String modules) {
+    return 'También activa: $modules';
+  }
+
+  @override
+  String moduleExpand(String module) {
+    return 'Expandir $module';
+  }
+
+  @override
+  String moduleCollapse(String module) {
+    return 'Contraer $module';
+  }
+
+  @override
+  String get moduleOn => 'Activado';
+
+  @override
+  String get moduleOff => 'Desactivado';
+
+  @override
+  String moduleLevel(int level) {
+    return 'Nivel $level';
+  }
 
   @override
   String get userRoleAdmin => 'Administrador';
@@ -6219,4 +6259,2696 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get envNotSaved =>
       'Hecho, pero la lista de entornos no se pudo guardar en este dispositivo.';
+
+  @override
+  String get tutTitle => 'Tutorial';
+
+  @override
+  String get tutBack => 'Atrás';
+
+  @override
+  String get tutNext => 'Siguiente';
+
+  @override
+  String get tutSkipStep => 'Omitir paso';
+
+  @override
+  String get tutPause => 'Pausar';
+
+  @override
+  String get tutResume => 'Reanudar';
+
+  @override
+  String get tutPaused => 'Tutorial en pausa';
+
+  @override
+  String get tutTakeMe => 'Llévame allí';
+
+  @override
+  String tutStepOf(int current, int total) {
+    return 'Paso $current de $total';
+  }
+
+  @override
+  String get tutOfferTitle => 'Bienvenido a TradoCraft';
+
+  @override
+  String get tutOfferBody =>
+      'Este es un entorno de tutorial. ¿Quieres un recorrido guiado que te enseñe la aplicación paso a paso, con datos de práctica?';
+
+  @override
+  String get tutOfferStart => 'Iniciar el tutorial';
+
+  @override
+  String get tutOfferLater => 'Ahora no';
+
+  @override
+  String get tutLiveTitle => 'El tutorial no se ejecuta con datos reales';
+
+  @override
+  String get tutLiveBody =>
+      'El tutorial crea registros, así que solo se ejecuta en un entorno de prueba o de tutorial. Cambia a uno o añade uno.';
+
+  @override
+  String get tutSwitchEnv => 'Cambiar de entorno';
+
+  @override
+  String get tutAddEnv => 'Añadir un entorno';
+
+  @override
+  String get tutMapIntro =>
+      'Recorre los capítulos en orden. Puedes pausar, repetir u omitir un capítulo en cualquier momento.';
+
+  @override
+  String get tutStatusDone => 'Hecho';
+
+  @override
+  String get tutStatusCurrent => 'Siguiente';
+
+  @override
+  String get tutStatusLocked => 'Bloqueado';
+
+  @override
+  String get tutStatusSkipped => 'Omitido';
+
+  @override
+  String get tutStatusPaused => 'En curso';
+
+  @override
+  String get tutStart => 'Iniciar';
+
+  @override
+  String get tutReplay => 'Repetir';
+
+  @override
+  String tutFinishedTitle(String name) {
+    return 'Capítulo $name completado';
+  }
+
+  @override
+  String tutFinishedNext(String name) {
+    return 'Bien hecho. Lo siguiente: $name. Empiézalo ahora o elígelo más tarde en el mapa de capítulos.';
+  }
+
+  @override
+  String get tutFinishedLast =>
+      'Ese era el último capítulo. Bien hecho. Puedes repetir cualquier capítulo desde el mapa de capítulos.';
+
+  @override
+  String get tutStartNext => 'Empezar el siguiente capítulo';
+
+  @override
+  String get tutBackToMap => 'Volver al mapa de capítulos';
+
+  @override
+  String get tutSkipChapter => 'Omitir capítulo';
+
+  @override
+  String get tutWelcomeTitle => 'Bienvenida';
+
+  @override
+  String get tutWelcomeSummary =>
+      'Orientación: la banda del entorno, las pestañas y los controles del tutorial.';
+
+  @override
+  String get tutProductTitle => 'Tu primer producto';
+
+  @override
+  String get tutProductSummary =>
+      'Sombrero: responsable de producto. Crea tres componentes, un producto terminado y su lista de materiales.';
+
+  @override
+  String get tutWelcomeBannerTitle => 'La banda superior';
+
+  @override
+  String get tutWelcomeBannerBody =>
+      'Esta banda muestra siempre en qué entorno estás: su nombre y su tipo. Ámbar es prueba, azul es tutorial y rojo son datos reales. El tutorial solo se ejecuta en entornos de prueba y de tutorial, así que nada de lo que hagas aquí toca datos reales.';
+
+  @override
+  String get tutWelcomeTabsTitle => 'Pestañas y secciones';
+
+  @override
+  String get tutWelcomeTabsBody =>
+      'Las secciones están a la izquierda (o en la barra inferior en un teléfono). Al abrir un registro, como un producto o un presupuesto, se añade una pestaña al espacio de trabajo, así puedes mantener varios registros abiertos.';
+
+  @override
+  String get tutWelcomeControlsTitle => 'Esta tarjeta';
+
+  @override
+  String get tutWelcomeControlsBody =>
+      'Soy tu narrador. «Siguiente» avanza cuando un paso es solo una explicación. Los pasos en los que debes hacer algo terminan solos en cuanto lo haces. «Atrás» y «Omitir paso» te dejan moverte, y «Pausar» me oculta hasta que pulses «Reanudar».';
+
+  @override
+  String get tutWelcomeMenuTitle => 'Dónde encontrarme';
+
+  @override
+  String get tutWelcomeMenuBody =>
+      'Abre el menú de la cuenta para encontrar la entrada Tutorial. Abre el mapa de capítulos, donde puedes reanudar, repetir u omitir un capítulo en cualquier momento.';
+
+  @override
+  String get tutWelcomeProductsTitle => 'Empecemos';
+
+  @override
+  String get tutWelcomeProductsBody =>
+      'Abre la sección Productos. El siguiente capítulo empieza allí.';
+
+  @override
+  String get tutProductOpenTitle => 'Productos';
+
+  @override
+  String get tutProductOpenBody =>
+      'Hoy eres el responsable de producto. Todo lo que la empresa vende o fabrica es un producto. Abre la sección Productos.';
+
+  @override
+  String get tutProductMotorTitle => 'Componente: Motor';
+
+  @override
+  String get tutProductMotorBody =>
+      'Crea el primer componente. Pulsa Nuevo producto, escribe el código TUT-MOTOR y el nombre Motor, deja el tipo Comprado y guarda.';
+
+  @override
+  String get tutProductMotorHint =>
+      'El prefijo TUT- marca los datos del tutorial, para reconocerlos más tarde.';
+
+  @override
+  String get tutProductFrameTitle => 'Componente: Frame';
+
+  @override
+  String get tutProductFrameBody =>
+      'Crea un segundo componente del mismo modo: código TUT-FRAME, nombre Frame, tipo Comprado.';
+
+  @override
+  String get tutProductControllerTitle => 'Componente: Controller';
+
+  @override
+  String get tutProductControllerBody =>
+      'Y un tercero: código TUT-CTRL, nombre Controller, tipo Comprado.';
+
+  @override
+  String get tutProductCartTitle => 'El producto terminado';
+
+  @override
+  String get tutProductCartBody =>
+      'Ahora el producto que fabricas con esas piezas. Crea el código TUT-CART, el nombre Cart y elige el tipo Fabricado: solo los productos fabricados tienen lista de materiales.';
+
+  @override
+  String get tutProductOpenCartTitle => 'Abre el Cart';
+
+  @override
+  String get tutProductOpenCartBody =>
+      'Abre el nuevo producto Cart de la lista para ver sus pestañas.';
+
+  @override
+  String get tutProductBomTabTitle => 'Lista de materiales';
+
+  @override
+  String get tutProductBomTabBody =>
+      'Elige la pestaña Lista de materiales. Enumera los componentes necesarios para fabricar una unidad. Una revisión es un borrador que editas, o la activa que usa producción. Pulsa Siguiente cuando estés allí.';
+
+  @override
+  String get tutProductRevisionTitle => 'Una primera revisión';
+
+  @override
+  String get tutProductRevisionBody =>
+      'Pulsa Nueva revisión para empezar un borrador.';
+
+  @override
+  String get tutProductLinesTitle => 'Añade los componentes';
+
+  @override
+  String get tutProductLinesBody =>
+      'Busca cada componente y añádelo: Motor, Frame y Controller. Después pulsa Guardar borrador.';
+
+  @override
+  String get tutProductLinesHint =>
+      'Escribe TUT en el cuadro de búsqueda para encontrar los tres componentes.';
+
+  @override
+  String get tutProductActivateTitle => 'Actívala';
+
+  @override
+  String get tutProductActivateBody =>
+      'Pulsa Activar. Desde ahora producción y presupuestos usan esta revisión; los cambios posteriores pasan por una nueva revisión.';
+
+  @override
+  String get tutProductDoneTitle => 'Bien hecho';
+
+  @override
+  String get tutProductDoneBody =>
+      'Tienes un producto terminado con una lista de materiales de tres componentes. Los capítulos siguientes se basan en él.';
+
+  @override
+  String get purchasing => 'Compras';
+
+  @override
+  String get tabSupplier => 'Proveedor';
+
+  @override
+  String get purchSuppliers => 'Proveedores';
+
+  @override
+  String get purchNewSupplier => 'Nuevo proveedor';
+
+  @override
+  String get purchPaymentTerms => 'Condiciones de pago';
+
+  @override
+  String purchDays(int count) {
+    return '$count días';
+  }
+
+  @override
+  String get purchActiveOnly => 'Solo activos';
+
+  @override
+  String get purchNameRequired => 'El nombre es obligatorio.';
+
+  @override
+  String get purchCountryInvalid => 'El país debe ser un código de 2 letras.';
+
+  @override
+  String get purchCurrencyInvalid =>
+      'La moneda debe ser un código de 3 letras.';
+
+  @override
+  String get purchTermsInvalid =>
+      'Las condiciones de pago deben ser un número entero de días.';
+
+  @override
+  String get purchInactive => 'Inactivo';
+
+  @override
+  String get purchPriceList => 'Lista de precios';
+
+  @override
+  String get purchAddProduct => 'Añadir producto';
+
+  @override
+  String get purchEditPrice => 'Editar precio';
+
+  @override
+  String get purchNoPrices => 'Aún no hay productos en esta lista de precios.';
+
+  @override
+  String get purchPickProduct => 'Elija un producto.';
+
+  @override
+  String get purchPriceInvalid => 'Introduzca un precio unitario válido.';
+
+  @override
+  String get purchMoqInvalid =>
+      'Introduzca una cantidad mínima de pedido válida.';
+
+  @override
+  String get purchLeadInvalid => 'El plazo debe ser un número entero de días.';
+
+  @override
+  String get purchSupplierArticleCode => 'Código de artículo del proveedor';
+
+  @override
+  String get purchSupplierArticleName => 'Nombre de artículo del proveedor';
+
+  @override
+  String get purchMoq => 'Cantidad mínima';
+
+  @override
+  String get purchLeadTimeDays => 'Plazo (días)';
+
+  @override
+  String get purchPreferred => 'Proveedor preferido';
+
+  @override
+  String purchRemoveProductConfirm(String code) {
+    return '¿Quitar $code de esta lista de precios?';
+  }
+
+  @override
+  String purchMoqValue(String qty) {
+    return 'CMP $qty';
+  }
+
+  @override
+  String purchLeadValue(int days) {
+    return 'plazo $days d';
+  }
+
+  @override
+  String get purchNoSuppliers => 'No se encontraron proveedores.';
+
+  @override
+  String get purchOrders => 'Pedidos de compra';
+
+  @override
+  String get purchNewOrder => 'Nuevo pedido de compra';
+
+  @override
+  String get purchNoOrders => 'No se encontraron pedidos de compra.';
+
+  @override
+  String get purchOrderNumber => 'Número';
+
+  @override
+  String get purchSupplier => 'Proveedor';
+
+  @override
+  String get purchAllSuppliers => 'Todos los proveedores';
+
+  @override
+  String get purchOrderDate => 'Fecha del pedido';
+
+  @override
+  String get purchExpectedDate => 'Entrega prevista';
+
+  @override
+  String get purchStatusDraft => 'borrador';
+
+  @override
+  String get purchStatusApproved => 'aprobado';
+
+  @override
+  String get purchStatusSent => 'enviado';
+
+  @override
+  String get purchStatusPartial => 'recibido parcialmente';
+
+  @override
+  String get purchStatusReceived => 'recibido';
+
+  @override
+  String get purchStatusCancelled => 'cancelado';
+
+  @override
+  String get purchLines => 'Líneas';
+
+  @override
+  String get purchAddLine => 'Añadir línea';
+
+  @override
+  String get purchGoodsPickSupplier =>
+      'Elija un proveedor para ver sus artículos.';
+
+  @override
+  String get purchGoodsEmpty =>
+      'Este proveedor aún no tiene productos en su lista de precios. Use \"Otros productos\" más abajo para añadir productos a este pedido, o añádalos a la lista de precios más tarde.';
+
+  @override
+  String get purchGoodsNoMatch => 'Ningún artículo coincide con el filtro.';
+
+  @override
+  String get purchGoodsFilter => 'Filtrar artículos';
+
+  @override
+  String get purchGoodsHeader =>
+      'Artículos de este proveedor: marque lo que quiera pedir';
+
+  @override
+  String purchGoodsBelowMoq(String qty) {
+    return 'Por debajo de la cantidad mínima de pedido ($qty)';
+  }
+
+  @override
+  String get purchGoodsCleared =>
+      'Se borraron los artículos elegidos porque cambió el proveedor.';
+
+  @override
+  String get purchGoodsOther =>
+      'Otros productos (fuera de la lista de precios)';
+
+  @override
+  String purchGoodsSummary(int count, String total) {
+    return '$count líneas, total $total';
+  }
+
+  @override
+  String get purchGoodsLoadFailed =>
+      'No se pudieron cargar los artículos del proveedor. Aún puede añadir productos en \"Otros productos\", o reintentar.';
+
+  @override
+  String purchGoodsMixedCurrencies(int count, String currencies) {
+    return '$count líneas en monedas distintas ($currencies): sin total único';
+  }
+
+  @override
+  String get purchPickSupplier => 'Elija un proveedor.';
+
+  @override
+  String get purchLineQtyInvalid =>
+      'La cantidad debe ser mayor que cero, con un máximo de 4 decimales.';
+
+  @override
+  String get purchLinePriceInvalid =>
+      'El precio unitario debe ser cero o más, con un máximo de 4 decimales.';
+
+  @override
+  String get purchNeedLine => 'Añada al menos una línea.';
+
+  @override
+  String get purchApprove => 'Aprobar';
+
+  @override
+  String get purchCancelOrder => 'Cancelar pedido';
+
+  @override
+  String purchCancelOrderConfirm(String number) {
+    return '¿Cancelar el pedido de compra $number? No se puede deshacer.';
+  }
+
+  @override
+  String get purchKeepOrder => 'Mantener pedido';
+
+  @override
+  String get purchQtyReceived => 'Recibido';
+
+  @override
+  String get purchLineTotal => 'Total de la línea';
+
+  @override
+  String get purchSubtotal => 'Subtotal';
+
+  @override
+  String get purchTax => 'IVA';
+
+  @override
+  String get tabPurchaseOrder => 'Pedido de compra';
+
+  @override
+  String get purchReceiveGoods => 'Recibir mercancía';
+
+  @override
+  String purchReceiveTitle(String number) {
+    return 'Recibir mercancía de $number';
+  }
+
+  @override
+  String get purchReceiveDestination => 'Ubicación de destino';
+
+  @override
+  String get purchReceiveQty => 'Cantidad a recibir';
+
+  @override
+  String purchReceiveRemaining(String qty) {
+    return 'Pendiente: $qty';
+  }
+
+  @override
+  String get purchReceiveSerialsHelp => 'Un número de serie por línea';
+
+  @override
+  String get purchDeliveryNote => 'Albarán del proveedor';
+
+  @override
+  String purchReceiveQtyInvalid(String product, String max) {
+    return '$product: introduzca una cantidad entre 0 y $max.';
+  }
+
+  @override
+  String purchReceiveLotNeeded(String product) {
+    return '$product: introduzca un número de lote.';
+  }
+
+  @override
+  String purchReceiveSerialWhole(String product) {
+    return '$product: la cantidad debe ser un número entero.';
+  }
+
+  @override
+  String purchReceiveSerialCount(String product, int count) {
+    return '$product: introduzca exactamente $count números de serie distintos.';
+  }
+
+  @override
+  String get purchReceiveNothing =>
+      'Introduzca una cantidad en al menos una línea.';
+
+  @override
+  String get purchReceiveLocationNeeded => 'Elija una ubicación de destino.';
+
+  @override
+  String purchReceiptBooked(String number) {
+    return 'Recepción $number registrada.';
+  }
+
+  @override
+  String get purchOpenReceipt => 'Abrir recepción';
+
+  @override
+  String get purchReceipts => 'Recepciones de mercancía';
+
+  @override
+  String get purchReceivedDate => 'Recibido';
+
+  @override
+  String get purchOpenOrder => 'Pedido de compra';
+
+  @override
+  String get tabGoodsReceipt => 'Recepción';
+
+  @override
+  String get setupTitle => 'Configurar una nueva empresa';
+
+  @override
+  String get setupOffer => 'Configurar una nueva empresa';
+
+  @override
+  String get setupOfferHint => 'Este servidor aún no tiene ninguna empresa.';
+
+  @override
+  String setupServer(String url) {
+    return 'Servidor: $url';
+  }
+
+  @override
+  String setupStepOf(int n, int total) {
+    return 'Paso $n de $total';
+  }
+
+  @override
+  String get setupStepCompany => 'Empresa';
+
+  @override
+  String get setupStepRegion => 'País, moneda e idioma';
+
+  @override
+  String get setupStepAdmin => 'Administrador';
+
+  @override
+  String get setupStepToken => 'Token de configuración';
+
+  @override
+  String get setupStepReview => 'Revisión';
+
+  @override
+  String get setupCompanyName => 'Nombre de la empresa';
+
+  @override
+  String get setupLegalName => 'Razón social (opcional)';
+
+  @override
+  String get setupVatNumber => 'Número de IVA (opcional)';
+
+  @override
+  String get setupCountry => 'Código de país (2 letras, p. ej. BE)';
+
+  @override
+  String get setupCurrency => 'Moneda (3 letras, p. ej. EUR)';
+
+  @override
+  String get setupLanguage => 'Idioma predeterminado';
+
+  @override
+  String get setupAdminEmail => 'Correo del administrador';
+
+  @override
+  String get setupAdminName => 'Nombre del administrador';
+
+  @override
+  String get setupToken => 'Token de configuración';
+
+  @override
+  String get setupTokenHelp => 'El valor de BOOTSTRAP_TOKEN en el servidor.';
+
+  @override
+  String get setupErrName => 'Introduzca el nombre de la empresa.';
+
+  @override
+  String get setupErrVat =>
+      'Un número de IVA tiene de 4 a 20 letras y dígitos.';
+
+  @override
+  String get setupErrCountry => 'Introduzca un código de país de dos letras.';
+
+  @override
+  String get setupErrCurrency =>
+      'Introduzca un código de moneda de tres letras.';
+
+  @override
+  String get setupErrEmail => 'Introduzca un correo electrónico válido.';
+
+  @override
+  String get setupErrAdminName => 'Introduzca el nombre del administrador.';
+
+  @override
+  String get setupErrToken => 'Introduzca el token de configuración.';
+
+  @override
+  String get setupNext => 'Siguiente';
+
+  @override
+  String get setupBack => 'Atrás';
+
+  @override
+  String get setupCreate => 'Crear empresa';
+
+  @override
+  String get setupReviewHint =>
+      'Compruebe los datos. Solo se puede crear una empresa una vez en este servidor.';
+
+  @override
+  String get setupErr403 => 'El token de configuración falta o es incorrecto.';
+
+  @override
+  String get setupErr404 =>
+      'La configuración está desactivada en este servidor. Defina BOOTSTRAP_TOKEN en el servidor y reinícielo.';
+
+  @override
+  String get setupErr409 => 'Este servidor ya tiene una empresa.';
+
+  @override
+  String setupDone(String name) {
+    return 'Empresa $name creada.';
+  }
+
+  @override
+  String setupDoneDev(String email) {
+    return 'Iniciando sesión como $email.';
+  }
+
+  @override
+  String setupDoneOidc(String email) {
+    return 'Inicie sesión con su proveedor de identidad con $email: esa cuenta es la del administrador.';
+  }
+
+  @override
+  String get setupToLogin => 'Ir al inicio de sesión';
+
+  @override
+  String get setupAddOfferTitle => '¿Configurar este servidor?';
+
+  @override
+  String get setupAddOfferBody =>
+      'Este servidor aún no tiene empresa. ¿Configurar una ahora?';
+
+  @override
+  String get setupLater => 'Más tarde';
+
+  @override
+  String get finMatchColumn => 'Conciliación';
+
+  @override
+  String get finance => 'Finanzas';
+
+  @override
+  String get finSupplierInvoices => 'Facturas de proveedor';
+
+  @override
+  String get finSettings => 'Ajustes';
+
+  @override
+  String get tabSupplierInvoice => 'Factura de proveedor';
+
+  @override
+  String get finNewInvoice => 'Nueva factura de proveedor';
+
+  @override
+  String get finNoInvoices => 'No se encontraron facturas de proveedor.';
+
+  @override
+  String get finInvoiceNumber => 'Número de factura';
+
+  @override
+  String get finInternalNumber => 'Número interno';
+
+  @override
+  String get finInvoiceDate => 'Fecha de factura';
+
+  @override
+  String get finDueDate => 'Fecha de vencimiento';
+
+  @override
+  String get finStatusDraft => 'borrador';
+
+  @override
+  String get finStatusMatched => 'conciliada';
+
+  @override
+  String get finStatusDisputed => 'en disputa';
+
+  @override
+  String get finStatusApproved => 'aprobada';
+
+  @override
+  String get finStatusPaid => 'pagada';
+
+  @override
+  String get finMatchOk => 'correcto';
+
+  @override
+  String get finMatchNotReceived => 'no recibido';
+
+  @override
+  String get finMatchOverInvoiced => 'sobrefacturado';
+
+  @override
+  String get finMatchPriceVariance => 'diferencia de precio';
+
+  @override
+  String get finMatchNoPoLine => 'sin línea de pedido';
+
+  @override
+  String get finOrderOptional => 'Pedido de compra (opcional)';
+
+  @override
+  String get finNoOrder => 'Sin pedido de compra';
+
+  @override
+  String get finOrderPrefillHint =>
+      'Las líneas se rellenan con la mercancía recibida y aún no facturada.';
+
+  @override
+  String get finNumberRequired =>
+      'El número de factura es obligatorio (máximo 64 caracteres).';
+
+  @override
+  String get finLineDescriptionRequired =>
+      'Una línea de texto libre necesita una descripción.';
+
+  @override
+  String get finVatInvalid =>
+      'El tipo de IVA debe estar entre 0 y 100, con 2 decimales como máximo.';
+
+  @override
+  String get finOrdered => 'Pedido';
+
+  @override
+  String get finInvoiced => 'Facturado';
+
+  @override
+  String get finOrderPrice => 'Precio de pedido';
+
+  @override
+  String get finInvoicePrice => 'Precio facturado';
+
+  @override
+  String get finVariance => 'Diferencia';
+
+  @override
+  String get finMatches =>
+      'La factura coincide con el pedido y las recepciones.';
+
+  @override
+  String get finNotMatches =>
+      'La factura no coincide con el pedido y las recepciones.';
+
+  @override
+  String finTolerances(String qty, String price) {
+    return 'Tolerancias: cantidad $qty %, precio $price %';
+  }
+
+  @override
+  String get finSubmitMatch => 'Comprobar conciliación';
+
+  @override
+  String get finApprove => 'Aprobar';
+
+  @override
+  String get finOverrideTitle => 'Aprobar pese a la diferencia';
+
+  @override
+  String get finOverrideHelp =>
+      'La factura no coincide. Indique el motivo para aprobarla igualmente; se guarda con la aprobación.';
+
+  @override
+  String get finOverrideReason => 'Motivo de la excepción';
+
+  @override
+  String get finReasonRequired => 'El motivo es obligatorio.';
+
+  @override
+  String get finDispute => 'Disputar';
+
+  @override
+  String get finDisputeReason => 'Motivo de la disputa';
+
+  @override
+  String get finReopen => 'Reabrir';
+
+  @override
+  String get finMarkPaid => 'Marcar como pagada';
+
+  @override
+  String get finPaymentDate => 'Fecha de pago';
+
+  @override
+  String get finPaymentReference => 'Referencia de pago';
+
+  @override
+  String get finDeleteDraft => 'Eliminar borrador';
+
+  @override
+  String finDeleteConfirm(String number) {
+    return '¿Eliminar la factura $number? No se puede deshacer.';
+  }
+
+  @override
+  String get finNetTotal => 'Neto';
+
+  @override
+  String get finGrossTotal => 'Total con IVA';
+
+  @override
+  String get finDisputeReasonShown => 'Motivo de la disputa';
+
+  @override
+  String get finOverrideShown => 'Motivo de la excepción';
+
+  @override
+  String get finPaidOn => 'Pagada el';
+
+  @override
+  String get finPurchaseOrder => 'Pedido de compra';
+
+  @override
+  String get finQuantityTolerance => 'Tolerancia de cantidad (%)';
+
+  @override
+  String get finPriceTolerance => 'Tolerancia de precio (%)';
+
+  @override
+  String get finToleranceInvalid => 'Introduzca un porcentaje entre 0 y 100.';
+
+  @override
+  String get finSettingsSaved => 'Ajustes guardados.';
+
+  @override
+  String get finSettingsHelp =>
+      'Diferencia máxima aceptada entre el pedido y la factura antes de que una línea cuente como diferencia.';
+
+  @override
+  String get finCreateInvoice => 'Crear factura de proveedor';
+
+  @override
+  String get userRoleFinance => 'Finanzas';
+
+  @override
+  String get moduleFinance => 'Finanzas';
+
+  @override
+  String get productionDivisionMembers => 'Miembros';
+
+  @override
+  String get productionDivisionNoMembers => 'Sin miembros';
+
+  @override
+  String get productionScopeMine => 'Mis divisiones';
+
+  @override
+  String get productionScopeAll => 'Todas las divisiones';
+
+  @override
+  String get productionScopeEmpty =>
+      'No hay órdenes en sus divisiones. Se incluyen las órdenes sin división.';
+
+  @override
+  String get productionShowAllDivisions => 'Mostrar todas las divisiones';
+
+  @override
+  String get productionYourDivisions => 'Sus divisiones';
+
+  @override
+  String get setupErrInsecure =>
+      'El token de configuración no se envía por una conexión sin cifrar a otro equipo. Use una dirección https:// (http simple solo se permite para localhost).';
+
+  @override
+  String get setupUnavailable =>
+      'La configuración no está disponible en este servidor: ya tiene una empresa o la configuración está desactivada.';
+
+  @override
+  String get setupErrRedirect =>
+      'El servidor redirigió la solicitud, por lo que el token de configuración no se reenvió. Compruebe la dirección del servidor (use la dirección https:// definitiva).';
+
+  @override
+  String get tutSuppliersTitle => 'Proveedores';
+
+  @override
+  String get tutSuppliersSummary =>
+      'Sombrero: comprador. Cree dos proveedores y dé a cada uno una lista de precios para sus componentes.';
+
+  @override
+  String get tutSuppliersNeedsTitle => 'Primero el capítulo 1';
+
+  @override
+  String get tutSuppliersNeedsBody =>
+      'Este capítulo necesita los cuatro productos del capítulo 1 (TUT-MOTOR, TUT-FRAME, TUT-CTRL y TUT-CART) y no los ha encontrado. Vuelva al mapa de capítulos y termine primero el capítulo 1.';
+
+  @override
+  String get tutSuppliersOpenTitle => 'Póngase el sombrero de comprador';
+
+  @override
+  String get tutSuppliersOpenBody =>
+      'Sus componentes tienen que venir de algún sitio. Abra Compras en el menú: la lista de proveedores es el primer segmento.';
+
+  @override
+  String get tutSuppliersSupplierATitle => 'El primer proveedor';
+
+  @override
+  String get tutSuppliersSupplierABody =>
+      'Cree un proveedor con código TUT-SUP-A y nombre Voltaic Drives Ltd. Código y nombre son los únicos campos obligatorios; las condiciones de pago, el NIF y los contactos pueden venir después.';
+
+  @override
+  String get tutSuppliersSupplierBTitle => 'Un segundo proveedor';
+
+  @override
+  String get tutSuppliersSupplierBBody =>
+      'A un comprador le gusta comparar. Cree un segundo proveedor con código TUT-SUP-B y nombre Ironbridge Frames.';
+
+  @override
+  String get tutSuppliersOpenATitle => 'Abra el primer proveedor';
+
+  @override
+  String get tutSuppliersOpenABody =>
+      'Abra Voltaic Drives Ltd desde la lista. Su lista de precios está al final de la pantalla del proveedor.';
+
+  @override
+  String get tutSuppliersPriceMotorTitle => 'Un precio para el motor';
+
+  @override
+  String get tutSuppliersPriceMotorBody =>
+      'Añada TUT-MOTOR a la lista de precios: precio unitario 120, plazo 14 días, cantidad mínima de pedido 5. Los pedidos de compra la usan para rellenar sus líneas.';
+
+  @override
+  String get tutSuppliersPriceMotorHint =>
+      'Elija el producto con el cuadro de búsqueda del diálogo; escriba TUT-MOTOR.';
+
+  @override
+  String get tutSuppliersPriceFrameTitle => 'Un precio para el bastidor';
+
+  @override
+  String get tutSuppliersPriceFrameBody =>
+      'Lo mismo para TUT-FRAME: precio unitario 45, plazo 10 días, cantidad mínima 5.';
+
+  @override
+  String get tutSuppliersPriceControllerTitle =>
+      'Un precio para el controlador';
+
+  @override
+  String get tutSuppliersPriceControllerBody =>
+      'Y TUT-CTRL: precio unitario 30, plazo 7 días, cantidad mínima 5. Este proveedor ya cubre los tres componentes.';
+
+  @override
+  String get tutSuppliersOpenBTitle => 'Abra el segundo proveedor';
+
+  @override
+  String get tutSuppliersOpenBBody =>
+      'Vuelva a la lista y abra Ironbridge Frames.';
+
+  @override
+  String get tutSuppliersPriceMotorBTitle => 'Un precio competidor';
+
+  @override
+  String get tutSuppliersPriceMotorBBody =>
+      'Dé también a este proveedor un precio para TUT-MOTOR: precio unitario 135, plazo 5 días, cantidad mínima 1. Más caro pero más rápido: una lista de precios ayuda a elegir así.';
+
+  @override
+  String get tutSuppliersDoneTitle => 'Lo que ha aprendido';
+
+  @override
+  String get tutSuppliersDoneBody =>
+      'Un proveedor es una ficha con condiciones de pago y contactos; su lista de precios lo une a productos con precio, plazo y cantidad mínima. Siguiente: pedir la mercancía.';
+
+  @override
+  String get tutBuyingTitle => 'Comprar y recibir';
+
+  @override
+  String get tutBuyingSummary =>
+      'Sombreros: comprador y recepción. Pida los componentes, envíe el pedido y reciba la mercancía en dos entregas.';
+
+  @override
+  String get tutBuyingNeedsTitle => 'Primero los capítulos 1 y 2';
+
+  @override
+  String get tutBuyingNeedsBody =>
+      'Este capítulo necesita los productos del capítulo 1 y el proveedor Voltaic Drives Ltd con su lista de precios del capítulo 2, y no ha encontrado los productos. Termine antes esos capítulos.';
+
+  @override
+  String get tutBuyingOpenTitle => 'La lista de pedidos';
+
+  @override
+  String get tutBuyingOpenBody =>
+      'Abra Compras. Junto a Proveedores hay un segmento de pedidos de compra; ábralo.';
+
+  @override
+  String get tutBuyingOrderTitle => 'Pida los componentes';
+
+  @override
+  String get tutBuyingOrderBody =>
+      'Cree un pedido de compra a Voltaic Drives Ltd. Al elegir el proveedor se listan sus artículos: marque TUT-MOTOR, TUT-FRAME y TUT-CTRL, ponga la cantidad 30 en cada uno y guarde. Los precios salen de la lista de precios.';
+
+  @override
+  String get tutBuyingOrderHint =>
+      'Elija primero el proveedor. Al marcar una casilla se rellena la cantidad mínima de pedido (o 1); escriba 30 en el campo de cantidad. Use el filtro para encontrar un producto rápido.';
+
+  @override
+  String get tutBuyingOpenOrderTitle => 'La pantalla del pedido';
+
+  @override
+  String get tutBuyingOpenOrderBody =>
+      'Abra el pedido que acaba de crear. Un pedido de compra empieza como borrador; los botones de arriba siguen su vida: aprobar, enviar, recibir.';
+
+  @override
+  String get tutBuyingApproveTitle => 'Apruebe el pedido';
+
+  @override
+  String get tutBuyingApproveBody =>
+      'Aprobar es un permiso aparte: un comprador prepara pedidos que un responsable libera. Como admin lleva ambos sombreros: pulse Aprobar.';
+
+  @override
+  String get tutBuyingSendTitle => 'Envíelo al proveedor';
+
+  @override
+  String get tutBuyingSendBody =>
+      'Pulse Enviar. El pedido se marca como enviado y el proveedor lo recibe. En entornos de prueba y tutorial el correo saliente solo se escribe en archivos del servidor: nada sale del edificio.';
+
+  @override
+  String get tutBuyingOpenWarehousesTitle => '¿Adónde va la mercancía?';
+
+  @override
+  String get tutBuyingOpenWarehousesBody =>
+      'La mercancía necesita un lugar antes de poder recibirse. Abra Stock y pulse Almacenes: aquí se guardan los almacenes y sus ubicaciones.';
+
+  @override
+  String get tutBuyingWarehouseTitle => 'Cree el almacén';
+
+  @override
+  String get tutBuyingWarehouseBody =>
+      'Pulse Nuevo almacén, póngale el código MAIN y el nombre Almacén principal, y guarde. Un almacén nuevo trae su ubicación MAIN, que es donde recibirá la mercancía a continuación. Si se rechaza al guardar porque el código MAIN ya existe, lo tiene un almacén inactivo: vuelva a activarlo (y su ubicación) en Stock > Almacenes, o cámbiele el código con su botón de editar, y pulse después Siguiente.';
+
+  @override
+  String get tutBuyingWarehouseHint =>
+      'El código y el nombre son obligatorios. Si ya existe un almacén con una ubicación, este paso se omite.';
+
+  @override
+  String get tutBuyingReceivePartTitle => 'Llega la primera entrega';
+
+  @override
+  String get tutBuyingReceivePartBody =>
+      'Póngase el sombrero de recepción. Pulse Recibir mercancía, elija la ubicación MAIN del almacén y registre 10 unidades de cada componente, menos de lo pedido. El pedido pasa a recibido parcialmente.';
+
+  @override
+  String get tutBuyingReceivePartHint =>
+      'Cambie la cantidad de cada línea en el diálogo; la cantidad restante aparece al lado. El número de albarán es opcional.';
+
+  @override
+  String get tutBuyingReceiveRestTitle => 'Llega el resto';
+
+  @override
+  String get tutBuyingReceiveRestBody =>
+      'Reciba del mismo modo las 20 unidades restantes de cada componente. Cuando todo ha llegado, el pedido queda recibido por completo; cada entrega conserva su propio albarán de recepción.';
+
+  @override
+  String get tutBuyingStockTitle => 'Mire el stock';
+
+  @override
+  String get tutBuyingStockBody =>
+      'Abra Stock. Los 30 motores, bastidores y controladores están en el almacén MAIN. Cada recepción creó un movimiento de stock, así que la cantidad siempre se puede rastrear.';
+
+  @override
+  String get tutBuyingDoneTitle => 'Lo que ha aprendido';
+
+  @override
+  String get tutBuyingDoneBody =>
+      'Un pedido de compra pasa de borrador a aprobado, enviado, recibido. La mercancía puede llegar en varias entregas y cada una aumenta el stock. Sigue la factura del proveedor.';
+
+  @override
+  String get tutInvoicesTitle => 'Revisar las facturas';
+
+  @override
+  String get tutInvoicesSummary =>
+      'Sombrero: contable. Registre facturas de proveedor, lea la conciliación a tres bandas, apruebe, dispute y pague.';
+
+  @override
+  String get tutInvoicesNeedsTitle => 'Primero el capítulo 3';
+
+  @override
+  String get tutInvoicesNeedsBody =>
+      'Este capítulo necesita el pedido de compra del capítulo 3, recibido por completo, y (todavía) no lo está. Termine antes el capítulo 3.';
+
+  @override
+  String get tutInvoicesOpenOrderTitle => 'De vuelta al pedido';
+
+  @override
+  String get tutInvoicesOpenOrderBody =>
+      'Llega la factura del proveedor. Abra de nuevo el pedido del capítulo 3: en cuanto hay mercancía recibida ofrece un atajo para registrar la factura.';
+
+  @override
+  String get tutInvoicesCreateTitle => 'Registre la factura';
+
+  @override
+  String get tutInvoicesCreateBody =>
+      'Pulse Crear factura de proveedor. Escriba el número de factura del proveedor, por ejemplo TUT-INV-001, y guarde. Las líneas se rellenan según lo pedido y recibido.';
+
+  @override
+  String get tutInvoicesCreateHint =>
+      'La fecha de factura y el vencimiento son por defecto hoy y las condiciones de pago del proveedor.';
+
+  @override
+  String get tutInvoicesMatchTitle => 'La conciliación a tres bandas';
+
+  @override
+  String get tutInvoicesMatchBody =>
+      'El banner compara tres documentos: lo pedido, lo recibido y lo facturado, línea por línea. Verde significa que coinciden dentro de las tolerancias, que se muestran en el banner. Pulse Siguiente cuando lo haya mirado.';
+
+  @override
+  String get tutInvoicesApproveTitle => 'Apruebe la factura';
+
+  @override
+  String get tutInvoicesApproveBody =>
+      'La conciliación está en verde, así que pulse Aprobar. Una factura aprobada queda lista para pagar.';
+
+  @override
+  String get tutInvoicesSecondTitle => 'Una factura sospechosa';
+
+  @override
+  String get tutInvoicesSecondBody =>
+      'Llega una segunda factura de Voltaic Drives Ltd, esta vez sin pedido de compra: en Finanzas cree una factura de proveedor para ese proveedor, número TUT-INV-002, deje el pedido vacío y añada una línea con descripción Motores, cantidad 10, precio unitario 150.';
+
+  @override
+  String get tutInvoicesSecondHint =>
+      'El precio real del motor es 120 y esta línea no tiene línea de pedido con la que comparar. La app no permite cambiar precios de una factura con pedido, así que una factura de texto libre sirve aquí para ver una discrepancia.';
+
+  @override
+  String get tutInvoicesMismatchTitle => 'La conciliación falla';
+
+  @override
+  String get tutInvoicesMismatchBody =>
+      'El banner está en naranja: una línea de texto libre no tiene nada con qué conciliarse, así que no se puede comprobar con un pedido ni con una recepción. La línea muestra el motivo. Pulse Siguiente cuando lo haya mirado.';
+
+  @override
+  String get tutInvoicesDisputeTitle => 'Dispute la factura';
+
+  @override
+  String get tutInvoicesDisputeBody =>
+      'Pulse Disputar e indique un motivo, por ejemplo el precio no coincide con el acuerdo. Una factura disputada no se puede pagar hasta reabrirla. (Un aprobador también puede aprobar una conciliación fallida con un motivo de excepción, que queda en la factura.)';
+
+  @override
+  String get tutInvoicesTolerancesTitle => 'Las tolerancias';
+
+  @override
+  String get tutInvoicesTolerancesBody =>
+      'Cuánto puede diferir una factura es un ajuste: abra el segmento Ajustes de Finanzas para ver las tolerancias de cantidad y precio en porcentaje. Mire y pulse Siguiente; cambiarlas queda a su criterio.';
+
+  @override
+  String get tutInvoicesPayTitle => 'Pague la factura correcta';
+
+  @override
+  String get tutInvoicesPayBody =>
+      'Abra la primera factura de proveedor que registró (la que coincidió y se aprobó) y pulse Marcar como pagada. Introduzca una referencia de pago como TUT-PAY-001. La app registra el pago; la transferencia se hace en otro sitio.';
+
+  @override
+  String get tutInvoicesDoneTitle => 'Lo que ha aprendido';
+
+  @override
+  String get tutInvoicesDoneBody =>
+      'La conciliación a tres bandas compara pedido, recepción y factura antes de mover dinero. Las facturas correctas se aprueban y pagan, las dudosas se disputan. Siguiente: fabricar los carritos.';
+
+  @override
+  String get tutManufacturingTitle => 'Fabricación';
+
+  @override
+  String get tutManufacturingSummary =>
+      'Sombreros: jefe de producción y operario. Configure una división y fabrique cinco carritos con los componentes.';
+
+  @override
+  String get tutManufacturingNeedsTitle => 'Primero los capítulos 1 a 3';
+
+  @override
+  String get tutManufacturingNeedsBody =>
+      'Este capítulo necesita el carrito con su lista de materiales (capítulo 1) y componentes en stock (capítulo 3), y no ha encontrado los productos. Termine antes esos capítulos.';
+
+  @override
+  String get tutManufacturingOpenDivisionsTitle => 'Divisiones';
+
+  @override
+  String get tutManufacturingOpenDivisionsBody =>
+      'El trabajo de producción se organiza en divisiones, por ejemplo una línea de montaje. Solo un administrador las define. Abra Producción y use el botón de engranaje de arriba a la derecha para llegar a las divisiones.';
+
+  @override
+  String get tutManufacturingDivisionTitle => 'Cree una división';
+
+  @override
+  String get tutManufacturingDivisionBody =>
+      'Añada una división con código TUT-ASM y nombre Tutorial assembly, y márquese en la lista de miembros: los miembros son los operarios de la división.';
+
+  @override
+  String get tutManufacturingDivisionHint =>
+      'El diálogo lista los usuarios de la empresa; marque la etiqueta con su nombre.';
+
+  @override
+  String get tutManufacturingQueueTitle => 'La cola de producción';
+
+  @override
+  String get tutManufacturingQueueBody =>
+      'Vuelva a Producción. En la cabecera de la cola elija Mis divisiones: muestra las órdenes de sus divisiones más las que no tienen división, así no se oculta nada sin asignar. Es miembro de una división, así que es la opción por defecto; elija Todas las divisiones para verlo todo.';
+
+  @override
+  String get tutManufacturingReleaseTitle => 'Libere una orden de producción';
+
+  @override
+  String get tutManufacturingReleaseBody =>
+      'Pulse Fabricar para stock, elija TUT-CART con cantidad 5 y libere. La lista de materiales se congela y los componentes se reservan. Normalmente la producción parte de una línea de pedido de venta; lo verá en el capítulo 9.';
+
+  @override
+  String get tutManufacturingReleaseHint =>
+      'Solo los productos fabricados con lista de materiales activa se pueden liberar.';
+
+  @override
+  String get tutManufacturingAssignTitle => 'Asígnelo a la división';
+
+  @override
+  String get tutManufacturingAssignBody =>
+      'La nueva orden está abierta. Elija la división Tutorial assembly en el campo División y pulse Guardar, para que aparezca en la cola de esa división.';
+
+  @override
+  String get tutManufacturingStartTitle => 'Empiece el trabajo';
+
+  @override
+  String get tutManufacturingStartBody =>
+      'Póngase el sombrero de operario y pulse Iniciar. La orden pasa de liberada a en curso.';
+
+  @override
+  String get tutManufacturingWarehouseTitle => 'Un lugar para los carritos';
+
+  @override
+  String get tutManufacturingWarehouseBody =>
+      'Los carritos terminados necesitan una ubicación donde ir, y todavía no hay ningún almacén (el capítulo 3 lo crea). Abra Stock, pulse Almacenes y cree el almacén MAIN con el nombre Almacén principal; después vuelva a la orden de producción. Si se rechaza al guardar porque el código MAIN ya existe, lo tiene un almacén inactivo: vuelva a activarlo (y su ubicación) en Stock > Almacenes, o cámbiele el código con su botón de editar, y pulse después Siguiente.';
+
+  @override
+  String get tutManufacturingWarehouseHint =>
+      'La ubicación MAIN se crea junto con el almacén. Si ya existe un almacén con una ubicación, este paso se omite.';
+
+  @override
+  String get tutManufacturingCompleteTitle => 'Complete la orden';
+
+  @override
+  String get tutManufacturingCompleteBody =>
+      'Pulse Completar. El diálogo muestra la cantidad producida (5) y los componentes consumidos. Elija la ubicación MAIN del almacén en Almacenar en, para que los carritos terminados tengan dónde ir, y confirme: los componentes salen del stock y entran cinco carritos terminados.';
+
+  @override
+  String get tutManufacturingCompleteHint =>
+      'Deje los valores previstos; el diálogo permite registrar desechos o consumo extra si la realidad difiere.';
+
+  @override
+  String get tutManufacturingStockTitle => 'Compruebe el stock';
+
+  @override
+  String get tutManufacturingStockBody =>
+      'Abra Stock: TUT-CART tiene ahora 5 y cada componente ha bajado 5 (quedan 25 de cada uno). La producción une compras y ventas.';
+
+  @override
+  String get tutManufacturingDoneTitle => 'Lo que ha aprendido';
+
+  @override
+  String get tutManufacturingDoneBody =>
+      'Las divisiones agrupan operarios; una orden de producción congela la lista de materiales, reserva componentes, se inicia y completa, y convierte componentes en producto terminado. Siguiente: los precios.';
+
+  @override
+  String get tutPricesTitle => 'Precios y zonas';
+
+  @override
+  String get tutPricesSummary =>
+      'Sombrero: jefe de ventas. Cree una zona de precios y dé al carrito un precio en dos zonas.';
+
+  @override
+  String get tutPricesNeedsTitle => 'Primero el capítulo 1';
+
+  @override
+  String get tutPricesNeedsBody =>
+      'Este capítulo necesita el carrito del capítulo 1 y no lo ha encontrado. Termine antes el capítulo 1.';
+
+  @override
+  String get tutPricesOpenAdminTitle => 'Abra la administración';
+
+  @override
+  String get tutPricesOpenAdminBody =>
+      'Un precio depende de la zona del cliente: un país o mercado con su propia lista. Las zonas se gestionan en Administración. Abra Administración y elija el segmento Zonas de precios; la empresa ya tiene las zonas Z1 a Z5.';
+
+  @override
+  String get tutPricesZoneTitle => 'Cree una zona';
+
+  @override
+  String get tutPricesZoneBody =>
+      'Añada una zona de precios con código TUT-EXPORT y nombre Zona export. Los clientes reciben una zona después, al crearlos.';
+
+  @override
+  String get tutPricesZoneHint =>
+      'Elija primero el segmento Zonas de precios en la parte superior de la página de Administración.';
+
+  @override
+  String get tutPricesOpenCartTitle => 'Abra el carrito';
+
+  @override
+  String get tutPricesOpenCartBody =>
+      'Abra el producto TUT-CART desde la lista de productos. Su primera pestaña, Precios, contiene los precios por zona.';
+
+  @override
+  String get tutPricesPriceExportTitle => 'Un precio en la nueva zona';
+
+  @override
+  String get tutPricesPriceExportBody =>
+      'Pulse Nuevo precio, elija la zona TUT-EXPORT, introduzca el precio unitario 1450 (sin IVA) y guarde.';
+
+  @override
+  String get tutPricesPriceExportHint =>
+      'La fecha de inicio es hoy por defecto; una fecha posterior programa un cambio de precio.';
+
+  @override
+  String get tutPricesPriceHomeTitle => 'Un precio en otra zona';
+
+  @override
+  String get tutPricesPriceHomeBody =>
+      'Añada un segundo precio para el carrito en una de las zonas existentes, por ejemplo Z1 a 1200. El mismo producto puede costar distinto según la zona del cliente.';
+
+  @override
+  String get tutPricesDoneTitle => 'Lo que ha aprendido';
+
+  @override
+  String get tutPricesDoneBody =>
+      'Una zona de precios agrupa clientes con la misma lista y un producto tiene un precio por zona y fecha. Los presupuestos toman el precio de la zona del cliente. Siguiente: escribe un cliente nuevo.';
+
+  @override
+  String get tutCustomerTitle => 'Escribe un cliente nuevo';
+
+  @override
+  String get tutCustomerSummary =>
+      'Sombreros: ventas y helpdesk. Un correo de cliente se convierte en ticket; el remitente es nuevo, así que pide los datos de la empresa y crea el cliente.';
+
+  @override
+  String get tutCustomerNeedsTitle => 'Primero el capítulo 6';
+
+  @override
+  String get tutCustomerNeedsBody =>
+      'Este capítulo necesita la zona de precios TUT-EXPORT del capítulo 6 (el cliente nuevo la recibe) y no la ha encontrado. Termine antes los capítulos anteriores.';
+
+  @override
+  String get tutCustomerMail1Title => 'Llega un correo';
+
+  @override
+  String get tutCustomerMail1Body =>
+      'Alguien que no conoce pide un presupuesto para su carrito. Un buzón real entregaría el mensaje solo; aquí el botón de abajo hace de cliente y entrega al helpdesk un correo ya preparado (de Maya Okafor, example.test), igual que el importador de correo.';
+
+  @override
+  String get tutCustomerMail1Action => 'Simular correo del cliente';
+
+  @override
+  String get tutCustomerOpenHelpdeskTitle => 'El ticket';
+
+  @override
+  String get tutCustomerOpenHelpdeskBody =>
+      'Cada mensaje entrante se convierte en ticket. Abra Helpdesk: el ticket de Maya Okafor está en la lista.';
+
+  @override
+  String get tutCustomerOpenTicketTitle => 'Abra el ticket';
+
+  @override
+  String get tutCustomerOpenTicketBody =>
+      'Abra el ticket. La conversación está a la izquierda y las propiedades a la derecha. Aún no hay cliente vinculado, porque nadie con esta dirección existe en el sistema.';
+
+  @override
+  String get tutCustomerReplyTitle => 'Pida los datos de la empresa';
+
+  @override
+  String get tutCustomerReplyBody =>
+      'Responda a Maya: agradézcale y pida razón social, NIF-IVA y dirección, y pulse Enviar. La respuesta queda en la cola del worker de correo. En entornos de prueba y tutorial el correo saliente solo se escribe en archivos del servidor, así que Maya no recibe nada.';
+
+  @override
+  String get tutCustomerReplyHint =>
+      'Compruebe que sobre el cuadro de mensaje esté seleccionada la pestaña Respuesta (no Nota interna).';
+
+  @override
+  String get tutCustomerMail2Title => 'El cliente responde';
+
+  @override
+  String get tutCustomerMail2Body =>
+      'Use el botón para reproducir la respuesta de Maya. Es una respuesta a su primer mensaje, así que llega al mismo ticket como mensaje nuevo, con razón social, NIF-IVA y dirección.';
+
+  @override
+  String get tutCustomerMail2Action => 'Simular correo del cliente';
+
+  @override
+  String get tutCustomerReadDetailsTitle => 'Lea los datos';
+
+  @override
+  String get tutCustomerReadDetailsBody =>
+      'Vuelva al ticket (ábralo de nuevo si aún no muestra el mensaje) y lea la respuesta de Maya: empresa Brightwheel Logistics BV, NIF-IVA BE0123456749, Voorbeeldlaan 12, 9000 Gante, Bélgica. Pulse Siguiente cuando los tenga.';
+
+  @override
+  String get tutCustomerCreateCustomerTitle => 'Cree el cliente';
+
+  @override
+  String get tutCustomerCreateCustomerBody =>
+      'En las propiedades del ticket pulse Nuevo cliente. Rellene el nombre Brightwheel Logistics BV, un código como TUT-CUST, el NIF-IVA, la dirección, y elija la zona de precios TUT-EXPORT. El ticket se vincula al nuevo cliente al guardar.';
+
+  @override
+  String get tutCustomerCreateCustomerHint =>
+      'Calle Voorbeeldlaan 12, código postal 9000, ciudad Gante, país BE. El idioma y las condiciones de pago pueden quedar como están.';
+
+  @override
+  String get tutCustomerLinkedTitle => 'El ticket conoce a su cliente';
+
+  @override
+  String get tutCustomerLinkedBody =>
+      'El ticket muestra ya al cliente y aparecen botones nuevos: crear un lead o empezar un presupuesto directamente desde el ticket. El siguiente capítulo hace el presupuesto. Pulse Siguiente.';
+
+  @override
+  String get tutCustomerDoneTitle => 'Lo que ha aprendido';
+
+  @override
+  String get tutCustomerDoneBody =>
+      'El correo entrante se convierte en tickets, una respuesta pide al cliente lo que falta, y desde el ticket se puede crear un cliente para que todo quede vinculado. Siguiente: el presupuesto.';
+
+  @override
+  String get tutQuotationTitle => 'El presupuesto';
+
+  @override
+  String get tutQuotationSummary =>
+      'Sombrero: comercial. Presupueste 8 carritos al cliente nuevo, pida a producción el plazo y envíelo.';
+
+  @override
+  String get tutQuotationNeedsTitle => 'Primero el capítulo 7';
+
+  @override
+  String get tutQuotationNeedsBody =>
+      'Este capítulo necesita al cliente Brightwheel Logistics BV del capítulo 7 y no lo ha encontrado. Termine antes el capítulo 7.';
+
+  @override
+  String get tutQuotationOpenQuotationsTitle => 'Presupuestos';
+
+  @override
+  String get tutQuotationOpenQuotationsBody =>
+      'Abra Presupuestos en el menú. Esta lista contiene cada presupuesto con su número, cliente y estado.';
+
+  @override
+  String get tutQuotationCreateTitle => 'Redacte el presupuesto';
+
+  @override
+  String get tutQuotationCreateBody =>
+      'Pulse Nuevo presupuesto, elija Brightwheel Logistics BV, añada TUT-CART con cantidad 8 y guarde el borrador. El precio unitario sale de la zona de precios del cliente, TUT-EXPORT: son los 1450 del capítulo 6.';
+
+  @override
+  String get tutQuotationCreateHint =>
+      'Use la búsqueda de producto en las líneas; escriba TUT-CART. Si el cliente no está preseleccionado, busque Brightwheel.';
+
+  @override
+  String get tutQuotationLeadTitle => '¿Cuánto tardará?';
+
+  @override
+  String get tutQuotationLeadBody =>
+      'El cliente pidió un plazo de entrega. Siendo honestos: la app aún no calcula plazos automáticamente y un presupuesto no tiene campo de fecha de entrega. Pregunte entonces a producción (póngase ese sombrero, mire la cola de producción y los componentes en stock) y escriba la respuesta en las notas del presupuesto, por ejemplo: entrega unas 3 semanas tras el pedido. Guarde el borrador.';
+
+  @override
+  String get tutQuotationLeadHint =>
+      'En un pedido puede enviar una pregunta a producción como ticket (se ve en el capítulo 9); los presupuestos aún no tienen ese botón.';
+
+  @override
+  String get tutQuotationSendTitle => 'Envíe el presupuesto';
+
+  @override
+  String get tutQuotationSendBody =>
+      'Pulse Marcar como enviado. Desde ahora el presupuesto queda congelado: solo puede aceptarse, rechazarse o revisarse. (Este botón no envía correo; usted envía el PDF o responde en el ticket.)';
+
+  @override
+  String get tutQuotationPdfTitle => 'El PDF';
+
+  @override
+  String get tutQuotationPdfBody =>
+      'El botón PDF muestra el presupuesto como lo vería el cliente. Se genera en el servidor con una herramienta de composición; sin ella verá un mensaje de error que no afecta a nada más. Mírelo si quiere y pulse Siguiente.';
+
+  @override
+  String get tutQuotationPdfHint =>
+      'No se rompe nada si el PDF falla: el presupuesto ya está enviado.';
+
+  @override
+  String get tutQuotationDoneTitle => 'Lo que ha aprendido';
+
+  @override
+  String get tutQuotationDoneBody =>
+      'Un presupuesto toma el precio de la zona del cliente, lleva notas y se congela al enviarse. Los plazos siguen siendo su criterio, junto con producción. Siguiente: el cliente quiere un cambio.';
+
+  @override
+  String get tutChangeTitle => 'Cambio, pedido, producción';
+
+  @override
+  String get tutChangeSummary =>
+      'Sombreros: ventas y producción. Revise el presupuesto, conviértalo en pedido, fabrique los carritos y algunos más para stock.';
+
+  @override
+  String get tutChangeNeedsTitle => 'Primero el capítulo 8';
+
+  @override
+  String get tutChangeNeedsBody =>
+      'Este capítulo necesita el presupuesto enviado del capítulo 8 y no lo ha encontrado. Termine antes el capítulo 8.';
+
+  @override
+  String get tutChangeMail3Title => 'El cliente responde otra vez';
+
+  @override
+  String get tutChangeMail3Body =>
+      'Maya está contenta con el presupuesto pero quiere 10 carritos en lugar de 8. Use el botón para reproducir su correo; llega al mismo ticket.';
+
+  @override
+  String get tutChangeMail3Action => 'Simular correo del cliente';
+
+  @override
+  String get tutChangeOpenQuoteTitle => 'Abra el presupuesto enviado';
+
+  @override
+  String get tutChangeOpenQuoteBody =>
+      'Un presupuesto enviado está congelado, así que un cambio significa una nueva revisión. Abra el presupuesto del capítulo 8.';
+
+  @override
+  String get tutChangeReviseTitle => 'Cree una revisión';
+
+  @override
+  String get tutChangeReviseBody =>
+      'Pulse Nueva revisión y elija Mantener precios acordados. La revisión anterior queda sustituida y se abre un nuevo borrador con el mismo número.';
+
+  @override
+  String get tutChangeReviseHint =>
+      'Actualizar a precios actuales recalcularía con la lista de hoy; aquí el cliente conserva el precio acordado.';
+
+  @override
+  String get tutChangeEditTitle => 'Cambie la cantidad';
+
+  @override
+  String get tutChangeEditBody =>
+      'Ponga la cantidad de TUT-CART en 10 y guarde el borrador.';
+
+  @override
+  String get tutChangeEditHint =>
+      'Las notas de la primera revisión se copiaron; ajústelas si cambia el plazo.';
+
+  @override
+  String get tutChangeSendTitle => 'Envíe la revisión';
+
+  @override
+  String get tutChangeSendBody =>
+      'Marque la nueva revisión como enviada, como antes.';
+
+  @override
+  String get tutChangeAcceptTitle => 'El cliente acepta';
+
+  @override
+  String get tutChangeAcceptBody =>
+      'Maya está de acuerdo con la nueva revisión: pulse Aceptado para registrarlo.';
+
+  @override
+  String get tutChangeConvertTitle => 'Conviértalo en pedido de venta';
+
+  @override
+  String get tutChangeConvertBody =>
+      'Pulse Convertir en pedido. Se crea un pedido de venta en borrador a partir de la revisión aceptada y se abre.';
+
+  @override
+  String get tutChangeConvertHint =>
+      'El diálogo pide la referencia propia del cliente; escriba por ejemplo TUT-PO-1 o déjela vacía.';
+
+  @override
+  String get tutChangeOpenOrderTitle => 'El pedido de venta';
+
+  @override
+  String get tutChangeOpenOrderBody =>
+      'Si el pedido no se abrió solo, ábralo desde Pedidos. Tiene los 10 carritos, el precio y la referencia del cliente. Los pedidos pasan de borrador a enviado y a confirmado.';
+
+  @override
+  String get tutChangeSendOrderTitle => 'Envíe la confirmación del pedido';
+
+  @override
+  String get tutChangeSendOrderBody =>
+      'Pulse Enviar confirmación de pedido. El pedido pasa a enviado: el cliente ya puede confirmarlo.';
+
+  @override
+  String get tutChangeSendOrderHint =>
+      'Generar el documento de confirmación requiere la herramienta de composición del servidor; si falta, el servidor rechaza este paso y hace falta un servidor que la tenga para continuar.';
+
+  @override
+  String get tutChangeConfirmTitle => 'Confirme en nombre del cliente';
+
+  @override
+  String get tutChangeConfirmBody =>
+      'Maya ya dijo que sí por correo: pulse Confirmar en nombre del cliente y añada una nota como confirmado por correo. El pedido queda confirmado y puede ir a producción.';
+
+  @override
+  String get tutChangeReleaseTitle => 'Por liberar';
+
+  @override
+  String get tutChangeReleaseBody =>
+      'Póngase el sombrero de producción. Abra Producción > Por liberar: la línea de pedido confirmada con 10 carritos espera. Pulse Liberar a producción para crear la orden de producción de esa línea.';
+
+  @override
+  String get tutChangeStartTitle => 'Inicie la producción';
+
+  @override
+  String get tutChangeStartBody =>
+      'Pulse Iniciar en la nueva orden de producción.';
+
+  @override
+  String get tutChangeWarehouseTitle => 'Un lugar para los carritos';
+
+  @override
+  String get tutChangeWarehouseBody =>
+      'Los carritos terminados necesitan una ubicación donde ir, y todavía no hay ningún almacén (el capítulo 3 lo crea). Abra Stock, pulse Almacenes y cree el almacén MAIN con el nombre Almacén principal; después vuelva a la orden de producción. Si se rechaza al guardar porque el código MAIN ya existe, lo tiene un almacén inactivo: vuelva a activarlo (y su ubicación) en Stock > Almacenes, o cámbiele el código con su botón de editar, y pulse después Siguiente.';
+
+  @override
+  String get tutChangeWarehouseHint =>
+      'La ubicación MAIN se crea junto con el almacén. Si ya existe un almacén con una ubicación, este paso se omite.';
+
+  @override
+  String get tutChangeCompleteTitle => 'Complete la producción';
+
+  @override
+  String get tutChangeCompleteBody =>
+      'Pulse Completar, elija la ubicación MAIN del almacén en Almacenar en y confirme los 10 carritos. Se consumen los componentes y los carritos van al pedido.';
+
+  @override
+  String get tutChangeReadyTitle => 'Listo para enviar';
+
+  @override
+  String get tutChangeReadyBody =>
+      'Abra el pedido de nuevo: con todas sus líneas producidas está listo para enviar. La entrega (preparación, envío, facturación al cliente) queda fuera de este tutorial. Pulse Siguiente.';
+
+  @override
+  String get tutChangeStockTitle => 'Algunos más para stock';
+
+  @override
+  String get tutChangeStockBody =>
+      'La producción suele adelantarse a los pedidos. Abra Producción, pulse Fabricar para stock y libere 4 carritos más de TUT-CART. Sin pedido, simplemente entran en stock al completarse.';
+
+  @override
+  String get tutChangeStockHint =>
+      'Puede iniciar y completar esa orden como en el capítulo 5, o dejarla liberada.';
+
+  @override
+  String get tutChangeDoneTitle => 'Bien hecho: toda la historia';
+
+  @override
+  String get tutChangeDoneBody =>
+      'Ha pasado de proveedores a compras, facturas, producción, precios, un ticket, un cliente nuevo, un presupuesto revisado, un pedido y la producción para el pedido y para stock. Y ahora: entregas y envíos, reparaciones, servicio de campo e informes tienen cada uno su entrada de menú. Cualquier capítulo se puede repetir desde el mapa de capítulos; los pasos ya hechos se omiten.';
+
+  @override
+  String get tutInvoicesOpenSecondTitle => 'Abra la factura sospechosa';
+
+  @override
+  String get tutInvoicesOpenSecondBody =>
+      'Abra la factura TUT-INV-002, la que acaba de registrar, desde la lista de Finanzas.';
+
+  @override
+  String get adminIdentityProviders => 'Proveedores de identidad';
+
+  @override
+  String get idpIntro =>
+      'Los proveedores de identidad deciden quién puede iniciar sesión en TradoCraft. Las personas se siguen creando en el ERP; el proveedor solo demuestra quién es cada una.';
+
+  @override
+  String idpPrimaryCompany(String name) {
+    return 'Empresa principal: $name';
+  }
+
+  @override
+  String get idpPrimaryNote =>
+      'Solo los administradores de la empresa principal de la instalación pueden cambiar estos ajustes.';
+
+  @override
+  String get idpReadOnlyNotice =>
+      'No eres administrador de la empresa principal de la instalación, así que estos ajustes no están disponibles para ti. Pídeselo a un administrador de esa empresa.';
+
+  @override
+  String get idpAdd => 'Añadir proveedor';
+
+  @override
+  String get idpNone => 'Aún no hay proveedores de identidad configurados.';
+
+  @override
+  String get idpEnabled => 'Activado';
+
+  @override
+  String get idpDisabled => 'Desactivado';
+
+  @override
+  String get idpSourceEnv => 'Entorno del servidor';
+
+  @override
+  String get idpSourceDatabase => 'Guardado en la app';
+
+  @override
+  String get idpEnvExplain =>
+      'Definido por OIDC_ISSUER / OIDC_AUDIENCE del servidor. No se puede cambiar aquí; sigue disponible como solución de emergencia.';
+
+  @override
+  String idpRuleVerified(String claim) {
+    return 'Vincula por correo cuando la declaración $claim es verdadera';
+  }
+
+  @override
+  String get idpRuleTrust =>
+      'Vincula por correo y confía en la dirección del proveedor';
+
+  @override
+  String get idpRuleSubject =>
+      'Solo sujetos existentes: sin vincular por correo';
+
+  @override
+  String idpRuleDomains(String domains) {
+    return 'solo para $domains';
+  }
+
+  @override
+  String get idpAddTitle => 'Añadir proveedor de identidad';
+
+  @override
+  String get idpEditTitle => 'Editar proveedor de identidad';
+
+  @override
+  String get idpPreset => 'Empezar desde';
+
+  @override
+  String get idpPresetEntra => 'Microsoft Entra ID';
+
+  @override
+  String get idpPresetGoogle => 'Google';
+
+  @override
+  String get idpPresetGeneric => 'OpenID Connect genérico';
+
+  @override
+  String get idpTenantId => 'Id del inquilino (directorio)';
+
+  @override
+  String get idpAudienceEntraHint =>
+      'El id de aplicación (cliente) de tu registro de app de Entra';
+
+  @override
+  String get idpFieldName => 'Nombre';
+
+  @override
+  String get idpFieldIssuer => 'URL del emisor';
+
+  @override
+  String get idpFieldAudience => 'Audiencia';
+
+  @override
+  String get idpFieldClientId => 'Id de cliente (cliente público, sin secreto)';
+
+  @override
+  String get idpFieldScopes => 'Scopes';
+
+  @override
+  String get idpFieldTokenUse =>
+      'Token que se envía (aún no se usa para iniciar sesión)';
+
+  @override
+  String get idpTokenUseIdTitle => 'Token de ID';
+
+  @override
+  String get idpTokenUseIdBody =>
+      'Predeterminado. Funciona con Keycloak y la mayoría de los proveedores OpenID Connect: la audiencia es el id de cliente.';
+
+  @override
+  String get idpTokenUseAccessTitle => 'Token de acceso';
+
+  @override
+  String get idpTokenUseAccessBody =>
+      'Para Microsoft Entra ID: el token de acceso de la propia API (scope api://<client-id>/access_as_user).';
+
+  @override
+  String get idpFieldEmailClaim => 'Declaración del correo';
+
+  @override
+  String get idpFieldVerifiedClaim => 'Declaración de verificación';
+
+  @override
+  String get idpFieldDomains => 'Dominios de correo permitidos';
+
+  @override
+  String get idpDomainsHint =>
+      'Escribe un dominio y pulsa Intro, por ejemplo example.com';
+
+  @override
+  String get idpAdvanced => 'Avanzado';
+
+  @override
+  String get idpAlgorithms => 'Algoritmos de firma aceptados';
+
+  @override
+  String get idpEmailRuleTitle =>
+      '¿Cómo puede usarse una dirección de correo para vincular a una persona?';
+
+  @override
+  String get idpRuleVerifiedTitle =>
+      'Exigir una declaración verificada (recomendado)';
+
+  @override
+  String get idpRuleVerifiedBody =>
+      'El primer inicio de sesión solo se vincula al usuario del ERP con el mismo correo si el token incluye una declaración, como email_verified, que indique que el proveedor comprobó esa dirección. Riesgo: si el proveedor no comprueba realmente las direcciones, la declaración no vale nada y un extraño podría apropiarse de un usuario.';
+
+  @override
+  String get idpRuleTrustTitle =>
+      'Confiar en la dirección de correo del proveedor';
+
+  @override
+  String get idpRuleTrustBody =>
+      'La dirección del token se acepta sin declaración de verificación. Úsalo solo en un directorio donde tu empresa controle todas las direcciones, como un único inquilino de Entra, y añade dominios permitidos. Riesgo: si las personas pueden fijar su propia dirección en el proveedor, pueden entrar como cualquier usuario.';
+
+  @override
+  String get idpRuleSubjectTitle => 'Solo sujetos existentes';
+
+  @override
+  String get idpRuleSubjectBody =>
+      'Nadie se vincula por correo. Un administrador vincula cada usuario con una identidad del proveedor (Usuarios, Vincular identidad). Lo más seguro, pero más trabajo.';
+
+  @override
+  String get idpEntraAdvice =>
+      'Entra ID: o bien confiar en el correo del proveedor y listar tus dominios permitidos (un inquilino solo contiene a tu gente), o bien exigir la declaración xms_edov, que Entra solo envía si la añades como declaración opcional en el registro de la app.';
+
+  @override
+  String get idpErrName => 'El nombre es obligatorio.';
+
+  @override
+  String get idpErrIssuer => 'El emisor debe ser una URL https://.';
+
+  @override
+  String get idpErrAudience => 'La audiencia es obligatoria.';
+
+  @override
+  String idpErrDomain(String domain) {
+    return '$domain no parece un dominio.';
+  }
+
+  @override
+  String get idpErrAlgorithms => 'Selecciona al menos un algoritmo.';
+
+  @override
+  String idpSaveRefused(String reason) {
+    return 'El servidor rechazó estos ajustes: $reason';
+  }
+
+  @override
+  String get idpSaved => 'Proveedor de identidad guardado';
+
+  @override
+  String get idpDeleted => 'Proveedor de identidad eliminado';
+
+  @override
+  String idpDeleteConfirm(String name) {
+    return '¿Eliminar el proveedor de identidad $name? Quienes inician sesión con él ya no podrán hacerlo.';
+  }
+
+  @override
+  String get idpLockoutTitle => 'Esto puede dejar a personas fuera';
+
+  @override
+  String get idpLockoutLast =>
+      'Este es el último proveedor de identidad activado y el servidor no tiene alternativa OIDC_ISSUER. Si continúas, nadie podrá iniciar sesión hasta que se arregle la configuración del servidor.';
+
+  @override
+  String get idpLockoutOwn =>
+      'Has iniciado sesión con este proveedor. Si continúas, se cerrará tu sesión y no podrás volver a entrar salvo que otro proveedor te acepte.';
+
+  @override
+  String get idpLockoutContinue => 'Continuar de todos modos';
+
+  @override
+  String get idpTest => 'Probar';
+
+  @override
+  String get idpTestSampleToken => 'Token de ejemplo (opcional)';
+
+  @override
+  String get idpTestSampleHint =>
+      'Pega un token de acceso de una persona de este proveedor para ver cómo se trataría.';
+
+  @override
+  String get idpTestNothing =>
+      'La prueba solo lee el proveedor y comprueba el token. No se vincula ni se guarda nada.';
+
+  @override
+  String idpTestFailed(String error) {
+    return 'No se pudo leer el proveedor: $error';
+  }
+
+  @override
+  String get idpTestDiscovery => 'Documento de descubrimiento accesible';
+
+  @override
+  String get idpTestIssuerMatch =>
+      'El emisor coincide con el documento de descubrimiento';
+
+  @override
+  String idpTestKeys(int count, String algorithms) {
+    return '$count claves de firma, algoritmos: $algorithms';
+  }
+
+  @override
+  String idpTestClaims(String claims) {
+    return 'Declaraciones que el proveedor dice admitir: $claims';
+  }
+
+  @override
+  String get idpTestToken => 'Token de ejemplo';
+
+  @override
+  String get idpTestSignature => 'Firma';
+
+  @override
+  String get idpTestAudience => 'Audiencia';
+
+  @override
+  String get idpTestExpiry => 'No caducado';
+
+  @override
+  String get idpTestOk => 'OK';
+
+  @override
+  String get idpTestNotOk => 'Fallo';
+
+  @override
+  String idpTestEmail(String email) {
+    return 'Correo encontrado: $email';
+  }
+
+  @override
+  String get idpTestNoEmail =>
+      'No se encontró ninguna dirección de correo en el token';
+
+  @override
+  String get idpTestVerified =>
+      'El proveedor marca la dirección como verificada';
+
+  @override
+  String get idpTestNotVerified =>
+      'La dirección no está marcada como verificada';
+
+  @override
+  String idpBindWould(String email) {
+    return 'Iniciaría sesión como $email';
+  }
+
+  @override
+  String idpBindExisting(String email) {
+    return 'Ya vinculado a $email';
+  }
+
+  @override
+  String idpBindRefused(String reason) {
+    return 'Sería rechazado: $reason';
+  }
+
+  @override
+  String get idpLinkIdentity => 'Vincular identidad';
+
+  @override
+  String idpLinkTitle(String name) {
+    return 'Vincular la identidad de $name';
+  }
+
+  @override
+  String get idpLinkExplain =>
+      'Solo necesario para proveedores con la regla «Solo sujetos existentes». Elige el proveedor e introduce el sujeto (la declaración sub) de esta persona allí. Déjalo vacío para quitar el vínculo.';
+
+  @override
+  String get idpLinkProvider => 'Proveedor';
+
+  @override
+  String get idpLinkSubject => 'Sujeto (sub)';
+
+  @override
+  String get idpLinkNoProviders =>
+      'Aún no hay proveedores de identidad guardados en la app.';
+
+  @override
+  String get idpLinkSaved => 'Vínculo de identidad guardado';
+
+  @override
+  String get idpLinkCleared => 'Vínculo de identidad eliminado';
+
+  @override
+  String tutActionFailed(String reason) {
+    return 'No se pudo enviar el correo simulado: $reason. Inténtelo de nuevo.';
+  }
+
+  @override
+  String get tutActionForbidden =>
+      'No tiene permiso para importar correo al helpdesk (hace falta el permiso de escritura del helpdesk). Pídalo a un administrador o inicie sesión como tal e inténtelo de nuevo.';
+
+  @override
+  String workerDownBanner(String since) {
+    return 'El procesamiento en segundo plano no funciona desde $since: no se envían ni reciben correos y no se escalan los incumplimientos de SLA.';
+  }
+
+  @override
+  String get workerNeverSeenBanner =>
+      'Todavía no ha funcionado ningún procesamiento en segundo plano: no se envían ni reciben correos y no se escalan los incumplimientos de SLA.';
+
+  @override
+  String get workerBannerSemantics => 'Procesamiento en segundo plano';
+
+  @override
+  String get vatLookup => 'Buscar en VIES';
+
+  @override
+  String get vatValid =>
+      'El formato y los dígitos de control son correctos. Eso no demuestra que el número esté registrado.';
+
+  @override
+  String get vatFormatOk =>
+      'El formato es correcto. Los dígitos de control de este país no se verifican aquí.';
+
+  @override
+  String get vatBadFormat =>
+      'Esto no tiene la forma de un NIF-IVA de este país.';
+
+  @override
+  String get vatBadChecksum =>
+      'Los dígitos de control no coinciden: revise si hay un error de escritura.';
+
+  @override
+  String get vatNotChecked =>
+      'No es un NIF-IVA de la UE, por lo que no se comprueba.';
+
+  @override
+  String vatDuplicates(String records) {
+    return 'También lo usa: $records';
+  }
+
+  @override
+  String vatInactive(String record) {
+    return '$record (inactivo)';
+  }
+
+  @override
+  String get viesValid => 'Registrado y activo en VIES.';
+
+  @override
+  String get viesInvalid => 'VIES no conoce este número.';
+
+  @override
+  String viesUnavailable(String reason) {
+    return 'VIES no pudo responder ($reason). Introduzca los datos a mano.';
+  }
+
+  @override
+  String get viesDisabled =>
+      'La consulta VIES está desactivada en este servidor.';
+
+  @override
+  String get viesFilled => 'Campos vacíos rellenados desde VIES.';
+
+  @override
+  String get viesNoDetails =>
+      'El Estado miembro no divulga nombre ni dirección.';
+
+  @override
+  String get adminAuditTrail => 'Registro de auditoría';
+
+  @override
+  String get auditRecordType => 'Tipo de registro';
+
+  @override
+  String get auditAllRecords => 'Todos';
+
+  @override
+  String get auditAction => 'Acción';
+
+  @override
+  String get auditFrom => 'Desde';
+
+  @override
+  String get auditTo => 'Hasta';
+
+  @override
+  String get auditClearDates => 'Quitar las fechas';
+
+  @override
+  String get auditSystem => 'Sistema';
+
+  @override
+  String get auditNoEvents => 'No se encontraron eventos.';
+
+  @override
+  String get auditLoadMore => 'Cargar eventos anteriores';
+
+  @override
+  String get auditHistory => 'Historial';
+
+  @override
+  String auditHistoryTitle(String name) {
+    return 'Historial de $name';
+  }
+
+  @override
+  String get auditNoDetails => 'No se registraron detalles.';
+
+  @override
+  String get mailboxes => 'Buzones';
+
+  @override
+  String get newMailbox => 'Nuevo buzón';
+
+  @override
+  String get mailboxesEmpty =>
+      'Todavía no hay buzones. El correo se recibe y se envía con la configuración del proceso en segundo plano.';
+
+  @override
+  String get mailboxRefresh => 'Actualizar el estado';
+
+  @override
+  String get mailboxAddress => 'Dirección de correo';
+
+  @override
+  String get mailboxKind => 'Conexión';
+
+  @override
+  String get mailboxKindGraph => 'Microsoft 365 (Exchange Online)';
+
+  @override
+  String get mailboxKindImap => 'IMAP y SMTP';
+
+  @override
+  String get mailboxTenantId => 'ID del inquilino (tenant)';
+
+  @override
+  String get mailboxClientId => 'ID de aplicación (cliente)';
+
+  @override
+  String get mailboxUsername => 'Nombre de usuario';
+
+  @override
+  String get mailboxImapHost => 'Servidor IMAP';
+
+  @override
+  String get mailboxImapPort => 'Puerto IMAP';
+
+  @override
+  String get mailboxImapFolder => 'Carpeta';
+
+  @override
+  String get mailboxImapTls => 'Conexión IMAP cifrada (TLS)';
+
+  @override
+  String get mailboxSmtpHost => 'Servidor SMTP';
+
+  @override
+  String get mailboxSmtpPort => 'Puerto SMTP';
+
+  @override
+  String get mailboxSmtpSecurity => 'Cifrado SMTP';
+
+  @override
+  String get mailboxSmtpNone => 'Ninguno';
+
+  @override
+  String get mailboxSecretRef => 'Nombre del secreto';
+
+  @override
+  String mailboxSecretHelp(String variable) {
+    return 'La contraseña o el secreto de cliente no se guarda aquí. Defínalo en el servidor en la variable $variable del proceso en segundo plano.';
+  }
+
+  @override
+  String get mailboxTeam => 'Equipo para tickets nuevos';
+
+  @override
+  String get mailboxTeamDefault => 'El equipo predeterminado';
+
+  @override
+  String get mailboxInbound => 'Recibir el correo entrante';
+
+  @override
+  String get mailboxDefault =>
+      'Buzón predeterminado: para el correo del sistema y los tickets sin buzón';
+
+  @override
+  String get mailboxDefaultBadge => 'predeterminado';
+
+  @override
+  String get mailboxSendOnly => 'Solo envía';
+
+  @override
+  String get mailboxNeverPolled => 'Todavía no se ha recibido correo';
+
+  @override
+  String mailboxLastOk(String when) {
+    return 'Correo recibido por última vez el $when';
+  }
+
+  @override
+  String mailboxError(String error) {
+    return 'Problema al recibir el correo: $error';
+  }
+
+  @override
+  String mailboxDeleteConfirm(String name) {
+    return '¿Eliminar el buzón $name? Sus tickets se conservan. Las respuestas salen entonces por el buzón predeterminado.';
+  }
+
+  @override
+  String get productionWorkCentres => 'Puestos de trabajo';
+
+  @override
+  String get productionWorkCentreAdd => 'Añadir puesto de trabajo';
+
+  @override
+  String get productionWorkCentreEdit => 'Editar puesto de trabajo';
+
+  @override
+  String get productionWorkCentreCapacity =>
+      'Capacidad (unidades trabajando a la vez)';
+
+  @override
+  String get productionWorkCentreCost => 'Coste por hora';
+
+  @override
+  String productionWorkCentreOpenOps(String count) {
+    return '$count operaciones abiertas';
+  }
+
+  @override
+  String get productionWorkCentreEmpty =>
+      'Aún no hay puestos de trabajo. Añada las máquinas y bancos en los que se ejecutan sus operaciones.';
+
+  @override
+  String get productionWorkingHours => 'Horario de trabajo';
+
+  @override
+  String get productionHoursDefault =>
+      'Sin horario propio: de lunes a viernes 08:00–12:00 y 13:00–17:00.';
+
+  @override
+  String get productionHoursAddBlock => 'Añadir tramo';
+
+  @override
+  String get productionClosures => 'Cierres';
+
+  @override
+  String get productionClosureAdd => 'Añadir cierre';
+
+  @override
+  String get productionClosureWholePlant => 'Toda la planta';
+
+  @override
+  String get productionClosureKind => 'Tipo';
+
+  @override
+  String get productionClosureMaintenance => 'Mantenimiento';
+
+  @override
+  String get productionClosureHoliday => 'Festivo';
+
+  @override
+  String get productionClosureOther => 'Otro';
+
+  @override
+  String get productionClosureEmpty => 'Sin cierres.';
+
+  @override
+  String get productionCapacity => 'Capacidad';
+
+  @override
+  String get productionCapacityLegend =>
+      'Carga de las operaciones abiertas frente a lo que cada puesto puede trabajar. Rojo: sobrecargado.';
+
+  @override
+  String get productionCapacityOverloaded => 'Sobrecargado';
+
+  @override
+  String get productionCapacityEmpty =>
+      'No hay puestos de trabajo que mostrar.';
+
+  @override
+  String get productionCapacityEarlier => 'Antes';
+
+  @override
+  String get productionCapacityLater => 'Después';
+
+  @override
+  String get productionCapacityToday => 'Hoy';
+
+  @override
+  String productionWorkCentreUnits(String count) {
+    return '$count unidades';
+  }
+
+  @override
+  String get productionOperations => 'Operaciones';
+
+  @override
+  String get productionOperationPending => 'Sin empezar';
+
+  @override
+  String get productionOperationDone => 'Hecha';
+
+  @override
+  String get productionOperationSkipped => 'Omitida';
+
+  @override
+  String get productionOperationStart => 'Iniciar operación';
+
+  @override
+  String get productionOperationFinish => 'Terminar operación';
+
+  @override
+  String get productionOperationReopen => 'Reabrir operación';
+
+  @override
+  String get productionOperationMove => 'Mover operación';
+
+  @override
+  String get productionOperationMinutes => 'Minutos trabajados';
+
+  @override
+  String get productionOperationPlanned => 'Previsto';
+
+  @override
+  String get productionOperationWorked => 'Trabajado';
+
+  @override
+  String productionOperationBy(String name) {
+    return 'por $name';
+  }
+
+  @override
+  String get productionScheduleAgain => 'Replanificar';
+
+  @override
+  String get productionStartFrom => 'Empezar desde';
+
+  @override
+  String productionBehindSchedule(String date) {
+    return 'Con retraso: la última operación está prevista para el $date, después de la fecha de finalización prevista.';
+  }
+
+  @override
+  String get productionBehindScheduleShort => 'Con retraso';
+
+  @override
+  String productionUseScheduledEnd(String date) {
+    return 'Usar $date como fecha de finalización prevista';
+  }
+
+  @override
+  String get productionRemark => 'Observación para producción (interna)';
+
+  @override
+  String get productionSubOrders => 'Órdenes de subconjuntos';
+
+  @override
+  String productionSubassemblyOf(String number) {
+    return 'Subconjunto de $number';
+  }
+
+  @override
+  String get productionCost => 'Coste';
+
+  @override
+  String get productionCostPlanned => 'Previsto';
+
+  @override
+  String get productionCostActual => 'Real';
+
+  @override
+  String get productionCostMaterial => 'Material';
+
+  @override
+  String get productionCostLabour => 'Mano de obra';
+
+  @override
+  String get productionCostIncomplete =>
+      'Faltan algunos costes y se han omitido.';
+
+  @override
+  String productionOperationsOpenWarning(String count) {
+    return '$count operaciones siguen abiertas. Indique los minutos trabajados para terminarlas; deje el campo vacío para omitir una.';
+  }
+
+  @override
+  String get productionAutoRelease =>
+      'Lanzar también los subconjuntos que el stock no cubre';
+
+  @override
+  String get productionRouting => 'Ruta de fabricación';
+
+  @override
+  String get productionRoutingNone =>
+      'Sin ruta: las órdenes de producción de este producto no tienen operaciones.';
+
+  @override
+  String get productionRoutingAddOperation => 'Añadir operación';
+
+  @override
+  String get productionRoutingOperation => 'Operación';
+
+  @override
+  String get productionRoutingSetup => 'Preparación (min)';
+
+  @override
+  String get productionRoutingRun => 'Duración por unidad (min)';
+
+  @override
+  String get productionRoutingNoWorkCentres =>
+      'Añada primero puestos de trabajo (Producción, puestos de trabajo).';
+
+  @override
+  String get productionCostRollup => 'Cálculo de costes';
+
+  @override
+  String get productionCostRollupHint =>
+      'Material al coste estándar y mano de obra al coste por hora de los puestos de trabajo, en todos los niveles.';
+
+  @override
+  String get productionCostPerUnit => 'Coste por unidad';
+
+  @override
+  String productionCostGapProduct(String code) {
+    return 'Sin coste estándar: $code';
+  }
+
+  @override
+  String productionCostGapWorkCentre(String code) {
+    return 'Sin coste por hora: $code';
+  }
+
+  @override
+  String get productionCostCalculate => 'Calcular';
+
+  @override
+  String get productionOperationMinutesInvalid =>
+      'Indique los minutos como número entero.';
+
+  @override
+  String get productionRoutingLoadFailed =>
+      'No se pudo cargar la ruta, así que no se puede modificar ahora.';
+
+  @override
+  String get productionRoutingChangedWhileSaving =>
+      'La ruta cambió mientras se guardaba. Guarde de nuevo para incluir los últimos cambios.';
+
+  @override
+  String get shortcutBack => 'Atrás';
+
+  @override
+  String get shortcutCreate => 'Crear';
+
+  @override
+  String get shortcutHome => 'Inicio';
+
+  @override
+  String get shortcutDiscard => 'Descartar cambios';
+
+  @override
+  String get shortcutSave => 'Guardar';
+
+  @override
+  String get shortcutNextPage => 'Cargar más';
+
+  @override
+  String get shortcutSearch => 'Buscar';
+
+  @override
+  String get shortcutNewTodo => 'Nueva tarea';
+
+  @override
+  String get shortcutKbSearch => 'Buscar artículos';
+
+  @override
+  String get shortcutKbShare => 'Compartir artículo';
+
+  @override
+  String get shortcutPalette => 'Paleta de comandos';
+
+  @override
+  String get shortcutHelp => 'Atajos de teclado';
+
+  @override
+  String shortcutMenuItem(int n) {
+    return 'Elemento de menú $n';
+  }
+
+  @override
+  String shortcutHint(String keys) {
+    return 'Atajo: $keys';
+  }
+
+  @override
+  String get moduleTodo => 'Tareas';
+
+  @override
+  String get todoTitle => 'Tareas';
+
+  @override
+  String get todoAdd => 'Añadir tarea';
+
+  @override
+  String get todoAddSub => 'Añadir subtarea';
+
+  @override
+  String get todoWhat => '¿Qué hay que hacer?';
+
+  @override
+  String get todoNotes => 'Notas';
+
+  @override
+  String get todoDueDate => 'Fecha límite';
+
+  @override
+  String get todoSetDue => 'Fijar fecha límite';
+
+  @override
+  String get todoClearDue => 'Quitar fecha límite';
+
+  @override
+  String todoDue(String date) {
+    return 'Vence $date';
+  }
+
+  @override
+  String get todoOverdue => 'Vencida';
+
+  @override
+  String get todoFilterOpen => 'Abiertas';
+
+  @override
+  String get todoFilterDone => 'Hechas';
+
+  @override
+  String get todoFilterAll => 'Todas';
+
+  @override
+  String get todoEmpty => 'Nada pendiente. Añada su primera tarea.';
+
+  @override
+  String get todoEmptyDone => 'No hay tareas hechas.';
+
+  @override
+  String get todoComplete => 'Marcar como hecha';
+
+  @override
+  String get todoReopen => 'Reabrir';
+
+  @override
+  String todoDeleteConfirm(String title) {
+    return '¿Eliminar «$title»? Sus subtareas también se eliminan.';
+  }
+
+  @override
+  String get todoCompleteAllTitle => '¿Completar también las subtareas?';
+
+  @override
+  String todoCompleteAllBody(String title) {
+    return '«$title» aún tiene subtareas abiertas. Al completarla, también se completan.';
+  }
+
+  @override
+  String get todoCompleteAll => 'Completar todas';
+
+  @override
+  String get todoLinkedItem => 'Elemento vinculado';
+
+  @override
+  String todoFromOwner(String name) {
+    return 'De $name';
+  }
+
+  @override
+  String todoSubProgress(int done, int total) {
+    return '$done de $total subtareas hechas';
+  }
+
+  @override
+  String get todoReorder => 'Arrastrar para reordenar';
+
+  @override
+  String get changeProduct => 'Cambiar producto';
+
+  @override
+  String changeProductOf(String product) {
+    return 'Nuevo producto principal para $product';
+  }
+
+  @override
+  String get changeProductNew => 'Nuevo producto';
+
+  @override
+  String changeProductNetNote(String product) {
+    return '$product tiene precio neto: se ha borrado el descuento de la línea.';
+  }
+
+  @override
+  String changeProductIndicativeNote(String product) {
+    return '$product tiene precio indicativo: confirme el precio antes de enviar.';
+  }
+
+  @override
+  String optionsNotApplicable(int count, String product) {
+    return '$count opción(es) no se aplican a $product: elimínelas.';
+  }
+
+  @override
+  String removeNamedLine(String code) {
+    return 'Eliminar $code';
+  }
+
+  @override
+  String optionNotOffered(String product) {
+    return 'No se ofrece con $product';
+  }
+
+  @override
+  String sentWithNotApplicable(int count) {
+    return 'Enviado con $count opción(es) que no se aplican a su producto principal.';
+  }
+
+  @override
+  String get tabCustomer => 'Cliente';
+
+  @override
+  String get todoAdded => 'Tarea añadida';
+
+  @override
+  String get todoLinkToScreen => 'Vincular a la pantalla actual';
+
+  @override
+  String get todoLinkNotAvailable =>
+      'Esta pantalla no tiene ningún registro al que vincular.';
+
+  @override
+  String get todoOpenLink => 'Abrir el registro vinculado';
+
+  @override
+  String get todoRemoveLink => 'Quitar el enlace de mis tareas';
+
+  @override
+  String get recordNotFound =>
+      'No se encontró este registro. Puede que se haya eliminado o que no tengas acceso a él.';
+
+  @override
+  String get todoForObject => 'Tareas de este registro';
+
+  @override
+  String todoForObjectCount(int count) {
+    return 'Tareas de este registro ($count abiertas)';
+  }
+
+  @override
+  String get todoForObjectEmpty => 'No hay tareas abiertas para este registro.';
+
+  @override
+  String get todoEmailReminders => 'Recordatorios por correo';
 }

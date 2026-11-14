@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -14,6 +14,7 @@ import 'package:tradocraft_app/app/shell.dart';
 import 'package:tradocraft_app/app/workspace.dart';
 import 'package:tradocraft_app/features/field/offline/kv_store.dart';
 import 'package:tradocraft_app/features/login/login_page.dart';
+import 'package:tradocraft_app/features/setup/setup_api.dart';
 import 'package:tradocraft_app/l10n/app_localizations.dart';
 
 import 'fake_http.dart';
@@ -82,6 +83,7 @@ ProviderContainer _container({
   EnvironmentsState? environments,
   MemoryKvStore? kv,
   Future<EnvironmentProbe> Function(String)? probe,
+  Future<SetupStatusInfo> Function(String)? setupStatus,
 }) {
   final envs = environments ?? _two();
   final c = ProviderContainer(
@@ -90,6 +92,9 @@ ProviderContainer _container({
       initialEnvironmentsProvider.overrideWithValue(envs),
       initialSessionProvider.overrideWithValue(envs.active.session),
       environmentProbeProvider.overrideWithValue(probe ?? _probe),
+      setupStatusProvider.overrideWithValue(
+        setupStatus ?? (_) async => throw Exception('offline'),
+      ),
     ],
   );
   addTearDown(c.dispose);
@@ -100,7 +105,7 @@ Widget _app(ProviderContainer c, Widget home) => UncontrolledProviderScope(
   container: c,
   child: MaterialApp(
     locale: const Locale('en'),
-    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    localizationsDelegates: [AppLocalizations.delegate, ...GlobalMaterialLocalizations.delegates],
     supportedLocales: AppLocalizations.supportedLocales,
     home: home,
   ),
@@ -326,7 +331,7 @@ void main() {
               child: MaterialApp(
                 theme: ThemeData(brightness: brightness),
                 locale: const Locale('en'),
-                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                localizationsDelegates: [AppLocalizations.delegate, ...GlobalMaterialLocalizations.delegates],
                 supportedLocales: AppLocalizations.supportedLocales,
                 home: const Scaffold(body: EnvironmentBanner()),
               ),
@@ -411,7 +416,7 @@ void main() {
             child: MaterialApp.router(
               routerConfig: router,
               locale: const Locale('en'),
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: [AppLocalizations.delegate, ...GlobalMaterialLocalizations.delegates],
               supportedLocales: AppLocalizations.supportedLocales,
             ),
           ),
@@ -470,6 +475,66 @@ void main() {
       expect(state.active.serverUrl, 'http://localhost:8083');
       expect(c.read(dioProvider).options.baseUrl, 'http://localhost:8083');
       expect(find.text('TUTORIAL · Practice'), findsOneWidget);
+    });
+
+    testWidgets('adding a server without a company offers the setup wizard', (
+      tester,
+    ) async {
+      final c = _container(
+        setupStatus: (_) async => const SetupStatusInfo(
+          needsSetup: true,
+          tokenRequired: false,
+          authMode: 'dev',
+        ),
+      );
+      _servers['http://localhost:8084'] = const EnvironmentProbe(
+        name: 'Empty',
+        kind: EnvironmentKind.tutorial,
+        dbName: 'empty',
+        version: '0.1.0',
+      );
+      addTearDown(() => _servers.remove('http://localhost:8084'));
+      final router = GoRouter(
+        routes: [
+          GoRoute(
+            path: '/',
+            builder: (_, _) => const Scaffold(body: EnvironmentBanner()),
+          ),
+          GoRoute(
+            path: '/setup',
+            builder: (_, s) =>
+                Text('WIZARD ${s.uri.queryParameters['server']}'),
+          ),
+        ],
+      );
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: c,
+          child: MaterialApp.router(
+            routerConfig: router,
+            locale: const Locale('en'),
+            localizationsDelegates: [AppLocalizations.delegate, ...GlobalMaterialLocalizations.delegates],
+            supportedLocales: AppLocalizations.supportedLocales,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(EnvironmentBanner));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('env-add')));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('env-url')),
+        'http://localhost:8084',
+      );
+      await tester.tap(find.byKey(const ValueKey('env-check')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('env-add-confirm')));
+      await tester.pumpAndSettle();
+      expect(find.text('Set up this server?'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('setup-offer-open')));
+      await tester.pumpAndSettle();
+      expect(find.text('WIZARD http://localhost:8084'), findsOneWidget);
     });
 
     testWidgets('an unreachable server cannot be added', (tester) async {
@@ -806,7 +871,7 @@ void main() {
           child: MaterialApp.router(
             routerConfig: router,
             locale: const Locale('en'),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            localizationsDelegates: [AppLocalizations.delegate, ...GlobalMaterialLocalizations.delegates],
             supportedLocales: AppLocalizations.supportedLocales,
           ),
         ),

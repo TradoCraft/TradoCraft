@@ -16,6 +16,7 @@ Module overview: [ARCHITECTURE.md](ARCHITECTURE.md).
 | A3 Field service completion | Done, ADR 0020 and [ADR 0022](adr/0022-technician-offline-queue.md) |
 | A4 Helpdesk collaboration (manual escalation, hand-over, watchers, unread, timeline, soft presence) | Done, [ADR 0023](adr/0023-helpdesk-collaboration.md) |
 | Helpdesk follow-up: business hours, automation rules, split, reporting | Done, ADR 0021 |
+| Helpdesk mailboxes: several per company, Microsoft 365 (Graph) or IMAP/SMTP, replies through the ticket's mailbox | Done, [ADR 0054](adr/0054-helpdesk-mailboxes.md) |
 | User-defined reports (customers, quotations, orders; joins, grouping, charts, CSV and PDF) | Done, [ADR 0042](adr/0042-report-builder.md) |
 | Environment awareness (`/meta/environment`, environment list, banner and switcher in the app) | Done, [ADR 0043](adr/0043-environments.md); clone script, bootstrap wizard and outbound-side-effect switch-off follow |
 | A5 Helpdesk customer mail: e-mail actions in automation rules, SLA notices to the customer, scheduled report mails | Open (builds on ADR 0021) |
@@ -25,14 +26,15 @@ Module overview: [ARCHITECTURE.md](ARCHITECTURE.md).
 | A9 Helpdesk ticket bundles (linked tickets) | Open (merge and split are done, ADR 0017 and ADR 0021) |
 | B1 Inventory foundation | Done, [ADR 0019](adr/0019-inventory-stock-ledger.md) |
 | B2 Purchasing | In progress, [ADR 0031](adr/0031-purchasing.md) |
+| B2b Supplier invoices and three-way match (AP register, no ledger) | Backend done, [ADR 0046](adr/0046-supplier-invoices-and-three-way-match.md); Flutter screens follow |
 | B3 Delivery | Done, [ADR 0035](adr/0035-delivery.md) |
 | C1a Production orders | Done, [ADR 0036](adr/0036-production.md) |
-| C1b Work centres, routings, operations | Open (needs C1a) |
+| C1b Work centres, routings, operations | Done, [ADR 0063](adr/0063-work-centres-routings-and-operations.md) |
 | C2 MRP | Open (needs B1, B2, C1) |
 | C3 Planning board, field-jobs half (calendars, absences, skills, conflicts, suggestions, drag-and-drop board) | Done, [ADR 0024](adr/0024-planning-board.md) |
-| C3 Planning board, work-centre half (capacity, finite loading) | Open (needs C1; reuses the resource calendar and `ResourceBoard`) |
-| D1 Worker heartbeat and "worker was down" alert | Open |
-| D2 Backup and restore runbook | Open |
+| C3 Planning board, work-centre half (finite loading, drag-and-drop board) | Open; the capacity view and the work-centre calendars are done in C1b ([ADR 0063](adr/0063-work-centres-routings-and-operations.md)); reuses `ResourceBoard` |
+| D1 Worker heartbeat and "worker was down" alert | Done, [ADR 0052](adr/0052-worker-heartbeat.md) |
+| D2 Backup and restore runbook | Done, [ADR 0056](adr/0056-backup-and-restore.md) |
 | D3 Concurrent-edit protection on records | Open |
 | D4 VAT number validation, registry lookup and duplicate warning | Open |
 | D5 Accent-insensitive search | Open |
@@ -41,6 +43,10 @@ Module overview: [ARCHITECTURE.md](ARCHITECTURE.md).
 | D8 Draft autosave | Open |
 | D9 Two-factor authentication | Open |
 | D10 Data import framework (CSV, XLSX, ODS, Parquet) | Open (extends ADR 0029) |
+| D11 VAT number validation, registry lookup and duplicate warning | Done, [ADR 0058](adr/0058-vat-number-validation-and-lookup.md); the request to the live VIES service is untested (see the ADR) |
+| D12 Accent-insensitive search | Done for customers, contacts, suppliers and products, [ADR 0057](adr/0057-accent-insensitive-search.md); the other lists follow |
+| D13 Audit log viewer | Done, [ADR 0059](adr/0059-audit-trail-viewer.md); field-level changes are recorded for customers and suppliers, other modules adopt `audit::Changes` |
+| D14 Restrict CORS to configured origins | Done, [ADR 0050](adr/0050-portal-surface.md) |
 
 ## Sequencing
 
@@ -121,7 +127,7 @@ Remaining knowledge base gaps (ADR 0018): non-image attachments, analytics, sema
 **B2 Purchasing** (large)
 - Crate `purchasing`: suppliers, supplier price lists, product codes, MOQ and lead times;
   RFQ -> PO -> goods receipt; a receipt creates stock moves and serial units ([ADR 0011](adr/0011-bom-revisions-and-serial-genealogy.md)).
-- PO PDF and mail to the supplier through the outbox; approval limits; vendor bill matching (two-way first).
+- PO PDF and mail to the supplier through the outbox; approval limits; vendor bill matching: see B2b for the three-way match.
 - Numbering through `core::numbering::next_number` (new codes PO, GR). Export of bills and valuation to the accounting package later.
 
 **B3 Delivery** (small-medium, done), [ADR 0035](adr/0035-delivery.md)
@@ -141,9 +147,13 @@ Remaining knowledge base gaps (ADR 0018): non-image attachments, analytics, sema
 - Planned-ready dates drive the order statuses `in_planning -> planned -> in_production ->
   ready_for_shipping` and the order's promised date (the latest one); queues sort by order priority.
 
-**C1b Work centres, routings and operations** (large)
-- Work centres, routings on the BOM, operations on the production order, labour and capacity; the
-  work-centre half of C3 builds on it. Also: multi-level auto-release, a production order PDF, cost roll-up.
+**C1b Work centres, routings and operations** (large, done), [ADR 0063](adr/0063-work-centres-routings-and-operations.md)
+- Work centres with opening hours and closures, a routing on the BOM revision (draft-only, copied by a new
+  revision), operations on the production order (snapshotted and scheduled at release, finished with the
+  minutes worked), a capacity grid, multi-level auto-release for the shortfall, a cost roll-up and the
+  planned and actual cost of an order (behind `inventory.cost`), and a traveller PDF.
+- Later: the work-centre planning board (C3), per-person time and a shop-floor offline queue, valuation and
+  work in progress at actual cost, parallel or overlapping operations, routing times in MRP.
 
 **C2 MRP** (large)
 - Reorder rules and an MRP run for make-to-stock and make-to-order: net requirements from orders, stock and
@@ -166,12 +176,18 @@ production.
   nothing reports it.
 - The loop writes a heartbeat row each pass; the API exposes its age, the app shows a warning to
   administrators, and a system mail goes out when the worker resumes after a gap.
+- Done ([ADR 0052](adr/0052-worker-heartbeat.md)): `GET /admin/worker`, an amber strip for
+  administrators, and outages recorded in `core.worker_outages`.
 
 **D2 Backup and restore runbook** (small)
 - A scripted backup that copes with the files stored in `bytea` (a physical backup rather than
   `pg_dump` while those live in the database), a retention rule, and a restore that is tested
   against a clone ([ADR 0043](adr/0043-environments.md)).
 - A runbook in `docs/runbooks/`.
+- Done ([ADR 0056](adr/0056-backup-and-restore.md)): `scripts/backupctl` (`pg_basebackup` with a
+  manifest, 7 daily, 4 weekly and 6 monthly backups kept, `verify` restores into a throwaway
+  server and reads every row) and the [runbook](runbooks/backup-and-restore.md), with a restore
+  drill through `envctl clone`.
 
 **D3 Concurrent-edit protection on records** (medium)
 - Updates carry no version check today, so two people who edit the same customer, quotation or
@@ -183,23 +199,43 @@ production.
   the other records and the 409 on the API.
 
 **D4 VAT number validation, registry lookup and duplicate warning** (small-medium)
-- `vat_number` on customers is stored unchecked; suppliers have no VAT number field yet.
+- `vat_number` on customers was stored unchecked; the supplier's `tax_id` (free text) was never looked at.
 - Format and check-digit validation, a VIES lookup that pre-fills name and address on create (with
-  a fallback when the service is down), and a warning when the number already exists in the company.
+  a fallback when the service is down), and a warning when the number already exists.
+- Done ([ADR 0058](adr/0058-vat-number-validation-and-lookup.md)): `core::vat` (format for the 27 member
+  states, check digits for 19, cross-checked against an independent implementation), a refusal of a
+  new or changed wrong number on customers and suppliers (an unchanged legacy number is left alone),
+  `GET /customers/vat-check` and `GET /suppliers/vat-check` (status, duplicates, optional VIES lookup),
+  and a VAT field in the customer and supplier forms that shows the verdict as the user types and has a
+  lookup button. `VIES_URL` configures or switches off the lookup.
+- Still to do: one lookup against the live VIES service (the build environment could not reach it);
+  check digits for the other countries (BG CY CZ ES IE LT LV MT); validating the company's own number.
 
 **D5 Accent-insensitive search** (small)
 - List and lookup searches use `ILIKE`, so "Liege" does not find "Liège". Customers, contacts,
   suppliers and products in five languages need accent folding (`unaccent` with a matching index).
+- Done ([ADR 0057](adr/0057-accent-insensitive-search.md)): `core.search_fold` and `core::search`, applied to
+  those four searches, trigram indexes for the three large tables, and a `q` on `GET /suppliers` (the
+  app's supplier list no longer filters in Dart).
+- Still to do: the other lists that search with `lower(...) LIKE` (orders, quotations, tickets, repairs,
+  packages, delivery notes, field jobs, contracts, stock, production orders, finance invoices, report
+  filters): each is a one-line change to `search::matches`.
 
 **D6 Audit log viewer** (medium)
 - `audit.events` is written in every transaction but cannot be read: no endpoint and no screen.
 - A permission-gated history per record (who changed what and when) and a company-wide view with
   filters for administrators.
+- Done ([ADR 0059](adr/0059-audit-trail-viewer.md)): permission `audit.view` (administrators), `GET /audit/events`,
+  `GET /audit/records/{entity}/{id}` and `GET /audit/facets` with cursor paging, an Audit trail tab in
+  Administration and a History button on customers and suppliers. Customer and supplier updates now
+  record which fields changed (`audit::Changes`).
+- Still to do: the other modules record little more than the action; adopt `audit::Changes` where
+  they record an update. A user filter in the app, an export, and a retention rule.
 
 **D7 Restrict CORS to configured origins** (small)
-- The API answers any origin (`CorsLayer` with `allow_origin(Any)` in `apps/api/src/lib.rs`).
-- Read the allowed origins (the web app and the customer portal) from configuration, per
-  environment; keep the permissive setting for local development only.
+- Done ([ADR 0050](adr/0050-portal-surface.md)): the API reads `CORS_ALLOWED_ORIGINS` (any origin
+  only with `AUTH_MODE=dev`); the customer portal server answers the companies' `portal_url`
+  origins or `PORTAL_ALLOWED_ORIGINS`.
 
 **D8 Draft autosave** (small-medium)
 - A long text (ticket reply, internal note, knowledge base article, quotation remark) is saved as a

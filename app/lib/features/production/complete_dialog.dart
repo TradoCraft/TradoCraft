@@ -1,5 +1,5 @@
 import 'package:decimal/decimal.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/api.dart';
@@ -7,6 +7,7 @@ import '../../l10n/l10n.dart';
 import '../../shared/format.dart';
 import '../inventory/inventory_common.dart';
 import '../planning/board_model.dart';
+import '../tutorial/targets.dart';
 
 /// What the planner fills in when a production order is completed: the output (quantity, place,
 /// lot or serial numbers) and, per component, what was really used, scrapped and (for serial
@@ -44,11 +45,22 @@ class _CompleteDialogState extends ConsumerState<CompleteDialog> {
   late final Map<String, _Actual> _actuals = {
     for (final c in widget.order.components) c.id: _Actual(c),
   };
+  /// Operations that are not finished, with the minutes worked (the planned minutes to start
+  /// with). A field left empty skips the operation.
+  late final Map<String, TextEditingController> _opMinutes = {
+    for (final o in widget.order.operations.where(
+      (o) => o.status == 'pending' || o.status == 'in_progress',
+    ))
+      o.id: TextEditingController(text: o.plannedMinutes.toString()),
+  };
   String? _error;
   bool _saving = false;
 
   @override
   void dispose() {
+    for (final c in _opMinutes.values) {
+      c.dispose();
+    }
     _quantity.dispose();
     _lot.dispose();
     _serials.dispose();
@@ -95,6 +107,24 @@ class _CompleteDialogState extends ConsumerState<CompleteDialog> {
       );
       return;
     }
+    // A minutes field that is left empty skips its operation; one that is filled in must be a
+    // whole number, or the operation would be silently left out.
+    final operations = <ProductionOperationActual>[];
+    for (final op in o.operations) {
+      final text = _opMinutes[op.id]?.text.trim() ?? '';
+      if (text.isEmpty) continue;
+      final minutes = int.tryParse(text);
+      if (minutes == null || minutes < 0) {
+        setState(
+          () => _error =
+              '${op.position}. ${op.name}: ${l.productionOperationMinutesInvalid}',
+        );
+        return;
+      }
+      operations.add(
+        ProductionOperationActual(operationId: op.id, actualMinutes: minutes),
+      );
+    }
     setState(() {
       _saving = true;
       _error = null;
@@ -136,6 +166,7 @@ class _CompleteDialogState extends ConsumerState<CompleteDialog> {
                         : null,
                   ),
               ],
+              operations: operations,
               note: _note.text.trim(),
             ),
           );
@@ -290,6 +321,35 @@ class _CompleteDialogState extends ConsumerState<CompleteDialog> {
                     ],
                   ),
                 ),
+              if (_opMinutes.isNotEmpty) ...[
+                gap,
+                Text(
+                  l.productionOperations,
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                Text(
+                  l.productionOperationsOpenWarning(
+                    _opMinutes.length.toString(),
+                  ),
+                  key: const ValueKey('operations-open-warning'),
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                for (final op in o.operations.where(
+                  (x) => _opMinutes.containsKey(x.id),
+                ))
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: TextField(
+                      key: ValueKey('op-minutes-${op.id}'),
+                      controller: _opMinutes[op.id],
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText:
+                            '${op.position}. ${op.name} · ${l.productionOperationMinutes}',
+                      ),
+                    ),
+                  ),
+              ],
               gap,
               TextField(
                 controller: _note,
@@ -313,11 +373,11 @@ class _CompleteDialogState extends ConsumerState<CompleteDialog> {
           onPressed: () => Navigator.pop(context),
           child: Text(l.cancel),
         ),
-        FilledButton(
+        TutorialTarget(id: 'production-complete-save', child: FilledButton(
           key: const ValueKey('complete-save'),
           onPressed: _saving ? null : _save,
           child: Text(l.productionComplete),
-        ),
+        )),
       ],
     );
   }

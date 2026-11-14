@@ -19,7 +19,7 @@ our own processes.
 
 ```
 apps/api/            HTTP server: wires modules, OpenAPI, migrations, integration tests
-crates/core/         errors, auth (OIDC / dev), companies, numbering, audit trail
+crates/core/         errors, auth (OIDC / dev), companies, numbering, audit trail and its viewer, VAT validation and VIES lookup, accent-insensitive search
 crates/pricing/      pure pricing engine (no I/O): zone prices, discounts, rounding, VAT
 crates/crm/          customers, contacts (people), per-company commercial terms, opportunities
 crates/products/     products, price zones, price history
@@ -29,7 +29,8 @@ crates/helpdesk/     tickets from e-mail and phone, threading, prepared answers,
 crates/portal/       customer portal: passwordless login for contacts, their tickets, repairs and profile
 crates/repairs/      repairs customers send in, workshop departments, routing workflow, photos
 crates/fieldservice/ jobs at customer sites for technicians: tasks, work logs, photos
-apps/worker/         background worker: IMAP polling and sending the e-mail outbox
+apps/worker/         background worker: IMAP polling, sending the e-mail outbox, heartbeat
+apps/portal-api/     customer-facing HTTP server: only the portal, public knowledge base and survey routes
 crates/documents/    Typst PDF rendering, Belgian number formatting
 migrations/          SQLx migrations (one PostgreSQL schema per module)
 templates/           Typst document templates (nl / fr / en)
@@ -78,8 +79,41 @@ in (never the host, user or password). The app keeps a list of environments, swi
 them from the account menu or the login page, and always shows the active one in a banner: red
 for live, amber for test, blue for tutorial.
 
+Test environments. `scripts/envctl clone <database> <name> [--anonymize]` copies a database
+(`pg_dump | pg_restore`), clears credentials and starts a separate API instance with
+`APP_ENV_KIND=test`; outside `live` the API and worker force `MAIL_TRANSPORT=files` and do not poll
+IMAP unless `ALLOW_INBOUND_MAIL_IN_NON_LIVE=1`
+([ADR 0048](docs/adr/0048-environment-clones-and-outbound-safety.md),
+[runbook](docs/runbooks/test-environments.md)).
+
+VAT numbers and the audit trail. Customer and supplier VAT numbers are checked as you type (format and
+check digits for EU numbers; the form warns about a number another record already has), and a lookup
+button asks the EU's VIES service for the name and address. `VIES_URL` changes the service or, as `off`,
+switches it off (it is always off in test and tutorial environments); only the VAT number is sent
+([ADR 0058](docs/adr/0058-vat-number-validation-and-lookup.md)).
+Administrators see the audit trail under Administration > Audit trail, and a History button on a customer
+or supplier shows that record's changes ([ADR 0059](docs/adr/0059-audit-trail-viewer.md)). Searches in the
+customer, contact, supplier and product lists ignore accents and case
+([ADR 0057](docs/adr/0057-accent-insensitive-search.md)).
+
+Backups. `scripts/backupctl backup` takes a physical backup of the whole PostgreSQL server
+(attachments included) and keeps 7 daily, 4 weekly and 6 monthly ones; `scripts/backupctl verify`
+restores the latest into a throwaway server and checks it
+([ADR 0056](docs/adr/0056-backup-and-restore.md),
+[runbook](docs/runbooks/backup-and-restore.md)).
+
+Story-mission tutorial. `scripts/tutorial-env up` creates a clean, throwaway environment of kind
+`tutorial` with the demo data and prints its address; add that address in the app (login page >
+Environments), sign in as `admin@example.com` and start it from the account menu > Tutorial.
+`scripts/tutorial-env reset` replays it from chapter 0
+([runbook](docs/runbooks/test-environments.md#do-the-tutorial-in-three-commands)).
+
 Worker (helpdesk e-mail). By default outgoing mail is written to `./outbox` as `.eml` files;
-set `MAIL_TRANSPORT=smtp` and `SMTP_*`, and `IMAP_*` to fetch incoming mail (see `.env.example`):
+set `MAIL_TRANSPORT=smtp` and `SMTP_*`, and `IMAP_*` to fetch incoming mail (see `.env.example`).
+For several mailboxes, or a Microsoft 365 mailbox (Exchange Online, through Microsoft Graph), add
+them in the app under Helpdesk > Settings > Mailboxes and give the worker each secret as
+`MAILBOX_SECRET_<NAME>` ([ADR 0054](docs/adr/0054-helpdesk-mailboxes.md),
+[runbook](docs/runbooks/helpdesk-mailboxes.md)):
 
 ```bash
 cargo run -p tradocraft-worker
@@ -124,6 +158,23 @@ flutter run -d chrome --web-port 8081 -t lib/portal/portal_main.dart \
   --dart-define=PORTAL_COMPANY_ID=00000000-0000-7000-8000-000000000001
 ```
 
+Putting the portal on the internet ([ADR 0050](docs/adr/0050-portal-surface.md),
+[runbook](docs/runbooks/customer-portal.md)). Do not publish the API for it. Customers talk to a
+second, small server built from the same code, `tradocraft-portal-api`, which has the portal,
+public knowledge base and survey routes and nothing else: no staff routes, no `/docs`, no setup
+wizard. It limits requests per client address, answers only the portal's own browser origin and
+has its own small database pool. The API stays on the internal network. Locally it listens on
+`http://localhost:8090` (`docker compose up` starts it too); point the portal build at it with
+`--dart-define=PORTAL_API_URL=http://localhost:8090`:
+
+```bash
+cargo run -p tradocraft-portal-api    # after the API has started once (it migrates the database)
+```
+
+The API itself answers browsers only from `CORS_ALLOWED_ORIGINS` (any origin with
+`AUTH_MODE=dev`, none by default with `AUTH_MODE=oidc`); the Windows and mobile apps are not
+affected.
+
 Repairs and field service (seed users, all in development authentication): `support@example.com`
 registers and routes repairs; `electronics@example.com` and `mechanic@example.com` work in their
 departments; `admin@example.com` creates departments (Repairs → Departments);
@@ -132,6 +183,36 @@ Photos are JPEG/PNG/WebP up to 12 MB and are stored in the database.
 
 Staff manage the people at a customer under Customers → Contacts, look up a caller with
 "Who is calling?" in the helpdesk, and give a contact portal access in the contact form.
+
+## First run: a new company
+
+Without the demo seed (`SEED_DEV_DATA` unset) a new database is empty. Start the app, point it at
+the server and choose "Set up a new company" on the sign-in screen (or in the add-environment
+dialog). The wizard asks for the company (name, legal name, VAT number, country, currency,
+language) and its first administrator, and creates the basics: numbering, a warehouse with its
+locations and the price zones Z1-Z5 (units of measure ship with the migrations; no demo
+catalogue). It works once, only while no company exists
+([ADR 0047](docs/adr/0047-company-bootstrap.md)).
+
+* `AUTH_MODE=dev`: the admin e-mail becomes the dev user and the app signs in as that user.
+  `BOOTSTRAP_TOKEN` is optional.
+* `AUTH_MODE=oidc`: set `BOOTSTRAP_TOKEN` (a long random string) before starting, or the setup
+  endpoint answers 404. The wizard asks for it. Afterwards the administrator signs in through the
+  identity provider with the same e-mail address; remove the token from the environment.
+  Set `OIDC_ISSUER` and `OIDC_AUDIENCE` (optionally `OIDC_CLIENT_ID` and `OIDC_SCOPES`, default
+  `openid profile email`) before signing in: they define a read-only fallback provider
+  ([ADR 0055](docs/adr/0055-configurable-identity-providers.md)). Once signed in, an administrator
+  of the primary company (the first company created; another one can be made primary with
+  `POST /api/v1/admin/companies/{id}/make-primary`) adds database providers in the app
+  (Admin > Identity providers) or through the authenticated admin API
+  `/api/v1/admin/identity-providers` (permission `identity.admin`). The API
+  may start without the variables when the database has providers; with neither, every request
+  answers 401 and the bootstrap still works with `BOOTSTRAP_TOKEN`.
+
+Without the app: `curl -X POST localhost:8080/api/v1/setup/bootstrap -H 'content-type:
+application/json' -d '{"name": "Acme", "country_code": "BE", "currency": "EUR",
+"default_language": "en", "admin_email": "me@acme.example", "admin_display_name": "Me",
+"token": "..."}'`.
 
 ## Tests
 

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -128,6 +128,7 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
         ),
       ],
       createLabel: context.l10n.newProduct,
+      createTargetId: 'products-create',
       onCreate: canWrite
           ? () async => await showProductForm(context) != null
           : null,

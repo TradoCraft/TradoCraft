@@ -1,10 +1,11 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../app/api.dart';
 import '../app/workspace.dart' show OpenInTab;
 import '../l10n/l10n.dart';
+import '../features/tutorial/targets.dart';
 import 'app_icons.dart';
 
 /// Column of a generic entity list.
@@ -45,9 +46,12 @@ class EntityList<T> extends StatefulWidget {
     this.locationOf,
     this.onCreate,
     this.createLabel,
+    this.createTargetId,
     this.filters,
     this.moreFilters,
     this.actions = const [],
+    this.emptyText,
+    this.emptyAction,
   });
 
   final String title;
@@ -60,6 +64,9 @@ class EntityList<T> extends StatefulWidget {
   final String? Function(T item)? locationOf;
   final Future<bool?> Function()? onCreate;
   final String? createLabel;
+
+  /// Tutorial target id of the create button (null: not a tutorial target).
+  final String? createTargetId;
   final Widget? filters;
 
   /// More filters, on a line of their own under the search box (for lists with many).
@@ -67,6 +74,12 @@ class EntityList<T> extends StatefulWidget {
 
   /// Extra buttons next to the create button.
   final List<Widget> actions;
+
+  /// Shown instead of the rows when a finished load found nothing.
+  final String? emptyText;
+
+  /// Shown under [emptyText], for example a button that widens the view.
+  final Widget? emptyAction;
 
   @override
   State<EntityList<T>> createState() => EntityListState<T>();
@@ -94,9 +107,12 @@ class EntityListState<T> extends State<EntityList<T>> {
     super.dispose();
   }
 
+  int _generation = 0;
+
   Future<void> reload() => _fetch(reset: true);
 
   Future<void> _fetch({required bool reset}) async {
+    final generation = ++_generation;
     setState(() {
       _loading = true;
       _error = null;
@@ -108,21 +124,35 @@ class EntityListState<T> extends State<EntityList<T>> {
         reset ? 0 : _items.length,
         _pageSize,
       );
-      if (!mounted) return;
+      if (!mounted || generation != _generation) return;
       setState(() {
         _items = reset ? items : [..._items, ...items];
         _total = total;
       });
     } catch (e) {
-      if (mounted) setState(() => _error = errorMessage(e));
+      if (mounted && generation == _generation) {
+        setState(() => _error = errorMessage(e));
+      }
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted && generation == _generation) {
+        setState(() => _loading = false);
+      }
     }
   }
 
   void _onSearchChanged(String _) {
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 300), reload);
+  }
+
+  Widget _createButton(BuildContext context) {
+    final button = FilledButton.icon(
+      onPressed: () => _after(widget.onCreate!()),
+      icon: const Icon(AppIcons.add),
+      label: Text(widget.createLabel ?? context.l10n.newItem),
+    );
+    final id = widget.createTargetId;
+    return id == null ? button : TutorialTarget(id: id, child: button);
   }
 
   Future<void> _after(Future<bool?>? action) async {
@@ -144,12 +174,7 @@ class EntityListState<T> extends State<EntityList<T>> {
               const Spacer(),
               for (final a in widget.actions)
                 Padding(padding: const EdgeInsets.only(right: 8), child: a),
-              if (widget.onCreate != null)
-                FilledButton.icon(
-                  onPressed: () => _after(widget.onCreate!()),
-                  icon: const Icon(AppIcons.add),
-                  label: Text(widget.createLabel ?? context.l10n.newItem),
-                ),
+              if (widget.onCreate != null) _createButton(context),
             ],
           ),
           const SizedBox(height: 12),
@@ -187,6 +212,22 @@ class EntityListState<T> extends State<EntityList<T>> {
             ),
           if (_loading) const LinearProgressIndicator(),
           if (wide) _header(theme),
+          if (widget.emptyText != null &&
+              !_loading &&
+              _error == null &&
+              _items.isEmpty)
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(widget.emptyText!, textAlign: TextAlign.center),
+                    if (widget.emptyAction != null) widget.emptyAction!,
+                  ],
+                ),
+              ),
+            ),
           Expanded(
             child: ListView.separated(
               itemCount: _items.length + 1,

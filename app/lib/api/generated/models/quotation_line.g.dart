@@ -24,6 +24,8 @@ QuotationLine _$QuotationLineFromJson(Map<String, dynamic> json) =>
       vatRate: json['vat_rate'] as String,
       comment: json['comment'] as String?,
       customerRemark: json['customer_remark'] as String?,
+      customerRemarkLanguage: json['customer_remark_language'] as String?,
+      favoriteItemId: json['favorite_item_id'] as String?,
       parentPosition: (json['parent_position'] as num?)?.toInt(),
       percentBase: json['percent_base'] as String?,
       percentOfParent: json['percent_of_parent'] as String?,
@@ -36,7 +38,9 @@ Map<String, dynamic> _$QuotationLineToJson(QuotationLine instance) =>
     <String, dynamic>{
       'comment': ?instance.comment,
       'customer_remark': ?instance.customerRemark,
+      'customer_remark_language': ?instance.customerRemarkLanguage,
       'description': instance.description,
+      'favorite_item_id': ?instance.favoriteItemId,
       'line_discount_percent': instance.lineDiscountPercent,
       'line_total': instance.lineTotal,
       'list_unit_price': instance.listUnitPrice,

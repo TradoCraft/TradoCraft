@@ -1012,9 +1012,21 @@ async fn reply(
             .bind(user.company_id)
             .fetch_one(&mut *tx)
             .await?;
-    let from = company_email.filter(|e| e.contains('@')).ok_or_else(|| {
-        AppError::Validation("the company has no e-mail address to send from".into())
-    })?;
+    // The reply leaves through the mailbox the ticket came in on, else the default mailbox; a
+    // company without mailboxes sends from its own address through the worker's transport.
+    let ticket_mailbox: Option<Uuid> =
+        sqlx::query_scalar("SELECT mailbox_id FROM helpdesk.tickets WHERE id = $1")
+            .bind(id)
+            .fetch_one(&mut *tx)
+            .await?;
+    let sender = crate::mailboxes::sender(&mut tx, user.company_id, ticket_mailbox).await?;
+    let from = sender
+        .as_ref()
+        .map(|s| s.address.clone())
+        .or(company_email.filter(|e| e.contains('@')))
+        .ok_or_else(|| {
+            AppError::Validation("the company has no e-mail address to send from".into())
+        })?;
     let domain = from
         .rsplit_once('@')
         .map(|(_, d)| d.to_string())
@@ -1029,8 +1041,8 @@ async fn reply(
     let article_id = new_id();
     sqlx::query(
         "INSERT INTO helpdesk.articles (id, ticket_id, kind, from_address, from_name, to_addresses, cc_addresses, subject,
-                                        body, language, message_id, in_reply_to, author_user_id, delivery)
-         VALUES ($1, $2, 'email_out', $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'queued')",
+                                        body, language, message_id, in_reply_to, author_user_id, delivery, mailbox_id)
+         VALUES ($1, $2, 'email_out', $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'queued', $13)",
     )
     .bind(article_id)
     .bind(id)
@@ -1044,6 +1056,7 @@ async fn reply(
     .bind(format!("{article_id}@{domain}"))
     .bind(in_reply_to)
     .bind(user.user_id)
+    .bind(sender.as_ref().map(|s| s.mailbox_id))
     .execute(&mut *tx)
     .await?;
     crate::attachments::link(&mut tx, id, article_id, &input.attachment_ids, None).await?;
@@ -1518,6 +1531,7 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(log_call))
         .routes(routes!(inbound))
         .merge(crate::teams::router())
+        .merge(crate::mailboxes::router())
         .merge(crate::sla::router())
         .merge(crate::attachments::router())
         .merge(crate::extras::router())

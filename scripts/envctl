@@ -1,0 +1,632 @@
+#!/usr/bin/env bash
+# envctl: create, clone, run and drop tradocraft test and tutorial environments (ADR 0048).
+#
+# An environment is one PostgreSQL database plus one API instance (ADR 0043). This tool clones a
+# database with pg_dump | pg_restore, clears credentials in the clone, and runs the API (and
+# optionally the worker) for it on its own port with APP_ENV_KIND=test|tutorial and mail forced to
+# files. The source database is only ever read. Passwords are never printed.
+#
+# Usage: scripts/envctl help
+set -Eeuo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+SQL_DIR="$SCRIPT_DIR/envctl.d"
+
+die() { echo "envctl: $*" >&2; exit 1; }
+info() { echo "envctl: $*"; }
+
+usage() {
+  cat <<'EOF'
+envctl: test and tutorial environments for tradocraft (ADR 0048)
+
+Usage: envctl [--config FILE] [--dir DIR] [--database-url URL] <command> [args]
+
+Commands:
+  list                              Registered environments (and unregistered databases)
+  create-empty <name> [--kind test|tutorial] [--seed] [--no-start]
+                                    New empty database; the instance migrates it at boot
+  clone <source> <name> [--kind test|tutorial] [--anonymize] [--no-start] [--worker]
+                                    Copy a database (or a registered environment) into <name>
+  start <name> [--worker]           Start the API (and the worker) of an environment
+  stop <name>                       Stop them
+  status [name]                     Running state, port and URL
+  versions                          Migration and app version of each environment
+  register <name> --database DB --kind live|test|tutorial [--url URL]
+                                    Record an existing environment (e.g. live, so it is protected)
+  drop <name> [--yes]               Stop, drop the database and remove the directory
+  help                              This text
+
+Connection: DATABASE_URL (from the environment, --database-url or the config file) names the
+server and the default source database. Config file: --config FILE, $ENVCTL_CONFIG, ./.env or the
+repository .env (only known keys are read; the file is never sourced).
+Settings: ENVCTL_DIR (default ~/.local/share/tradocraft-envs), ENVCTL_PORT_MIN/ENVCTL_PORT_MAX
+(8100-8199), ENVCTL_BIND_HOST (127.0.0.1), ENVCTL_API_BIN, ENVCTL_WORKER_BIN, ENVCTL_START_TIMEOUT
+(180 s), ENVCTL_MAINTENANCE_DB (postgres), ENVCTL_SOURCE_DB (default source for clone).
+EOF
+}
+
+# --- configuration -----------------------------------------------------------------------------
+
+CONFIG_KEYS=" DATABASE_URL AUTH_MODE DEV_DEFAULT_USER OIDC_ISSUER OIDC_AUDIENCE CORS_ALLOWED_ORIGINS TYPST_BIN TEMPLATE_DIR ENVCTL_DIR ENVCTL_PORT_MIN ENVCTL_PORT_MAX ENVCTL_BIND_HOST ENVCTL_API_BIN ENVCTL_WORKER_BIN ENVCTL_START_TIMEOUT ENVCTL_MAINTENANCE_DB ENVCTL_SOURCE_DB "
+
+# Reads KEY=VALUE lines of a .env-style file for the known keys; values already set in the
+# environment win. The file is parsed, never executed.
+load_config() {
+  local file="$1" line key value
+  [[ -r "$file" ]] || return 0
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    line="${line#"${line%%[![:space:]]*}"}"
+    [[ -z "$line" || "$line" == \#* ]] && continue
+    line="${line#export }"
+    [[ "$line" == *=* ]] || continue
+    key="${line%%=*}"
+    value="${line#*=}"
+    [[ "$CONFIG_KEYS" == *" $key "* ]] || continue
+    value="${value%\"}"; value="${value#\"}"; value="${value%\'}"; value="${value#\'}"
+    if [[ -z "${!key:-}" && -n "$value" ]]; then
+      export "$key=$value"
+    fi
+  done <"$file"
+}
+
+CONFIG_FILE="${ENVCTL_CONFIG:-}"
+ARGS=()
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --config) CONFIG_FILE="${2:-}"; shift 2 ;;
+    --dir) export ENVCTL_DIR="${2:-}"; shift 2 ;;
+    --database-url) export DATABASE_URL="${2:-}"; shift 2 ;;
+    *) ARGS+=("$1"); shift ;;
+  esac
+done
+set -- "${ARGS[@]+"${ARGS[@]}"}"
+
+if [[ -n "$CONFIG_FILE" ]]; then
+  [[ -r "$CONFIG_FILE" ]] || die "cannot read config file $CONFIG_FILE"
+  load_config "$CONFIG_FILE"
+elif [[ -r ./.env ]]; then
+  load_config ./.env
+elif [[ -r "$REPO_ROOT/.env" ]]; then
+  load_config "$REPO_ROOT/.env"
+fi
+
+ENVCTL_DIR="${ENVCTL_DIR:-$HOME/.local/share/tradocraft-envs}"
+PORT_MIN="${ENVCTL_PORT_MIN:-8100}"
+PORT_MAX="${ENVCTL_PORT_MAX:-8199}"
+BIND_HOST="${ENVCTL_BIND_HOST:-127.0.0.1}"
+START_TIMEOUT="${ENVCTL_START_TIMEOUT:-180}"
+MAINT_DB="${ENVCTL_MAINTENANCE_DB:-postgres}"
+REG_DIR="$ENVCTL_DIR/registry"
+ENVS_DIR="$ENVCTL_DIR/envs"
+
+# --- PostgreSQL connection ---------------------------------------------------------------------
+
+URL_SCHEME="" URL_USERINFO="" URL_HOSTPORT="" URL_DB="" URL_QUERY=""
+
+# Splits DATABASE_URL and exports the libpq variables so no password ever appears in a command line.
+parse_pg_url() {
+  [[ -n "${DATABASE_URL:-}" ]] || die "DATABASE_URL is required (environment, --database-url or config file)"
+  local url="$DATABASE_URL" rest hostpart user pass host port
+  [[ "$url" == postgres://* || "$url" == postgresql://* ]] || die "DATABASE_URL must start with postgresql://"
+  URL_SCHEME="${url%%://*}"
+  rest="${url#*://}"
+  URL_QUERY=""
+  if [[ "$rest" == *\?* ]]; then URL_QUERY="${rest#*\?}"; rest="${rest%%\?*}"; fi
+  if [[ "$rest" == *@* ]]; then
+    URL_USERINFO="${rest%@*}"
+    hostpart="${rest##*@}"
+  else
+    URL_USERINFO=""
+    hostpart="$rest"
+  fi
+  URL_HOSTPORT="${hostpart%%/*}"
+  URL_DB=""
+  [[ "$hostpart" == */* ]] && URL_DB="${hostpart#*/}"
+  user="${URL_USERINFO%%:*}"
+  pass=""
+  [[ "$URL_USERINFO" == *:* ]] && pass="${URL_USERINFO#*:}"
+  host="${URL_HOSTPORT%%:*}"
+  port=""
+  [[ "$URL_HOSTPORT" == *:* ]] && port="${URL_HOSTPORT#*:}"
+  decode() { printf '%b' "${1//%/\\x}"; }
+  [[ -n "$host" ]] && export PGHOST="$host"
+  [[ -n "$port" ]] && export PGPORT="$port"
+  [[ -n "$user" ]] && PGUSER="$(decode "$user")" && export PGUSER
+  [[ -n "$pass" ]] && PGPASSWORD="$(decode "$pass")" && export PGPASSWORD
+  if [[ -n "$URL_QUERY" && "$URL_QUERY" == *sslmode=* ]]; then
+    local ssl="${URL_QUERY##*sslmode=}"
+    export PGSSLMODE="${ssl%%&*}"
+  fi
+  return 0
+}
+
+# DATABASE_URL pointing at another database of the same server (same credentials).
+url_for_db() {
+  local db="$1" auth=""
+  [[ -n "$URL_USERINFO" ]] && auth="$URL_USERINFO@"
+  printf '%s://%s%s/%s%s' "$URL_SCHEME" "$auth" "$URL_HOSTPORT" "$db" "${URL_QUERY:+?$URL_QUERY}"
+}
+
+# psql against a database, quiet, stopping at the first error.
+sql() { local db="$1"; shift; psql -X -q -v ON_ERROR_STOP=1 -d "$db" "$@"; }
+sql_value() { local db="$1" q="$2"; psql -X -q -t -A -v ON_ERROR_STOP=1 -d "$db" -c "$q"; }
+
+db_exists() {
+  local n
+  n="$(sql_value "$MAINT_DB" "SELECT count(*) FROM pg_database WHERE datname = '$1'")"
+  [[ "$n" == "1" ]]
+}
+
+# --- names, registry ---------------------------------------------------------------------------
+
+valid_name() {
+  [[ "$1" =~ ^[a-z][a-z0-9_]{0,39}$ ]] || die "unsafe name '$1': use lower-case letters, digits and underscores, starting with a letter (max 40)"
+  case "$1" in
+    postgres|template0|template1|live|default|all) die "name '$1' is reserved" ;;
+  esac
+}
+
+reg_file() { printf '%s/%s.env' "$REG_DIR" "$1"; }
+reg_exists() { [[ -f "$(reg_file "$1")" ]]; }
+
+reg_get() {
+  local f
+  f="$(reg_file "$1")"
+  [[ -f "$f" ]] || return 0
+  grep -m1 "^$2=" "$f" | cut -d= -f2- || true
+}
+
+# reg_set name key value: add or replace one line, atomically.
+reg_set() {
+  local f tmp
+  f="$(reg_file "$1")"
+  mkdir -p "$REG_DIR"
+  tmp="$(mktemp "$REG_DIR/.tmp.XXXXXX")"
+  { [[ -f "$f" ]] && grep -v "^$2=" "$f" || true; echo "$2=$3"; } >"$tmp"
+  mv "$tmp" "$f"
+}
+
+reg_names() {
+  local f
+  [[ -d "$REG_DIR" ]] || return 0
+  for f in "$REG_DIR"/*.env; do
+    [[ -e "$f" ]] || continue
+    basename "$f" .env
+  done
+}
+
+env_dir() { printf '%s/%s' "$ENVS_DIR" "$1"; }
+
+# Identity of the PostgreSQL server of the active connection (host:port).
+server_id() { printf '%s:%s' "${PGHOST:-local}" "${PGPORT:-5432}"; }
+
+# Refuses to act on an environment that was registered for another server than the active one.
+check_server() {
+  local registered
+  registered="$(reg_get "$1" server)"
+  [[ -z "$registered" || "$registered" == "$(server_id)" ]] \
+    || die "'$1' is registered for server $registered but DATABASE_URL points to $(server_id): refusing"
+}
+
+pid_matches() {
+  # True when the pid is alive and is this environment's process (guards against pid reuse).
+  local pid="$1" name="$2"
+  [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null || return 1
+  if [[ -r "/proc/$pid/environ" ]]; then
+    tr '\0' '\n' <"/proc/$pid/environ" 2>/dev/null | grep -qx "APP_ENV_NAME=$name"
+  else
+    return 0
+  fi
+}
+
+port_in_use() { (exec 3<>"/dev/tcp/127.0.0.1/$1") 2>/dev/null; }
+
+pick_port() {
+  local p used
+  used=" $(for n in $(reg_names); do reg_get "$n" port; done | tr '\n' ' ') "
+  for ((p = PORT_MIN; p <= PORT_MAX; p++)); do
+    [[ "$used" == *" $p "* ]] && continue
+    port_in_use "$p" && continue
+    echo "$p"
+    return 0
+  done
+  die "no free port in $PORT_MIN-$PORT_MAX (ENVCTL_PORT_MIN/ENVCTL_PORT_MAX)"
+}
+
+# --- instances ---------------------------------------------------------------------------------
+
+find_bin() {
+  # find_bin <crate/binary name> <override>
+  local bin="$1" override="$2" c
+  if [[ -n "$override" ]]; then echo "$override"; return 0; fi
+  for c in "$REPO_ROOT/target/release/$bin" "$REPO_ROOT/target/debug/$bin"; do
+    [[ -x "$c" ]] && { echo "$c"; return 0; }
+  done
+  echo ""
+}
+
+# start_process <name> <label api|worker> <port> <seed>
+start_process() {
+  local name="$1" label="$2" port="$3" seed="$4"
+  local kind db dir bin crate override pid logf
+  kind="$(reg_get "$name" kind)"
+  db="$(reg_get "$name" database)"
+  dir="$(env_dir "$name")"
+  mkdir -p "$dir/outbox"
+  if [[ "$label" == api ]]; then crate=tradocraft-api; override="${ENVCTL_API_BIN:-}"; else crate=tradocraft-worker; override="${ENVCTL_WORKER_BIN:-}"; fi
+  bin="$(find_bin "$crate" "$override")"
+  logf="$dir/$label.log"
+  local -a cmd
+  if [[ -n "$bin" ]]; then cmd=("$bin"); else
+    command -v cargo >/dev/null || die "no built $crate binary and no cargo: build it or set ENVCTL_API_BIN/ENVCTL_WORKER_BIN"
+    cmd=(nice cargo run --quiet --manifest-path "$REPO_ROOT/Cargo.toml" -p "$crate")
+  fi
+  local -a envs=(
+    "DATABASE_URL=$(url_for_db "$db")"
+    "BIND_ADDR=$BIND_HOST:$port"
+    "APP_ENV_NAME=$name"
+    "APP_ENV_KIND=$kind"
+    "MAIL_TRANSPORT=files"
+    "MAIL_FILES_DIR=$dir/outbox"
+    "SEED_DEV_DATA=$seed"
+    "AUTH_MODE=${AUTH_MODE:-dev}"
+  )
+  [[ -n "${DEV_DEFAULT_USER:-}" ]] && envs+=("DEV_DEFAULT_USER=$DEV_DEFAULT_USER")
+  [[ -n "${OIDC_ISSUER:-}" ]] && envs+=("OIDC_ISSUER=$OIDC_ISSUER")
+  [[ -n "${OIDC_AUDIENCE:-}" ]] && envs+=("OIDC_AUDIENCE=$OIDC_AUDIENCE")
+  [[ -n "${CORS_ALLOWED_ORIGINS:-}" ]] && envs+=("CORS_ALLOWED_ORIGINS=$CORS_ALLOWED_ORIGINS")
+  [[ -n "${TYPST_BIN:-}" ]] && envs+=("TYPST_BIN=$TYPST_BIN")
+  [[ -n "${TEMPLATE_DIR:-}" ]] && envs+=("TEMPLATE_DIR=$TEMPLATE_DIR")
+  # A clone never inherits a mailbox or SMTP server from the shell (the worker policy would
+  # ignore them too; this keeps the process environment clean as well).
+  setsid nohup env -u SMTP_HOST -u SMTP_PASSWORD "${envs[@]}" "${cmd[@]}" >"$logf" 2>&1 </dev/null 9>&- &
+  pid=$!
+  reg_set "$name" "${label}_pid" "$pid"
+  info "$label started (pid $pid), log: $logf"
+}
+
+wait_ready() {
+  local name="$1" port="$2" waited=0 pid doc
+  pid="$(reg_get "$name" api_pid)"
+  while ((waited < START_TIMEOUT)); do
+    doc="$(curl -fsS -m 2 "http://$BIND_HOST:$port/api/v1/meta/environment" 2>/dev/null || true)"
+    if [[ -n "$doc" && "$(jq -r '[.name, .db_name, .kind] | join("|")' <<<"$doc" 2>/dev/null)" == "$name|$(reg_get "$name" database)|$(reg_get "$name" kind)" ]]; then
+      return 0
+    fi
+    if ! kill -0 "$pid" 2>/dev/null; then
+      echo "--- last log lines ---" >&2
+      tail -n 15 "$(env_dir "$name")/api.log" >&2 || true
+      die "the API of '$name' exited during start-up"
+    fi
+    sleep 1
+    waited=$((waited + 1))
+  done
+  die "the API of '$name' did not answer within ${START_TIMEOUT}s (see $(env_dir "$name")/api.log)"
+}
+
+cmd_start_instance() {
+  local name="$1" worker="$2" seed="${3:-}" port kind
+  reg_exists "$name" || die "unknown environment '$name'"
+  kind="$(reg_get "$name" kind)"
+  [[ "$kind" != live ]] || die "'$name' is registered as live: envctl never starts live instances"
+  check_server "$name"
+  [[ -n "$seed" ]] || seed="$(reg_get "$name" seed)"
+  [[ "$seed" == true ]] || seed=false
+  # One lock for port choice and start-up, so concurrent starts never claim the same port. The
+  # lock is released once the API answers; child processes do not inherit it.
+  mkdir -p "$ENVCTL_DIR"
+  if command -v flock >/dev/null; then
+    exec 9>"$ENVCTL_DIR/.start.lock"
+    flock 9
+  fi
+  if pid_matches "$(reg_get "$name" api_pid)" "$name"; then
+    info "API of '$name' is already running (port $(reg_get "$name" port))"
+  else
+    port="$(reg_get "$name" port)"
+    if [[ -z "$port" ]] || port_in_use "$port"; then port="$(pick_port)"; fi
+    reg_set "$name" port "$port"
+    reg_set "$name" url "http://$BIND_HOST:$port"
+    start_process "$name" api "$port" "$seed"
+    wait_ready "$name" "$port"
+    reg_set "$name" seed false
+  fi
+  exec 9>&- || true
+  port="$(reg_get "$name" port)"
+  if [[ "$worker" == yes ]]; then
+    if pid_matches "$(reg_get "$name" worker_pid)" "$name"; then
+      info "worker of '$name' is already running: reusing it"
+    else
+      start_process "$name" worker "$port" false
+    fi
+  fi
+  info "'$name' ($kind) is ready: http://$BIND_HOST:$port  (add this URL as an environment in the app)"
+}
+
+stop_pid() {
+  local name="$1" key="$2" pid i
+  pid="$(reg_get "$name" "$key")"
+  if pid_matches "$pid" "$name"; then
+    kill -TERM -- "-$pid" 2>/dev/null || kill -TERM "$pid" 2>/dev/null || true
+    for ((i = 0; i < 20; i++)); do kill -0 "$pid" 2>/dev/null || break; sleep 0.5; done
+    if kill -0 "$pid" 2>/dev/null; then kill -KILL -- "-$pid" 2>/dev/null || kill -KILL "$pid" 2>/dev/null || true; fi
+    info "stopped $key $pid"
+  fi
+  reg_set "$name" "$key" ""
+}
+
+cmd_stop() {
+  [[ $# -ge 1 ]] || die "usage: envctl stop <name>"
+  reg_exists "$1" || die "unknown environment '$1'"
+  stop_pid "$1" worker_pid
+  stop_pid "$1" api_pid
+}
+
+# --- commands ----------------------------------------------------------------------------------
+
+cmd_list() {
+  local n found=no
+  printf '%-16s %-9s %-24s %-6s %-9s %s\n' NAME KIND DATABASE PORT STATE URL
+  for n in $(reg_names); do
+    found=yes
+    local state=stopped
+    pid_matches "$(reg_get "$n" api_pid)" "$n" && state=running
+    printf '%-16s %-9s %-24s %-6s %-9s %s\n' "$n" "$(reg_get "$n" kind)" "$(reg_get "$n" database)" \
+      "$(reg_get "$n" port)" "$state" "$(reg_get "$n" url)"
+  done
+  [[ "$found" == yes ]] || echo "(no registered environments)"
+  if parse_pg_url 2>/dev/null; then
+    local dbs known
+    known=" $(for n in $(reg_names); do reg_get "$n" database; done | tr '\n' ' ') "
+    dbs=""
+    local d
+    while IFS= read -r d; do
+      [[ "$known" == *" $d "* ]] || dbs="$dbs $d"
+    done < <(sql_value "$MAINT_DB" "SELECT datname FROM pg_database WHERE NOT datistemplate AND datname <> '$MAINT_DB' ORDER BY 1" 2>/dev/null || true)
+    [[ -z "$dbs" ]] || echo "unregistered databases on the server:$dbs"
+  fi
+}
+
+cmd_status() {
+  local n state
+  for n in ${1:-$(reg_names)}; do
+    reg_exists "$n" || die "unknown environment '$n'"
+    state=stopped
+    pid_matches "$(reg_get "$n" api_pid)" "$n" && state=running
+    local w=stopped
+    pid_matches "$(reg_get "$n" worker_pid)" "$n" && w=running
+    echo "$n: kind=$(reg_get "$n" kind) api=$state worker=$w port=$(reg_get "$n" port) url=$(reg_get "$n" url) database=$(reg_get "$n" database)"
+  done
+}
+
+parse_create_flags() {
+  # sets KIND, ANON, NOSTART, WORKER, SEED from the remaining arguments
+  KIND=test ANON=no NOSTART=no WORKER=no SEED=false
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --kind) KIND="${2:-}"; shift 2 ;;
+      --anonymize) ANON=yes; shift ;;
+      --no-start) NOSTART=yes; shift ;;
+      --worker) WORKER=yes; shift ;;
+      --seed) SEED=true; shift ;;
+      *) die "unknown option $1" ;;
+    esac
+  done
+  case "$KIND" in test|tutorial) ;; *) die "--kind must be test or tutorial (live environments are never created by envctl)" ;; esac
+}
+
+register_new() {
+  local name="$1" kind="$2" db="$3"
+  reg_set "$name" name "$name"
+  reg_set "$name" kind "$kind"
+  reg_set "$name" database "$db"
+  reg_set "$name" port ""
+  reg_set "$name" url ""
+  reg_set "$name" api_pid ""
+  reg_set "$name" worker_pid ""
+  reg_set "$name" server "$(server_id)"
+  reg_set "$name" seed "${4:-false}"
+  reg_set "$name" created "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+}
+
+check_new_name() {
+  valid_name "$1"
+  reg_exists "$1" && die "environment '$1' is already registered"
+  parse_pg_url
+  [[ "$1" != "${URL_DB:-}" ]] || die "'$1' is the database of DATABASE_URL: refusing to touch it"
+  db_exists "$1" && die "database '$1' already exists: refusing to overwrite it"
+  return 0
+}
+
+cmd_create_empty() {
+  [[ $# -ge 1 ]] || die "usage: envctl create-empty <name> [--kind test|tutorial] [--seed] [--no-start]"
+  local name="$1"; shift
+  parse_create_flags "$@"
+  check_new_name "$name"
+  createdb -- "$name"
+  register_new "$name" "$KIND" "$name" "$SEED"
+  info "created empty database '$name' (kind $KIND)"
+  if [[ "$NOSTART" == no ]]; then cmd_start_instance "$name" "$WORKER"; fi
+}
+
+# Brings the clone to the schema of the binary that will run it, before scrubbing and before any
+# listener exists (the source may be at an older migration version).
+migrate_target() {
+  local bin
+  bin="$(find_bin tradocraft-api "${ENVCTL_API_BIN:-}")"
+  info "migrating the clone to the current schema"
+  if [[ -n "$bin" ]]; then
+    DATABASE_URL="$(url_for_db "$1")" "$bin" migrate >/dev/null
+  else
+    DATABASE_URL="$(url_for_db "$1")" nice cargo run --quiet --manifest-path "$REPO_ROOT/Cargo.toml" -p tradocraft-api -- migrate >/dev/null
+  fi
+}
+
+# Fails before anything is created when the migration step cannot run.
+check_migrate_available() {
+  if [[ -n "${ENVCTL_API_BIN:-}" ]]; then
+    [[ -x "$ENVCTL_API_BIN" ]] || die "ENVCTL_API_BIN '$ENVCTL_API_BIN' is not an executable file"
+    return 0
+  fi
+  [[ -n "$(find_bin tradocraft-api "")" ]] || command -v cargo >/dev/null \
+    || die "no built tradocraft-api binary and no cargo: build it (cargo build --release -p tradocraft-api) or set ENVCTL_API_BIN"
+}
+
+CLONE_TARGET=""
+# EXIT trap while a clone is in progress: covers failures of any step, die() and signals, until the
+# target is registered. A failed clone leaves no database behind, so it can simply be retried.
+clone_cleanup() {
+  local rc=$? err
+  if [[ -n "$CLONE_TARGET" ]]; then
+    # The name was unregistered when the clone began, so any registry file now belongs to this
+    # failed clone: remove it too, or a retry would say "already registered".
+    rm -f -- "$(reg_file "$CLONE_TARGET")"
+    if err="$(dropdb --if-exists --force -- "$CLONE_TARGET" 2>&1)"; then
+      echo "envctl: clone failed, target database '$CLONE_TARGET' removed" >&2
+    else
+      echo "envctl: clone failed AND removing the target database '$CLONE_TARGET' failed: $err" >&2
+      echo "envctl: remove it by hand (dropdb '$CLONE_TARGET') before retrying" >&2
+    fi
+  fi
+  return "$rc"
+}
+
+cmd_clone() {
+  [[ $# -ge 2 ]] || die "usage: envctl clone <source-database-or-env> <name> [--kind test|tutorial] [--anonymize] [--no-start] [--worker]"
+  local source="$1" name="$2"; shift 2
+  parse_create_flags "$@"
+  check_new_name "$name"
+  local src_db="$source"
+  if reg_exists "$source"; then src_db="$(reg_get "$source" database)"; fi
+  [[ "$src_db" =~ ^[A-Za-z0-9_.-]+$ ]] || die "unsafe source database name"
+  [[ "$src_db" != "$name" ]] || die "refusing to clone a database onto itself"
+  db_exists "$src_db" || die "source database '$src_db' does not exist"
+  [[ -r "$SQL_DIR/scrub_credentials.sql" ]] || die "missing $SQL_DIR/scrub_credentials.sql"
+  check_migrate_available
+  info "cloning '$src_db' (read only) into new database '$name' ..."
+  trap clone_cleanup EXIT
+  trap 'exit 130' INT
+  trap 'exit 143' TERM
+  createdb -- "$name"
+  CLONE_TARGET="$name"
+  PGOPTIONS='-c default_transaction_read_only=on' pg_dump --format=custom --no-owner --no-acl -d "$src_db" \
+    | pg_restore --no-owner --no-acl --exit-on-error -d "$name"
+  migrate_target "$name"
+  info "applying credential scrub"
+  sql "$name" -f "$SQL_DIR/scrub_credentials.sql"
+  if [[ "$ANON" == yes ]]; then
+    info "anonymizing personal data (admin users keep their e-mail address)"
+    sql "$name" -f "$SQL_DIR/anonymize.sql"
+  fi
+  register_new "$name" "$KIND" "$name"
+  reg_set "$name" cloned_from "$src_db"
+  reg_set "$name" anonymized "$ANON"
+  CLONE_TARGET=""
+  trap - EXIT INT TERM
+  info "clone '$name' registered (kind $KIND)"
+  if [[ "$NOSTART" == no ]]; then cmd_start_instance "$name" "$WORKER"; fi
+}
+
+cmd_start() {
+  [[ $# -ge 1 ]] || die "usage: envctl start <name> [--worker]"
+  local name="$1" worker=no; shift
+  while [[ $# -gt 0 ]]; do
+    case "$1" in --worker) worker=yes ;; *) die "unknown option $1" ;; esac
+    shift
+  done
+  parse_pg_url
+  cmd_start_instance "$name" "$worker"
+}
+
+cmd_versions() {
+  parse_pg_url
+  local n url db kind mig doc
+  printf '%-16s %-9s %-10s %-16s %s\n' NAME KIND APP MIGRATION STATE
+  for n in $(reg_names); do
+    db="$(reg_get "$n" database)"
+    kind="$(reg_get "$n" kind)"
+    mig="-"
+    if db_exists "$db"; then
+      mig="$(sql_value "$db" "SELECT max(version) FROM _sqlx_migrations WHERE success" 2>/dev/null || true)"
+      [[ -n "$mig" ]] || mig="(none)"
+    else mig="(no database)"; fi
+    url="$(reg_get "$n" url)"
+    doc=""
+    [[ -n "$url" ]] && doc="$(curl -fsS -m 3 "$url/api/v1/meta/environment" 2>/dev/null || true)"
+    if [[ -n "$doc" ]]; then
+      printf '%-16s %-9s %-10s %-16s %s\n' "$n" "$(jq -r .kind <<<"$doc")" "$(jq -r .version <<<"$doc")" "$mig" "running"
+    else
+      printf '%-16s %-9s %-10s %-16s %s\n' "$n" "$kind" "-" "$mig" "stopped"
+    fi
+  done
+}
+
+cmd_register() {
+  [[ $# -ge 1 ]] || die "usage: envctl register <name> --database DB --kind live|test|tutorial [--url URL]"
+  local name="$1" db="" kind="" url=""; shift
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --database) db="${2:-}"; shift 2 ;;
+      --kind) kind="${2:-}"; shift 2 ;;
+      --url) url="${2:-}"; shift 2 ;;
+      *) die "unknown option $1" ;;
+    esac
+  done
+  valid_name "$name"
+  reg_exists "$name" && die "environment '$name' is already registered"
+  [[ -n "$db" && "$db" =~ ^[A-Za-z0-9_.-]+$ ]] || die "--database is required (letters, digits, _ . -)"
+  case "$kind" in live|test|tutorial) ;; *) die "--kind must be live, test or tutorial" ;; esac
+  parse_pg_url
+  register_new "$name" "$kind" "$db"
+  reg_set "$name" external yes
+  [[ -z "$url" ]] || reg_set "$name" url "$url"
+  info "registered '$name' ($kind, database $db)"
+}
+
+cmd_drop() {
+  [[ $# -ge 1 ]] || die "usage: envctl drop <name> [--yes]"
+  local name="$1" yes=no answer; shift
+  while [[ $# -gt 0 ]]; do
+    case "$1" in --yes) yes=yes ;; *) die "unknown option $1" ;; esac
+    shift
+  done
+  valid_name "$name"
+  reg_exists "$name" || die "'$name' is not a registered environment: envctl only drops databases it created"
+  [[ "$(reg_get "$name" kind)" != live ]] || die "'$name' is registered as live: refusing to drop it"
+  [[ "$(reg_get "$name" external)" != yes ]] || die "'$name' was registered, not created by envctl: refusing to drop it (use psql yourself)"
+  parse_pg_url
+  check_server "$name"
+  local db
+  db="$(reg_get "$name" database)"
+  [[ "$db" != "${URL_DB:-}" ]] || die "'$db' is the database of DATABASE_URL: refusing to drop it"
+  if [[ "$yes" != yes ]]; then
+    [[ -t 0 ]] || die "not interactive: pass --yes to confirm"
+    read -r -p "Drop environment '$name' and its database '$db'? Type the name to confirm: " answer
+    [[ "$answer" == "$name" ]] || die "not confirmed"
+  fi
+  cmd_stop "$name"
+  dropdb --if-exists --force -- "$db"
+  rm -rf -- "${ENVS_DIR:?}/$name"
+  rm -f -- "$(reg_file "$name")"
+  info "dropped '$name'"
+}
+
+main() {
+  local subcmd="${1:-help}"
+  [[ $# -eq 0 ]] || shift
+  case "$subcmd" in
+    help|-h|--help) usage ;;
+    list) cmd_list ;;
+    status) cmd_status "$@" ;;
+    stop) cmd_stop "$@" ;;
+    start) cmd_start "$@" ;;
+    versions) cmd_versions ;;
+    register) cmd_register "$@" ;;
+    create-empty) cmd_create_empty "$@" ;;
+    clone) cmd_clone "$@" ;;
+    drop) cmd_drop "$@" ;;
+    *) usage >&2; exit 2 ;;
+  esac
+}
+
+main "$@"

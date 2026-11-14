@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'app_icons.dart';
 
@@ -12,6 +12,7 @@ class SearchPicker<T extends Object> extends StatelessWidget {
     required this.onSelected,
     this.initial,
     this.clearOnSelect = false,
+    this.onTextChanged,
   });
 
   final Future<List<T>> Function(String query) search;
@@ -20,6 +21,9 @@ class SearchPicker<T extends Object> extends StatelessWidget {
   final void Function(T) onSelected;
   final T? initial;
   final bool clearOnSelect;
+
+  /// Called whenever the typed text changes (also when a selection is written into the field).
+  final void Function(String text)? onTextChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -50,6 +54,7 @@ class SearchPicker<T extends Object> extends StatelessWidget {
         return TextField(
           controller: controller,
           focusNode: focusNode,
+          onChanged: onTextChanged,
           onSubmitted: (_) => onSubmitted(),
           decoration: InputDecoration(
             labelText: label,

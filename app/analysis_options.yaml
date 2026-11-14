@@ -3,6 +3,9 @@ include: package:flutter_lints/flutter.yaml
 analyzer:
   exclude:
     - lib/api/generated/**
+    # gen-l10n output still references the deprecated flutter_localizations
+    # delegates; the app uses GlobalMaterialLocalizations.delegates instead.
+    - lib/l10n/app_localizations*.dart
     - build/**
     - android/**
     - web/**

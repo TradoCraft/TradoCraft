@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The time axis of one day cell: which minutes of the day are visible and how wide a minute is.
 /// Generic on purpose: a work-centre board can use the same axis for machines instead of people.

@@ -1,4 +1,6 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
+
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tradocraft_app/shared/entity_list.dart';
 import 'package:tradocraft_app/l10n/app_localizations.dart';
@@ -17,7 +19,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('en'),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localizationsDelegates: [AppLocalizations.delegate, ...GlobalMaterialLocalizations.delegates],
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: EntityList<String>(
@@ -51,5 +53,39 @@ void main() {
     await tester.pumpAndSettle();
     expect(queries.last, 'Item 5');
     expect(find.text('10 of 10'), findsOneWidget);
+  });
+
+  testWidgets('ignores a stale response that arrives after a newer one', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1200, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final first = Completer<(List<String>, int)>();
+    var calls = 0;
+    final key = GlobalKey<EntityListState<String>>();
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: [AppLocalizations.delegate, ...GlobalMaterialLocalizations.delegates],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: EntityList<String>(
+            key: key,
+            title: 'Things',
+            load: (q, offset, limit) async =>
+                ++calls == 1 ? first.future : (['New'], 1),
+            columns: [EntityColumn('Name', (s) => s)],
+          ),
+        ),
+      ),
+    );
+    await key.currentState!.reload();
+    await tester.pumpAndSettle();
+    expect(find.text('New'), findsOneWidget);
+    first.complete((['Old'], 1));
+    await tester.pumpAndSettle();
+    expect(find.text('Old'), findsNothing);
+    expect(find.text('New'), findsOneWidget);
   });
 }

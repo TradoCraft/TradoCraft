@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -9,9 +9,11 @@ import '../features/configurator/configurator_page.dart';
 import '../features/configurator/runner_screen.dart';
 import '../features/customers/customers_page.dart';
 import '../features/delivery/deliveries_page.dart';
+import '../features/production/capacity_page.dart';
 import '../features/production/divisions_page.dart';
 import '../features/production/production_page.dart';
 import '../features/production/release_page.dart';
+import '../features/production/work_centres_page.dart';
 import '../features/delivery/delivery_settings_page.dart';
 import '../features/helpdesk/answers_page.dart';
 import '../features/helpdesk/automation_page.dart';
@@ -21,6 +23,7 @@ import '../features/helpdesk/reports_page.dart';
 import '../features/reports/report_builder_page.dart';
 import '../features/reports/report_screen.dart';
 import '../features/reports/reports_page.dart';
+import '../features/todo/todo_page.dart';
 import '../features/helpdesk/tickets_page.dart';
 import '../features/kb/kb_categories_page.dart';
 import '../features/kb/kb_page.dart';
@@ -35,16 +38,21 @@ import '../features/planning/planning_settings_page.dart';
 import '../features/orders/orders_page.dart';
 import '../features/shipping/shipping_page.dart';
 import '../features/login/login_page.dart';
+import '../features/setup/setup_page.dart';
 import '../features/opportunities/opportunities_page.dart';
 import '../features/products/products_page.dart';
+import '../features/finance/finance_page.dart';
+import '../features/purchasing/purchasing_page.dart';
 import '../features/packages/intake_page.dart';
 import '../features/packages/receiving_page.dart';
 import '../features/repairs/departments_page.dart';
 import '../features/repairs/repairs_page.dart';
 import '../features/quotations/quotations_page.dart';
+import '../features/tutorial/chapter_map_page.dart';
 import 'session.dart';
 import '../features/field/offline/offline_ui.dart' show OfflineSyncHost;
 import 'shell.dart';
+import 'shortcuts/registry.dart' show ModalShortcutObserver, shortcutRegistryProvider;
 import 'workspace.dart' show DetailPortal;
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -53,16 +61,29 @@ final routerProvider = Provider<GoRouter>((ref) {
   ref.onDispose(signedIn.dispose);
 
   return GoRouter(
+    // Dialogs and popups are modal for keyboard shortcuts (see ModalShortcutObserver).
+    observers: [ModalShortcutObserver(ref.read(shortcutRegistryProvider))],
     initialLocation: '/quotations',
     refreshListenable: signedIn,
     redirect: (context, state) {
-      final atLogin = state.matchedLocation == '/login';
+      final atLogin =
+          state.matchedLocation == '/login' ||
+          state.matchedLocation == '/setup';
       if (!signedIn.value) return atLogin ? null : '/login';
       return atLogin ? '/quotations' : null;
     },
     routes: [
       GoRoute(path: '/login', builder: (_, _) => const LoginPage()),
+      // Company setup wizard (ADR 0047); `?server=` names the server to set up.
+      GoRoute(
+        path: '/setup',
+        builder: (_, state) =>
+            SetupPage(server: state.uri.queryParameters['server']),
+      ),
+      GoRoute(path: '/tutorial', builder: (_, _) => const TutorialMapPage()),
       ShellRoute(
+        // Bottom sheets and menus opened from a shell page use this navigator, not the root.
+        observers: [ModalShortcutObserver(ref.read(shortcutRegistryProvider))],
         builder: (context, state, child) => OfflineSyncHost(
           child: AppShell(location: state.matchedLocation, child: child),
         ),
@@ -134,6 +155,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/helpdesk/:id',
             builder: (_, s) => DetailPortal(location: s.uri.toString()),
           ),
+          GoRoute(path: '/todo', builder: (_, _) => const TodoPage()),
           GoRoute(
             path: '/reports',
             builder: (_, _) => const SavedReportsPage(),
@@ -218,6 +240,14 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (_, _) => const DivisionsPage(),
           ),
           GoRoute(
+            path: '/production/work-centres',
+            builder: (_, _) => const WorkCentresPage(),
+          ),
+          GoRoute(
+            path: '/production/capacity',
+            builder: (_, _) => const CapacityPage(),
+          ),
+          GoRoute(
             path: '/production/:id',
             builder: (_, s) => DetailPortal(location: s.uri.toString()),
           ),
@@ -246,9 +276,34 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (_, s) => DetailPortal(location: s.uri.toString()),
           ),
           GoRoute(path: '/customers', builder: (_, _) => const CustomersPage()),
+          GoRoute(
+            path: '/customers/:id',
+            builder: (_, s) => DetailPortal(location: s.uri.toString()),
+          ),
           GoRoute(path: '/products', builder: (_, _) => const ProductsPage()),
           GoRoute(
             path: '/products/:id',
+            builder: (_, s) => DetailPortal(location: s.uri.toString()),
+          ),
+          GoRoute(
+            path: '/purchasing',
+            builder: (_, _) => const PurchasingPage(),
+          ),
+          GoRoute(path: '/finance', builder: (_, _) => const FinancePage()),
+          GoRoute(
+            path: '/supplier-invoices/:id',
+            builder: (_, s) => DetailPortal(location: s.uri.toString()),
+          ),
+          GoRoute(
+            path: '/purchase-orders/:id',
+            builder: (_, s) => DetailPortal(location: s.uri.toString()),
+          ),
+          GoRoute(
+            path: '/goods-receipts/:id',
+            builder: (_, s) => DetailPortal(location: s.uri.toString()),
+          ),
+          GoRoute(
+            path: '/suppliers/:id',
             builder: (_, s) => DetailPortal(location: s.uri.toString()),
           ),
           GoRoute(path: '/admin', builder: (_, _) => const AdminPage()),

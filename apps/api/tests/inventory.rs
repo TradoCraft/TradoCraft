@@ -3289,3 +3289,31 @@ async fn counts_are_searched_and_paged_and_a_foreign_lot_is_refused(db: PgPool) 
     .await;
     assert_eq!(status, StatusCode::NOT_FOUND, "{r}");
 }
+
+/// The development seed (the tutorial environment) has no warehouse: the tutorial teaches creating
+/// one. Creating a warehouse brings its location MAIN, which goods are received into.
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn dev_seed_has_no_warehouse_and_a_new_one_brings_location_main(db: PgPool) {
+    let app = setup(db).await;
+    let (st, list) = get(&app, ADMIN, "/inventory/warehouses").await;
+    assert_eq!(st, StatusCode::OK, "{list}");
+    assert_eq!(list, json!([]), "the tutorial creates the warehouse itself");
+    let (st, w) = post(
+        &app,
+        ADMIN,
+        "/inventory/warehouses",
+        json!({ "code": "MAIN", "name": "Main warehouse" }),
+    )
+    .await;
+    assert_eq!(st, StatusCode::CREATED, "{w}");
+    assert_eq!(w["locations"].as_array().unwrap().len(), 1);
+    assert_eq!(w["locations"][0]["code"], "MAIN");
+    let (st, _) = post(
+        &app,
+        ADMIN,
+        "/inventory/warehouses",
+        json!({ "code": "MAIN", "name": "again" }),
+    )
+    .await;
+    assert_eq!(st, StatusCode::CONFLICT, "the code is unique per company");
+}

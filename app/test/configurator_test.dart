@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart' hide Evaluation;
 import 'package:tradocraft_app/app/api.dart';
@@ -247,7 +247,7 @@ Future<void> _pump(WidgetTester tester, Widget child) async {
   await tester.pumpWidget(
     MaterialApp(
       locale: const Locale('en'),
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      localizationsDelegates: [AppLocalizations.delegate, ...GlobalMaterialLocalizations.delegates],
       supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(body: SingleChildScrollView(child: child)),
     ),
@@ -1161,7 +1161,7 @@ void main() {
         overrides: [dioProvider.overrideWithValue(fakeDio(http))],
         child: MaterialApp(
           locale: const Locale('en'),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: [AppLocalizations.delegate, ...GlobalMaterialLocalizations.delegates],
           supportedLocales: AppLocalizations.supportedLocales,
           home: const Scaffold(body: ConfiguratorPage()),
         ),

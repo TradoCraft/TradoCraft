@@ -6,6 +6,7 @@
 
 pub mod configured;
 pub mod cooccurrence;
+pub mod favorites;
 mod model;
 pub mod order_doc;
 pub mod order_portal;
@@ -27,4 +28,5 @@ pub fn router() -> utoipa_axum::router::OpenApiRouter<tradocraft_core::AppState>
         .merge(shipping::router())
         .merge(configured::router())
         .merge(remarks::router())
+        .merge(favorites::router())
 }

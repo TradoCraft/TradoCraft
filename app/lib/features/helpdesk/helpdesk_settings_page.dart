@@ -1,10 +1,11 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/api.dart';
 import '../../l10n/l10n.dart';
 import '../../shared/actions.dart';
+import 'helpdesk_mailboxes.dart';
 import 'ticket_screen.dart' show teamsProvider, usersProvider;
 import 'tickets_page.dart' show ticketPriorities;
 import '../../shared/app_icons.dart';
@@ -17,8 +18,8 @@ final _settingsProvider = FutureProvider.autoDispose<HelpdeskSettings>(
   (ref) => ref.watch(apiProvider).helpdesk.getSettings(),
 );
 
-/// Helpdesk administration: service levels per priority, teams and their members, and the
-/// default team and satisfaction survey switch.
+/// Helpdesk administration: service levels per priority, teams and their members, the
+/// mailboxes, and the default team and satisfaction survey switch.
 class HelpdeskSettingsPage extends ConsumerWidget {
   const HelpdeskSettingsPage({super.key});
 
@@ -73,6 +74,8 @@ class HelpdeskSettingsPage extends ConsumerWidget {
             const _PoliciesCard(),
             const SizedBox(height: 16),
             const _TeamsCard(),
+            const SizedBox(height: 16),
+            const MailboxesCard(),
             const SizedBox(height: 16),
             const _SettingsCard(),
           ],

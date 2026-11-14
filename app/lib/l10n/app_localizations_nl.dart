@@ -2704,6 +2704,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get stockNoMoves => 'Nog geen bewegingen';
 
   @override
+  String get stockNoLocationsHint =>
+      'Nog geen locaties. Een beheerder maakt onder Voorraad > Magazijnen een magazijn en een locatie aan.';
+
+  @override
   String get stockNoWarehouses =>
       'Nog geen magazijnen. Een beheerder maakt ze hier aan.';
 
@@ -3972,6 +3976,42 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get modulesSaved => 'Modules opgeslagen';
+
+  @override
+  String moduleAlsoRequires(String modules) {
+    return 'Heeft ook $modules nodig';
+  }
+
+  @override
+  String moduleAlsoSwitchedOff(String modules) {
+    return 'Zet ook uit: $modules';
+  }
+
+  @override
+  String moduleAlsoSwitchedOn(String modules) {
+    return 'Zet ook aan: $modules';
+  }
+
+  @override
+  String moduleExpand(String module) {
+    return '$module uitklappen';
+  }
+
+  @override
+  String moduleCollapse(String module) {
+    return '$module inklappen';
+  }
+
+  @override
+  String get moduleOn => 'Aan';
+
+  @override
+  String get moduleOff => 'Uit';
+
+  @override
+  String moduleLevel(int level) {
+    return 'Niveau $level';
+  }
 
   @override
   String get userRoleAdmin => 'Beheerder';
@@ -6220,4 +6260,2688 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get envNotSaved =>
       'Gedaan, maar de lijst met omgevingen kon niet op dit toestel worden bewaard.';
+
+  @override
+  String get tutTitle => 'Tutorial';
+
+  @override
+  String get tutBack => 'Terug';
+
+  @override
+  String get tutNext => 'Volgende';
+
+  @override
+  String get tutSkipStep => 'Stap overslaan';
+
+  @override
+  String get tutPause => 'Pauzeren';
+
+  @override
+  String get tutResume => 'Hervatten';
+
+  @override
+  String get tutPaused => 'Tutorial gepauzeerd';
+
+  @override
+  String get tutTakeMe => 'Breng me erheen';
+
+  @override
+  String tutStepOf(int current, int total) {
+    return 'Stap $current van $total';
+  }
+
+  @override
+  String get tutOfferTitle => 'Welkom bij TradoCraft';
+
+  @override
+  String get tutOfferBody =>
+      'Dit is een tutorialomgeving. Wil je een rondleiding die je stap voor stap de app leert, met oefendata?';
+
+  @override
+  String get tutOfferStart => 'Start het tutorial';
+
+  @override
+  String get tutOfferLater => 'Niet nu';
+
+  @override
+  String get tutLiveTitle => 'Het tutorial draait niet op live data';
+
+  @override
+  String get tutLiveBody =>
+      'Het tutorial maakt records aan en draait daarom alleen in een test- of tutorialomgeving. Schakel over naar zo\'n omgeving, of voeg er een toe.';
+
+  @override
+  String get tutSwitchEnv => 'Omgeving wisselen';
+
+  @override
+  String get tutAddEnv => 'Omgeving toevoegen';
+
+  @override
+  String get tutMapIntro =>
+      'Werk de hoofdstukken in volgorde af. Je kunt een hoofdstuk altijd pauzeren, opnieuw doen of overslaan.';
+
+  @override
+  String get tutStatusDone => 'Klaar';
+
+  @override
+  String get tutStatusCurrent => 'Aan de beurt';
+
+  @override
+  String get tutStatusLocked => 'Vergrendeld';
+
+  @override
+  String get tutStatusSkipped => 'Overgeslagen';
+
+  @override
+  String get tutStatusPaused => 'Bezig';
+
+  @override
+  String get tutStart => 'Starten';
+
+  @override
+  String get tutReplay => 'Opnieuw';
+
+  @override
+  String tutFinishedTitle(String name) {
+    return 'Hoofdstuk $name voltooid';
+  }
+
+  @override
+  String tutFinishedNext(String name) {
+    return 'Goed gedaan. Hierna: $name. Start het nu, of kies het later op de hoofdstukkenkaart.';
+  }
+
+  @override
+  String get tutFinishedLast =>
+      'Dat was het laatste hoofdstuk. Goed gedaan. Je kunt elk hoofdstuk opnieuw doen vanaf de hoofdstukkenkaart.';
+
+  @override
+  String get tutStartNext => 'Volgend hoofdstuk starten';
+
+  @override
+  String get tutBackToMap => 'Terug naar hoofdstukkenkaart';
+
+  @override
+  String get tutSkipChapter => 'Hoofdstuk overslaan';
+
+  @override
+  String get tutWelcomeTitle => 'Welkom';
+
+  @override
+  String get tutWelcomeSummary =>
+      'Wegwijs: de omgevingsbalk, de tabbladen en de bediening van het tutorial.';
+
+  @override
+  String get tutProductTitle => 'Je eerste product';
+
+  @override
+  String get tutProductSummary =>
+      'Pet: productbeheerder. Maak drie componenten, een eindproduct en de stuklijst ervan.';
+
+  @override
+  String get tutWelcomeBannerTitle => 'De balk bovenaan';
+
+  @override
+  String get tutWelcomeBannerBody =>
+      'Deze balk toont altijd in welke omgeving je zit: de naam en het soort. Amber betekent test, blauw tutorial en rood live data. Het tutorial draait alleen in test- en tutorialomgevingen, dus niets wat je hier doet raakt echte data.';
+
+  @override
+  String get tutWelcomeTabsTitle => 'Tabbladen en secties';
+
+  @override
+  String get tutWelcomeTabsBody =>
+      'De secties staan links (of in de balk onderaan op een telefoon). Een record openen, zoals een product of offerte, voegt een tabblad toe aan de werkruimte, zodat je meerdere records open kunt houden en erop kunt terugkomen.';
+
+  @override
+  String get tutWelcomeControlsTitle => 'Deze kaart';
+
+  @override
+  String get tutWelcomeControlsBody =>
+      'Ik ben je verteller. Met Volgende ga je verder als een stap alleen uitleg is. Stappen waarin je iets moet doen, zijn vanzelf klaar zodra je het gedaan hebt. Met Terug en Stap overslaan beweeg je vrij, en Pauzeren verbergt mij tot je op Hervatten drukt.';
+
+  @override
+  String get tutWelcomeMenuTitle => 'Waar je mij vindt';
+
+  @override
+  String get tutWelcomeMenuBody =>
+      'Open het accountmenu voor het item Tutorial. Dat opent de hoofdstukkenkaart, waar je een hoofdstuk altijd kunt hervatten, opnieuw doen of overslaan.';
+
+  @override
+  String get tutWelcomeProductsTitle => 'Laten we beginnen';
+
+  @override
+  String get tutWelcomeProductsBody =>
+      'Open de sectie Producten. Het volgende hoofdstuk begint daar.';
+
+  @override
+  String get tutProductOpenTitle => 'Producten';
+
+  @override
+  String get tutProductOpenBody =>
+      'Vandaag ben jij de productbeheerder. Alles wat het bedrijf verkoopt of bouwt is een product. Open de sectie Producten.';
+
+  @override
+  String get tutProductMotorTitle => 'Component: Motor';
+
+  @override
+  String get tutProductMotorBody =>
+      'Maak het eerste component aan. Kies Nieuw product, vul code TUT-MOTOR en naam Motor in, laat het type op Aangekocht staan en sla op.';
+
+  @override
+  String get tutProductMotorHint =>
+      'Het voorvoegsel TUT- markeert tutorialdata, zodat je die later herkent.';
+
+  @override
+  String get tutProductFrameTitle => 'Component: Frame';
+
+  @override
+  String get tutProductFrameBody =>
+      'Maak op dezelfde manier een tweede component: code TUT-FRAME, naam Frame, type Aangekocht.';
+
+  @override
+  String get tutProductControllerTitle => 'Component: Controller';
+
+  @override
+  String get tutProductControllerBody =>
+      'En een derde: code TUT-CTRL, naam Controller, type Aangekocht.';
+
+  @override
+  String get tutProductCartTitle => 'Het eindproduct';
+
+  @override
+  String get tutProductCartBody =>
+      'Nu het product dat je uit die onderdelen bouwt. Maak code TUT-CART, naam Cart aan en kies het type Eigen productie: alleen producten met eigen productie hebben een stuklijst.';
+
+  @override
+  String get tutProductOpenCartTitle => 'Open de cart';
+
+  @override
+  String get tutProductOpenCartBody =>
+      'Open het nieuwe product Cart uit de lijst om de tabbladen te zien.';
+
+  @override
+  String get tutProductBomTabTitle => 'Stuklijst';
+
+  @override
+  String get tutProductBomTabBody =>
+      'Kies het tabblad Stuklijst. Daarin staan de componenten om één stuk te bouwen. Een revisie is een concept dat je bewerkt, of de actieve die de productie gebruikt. Druk op Volgende als je er bent.';
+
+  @override
+  String get tutProductRevisionTitle => 'Een eerste revisie';
+
+  @override
+  String get tutProductRevisionBody =>
+      'Kies Nieuwe revisie om een concept te starten.';
+
+  @override
+  String get tutProductLinesTitle => 'Voeg de componenten toe';
+
+  @override
+  String get tutProductLinesBody =>
+      'Zoek elk component op en voeg het toe: Motor, Frame en Controller. Druk daarna op Concept opslaan.';
+
+  @override
+  String get tutProductLinesHint =>
+      'Typ TUT in het zoekveld om de drie componenten te vinden.';
+
+  @override
+  String get tutProductActivateTitle => 'Activeer de revisie';
+
+  @override
+  String get tutProductActivateBody =>
+      'Druk op Activeren. Vanaf nu gebruiken productie en offertes deze revisie; latere wijzigingen lopen via een nieuwe revisie.';
+
+  @override
+  String get tutProductDoneTitle => 'Goed gedaan';
+
+  @override
+  String get tutProductDoneBody =>
+      'Je hebt een eindproduct met een stuklijst van drie componenten. Latere hoofdstukken bouwen hierop voort.';
+
+  @override
+  String get purchasing => 'Inkoop';
+
+  @override
+  String get tabSupplier => 'Leverancier';
+
+  @override
+  String get purchSuppliers => 'Leveranciers';
+
+  @override
+  String get purchNewSupplier => 'Nieuwe leverancier';
+
+  @override
+  String get purchPaymentTerms => 'Betalingstermijn';
+
+  @override
+  String purchDays(int count) {
+    return '$count dagen';
+  }
+
+  @override
+  String get purchActiveOnly => 'Alleen actieve';
+
+  @override
+  String get purchNameRequired => 'De naam is verplicht.';
+
+  @override
+  String get purchCountryInvalid =>
+      'Het land moet een code van 2 letters zijn.';
+
+  @override
+  String get purchCurrencyInvalid =>
+      'De munt moet een code van 3 letters zijn.';
+
+  @override
+  String get purchTermsInvalid =>
+      'De betalingstermijn moet een geheel aantal dagen zijn.';
+
+  @override
+  String get purchInactive => 'Inactief';
+
+  @override
+  String get purchPriceList => 'Prijslijst';
+
+  @override
+  String get purchAddProduct => 'Product toevoegen';
+
+  @override
+  String get purchEditPrice => 'Prijs wijzigen';
+
+  @override
+  String get purchNoPrices => 'Nog geen producten in deze prijslijst.';
+
+  @override
+  String get purchPickProduct => 'Kies een product.';
+
+  @override
+  String get purchPriceInvalid => 'Geef een geldige eenheidsprijs in.';
+
+  @override
+  String get purchMoqInvalid =>
+      'Geef een geldige minimale bestelhoeveelheid in.';
+
+  @override
+  String get purchLeadInvalid =>
+      'De levertijd moet een geheel aantal dagen zijn.';
+
+  @override
+  String get purchSupplierArticleCode => 'Artikelcode leverancier';
+
+  @override
+  String get purchSupplierArticleName => 'Artikelnaam leverancier';
+
+  @override
+  String get purchMoq => 'Min. bestelhoeveelheid';
+
+  @override
+  String get purchLeadTimeDays => 'Levertijd (dagen)';
+
+  @override
+  String get purchPreferred => 'Voorkeursleverancier';
+
+  @override
+  String purchRemoveProductConfirm(String code) {
+    return '$code uit deze prijslijst verwijderen?';
+  }
+
+  @override
+  String purchMoqValue(String qty) {
+    return 'MBH $qty';
+  }
+
+  @override
+  String purchLeadValue(int days) {
+    return 'levertijd $days d';
+  }
+
+  @override
+  String get purchNoSuppliers => 'Geen leveranciers gevonden.';
+
+  @override
+  String get purchOrders => 'Inkooporders';
+
+  @override
+  String get purchNewOrder => 'Nieuwe inkooporder';
+
+  @override
+  String get purchNoOrders => 'Geen inkooporders gevonden.';
+
+  @override
+  String get purchOrderNumber => 'Nummer';
+
+  @override
+  String get purchSupplier => 'Leverancier';
+
+  @override
+  String get purchAllSuppliers => 'Alle leveranciers';
+
+  @override
+  String get purchOrderDate => 'Orderdatum';
+
+  @override
+  String get purchExpectedDate => 'Verwachte levering';
+
+  @override
+  String get purchStatusDraft => 'concept';
+
+  @override
+  String get purchStatusApproved => 'goedgekeurd';
+
+  @override
+  String get purchStatusSent => 'verzonden';
+
+  @override
+  String get purchStatusPartial => 'gedeeltelijk ontvangen';
+
+  @override
+  String get purchStatusReceived => 'ontvangen';
+
+  @override
+  String get purchStatusCancelled => 'geannuleerd';
+
+  @override
+  String get purchLines => 'Regels';
+
+  @override
+  String get purchAddLine => 'Regel toevoegen';
+
+  @override
+  String get purchGoodsPickSupplier =>
+      'Kies een leverancier om zijn artikelen te zien.';
+
+  @override
+  String get purchGoodsEmpty =>
+      'Deze leverancier heeft nog geen producten in zijn prijslijst. Gebruik hieronder \"Overige producten\" om producten aan deze order toe te voegen, of voeg ze later aan de prijslijst toe.';
+
+  @override
+  String get purchGoodsNoMatch => 'Geen artikel past bij het filter.';
+
+  @override
+  String get purchGoodsFilter => 'Artikelen filteren';
+
+  @override
+  String get purchGoodsHeader =>
+      'Artikelen van deze leverancier: vink aan wat u wilt bestellen';
+
+  @override
+  String purchGoodsBelowMoq(String qty) {
+    return 'Onder de minimale bestelhoeveelheid ($qty)';
+  }
+
+  @override
+  String get purchGoodsCleared =>
+      'De gekozen artikelen zijn gewist omdat de leverancier is gewijzigd.';
+
+  @override
+  String get purchGoodsOther => 'Overige producten (niet in de prijslijst)';
+
+  @override
+  String purchGoodsSummary(int count, String total) {
+    return '$count regels, totaal $total';
+  }
+
+  @override
+  String get purchGoodsLoadFailed =>
+      'De artikelen van de leverancier konden niet worden geladen. U kunt nog steeds producten toevoegen onder \"Overige producten\", of opnieuw proberen.';
+
+  @override
+  String purchGoodsMixedCurrencies(int count, String currencies) {
+    return '$count regels in verschillende valuta ($currencies): geen enkel totaal';
+  }
+
+  @override
+  String get purchPickSupplier => 'Kies een leverancier.';
+
+  @override
+  String get purchLineQtyInvalid =>
+      'Aantal moet groter zijn dan nul, met maximaal 4 decimalen.';
+
+  @override
+  String get purchLinePriceInvalid =>
+      'Eenheidsprijs moet nul of meer zijn, met maximaal 4 decimalen.';
+
+  @override
+  String get purchNeedLine => 'Voeg minstens een regel toe.';
+
+  @override
+  String get purchApprove => 'Goedkeuren';
+
+  @override
+  String get purchCancelOrder => 'Order annuleren';
+
+  @override
+  String purchCancelOrderConfirm(String number) {
+    return 'Inkooporder $number annuleren? Dit kan niet ongedaan worden gemaakt.';
+  }
+
+  @override
+  String get purchKeepOrder => 'Order behouden';
+
+  @override
+  String get purchQtyReceived => 'Ontvangen';
+
+  @override
+  String get purchLineTotal => 'Regeltotaal';
+
+  @override
+  String get purchSubtotal => 'Subtotaal';
+
+  @override
+  String get purchTax => 'Btw';
+
+  @override
+  String get tabPurchaseOrder => 'Inkooporder';
+
+  @override
+  String get purchReceiveGoods => 'Goederen ontvangen';
+
+  @override
+  String purchReceiveTitle(String number) {
+    return 'Goederen ontvangen voor $number';
+  }
+
+  @override
+  String get purchReceiveDestination => 'Bestemmingslocatie';
+
+  @override
+  String get purchReceiveQty => 'Te ontvangen aantal';
+
+  @override
+  String purchReceiveRemaining(String qty) {
+    return 'Resterend: $qty';
+  }
+
+  @override
+  String get purchReceiveSerialsHelp => 'Eén serienummer per regel';
+
+  @override
+  String get purchDeliveryNote => 'Leveringsbon leverancier';
+
+  @override
+  String purchReceiveQtyInvalid(String product, String max) {
+    return '$product: voer een aantal in tussen 0 en $max.';
+  }
+
+  @override
+  String purchReceiveLotNeeded(String product) {
+    return '$product: voer een lotnummer in.';
+  }
+
+  @override
+  String purchReceiveSerialWhole(String product) {
+    return '$product: het aantal moet een geheel getal zijn.';
+  }
+
+  @override
+  String purchReceiveSerialCount(String product, int count) {
+    return '$product: voer precies $count verschillende serienummers in.';
+  }
+
+  @override
+  String get purchReceiveNothing =>
+      'Voer een aantal in voor minstens één regel.';
+
+  @override
+  String get purchReceiveLocationNeeded => 'Kies een bestemmingslocatie.';
+
+  @override
+  String purchReceiptBooked(String number) {
+    return 'Goederenontvangst $number geboekt.';
+  }
+
+  @override
+  String get purchOpenReceipt => 'Ontvangst openen';
+
+  @override
+  String get purchReceipts => 'Goederenontvangsten';
+
+  @override
+  String get purchReceivedDate => 'Ontvangen';
+
+  @override
+  String get purchOpenOrder => 'Inkooporder';
+
+  @override
+  String get tabGoodsReceipt => 'Goederenontvangst';
+
+  @override
+  String get setupTitle => 'Een nieuw bedrijf instellen';
+
+  @override
+  String get setupOffer => 'Een nieuw bedrijf instellen';
+
+  @override
+  String get setupOfferHint => 'Deze server heeft nog geen bedrijf.';
+
+  @override
+  String setupServer(String url) {
+    return 'Server: $url';
+  }
+
+  @override
+  String setupStepOf(int n, int total) {
+    return 'Stap $n van $total';
+  }
+
+  @override
+  String get setupStepCompany => 'Bedrijf';
+
+  @override
+  String get setupStepRegion => 'Land, valuta en taal';
+
+  @override
+  String get setupStepAdmin => 'Beheerder';
+
+  @override
+  String get setupStepToken => 'Installatietoken';
+
+  @override
+  String get setupStepReview => 'Controle';
+
+  @override
+  String get setupCompanyName => 'Bedrijfsnaam';
+
+  @override
+  String get setupLegalName => 'Juridische naam (optioneel)';
+
+  @override
+  String get setupVatNumber => 'Btw-nummer (optioneel)';
+
+  @override
+  String get setupCountry => 'Landcode (2 letters, bv. BE)';
+
+  @override
+  String get setupCurrency => 'Valuta (3 letters, bv. EUR)';
+
+  @override
+  String get setupLanguage => 'Standaardtaal';
+
+  @override
+  String get setupAdminEmail => 'E-mailadres van de beheerder';
+
+  @override
+  String get setupAdminName => 'Naam van de beheerder';
+
+  @override
+  String get setupToken => 'Installatietoken';
+
+  @override
+  String get setupTokenHelp => 'De waarde van BOOTSTRAP_TOKEN op de server.';
+
+  @override
+  String get setupErrName => 'Vul de bedrijfsnaam in.';
+
+  @override
+  String get setupErrVat => 'Een btw-nummer heeft 4 tot 20 letters en cijfers.';
+
+  @override
+  String get setupErrCountry => 'Vul een landcode van twee letters in.';
+
+  @override
+  String get setupErrCurrency => 'Vul een valutacode van drie letters in.';
+
+  @override
+  String get setupErrEmail => 'Vul een geldig e-mailadres in.';
+
+  @override
+  String get setupErrAdminName => 'Vul de naam van de beheerder in.';
+
+  @override
+  String get setupErrToken => 'Vul het installatietoken in.';
+
+  @override
+  String get setupNext => 'Volgende';
+
+  @override
+  String get setupBack => 'Terug';
+
+  @override
+  String get setupCreate => 'Bedrijf aanmaken';
+
+  @override
+  String get setupReviewHint =>
+      'Controleer de gegevens. Op deze server kan maar één keer een bedrijf worden aangemaakt.';
+
+  @override
+  String get setupErr403 => 'Het installatietoken ontbreekt of is onjuist.';
+
+  @override
+  String get setupErr404 =>
+      'Instellen is uitgeschakeld op deze server. Stel BOOTSTRAP_TOKEN in op de server en herstart die.';
+
+  @override
+  String get setupErr409 => 'Deze server heeft al een bedrijf.';
+
+  @override
+  String setupDone(String name) {
+    return 'Bedrijf $name aangemaakt.';
+  }
+
+  @override
+  String setupDoneDev(String email) {
+    return 'Aanmelden als $email.';
+  }
+
+  @override
+  String setupDoneOidc(String email) {
+    return 'Meld u aan via uw identiteitsprovider met $email: dat account is de beheerder.';
+  }
+
+  @override
+  String get setupToLogin => 'Naar aanmelden';
+
+  @override
+  String get setupAddOfferTitle => 'Deze server instellen?';
+
+  @override
+  String get setupAddOfferBody =>
+      'Deze server heeft nog geen bedrijf. Nu een bedrijf instellen?';
+
+  @override
+  String get setupLater => 'Later';
+
+  @override
+  String get finMatchColumn => 'Match';
+
+  @override
+  String get finance => 'Financiën';
+
+  @override
+  String get finSupplierInvoices => 'Inkoopfacturen';
+
+  @override
+  String get finSettings => 'Instellingen';
+
+  @override
+  String get tabSupplierInvoice => 'Inkoopfactuur';
+
+  @override
+  String get finNewInvoice => 'Nieuwe inkoopfactuur';
+
+  @override
+  String get finNoInvoices => 'Geen inkoopfacturen gevonden.';
+
+  @override
+  String get finInvoiceNumber => 'Factuurnummer';
+
+  @override
+  String get finInternalNumber => 'Intern nummer';
+
+  @override
+  String get finInvoiceDate => 'Factuurdatum';
+
+  @override
+  String get finDueDate => 'Vervaldatum';
+
+  @override
+  String get finStatusDraft => 'concept';
+
+  @override
+  String get finStatusMatched => 'gematcht';
+
+  @override
+  String get finStatusDisputed => 'betwist';
+
+  @override
+  String get finStatusApproved => 'goedgekeurd';
+
+  @override
+  String get finStatusPaid => 'betaald';
+
+  @override
+  String get finMatchOk => 'in orde';
+
+  @override
+  String get finMatchNotReceived => 'niet ontvangen';
+
+  @override
+  String get finMatchOverInvoiced => 'te veel gefactureerd';
+
+  @override
+  String get finMatchPriceVariance => 'prijsafwijking';
+
+  @override
+  String get finMatchNoPoLine => 'geen orderregel';
+
+  @override
+  String get finOrderOptional => 'Inkooporder (optioneel)';
+
+  @override
+  String get finNoOrder => 'Geen inkooporder';
+
+  @override
+  String get finOrderPrefillHint =>
+      'De regels worden ingevuld met de ontvangen, nog niet gefactureerde goederen.';
+
+  @override
+  String get finNumberRequired =>
+      'Het factuurnummer is verplicht (maximaal 64 tekens).';
+
+  @override
+  String get finLineDescriptionRequired =>
+      'Een vrije regel heeft een omschrijving nodig.';
+
+  @override
+  String get finVatInvalid =>
+      'Het btw-tarief moet tussen 0 en 100 liggen, met maximaal 2 decimalen.';
+
+  @override
+  String get finOrdered => 'Besteld';
+
+  @override
+  String get finInvoiced => 'Gefactureerd';
+
+  @override
+  String get finOrderPrice => 'Orderprijs';
+
+  @override
+  String get finInvoicePrice => 'Factuurprijs';
+
+  @override
+  String get finVariance => 'Afwijking';
+
+  @override
+  String get finMatches =>
+      'De factuur komt overeen met de order en de ontvangsten.';
+
+  @override
+  String get finNotMatches =>
+      'De factuur komt niet overeen met de order en de ontvangsten.';
+
+  @override
+  String finTolerances(String qty, String price) {
+    return 'Toleranties: hoeveelheid $qty %, prijs $price %';
+  }
+
+  @override
+  String get finSubmitMatch => 'Match controleren';
+
+  @override
+  String get finApprove => 'Goedkeuren';
+
+  @override
+  String get finOverrideTitle => 'Goedkeuren ondanks afwijking';
+
+  @override
+  String get finOverrideHelp =>
+      'De factuur komt niet overeen. Geef de reden om toch goed te keuren; die wordt bij de goedkeuring bewaard.';
+
+  @override
+  String get finOverrideReason => 'Reden voor afwijking';
+
+  @override
+  String get finReasonRequired => 'Een reden is verplicht.';
+
+  @override
+  String get finDispute => 'Betwisten';
+
+  @override
+  String get finDisputeReason => 'Reden van betwisting';
+
+  @override
+  String get finReopen => 'Heropenen';
+
+  @override
+  String get finMarkPaid => 'Markeren als betaald';
+
+  @override
+  String get finPaymentDate => 'Betaaldatum';
+
+  @override
+  String get finPaymentReference => 'Betalingskenmerk';
+
+  @override
+  String get finDeleteDraft => 'Concept verwijderen';
+
+  @override
+  String finDeleteConfirm(String number) {
+    return 'Factuur $number verwijderen? Dit kan niet ongedaan worden gemaakt.';
+  }
+
+  @override
+  String get finNetTotal => 'Netto';
+
+  @override
+  String get finGrossTotal => 'Totaal incl. btw';
+
+  @override
+  String get finDisputeReasonShown => 'Reden van betwisting';
+
+  @override
+  String get finOverrideShown => 'Reden voor afwijking';
+
+  @override
+  String get finPaidOn => 'Betaald op';
+
+  @override
+  String get finPurchaseOrder => 'Inkooporder';
+
+  @override
+  String get finQuantityTolerance => 'Hoeveelheidstolerantie (%)';
+
+  @override
+  String get finPriceTolerance => 'Prijstolerantie (%)';
+
+  @override
+  String get finToleranceInvalid => 'Geef een percentage tussen 0 en 100 op.';
+
+  @override
+  String get finSettingsSaved => 'Instellingen opgeslagen.';
+
+  @override
+  String get finSettingsHelp =>
+      'Grootste toegestane verschil tussen order en factuur voordat een regel als afwijking telt.';
+
+  @override
+  String get finCreateInvoice => 'Inkoopfactuur aanmaken';
+
+  @override
+  String get userRoleFinance => 'Financiën';
+
+  @override
+  String get moduleFinance => 'Financiën';
+
+  @override
+  String get productionDivisionMembers => 'Leden';
+
+  @override
+  String get productionDivisionNoMembers => 'Geen leden';
+
+  @override
+  String get productionScopeMine => 'Mijn afdelingen';
+
+  @override
+  String get productionScopeAll => 'Alle afdelingen';
+
+  @override
+  String get productionScopeEmpty =>
+      'Geen orders in uw afdelingen. Orders zonder afdeling zijn inbegrepen.';
+
+  @override
+  String get productionShowAllDivisions => 'Alle afdelingen tonen';
+
+  @override
+  String get productionYourDivisions => 'Uw afdelingen';
+
+  @override
+  String get setupErrInsecure =>
+      'Het installatietoken wordt niet via een onversleutelde verbinding naar een andere computer gestuurd. Gebruik een https://-adres (gewone http mag alleen voor localhost).';
+
+  @override
+  String get setupUnavailable =>
+      'Instellen is niet beschikbaar op deze server: er is al een bedrijf, of instellen is uitgeschakeld.';
+
+  @override
+  String get setupErrRedirect =>
+      'De server stuurde de aanvraag door, dus het installatietoken is niet verder gestuurd. Controleer het serveradres (gebruik het definitieve https://-adres).';
+
+  @override
+  String get tutSuppliersTitle => 'Leveranciers';
+
+  @override
+  String get tutSuppliersSummary =>
+      'Hoed: inkoper. Maak twee leveranciers en geef ze een prijslijst voor je componenten.';
+
+  @override
+  String get tutSuppliersNeedsTitle => 'Eerst hoofdstuk 1';
+
+  @override
+  String get tutSuppliersNeedsBody =>
+      'Dit hoofdstuk heeft de vier producten uit hoofdstuk 1 nodig (TUT-MOTOR, TUT-FRAME, TUT-CTRL en TUT-CART) en vond ze niet. Ga terug naar de hoofdstukkaart en rond eerst hoofdstuk 1 af.';
+
+  @override
+  String get tutSuppliersOpenTitle => 'Zet de inkopershoed op';
+
+  @override
+  String get tutSuppliersOpenBody =>
+      'Je componenten moeten ergens vandaan komen. Open Inkoop in het menu: de lijst Leveranciers is het eerste segment.';
+
+  @override
+  String get tutSuppliersSupplierATitle => 'De eerste leverancier';
+
+  @override
+  String get tutSuppliersSupplierABody =>
+      'Maak een leverancier met code TUT-SUP-A en naam Voltaic Drives Ltd. Code en naam zijn de enige verplichte velden; betaaltermijn, btw-nummer en contactgegevens kunnen later.';
+
+  @override
+  String get tutSuppliersSupplierBTitle => 'Een tweede leverancier';
+
+  @override
+  String get tutSuppliersSupplierBBody =>
+      'Een inkoper vergelijkt graag. Maak een tweede leverancier met code TUT-SUP-B en naam Ironbridge Frames.';
+
+  @override
+  String get tutSuppliersOpenATitle => 'Open de eerste leverancier';
+
+  @override
+  String get tutSuppliersOpenABody =>
+      'Open Voltaic Drives Ltd uit de lijst. De prijslijst staat onderaan het leveranciersscherm.';
+
+  @override
+  String get tutSuppliersPriceMotorTitle => 'Een prijs voor de motor';
+
+  @override
+  String get tutSuppliersPriceMotorBody =>
+      'Voeg TUT-MOTOR toe aan de prijslijst: stukprijs 120, levertijd 14 dagen, minimale bestelhoeveelheid 5. Inkooporders gebruiken deze waarden om hun regels voor te vullen.';
+
+  @override
+  String get tutSuppliersPriceMotorHint =>
+      'Kies het product met het zoekveld in het dialoogvenster; typ TUT-MOTOR.';
+
+  @override
+  String get tutSuppliersPriceFrameTitle => 'Een prijs voor het frame';
+
+  @override
+  String get tutSuppliersPriceFrameBody =>
+      'Hetzelfde voor TUT-FRAME: stukprijs 45, levertijd 10 dagen, minimale bestelhoeveelheid 5.';
+
+  @override
+  String get tutSuppliersPriceControllerTitle => 'Een prijs voor de controller';
+
+  @override
+  String get tutSuppliersPriceControllerBody =>
+      'En TUT-CTRL: stukprijs 30, levertijd 7 dagen, minimale bestelhoeveelheid 5. Deze leverancier dekt nu alle drie de componenten.';
+
+  @override
+  String get tutSuppliersOpenBTitle => 'Open de tweede leverancier';
+
+  @override
+  String get tutSuppliersOpenBBody =>
+      'Ga terug naar de lijst en open Ironbridge Frames.';
+
+  @override
+  String get tutSuppliersPriceMotorBTitle => 'Een concurrerende prijs';
+
+  @override
+  String get tutSuppliersPriceMotorBBody =>
+      'Geef ook deze leverancier een prijs voor TUT-MOTOR: stukprijs 135, levertijd 5 dagen, minimale bestelhoeveelheid 1. Duurder maar sneller; precies zo\'n keuze helpt een prijslijst te maken.';
+
+  @override
+  String get tutSuppliersDoneTitle => 'Wat je geleerd hebt';
+
+  @override
+  String get tutSuppliersDoneBody =>
+      'Een leverancier is een record met betaaltermijn en contactgegevens, en de prijslijst koppelt hem aan producten met prijs, levertijd en minimale bestelhoeveelheid. Volgende stap: de goederen bestellen.';
+
+  @override
+  String get tutBuyingTitle => 'Kopen en ontvangen';
+
+  @override
+  String get tutBuyingSummary =>
+      'Hoeden: inkoper en goederenontvangst. Bestel de componenten, verstuur de order en ontvang de goederen in twee leveringen.';
+
+  @override
+  String get tutBuyingNeedsTitle => 'Eerst hoofdstuk 1 en 2';
+
+  @override
+  String get tutBuyingNeedsBody =>
+      'Dit hoofdstuk heeft de producten uit hoofdstuk 1 en leverancier Voltaic Drives Ltd met prijslijst uit hoofdstuk 2 nodig, en vond de producten niet. Rond die hoofdstukken eerst af.';
+
+  @override
+  String get tutBuyingOpenTitle => 'De orderlijst';
+
+  @override
+  String get tutBuyingOpenBody =>
+      'Open Inkoop. Naast Leveranciers staat een segment voor inkooporders; open dat.';
+
+  @override
+  String get tutBuyingOrderTitle => 'Bestel de componenten';
+
+  @override
+  String get tutBuyingOrderBody =>
+      'Maak een inkooporder voor Voltaic Drives Ltd. Na het kiezen van de leverancier worden zijn artikelen getoond: vink TUT-MOTOR, TUT-FRAME en TUT-CTRL aan, zet de hoeveelheid op 30 voor elk en sla op. De prijzen komen uit de prijslijst.';
+
+  @override
+  String get tutBuyingOrderHint =>
+      'Kies eerst de leverancier. Aanvinken vult de minimale bestelhoeveelheid (of 1) in; typ liever 30 in het hoeveelheidsveld. Met het filterveld vindt u snel een product.';
+
+  @override
+  String get tutBuyingOpenOrderTitle => 'Het orderscherm';
+
+  @override
+  String get tutBuyingOpenOrderBody =>
+      'Open de order die je net maakte. Een inkooporder is eerst een concept; de knoppen bovenaan volgen zijn leven: goedkeuren, versturen, ontvangen.';
+
+  @override
+  String get tutBuyingApproveTitle => 'Keur de order goed';
+
+  @override
+  String get tutBuyingApproveBody =>
+      'Goedkeuren is een apart recht, zodat een inkoper orders kan voorbereiden die een manager vrijgeeft. Als admin draag je beide hoeden: druk op Goedkeuren.';
+
+  @override
+  String get tutBuyingSendTitle => 'Verstuur naar de leverancier';
+
+  @override
+  String get tutBuyingSendBody =>
+      'Druk op Verzenden. De order wordt als verstuurd gemarkeerd en de leverancier krijgt hem. In test- en tutorialomgevingen wordt uitgaande e-mail alleen naar bestanden op de server geschreven; er verlaat niets het gebouw.';
+
+  @override
+  String get tutBuyingOpenWarehousesTitle => 'Waar gaan de goederen heen?';
+
+  @override
+  String get tutBuyingOpenWarehousesBody =>
+      'Goederen hebben een plek nodig voordat ze ontvangen kunnen worden. Open Voorraad en druk op Magazijnen: hier staan de magazijnen en hun locaties.';
+
+  @override
+  String get tutBuyingWarehouseTitle => 'Maak het magazijn aan';
+
+  @override
+  String get tutBuyingWarehouseBody =>
+      'Druk op Nieuw magazijn, geef het de code MAIN en de naam Hoofdmagazijn, en sla op. Een nieuw magazijn komt met zijn locatie MAIN, waar je de goederen straks ontvangt. Wordt opslaan geweigerd omdat de code MAIN al bestaat, dan heeft een inactief magazijn hem: zet het (en zijn locatie) weer aan onder Voorraad > Magazijnen, of geef het met de bewerkknop een andere code, en druk daarna op Volgende.';
+
+  @override
+  String get tutBuyingWarehouseHint =>
+      'Code en naam zijn verplicht. Bestaat er al een magazijn met een locatie, dan wordt deze stap overgeslagen.';
+
+  @override
+  String get tutBuyingReceivePartTitle => 'De eerste levering komt aan';
+
+  @override
+  String get tutBuyingReceivePartBody =>
+      'Zet de hoed van goederenontvangst op. Druk op Goederen ontvangen, kies de magazijnlocatie MAIN en boek van elke component 10 stuks, minder dan besteld. De order wordt gedeeltelijk ontvangen.';
+
+  @override
+  String get tutBuyingReceivePartHint =>
+      'Pas in het dialoogvenster de hoeveelheid van elke regel aan; de resterende hoeveelheid staat ernaast. Een leverbonnummer is optioneel.';
+
+  @override
+  String get tutBuyingReceiveRestTitle => 'De rest komt aan';
+
+  @override
+  String get tutBuyingReceiveRestBody =>
+      'Ontvang de resterende 20 stuks van elke component op dezelfde manier. Is alles binnen, dan is de order volledig ontvangen; elke levering houdt haar eigen ontvangstbon.';
+
+  @override
+  String get tutBuyingStockTitle => 'Kijk naar de voorraad';
+
+  @override
+  String get tutBuyingStockBody =>
+      'Open Voorraad. De 30 motoren, frames en controllers liggen in magazijn MAIN. Elke ontvangst maakte een voorraadbeweging, dus de hoeveelheid is altijd te herleiden.';
+
+  @override
+  String get tutBuyingDoneTitle => 'Wat je geleerd hebt';
+
+  @override
+  String get tutBuyingDoneBody =>
+      'Een inkooporder gaat van concept naar goedgekeurd, verstuurd, ontvangen. Goederen mogen in meerdere leveringen komen en elke levering vult de voorraad aan. De factuur van de leverancier volgt.';
+
+  @override
+  String get tutInvoicesTitle => 'Facturen controleren';
+
+  @override
+  String get tutInvoicesSummary =>
+      'Hoed: boekhouder. Registreer leveranciersfacturen, lees de driewegmatch, keur goed, betwist en betaal.';
+
+  @override
+  String get tutInvoicesNeedsTitle => 'Eerst hoofdstuk 3';
+
+  @override
+  String get tutInvoicesNeedsBody =>
+      'Dit hoofdstuk heeft de volledig ontvangen inkooporder uit hoofdstuk 3 nodig en die is er (nog) niet. Rond eerst hoofdstuk 3 af.';
+
+  @override
+  String get tutInvoicesOpenOrderTitle => 'Terug naar de order';
+
+  @override
+  String get tutInvoicesOpenOrderBody =>
+      'De factuur van de leverancier komt binnen. Open de inkooporder uit hoofdstuk 3 opnieuw: zodra er goederen ontvangen zijn, biedt hij een snelkoppeling om de factuur te registreren.';
+
+  @override
+  String get tutInvoicesCreateTitle => 'Registreer de factuur';
+
+  @override
+  String get tutInvoicesCreateBody =>
+      'Druk op Inkoopfactuur aanmaken. Typ het eigen factuurnummer van de leverancier, bijvoorbeeld TUT-INV-001, en bewaar. De regels worden ingevuld vanuit wat besteld en ontvangen is, er valt niets te typen.';
+
+  @override
+  String get tutInvoicesCreateHint =>
+      'Factuurdatum en vervaldatum staan standaard op vandaag en op de betaaltermijn van de leverancier.';
+
+  @override
+  String get tutInvoicesMatchTitle => 'De driewegmatch';
+
+  @override
+  String get tutInvoicesMatchBody =>
+      'De banner vergelijkt drie documenten: wat besteld, wat ontvangen en wat gefactureerd is, regel voor regel. Groen betekent dat ze binnen de tolerantie overeenkomen; de tolerantie staat in de banner. Druk op Volgende als je gekeken hebt.';
+
+  @override
+  String get tutInvoicesApproveTitle => 'Keur de factuur goed';
+
+  @override
+  String get tutInvoicesApproveBody =>
+      'De match is groen, dus druk op Goedkeuren. Een goedgekeurde factuur is klaar voor betaling.';
+
+  @override
+  String get tutInvoicesSecondTitle => 'Een verdachte factuur';
+
+  @override
+  String get tutInvoicesSecondBody =>
+      'Nu komt een tweede factuur binnen van Voltaic Drives Ltd, deze keer zonder inkooporder: maak in Financiën een leveranciersfactuur voor die leverancier, nummer TUT-INV-002, laat de order leeg en voeg één regel toe met omschrijving Motoren, aantal 10, stukprijs 150.';
+
+  @override
+  String get tutInvoicesSecondHint =>
+      'De echte motorprijs is 120 en deze regel heeft geen orderregel om mee te vergelijken. De app kan prijzen van een orderfactuur niet wijzigen, dus een vrije-tekstfactuur is hier de manier om een afwijking te zien.';
+
+  @override
+  String get tutInvoicesMismatchTitle => 'De match mislukt';
+
+  @override
+  String get tutInvoicesMismatchBody =>
+      'De banner is oranje: een vrije-tekstregel heeft niets om mee te vergelijken en kan dus niet tegen een order of ontvangst gecontroleerd worden. De regel toont waarom. Druk op Volgende als je gekeken hebt.';
+
+  @override
+  String get tutInvoicesDisputeTitle => 'Betwist de factuur';
+
+  @override
+  String get tutInvoicesDisputeBody =>
+      'Druk op Betwisten en geef een reden, bijvoorbeeld prijs komt niet overeen met de afspraak. Een betwiste factuur kan niet betaald worden tot ze heropend is. (Een goedkeurder kan een mislukte match ook goedkeuren met een afwijkingsreden, die op de factuur bewaard blijft.)';
+
+  @override
+  String get tutInvoicesTolerancesTitle => 'De toleranties';
+
+  @override
+  String get tutInvoicesTolerancesBody =>
+      'Hoeveel een factuur mag afwijken is een instelling: open het segment Instellingen van Financiën om de hoeveelheids- en prijstolerantie in procenten te zien. Kijk en druk op Volgende; het wijzigen is aan jou.';
+
+  @override
+  String get tutInvoicesPayTitle => 'Betaal de goede factuur';
+
+  @override
+  String get tutInvoicesPayBody =>
+      'Open de eerste leveranciersfactuur die je registreerde (die gematcht en goedgekeurd werd) en druk op Markeren als betaald. Voer een betalingsreferentie in zoals TUT-PAY-001. De app legt de betaling vast; de overschrijving zelf gebeurt elders.';
+
+  @override
+  String get tutInvoicesDoneTitle => 'Wat je geleerd hebt';
+
+  @override
+  String get tutInvoicesDoneBody =>
+      'De driewegmatch vergelijkt order, ontvangst en factuur voordat er geld beweegt. Kloppende facturen worden goedgekeurd en betaald, twijfelachtige betwist. Volgende stap: de karretjes zelf bouwen.';
+
+  @override
+  String get tutManufacturingTitle => 'Produceren';
+
+  @override
+  String get tutManufacturingSummary =>
+      'Hoeden: productiebeheerder en productiemedewerker. Richt een afdeling in en bouw vijf karretjes uit de componenten.';
+
+  @override
+  String get tutManufacturingNeedsTitle => 'Eerst hoofdstuk 1 tot 3';
+
+  @override
+  String get tutManufacturingNeedsBody =>
+      'Dit hoofdstuk heeft het karretje met stuklijst (hoofdstuk 1) en componenten op voorraad (hoofdstuk 3) nodig en vond de producten niet. Rond die hoofdstukken eerst af.';
+
+  @override
+  String get tutManufacturingOpenDivisionsTitle => 'Afdelingen';
+
+  @override
+  String get tutManufacturingOpenDivisionsBody =>
+      'Productiewerk is georganiseerd in afdelingen, bijvoorbeeld een assemblagelijn. Alleen een beheerder definieert ze. Open Productie en gebruik de tandwielknop rechtsboven om bij de afdelingen te komen.';
+
+  @override
+  String get tutManufacturingDivisionTitle => 'Maak een afdeling';
+
+  @override
+  String get tutManufacturingDivisionBody =>
+      'Voeg een afdeling toe met code TUT-ASM en naam Tutorial assembly, en vink jezelf aan in de ledenlijst: leden zijn de werknemers van de afdeling.';
+
+  @override
+  String get tutManufacturingDivisionHint =>
+      'Het dialoogvenster toont de gebruikers van het bedrijf; vink het label met je eigen naam aan.';
+
+  @override
+  String get tutManufacturingQueueTitle => 'De productiewachtrij';
+
+  @override
+  String get tutManufacturingQueueBody =>
+      'Ga terug naar Productie. Kies bovenaan de wachtrij Mijn afdelingen: dat toont de orders van je afdelingen plus orders zonder afdeling, zodat niets onbeheerds verborgen blijft. Je bent lid van een afdeling, dus dit is voor jou de standaard; kies Alle afdelingen om alles te zien.';
+
+  @override
+  String get tutManufacturingReleaseTitle => 'Geef een productieorder vrij';
+
+  @override
+  String get tutManufacturingReleaseBody =>
+      'Druk op Voor voorraad maken, kies TUT-CART met hoeveelheid 5 en geef vrij. De stuklijst wordt bevroren en de componenten worden gereserveerd. Normaal start productie vanuit een verkooporderregel; dat zie je in hoofdstuk 9.';
+
+  @override
+  String get tutManufacturingReleaseHint =>
+      'Alleen geproduceerde producten met een actieve stuklijst kunnen vrijgegeven worden.';
+
+  @override
+  String get tutManufacturingAssignTitle => 'Wijs het toe aan de afdeling';
+
+  @override
+  String get tutManufacturingAssignBody =>
+      'De nieuwe order staat open. Kies de afdeling Tutorial assembly in het veld Afdeling en druk op Opslaan, zodat de order in de wachtrij van die afdeling verschijnt.';
+
+  @override
+  String get tutManufacturingStartTitle => 'Start het werk';
+
+  @override
+  String get tutManufacturingStartBody =>
+      'Zet de werknemershoed op en druk op Starten. De order gaat van vrijgegeven naar in uitvoering.';
+
+  @override
+  String get tutManufacturingWarehouseTitle => 'Een plek voor de karretjes';
+
+  @override
+  String get tutManufacturingWarehouseBody =>
+      'De afgewerkte karretjes hebben een locatie nodig om in te komen, en er is nog geen magazijn (hoofdstuk 3 maakt het aan). Open Voorraad, druk op Magazijnen en maak het magazijn MAIN aan met de naam Hoofdmagazijn; ga daarna terug naar de productieorder. Wordt opslaan geweigerd omdat de code MAIN al bestaat, dan heeft een inactief magazijn hem: zet het (en zijn locatie) weer aan onder Voorraad > Magazijnen, of geef het met de bewerkknop een andere code, en druk daarna op Volgende.';
+
+  @override
+  String get tutManufacturingWarehouseHint =>
+      'De locatie MAIN wordt samen met het magazijn aangemaakt. Bestaat er al een magazijn met een locatie, dan wordt deze stap overgeslagen.';
+
+  @override
+  String get tutManufacturingCompleteTitle => 'Rond de order af';
+
+  @override
+  String get tutManufacturingCompleteBody =>
+      'Druk op Afronden. Het dialoogvenster toont de uitvoerhoeveelheid (5) en de verbruikte componenten. Kies de magazijnlocatie MAIN bij Opslaan in, zodat de afgewerkte karretjes een plek hebben, en bevestig: de componenten verdwijnen uit de voorraad en vijf afgewerkte karretjes komen erin.';
+
+  @override
+  String get tutManufacturingCompleteHint =>
+      'Laat de geplande waarden staan; het dialoogvenster laat je uitval of extra verbruik vastleggen als de werkelijkheid afwijkt.';
+
+  @override
+  String get tutManufacturingStockTitle => 'Controleer de voorraad';
+
+  @override
+  String get tutManufacturingStockBody =>
+      'Open Voorraad: TUT-CART heeft nu 5 op voorraad en elke component is met 5 gedaald (25 over van elk). Productie is de schakel tussen inkoop en verkoop.';
+
+  @override
+  String get tutManufacturingDoneTitle => 'Wat je geleerd hebt';
+
+  @override
+  String get tutManufacturingDoneBody =>
+      'Afdelingen groeperen productiemedewerkers; een productieorder bevriest de stuklijst, reserveert componenten, wordt gestart en voltooid en maakt van componenten eindproducten. Volgende stap: prijzen.';
+
+  @override
+  String get tutPricesTitle => 'Prijzen en zones';
+
+  @override
+  String get tutPricesSummary =>
+      'Hoed: verkoopbeheerder. Maak een prijszone en geef het karretje een prijs in twee zones.';
+
+  @override
+  String get tutPricesNeedsTitle => 'Eerst hoofdstuk 1';
+
+  @override
+  String get tutPricesNeedsBody =>
+      'Dit hoofdstuk heeft het karretje uit hoofdstuk 1 nodig en vond het niet. Rond eerst hoofdstuk 1 af.';
+
+  @override
+  String get tutPricesOpenAdminTitle => 'Open het beheer';
+
+  @override
+  String get tutPricesOpenAdminBody =>
+      'Een prijs hangt af van de zone van de klant: een land of markt met een eigen prijslijst. Zones beheer je onder Beheer. Open Beheer en kies het segment Prijszones; het bedrijf heeft al zones Z1 tot Z5.';
+
+  @override
+  String get tutPricesZoneTitle => 'Maak een zone';
+
+  @override
+  String get tutPricesZoneBody =>
+      'Voeg een prijszone toe met code TUT-EXPORT en naam Exportzone. Klanten krijgen later een zone, wanneer je er een aanmaakt.';
+
+  @override
+  String get tutPricesZoneHint =>
+      'Kies eerst het segment Prijszones bovenaan de pagina Beheer.';
+
+  @override
+  String get tutPricesOpenCartTitle => 'Open het karretje';
+
+  @override
+  String get tutPricesOpenCartBody =>
+      'Open het product TUT-CART uit de lijst Producten. Het eerste tabblad, Prijzen, bevat de prijzen per zone.';
+
+  @override
+  String get tutPricesPriceExportTitle => 'Een prijs in de nieuwe zone';
+
+  @override
+  String get tutPricesPriceExportBody =>
+      'Druk op Nieuwe prijs, kies zone TUT-EXPORT, voer stukprijs 1450 (excl. btw) in en bewaar.';
+
+  @override
+  String get tutPricesPriceExportHint =>
+      'De geldig-vanafdatum staat standaard op vandaag; een latere datum plant een prijswijziging.';
+
+  @override
+  String get tutPricesPriceHomeTitle => 'Een prijs in een andere zone';
+
+  @override
+  String get tutPricesPriceHomeBody =>
+      'Voeg een tweede prijs voor het karretje toe in een van de bestaande zones, bijvoorbeeld Z1 voor 1200. Hetzelfde product kan nu verschillend kosten afhankelijk van de zone van de klant.';
+
+  @override
+  String get tutPricesDoneTitle => 'Wat je geleerd hebt';
+
+  @override
+  String get tutPricesDoneBody =>
+      'Een prijszone groepeert klanten met dezelfde prijslijst en een product heeft één prijs per zone en datum. Offertes nemen de prijs van de zone van de klant. Volgende stap: een nieuwe klant neemt contact op.';
+
+  @override
+  String get tutCustomerTitle => 'Een nieuwe klant neemt contact op';
+
+  @override
+  String get tutCustomerSummary =>
+      'Hoeden: verkoop en helpdesk. Een e-mail van een klant wordt een ticket; de afzender is nieuw, dus je vraagt bedrijfsgegevens en maakt de klant aan.';
+
+  @override
+  String get tutCustomerNeedsTitle => 'Eerst hoofdstuk 6';
+
+  @override
+  String get tutCustomerNeedsBody =>
+      'Dit hoofdstuk heeft de prijszone TUT-EXPORT uit hoofdstuk 6 nodig (de nieuwe klant krijgt die) en vond ze niet. Rond eerst de vorige hoofdstukken af.';
+
+  @override
+  String get tutCustomerMail1Title => 'Er komt een e-mail binnen';
+
+  @override
+  String get tutCustomerMail1Body =>
+      'Iemand die je niet kent vraagt een offerte voor je karretje. Een echte mailbox levert het bericht zelf af; hier speelt de knop hieronder de klant en geeft een kant-en-klare e-mail (van Maya Okafor, example.test) aan de helpdesk, precies zoals de mailimporter doet.';
+
+  @override
+  String get tutCustomerMail1Action => 'Klant-e-mail simuleren';
+
+  @override
+  String get tutCustomerOpenHelpdeskTitle => 'Het ticket';
+
+  @override
+  String get tutCustomerOpenHelpdeskBody =>
+      'Elk binnenkomend bericht wordt een ticket. Open Helpdesk: het ticket van Maya Okafor staat in de lijst.';
+
+  @override
+  String get tutCustomerOpenTicketTitle => 'Open het ticket';
+
+  @override
+  String get tutCustomerOpenTicketBody =>
+      'Open het ticket. Links staat het gesprek, rechts de eigenschappen. Er is nog geen klant gekoppeld, want niemand met dit adres bestaat in het systeem.';
+
+  @override
+  String get tutCustomerReplyTitle => 'Vraag bedrijfsgegevens';
+
+  @override
+  String get tutCustomerReplyBody =>
+      'Antwoord Maya: bedank haar en vraag naar bedrijfsnaam, btw-nummer en adres, en druk op Verzenden. Het antwoord komt in de wachtrij van de mailworker. In test- en tutorialomgevingen wordt uitgaande mail alleen naar bestanden op de server geschreven, dus Maya ontvangt niets.';
+
+  @override
+  String get tutCustomerReplyHint =>
+      'Zorg dat het tabblad Antwoord (niet Interne notitie) boven het berichtvak is gekozen.';
+
+  @override
+  String get tutCustomerMail2Title => 'De klant antwoordt';
+
+  @override
+  String get tutCustomerMail2Body =>
+      'Gebruik de knop om het antwoord van Maya te spelen. Het is een antwoord op haar eerste bericht, dus het komt als nieuw bericht in hetzelfde ticket, met bedrijfsnaam, btw-nummer en adres.';
+
+  @override
+  String get tutCustomerMail2Action => 'Klant-e-mail simuleren';
+
+  @override
+  String get tutCustomerReadDetailsTitle => 'Lees de gegevens';
+
+  @override
+  String get tutCustomerReadDetailsBody =>
+      'Ga terug naar het ticket (open het opnieuw als het nieuwe bericht nog niet getoond wordt) en lees het antwoord van Maya: bedrijf Brightwheel Logistics BV, btw-nummer BE0123456749, Voorbeeldlaan 12, 9000 Gent, België. Druk op Volgende als je het hebt.';
+
+  @override
+  String get tutCustomerCreateCustomerTitle => 'Maak de klant aan';
+
+  @override
+  String get tutCustomerCreateCustomerBody =>
+      'Druk in de ticketeigenschappen op Nieuwe klant. Vul naam Brightwheel Logistics BV in, een code zoals TUT-CUST, btw-nummer, het adres, en kies de prijszone TUT-EXPORT. Het ticket wordt aan de nieuwe klant gekoppeld als je bewaart.';
+
+  @override
+  String get tutCustomerCreateCustomerHint =>
+      'Straat Voorbeeldlaan 12, postcode 9000, plaats Gent, land BE. Taal en betaaltermijn mogen blijven zoals ze zijn.';
+
+  @override
+  String get tutCustomerLinkedTitle => 'Het ticket kent zijn klant';
+
+  @override
+  String get tutCustomerLinkedBody =>
+      'Het ticket toont nu de klant en er verschijnen nieuwe knoppen: een lead maken of direct vanuit het ticket een offerte starten. Het volgende hoofdstuk maakt de offerte. Druk op Volgende.';
+
+  @override
+  String get tutCustomerDoneTitle => 'Wat je geleerd hebt';
+
+  @override
+  String get tutCustomerDoneBody =>
+      'Binnenkomende mail wordt tickets, een antwoord vraagt de klant om wat ontbreekt, en vanuit het ticket kan een klant aangemaakt worden zodat alles gekoppeld blijft. Volgende stap: de offerte.';
+
+  @override
+  String get tutQuotationTitle => 'De offerte';
+
+  @override
+  String get tutQuotationSummary =>
+      'Hoed: verkoper. Offreer 8 karretjes aan de nieuwe klant, vraag productie naar de timing en verstuur.';
+
+  @override
+  String get tutQuotationNeedsTitle => 'Eerst hoofdstuk 7';
+
+  @override
+  String get tutQuotationNeedsBody =>
+      'Dit hoofdstuk heeft klant Brightwheel Logistics BV uit hoofdstuk 7 nodig en vond die niet. Rond eerst hoofdstuk 7 af.';
+
+  @override
+  String get tutQuotationOpenQuotationsTitle => 'Offertes';
+
+  @override
+  String get tutQuotationOpenQuotationsBody =>
+      'Open Offertes in het menu. Deze lijst bevat elke offerte met nummer, klant en status.';
+
+  @override
+  String get tutQuotationCreateTitle => 'Maak de offerte';
+
+  @override
+  String get tutQuotationCreateBody =>
+      'Druk op Nieuwe offerte, kies Brightwheel Logistics BV, voeg TUT-CART toe met aantal 8 en bewaar het concept. De stukprijs komt uit de prijszone van de klant, TUT-EXPORT, dus de 1450 die je in hoofdstuk 6 invoerde.';
+
+  @override
+  String get tutQuotationCreateHint =>
+      'Gebruik het productzoekveld bij de regels; typ TUT-CART. Als de klant niet vooraf gekozen is, zoek op Brightwheel.';
+
+  @override
+  String get tutQuotationLeadTitle => 'Hoe lang duurt het?';
+
+  @override
+  String get tutQuotationLeadBody =>
+      'De klant vroeg om een levertijd. Eerlijk gezegd: de app berekent nog geen levertijden automatisch en een offerte heeft geen leverdatumveld. Vraag het dus aan productie (zet die hoed op, kijk naar de productiewachtrij en de componenten op voorraad) en schrijf het antwoord in de notities van de offerte, bijvoorbeeld: levering ongeveer 3 weken na bestelling. Bewaar het concept.';
+
+  @override
+  String get tutQuotationLeadHint =>
+      'Bij een order kun je productie een vraag als ticket sturen (dat zie je in hoofdstuk 9); offertes hebben die knop nog niet.';
+
+  @override
+  String get tutQuotationSendTitle => 'Verstuur de offerte';
+
+  @override
+  String get tutQuotationSendBody =>
+      'Druk op Markeren als verzonden. Vanaf nu ligt de offerte vast: ze kan alleen nog aanvaard, afgewezen of herzien worden. (Deze knop verstuurt geen mail; je stuurt de pdf zelf of antwoordt in het ticket.)';
+
+  @override
+  String get tutQuotationPdfTitle => 'De pdf';
+
+  @override
+  String get tutQuotationPdfBody =>
+      'De pdf-knop toont de offerte zoals de klant ze zou zien. Ze wordt op de server gemaakt met een zetprogramma; op een server zonder dat krijg je een foutmelding, die verder niets beïnvloedt. Kijk gerust en druk op Volgende.';
+
+  @override
+  String get tutQuotationPdfHint =>
+      'Er breekt niets als de pdf mislukt: de offerte is al verstuurd.';
+
+  @override
+  String get tutQuotationDoneTitle => 'Wat je geleerd hebt';
+
+  @override
+  String get tutQuotationDoneBody =>
+      'Een offerte neemt de prijs van de zone van de klant, draagt notities en ligt vast zodra ze verstuurd is. Levertijden blijven je eigen inschatting, samen met productie. Volgende stap: de klant wil een wijziging.';
+
+  @override
+  String get tutChangeTitle => 'Wijziging, order, productie';
+
+  @override
+  String get tutChangeSummary =>
+      'Hoeden: verkoop en productie. Herzie de offerte, maak er een order van, bouw de karretjes en enkele extra voor voorraad.';
+
+  @override
+  String get tutChangeNeedsTitle => 'Eerst hoofdstuk 8';
+
+  @override
+  String get tutChangeNeedsBody =>
+      'Dit hoofdstuk heeft de verstuurde offerte uit hoofdstuk 8 nodig en vond ze niet. Rond eerst hoofdstuk 8 af.';
+
+  @override
+  String get tutChangeMail3Title => 'De klant antwoordt opnieuw';
+
+  @override
+  String get tutChangeMail3Body =>
+      'Maya is tevreden met de offerte maar wil 10 karretjes in plaats van 8. Gebruik de knop om haar e-mail te spelen; ze komt in hetzelfde ticket.';
+
+  @override
+  String get tutChangeMail3Action => 'Klant-e-mail simuleren';
+
+  @override
+  String get tutChangeOpenQuoteTitle => 'Open de verstuurde offerte';
+
+  @override
+  String get tutChangeOpenQuoteBody =>
+      'Een verstuurde offerte ligt vast, dus een wijziging betekent een nieuwe revisie. Open de offerte uit hoofdstuk 8.';
+
+  @override
+  String get tutChangeReviseTitle => 'Maak een revisie';
+
+  @override
+  String get tutChangeReviseBody =>
+      'Druk op Nieuwe revisie en kies Afgesproken prijzen behouden. De oude revisie wordt vervangen en een nieuw concept met hetzelfde nummer opent.';
+
+  @override
+  String get tutChangeReviseHint =>
+      'Bijwerken naar actuele prijzen zou herprijzen met de prijslijst van vandaag; hier behoudt de klant de afgesproken prijs.';
+
+  @override
+  String get tutChangeEditTitle => 'Wijzig het aantal';
+
+  @override
+  String get tutChangeEditBody =>
+      'Zet het aantal van TUT-CART op 10 en bewaar het concept.';
+
+  @override
+  String get tutChangeEditHint =>
+      'De notities van de eerste revisie zijn gekopieerd; pas ze aan als de levertijd verandert.';
+
+  @override
+  String get tutChangeSendTitle => 'Verstuur de revisie';
+
+  @override
+  String get tutChangeSendBody =>
+      'Markeer de nieuwe revisie als verzonden, zoals eerder.';
+
+  @override
+  String get tutChangeAcceptTitle => 'De klant gaat akkoord';
+
+  @override
+  String get tutChangeAcceptBody =>
+      'Maya gaat akkoord met de nieuwe revisie: druk op Aanvaard om dat vast te leggen.';
+
+  @override
+  String get tutChangeConvertTitle => 'Maak er een verkooporder van';
+
+  @override
+  String get tutChangeConvertBody =>
+      'Druk op Omzetten naar order. Uit de aanvaarde revisie ontstaat een conceptverkooporder die opent.';
+
+  @override
+  String get tutChangeConvertHint =>
+      'Het dialoogvenster vraagt de eigen referentie van de klant; typ bijvoorbeeld TUT-PO-1 of laat het leeg.';
+
+  @override
+  String get tutChangeOpenOrderTitle => 'De verkooporder';
+
+  @override
+  String get tutChangeOpenOrderBody =>
+      'Is de order niet vanzelf geopend, open hem dan via Orders. Hij heeft de 10 karretjes, de prijs en de klantreferentie. Orders gaan van concept naar verstuurd naar bevestigd.';
+
+  @override
+  String get tutChangeSendOrderTitle => 'Verstuur de orderbevestiging';
+
+  @override
+  String get tutChangeSendOrderBody =>
+      'Druk op Orderbevestiging verzenden. De order wordt verstuurd: de klant kan hem nu bevestigen.';
+
+  @override
+  String get tutChangeSendOrderHint =>
+      'Het bevestigingsdocument maken vraagt het zetprogramma van de server; ontbreekt dat, dan weigert de server deze stap en is een server met dat programma nodig om verder te gaan.';
+
+  @override
+  String get tutChangeConfirmTitle => 'Bevestig namens de klant';
+
+  @override
+  String get tutChangeConfirmBody =>
+      'Maya zei al ja per e-mail, dus druk op Bevestigen namens de klant en voeg een notitie toe zoals per e-mail bevestigd. De order is nu bevestigd en kan naar productie.';
+
+  @override
+  String get tutChangeReleaseTitle => 'Vrij te geven';
+
+  @override
+  String get tutChangeReleaseBody =>
+      'Zet de productiehoed op. Open Productie > Vrij te geven: de bevestigde orderregel met 10 karretjes wacht. Druk op Vrijgeven aan productie om de productieorder voor precies die regel te maken.';
+
+  @override
+  String get tutChangeStartTitle => 'Start de productie';
+
+  @override
+  String get tutChangeStartBody =>
+      'Druk op Starten bij de nieuwe productieorder.';
+
+  @override
+  String get tutChangeWarehouseTitle => 'Een plek voor de karretjes';
+
+  @override
+  String get tutChangeWarehouseBody =>
+      'De afgewerkte karretjes hebben een locatie nodig om in te komen, en er is nog geen magazijn (hoofdstuk 3 maakt het aan). Open Voorraad, druk op Magazijnen en maak het magazijn MAIN aan met de naam Hoofdmagazijn; ga daarna terug naar de productieorder. Wordt opslaan geweigerd omdat de code MAIN al bestaat, dan heeft een inactief magazijn hem: zet het (en zijn locatie) weer aan onder Voorraad > Magazijnen, of geef het met de bewerkknop een andere code, en druk daarna op Volgende.';
+
+  @override
+  String get tutChangeWarehouseHint =>
+      'De locatie MAIN wordt samen met het magazijn aangemaakt. Bestaat er al een magazijn met een locatie, dan wordt deze stap overgeslagen.';
+
+  @override
+  String get tutChangeCompleteTitle => 'Rond de productie af';
+
+  @override
+  String get tutChangeCompleteBody =>
+      'Druk op Afronden, kies de magazijnlocatie MAIN bij Opslaan in en bevestig de 10 karretjes. De componenten worden verbruikt en de karretjes gaan naar de order.';
+
+  @override
+  String get tutChangeReadyTitle => 'Klaar voor verzending';
+
+  @override
+  String get tutChangeReadyBody =>
+      'Open de order opnieuw: met alle regels geproduceerd is hij klaar voor verzending. Levering (picken, verzenden, de klant factureren) valt buiten deze tutorial. Druk op Volgende.';
+
+  @override
+  String get tutChangeStockTitle => 'Enkele extra voor voorraad';
+
+  @override
+  String get tutChangeStockBody =>
+      'Productie loopt vaak vooruit op orders. Open Productie, druk op Voor voorraad maken en geef nog 4 karretjes TUT-CART vrij. Zonder order komen ze bij voltooiing gewoon op voorraad.';
+
+  @override
+  String get tutChangeStockHint =>
+      'Je kunt die order starten en voltooien zoals in hoofdstuk 5, of hem vrijgegeven laten.';
+
+  @override
+  String get tutChangeDoneTitle => 'Goed gedaan: het hele verhaal';
+
+  @override
+  String get tutChangeDoneBody =>
+      'Je ging van leveranciers naar inkoop, facturen, productie, prijzen, een ticket, een nieuwe klant, een herziene offerte, een order en productie voor de order en voor voorraad. Wat nu: leveringen en verzending, herstellingen, buitendienst en rapporten hebben elk hun eigen menu-item. Elk hoofdstuk kan opnieuw gespeeld worden vanuit de hoofdstukkaart; stappen die al klaar zijn worden overgeslagen.';
+
+  @override
+  String get tutInvoicesOpenSecondTitle => 'Open de verdachte factuur';
+
+  @override
+  String get tutInvoicesOpenSecondBody =>
+      'Open factuur TUT-INV-002, die je net registreerde, vanuit de lijst in Financiën.';
+
+  @override
+  String get adminIdentityProviders => 'Identiteitsproviders';
+
+  @override
+  String get idpIntro =>
+      'Identiteitsproviders bepalen wie zich kan aanmelden bij TradoCraft. Mensen worden nog steeds in de ERP aangemaakt; de provider bewijst alleen wie iemand is.';
+
+  @override
+  String idpPrimaryCompany(String name) {
+    return 'Primair bedrijf: $name';
+  }
+
+  @override
+  String get idpPrimaryNote =>
+      'Alleen beheerders van het primaire bedrijf van de installatie kunnen deze instellingen wijzigen.';
+
+  @override
+  String get idpReadOnlyNotice =>
+      'Je bent geen beheerder van het primaire bedrijf van de installatie, dus deze instellingen zijn niet beschikbaar voor jou. Vraag het aan een beheerder van dat bedrijf.';
+
+  @override
+  String get idpAdd => 'Provider toevoegen';
+
+  @override
+  String get idpNone => 'Nog geen identiteitsproviders ingesteld.';
+
+  @override
+  String get idpEnabled => 'Actief';
+
+  @override
+  String get idpDisabled => 'Uitgeschakeld';
+
+  @override
+  String get idpSourceEnv => 'Serveromgeving';
+
+  @override
+  String get idpSourceDatabase => 'Opgeslagen in de app';
+
+  @override
+  String get idpEnvExplain =>
+      'Ingesteld door OIDC_ISSUER / OIDC_AUDIENCE van de server. Kan hier niet gewijzigd worden; blijft beschikbaar als noodoplossing.';
+
+  @override
+  String idpRuleVerified(String claim) {
+    return 'Koppelt mensen via e-mail als de claim $claim waar is';
+  }
+
+  @override
+  String get idpRuleTrust =>
+      'Koppelt mensen via e-mail en vertrouwt het adres van de provider';
+
+  @override
+  String get idpRuleSubject =>
+      'Alleen bestaande subjects: geen koppeling via e-mail';
+
+  @override
+  String idpRuleDomains(String domains) {
+    return 'alleen voor $domains';
+  }
+
+  @override
+  String get idpAddTitle => 'Identiteitsprovider toevoegen';
+
+  @override
+  String get idpEditTitle => 'Identiteitsprovider bewerken';
+
+  @override
+  String get idpPreset => 'Begin met';
+
+  @override
+  String get idpPresetEntra => 'Microsoft Entra ID';
+
+  @override
+  String get idpPresetGoogle => 'Google';
+
+  @override
+  String get idpPresetGeneric => 'Generieke OpenID Connect';
+
+  @override
+  String get idpTenantId => 'Tenant-id (directory-id)';
+
+  @override
+  String get idpAudienceEntraHint =>
+      'De toepassings-id (client-id) van je Entra-appregistratie';
+
+  @override
+  String get idpFieldName => 'Naam';
+
+  @override
+  String get idpFieldIssuer => 'Issuer-URL';
+
+  @override
+  String get idpFieldAudience => 'Audience';
+
+  @override
+  String get idpFieldClientId => 'Client-id (publieke client, geen secret)';
+
+  @override
+  String get idpFieldScopes => 'Scopes';
+
+  @override
+  String get idpFieldTokenUse =>
+      'Te verzenden token (nog niet gebruikt voor aanmelden)';
+
+  @override
+  String get idpTokenUseIdTitle => 'ID-token';
+
+  @override
+  String get idpTokenUseIdBody =>
+      'Standaard. Werkt met Keycloak en de meeste OpenID Connect-providers: de audience is de client-id.';
+
+  @override
+  String get idpTokenUseAccessTitle => 'Toegangstoken';
+
+  @override
+  String get idpTokenUseAccessBody =>
+      'Voor Microsoft Entra ID: het toegangstoken van de eigen API (scope api://<client-id>/access_as_user).';
+
+  @override
+  String get idpFieldEmailClaim => 'E-mailclaim';
+
+  @override
+  String get idpFieldVerifiedClaim => 'Verificatieclaim';
+
+  @override
+  String get idpFieldDomains => 'Toegelaten e-maildomeinen';
+
+  @override
+  String get idpDomainsHint =>
+      'Typ een domein en druk op Enter, bijvoorbeeld example.com';
+
+  @override
+  String get idpAdvanced => 'Geavanceerd';
+
+  @override
+  String get idpAlgorithms => 'Aanvaarde handtekeningalgoritmes';
+
+  @override
+  String get idpEmailRuleTitle =>
+      'Hoe mag een e-mailadres gebruikt worden om iemand te koppelen?';
+
+  @override
+  String get idpRuleVerifiedTitle =>
+      'Een geverifieerde claim eisen (aanbevolen)';
+
+  @override
+  String get idpRuleVerifiedBody =>
+      'De eerste aanmelding wordt pas gekoppeld aan de ERP-gebruiker met hetzelfde e-mailadres als het token een claim bevat, zoals email_verified, die zegt dat de provider dat adres gecontroleerd heeft. Risico: controleert de provider adressen niet echt, dan is de claim waardeloos en kan een vreemde een gebruiker overnemen.';
+
+  @override
+  String get idpRuleTrustTitle => 'Het e-mailadres van de provider vertrouwen';
+
+  @override
+  String get idpRuleTrustBody =>
+      'Het adres in het token wordt aanvaard zonder verificatieclaim. Gebruik dit alleen voor een directory waar je bedrijf elk adres beheert, zoals één Entra-tenant, en voeg toegelaten domeinen toe. Risico: kunnen mensen hun adres zelf instellen bij de provider, dan kunnen ze zich als eender welke gebruiker aanmelden.';
+
+  @override
+  String get idpRuleSubjectTitle => 'Alleen bestaande subjects';
+
+  @override
+  String get idpRuleSubjectBody =>
+      'Niemand wordt via e-mail gekoppeld. Een beheerder koppelt elke gebruiker aan een identiteit bij de provider (Gebruikers, Identiteit koppelen). Het veiligst, maar meer werk.';
+
+  @override
+  String get idpEntraAdvice =>
+      'Entra ID: vertrouw ofwel het e-mailadres van de provider en geef je toegelaten domeinen op (een tenant bevat enkel je eigen mensen), of eis de claim xms_edov, die Entra alleen meestuurt als je hem als optionele claim in de appregistratie toevoegt.';
+
+  @override
+  String get idpErrName => 'Een naam is verplicht.';
+
+  @override
+  String get idpErrIssuer => 'De issuer moet een https://-URL zijn.';
+
+  @override
+  String get idpErrAudience => 'De audience is verplicht.';
+
+  @override
+  String idpErrDomain(String domain) {
+    return '$domain lijkt geen domein.';
+  }
+
+  @override
+  String get idpErrAlgorithms => 'Kies minstens één algoritme.';
+
+  @override
+  String idpSaveRefused(String reason) {
+    return 'De server weigerde deze instellingen: $reason';
+  }
+
+  @override
+  String get idpSaved => 'Identiteitsprovider opgeslagen';
+
+  @override
+  String get idpDeleted => 'Identiteitsprovider verwijderd';
+
+  @override
+  String idpDeleteConfirm(String name) {
+    return 'Identiteitsprovider $name verwijderen? Mensen die er via aanmelden kunnen dat dan niet meer.';
+  }
+
+  @override
+  String get idpLockoutTitle => 'Dit kan mensen buitensluiten';
+
+  @override
+  String get idpLockoutLast =>
+      'Dit is de laatste actieve identiteitsprovider en de server heeft geen OIDC_ISSUER-noodoplossing. Als je doorgaat, kan niemand zich aanmelden tot de serverconfiguratie hersteld is.';
+
+  @override
+  String get idpLockoutOwn =>
+      'Je bent via deze provider aangemeld. Als je doorgaat, word je afgemeld en kun je pas opnieuw aanmelden als een andere provider je aanvaardt.';
+
+  @override
+  String get idpLockoutContinue => 'Toch doorgaan';
+
+  @override
+  String get idpTest => 'Testen';
+
+  @override
+  String get idpTestSampleToken => 'Voorbeeldtoken (optioneel)';
+
+  @override
+  String get idpTestSampleHint =>
+      'Plak een toegangstoken van iemand bij deze provider om te zien hoe het behandeld zou worden.';
+
+  @override
+  String get idpTestNothing =>
+      'Testen leest alleen de provider en controleert het token. Er wordt niets gekoppeld of opgeslagen.';
+
+  @override
+  String idpTestFailed(String error) {
+    return 'De provider kon niet gelezen worden: $error';
+  }
+
+  @override
+  String get idpTestDiscovery => 'Discovery-document bereikbaar';
+
+  @override
+  String get idpTestIssuerMatch =>
+      'Issuer komt overeen met het discovery-document';
+
+  @override
+  String idpTestKeys(int count, String algorithms) {
+    return '$count ondertekeningssleutels, algoritmes: $algorithms';
+  }
+
+  @override
+  String idpTestClaims(String claims) {
+    return 'Claims die de provider zegt te ondersteunen: $claims';
+  }
+
+  @override
+  String get idpTestToken => 'Voorbeeldtoken';
+
+  @override
+  String get idpTestSignature => 'Handtekening';
+
+  @override
+  String get idpTestAudience => 'Audience';
+
+  @override
+  String get idpTestExpiry => 'Niet verlopen';
+
+  @override
+  String get idpTestOk => 'OK';
+
+  @override
+  String get idpTestNotOk => 'Mislukt';
+
+  @override
+  String idpTestEmail(String email) {
+    return 'Gevonden e-mailadres: $email';
+  }
+
+  @override
+  String get idpTestNoEmail => 'Geen e-mailadres gevonden in het token';
+
+  @override
+  String get idpTestVerified =>
+      'De provider markeert het adres als geverifieerd';
+
+  @override
+  String get idpTestNotVerified =>
+      'Het adres is niet als geverifieerd gemarkeerd';
+
+  @override
+  String idpBindWould(String email) {
+    return 'Zou aanmelden als $email';
+  }
+
+  @override
+  String idpBindExisting(String email) {
+    return 'Al gekoppeld aan $email';
+  }
+
+  @override
+  String idpBindRefused(String reason) {
+    return 'Zou geweigerd worden: $reason';
+  }
+
+  @override
+  String get idpLinkIdentity => 'Identiteit koppelen';
+
+  @override
+  String idpLinkTitle(String name) {
+    return 'Identiteit koppelen van $name';
+  }
+
+  @override
+  String get idpLinkExplain =>
+      'Alleen nodig voor providers met de regel \'Alleen bestaande subjects\'. Kies de provider en geef het subject (de sub-claim) van deze persoon daar op. Laat leeg om de koppeling te verwijderen.';
+
+  @override
+  String get idpLinkProvider => 'Provider';
+
+  @override
+  String get idpLinkSubject => 'Subject (sub)';
+
+  @override
+  String get idpLinkNoProviders =>
+      'Er zijn nog geen identiteitsproviders in de app opgeslagen.';
+
+  @override
+  String get idpLinkSaved => 'Identiteitskoppeling opgeslagen';
+
+  @override
+  String get idpLinkCleared => 'Identiteitskoppeling verwijderd';
+
+  @override
+  String tutActionFailed(String reason) {
+    return 'Het gesimuleerde e-mailbericht kon niet verstuurd worden: $reason. Probeer het opnieuw.';
+  }
+
+  @override
+  String get tutActionForbidden =>
+      'Je mag geen e-mail in de helpdesk importeren (daarvoor is het schrijfrecht voor de helpdesk nodig). Vraag het aan een beheerder of meld je als beheerder aan en probeer opnieuw.';
+
+  @override
+  String workerDownBanner(String since) {
+    return 'De achtergrondverwerking draait niet meer sinds $since: e-mail wordt niet verstuurd of opgehaald en SLA-overschrijdingen worden niet geëscaleerd.';
+  }
+
+  @override
+  String get workerNeverSeenBanner =>
+      'De achtergrondverwerking heeft nog nooit gedraaid: e-mail wordt niet verstuurd of opgehaald en SLA-overschrijdingen worden niet geëscaleerd.';
+
+  @override
+  String get workerBannerSemantics => 'Achtergrondverwerking';
+
+  @override
+  String get vatLookup => 'Opzoeken in VIES';
+
+  @override
+  String get vatValid =>
+      'De notatie en de controlecijfers kloppen. Dat bewijst niet dat het nummer geregistreerd is.';
+
+  @override
+  String get vatFormatOk =>
+      'De notatie klopt. De controlecijfers van dit land worden hier niet gecontroleerd.';
+
+  @override
+  String get vatBadFormat =>
+      'Dit heeft niet de vorm van een btw-nummer van dit land.';
+
+  @override
+  String get vatBadChecksum =>
+      'De controlecijfers kloppen niet: controleer op een tikfout.';
+
+  @override
+  String get vatNotChecked => 'Geen EU-btw-nummer, dus niet gecontroleerd.';
+
+  @override
+  String vatDuplicates(String records) {
+    return 'Ook in gebruik bij: $records';
+  }
+
+  @override
+  String vatInactive(String record) {
+    return '$record (inactief)';
+  }
+
+  @override
+  String get viesValid => 'Geregistreerd en actief in VIES.';
+
+  @override
+  String get viesInvalid => 'VIES kent dit nummer niet.';
+
+  @override
+  String viesUnavailable(String reason) {
+    return 'VIES kon niet antwoorden ($reason). Vul de gegevens zelf in.';
+  }
+
+  @override
+  String get viesDisabled => 'De VIES-opzoeking staat uit op deze server.';
+
+  @override
+  String get viesFilled => 'Lege velden ingevuld vanuit VIES.';
+
+  @override
+  String get viesNoDetails => 'De lidstaat maakt geen naam of adres bekend.';
+
+  @override
+  String get adminAuditTrail => 'Auditlog';
+
+  @override
+  String get auditRecordType => 'Soort gegeven';
+
+  @override
+  String get auditAllRecords => 'Alle';
+
+  @override
+  String get auditAction => 'Actie';
+
+  @override
+  String get auditFrom => 'Van';
+
+  @override
+  String get auditTo => 'Tot';
+
+  @override
+  String get auditClearDates => 'Datumfilter wissen';
+
+  @override
+  String get auditSystem => 'Systeem';
+
+  @override
+  String get auditNoEvents => 'Geen gebeurtenissen gevonden.';
+
+  @override
+  String get auditLoadMore => 'Oudere gebeurtenissen laden';
+
+  @override
+  String get auditHistory => 'Geschiedenis';
+
+  @override
+  String auditHistoryTitle(String name) {
+    return 'Geschiedenis van $name';
+  }
+
+  @override
+  String get auditNoDetails => 'Er zijn geen details vastgelegd.';
+
+  @override
+  String get mailboxes => 'Mailboxen';
+
+  @override
+  String get newMailbox => 'Nieuwe mailbox';
+
+  @override
+  String get mailboxesEmpty =>
+      'Nog geen mailboxen. E-mail wordt opgehaald en verstuurd met de instellingen van de achtergrondverwerking.';
+
+  @override
+  String get mailboxRefresh => 'Status vernieuwen';
+
+  @override
+  String get mailboxAddress => 'E-mailadres';
+
+  @override
+  String get mailboxKind => 'Verbinding';
+
+  @override
+  String get mailboxKindGraph => 'Microsoft 365 (Exchange Online)';
+
+  @override
+  String get mailboxKindImap => 'IMAP en SMTP';
+
+  @override
+  String get mailboxTenantId => 'Tenant-ID';
+
+  @override
+  String get mailboxClientId => 'Toepassings-ID (client)';
+
+  @override
+  String get mailboxUsername => 'Gebruikersnaam';
+
+  @override
+  String get mailboxImapHost => 'IMAP-server';
+
+  @override
+  String get mailboxImapPort => 'IMAP-poort';
+
+  @override
+  String get mailboxImapFolder => 'Map';
+
+  @override
+  String get mailboxImapTls => 'Versleutelde IMAP-verbinding (TLS)';
+
+  @override
+  String get mailboxSmtpHost => 'SMTP-server';
+
+  @override
+  String get mailboxSmtpPort => 'SMTP-poort';
+
+  @override
+  String get mailboxSmtpSecurity => 'SMTP-versleuteling';
+
+  @override
+  String get mailboxSmtpNone => 'Geen';
+
+  @override
+  String get mailboxSecretRef => 'Naam van het geheim';
+
+  @override
+  String mailboxSecretHelp(String variable) {
+    return 'Het wachtwoord of clientgeheim wordt hier niet bewaard. Stel het op de server in als de variabele $variable van de achtergrondverwerking.';
+  }
+
+  @override
+  String get mailboxTeam => 'Team voor nieuwe tickets';
+
+  @override
+  String get mailboxTeamDefault => 'Het standaardteam';
+
+  @override
+  String get mailboxInbound => 'Inkomende e-mail ophalen';
+
+  @override
+  String get mailboxDefault =>
+      'Standaardmailbox: voor systeemmail en tickets zonder mailbox';
+
+  @override
+  String get mailboxDefaultBadge => 'standaard';
+
+  @override
+  String get mailboxSendOnly => 'Verstuurt alleen';
+
+  @override
+  String get mailboxNeverPolled => 'Nog geen e-mail opgehaald';
+
+  @override
+  String mailboxLastOk(String when) {
+    return 'E-mail laatst opgehaald op $when';
+  }
+
+  @override
+  String mailboxError(String error) {
+    return 'Probleem bij het ophalen van e-mail: $error';
+  }
+
+  @override
+  String mailboxDeleteConfirm(String name) {
+    return 'De mailbox $name verwijderen? De tickets blijven bestaan. Antwoorden daarop vertrekken dan via de standaardmailbox.';
+  }
+
+  @override
+  String get productionWorkCentres => 'Werkplekken';
+
+  @override
+  String get productionWorkCentreAdd => 'Werkplek toevoegen';
+
+  @override
+  String get productionWorkCentreEdit => 'Werkplek bewerken';
+
+  @override
+  String get productionWorkCentreCapacity =>
+      'Capaciteit (eenheden tegelijk aan het werk)';
+
+  @override
+  String get productionWorkCentreCost => 'Kost per uur';
+
+  @override
+  String productionWorkCentreOpenOps(String count) {
+    return '$count openstaande bewerkingen';
+  }
+
+  @override
+  String get productionWorkCentreEmpty =>
+      'Nog geen werkplekken. Voeg de machines en werkbanken toe waarop uw bewerkingen draaien.';
+
+  @override
+  String get productionWorkingHours => 'Werkuren';
+
+  @override
+  String get productionHoursDefault =>
+      'Geen eigen uren: maandag tot vrijdag 08:00–12:00 en 13:00–17:00.';
+
+  @override
+  String get productionHoursAddBlock => 'Blok toevoegen';
+
+  @override
+  String get productionClosures => 'Sluitingen';
+
+  @override
+  String get productionClosureAdd => 'Sluiting toevoegen';
+
+  @override
+  String get productionClosureWholePlant => 'Hele bedrijf';
+
+  @override
+  String get productionClosureKind => 'Soort';
+
+  @override
+  String get productionClosureMaintenance => 'Onderhoud';
+
+  @override
+  String get productionClosureHoliday => 'Feestdag';
+
+  @override
+  String get productionClosureOther => 'Andere';
+
+  @override
+  String get productionClosureEmpty => 'Geen sluitingen.';
+
+  @override
+  String get productionCapacity => 'Capaciteit';
+
+  @override
+  String get productionCapacityLegend =>
+      'Belasting door de openstaande bewerkingen tegenover wat elke werkplek kan werken. Rood: overbelast.';
+
+  @override
+  String get productionCapacityOverloaded => 'Overbelast';
+
+  @override
+  String get productionCapacityEmpty => 'Geen werkplekken om te tonen.';
+
+  @override
+  String get productionCapacityEarlier => 'Eerder';
+
+  @override
+  String get productionCapacityLater => 'Later';
+
+  @override
+  String get productionCapacityToday => 'Vandaag';
+
+  @override
+  String productionWorkCentreUnits(String count) {
+    return '$count eenheden';
+  }
+
+  @override
+  String get productionOperations => 'Bewerkingen';
+
+  @override
+  String get productionOperationPending => 'Niet gestart';
+
+  @override
+  String get productionOperationDone => 'Klaar';
+
+  @override
+  String get productionOperationSkipped => 'Overgeslagen';
+
+  @override
+  String get productionOperationStart => 'Bewerking starten';
+
+  @override
+  String get productionOperationFinish => 'Bewerking afronden';
+
+  @override
+  String get productionOperationReopen => 'Bewerking heropenen';
+
+  @override
+  String get productionOperationMove => 'Bewerking verplaatsen';
+
+  @override
+  String get productionOperationMinutes => 'Gewerkte minuten';
+
+  @override
+  String get productionOperationPlanned => 'Gepland';
+
+  @override
+  String get productionOperationWorked => 'Gewerkt';
+
+  @override
+  String productionOperationBy(String name) {
+    return 'door $name';
+  }
+
+  @override
+  String get productionScheduleAgain => 'Opnieuw inplannen';
+
+  @override
+  String get productionStartFrom => 'Starten vanaf';
+
+  @override
+  String productionBehindSchedule(String date) {
+    return 'Achter op schema: de laatste bewerking is gepland op $date, na de geplande klaar-datum.';
+  }
+
+  @override
+  String get productionBehindScheduleShort => 'Achter op schema';
+
+  @override
+  String productionUseScheduledEnd(String date) {
+    return '$date als geplande klaar-datum nemen';
+  }
+
+  @override
+  String get productionRemark => 'Opmerking voor productie (intern)';
+
+  @override
+  String get productionSubOrders => 'Orders voor onderdelen';
+
+  @override
+  String productionSubassemblyOf(String number) {
+    return 'Onderdeel van $number';
+  }
+
+  @override
+  String get productionCost => 'Kost';
+
+  @override
+  String get productionCostPlanned => 'Gepland';
+
+  @override
+  String get productionCostActual => 'Werkelijk';
+
+  @override
+  String get productionCostMaterial => 'Materiaal';
+
+  @override
+  String get productionCostLabour => 'Arbeid';
+
+  @override
+  String get productionCostIncomplete =>
+      'Sommige kosten ontbreken en zijn weggelaten.';
+
+  @override
+  String productionOperationsOpenWarning(String count) {
+    return '$count bewerkingen staan nog open. Vul de gewerkte minuten in om ze af te ronden; laat het veld leeg om er een over te slaan.';
+  }
+
+  @override
+  String get productionAutoRelease =>
+      'Ook de onderdelen vrijgeven die niet uit voorraad komen';
+
+  @override
+  String get productionRouting => 'Routing';
+
+  @override
+  String get productionRoutingNone =>
+      'Geen routing: productieorders voor dit product hebben geen bewerkingen.';
+
+  @override
+  String get productionRoutingAddOperation => 'Bewerking toevoegen';
+
+  @override
+  String get productionRoutingOperation => 'Bewerking';
+
+  @override
+  String get productionRoutingSetup => 'Opstellen (min)';
+
+  @override
+  String get productionRoutingRun => 'Looptijd per eenheid (min)';
+
+  @override
+  String get productionRoutingNoWorkCentres =>
+      'Voeg eerst werkplekken toe (Productie, werkplekken).';
+
+  @override
+  String get productionCostRollup => 'Kostprijsberekening';
+
+  @override
+  String get productionCostRollupHint =>
+      'Materiaal tegen standaardkost en arbeid tegen de kost per uur van de werkplekken, over alle niveaus.';
+
+  @override
+  String get productionCostPerUnit => 'Kost per eenheid';
+
+  @override
+  String productionCostGapProduct(String code) {
+    return 'Geen standaardkost: $code';
+  }
+
+  @override
+  String productionCostGapWorkCentre(String code) {
+    return 'Geen kost per uur: $code';
+  }
+
+  @override
+  String get productionCostCalculate => 'Berekenen';
+
+  @override
+  String get productionOperationMinutesInvalid =>
+      'Geef de minuten als een geheel getal op.';
+
+  @override
+  String get productionRoutingLoadFailed =>
+      'De routing kon niet worden geladen en kan nu niet worden gewijzigd.';
+
+  @override
+  String get productionRoutingChangedWhileSaving =>
+      'De routing is gewijzigd terwijl ze werd opgeslagen. Sla opnieuw op om de laatste wijzigingen mee te nemen.';
+
+  @override
+  String get shortcutBack => 'Terug';
+
+  @override
+  String get shortcutCreate => 'Aanmaken';
+
+  @override
+  String get shortcutHome => 'Startpagina';
+
+  @override
+  String get shortcutDiscard => 'Wijzigingen verwerpen';
+
+  @override
+  String get shortcutSave => 'Opslaan';
+
+  @override
+  String get shortcutNextPage => 'Meer laden';
+
+  @override
+  String get shortcutSearch => 'Zoeken';
+
+  @override
+  String get shortcutNewTodo => 'Nieuwe taak';
+
+  @override
+  String get shortcutKbSearch => 'Artikelen zoeken';
+
+  @override
+  String get shortcutKbShare => 'Artikel delen';
+
+  @override
+  String get shortcutPalette => 'Opdrachtenpalet';
+
+  @override
+  String get shortcutHelp => 'Sneltoetsen';
+
+  @override
+  String shortcutMenuItem(int n) {
+    return 'Menu-item $n';
+  }
+
+  @override
+  String shortcutHint(String keys) {
+    return 'Sneltoets: $keys';
+  }
+
+  @override
+  String get moduleTodo => 'Taken';
+
+  @override
+  String get todoTitle => 'Taken';
+
+  @override
+  String get todoAdd => 'Taak toevoegen';
+
+  @override
+  String get todoAddSub => 'Subtaak toevoegen';
+
+  @override
+  String get todoWhat => 'Wat moet er gebeuren?';
+
+  @override
+  String get todoNotes => 'Notities';
+
+  @override
+  String get todoDueDate => 'Vervaldatum';
+
+  @override
+  String get todoSetDue => 'Vervaldatum instellen';
+
+  @override
+  String get todoClearDue => 'Vervaldatum wissen';
+
+  @override
+  String todoDue(String date) {
+    return 'Vervalt $date';
+  }
+
+  @override
+  String get todoOverdue => 'Te laat';
+
+  @override
+  String get todoFilterOpen => 'Open';
+
+  @override
+  String get todoFilterDone => 'Afgerond';
+
+  @override
+  String get todoFilterAll => 'Alle';
+
+  @override
+  String get todoEmpty => 'Niets te doen. Voeg je eerste taak toe.';
+
+  @override
+  String get todoEmptyDone => 'Geen afgeronde taken.';
+
+  @override
+  String get todoComplete => 'Als afgerond markeren';
+
+  @override
+  String get todoReopen => 'Heropenen';
+
+  @override
+  String todoDeleteConfirm(String title) {
+    return '\"$title\" verwijderen? De subtaken worden ook verwijderd.';
+  }
+
+  @override
+  String get todoCompleteAllTitle => 'Ook de subtaken afronden?';
+
+  @override
+  String todoCompleteAllBody(String title) {
+    return '\"$title\" heeft nog open subtaken. Afronden rondt ze ook af.';
+  }
+
+  @override
+  String get todoCompleteAll => 'Alles afronden';
+
+  @override
+  String get todoLinkedItem => 'Gekoppeld item';
+
+  @override
+  String todoFromOwner(String name) {
+    return 'Van $name';
+  }
+
+  @override
+  String todoSubProgress(int done, int total) {
+    return '$done van $total subtaken afgerond';
+  }
+
+  @override
+  String get todoReorder => 'Slepen om te ordenen';
+
+  @override
+  String get changeProduct => 'Product wijzigen';
+
+  @override
+  String changeProductOf(String product) {
+    return 'Nieuw hoofdproduct voor $product';
+  }
+
+  @override
+  String get changeProductNew => 'Nieuw product';
+
+  @override
+  String changeProductNetNote(String product) {
+    return '$product heeft een nettoprijs: de regelkorting is gewist.';
+  }
+
+  @override
+  String changeProductIndicativeNote(String product) {
+    return '$product heeft een indicatieve prijs: bevestig de prijs voor het verzenden.';
+  }
+
+  @override
+  String optionsNotApplicable(int count, String product) {
+    return '$count optie(s) gelden niet voor $product: verwijder ze.';
+  }
+
+  @override
+  String removeNamedLine(String code) {
+    return '$code verwijderen';
+  }
+
+  @override
+  String optionNotOffered(String product) {
+    return 'Niet aangeboden bij $product';
+  }
+
+  @override
+  String sentWithNotApplicable(int count) {
+    return 'Verzonden met $count optie(s) die niet bij hun hoofdproduct horen.';
+  }
+
+  @override
+  String get tabCustomer => 'Klant';
+
+  @override
+  String get todoAdded => 'Taak toegevoegd';
+
+  @override
+  String get todoLinkToScreen => 'Koppelen aan huidig scherm';
+
+  @override
+  String get todoLinkNotAvailable =>
+      'Dit scherm heeft geen record om aan te koppelen.';
+
+  @override
+  String get todoOpenLink => 'Gekoppeld record openen';
+
+  @override
+  String get todoRemoveLink => 'Koppeling uit mijn taken verwijderen';
+
+  @override
+  String get recordNotFound =>
+      'Dit record is niet gevonden. Het is misschien verwijderd, of je hebt er geen toegang toe.';
+
+  @override
+  String get todoForObject => 'Taken voor dit record';
+
+  @override
+  String todoForObjectCount(int count) {
+    return 'Taken voor dit record ($count open)';
+  }
+
+  @override
+  String get todoForObjectEmpty => 'Geen openstaande taken voor dit record.';
+
+  @override
+  String get todoEmailReminders => 'E-mailherinneringen';
 }

@@ -1140,3 +1140,312 @@ fn the_production_request_bodies_are_in_the_api_contract() {
         "{body}"
     );
 }
+
+/// The user id of a test user, by e-mail.
+async fn user_id(db: &PgPool, email: &str) -> String {
+    sqlx::query_scalar::<_, Uuid>("SELECT id FROM core.users WHERE email = $1")
+        .bind(email)
+        .fetch_one(db)
+        .await
+        .unwrap()
+        .to_string()
+}
+
+fn member_ids(division: &Value) -> Vec<String> {
+    division["members"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|m| m["user_id"].as_str().unwrap().to_string())
+        .collect()
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn division_members_replace_all_and_report_membership_per_caller(db: PgPool) {
+    let e = env(db).await;
+    let planner = user_id(&e.db, PLANNER).await;
+    let stores = user_id(&e.db, STORES).await;
+    let admin = user_id(&e.db, ADMIN).await;
+
+    // Created with members; the response lists them and tells each caller whether they are in it.
+    let (status, elec) = post(
+        &e.app,
+        ADMIN,
+        "/production/divisions",
+        json!({ "code": "ELEC", "name": "Electronics", "member_user_ids": [planner, stores, planner] }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{elec}");
+    assert_eq!(member_ids(&elec).len(), 2, "duplicates collapse");
+    assert_eq!(elec["is_member"], false, "the admin is not in it");
+    // A user can be in several divisions.
+    let (_, mech) = post(
+        &e.app,
+        ADMIN,
+        "/production/divisions",
+        json!({ "code": "MECH", "name": "Mechanics", "sort_order": 1, "member_user_ids": [planner, admin] }),
+    )
+    .await;
+    let (_, list) = get(&e.app, PLANNER, "/production/divisions").await;
+    assert_eq!(list[0]["is_member"], true);
+    assert_eq!(list[1]["is_member"], true);
+    let (_, list) = get(&e.app, STORES, "/production/divisions").await;
+    assert_eq!(list[0]["is_member"], true);
+    assert_eq!(list[1]["is_member"], false);
+    let (_, list) = get(&e.app, SALES, "/production/divisions").await;
+    assert!(list
+        .as_array()
+        .unwrap()
+        .iter()
+        .all(|d| d["is_member"] == false));
+
+    // A field left out keeps the members; a list replaces all of them; an empty list clears them.
+    let uri = format!("/production/divisions/{}", id(&elec));
+    let (status, same) = put(
+        &e.app,
+        ADMIN,
+        &uri,
+        json!({ "code": "ELEC", "name": "Electronics and control" }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{same}");
+    assert_eq!(member_ids(&same).len(), 2);
+    let (_, replaced) = put(
+        &e.app,
+        ADMIN,
+        &uri,
+        json!({ "code": "ELEC", "name": "Electronics", "member_user_ids": [stores] }),
+    )
+    .await;
+    assert_eq!(member_ids(&replaced), vec![stores.clone()]);
+    let (_, still) = get(&e.app, ADMIN, "/production/divisions").await;
+    assert_eq!(
+        member_ids(&still[1]).len(),
+        2,
+        "the other division is untouched"
+    );
+    assert_eq!(id(&still[1]), id(&mech));
+    let (_, cleared) = put(
+        &e.app,
+        ADMIN,
+        &uri,
+        json!({ "code": "ELEC", "name": "Electronics", "member_user_ids": [] }),
+    )
+    .await;
+    assert!(member_ids(&cleared).is_empty());
+
+    // Member changes are audited.
+    let audited: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM audit.events WHERE entity = 'production_division' AND action = 'updated'
+         AND jsonb_typeof(data->'member_user_ids') = 'array'",
+    )
+    .fetch_one(&e.db)
+    .await
+    .unwrap();
+    assert_eq!(audited, 2);
+
+    // Only the administrator changes members.
+    for user in [PLANNER, SALES, MANAGER] {
+        let (status, _) = put(
+            &e.app,
+            user,
+            &uri,
+            json!({ "code": "ELEC", "name": "Electronics", "member_user_ids": [planner] }),
+        )
+        .await;
+        assert_eq!(status, StatusCode::FORBIDDEN, "{user}");
+    }
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn division_members_must_be_active_colleagues_of_the_company(db: PgPool) {
+    let e = env(db).await;
+    let planner = user_id(&e.db, PLANNER).await;
+    // A user of another company only, and an inactive user.
+    let other_company = Uuid::now_v7();
+    sqlx::query("INSERT INTO core.companies (id, name) VALUES ($1, 'Other')")
+        .bind(other_company)
+        .execute(&e.db)
+        .await
+        .unwrap();
+    let foreign = Uuid::now_v7();
+    sqlx::query("INSERT INTO core.users (id, email, display_name) VALUES ($1, 'foreign@example.com', 'Foreign')")
+        .bind(foreign)
+        .execute(&e.db)
+        .await
+        .unwrap();
+    sqlx::query("INSERT INTO core.user_companies (user_id, company_id, roles, is_default) VALUES ($1, $2, $3, true)")
+        .bind(foreign)
+        .bind(other_company)
+        .bind(vec!["admin".to_string()])
+        .execute(&e.db)
+        .await
+        .unwrap();
+    let gone = user_id(&e.db, STORES).await;
+    sqlx::query("UPDATE core.users SET active = false WHERE id = $1::uuid")
+        .bind(&gone)
+        .execute(&e.db)
+        .await
+        .unwrap();
+
+    for bad in [foreign.to_string(), gone, Uuid::now_v7().to_string()] {
+        let (status, body) = post(
+            &e.app,
+            ADMIN,
+            "/production/divisions",
+            json!({ "code": "X", "name": "X", "member_user_ids": [planner, bad] }),
+        )
+        .await;
+        assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{body}");
+    }
+    // Nothing was created by the refused requests.
+    let (_, list) = get(&e.app, ADMIN, "/production/divisions").await;
+    assert!(list.as_array().unwrap().is_empty());
+
+    // The other company sees none of this company's divisions or members.
+    let (_, weld) = post(
+        &e.app,
+        ADMIN,
+        "/production/divisions",
+        json!({ "code": "WELD", "name": "Welding", "member_user_ids": [planner] }),
+    )
+    .await;
+    let (status, theirs) = get(&e.app, "foreign@example.com", "/production/divisions").await;
+    assert_eq!(status, StatusCode::OK, "{theirs}");
+    assert!(theirs.as_array().unwrap().is_empty());
+    let (status, _) = put(
+        &e.app,
+        "foreign@example.com",
+        &format!("/production/divisions/{}", id(&weld)),
+        json!({ "code": "WELD", "name": "Welding", "member_user_ids": [foreign.to_string()] }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    // The database refuses a membership across companies too.
+    let cross = sqlx::query(
+        "INSERT INTO production.division_members (company_id, division_id, user_id) VALUES ($1, $2::uuid, $3)",
+    )
+    .bind(other_company)
+    .bind(id(&weld))
+    .bind(foreign)
+    .execute(&e.db)
+    .await;
+    assert!(cross.is_err());
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn mine_filter_returns_own_divisions_and_unassigned_orders(db: PgPool) {
+    let e = env(db).await;
+    e.stock(PROFILE, "60").await;
+    e.stock(BOLT, "300").await;
+    let planner = user_id(&e.db, PLANNER).await;
+    let (_, elec) = post(
+        &e.app,
+        ADMIN,
+        "/production/divisions",
+        json!({ "code": "ELEC", "name": "Electronics", "member_user_ids": [planner] }),
+    )
+    .await;
+    let (_, mech) = post(
+        &e.app,
+        ADMIN,
+        "/production/divisions",
+        json!({ "code": "MECH", "name": "Mechanics", "member_user_ids": [planner] }),
+    )
+    .await;
+    let (_, weld) = post(
+        &e.app,
+        ADMIN,
+        "/production/divisions",
+        json!({ "code": "WELD", "name": "Welding" }),
+    )
+    .await;
+    for d in [Some(id(&elec)), Some(id(&mech)), Some(id(&weld)), None] {
+        let (status, po) = post(
+            &e.app,
+            ADMIN,
+            "/production-orders",
+            json!({ "product_id": FRAME, "quantity": "1", "division_id": d }),
+        )
+        .await;
+        assert_eq!(status, StatusCode::CREATED, "{po}");
+    }
+    let names = |q: &Value| -> Vec<String> {
+        let mut v: Vec<String> = q["items"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|i| i["division_name"].as_str().unwrap_or("-").to_string())
+            .collect();
+        v.sort();
+        v
+    };
+    let (_, all) = get(&e.app, PLANNER, "/production-orders").await;
+    assert_eq!(all["total"], 4);
+    let (_, all) = get(&e.app, PLANNER, "/production-orders?mine=false").await;
+    assert_eq!(all["total"], 4);
+    // Own divisions plus unassigned; the other division's order is left out.
+    let (status, mine) = get(&e.app, PLANNER, "/production-orders?mine=true").await;
+    assert_eq!(status, StatusCode::OK, "{mine}");
+    assert_eq!(mine["total"], 3);
+    assert_eq!(names(&mine), vec!["-", "Electronics", "Mechanics"]);
+    // It combines with the division filter.
+    let (_, one) = get(
+        &e.app,
+        PLANNER,
+        &format!("/production-orders?mine=true&division_id={}", id(&mech)),
+    )
+    .await;
+    assert_eq!(names(&one), vec!["Mechanics"]);
+    let (_, none) = get(
+        &e.app,
+        PLANNER,
+        &format!("/production-orders?mine=true&division_id={}", id(&weld)),
+    )
+    .await;
+    assert_eq!(none["total"], 0);
+    // Someone with no division sees only the unassigned orders with mine=true, and all otherwise.
+    let (_, admin_mine) = get(&e.app, ADMIN, "/production-orders?mine=true").await;
+    assert_eq!(names(&admin_mine), vec!["-"]);
+    let (_, admin_all) = get(&e.app, ADMIN, "/production-orders").await;
+    assert_eq!(admin_all["total"], 4);
+
+    // Deactivation is unchanged: a used division is refused on delete and can be deactivated, and
+    // the members stay.
+    let (status, _) = api(
+        &e.app,
+        ADMIN,
+        Method::DELETE,
+        &format!("/production/divisions/{}", id(&elec)),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::CONFLICT);
+    let (status, off) = put(
+        &e.app,
+        ADMIN,
+        &format!("/production/divisions/{}", id(&elec)),
+        json!({ "code": "ELEC", "name": "Electronics", "active": false }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{off}");
+    assert_eq!(off["active"], false);
+    assert_eq!(member_ids(&off), vec![planner]);
+    // An unused division is deleted together with its members.
+    let (_, tmp) = post(
+        &e.app,
+        ADMIN,
+        "/production/divisions",
+        json!({ "code": "TMP", "name": "Tmp", "member_user_ids": [user_id(&e.db, STORES).await] }),
+    )
+    .await;
+    let (status, _) = api(
+        &e.app,
+        ADMIN,
+        Method::DELETE,
+        &format!("/production/divisions/{}", id(&tmp)),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+}

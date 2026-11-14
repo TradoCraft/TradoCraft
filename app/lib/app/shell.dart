@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -10,7 +10,15 @@ import 'environments.dart';
 import 'profile.dart';
 import 'profile_badge.dart';
 import 'session.dart';
+import 'shortcuts/actions.dart';
+import 'shortcuts/key_hint.dart';
+import 'shortcuts/registry.dart';
+import 'worker_ui.dart';
 import 'workspace.dart';
+import '../features/todo/todo_badge.dart';
+import '../features/todo/todo_quick_add.dart';
+import '../features/todo/todo_repository.dart';
+import '../features/tutorial/targets.dart';
 import '../l10n/l10n.dart';
 import '../shared/app_icons.dart';
 import '../shared/module_icon.dart';
@@ -23,6 +31,7 @@ class _Dest {
     this.permission, {
     this.unless,
     this.alsoFor,
+    this.alsoPaths = const [],
   });
   final String path;
   final String Function(AppLocalizations l) label;
@@ -36,6 +45,14 @@ class _Dest {
 
   /// A second permission that also makes the tab visible (e.g. price zone management).
   final String? alsoFor;
+
+  /// Detail locations that belong to this section (e.g. `/suppliers`), so a tab showing one
+  /// highlights this destination.
+  final List<String> alsoPaths;
+
+  /// Whether [location] belongs to this destination.
+  bool matches(String location) =>
+      location.startsWith(path) || alsoPaths.any(location.startsWith);
 
   /// Whether a user with [perms] sees this destination.
   bool visibleFor(List<String> perms) =>
@@ -64,6 +81,8 @@ const _sectionArt = {
   '/planning': 'planning',
   '/customers': 'customers',
   '/products': 'product',
+  '/purchasing': 'purchasing',
+  '/finance': 'finance',
   '/admin': 'admin',
 };
 
@@ -71,7 +90,11 @@ const _sectionArt = {
 Widget _destIcon(_Dest d) {
   final art = _sectionArt[d.path];
   // The label of the destination names it; the file name of the artwork must not add to it.
-  return art == null ? Icon(d.icon) : ExcludeSemantics(child: ModuleIcon(art));
+  final icon = art == null
+      ? Icon(d.icon)
+      : ExcludeSemantics(child: ModuleIcon(art));
+  // The to-do entry carries the number of open to-dos on the plate of the user.
+  return d.path == '/todo' ? TodoNavBadge(child: icon) : icon;
 }
 
 final _allDestinations = [
@@ -140,7 +163,22 @@ final _allDestinations = [
   ),
   _Dest('/customers', (l) => l.customers, AppIcons.business, 'customers.read'),
   _Dest('/products', (l) => l.products, AppIcons.inventory2, 'products.read'),
+  _Dest(
+    '/purchasing',
+    (l) => l.purchasing,
+    AppIcons.shoppingCart,
+    'purchasing.read',
+    alsoPaths: ['/suppliers', '/purchase-orders', '/goods-receipts'],
+  ),
+  _Dest(
+    '/finance',
+    (l) => l.finance,
+    AppIcons.accountBalance,
+    'finance.read',
+    alsoPaths: ['/supplier-invoices'],
+  ),
   _Dest('/reports', (l) => l.crTitle, AppIcons.tableChart, 'reports.read'),
+  _Dest('/todo', (l) => l.todoTitle, AppIcons.checklist, 'todo.use'),
   _Dest(
     '/admin',
     (l) => l.adminTitle,
@@ -161,6 +199,8 @@ class AppShell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final wide = MediaQuery.sizeOf(context).width >= 800;
     final me = ref.watch(meProvider);
+    // Keeps the to-do badge fresh (only while signed in and holding todo.use).
+    ref.watch(todoBadgeSyncProvider);
     // Show the sections the user has rights for (all, while the user is still loading), so a
     // technician sees "My jobs" and not a row of tabs that answer "forbidden".
     final perms = me.value?.permissions;
@@ -174,7 +214,7 @@ class AppShell extends ConsumerWidget {
     if (!isDetailLocation(location)) workspaceNotifier.homeLocation = location;
     // The section of the focused tab is highlighted, so a ticket tab belongs to Helpdesk.
     final shown = workspace.activeTab?.location ?? location;
-    final found = destinations.indexWhere((d) => shown.startsWith(d.path));
+    final found = destinations.indexWhere((d) => d.matches(shown));
     if (found < 0 && destinations.isNotEmpty && perms != null) {
       // The current page is not for this user (e.g. the default start page): go to their first.
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -199,13 +239,32 @@ class AppShell extends ConsumerWidget {
       context.go(destinations[i].path);
     }
 
+    // Menu 1-9 pick the n-th entry of the permission-filtered list; Home is the first one (the
+    // main area of the first permitted section). Back lives in each tab (see workspace.dart).
+    // New to-do needs `todo.use` (the server also takes it away when the module is off).
+    final canTodo = perms?.contains('todo.use') ?? false;
+    final shellActions = <ShortcutAction, VoidCallback?>{
+      ShortcutAction.home: () => go(0),
+      if (canTodo) ShortcutAction.newTodo: () => showTodoQuickAdd(context, ref),
+      for (
+        var i = 0;
+        i < destinations.length && i < ShortcutAction.menus.length;
+        i++
+      )
+        ShortcutAction.menus[i]: () => go(i),
+    };
+    // The badge of entry [i] (only the first nine have a shortcut).
+    Widget hinted(int i, Widget icon) => i < ShortcutAction.menus.length
+        ? KeyHint(action: ShortcutAction.menus[i], child: icon)
+        : icon;
+
     final profile = ref.watch(profileProvider);
     final activeEnv = ref.watch(activeEnvironmentProvider);
     final badge = profile == null
         ? null
         : ProfileBadge(profile: profile, roles: me.value?.roles ?? const []);
 
-    final userMenu = PopupMenuButton<String>(
+    final userMenuButton = PopupMenuButton<String>(
       tooltip: context.l10n.account,
       icon: const Icon(AppIcons.accountCircle),
       itemBuilder: (_) => [
@@ -222,6 +281,23 @@ class AppShell extends ConsumerWidget {
           ),
         ),
         const PopupMenuDivider(),
+        // Always reachable, whatever the keyboard offers.
+        if (canTodo)
+          PopupMenuItem(
+            key: const ValueKey('account-new-todo'),
+            value: 'todo',
+            child: Row(
+              children: [
+                Expanded(child: Text(context.l10n.shortcutNewTodo)),
+                const SizedBox(width: 16),
+                Text(
+                  ShortcutAction.newTodo.describe(),
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            ),
+          ),
+        PopupMenuItem(value: 'tutorial', child: Text(context.l10n.tutTitle)),
         PopupMenuItem(
           value: 'env',
           child: Text(context.l10n.envSwitchMenu(activeEnv.name)),
@@ -245,6 +321,8 @@ class AppShell extends ConsumerWidget {
       onSelected: (v) {
         if (v == 'signout') ref.read(sessionProvider.notifier).signOut();
         if (v == 'env') showEnvironmentSwitcher(context);
+        if (v == 'tutorial') context.push('/tutorial');
+        if (v == 'todo') showTodoQuickAdd(context, ref);
         if (v.startsWith('lang:')) {
           final code = v.substring(5);
           ref
@@ -254,68 +332,79 @@ class AppShell extends ConsumerWidget {
       },
     );
 
+    final userMenu = TutorialTarget(id: 'user-menu', child: userMenuButton);
+
     if (wide) {
       return Scaffold(
-        body: Column(
-          children: [
-            const EnvironmentBanner(),
-            Expanded(
-              child: Row(
-                children: [
-                  // Many destinations do not fit a short window: scroll, but keep the user menu at the
-                  // bottom when there is room to spare.
-                  LayoutBuilder(
-                    builder: (context, constraints) => SingleChildScrollView(
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(
-                          minHeight: constraints.maxHeight,
-                        ),
-                        child: IntrinsicHeight(
-                          child: NavigationRail(
-                            selectedIndex: index,
-                            onDestinationSelected: go,
-                            labelType: NavigationRailLabelType.all,
-                            leading: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              child: Column(
-                                children: [
-                                  Text(
-                                    brandName,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleMedium,
-                                  ),
-                                  if (badge != null) ...[
-                                    const SizedBox(height: 6),
-                                    badge,
-                                  ],
-                                ],
-                              ),
-                            ),
-                            trailing: Expanded(
-                              child: Align(
-                                alignment: Alignment.bottomCenter,
-                                child: userMenu,
-                              ),
-                            ),
-                            destinations: [
-                              for (final d in destinations)
-                                NavigationRailDestination(
-                                  icon: _destIcon(d),
-                                  label: Text(d.label(context.l10n)),
+        body: ShortcutScope(
+          layer: ShortcutLayer.shell,
+          actions: shellActions,
+          child: Column(
+            children: [
+              const EnvironmentBanner(),
+              const WorkerBanner(),
+              Expanded(
+                child: Row(
+                  children: [
+                    // Many destinations do not fit a short window: scroll, but keep the user menu at the
+                    // bottom when there is room to spare.
+                    LayoutBuilder(
+                      builder: (context, constraints) => SingleChildScrollView(
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            minHeight: constraints.maxHeight,
+                          ),
+                          child: IntrinsicHeight(
+                            child: NavigationRail(
+                              selectedIndex: index,
+                              onDestinationSelected: go,
+                              labelType: NavigationRailLabelType.all,
+                              leading: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
                                 ),
-                            ],
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      brandName,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleMedium,
+                                    ),
+                                    if (badge != null) ...[
+                                      const SizedBox(height: 6),
+                                      badge,
+                                    ],
+                                  ],
+                                ),
+                              ),
+                              trailing: Expanded(
+                                child: Align(
+                                  alignment: Alignment.bottomCenter,
+                                  child: userMenu,
+                                ),
+                              ),
+                              destinations: [
+                                for (var i = 0; i < destinations.length; i++)
+                                  NavigationRailDestination(
+                                    icon: hinted(i, _destIcon(destinations[i])),
+                                    label: Text(
+                                      destinations[i].label(context.l10n),
+                                    ),
+                                  ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                  const VerticalDivider(width: 1),
-                  Expanded(child: WorkspaceBody(home: child, wide: true)),
-                ],
+                    const VerticalDivider(width: 1),
+                    Expanded(child: WorkspaceBody(home: child, wide: true)),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       );
     }
@@ -324,20 +413,25 @@ class AppShell extends ConsumerWidget {
         title: Text(me.value?.company.name ?? brandName),
         actions: [?badge, const WorkspaceMenuButton(), userMenu],
       ),
-      body: Column(
-        children: [
-          const EnvironmentBanner(),
-          Expanded(child: WorkspaceBody(home: child, wide: false)),
-        ],
+      body: ShortcutScope(
+        layer: ShortcutLayer.shell,
+        actions: shellActions,
+        child: Column(
+          children: [
+            const EnvironmentBanner(),
+            const WorkerBanner(),
+            Expanded(child: WorkspaceBody(home: child, wide: false)),
+          ],
+        ),
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: index,
         onDestinationSelected: go,
         destinations: [
-          for (final d in destinations)
+          for (var i = 0; i < destinations.length; i++)
             NavigationDestination(
-              icon: _destIcon(d),
-              label: d.label(context.l10n),
+              icon: hinted(i, _destIcon(destinations[i])),
+              label: destinations[i].label(context.l10n),
             ),
         ],
       ),

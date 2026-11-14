@@ -47,3 +47,22 @@ accepted one; mark superseded records as such.
 | [0041](0041-workspace-tabs.md) | Workspace tabs for detail screens | Accepted |
 | [0042](0042-report-builder.md) | User-defined reports: catalog, definition, query engine, CSV and PDF export | Accepted |
 | [0043](0043-environments.md) | Environments: one database and API instance each, kinds live, test and tutorial, banner and switcher | Accepted |
+| [0045](0045-story-mission-tutorial.md) | Story-mission tutorial: engine, missions, spotlight, progress, only in test or tutorial environments | Accepted |
+| [0046](0046-supplier-invoices-and-three-way-match.md) | Supplier invoices and the three-way match (accounts-payable register) | Accepted |
+| [0047](0047-company-bootstrap.md) | Company bootstrap: setup wizard and `POST /setup/bootstrap` create the first company in an empty database | Accepted |
+| [0048](0048-environment-clones-and-outbound-safety.md) | Environment clones (pg_dump/pg_restore), envctl, outbound safety policy and clone scrub | Accepted |
+| [0049](0049-production-division-membership.md) | Production division membership: members per division, default queue scope (`mine`), unassigned orders always shown | Accepted |
+| [0050](0050-portal-surface.md) | Portal surface: a separate customer-facing server with only the portal routes, rate limits, and CORS from configuration | Accepted |
+| [0051](0051-material-and-cupertino-as-packages.md) | Material and Cupertino as packages: `material_ui`/`cupertino_ui` replace `package:flutter/material.dart`; Flutter pinned to 3.50.0 | Accepted |
+| [0052](0052-worker-heartbeat.md) | Worker heartbeat: one beat row, `GET /admin/worker`, an in-app warning and a "worker was down" mail to administrators | Accepted |
+| [0053](0053-interactive-sign-in.md) | Interactive sign-in: OIDC code + PKCE in the app with the `oidc` package behind our own interface, loopback redirect on desktop, `token_use` per provider, Dio interceptor, secure storage | Proposed |
+| [0054](0054-helpdesk-mailboxes.md) | Helpdesk mailboxes: several per company, Microsoft Graph (Exchange Online) or IMAP/SMTP, secrets only in the worker environment, replies through the ticket's mailbox | Accepted |
+| [0055](0055-configurable-identity-providers.md) | Configurable identity providers: per installation, selected by issuer, hardened verifier, e-mail trust policies, admin API with lock-out safeguards | Accepted |
+| [0056](0056-backup-and-restore.md) | Backup and restore: physical base backups with `scripts/backupctl`, grandfather-father-son retention, verify by restoring, restore drill through a clone | Accepted |
+| [0057](0057-accent-insensitive-search.md) | Accent-insensitive search: `core.search_fold` (lower and `unaccent`) on column and text, trigram indexes, customers, contacts, products and suppliers | Accepted |
+| [0058](0058-vat-number-validation-and-lookup.md) | VAT numbers: EU format and check-digit validation, duplicate warning through a comparison key, VIES lookup that pre-fills and never blocks | Accepted (live VIES request unverified) |
+| [0059](0059-audit-trail-viewer.md) | Audit trail viewer: `audit.view` for administrators, cursor-paged endpoints, field-level changes, Admin tab and History button | Accepted |
+| [0060](0060-keyboard-shortcuts.md) | Keyboard shortcuts: common business-app chords (Alt, Ctrl on macOS), scoped handler registry, hint badges, web policy (Alt+Shift digits) | Accepted (phase A) |
+| [0061](0061-todo-items.md) | To-do items: private to owner and assignee, two levels, polymorphic link without foreign key (permission-gated label), completion rules, `todo` module and `todo.use` | Accepted |
+| [0062](0062-sales-favorites.md) | Sales favorites: company-wide main product with options and comments, no prices, customer remarks per language, line fields `customer_remark_language` and `favorite_item_id`, add-only translations | Accepted |
+| [0063](0063-work-centres-routings-and-operations.md) | Work centres, routings and operations: calendars and closures, a routing on the BOM revision (copied by a new revision), operations snapshotted and scheduled at release, completion totals for labour, capacity per day, multi-level auto-release for the shortfall, cost roll-up behind `inventory.cost`, a traveller PDF | Accepted |

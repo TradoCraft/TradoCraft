@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -100,7 +100,7 @@ class PortalApp extends ConsumerWidget {
       routerConfig: ref.watch(portalRouterProvider),
       locale: ref.watch(portalLocaleProvider),
       supportedLocales: AppLocalizations.supportedLocales,
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      localizationsDelegates: [AppLocalizations.delegate, ...GlobalMaterialLocalizations.delegates],
       onGenerateTitle: (context) => context.l10n.portalTitle,
     );
   }

@@ -8,15 +8,14 @@
 //! The active legal entity is chosen with the `X-Company-Id` header and
 //! defaults to the user's default membership.
 
-use std::collections::HashMap;
-
 use axum::extract::FromRequestParts;
 use axum::http::request::Parts;
-use jsonwebtoken::jwk::JwkSet;
-use jsonwebtoken::{decode, decode_header, DecodingKey, Validation};
-use serde::Deserialize;
-use tokio::sync::RwLock;
 use uuid::Uuid;
+
+pub use crate::identity::Claims;
+use crate::identity::{
+    normalize_issuer, peek_issuer, EmailPolicy, IdentityProviders, ProviderConfig, ProviderSource,
+};
 
 use crate::modules::{effective_disabled, permission_module, Module};
 use crate::{AppError, AppState};
@@ -24,9 +23,16 @@ use crate::{AppError, AppState};
 pub const DEV_USER_HEADER: &str = "x-dev-user";
 pub const COMPANY_HEADER: &str = "x-company-id";
 
+#[allow(clippy::large_enum_variant)]
 pub enum AuthConfig {
-    Dev { default_email: Option<String> },
-    Oidc(OidcVerifier),
+    Dev {
+        default_email: Option<String>,
+    },
+    /// OpenID Connect against the configured identity providers (ADR 0055).
+    Oidc(IdentityProviders),
+    /// No staff sign-in at all: every staff route answers 401. Used by the customer-facing
+    /// portal server, which serves no staff routes (ADR 0050).
+    Disabled,
 }
 
 /// Permissions are checked in code; roles are granted per company and map to permissions.
@@ -124,6 +130,13 @@ pub enum Permission {
     PurchasingApprove,
     /// Receive goods against purchase orders.
     GoodsReceipt,
+    /// See supplier invoices, their match report and the finance settings (ADR 0046).
+    FinanceRead,
+    /// Register, edit, match, dispute and delete supplier invoices.
+    FinanceWrite,
+    /// Approve supplier invoices (also against a failed match, with a reason), record payment
+    /// and change the match tolerances.
+    FinanceApprove,
     /// Build configurators: models, revisions, tables, formulas, activation (ADR 0034).
     ConfiguratorDesign,
     /// Run configurators, save configurations and turn them into quotations (ADR 0034).
@@ -151,10 +164,21 @@ pub enum Permission {
     ReportsRead,
     /// Create, change and delete one's own reports and share them with the company.
     ReportsWrite,
+    /// Configure the identity providers of the installation (ADR 0055). Also requires the admin
+    /// role in the installation's primary company.
+    IdentityAdmin,
+    /// See the audit trail of the company: the history of a record and the company-wide view
+    /// (ADR 0059). The trail holds what every module recorded, so it is for administrators. Named
+    /// `.view` and not `.read` on purpose: every `.read` permission belongs to the read-only
+    /// viewer role (see `viewer_is_read_only`), and the viewer must not see the trail.
+    AuditView,
+    /// Use the to-do list: create, change, complete and delete one's own items and the ones handed
+    /// over to oneself (ADR 0061). Not a `.read` permission, so the read-only viewer role has none.
+    TodoUse,
 }
 
 impl Permission {
-    pub const ALL: [Permission; 66] = [
+    pub const ALL: [Permission; 72] = [
         Permission::CustomersRead,
         Permission::CustomersWrite,
         Permission::ProductsRead,
@@ -208,6 +232,9 @@ impl Permission {
         Permission::PurchasingWrite,
         Permission::PurchasingApprove,
         Permission::GoodsReceipt,
+        Permission::FinanceRead,
+        Permission::FinanceWrite,
+        Permission::FinanceApprove,
         Permission::ConfiguratorDesign,
         Permission::ConfiguratorUse,
         Permission::DeliveryRead,
@@ -221,6 +248,9 @@ impl Permission {
         Permission::ProductionAdmin,
         Permission::ReportsRead,
         Permission::ReportsWrite,
+        Permission::IdentityAdmin,
+        Permission::AuditView,
+        Permission::TodoUse,
     ];
 
     pub fn as_str(self) -> &'static str {
@@ -278,6 +308,9 @@ impl Permission {
             Permission::PurchasingWrite => "purchasing.write",
             Permission::PurchasingApprove => "purchasing.approve",
             Permission::GoodsReceipt => "purchasing.receipt",
+            Permission::FinanceRead => "finance.read",
+            Permission::FinanceWrite => "finance.write",
+            Permission::FinanceApprove => "finance.approve",
             Permission::ConfiguratorDesign => "configurator.design",
             Permission::ConfiguratorUse => "configurator.use",
             Permission::DeliveryRead => "delivery.read",
@@ -291,13 +324,16 @@ impl Permission {
             Permission::ProductionAdmin => "production.admin",
             Permission::ReportsRead => "reports.read",
             Permission::ReportsWrite => "reports.write",
+            Permission::IdentityAdmin => "identity.admin",
+            Permission::AuditView => "audit.view",
+            Permission::TodoUse => "todo.use",
         }
     }
 }
 
 /// The roles that exist. Roles are fixed in code (ADR 0004); the user administration picks from
 /// this list.
-pub const ROLES: [&str; 16] = [
+pub const ROLES: [&str; 17] = [
     "admin",
     "sales_manager",
     "sales",
@@ -311,6 +347,8 @@ pub const ROLES: [&str; 16] = [
     "logistics",
     "viewer",
     "purchaser",
+    // Accounts payable: supplier invoices and the three-way match (ADR 0046).
+    "finance",
     // Incoming parcels and the repair hand-over (ADR 0030).
     "goods_in",
     "repair_intake",
@@ -321,6 +359,13 @@ pub const ROLES: [&str; 16] = [
 /// Role → permission mapping. Kept in code (reviewed, tested) rather than data for now.
 pub fn role_grants(role: &str, p: Permission) -> bool {
     use Permission::*;
+    // Everyone who works in the company has a to-do list, except the read-only viewer and the
+    // integration service account (ADR 0061).
+    if p == TodoUse {
+        return ROLES
+            .iter()
+            .any(|r| *r == role && !matches!(role, "viewer" | "integration"));
+    }
     match role {
         "admin" => true,
         "sales_manager" => {
@@ -525,6 +570,7 @@ pub fn role_grants(role: &str, p: Permission) -> bool {
                 | OrdersRead
                 | InventoryRead
                 | PurchasingRead
+                | FinanceRead
                 | DeliveryRead
                 | ProductionRead
                 | ReportsRead
@@ -542,6 +588,19 @@ pub fn role_grants(role: &str, p: Permission) -> bool {
                 | PurchasingWrite
                 | PurchasingApprove
                 | GoodsReceipt
+                | FinanceRead
+        ),
+        // Accounts payable: registers, matches, approves and pays supplier invoices (ADR 0046).
+        "finance" => matches!(
+            p,
+            CustomersRead
+                | ProductsRead
+                | InventoryRead
+                | PurchasingRead
+                | FinanceRead
+                | FinanceWrite
+                | FinanceApprove
+                | ReportsRead
         ),
         // The receiving dock: registers and photographs incoming parcels (ADR 0030, step 1).
         "goods_in" => matches!(
@@ -662,9 +721,10 @@ impl FromRequestParts<AppState> for CurrentUser {
                 let token = header(parts, "authorization")
                     .and_then(|h| h.strip_prefix("Bearer "))
                     .ok_or(AppError::Unauthorized)?;
-                let claims = verifier.verify(token).await?;
-                resolve_oidc_user(state, &claims).await?
+                let verified = verifier.verify(token).await?;
+                resolve_oidc_user(state, &verified.provider, &verified.claims).await?
             }
+            AuthConfig::Disabled => return Err(AppError::Unauthorized),
         };
 
         let requested_company = match header(parts, COMPANY_HEADER) {
@@ -725,118 +785,203 @@ async fn find_user_by_email(state: &AppState, email: &str) -> Result<Option<User
     .await?)
 }
 
-/// Users are provisioned in the ERP (with roles); the identity provider only proves who they are.
-/// On first login the OIDC subject is bound to the user found by e-mail.
-async fn resolve_oidc_user(state: &AppState, claims: &Claims) -> Result<UserRow, AppError> {
+/// What signing in with a verified identity would do, without doing it.
+#[derive(Debug, Clone)]
+pub struct BindingPreview {
+    /// `existing_subject` (already bound), `would_bind` (first sign-in binds by e-mail) or `refused`.
+    pub outcome: &'static str,
+    /// The user it resolves to.
+    pub user_id: Option<Uuid>,
+    /// That user's e-mail address.
+    pub user_email: Option<String>,
+    /// Why it is refused.
+    pub reason: Option<String>,
+}
+
+struct Decision {
+    preview: BindingPreview,
+    user: Option<UserRow>,
+    bind: bool,
+    subject: String,
+}
+
+/// The value stored in `core.users.oidc_subject`: issuer-qualified (`<issuer>|<sub>`) for database
+/// providers, because the same `sub` can repeat across issuers; legacy unqualified for the
+/// environment provider (ADR 0055).
+pub fn stored_subject(cfg: &ProviderConfig, sub: &str) -> String {
+    match cfg.source {
+        ProviderSource::Env => sub.to_string(),
+        ProviderSource::Database => format!("{}|{}", cfg.issuer, sub),
+    }
+}
+
+fn refused(reason: &str, subject: String) -> Decision {
+    Decision {
+        preview: BindingPreview {
+            outcome: "refused",
+            user_id: None,
+            user_email: None,
+            reason: Some(reason.into()),
+        },
+        user: None,
+        bind: false,
+        subject,
+    }
+}
+
+async fn decide(
+    state: &AppState,
+    cfg: &ProviderConfig,
+    claims: &Claims,
+) -> Result<Decision, AppError> {
+    let subject = stored_subject(cfg, &claims.sub);
     let by_subject: Option<UserRow> = sqlx::query_as(
         "SELECT id, email, display_name, oidc_subject FROM core.users WHERE oidc_subject = $1 AND active",
     )
-    .bind(&claims.sub)
+    .bind(&subject)
     .fetch_optional(&state.db)
     .await?;
     if let Some(u) = by_subject {
-        return Ok(u);
+        return Ok(Decision {
+            preview: BindingPreview {
+                outcome: "existing_subject",
+                user_id: Some(u.id),
+                user_email: Some(u.email.clone()),
+                reason: None,
+            },
+            user: Some(u),
+            bind: false,
+            subject,
+        });
     }
-    let email = claims
-        .email
-        .as_deref()
-        .or(claims.preferred_username.as_deref())
-        .ok_or(AppError::Unauthorized)?;
-    let user = find_user_by_email(state, email)
-        .await?
-        .ok_or(AppError::Unauthorized)?;
+    // The first sign-in binds the account by e-mail, as the provider's policy allows (ADR 0047:
+    // the bootstrap admin is pre-provisioned by e-mail).
+    match cfg.email_policy {
+        EmailPolicy::SubjectOnly => {
+            return Ok(refused(
+                "policy subject_only: no user has this subject set",
+                subject,
+            ))
+        }
+        EmailPolicy::RequireVerifiedClaim => {
+            if claims.verified(cfg) != Some(true) {
+                return Ok(refused(
+                    &format!(
+                        "the claim {} does not confirm the e-mail address",
+                        cfg.verified_claim
+                    ),
+                    subject,
+                ));
+            }
+        }
+        EmailPolicy::TrustProviderEmail => {}
+    }
+    let Some(email) = claims.email(cfg) else {
+        return Ok(refused(
+            &format!("the token has no {} claim", cfg.email_claim),
+            subject,
+        ));
+    };
+    if !cfg.allowed_email_domains.is_empty() {
+        let domain = email.rsplit_once('@').map(|(_, d)| d.to_lowercase());
+        if !domain.is_some_and(|d| cfg.allowed_email_domains.contains(&d)) {
+            return Ok(refused("the e-mail domain is not allowed", subject));
+        }
+    }
+    let Some(user) = find_user_by_email(state, &email).await? else {
+        return Ok(refused("no active user has this e-mail address", subject));
+    };
     if user.oidc_subject.is_some() {
         // Bound to a different identity: refuse rather than silently re-bind.
-        return Err(AppError::Unauthorized);
+        return Ok(refused(
+            "the user is bound to a different identity",
+            subject,
+        ));
     }
-    sqlx::query("UPDATE core.users SET oidc_subject = $1 WHERE id = $2")
-        .bind(&claims.sub)
+    Ok(Decision {
+        preview: BindingPreview {
+            outcome: "would_bind",
+            user_id: Some(user.id),
+            user_email: Some(user.email.clone()),
+            reason: None,
+        },
+        user: Some(user),
+        bind: true,
+        subject,
+    })
+}
+
+/// What a verified identity would resolve to, without binding anything.
+pub async fn preview_binding(
+    state: &AppState,
+    cfg: &ProviderConfig,
+    claims: &Claims,
+) -> Result<BindingPreview, AppError> {
+    Ok(decide(state, cfg, claims).await?.preview)
+}
+
+/// Users are provisioned in the ERP (with roles); the identity provider only proves who they are.
+/// On first login the subject is bound to the user found by e-mail, as the provider's policy allows.
+async fn resolve_oidc_user(
+    state: &AppState,
+    cfg: &ProviderConfig,
+    claims: &Claims,
+) -> Result<UserRow, AppError> {
+    let d = decide(state, cfg, claims).await?;
+    let user = d.user.ok_or(AppError::Unauthorized)?;
+    if d.bind {
+        let done = sqlx::query(
+            "UPDATE core.users SET oidc_subject = $1 WHERE id = $2 AND oidc_subject IS NULL",
+        )
+        .bind(&d.subject)
         .bind(user.id)
         .execute(&state.db)
         .await?;
+        if done.rows_affected() != 1 {
+            // Another sign-in bound the user first: only the same identity may continue.
+            let now: Option<String> =
+                sqlx::query_scalar("SELECT oidc_subject FROM core.users WHERE id = $1")
+                    .bind(user.id)
+                    .fetch_optional(&state.db)
+                    .await?
+                    .flatten();
+            if now.as_deref() != Some(d.subject.as_str()) {
+                return Err(AppError::Unauthorized);
+            }
+        }
+    }
     Ok(user)
 }
 
-#[derive(Debug, Deserialize)]
-pub struct Claims {
-    pub sub: String,
-    pub email: Option<String>,
-    pub preferred_username: Option<String>,
+/// Resolves (and on first sign-in binds) the user a verified identity of `cfg` belongs to;
+/// returns the user id. Public so the binding can be tested without minting a signed token.
+pub async fn bind_oidc_user(
+    state: &AppState,
+    cfg: &ProviderConfig,
+    claims: &Claims,
+) -> Result<Uuid, AppError> {
+    Ok(resolve_oidc_user(state, cfg, claims).await?.id)
 }
 
-/// Verifies OIDC access tokens against the issuer's published signing keys.
-pub struct OidcVerifier {
-    issuer: String,
-    audience: String,
-    http: reqwest::Client,
-    keys: RwLock<HashMap<String, DecodingKey>>,
-}
+/// The issuer of the caller's bearer token (unverified; use only after [`CurrentUser`] succeeded
+/// in the same handler). None in dev mode.
+#[derive(Debug, Clone)]
+pub struct CallerIssuer(pub Option<String>);
 
-#[derive(Deserialize)]
-struct Discovery {
-    jwks_uri: String,
-}
+impl FromRequestParts<AppState> for CallerIssuer {
+    type Rejection = AppError;
 
-impl OidcVerifier {
-    pub fn new(issuer: String, audience: String) -> Self {
-        Self {
-            issuer,
-            audience,
-            http: reqwest::Client::new(),
-            keys: RwLock::new(HashMap::new()),
-        }
-    }
-
-    async fn refresh_keys(&self) -> anyhow::Result<()> {
-        let discovery_url = format!(
-            "{}/.well-known/openid-configuration",
-            self.issuer.trim_end_matches('/')
-        );
-        let discovery: Discovery = self
-            .http
-            .get(discovery_url)
-            .send()
-            .await?
-            .error_for_status()?
-            .json()
-            .await?;
-        let jwks: JwkSet = self
-            .http
-            .get(discovery.jwks_uri)
-            .send()
-            .await?
-            .error_for_status()?
-            .json()
-            .await?;
-        let mut keys = HashMap::new();
-        for jwk in &jwks.keys {
-            if let (Some(kid), Ok(key)) = (jwk.common.key_id.clone(), DecodingKey::from_jwk(jwk)) {
-                keys.insert(kid, key);
-            }
-        }
-        *self.keys.write().await = keys;
-        Ok(())
-    }
-
-    pub async fn verify(&self, token: &str) -> Result<Claims, AppError> {
-        let header = decode_header(token).map_err(|_| AppError::Unauthorized)?;
-        let kid = header.kid.ok_or(AppError::Unauthorized)?;
-
-        if !self.keys.read().await.contains_key(&kid) {
-            // Unknown key id: the provider may have rotated its keys.
-            self.refresh_keys().await.map_err(AppError::Internal)?;
-        }
-        let keys = self.keys.read().await;
-        let key = keys.get(&kid).ok_or(AppError::Unauthorized)?;
-
-        let mut validation = Validation::new(header.alg);
-        validation.set_issuer(&[&self.issuer]);
-        validation.set_audience(&[&self.audience]);
-        let data = decode::<Claims>(token, key, &validation).map_err(|e| {
-            tracing::debug!(error = %e, "token rejected");
-            AppError::Unauthorized
-        })?;
-        Ok(data.claims)
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &AppState,
+    ) -> Result<Self, Self::Rejection> {
+        Ok(CallerIssuer(match state.auth.as_ref() {
+            AuthConfig::Dev { .. } | AuthConfig::Disabled => None,
+            AuthConfig::Oidc(_) => header(parts, "authorization")
+                .and_then(|h| h.strip_prefix("Bearer "))
+                .and_then(peek_issuer)
+                .map(|i| normalize_issuer(&i)),
+        }))
     }
 }
 
@@ -1198,11 +1343,66 @@ mod tests {
     }
 
     #[test]
+    fn finance_rights_follow_the_roles() {
+        for p in [
+            Permission::FinanceRead,
+            Permission::FinanceWrite,
+            Permission::FinanceApprove,
+        ] {
+            assert!(role_grants("admin", p));
+            assert!(role_grants("finance", p));
+            assert_eq!(p.as_str().split('.').next(), Some("finance"));
+        }
+        // The purchaser sees invoices but cannot register or approve them.
+        assert!(role_grants("purchaser", Permission::FinanceRead));
+        assert!(!role_grants("purchaser", Permission::FinanceWrite));
+        assert!(!role_grants("purchaser", Permission::FinanceApprove));
+        // The viewer reads everything (every `.read` permission), but cannot write or approve.
+        assert!(role_grants("viewer", Permission::FinanceRead));
+        assert!(!role_grants("viewer", Permission::FinanceWrite));
+        for r in ["sales", "warehouse", "logistics", "production"] {
+            assert!(!role_grants(r, Permission::FinanceRead), "{r}");
+        }
+    }
+
+    #[test]
     fn only_admins_administer_users() {
         assert!(role_grants("admin", Permission::UsersAdmin));
         for r in ROLES.iter().filter(|r| **r != "admin") {
             assert!(!role_grants(r, Permission::UsersAdmin), "{r}");
         }
+    }
+
+    #[test]
+    fn only_admins_administer_identity() {
+        for r in ROLES {
+            assert_eq!(
+                role_grants(r, Permission::IdentityAdmin),
+                r == "admin",
+                "{r}"
+            );
+        }
+    }
+
+    #[test]
+    fn everyone_but_the_viewer_and_the_integration_account_has_a_to_do_list() {
+        for r in ROLES {
+            assert_eq!(
+                role_grants(r, Permission::TodoUse),
+                !matches!(r, "viewer" | "integration"),
+                "{r}"
+            );
+        }
+        assert_eq!(Permission::TodoUse.as_str(), "todo.use");
+        assert!(!role_grants("nobody", Permission::TodoUse));
+    }
+
+    #[test]
+    fn only_admins_view_the_audit_trail() {
+        for r in ROLES {
+            assert_eq!(role_grants(r, Permission::AuditView), r == "admin", "{r}");
+        }
+        assert_eq!(Permission::AuditView.as_str(), "audit.view");
     }
 
     #[test]

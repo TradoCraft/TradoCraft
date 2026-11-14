@@ -141,7 +141,7 @@ abstract class ProductsClient {
     @Body() required ProductRelationInput body,
   });
 
-  /// [q] - Searches code and name.
+  /// [q] - Searches code and name, ignoring case and accents.
   @GET('/api/v1/products')
   Future<ProductPage> listProducts({
     @Query('q') String? q,

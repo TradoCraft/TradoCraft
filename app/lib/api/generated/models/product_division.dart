@@ -6,6 +6,7 @@ import 'package:json_annotation/json_annotation.dart';
 
 part 'product_division.g.dart';
 
+/// The division that normally builds a product.
 @JsonSerializable()
 class ProductDivision {
   const ProductDivision({

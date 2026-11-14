@@ -1,9 +1,12 @@
 //! HTTP application: wires the business modules into one API.
 
 use axum::Router;
-use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::TraceLayer;
+use tradocraft_core::companies::BootstrapConfig;
+use tradocraft_core::cors::CorsConfig;
 use tradocraft_core::environment::EnvironmentConfig;
+use tradocraft_core::identity::IdpSettings;
+use tradocraft_core::vies::ViesConfig;
 use tradocraft_core::AppState;
 use utoipa::openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme};
 use utoipa::openapi::OpenApi as OpenApiDoc;
@@ -19,22 +22,29 @@ pub const DEV_SEED_SQL: &str = include_str!("../../../seed/dev_seed.sql");
 #[derive(OpenApi)]
 #[openapi(
     info(title = "tradocraft API", description = "Business platform API (CRM, products, pricing, sales, engineering, helpdesk, customer portal)."),
+    // Query parameters are not collected from the routes: list the enums they use.
+    components(schemas(tradocraft_todo::TodoScope)),
     modifiers(&Security),
     security(("bearer" = [])),
     tags(
         (name = "core", description = "Users and companies"),
+        (name = "admin", description = "Installation administration: identity providers and who may sign in"),
+        (name = "audit", description = "The audit trail: the history of a record and the company-wide view, for administrators"),
         (name = "crm", description = "Customers and opportunities"),
         (name = "products", description = "Products, price zones and price lists"),
         (name = "sales", description = "Quotations, pricing and orders"),
+        (name = "favorites", description = "Company-wide favorites for sales lines: a main product with its options and comments, no prices"),
         (name = "engineering", description = "Bills of materials and serial numbers"),
         (name = "helpdesk", description = "Tickets, e-mail and prepared answers"),
         (name = "reports", description = "User-defined reports: build, save, share, run and export"),
+        (name = "todo", description = "To-do items: private checklists with sub-items, hand-over to a colleague and links to records"),
         (name = "kb", description = "Knowledge base: entries in five languages, search, versions, public reading"),
         (name = "repairs", description = "Repairs, workshop departments and photos"),
         (name = "field", description = "Field jobs for technicians: tasks, work logs and photos"),
         (name = "inventory", description = "Warehouses, stock moves, lots, reservations and counts"),
         (name = "planning", description = "Planning board: technician calendars, absences, skills, conflicts and suggestions"),
         (name = "purchasing", description = "Suppliers, price lists, purchase orders and goods receipts"),
+        (name = "finance", description = "Supplier invoices (AP register), the three-way match, approval and payment status"),
         (name = "delivery", description = "Delivery notes for sales orders: planning, picking, shipping and the closure policy"),
         (name = "production", description = "Production orders from the BOM: divisions, release, component reservation, completion and output"),
         (name = "configurator", description = "Admin-defined product configurators: models, revisions, formulas, evaluation and saved configurations"),
@@ -64,6 +74,9 @@ fn api() -> (Router<AppState>, OpenApiDoc) {
     let v1 = OpenApiRouter::new()
         .merge(tradocraft_core::company::router())
         .merge(tradocraft_core::environment::router())
+        .merge(tradocraft_core::companies::router())
+        .merge(tradocraft_core::identity_admin::router())
+        .merge(tradocraft_core::audit_log::router())
         .merge(tradocraft_crm::router())
         .merge(tradocraft_products::router())
         .merge(tradocraft_sales::router())
@@ -75,10 +88,12 @@ fn api() -> (Router<AppState>, OpenApiDoc) {
         .merge(tradocraft_inventory::router())
         .merge(tradocraft_planning::router())
         .merge(tradocraft_purchasing::router())
+        .merge(tradocraft_finance::router())
         .merge(tradocraft_delivery::router())
         .merge(tradocraft_production::router())
         .merge(tradocraft_configurator::router())
         .merge(tradocraft_reports::router())
+        .merge(tradocraft_todo::router())
         .merge(tradocraft_portal::router());
     OpenApiRouter::with_openapi(ApiDoc::openapi())
         .nest("/api/v1", v1)
@@ -96,6 +111,59 @@ pub fn app(state: AppState) -> Router {
 
 /// The application, reporting itself as `environment` on `GET /api/v1/meta/environment`.
 pub fn app_with_environment(state: AppState, environment: EnvironmentConfig) -> Router {
+    app_with_options(state, environment, BootstrapConfig::default())
+}
+
+/// The application with an environment and the bootstrap secret (`BOOTSTRAP_TOKEN`, ADR 0047).
+pub fn app_with_options(
+    state: AppState,
+    environment: EnvironmentConfig,
+    bootstrap: BootstrapConfig,
+) -> Router {
+    app_with_cors(state, environment, bootstrap, &CorsConfig::Any)
+}
+
+/// The application answering only the browser origins of `cors` (`CORS_ALLOWED_ORIGINS`,
+/// ADR 0050).
+pub fn app_with_cors(
+    state: AppState,
+    environment: EnvironmentConfig,
+    bootstrap: BootstrapConfig,
+    cors: &CorsConfig,
+) -> Router {
+    app_with_identity(state, environment, bootstrap, cors, IdpSettings::default())
+}
+
+/// The application with the identity provider settings (ADR 0055) the admin API validates and
+/// tests providers with; the same settings the registry in `state.auth` runs with.
+pub fn app_with_identity(
+    state: AppState,
+    environment: EnvironmentConfig,
+    bootstrap: BootstrapConfig,
+    cors: &CorsConfig,
+    identity: IdpSettings,
+) -> Router {
+    // Without a say in the matter the VIES lookup is off: a test must not call the Commission.
+    app_with_vies(
+        state,
+        environment,
+        bootstrap,
+        cors,
+        identity,
+        ViesConfig::disabled(),
+    )
+}
+
+/// The application with the VIES lookup (ADR 0058) pointed at `vies`: the server passes
+/// `ViesConfig::from_env()` (`VIES_URL`), a test passes a local stand-in.
+pub fn app_with_vies(
+    state: AppState,
+    environment: EnvironmentConfig,
+    bootstrap: BootstrapConfig,
+    cors: &CorsConfig,
+    identity: IdpSettings,
+    vies: ViesConfig,
+) -> Router {
     let (router, doc) = api();
     router
         .route("/health", axum::routing::get(|| async { "ok" }))
@@ -105,13 +173,11 @@ pub fn app_with_environment(state: AppState, environment: EnvironmentConfig) -> 
             axum::routing::get(move || async move { axum::Json(doc) }),
         )
         .layer(axum::Extension(environment))
+        .layer(axum::Extension(bootstrap))
+        .layer(axum::Extension(identity))
+        .layer(axum::Extension(vies))
         .layer(TraceLayer::new_for_http())
-        .layer(
-            CorsLayer::new()
-                .allow_origin(Any)
-                .allow_methods(Any)
-                .allow_headers(Any),
-        )
+        .layer(cors.layer())
         .with_state(state)
 }
 

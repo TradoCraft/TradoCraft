@@ -24,13 +24,21 @@ pub enum Module {
     Production,
     /// User-defined reports over the other modules' data (ADR 0042).
     Reports,
+    /// Supplier invoices and the three-way match: an AP register, not a ledger (ADR 0046).
+    Finance,
+    /// To-do items: private checklists with sub-items and links to records (ADR 0061).
+    Todo,
 }
 
 /// Permissions that belong to no module: they cannot be switched off.
-pub const ALWAYS_ON: [Permission; 1] = [Permission::UsersAdmin];
+pub const ALWAYS_ON: [Permission; 3] = [
+    Permission::UsersAdmin,
+    Permission::IdentityAdmin,
+    Permission::AuditView,
+];
 
 impl Module {
-    pub const ALL: [Module; 14] = [
+    pub const ALL: [Module; 16] = [
         Module::Customers,
         Module::Products,
         Module::Sales,
@@ -45,6 +53,8 @@ impl Module {
         Module::Delivery,
         Module::Production,
         Module::Reports,
+        Module::Finance,
+        Module::Todo,
     ];
 
     pub fn code(self) -> &'static str {
@@ -63,6 +73,8 @@ impl Module {
             Module::Delivery => "delivery",
             Module::Production => "production",
             Module::Reports => "reports",
+            Module::Finance => "finance",
+            Module::Todo => "todo",
         }
     }
 
@@ -144,6 +156,8 @@ impl Module {
                 ProductionAdmin,
             ],
             Module::Reports => &[ReportsRead, ReportsWrite],
+            Module::Finance => &[FinanceRead, FinanceWrite, FinanceApprove],
+            Module::Todo => &[TodoUse],
         }
     }
 
@@ -153,6 +167,8 @@ impl Module {
         match self {
             Module::Sales => &[Module::Customers, Module::Products],
             Module::Purchasing => &[Module::Products, Module::Inventory],
+            // Invoices are matched against purchase orders and goods receipts.
+            Module::Finance => &[Module::Purchasing],
             Module::Engineering | Module::Inventory => &[Module::Products],
             Module::Repairs | Module::Field => &[Module::Customers],
             // Models reference products; configurations become quotations.
@@ -167,7 +183,10 @@ impl Module {
             | Module::Products
             | Module::Helpdesk
             | Module::Kb
-            | Module::Reports => &[],
+            | Module::Reports
+            // A link to a record is checked against that record's read permission, so the
+            // list needs no other module to be present.
+            | Module::Todo => &[],
         }
     }
 }
@@ -302,6 +321,16 @@ mod tests {
     }
 
     #[test]
+    fn the_to_do_module_owns_its_permission_and_needs_no_other_module() {
+        assert_eq!(Module::Todo.code(), "todo");
+        assert_eq!(Module::Todo.permissions(), &[Permission::TodoUse]);
+        assert_eq!(permission_module(Permission::TodoUse), Some(Module::Todo));
+        assert!(Module::Todo.requires().is_empty());
+        // It can be switched off on its own.
+        assert!(validate_company_disabled(&s(&["todo"])).is_ok());
+    }
+
+    #[test]
     fn codes_round_trip_and_are_unique() {
         for m in Module::ALL {
             assert_eq!(Module::from_code(m.code()), Some(m));
@@ -385,6 +414,7 @@ mod tests {
                 "engineering",
                 "inventory",
                 "purchasing",
+                "finance",
                 "configurator",
                 "delivery",
                 "production"

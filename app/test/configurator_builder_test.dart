@@ -3,7 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/gestures.dart' show kLongPressTimeout;
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
@@ -102,7 +102,7 @@ Future<ProviderContainer> _pumpEditor(
       container: container,
       child: MaterialApp(
         locale: const Locale('en'),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localizationsDelegates: [AppLocalizations.delegate, ...GlobalMaterialLocalizations.delegates],
         supportedLocales: AppLocalizations.supportedLocales,
         home: const RevisionEditorScreen(id: 'rev1'),
       ),
@@ -718,7 +718,7 @@ void main() {
         container: container,
         child: MaterialApp(
           locale: const Locale('en'),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: [AppLocalizations.delegate, ...GlobalMaterialLocalizations.delegates],
           supportedLocales: AppLocalizations.supportedLocales,
           home: Builder(
             builder: (context) => Scaffold(
@@ -848,7 +848,7 @@ void main() {
         child: MaterialApp.router(
           routerConfig: router,
           locale: const Locale('en'),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: [AppLocalizations.delegate, ...GlobalMaterialLocalizations.delegates],
           supportedLocales: AppLocalizations.supportedLocales,
         ),
       ),

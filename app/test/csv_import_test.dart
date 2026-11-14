@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:async';
 import 'dart:typed_data';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -64,7 +64,7 @@ Future<void> pumpPage(
       ],
       child: MaterialApp(
         locale: const Locale('en'),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localizationsDelegates: [AppLocalizations.delegate, ...GlobalMaterialLocalizations.delegates],
         supportedLocales: AppLocalizations.supportedLocales,
         home: const Scaffold(body: CustomersPage()),
       ),
@@ -291,7 +291,7 @@ void main() {
         ],
         child: MaterialApp(
           locale: const Locale('en'),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: [AppLocalizations.delegate, ...GlobalMaterialLocalizations.delegates],
           supportedLocales: AppLocalizations.supportedLocales,
           home: Builder(
             builder: (context) => TextButton(
@@ -341,7 +341,7 @@ void main() {
         ],
         child: MaterialApp(
           locale: const Locale('en'),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: [AppLocalizations.delegate, ...GlobalMaterialLocalizations.delegates],
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: CsvImportDialog(

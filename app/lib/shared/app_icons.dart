@@ -1,9 +1,10 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Single source of icons for the app: one name per concept, outlined style throughout.
 /// Swap the icon set here and nowhere else.
 abstract final class AppIcons {
-  static const IconData accountCircle = Icons.account_circle_outlined;
+  static const IconData accountBalance = Icons.account_balance_outlined;
+  static const IconData accountCircle= Icons.account_circle_outlined;
   static const IconData accountTree = Icons.account_tree_outlined;
   static const IconData add = Icons.add;
   static const IconData addAPhoto = Icons.add_a_photo_outlined;
@@ -39,6 +40,7 @@ abstract final class AppIcons {
   static const IconData category = Icons.category_outlined;
   static const IconData check = Icons.check;
   static const IconData checkCircle = Icons.check_circle_outlined;
+  static const IconData checklist = Icons.checklist;
   static const IconData chevronLeft = Icons.chevron_left;
   static const IconData chevronRight = Icons.chevron_right;
   static const IconData circle = Icons.circle;
@@ -116,6 +118,8 @@ abstract final class AppIcons {
   static const IconData pictureAsPdf = Icons.picture_as_pdf_outlined;
   static const IconData place = Icons.place_outlined;
   static const IconData playArrow = Icons.play_arrow;
+  static const IconData school = Icons.school_outlined;
+  static const IconData skipNext = Icons.skip_next_outlined;
   static const IconData precisionManufacturing =
       Icons.precision_manufacturing_outlined;
   static const IconData priorityHigh = Icons.priority_high;
@@ -128,11 +132,13 @@ abstract final class AppIcons {
   static const IconData schedule = Icons.schedule;
   static const IconData science = Icons.science_outlined;
   static const IconData search = Icons.search;
+  static const IconData searchOff = Icons.search_off;
   static const IconData sell = Icons.sell_outlined;
   static const IconData send = Icons.send;
   static const IconData sentimentDissatisfied = Icons.sentiment_dissatisfied;
   static const IconData sentimentSatisfiedAlt = Icons.sentiment_satisfied_alt;
   static const IconData settings = Icons.settings_outlined;
+  static const IconData shoppingCart = Icons.shopping_cart_outlined;
   static const IconData shoppingCartCheckout = Icons.shopping_cart_checkout;
   static const IconData subdirectory = Icons.subdirectory_arrow_right;
   static const IconData supportAgent = Icons.support_agent;

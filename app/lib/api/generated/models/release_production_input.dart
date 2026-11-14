@@ -9,6 +9,7 @@ part 'release_production_input.g.dart';
 @JsonSerializable()
 class ReleaseProductionInput {
   const ReleaseProductionInput({
+    this.autoReleaseSubassemblies,
     this.divisionId,
     this.notes,
     this.orderId,
@@ -17,10 +18,16 @@ class ReleaseProductionInput {
     this.plannedReadyDate,
     this.productId,
     this.quantity,
+    this.startDate,
   });
   
   factory ReleaseProductionInput.fromJson(Map<String, Object?> json) => _$ReleaseProductionInputFromJson(json);
   
+  /// Also release production orders for the subassemblies that stock does not cover (for the.
+  /// shortfall), and their subassemblies in turn.
+  @JsonKey(includeIfNull: false,name: 'auto_release_subassemblies')
+  final bool? autoReleaseSubassemblies;
+
   /// Defaults to the division that normally builds the product.
   @JsonKey(includeIfNull: false,name: 'division_id')
   final String? divisionId;
@@ -45,6 +52,10 @@ class ReleaseProductionInput {
   /// In the stock unit of the product. For an order line it defaults to what is still to be built.
   @JsonKey(includeIfNull: false)
   final String? quantity;
+
+  /// The first day work can start, for scheduling the operations; defaults to today.
+  @JsonKey(includeIfNull: false,name: 'start_date')
+  final DateTime? startDate;
 
   Map<String, Object?> toJson() => _$ReleaseProductionInputToJson(this);
 }

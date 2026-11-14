@@ -402,3 +402,25 @@ pub async fn receive(
 
     load(conn, user.company_id, gr_id).await
 }
+
+/// Total quantity received per purchase order line, summed over the goods receipt lines of the
+/// order (ADR 0046: the "received" side of the three-way match). Lines without a receipt are
+/// absent from the result.
+pub async fn received_quantities(
+    conn: &mut PgConnection,
+    company_id: Uuid,
+    po_id: Uuid,
+) -> AppResult<Vec<(Uuid, rust_decimal::Decimal)>> {
+    sqlx::query_as::<_, (Uuid, rust_decimal::Decimal)>(
+        "SELECT grl.po_line_id, SUM(grl.quantity_received)
+         FROM purchasing.goods_receipt_lines grl
+         JOIN purchasing.goods_receipts gr ON gr.id = grl.goods_receipt_id
+         WHERE gr.company_id = $1 AND gr.purchase_order_id = $2
+         GROUP BY grl.po_line_id",
+    )
+    .bind(company_id)
+    .bind(po_id)
+    .fetch_all(conn)
+    .await
+    .map_err(Into::into)
+}

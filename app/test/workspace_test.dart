@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -122,7 +122,7 @@ void main() {
         child: MaterialApp.router(
           routerConfig: router,
           locale: const Locale('en'),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: [AppLocalizations.delegate, ...GlobalMaterialLocalizations.delegates],
           supportedLocales: AppLocalizations.supportedLocales,
         ),
       ),
@@ -304,7 +304,7 @@ void main() {
           container: c,
           child: MaterialApp(
             locale: const Locale('en'),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            localizationsDelegates: [AppLocalizations.delegate, ...GlobalMaterialLocalizations.delegates],
             supportedLocales: AppLocalizations.supportedLocales,
             home: const Scaffold(body: WorkspaceTabStrip()),
           ),
@@ -332,6 +332,21 @@ void main() {
       expect(router.state.matchedLocation, '/orders');
       expect(find.byKey(const ValueKey('tab-home')), findsOneWidget);
       expect(find.textContaining('o1 active=true'), findsOneWidget);
+    });
+
+    testWidgets('the tab strip and the rail stay in the semantics tree with a record open', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await pump(tester);
+      await tester.tap(find.text('open-o1'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('o1 active=true'), findsOneWidget);
+      // The modal barrier of the tab's page route blocks the semantics of whatever was painted before it;
+      // without a semantic boundary around the tab's navigator that reached the shell around it.
+      expect(find.bySemanticsLabel('Overview'), findsOneWidget);
+      expect(find.bySemanticsLabel(RegExp('^Helpdesk')), findsWidgets);
+      handle.dispose();
     });
 
     testWidgets('opening the same location again focuses the same tab', (

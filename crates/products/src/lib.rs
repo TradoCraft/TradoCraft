@@ -267,7 +267,7 @@ pub struct ProductPage {
 
 #[derive(Debug, Deserialize, IntoParams)]
 pub struct ListParams {
-    /// Searches code and name.
+    /// Searches code and name, ignoring case and accents.
     pub q: Option<String>,
     pub active: Option<bool>,
     pub family_id: Option<Uuid>,
@@ -461,12 +461,14 @@ async fn list_products(
     Query(p): Query<ListParams>,
 ) -> AppResult<Json<ProductPage>> {
     user.require(Permission::ProductsRead)?;
-    let pattern =
-        p.q.as_deref()
-            .map(|q| format!("%{}%", q.trim().to_lowercase()));
-    let filter = "WHERE ($1::text IS NULL OR lower(code) LIKE $1 OR lower(name) LIKE $1)
+    let pattern = tradocraft_core::search::pattern(p.q.as_deref());
+    let filter = format!(
+        "WHERE ($1::text IS NULL OR {} OR {})
                   AND ($2::boolean IS NULL OR active = $2)
-                  AND ($5::uuid IS NULL OR family_id = $5)";
+                  AND ($5::uuid IS NULL OR family_id = $5)",
+        tradocraft_core::search::matches("code", "$1"),
+        tradocraft_core::search::matches("name", "$1"),
+    );
     let items = sqlx::query_as(&format!(
         "{SELECT_PRODUCT} {filter} ORDER BY code LIMIT $3 OFFSET $4"
     ))

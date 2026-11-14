@@ -1,5 +1,10 @@
-//! Sending queued e-mails (the outbox) over SMTP, or to files in development.
+//! Sending queued e-mails (the outbox) over SMTP or Microsoft Graph, or to files in development.
+//!
+//! An e-mail leaves through the helpdesk mailbox it belongs to (ADR 0054): the mailbox of the
+//! ticket, else the company's default mailbox. Without mailboxes, everything uses the one
+//! transport from the worker's `MAIL_TRANSPORT` and `SMTP_*` variables.
 
+use std::collections::HashMap;
 use std::path::PathBuf;
 
 use anyhow::Context;
@@ -9,6 +14,8 @@ use lettre::transport::smtp::authentication::Credentials;
 use lettre::{AsyncSmtpTransport, AsyncTransport, Tokio1Executor};
 use sqlx::{FromRow, PgPool};
 use uuid::Uuid;
+
+use crate::graph::{GraphClient, GraphMailbox};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SmtpSecurity {
@@ -24,6 +31,32 @@ pub enum Mailer {
     Smtp(AsyncSmtpTransport<Tokio1Executor>),
     /// Writes each message as an .eml file (development and tests).
     Files(PathBuf),
+    /// An Exchange Online mailbox through Microsoft Graph.
+    Graph(GraphClient, GraphMailbox),
+}
+
+/// The transports of one worker pass.
+pub struct Transports<'a> {
+    /// The transport from the worker's variables: used when the company has no mailbox.
+    pub fallback: &'a Mailer,
+    /// One transport per active helpdesk mailbox, or why it cannot send. `None` when mailboxes
+    /// must not be used: outside a live environment everything goes to the fallback, which the
+    /// outbound policy forces to files (ADR 0048).
+    pub mailboxes: Option<&'a HashMap<Uuid, Result<Mailer, String>>>,
+}
+
+impl Transports<'_> {
+    fn pick(&self, mailbox: Option<Uuid>) -> anyhow::Result<&Mailer> {
+        match (self.mailboxes, mailbox) {
+            (Some(map), Some(id)) => match map.get(&id) {
+                Some(Ok(m)) => Ok(m),
+                Some(Err(reason)) => Err(anyhow::anyhow!("{reason}")),
+                // Never through another server than the one the sender address belongs to.
+                None => Err(anyhow::anyhow!("the mailbox of this e-mail is not active")),
+            },
+            _ => Ok(self.fallback),
+        }
+    }
 }
 
 impl Mailer {
@@ -46,7 +79,9 @@ impl Mailer {
         Ok(Mailer::Smtp(b.build()))
     }
 
-    async fn send(&self, message: Message, id: Uuid) -> anyhow::Result<()> {
+    /// Sends the message. Returns the Message-ID the server gave it when that is known and may
+    /// differ from the one in the message (Exchange Online).
+    async fn send(&self, message: Message, id: Uuid) -> anyhow::Result<Option<String>> {
         match self {
             Mailer::Smtp(t) => {
                 t.send(message).await?;
@@ -55,8 +90,11 @@ impl Mailer {
                 tokio::fs::create_dir_all(dir).await?;
                 tokio::fs::write(dir.join(format!("{id}.eml")), message.formatted()).await?;
             }
+            Mailer::Graph(client, mailbox) => {
+                return client.send(mailbox, &message.formatted()).await;
+            }
         }
-        Ok(())
+        Ok(None)
     }
 }
 
@@ -73,6 +111,25 @@ struct Queued {
     in_reply_to: Option<String>,
     references: Option<Vec<String>>,
     attempts: i32,
+    /// The mailbox to send through: the article's, else the company's default.
+    mailbox_id: Option<Uuid>,
+    /// That mailbox's address: the transport only sends as that address.
+    mailbox_address: Option<String>,
+}
+
+impl Queued {
+    /// A queued reply whose mailbox is gone (the article's link is cleared when a mailbox is
+    /// deleted) must not leave through the default mailbox under another sender address.
+    fn check_sender(&self) -> anyhow::Result<()> {
+        match &self.mailbox_address {
+            Some(a) if !a.eq_ignore_ascii_case(self.from_address.trim()) => anyhow::bail!(
+                "the sender {} does not belong to the mailbox this e-mail would leave through ({a}); \
+                 check the mailbox settings and queue the reply again",
+                self.from_address
+            ),
+            _ => Ok(()),
+        }
+    }
 }
 
 const MAX_ATTEMPTS: i32 = 5;
@@ -136,6 +193,19 @@ fn build(q: &Queued, files: &[FileToSend]) -> anyhow::Result<Message> {
 /// Sends up to `batch` queued e-mails. Each article is locked while it is being sent, so several
 /// workers can run side by side. Returns the number sent.
 pub async fn process_outbox(db: &PgPool, mailer: &Mailer, batch: i64) -> anyhow::Result<usize> {
+    let transports = Transports {
+        fallback: mailer,
+        mailboxes: None,
+    };
+    process_outbox_with(db, &transports, batch).await
+}
+
+/// [`process_outbox`] with one transport per helpdesk mailbox.
+pub async fn process_outbox_with(
+    db: &PgPool,
+    transports: &Transports<'_>,
+    batch: i64,
+) -> anyhow::Result<usize> {
     let mut sent = 0;
     for _ in 0..batch {
         let mut tx = db.begin().await?;
@@ -145,11 +215,16 @@ pub async fn process_outbox(db: &PgPool, mailer: &Mailer, batch: i64) -> anyhow:
                     (SELECT array_agg(x.message_id ORDER BY x.created_at) FROM helpdesk.articles x
                      WHERE x.ticket_id = a.ticket_id AND x.message_id IS NOT NULL AND x.id <> a.id
                        AND x.kind <> 'note') AS references,
-                    a.attempts
+                    a.attempts, coalesce(a.mailbox_id, d.id) AS mailbox_id, e.address AS mailbox_address
              FROM helpdesk.articles a
+             JOIN helpdesk.tickets t ON t.id = a.ticket_id
+             LEFT JOIN helpdesk.mailboxes d ON d.company_id = t.company_id AND d.is_default AND d.active
+             LEFT JOIN helpdesk.mailboxes e ON e.id = coalesce(a.mailbox_id, d.id)
              WHERE a.delivery = 'queued'
-             ORDER BY a.created_at
-             LIMIT 1 FOR UPDATE SKIP LOCKED",
+             -- An e-mail that failed goes behind the others, so one broken mailbox does not hold
+             -- up the rest.
+             ORDER BY a.attempts, a.created_at
+             LIMIT 1 FOR UPDATE OF a SKIP LOCKED",
         )
         .fetch_optional(&mut *tx)
         .await?;
@@ -163,20 +238,33 @@ pub async fn process_outbox(db: &PgPool, mailer: &Mailer, batch: i64) -> anyhow:
         .bind(q.id)
         .fetch_all(&mut *tx)
         .await?;
-        let result = match build(&q, &files) {
-            Ok(m) => mailer.send(m, q.id).await,
-            Err(e) => Err(e),
+        let result = match (build(&q, &files), transports.pick(q.mailbox_id)) {
+            // Outside live the fallback writes files whatever the address.
+            (Ok(m), Ok(mailer)) => match (transports.mailboxes, q.check_sender()) {
+                (Some(_), Err(e)) => Err(e),
+                _ => mailer.send(m, q.id).await,
+            },
+            (Err(e), _) | (_, Err(e)) => Err(e),
         };
         match result {
-            Ok(()) => {
-                sqlx::query("UPDATE helpdesk.articles SET delivery = 'sent', sent_at = now(), attempts = attempts + 1, delivery_error = NULL WHERE id = $1")
-                    .bind(q.id)
-                    .execute(&mut *tx)
-                    .await?;
+            Ok(assigned) => {
+                // The Message-ID the customer's reply will refer to: the one the server gave.
+                sqlx::query(
+                    "UPDATE helpdesk.articles SET delivery = 'sent', sent_at = now(), attempts = attempts + 1,
+                            delivery_error = NULL, message_id = coalesce($2, message_id), mailbox_id = $3
+                     WHERE id = $1",
+                )
+                .bind(q.id)
+                .bind(assigned)
+                .bind(q.mailbox_id)
+                .execute(&mut *tx)
+                .await?;
                 sent += 1;
             }
             Err(e) => {
-                let failed = q.attempts + 1 >= MAX_ATTEMPTS;
+                // A send whose outcome is unknown is never repeated: it could reach the customer twice.
+                let failed = q.attempts + 1 >= MAX_ATTEMPTS
+                    || e.downcast_ref::<crate::graph::SendUnknown>().is_some();
                 tracing::warn!(article = %q.id, error = %e, failed, "sending e-mail failed");
                 sqlx::query(
                     "UPDATE helpdesk.articles SET attempts = attempts + 1, delivery_error = $2,
@@ -184,13 +272,12 @@ pub async fn process_outbox(db: &PgPool, mailer: &Mailer, batch: i64) -> anyhow:
                      WHERE id = $1",
                 )
                 .bind(q.id)
-                .bind(e.to_string())
+                .bind(format!("{e:#}"))
                 .bind(failed)
                 .execute(&mut *tx)
                 .await?;
                 tx.commit().await?;
-                // Leave the rest for the next round; the failing one goes to the back of the queue
-                // because created_at order is kept but attempts are limited.
+                // Leave the rest for the next round.
                 break;
             }
         }
@@ -211,12 +298,16 @@ struct QueuedSystem {
     attachment_data: Option<Vec<u8>>,
     company_name: String,
     company_email: Option<String>,
+    /// The company's default mailbox: its address is the sender and it is the transport.
+    mailbox_id: Option<Uuid>,
+    mailbox_address: Option<String>,
 }
 
 fn build_system(q: &QueuedSystem) -> anyhow::Result<Message> {
     let from_address = q
-        .company_email
+        .mailbox_address
         .as_deref()
+        .or(q.company_email.as_deref())
         .filter(|e| e.contains('@'))
         .context("the company has no e-mail address to send from")?;
     let from: Mailbox = format!(
@@ -261,26 +352,42 @@ pub async fn process_system_mail(
     mailer: &Mailer,
     batch: i64,
 ) -> anyhow::Result<usize> {
+    let transports = Transports {
+        fallback: mailer,
+        mailboxes: None,
+    };
+    process_system_mail_with(db, &transports, batch).await
+}
+
+/// [`process_system_mail`] through the company's default helpdesk mailbox when it has one.
+pub async fn process_system_mail_with(
+    db: &PgPool,
+    transports: &Transports<'_>,
+    batch: i64,
+) -> anyhow::Result<usize> {
     let mut sent = 0;
     for _ in 0..batch {
         let mut tx = db.begin().await?;
         let next: Option<QueuedSystem> = sqlx::query_as(
             "SELECT m.id, m.to_address, m.subject, m.body, m.attempts,
-                    m.attachment_name, m.attachment_type, m.attachment_data, co.name AS company_name, co.email AS company_email
+                    m.attachment_name, m.attachment_type, m.attachment_data, co.name AS company_name, co.email AS company_email,
+                    d.id AS mailbox_id, d.address AS mailbox_address
              FROM core.mail_outbox m JOIN core.companies co ON co.id = m.company_id
+             LEFT JOIN helpdesk.mailboxes d ON d.company_id = m.company_id AND d.is_default AND d.active
              WHERE m.delivery = 'queued'
-             ORDER BY m.created_at
+             ORDER BY m.attempts, m.created_at
              LIMIT 1 FOR UPDATE OF m SKIP LOCKED",
         )
         .fetch_optional(&mut *tx)
         .await?;
         let Some(q) = next else { break };
-        let result = match build_system(&q) {
-            Ok(m) => mailer.send(m, q.id).await,
-            Err(e) => Err(e),
+        // Outside live the fallback (files) is used; the sender address stays the mailbox's.
+        let result = match (build_system(&q), transports.pick(q.mailbox_id)) {
+            (Ok(m), Ok(mailer)) => mailer.send(m, q.id).await,
+            (Err(e), _) | (_, Err(e)) => Err(e),
         };
         match result {
-            Ok(()) => {
+            Ok(_) => {
                 sqlx::query("UPDATE core.mail_outbox SET delivery = 'sent', sent_at = now(), attempts = attempts + 1, delivery_error = NULL WHERE id = $1")
                     .bind(q.id)
                     .execute(&mut *tx)
@@ -288,7 +395,9 @@ pub async fn process_system_mail(
                 sent += 1;
             }
             Err(e) => {
-                let failed = q.attempts + 1 >= MAX_ATTEMPTS;
+                // A send whose outcome is unknown is never repeated: it could reach the customer twice.
+                let failed = q.attempts + 1 >= MAX_ATTEMPTS
+                    || e.downcast_ref::<crate::graph::SendUnknown>().is_some();
                 tracing::warn!(mail = %q.id, error = %e, failed, "sending system e-mail failed");
                 sqlx::query(
                     "UPDATE core.mail_outbox SET attempts = attempts + 1, delivery_error = $2,
@@ -296,7 +405,7 @@ pub async fn process_system_mail(
                      WHERE id = $1",
                 )
                 .bind(q.id)
-                .bind(e.to_string())
+                .bind(format!("{e:#}"))
                 .bind(failed)
                 .execute(&mut *tx)
                 .await?;

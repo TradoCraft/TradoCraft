@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tradocraft_app/app/api.dart';
@@ -88,6 +88,7 @@ class _Fake implements HttpClientAdapter {
           'country_code': 'BE',
           'currency': 'EUR',
           'default_language': 'nl',
+          'is_primary': true,
         },
       },
       'GET /api/v1/users' => [
@@ -169,7 +170,7 @@ Future<_Fake> _pump(
       overrides: [dioProvider.overrideWithValue(dio)],
       child: MaterialApp(
         locale: Locale(locale),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localizationsDelegates: [AppLocalizations.delegate, ...GlobalMaterialLocalizations.delegates],
         supportedLocales: AppLocalizations.supportedLocales,
         home: const TicketScreen(id: 't1'),
       ),

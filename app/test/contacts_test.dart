@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tradocraft_app/app/api.dart';
@@ -22,7 +22,7 @@ Future<FakeHttp> _pump(
       overrides: [dioProvider.overrideWithValue(fakeDio(http))],
       child: MaterialApp(
         locale: Locale(locale),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localizationsDelegates: [AppLocalizations.delegate, ...GlobalMaterialLocalizations.delegates],
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: Builder(builder: (_) => home)),
       ),

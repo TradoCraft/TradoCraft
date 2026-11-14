@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -125,7 +125,7 @@ Future<void> _pumpStaff(WidgetTester tester, FakeHttp http, Widget home) async {
       overrides: [dioProvider.overrideWithValue(fakeDio(http))],
       child: MaterialApp(
         locale: const Locale('en'),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localizationsDelegates: [AppLocalizations.delegate, ...GlobalMaterialLocalizations.delegates],
         supportedLocales: AppLocalizations.supportedLocales,
         home: home,
       ),
@@ -152,7 +152,7 @@ Future<void> _pumpPortal(
       ],
       child: MaterialApp(
         locale: Locale(locale),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localizationsDelegates: [AppLocalizations.delegate, ...GlobalMaterialLocalizations.delegates],
         supportedLocales: AppLocalizations.supportedLocales,
         home: home,
       ),
@@ -403,6 +403,7 @@ void main() {
       'GET /api/v1/me': (_) => meJson([..._helpdeskPerms, 'helpdesk.admin']),
       'GET /api/v1/users': (_) => [_user()],
       'GET /api/v1/helpdesk/teams': (_) => [_team()],
+      'GET /api/v1/helpdesk/mailboxes': (_) => <Object?>[],
       'GET /api/v1/helpdesk/settings': (_) => {
         'default_team_id': null,
         'csat_enabled': false,

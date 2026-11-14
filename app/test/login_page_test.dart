@@ -1,12 +1,13 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tradocraft_app/app/profile.dart';
 import 'package:tradocraft_app/app/session.dart';
 import 'package:tradocraft_app/features/field/offline/kv_store.dart';
 import 'package:tradocraft_app/features/login/login_page.dart';
+import 'package:tradocraft_app/features/setup/setup_api.dart';
 import 'package:tradocraft_app/l10n/app_localizations.dart';
 
 /// A store that answers reads only after [release], so the remembered user arrives late.
@@ -30,10 +31,13 @@ void main() {
         overrides: [
           profileProvider.overrideWithValue('admin'),
           kvStoreProvider.overrideWithValue(store),
+          setupStatusProvider.overrideWithValue(
+            (_) async => throw Exception('offline'),
+          ),
         ],
         child: const MaterialApp(
           locale: Locale('en'),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: [AppLocalizations.delegate, ...GlobalMaterialLocalizations.delegates],
           supportedLocales: AppLocalizations.supportedLocales,
           home: LoginPage(),
         ),

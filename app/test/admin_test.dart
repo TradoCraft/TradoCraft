@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -82,7 +82,7 @@ Future<void> _pump(WidgetTester tester, FakeHttp http, Widget home) async {
       overrides: [dioProvider.overrideWithValue(fakeDio(http))],
       child: MaterialApp(
         locale: const Locale('en'),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localizationsDelegates: [AppLocalizations.delegate, ...GlobalMaterialLocalizations.delegates],
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           // The shell watches /me; the test stands in for it.
@@ -274,8 +274,9 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
+    // Switching customers off takes sales (which requires it) along.
     expect(http.bodies['PUT /api/v1/admin/modules'], {
-      'disabled_modules': ['customers', 'products'],
+      'disabled_modules': ['customers', 'products', 'sales'],
     });
     expect(find.text('sales requires customers'), findsOneWidget);
 
@@ -293,6 +294,112 @@ void main() {
       http.requests.where((r) => r == 'GET /api/v1/me').length,
       greaterThan(before),
     );
+  });
+
+  group('module tree', () {
+    List<Object?> tree({List<String> off = const []}) => [
+      for (final m in [
+        ('customers', <String>[]),
+        ('products', <String>[]),
+        ('sales', ['customers', 'products']),
+        ('delivery', ['sales', 'products']),
+        ('helpdesk', <String>[]),
+      ])
+        _module(m.$1, requires: m.$2, enabled: !off.contains(m.$1)),
+    ];
+
+    Future<FakeHttp> open(
+      WidgetTester tester, {
+      List<String> off = const [],
+    }) async {
+      final http = FakeHttp(
+        _routes(
+          extra: {
+            'GET /api/v1/admin/modules': (_) => tree(off: off),
+            'PUT /api/v1/admin/modules': (_) => tree(),
+          },
+        ),
+      );
+      await _pump(tester, http, const AdminPage());
+      await tester.tap(find.text('Modules'));
+      await tester.pumpAndSettle();
+      return http;
+    }
+
+    Finder key(String k) => find.byKey(ValueKey(k));
+
+    testWidgets('shows roots, children and repeated multi-parent modules', (
+      tester,
+    ) async {
+      await open(tester);
+      for (final k in [
+        'module-customers',
+        'module-products',
+        'module-helpdesk',
+        'module-sales',
+        'module-delivery',
+        'module-sales-under-products',
+        'module-delivery-under-products',
+      ]) {
+        expect(key(k), findsOneWidget, reason: k);
+      }
+      expect(find.text('Needs Customers, Products'), findsOneWidget);
+      expect(find.text('Also needs Customers'), findsOneWidget);
+      expect(find.text('Also needs Sales'), findsOneWidget);
+      // Indentation: children sit to the right of their parent.
+      expect(
+        tester.getTopLeft(key('module-sales')).dx,
+        greaterThan(tester.getTopLeft(key('module-customers')).dx),
+      );
+    });
+
+    testWidgets(
+      'switching off cascades, says so, and saves the effective set',
+      (tester) async {
+        final http = await open(tester);
+        await tester.tap(key('module-customers'));
+        await tester.pumpAndSettle();
+        expect(find.textContaining('Also switches off: Sales'), findsOneWidget);
+        // customers, sales (x2) and delivery (x2) read Off; both occurrences share state.
+        expect(find.text('Off'), findsNWidgets(5));
+        await tester.tap(find.text('Save'));
+        await tester.pumpAndSettle();
+        expect(http.bodies['PUT /api/v1/admin/modules'], {
+          'disabled_modules': ['customers', 'delivery', 'sales'],
+        });
+      },
+    );
+
+    testWidgets('switching on enables what the module needs', (tester) async {
+      await open(tester, off: ['customers', 'sales', 'delivery']);
+      await tester.tap(key('module-delivery'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Also switches on: '), findsOneWidget);
+      expect(find.text('Off'), findsNothing);
+    });
+
+    testWidgets('a repeated occurrence toggles the same state', (tester) async {
+      await open(tester);
+      await tester.tap(key('module-sales-under-products'));
+      await tester.pumpAndSettle();
+      expect(tester.widget<SwitchListTile>(key('module-sales')).value, false);
+      expect(
+        tester.widget<SwitchListTile>(key('module-delivery')).value,
+        false,
+      );
+    });
+
+    testWidgets('rows collapse and expand', (tester) async {
+      await open(tester);
+      await tester.tap(key('expand-customers'));
+      await tester.pumpAndSettle();
+      expect(key('module-sales'), findsNothing);
+      expect(key('module-delivery'), findsNothing);
+      expect(key('module-sales-under-products'), findsOneWidget);
+      await tester.tap(key('expand-customers'));
+      await tester.pumpAndSettle();
+      expect(key('module-sales'), findsOneWidget);
+    });
   });
 
   group('navigation', () {
@@ -327,7 +434,7 @@ void main() {
           child: MaterialApp.router(
             routerConfig: router,
             locale: const Locale('en'),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            localizationsDelegates: [AppLocalizations.delegate, ...GlobalMaterialLocalizations.delegates],
             supportedLocales: AppLocalizations.supportedLocales,
           ),
         ),

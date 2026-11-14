@@ -1,7 +1,9 @@
-import 'package:decimal/decimal.dart';
-import 'package:flutter/material.dart';
+import 'dart:typed_data';
+
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:printing/printing.dart';
 
 import '../../app/api.dart';
 import '../../l10n/l10n.dart';
@@ -10,7 +12,9 @@ import '../../shared/app_icons.dart';
 import '../../shared/format.dart';
 import '../planning/board_model.dart';
 import 'complete_dialog.dart';
+import 'order_operations.dart';
 import 'production_page.dart';
+import '../tutorial/targets.dart';
 
 /// One production order: division, planned-ready date, the frozen components with what is
 /// reserved, start, complete (backflush) and cancel.
@@ -66,16 +70,19 @@ class _ProductionScreenState extends ConsumerState<ProductionScreen> {
     _notes.text = po.notes;
   }
 
+  /// Runs an action that answers with the changed order and shows it. With [keepEdits] what the
+  /// planner has typed but not saved (division, planned-ready date, notes) stays as it is.
   Future<void> _run(
     Future<ProductionOrder> Function() action, {
     String? success,
+    bool keepEdits = false,
   }) async {
     setState(() => _busy = true);
     try {
       final po = await action();
       _changed = true;
       if (mounted) {
-        setState(() => _show(po));
+        setState(() => keepEdits ? _po = po : _show(po));
         if (success != null) _snack(success);
       }
     } catch (e) {
@@ -150,19 +157,16 @@ class _ProductionScreenState extends ConsumerState<ProductionScreen> {
     }
   }
 
+  /// Releases a production order for what is still missing of a component that is built from a
+  /// BOM; the server works out how much (required, less reserved, free and already under way).
   Future<void> _buildComponent(ProductionComponent c) async {
     final po = _po!;
-    final missing =
-        (Decimal.tryParse(c.requiredQuantity) ?? Decimal.zero) -
-        (Decimal.tryParse(c.reservedQuantity) ?? Decimal.zero);
     String? opened;
     await runAction(context, () async {
-      final child = await _api.release(
-        body: ReleaseProductionInput(
-          productId: c.componentProductId,
-          quantity: parseDecimalInput(missing.toString()),
-          parentOrderId: po.id,
-        ),
+      final child = await _api.buildComponent(
+        id: po.id,
+        componentId: c.id,
+        body: ProductionBuildComponentInput(),
       );
       opened = child.id;
     }, success: context.l10n.productionReleased);
@@ -170,6 +174,20 @@ class _ProductionScreenState extends ConsumerState<ProductionScreen> {
       await context.push('/production/$opened');
       _load();
     }
+  }
+
+  Future<void> _pdf() async {
+    final po = _po!;
+    await runAction(context, () async {
+      final bytes = await downloadBytes(
+        ref.read(dioProvider),
+        '/api/v1/production-orders/${po.id}/pdf',
+      );
+      await Printing.layoutPdf(
+        name: '${po.number}.pdf',
+        onLayout: (_) async => Uint8List.fromList(bytes),
+      );
+    });
   }
 
   @override
@@ -207,6 +225,14 @@ class _ProductionScreenState extends ConsumerState<ProductionScreen> {
       child: Scaffold(
         appBar: AppBar(
           title: Text('${po.number} · ${l.productionStatus(po.status)}'),
+          actions: [
+            IconButton(
+              key: const ValueKey('production-pdf'),
+              tooltip: l.pdf,
+              icon: const Icon(AppIcons.pictureAsPdf),
+              onPressed: _busy ? null : _pdf,
+            ),
+          ],
         ),
         body: ListView(
           padding: const EdgeInsets.all(16),
@@ -234,6 +260,47 @@ class _ProductionScreenState extends ConsumerState<ProductionScreen> {
                   ),
               ],
             ),
+            if (po.parentOrderId != null && po.parentOrderNumber != null)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  key: const ValueKey('parent-order'),
+                  icon: const Icon(AppIcons.subdirectoryArrowRight),
+                  label: Text(l.productionSubassemblyOf(po.parentOrderNumber!)),
+                  onPressed: () async {
+                    await context.push('/production/${po.parentOrderId}');
+                    _load();
+                  },
+                ),
+              ),
+            if ((po.productionRemark ?? '').isNotEmpty)
+              Card(
+                key: const ValueKey('production-remark'),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l.productionRemark,
+                        style: Theme.of(context).textTheme.labelSmall,
+                      ),
+                      Text(po.productionRemark!),
+                    ],
+                  ),
+                ),
+              ),
+            if (po.behindSchedule && po.scheduledEnd != null && open)
+              Card(
+                key: const ValueKey('behind-schedule'),
+                color: Theme.of(context).colorScheme.errorContainer,
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Text(
+                    l.productionBehindSchedule(date(po.scheduledEnd)),
+                  ),
+                ),
+              ),
             if (po.orderCancelled && open)
               Card(
                 key: const ValueKey('order-cancelled'),
@@ -245,7 +312,7 @@ class _ProductionScreenState extends ConsumerState<ProductionScreen> {
               ),
             if (canWrite) ...[
               gap,
-              DropdownButtonFormField<String?>(
+              TutorialTarget(id: 'production-division', child: DropdownButtonFormField<String?>(
                 key: ValueKey(
                   'division-${_division ?? ''}-${divisions.length}',
                 ),
@@ -270,7 +337,7 @@ class _ProductionScreenState extends ConsumerState<ProductionScreen> {
                     ),
                 ],
                 onChanged: (v) => setState(() => _division = v),
-              ),
+              )),
               gap,
               Row(
                 children: [
@@ -290,6 +357,20 @@ class _ProductionScreenState extends ConsumerState<ProductionScreen> {
                     ),
                 ],
               ),
+              if (po.scheduledEnd != null &&
+                  (_ready == null ||
+                      _ready!.isBefore(dateOnly(po.scheduledEnd!))))
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton(
+                    key: const ValueKey('use-scheduled-end'),
+                    onPressed: () =>
+                        setState(() => _ready = dateOnly(po.scheduledEnd!)),
+                    child: Text(
+                      l.productionUseScheduledEnd(date(po.scheduledEnd)),
+                    ),
+                  ),
+                ),
               gap,
               TextField(
                 controller: _notes,
@@ -341,6 +422,54 @@ class _ProductionScreenState extends ConsumerState<ProductionScreen> {
                       )
                     : null,
               ),
+            OrderOperations(
+              order: po,
+              canRun: canRun,
+              canWrite: canWrite,
+              busy: _busy,
+              run: (action) => _run(action, keepEdits: true),
+            ),
+            if (po.subOrders.isNotEmpty) ...[
+              gap,
+              Text(
+                l.productionSubOrders,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              for (final c in po.subOrders)
+                ListTile(
+                  key: ValueKey('sub-order-${c.id}'),
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(
+                    '${c.number} · ${c.productCode} · ${number(c.quantity)} ${c.unit}',
+                  ),
+                  subtitle: Text(
+                    [
+                      l.productionStatus(c.status),
+                      if (c.scheduledEnd != null) date(c.scheduledEnd),
+                    ].join(' · '),
+                  ),
+                  trailing: const Icon(AppIcons.chevronRight),
+                  onTap: () async {
+                    await context.push('/production/${c.id}');
+                    _load();
+                  },
+                ),
+            ],
+            if (po.plannedCost != null) ...[
+              gap,
+              Text(
+                l.productionCost,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              _costRow(l, l.productionCostPlanned, po.plannedCost!),
+              if (po.actualCost != null)
+                _costRow(l, l.productionCostActual, po.actualCost!),
+              if (po.plannedCost!.incomplete)
+                Text(
+                  l.productionCostIncomplete,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+            ],
             if (po.outputs.isNotEmpty) ...[
               gap,
               Text(
@@ -364,11 +493,11 @@ class _ProductionScreenState extends ConsumerState<ProductionScreen> {
               runSpacing: 8,
               children: [
                 if (canWrite)
-                  OutlinedButton(
+                  TutorialTarget(id: 'production-save', child: OutlinedButton(
                     key: const ValueKey('save-production'),
                     onPressed: _busy ? null : _save,
                     child: Text(l.save),
-                  ),
+                  )),
                 if (canWrite && anyShort)
                   OutlinedButton(
                     key: const ValueKey('reserve-again'),
@@ -379,21 +508,21 @@ class _ProductionScreenState extends ConsumerState<ProductionScreen> {
                     child: Text(l.productionReserveAgain),
                   ),
                 if (canRun && po.status == 'released')
-                  OutlinedButton.icon(
+                  TutorialTarget(id: 'production-start', child: OutlinedButton.icon(
                     key: const ValueKey('start-production'),
                     onPressed: _busy
                         ? null
                         : () => _run(() => _api.startOrder(id: widget.id)),
                     icon: const Icon(AppIcons.playArrow),
                     label: Text(l.productionStart),
-                  ),
+                  )),
                 if (canRun && !po.orderCancelled)
-                  FilledButton.icon(
+                  TutorialTarget(id: 'production-complete', child: FilledButton.icon(
                     key: const ValueKey('complete-production'),
                     onPressed: _busy ? null : _complete,
                     icon: const Icon(AppIcons.check),
                     label: Text(l.productionComplete),
-                  ),
+                  )),
                 if (canWrite)
                   TextButton(
                     key: const ValueKey('cancel-production'),
@@ -408,3 +537,15 @@ class _ProductionScreenState extends ConsumerState<ProductionScreen> {
     );
   }
 }
+
+/// One line of cost: what it is, material and labour, and the total.
+Widget _costRow(AppLocalizations l, String label, ProductionOrderCost c) =>
+    ListTile(
+      key: ValueKey('cost-$label'),
+      contentPadding: EdgeInsets.zero,
+      title: Text(label),
+      subtitle: Text(
+        '${l.productionCostMaterial} ${money(c.materialCost)} · ${l.productionCostLabour} ${money(c.labourCost)}',
+      ),
+      trailing: Text(money(c.totalCost)),
+    );

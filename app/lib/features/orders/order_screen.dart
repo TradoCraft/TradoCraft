@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -16,6 +16,9 @@ import '../delivery/order_deliveries.dart';
 import '../production/order_production.dart';
 import '../inventory/order_stock_panel.dart';
 import '../../shared/app_icons.dart';
+import '../../shared/load_failed.dart';
+import '../todo/object_todos_button.dart';
+import '../tutorial/targets.dart';
 
 final _historyProvider = FutureProvider.autoDispose
     .family<List<PriorityChange>, String>(
@@ -44,6 +47,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
   bool _busy = false;
   bool _changed = false;
   String? _error;
+  bool _missing = false;
 
   bool _editing = false;
   final _qty = <int, TextEditingController>{};
@@ -94,7 +98,12 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
       final o = await call();
       if (mounted) _show(o);
     } catch (e) {
-      if (mounted) setState(() => _error = errorMessage(e));
+      if (mounted) {
+        setState(() {
+          _error = errorMessage(e);
+          _missing = errorStatus(e) == 404;
+        });
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -512,11 +521,11 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
               icon: const Icon(AppIcons.edit),
               label: Text(l.edit),
             ),
-            FilledButton.icon(
+            TutorialTarget(id: 'order-send', child: FilledButton.icon(
               onPressed: busy ? null : _send,
               icon: const Icon(AppIcons.forwardToInbox),
               label: Text(l.sendOrderConfirmation),
-            ),
+            )),
           ],
         ],
         if (canWrite && isCurrent && o.status == 'sent') ...[
@@ -525,11 +534,11 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
             icon: const Icon(AppIcons.copy),
             label: Text(l.newRevision),
           ),
-          FilledButton.icon(
+          TutorialTarget(id: 'order-confirm', child: FilledButton.icon(
             onPressed: busy ? null : _confirmOnBehalf,
             icon: const Icon(AppIcons.check),
             label: Text(l.confirmOnBehalf),
-          ),
+          )),
         ],
         if (canWrite && isCurrent && open && !_editing)
           OutlinedButton.icon(
@@ -795,11 +804,15 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
     final d = _order;
     if (d == null) {
       return Scaffold(
-        body: Center(
-          child: _loading
-              ? const CircularProgressIndicator()
-              : Text(_error ?? ''),
-        ),
+        body: _loading || _error == null
+            ? const Center(child: CircularProgressIndicator())
+            : LoadFailedView(
+                message: _error!,
+                leaveTo: '/orders',
+                notFound: _missing,
+                todoKind: TodoLinkKind.order,
+                todoId: widget.id,
+              ),
       );
     }
     final o = d.order;
@@ -830,6 +843,11 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
               Chip(
                 label: Text(l.revisionNumber(d.revision)),
                 visualDensity: VisualDensity.compact,
+              ),
+              ObjectTodosButton(
+                kind: TodoLinkKind.order,
+                id: o.id,
+                label: o.number,
               ),
               OutlinedButton.icon(
                 icon: const Icon(AppIcons.requestQuote),

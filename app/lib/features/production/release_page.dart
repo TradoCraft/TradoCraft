@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -7,6 +7,7 @@ import '../../l10n/l10n.dart';
 import '../../shared/actions.dart';
 import '../../shared/app_icons.dart';
 import '../../shared/format.dart';
+import '../tutorial/targets.dart';
 
 /// Lines of confirmed orders that are built from a BOM and not yet covered by production orders:
 /// what the planner can release, most urgent orders first.
@@ -21,6 +22,9 @@ class _ReleasePageState extends ConsumerState<ReleasePage> {
   List<ProductionToRelease>? _items;
   String? _error;
   String? _busy;
+
+  /// Also release the subassemblies that stock does not cover.
+  bool _auto = false;
 
   @override
   void initState() {
@@ -54,6 +58,7 @@ class _ReleasePageState extends ConsumerState<ReleasePage> {
             body: ReleaseProductionInput(
               orderId: t.orderId,
               orderLineId: t.orderLineId,
+              autoReleaseSubassemblies: _auto ? true : null,
             ),
           );
       opened = po.id;
@@ -91,6 +96,14 @@ class _ReleasePageState extends ConsumerState<ReleasePage> {
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [
+                if (canRelease)
+                  SwitchListTile(
+                    key: const ValueKey('auto-release'),
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(l.productionAutoRelease),
+                    value: _auto,
+                    onChanged: (v) => setState(() => _auto = v),
+                  ),
                 for (final t in items)
                   Card(
                     key: ValueKey('release-${t.orderLineId}'),
@@ -102,14 +115,14 @@ class _ReleasePageState extends ConsumerState<ReleasePage> {
                         '${t.orderNumber} · ${t.customerName} · ${l.orderPriority(t.priority)}',
                       ),
                       trailing: canRelease
-                          ? FilledButton.icon(
+                          ? TutorialTarget(id: 'production-release-line', child: FilledButton.icon(
                               key: ValueKey('release-button-${t.orderLineId}'),
                               icon: const Icon(AppIcons.outbox),
                               label: Text(l.productionRelease),
                               onPressed: _busy == null
                                   ? () => _release(t)
                                   : null,
-                            )
+                            ))
                           : null,
                       onTap: () => context.push('/orders/${t.orderId}'),
                     ),

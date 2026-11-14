@@ -5072,6 +5072,12 @@ abstract class AppLocalizations {
   /// **'No movements yet'**
   String get stockNoMoves;
 
+  /// No description provided for @stockNoLocationsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'No locations yet. An administrator creates a warehouse and a location under Stock > Warehouses.'**
+  String get stockNoLocationsHint;
+
   /// No description provided for @stockNoWarehouses.
   ///
   /// In en, this message translates to:
@@ -7261,6 +7267,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Modules saved'**
   String get modulesSaved;
+
+  /// No description provided for @moduleAlsoRequires.
+  ///
+  /// In en, this message translates to:
+  /// **'Also needs {modules}'**
+  String moduleAlsoRequires(String modules);
+
+  /// No description provided for @moduleAlsoSwitchedOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Also switches off: {modules}'**
+  String moduleAlsoSwitchedOff(String modules);
+
+  /// No description provided for @moduleAlsoSwitchedOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Also switches on: {modules}'**
+  String moduleAlsoSwitchedOn(String modules);
+
+  /// No description provided for @moduleExpand.
+  ///
+  /// In en, this message translates to:
+  /// **'Expand {module}'**
+  String moduleExpand(String module);
+
+  /// No description provided for @moduleCollapse.
+  ///
+  /// In en, this message translates to:
+  /// **'Collapse {module}'**
+  String moduleCollapse(String module);
+
+  /// No description provided for @moduleOn.
+  ///
+  /// In en, this message translates to:
+  /// **'On'**
+  String get moduleOn;
+
+  /// No description provided for @moduleOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get moduleOff;
+
+  /// No description provided for @moduleLevel.
+  ///
+  /// In en, this message translates to:
+  /// **'Level {level}'**
+  String moduleLevel(int level);
 
   /// No description provided for @userRoleAdmin.
   ///
@@ -11231,6 +11285,4644 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Done, but the list of environments could not be saved on this device.'**
   String get envNotSaved;
+
+  /// No description provided for @tutTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tutorial'**
+  String get tutTitle;
+
+  /// No description provided for @tutBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get tutBack;
+
+  /// No description provided for @tutNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get tutNext;
+
+  /// No description provided for @tutSkipStep.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip step'**
+  String get tutSkipStep;
+
+  /// No description provided for @tutPause.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause'**
+  String get tutPause;
+
+  /// No description provided for @tutResume.
+  ///
+  /// In en, this message translates to:
+  /// **'Resume'**
+  String get tutResume;
+
+  /// No description provided for @tutPaused.
+  ///
+  /// In en, this message translates to:
+  /// **'Tutorial paused'**
+  String get tutPaused;
+
+  /// No description provided for @tutTakeMe.
+  ///
+  /// In en, this message translates to:
+  /// **'Take me there'**
+  String get tutTakeMe;
+
+  /// No description provided for @tutStepOf.
+  ///
+  /// In en, this message translates to:
+  /// **'Step {current} of {total}'**
+  String tutStepOf(int current, int total);
+
+  /// No description provided for @tutOfferTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome to TradoCraft'**
+  String get tutOfferTitle;
+
+  /// No description provided for @tutOfferBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This is a tutorial environment. Want a guided tour that teaches you the app step by step, on practice data?'**
+  String get tutOfferBody;
+
+  /// No description provided for @tutOfferStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start the tutorial'**
+  String get tutOfferStart;
+
+  /// No description provided for @tutOfferLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get tutOfferLater;
+
+  /// No description provided for @tutLiveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The tutorial does not run on live data'**
+  String get tutLiveTitle;
+
+  /// No description provided for @tutLiveBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The tutorial creates records, so it only runs in a test or tutorial environment. Switch to one, or add one.'**
+  String get tutLiveBody;
+
+  /// No description provided for @tutSwitchEnv.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch environment'**
+  String get tutSwitchEnv;
+
+  /// No description provided for @tutAddEnv.
+  ///
+  /// In en, this message translates to:
+  /// **'Add an environment'**
+  String get tutAddEnv;
+
+  /// No description provided for @tutMapIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Work through the chapters in order. You can pause, replay or skip a chapter at any time.'**
+  String get tutMapIntro;
+
+  /// No description provided for @tutStatusDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get tutStatusDone;
+
+  /// No description provided for @tutStatusCurrent.
+  ///
+  /// In en, this message translates to:
+  /// **'Up next'**
+  String get tutStatusCurrent;
+
+  /// No description provided for @tutStatusLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Locked'**
+  String get tutStatusLocked;
+
+  /// No description provided for @tutStatusSkipped.
+  ///
+  /// In en, this message translates to:
+  /// **'Skipped'**
+  String get tutStatusSkipped;
+
+  /// No description provided for @tutStatusPaused.
+  ///
+  /// In en, this message translates to:
+  /// **'In progress'**
+  String get tutStatusPaused;
+
+  /// No description provided for @tutStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get tutStart;
+
+  /// No description provided for @tutReplay.
+  ///
+  /// In en, this message translates to:
+  /// **'Replay'**
+  String get tutReplay;
+
+  /// No description provided for @tutFinishedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chapter {name} complete'**
+  String tutFinishedTitle(String name);
+
+  /// No description provided for @tutFinishedNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Well done. Next up: {name}. Start it now, or pick it later from the chapter map.'**
+  String tutFinishedNext(String name);
+
+  /// No description provided for @tutFinishedLast.
+  ///
+  /// In en, this message translates to:
+  /// **'That was the last chapter. Well done. You can replay any chapter from the chapter map.'**
+  String get tutFinishedLast;
+
+  /// No description provided for @tutStartNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Start next chapter'**
+  String get tutStartNext;
+
+  /// No description provided for @tutBackToMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to chapter map'**
+  String get tutBackToMap;
+
+  /// No description provided for @tutSkipChapter.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip chapter'**
+  String get tutSkipChapter;
+
+  /// No description provided for @tutWelcomeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome'**
+  String get tutWelcomeTitle;
+
+  /// No description provided for @tutWelcomeSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Find your way around: the environment banner, the tabs and the tutorial controls.'**
+  String get tutWelcomeSummary;
+
+  /// No description provided for @tutProductTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your first product'**
+  String get tutProductTitle;
+
+  /// No description provided for @tutProductSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Hat: product manager. Create three components, a finished product and its bill of materials.'**
+  String get tutProductSummary;
+
+  /// No description provided for @tutWelcomeBannerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The strip at the top'**
+  String get tutWelcomeBannerTitle;
+
+  /// No description provided for @tutWelcomeBannerBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This strip always shows which environment you are in: its name and its kind. Amber means test, blue means tutorial and red means live data. The tutorial only runs in test and tutorial environments, so nothing you do here touches real data.'**
+  String get tutWelcomeBannerBody;
+
+  /// No description provided for @tutWelcomeTabsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tabs and sections'**
+  String get tutWelcomeTabsTitle;
+
+  /// No description provided for @tutWelcomeTabsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The sections are on the left (or in the bottom bar on a phone). Opening a record, such as a product or a quotation, adds a tab to the workspace, so you can keep several records open and come back to them.'**
+  String get tutWelcomeTabsBody;
+
+  /// No description provided for @tutWelcomeControlsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'This card'**
+  String get tutWelcomeControlsTitle;
+
+  /// No description provided for @tutWelcomeControlsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'I am your narrator. Next moves on when a step is only an explanation. Steps that ask you to do something finish by themselves as soon as you have done it. Back and Skip step let you move around, and Pause hides me until you press Resume.'**
+  String get tutWelcomeControlsBody;
+
+  /// No description provided for @tutWelcomeMenuTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Where to find me'**
+  String get tutWelcomeMenuTitle;
+
+  /// No description provided for @tutWelcomeMenuBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the account menu to find the Tutorial entry. It opens the chapter map, where you can resume, replay or skip a chapter at any time.'**
+  String get tutWelcomeMenuBody;
+
+  /// No description provided for @tutWelcomeProductsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Let\'s start'**
+  String get tutWelcomeProductsTitle;
+
+  /// No description provided for @tutWelcomeProductsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the Products section. The next chapter starts there.'**
+  String get tutWelcomeProductsBody;
+
+  /// No description provided for @tutProductOpenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Products'**
+  String get tutProductOpenTitle;
+
+  /// No description provided for @tutProductOpenBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Today you are the product manager. Everything the company sells or builds is a product. Open the Products section.'**
+  String get tutProductOpenBody;
+
+  /// No description provided for @tutProductMotorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Component: Motor'**
+  String get tutProductMotorTitle;
+
+  /// No description provided for @tutProductMotorBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Create the first component. Press New product, enter code TUT-MOTOR and name Motor, keep the type Purchased, and save.'**
+  String get tutProductMotorBody;
+
+  /// No description provided for @tutProductMotorHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The TUT- prefix marks tutorial data, so you can recognise it later.'**
+  String get tutProductMotorHint;
+
+  /// No description provided for @tutProductFrameTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Component: Frame'**
+  String get tutProductFrameTitle;
+
+  /// No description provided for @tutProductFrameBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a second component the same way: code TUT-FRAME, name Frame, type Purchased.'**
+  String get tutProductFrameBody;
+
+  /// No description provided for @tutProductControllerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Component: Controller'**
+  String get tutProductControllerTitle;
+
+  /// No description provided for @tutProductControllerBody.
+  ///
+  /// In en, this message translates to:
+  /// **'And a third one: code TUT-CTRL, name Controller, type Purchased.'**
+  String get tutProductControllerBody;
+
+  /// No description provided for @tutProductCartTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The finished product'**
+  String get tutProductCartTitle;
+
+  /// No description provided for @tutProductCartBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Now the product you build from those parts. Create code TUT-CART, name Cart, and choose the type Manufactured: only manufactured products have a bill of materials.'**
+  String get tutProductCartBody;
+
+  /// No description provided for @tutProductOpenCartTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the cart'**
+  String get tutProductOpenCartTitle;
+
+  /// No description provided for @tutProductOpenCartBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the new Cart product from the list to see its tabs.'**
+  String get tutProductOpenCartBody;
+
+  /// No description provided for @tutProductBomTabTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Bill of materials'**
+  String get tutProductBomTabTitle;
+
+  /// No description provided for @tutProductBomTabBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the Bill of materials tab. It lists the components needed to build one unit. A revision is a draft you edit, or the active one that production uses. Press Next when you are there.'**
+  String get tutProductBomTabBody;
+
+  /// No description provided for @tutProductRevisionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A first revision'**
+  String get tutProductRevisionTitle;
+
+  /// No description provided for @tutProductRevisionBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Press New revision to start a draft.'**
+  String get tutProductRevisionBody;
+
+  /// No description provided for @tutProductLinesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add the components'**
+  String get tutProductLinesTitle;
+
+  /// No description provided for @tutProductLinesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Search each component and add it: Motor, Frame and Controller. Then press Save draft.'**
+  String get tutProductLinesBody;
+
+  /// No description provided for @tutProductLinesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Type TUT in the search box to find the three components.'**
+  String get tutProductLinesHint;
+
+  /// No description provided for @tutProductActivateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Activate it'**
+  String get tutProductActivateTitle;
+
+  /// No description provided for @tutProductActivateBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Press Activate. From now on production and quotations use this revision; later changes go through a new revision.'**
+  String get tutProductActivateBody;
+
+  /// No description provided for @tutProductDoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Well done'**
+  String get tutProductDoneTitle;
+
+  /// No description provided for @tutProductDoneBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You have a finished product with a bill of materials of three components. Later chapters build on it.'**
+  String get tutProductDoneBody;
+
+  /// No description provided for @purchasing.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchasing'**
+  String get purchasing;
+
+  /// No description provided for @tabSupplier.
+  ///
+  /// In en, this message translates to:
+  /// **'Supplier'**
+  String get tabSupplier;
+
+  /// No description provided for @purchSuppliers.
+  ///
+  /// In en, this message translates to:
+  /// **'Suppliers'**
+  String get purchSuppliers;
+
+  /// No description provided for @purchNewSupplier.
+  ///
+  /// In en, this message translates to:
+  /// **'New supplier'**
+  String get purchNewSupplier;
+
+  /// No description provided for @purchPaymentTerms.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment terms'**
+  String get purchPaymentTerms;
+
+  /// No description provided for @purchDays.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} days'**
+  String purchDays(int count);
+
+  /// No description provided for @purchActiveOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Active only'**
+  String get purchActiveOnly;
+
+  /// No description provided for @purchNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'The name is required.'**
+  String get purchNameRequired;
+
+  /// No description provided for @purchCountryInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'The country must be a 2-letter code.'**
+  String get purchCountryInvalid;
+
+  /// No description provided for @purchCurrencyInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'The currency must be a 3-letter code.'**
+  String get purchCurrencyInvalid;
+
+  /// No description provided for @purchTermsInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment terms must be a whole number of days.'**
+  String get purchTermsInvalid;
+
+  /// No description provided for @purchInactive.
+  ///
+  /// In en, this message translates to:
+  /// **'Inactive'**
+  String get purchInactive;
+
+  /// No description provided for @purchPriceList.
+  ///
+  /// In en, this message translates to:
+  /// **'Price list'**
+  String get purchPriceList;
+
+  /// No description provided for @purchAddProduct.
+  ///
+  /// In en, this message translates to:
+  /// **'Add product'**
+  String get purchAddProduct;
+
+  /// No description provided for @purchEditPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit price'**
+  String get purchEditPrice;
+
+  /// No description provided for @purchNoPrices.
+  ///
+  /// In en, this message translates to:
+  /// **'No products on this price list yet.'**
+  String get purchNoPrices;
+
+  /// No description provided for @purchPickProduct.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a product.'**
+  String get purchPickProduct;
+
+  /// No description provided for @purchPriceInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid unit price.'**
+  String get purchPriceInvalid;
+
+  /// No description provided for @purchMoqInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid minimum order quantity.'**
+  String get purchMoqInvalid;
+
+  /// No description provided for @purchLeadInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Lead time must be a whole number of days.'**
+  String get purchLeadInvalid;
+
+  /// No description provided for @purchSupplierArticleCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Supplier article code'**
+  String get purchSupplierArticleCode;
+
+  /// No description provided for @purchSupplierArticleName.
+  ///
+  /// In en, this message translates to:
+  /// **'Supplier article name'**
+  String get purchSupplierArticleName;
+
+  /// No description provided for @purchMoq.
+  ///
+  /// In en, this message translates to:
+  /// **'Min. order qty'**
+  String get purchMoq;
+
+  /// No description provided for @purchLeadTimeDays.
+  ///
+  /// In en, this message translates to:
+  /// **'Lead time (days)'**
+  String get purchLeadTimeDays;
+
+  /// No description provided for @purchPreferred.
+  ///
+  /// In en, this message translates to:
+  /// **'Preferred supplier'**
+  String get purchPreferred;
+
+  /// No description provided for @purchRemoveProductConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {code} from this price list?'**
+  String purchRemoveProductConfirm(String code);
+
+  /// No description provided for @purchMoqValue.
+  ///
+  /// In en, this message translates to:
+  /// **'MOQ {qty}'**
+  String purchMoqValue(String qty);
+
+  /// No description provided for @purchLeadValue.
+  ///
+  /// In en, this message translates to:
+  /// **'lead time {days} d'**
+  String purchLeadValue(int days);
+
+  /// No description provided for @purchNoSuppliers.
+  ///
+  /// In en, this message translates to:
+  /// **'No suppliers found.'**
+  String get purchNoSuppliers;
+
+  /// No description provided for @purchOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase orders'**
+  String get purchOrders;
+
+  /// No description provided for @purchNewOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'New purchase order'**
+  String get purchNewOrder;
+
+  /// No description provided for @purchNoOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'No purchase orders found.'**
+  String get purchNoOrders;
+
+  /// No description provided for @purchOrderNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Number'**
+  String get purchOrderNumber;
+
+  /// No description provided for @purchSupplier.
+  ///
+  /// In en, this message translates to:
+  /// **'Supplier'**
+  String get purchSupplier;
+
+  /// No description provided for @purchAllSuppliers.
+  ///
+  /// In en, this message translates to:
+  /// **'All suppliers'**
+  String get purchAllSuppliers;
+
+  /// No description provided for @purchOrderDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Order date'**
+  String get purchOrderDate;
+
+  /// No description provided for @purchExpectedDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Expected delivery'**
+  String get purchExpectedDate;
+
+  /// No description provided for @purchStatusDraft.
+  ///
+  /// In en, this message translates to:
+  /// **'draft'**
+  String get purchStatusDraft;
+
+  /// No description provided for @purchStatusApproved.
+  ///
+  /// In en, this message translates to:
+  /// **'approved'**
+  String get purchStatusApproved;
+
+  /// No description provided for @purchStatusSent.
+  ///
+  /// In en, this message translates to:
+  /// **'sent'**
+  String get purchStatusSent;
+
+  /// No description provided for @purchStatusPartial.
+  ///
+  /// In en, this message translates to:
+  /// **'partially received'**
+  String get purchStatusPartial;
+
+  /// No description provided for @purchStatusReceived.
+  ///
+  /// In en, this message translates to:
+  /// **'received'**
+  String get purchStatusReceived;
+
+  /// No description provided for @purchStatusCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'cancelled'**
+  String get purchStatusCancelled;
+
+  /// No description provided for @purchLines.
+  ///
+  /// In en, this message translates to:
+  /// **'Lines'**
+  String get purchLines;
+
+  /// No description provided for @purchAddLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Add line'**
+  String get purchAddLine;
+
+  /// No description provided for @purchGoodsPickSupplier.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a supplier to see the goods it offers.'**
+  String get purchGoodsPickSupplier;
+
+  /// No description provided for @purchGoodsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'This supplier has no products on its price list yet. Use \"Other products\" below to add products to this order, or add them to the price list later.'**
+  String get purchGoodsEmpty;
+
+  /// No description provided for @purchGoodsNoMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'No goods match the filter.'**
+  String get purchGoodsNoMatch;
+
+  /// No description provided for @purchGoodsFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter goods'**
+  String get purchGoodsFilter;
+
+  /// No description provided for @purchGoodsHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Goods of this supplier: tick what you want to order'**
+  String get purchGoodsHeader;
+
+  /// No description provided for @purchGoodsBelowMoq.
+  ///
+  /// In en, this message translates to:
+  /// **'Below the minimum order quantity ({qty})'**
+  String purchGoodsBelowMoq(String qty);
+
+  /// No description provided for @purchGoodsCleared.
+  ///
+  /// In en, this message translates to:
+  /// **'The selected goods were cleared because the supplier changed.'**
+  String get purchGoodsCleared;
+
+  /// No description provided for @purchGoodsOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other products (not on the price list)'**
+  String get purchGoodsOther;
+
+  /// No description provided for @purchGoodsSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} lines, total {total}'**
+  String purchGoodsSummary(int count, String total);
+
+  /// No description provided for @purchGoodsLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The supplier\'s goods could not be loaded. You can still add products under \"Other products\", or retry.'**
+  String get purchGoodsLoadFailed;
+
+  /// No description provided for @purchGoodsMixedCurrencies.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} lines in mixed currencies ({currencies}): no single total'**
+  String purchGoodsMixedCurrencies(int count, String currencies);
+
+  /// No description provided for @purchPickSupplier.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a supplier.'**
+  String get purchPickSupplier;
+
+  /// No description provided for @purchLineQtyInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Quantity must be greater than zero, with at most 4 decimals.'**
+  String get purchLineQtyInvalid;
+
+  /// No description provided for @purchLinePriceInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Unit price must be zero or more, with at most 4 decimals.'**
+  String get purchLinePriceInvalid;
+
+  /// No description provided for @purchNeedLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Add at least one line.'**
+  String get purchNeedLine;
+
+  /// No description provided for @purchApprove.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve'**
+  String get purchApprove;
+
+  /// No description provided for @purchCancelOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel order'**
+  String get purchCancelOrder;
+
+  /// No description provided for @purchCancelOrderConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel purchase order {number}? This cannot be undone.'**
+  String purchCancelOrderConfirm(String number);
+
+  /// No description provided for @purchKeepOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep order'**
+  String get purchKeepOrder;
+
+  /// No description provided for @purchQtyReceived.
+  ///
+  /// In en, this message translates to:
+  /// **'Received'**
+  String get purchQtyReceived;
+
+  /// No description provided for @purchLineTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Line total'**
+  String get purchLineTotal;
+
+  /// No description provided for @purchSubtotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Subtotal'**
+  String get purchSubtotal;
+
+  /// No description provided for @purchTax.
+  ///
+  /// In en, this message translates to:
+  /// **'Tax'**
+  String get purchTax;
+
+  /// No description provided for @tabPurchaseOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase order'**
+  String get tabPurchaseOrder;
+
+  /// No description provided for @purchReceiveGoods.
+  ///
+  /// In en, this message translates to:
+  /// **'Receive goods'**
+  String get purchReceiveGoods;
+
+  /// No description provided for @purchReceiveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Receive goods for {number}'**
+  String purchReceiveTitle(String number);
+
+  /// No description provided for @purchReceiveDestination.
+  ///
+  /// In en, this message translates to:
+  /// **'Destination location'**
+  String get purchReceiveDestination;
+
+  /// No description provided for @purchReceiveQty.
+  ///
+  /// In en, this message translates to:
+  /// **'Quantity to receive'**
+  String get purchReceiveQty;
+
+  /// No description provided for @purchReceiveRemaining.
+  ///
+  /// In en, this message translates to:
+  /// **'Remaining: {qty}'**
+  String purchReceiveRemaining(String qty);
+
+  /// No description provided for @purchReceiveSerialsHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'One serial number per line'**
+  String get purchReceiveSerialsHelp;
+
+  /// No description provided for @purchDeliveryNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Supplier delivery note'**
+  String get purchDeliveryNote;
+
+  /// No description provided for @purchReceiveQtyInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'{product}: enter a quantity between 0 and {max}.'**
+  String purchReceiveQtyInvalid(String product, String max);
+
+  /// No description provided for @purchReceiveLotNeeded.
+  ///
+  /// In en, this message translates to:
+  /// **'{product}: enter a lot number.'**
+  String purchReceiveLotNeeded(String product);
+
+  /// No description provided for @purchReceiveSerialWhole.
+  ///
+  /// In en, this message translates to:
+  /// **'{product}: the quantity must be a whole number.'**
+  String purchReceiveSerialWhole(String product);
+
+  /// No description provided for @purchReceiveSerialCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{product}: enter exactly {count} different serial numbers.'**
+  String purchReceiveSerialCount(String product, int count);
+
+  /// No description provided for @purchReceiveNothing.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a quantity for at least one line.'**
+  String get purchReceiveNothing;
+
+  /// No description provided for @purchReceiveLocationNeeded.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a destination location.'**
+  String get purchReceiveLocationNeeded;
+
+  /// No description provided for @purchReceiptBooked.
+  ///
+  /// In en, this message translates to:
+  /// **'Goods receipt {number} booked.'**
+  String purchReceiptBooked(String number);
+
+  /// No description provided for @purchOpenReceipt.
+  ///
+  /// In en, this message translates to:
+  /// **'Open receipt'**
+  String get purchOpenReceipt;
+
+  /// No description provided for @purchReceipts.
+  ///
+  /// In en, this message translates to:
+  /// **'Goods receipts'**
+  String get purchReceipts;
+
+  /// No description provided for @purchReceivedDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Received'**
+  String get purchReceivedDate;
+
+  /// No description provided for @purchOpenOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase order'**
+  String get purchOpenOrder;
+
+  /// No description provided for @tabGoodsReceipt.
+  ///
+  /// In en, this message translates to:
+  /// **'Goods receipt'**
+  String get tabGoodsReceipt;
+
+  /// No description provided for @setupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up a new company'**
+  String get setupTitle;
+
+  /// No description provided for @setupOffer.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up a new company'**
+  String get setupOffer;
+
+  /// No description provided for @setupOfferHint.
+  ///
+  /// In en, this message translates to:
+  /// **'This server has no company yet.'**
+  String get setupOfferHint;
+
+  /// No description provided for @setupServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Server: {url}'**
+  String setupServer(String url);
+
+  /// No description provided for @setupStepOf.
+  ///
+  /// In en, this message translates to:
+  /// **'Step {n} of {total}'**
+  String setupStepOf(int n, int total);
+
+  /// No description provided for @setupStepCompany.
+  ///
+  /// In en, this message translates to:
+  /// **'Company'**
+  String get setupStepCompany;
+
+  /// No description provided for @setupStepRegion.
+  ///
+  /// In en, this message translates to:
+  /// **'Country, currency and language'**
+  String get setupStepRegion;
+
+  /// No description provided for @setupStepAdmin.
+  ///
+  /// In en, this message translates to:
+  /// **'Administrator'**
+  String get setupStepAdmin;
+
+  /// No description provided for @setupStepToken.
+  ///
+  /// In en, this message translates to:
+  /// **'Setup token'**
+  String get setupStepToken;
+
+  /// No description provided for @setupStepReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Review'**
+  String get setupStepReview;
+
+  /// No description provided for @setupCompanyName.
+  ///
+  /// In en, this message translates to:
+  /// **'Company name'**
+  String get setupCompanyName;
+
+  /// No description provided for @setupLegalName.
+  ///
+  /// In en, this message translates to:
+  /// **'Legal name (optional)'**
+  String get setupLegalName;
+
+  /// No description provided for @setupVatNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'VAT number (optional)'**
+  String get setupVatNumber;
+
+  /// No description provided for @setupCountry.
+  ///
+  /// In en, this message translates to:
+  /// **'Country code (2 letters, e.g. BE)'**
+  String get setupCountry;
+
+  /// No description provided for @setupCurrency.
+  ///
+  /// In en, this message translates to:
+  /// **'Currency (3 letters, e.g. EUR)'**
+  String get setupCurrency;
+
+  /// No description provided for @setupLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Default language'**
+  String get setupLanguage;
+
+  /// No description provided for @setupAdminEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Administrator e-mail'**
+  String get setupAdminEmail;
+
+  /// No description provided for @setupAdminName.
+  ///
+  /// In en, this message translates to:
+  /// **'Administrator name'**
+  String get setupAdminName;
+
+  /// No description provided for @setupToken.
+  ///
+  /// In en, this message translates to:
+  /// **'Setup token'**
+  String get setupToken;
+
+  /// No description provided for @setupTokenHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'The value of BOOTSTRAP_TOKEN on the server.'**
+  String get setupTokenHelp;
+
+  /// No description provided for @setupErrName.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the company name.'**
+  String get setupErrName;
+
+  /// No description provided for @setupErrVat.
+  ///
+  /// In en, this message translates to:
+  /// **'A VAT number has 4 to 20 letters and digits.'**
+  String get setupErrVat;
+
+  /// No description provided for @setupErrCountry.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a two-letter country code.'**
+  String get setupErrCountry;
+
+  /// No description provided for @setupErrCurrency.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a three-letter currency code.'**
+  String get setupErrCurrency;
+
+  /// No description provided for @setupErrEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid e-mail address.'**
+  String get setupErrEmail;
+
+  /// No description provided for @setupErrAdminName.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the administrator\'s name.'**
+  String get setupErrAdminName;
+
+  /// No description provided for @setupErrToken.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the setup token.'**
+  String get setupErrToken;
+
+  /// No description provided for @setupNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get setupNext;
+
+  /// No description provided for @setupBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get setupBack;
+
+  /// No description provided for @setupCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create company'**
+  String get setupCreate;
+
+  /// No description provided for @setupReviewHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Check the details. A company can be created only once on this server.'**
+  String get setupReviewHint;
+
+  /// No description provided for @setupErr403.
+  ///
+  /// In en, this message translates to:
+  /// **'The setup token is missing or wrong.'**
+  String get setupErr403;
+
+  /// No description provided for @setupErr404.
+  ///
+  /// In en, this message translates to:
+  /// **'Setting up is disabled on this server. Set BOOTSTRAP_TOKEN on the server and restart it.'**
+  String get setupErr404;
+
+  /// No description provided for @setupErr409.
+  ///
+  /// In en, this message translates to:
+  /// **'This server already has a company.'**
+  String get setupErr409;
+
+  /// No description provided for @setupDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Company {name} created.'**
+  String setupDone(String name);
+
+  /// No description provided for @setupDoneDev.
+  ///
+  /// In en, this message translates to:
+  /// **'Signing in as {email}.'**
+  String setupDoneDev(String email);
+
+  /// No description provided for @setupDoneOidc.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in through your identity provider with {email}: that account is the administrator.'**
+  String setupDoneOidc(String email);
+
+  /// No description provided for @setupToLogin.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to sign in'**
+  String get setupToLogin;
+
+  /// No description provided for @setupAddOfferTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up this server?'**
+  String get setupAddOfferTitle;
+
+  /// No description provided for @setupAddOfferBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This server has no company yet. Set one up now?'**
+  String get setupAddOfferBody;
+
+  /// No description provided for @setupLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Later'**
+  String get setupLater;
+
+  /// No description provided for @finMatchColumn.
+  ///
+  /// In en, this message translates to:
+  /// **'Match'**
+  String get finMatchColumn;
+
+  /// No description provided for @finance.
+  ///
+  /// In en, this message translates to:
+  /// **'Finance'**
+  String get finance;
+
+  /// No description provided for @finSupplierInvoices.
+  ///
+  /// In en, this message translates to:
+  /// **'Supplier invoices'**
+  String get finSupplierInvoices;
+
+  /// No description provided for @finSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get finSettings;
+
+  /// No description provided for @tabSupplierInvoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Supplier invoice'**
+  String get tabSupplierInvoice;
+
+  /// No description provided for @finNewInvoice.
+  ///
+  /// In en, this message translates to:
+  /// **'New supplier invoice'**
+  String get finNewInvoice;
+
+  /// No description provided for @finNoInvoices.
+  ///
+  /// In en, this message translates to:
+  /// **'No supplier invoices found.'**
+  String get finNoInvoices;
+
+  /// No description provided for @finInvoiceNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice number'**
+  String get finInvoiceNumber;
+
+  /// No description provided for @finInternalNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Internal number'**
+  String get finInternalNumber;
+
+  /// No description provided for @finInvoiceDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice date'**
+  String get finInvoiceDate;
+
+  /// No description provided for @finDueDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Due date'**
+  String get finDueDate;
+
+  /// No description provided for @finStatusDraft.
+  ///
+  /// In en, this message translates to:
+  /// **'draft'**
+  String get finStatusDraft;
+
+  /// No description provided for @finStatusMatched.
+  ///
+  /// In en, this message translates to:
+  /// **'matched'**
+  String get finStatusMatched;
+
+  /// No description provided for @finStatusDisputed.
+  ///
+  /// In en, this message translates to:
+  /// **'disputed'**
+  String get finStatusDisputed;
+
+  /// No description provided for @finStatusApproved.
+  ///
+  /// In en, this message translates to:
+  /// **'approved'**
+  String get finStatusApproved;
+
+  /// No description provided for @finStatusPaid.
+  ///
+  /// In en, this message translates to:
+  /// **'paid'**
+  String get finStatusPaid;
+
+  /// No description provided for @finMatchOk.
+  ///
+  /// In en, this message translates to:
+  /// **'ok'**
+  String get finMatchOk;
+
+  /// No description provided for @finMatchNotReceived.
+  ///
+  /// In en, this message translates to:
+  /// **'not received'**
+  String get finMatchNotReceived;
+
+  /// No description provided for @finMatchOverInvoiced.
+  ///
+  /// In en, this message translates to:
+  /// **'over invoiced'**
+  String get finMatchOverInvoiced;
+
+  /// No description provided for @finMatchPriceVariance.
+  ///
+  /// In en, this message translates to:
+  /// **'price variance'**
+  String get finMatchPriceVariance;
+
+  /// No description provided for @finMatchNoPoLine.
+  ///
+  /// In en, this message translates to:
+  /// **'no order line'**
+  String get finMatchNoPoLine;
+
+  /// No description provided for @finOrderOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase order (optional)'**
+  String get finOrderOptional;
+
+  /// No description provided for @finNoOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'No purchase order'**
+  String get finNoOrder;
+
+  /// No description provided for @finOrderPrefillHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The lines are filled from the goods received and not yet invoiced.'**
+  String get finOrderPrefillHint;
+
+  /// No description provided for @finNumberRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'The invoice number is required (at most 64 characters).'**
+  String get finNumberRequired;
+
+  /// No description provided for @finLineDescriptionRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'A free-text line needs a description.'**
+  String get finLineDescriptionRequired;
+
+  /// No description provided for @finVatInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'VAT rate must be between 0 and 100 with at most 2 decimals.'**
+  String get finVatInvalid;
+
+  /// No description provided for @finOrdered.
+  ///
+  /// In en, this message translates to:
+  /// **'Ordered'**
+  String get finOrdered;
+
+  /// No description provided for @finInvoiced.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoiced'**
+  String get finInvoiced;
+
+  /// No description provided for @finOrderPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Order price'**
+  String get finOrderPrice;
+
+  /// No description provided for @finInvoicePrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice price'**
+  String get finInvoicePrice;
+
+  /// No description provided for @finVariance.
+  ///
+  /// In en, this message translates to:
+  /// **'Variance'**
+  String get finVariance;
+
+  /// No description provided for @finMatches.
+  ///
+  /// In en, this message translates to:
+  /// **'The invoice matches the order and the receipts.'**
+  String get finMatches;
+
+  /// No description provided for @finNotMatches.
+  ///
+  /// In en, this message translates to:
+  /// **'The invoice does not match the order and the receipts.'**
+  String get finNotMatches;
+
+  /// No description provided for @finTolerances.
+  ///
+  /// In en, this message translates to:
+  /// **'Tolerances: quantity {qty} %, price {price} %'**
+  String finTolerances(String qty, String price);
+
+  /// No description provided for @finSubmitMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Check match'**
+  String get finSubmitMatch;
+
+  /// No description provided for @finApprove.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve'**
+  String get finApprove;
+
+  /// No description provided for @finOverrideTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve despite mismatch'**
+  String get finOverrideTitle;
+
+  /// No description provided for @finOverrideHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'The invoice does not match. Give the reason for approving it anyway; it is stored with the approval.'**
+  String get finOverrideHelp;
+
+  /// No description provided for @finOverrideReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Override reason'**
+  String get finOverrideReason;
+
+  /// No description provided for @finReasonRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'A reason is required.'**
+  String get finReasonRequired;
+
+  /// No description provided for @finDispute.
+  ///
+  /// In en, this message translates to:
+  /// **'Dispute'**
+  String get finDispute;
+
+  /// No description provided for @finDisputeReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Dispute reason'**
+  String get finDisputeReason;
+
+  /// No description provided for @finReopen.
+  ///
+  /// In en, this message translates to:
+  /// **'Reopen'**
+  String get finReopen;
+
+  /// No description provided for @finMarkPaid.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark as paid'**
+  String get finMarkPaid;
+
+  /// No description provided for @finPaymentDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment date'**
+  String get finPaymentDate;
+
+  /// No description provided for @finPaymentReference.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment reference'**
+  String get finPaymentReference;
+
+  /// No description provided for @finDeleteDraft.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete draft'**
+  String get finDeleteDraft;
+
+  /// No description provided for @finDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete invoice {number}? This cannot be undone.'**
+  String finDeleteConfirm(String number);
+
+  /// No description provided for @finNetTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Net'**
+  String get finNetTotal;
+
+  /// No description provided for @finGrossTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Total incl. VAT'**
+  String get finGrossTotal;
+
+  /// No description provided for @finDisputeReasonShown.
+  ///
+  /// In en, this message translates to:
+  /// **'Dispute reason'**
+  String get finDisputeReasonShown;
+
+  /// No description provided for @finOverrideShown.
+  ///
+  /// In en, this message translates to:
+  /// **'Override reason'**
+  String get finOverrideShown;
+
+  /// No description provided for @finPaidOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid on'**
+  String get finPaidOn;
+
+  /// No description provided for @finPurchaseOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase order'**
+  String get finPurchaseOrder;
+
+  /// No description provided for @finQuantityTolerance.
+  ///
+  /// In en, this message translates to:
+  /// **'Quantity tolerance (%)'**
+  String get finQuantityTolerance;
+
+  /// No description provided for @finPriceTolerance.
+  ///
+  /// In en, this message translates to:
+  /// **'Price tolerance (%)'**
+  String get finPriceTolerance;
+
+  /// No description provided for @finToleranceInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a percentage between 0 and 100.'**
+  String get finToleranceInvalid;
+
+  /// No description provided for @finSettingsSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings saved.'**
+  String get finSettingsSaved;
+
+  /// No description provided for @finSettingsHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Largest accepted difference between the order and the invoice before a line counts as a mismatch.'**
+  String get finSettingsHelp;
+
+  /// No description provided for @finCreateInvoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Create supplier invoice'**
+  String get finCreateInvoice;
+
+  /// No description provided for @userRoleFinance.
+  ///
+  /// In en, this message translates to:
+  /// **'Finance'**
+  String get userRoleFinance;
+
+  /// No description provided for @moduleFinance.
+  ///
+  /// In en, this message translates to:
+  /// **'Finance'**
+  String get moduleFinance;
+
+  /// No description provided for @productionDivisionMembers.
+  ///
+  /// In en, this message translates to:
+  /// **'Members'**
+  String get productionDivisionMembers;
+
+  /// No description provided for @productionDivisionNoMembers.
+  ///
+  /// In en, this message translates to:
+  /// **'No members'**
+  String get productionDivisionNoMembers;
+
+  /// No description provided for @productionScopeMine.
+  ///
+  /// In en, this message translates to:
+  /// **'My divisions'**
+  String get productionScopeMine;
+
+  /// No description provided for @productionScopeAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All divisions'**
+  String get productionScopeAll;
+
+  /// No description provided for @productionScopeEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No orders in your divisions. Orders without a division are included.'**
+  String get productionScopeEmpty;
+
+  /// No description provided for @productionShowAllDivisions.
+  ///
+  /// In en, this message translates to:
+  /// **'Show all divisions'**
+  String get productionShowAllDivisions;
+
+  /// No description provided for @productionYourDivisions.
+  ///
+  /// In en, this message translates to:
+  /// **'Your divisions'**
+  String get productionYourDivisions;
+
+  /// No description provided for @setupErrInsecure.
+  ///
+  /// In en, this message translates to:
+  /// **'The setup token is not sent over an unencrypted connection to another computer. Use an https:// address (plain http is only allowed for localhost).'**
+  String get setupErrInsecure;
+
+  /// No description provided for @setupUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Setting up is not available on this server: it already has a company, or setting up is disabled.'**
+  String get setupUnavailable;
+
+  /// No description provided for @setupErrRedirect.
+  ///
+  /// In en, this message translates to:
+  /// **'The server redirected the request, so the setup token was not sent on. Check the server address (use the final https:// address).'**
+  String get setupErrRedirect;
+
+  /// No description provided for @tutSuppliersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Suppliers'**
+  String get tutSuppliersTitle;
+
+  /// No description provided for @tutSuppliersSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Hat: purchaser. Create two suppliers and give them a price list for your components.'**
+  String get tutSuppliersSummary;
+
+  /// No description provided for @tutSuppliersNeedsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chapter 1 first'**
+  String get tutSuppliersNeedsTitle;
+
+  /// No description provided for @tutSuppliersNeedsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This chapter needs the four products from chapter 1 (TUT-MOTOR, TUT-FRAME, TUT-CTRL and TUT-CART) and could not find them. Go back to the chapter map and finish chapter 1 first, then come back here.'**
+  String get tutSuppliersNeedsBody;
+
+  /// No description provided for @tutSuppliersOpenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Put on the purchaser hat'**
+  String get tutSuppliersOpenTitle;
+
+  /// No description provided for @tutSuppliersOpenBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your components have to come from somewhere. Open Purchasing in the menu: the Suppliers list is the first segment.'**
+  String get tutSuppliersOpenBody;
+
+  /// No description provided for @tutSuppliersSupplierATitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The first supplier'**
+  String get tutSuppliersSupplierATitle;
+
+  /// No description provided for @tutSuppliersSupplierABody.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a supplier with code TUT-SUP-A and name Voltaic Drives Ltd. Code and name are the only required fields; payment terms, tax id and contact details can follow later.'**
+  String get tutSuppliersSupplierABody;
+
+  /// No description provided for @tutSuppliersSupplierBTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A second supplier'**
+  String get tutSuppliersSupplierBTitle;
+
+  /// No description provided for @tutSuppliersSupplierBBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A purchaser likes to compare. Create a second supplier with code TUT-SUP-B and name Ironbridge Frames.'**
+  String get tutSuppliersSupplierBBody;
+
+  /// No description provided for @tutSuppliersOpenATitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the first supplier'**
+  String get tutSuppliersOpenATitle;
+
+  /// No description provided for @tutSuppliersOpenABody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Voltaic Drives Ltd from the list. Its price list is at the bottom of the supplier screen.'**
+  String get tutSuppliersOpenABody;
+
+  /// No description provided for @tutSuppliersPriceMotorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A price for the motor'**
+  String get tutSuppliersPriceMotorTitle;
+
+  /// No description provided for @tutSuppliersPriceMotorBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Add TUT-MOTOR to the price list: unit price 120, lead time 14 days, minimum order quantity 5. Purchase orders use these values to pre-fill their lines.'**
+  String get tutSuppliersPriceMotorBody;
+
+  /// No description provided for @tutSuppliersPriceMotorHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick the product with the search box in the dialog; type TUT-MOTOR.'**
+  String get tutSuppliersPriceMotorHint;
+
+  /// No description provided for @tutSuppliersPriceFrameTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A price for the frame'**
+  String get tutSuppliersPriceFrameTitle;
+
+  /// No description provided for @tutSuppliersPriceFrameBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Same again for TUT-FRAME: unit price 45, lead time 10 days, minimum order quantity 5.'**
+  String get tutSuppliersPriceFrameBody;
+
+  /// No description provided for @tutSuppliersPriceControllerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A price for the controller'**
+  String get tutSuppliersPriceControllerTitle;
+
+  /// No description provided for @tutSuppliersPriceControllerBody.
+  ///
+  /// In en, this message translates to:
+  /// **'And TUT-CTRL: unit price 30, lead time 7 days, minimum order quantity 5. This supplier now covers all three components.'**
+  String get tutSuppliersPriceControllerBody;
+
+  /// No description provided for @tutSuppliersOpenBTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the second supplier'**
+  String get tutSuppliersOpenBTitle;
+
+  /// No description provided for @tutSuppliersOpenBBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Go back to the list and open Ironbridge Frames.'**
+  String get tutSuppliersOpenBBody;
+
+  /// No description provided for @tutSuppliersPriceMotorBTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A competing price'**
+  String get tutSuppliersPriceMotorBTitle;
+
+  /// No description provided for @tutSuppliersPriceMotorBBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Give this supplier a price for TUT-MOTOR too: unit price 135, lead time 5 days, minimum order quantity 1. It is dearer but faster; that is the kind of choice a price list helps with.'**
+  String get tutSuppliersPriceMotorBBody;
+
+  /// No description provided for @tutSuppliersDoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What you learned'**
+  String get tutSuppliersDoneTitle;
+
+  /// No description provided for @tutSuppliersDoneBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A supplier is a record with payment terms and contacts, and its price list links it to products with a price, a lead time and a minimum order quantity. Next: ordering the goods.'**
+  String get tutSuppliersDoneBody;
+
+  /// No description provided for @tutBuyingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Buying and receiving'**
+  String get tutBuyingTitle;
+
+  /// No description provided for @tutBuyingSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Hats: purchaser and goods-in. Order the components, send the order and receive the goods in two deliveries.'**
+  String get tutBuyingSummary;
+
+  /// No description provided for @tutBuyingNeedsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chapters 1 and 2 first'**
+  String get tutBuyingNeedsTitle;
+
+  /// No description provided for @tutBuyingNeedsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This chapter needs the products of chapter 1 and the supplier Voltaic Drives Ltd with its price list from chapter 2, and could not find the products. Finish those chapters first.'**
+  String get tutBuyingNeedsBody;
+
+  /// No description provided for @tutBuyingOpenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The orders list'**
+  String get tutBuyingOpenTitle;
+
+  /// No description provided for @tutBuyingOpenBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Purchasing. Next to Suppliers there is a segment for purchase orders; open it.'**
+  String get tutBuyingOpenBody;
+
+  /// No description provided for @tutBuyingOrderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Order the components'**
+  String get tutBuyingOrderTitle;
+
+  /// No description provided for @tutBuyingOrderBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a purchase order for Voltaic Drives Ltd. After choosing the supplier its goods are listed: tick TUT-MOTOR, TUT-FRAME and TUT-CTRL and set the quantity to 30 for each, then save. The prices come from the price list.'**
+  String get tutBuyingOrderBody;
+
+  /// No description provided for @tutBuyingOrderHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the supplier first. Ticking a box fills in the minimum order quantity (or 1); type 30 in the quantity box instead. Use the filter box to find a product quickly.'**
+  String get tutBuyingOrderHint;
+
+  /// No description provided for @tutBuyingOpenOrderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The order screen'**
+  String get tutBuyingOpenOrderTitle;
+
+  /// No description provided for @tutBuyingOpenOrderBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the order you just made. A purchase order is a draft first; the buttons at the top follow its life: approve, send, receive.'**
+  String get tutBuyingOpenOrderBody;
+
+  /// No description provided for @tutBuyingApproveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve the order'**
+  String get tutBuyingApproveTitle;
+
+  /// No description provided for @tutBuyingApproveBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Approving is a separate permission, so a purchaser can prepare orders that a manager releases. As admin you wear both hats: press Approve.'**
+  String get tutBuyingApproveBody;
+
+  /// No description provided for @tutBuyingSendTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Send it to the supplier'**
+  String get tutBuyingSendTitle;
+
+  /// No description provided for @tutBuyingSendBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Press Send. The order is marked as sent and the supplier gets it. In test and tutorial environments outgoing mail is only written to files on the server, nothing leaves the building.'**
+  String get tutBuyingSendBody;
+
+  /// No description provided for @tutBuyingOpenWarehousesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Where do the goods go?'**
+  String get tutBuyingOpenWarehousesTitle;
+
+  /// No description provided for @tutBuyingOpenWarehousesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Goods need a place before they can be received. Open Stock and press Warehouses: this is where warehouses and their locations are kept.'**
+  String get tutBuyingOpenWarehousesBody;
+
+  /// No description provided for @tutBuyingWarehouseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create the warehouse'**
+  String get tutBuyingWarehouseTitle;
+
+  /// No description provided for @tutBuyingWarehouseBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Press New warehouse, give it the code MAIN and the name Main warehouse, and save. A new warehouse comes with its location MAIN, which is where you receive the goods next. If saving is refused because the code MAIN is taken, an inactive warehouse holds it: switch it (and its location) back on in Stock > Warehouses, or give it another code with its edit button, then press Next.'**
+  String get tutBuyingWarehouseBody;
+
+  /// No description provided for @tutBuyingWarehouseHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Code and name are both required. If a warehouse with a location exists already, this step is skipped.'**
+  String get tutBuyingWarehouseHint;
+
+  /// No description provided for @tutBuyingReceivePartTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The first delivery arrives'**
+  String get tutBuyingReceivePartTitle;
+
+  /// No description provided for @tutBuyingReceivePartBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Put on the goods-in hat. Press Receive goods, choose the warehouse location MAIN and book 10 pieces of each component, fewer than ordered. The order becomes partially received.'**
+  String get tutBuyingReceivePartBody;
+
+  /// No description provided for @tutBuyingReceivePartHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Change the quantity of each line in the dialog; the remaining quantity is shown next to it. A delivery note number is optional.'**
+  String get tutBuyingReceivePartHint;
+
+  /// No description provided for @tutBuyingReceiveRestTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The rest arrives'**
+  String get tutBuyingReceiveRestTitle;
+
+  /// No description provided for @tutBuyingReceiveRestBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Receive the remaining 20 pieces of each component the same way. When everything is in, the order is fully received; each delivery keeps its own goods receipt.'**
+  String get tutBuyingReceiveRestBody;
+
+  /// No description provided for @tutBuyingStockTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Look at the stock'**
+  String get tutBuyingStockTitle;
+
+  /// No description provided for @tutBuyingStockBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Stock. The 30 motors, frames and controllers are on hand in warehouse MAIN. Every receipt created a stock movement, so the quantity can always be traced back.'**
+  String get tutBuyingStockBody;
+
+  /// No description provided for @tutBuyingDoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What you learned'**
+  String get tutBuyingDoneTitle;
+
+  /// No description provided for @tutBuyingDoneBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A purchase order goes draft, approved, sent, received. Goods can arrive in several deliveries and every delivery adds to stock. The supplier\'s invoice comes next.'**
+  String get tutBuyingDoneBody;
+
+  /// No description provided for @tutInvoicesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking the invoices'**
+  String get tutInvoicesTitle;
+
+  /// No description provided for @tutInvoicesSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Hat: accountant. Register supplier invoices, read the three-way match, approve, dispute and pay.'**
+  String get tutInvoicesSummary;
+
+  /// No description provided for @tutInvoicesNeedsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chapter 3 first'**
+  String get tutInvoicesNeedsTitle;
+
+  /// No description provided for @tutInvoicesNeedsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This chapter needs the purchase order from chapter 3, fully received, and it is not (yet). Finish chapter 3 first.'**
+  String get tutInvoicesNeedsBody;
+
+  /// No description provided for @tutInvoicesOpenOrderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to the order'**
+  String get tutInvoicesOpenOrderTitle;
+
+  /// No description provided for @tutInvoicesOpenOrderBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The supplier\'s invoice arrives. Open the purchase order from chapter 3 again: once goods are received it offers a shortcut to register the invoice.'**
+  String get tutInvoicesOpenOrderBody;
+
+  /// No description provided for @tutInvoicesCreateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Register the invoice'**
+  String get tutInvoicesCreateTitle;
+
+  /// No description provided for @tutInvoicesCreateBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Press Create supplier invoice. Type the supplier\'s own invoice number, for example TUT-INV-001, and save. The lines are filled in from what was ordered and received, so there is nothing to type.'**
+  String get tutInvoicesCreateBody;
+
+  /// No description provided for @tutInvoicesCreateHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The invoice date and due date default to today and to the payment terms of the supplier.'**
+  String get tutInvoicesCreateHint;
+
+  /// No description provided for @tutInvoicesMatchTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The three-way match'**
+  String get tutInvoicesMatchTitle;
+
+  /// No description provided for @tutInvoicesMatchBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The banner compares three documents: what was ordered, what was received and what is invoiced, line by line. Green means they agree within the tolerances; the tolerances are shown in the banner. Press Next when you have looked.'**
+  String get tutInvoicesMatchBody;
+
+  /// No description provided for @tutInvoicesApproveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve the invoice'**
+  String get tutInvoicesApproveTitle;
+
+  /// No description provided for @tutInvoicesApproveBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The match is green, so press Approve. An approved invoice is ready for payment.'**
+  String get tutInvoicesApproveBody;
+
+  /// No description provided for @tutInvoicesSecondTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A suspicious invoice'**
+  String get tutInvoicesSecondTitle;
+
+  /// No description provided for @tutInvoicesSecondBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Now a second invoice arrives from Voltaic Drives Ltd, this time without a purchase order: in Finance, create a supplier invoice for that supplier, number TUT-INV-002, leave the order empty and add one line with description Motors, quantity 10, unit price 150.'**
+  String get tutInvoicesSecondBody;
+
+  /// No description provided for @tutInvoicesSecondHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The real motor price is 120 and this line has no order line to compare with. The app cannot change prices of an order-based invoice, so a free-text invoice is how a mismatch shows up here.'**
+  String get tutInvoicesSecondHint;
+
+  /// No description provided for @tutInvoicesMismatchTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The match fails'**
+  String get tutInvoicesMismatchTitle;
+
+  /// No description provided for @tutInvoicesMismatchBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The banner is orange: a free-text line has nothing it can be matched against, so it cannot be checked against an order or a receipt. The line shows why. Press Next when you have looked.'**
+  String get tutInvoicesMismatchBody;
+
+  /// No description provided for @tutInvoicesDisputeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Dispute the invoice'**
+  String get tutInvoicesDisputeTitle;
+
+  /// No description provided for @tutInvoicesDisputeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Press Dispute and give a reason, for example price does not match the agreement. A disputed invoice cannot be paid until it is reopened. (An approver can also approve a failed match with an override reason, which is kept on the invoice.)'**
+  String get tutInvoicesDisputeBody;
+
+  /// No description provided for @tutInvoicesTolerancesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The tolerances'**
+  String get tutInvoicesTolerancesTitle;
+
+  /// No description provided for @tutInvoicesTolerancesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'How far an invoice may differ is a setting: open the Settings segment of Finance to see the quantity and price tolerances in percent. Look, then press Next; changing them is up to you.'**
+  String get tutInvoicesTolerancesBody;
+
+  /// No description provided for @tutInvoicesPayTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay the good invoice'**
+  String get tutInvoicesPayTitle;
+
+  /// No description provided for @tutInvoicesPayBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the first supplier invoice you registered (the one that matched and was approved) and press Mark as paid. Enter a payment reference such as TUT-PAY-001. The app records the payment; the bank transfer itself happens elsewhere.'**
+  String get tutInvoicesPayBody;
+
+  /// No description provided for @tutInvoicesDoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What you learned'**
+  String get tutInvoicesDoneTitle;
+
+  /// No description provided for @tutInvoicesDoneBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The three-way match compares order, receipt and invoice before money moves. Matching invoices are approved and paid, doubtful ones are disputed. Next: building the carts yourself.'**
+  String get tutInvoicesDoneBody;
+
+  /// No description provided for @tutManufacturingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Manufacturing'**
+  String get tutManufacturingTitle;
+
+  /// No description provided for @tutManufacturingSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Hats: production manager and production worker. Set up a division, then build five carts from the components.'**
+  String get tutManufacturingSummary;
+
+  /// No description provided for @tutManufacturingNeedsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chapters 1 to 3 first'**
+  String get tutManufacturingNeedsTitle;
+
+  /// No description provided for @tutManufacturingNeedsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This chapter needs the cart with its bill of materials (chapter 1) and components in stock (chapter 3), and could not find the products. Finish those chapters first.'**
+  String get tutManufacturingNeedsBody;
+
+  /// No description provided for @tutManufacturingOpenDivisionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Divisions'**
+  String get tutManufacturingOpenDivisionsTitle;
+
+  /// No description provided for @tutManufacturingOpenDivisionsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Production work is organised in divisions, for example an assembly line. Only an administrator defines them. Open Production and use the gear button at the top right to reach the divisions.'**
+  String get tutManufacturingOpenDivisionsBody;
+
+  /// No description provided for @tutManufacturingDivisionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a division'**
+  String get tutManufacturingDivisionTitle;
+
+  /// No description provided for @tutManufacturingDivisionBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a division with code TUT-ASM and name Tutorial assembly, and tick yourself in the member list: members are the workers of the division.'**
+  String get tutManufacturingDivisionBody;
+
+  /// No description provided for @tutManufacturingDivisionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The dialog lists the users of the company; tick the chip with your own name.'**
+  String get tutManufacturingDivisionHint;
+
+  /// No description provided for @tutManufacturingQueueTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The production queue'**
+  String get tutManufacturingQueueTitle;
+
+  /// No description provided for @tutManufacturingQueueBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Go back to Production. In the queue header choose My divisions: it shows the orders of your divisions plus orders without a division, so nothing unassigned is hidden. You are a member of a division, so this is the default for you; choose All divisions to see everything.'**
+  String get tutManufacturingQueueBody;
+
+  /// No description provided for @tutManufacturingReleaseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Release a production order'**
+  String get tutManufacturingReleaseTitle;
+
+  /// No description provided for @tutManufacturingReleaseBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Press Build for stock, choose TUT-CART and quantity 5, and release. The bill of materials is frozen and the components are reserved. Normally production starts from a sales order line; you will see that in chapter 9.'**
+  String get tutManufacturingReleaseBody;
+
+  /// No description provided for @tutManufacturingReleaseHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Only manufactured products with an active bill of materials can be released.'**
+  String get tutManufacturingReleaseHint;
+
+  /// No description provided for @tutManufacturingAssignTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Give it to the division'**
+  String get tutManufacturingAssignTitle;
+
+  /// No description provided for @tutManufacturingAssignBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The new order is open. Choose the division Tutorial assembly in the Division field and press Save, so that the order shows up in the queue of that division.'**
+  String get tutManufacturingAssignBody;
+
+  /// No description provided for @tutManufacturingStartTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Start the work'**
+  String get tutManufacturingStartTitle;
+
+  /// No description provided for @tutManufacturingStartBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Put on the worker hat and press Start. The order moves from released to in progress.'**
+  String get tutManufacturingStartBody;
+
+  /// No description provided for @tutManufacturingWarehouseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A place for the carts'**
+  String get tutManufacturingWarehouseTitle;
+
+  /// No description provided for @tutManufacturingWarehouseBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The finished carts need a location to go into, and there is no warehouse yet (chapter 3 creates it). Open Stock, press Warehouses and create the warehouse MAIN with the name Main warehouse, then go back to the production order. If saving is refused because the code MAIN is taken, an inactive warehouse holds it: switch it (and its location) back on in Stock > Warehouses, or give it another code with its edit button, then press Next.'**
+  String get tutManufacturingWarehouseBody;
+
+  /// No description provided for @tutManufacturingWarehouseHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The location MAIN is created together with the warehouse. If a warehouse with a location exists already, this step is skipped.'**
+  String get tutManufacturingWarehouseHint;
+
+  /// No description provided for @tutManufacturingCompleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete the order'**
+  String get tutManufacturingCompleteTitle;
+
+  /// No description provided for @tutManufacturingCompleteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Press Complete. The dialog shows the output quantity (5) and the components consumed. Choose the warehouse location MAIN in Put into, so the finished carts have a place to go, and confirm: the components leave the stock and five finished carts enter it.'**
+  String get tutManufacturingCompleteBody;
+
+  /// No description provided for @tutManufacturingCompleteHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave the planned values as they are; the dialog lets you record scrap or extra consumption when reality differs.'**
+  String get tutManufacturingCompleteHint;
+
+  /// No description provided for @tutManufacturingStockTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Check the stock'**
+  String get tutManufacturingStockTitle;
+
+  /// No description provided for @tutManufacturingStockBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Stock: TUT-CART now has 5 on hand, and each component is down by 5 (25 left of each). Production is what links purchasing to selling.'**
+  String get tutManufacturingStockBody;
+
+  /// No description provided for @tutManufacturingDoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What you learned'**
+  String get tutManufacturingDoneTitle;
+
+  /// No description provided for @tutManufacturingDoneBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Divisions group production workers; a production order freezes the bill of materials, reserves components, is started and completed, and turns components into finished goods. Next: prices.'**
+  String get tutManufacturingDoneBody;
+
+  /// No description provided for @tutPricesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Prices and zones'**
+  String get tutPricesTitle;
+
+  /// No description provided for @tutPricesSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Hat: sales manager. Create a price zone and give the cart a price in two zones.'**
+  String get tutPricesSummary;
+
+  /// No description provided for @tutPricesNeedsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chapter 1 first'**
+  String get tutPricesNeedsTitle;
+
+  /// No description provided for @tutPricesNeedsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This chapter needs the cart from chapter 1 and could not find it. Finish chapter 1 first.'**
+  String get tutPricesNeedsBody;
+
+  /// No description provided for @tutPricesOpenAdminTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the admin area'**
+  String get tutPricesOpenAdminTitle;
+
+  /// No description provided for @tutPricesOpenAdminBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A price depends on the customer\'s zone: a country or market with its own price list. Zones are managed under Admin. Open Admin and choose the Price zones segment; the company already has zones Z1 to Z5.'**
+  String get tutPricesOpenAdminBody;
+
+  /// No description provided for @tutPricesZoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a zone'**
+  String get tutPricesZoneTitle;
+
+  /// No description provided for @tutPricesZoneBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a price zone with code TUT-EXPORT and name Export zone. Customers are placed in a zone later, when you create one.'**
+  String get tutPricesZoneBody;
+
+  /// No description provided for @tutPricesZoneHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the Price zones segment at the top of the Admin page first.'**
+  String get tutPricesZoneHint;
+
+  /// No description provided for @tutPricesOpenCartTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the cart'**
+  String get tutPricesOpenCartTitle;
+
+  /// No description provided for @tutPricesOpenCartBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the product TUT-CART from the Products list. Its first tab, Prices, holds the prices per zone.'**
+  String get tutPricesOpenCartBody;
+
+  /// No description provided for @tutPricesPriceExportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A price in the new zone'**
+  String get tutPricesPriceExportTitle;
+
+  /// No description provided for @tutPricesPriceExportBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Press New price, choose zone TUT-EXPORT, enter unit price 1450 (excluding VAT) and save.'**
+  String get tutPricesPriceExportBody;
+
+  /// No description provided for @tutPricesPriceExportHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The valid-from date defaults to today; a later date schedules a price change.'**
+  String get tutPricesPriceExportHint;
+
+  /// No description provided for @tutPricesPriceHomeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A price in another zone'**
+  String get tutPricesPriceHomeTitle;
+
+  /// No description provided for @tutPricesPriceHomeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a second price for the cart in one of the existing zones, for example Z1 at 1200. The same product can now cost different amounts depending on the customer\'s zone.'**
+  String get tutPricesPriceHomeBody;
+
+  /// No description provided for @tutPricesDoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What you learned'**
+  String get tutPricesDoneTitle;
+
+  /// No description provided for @tutPricesDoneBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A price zone groups customers that get the same price list, and a product has one price per zone and date. Quotations pick the price of the customer\'s zone. Next: a new customer writes in.'**
+  String get tutPricesDoneBody;
+
+  /// No description provided for @tutCustomerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A new customer writes in'**
+  String get tutCustomerTitle;
+
+  /// No description provided for @tutCustomerSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Hats: sales and helpdesk. A customer e-mail becomes a ticket; the sender is new, so you ask for company details and create the customer.'**
+  String get tutCustomerSummary;
+
+  /// No description provided for @tutCustomerNeedsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chapter 6 first'**
+  String get tutCustomerNeedsTitle;
+
+  /// No description provided for @tutCustomerNeedsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This chapter needs the price zone TUT-EXPORT from chapter 6 (the new customer gets it) and could not find it. Finish the earlier chapters first.'**
+  String get tutCustomerNeedsBody;
+
+  /// No description provided for @tutCustomerMail1Title.
+  ///
+  /// In en, this message translates to:
+  /// **'An e-mail arrives'**
+  String get tutCustomerMail1Title;
+
+  /// No description provided for @tutCustomerMail1Body.
+  ///
+  /// In en, this message translates to:
+  /// **'Someone you do not know asks for a quotation for your cart. A real mailbox would deliver the message by itself; here the button below plays the customer and hands a ready-made e-mail (from Maya Okafor, example.test) to the helpdesk, exactly as the mail importer does.'**
+  String get tutCustomerMail1Body;
+
+  /// No description provided for @tutCustomerMail1Action.
+  ///
+  /// In en, this message translates to:
+  /// **'Simulate customer e-mail'**
+  String get tutCustomerMail1Action;
+
+  /// No description provided for @tutCustomerOpenHelpdeskTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The ticket'**
+  String get tutCustomerOpenHelpdeskTitle;
+
+  /// No description provided for @tutCustomerOpenHelpdeskBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Every incoming message becomes a ticket. Open Helpdesk: the ticket from Maya Okafor is in the list.'**
+  String get tutCustomerOpenHelpdeskBody;
+
+  /// No description provided for @tutCustomerOpenTicketTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the ticket'**
+  String get tutCustomerOpenTicketTitle;
+
+  /// No description provided for @tutCustomerOpenTicketBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the ticket. The conversation is on the left; on the right are its properties. No customer is linked yet, because nobody with this address exists in the system.'**
+  String get tutCustomerOpenTicketBody;
+
+  /// No description provided for @tutCustomerReplyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask for company details'**
+  String get tutCustomerReplyTitle;
+
+  /// No description provided for @tutCustomerReplyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Reply to Maya: thank her and ask for the company name, VAT number and address, then press Send. The reply is queued for the mail worker. In test and tutorial environments outgoing mail is only written to files on the server, so Maya never receives it.'**
+  String get tutCustomerReplyBody;
+
+  /// No description provided for @tutCustomerReplyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Make sure the Reply tab (not Internal note) is selected above the message box.'**
+  String get tutCustomerReplyHint;
+
+  /// No description provided for @tutCustomerMail2Title.
+  ///
+  /// In en, this message translates to:
+  /// **'The customer answers'**
+  String get tutCustomerMail2Title;
+
+  /// No description provided for @tutCustomerMail2Body.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the button to play Maya\'s answer. It is a reply to her first message, so it lands in the same ticket as a new message, with her company name, VAT number and address.'**
+  String get tutCustomerMail2Body;
+
+  /// No description provided for @tutCustomerMail2Action.
+  ///
+  /// In en, this message translates to:
+  /// **'Simulate customer e-mail'**
+  String get tutCustomerMail2Action;
+
+  /// No description provided for @tutCustomerReadDetailsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Read the details'**
+  String get tutCustomerReadDetailsTitle;
+
+  /// No description provided for @tutCustomerReadDetailsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Go back to the ticket (reopen it if it does not show the new message yet) and read Maya\'s answer: company Brightwheel Logistics BV, VAT number BE0123456749, Voorbeeldlaan 12, 9000 Gent, Belgium. Press Next when you have it.'**
+  String get tutCustomerReadDetailsBody;
+
+  /// No description provided for @tutCustomerCreateCustomerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create the customer'**
+  String get tutCustomerCreateCustomerTitle;
+
+  /// No description provided for @tutCustomerCreateCustomerBody.
+  ///
+  /// In en, this message translates to:
+  /// **'In the ticket properties press New customer. Fill in name Brightwheel Logistics BV, a code such as TUT-CUST, VAT number, the address, and choose the price zone TUT-EXPORT. The ticket is linked to the new customer when you save.'**
+  String get tutCustomerCreateCustomerBody;
+
+  /// No description provided for @tutCustomerCreateCustomerHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Street Voorbeeldlaan 12, postal code 9000, city Gent, country BE. Language and payment terms can stay as they are.'**
+  String get tutCustomerCreateCustomerHint;
+
+  /// No description provided for @tutCustomerLinkedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The ticket knows its customer'**
+  String get tutCustomerLinkedTitle;
+
+  /// No description provided for @tutCustomerLinkedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The ticket now shows the customer, and new buttons appear: create a lead or start a quotation straight from the ticket. The next chapter makes the quotation. Press Next.'**
+  String get tutCustomerLinkedBody;
+
+  /// No description provided for @tutCustomerDoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What you learned'**
+  String get tutCustomerDoneTitle;
+
+  /// No description provided for @tutCustomerDoneBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Incoming mail becomes tickets, a reply asks the customer for what is missing, and a customer can be created from the ticket so that everything stays linked. Next: the quotation.'**
+  String get tutCustomerDoneBody;
+
+  /// No description provided for @tutQuotationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The quotation'**
+  String get tutQuotationTitle;
+
+  /// No description provided for @tutQuotationSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Hat: salesperson. Quote 8 carts to the new customer, get an answer from production on timing and send it.'**
+  String get tutQuotationSummary;
+
+  /// No description provided for @tutQuotationNeedsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chapter 7 first'**
+  String get tutQuotationNeedsTitle;
+
+  /// No description provided for @tutQuotationNeedsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This chapter needs the customer Brightwheel Logistics BV from chapter 7 and could not find it. Finish chapter 7 first.'**
+  String get tutQuotationNeedsBody;
+
+  /// No description provided for @tutQuotationOpenQuotationsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Quotations'**
+  String get tutQuotationOpenQuotationsTitle;
+
+  /// No description provided for @tutQuotationOpenQuotationsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Quotations in the menu. This list holds every quotation with its number, customer and status.'**
+  String get tutQuotationOpenQuotationsBody;
+
+  /// No description provided for @tutQuotationCreateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Write the quotation'**
+  String get tutQuotationCreateTitle;
+
+  /// No description provided for @tutQuotationCreateBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Press New quotation, choose Brightwheel Logistics BV, add TUT-CART with quantity 8 and save the draft. The unit price comes from the customer\'s price zone, TUT-EXPORT, so it is the 1450 you entered in chapter 6.'**
+  String get tutQuotationCreateBody;
+
+  /// No description provided for @tutQuotationCreateHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the product search in the lines section; type TUT-CART. If the customer is not preselected, search for Brightwheel.'**
+  String get tutQuotationCreateHint;
+
+  /// No description provided for @tutQuotationLeadTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How long will it take?'**
+  String get tutQuotationLeadTitle;
+
+  /// No description provided for @tutQuotationLeadBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The customer asked for a delivery time. Honestly: the app does not calculate lead times automatically yet, and a quotation has no delivery date field. So ask production (put on that hat, look at the production queue and the components in stock) and write the answer into the quotation\'s notes, for example: Delivery about 3 weeks after order. Save the draft.'**
+  String get tutQuotationLeadBody;
+
+  /// No description provided for @tutQuotationLeadHint.
+  ///
+  /// In en, this message translates to:
+  /// **'On an order you can send production a question as a ticket (you will see that in chapter 9); quotations do not have that button yet.'**
+  String get tutQuotationLeadHint;
+
+  /// No description provided for @tutQuotationSendTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Send the quotation'**
+  String get tutQuotationSendTitle;
+
+  /// No description provided for @tutQuotationSendBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Press Mark as sent. From now on the quotation is frozen: it can only be accepted, rejected or revised. (Mail is not sent from this button; you would send the PDF yourself or reply in the ticket.)'**
+  String get tutQuotationSendBody;
+
+  /// No description provided for @tutQuotationPdfTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The PDF'**
+  String get tutQuotationPdfTitle;
+
+  /// No description provided for @tutQuotationPdfBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The PDF button shows the quotation as the customer would see it. It is made on the server with a typesetting tool; on a server without it you get an error message, which does not affect anything else. Look if you like, then press Next.'**
+  String get tutQuotationPdfBody;
+
+  /// No description provided for @tutQuotationPdfHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing breaks if the PDF fails: the quotation is already sent.'**
+  String get tutQuotationPdfHint;
+
+  /// No description provided for @tutQuotationDoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What you learned'**
+  String get tutQuotationDoneTitle;
+
+  /// No description provided for @tutQuotationDoneBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A quotation takes the price of the customer\'s zone, carries notes and freezes when it is sent. Delivery times are still your judgement call, together with production. Next: the customer wants a change.'**
+  String get tutQuotationDoneBody;
+
+  /// No description provided for @tutChangeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Change, order, production'**
+  String get tutChangeTitle;
+
+  /// No description provided for @tutChangeSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Hats: sales and production. Revise the quotation, turn it into an order, build the carts and a few extra for stock.'**
+  String get tutChangeSummary;
+
+  /// No description provided for @tutChangeNeedsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chapter 8 first'**
+  String get tutChangeNeedsTitle;
+
+  /// No description provided for @tutChangeNeedsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This chapter needs the sent quotation from chapter 8 and could not find it. Finish chapter 8 first.'**
+  String get tutChangeNeedsBody;
+
+  /// No description provided for @tutChangeMail3Title.
+  ///
+  /// In en, this message translates to:
+  /// **'The customer answers again'**
+  String get tutChangeMail3Title;
+
+  /// No description provided for @tutChangeMail3Body.
+  ///
+  /// In en, this message translates to:
+  /// **'Maya is happy with the quotation but wants 10 carts instead of 8. Use the button to play her e-mail; it joins the same ticket.'**
+  String get tutChangeMail3Body;
+
+  /// No description provided for @tutChangeMail3Action.
+  ///
+  /// In en, this message translates to:
+  /// **'Simulate customer e-mail'**
+  String get tutChangeMail3Action;
+
+  /// No description provided for @tutChangeOpenQuoteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the sent quotation'**
+  String get tutChangeOpenQuoteTitle;
+
+  /// No description provided for @tutChangeOpenQuoteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A sent quotation is frozen, so a change means a new revision. Open the quotation from chapter 8.'**
+  String get tutChangeOpenQuoteBody;
+
+  /// No description provided for @tutChangeReviseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Make a revision'**
+  String get tutChangeReviseTitle;
+
+  /// No description provided for @tutChangeReviseBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Press New revision and choose Keep agreed prices. The old revision is marked superseded and a new draft with the same number opens.'**
+  String get tutChangeReviseBody;
+
+  /// No description provided for @tutChangeReviseHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Update to current prices would reprice at today\'s price list; here the customer keeps the agreed price.'**
+  String get tutChangeReviseHint;
+
+  /// No description provided for @tutChangeEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Change the quantity'**
+  String get tutChangeEditTitle;
+
+  /// No description provided for @tutChangeEditBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Set the quantity of TUT-CART to 10 and save the draft.'**
+  String get tutChangeEditBody;
+
+  /// No description provided for @tutChangeEditHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The notes of the first revision were copied; adjust them if the delivery time changes.'**
+  String get tutChangeEditHint;
+
+  /// No description provided for @tutChangeSendTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Send the revision'**
+  String get tutChangeSendTitle;
+
+  /// No description provided for @tutChangeSendBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark the new revision as sent, as before.'**
+  String get tutChangeSendBody;
+
+  /// No description provided for @tutChangeAcceptTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The customer accepts'**
+  String get tutChangeAcceptTitle;
+
+  /// No description provided for @tutChangeAcceptBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Maya agrees with the new revision: press Accepted to record it.'**
+  String get tutChangeAcceptBody;
+
+  /// No description provided for @tutChangeConvertTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn it into a sales order'**
+  String get tutChangeConvertTitle;
+
+  /// No description provided for @tutChangeConvertBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Press Convert to order. A draft sales order is created from the accepted revision and opens.'**
+  String get tutChangeConvertBody;
+
+  /// No description provided for @tutChangeConvertHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The dialog asks for the customer\'s own reference; type for instance TUT-PO-1 or leave it empty.'**
+  String get tutChangeConvertHint;
+
+  /// No description provided for @tutChangeOpenOrderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The sales order'**
+  String get tutChangeOpenOrderTitle;
+
+  /// No description provided for @tutChangeOpenOrderBody.
+  ///
+  /// In en, this message translates to:
+  /// **'If the order did not open by itself, open it from Orders. It has the 10 carts, the price and the customer reference. Orders go from draft to sent to confirmed.'**
+  String get tutChangeOpenOrderBody;
+
+  /// No description provided for @tutChangeSendOrderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Send the order confirmation'**
+  String get tutChangeSendOrderTitle;
+
+  /// No description provided for @tutChangeSendOrderBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Press Send order confirmation. The order becomes sent: the customer can now confirm it.'**
+  String get tutChangeSendOrderBody;
+
+  /// No description provided for @tutChangeSendOrderHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Making the confirmation document needs the server\'s typesetting tool; if it is missing the server refuses this step and a server with the tool is needed to continue.'**
+  String get tutChangeSendOrderHint;
+
+  /// No description provided for @tutChangeConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm on the customer\'s behalf'**
+  String get tutChangeConfirmTitle;
+
+  /// No description provided for @tutChangeConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Maya already said yes by e-mail, so press Confirm on behalf and add a note such as confirmed by e-mail. The order is now confirmed and can go to production.'**
+  String get tutChangeConfirmBody;
+
+  /// No description provided for @tutChangeReleaseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'To release'**
+  String get tutChangeReleaseTitle;
+
+  /// No description provided for @tutChangeReleaseBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Put on the production hat. Open Production > To release: the confirmed order line with 10 carts is waiting. Press Release to production to create the production order for exactly that line.'**
+  String get tutChangeReleaseBody;
+
+  /// No description provided for @tutChangeStartTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Start production'**
+  String get tutChangeStartTitle;
+
+  /// No description provided for @tutChangeStartBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Press Start on the new production order.'**
+  String get tutChangeStartBody;
+
+  /// No description provided for @tutChangeWarehouseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A place for the carts'**
+  String get tutChangeWarehouseTitle;
+
+  /// No description provided for @tutChangeWarehouseBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The finished carts need a location to go into, and there is no warehouse yet (chapter 3 creates it). Open Stock, press Warehouses and create the warehouse MAIN with the name Main warehouse, then go back to the production order. If saving is refused because the code MAIN is taken, an inactive warehouse holds it: switch it (and its location) back on in Stock > Warehouses, or give it another code with its edit button, then press Next.'**
+  String get tutChangeWarehouseBody;
+
+  /// No description provided for @tutChangeWarehouseHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The location MAIN is created together with the warehouse. If a warehouse with a location exists already, this step is skipped.'**
+  String get tutChangeWarehouseHint;
+
+  /// No description provided for @tutChangeCompleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete production'**
+  String get tutChangeCompleteTitle;
+
+  /// No description provided for @tutChangeCompleteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Press Complete, choose the warehouse location MAIN in Put into and confirm the 10 carts. The components are consumed and the carts go to the order.'**
+  String get tutChangeCompleteBody;
+
+  /// No description provided for @tutChangeReadyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready for shipping'**
+  String get tutChangeReadyTitle;
+
+  /// No description provided for @tutChangeReadyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the order again: with all its lines produced it is ready for shipping. Delivery (picking, shipping, invoicing the customer) is outside this tutorial. Press Next.'**
+  String get tutChangeReadyBody;
+
+  /// No description provided for @tutChangeStockTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A few extra for stock'**
+  String get tutChangeStockTitle;
+
+  /// No description provided for @tutChangeStockBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Production is often ahead of orders. Open Production, press Build for stock and release 4 more carts of TUT-CART. Without an order they simply land in stock when completed.'**
+  String get tutChangeStockBody;
+
+  /// No description provided for @tutChangeStockHint.
+  ///
+  /// In en, this message translates to:
+  /// **'You can start and complete that order as in chapter 5, or leave it released.'**
+  String get tutChangeStockHint;
+
+  /// No description provided for @tutChangeDoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Well done: the whole story'**
+  String get tutChangeDoneTitle;
+
+  /// No description provided for @tutChangeDoneBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You went from suppliers to purchasing, invoices, production, prices, a ticket, a new customer, a revised quotation, an order and production for the order and for stock. Where next: deliveries and shipping, repairs, field service and the reports each have their own menu entry. Any chapter can be replayed from the chapter map; steps that are already done are skipped.'**
+  String get tutChangeDoneBody;
+
+  /// No description provided for @tutInvoicesOpenSecondTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the suspicious invoice'**
+  String get tutInvoicesOpenSecondTitle;
+
+  /// No description provided for @tutInvoicesOpenSecondBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open invoice TUT-INV-002, the one you just registered, from the list in Finance.'**
+  String get tutInvoicesOpenSecondBody;
+
+  /// No description provided for @adminIdentityProviders.
+  ///
+  /// In en, this message translates to:
+  /// **'Identity providers'**
+  String get adminIdentityProviders;
+
+  /// No description provided for @idpIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Identity providers decide who can sign in to TradoCraft. People are still created in the ERP; the provider only proves who someone is.'**
+  String get idpIntro;
+
+  /// No description provided for @idpPrimaryCompany.
+  ///
+  /// In en, this message translates to:
+  /// **'Primary company: {name}'**
+  String idpPrimaryCompany(String name);
+
+  /// No description provided for @idpPrimaryNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Only administrators of the installation\'s primary company can change these settings.'**
+  String get idpPrimaryNote;
+
+  /// No description provided for @idpReadOnlyNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'You are not an administrator of the installation\'s primary company, so these settings are not available to you. Ask an administrator of that company.'**
+  String get idpReadOnlyNotice;
+
+  /// No description provided for @idpAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add provider'**
+  String get idpAdd;
+
+  /// No description provided for @idpNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No identity providers configured yet.'**
+  String get idpNone;
+
+  /// No description provided for @idpEnabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Enabled'**
+  String get idpEnabled;
+
+  /// No description provided for @idpDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Disabled'**
+  String get idpDisabled;
+
+  /// No description provided for @idpSourceEnv.
+  ///
+  /// In en, this message translates to:
+  /// **'Server environment'**
+  String get idpSourceEnv;
+
+  /// No description provided for @idpSourceDatabase.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved in the app'**
+  String get idpSourceDatabase;
+
+  /// No description provided for @idpEnvExplain.
+  ///
+  /// In en, this message translates to:
+  /// **'Set by the server\'s OIDC_ISSUER / OIDC_AUDIENCE. It cannot be changed here; it stays available as an emergency fallback.'**
+  String get idpEnvExplain;
+
+  /// No description provided for @idpRuleVerified.
+  ///
+  /// In en, this message translates to:
+  /// **'Links people by e-mail when the claim {claim} is true'**
+  String idpRuleVerified(String claim);
+
+  /// No description provided for @idpRuleTrust.
+  ///
+  /// In en, this message translates to:
+  /// **'Links people by e-mail and trusts the provider\'s address'**
+  String get idpRuleTrust;
+
+  /// No description provided for @idpRuleSubject.
+  ///
+  /// In en, this message translates to:
+  /// **'Only existing subjects: no linking by e-mail'**
+  String get idpRuleSubject;
+
+  /// No description provided for @idpRuleDomains.
+  ///
+  /// In en, this message translates to:
+  /// **'only for {domains}'**
+  String idpRuleDomains(String domains);
+
+  /// No description provided for @idpAddTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add identity provider'**
+  String get idpAddTitle;
+
+  /// No description provided for @idpEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit identity provider'**
+  String get idpEditTitle;
+
+  /// No description provided for @idpPreset.
+  ///
+  /// In en, this message translates to:
+  /// **'Start from'**
+  String get idpPreset;
+
+  /// No description provided for @idpPresetEntra.
+  ///
+  /// In en, this message translates to:
+  /// **'Microsoft Entra ID'**
+  String get idpPresetEntra;
+
+  /// No description provided for @idpPresetGoogle.
+  ///
+  /// In en, this message translates to:
+  /// **'Google'**
+  String get idpPresetGoogle;
+
+  /// No description provided for @idpPresetGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Generic OpenID Connect'**
+  String get idpPresetGeneric;
+
+  /// No description provided for @idpTenantId.
+  ///
+  /// In en, this message translates to:
+  /// **'Tenant id (directory id)'**
+  String get idpTenantId;
+
+  /// No description provided for @idpAudienceEntraHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The application (client) id of your Entra app registration'**
+  String get idpAudienceEntraHint;
+
+  /// No description provided for @idpFieldName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get idpFieldName;
+
+  /// No description provided for @idpFieldIssuer.
+  ///
+  /// In en, this message translates to:
+  /// **'Issuer URL'**
+  String get idpFieldIssuer;
+
+  /// No description provided for @idpFieldAudience.
+  ///
+  /// In en, this message translates to:
+  /// **'Audience'**
+  String get idpFieldAudience;
+
+  /// No description provided for @idpFieldClientId.
+  ///
+  /// In en, this message translates to:
+  /// **'Client id (public client, no secret)'**
+  String get idpFieldClientId;
+
+  /// No description provided for @idpFieldScopes.
+  ///
+  /// In en, this message translates to:
+  /// **'Scopes'**
+  String get idpFieldScopes;
+
+  /// No description provided for @idpFieldTokenUse.
+  ///
+  /// In en, this message translates to:
+  /// **'Token to send (not used for sign-in yet)'**
+  String get idpFieldTokenUse;
+
+  /// No description provided for @idpTokenUseIdTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'ID token'**
+  String get idpTokenUseIdTitle;
+
+  /// No description provided for @idpTokenUseIdBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Default. Works with Keycloak and most OpenID Connect providers: the audience is the client id.'**
+  String get idpTokenUseIdBody;
+
+  /// No description provided for @idpTokenUseAccessTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Access token'**
+  String get idpTokenUseAccessTitle;
+
+  /// No description provided for @idpTokenUseAccessBody.
+  ///
+  /// In en, this message translates to:
+  /// **'For Microsoft Entra ID: the access token of your own API (scope api://<client-id>/access_as_user).'**
+  String get idpTokenUseAccessBody;
+
+  /// No description provided for @idpFieldEmailClaim.
+  ///
+  /// In en, this message translates to:
+  /// **'E-mail claim'**
+  String get idpFieldEmailClaim;
+
+  /// No description provided for @idpFieldVerifiedClaim.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified claim'**
+  String get idpFieldVerifiedClaim;
+
+  /// No description provided for @idpFieldDomains.
+  ///
+  /// In en, this message translates to:
+  /// **'Allowed e-mail domains'**
+  String get idpFieldDomains;
+
+  /// No description provided for @idpDomainsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Type a domain and press Enter, for example example.com'**
+  String get idpDomainsHint;
+
+  /// No description provided for @idpAdvanced.
+  ///
+  /// In en, this message translates to:
+  /// **'Advanced'**
+  String get idpAdvanced;
+
+  /// No description provided for @idpAlgorithms.
+  ///
+  /// In en, this message translates to:
+  /// **'Accepted signature algorithms'**
+  String get idpAlgorithms;
+
+  /// No description provided for @idpEmailRuleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How may an e-mail address be used to link a person?'**
+  String get idpEmailRuleTitle;
+
+  /// No description provided for @idpRuleVerifiedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Require a verified claim (recommended)'**
+  String get idpRuleVerifiedTitle;
+
+  /// No description provided for @idpRuleVerifiedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The first sign-in is linked to the ERP user with the same e-mail address only when the token carries a claim, such as email_verified, saying the provider checked that address. Risk: if the provider does not really check addresses, the claim is worthless and a stranger could take over a user.'**
+  String get idpRuleVerifiedBody;
+
+  /// No description provided for @idpRuleTrustTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Trust the provider\'s e-mail address'**
+  String get idpRuleTrustTitle;
+
+  /// No description provided for @idpRuleTrustBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The address in the token is accepted without any verification claim. Only use this for a directory where your company controls every address, such as a single Entra tenant, and add allowed domains. Risk: if people can set their own address at the provider, they can sign in as any user.'**
+  String get idpRuleTrustBody;
+
+  /// No description provided for @idpRuleSubjectTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Only existing subjects'**
+  String get idpRuleSubjectTitle;
+
+  /// No description provided for @idpRuleSubjectBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Nobody is linked by e-mail. An administrator links each user to an identity at the provider (Users, Link identity). Safest, but more work.'**
+  String get idpRuleSubjectBody;
+
+  /// No description provided for @idpEntraAdvice.
+  ///
+  /// In en, this message translates to:
+  /// **'Entra ID: either trust the provider\'s e-mail and list your allowed domains (a tenant only holds your own people), or require the claim xms_edov, which Entra only sends when you add it as an optional claim in the app registration.'**
+  String get idpEntraAdvice;
+
+  /// No description provided for @idpErrName.
+  ///
+  /// In en, this message translates to:
+  /// **'A name is required.'**
+  String get idpErrName;
+
+  /// No description provided for @idpErrIssuer.
+  ///
+  /// In en, this message translates to:
+  /// **'The issuer must be an https:// URL.'**
+  String get idpErrIssuer;
+
+  /// No description provided for @idpErrAudience.
+  ///
+  /// In en, this message translates to:
+  /// **'The audience is required.'**
+  String get idpErrAudience;
+
+  /// No description provided for @idpErrDomain.
+  ///
+  /// In en, this message translates to:
+  /// **'{domain} does not look like a domain.'**
+  String idpErrDomain(String domain);
+
+  /// No description provided for @idpErrAlgorithms.
+  ///
+  /// In en, this message translates to:
+  /// **'Select at least one algorithm.'**
+  String get idpErrAlgorithms;
+
+  /// No description provided for @idpSaveRefused.
+  ///
+  /// In en, this message translates to:
+  /// **'The server refused these settings: {reason}'**
+  String idpSaveRefused(String reason);
+
+  /// No description provided for @idpSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Identity provider saved'**
+  String get idpSaved;
+
+  /// No description provided for @idpDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Identity provider deleted'**
+  String get idpDeleted;
+
+  /// No description provided for @idpDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete identity provider {name}? People who sign in through it can no longer do so.'**
+  String idpDeleteConfirm(String name);
+
+  /// No description provided for @idpLockoutTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'This can lock people out'**
+  String get idpLockoutTitle;
+
+  /// No description provided for @idpLockoutLast.
+  ///
+  /// In en, this message translates to:
+  /// **'This is the last enabled identity provider and the server has no OIDC_ISSUER fallback. If you continue, nobody can sign in until the server\'s configuration is fixed.'**
+  String get idpLockoutLast;
+
+  /// No description provided for @idpLockoutOwn.
+  ///
+  /// In en, this message translates to:
+  /// **'You are signed in through this provider. If you continue, you will be signed out and cannot sign in again unless another provider accepts you.'**
+  String get idpLockoutOwn;
+
+  /// No description provided for @idpLockoutContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue anyway'**
+  String get idpLockoutContinue;
+
+  /// No description provided for @idpTest.
+  ///
+  /// In en, this message translates to:
+  /// **'Test'**
+  String get idpTest;
+
+  /// No description provided for @idpTestSampleToken.
+  ///
+  /// In en, this message translates to:
+  /// **'Sample token (optional)'**
+  String get idpTestSampleToken;
+
+  /// No description provided for @idpTestSampleHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste an access token of a person from this provider to see how it would be handled.'**
+  String get idpTestSampleHint;
+
+  /// No description provided for @idpTestNothing.
+  ///
+  /// In en, this message translates to:
+  /// **'Testing reads the provider and checks the token only. Nothing is linked or stored.'**
+  String get idpTestNothing;
+
+  /// No description provided for @idpTestFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not read the provider: {error}'**
+  String idpTestFailed(String error);
+
+  /// No description provided for @idpTestDiscovery.
+  ///
+  /// In en, this message translates to:
+  /// **'Discovery document reachable'**
+  String get idpTestDiscovery;
+
+  /// No description provided for @idpTestIssuerMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Issuer matches the discovery document'**
+  String get idpTestIssuerMatch;
+
+  /// No description provided for @idpTestKeys.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} signing keys, algorithms: {algorithms}'**
+  String idpTestKeys(int count, String algorithms);
+
+  /// No description provided for @idpTestClaims.
+  ///
+  /// In en, this message translates to:
+  /// **'Claims the provider says it supports: {claims}'**
+  String idpTestClaims(String claims);
+
+  /// No description provided for @idpTestToken.
+  ///
+  /// In en, this message translates to:
+  /// **'Sample token'**
+  String get idpTestToken;
+
+  /// No description provided for @idpTestSignature.
+  ///
+  /// In en, this message translates to:
+  /// **'Signature'**
+  String get idpTestSignature;
+
+  /// No description provided for @idpTestAudience.
+  ///
+  /// In en, this message translates to:
+  /// **'Audience'**
+  String get idpTestAudience;
+
+  /// No description provided for @idpTestExpiry.
+  ///
+  /// In en, this message translates to:
+  /// **'Not expired'**
+  String get idpTestExpiry;
+
+  /// No description provided for @idpTestOk.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get idpTestOk;
+
+  /// No description provided for @idpTestNotOk.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get idpTestNotOk;
+
+  /// No description provided for @idpTestEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'E-mail found: {email}'**
+  String idpTestEmail(String email);
+
+  /// No description provided for @idpTestNoEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'No e-mail address found in the token'**
+  String get idpTestNoEmail;
+
+  /// No description provided for @idpTestVerified.
+  ///
+  /// In en, this message translates to:
+  /// **'The provider marks the address as verified'**
+  String get idpTestVerified;
+
+  /// No description provided for @idpTestNotVerified.
+  ///
+  /// In en, this message translates to:
+  /// **'The address is not marked as verified'**
+  String get idpTestNotVerified;
+
+  /// No description provided for @idpBindWould.
+  ///
+  /// In en, this message translates to:
+  /// **'Would sign in as {email}'**
+  String idpBindWould(String email);
+
+  /// No description provided for @idpBindExisting.
+  ///
+  /// In en, this message translates to:
+  /// **'Already linked to {email}'**
+  String idpBindExisting(String email);
+
+  /// No description provided for @idpBindRefused.
+  ///
+  /// In en, this message translates to:
+  /// **'Would be refused: {reason}'**
+  String idpBindRefused(String reason);
+
+  /// No description provided for @idpLinkIdentity.
+  ///
+  /// In en, this message translates to:
+  /// **'Link identity'**
+  String get idpLinkIdentity;
+
+  /// No description provided for @idpLinkTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Link identity of {name}'**
+  String idpLinkTitle(String name);
+
+  /// No description provided for @idpLinkExplain.
+  ///
+  /// In en, this message translates to:
+  /// **'Only needed for providers that use the rule \'Only existing subjects\'. Choose the provider and enter the subject (the sub claim) this person has there. Leave it empty to remove the link.'**
+  String get idpLinkExplain;
+
+  /// No description provided for @idpLinkProvider.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider'**
+  String get idpLinkProvider;
+
+  /// No description provided for @idpLinkSubject.
+  ///
+  /// In en, this message translates to:
+  /// **'Subject (sub)'**
+  String get idpLinkSubject;
+
+  /// No description provided for @idpLinkNoProviders.
+  ///
+  /// In en, this message translates to:
+  /// **'No identity providers are saved in the app yet.'**
+  String get idpLinkNoProviders;
+
+  /// No description provided for @idpLinkSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Identity link saved'**
+  String get idpLinkSaved;
+
+  /// No description provided for @idpLinkCleared.
+  ///
+  /// In en, this message translates to:
+  /// **'Identity link removed'**
+  String get idpLinkCleared;
+
+  /// No description provided for @tutActionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not send the simulated e-mail: {reason}. Try again.'**
+  String tutActionFailed(String reason);
+
+  /// No description provided for @tutActionForbidden.
+  ///
+  /// In en, this message translates to:
+  /// **'You are not allowed to import e-mail into the helpdesk (it needs the helpdesk write permission). Ask an administrator, or sign in as one, and try again.'**
+  String get tutActionForbidden;
+
+  /// No description provided for @workerDownBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'The background worker has not run since {since}: e-mail is not sent or fetched and SLA breaches are not escalated.'**
+  String workerDownBanner(String since);
+
+  /// No description provided for @workerNeverSeenBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'No background worker has run yet: e-mail is not sent or fetched and SLA breaches are not escalated.'**
+  String get workerNeverSeenBanner;
+
+  /// No description provided for @workerBannerSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Background worker'**
+  String get workerBannerSemantics;
+
+  /// No description provided for @vatLookup.
+  ///
+  /// In en, this message translates to:
+  /// **'Look up in VIES'**
+  String get vatLookup;
+
+  /// No description provided for @vatValid.
+  ///
+  /// In en, this message translates to:
+  /// **'The format and check digits are right. This does not show that the number is registered.'**
+  String get vatValid;
+
+  /// No description provided for @vatFormatOk.
+  ///
+  /// In en, this message translates to:
+  /// **'The format is right. This country\'s check digits are not verified here.'**
+  String get vatFormatOk;
+
+  /// No description provided for @vatBadFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'This is not shaped like a VAT number of this country.'**
+  String get vatBadFormat;
+
+  /// No description provided for @vatBadChecksum.
+  ///
+  /// In en, this message translates to:
+  /// **'The check digits do not match: please check for a typo.'**
+  String get vatBadChecksum;
+
+  /// No description provided for @vatNotChecked.
+  ///
+  /// In en, this message translates to:
+  /// **'Not an EU VAT number, so it is not checked.'**
+  String get vatNotChecked;
+
+  /// No description provided for @vatDuplicates.
+  ///
+  /// In en, this message translates to:
+  /// **'Also used by: {records}'**
+  String vatDuplicates(String records);
+
+  /// No description provided for @vatInactive.
+  ///
+  /// In en, this message translates to:
+  /// **'{record} (inactive)'**
+  String vatInactive(String record);
+
+  /// No description provided for @viesValid.
+  ///
+  /// In en, this message translates to:
+  /// **'Registered and active in VIES.'**
+  String get viesValid;
+
+  /// No description provided for @viesInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'VIES does not know this number.'**
+  String get viesInvalid;
+
+  /// No description provided for @viesUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'VIES could not answer ({reason}). Fill in the details by hand.'**
+  String viesUnavailable(String reason);
+
+  /// No description provided for @viesDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'The VIES lookup is switched off on this server.'**
+  String get viesDisabled;
+
+  /// No description provided for @viesFilled.
+  ///
+  /// In en, this message translates to:
+  /// **'Empty fields filled in from VIES.'**
+  String get viesFilled;
+
+  /// No description provided for @viesNoDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'The member state does not disclose a name or address.'**
+  String get viesNoDetails;
+
+  /// No description provided for @adminAuditTrail.
+  ///
+  /// In en, this message translates to:
+  /// **'Audit trail'**
+  String get adminAuditTrail;
+
+  /// No description provided for @auditRecordType.
+  ///
+  /// In en, this message translates to:
+  /// **'Record type'**
+  String get auditRecordType;
+
+  /// No description provided for @auditAllRecords.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get auditAllRecords;
+
+  /// No description provided for @auditAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Action'**
+  String get auditAction;
+
+  /// No description provided for @auditFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'From'**
+  String get auditFrom;
+
+  /// No description provided for @auditTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Until'**
+  String get auditTo;
+
+  /// No description provided for @auditClearDates.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear dates'**
+  String get auditClearDates;
+
+  /// No description provided for @auditSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get auditSystem;
+
+  /// No description provided for @auditNoEvents.
+  ///
+  /// In en, this message translates to:
+  /// **'No events found.'**
+  String get auditNoEvents;
+
+  /// No description provided for @auditLoadMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Load older events'**
+  String get auditLoadMore;
+
+  /// No description provided for @auditHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'History'**
+  String get auditHistory;
+
+  /// No description provided for @auditHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'History of {name}'**
+  String auditHistoryTitle(String name);
+
+  /// No description provided for @auditNoDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'No details were recorded.'**
+  String get auditNoDetails;
+
+  /// No description provided for @mailboxes.
+  ///
+  /// In en, this message translates to:
+  /// **'Mailboxes'**
+  String get mailboxes;
+
+  /// No description provided for @newMailbox.
+  ///
+  /// In en, this message translates to:
+  /// **'New mailbox'**
+  String get newMailbox;
+
+  /// No description provided for @mailboxesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No mailboxes yet. E-mail is fetched and sent with the settings of the background worker.'**
+  String get mailboxesEmpty;
+
+  /// No description provided for @mailboxRefresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh the status'**
+  String get mailboxRefresh;
+
+  /// No description provided for @mailboxAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'E-mail address'**
+  String get mailboxAddress;
+
+  /// No description provided for @mailboxKind.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection'**
+  String get mailboxKind;
+
+  /// No description provided for @mailboxKindGraph.
+  ///
+  /// In en, this message translates to:
+  /// **'Microsoft 365 (Exchange Online)'**
+  String get mailboxKindGraph;
+
+  /// No description provided for @mailboxKindImap.
+  ///
+  /// In en, this message translates to:
+  /// **'IMAP and SMTP'**
+  String get mailboxKindImap;
+
+  /// No description provided for @mailboxTenantId.
+  ///
+  /// In en, this message translates to:
+  /// **'Tenant ID'**
+  String get mailboxTenantId;
+
+  /// No description provided for @mailboxClientId.
+  ///
+  /// In en, this message translates to:
+  /// **'Application (client) ID'**
+  String get mailboxClientId;
+
+  /// No description provided for @mailboxUsername.
+  ///
+  /// In en, this message translates to:
+  /// **'User name'**
+  String get mailboxUsername;
+
+  /// No description provided for @mailboxImapHost.
+  ///
+  /// In en, this message translates to:
+  /// **'IMAP server'**
+  String get mailboxImapHost;
+
+  /// No description provided for @mailboxImapPort.
+  ///
+  /// In en, this message translates to:
+  /// **'IMAP port'**
+  String get mailboxImapPort;
+
+  /// No description provided for @mailboxImapFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Folder'**
+  String get mailboxImapFolder;
+
+  /// No description provided for @mailboxImapTls.
+  ///
+  /// In en, this message translates to:
+  /// **'Encrypted IMAP connection (TLS)'**
+  String get mailboxImapTls;
+
+  /// No description provided for @mailboxSmtpHost.
+  ///
+  /// In en, this message translates to:
+  /// **'SMTP server'**
+  String get mailboxSmtpHost;
+
+  /// No description provided for @mailboxSmtpPort.
+  ///
+  /// In en, this message translates to:
+  /// **'SMTP port'**
+  String get mailboxSmtpPort;
+
+  /// No description provided for @mailboxSmtpSecurity.
+  ///
+  /// In en, this message translates to:
+  /// **'SMTP encryption'**
+  String get mailboxSmtpSecurity;
+
+  /// No description provided for @mailboxSmtpNone.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get mailboxSmtpNone;
+
+  /// No description provided for @mailboxSecretRef.
+  ///
+  /// In en, this message translates to:
+  /// **'Name of the secret'**
+  String get mailboxSecretRef;
+
+  /// No description provided for @mailboxSecretHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'The password or client secret is not stored here. Set it on the server as the worker variable {variable}.'**
+  String mailboxSecretHelp(String variable);
+
+  /// No description provided for @mailboxTeam.
+  ///
+  /// In en, this message translates to:
+  /// **'Team for new tickets'**
+  String get mailboxTeam;
+
+  /// No description provided for @mailboxTeamDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'The default team'**
+  String get mailboxTeamDefault;
+
+  /// No description provided for @mailboxInbound.
+  ///
+  /// In en, this message translates to:
+  /// **'Fetch incoming e-mail'**
+  String get mailboxInbound;
+
+  /// No description provided for @mailboxDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Default mailbox: for system e-mail and tickets without a mailbox'**
+  String get mailboxDefault;
+
+  /// No description provided for @mailboxDefaultBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'default'**
+  String get mailboxDefaultBadge;
+
+  /// No description provided for @mailboxSendOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Sends only'**
+  String get mailboxSendOnly;
+
+  /// No description provided for @mailboxNeverPolled.
+  ///
+  /// In en, this message translates to:
+  /// **'No e-mail fetched yet'**
+  String get mailboxNeverPolled;
+
+  /// No description provided for @mailboxLastOk.
+  ///
+  /// In en, this message translates to:
+  /// **'E-mail last fetched on {when}'**
+  String mailboxLastOk(String when);
+
+  /// No description provided for @mailboxError.
+  ///
+  /// In en, this message translates to:
+  /// **'Problem fetching e-mail: {error}'**
+  String mailboxError(String error);
+
+  /// No description provided for @mailboxDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove the mailbox {name}? Its tickets stay. Replies on them then leave through the default mailbox.'**
+  String mailboxDeleteConfirm(String name);
+
+  /// No description provided for @productionWorkCentres.
+  ///
+  /// In en, this message translates to:
+  /// **'Work centres'**
+  String get productionWorkCentres;
+
+  /// No description provided for @productionWorkCentreAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add work centre'**
+  String get productionWorkCentreAdd;
+
+  /// No description provided for @productionWorkCentreEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit work centre'**
+  String get productionWorkCentreEdit;
+
+  /// No description provided for @productionWorkCentreCapacity.
+  ///
+  /// In en, this message translates to:
+  /// **'Capacity (units working at once)'**
+  String get productionWorkCentreCapacity;
+
+  /// No description provided for @productionWorkCentreCost.
+  ///
+  /// In en, this message translates to:
+  /// **'Cost per hour'**
+  String get productionWorkCentreCost;
+
+  /// No description provided for @productionWorkCentreOpenOps.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} open operations'**
+  String productionWorkCentreOpenOps(String count);
+
+  /// No description provided for @productionWorkCentreEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No work centres yet. Add the machines and benches your operations run on.'**
+  String get productionWorkCentreEmpty;
+
+  /// No description provided for @productionWorkingHours.
+  ///
+  /// In en, this message translates to:
+  /// **'Working hours'**
+  String get productionWorkingHours;
+
+  /// No description provided for @productionHoursDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'No hours of its own: Monday to Friday 08:00–12:00 and 13:00–17:00.'**
+  String get productionHoursDefault;
+
+  /// No description provided for @productionHoursAddBlock.
+  ///
+  /// In en, this message translates to:
+  /// **'Add block'**
+  String get productionHoursAddBlock;
+
+  /// No description provided for @productionClosures.
+  ///
+  /// In en, this message translates to:
+  /// **'Closures'**
+  String get productionClosures;
+
+  /// No description provided for @productionClosureAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add closure'**
+  String get productionClosureAdd;
+
+  /// No description provided for @productionClosureWholePlant.
+  ///
+  /// In en, this message translates to:
+  /// **'Whole plant'**
+  String get productionClosureWholePlant;
+
+  /// No description provided for @productionClosureKind.
+  ///
+  /// In en, this message translates to:
+  /// **'Kind'**
+  String get productionClosureKind;
+
+  /// No description provided for @productionClosureMaintenance.
+  ///
+  /// In en, this message translates to:
+  /// **'Maintenance'**
+  String get productionClosureMaintenance;
+
+  /// No description provided for @productionClosureHoliday.
+  ///
+  /// In en, this message translates to:
+  /// **'Holiday'**
+  String get productionClosureHoliday;
+
+  /// No description provided for @productionClosureOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get productionClosureOther;
+
+  /// No description provided for @productionClosureEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No closures.'**
+  String get productionClosureEmpty;
+
+  /// No description provided for @productionCapacity.
+  ///
+  /// In en, this message translates to:
+  /// **'Capacity'**
+  String get productionCapacity;
+
+  /// No description provided for @productionCapacityLegend.
+  ///
+  /// In en, this message translates to:
+  /// **'Load of the open operations against what each work centre can work. Red: overloaded.'**
+  String get productionCapacityLegend;
+
+  /// No description provided for @productionCapacityOverloaded.
+  ///
+  /// In en, this message translates to:
+  /// **'Overloaded'**
+  String get productionCapacityOverloaded;
+
+  /// No description provided for @productionCapacityEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No work centres to show.'**
+  String get productionCapacityEmpty;
+
+  /// No description provided for @productionCapacityEarlier.
+  ///
+  /// In en, this message translates to:
+  /// **'Earlier'**
+  String get productionCapacityEarlier;
+
+  /// No description provided for @productionCapacityLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Later'**
+  String get productionCapacityLater;
+
+  /// No description provided for @productionCapacityToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get productionCapacityToday;
+
+  /// No description provided for @productionWorkCentreUnits.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} units'**
+  String productionWorkCentreUnits(String count);
+
+  /// No description provided for @productionOperations.
+  ///
+  /// In en, this message translates to:
+  /// **'Operations'**
+  String get productionOperations;
+
+  /// No description provided for @productionOperationPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Not started'**
+  String get productionOperationPending;
+
+  /// No description provided for @productionOperationDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get productionOperationDone;
+
+  /// No description provided for @productionOperationSkipped.
+  ///
+  /// In en, this message translates to:
+  /// **'Skipped'**
+  String get productionOperationSkipped;
+
+  /// No description provided for @productionOperationStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start operation'**
+  String get productionOperationStart;
+
+  /// No description provided for @productionOperationFinish.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish operation'**
+  String get productionOperationFinish;
+
+  /// No description provided for @productionOperationReopen.
+  ///
+  /// In en, this message translates to:
+  /// **'Reopen operation'**
+  String get productionOperationReopen;
+
+  /// No description provided for @productionOperationMove.
+  ///
+  /// In en, this message translates to:
+  /// **'Move operation'**
+  String get productionOperationMove;
+
+  /// No description provided for @productionOperationMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'Minutes worked'**
+  String get productionOperationMinutes;
+
+  /// No description provided for @productionOperationPlanned.
+  ///
+  /// In en, this message translates to:
+  /// **'Planned'**
+  String get productionOperationPlanned;
+
+  /// No description provided for @productionOperationWorked.
+  ///
+  /// In en, this message translates to:
+  /// **'Worked'**
+  String get productionOperationWorked;
+
+  /// No description provided for @productionOperationBy.
+  ///
+  /// In en, this message translates to:
+  /// **'by {name}'**
+  String productionOperationBy(String name);
+
+  /// No description provided for @productionScheduleAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule again'**
+  String get productionScheduleAgain;
+
+  /// No description provided for @productionStartFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'Start from'**
+  String get productionStartFrom;
+
+  /// No description provided for @productionBehindSchedule.
+  ///
+  /// In en, this message translates to:
+  /// **'Behind schedule: the last operation is planned for {date}, after the planned-ready date.'**
+  String productionBehindSchedule(String date);
+
+  /// No description provided for @productionBehindScheduleShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Behind schedule'**
+  String get productionBehindScheduleShort;
+
+  /// No description provided for @productionUseScheduledEnd.
+  ///
+  /// In en, this message translates to:
+  /// **'Use {date} as planned-ready date'**
+  String productionUseScheduledEnd(String date);
+
+  /// No description provided for @productionRemark.
+  ///
+  /// In en, this message translates to:
+  /// **'Production remark (internal)'**
+  String get productionRemark;
+
+  /// No description provided for @productionSubOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Subassembly orders'**
+  String get productionSubOrders;
+
+  /// No description provided for @productionSubassemblyOf.
+  ///
+  /// In en, this message translates to:
+  /// **'Subassembly of {number}'**
+  String productionSubassemblyOf(String number);
+
+  /// No description provided for @productionCost.
+  ///
+  /// In en, this message translates to:
+  /// **'Cost'**
+  String get productionCost;
+
+  /// No description provided for @productionCostPlanned.
+  ///
+  /// In en, this message translates to:
+  /// **'Planned'**
+  String get productionCostPlanned;
+
+  /// No description provided for @productionCostActual.
+  ///
+  /// In en, this message translates to:
+  /// **'Actual'**
+  String get productionCostActual;
+
+  /// No description provided for @productionCostMaterial.
+  ///
+  /// In en, this message translates to:
+  /// **'Material'**
+  String get productionCostMaterial;
+
+  /// No description provided for @productionCostLabour.
+  ///
+  /// In en, this message translates to:
+  /// **'Labour'**
+  String get productionCostLabour;
+
+  /// No description provided for @productionCostIncomplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Some costs are missing and left out.'**
+  String get productionCostIncomplete;
+
+  /// No description provided for @productionOperationsOpenWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} operations are still open. Fill in the minutes worked to finish them; leave the field empty to skip one.'**
+  String productionOperationsOpenWarning(String count);
+
+  /// No description provided for @productionAutoRelease.
+  ///
+  /// In en, this message translates to:
+  /// **'Also release the subassemblies that stock does not cover'**
+  String get productionAutoRelease;
+
+  /// No description provided for @productionRouting.
+  ///
+  /// In en, this message translates to:
+  /// **'Routing'**
+  String get productionRouting;
+
+  /// No description provided for @productionRoutingNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No routing: production orders for this product have no operations.'**
+  String get productionRoutingNone;
+
+  /// No description provided for @productionRoutingAddOperation.
+  ///
+  /// In en, this message translates to:
+  /// **'Add operation'**
+  String get productionRoutingAddOperation;
+
+  /// No description provided for @productionRoutingOperation.
+  ///
+  /// In en, this message translates to:
+  /// **'Operation'**
+  String get productionRoutingOperation;
+
+  /// No description provided for @productionRoutingSetup.
+  ///
+  /// In en, this message translates to:
+  /// **'Setup (min)'**
+  String get productionRoutingSetup;
+
+  /// No description provided for @productionRoutingRun.
+  ///
+  /// In en, this message translates to:
+  /// **'Run per unit (min)'**
+  String get productionRoutingRun;
+
+  /// No description provided for @productionRoutingNoWorkCentres.
+  ///
+  /// In en, this message translates to:
+  /// **'Add work centres first (Production, work centres).'**
+  String get productionRoutingNoWorkCentres;
+
+  /// No description provided for @productionCostRollup.
+  ///
+  /// In en, this message translates to:
+  /// **'Cost roll-up'**
+  String get productionCostRollup;
+
+  /// No description provided for @productionCostRollupHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Material at standard cost and labour at the work centres\' cost per hour, through every level.'**
+  String get productionCostRollupHint;
+
+  /// No description provided for @productionCostPerUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'Cost per unit'**
+  String get productionCostPerUnit;
+
+  /// No description provided for @productionCostGapProduct.
+  ///
+  /// In en, this message translates to:
+  /// **'No standard cost: {code}'**
+  String productionCostGapProduct(String code);
+
+  /// No description provided for @productionCostGapWorkCentre.
+  ///
+  /// In en, this message translates to:
+  /// **'No cost per hour: {code}'**
+  String productionCostGapWorkCentre(String code);
+
+  /// No description provided for @productionCostCalculate.
+  ///
+  /// In en, this message translates to:
+  /// **'Calculate'**
+  String get productionCostCalculate;
+
+  /// No description provided for @productionOperationMinutesInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the minutes as a whole number.'**
+  String get productionOperationMinutesInvalid;
+
+  /// No description provided for @productionRoutingLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The routing could not be loaded, so it cannot be changed now.'**
+  String get productionRoutingLoadFailed;
+
+  /// No description provided for @productionRoutingChangedWhileSaving.
+  ///
+  /// In en, this message translates to:
+  /// **'The routing changed while it was being saved. Save again to include the latest changes.'**
+  String get productionRoutingChangedWhileSaving;
+
+  /// No description provided for @shortcutBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get shortcutBack;
+
+  /// No description provided for @shortcutCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
+  String get shortcutCreate;
+
+  /// No description provided for @shortcutHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get shortcutHome;
+
+  /// No description provided for @shortcutDiscard.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard changes'**
+  String get shortcutDiscard;
+
+  /// No description provided for @shortcutSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get shortcutSave;
+
+  /// No description provided for @shortcutNextPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Load more'**
+  String get shortcutNextPage;
+
+  /// No description provided for @shortcutSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get shortcutSearch;
+
+  /// No description provided for @shortcutNewTodo.
+  ///
+  /// In en, this message translates to:
+  /// **'New to-do'**
+  String get shortcutNewTodo;
+
+  /// No description provided for @shortcutKbSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search articles'**
+  String get shortcutKbSearch;
+
+  /// No description provided for @shortcutKbShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Share article'**
+  String get shortcutKbShare;
+
+  /// No description provided for @shortcutPalette.
+  ///
+  /// In en, this message translates to:
+  /// **'Command palette'**
+  String get shortcutPalette;
+
+  /// No description provided for @shortcutHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Keyboard shortcuts'**
+  String get shortcutHelp;
+
+  /// No description provided for @shortcutMenuItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Menu item {n}'**
+  String shortcutMenuItem(int n);
+
+  /// No description provided for @shortcutHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Shortcut: {keys}'**
+  String shortcutHint(String keys);
+
+  /// No description provided for @moduleTodo.
+  ///
+  /// In en, this message translates to:
+  /// **'To-do'**
+  String get moduleTodo;
+
+  /// No description provided for @todoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'To-dos'**
+  String get todoTitle;
+
+  /// No description provided for @todoAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to-do'**
+  String get todoAdd;
+
+  /// No description provided for @todoAddSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Add sub-item'**
+  String get todoAddSub;
+
+  /// No description provided for @todoWhat.
+  ///
+  /// In en, this message translates to:
+  /// **'What needs doing?'**
+  String get todoWhat;
+
+  /// No description provided for @todoNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get todoNotes;
+
+  /// No description provided for @todoDueDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Due date'**
+  String get todoDueDate;
+
+  /// No description provided for @todoSetDue.
+  ///
+  /// In en, this message translates to:
+  /// **'Set due date'**
+  String get todoSetDue;
+
+  /// No description provided for @todoClearDue.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear due date'**
+  String get todoClearDue;
+
+  /// No description provided for @todoDue.
+  ///
+  /// In en, this message translates to:
+  /// **'Due {date}'**
+  String todoDue(String date);
+
+  /// No description provided for @todoOverdue.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue'**
+  String get todoOverdue;
+
+  /// No description provided for @todoFilterOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get todoFilterOpen;
+
+  /// No description provided for @todoFilterDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get todoFilterDone;
+
+  /// No description provided for @todoFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get todoFilterAll;
+
+  /// No description provided for @todoEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to do. Add your first to-do.'**
+  String get todoEmpty;
+
+  /// No description provided for @todoEmptyDone.
+  ///
+  /// In en, this message translates to:
+  /// **'No finished to-dos.'**
+  String get todoEmptyDone;
+
+  /// No description provided for @todoComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark as done'**
+  String get todoComplete;
+
+  /// No description provided for @todoReopen.
+  ///
+  /// In en, this message translates to:
+  /// **'Reopen'**
+  String get todoReopen;
+
+  /// No description provided for @todoDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete \"{title}\"? Its sub-items are deleted too.'**
+  String todoDeleteConfirm(String title);
+
+  /// No description provided for @todoCompleteAllTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete the sub-items too?'**
+  String get todoCompleteAllTitle;
+
+  /// No description provided for @todoCompleteAllBody.
+  ///
+  /// In en, this message translates to:
+  /// **'\"{title}\" still has open sub-items. Completing it marks them as done too.'**
+  String todoCompleteAllBody(String title);
+
+  /// No description provided for @todoCompleteAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete all'**
+  String get todoCompleteAll;
+
+  /// No description provided for @todoLinkedItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Linked item'**
+  String get todoLinkedItem;
+
+  /// No description provided for @todoFromOwner.
+  ///
+  /// In en, this message translates to:
+  /// **'From {name}'**
+  String todoFromOwner(String name);
+
+  /// No description provided for @todoSubProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'{done} of {total} sub-items done'**
+  String todoSubProgress(int done, int total);
+
+  /// No description provided for @todoReorder.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag to reorder'**
+  String get todoReorder;
+
+  /// No description provided for @changeProduct.
+  ///
+  /// In en, this message translates to:
+  /// **'Change product'**
+  String get changeProduct;
+
+  /// No description provided for @changeProductOf.
+  ///
+  /// In en, this message translates to:
+  /// **'New main product for {product}'**
+  String changeProductOf(String product);
+
+  /// No description provided for @changeProductNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New product'**
+  String get changeProductNew;
+
+  /// No description provided for @changeProductNetNote.
+  ///
+  /// In en, this message translates to:
+  /// **'{product} has a net price: the line discount was cleared.'**
+  String changeProductNetNote(String product);
+
+  /// No description provided for @changeProductIndicativeNote.
+  ///
+  /// In en, this message translates to:
+  /// **'{product} has an indicative price: confirm the price before sending.'**
+  String changeProductIndicativeNote(String product);
+
+  /// No description provided for @optionsNotApplicable.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} option(s) do not apply to {product}: remove them.'**
+  String optionsNotApplicable(int count, String product);
+
+  /// No description provided for @removeNamedLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {code}'**
+  String removeNamedLine(String code);
+
+  /// No description provided for @optionNotOffered.
+  ///
+  /// In en, this message translates to:
+  /// **'Not offered with {product}'**
+  String optionNotOffered(String product);
+
+  /// No description provided for @sentWithNotApplicable.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent with {count} option(s) that do not apply to their main product.'**
+  String sentWithNotApplicable(int count);
+
+  /// No description provided for @tabCustomer.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer'**
+  String get tabCustomer;
+
+  /// No description provided for @todoAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'To-do added'**
+  String get todoAdded;
+
+  /// No description provided for @todoLinkToScreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Link to current screen'**
+  String get todoLinkToScreen;
+
+  /// No description provided for @todoLinkNotAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'This screen has no record to link to.'**
+  String get todoLinkNotAvailable;
+
+  /// No description provided for @todoOpenLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the linked record'**
+  String get todoOpenLink;
+
+  /// No description provided for @todoRemoveLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove link from my to-dos'**
+  String get todoRemoveLink;
+
+  /// No description provided for @recordNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'This record was not found. It may have been deleted, or you may not have access to it.'**
+  String get recordNotFound;
+
+  /// No description provided for @todoForObject.
+  ///
+  /// In en, this message translates to:
+  /// **'To-dos for this record'**
+  String get todoForObject;
+
+  /// No description provided for @todoForObjectCount.
+  ///
+  /// In en, this message translates to:
+  /// **'To-dos for this record ({count} open)'**
+  String todoForObjectCount(int count);
+
+  /// No description provided for @todoForObjectEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No open to-dos for this record.'**
+  String get todoForObjectEmpty;
+
+  /// No description provided for @todoEmailReminders.
+  ///
+  /// In en, this message translates to:
+  /// **'E-mail reminders'**
+  String get todoEmailReminders;
 }
 
 class _AppLocalizationsDelegate

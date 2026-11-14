@@ -108,6 +108,107 @@ impl EnvironmentConfig {
     }
 }
 
+/// Environment variable that lets a non-live worker poll a mailbox anyway (`1` or `true`).
+pub const ALLOW_INBOUND_MAIL_VAR: &str = "ALLOW_INBOUND_MAIL_IN_NON_LIVE";
+
+/// The one policy for what may reach the outside world (ADR 0048). Computed once at start-up from
+/// the environment kind; the API and the worker both apply it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OutboundPolicy {
+    /// The kind of environment the policy was computed for.
+    pub kind: EnvKind,
+    /// The mail transport to use: what was requested for live, always `files` otherwise.
+    pub mail_transport: String,
+    /// Whether the worker may fetch mail from a mailbox (IMAP or Microsoft Graph).
+    pub inbound_allowed: bool,
+}
+
+impl OutboundPolicy {
+    /// Computes the policy. `requested_transport` is `MAIL_TRANSPORT` (default `files`);
+    /// `allow_inbound` is the explicit opt-in for polling a mailbox in a non-live environment.
+    pub fn resolve(kind: EnvKind, requested_transport: &str, allow_inbound: bool) -> Self {
+        let live = kind == EnvKind::Live;
+        Self {
+            kind,
+            mail_transport: if live {
+                requested_transport.to_string()
+            } else {
+                "files".to_string()
+            },
+            inbound_allowed: live || allow_inbound,
+        }
+    }
+
+    /// Parses the opt-in value: only `1` and `true` (any case) enable it.
+    pub fn parse_opt_in(value: Option<&str>) -> bool {
+        matches!(
+            value.map(|v| v.trim().to_ascii_lowercase()).as_deref(),
+            Some("1" | "true")
+        )
+    }
+
+    /// True when nothing is restricted (live).
+    pub fn is_unrestricted(&self) -> bool {
+        self.kind == EnvKind::Live
+    }
+
+    /// The lines of the start-up warning: what this policy disables. Empty for live.
+    pub fn warnings(&self, requested_transport: &str) -> Vec<String> {
+        if self.is_unrestricted() {
+            return Vec::new();
+        }
+        let mut w = vec![format!(
+            "OUTBOUND SAFETY: environment kind is {}: outbound side effects are disabled",
+            self.kind.as_str()
+        )];
+        w.push(if requested_transport == "files" {
+            "OUTBOUND SAFETY: e-mail is written to .eml files, never sent (MAIL_TRANSPORT=files)"
+                .to_string()
+        } else {
+            format!(
+                "OUTBOUND SAFETY: MAIL_TRANSPORT={requested_transport} overridden to files: e-mail is never sent"
+            )
+        });
+        w.push(if self.inbound_allowed {
+            format!(
+                "OUTBOUND SAFETY: {ALLOW_INBOUND_MAIL_VAR} is set: the mailbox WILL be polled and fetched mail is marked read there"
+            )
+        } else {
+            format!(
+                "OUTBOUND SAFETY: inbound mailbox polling (Graph and IMAP) is disabled (set {ALLOW_INBOUND_MAIL_VAR}=1 to opt in)"
+            )
+        });
+        // The API only (the worker never calls VIES), but the policy is one list for both.
+        w.push(
+            "OUTBOUND SAFETY: the VIES lookup of VAT numbers is disabled (ADR 0058)".to_string(),
+        );
+        w
+    }
+
+    /// Logs [`Self::warnings`] at WARN level.
+    pub fn log_warnings(&self, requested_transport: &str) {
+        for line in self.warnings(requested_transport) {
+            tracing::warn!("{line}");
+        }
+    }
+}
+
+impl EnvironmentConfig {
+    /// Whether this environment may send e-mail or call external services: live only.
+    pub fn outbound_allowed(&self) -> bool {
+        self.kind == EnvKind::Live
+    }
+
+    /// The outbound policy for this environment; reads `ALLOW_INBOUND_MAIL_IN_NON_LIVE`.
+    pub fn outbound_policy(&self, requested_transport: &str) -> OutboundPolicy {
+        OutboundPolicy::resolve(
+            self.kind,
+            requested_transport,
+            OutboundPolicy::parse_opt_in(std::env::var(ALLOW_INBOUND_MAIL_VAR).ok().as_deref()),
+        )
+    }
+}
+
 /// The environment this API instance serves.
 #[derive(Debug, Serialize, ToSchema)]
 pub struct EnvironmentInfo {
@@ -191,6 +292,57 @@ mod tests {
             EnvironmentConfig::from_os_values(None, None).unwrap(),
             EnvironmentConfig::default()
         );
+    }
+
+    #[test]
+    fn live_keeps_the_requested_transport_and_imap() {
+        let p = OutboundPolicy::resolve(EnvKind::Live, "smtp", false);
+        assert_eq!(p.mail_transport, "smtp");
+        assert!(p.inbound_allowed && p.is_unrestricted());
+        assert!(p.warnings("smtp").is_empty());
+    }
+
+    #[test]
+    fn non_live_forces_files_and_disables_imap() {
+        for kind in [EnvKind::Test, EnvKind::Tutorial] {
+            let p = OutboundPolicy::resolve(kind, "smtp", false);
+            assert_eq!(p.mail_transport, "files");
+            assert!(!p.inbound_allowed);
+            let w = p.warnings("smtp").join("\n");
+            assert!(
+                w.contains("overridden to files")
+                    && w.contains("inbound mailbox polling (Graph and IMAP) is disabled")
+            );
+            assert!(w.contains("VIES lookup of VAT numbers is disabled"));
+        }
+    }
+
+    #[test]
+    fn imap_needs_the_explicit_opt_in_in_non_live() {
+        let p = OutboundPolicy::resolve(EnvKind::Test, "files", true);
+        assert!(p.inbound_allowed);
+        assert_eq!(p.mail_transport, "files");
+        assert!(p.warnings("files").join("\n").contains("WILL be polled"));
+        assert!(OutboundPolicy::parse_opt_in(Some(" TRUE ")));
+        assert!(OutboundPolicy::parse_opt_in(Some("1")));
+        assert!(!OutboundPolicy::parse_opt_in(Some("yes")));
+        assert!(!OutboundPolicy::parse_opt_in(Some("0")));
+        assert!(!OutboundPolicy::parse_opt_in(None));
+    }
+
+    #[test]
+    fn only_live_allows_outbound() {
+        for (k, ok) in [
+            (EnvKind::Live, true),
+            (EnvKind::Test, false),
+            (EnvKind::Tutorial, false),
+        ] {
+            let c = EnvironmentConfig {
+                name: None,
+                kind: k,
+            };
+            assert_eq!(c.outbound_allowed(), ok);
+        }
     }
 
     #[test]

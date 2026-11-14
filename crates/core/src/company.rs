@@ -25,16 +25,35 @@ pub struct Company {
     pub phone: Option<String>,
     pub iban: Option<String>,
     pub default_language: String,
+    /// True for the installation's primary company, whose administrators change the
+    /// installation-wide settings (identity providers, ADR 0055).
+    pub is_primary: bool,
 }
 
 pub async fn get_company<'e>(db: impl PgExecutor<'e>, id: Uuid) -> Result<Company, sqlx::Error> {
     sqlx::query_as(
         "SELECT id, name, vat_number, street, postal_code, city, country_code::text AS country_code,
                 currency::text AS currency, email, phone, iban,
-                default_language::text AS default_language
+                default_language::text AS default_language, is_primary
          FROM core.companies WHERE id = $1",
     )
     .bind(id)
+    .fetch_one(db)
+    .await
+}
+
+/// The language to address a user in: their own, else the company's default.
+pub async fn user_language<'e>(
+    db: impl PgExecutor<'e>,
+    company_id: Uuid,
+    user_id: Uuid,
+) -> Result<String, sqlx::Error> {
+    sqlx::query_scalar(
+        "SELECT coalesce(u.language, c.default_language)::text
+         FROM core.users u, core.companies c WHERE u.id = $1 AND c.id = $2",
+    )
+    .bind(user_id)
+    .bind(company_id)
     .fetch_one(db)
     .await
 }
@@ -133,4 +152,5 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(me))
         .routes(routes!(list_users))
         .merge(crate::admin::router())
+        .merge(crate::worker::router())
 }
