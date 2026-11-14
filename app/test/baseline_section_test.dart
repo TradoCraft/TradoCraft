@@ -123,8 +123,7 @@ FakeHttp _http({
   Object? Function(Object?)? onDelete,
   Object? Function(Object?)? onImport,
 }) => FakeHttp({
-  if (onImport != null)
-    'POST /api/v1/opportunities/o1/baseline/import': onImport,
+  'POST /api/v1/opportunities/o1/baseline/import': ?onImport,
   'GET /api/v1/me': (_) => meJson(perms),
   'GET /api/v1/opportunities/o1/baseline': (_) => tree ?? _tree(),
   'GET /api/v1/baseline-item-types': (_) => _types,
