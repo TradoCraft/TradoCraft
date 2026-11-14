@@ -126,6 +126,22 @@ pub async fn find_by_code(
     )
 }
 
+/// Like [`find_by_code`], but takes a shared row lock held to the end of the transaction, so an
+/// item write validates against rules that `update_type` (exclusive lock) cannot change under it.
+pub async fn find_by_code_shared(
+    conn: &mut PgConnection,
+    company_id: Uuid,
+    code: &str,
+) -> AppResult<Option<BaselineItemType>> {
+    Ok(sqlx::query_as(&format!(
+        "{SELECT} WHERE company_id = $1 AND code = $2 FOR SHARE"
+    ))
+    .bind(company_id)
+    .bind(code)
+    .fetch_optional(conn)
+    .await?)
+}
+
 /// Every allowed parent code must be a type of the company (or the type itself).
 async fn check_parent_codes_exist(
     conn: &mut PgConnection,

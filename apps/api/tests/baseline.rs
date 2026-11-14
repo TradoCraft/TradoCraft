@@ -1280,3 +1280,59 @@ async fn a_failing_baseline_default_seed_rolls_the_dev_company_back(db: PgPool) 
         .unwrap();
     assert_eq!(n, 0, "the company insert must not survive a failed seed");
 }
+
+/// Holds the exclusive row lock `update_type` takes on a type.
+async fn lock_type(db: &PgPool, code: &str) -> sqlx::Transaction<'static, sqlx::Postgres> {
+    let mut tx = db.begin().await.unwrap();
+    sqlx::query("SELECT 1 FROM crm.baseline_item_types WHERE code = $1 FOR UPDATE")
+        .bind(code)
+        .execute(&mut *tx)
+        .await
+        .unwrap();
+    tx
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn item_writes_wait_for_a_type_being_edited(db: PgPool) {
+    let app = seeded(&db).await;
+    let existing = add_ok(
+        &app,
+        OPP,
+        json!({ "type_code": "bell", "name": "Old", "values": {} }),
+    )
+    .await;
+
+    let tx = lock_type(&db, "bell").await;
+    let (a, id) = (app.clone(), existing.clone());
+    let create = tokio::spawn(async move {
+        add(
+            &a,
+            OPP,
+            json!({ "type_code": "bell", "name": "New", "values": {} }),
+        )
+        .await
+    });
+    let a = app.clone();
+    let update = tokio::spawn(async move {
+        api(
+            &a,
+            SALES,
+            Method::PUT,
+            &item_url(OPP, &id),
+            Some(json!({ "name": "Renamed", "values": {} })),
+        )
+        .await
+    });
+    tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+    assert!(!create.is_finished(), "create ignored the type lock");
+    assert!(!update.is_finished(), "update ignored the type lock");
+    // The edit that held the lock deactivates the type: the waiting create must see it.
+    let mut tx = tx;
+    sqlx::query("UPDATE crm.baseline_item_types SET active = false WHERE code = 'bell'")
+        .execute(&mut *tx)
+        .await
+        .unwrap();
+    tx.commit().await.unwrap();
+    assert_eq!(create.await.unwrap().0, StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(update.await.unwrap().0, StatusCode::OK);
+}

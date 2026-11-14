@@ -414,7 +414,7 @@ async fn create_item(
     let mut tx = state.db.begin().await?;
     check_opportunity(&mut tx, user.company_id, opportunity_id, true).await?;
     let type_code = input.type_code.trim();
-    let ty = baseline_types::find_by_code(&mut tx, user.company_id, type_code)
+    let ty = baseline_types::find_by_code_shared(&mut tx, user.company_id, type_code)
         .await?
         .ok_or_else(|| AppError::Validation(format!("unknown baseline item type {type_code}")))?;
     if !ty.active {
@@ -485,7 +485,7 @@ async fn update_item(
     let mut tx = state.db.begin().await?;
     check_opportunity(&mut tx, user.company_id, opportunity_id, true).await?;
     let current = load_item(&mut tx, opportunity_id, item_id).await?;
-    let ty = baseline_types::find_by_code(&mut tx, user.company_id, &current.type_code)
+    let ty = baseline_types::find_by_code_shared(&mut tx, user.company_id, &current.type_code)
         .await?
         .ok_or(AppError::NotFound("baseline item type"))?;
     let existing = placements(&mut tx, opportunity_id).await?;
