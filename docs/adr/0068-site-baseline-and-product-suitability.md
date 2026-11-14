@@ -170,3 +170,21 @@ attributes and the tables). Decision 6 is implemented without a second engine.
 * Motor tables: column types are checked when loaded (a text `kw` is refused, not read as empty),
   and a matched class without `kw` or `size` is `MissingData`; `TooLarge` is only the real
   overflow.
+
+**Matches panel notes (backend and app).**
+
+* A product that lacks the attribute a rule compares (or has it in a shape the operator cannot use)
+  is now `unknown` with a reason naming the missing attribute, when the baseline has an item of
+  the rule's type. Before, such a product was silently `suitable`. Example: a 2000 mm dial against
+  `dial_size_mm` 600..1250 is `unsuitable` ("dial_diameter_mm 2000 is outside dial_size_mm
+  600..1250"), against 1500..2500 `suitable`, and without `dial_size_mm` `unknown`. Products with
+  no applicable rule at all (no item of the rule's type) are still `suitable` without reasons.
+* `GET /opportunities/{id}/product-matches` returns the products ordered suitable, unknown,
+  unsuitable, each group by name then code; paging applies after the ordering. The optional
+  `item_id` judges against that baseline item and the items inside it only (404 when it is not an
+  item of the opportunity); the power check is unchanged.
+* App: a "Product matches" panel below the baseline on the opportunity screen (needs
+  `products.read`) and a "Suggest products" action per baseline item that opens the same list
+  filtered to that item. Not suitable and unknown products are dimmed with the reasons that are not
+  `ok` beneath. Not run against a real backend yet; covered by widget tests with a fake server.
+* Follow-up: an "only suitable" toggle, and showing the `ok` reasons on demand.
