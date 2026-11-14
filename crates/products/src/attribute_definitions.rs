@@ -316,6 +316,18 @@ async fn stored_uses(
     }
 }
 
+/// Reading definitions: those of a baseline item type need `products.read` or
+/// `opportunities.read` (the baseline forms load them); the `product` scope, and a list without a
+/// scope (which includes it), need `products.read`.
+fn require_read(user: &CurrentUser, scope: Option<&str>) -> AppResult<()> {
+    match scope {
+        Some(s) if s != "product" => {
+            user.require_any(&[Permission::ProductsRead, Permission::OpportunitiesRead])
+        }
+        _ => user.require(Permission::ProductsRead),
+    }
+}
+
 #[derive(Debug, Deserialize, IntoParams)]
 pub struct ListQuery {
     /// Only definitions of this scope (`product` or a baseline item type code).
@@ -329,7 +341,7 @@ async fn list_definitions(
     user: CurrentUser,
     Query(q): Query<ListQuery>,
 ) -> AppResult<Json<Vec<AttributeDefinition>>> {
-    user.require(Permission::ProductsRead)?;
+    require_read(&user, q.scope.as_deref().map(str::trim))?;
     let rows: Vec<Row> = sqlx::query_as(&format!(
         "{SELECT} WHERE company_id = $1 AND ($2::text IS NULL OR scope = $2)
          ORDER BY scope, sort_order, key"
@@ -348,8 +360,10 @@ async fn get_definition(
     user: CurrentUser,
     Path(id): Path<Uuid>,
 ) -> AppResult<Json<AttributeDefinition>> {
-    user.require(Permission::ProductsRead)?;
-    Ok(Json(load(&state.db, user.company_id, id).await?))
+    user.require_any(&[Permission::ProductsRead, Permission::OpportunitiesRead])?;
+    let def = load(&state.db, user.company_id, id).await?;
+    require_read(&user, Some(&def.scope))?;
+    Ok(Json(def))
 }
 
 #[utoipa::path(post, path = "/attribute-definitions", tag = "products", request_body = AttributeDefinitionInput,

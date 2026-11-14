@@ -686,6 +686,18 @@ impl CurrentUser {
         }
     }
 
+    /// Passes when the user holds at least one of the permissions; otherwise the error of the
+    /// first one.
+    pub fn require_any(&self, ps: &[Permission]) -> Result<(), AppError> {
+        if ps.iter().any(|p| self.can(*p)) {
+            return Ok(());
+        }
+        match ps.first() {
+            Some(p) => self.require(*p),
+            None => Err(AppError::Forbidden("missing permission".into())),
+        }
+    }
+
     pub fn permissions(&self) -> Vec<Permission> {
         Permission::ALL
             .into_iter()

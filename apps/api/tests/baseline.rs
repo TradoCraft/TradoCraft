@@ -1387,3 +1387,49 @@ async fn an_update_without_a_grid_keeps_the_grid_a_concurrent_update_just_set(db
         "the retained grid was stale"
     );
 }
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn baseline_definitions_are_readable_with_opportunities_read_alone(db: PgPool) {
+    let app = seeded(&db).await;
+    let bell_def = definition_id(&app, "weight_kg").await;
+    let product_def = definition_id(&app, "dial_size_mm").await;
+    // A user whose products module is off still has opportunities.read.
+    sqlx::query(
+        "UPDATE core.user_companies SET disabled_modules = '{products}'
+         WHERE user_id = (SELECT id FROM core.users WHERE email = $1)",
+    )
+    .bind(SALES)
+    .execute(&db)
+    .await
+    .unwrap();
+    let get = |uri: String| {
+        let app = app.clone();
+        async move { api(&app, SALES, Method::GET, &uri, None).await }
+    };
+    let (status, list) = get("/attribute-definitions?scope=bell".into()).await;
+    assert_eq!(status, StatusCode::OK, "{list}");
+    assert!(!list.as_array().unwrap().is_empty());
+    let (status, _) = get(format!("/attribute-definitions/{bell_def}")).await;
+    assert_eq!(status, StatusCode::OK);
+    // Product-scope definitions and the unscoped list stay behind products.read.
+    for uri in [
+        "/attribute-definitions".to_string(),
+        "/attribute-definitions?scope=product".to_string(),
+        format!("/attribute-definitions/{product_def}"),
+    ] {
+        let (status, r) = get(uri.clone()).await;
+        assert_eq!(status, StatusCode::FORBIDDEN, "{uri} {r}");
+    }
+    let (status, _) = get("/baseline-item-types".into()).await;
+    assert_eq!(status, StatusCode::OK);
+    // Writes still need products.write.
+    let (status, _) = api(
+        &app,
+        SALES,
+        Method::POST,
+        "/attribute-definitions",
+        Some(json!({ "key": "zz", "label": "Z", "kind": "text", "scope": "bell" })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
+}

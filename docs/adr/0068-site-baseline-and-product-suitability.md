@@ -146,3 +146,26 @@ attributes and the tables). Decision 6 is implemented without a second engine.
   bites when an administrator adds larger classes or lowers it. Hard-coded in Rust, not in tables:
   the baseline type code `bell`, the bell attribute keys `weight_kg`, `motion`, `num_wheels`,
   `motor_brand` and the product attribute `motor_kw`.
+
+**Review follow-up notes (backend).**
+
+* Reading attribute definitions: `GET /attribute-definitions[?scope=...]` and `GET
+  /attribute-definitions/{id}` need `products.read` OR `opportunities.read` for definitions of a
+  baseline item type (the baseline forms load them, and a user can have the products module off
+  while keeping opportunities). The `product` scope, and a list without a scope (it includes the
+  product scope), still need `products.read`: least privilege, product master data stays behind
+  the products permission. Writes stay `products.write`. `GET /baseline-item-types` needs
+  `opportunities.read`. The any-of check is `CurrentUser::require_any`.
+* The baseline item type code `product` is reserved (422 on create): it is the product scope of
+  the attribute definitions, so a type with that code would share its definitions. The type code
+  is immutable, so updates cannot introduce it. API-level only; no database constraint.
+* A definition cannot be created for a key (in its scope) that already has stored values: product
+  attributes stored without a definition, or baseline items storing the key (409).
+* A stored select value stays valid when the option is removed from the definition, as long as the
+  product's attribute is saved with the same value; a different value must be a current option.
+* Writes to baseline items take `FOR SHARE` on their item type row; `update_type` and delete take
+  `FOR UPDATE`, so an edit waits for in-flight item writes and the other way round. An
+  opportunity update locks the opportunity row first, so a retained power grid is never stale.
+* Motor tables: column types are checked when loaded (a text `kw` is refused, not read as empty),
+  and a matched class without `kw` or `size` is `MissingData`; `TooLarge` is only the real
+  overflow.
