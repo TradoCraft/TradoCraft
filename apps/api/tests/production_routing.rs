@@ -3497,20 +3497,30 @@ async fn work_spread_from_before_the_period_respects_closures_before_it(db: PgPo
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
 async fn the_cost_rollup_refuses_a_structure_that_is_too_large_to_walk(db: PgPool) {
     let e = env(db).await;
-    // Every level uses the one below twice: the walk doubles at each level.
+    // A diamond per level: two distinct subassemblies each use the top of the level below, and
+    // the level's top uses both. Lines for one product are merged into a single need, so the
+    // walk only doubles when the two uses are different products.
     let mut below = BOLT.to_string();
     let mut tops = Vec::new();
-    for i in 0..12 {
+    for i in 0..9 {
+        let a = e
+            .make_product(&format!("A{i}"), "none", &[(&below, "1")])
+            .await;
+        let b = e
+            .make_product(&format!("B{i}"), "none", &[(&below, "1")])
+            .await;
         below = e
-            .make_product(&format!("D{i}"), "none", &[(&below, "1"), (&below, "1")])
+            .make_product(&format!("D{i}"), "none", &[(&a, "1"), (&b, "1")])
             .await;
         tops.push(below.clone());
     }
-    // 2^5 - 1 built products is fine; 2^12 - 1 is too many.
-    let (status, small) = e.rollup(ADMIN, &tops[4], "1").await;
+    // Visits per top: v(0) = 3 (D0, A0, B0), v(i) = 3 + 2 * v(i - 1), so 3, 9, 21, 45, ... 1533.
+    // D3 is 45 built products over 8 levels, well within the limit; D8 is 1533 (17 levels deep,
+    // inside the depth limit), so it is the visit limit that refuses it.
+    let (status, small) = e.rollup(ADMIN, &tops[3], "1").await;
     assert_eq!(status, StatusCode::OK, "{small}");
-    assert_eq!(small["levels"].as_array().unwrap().len(), 31);
-    let (status, big) = e.rollup(ADMIN, &tops[11], "1").await;
+    assert_eq!(small["levels"].as_array().unwrap().len(), 45);
+    let (status, big) = e.rollup(ADMIN, &tops[8], "1").await;
     assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{big}");
     assert!(
         big["message"].as_str().unwrap().contains("more than 1000"),
