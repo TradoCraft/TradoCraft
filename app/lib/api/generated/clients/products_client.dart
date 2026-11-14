@@ -65,8 +65,9 @@ abstract class ProductsClient {
     @Body() required AttributeDefinitionInput body,
   });
 
-  /// Deletes an unused definition. A definition whose key is stored on products is refused with 409.
-  /// (deactivate it with `active: false` instead, which keeps the stored values readable).
+  /// Deletes an unused definition. A definition whose key is stored on products (scope `product`) or.
+  /// on baseline items of its type is refused with 409 (deactivate it with `active: false` instead,.
+  /// which keeps the stored values readable).
   @DELETE('/api/v1/attribute-definitions/{id}')
   Future<void> deleteDefinition({
     @Path('id') required String id,

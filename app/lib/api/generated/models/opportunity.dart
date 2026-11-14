@@ -27,6 +27,7 @@ class Opportunity {
     this.closedAt,
     this.expectedClose,
     this.lostReason,
+    this.powerGridId,
   });
   
   factory Opportunity.fromJson(Map<String, Object?> json) => _$OpportunityFromJson(json);
@@ -52,6 +53,10 @@ class Opportunity {
   final String ownerName;
   @JsonKey(name: 'owner_user_id')
   final String ownerUserId;
+
+  /// The power grid of the site; belongs to the customer's country (ADR 0068).
+  @JsonKey(includeIfNull: false,name: 'power_grid_id')
+  final String? powerGridId;
   final int probability;
   final OpportunityStage stage;
   final String title;
