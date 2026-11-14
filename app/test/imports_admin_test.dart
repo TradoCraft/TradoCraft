@@ -1167,9 +1167,12 @@ void main() {
       s = ImportsServer(
         history: () {
           final offset = (s.http.queries.last['offset'] ?? 0) as int;
+          // 251 jobs: five full pages, then the single remaining one.
           return {
-            'total': 500,
-            'items': [jobJson(id: 'h$offset')],
+            'total': 251,
+            'items': offset >= 250
+                ? [jobJson(id: 'h$offset')]
+                : [for (var i = 0; i < 50; i++) jobJson(id: 'h${offset + i}')],
           };
         },
       );
@@ -1180,16 +1183,29 @@ void main() {
       final more = find.byKey(const ValueKey('imp-history-more'));
       // Past 200 jobs the button stays: the pages go on by offset.
       for (final offset in [50, 100, 150, 200, 250]) {
-        await tester.ensureVisible(more);
+        // The list is lazy: scroll down to the button before tapping it.
+        await tester.scrollUntilVisible(
+          more,
+          400,
+          scrollable: find.byType(Scrollable).last,
+        );
         await tester.tap(more);
         await tester.pumpAndSettle();
         expect(s.http.queries.last['offset'], offset);
         expect(s.http.queries.last['limit'], 50);
         expect(find.byKey(ValueKey('imp-job-h$offset')), findsOneWidget);
       }
+      // The final page loaded.
+      // At the very end of the (lazy) list, the button is gone: all 251 jobs are loaded.
+      final list = tester.state<ScrollableState>(find.byType(Scrollable).last);
+      list.position.jumpTo(list.position.maxScrollExtent);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('imp-job-h250')), findsOneWidget);
+      expect(more, findsNothing);
       // The earlier pages are still listed.
+      list.position.jumpTo(0);
+      await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('imp-job-h0')), findsOneWidget);
-      expect(more, findsOneWidget);
     });
   });
 
