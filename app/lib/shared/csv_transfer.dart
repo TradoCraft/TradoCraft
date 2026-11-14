@@ -25,8 +25,10 @@ typedef CsvPicker = Future<PickedFile?> Function();
 typedef CsvSaver = Future<bool> Function(String filename, Uint8List bytes);
 
 /// Runs an import (or only its dry run) of a CSV, XLSX or ODS file and reports what happened.
-typedef CsvImporter =
-    Future<ImportReport> Function(Uint8List bytes, {required bool dryRun});
+typedef CsvImporter = Future<ImportReport> Function(
+  Uint8List bytes, {
+  required bool dryRun,
+});
 
 /// Picks a CSV file only (the configurator tables).
 final csvPickerProvider = Provider<CsvPicker>((_) => pickCsvFile);
@@ -184,6 +186,7 @@ class CsvMenu extends ConsumerWidget {
   /// Plural name of what is transferred, for titles ("customers").
   final String entity;
   final String exportPath;
+
   /// File name without extension; the format adds `.csv`, `.xlsx` or `.ods`.
   final String fileStem;
   final CsvImporter importer;
@@ -191,7 +194,11 @@ class CsvMenu extends ConsumerWidget {
   final bool canImport;
   final VoidCallback onImported;
 
-  Future<void> _export(BuildContext context, WidgetRef ref, Format format) async {
+  Future<void> _export(
+    BuildContext context,
+    WidgetRef ref,
+    Format format,
+  ) async {
     final messenger = ScaffoldMessenger.of(context);
     final l = context.l10n;
     try {
@@ -235,13 +242,12 @@ class CsvMenu extends ConsumerWidget {
     return PopupMenuButton<String>(
       tooltip: l.csvMenu,
       icon: const Icon(AppIcons.moreVert),
-      onSelected: (v) =>
-          switch (v) {
-            'csv' => _export(context, ref, Format.csv),
-            'xlsx' => _export(context, ref, Format.xlsx),
-            'ods' => _export(context, ref, Format.ods),
-            _ => _import(context),
-          },
+      onSelected: (v) => switch (v) {
+        'csv' => _export(context, ref, Format.csv),
+        'xlsx' => _export(context, ref, Format.xlsx),
+        'ods' => _export(context, ref, Format.ods),
+        _ => _import(context),
+      },
       itemBuilder: (_) => [
         if (canExport) ...[
           for (final (value, label) in [
