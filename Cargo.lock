@@ -3013,6 +3013,7 @@ dependencies = [
  "tradocraft-fieldservice",
  "tradocraft-finance",
  "tradocraft-helpdesk",
+ "tradocraft-imports",
  "tradocraft-inventory",
  "tradocraft-kb",
  "tradocraft-planning",
@@ -3225,6 +3226,25 @@ dependencies = [
  "utoipa-axum",
  "uuid",
  "webpki-roots 0.26.11",
+]
+
+[[package]]
+name = "tradocraft-imports"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "chrono",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "tokio",
+ "tracing",
+ "tradocraft-core",
+ "tradocraft-crm",
+ "tradocraft-products",
+ "utoipa",
+ "utoipa-axum",
+ "uuid",
 ]
 
 [[package]]

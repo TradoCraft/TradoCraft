@@ -30,6 +30,7 @@ tradocraft-delivery = { path = "crates/delivery" }
 tradocraft-production = { path = "crates/production" }
 tradocraft-reports = { path = "crates/reports" }
 tradocraft-todo = { path = "crates/todo" }
+tradocraft-imports = { path = "crates/imports" }
 
 anyhow = "1"
 axum = { version = "0.8", features = ["macros"] }
