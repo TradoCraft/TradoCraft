@@ -22,7 +22,8 @@ class ProductMatchPage {
   /// Products per status within the family filter, ignoring the status filter.
   final StatusCounts counts;
 
-  /// The requested page of the products with the asked status, in product code order.
+  /// The requested page of the products with the asked status: suitable first, then unknown,.
+  /// then unsuitable, each by name.
   final List<ProductMatch> items;
 
   /// Number of products with the asked status (all statuses without a filter).

@@ -13287,6 +13287,19 @@
             }
           },
           {
+            "name": "item_id",
+            "in": "query",
+            "description": "Judge against this baseline item (and the items inside it) only, e.g. to suggest products\nfor one dial or bell group. 404 when it is not an item of the opportunity.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "uuid"
+            }
+          },
+          {
             "name": "limit",
             "in": "query",
             "description": "Default 100, at most 500.",
@@ -42238,7 +42251,7 @@
             "items": {
               "$ref": "#/components/schemas/ProductMatch"
             },
-            "description": "The requested page of the products with the asked status, in product code order."
+            "description": "The requested page of the products with the asked status: suitable first, then unknown,\nthen unsuitable, each by name."
           },
           "total": {
             "type": "integer",

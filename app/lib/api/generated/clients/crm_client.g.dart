@@ -1251,6 +1251,7 @@ class _CrmClient implements CrmClient {
     required String id,
     String? status,
     String? familyId,
+    String? itemId,
     int? limit,
     int? offset,
   }) async {
@@ -1258,6 +1259,7 @@ class _CrmClient implements CrmClient {
     final queryParameters = <String, dynamic>{
       r'status': status,
       r'family_id': familyId,
+      r'item_id': itemId,
       r'limit': limit,
       r'offset': offset,
     };
