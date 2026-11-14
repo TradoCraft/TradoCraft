@@ -9679,4 +9679,30 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get attrScopeProduct => 'Product';
+
+  @override
+  String get matchesTitle => 'Productmatches';
+
+  @override
+  String get matchesEmpty => 'Geen producten om te tonen.';
+
+  @override
+  String get matchesSuggest => 'Producten voorstellen';
+
+  @override
+  String matchesForItem(String name) {
+    return 'Producten voor $name';
+  }
+
+  @override
+  String get matchesSuitable => 'Geschikt';
+
+  @override
+  String get matchesUnknown => 'Onbekend';
+
+  @override
+  String get matchesUnsuitable => 'Niet geschikt';
+
+  @override
+  String get matchesNoReason => 'Kon niet worden beoordeeld.';
 }

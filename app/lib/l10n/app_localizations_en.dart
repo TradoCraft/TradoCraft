@@ -9637,4 +9637,30 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get attrScopeProduct => 'Product';
+
+  @override
+  String get matchesTitle => 'Product matches';
+
+  @override
+  String get matchesEmpty => 'No products to show.';
+
+  @override
+  String get matchesSuggest => 'Suggest products';
+
+  @override
+  String matchesForItem(String name) {
+    return 'Products for $name';
+  }
+
+  @override
+  String get matchesSuitable => 'Suitable';
+
+  @override
+  String get matchesUnknown => 'Unknown';
+
+  @override
+  String get matchesUnsuitable => 'Not suitable';
+
+  @override
+  String get matchesNoReason => 'Could not be judged.';
 }
