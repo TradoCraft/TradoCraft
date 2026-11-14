@@ -102,7 +102,8 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
   @override
   void initState() {
     super.initState();
-    // In the customer screen an edit marks the tab as holding unsaved changes (ADR 0041).
+    // In the customer screen an edit marks the tab as holding unsaved changes (ADR 0041). A
+    // controller also notifies for a cursor or selection move: only a changed text counts.
     for (final t in [
       _code,
       _name,
@@ -116,9 +117,18 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
       _discount,
       _terms,
     ]) {
-      t.addListener(_markDirty);
+      var last = t.text;
+      t.addListener(() {
+        if (t.text == last) return;
+        last = t.text;
+        _markDirty();
+      });
     }
   }
+
+  /// Nothing is edited while the form is read-only or a save is under way: an edit made after the
+  /// payload was taken would be lost when the saved customer replaces the form.
+  bool get _locked => widget.readOnly || _saving;
 
   void _markDirty() {
     if (widget.screen && !widget.readOnly && mounted) {
@@ -221,7 +231,7 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
     String? Function(String)? check,
   }) => TextFormField(
     controller: t,
-    readOnly: widget.readOnly,
+    readOnly: _locked,
     decoration: InputDecoration(labelText: label),
     validator: (v) {
       final s = (v ?? '').trim();
@@ -292,7 +302,7 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
                   child: Text(context.l10n.vatRegimeOutsideEu),
                 ),
               ],
-              onChanged: widget.readOnly
+              onChanged: _locked
                   ? null
                   : (v) {
                       setState(() => _vatRegime = v!);
@@ -329,7 +339,7 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
                     DropdownMenuItem(value: 'de', child: Text('DE')),
                     DropdownMenuItem(value: 'es', child: Text('ES')),
                   ],
-                  onChanged: widget.readOnly
+                  onChanged: _locked
                       ? null
                       : (v) {
                           setState(() => _language = v!);
@@ -382,7 +392,7 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
                         child: Text('${z.code} – ${z.name}'),
                       ),
                   ],
-                  onChanged: widget.readOnly
+                  onChanged: _locked
                       ? null
                       : (v) {
                           setState(() => _zoneId = v);
