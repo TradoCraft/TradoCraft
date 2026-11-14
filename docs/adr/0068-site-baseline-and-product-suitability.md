@@ -97,8 +97,8 @@ have no reference data and start empty.
 * `GET /opportunities/{id}/product-matches?status=&family_id=&limit=&offset=` (needs
   `opportunities.read` and `products.read`; another company's opportunity is 404, a bad `status`
   422) returns `{items, total, counts}` for the active products in code order. Because the status
-  is computed, all active products are evaluated in memory (four queries: opportunity, baseline,
-  rules, products with their rule attributes and supplies, no per-product queries) and then
+  is computed, all active products are evaluated in memory (a fixed number of queries: opportunity, baseline,
+  rules, products, their rule attributes and supplies; no per-product queries) and then
   filtered and paged; `limit` defaults to 100, at most 500. `counts` gives the number per status
   within the family filter, ignoring the status filter. Products are catalogue-wide (they have no
   company), the opportunity, baseline and rules are the company's.
