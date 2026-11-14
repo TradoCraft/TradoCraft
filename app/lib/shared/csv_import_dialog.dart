@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -8,7 +10,7 @@ import 'csv_transfer.dart';
 
 enum _Phase { idle, checking, preview, errors, importing, done }
 
-/// Imports a CSV file: choose a file, dry run, preview (counts or row errors), import.
+/// Imports a CSV, XLSX or ODS file (the first sheet): choose a file, dry run, preview (counts or row errors), import.
 /// Pops `true` when records were written. Shared by the customers and products lists.
 class CsvImportDialog extends ConsumerStatefulWidget {
   const CsvImportDialog({
@@ -35,7 +37,7 @@ class _CsvImportDialogState extends ConsumerState<CsvImportDialog> {
 
   _Phase _phase = _Phase.idle;
   String? _fileName;
-  String? _csv;
+  Uint8List? _bytes;
   String? _problem;
   ImportReport? _report;
 
@@ -44,34 +46,28 @@ class _CsvImportDialogState extends ConsumerState<CsvImportDialog> {
   Future<void> _choose() async {
     if (_busy) return;
     final l = context.l10n;
-    PickedCsv? file;
+    PickedFile? file;
     try {
-      file = await ref.read(csvPickerProvider)();
+      file = await ref.read(importFilePickerProvider)();
     } catch (_) {
       _fail(l.csvReadFailed);
       return;
     }
     if (file == null || !mounted) return;
-    String text;
-    try {
-      text = decodeCsv(file.bytes);
-    } on FormatException {
-      _fail(l.csvNotUtf8, name: file.name);
-      return;
-    }
-    if (text.trim().isEmpty) {
+    final bytes = file.bytes;
+    if (bytes.isEmpty) {
       _fail(l.csvEmptyFile, name: file.name);
       return;
     }
     setState(() {
       _fileName = file!.name;
-      _csv = text;
+      _bytes = bytes;
       _problem = null;
       _report = null;
       _phase = _Phase.checking;
     });
     try {
-      final r = await widget.importer(text, dryRun: true);
+      final r = await widget.importer(bytes, dryRun: true);
       if (!mounted) return;
       setState(() {
         _report = r;
@@ -86,7 +82,7 @@ class _CsvImportDialogState extends ConsumerState<CsvImportDialog> {
     if (!mounted) return;
     setState(() {
       _fileName = name ?? _fileName;
-      _csv = null;
+      _bytes = null;
       _report = null;
       _problem = message;
       _phase = _Phase.idle;
@@ -94,11 +90,11 @@ class _CsvImportDialogState extends ConsumerState<CsvImportDialog> {
   }
 
   Future<void> _import() async {
-    final csv = _csv;
-    if (_phase != _Phase.preview || csv == null) return;
+    final bytes = _bytes;
+    if (_phase != _Phase.preview || bytes == null) return;
     setState(() => _phase = _Phase.importing);
     try {
-      final r = await widget.importer(csv, dryRun: false);
+      final r = await widget.importer(bytes, dryRun: false);
       // Tied to completion of the write, not to the dialog still being on screen.
       if (r.errors.isEmpty && (r.created + r.updated) > 0) {
         widget.onImported?.call();
@@ -197,7 +193,7 @@ class _CsvImportDialogState extends ConsumerState<CsvImportDialog> {
           TextButton.icon(
             icon: const Icon(AppIcons.fileUpload),
             label: Text(
-              _csv == null && _phase != _Phase.errors
+              _bytes == null && _phase != _Phase.errors
                   ? l.csvChooseFile
                   : l.csvChooseOther,
             ),

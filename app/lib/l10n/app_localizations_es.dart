@@ -4743,13 +4743,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get eventWarrantyVoidRemoved => 'Anulación de garantía quitada';
 
   @override
-  String get csvMenu => 'Exportar e importar CSV';
+  String get csvMenu => 'Importar y exportar';
 
   @override
-  String get csvExport => 'Exportar CSV';
-
-  @override
-  String get csvImport => 'Importar CSV';
+  String get csvImport => 'Importar desde archivo';
 
   @override
   String csvExported(String name) {
@@ -4763,15 +4760,15 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String csvImportTitle(String entity) {
-    return 'Importar CSV: $entity';
+    return 'Importar: $entity';
   }
 
   @override
   String get csvImportHelp =>
-      'Las filas se emparejan por código: un código existente se actualiza y un código nuevo se crea. Las columnas que faltan en el archivo no se modifican y nunca se elimina nada. Todo o nada: si alguna fila tiene un error, no se importa nada. Separado por punto y coma o coma, UTF-8.';
+      'Elija un archivo CSV, Excel (XLSX) u OpenDocument (ODS). Las filas se emparejan por código: un código existente se actualiza y un código nuevo se crea. Las columnas que faltan en el archivo no se modifican y nunca se elimina nada. Todo o nada: si alguna fila tiene un error, no se importa nada. CSV: separado por punto y coma o coma, UTF-8. Hojas de cálculo: se lee la primera hoja; para elegir otra hoja o columnas con otros nombres use Administración, Importación.';
 
   @override
-  String get csvChooseFile => 'Elegir archivo CSV';
+  String get csvChooseFile => 'Elegir archivo';
 
   @override
   String get csvChooseOther => 'Elegir otro archivo';
@@ -4808,10 +4805,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get csvEmptyFile => 'El archivo está vacío.';
-
-  @override
-  String get csvNotUtf8 =>
-      'El archivo no es texto UTF-8. Guárdelo como CSV (UTF-8) e inténtelo de nuevo.';
 
   @override
   String get csvReadFailed => 'No se pudo leer el archivo.';
@@ -8951,4 +8944,311 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get todoEmailReminders => 'Recordatorios por correo';
+
+  @override
+  String get csvExportCsv => 'Exportar como CSV';
+
+  @override
+  String get csvExportXlsx => 'Exportar como Excel (XLSX)';
+
+  @override
+  String get csvExportOds => 'Exportar como OpenDocument (ODS)';
+
+  @override
+  String get adminImport => 'Importación';
+
+  @override
+  String get impNew => 'Nueva importación';
+
+  @override
+  String get impHistory => 'Historial';
+
+  @override
+  String get impStepFile => 'Archivo';
+
+  @override
+  String get impStepWhat => 'Qué y dónde';
+
+  @override
+  String get impStepColumns => 'Columnas';
+
+  @override
+  String get impStepCheck => 'Comprobación';
+
+  @override
+  String get impStepApply => 'Importar';
+
+  @override
+  String get impFileHelp =>
+      'Archivo CSV, Excel (XLSX) u OpenDocument (ODS), de 50 MiB como máximo. El archivo se conserva una semana.';
+
+  @override
+  String get impChooseFile => 'Elegir archivo';
+
+  @override
+  String get impChooseOther => 'Elegir otro archivo';
+
+  @override
+  String get impUploading => 'Subiendo...';
+
+  @override
+  String get impFileTooLarge => 'El archivo supera el límite de 50 MiB.';
+
+  @override
+  String impFileFormatSize(String format, String size) {
+    return 'Formato: $format, tamaño: $size';
+  }
+
+  @override
+  String get impEntity => '¿Qué desea importar?';
+
+  @override
+  String get impNoEntities =>
+      'Para importar aquí necesita el permiso de escritura de una entidad, por ejemplo clientes o productos.';
+
+  @override
+  String get impSheet => 'Hoja';
+
+  @override
+  String get impPreview => 'Vista previa';
+
+  @override
+  String impRowCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count filas de datos',
+      one: '1 fila de datos',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String impFirstRows(int count) {
+    return 'Se muestran las primeras $count filas.';
+  }
+
+  @override
+  String get impNoHeader => 'El archivo no tiene fila de encabezado.';
+
+  @override
+  String get impColFile => 'Columna del archivo';
+
+  @override
+  String get impColSample => 'Ejemplo';
+
+  @override
+  String get impColField => 'Campo';
+
+  @override
+  String get impIgnore => 'Ignorar';
+
+  @override
+  String get impRequiredNew => 'Obligatorio para registros nuevos';
+
+  @override
+  String get impKeyBadge => 'Clave';
+
+  @override
+  String impKeyMissing(String field) {
+    return 'Elija una columna para el campo clave $field: las filas se emparejan por él.';
+  }
+
+  @override
+  String impDuplicateField(String field) {
+    return 'El campo $field está elegido para más de una columna.';
+  }
+
+  @override
+  String impUnmapped(String fields) {
+    return 'Campos sin columna: $fields';
+  }
+
+  @override
+  String impUnmappedRequired(String fields) {
+    return 'Necesarios para crear registros nuevos: $fields';
+  }
+
+  @override
+  String get impAllMapped => 'Cada campo tiene una columna.';
+
+  @override
+  String get impMappingsMenu => 'Asignaciones guardadas';
+
+  @override
+  String get impNoMappings =>
+      'Todavía no hay asignaciones guardadas para esta entidad.';
+
+  @override
+  String get impSaveMapping => 'Guardar asignación';
+
+  @override
+  String get impMappingName => 'Nombre de la asignación';
+
+  @override
+  String get impOverwriteTitle => '¿Reemplazar la asignación?';
+
+  @override
+  String impOverwriteBody(String name) {
+    return 'Ya existe una asignación llamada $name. ¿Reemplazarla por la actual?';
+  }
+
+  @override
+  String get impOverwriteAction => 'Reemplazar';
+
+  @override
+  String impMappingSaved(String name) {
+    return 'Asignación $name guardada';
+  }
+
+  @override
+  String impDeleteMapping(String name) {
+    return 'Eliminar la asignación $name';
+  }
+
+  @override
+  String impDeleteMappingConfirm(String name) {
+    return '¿Eliminar la asignación guardada $name?';
+  }
+
+  @override
+  String impMappingDeleted(String name) {
+    return 'Asignación $name eliminada';
+  }
+
+  @override
+  String impProposalSaved(String name) {
+    return 'Columnas tomadas de la asignación guardada $name.';
+  }
+
+  @override
+  String get impProposalByName =>
+      'Columnas emparejadas con los campos del mismo nombre. Compruébelas antes de continuar.';
+
+  @override
+  String get impRunCheck => 'Comprobar el archivo';
+
+  @override
+  String get impChecking => 'Comprobando el archivo...';
+
+  @override
+  String get impBackgroundNote =>
+      'Los archivos grandes se procesan en segundo plano. Puede salir de esta página: la tarea aparece en el historial.';
+
+  @override
+  String get impOutdated =>
+      'El archivo, la entidad, la hoja o las columnas han cambiado después de esta comprobación. Vuelva a comprobar.';
+
+  @override
+  String get impCheckClean =>
+      'No se han encontrado problemas. Todavía no se ha importado nada.';
+
+  @override
+  String get impStatusQueued => 'En cola';
+
+  @override
+  String get impStatusRunning => 'En curso';
+
+  @override
+  String get impStatusDone => 'Terminado';
+
+  @override
+  String impStatusDoneErrors(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Terminado con $count errores',
+      one: 'Terminado con 1 error',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get impStatusFailed => 'Fallido';
+
+  @override
+  String get impStatusCancelled => 'Cancelado';
+
+  @override
+  String get impPhaseReading => 'Leyendo el archivo';
+
+  @override
+  String get impPhaseValidating => 'Validando las filas';
+
+  @override
+  String get impPhaseWriting => 'Escribiendo los registros';
+
+  @override
+  String impProgress(int done, int total) {
+    return '$done de $total filas';
+  }
+
+  @override
+  String get impCancelJob => 'Cancelar la tarea';
+
+  @override
+  String get impDownloadErrors => 'Descargar el informe de errores';
+
+  @override
+  String impErrorsTotal(int shown, int total) {
+    return 'Se muestran los primeros $shown de $total problemas. El informe de errores los contiene todos.';
+  }
+
+  @override
+  String get impApplyHint =>
+      'La importación es posible tras una comprobación sin problemas.';
+
+  @override
+  String get impApplyAction => 'Importar ahora';
+
+  @override
+  String impApplyConfirmTitle(String entity) {
+    return '¿Importar $entity?';
+  }
+
+  @override
+  String impApplyConfirmBody(int created, int updated) {
+    return 'Se crearán $created y se actualizarán $updated. Esto modifica datos.';
+  }
+
+  @override
+  String get impImportAnother => 'Importar otro archivo';
+
+  @override
+  String get impHistoryEmpty => 'Todavía no hay importaciones.';
+
+  @override
+  String get impDryRun => 'Solo comprobación';
+
+  @override
+  String get impApplied => 'Importado';
+
+  @override
+  String impCountsPlanned(int created, int updated, int unchanged) {
+    return '$created por crear, $updated por actualizar, $unchanged sin cambios';
+  }
+
+  @override
+  String impCountsDone(int created, int updated, int unchanged) {
+    return '$created creados, $updated actualizados, $unchanged sin cambios';
+  }
+
+  @override
+  String impJobBy(String name) {
+    return 'Por $name';
+  }
+
+  @override
+  String get impJobDetails => 'Detalles de la importación';
+
+  @override
+  String get impJobMessage => 'Mensaje';
+
+  @override
+  String impJobSheet(String sheet) {
+    return 'Hoja $sheet';
+  }
+
+  @override
+  String get impRefresh => 'Actualizar';
 }

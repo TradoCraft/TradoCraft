@@ -3,7 +3,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../api/generated/export.dart';
+import '../api/generated/export.dart' hide Column;
 
 /// Where the portal finds the API and which company's portal this is. Set at build time:
 /// `flutter build web -t lib/portal/portal_main.dart --dart-define=PORTAL_API_URL=https://...`

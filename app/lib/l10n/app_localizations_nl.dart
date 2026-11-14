@@ -4742,13 +4742,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get eventWarrantyVoidRemoved => 'Garantie-overschrijving verwijderd';
 
   @override
-  String get csvMenu => 'CSV exporteren en importeren';
+  String get csvMenu => 'Importeren en exporteren';
 
   @override
-  String get csvExport => 'CSV exporteren';
-
-  @override
-  String get csvImport => 'CSV importeren';
+  String get csvImport => 'Importeren uit bestand';
 
   @override
   String csvExported(String name) {
@@ -4762,15 +4759,15 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String csvImportTitle(String entity) {
-    return 'CSV importeren: $entity';
+    return 'Importeren: $entity';
   }
 
   @override
   String get csvImportHelp =>
-      'Rijen worden gekoppeld op code: een bestaande code wordt bijgewerkt, een nieuwe code wordt aangemaakt. Kolommen die niet in het bestand staan, blijven ongewijzigd en er wordt nooit iets verwijderd. Alles of niets: bij een fout in een rij wordt niets geïmporteerd. Gescheiden door puntkomma of komma, UTF-8.';
+      'Kies een CSV-, Excel- (XLSX) of OpenDocument-bestand (ODS). Rijen worden gekoppeld op code: een bestaande code wordt bijgewerkt, een nieuwe code wordt aangemaakt. Kolommen die niet in het bestand staan, blijven ongewijzigd en er wordt nooit iets verwijderd. Alles of niets: bij een fout in een rij wordt niets geïmporteerd. CSV: gescheiden door puntkomma of komma, UTF-8. Rekenbladen: het eerste werkblad wordt gelezen; voor een ander werkblad of kolommen met andere namen gebruik je Beheer, Import.';
 
   @override
-  String get csvChooseFile => 'CSV-bestand kiezen';
+  String get csvChooseFile => 'Bestand kiezen';
 
   @override
   String get csvChooseOther => 'Ander bestand kiezen';
@@ -4807,10 +4804,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get csvEmptyFile => 'Het bestand is leeg.';
-
-  @override
-  String get csvNotUtf8 =>
-      'Het bestand is geen UTF-8-tekst. Sla het op als CSV (UTF-8) en probeer opnieuw.';
 
   @override
   String get csvReadFailed => 'Het bestand kon niet worden gelezen.';
@@ -8944,4 +8937,311 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get todoEmailReminders => 'E-mailherinneringen';
+
+  @override
+  String get csvExportCsv => 'Exporteren als CSV';
+
+  @override
+  String get csvExportXlsx => 'Exporteren als Excel (XLSX)';
+
+  @override
+  String get csvExportOds => 'Exporteren als OpenDocument (ODS)';
+
+  @override
+  String get adminImport => 'Import';
+
+  @override
+  String get impNew => 'Nieuwe import';
+
+  @override
+  String get impHistory => 'Geschiedenis';
+
+  @override
+  String get impStepFile => 'Bestand';
+
+  @override
+  String get impStepWhat => 'Wat en waarheen';
+
+  @override
+  String get impStepColumns => 'Kolommen';
+
+  @override
+  String get impStepCheck => 'Controle';
+
+  @override
+  String get impStepApply => 'Importeren';
+
+  @override
+  String get impFileHelp =>
+      'CSV-, Excel- (XLSX) of OpenDocument-bestand (ODS), maximaal 50 MiB. Het bestand wordt een week bewaard.';
+
+  @override
+  String get impChooseFile => 'Bestand kiezen';
+
+  @override
+  String get impChooseOther => 'Ander bestand kiezen';
+
+  @override
+  String get impUploading => 'Uploaden...';
+
+  @override
+  String get impFileTooLarge =>
+      'Het bestand is groter dan de limiet van 50 MiB.';
+
+  @override
+  String impFileFormatSize(String format, String size) {
+    return 'Indeling: $format, grootte: $size';
+  }
+
+  @override
+  String get impEntity => 'Wat importeer je?';
+
+  @override
+  String get impNoEntities =>
+      'Je hebt het recht nodig om een entiteit te schrijven, bijvoorbeeld klanten of producten, om die hier te importeren.';
+
+  @override
+  String get impSheet => 'Werkblad';
+
+  @override
+  String get impPreview => 'Voorbeeld';
+
+  @override
+  String impRowCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count gegevensrijen',
+      one: '1 gegevensrij',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String impFirstRows(int count) {
+    return 'De eerste $count rijen worden getoond.';
+  }
+
+  @override
+  String get impNoHeader => 'Het bestand heeft geen koprij.';
+
+  @override
+  String get impColFile => 'Kolom in bestand';
+
+  @override
+  String get impColSample => 'Voorbeeld';
+
+  @override
+  String get impColField => 'Veld';
+
+  @override
+  String get impIgnore => 'Negeren';
+
+  @override
+  String get impRequiredNew => 'Verplicht voor nieuwe records';
+
+  @override
+  String get impKeyBadge => 'Sleutel';
+
+  @override
+  String impKeyMissing(String field) {
+    return 'Kies een kolom voor het sleutelveld $field: rijen worden erop gekoppeld.';
+  }
+
+  @override
+  String impDuplicateField(String field) {
+    return 'Het veld $field is voor meer dan één kolom gekozen.';
+  }
+
+  @override
+  String impUnmapped(String fields) {
+    return 'Velden zonder kolom: $fields';
+  }
+
+  @override
+  String impUnmappedRequired(String fields) {
+    return 'Nodig om nieuwe records aan te maken: $fields';
+  }
+
+  @override
+  String get impAllMapped => 'Elk veld heeft een kolom.';
+
+  @override
+  String get impMappingsMenu => 'Opgeslagen koppelingen';
+
+  @override
+  String get impNoMappings =>
+      'Nog geen opgeslagen koppelingen voor deze entiteit.';
+
+  @override
+  String get impSaveMapping => 'Koppeling opslaan';
+
+  @override
+  String get impMappingName => 'Naam van de koppeling';
+
+  @override
+  String get impOverwriteTitle => 'Koppeling vervangen?';
+
+  @override
+  String impOverwriteBody(String name) {
+    return 'Er bestaat al een koppeling met de naam $name. Vervangen door de huidige?';
+  }
+
+  @override
+  String get impOverwriteAction => 'Vervangen';
+
+  @override
+  String impMappingSaved(String name) {
+    return 'Koppeling $name opgeslagen';
+  }
+
+  @override
+  String impDeleteMapping(String name) {
+    return 'Koppeling $name verwijderen';
+  }
+
+  @override
+  String impDeleteMappingConfirm(String name) {
+    return 'De opgeslagen koppeling $name verwijderen?';
+  }
+
+  @override
+  String impMappingDeleted(String name) {
+    return 'Koppeling $name verwijderd';
+  }
+
+  @override
+  String impProposalSaved(String name) {
+    return 'Kolommen overgenomen uit de opgeslagen koppeling $name.';
+  }
+
+  @override
+  String get impProposalByName =>
+      'Kolommen gekoppeld aan velden met dezelfde naam. Controleer ze voor je verdergaat.';
+
+  @override
+  String get impRunCheck => 'Bestand controleren';
+
+  @override
+  String get impChecking => 'Bestand controleren...';
+
+  @override
+  String get impBackgroundNote =>
+      'Grote bestanden draaien op de achtergrond. Je kunt deze pagina verlaten: de taak verschijnt in de geschiedenis.';
+
+  @override
+  String get impOutdated =>
+      'Het bestand, de entiteit, het werkblad of de kolommen zijn gewijzigd na deze controle. Voer de controle opnieuw uit.';
+
+  @override
+  String get impCheckClean =>
+      'Geen problemen gevonden. Er is nog niets geïmporteerd.';
+
+  @override
+  String get impStatusQueued => 'In wachtrij';
+
+  @override
+  String get impStatusRunning => 'Bezig';
+
+  @override
+  String get impStatusDone => 'Klaar';
+
+  @override
+  String impStatusDoneErrors(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Klaar met $count fouten',
+      one: 'Klaar met 1 fout',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get impStatusFailed => 'Mislukt';
+
+  @override
+  String get impStatusCancelled => 'Geannuleerd';
+
+  @override
+  String get impPhaseReading => 'Bestand lezen';
+
+  @override
+  String get impPhaseValidating => 'Rijen valideren';
+
+  @override
+  String get impPhaseWriting => 'Records schrijven';
+
+  @override
+  String impProgress(int done, int total) {
+    return '$done van $total rijen';
+  }
+
+  @override
+  String get impCancelJob => 'Taak annuleren';
+
+  @override
+  String get impDownloadErrors => 'Foutenrapport downloaden';
+
+  @override
+  String impErrorsTotal(int shown, int total) {
+    return 'De eerste $shown van $total problemen worden getoond. Het foutenrapport bevat ze allemaal.';
+  }
+
+  @override
+  String get impApplyHint => 'Importeren kan na een controle zonder problemen.';
+
+  @override
+  String get impApplyAction => 'Nu importeren';
+
+  @override
+  String impApplyConfirmTitle(String entity) {
+    return '$entity importeren?';
+  }
+
+  @override
+  String impApplyConfirmBody(int created, int updated) {
+    return '$created worden aangemaakt en $updated bijgewerkt. Dit wijzigt gegevens.';
+  }
+
+  @override
+  String get impImportAnother => 'Nog een bestand importeren';
+
+  @override
+  String get impHistoryEmpty => 'Nog geen imports.';
+
+  @override
+  String get impDryRun => 'Alleen controle';
+
+  @override
+  String get impApplied => 'Geïmporteerd';
+
+  @override
+  String impCountsPlanned(int created, int updated, int unchanged) {
+    return '$created aan te maken, $updated bij te werken, $unchanged ongewijzigd';
+  }
+
+  @override
+  String impCountsDone(int created, int updated, int unchanged) {
+    return '$created aangemaakt, $updated bijgewerkt, $unchanged ongewijzigd';
+  }
+
+  @override
+  String impJobBy(String name) {
+    return 'Door $name';
+  }
+
+  @override
+  String get impJobDetails => 'Details van de import';
+
+  @override
+  String get impJobMessage => 'Melding';
+
+  @override
+  String impJobSheet(String sheet) {
+    return 'Werkblad $sheet';
+  }
+
+  @override
+  String get impRefresh => 'Verversen';
 }

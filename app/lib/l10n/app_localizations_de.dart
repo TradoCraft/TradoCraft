@@ -4749,13 +4749,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get eventWarrantyVoidRemoved => 'Garantie-Überschreibung entfernt';
 
   @override
-  String get csvMenu => 'CSV-Export und -Import';
+  String get csvMenu => 'Import und Export';
 
   @override
-  String get csvExport => 'CSV exportieren';
-
-  @override
-  String get csvImport => 'CSV importieren';
+  String get csvImport => 'Aus Datei importieren';
 
   @override
   String csvExported(String name) {
@@ -4769,15 +4766,15 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String csvImportTitle(String entity) {
-    return 'CSV-Import: $entity';
+    return 'Import: $entity';
   }
 
   @override
   String get csvImportHelp =>
-      'Zeilen werden über den Code zugeordnet: ein vorhandener Code wird aktualisiert, ein neuer Code wird angelegt. Spalten, die in der Datei fehlen, bleiben unverändert, und es wird nie etwas gelöscht. Alles oder nichts: Bei einem Fehler in einer Zeile wird nichts importiert. Getrennt durch Semikolon oder Komma, UTF-8.';
+      'Wählen Sie eine CSV-, Excel- (XLSX) oder OpenDocument-Datei (ODS). Zeilen werden über den Code zugeordnet: ein vorhandener Code wird aktualisiert, ein neuer Code wird angelegt. Spalten, die in der Datei fehlen, bleiben unverändert, und es wird nie etwas gelöscht. Alles oder nichts: Bei einem Fehler in einer Zeile wird nichts importiert. CSV: getrennt durch Semikolon oder Komma, UTF-8. Tabellen: Das erste Tabellenblatt wird gelesen; für ein anderes Blatt oder anders benannte Spalten nutzen Sie Verwaltung, Import.';
 
   @override
-  String get csvChooseFile => 'CSV-Datei auswählen';
+  String get csvChooseFile => 'Datei auswählen';
 
   @override
   String get csvChooseOther => 'Andere Datei auswählen';
@@ -4814,10 +4811,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get csvEmptyFile => 'Die Datei ist leer.';
-
-  @override
-  String get csvNotUtf8 =>
-      'Die Datei ist kein UTF-8-Text. Speichern Sie sie als CSV (UTF-8) und versuchen Sie es erneut.';
 
   @override
   String get csvReadFailed => 'Die Datei konnte nicht gelesen werden.';
@@ -8966,4 +8959,311 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get todoEmailReminders => 'E-Mail-Erinnerungen';
+
+  @override
+  String get csvExportCsv => 'Als CSV exportieren';
+
+  @override
+  String get csvExportXlsx => 'Als Excel (XLSX) exportieren';
+
+  @override
+  String get csvExportOds => 'Als OpenDocument (ODS) exportieren';
+
+  @override
+  String get adminImport => 'Import';
+
+  @override
+  String get impNew => 'Neuer Import';
+
+  @override
+  String get impHistory => 'Verlauf';
+
+  @override
+  String get impStepFile => 'Datei';
+
+  @override
+  String get impStepWhat => 'Was und wohin';
+
+  @override
+  String get impStepColumns => 'Spalten';
+
+  @override
+  String get impStepCheck => 'Prüfung';
+
+  @override
+  String get impStepApply => 'Importieren';
+
+  @override
+  String get impFileHelp =>
+      'CSV-, Excel- (XLSX) oder OpenDocument-Datei (ODS), höchstens 50 MiB. Die Datei wird eine Woche aufbewahrt.';
+
+  @override
+  String get impChooseFile => 'Datei auswählen';
+
+  @override
+  String get impChooseOther => 'Andere Datei auswählen';
+
+  @override
+  String get impUploading => 'Wird hochgeladen...';
+
+  @override
+  String get impFileTooLarge => 'Die Datei überschreitet das Limit von 50 MiB.';
+
+  @override
+  String impFileFormatSize(String format, String size) {
+    return 'Format: $format, Größe: $size';
+  }
+
+  @override
+  String get impEntity => 'Was möchten Sie importieren?';
+
+  @override
+  String get impNoEntities =>
+      'Zum Importieren benötigen Sie die Schreibberechtigung für eine Entität, zum Beispiel Kunden oder Produkte.';
+
+  @override
+  String get impSheet => 'Tabellenblatt';
+
+  @override
+  String get impPreview => 'Vorschau';
+
+  @override
+  String impRowCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Datenzeilen',
+      one: '1 Datenzeile',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String impFirstRows(int count) {
+    return 'Die ersten $count Zeilen werden angezeigt.';
+  }
+
+  @override
+  String get impNoHeader => 'Die Datei hat keine Kopfzeile.';
+
+  @override
+  String get impColFile => 'Spalte in der Datei';
+
+  @override
+  String get impColSample => 'Beispiel';
+
+  @override
+  String get impColField => 'Feld';
+
+  @override
+  String get impIgnore => 'Ignorieren';
+
+  @override
+  String get impRequiredNew => 'Pflicht für neue Datensätze';
+
+  @override
+  String get impKeyBadge => 'Schlüssel';
+
+  @override
+  String impKeyMissing(String field) {
+    return 'Wählen Sie eine Spalte für das Schlüsselfeld $field: Zeilen werden darüber zugeordnet.';
+  }
+
+  @override
+  String impDuplicateField(String field) {
+    return 'Das Feld $field ist für mehr als eine Spalte gewählt.';
+  }
+
+  @override
+  String impUnmapped(String fields) {
+    return 'Felder ohne Spalte: $fields';
+  }
+
+  @override
+  String impUnmappedRequired(String fields) {
+    return 'Zum Anlegen neuer Datensätze nötig: $fields';
+  }
+
+  @override
+  String get impAllMapped => 'Jedes Feld hat eine Spalte.';
+
+  @override
+  String get impMappingsMenu => 'Gespeicherte Zuordnungen';
+
+  @override
+  String get impNoMappings =>
+      'Noch keine gespeicherten Zuordnungen für diese Entität.';
+
+  @override
+  String get impSaveMapping => 'Zuordnung speichern';
+
+  @override
+  String get impMappingName => 'Name der Zuordnung';
+
+  @override
+  String get impOverwriteTitle => 'Zuordnung ersetzen?';
+
+  @override
+  String impOverwriteBody(String name) {
+    return 'Eine Zuordnung namens $name existiert bereits. Durch die aktuelle ersetzen?';
+  }
+
+  @override
+  String get impOverwriteAction => 'Ersetzen';
+
+  @override
+  String impMappingSaved(String name) {
+    return 'Zuordnung $name gespeichert';
+  }
+
+  @override
+  String impDeleteMapping(String name) {
+    return 'Zuordnung $name löschen';
+  }
+
+  @override
+  String impDeleteMappingConfirm(String name) {
+    return 'Die gespeicherte Zuordnung $name löschen?';
+  }
+
+  @override
+  String impMappingDeleted(String name) {
+    return 'Zuordnung $name gelöscht';
+  }
+
+  @override
+  String impProposalSaved(String name) {
+    return 'Spalten aus der gespeicherten Zuordnung $name übernommen.';
+  }
+
+  @override
+  String get impProposalByName =>
+      'Spalten den gleichnamigen Feldern zugeordnet. Prüfen Sie sie, bevor Sie fortfahren.';
+
+  @override
+  String get impRunCheck => 'Datei prüfen';
+
+  @override
+  String get impChecking => 'Datei wird geprüft...';
+
+  @override
+  String get impBackgroundNote =>
+      'Große Dateien laufen im Hintergrund. Sie können diese Seite verlassen: Der Auftrag erscheint im Verlauf.';
+
+  @override
+  String get impOutdated =>
+      'Datei, Entität, Tabellenblatt oder Spalten wurden nach dieser Prüfung geändert. Führen Sie die Prüfung erneut aus.';
+
+  @override
+  String get impCheckClean =>
+      'Keine Probleme gefunden. Es wurde noch nichts importiert.';
+
+  @override
+  String get impStatusQueued => 'In der Warteschlange';
+
+  @override
+  String get impStatusRunning => 'Läuft';
+
+  @override
+  String get impStatusDone => 'Fertig';
+
+  @override
+  String impStatusDoneErrors(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Fertig mit $count Fehlern',
+      one: 'Fertig mit 1 Fehler',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get impStatusFailed => 'Fehlgeschlagen';
+
+  @override
+  String get impStatusCancelled => 'Abgebrochen';
+
+  @override
+  String get impPhaseReading => 'Datei wird gelesen';
+
+  @override
+  String get impPhaseValidating => 'Zeilen werden geprüft';
+
+  @override
+  String get impPhaseWriting => 'Datensätze werden geschrieben';
+
+  @override
+  String impProgress(int done, int total) {
+    return '$done von $total Zeilen';
+  }
+
+  @override
+  String get impCancelJob => 'Auftrag abbrechen';
+
+  @override
+  String get impDownloadErrors => 'Fehlerbericht herunterladen';
+
+  @override
+  String impErrorsTotal(int shown, int total) {
+    return 'Die ersten $shown von $total Problemen werden angezeigt. Der Fehlerbericht enthält alle.';
+  }
+
+  @override
+  String get impApplyHint =>
+      'Der Import ist nach einer Prüfung ohne Probleme möglich.';
+
+  @override
+  String get impApplyAction => 'Jetzt importieren';
+
+  @override
+  String impApplyConfirmTitle(String entity) {
+    return '$entity importieren?';
+  }
+
+  @override
+  String impApplyConfirmBody(int created, int updated) {
+    return '$created werden angelegt und $updated aktualisiert. Dies ändert Daten.';
+  }
+
+  @override
+  String get impImportAnother => 'Weitere Datei importieren';
+
+  @override
+  String get impHistoryEmpty => 'Noch keine Importe.';
+
+  @override
+  String get impDryRun => 'Nur Prüfung';
+
+  @override
+  String get impApplied => 'Importiert';
+
+  @override
+  String impCountsPlanned(int created, int updated, int unchanged) {
+    return '$created neu anzulegen, $updated zu aktualisieren, $unchanged unverändert';
+  }
+
+  @override
+  String impCountsDone(int created, int updated, int unchanged) {
+    return '$created angelegt, $updated aktualisiert, $unchanged unverändert';
+  }
+
+  @override
+  String impJobBy(String name) {
+    return 'Von $name';
+  }
+
+  @override
+  String get impJobDetails => 'Details des Imports';
+
+  @override
+  String get impJobMessage => 'Meldung';
+
+  @override
+  String impJobSheet(String sheet) {
+    return 'Tabellenblatt $sheet';
+  }
+
+  @override
+  String get impRefresh => 'Aktualisieren';
 }

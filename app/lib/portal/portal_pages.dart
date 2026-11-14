@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
-import '../api/generated/export.dart';
+import '../api/generated/export.dart' hide Column;
 import '../l10n/l10n.dart';
 import '../shared/attachments.dart';
 import 'portal_help.dart' show PortalKbSuggestions;
