@@ -558,8 +558,8 @@ fn scan_ods_content(
     let (mut row_repeat, mut col) = (1u64, 0u64);
     let (mut row_first, mut row_end) = (None::<u64>, 0u64);
     let (mut in_row, mut in_cell, mut cell_repeat) = (false, false, 1u64);
-    // What calamine holds at once: the cells it stores per row (from column A, a repeated row is
-    // stored once) and the dense rectangle of every sheet, over all sheets together.
+    // What calamine holds: the cells it stores per row (from column A, a repeated row is stored
+    // once) and the dense rectangle of every sheet, each over all sheets together.
     let (mut stored, mut dense) = (0u128, 0u128);
     let mut text = 0u128;
     let mut table_name = String::new();
@@ -682,8 +682,16 @@ fn scan_ods_content(
                                 limits.cells_per_row
                             )));
                         }
-                        if stored + dense > limits.total_cells as u128 {
+                        if stored > limits.total_cells as u128 {
                             return Err(too_many_cells());
+                        }
+                        // The header is a row too; a repeated row is one element but many rows.
+                        if end_row - first_row.unwrap_or(0) > limits.rows as u64 + 1 {
+                            return Err(over_limit(format!(
+                                "too many rows: at most {} are accepted (the sheet would expand \
+                                 to too many cells)",
+                                limits.rows
+                            )));
                         }
                     }
                     cursor = cursor.saturating_add(row_repeat);
@@ -694,7 +702,7 @@ fn scan_ods_content(
                             dense += u128::from(end_row - first)
                                 * u128::from(end_col.saturating_sub(first_col));
                         }
-                        if stored + dense > limits.total_cells as u128 {
+                        if dense > limits.total_cells as u128 {
                             return Err(too_many_cells());
                         }
                     }
