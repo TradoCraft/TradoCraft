@@ -459,6 +459,31 @@ void main() {
     });
   });
 
+  group('help', () {
+    testWidgets('Ctrl+/ lists the chords in effect and closes with Esc', (
+      t,
+    ) async {
+      await pump(t);
+      expect(await chord(t, LogicalKeyboardKey.slash, ctrl: true), isTrue);
+      expect(find.text('Keyboard shortcuts'), findsNWidgets(2)); // title and its own row
+      for (final keys in [
+        'Ctrl+S',
+        'Ctrl+Enter',
+        'Esc',
+        'Ctrl+F',
+        'Ctrl+N',
+        'Alt+B',
+        'Alt+H',
+        'Alt+L',
+        'Alt+1 - 9',
+      ]) {
+        expect(find.text(keys), findsOneWidget, reason: keys);
+      }
+      expect(await chord(t, LogicalKeyboardKey.escape), isTrue);
+      expect(find.text('Keyboard shortcuts'), findsNothing);
+    });
+  });
+
   group('Esc leaves the form', () {
     testWidgets('Esc closes a clean tab and goes back one screen first', (
       t,
