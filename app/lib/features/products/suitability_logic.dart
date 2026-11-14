@@ -111,11 +111,7 @@ AttrBuildResult buildAttributes({
       case DefinitionKind.$unknown:
         if (at(0).isEmpty) break;
         out.add(
-          ProductAttribute(
-            key: d.key,
-            kind: AttributeKind.text,
-            value: at(0),
-          ),
+          ProductAttribute(key: d.key, kind: AttributeKind.text, value: at(0)),
         );
     }
   }

@@ -6,6 +6,7 @@ import '../../app/api.dart';
 import '../../shared/app_icons.dart';
 
 import '../../l10n/l10n.dart';
+import 'attribute_definitions_page.dart';
 import 'audit_trail_page.dart';
 import 'identity_providers_page.dart';
 import 'imports/imports_page.dart';
@@ -14,7 +15,7 @@ import 'price_zones_page.dart';
 import 'users_page.dart';
 
 /// Administration: one destination with a switch between users, modules, price zones,
-/// identity providers, the audit trail and data import (each shown with its own permission).
+/// attribute definitions, identity providers, the audit trail and data import (each shown with its own permission).
 class AdminPage extends ConsumerStatefulWidget {
   const AdminPage({super.key});
 
@@ -34,6 +35,7 @@ class _AdminPageState extends ConsumerState<AdminPage> {
       if (isAdmin) 'users',
       if (isAdmin) 'modules',
       if (can(ref, 'prices.write')) 'zones',
+      if (can(ref, 'products.write')) 'attributes',
       if (can(ref, 'identity.admin')) 'identity',
       if (can(ref, 'audit.view')) 'audit',
       if (can(ref, 'imports.admin')) 'import',
@@ -60,6 +62,7 @@ class _AdminPageState extends ConsumerState<AdminPage> {
                           label: Text(switch (t) {
                             'users' => l.adminUsers,
                             'modules' => l.adminModules,
+                            'attributes' => l.adminAttributes,
                             'identity' => l.adminIdentityProviders,
                             'audit' => l.adminAuditTrail,
                             'import' => l.adminImport,
@@ -86,6 +89,7 @@ class _AdminPageState extends ConsumerState<AdminPage> {
           child: switch (tab) {
             'modules' => const ModulesPage(),
             'zones' => const PriceZonesPage(),
+            'attributes' => const AttributeDefinitionsPage(),
             'identity' => const IdentityProvidersPage(),
             'audit' => const AuditTrailPage(),
             'import' => const ImportsPage(),
