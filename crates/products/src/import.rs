@@ -1,5 +1,6 @@
-//! Products as CSV: an export and an all-or-nothing upsert-by-`code` import (see
-//! `docs/adr/0029-csv-export-import.md`).
+//! Products as an importable entity (ADR 0029, ADR 0064): an export and an all-or-nothing
+//! upsert-by-`code` import in CSV, XLSX or ODS. Everything shared lives in
+//! `tradocraft_core::import`; this file holds only what is the products'.
 //!
 //! Not part of the file: the standard cost (permissioned, set in the product form) and the zone
 //! prices (dated history, see the price endpoints).
@@ -11,11 +12,14 @@ use axum::extract::{DefaultBodyLimit, Query, State};
 use axum::http::{HeaderMap, StatusCode};
 use axum::Json;
 use rust_decimal::Decimal;
-use tradocraft_core::csv_io::{
-    self, format_decimal, parse_table, Cell, Cells, ImportParams, ImportReport, RowError,
-};
+use sqlx::{PgConnection, PgPool};
+use tradocraft_core::csv_io::{self, ImportParams, ImportReport};
 use tradocraft_core::error::ErrorBody;
-use tradocraft_core::{audit, new_id, AppError, AppResult, AppState, CurrentUser, Permission};
+use tradocraft_core::import::{
+    self, Cell, CellValue, Cells, Column, ColumnKind, ExportParams, ImportEntity, Importable, Row,
+    Table,
+};
+use tradocraft_core::{AppError, AppResult, AppState, CurrentUser, Permission};
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 use uuid::Uuid;
@@ -26,45 +30,46 @@ use crate::{
 };
 
 /// The columns, in export order. `code` is the key; the others are optional in an import file.
-pub const COLUMNS: [&str; 20] = [
-    "code",
-    "name",
-    "description",
-    "unit",
-    "product_type",
-    "vat_rate",
-    "tracking",
-    "family_code",
-    "pricing_type",
-    "active",
-    "reorder_min",
-    "reorder_max",
-    "lead_time_days",
-    "barcode",
-    "packaging_category_code",
-    "length_mm",
-    "width_mm",
-    "height_mm",
-    "weight_g",
-    "default_production_remark",
+/// `required` means a new product needs a value.
+const COLUMNS: [Column; 20] = [
+    Column::new("code", ColumnKind::Code, true),
+    Column::new("name", ColumnKind::Text, true),
+    Column::new("description", ColumnKind::Text, false),
+    Column::new("unit", ColumnKind::Text, false),
+    Column::new("product_type", ColumnKind::Code, false),
+    Column::new("vat_rate", ColumnKind::Decimal, true),
+    Column::new("tracking", ColumnKind::Code, false),
+    Column::new("family_code", ColumnKind::Code, false),
+    Column::new("pricing_type", ColumnKind::Code, false),
+    Column::new("active", ColumnKind::Boolean, false),
+    Column::new("reorder_min", ColumnKind::Decimal, false),
+    Column::new("reorder_max", ColumnKind::Decimal, false),
+    Column::new("lead_time_days", ColumnKind::Integer, false),
+    Column::new("barcode", ColumnKind::Code, false),
+    Column::new("packaging_category_code", ColumnKind::Code, false),
+    Column::new("length_mm", ColumnKind::Integer, false),
+    Column::new("width_mm", ColumnKind::Integer, false),
+    Column::new("height_mm", ColumnKind::Integer, false),
+    Column::new("weight_g", ColumnKind::Integer, false),
+    Column::new("default_production_remark", ColumnKind::Text, false),
 ];
 
 /// One product as the cells of an export row, in [`COLUMNS`] order.
-fn export_row(p: &Product) -> Vec<String> {
-    let opt = |v: &Option<String>| v.clone().unwrap_or_default();
-    let dec = |v: Option<Decimal>| v.map(format_decimal).unwrap_or_default();
-    let int = |v: Option<i32>| v.map(|v| v.to_string()).unwrap_or_default();
+fn export_row(p: &Product) -> Vec<CellValue> {
+    let opt = |v: &Option<String>| CellValue::text(v.clone().unwrap_or_default());
+    let dec = |v: Option<Decimal>| v.map_or(CellValue::Empty, |d| CellValue::Number(d.normalize()));
+    let int = |v: Option<i32>| v.map_or(CellValue::Empty, |v| CellValue::int(v.into()));
     vec![
-        p.code.clone(),
-        p.name.clone(),
-        p.description.clone(),
-        p.unit.clone(),
-        p.product_type.clone(),
-        format_decimal(p.vat_rate),
-        p.tracking.clone(),
+        CellValue::text(&p.code),
+        CellValue::text(&p.name),
+        CellValue::text(&p.description),
+        CellValue::text(&p.unit),
+        CellValue::text(&p.product_type),
+        CellValue::Number(p.vat_rate.normalize()),
+        CellValue::text(&p.tracking),
         opt(&p.family_code),
-        p.pricing_type.clone(),
-        p.active.to_string(),
+        CellValue::text(&p.pricing_type),
+        CellValue::Bool(p.active),
         dec(p.reorder_min),
         dec(p.reorder_max),
         int(p.lead_time_days),
@@ -74,37 +79,8 @@ fn export_row(p: &Product) -> Vec<String> {
         int(p.width_mm),
         int(p.height_mm),
         int(p.weight_g),
-        p.default_production_remark.clone(),
+        CellValue::text(&p.default_production_remark),
     ]
-}
-
-/// All products as CSV, ordered by code.
-#[utoipa::path(get, path = "/products/export", tag = "products", operation_id = "export_products",
-    responses((status = 200, body = String, content_type = "text/csv"), (status = 403, body = ErrorBody)))]
-async fn export_products(
-    State(state): State<AppState>,
-    user: CurrentUser,
-) -> AppResult<(HeaderMap, String)> {
-    user.require(Permission::ProductsRead)?;
-    let products: Vec<Product> = sqlx::query_as(&format!("{SELECT_PRODUCT} ORDER BY code"))
-        .fetch_all(&state.db)
-        .await?;
-    let body = csv_io::write_csv(&COLUMNS, products.iter().map(export_row));
-    Ok(csv_io::download("products.csv", body))
-}
-
-/// What an import does with one valid row.
-enum Action {
-    Create(ProductInput),
-    Update(Uuid, ProductInput),
-}
-
-/// The outcome of checking a whole file: what to write and what was found wrong.
-#[derive(Default)]
-struct Plan {
-    actions: Vec<Action>,
-    unchanged: usize,
-    errors: Vec<RowError>,
 }
 
 /// Whether the stored product already equals what the row would write (so nothing is written).
@@ -174,61 +150,99 @@ async fn code_map(conn: &mut sqlx::PgConnection, sql: &str) -> AppResult<HashMap
         .collect())
 }
 
-/// Checks every row against the database and decides what each one would do.
-async fn plan(conn: &mut sqlx::PgConnection, table: &csv_io::CsvTable) -> AppResult<Plan> {
-    let families = code_map(conn, "SELECT code, id FROM products.product_families").await?;
-    let categories = code_map(conn, "SELECT code, id FROM products.packaging_categories").await?;
-    let codes: Vec<String> = table
-        .rows
-        .iter()
-        .filter_map(|r| r.get_trimmed("code"))
-        .map(str::to_string)
-        .collect();
-    // Read and lock the rows we are going to change (as a manual edit does) in one statement, so a
-    // concurrent edit cannot slip in between the read and the lock.
-    let existing: HashMap<String, Product> = sqlx::query_as::<_, Product>(&format!(
-        "{SELECT_PRODUCT_LOCKABLE} WHERE p.code = ANY($1) ORDER BY p.id FOR UPDATE OF p"
-    ))
-    .bind(&codes)
-    .fetch_all(&mut *conn)
-    .await?
-    .into_iter()
-    .map(|p| (p.code.clone(), p))
-    .collect();
-    let barcodes: Vec<String> = table
-        .rows
-        .iter()
-        .filter_map(|r| r.get_trimmed("barcode"))
-        .map(str::to_string)
-        .collect();
-    let barcode_owner: HashMap<String, String> = sqlx::query_as::<_, (String, String)>(
-        "SELECT barcode, code FROM products.products WHERE barcode = ANY($1)",
-    )
-    .bind(&barcodes)
-    .fetch_all(&mut *conn)
-    .await?
-    .into_iter()
-    .collect();
+/// What the rows of one run are checked against.
+pub struct ProductContext {
+    families: HashMap<String, Uuid>,
+    categories: HashMap<String, Uuid>,
+    /// Barcodes of the file that already belong to a product: barcode -> product code.
+    barcode_owner: HashMap<String, String>,
+    /// Barcodes seen so far in the file: barcode -> first line.
+    seen_barcodes: HashMap<String, usize>,
+}
 
-    let mut plan = Plan::default();
-    let mut seen_codes: HashMap<String, usize> = HashMap::new();
-    let mut seen_barcodes: HashMap<String, usize> = HashMap::new();
-    for row in &table.rows {
-        let mut cells = Cells::new(row, &mut plan.errors);
+/// The products as an importable entity.
+pub struct Products;
+
+impl Importable for Products {
+    type Stored = Product;
+    type Change = ProductInput;
+    type Context = ProductContext;
+
+    const KEY: &'static str = "products";
+    const AUDIT_ENTITY: &'static str = "product";
+    const READ: Permission = Permission::ProductsRead;
+    const WRITE: Permission = Permission::ProductsWrite;
+    const FILE_STEM: &'static str = "products";
+    const COLUMNS: &'static [Column] = &COLUMNS;
+
+    async fn context(
+        conn: &mut PgConnection,
+        _user: &CurrentUser,
+        table: &Table,
+    ) -> AppResult<ProductContext> {
+        let families = code_map(conn, "SELECT code, id FROM products.product_families").await?;
+        let categories =
+            code_map(conn, "SELECT code, id FROM products.packaging_categories").await?;
+        let barcodes: Vec<String> = table
+            .rows
+            .iter()
+            .filter_map(|r| r.get_trimmed("barcode"))
+            .map(str::to_string)
+            .collect();
+        let barcode_owner = sqlx::query_as::<_, (String, String)>(
+            "SELECT barcode, code FROM products.products WHERE barcode = ANY($1)",
+        )
+        .bind(&barcodes)
+        .fetch_all(conn)
+        .await?
+        .into_iter()
+        .collect();
+        Ok(ProductContext {
+            families,
+            categories,
+            barcode_owner,
+            seen_barcodes: HashMap::new(),
+        })
+    }
+
+    async fn load(
+        conn: &mut PgConnection,
+        _user: &CurrentUser,
+        keys: &[String],
+    ) -> AppResult<Vec<(String, Product)>> {
+        // Read and lock the rows we are going to change (as a manual edit does) in one statement,
+        // so a concurrent edit cannot slip in between the read and the lock.
+        Ok(sqlx::query_as::<_, Product>(&format!(
+            "{SELECT_PRODUCT_LOCKABLE} WHERE p.code = ANY($1) ORDER BY p.id FOR UPDATE OF p"
+        ))
+        .bind(keys)
+        .fetch_all(conn)
+        .await?
+        .into_iter()
+        .map(|p| (p.code.clone(), p))
+        .collect())
+    }
+
+    fn stored_id(stored: &Product) -> Uuid {
+        stored.id
+    }
+
+    async fn plan_row(
+        conn: &mut PgConnection,
+        _user: &CurrentUser,
+        context: &mut ProductContext,
+        key: &str,
+        current: Option<&Product>,
+        row: &Row,
+        cells: &mut Cells<'_>,
+    ) -> AppResult<ProductInput> {
+        let ProductContext {
+            families,
+            categories,
+            barcode_owner,
+            seen_barcodes,
+        } = context;
         let before = cells.error_count();
-        let Some(code) = cells.trimmed("code").value() else {
-            cells.error(Some("code"), "code is required");
-            continue;
-        };
-        if let Some(first) = seen_codes.insert(code.clone(), row.line) {
-            cells.error(
-                Some("code"),
-                format!("code {code} appears twice (first on line {first})"),
-            );
-            continue;
-        }
-        let current = existing.get(&code);
-
         // Start from the stored values (or the API defaults) and overlay the columns of the file.
         let mut input = match current {
             Some(p) => ProductInput {
@@ -255,7 +269,7 @@ async fn plan(conn: &mut sqlx::PgConnection, table: &csv_io::CsvTable) -> AppRes
                 default_production_remark: p.default_production_remark.clone(),
             },
             None => ProductInput {
-                code: code.clone(),
+                code: key.to_string(),
                 name: String::new(),
                 description: String::new(),
                 unit: "pcs".into(),
@@ -285,22 +299,12 @@ async fn plan(conn: &mut sqlx::PgConnection, table: &csv_io::CsvTable) -> AppRes
         cells.trimmed("tracking").apply(&mut input.tracking);
         cells.trimmed("pricing_type").apply(&mut input.pricing_type);
         cells.boolean("active").apply(&mut input.active);
-        let vat = bounded(&mut cells, "vat_rate", 2, Decimal::new(99999, 2));
+        let vat = bounded(cells, "vat_rate", 2, Decimal::new(99999, 2));
         vat.apply(&mut input.vat_rate);
-        bounded(
-            &mut cells,
-            "reorder_min",
-            4,
-            Decimal::new(99_999_999_999_999, 4),
-        )
-        .apply_opt(&mut input.reorder_min);
-        bounded(
-            &mut cells,
-            "reorder_max",
-            4,
-            Decimal::new(99_999_999_999_999, 4),
-        )
-        .apply_opt(&mut input.reorder_max);
+        bounded(cells, "reorder_min", 4, Decimal::new(99_999_999_999_999, 4))
+            .apply_opt(&mut input.reorder_min);
+        bounded(cells, "reorder_max", 4, Decimal::new(99_999_999_999_999, 4))
+            .apply_opt(&mut input.reorder_max);
         cells
             .int("lead_time_days")
             .apply_opt(&mut input.lead_time_days);
@@ -312,11 +316,11 @@ async fn plan(conn: &mut sqlx::PgConnection, table: &csv_io::CsvTable) -> AppRes
         cells
             .text("default_production_remark")
             .apply(&mut input.default_production_remark);
-        reference(&mut cells, "family_code", &families, &mut input.family_id);
+        reference(cells, "family_code", families, &mut input.family_id);
         reference(
-            &mut cells,
+            cells,
             "packaging_category_code",
-            &categories,
+            categories,
             &mut input.packaging_category_id,
         );
         input.name = input.name.trim().to_string();
@@ -339,7 +343,7 @@ async fn plan(conn: &mut sqlx::PgConnection, table: &csv_io::CsvTable) -> AppRes
                 .problems()
                 .into_iter()
                 .filter(|m| !(name_missing && m.starts_with("code and name"))),
-            &COLUMNS,
+            &import::column_names::<Self>(),
         );
         if let Some(b) = barcode(&input) {
             if let Some(first) = seen_barcodes.insert(b.to_string(), row.line) {
@@ -347,7 +351,7 @@ async fn plan(conn: &mut sqlx::PgConnection, table: &csv_io::CsvTable) -> AppRes
                     Some("barcode"),
                     format!("barcode {b} appears twice (first on line {first})"),
                 );
-            } else if barcode_owner.get(b).is_some_and(|owner| *owner != code) {
+            } else if barcode_owner.get(b).is_some_and(|owner| *owner != key) {
                 cells.error(
                     Some("barcode"),
                     format!("barcode {b} is used by product {}", barcode_owner[b]),
@@ -380,24 +384,68 @@ async fn plan(conn: &mut sqlx::PgConnection, table: &csv_io::CsvTable) -> AppRes
                 Err(e) => return Err(e),
             }
         }
-        if cells.error_count() > before {
-            continue;
-        }
-
-        match current {
-            Some(p) if same(p, &input) => plan.unchanged += 1,
-            Some(p) => plan.actions.push(Action::Update(p.id, input)),
-            None => plan.actions.push(Action::Create(input)),
-        }
+        Ok(input)
     }
-    Ok(plan)
+
+    fn unchanged(stored: &Product, change: &ProductInput) -> bool {
+        same(stored, change)
+    }
+
+    async fn create(
+        conn: &mut PgConnection,
+        _user: &CurrentUser,
+        id: Uuid,
+        change: &ProductInput,
+    ) -> AppResult<()> {
+        insert_product(conn, id, change, false).await
+    }
+
+    async fn update(
+        conn: &mut PgConnection,
+        _user: &CurrentUser,
+        id: Uuid,
+        change: &ProductInput,
+    ) -> AppResult<()> {
+        update_product_row(conn, id, change, false).await
+    }
+
+    async fn export(pool: &PgPool, _user: &CurrentUser) -> AppResult<Vec<Vec<CellValue>>> {
+        let products: Vec<Product> = sqlx::query_as(&format!("{SELECT_PRODUCT} ORDER BY code"))
+            .fetch_all(pool)
+            .await?;
+        Ok(products.iter().map(export_row).collect())
+    }
 }
 
-/// Creates or updates products from CSV, keyed by `code`. All-or-nothing: with any row error
-/// nothing is written (422 with every error); `dry_run=true` only reports.
+/// The products' handle for the import registry and the background worker.
+pub fn products_import() -> ImportEntity {
+    ImportEntity::of::<Products>()
+}
+
+/// All products as CSV, XLSX or ODS, ordered by code.
+#[utoipa::path(get, path = "/products/export", tag = "products", operation_id = "export_products",
+    params(ExportParams),
+    responses((status = 200, content(
+            (String = "text/csv"),
+            (String = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+            (String = "application/vnd.oasis.opendocument.spreadsheet"))),
+        (status = 403, body = ErrorBody)))]
+async fn export_products(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Query(p): Query<ExportParams>,
+) -> AppResult<(HeaderMap, Vec<u8>)> {
+    import::export_request::<Products>(&state.db, &user, &p).await
+}
+
+/// Creates or updates products from a CSV, XLSX or ODS file (detected from the content), keyed by
+/// `code`. All-or-nothing: with any row error nothing is written (422 with every error);
+/// `dry_run=true` only reports. `sheet` picks the sheet of a spreadsheet.
 #[utoipa::path(post, path = "/products/import", tag = "products", operation_id = "import_products",
     params(ImportParams),
-    request_body(content = String, content_type = "text/csv"),
+    request_body(content(
+        (String = "application/octet-stream"),
+        (String = "text/csv"))),
     responses((status = 200, body = ImportReport), (status = 403, body = ErrorBody),
         (status = 413, description = "Body larger than 5 MB"), (status = 422, body = ImportReport)))]
 async fn import_products(
@@ -406,67 +454,7 @@ async fn import_products(
     Query(p): Query<ImportParams>,
     body: Bytes,
 ) -> AppResult<(StatusCode, Json<ImportReport>)> {
-    user.require(Permission::ProductsWrite)?;
-    let table = match parse_table(&body, &COLUMNS, &["code"]) {
-        Ok(t) => t,
-        Err(errors) => return Ok(ImportReport::failed(errors).into_response()),
-    };
-    csv_io::with_replan(|| run_import(&state, &user, &table, p.dry_run)).await
-}
-
-/// One attempt: plan in a transaction and, when the plan is clean and this is no dry run, write it.
-/// A unique-key conflict at write time (a barcode or code taken by a concurrent writer) fails the
-/// attempt; [`csv_io::with_replan`] then plans again, and the new plan reports a taken barcode as
-/// a row error and turns a create of a code that now exists into an update.
-async fn run_import(
-    state: &AppState,
-    user: &CurrentUser,
-    table: &csv_io::CsvTable,
-    dry_run: bool,
-) -> AppResult<(StatusCode, Json<ImportReport>)> {
-    let mut tx = state.db.begin().await?;
-    let plan = plan(&mut tx, table).await?;
-    let mut report = ImportReport::planned(plan.unchanged, &table.width_errors, plan.errors);
-    for a in &plan.actions {
-        match a {
-            Action::Create(_) => report.created += 1,
-            Action::Update(..) => report.updated += 1,
-        }
-    }
-    if !report.errors.is_empty() || dry_run {
-        return Ok(report.into_response());
-    }
-    for a in plan.actions {
-        match a {
-            Action::Create(input) => {
-                let id = new_id();
-                insert_product(&mut tx, id, &input, false).await?;
-                audit::record(
-                    &mut tx,
-                    user,
-                    "product",
-                    id,
-                    "created",
-                    serde_json::json!({ "code": input.code, "source": "csv_import" }),
-                )
-                .await?;
-            }
-            Action::Update(id, input) => {
-                update_product_row(&mut tx, id, &input, false).await?;
-                audit::record(
-                    &mut tx,
-                    user,
-                    "product",
-                    id,
-                    "updated",
-                    serde_json::json!({ "source": "csv_import" }),
-                )
-                .await?;
-            }
-        }
-    }
-    tx.commit().await?;
-    Ok(report.into_response())
+    import::import_request::<Products>(&state.db, &user, &p, &body).await
 }
 
 /// The routes of the product export and import (the import with its own body limit).
