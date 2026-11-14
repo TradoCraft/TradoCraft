@@ -1,4 +1,4 @@
-//! SLA notices to the customer (ADR 0064).
+//! SLA notices to the customer (ADR 0067).
 
 mod common;
 

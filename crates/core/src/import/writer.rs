@@ -1,0 +1,177 @@
+//! Writing a table of typed cells as CSV, XLSX or ODS.
+
+use chrono::{Datelike, NaiveDate, NaiveDateTime, Timelike};
+use rust_xlsxwriter::{ExcelDateTime, Format as XlsxFormat, Workbook};
+
+use crate::csv_io::write_csv;
+use crate::error::{AppError, AppResult};
+use crate::import::cell::exact_f64;
+use crate::import::{ods_writer, CellValue, Format};
+
+/// Checks a sheet name for both spreadsheet formats: not empty, no `[ ] : * ? / \`, no apostrophe
+/// at either end. (XLSX also limits it to 31 characters.)
+pub(crate) fn check_sheet_name(name: &str) -> AppResult<()> {
+    let bad = name.is_empty()
+        || name
+            .chars()
+            .any(|c| "[]:*?/\\".contains(c) || c.is_control())
+        || name.starts_with('\'')
+        || name.ends_with('\'')
+        || name.chars().count() > 31;
+    if bad {
+        return Err(AppError::Validation(format!(
+            "{name:?} is not a valid sheet name"
+        )));
+    }
+    Ok(())
+}
+
+/// Says which record an error of the writer is about: the sheet row, the record's first value (its
+/// key in every entity export) and the column. One value a format cannot hold otherwise fails a
+/// whole export with nothing to find it by.
+pub(crate) fn name_record(
+    error: AppError,
+    row: usize,
+    first: Option<&CellValue>,
+    column: &str,
+) -> AppError {
+    let AppError::Validation(message) = error else {
+        return error;
+    };
+    let key = first.and_then(CellValue::render).unwrap_or_default();
+    AppError::Validation(format!(
+        "row {row} (first value {key:?}), column {column:?}: {message}"
+    ))
+}
+
+/// Writes `header` and `rows` as one file of `format`. The sheet (XLSX, ODS) is named
+/// `sheet_name`; CSV ignores it.
+///
+/// Text is always stored as text: a code `00123` keeps its zeros and a value starting with `=`
+/// is not a formula (CSV gets the apostrophe protection of ADR 0029, the spreadsheet formats need
+/// none). Numbers are number cells, booleans boolean cells, dates date cells with a date format. A
+/// number that a spreadsheet's binary double cannot hold exactly (more than about 15 digits) is
+/// written as text instead, never rounded. Empty cells are left out.
+pub fn write(
+    format: Format,
+    sheet_name: &str,
+    header: &[&str],
+    rows: impl IntoIterator<Item = Vec<CellValue>>,
+) -> AppResult<Vec<u8>> {
+    match format {
+        Format::Csv => Ok(write_csv(
+            header,
+            rows.into_iter()
+                .map(|r| r.iter().map(|c| c.render().unwrap_or_default()).collect()),
+        )
+        .into_bytes()),
+        Format::Xlsx => write_xlsx(sheet_name, header, rows),
+        Format::Ods => ods_writer::write_ods(sheet_name, header, rows),
+    }
+}
+
+fn xlsx_error(e: rust_xlsxwriter::XlsxError) -> AppError {
+    AppError::Validation(format!("the spreadsheet cannot be written: {e}"))
+}
+
+/// The date as an Excel date, if it is one Excel can hold (1900 or later).
+fn excel_date(d: NaiveDate) -> Option<ExcelDateTime> {
+    let year = u16::try_from(d.year()).ok()?;
+    ExcelDateTime::from_ymd(year, d.month() as u8, d.day() as u8).ok()
+}
+
+/// The date-time as an Excel one, if Excel can hold it: from 1900 and in whole milliseconds. A
+/// finer time would be rounded, so it is `None` and the caller writes the exact ISO text.
+fn excel_datetime(t: NaiveDateTime) -> Option<ExcelDateTime> {
+    if !t.nanosecond().is_multiple_of(1_000_000) {
+        return None;
+    }
+    excel_date(t.date())?
+        .and_hms_milli(
+            t.hour() as u16,
+            t.minute() as u8,
+            t.second() as u8,
+            (t.nanosecond() / 1_000_000) as u16,
+        )
+        .ok()
+}
+
+fn write_xlsx(
+    sheet_name: &str,
+    header: &[&str],
+    rows: impl IntoIterator<Item = Vec<CellValue>>,
+) -> AppResult<Vec<u8>> {
+    check_sheet_name(sheet_name)?;
+    let date_format = XlsxFormat::new().set_num_format("yyyy-mm-dd");
+    let datetime_format = XlsxFormat::new().set_num_format("yyyy-mm-dd hh:mm:ss");
+    let mut workbook = Workbook::new();
+    let sheet = workbook.add_worksheet();
+    sheet.set_name(sheet_name).map_err(xlsx_error)?;
+    for (c, h) in header.iter().enumerate() {
+        sheet.write_string(0, c as u16, *h).map_err(xlsx_error)?;
+    }
+    for (r, row) in rows.into_iter().enumerate() {
+        let sheet_row = r + 2;
+        let first = row.first().cloned();
+        let r = (r + 1) as u32;
+        for (c, cell) in row.into_iter().enumerate() {
+            let column = header.get(c).copied().unwrap_or_default();
+            let c = c as u16;
+            match cell {
+                CellValue::Empty => continue,
+                CellValue::Text(s) => sheet.write_string(r, c, s),
+                CellValue::Number(d) => match exact_f64(d) {
+                    Some(f) => sheet.write_number(r, c, f),
+                    None => sheet.write_string(r, c, crate::csv_io::format_decimal(d)),
+                },
+                CellValue::Bool(b) => sheet.write_boolean(r, c, b),
+                CellValue::Date(d) => match excel_date(d) {
+                    Some(x) => sheet.write_datetime_with_format(r, c, x, &date_format),
+                    None => sheet.write_string(r, c, d.format("%Y-%m-%d").to_string()),
+                },
+                CellValue::DateTime(t) => match excel_datetime(t) {
+                    Some(x) => sheet.write_datetime_with_format(r, c, x, &datetime_format),
+                    None => sheet.write_string(r, c, t.format("%Y-%m-%dT%H:%M:%S%.f").to_string()),
+                },
+            }
+            .map_err(|e| name_record(xlsx_error(e), sheet_row, first.as_ref(), column))?;
+        }
+    }
+    workbook.save_to_buffer().map_err(xlsx_error)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn at(text: &str) -> NaiveDateTime {
+        NaiveDateTime::parse_from_str(text, "%Y-%m-%dT%H:%M:%S%.f").unwrap()
+    }
+
+    #[test]
+    fn a_time_finer_than_a_millisecond_is_not_rounded() {
+        assert!(excel_datetime(at("2024-01-31T10:30:05.250")).is_some());
+        assert!(excel_datetime(at("2024-01-31T10:30:05")).is_some());
+        assert!(excel_datetime(at("2024-01-31T10:30:05.250123456")).is_none());
+        assert!(excel_datetime(at("2024-01-31T10:30:05.250000001")).is_none());
+    }
+
+    #[test]
+    fn a_fine_date_time_is_written_as_its_exact_text() {
+        let t = at("2024-01-31T10:30:05.250123456");
+        let bytes = write(
+            Format::Xlsx,
+            "S",
+            &["when"],
+            vec![vec![CellValue::DateTime(t)]],
+        )
+        .unwrap();
+        let raw = crate::import::read_raw(&bytes, None, &crate::import::Limits::request())
+            .unwrap()
+            .1;
+        assert_eq!(
+            raw.rows[0].cells[0],
+            CellValue::Text("2024-01-31T10:30:05.250123456".into())
+        );
+    }
+}

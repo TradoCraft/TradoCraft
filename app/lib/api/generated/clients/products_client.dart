@@ -2,11 +2,14 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, unused_import, invalid_annotation_target, unnecessary_import
 
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:retrofit/retrofit.dart';
 
 import '../models/bulk_price_change_input.dart';
 import '../models/bulk_price_preview.dart';
+import '../models/format.dart';
 import '../models/import_report.dart';
 import '../models/packaging_category.dart';
 import '../models/packaging_category_input.dart';
@@ -156,18 +159,28 @@ abstract class ProductsClient {
     @Body() required ProductInput body,
   });
 
-  /// All products as CSV, ordered by code.
+  /// All products as CSV, XLSX or ODS, ordered by code.
+  ///
+  /// [format] - `csv` (default), `xlsx` or `ods`.
   @GET('/api/v1/products/export')
-  Future<String> exportProducts();
+  Future<String> exportProducts({
+    @Query('format') Format? format,
+  });
 
-  /// Creates or updates products from CSV, keyed by `code`. All-or-nothing: with any row error.
-  /// nothing is written (422 with every error); `dry_run=true` only reports.
+  /// Creates or updates products from a CSV, XLSX or ODS file (detected from the content), keyed by.
+  /// `code`. All-or-nothing: with any row error nothing is written (422 with every error);.
+  /// `dry_run=true` only reports. `sheet` picks the sheet of a spreadsheet.
   ///
   /// [dryRun] - Validate and count only; nothing is written.
+  ///
+  /// [sheet] - The sheet to read from an XLSX or ODS file (the first sheet when absent); ignored for CSV.
+  ///
+  /// [body] - The raw bytes of a file.
   @POST('/api/v1/products/import')
   Future<ImportReport> importProducts({
-    @Body() required String body,
+    @Body() required File body,
     @Query('dry_run') bool? dryRun,
+    @Query('sheet') String? sheet,
   });
 
   @GET('/api/v1/products/{id}')

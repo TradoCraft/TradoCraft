@@ -24,8 +24,9 @@ const PRICING_TYPES: [&str; 3] = ["list", "net", "indicative"];
 
 pub mod attributes;
 pub mod bulk;
-pub mod csv;
 pub mod families;
+pub mod import;
+pub use import::{products_import, Products};
 pub mod options;
 pub mod packaging;
 pub mod power;
@@ -978,7 +979,7 @@ pub fn router() -> OpenApiRouter<AppState> {
         .merge(power::router())
         .merge(relations::router())
         .merge(bulk::router())
-        .merge(csv::router())
+        .merge(import::router())
         .merge(translations::router())
         .merge(options::router())
         .merge(attributes::router())

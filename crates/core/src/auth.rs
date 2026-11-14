@@ -178,10 +178,13 @@ pub enum Permission {
     /// Use the to-do list: create, change, complete and delete one's own items and the ones handed
     /// over to oneself (ADR 0061). Not a `.read` permission, so the read-only viewer role has none.
     TodoUse,
+    /// Use the data import screen: upload files, map their columns, run and read import jobs
+    /// (ADR 0067). Running an import also needs the write permission of the entity.
+    ImportsAdmin,
 }
 
 impl Permission {
-    pub const ALL: [Permission; 73] = [
+    pub const ALL: [Permission; 74] = [
         Permission::CustomersRead,
         Permission::CustomersWrite,
         Permission::ProductsRead,
@@ -255,6 +258,7 @@ impl Permission {
         Permission::IdentityAdmin,
         Permission::AuditView,
         Permission::TodoUse,
+        Permission::ImportsAdmin,
     ];
 
     pub fn as_str(self) -> &'static str {
@@ -332,6 +336,7 @@ impl Permission {
             Permission::IdentityAdmin => "identity.admin",
             Permission::AuditView => "audit.view",
             Permission::TodoUse => "todo.use",
+            Permission::ImportsAdmin => "imports.admin",
         }
     }
 }
@@ -706,6 +711,74 @@ struct MembershipRow {
     active: bool,
 }
 
+/// The membership of a user in a company: the requested one, or the default one when `company_id`
+/// is None. The one place that reads roles and disabled modules, for a request and for a stored
+/// user alike.
+async fn find_membership(
+    db: &sqlx::PgPool,
+    user_id: Uuid,
+    company_id: Option<Uuid>,
+) -> Result<MembershipRow, AppError> {
+    let membership: Option<MembershipRow> = sqlx::query_as(
+        "SELECT uc.company_id, uc.roles, c.disabled_modules,
+                uc.disabled_modules AS user_disabled_modules, uc.active
+         FROM core.user_companies uc JOIN core.companies c ON c.id = uc.company_id
+         WHERE uc.user_id = $1 AND (uc.company_id = $2 OR ($2 IS NULL AND uc.is_default))",
+    )
+    .bind(user_id)
+    .bind(company_id)
+    .fetch_optional(db)
+    .await?;
+    membership.ok_or_else(|| AppError::Forbidden("no access to the requested company".into()))
+}
+
+impl CurrentUser {
+    fn assemble(
+        user_id: Uuid,
+        email: String,
+        display_name: String,
+        membership: MembershipRow,
+    ) -> Result<CurrentUser, AppError> {
+        if !membership.active {
+            return Err(AppError::Forbidden(
+                "your access to this company has been deactivated".into(),
+            ));
+        }
+        Ok(CurrentUser {
+            user_id,
+            email,
+            display_name,
+            company_id: membership.company_id,
+            roles: membership.roles,
+            disabled_modules: effective_disabled(
+                &membership.disabled_modules,
+                &membership.user_disabled_modules,
+            ),
+        })
+    }
+
+    /// The user `user_id` as they act in `company_id` right now, for work done on their behalf
+    /// outside a request (a background import job): the same roles and disabled modules a request
+    /// of theirs would see. Fails with `Forbidden` when the user no longer exists or is
+    /// deactivated, is not a member of the company, or their membership is deactivated.
+    pub async fn for_member(
+        db: &sqlx::PgPool,
+        user_id: Uuid,
+        company_id: Uuid,
+    ) -> Result<CurrentUser, AppError> {
+        let user: UserRow = sqlx::query_as(
+            "SELECT id, email, display_name, oidc_subject FROM core.users
+             WHERE id = $1 AND active",
+        )
+        .bind(user_id)
+        .fetch_optional(db)
+        .await?
+        .ok_or_else(|| AppError::Forbidden("the user no longer exists or is deactivated".into()))?;
+        let membership = find_membership(db, user_id, Some(company_id)).await?;
+        CurrentUser::assemble(user.id, user.email, user.display_name, membership)
+    }
+}
+
 impl FromRequestParts<AppState> for CurrentUser {
     type Rejection = AppError;
 
@@ -740,35 +813,8 @@ impl FromRequestParts<AppState> for CurrentUser {
             ),
             None => None,
         };
-        let membership: Option<MembershipRow> = sqlx::query_as(
-            "SELECT uc.company_id, uc.roles, c.disabled_modules,
-                    uc.disabled_modules AS user_disabled_modules, uc.active
-             FROM core.user_companies uc JOIN core.companies c ON c.id = uc.company_id
-             WHERE uc.user_id = $1 AND (uc.company_id = $2 OR ($2 IS NULL AND uc.is_default))",
-        )
-        .bind(user.id)
-        .bind(requested_company)
-        .fetch_optional(&state.db)
-        .await?;
-        let membership = membership
-            .ok_or_else(|| AppError::Forbidden("no access to the requested company".into()))?;
-        if !membership.active {
-            return Err(AppError::Forbidden(
-                "your access to this company has been deactivated".into(),
-            ));
-        }
-
-        Ok(CurrentUser {
-            user_id: user.id,
-            email: user.email,
-            display_name: user.display_name,
-            company_id: membership.company_id,
-            roles: membership.roles,
-            disabled_modules: effective_disabled(
-                &membership.disabled_modules,
-                &membership.user_disabled_modules,
-            ),
-        })
+        let membership = find_membership(&state.db, user.id, requested_company).await?;
+        CurrentUser::assemble(user.id, user.email, user.display_name, membership)
     }
 }
 
@@ -1401,6 +1447,18 @@ mod tests {
         }
         assert_eq!(Permission::TodoUse.as_str(), "todo.use");
         assert!(!role_grants("nobody", Permission::TodoUse));
+    }
+
+    #[test]
+    fn only_admins_administer_imports() {
+        for r in ROLES {
+            assert_eq!(
+                role_grants(r, Permission::ImportsAdmin),
+                r == "admin",
+                "{r}"
+            );
+        }
+        assert_eq!(Permission::ImportsAdmin.as_str(), "imports.admin");
     }
 
     #[test]

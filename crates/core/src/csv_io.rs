@@ -4,8 +4,6 @@
 //! An import is always all-or-nothing: every row is checked first and *all* row errors are
 //! reported together ([`ImportReport`]); nothing is written unless there are none.
 
-use std::collections::{HashMap, HashSet};
-
 use axum::http::{header, HeaderMap, HeaderValue, StatusCode};
 use axum::Json;
 use rust_decimal::Decimal;
@@ -13,6 +11,10 @@ use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 
 use crate::error::{AppError, AppResult};
+use crate::import::{self, Limits};
+
+// One table type serves every format; the CSV names stay for the entity importers.
+pub use crate::import::{bind, Cell, Cells, Row as CsvRow, Table as CsvTable};
 
 /// Largest accepted import body.
 pub const MAX_BODY_BYTES: usize = 5 * 1024 * 1024;
@@ -54,7 +56,7 @@ fn needs_protection(value: &str) -> bool {
 }
 
 /// Removes the one apostrophe [`quote_cell`] added; any other value is returned as it is.
-fn unquote_formula(value: &str) -> &str {
+pub(crate) fn unquote_formula(value: &str) -> &str {
     match value.strip_prefix('\'') {
         Some(rest) if needs_protection(value) => rest,
         _ => value,
@@ -96,6 +98,10 @@ pub fn download(filename: &str, body: String) -> (HeaderMap, String) {
 // Report
 // ---------------------------------------------------------------------------------------------
 
+/// How many problems an import reports; the rest are left out and the report says so
+/// ([`ImportReport::planned`]).
+pub const MAX_REPORTED_ERRORS: usize = 1_000;
+
 /// One problem in an import file.
 #[derive(Debug, Clone, Serialize, ToSchema, PartialEq, Eq)]
 pub struct RowError {
@@ -104,6 +110,11 @@ pub struct RowError {
     /// Column name; null when the problem concerns the whole row.
     pub column: Option<String>,
     pub message: String,
+    /// The file exceeds a size limit ([`crate::import::Limits`]) rather than being wrong: with
+    /// larger limits it could be read. Not part of the API.
+    #[serde(skip)]
+    #[schema(ignore)]
+    pub limit: bool,
 }
 
 /// Outcome of an import (or of its dry run). `errors` is empty on success; with errors nothing was
@@ -120,14 +131,29 @@ impl ImportReport {
     /// The report of a planned import: the counts are filled in by the caller. `width_errors` (rows
     /// the parser could not use) and `plan_errors` (found while checking the other rows) are
     /// combined in file order.
+    ///
+    /// At most [`MAX_REPORTED_ERRORS`] errors are listed (the first in file order); when there are
+    /// more, or `more` says the reader or the planner stopped listing, a last error without a
+    /// column says that others exist.
     pub fn planned(
         unchanged: usize,
         width_errors: &[RowError],
         plan_errors: Vec<RowError>,
+        more: bool,
     ) -> Self {
         let mut errors = width_errors.to_vec();
         errors.extend(plan_errors);
         errors.sort_by_key(|e| e.row);
+        if errors.len() > MAX_REPORTED_ERRORS || more {
+            errors.truncate(MAX_REPORTED_ERRORS);
+            let row = errors.last().map_or(1, |e| e.row);
+            errors.push(format_error(
+                row,
+                format!(
+                    "more problems were found than are listed: only the first {MAX_REPORTED_ERRORS} are shown, fix these and run again"
+                ),
+            ));
+        }
         ImportReport {
             unchanged,
             errors,
@@ -181,20 +207,25 @@ pub struct ImportParams {
     /// Validate and count only; nothing is written.
     #[serde(default)]
     pub dry_run: bool,
+    /// The sheet to read from an XLSX or ODS file (the first sheet when absent); ignored for CSV.
+    pub sheet: Option<String>,
 }
 
 // ---------------------------------------------------------------------------------------------
 // Reading
 // ---------------------------------------------------------------------------------------------
 
-/// The delimiter of a file: `;` when the header line has more semicolons than commas (Excel in
-/// many locales), else `,`.
+/// The delimiter of a file: `;` when the header line (the first non-blank record, as the parsers
+/// read it) has more semicolons than commas (Excel in many locales), else `,`.
 pub fn detect_delimiter(text: &str) -> char {
-    let (mut commas, mut semis, mut quoted) = (0, 0, false);
+    let (mut commas, mut semis, mut quoted, mut started) = (0, 0, false, false);
     for c in text.chars() {
+        if !matches!(c, '\r' | '\n') {
+            started = true;
+        }
         match c {
             '"' => quoted = !quoted,
-            '\n' if !quoted => break,
+            '\n' if !quoted && started => break,
             ',' if !quoted => commas += 1,
             ';' if !quoted => semis += 1,
             _ => {}
@@ -208,375 +239,39 @@ pub fn detect_delimiter(text: &str) -> char {
 }
 
 /// A format error of the file as a whole at `row`.
-fn format_error(row: usize, message: impl Into<String>) -> RowError {
+pub(crate) fn format_error(row: usize, message: impl Into<String>) -> RowError {
     RowError {
         row,
         column: None,
         message: message.into(),
+        limit: false,
     }
 }
 
-/// Ends the current record: pushes the last field and keeps the record unless the line is blank.
-/// Fails when this would be more records than the header plus [`MAX_ROWS`] data rows.
-fn finish_record(
-    records: &mut Vec<(usize, Vec<String>)>,
-    fields: &mut Vec<String>,
-    field: &mut String,
-    start: usize,
-) -> Result<(), RowError> {
-    fields.push(std::mem::take(field));
-    let blank = fields.len() == 1 && fields[0].is_empty();
-    let record = std::mem::take(fields);
-    if blank {
-        return Ok(());
-    }
-    if records.len() > MAX_ROWS {
-        return Err(format_error(
-            1,
-            format!("too many rows: at most {MAX_ROWS} are accepted"),
-        ));
-    }
-    records.push((start, record));
-    Ok(())
-}
-
-/// Splits RFC 4180 text into records, each with the line number where it starts. Blank lines are
-/// skipped. The shape is checked while reading, before anything large is built: a quote inside an
-/// unquoted value, text after a closing quote, an unclosed quote, more than [`MAX_ROWS`] data rows
-/// or more than [`MAX_COLUMNS`] cells in a record end the parse with one error.
-fn parse_records(text: &str, delim: char) -> Result<Vec<(usize, Vec<String>)>, RowError> {
-    let mut records = Vec::new();
-    let mut fields: Vec<String> = Vec::new();
-    let mut field = String::new();
-    let (mut line, mut start, mut quoted, mut closed) = (1usize, 1usize, false, false);
-    let mut chars = text.chars().peekable();
-    while let Some(c) = chars.next() {
-        if quoted {
-            match c {
-                '"' if chars.peek() == Some(&'"') => {
-                    chars.next();
-                    field.push('"');
-                }
-                '"' => {
-                    quoted = false;
-                    closed = true;
-                }
-                '\n' => {
-                    line += 1;
-                    field.push(c);
-                }
-                _ => field.push(c),
-            }
-            continue;
-        }
-        match c {
-            '"' if field.is_empty() && !closed => quoted = true,
-            '"' if closed => {
-                return Err(format_error(start, "unexpected text after a closing quote"))
-            }
-            '"' => {
-                return Err(format_error(
-                    start,
-                    "a quote inside an unquoted value; quote the whole value and double the quotes in it",
-                ))
-            }
-            c if c == delim => {
-                fields.push(std::mem::take(&mut field));
-                closed = false;
-                if fields.len() >= MAX_COLUMNS {
-                    return Err(format_error(
-                        start,
-                        format!("too many columns: at most {MAX_COLUMNS} are accepted"),
-                    ));
-                }
-            }
-            '\r' => {}
-            '\n' => {
-                finish_record(&mut records, &mut fields, &mut field, start)?;
-                closed = false;
-                line += 1;
-                start = line;
-            }
-            _ if closed => return Err(format_error(start, "unexpected text after a closing quote")),
-            _ => field.push(c),
-        }
-    }
-    if quoted {
-        return Err(format_error(start, "a quoted value is not closed"));
-    }
-    if !field.is_empty() || !fields.is_empty() {
-        finish_record(&mut records, &mut fields, &mut field, start)?;
-    }
-    Ok(records)
-}
-
-/// A parsed import file: known columns in any order, one [`CsvRow`] per usable data row.
-#[derive(Debug)]
-pub struct CsvTable {
-    pub columns: Vec<String>,
-    pub rows: Vec<CsvRow>,
-    /// Rows left out of `rows` because their width does not match the header. The importers
-    /// check the other rows anyway and report these together with their own errors.
-    pub width_errors: Vec<RowError>,
-}
-
-/// One data row; cell values are exactly as written (see [`Cells`] for typed access).
-#[derive(Debug)]
-pub struct CsvRow {
-    pub line: usize,
-    cells: HashMap<String, String>,
-}
-
-impl CsvRow {
-    /// The cell as written (surrounding spaces kept), if the file has the column.
-    pub fn get(&self, column: &str) -> Option<&str> {
-        self.cells.get(column).map(String::as_str)
-    }
-
-    /// The cell without surrounding spaces; None when the file lacks the column or the cell is
-    /// empty or only spaces.
-    pub fn get_trimmed(&self, column: &str) -> Option<&str> {
-        self.get(column).map(str::trim).filter(|v| !v.is_empty())
+/// A format error of the file as a whole: it is larger than the limits allow.
+pub(crate) fn limit_error(row: usize, message: impl Into<String>) -> RowError {
+    RowError {
+        limit: true,
+        ..format_error(row, message)
     }
 }
 
-impl CsvTable {
-    /// Whether the file has this column.
-    pub fn has(&self, column: &str) -> bool {
-        self.columns.iter().any(|c| c == column)
-    }
-}
-
-/// Parses an import body. Header problems (unknown, duplicate or missing columns, an empty file,
-/// too many rows or columns, malformed quoting, bad encoding) are returned as errors on line 1 /
-/// the offending line. A data row with a different number of cells than the header is a row error
-/// (extra cells are tolerated when they are all empty) and is left out of the table; the other
-/// rows are kept. Cell values are not trimmed (see [`Cells`]); header names are.
+/// Parses an import body as CSV and binds it to the entity's columns (ADR 0029). Header problems
+/// (unknown, duplicate or missing columns, an empty file, too many rows or columns, malformed
+/// quoting, bad encoding) are returned as errors on line 1 / the offending line. A data row with a
+/// different number of cells than the header is a row error (extra cells are tolerated when they
+/// are all empty) and is left out of the table; the other rows are kept. Cell values are not
+/// trimmed (see [`Cells`]); header names are.
+///
+/// This is the CSV-only entry point with the limits of one request; the other formats, the column
+/// mapping and the job limits are in [`crate::import`].
 pub fn parse_table(
     body: &[u8],
     known: &[&str],
     required: &[&str],
 ) -> Result<CsvTable, Vec<RowError>> {
-    let text = std::str::from_utf8(body)
-        .map_err(|_| vec![format_error(1, "the file is not valid UTF-8")])?;
-    let text = text.strip_prefix('\u{feff}').unwrap_or(text);
-    let delim = detect_delimiter(text);
-    let mut records = parse_records(text, delim).map_err(|e| vec![e])?;
-    if records.is_empty() {
-        return Err(vec![format_error(1, "the file is empty")]);
-    }
-    let (header_line, header) = records.remove(0);
-    let columns: Vec<String> = header.iter().map(|h| h.trim().to_lowercase()).collect();
-
-    let mut errors = Vec::new();
-    let mut seen = HashSet::new();
-    for c in &columns {
-        if !known.contains(&c.as_str()) {
-            errors.push(RowError {
-                row: header_line,
-                column: Some(c.clone()),
-                message: format!("unknown column; known columns are {}", known.join(", ")),
-            });
-        } else if !seen.insert(c.as_str()) {
-            errors.push(RowError {
-                row: header_line,
-                column: Some(c.clone()),
-                message: "column appears twice".into(),
-            });
-        }
-    }
-    for r in required {
-        if !columns.iter().any(|c| c == r) {
-            errors.push(RowError {
-                row: header_line,
-                column: Some((*r).to_string()),
-                message: "required column is missing".into(),
-            });
-        }
-    }
-    if !errors.is_empty() {
-        return Err(errors);
-    }
-
-    let mut rows = Vec::with_capacity(records.len());
-    let mut width_errors = Vec::new();
-    for (line, mut cells) in records {
-        let wrong_width = cells.len() < columns.len()
-            || cells[columns.len()..].iter().any(|c| !c.trim().is_empty());
-        if wrong_width {
-            width_errors.push(format_error(
-                line,
-                format!(
-                    "{} values but the header has {} columns",
-                    cells.len(),
-                    columns.len()
-                ),
-            ));
-            continue;
-        }
-        cells.truncate(columns.len());
-        let map = columns
-            .iter()
-            .zip(cells.iter())
-            .map(|(c, v)| (c.clone(), unquote_formula(v).to_string()))
-            .collect();
-        rows.push(CsvRow { line, cells: map });
-    }
-    Ok(CsvTable {
-        columns,
-        rows,
-        width_errors,
-    })
-}
-
-/// What a cell holds: the column is not in the file, the cell is empty, or it has a value.
-#[derive(Debug, Clone, PartialEq)]
-pub enum Cell<T> {
-    Absent,
-    Blank,
-    Value(T),
-}
-
-impl<T> Cell<T> {
-    /// Sets a required field: only a value changes it (blank and absent keep the current one).
-    pub fn apply(self, target: &mut T) {
-        if let Cell::Value(v) = self {
-            *target = v;
-        }
-    }
-
-    /// Sets an optional field: a value sets it, a blank cell clears it, an absent column keeps it.
-    pub fn apply_opt(self, target: &mut Option<T>) {
-        match self {
-            Cell::Value(v) => *target = Some(v),
-            Cell::Blank => *target = None,
-            Cell::Absent => {}
-        }
-    }
-
-    /// The value, if the cell has one.
-    pub fn value(self) -> Option<T> {
-        match self {
-            Cell::Value(v) => Some(v),
-            _ => None,
-        }
-    }
-}
-
-/// Typed access to the cells of one row; parse problems are recorded as row errors.
-///
-/// Text cells ([`Cells::text`]) keep their surrounding spaces, so an exported value comes back
-/// exactly as it was; an empty cell is blank, a cell of only spaces is a value (it must not clear
-/// or change a stored value of that kind). Numbers, booleans and codes/keywords
-/// ([`Cells::trimmed`], [`Cells::decimal`], ...) are read without surrounding spaces, and there a
-/// cell of only spaces is blank.
-pub struct Cells<'a> {
-    row: &'a CsvRow,
-    errors: &'a mut Vec<RowError>,
-}
-
-impl<'a> Cells<'a> {
-    /// Typed access to `row`; problems are pushed onto `errors`.
-    pub fn new(row: &'a CsvRow, errors: &'a mut Vec<RowError>) -> Self {
-        Cells { row, errors }
-    }
-
-    /// How many errors have been recorded so far (in the whole import).
-    pub fn error_count(&self) -> usize {
-        self.errors.len()
-    }
-
-    /// Records a problem with the row (`column` None = the row as a whole).
-    pub fn error(&mut self, column: Option<&str>, message: impl Into<String>) {
-        self.errors.push(RowError {
-            row: self.row.line,
-            column: column.map(str::to_string),
-            message: message.into(),
-        });
-    }
-
-    /// Whether an error for `column` was recorded since the count was `since`
-    /// (see [`Cells::error_count`]).
-    pub fn failed_since(&self, since: usize, column: &str) -> bool {
-        self.errors[since..]
-            .iter()
-            .any(|e| e.column.as_deref() == Some(column))
-    }
-
-    /// Records one error per validation message, on the first of `columns` the message starts
-    /// with (the row as a whole when none). The rules of the API name their field first.
-    pub fn problems(&mut self, messages: impl IntoIterator<Item = String>, columns: &[&str]) {
-        for m in messages {
-            let column = columns.iter().find(|c| m.starts_with(**c)).copied();
-            self.error(column, m);
-        }
-    }
-
-    fn raw(&self, column: &str) -> Cell<&str> {
-        match self.row.cells.get(column).map(String::as_str) {
-            None => Cell::Absent,
-            Some("") => Cell::Blank,
-            Some(v) => Cell::Value(v),
-        }
-    }
-
-    fn trimmed_raw(&self, column: &str) -> Cell<&str> {
-        match self.raw(column) {
-            Cell::Value(v) if v.trim().is_empty() => Cell::Blank,
-            Cell::Value(v) => Cell::Value(v.trim()),
-            other => other,
-        }
-    }
-
-    /// A free text cell, exactly as written.
-    pub fn text(&self, column: &str) -> Cell<String> {
-        match self.raw(column) {
-            Cell::Absent => Cell::Absent,
-            Cell::Blank => Cell::Blank,
-            Cell::Value(v) => Cell::Value(v.to_string()),
-        }
-    }
-
-    /// A code or keyword cell: surrounding spaces removed, only spaces = blank.
-    pub fn trimmed(&self, column: &str) -> Cell<String> {
-        match self.trimmed_raw(column) {
-            Cell::Absent => Cell::Absent,
-            Cell::Blank => Cell::Blank,
-            Cell::Value(v) => Cell::Value(v.to_string()),
-        }
-    }
-
-    fn parsed<T>(&mut self, column: &str, parse: impl Fn(&str) -> Result<T, String>) -> Cell<T> {
-        match self.trimmed_raw(column) {
-            Cell::Absent => Cell::Absent,
-            Cell::Blank => Cell::Blank,
-            Cell::Value(v) => match parse(v) {
-                Ok(t) => Cell::Value(t),
-                Err(m) => {
-                    self.error(Some(column), m);
-                    Cell::Absent
-                }
-            },
-        }
-    }
-
-    /// A decimal cell, see [`parse_decimal`].
-    pub fn decimal(&mut self, column: &str) -> Cell<Decimal> {
-        self.parsed(column, parse_decimal)
-    }
-
-    /// A whole number cell.
-    pub fn int(&mut self, column: &str) -> Cell<i32> {
-        self.parsed(column, |v| {
-            v.parse()
-                .map_err(|_| format!("{v:?} is not a whole number"))
-        })
-    }
-
-    /// A boolean cell, see [`parse_bool`].
-    pub fn boolean(&mut self, column: &str) -> Cell<bool> {
-        self.parsed(column, parse_bool)
-    }
+    let raw = import::csv::read(body, &Limits::request())?;
+    import::bind(raw, known, required, None)
 }
 
 /// A decimal with `.` or `,` as the decimal separator. Thousands separators are not accepted, so
@@ -630,7 +325,7 @@ mod tests {
             &["code"],
         )
         .unwrap();
-        assert_eq!(t.rows[0].cells["name"], "+32 9\n\"x\", y");
+        assert_eq!(t.rows[0].get("name").unwrap(), "+32 9\n\"x\", y");
     }
 
     #[test]
@@ -641,7 +336,7 @@ mod tests {
         assert_eq!(t.columns, ["name", "code"]);
         assert_eq!(t.rows.len(), 2);
         assert_eq!((t.rows[0].line, t.rows[1].line), (3, 4));
-        assert_eq!(t.rows[1].cells["name"], "B;eta");
+        assert_eq!(t.rows[1].get("name").unwrap(), "B;eta");
     }
 
     #[test]
@@ -671,7 +366,10 @@ mod tests {
         let csv = write_csv(&["v"], values.iter().map(|v| vec![v.to_string()]));
         let t = parse_table(csv.as_bytes(), &["v"], &["v"]).unwrap();
         assert!(t.width_errors.is_empty());
-        t.rows.iter().map(|r| r.cells["v"].clone()).collect()
+        t.rows
+            .iter()
+            .map(|r| r.get("v").unwrap().to_string())
+            .collect()
     }
 
     #[test]
@@ -702,8 +400,8 @@ mod tests {
     #[test]
     fn cells_keep_their_surrounding_spaces() {
         let t = parse_table(b"v,w\n  a b  , \n", &["v", "w"], &["v"]).unwrap();
-        assert_eq!(t.rows[0].cells["v"], "  a b  ");
-        assert_eq!(t.rows[0].cells["w"], " ");
+        assert_eq!(t.rows[0].get("v").unwrap(), "  a b  ");
+        assert_eq!(t.rows[0].get("w").unwrap(), " ");
         let mut errors = Vec::new();
         let mut cells = Cells::new(&t.rows[0], &mut errors);
         assert_eq!(cells.text("w"), Cell::Value(" ".to_string()));
@@ -743,8 +441,8 @@ mod tests {
         }
         // Valid: quoted delimiters, escaped quotes, empty quoted value, quote then CRLF.
         let t = parse_table(b"v,w\r\n\"a,\"\"b\"\"\",\"\"\r\n", &["v", "w"], &["v"]).unwrap();
-        assert_eq!(t.rows[0].cells["v"], "a,\"b\"");
-        assert_eq!(t.rows[0].cells["w"], "");
+        assert_eq!(t.rows[0].get("v").unwrap(), "a,\"b\"");
+        assert_eq!(t.rows[0].get("w").unwrap(), "");
     }
 
     #[test]

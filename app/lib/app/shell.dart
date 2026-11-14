@@ -30,7 +30,7 @@ class _Dest {
     this.icon,
     this.permission, {
     this.unless,
-    this.alsoFor,
+    this.alsoFor = const [],
     this.alsoPaths = const [],
   });
   final String path;
@@ -43,8 +43,8 @@ class _Dest {
   /// A permission that hides the tab again, because another tab already covers this section.
   final String? unless;
 
-  /// A second permission that also makes the tab visible (e.g. price zone management).
-  final String? alsoFor;
+  /// Further permissions that also make the tab visible (e.g. price zone management, imports).
+  final List<String> alsoFor;
 
   /// Detail locations that belong to this section (e.g. `/suppliers`), so a tab showing one
   /// highlights this destination.
@@ -56,8 +56,7 @@ class _Dest {
 
   /// Whether a user with [perms] sees this destination.
   bool visibleFor(List<String> perms) =>
-      (perms.contains(permission) ||
-          (alsoFor != null && perms.contains(alsoFor))) &&
+      (perms.contains(permission) || alsoFor.any(perms.contains)) &&
       (unless == null || !perms.contains(unless));
 }
 
@@ -184,7 +183,7 @@ final _allDestinations = [
     (l) => l.adminTitle,
     AppIcons.adminPanelSettings,
     'users.admin',
-    alsoFor: 'prices.write',
+    alsoFor: ['prices.write', 'imports.admin'],
   ),
 ];
 

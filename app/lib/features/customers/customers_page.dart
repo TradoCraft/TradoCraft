@@ -44,13 +44,13 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
         CsvMenu(
           entity: context.l10n.customers,
           exportPath: '/api/v1/customers/export',
-          filename: 'customers.csv',
+          fileStem: 'customers',
           canExport: permissions.contains('customers.read'),
           canImport: canWrite,
-          importer: (csv, {required dryRun}) => postCsv(
+          importer: (bytes, {required dryRun}) => postImportFile(
             ref.read(dioProvider),
             '/api/v1/customers/import',
-            csv,
+            bytes,
             dryRun: dryRun,
           ),
           onImported: () => _list.currentState?.reload(),

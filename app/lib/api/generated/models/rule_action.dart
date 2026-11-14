@@ -9,7 +9,7 @@ part 'rule_action.g.dart';
 /// One change a rule makes. `kind` decides which of the other fields is used:.
 /// `set_owner` (`user_id`), `set_team` (`team_id`), `set_priority` (`value`), `set_category`.
 /// (`value`), `add_tag` (`value`), `set_internal` (`flag`), `send_email` (`recipient`, `team_id` or.
-/// `address`, `subject`, `body`, `period_hours`; ADR 0066).
+/// `address`, `subject`, `body`, `period_hours`; ADR 0063).
 @JsonSerializable()
 class RuleAction {
   const RuleAction({

@@ -10,6 +10,9 @@ publish.workspace = true
 anyhow.workspace = true
 axum.workspace = true
 base64 = "0.22"
+calamine.workspace = true
+quick-xml.workspace = true
+rust_xlsxwriter.workspace = true
 url = "2"
 chrono.workspace = true
 jsonwebtoken.workspace = true
@@ -25,3 +28,7 @@ tracing.workspace = true
 utoipa.workspace = true
 utoipa-axum.workspace = true
 uuid.workspace = true
+zip.workspace = true
+
+[dev-dependencies]
+rust_decimal_macros.workspace = true

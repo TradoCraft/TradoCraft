@@ -8,12 +8,13 @@ import '../../shared/app_icons.dart';
 import '../../l10n/l10n.dart';
 import 'audit_trail_page.dart';
 import 'identity_providers_page.dart';
+import 'imports/imports_page.dart';
 import 'modules_page.dart';
 import 'price_zones_page.dart';
 import 'users_page.dart';
 
 /// Administration: one destination with a switch between users, modules, price zones,
-/// identity providers and the audit trail (each shown with its own permission).
+/// identity providers, the audit trail and data import (each shown with its own permission).
 class AdminPage extends ConsumerStatefulWidget {
   const AdminPage({super.key});
 
@@ -35,6 +36,7 @@ class _AdminPageState extends ConsumerState<AdminPage> {
       if (can(ref, 'prices.write')) 'zones',
       if (can(ref, 'identity.admin')) 'identity',
       if (can(ref, 'audit.view')) 'audit',
+      if (can(ref, 'imports.admin')) 'import',
     ];
     final tab = tabs.contains(_tab) ? _tab! : (tabs.isEmpty ? '' : tabs.first);
     return Column(
@@ -60,6 +62,7 @@ class _AdminPageState extends ConsumerState<AdminPage> {
                             'modules' => l.adminModules,
                             'identity' => l.adminIdentityProviders,
                             'audit' => l.adminAuditTrail,
+                            'import' => l.adminImport,
                             _ => l.adminPriceZones,
                           }),
                         ),
@@ -85,6 +88,7 @@ class _AdminPageState extends ConsumerState<AdminPage> {
             'zones' => const PriceZonesPage(),
             'identity' => const IdentityProvidersPage(),
             'audit' => const AuditTrailPage(),
+            'import' => const ImportsPage(),
             'users' => const UsersPage(),
             _ => const SizedBox.shrink(),
           },

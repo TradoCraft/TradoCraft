@@ -5,6 +5,8 @@ import '../api/generated/export.dart';
 import '../features/tutorial/api_events.dart';
 import 'session.dart';
 
+// The generated import-column model `Column` would shadow Flutter's `Column` widget in every file
+// that imports this barrel; import it from api/generated/models/column.dart (prefixed) where needed.
 export '../api/generated/export.dart';
 
 final dioProvider = Provider<Dio>((ref) {
@@ -83,10 +85,15 @@ String errorMessage(Object error) {
   return error.toString();
 }
 
-/// Downloads a PDF produced by the API.
-Future<List<int>> downloadBytes(Dio dio, String path) async {
+/// Downloads a file produced by the API (a PDF, a CSV, a spreadsheet).
+Future<List<int>> downloadBytes(
+  Dio dio,
+  String path, {
+  Map<String, dynamic>? queryParameters,
+}) async {
   final res = await dio.get<List<int>>(
     path,
+    queryParameters: queryParameters,
     options: Options(responseType: ResponseType.bytes),
   );
   return res.data ?? const [];

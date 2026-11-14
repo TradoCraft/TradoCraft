@@ -1,6 +1,7 @@
-//! Customers as CSV: an export and an all-or-nothing upsert-by-`code` import (see
-//! `docs/adr/0029-csv-export-import.md`). The commercial terms (price zone, discount, payment
-//! terms) are those of the active company.
+//! Customers as an importable entity (ADR 0029, ADR 0067): an export and an all-or-nothing
+//! upsert-by-`code` import in CSV, XLSX or ODS. The commercial terms (price zone, discount, payment
+//! terms) are those of the active company. Everything shared lives in `tradocraft_core::import`;
+//! this file holds only what is the customers'.
 
 use std::collections::HashMap;
 
@@ -9,11 +10,14 @@ use axum::extract::{DefaultBodyLimit, Query, State};
 use axum::http::{HeaderMap, StatusCode};
 use axum::Json;
 use rust_decimal::Decimal;
-use tradocraft_core::csv_io::{
-    self, format_decimal, parse_table, Cell, Cells, ImportParams, ImportReport, RowError,
-};
+use sqlx::{PgConnection, PgPool};
+use tradocraft_core::csv_io::{self, ImportParams, ImportReport};
 use tradocraft_core::error::ErrorBody;
-use tradocraft_core::{audit, new_id, AppResult, AppState, CurrentUser, Permission};
+use tradocraft_core::import::{
+    self, BinaryFile, Cell, CellValue, Cells, Column, ColumnKind, ExportParams, ImportEntity,
+    Importable, Row, Table,
+};
+use tradocraft_core::{AppResult, AppState, CurrentUser, Permission};
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 use uuid::Uuid;
@@ -23,83 +27,54 @@ use crate::{
 };
 
 /// The columns, in export order. `code` is the key; the others are optional in an import file.
-pub const COLUMNS: [&str; 15] = [
-    "code",
-    "name",
-    "vat_number",
-    "email",
-    "phone",
-    "street",
-    "postal_code",
-    "city",
-    "country_code",
-    "language",
-    "active",
-    "price_zone_code",
-    "discount_percent",
-    "payment_terms_days",
-    "vat_regime",
+/// `required` means a new customer needs a value.
+const COLUMNS: [Column; 15] = [
+    Column::new("code", ColumnKind::Code, true),
+    Column::new("name", ColumnKind::Text, true),
+    Column::new("vat_number", ColumnKind::Text, false),
+    Column::new("email", ColumnKind::Text, false),
+    Column::new("phone", ColumnKind::Text, false),
+    Column::new("street", ColumnKind::Text, false),
+    Column::new("postal_code", ColumnKind::Text, false),
+    Column::new("city", ColumnKind::Text, false),
+    Column::new("country_code", ColumnKind::Code, false),
+    Column::new("language", ColumnKind::Code, false),
+    Column::new("active", ColumnKind::Boolean, false),
+    Column::new("price_zone_code", ColumnKind::Code, true),
+    Column::new("discount_percent", ColumnKind::Decimal, false),
+    Column::new("payment_terms_days", ColumnKind::Integer, false),
+    Column::new("vat_regime", ColumnKind::Code, false),
 ];
 
 /// One customer as the cells of an export row, in [`COLUMNS`] order.
-fn export_row(c: &Customer) -> Vec<String> {
-    let opt = |v: &Option<String>| v.clone().unwrap_or_default();
+fn export_row(c: &Customer) -> Vec<CellValue> {
+    let opt = |v: &Option<String>| CellValue::text(v.clone().unwrap_or_default());
     vec![
-        c.code.clone(),
-        c.name.clone(),
+        CellValue::text(&c.code),
+        CellValue::text(&c.name),
         opt(&c.vat_number),
         opt(&c.email),
         opt(&c.phone),
-        c.street.clone(),
-        c.postal_code.clone(),
-        c.city.clone(),
-        c.country_code.clone(),
-        c.language.clone(),
-        c.active.to_string(),
+        CellValue::text(&c.street),
+        CellValue::text(&c.postal_code),
+        CellValue::text(&c.city),
+        CellValue::text(&c.country_code),
+        CellValue::text(&c.language),
+        CellValue::Bool(c.active),
         opt(&c.price_zone_code),
-        c.discount_percent.map(format_decimal).unwrap_or_default(),
+        c.discount_percent
+            .map_or(CellValue::Empty, |d| CellValue::Number(d.normalize())),
         c.payment_terms_days
-            .map(|d| d.to_string())
-            .unwrap_or_default(),
-        c.vat_regime.clone(),
+            .map_or(CellValue::Empty, |d| CellValue::int(d.into())),
+        CellValue::text(&c.vat_regime),
     ]
 }
 
-/// All customers (with the terms in the active company) as CSV, ordered by code.
-#[utoipa::path(get, path = "/customers/export", tag = "crm", operation_id = "export_customers",
-    responses((status = 200, body = String, content_type = "text/csv"), (status = 403, body = ErrorBody)))]
-async fn export_customers(
-    State(state): State<AppState>,
-    user: CurrentUser,
-) -> AppResult<(HeaderMap, String)> {
-    user.require(Permission::CustomersRead)?;
-    let customers: Vec<Customer> = sqlx::query_as(&format!("{SELECT_CUSTOMER} ORDER BY c.code"))
-        .bind(user.company_id)
-        .fetch_all(&state.db)
-        .await?;
-    let body = csv_io::write_csv(&COLUMNS, customers.iter().map(export_row));
-    Ok(csv_io::download("customers.csv", body))
-}
-
-/// What an import does with one valid row.
-enum Action {
-    Create {
-        input: CustomerInput,
-    },
-    Update {
-        id: Uuid,
-        input: CustomerInput,
-        /// Terms are written (false: the customer has none here and the file gives none).
-        terms: bool,
-    },
-}
-
-/// The outcome of checking a whole file: what to write and what was found wrong.
-#[derive(Default)]
-struct Plan {
-    actions: Vec<Action>,
-    unchanged: usize,
-    errors: Vec<RowError>,
+/// What a valid row would write: the customer and the zone its terms belong to.
+pub struct CustomerChange {
+    input: CustomerInput,
+    /// The price zone of the terms; none means the customer has no terms here.
+    zone: Option<Uuid>,
 }
 
 /// Whether the stored customer already equals what the row would write (so nothing is written).
@@ -121,57 +96,70 @@ fn same(existing: &Customer, i: &CustomerInput, zone: Option<Uuid>) -> bool {
                 && existing.payment_terms_days == Some(i.payment_terms_days)))
 }
 
-/// Checks every row against the database and decides what each one would do.
-async fn plan(
-    conn: &mut sqlx::PgConnection,
-    company_id: Uuid,
-    table: &csv_io::CsvTable,
-) -> AppResult<Plan> {
-    let zones: HashMap<String, Uuid> = sqlx::query_as::<_, (String, Uuid)>(
-        "SELECT code, id FROM pricing.price_zones WHERE company_id = $1",
-    )
-    .bind(company_id)
-    .fetch_all(&mut *conn)
-    .await?
-    .into_iter()
-    .collect();
-    let codes: Vec<String> = table
-        .rows
-        .iter()
-        .filter_map(|r| r.get_trimmed("code"))
-        .map(str::to_string)
-        .collect();
-    // Read and lock the rows we are going to change in one statement, so a concurrent edit cannot
-    // slip in between the read and the lock (a row changed meanwhile is returned as committed).
-    let existing: HashMap<String, Customer> = sqlx::query_as::<_, Customer>(&format!(
-        "{SELECT_CUSTOMER} WHERE c.code = ANY($2) ORDER BY c.id FOR UPDATE OF c"
-    ))
-    .bind(company_id)
-    .bind(&codes)
-    .fetch_all(&mut *conn)
-    .await?
-    .into_iter()
-    .map(|c| (c.code.clone(), c))
-    .collect();
+/// The customers as an importable entity.
+pub struct Customers;
 
-    let mut plan = Plan::default();
-    let mut seen: HashMap<String, usize> = HashMap::new();
-    for row in &table.rows {
-        let mut cells = Cells::new(row, &mut plan.errors);
-        let before = cells.error_count();
-        let Some(code) = cells.trimmed("code").value() else {
-            cells.error(Some("code"), "code is required");
-            continue;
-        };
-        if let Some(first) = seen.insert(code.clone(), row.line) {
-            cells.error(
-                Some("code"),
-                format!("code {code} appears twice (first on line {first})"),
-            );
-            continue;
-        }
-        let current = existing.get(&code);
+impl Importable for Customers {
+    type Stored = Customer;
+    type Change = CustomerChange;
+    /// The price zones of the active company, by code.
+    type Context = HashMap<String, Uuid>;
 
+    const KEY: &'static str = "customers";
+    const AUDIT_ENTITY: &'static str = "customer";
+    const READ: Permission = Permission::CustomersRead;
+    const WRITE: Permission = Permission::CustomersWrite;
+    const FILE_STEM: &'static str = "customers";
+    const COLUMNS: &'static [Column] = &COLUMNS;
+
+    async fn context(
+        conn: &mut PgConnection,
+        user: &CurrentUser,
+        _table: &Table,
+    ) -> AppResult<Self::Context> {
+        Ok(sqlx::query_as::<_, (String, Uuid)>(
+            "SELECT code, id FROM pricing.price_zones WHERE company_id = $1",
+        )
+        .bind(user.company_id)
+        .fetch_all(conn)
+        .await?
+        .into_iter()
+        .collect())
+    }
+
+    async fn load(
+        conn: &mut PgConnection,
+        user: &CurrentUser,
+        keys: &[String],
+    ) -> AppResult<Vec<(String, Customer)>> {
+        // Read and lock the rows we are going to change in one statement, so a concurrent edit
+        // cannot slip in between the read and the lock (a row changed meanwhile is returned as
+        // committed).
+        Ok(sqlx::query_as::<_, Customer>(&format!(
+            "{SELECT_CUSTOMER} WHERE c.code = ANY($2) ORDER BY c.id FOR UPDATE OF c"
+        ))
+        .bind(user.company_id)
+        .bind(keys)
+        .fetch_all(conn)
+        .await?
+        .into_iter()
+        .map(|c| (c.code.clone(), c))
+        .collect())
+    }
+
+    fn stored_id(stored: &Customer) -> Uuid {
+        stored.id
+    }
+
+    async fn plan_row(
+        _conn: &mut PgConnection,
+        _user: &CurrentUser,
+        zones: &mut Self::Context,
+        key: &str,
+        current: Option<&Customer>,
+        _row: &Row,
+        cells: &mut Cells<'_>,
+    ) -> AppResult<CustomerChange> {
         // Start from the stored values (or the API defaults) and overlay the columns of the file.
         let mut input = match current {
             Some(c) => CustomerInput {
@@ -192,7 +180,7 @@ async fn plan(
                 payment_terms_days: c.payment_terms_days.unwrap_or(30),
             },
             None => CustomerInput {
-                code: code.clone(),
+                code: key.to_string(),
                 name: String::new(),
                 vat_number: None,
                 vat_regime: "domestic".to_string(),
@@ -284,35 +272,83 @@ async fn plan(
                 .problems()
                 .into_iter()
                 .filter(|m| !(name_missing && m.starts_with("code and name"))),
-            &COLUMNS,
+            &import::column_names::<Self>(),
         );
         // The VAT rule (ADR 0058) applies to a number the file adds or changes, so that an
         // untouched legacy number does not stop a re-import of an export.
         if let Some(m) = input.vat_problem(current.and_then(|c| c.vat_number.as_deref())) {
             cells.error(Some("vat_number"), m);
         }
-        if cells.error_count() > before {
-            continue;
-        }
-
-        match current {
-            Some(c) if same(c, &input, zone) => plan.unchanged += 1,
-            Some(c) => plan.actions.push(Action::Update {
-                id: c.id,
-                terms: zone.is_some(),
-                input,
-            }),
-            None => plan.actions.push(Action::Create { input }),
-        }
+        Ok(CustomerChange { input, zone })
     }
-    Ok(plan)
+
+    fn unchanged(stored: &Customer, change: &CustomerChange) -> bool {
+        same(stored, &change.input, change.zone)
+    }
+
+    async fn create(
+        conn: &mut PgConnection,
+        user: &CurrentUser,
+        id: Uuid,
+        change: &CustomerChange,
+    ) -> AppResult<()> {
+        insert_customer(conn, id, &change.input).await?;
+        upsert_terms(conn, user.company_id, id, &change.input).await
+    }
+
+    async fn update(
+        conn: &mut PgConnection,
+        user: &CurrentUser,
+        id: Uuid,
+        change: &CustomerChange,
+    ) -> AppResult<()> {
+        update_customer_row(conn, id, &change.input).await?;
+        // Terms are written only when the customer has a zone (the file gave one or it had one).
+        if change.zone.is_some() {
+            upsert_terms(conn, user.company_id, id, &change.input).await?;
+        }
+        Ok(())
+    }
+
+    async fn export(pool: &PgPool, user: &CurrentUser) -> AppResult<Vec<Vec<CellValue>>> {
+        let customers: Vec<Customer> =
+            sqlx::query_as(&format!("{SELECT_CUSTOMER} ORDER BY c.code"))
+                .bind(user.company_id)
+                .fetch_all(pool)
+                .await?;
+        Ok(customers.iter().map(export_row).collect())
+    }
 }
 
-/// Creates or updates customers from CSV, keyed by `code`. All-or-nothing: with any row error
-/// nothing is written (422 with every error); `dry_run=true` only reports.
+/// The customers' handle for the import registry and the background worker.
+pub fn customers_import() -> ImportEntity {
+    ImportEntity::of::<Customers>()
+}
+
+/// All customers (with the terms in the active company) as CSV, XLSX or ODS, ordered by code.
+#[utoipa::path(get, path = "/customers/export", tag = "crm", operation_id = "export_customers",
+    params(ExportParams),
+    responses((status = 200, content(
+            (String = "text/csv"),
+            (inline(BinaryFile) = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+            (inline(BinaryFile) = "application/vnd.oasis.opendocument.spreadsheet"))),
+        (status = 403, body = ErrorBody)))]
+async fn export_customers(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Query(p): Query<ExportParams>,
+) -> AppResult<(HeaderMap, Vec<u8>)> {
+    import::export_request::<Customers>(&state.db, &user, &p).await
+}
+
+/// Creates or updates customers from a CSV, XLSX or ODS file (detected from the content), keyed by
+/// `code`. All-or-nothing: with any row error nothing is written (422 with every error);
+/// `dry_run=true` only reports. `sheet` picks the sheet of a spreadsheet.
 #[utoipa::path(post, path = "/customers/import", tag = "crm", operation_id = "import_customers",
     params(ImportParams),
-    request_body(content = String, content_type = "text/csv"),
+    request_body(content(
+        (inline(BinaryFile) = "application/octet-stream"),
+        (String = "text/csv"))),
     responses((status = 200, body = ImportReport), (status = 403, body = ErrorBody),
         (status = 413, description = "Body larger than 5 MB"), (status = 422, body = ImportReport)))]
 async fn import_customers(
@@ -321,70 +357,7 @@ async fn import_customers(
     Query(p): Query<ImportParams>,
     body: Bytes,
 ) -> AppResult<(StatusCode, Json<ImportReport>)> {
-    user.require(Permission::CustomersWrite)?;
-    let table = match parse_table(&body, &COLUMNS, &["code"]) {
-        Ok(t) => t,
-        Err(errors) => return Ok(ImportReport::failed(errors).into_response()),
-    };
-    csv_io::with_replan(|| run_import(&state, &user, &table, p.dry_run)).await
-}
-
-/// One attempt: plan in a transaction and, when the plan is clean and this is no dry run, write it.
-/// A unique-key conflict at write time (a concurrent creation of the same code) fails the attempt;
-/// [`csv_io::with_replan`] then plans again against the committed data.
-async fn run_import(
-    state: &AppState,
-    user: &CurrentUser,
-    table: &csv_io::CsvTable,
-    dry_run: bool,
-) -> AppResult<(StatusCode, Json<ImportReport>)> {
-    let mut tx = state.db.begin().await?;
-    let plan = plan(&mut tx, user.company_id, table).await?;
-    let mut report = ImportReport::planned(plan.unchanged, &table.width_errors, plan.errors);
-    for a in &plan.actions {
-        match a {
-            Action::Create { .. } => report.created += 1,
-            Action::Update { .. } => report.updated += 1,
-        }
-    }
-    if !report.errors.is_empty() || dry_run {
-        return Ok(report.into_response());
-    }
-    for a in plan.actions {
-        match a {
-            Action::Create { input } => {
-                let id = new_id();
-                insert_customer(&mut tx, id, &input).await?;
-                upsert_terms(&mut tx, user.company_id, id, &input).await?;
-                audit::record(
-                    &mut tx,
-                    user,
-                    "customer",
-                    id,
-                    "created",
-                    serde_json::json!({ "code": input.code, "source": "csv_import" }),
-                )
-                .await?;
-            }
-            Action::Update { id, input, terms } => {
-                update_customer_row(&mut tx, id, &input).await?;
-                if terms {
-                    upsert_terms(&mut tx, user.company_id, id, &input).await?;
-                }
-                audit::record(
-                    &mut tx,
-                    user,
-                    "customer",
-                    id,
-                    "updated",
-                    serde_json::json!({ "source": "csv_import" }),
-                )
-                .await?;
-            }
-        }
-    }
-    tx.commit().await?;
-    Ok(report.into_response())
+    import::import_request::<Customers>(&state.db, &user, &p, &body).await
 }
 
 /// The routes of the customer export and import (the import with its own body limit).

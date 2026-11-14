@@ -4728,13 +4728,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get eventWarrantyVoidRemoved => 'Warranty override removed';
 
   @override
-  String get csvMenu => 'CSV export and import';
+  String get csvMenu => 'Import and export';
 
   @override
-  String get csvExport => 'Export CSV';
-
-  @override
-  String get csvImport => 'Import CSV';
+  String get csvImport => 'Import from file';
 
   @override
   String csvExported(String name) {
@@ -4748,15 +4745,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String csvImportTitle(String entity) {
-    return 'Import CSV: $entity';
+    return 'Import: $entity';
   }
 
   @override
   String get csvImportHelp =>
-      'Rows are matched on the code: an existing code is updated, a new code is created. Columns that are missing from the file are left untouched, and nothing is ever deleted. It is all or nothing: if any row has an error, nothing is imported. Semicolon or comma separated, UTF-8.';
+      'Choose a CSV, Excel (XLSX) or OpenDocument (ODS) file. Rows are matched on the code: an existing code is updated, a new code is created. Columns that are missing from the file are left untouched, and nothing is ever deleted. It is all or nothing: if any row has an error, nothing is imported. CSV: semicolon or comma separated, UTF-8. Spreadsheets: the first sheet is read; to pick another sheet or map differently named columns, use Administration, Import.';
 
   @override
-  String get csvChooseFile => 'Choose CSV file';
+  String get csvChooseFile => 'Choose file';
 
   @override
   String get csvChooseOther => 'Choose another file';
@@ -4793,10 +4790,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get csvEmptyFile => 'The file is empty.';
-
-  @override
-  String get csvNotUtf8 =>
-      'The file is not UTF-8 text. Save it as CSV (UTF-8) and try again.';
 
   @override
   String get csvReadFailed => 'The file could not be read.';
@@ -8909,6 +8902,312 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get todoEmailReminders => 'E-mail reminders';
+
+  @override
+  String get csvExportCsv => 'Export as CSV';
+
+  @override
+  String get csvExportXlsx => 'Export as Excel (XLSX)';
+
+  @override
+  String get csvExportOds => 'Export as OpenDocument (ODS)';
+
+  @override
+  String get adminImport => 'Import';
+
+  @override
+  String get impNew => 'New import';
+
+  @override
+  String get impHistory => 'History';
+
+  @override
+  String get impStepFile => 'File';
+
+  @override
+  String get impStepWhat => 'What and where';
+
+  @override
+  String get impStepColumns => 'Columns';
+
+  @override
+  String get impStepCheck => 'Check';
+
+  @override
+  String get impStepApply => 'Import';
+
+  @override
+  String get impFileHelp =>
+      'CSV, Excel (XLSX) or OpenDocument (ODS) file, up to 50 MiB. The file is stored for a week.';
+
+  @override
+  String get impChooseFile => 'Choose file';
+
+  @override
+  String get impChooseOther => 'Choose another file';
+
+  @override
+  String get impUploading => 'Uploading...';
+
+  @override
+  String get impFileTooLarge => 'The file is larger than the limit of 50 MiB.';
+
+  @override
+  String impFileFormatSize(String format, String size) {
+    return 'Format: $format, size: $size';
+  }
+
+  @override
+  String get impEntity => 'What do you import?';
+
+  @override
+  String get impNoEntities =>
+      'You need the permission to write an entity, for example customers or products, to import it here.';
+
+  @override
+  String get impSheet => 'Sheet';
+
+  @override
+  String get impPreview => 'Preview';
+
+  @override
+  String impRowCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count data rows',
+      one: '1 data row',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String impFirstRows(int count) {
+    return 'The first $count rows are shown.';
+  }
+
+  @override
+  String get impNoHeader => 'The file has no header row.';
+
+  @override
+  String get impColFile => 'File column';
+
+  @override
+  String get impColSample => 'Example';
+
+  @override
+  String get impColField => 'Field';
+
+  @override
+  String get impIgnore => 'Ignore';
+
+  @override
+  String get impRequiredNew => 'Required for new records';
+
+  @override
+  String get impKeyBadge => 'Key';
+
+  @override
+  String impKeyMissing(String field) {
+    return 'Choose a file column for the key field $field: rows are matched on it.';
+  }
+
+  @override
+  String impDuplicateField(String field) {
+    return 'The field $field is chosen for more than one column.';
+  }
+
+  @override
+  String impUnmapped(String fields) {
+    return 'Fields without a column: $fields';
+  }
+
+  @override
+  String impUnmappedRequired(String fields) {
+    return 'Needed to create new records: $fields';
+  }
+
+  @override
+  String get impAllMapped => 'Every field has a column.';
+
+  @override
+  String get impMappingsMenu => 'Saved mappings';
+
+  @override
+  String get impNoMappings => 'No saved mappings for this entity yet.';
+
+  @override
+  String get impSaveMapping => 'Save mapping';
+
+  @override
+  String get impMappingName => 'Name of the mapping';
+
+  @override
+  String get impOverwriteTitle => 'Replace the mapping?';
+
+  @override
+  String impOverwriteBody(String name) {
+    return 'A mapping named $name already exists. Replace it with the current one?';
+  }
+
+  @override
+  String get impOverwriteAction => 'Replace';
+
+  @override
+  String impMappingSaved(String name) {
+    return 'Mapping $name saved';
+  }
+
+  @override
+  String impDeleteMapping(String name) {
+    return 'Delete mapping $name';
+  }
+
+  @override
+  String impDeleteMappingConfirm(String name) {
+    return 'Delete the saved mapping $name?';
+  }
+
+  @override
+  String impMappingDeleted(String name) {
+    return 'Mapping $name deleted';
+  }
+
+  @override
+  String impProposalSaved(String name) {
+    return 'Columns taken from the saved mapping $name.';
+  }
+
+  @override
+  String get impProposalByName =>
+      'Columns paired with fields of the same name. Check them before you continue.';
+
+  @override
+  String get impRunCheck => 'Check the file';
+
+  @override
+  String get impChecking => 'Checking the file...';
+
+  @override
+  String get impBackgroundNote =>
+      'Large files run in the background. You can leave this page: the job appears in the history.';
+
+  @override
+  String get impOutdated =>
+      'The file, entity, sheet or columns changed after this check. Run the check again.';
+
+  @override
+  String get impCheckClean =>
+      'No problems found. Nothing has been imported yet.';
+
+  @override
+  String get impStatusQueued => 'Queued';
+
+  @override
+  String get impStatusRunning => 'Running';
+
+  @override
+  String get impStatusDone => 'Done';
+
+  @override
+  String impStatusDoneErrors(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Done with $count errors',
+      one: 'Done with 1 error',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get impStatusFailed => 'Failed';
+
+  @override
+  String get impStatusCancelled => 'Cancelled';
+
+  @override
+  String get impPhaseReading => 'Reading the file';
+
+  @override
+  String get impPhaseValidating => 'Validating the rows';
+
+  @override
+  String get impPhaseWriting => 'Writing the records';
+
+  @override
+  String impProgress(int done, int total) {
+    return '$done of $total rows';
+  }
+
+  @override
+  String get impCancelJob => 'Cancel job';
+
+  @override
+  String get impDownloadErrors => 'Download error report';
+
+  @override
+  String impErrorsTotal(int shown, int total) {
+    return 'Showing the first $shown of $total problems. The error report lists the same problems. A file with very many problems lists only the first ones: fix these and check again.';
+  }
+
+  @override
+  String get impApplyHint =>
+      'Importing is possible after a check without problems.';
+
+  @override
+  String get impApplyAction => 'Import now';
+
+  @override
+  String impApplyConfirmTitle(String entity) {
+    return 'Import $entity?';
+  }
+
+  @override
+  String impApplyConfirmBody(int created, int updated) {
+    return '$created will be created and $updated updated. This changes data.';
+  }
+
+  @override
+  String get impImportAnother => 'Import another file';
+
+  @override
+  String get impHistoryEmpty => 'No imports yet.';
+
+  @override
+  String get impDryRun => 'Check only';
+
+  @override
+  String get impApplied => 'Imported';
+
+  @override
+  String impCountsPlanned(int created, int updated, int unchanged) {
+    return '$created to create, $updated to update, $unchanged unchanged';
+  }
+
+  @override
+  String impCountsDone(int created, int updated, int unchanged) {
+    return '$created created, $updated updated, $unchanged unchanged';
+  }
+
+  @override
+  String impJobBy(String name) {
+    return 'By $name';
+  }
+
+  @override
+  String get impJobDetails => 'Import details';
+
+  @override
+  String get impJobMessage => 'Message';
+
+  @override
+  String impJobSheet(String sheet) {
+    return 'Sheet $sheet';
+  }
+
+  @override
+  String get impRefresh => 'Refresh';
 
   @override
   String get actionSendEmail => 'Send e-mail';

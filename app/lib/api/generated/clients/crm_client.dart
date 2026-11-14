@@ -2,6 +2,8 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, unused_import, invalid_annotation_target, unnecessary_import
 
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:retrofit/retrofit.dart';
 
@@ -14,6 +16,7 @@ import '../models/customer_input.dart';
 import '../models/customer_page.dart';
 import '../models/customer_rebate.dart';
 import '../models/delivery_check.dart';
+import '../models/format.dart';
 import '../models/import_report.dart';
 import '../models/lookup_result.dart';
 import '../models/opportunity.dart';
@@ -79,18 +82,28 @@ abstract class CrmClient {
     @Body() required CustomerInput body,
   });
 
-  /// All customers (with the terms in the active company) as CSV, ordered by code.
+  /// All customers (with the terms in the active company) as CSV, XLSX or ODS, ordered by code.
+  ///
+  /// [format] - `csv` (default), `xlsx` or `ods`.
   @GET('/api/v1/customers/export')
-  Future<String> exportCustomers();
+  Future<String> exportCustomers({
+    @Query('format') Format? format,
+  });
 
-  /// Creates or updates customers from CSV, keyed by `code`. All-or-nothing: with any row error.
-  /// nothing is written (422 with every error); `dry_run=true` only reports.
+  /// Creates or updates customers from a CSV, XLSX or ODS file (detected from the content), keyed by.
+  /// `code`. All-or-nothing: with any row error nothing is written (422 with every error);.
+  /// `dry_run=true` only reports. `sheet` picks the sheet of a spreadsheet.
   ///
   /// [dryRun] - Validate and count only; nothing is written.
+  ///
+  /// [sheet] - The sheet to read from an XLSX or ODS file (the first sheet when absent); ignored for CSV.
+  ///
+  /// [body] - The raw bytes of a file.
   @POST('/api/v1/customers/import')
   Future<ImportReport> importCustomers({
-    @Body() required String body,
+    @Body() required File body,
     @Query('dry_run') bool? dryRun,
+    @Query('sheet') String? sheet,
   });
 
   /// Checks a VAT number for the customer form: the format and check digits, other customers with.

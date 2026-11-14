@@ -8625,19 +8625,13 @@ abstract class AppLocalizations {
   /// No description provided for @csvMenu.
   ///
   /// In en, this message translates to:
-  /// **'CSV export and import'**
+  /// **'Import and export'**
   String get csvMenu;
-
-  /// No description provided for @csvExport.
-  ///
-  /// In en, this message translates to:
-  /// **'Export CSV'**
-  String get csvExport;
 
   /// No description provided for @csvImport.
   ///
   /// In en, this message translates to:
-  /// **'Import CSV'**
+  /// **'Import from file'**
   String get csvImport;
 
   /// No description provided for @csvExported.
@@ -8655,19 +8649,19 @@ abstract class AppLocalizations {
   /// No description provided for @csvImportTitle.
   ///
   /// In en, this message translates to:
-  /// **'Import CSV: {entity}'**
+  /// **'Import: {entity}'**
   String csvImportTitle(String entity);
 
   /// No description provided for @csvImportHelp.
   ///
   /// In en, this message translates to:
-  /// **'Rows are matched on the code: an existing code is updated, a new code is created. Columns that are missing from the file are left untouched, and nothing is ever deleted. It is all or nothing: if any row has an error, nothing is imported. Semicolon or comma separated, UTF-8.'**
+  /// **'Choose a CSV, Excel (XLSX) or OpenDocument (ODS) file. Rows are matched on the code: an existing code is updated, a new code is created. Columns that are missing from the file are left untouched, and nothing is ever deleted. It is all or nothing: if any row has an error, nothing is imported. CSV: semicolon or comma separated, UTF-8. Spreadsheets: the first sheet is read; to pick another sheet or map differently named columns, use Administration, Import.'**
   String get csvImportHelp;
 
   /// No description provided for @csvChooseFile.
   ///
   /// In en, this message translates to:
-  /// **'Choose CSV file'**
+  /// **'Choose file'**
   String get csvChooseFile;
 
   /// No description provided for @csvChooseOther.
@@ -8741,12 +8735,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The file is empty.'**
   String get csvEmptyFile;
-
-  /// No description provided for @csvNotUtf8.
-  ///
-  /// In en, this message translates to:
-  /// **'The file is not UTF-8 text. Save it as CSV (UTF-8) and try again.'**
-  String get csvNotUtf8;
 
   /// No description provided for @csvReadFailed.
   ///
@@ -15923,6 +15911,492 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'E-mail reminders'**
   String get todoEmailReminders;
+
+  /// No description provided for @csvExportCsv.
+  ///
+  /// In en, this message translates to:
+  /// **'Export as CSV'**
+  String get csvExportCsv;
+
+  /// No description provided for @csvExportXlsx.
+  ///
+  /// In en, this message translates to:
+  /// **'Export as Excel (XLSX)'**
+  String get csvExportXlsx;
+
+  /// No description provided for @csvExportOds.
+  ///
+  /// In en, this message translates to:
+  /// **'Export as OpenDocument (ODS)'**
+  String get csvExportOds;
+
+  /// No description provided for @adminImport.
+  ///
+  /// In en, this message translates to:
+  /// **'Import'**
+  String get adminImport;
+
+  /// No description provided for @impNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New import'**
+  String get impNew;
+
+  /// No description provided for @impHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'History'**
+  String get impHistory;
+
+  /// No description provided for @impStepFile.
+  ///
+  /// In en, this message translates to:
+  /// **'File'**
+  String get impStepFile;
+
+  /// No description provided for @impStepWhat.
+  ///
+  /// In en, this message translates to:
+  /// **'What and where'**
+  String get impStepWhat;
+
+  /// No description provided for @impStepColumns.
+  ///
+  /// In en, this message translates to:
+  /// **'Columns'**
+  String get impStepColumns;
+
+  /// No description provided for @impStepCheck.
+  ///
+  /// In en, this message translates to:
+  /// **'Check'**
+  String get impStepCheck;
+
+  /// No description provided for @impStepApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Import'**
+  String get impStepApply;
+
+  /// No description provided for @impFileHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'CSV, Excel (XLSX) or OpenDocument (ODS) file, up to 50 MiB. The file is stored for a week.'**
+  String get impFileHelp;
+
+  /// No description provided for @impChooseFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose file'**
+  String get impChooseFile;
+
+  /// No description provided for @impChooseOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose another file'**
+  String get impChooseOther;
+
+  /// No description provided for @impUploading.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading...'**
+  String get impUploading;
+
+  /// No description provided for @impFileTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'The file is larger than the limit of 50 MiB.'**
+  String get impFileTooLarge;
+
+  /// No description provided for @impFileFormatSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Format: {format}, size: {size}'**
+  String impFileFormatSize(String format, String size);
+
+  /// No description provided for @impEntity.
+  ///
+  /// In en, this message translates to:
+  /// **'What do you import?'**
+  String get impEntity;
+
+  /// No description provided for @impNoEntities.
+  ///
+  /// In en, this message translates to:
+  /// **'You need the permission to write an entity, for example customers or products, to import it here.'**
+  String get impNoEntities;
+
+  /// No description provided for @impSheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Sheet'**
+  String get impSheet;
+
+  /// No description provided for @impPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview'**
+  String get impPreview;
+
+  /// No description provided for @impRowCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 data row} other{{count} data rows}}'**
+  String impRowCount(int count);
+
+  /// No description provided for @impFirstRows.
+  ///
+  /// In en, this message translates to:
+  /// **'The first {count} rows are shown.'**
+  String impFirstRows(int count);
+
+  /// No description provided for @impNoHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'The file has no header row.'**
+  String get impNoHeader;
+
+  /// No description provided for @impColFile.
+  ///
+  /// In en, this message translates to:
+  /// **'File column'**
+  String get impColFile;
+
+  /// No description provided for @impColSample.
+  ///
+  /// In en, this message translates to:
+  /// **'Example'**
+  String get impColSample;
+
+  /// No description provided for @impColField.
+  ///
+  /// In en, this message translates to:
+  /// **'Field'**
+  String get impColField;
+
+  /// No description provided for @impIgnore.
+  ///
+  /// In en, this message translates to:
+  /// **'Ignore'**
+  String get impIgnore;
+
+  /// No description provided for @impRequiredNew.
+  ///
+  /// In en, this message translates to:
+  /// **'Required for new records'**
+  String get impRequiredNew;
+
+  /// No description provided for @impKeyBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Key'**
+  String get impKeyBadge;
+
+  /// No description provided for @impKeyMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a file column for the key field {field}: rows are matched on it.'**
+  String impKeyMissing(String field);
+
+  /// No description provided for @impDuplicateField.
+  ///
+  /// In en, this message translates to:
+  /// **'The field {field} is chosen for more than one column.'**
+  String impDuplicateField(String field);
+
+  /// No description provided for @impUnmapped.
+  ///
+  /// In en, this message translates to:
+  /// **'Fields without a column: {fields}'**
+  String impUnmapped(String fields);
+
+  /// No description provided for @impUnmappedRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Needed to create new records: {fields}'**
+  String impUnmappedRequired(String fields);
+
+  /// No description provided for @impAllMapped.
+  ///
+  /// In en, this message translates to:
+  /// **'Every field has a column.'**
+  String get impAllMapped;
+
+  /// No description provided for @impMappingsMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved mappings'**
+  String get impMappingsMenu;
+
+  /// No description provided for @impNoMappings.
+  ///
+  /// In en, this message translates to:
+  /// **'No saved mappings for this entity yet.'**
+  String get impNoMappings;
+
+  /// No description provided for @impSaveMapping.
+  ///
+  /// In en, this message translates to:
+  /// **'Save mapping'**
+  String get impSaveMapping;
+
+  /// No description provided for @impMappingName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name of the mapping'**
+  String get impMappingName;
+
+  /// No description provided for @impOverwriteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace the mapping?'**
+  String get impOverwriteTitle;
+
+  /// No description provided for @impOverwriteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A mapping named {name} already exists. Replace it with the current one?'**
+  String impOverwriteBody(String name);
+
+  /// No description provided for @impOverwriteAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace'**
+  String get impOverwriteAction;
+
+  /// No description provided for @impMappingSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Mapping {name} saved'**
+  String impMappingSaved(String name);
+
+  /// No description provided for @impDeleteMapping.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete mapping {name}'**
+  String impDeleteMapping(String name);
+
+  /// No description provided for @impDeleteMappingConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete the saved mapping {name}?'**
+  String impDeleteMappingConfirm(String name);
+
+  /// No description provided for @impMappingDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Mapping {name} deleted'**
+  String impMappingDeleted(String name);
+
+  /// No description provided for @impProposalSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Columns taken from the saved mapping {name}.'**
+  String impProposalSaved(String name);
+
+  /// No description provided for @impProposalByName.
+  ///
+  /// In en, this message translates to:
+  /// **'Columns paired with fields of the same name. Check them before you continue.'**
+  String get impProposalByName;
+
+  /// No description provided for @impRunCheck.
+  ///
+  /// In en, this message translates to:
+  /// **'Check the file'**
+  String get impRunCheck;
+
+  /// No description provided for @impChecking.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking the file...'**
+  String get impChecking;
+
+  /// No description provided for @impBackgroundNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Large files run in the background. You can leave this page: the job appears in the history.'**
+  String get impBackgroundNote;
+
+  /// No description provided for @impOutdated.
+  ///
+  /// In en, this message translates to:
+  /// **'The file, entity, sheet or columns changed after this check. Run the check again.'**
+  String get impOutdated;
+
+  /// No description provided for @impCheckClean.
+  ///
+  /// In en, this message translates to:
+  /// **'No problems found. Nothing has been imported yet.'**
+  String get impCheckClean;
+
+  /// No description provided for @impStatusQueued.
+  ///
+  /// In en, this message translates to:
+  /// **'Queued'**
+  String get impStatusQueued;
+
+  /// No description provided for @impStatusRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Running'**
+  String get impStatusRunning;
+
+  /// No description provided for @impStatusDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get impStatusDone;
+
+  /// No description provided for @impStatusDoneErrors.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Done with 1 error} other{Done with {count} errors}}'**
+  String impStatusDoneErrors(int count);
+
+  /// No description provided for @impStatusFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get impStatusFailed;
+
+  /// No description provided for @impStatusCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get impStatusCancelled;
+
+  /// No description provided for @impPhaseReading.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading the file'**
+  String get impPhaseReading;
+
+  /// No description provided for @impPhaseValidating.
+  ///
+  /// In en, this message translates to:
+  /// **'Validating the rows'**
+  String get impPhaseValidating;
+
+  /// No description provided for @impPhaseWriting.
+  ///
+  /// In en, this message translates to:
+  /// **'Writing the records'**
+  String get impPhaseWriting;
+
+  /// No description provided for @impProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'{done} of {total} rows'**
+  String impProgress(int done, int total);
+
+  /// No description provided for @impCancelJob.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel job'**
+  String get impCancelJob;
+
+  /// No description provided for @impDownloadErrors.
+  ///
+  /// In en, this message translates to:
+  /// **'Download error report'**
+  String get impDownloadErrors;
+
+  /// No description provided for @impErrorsTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing the first {shown} of {total} problems. The error report lists the same problems. A file with very many problems lists only the first ones: fix these and check again.'**
+  String impErrorsTotal(int shown, int total);
+
+  /// No description provided for @impApplyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Importing is possible after a check without problems.'**
+  String get impApplyHint;
+
+  /// No description provided for @impApplyAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Import now'**
+  String get impApplyAction;
+
+  /// No description provided for @impApplyConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Import {entity}?'**
+  String impApplyConfirmTitle(String entity);
+
+  /// No description provided for @impApplyConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{created} will be created and {updated} updated. This changes data.'**
+  String impApplyConfirmBody(int created, int updated);
+
+  /// No description provided for @impImportAnother.
+  ///
+  /// In en, this message translates to:
+  /// **'Import another file'**
+  String get impImportAnother;
+
+  /// No description provided for @impHistoryEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No imports yet.'**
+  String get impHistoryEmpty;
+
+  /// No description provided for @impDryRun.
+  ///
+  /// In en, this message translates to:
+  /// **'Check only'**
+  String get impDryRun;
+
+  /// No description provided for @impApplied.
+  ///
+  /// In en, this message translates to:
+  /// **'Imported'**
+  String get impApplied;
+
+  /// No description provided for @impCountsPlanned.
+  ///
+  /// In en, this message translates to:
+  /// **'{created} to create, {updated} to update, {unchanged} unchanged'**
+  String impCountsPlanned(int created, int updated, int unchanged);
+
+  /// No description provided for @impCountsDone.
+  ///
+  /// In en, this message translates to:
+  /// **'{created} created, {updated} updated, {unchanged} unchanged'**
+  String impCountsDone(int created, int updated, int unchanged);
+
+  /// No description provided for @impJobBy.
+  ///
+  /// In en, this message translates to:
+  /// **'By {name}'**
+  String impJobBy(String name);
+
+  /// No description provided for @impJobDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Import details'**
+  String get impJobDetails;
+
+  /// No description provided for @impJobMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Message'**
+  String get impJobMessage;
+
+  /// No description provided for @impJobSheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Sheet {sheet}'**
+  String impJobSheet(String sheet);
+
+  /// No description provided for @impRefresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get impRefresh;
 
   /// No description provided for @actionSendEmail.
   ///
