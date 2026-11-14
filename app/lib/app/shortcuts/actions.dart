@@ -4,11 +4,31 @@ import 'package:flutter/services.dart';
 import '../../l10n/l10n.dart';
 import 'platform.dart';
 
+/// Which modifier a chord needs.
+enum ChordMod {
+  /// Alt (Ctrl on macOS): the fixed chords and the automatic button keys.
+  primary,
+
+  /// Ctrl (Cmd on macOS): the standard chords (save, confirm, find, create, palette, help).
+  standard,
+
+  /// No modifier (Esc). Handled after the focused widget had its say, see `ShortcutsHost`.
+  none,
+}
+
 /// A key and whether Shift is part of the chord.
 class ShortcutChord {
   /// Creates a chord. [physical] also matches the key by position (used for the digit row, whose
   /// logical key changes with Shift and with the keyboard layout).
-  const ShortcutChord(this.key, {this.physical, this.shift = false});
+  const ShortcutChord(
+    this.key, {
+    this.physical,
+    this.shift = false,
+    this.mod = ChordMod.primary,
+  });
+
+  /// The modifier the chord needs.
+  final ChordMod mod;
 
   /// The logical key (layout aware: the letter the user sees on the key).
   final LogicalKeyboardKey key;
@@ -61,14 +81,18 @@ const _d9 = ShortcutChord(
 /// Everything a keyboard shortcut can do, in the style of common business-app shortcuts so users
 /// can move between products. See ADR 0060.
 ///
-/// Most chords use the primary modifier ([primaryModifierLabel]: Alt, Ctrl on macOS); [palette]
-/// and [help] always use Ctrl or Cmd.
+/// The fixed navigation chords use the primary modifier ([primaryModifierLabel]: Alt, Ctrl on
+/// macOS). The standard chords ([save], [confirm], [find], [create], [palette], [help]) use
+/// [standardModifierLabel] (Ctrl, Cmd on macOS); [cancel] is Esc alone.
 enum ShortcutAction {
   /// Back: pops the active tab's route.
   back(ShortcutChord(LogicalKeyboardKey.keyB)),
 
-  /// Create a record in the current scope.
-  create(ShortcutChord(LogicalKeyboardKey.keyC)),
+  /// Create a record in the current scope. Ctrl+N; browsers keep Ctrl+N, so the web uses Alt+C.
+  create(
+    ShortcutChord(LogicalKeyboardKey.keyN, mod: ChordMod.standard),
+    webOverride: ShortcutChord(LogicalKeyboardKey.keyC),
+  ),
 
   /// Home: the first permitted menu entry.
   home(ShortcutChord(LogicalKeyboardKey.keyH)),
@@ -76,8 +100,20 @@ enum ShortcutAction {
   /// Discard the edits (reset the form or close the tab).
   discard(ShortcutChord(LogicalKeyboardKey.keyJ)),
 
-  /// Save.
-  save(ShortcutChord(LogicalKeyboardKey.keyS)),
+  /// Save: Ctrl+S (Cmd+S).
+  save(ShortcutChord(LogicalKeyboardKey.keyS, mod: ChordMod.standard)),
+
+  /// Confirm the topmost dialog or submit the form: Ctrl+Enter.
+  confirm(ShortcutChord(LogicalKeyboardKey.enter, mod: ChordMod.standard)),
+
+  /// Cancel the topmost dialog or leave the form: Esc.
+  cancel(ShortcutChord(LogicalKeyboardKey.escape, mod: ChordMod.none)),
+
+  /// Focus the search field of the page: Ctrl+F.
+  find(ShortcutChord(LogicalKeyboardKey.keyF, mod: ChordMod.standard)),
+
+  /// Add a line to the document on screen (focus its "add product" picker).
+  addLine(ShortcutChord(LogicalKeyboardKey.keyL)),
 
   /// Load more on a list. (The previous-page key P is not implemented: no list pages yet.)
   nextPage(ShortcutChord(LogicalKeyboardKey.keyN)),
@@ -124,18 +160,15 @@ enum ShortcutAction {
   kbShare(ShortcutChord(LogicalKeyboardKey.keyS, shift: true)),
 
   /// The command palette: Ctrl or Cmd with K.
-  palette(ShortcutChord(LogicalKeyboardKey.keyK), usesPrimary: false),
+  palette(ShortcutChord(LogicalKeyboardKey.keyK, mod: ChordMod.standard)),
 
   /// The shortcut help: Ctrl or Cmd with the slash.
-  help(ShortcutChord(LogicalKeyboardKey.slash), usesPrimary: false);
+  help(ShortcutChord(LogicalKeyboardKey.slash, mod: ChordMod.standard));
 
-  const ShortcutAction(this.chord, {this.usesPrimary = true, this.webOverride});
+  const ShortcutAction(this.chord, {this.webOverride});
 
   /// The chord on desktop and mobile.
   final ShortcutChord chord;
-
-  /// True for the primary modifier (Alt, Ctrl on macOS); false for Ctrl or Cmd.
-  final bool usesPrimary;
 
   /// The chord on the web, when it differs.
   final ShortcutChord? webOverride;
@@ -161,8 +194,12 @@ enum ShortcutAction {
   ShortcutChord chordFor({bool web = kIsWeb}) =>
       web ? (webOverride ?? chord) : chord;
 
-  static String _keyText(ShortcutChord c) =>
-      c.key == LogicalKeyboardKey.slash ? '/' : c.key.keyLabel.toUpperCase();
+  static String _keyText(ShortcutChord c) => switch (c.key) {
+    LogicalKeyboardKey.slash => '/',
+    LogicalKeyboardKey.enter => 'Enter',
+    LogicalKeyboardKey.escape => 'Esc',
+    _ => c.key.keyLabel.toUpperCase(),
+  };
 
   /// The text of the corner badge: the letter or digit, with an arrow for Shift chords.
   String get hintLabel => hintLabelFor();
@@ -177,10 +214,14 @@ enum ShortcutAction {
   String describe({bool web = kIsWeb}) {
     final c = chordFor(web: web);
     return [
-      if (usesPrimary) primaryModifierLabel else 'Ctrl',
+      switch (c.mod) {
+        ChordMod.primary => primaryModifierLabel,
+        ChordMod.standard => standardModifierLabel,
+        ChordMod.none => null,
+      },
       if (c.shift) 'Shift',
       _keyText(c),
-    ].join('+');
+    ].whereType<String>().join('+');
   }
 
   /// The name of the action, in the language of the user.
@@ -190,6 +231,10 @@ enum ShortcutAction {
     home => l.shortcutHome,
     discard => l.shortcutDiscard,
     save => l.shortcutSave,
+    confirm => l.shortcutConfirm,
+    cancel => l.shortcutCancel,
+    find => l.shortcutFind,
+    addLine => l.shortcutAddLine,
     nextPage => l.shortcutNextPage,
     search => l.shortcutSearch,
     newTodo => l.shortcutNewTodo,
@@ -216,6 +261,9 @@ enum ShortcutAction {
     LogicalKeyboardKey.keyT,
   };
 
+  /// Whether [key] is an emacs-style editing letter in macOS text fields (with Ctrl).
+  static bool macTextKey(LogicalKeyboardKey key) => _macTextKeys.contains(key);
+
   /// The action [event] triggers with the modifiers now held, or null. [editing] says a text field
   /// has the focus (see [_macTextKeys]).
   static ShortcutAction? fromEvent(
@@ -230,18 +278,22 @@ enum ShortcutAction {
         shift = kb.isShiftPressed;
     for (final a in values) {
       final c = a.chordFor(web: web);
+      if (c.mod == ChordMod.none) continue;
       if (shift != c.shift) continue;
       final keyOk =
           event.logicalKey == c.key ||
+          (c.key == LogicalKeyboardKey.enter &&
+              event.logicalKey == LogicalKeyboardKey.numpadEnter) ||
           (c.physical != null && event.physicalKey == c.physical);
       if (!keyOk) continue;
-      if (a.usesPrimary) {
+      if (c.mod == ChordMod.primary) {
         final ok = isMac ? (ctrl && !alt && !meta) : (alt && !ctrl && !meta);
         if (!ok) continue;
         if (isMac && editing && _macTextKeys.contains(c.key)) continue;
       } else {
-        if (!((ctrl != meta) && !alt)) continue;
-        if (isMac && editing && ctrl && _macTextKeys.contains(c.key)) continue;
+        // Ctrl on Windows and Linux, Cmd on macOS.
+        final ok = isMac ? (meta && !ctrl && !alt) : (ctrl && !meta && !alt);
+        if (!ok) continue;
       }
       return a;
     }

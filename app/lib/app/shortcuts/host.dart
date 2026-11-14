@@ -1,15 +1,37 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'actions.dart';
+import 'button_scan.dart';
+import 'key_hint.dart';
 import 'platform.dart';
 import 'registry.dart';
+
+final _modifierKeys = {
+  LogicalKeyboardKey.altLeft,
+  LogicalKeyboardKey.altRight,
+  LogicalKeyboardKey.controlLeft,
+  LogicalKeyboardKey.controlRight,
+  LogicalKeyboardKey.metaLeft,
+  LogicalKeyboardKey.metaRight,
+  LogicalKeyboardKey.shiftLeft,
+  LogicalKeyboardKey.shiftRight,
+};
 
 /// Listens to the keyboard for the whole app and runs the winning handler of the
 /// [ShortcutStack]. Mounted once, in `MaterialApp.builder`, next to the zoom shell.
 ///
-/// Only a key press that a handler took is reported as handled; every other key passes through,
+/// What it does, in order of priority (ADR 0060):
+/// 1. The chords of [ShortcutAction] (Alt chords, Ctrl/Cmd chords): the registered handler of the
+///    topmost layer, else for save, confirm, create and find a generic fallback that presses the
+///    matching button or focuses the search field of the topmost layer.
+/// 2. Alt (Ctrl on macOS) plus a letter: the automatic key of a button of the topmost layer.
+/// 3. Enter in a single-line field that does not submit: the next field.
+/// 4. After the focused widget has declined the key: Esc (cancel).
+///
+/// Only a key press that something took is reported as handled; every other key passes through,
 /// so typing, Tab and the zoom keys behave as before.
 class ShortcutsHost extends ConsumerStatefulWidget {
   /// Creates the host.
@@ -25,26 +47,50 @@ class ShortcutsHost extends ConsumerStatefulWidget {
 class _ShortcutsHostState extends ConsumerState<ShortcutsHost>
     with WidgetsBindingObserver {
   late final ShortcutStack _registry = ref.read(shortcutRegistryProvider);
+  final _badges = ValueNotifier<List<BadgeSpec>>(const []);
+
+  /// The buttons found when a modifier went down; kept while it is held.
+  ScanResult? _scan;
+
+  /// Set when the window lost the focus: a key-up may have gone elsewhere, so no chord counts
+  /// until the next modifier event.
+  bool _stale = false;
+  FocusNode? _rootScope;
+  FocusNode? _lastFocus;
+  Object? _autofocused;
 
   @override
   void initState() {
     super.initState();
     HardwareKeyboard.instance.addHandler(_onKey);
     WidgetsBinding.instance.addObserver(this);
+    _rootScope = FocusManager.instance.rootScope;
+    _rootScope!.onKeyEvent = _onFocusKey;
+    FocusManager.instance.addListener(_onFocusChange);
+    _registry.addListener(_onRegistry);
   }
 
   @override
   void dispose() {
+    _registry.removeListener(_onRegistry);
+    FocusManager.instance.removeListener(_onFocusChange);
+    if (_rootScope?.onKeyEvent == _onFocusKey) _rootScope!.onKeyEvent = null;
     WidgetsBinding.instance.removeObserver(this);
     HardwareKeyboard.instance.removeHandler(_onKey);
+    _badges.dispose();
     super.dispose();
   }
 
   /// The window lost the focus (or came back): a key-up may have gone to another window, so the
-  /// badges must not stay on.
+  /// badges must not stay on and no letter counts until a modifier is pressed again.
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) =>
-      _registry.modifierHeld.value = false;
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    _stale = true;
+    _scan = null;
+    _registry.modifierHeld.value = false;
+    _registry.standardHeld.value = false;
+    _publish(const []);
+  }
 
   /// The focused widget is a text field.
   EditableTextState? get _editable => FocusManager
@@ -59,21 +105,402 @@ class _ShortcutsHostState extends ConsumerState<ShortcutsHost>
     return c != null && c.isValid && !c.isCollapsed;
   }
 
-  bool _onKey(KeyEvent e) {
+  // ---- modifiers and badges ------------------------------------------------------------------
+
+  bool get _primaryHeld {
     final kb = HardwareKeyboard.instance;
-    _registry.modifierHeld.value = isMac
-        ? kb.isControlPressed
-        : kb.isAltPressed;
-    if (e is KeyUpEvent || _composing) return false;
-    final action = ShortcutAction.fromEvent(e, editing: _editable != null);
-    if (action == null) return false;
-    final handler = _registry.resolve(action);
-    if (handler == null) return false;
-    // A held key repeats: swallow the repeats, run once.
-    if (e is KeyDownEvent) handler();
+    return isMac ? kb.isControlPressed : kb.isAltPressed;
+  }
+
+  bool get _standardHeld {
+    final kb = HardwareKeyboard.instance;
+    return isMac
+        ? kb.isMetaPressed && !kb.isControlPressed
+        : kb.isControlPressed && !kb.isAltPressed && !kb.isMetaPressed;
+  }
+
+  void _syncModifiers() {
+    final primary = _primaryHeld, standard = _standardHeld && !_primaryHeld;
+    _registry.modifierHeld.value = primary;
+    _registry.standardHeld.value = standard;
+    if (primary || standard) {
+      _refreshBadges();
+    } else {
+      _scan = null;
+      _publish(const []);
+    }
+  }
+
+  /// A tree walk of the topmost layer; cached while a modifier is held.
+  ScanResult _current() {
+    final s = _scan;
+    if (s != null && s.alive) return s;
+    return _scan = scanTree(
+      context as Element,
+      dialogOpen: _registry.hasDialog,
+      web: kIsWeb,
+    );
+  }
+
+  void _refreshBadges({bool rescan = false}) {
+    if (rescan) _scan = null;
+    final s = _current();
+    _publish(
+      _primaryHeld
+          ? altBadges(s)
+          : _standardHeld
+          ? standardBadges(s, web: kIsWeb)
+          : const [],
+    );
+  }
+
+  /// Hands the badges to the layer, with rectangles relative to the host.
+  void _publish(List<BadgeSpec> global) {
+    final box = context.findRenderObject();
+    final local = box is RenderBox && box.attached && box.hasSize
+        ? [
+            for (final b in global)
+              BadgeSpec(
+                box.globalToLocal(b.rect.topLeft) & b.rect.size,
+                b.text,
+              ),
+          ]
+        : const <BadgeSpec>[];
+    if (!listEquals(local, _badges.value)) _badges.value = local;
+  }
+
+  void _onRegistry() {
+    // A popup came or went while a modifier is held: its buttons are the layer now.
+    if (_registry.modifierHeld.value || _registry.standardHeld.value) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && (_primaryHeld || _standardHeld)) {
+          _refreshBadges(rescan: true);
+        }
+      });
+    }
+    _autofocusDialog();
+  }
+
+  // ---- chords ---------------------------------------------------------------------------------
+
+  bool _onKey(KeyEvent e) {
+    final isModifier = _modifierKeys.contains(e.logicalKey);
+    if (isModifier) _stale = false;
+    if (_stale) return false;
+    _syncModifiers();
+    if (e is KeyUpEvent || _composing || isModifier) return false;
+    final editing = _editable != null;
+    final action = ShortcutAction.fromEvent(e, editing: editing);
+    if (action != null) {
+      final run = _handlerFor(action);
+      if (run == null) return false;
+      // A held key repeats: swallow the repeats, run once.
+      if (e is KeyDownEvent) run();
+      return true;
+    }
+    // Enter is taken here, not after the focus tree: the app's default shortcuts swallow it there.
+    // Only a single-line field that does not submit is affected, see [_enter].
+    final kb = HardwareKeyboard.instance;
+    if ((e.logicalKey == LogicalKeyboardKey.enter ||
+            e.logicalKey == LogicalKeyboardKey.numpadEnter) &&
+        _bare(kb)) {
+      return _enter(e, back: kb.isShiftPressed);
+    }
+    return _autoKey(e, editing);
+  }
+
+  /// The registered handler, else the generic fallback.
+  VoidCallback? _handlerFor(ShortcutAction action) {
+    final registered = switch (action) {
+      ShortcutAction.find || ShortcutAction.search =>
+        _registry.resolve(ShortcutAction.find) ??
+            _registry.resolve(ShortcutAction.search),
+      _ => _registry.resolve(action),
+    };
+    if (registered != null) return registered;
+    // A dialog layer that has its own scope for the action is asked first (resolve stops there),
+    // so what is left is the generic search in the topmost layer.
+    switch (action) {
+      case ShortcutAction.save:
+        return _pressing(() => _current().saveTarget);
+      case ShortcutAction.confirm:
+        return _pressing(() => _current().confirmTarget);
+      case ShortcutAction.create:
+        return _pressing(() => _current().createTarget);
+      case ShortcutAction.find:
+      case ShortcutAction.search:
+        final s = _current();
+        final field = s.searchFields.firstOrNull;
+        if (field == null) return null;
+        return () => _focusField(field);
+      default:
+        return null;
+    }
+  }
+
+  VoidCallback? _pressing(ScanTarget? Function() find) {
+    final t = find();
+    final press = t?.onPressed;
+    return press == null ? null : () => _press(t!);
+  }
+
+  void _press(ScanTarget t) {
+    t.press();
+    // The press may change the screen: look again, once the frame is through.
+    _scan = null;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _syncModifiers();
+    });
+  }
+
+  void _focusField(Element editableOrField) {
+    final es = editableOrField is StatefulElement &&
+            editableOrField.state is EditableTextState
+        ? editableOrField.state as EditableTextState
+        : _findEditable(editableOrField);
+    if (es == null) return;
+    es.widget.focusNode.requestFocus();
+    es.widget.controller.selection = TextSelection(
+      baseOffset: 0,
+      extentOffset: es.widget.controller.text.length,
+    );
+  }
+
+  EditableTextState? _findEditable(Element root) {
+    EditableTextState? found;
+    void visit(Element e) {
+      if (found != null) return;
+      if (e is StatefulElement && e.state is EditableTextState) {
+        found = e.state as EditableTextState;
+        return;
+      }
+      e.visitChildren(visit);
+    }
+
+    visit(root);
+    return found;
+  }
+
+  /// Alt (Ctrl on macOS) with a letter presses the button holding that letter.
+  bool _autoKey(KeyEvent e, bool editing) {
+    final kb = HardwareKeyboard.instance;
+    if (kb.isShiftPressed || kb.isMetaPressed) return false;
+    final ok = isMac
+        ? kb.isControlPressed && !kb.isAltPressed
+        : kb.isAltPressed && !kb.isControlPressed;
+    final label = e.logicalKey.keyLabel;
+    if (!ok || label.length != 1) return false;
+    final letter = label.toLowerCase();
+    if (letter.codeUnitAt(0) < 97 || letter.codeUnitAt(0) > 122) return false;
+    if (isMac && editing && ShortcutAction.macTextKey(e.logicalKey)) {
+      return false;
+    }
+    final target = _current().byLetter[letter];
+    if (target == null || target.onPressed == null) return false;
+    if (e is KeyDownEvent) _press(target);
     return true;
   }
 
+  // ---- keys the focused widget did not take ------------------------------------------------
+
+  static bool _bare(HardwareKeyboard kb) =>
+      !kb.isControlPressed &&
+      !kb.isAltPressed &&
+      !kb.isMetaPressed;
+
+  KeyEventResult _onFocusKey(FocusNode node, KeyEvent e) {
+    if (e is KeyUpEvent || _composing) return KeyEventResult.ignored;
+    final kb = HardwareKeyboard.instance;
+    if (!_bare(kb)) return KeyEventResult.ignored;
+    if (e.logicalKey == LogicalKeyboardKey.escape && !kb.isShiftPressed) {
+      return _escape(e) ? KeyEventResult.handled : KeyEventResult.ignored;
+    }
+    return KeyEventResult.ignored;
+  }
+
+  /// Esc: the registered cancel handler of the topmost layer; in a dialog its Cancel or Close
+  /// button, else the dialog's own pop (which a `PopScope` can veto); on a page its Cancel button.
+  bool _escape(KeyEvent e) {
+    final handler = _registry.resolve(ShortcutAction.cancel);
+    if (handler != null) {
+      if (e is KeyDownEvent) handler();
+      return true;
+    }
+    final s = _current();
+    final cancel = s.cancelTarget;
+    if (cancel != null) {
+      if (e is KeyDownEvent) _press(cancel);
+      return true;
+    }
+    final popup = s.popup;
+    if (popup != null && popup.barrierDismissible && popup.isCurrent) {
+      if (e is KeyDownEvent) popup.navigator?.maybePop();
+      return true;
+    }
+    return false;
+  }
+
+  /// Enter in a single-line field that does not submit moves to the next field, Shift+Enter back.
+  bool _enter(KeyEvent e, {required bool back}) {
+    final es = _editable;
+    if (es == null) return false;
+    final w = es.widget;
+    final action = w.textInputAction;
+    if (w.maxLines != 1 ||
+        w.readOnly ||
+        w.onSubmitted != null ||
+        w.onEditingComplete != null ||
+        w.keyboardType == TextInputType.multiline ||
+        (action != null &&
+            action != TextInputAction.done &&
+            action != TextInputAction.next &&
+            action != TextInputAction.previous)) {
+      return false;
+    }
+    if (e is KeyDownEvent) {
+      final focus = FocusManager.instance.primaryFocus!;
+      back ? focus.previousFocus() : focus.nextFocus();
+    }
+    return true;
+  }
+
+  // ---- focus ----------------------------------------------------------------------------------
+
+  void _onFocusChange() {
+    final node = FocusManager.instance.primaryFocus;
+    if (identical(node, _lastFocus)) return;
+    _lastFocus = node;
+    final es = node?.context?.findAncestorStateOfType<EditableTextState>();
+    if (es == null) return;
+    // A number or amount field reached with the keyboard is selected whole, so typing replaces it.
+    // (A click keeps the caret where it landed.)
+    if (FocusManager.instance.highlightMode != FocusHighlightMode.traditional) {
+      return;
+    }
+    if (es.widget.keyboardType.index != TextInputType.number.index) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || FocusManager.instance.primaryFocus != node) return;
+      final c = es.widget.controller;
+      if (c.text.isNotEmpty) {
+        c.selection = TextSelection(baseOffset: 0, extentOffset: c.text.length);
+      }
+    });
+    WidgetsBinding.instance.ensureVisualUpdate();
+  }
+
+  /// A dialog or sheet that has text fields opens with the cursor in the first of them, unless
+  /// one of its fields already took the focus (`autofocus`).
+  void _autofocusDialog() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (!_registry.hasDialog) {
+        _autofocused = null;
+        return;
+      }
+      // The editable fields of current popup routes, in tree order; the last route is on top.
+      final fields = <(ModalRoute<dynamic>, EditableTextState)>[];
+      void visit(Element e) {
+        final w = e.widget;
+        if (w is Offstage && w.offstage) return;
+        if (w is TickerMode && !w.enabled) return;
+        if (e is StatefulElement && e.state is EditableTextState) {
+          final r = ModalRoute.of(e);
+          if (r is PopupRoute && r.isCurrent && r.isActive) {
+            fields.add((r, e.state as EditableTextState));
+          }
+          return;
+        }
+        e.visitChildren(visit);
+      }
+
+      visit(context as Element);
+      if (fields.isEmpty) return;
+      final route = fields.last.$1;
+      if (identical(route, _autofocused)) return;
+      _autofocused = route;
+      final focus = FocusManager.instance.primaryFocus;
+      if (focus?.context?.findAncestorStateOfType<EditableTextState>() !=
+              null ||
+          fields.any((f) => f.$1 == route && f.$2.widget.autofocus)) {
+        return;
+      }
+      fields
+          .where((f) => f.$1 == route && !f.$2.widget.readOnly)
+          .firstOrNull
+          ?.$2
+          .widget
+          .focusNode
+          .requestFocus();
+    });
+    WidgetsBinding.instance.ensureVisualUpdate();
+  }
+
   @override
-  Widget build(BuildContext context) => widget.child;
+  Widget build(BuildContext context) {
+    return Stack(
+      alignment: Alignment.topLeft,
+      fit: StackFit.passthrough,
+      children: [
+        NotificationListener<ScrollNotification>(
+          onNotification: (_) {
+            // Badges follow what scrolls underneath them.
+            if (_badges.value.isNotEmpty) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted && (_primaryHeld || _standardHeld)) {
+                  _refreshBadges();
+                }
+              });
+            }
+            return false;
+          },
+          child: widget.child,
+        ),
+        Positioned.fill(
+          child: IgnorePointer(
+            child: ExcludeSemantics(
+              child: ValueListenableBuilder<List<BadgeSpec>>(
+                valueListenable: _badges,
+                builder: (context, specs, _) => _BadgeLayer(
+                  specs: specs,
+                  standard: _registry.standardHeld.value,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Draws the badges at the rectangles of their buttons, above the app.
+class _BadgeLayer extends StatelessWidget {
+  const _BadgeLayer({required this.specs, required this.standard});
+  final List<BadgeSpec> specs;
+  final bool standard;
+
+  @override
+  Widget build(BuildContext context) {
+    if (specs.isEmpty) return const SizedBox.shrink();
+    return Stack(
+      alignment: Alignment.topLeft,
+      clipBehavior: Clip.none,
+      children: [
+        for (final s in specs)
+          Positioned(
+            left: s.rect.right,
+            top: s.rect.top - 6,
+            child: FractionalTranslation(
+              translation: const Offset(-0.7, 0),
+              child: KeyBadge(
+                s.text,
+                badgeKey: standard
+                    ? const ValueKey('std-key-badge')
+                    : const ValueKey('auto-key-badge'),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
 }
