@@ -25,7 +25,7 @@ use tradocraft_crm::matching::BaselineNode;
 use tradocraft_crm::product_matches::{BellMotorProvider, BoxFuture};
 use uuid::Uuid;
 
-use crate::definition::{self, Definition, TableKind};
+use crate::definition::{self, ColumnType, Definition, TableKind};
 use crate::expr::Value;
 use crate::tables::CompiledTable;
 
@@ -59,7 +59,8 @@ impl MotorTables {
                    kind: TableKind,
                    keys: &[&str],
                    columns: &[&str],
-                   range_key: Option<&str>|
+                   range_key: Option<&str>,
+                   types: &[(&str, &[ColumnType])]|
          -> Result<CompiledTable, String> {
             let t = def
                 .tables
@@ -85,6 +86,21 @@ impl MotorTables {
             {
                 return Err(format!("table {name} has the wrong kind or keys"));
             }
+            // A column of another type would read as an empty cell and silently weaken a rule.
+            for (column, allowed) in types {
+                if let Some(c) = t.columns.iter().find(|c| c.name == *column) {
+                    if !allowed.contains(&c.column_type) {
+                        return Err(format!(
+                            "table {name}: column {column} must be of type {}",
+                            allowed
+                                .iter()
+                                .map(|a| format!("{a:?}").to_lowercase())
+                                .collect::<Vec<_>>()
+                                .join(" or ")
+                        ));
+                    }
+                }
+            }
             CompiledTable::compile(t, name).map_err(|e| {
                 e.into_iter()
                     .map(|e| format!("{}: {}", e.path, e.message))
@@ -92,6 +108,11 @@ impl MotorTables {
                     .join("; ")
             })
         };
+
+        use ColumnType::{Integer, Number, Text};
+        const NUM: &[ColumnType] = &[Number, Integer];
+        const INT: &[ColumnType] = &[Integer];
+        const TXT: &[ColumnType] = &[Text];
         Ok(MotorTables {
             motion_rules: get(
                 "motion_rules",
@@ -99,6 +120,7 @@ impl MotorTables {
                 &["motion"],
                 &["effective"],
                 None,
+                &[("motion", TXT), ("effective", TXT)],
             )?,
             motion_bumps: get(
                 "motion_bumps",
@@ -106,6 +128,12 @@ impl MotorTables {
                 &["phases", "brand", "motion"],
                 &["bump"],
                 None,
+                &[
+                    ("phases", INT),
+                    ("brand", TXT),
+                    ("motion", TXT),
+                    ("bump", INT),
+                ],
             )?,
             phase_limits: get(
                 "phase_limits",
@@ -113,6 +141,7 @@ impl MotorTables {
                 &["phases"],
                 &["max_kw"],
                 None,
+                &[("phases", INT), ("max_kw", NUM)],
             )?,
             motors: get(
                 "motors",
@@ -120,6 +149,15 @@ impl MotorTables {
                 &["phases", "brand", "motion"],
                 &["kw", "size"],
                 Some("weight_kg"),
+                &[
+                    ("phases", INT),
+                    ("brand", TXT),
+                    ("motion", TXT),
+                    ("weight_min_kg", NUM),
+                    ("weight_max_kg", NUM),
+                    ("kw", NUM),
+                    ("size", TXT),
+                ],
             )?,
         })
     }
@@ -212,12 +250,9 @@ fn for_brand(
             bump,
         )
         .map_err(|_| MotorError::TooLarge(String::new()))?;
-    let (Some(kw), Some(size)) = (
-        field(&row, "kw")
-            .and_then(|v| v.as_decimal())
-            .and_then(|d| d.to_f64()),
-        field(&row, "size"),
-    ) else {
+    // No row (above the largest class, or the bump goes past the last one) is a genuine overflow;
+    // a matched row that lacks its motor is broken data.
+    if row.is_null() {
         let largest = tables
             .rows(phases, Some(brand), Some(effective))
             .filter_map(|r| r.get("weight_max_kg").and_then(Value::as_decimal))
@@ -230,6 +265,16 @@ fn for_brand(
         };
         return Err(MotorError::TooLarge(format!(
             "{per_wheel} kg per wheel{moved} is above the largest {phases}-phase {brand} motor class ({largest} kg); more wheels may help"
+        )));
+    }
+    let (Some(kw), Some(size)) = (
+        field(&row, "kw")
+            .and_then(|v| v.as_decimal())
+            .and_then(|d| d.to_f64()),
+        field(&row, "size"),
+    ) else {
+        return Err(MotorError::MissingData(format!(
+            "the {brand} {effective}-motion motor class for {per_wheel} kg per wheel has no kw or size"
         )));
     };
     let limit = tables
@@ -625,6 +670,61 @@ mod tests {
         // Flying 5000 kg: MEZ tops out at 4400, ADDA reaches 6000 (2.2 kW).
         let m = required_motor(&bell(5000.0, "flying"), Some(3), None, &t).unwrap();
         assert_eq!((m.kw, m.brand.as_str()), (2.2, "adda_750"));
+    }
+
+    #[test]
+    fn a_matched_row_without_kw_or_size_is_missing_data_not_too_large() {
+        for column in ["kw", "size"] {
+            let mut json = seed_json();
+            let motors = json["tables"]
+                .as_array_mut()
+                .unwrap()
+                .iter_mut()
+                .find(|t| t["name"] == "motors")
+                .unwrap();
+            for row in motors["rows"].as_array_mut().unwrap() {
+                if row["phases"] == 3 && row["brand"] == "mez_1000" && row["motion"] == "falling" {
+                    row.as_object_mut().unwrap().remove(column);
+                }
+            }
+            let tables = MotorTables::from_json(&json).unwrap();
+            let e = required_motor(&bell(450.0, "falling"), Some(3), Some("mez_1000"), &tables)
+                .unwrap_err();
+            assert!(matches!(e, MotorError::MissingData(_)), "{column}: {e:?}");
+        }
+    }
+
+    #[test]
+    fn columns_of_the_wrong_type_are_refused() {
+        for (table, column) in [
+            ("motors", "kw"),
+            ("motors", "weight_max_kg"),
+            ("phase_limits", "max_kw"),
+            ("motors", "phases"),
+        ] {
+            let mut json = seed_json();
+            let t = json["tables"]
+                .as_array_mut()
+                .unwrap()
+                .iter_mut()
+                .find(|t| t["name"] == table)
+                .unwrap();
+            // Text cells fit a text column, so the tables compile; only the type check refuses.
+            for c in t["columns"].as_array_mut().unwrap() {
+                if c["name"] == column {
+                    c["type"] = serde_json::json!("text");
+                }
+            }
+            for row in t["rows"].as_array_mut().unwrap() {
+                if let Some(v) = row.get_mut(column) {
+                    *v = serde_json::json!(v.to_string());
+                }
+            }
+            assert!(
+                MotorTables::from_json(&json).is_err(),
+                "{table}.{column} as text was accepted"
+            );
+        }
     }
 
     #[test]
