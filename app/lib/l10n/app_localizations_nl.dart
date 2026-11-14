@@ -9543,6 +9543,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get attrKindText => 'Tekst';
 
   @override
+  String get attrKindBoolean => 'Ja/Nee';
+
+  @override
   String get attrOptions => 'Opties';
 
   @override
@@ -9705,4 +9708,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get matchesNoReason => 'Kon niet worden beoordeeld.';
+
+  @override
+  String baselineUnknownSet(String label) {
+    return '$label: onbekend — invullen';
+  }
 }

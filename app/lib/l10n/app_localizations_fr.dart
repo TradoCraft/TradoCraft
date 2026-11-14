@@ -9555,6 +9555,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get attrKindText => 'Texte';
 
   @override
+  String get attrKindBoolean => 'Oui/Non';
+
+  @override
   String get attrOptions => 'Options';
 
   @override
@@ -9717,4 +9720,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get matchesNoReason => 'N\'a pas pu être évalué.';
+
+  @override
+  String baselineUnknownSet(String label) {
+    return '$label : inconnu — à renseigner';
+  }
 }

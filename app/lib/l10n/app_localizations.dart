@@ -16938,6 +16938,12 @@ abstract class AppLocalizations {
   /// **'Text'**
   String get attrKindText;
 
+  /// No description provided for @attrKindBoolean.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes/No'**
+  String get attrKindBoolean;
+
   /// No description provided for @attrOptions.
   ///
   /// In en, this message translates to:
@@ -17225,6 +17231,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not be judged.'**
   String get matchesNoReason;
+
+  /// No description provided for @baselineUnknownSet.
+  ///
+  /// In en, this message translates to:
+  /// **'{label}: unknown — set'**
+  String baselineUnknownSet(String label);
 }
 
 class _AppLocalizationsDelegate

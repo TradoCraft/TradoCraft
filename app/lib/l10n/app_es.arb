@@ -2984,6 +2984,7 @@
   "attrKindRange": "Rango",
   "attrKindSelect": "Selección",
   "attrKindText": "Texto",
+  "attrKindBoolean": "Sí/No",
   "attrOptions": "Opciones",
   "attrOptionValue": "Valor",
   "attrOptionLabel": "Etiqueta de la opción",
@@ -3035,5 +3036,6 @@
   "matchesSuitable": "Adecuado",
   "matchesUnknown": "Desconocido",
   "matchesUnsuitable": "No adecuado",
-  "matchesNoReason": "No se pudo evaluar."
+  "matchesNoReason": "No se pudo evaluar.",
+  "baselineUnknownSet": "{label}: desconocido — completar"
 }

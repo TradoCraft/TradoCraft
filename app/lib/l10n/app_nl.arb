@@ -2984,6 +2984,7 @@
   "attrKindRange": "Bereik",
   "attrKindSelect": "Keuzelijst",
   "attrKindText": "Tekst",
+  "attrKindBoolean": "Ja/Nee",
   "attrOptions": "Opties",
   "attrOptionValue": "Waarde",
   "attrOptionLabel": "Optielabel",
@@ -3035,5 +3036,6 @@
   "matchesSuitable": "Geschikt",
   "matchesUnknown": "Onbekend",
   "matchesUnsuitable": "Niet geschikt",
-  "matchesNoReason": "Kon niet worden beoordeeld."
+  "matchesNoReason": "Kon niet worden beoordeeld.",
+  "baselineUnknownSet": "{label}: onbekend — invullen"
 }

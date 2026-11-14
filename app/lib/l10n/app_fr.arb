@@ -2984,6 +2984,7 @@
   "attrKindRange": "Plage",
   "attrKindSelect": "Liste",
   "attrKindText": "Texte",
+  "attrKindBoolean": "Oui/Non",
   "attrOptions": "Options",
   "attrOptionValue": "Valeur",
   "attrOptionLabel": "Libellé de l’option",
@@ -3035,5 +3036,6 @@
   "matchesSuitable": "Adapté",
   "matchesUnknown": "Inconnu",
   "matchesUnsuitable": "Non adapté",
-  "matchesNoReason": "N'a pas pu être évalué."
+  "matchesNoReason": "N'a pas pu être évalué.",
+  "baselineUnknownSet": "{label} : inconnu — à renseigner"
 }

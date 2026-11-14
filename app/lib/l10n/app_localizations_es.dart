@@ -9547,6 +9547,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get attrKindText => 'Texto';
 
   @override
+  String get attrKindBoolean => 'Sí/No';
+
+  @override
   String get attrOptions => 'Opciones';
 
   @override
@@ -9709,4 +9712,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get matchesNoReason => 'No se pudo evaluar.';
+
+  @override
+  String baselineUnknownSet(String label) {
+    return '$label: desconocido — completar';
+  }
 }
