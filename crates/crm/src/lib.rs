@@ -5,7 +5,8 @@
 
 pub mod closures;
 pub mod contacts;
-pub mod csv;
+pub mod import;
+pub use import::{customers_import, Customers};
 pub mod opportunities;
 pub mod rebates;
 
@@ -555,7 +556,7 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(check_vat))
         .routes(routes!(list_customers, create_customer))
         .routes(routes!(get_customer_handler, update_customer))
-        .merge(csv::router())
+        .merge(import::router())
         .merge(contacts::router())
         .merge(opportunities::router())
         .merge(rebates::router())
