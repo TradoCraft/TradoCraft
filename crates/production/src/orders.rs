@@ -19,8 +19,8 @@ use tradocraft_core::{
 };
 use tradocraft_engineering::bom::active_bom_lines;
 use tradocraft_inventory::reservations::{
-    free_to_reserve, held_by, line_reservation, release_reference, set_reserved, ReservePin,
-    ReserveTarget, PRODUCTION_COMPONENT,
+    check_whole_units, free_to_reserve, held_by, line_reservation, release_reference, set_reserved,
+    ReservePin, ReserveTarget, PRODUCTION_COMPONENT,
 };
 use utoipa::{IntoParams, ToSchema};
 use utoipa_axum::router::OpenApiRouter;
@@ -482,8 +482,9 @@ pub(crate) fn required(per_unit: Decimal, quantity: Decimal, scrap_percent: Deci
 /// Reserves what a component needs, all or nothing. Short stock is not an error: the component
 /// stays unreserved and is flagged, and `reserve` tries again later. `claimed` is the free stock
 /// that an earlier component of the same release already counts on (see [`release_in_tx`]): it is
-/// not taken either, so the component stays unreserved exactly as if stock were short. Without a
-/// claim for the product nothing changes (and nothing extra is read).
+/// not taken either, so the component stays unreserved exactly as if stock were short (a quantity
+/// that `set_reserved` would refuse is still refused). Without a claim for the product nothing
+/// changes (and nothing extra is read).
 async fn try_reserve(
     conn: &mut PgConnection,
     user: &CurrentUser,
@@ -497,6 +498,8 @@ async fn try_reserve(
         return Ok(());
     }
     if let Some(taken) = claimed.get(&product_id).filter(|t| **t > Decimal::ZERO) {
+        // Leaving the component unreserved must not hide what `set_reserved` would refuse.
+        check_whole_units(&product.tracking, want)?;
         if free_to_reserve(&mut *conn, user.company_id, product_id).await? - *taken < want {
             return Ok(());
         }

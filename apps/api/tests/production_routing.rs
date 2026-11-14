@@ -3702,6 +3702,41 @@ async fn the_branches_build_the_same_frames_in_either_bom_order(db: PgPool) {
 }
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn auto_release_refuses_a_fractional_serial_need_even_when_stock_is_claimed(db: PgPool) {
+    let e = env(db).await;
+    // One serial unit of P is on the shelf. The top order needs 3 of P (so the unit is claimed) and
+    // a subassembly that needs half a P: a fraction of a serial-tracked product can never be
+    // reserved, and the release is refused as it is without a claim, instead of leaving a
+    // component that could never be reserved.
+    let p = e.make_product("SERP", "serial", &[(PROFILE, "1")]).await;
+    let sub = e.make_product("SUBF", "none", &[(p.as_str(), "0.5")]).await;
+    let top = e
+        .make_product("TOPF", "none", &[(p.as_str(), "3"), (sub.as_str(), "1")])
+        .await;
+    let (status, m) = post(
+        &e.app,
+        STORES,
+        "/inventory/receipts",
+        json!({ "id": uid(), "location_id": e.main, "product_id": p, "quantity": "1", "serial_number": "SERP-1" }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{m}");
+    let (status, r) = post(
+        &e.app,
+        PLANNER,
+        "/production-orders",
+        json!({ "product_id": top, "quantity": "1", "auto_release_subassemblies": true }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{r}");
+    assert!(
+        r["message"].as_str().unwrap().contains("whole units"),
+        "{r}"
+    );
+    assert_eq!(e.production_orders().await["total"], 0, "nothing was kept");
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
 async fn building_a_component_listed_twice_covers_all_its_lines_once(db: PgPool) {
     let e = env(db).await;
     let dup = e

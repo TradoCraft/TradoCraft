@@ -467,6 +467,18 @@ pub async fn held_by(
     .await?)
 }
 
+/// A serial-tracked product ships one unit at a time: a fraction could never be consumed, so it
+/// cannot be reserved. [`set_reserved`] applies this; a caller that decides not to reserve before
+/// getting there calls it too, so that it does not hide a refusal `set_reserved` would give.
+pub fn check_whole_units(tracking: &str, want: Decimal) -> AppResult<()> {
+    if tracking == "serial" && want.fract() != Decimal::ZERO {
+        return Err(AppError::Validation(
+            "a serial-tracked product can only be reserved in whole units".into(),
+        ));
+    }
+    Ok(())
+}
+
 /// Sets how much of a product is held for a reference, in the caller's transaction: more
 /// allocates from free stock (all or nothing), less releases the newest allocations first, 0
 /// releases everything. Returns the quantity that was held before. The owning module checks that
@@ -489,18 +501,13 @@ pub async fn set_reserved(
             "quantity must be 0 or more, with at most 4 decimals".into(),
         ));
     }
-    // A serial-tracked product ships one unit at a time: a fraction could never be consumed.
     if want.fract() != Decimal::ZERO {
         let tracking: Option<String> =
             sqlx::query_scalar("SELECT tracking FROM products.products WHERE id = $1")
                 .bind(t.product_id)
                 .fetch_optional(&mut *conn)
                 .await?;
-        if tracking.as_deref() == Some("serial") {
-            return Err(AppError::Validation(
-                "a serial-tracked product can only be reserved in whole units".into(),
-            ));
-        }
+        check_whole_units(tracking.as_deref().unwrap_or_default(), want)?;
     }
     // Serialise reservations and moves on this product, locking balance rows in the same order
     // (location, lot) as `post_move` does.
