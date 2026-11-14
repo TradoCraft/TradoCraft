@@ -57,3 +57,7 @@ have no reference data and start empty.
 * Seed: `crm.seed_baseline_defaults(company_id)` is idempotent and keeps existing rows. The
   migration applies it to every company; company provisioning and the dev seed call it for new
   ones.
+* Definition updates: `PUT /attribute-definitions/{id}` refuses (409) a change of `key`, `scope` or
+  `kind` while stored values use the definition (product attributes with the key, or baseline items
+  of that type storing it). Label, unit, options, sort order and active stay editable; shrinking the
+  options does not revalidate stored values.

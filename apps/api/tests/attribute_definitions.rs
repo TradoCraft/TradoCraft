@@ -276,3 +276,114 @@ async fn definitions_of_another_company_are_invisible_and_untouchable(db: PgPool
     .await;
     assert_eq!(status, StatusCode::CREATED);
 }
+
+async fn put(app: &axum::Router, id: &str, body: Value) -> (StatusCode, Value) {
+    call(app, ADMIN, Method::PUT, &format!("{URL}/{id}"), Some(body)).await
+}
+
+async fn make(app: &axum::Router, body: Value) -> String {
+    let (status, d) = call(app, ADMIN, Method::POST, URL, Some(body)).await;
+    assert_eq!(status, StatusCode::CREATED, "{d}");
+    d["id"].as_str().unwrap().to_string()
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn key_scope_and_kind_are_locked_while_product_values_exist(db: PgPool) {
+    let app = setup(db.clone()).await;
+    let id = make(
+        &app,
+        json!({ "key": "pw_t", "label": "Power", "kind": "number", "unit": "kW" }),
+    )
+    .await;
+    // Unused: everything may change.
+    let (status, u) = put(
+        &app,
+        &id,
+        json!({ "key": "pw_t2", "label": "Power", "kind": "text" }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{u}");
+    let (status, _) = put(
+        &app,
+        &id,
+        json!({ "key": "pw_t", "label": "Power", "kind": "number", "unit": "kW" }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    sqlx::query(
+        "INSERT INTO products.product_attributes (product_id, key, kind, value_number)
+         SELECT id, 'pw_t', 'number', 1 FROM products.products LIMIT 1",
+    )
+    .execute(&db)
+    .await
+    .unwrap();
+    for body in [
+        json!({ "key": "pw_t2", "label": "Power", "kind": "number", "unit": "kW" }),
+        json!({ "key": "pw_t", "label": "Power", "kind": "number", "unit": "kW", "scope": "bell" }),
+        json!({ "key": "pw_t", "label": "Power", "kind": "text" }),
+    ] {
+        let (status, r) = put(&app, &id, body.clone()).await;
+        assert_eq!(status, StatusCode::CONFLICT, "{body} -> {r}");
+    }
+    // Label, unit, sort order and active stay editable.
+    let (status, u) = put(
+        &app,
+        &id,
+        json!({ "key": "pw_t", "label": "Motor power", "kind": "number", "unit": "W",
+                "sort_order": 4, "active": false }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{u}");
+    assert_eq!(u["label"], "Motor power");
+    assert_eq!(u["unit"], "W");
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn key_scope_and_kind_are_locked_while_baseline_values_exist(db: PgPool) {
+    let app = setup(db.clone()).await;
+    sqlx::query("SELECT crm.seed_baseline_defaults('00000000-0000-7000-8000-000000000001'::uuid)")
+        .execute(&db)
+        .await
+        .unwrap();
+    let id = make(
+        &app,
+        json!({ "key": "custom_x", "label": "X", "kind": "number", "scope": "bell" }),
+    )
+    .await;
+    let other = make(
+        &app,
+        json!({ "key": "custom_y", "label": "Y", "kind": "number", "scope": "bell" }),
+    )
+    .await;
+    sqlx::query(
+        "INSERT INTO crm.opportunity_baseline_items (id, company_id, opportunity_id, type_code, \"values\")
+         VALUES ('00000000-0000-7000-8000-0000000fff10', '00000000-0000-7000-8000-000000000001',
+                 '00000000-0000-7000-8000-000000000701', 'bell', '{\"custom_x\": 5}')",
+    )
+    .execute(&db)
+    .await
+    .unwrap();
+    for body in [
+        json!({ "key": "custom_z", "label": "X", "kind": "number", "scope": "bell" }),
+        json!({ "key": "custom_x", "label": "X", "kind": "number", "scope": "product" }),
+        json!({ "key": "custom_x", "label": "X", "kind": "text", "scope": "bell" }),
+    ] {
+        let (status, r) = put(&app, &id, body.clone()).await;
+        assert_eq!(status, StatusCode::CONFLICT, "{body} -> {r}");
+    }
+    let (status, u) = put(
+        &app,
+        &id,
+        json!({ "key": "custom_x", "label": "Renamed", "kind": "number", "scope": "bell", "unit": "kg" }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{u}");
+    // A definition whose key no item stores is still free to change.
+    let (status, u) = put(
+        &app,
+        &other,
+        json!({ "key": "custom_w", "label": "Y", "kind": "text", "scope": "bell" }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{u}");
+}

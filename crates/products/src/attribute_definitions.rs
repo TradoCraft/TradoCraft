@@ -282,6 +282,40 @@ fn checked(input: &AttributeDefinitionInput) -> AppResult<AttributeDefinitionInp
     validate(input).map_err(AppError::Validation)
 }
 
+/// How many stored values use this definition: product attributes with its key (scope
+/// `product`) or baseline items of that type storing the key. Product attributes are shared master
+/// data keyed by `key`. crm depends on this crate, so the baseline table is read here directly
+/// rather than through a crm function.
+async fn stored_uses(
+    conn: &mut sqlx::PgConnection,
+    company_id: Uuid,
+    scope: &str,
+    key: &str,
+) -> AppResult<(i64, &'static str)> {
+    if scope == "product" {
+        Ok((
+            sqlx::query_scalar("SELECT count(*) FROM products.product_attributes WHERE key = $1")
+                .bind(key)
+                .fetch_one(conn)
+                .await?,
+            "products",
+        ))
+    } else {
+        Ok((
+            sqlx::query_scalar(
+                "SELECT count(*) FROM crm.opportunity_baseline_items
+                 WHERE company_id = $1 AND type_code = $2 AND jsonb_exists(\"values\", $3)",
+            )
+            .bind(company_id)
+            .bind(scope)
+            .bind(key)
+            .fetch_one(conn)
+            .await?,
+            "baseline items",
+        ))
+    }
+}
+
 #[derive(Debug, Deserialize, IntoParams)]
 pub struct ListQuery {
     /// Only definitions of this scope (`product` or a baseline item type code).
@@ -376,6 +410,23 @@ async fn update_definition(
     user.require(Permission::ProductsWrite)?;
     let input = checked(&input)?;
     let mut tx = state.db.begin().await?;
+    let (old_key, old_scope, old_kind): (String, String, String) = sqlx::query_as(
+        "SELECT key, scope, kind FROM products.attribute_definitions
+         WHERE id = $1 AND company_id = $2 FOR UPDATE",
+    )
+    .bind(id)
+    .bind(user.company_id)
+    .fetch_optional(&mut *tx)
+    .await?
+    .ok_or(AppError::NotFound("attribute definition"))?;
+    if old_key != input.key || old_scope != input.scope || old_kind != input.kind.as_str() {
+        let (used, what) = stored_uses(&mut tx, user.company_id, &old_scope, &old_key).await?;
+        if used > 0 {
+            return Err(AppError::Conflict(format!(
+                "attribute {old_key} is in use on {used} {what}; its key, scope and kind cannot change"
+            )));
+        }
+    }
     let r = sqlx::query(
         "UPDATE products.attribute_definitions
          SET key = $3, label = $4, kind = $5, unit = $6, options = $7, scope = $8,
@@ -431,31 +482,7 @@ async fn delete_definition(
     .fetch_optional(&mut *tx)
     .await?
     .ok_or(AppError::NotFound("attribute definition"))?;
-    // Product attributes are shared master data keyed by `key`. A baseline definition (any other
-    // scope) is in use while an item of that type stores its key. crm depends on this crate, so
-    // the baseline table is read here directly rather than through a crm function.
-    let (used, what): (i64, &str) = if scope == "product" {
-        (
-            sqlx::query_scalar("SELECT count(*) FROM products.product_attributes WHERE key = $1")
-                .bind(&key)
-                .fetch_one(&mut *tx)
-                .await?,
-            "products",
-        )
-    } else {
-        (
-            sqlx::query_scalar(
-                "SELECT count(*) FROM crm.opportunity_baseline_items
-                 WHERE company_id = $1 AND type_code = $2 AND jsonb_exists(\"values\", $3)",
-            )
-            .bind(user.company_id)
-            .bind(&scope)
-            .bind(&key)
-            .fetch_one(&mut *tx)
-            .await?,
-            "baseline items",
-        )
-    };
+    let (used, what) = stored_uses(&mut tx, user.company_id, &scope, &key).await?;
     if used > 0 {
         return Err(AppError::Conflict(format!(
             "attribute {key} is in use on {used} {what} and cannot be deleted; deactivate it instead"
