@@ -103,7 +103,8 @@ pub(crate) fn planned_minutes(
     run_minutes_per_unit: Decimal,
     quantity: Decimal,
 ) -> Option<i32> {
-    (Decimal::from(setup_minutes) + run_minutes_per_unit * quantity)
+    Decimal::from(setup_minutes)
+        .checked_add(run_minutes_per_unit.checked_mul(quantity)?)?
         .ceil()
         .to_i64()
         .and_then(|m| i32::try_from(m).ok())
@@ -179,6 +180,11 @@ struct Pending {
     planned_minutes: i32,
 }
 
+/// The day after `d` (`d` itself at the end of the calendar).
+pub(crate) fn day_after(d: NaiveDate) -> NaiveDate {
+    d.succ_opt().unwrap_or(d)
+}
+
 /// (Re)schedules the operations that are still pending, one after the other from `start`. An
 /// operation that is already running holds the work until its planned end.
 pub(crate) async fn place_pending(
@@ -206,7 +212,9 @@ pub(crate) async fn place_pending(
     .bind(company_id)
     .fetch_one(&mut *conn)
     .await?;
-    let from = running_until.map_or(start, |d| d.max(start));
+    // The planned end of a running operation is the last day it works, and how much of that day
+    // it uses is not known here, so the next work conservatively starts the day after.
+    let from = running_until.map_or(start, |d| start.max(day_after(d)));
     let mut centres: Vec<Uuid> = pending.iter().map(|p| p.work_centre_id).collect();
     centres.sort();
     centres.dedup();
@@ -561,7 +569,21 @@ async fn schedule_production_order(
     user.require(Permission::ProductionWrite)?;
     let mut tx = state.db.begin().await?;
     let po = open_order(&mut tx, &user, id).await?;
-    let start = input.start_date.unwrap_or_else(tradocraft_core::today);
+    let mut start = input.start_date.unwrap_or_else(tradocraft_core::today);
+    // Work on this order starts the day after the last of its open subassembly orders is ready.
+    let children_end: Option<NaiveDate> = sqlx::query_scalar(
+        "SELECT max(x.planned_end) FROM production.order_operations x
+         JOIN production.production_orders c ON c.id = x.production_order_id
+         WHERE c.parent_order_id = $1 AND c.company_id = $2
+           AND x.status IN ('pending', 'in_progress')",
+    )
+    .bind(id)
+    .bind(user.company_id)
+    .fetch_one(&mut *tx)
+    .await?;
+    if let Some(end) = children_end {
+        start = start.max(day_after(end));
+    }
     let placed = place_pending(&mut tx, user.company_id, id, start).await?;
     audit::record(
         &mut tx,
@@ -696,6 +718,29 @@ mod tests {
             planned_minutes(10, dec!(2), dec!(0.25)),
             Some(11),
             "10.5 rounds up"
+        );
+    }
+
+    #[test]
+    fn planned_minutes_multiplication_overflow_is_refused_not_a_panic() {
+        assert_eq!(planned_minutes(0, Decimal::MAX, dec!(2)), None);
+        assert_eq!(planned_minutes(1, Decimal::MAX, Decimal::MAX), None);
+        assert_eq!(planned_minutes(i32::MAX, Decimal::MAX, dec!(1)), None);
+    }
+
+    #[test]
+    fn day_after_steps_one_day_and_saturates_at_the_end() {
+        let d = NaiveDate::from_ymd_opt(2026, 2, 28).unwrap();
+        assert_eq!(day_after(d), NaiveDate::from_ymd_opt(2026, 3, 1).unwrap());
+        assert_eq!(day_after(NaiveDate::MAX), NaiveDate::MAX);
+        let start = NaiveDate::from_ymd_opt(2026, 3, 1).unwrap();
+        assert_eq!(start.max(day_after(d)), start, "a later start is kept");
+        assert_eq!(
+            NaiveDate::from_ymd_opt(2026, 2, 1)
+                .unwrap()
+                .max(day_after(d)),
+            start,
+            "an earlier start is raised to the day after"
         );
     }
 

@@ -26,7 +26,6 @@ use utoipa_axum::routes;
 use uuid::Uuid;
 
 use crate::operations::planned_minutes;
-use crate::orders::required;
 use crate::routing::load_routing;
 
 type ErrorBody = tradocraft_core::error::ErrorBody;
@@ -39,6 +38,24 @@ const MAX_LEVELS: i32 = 20;
 /// may visit. A subassembly used several times at several levels is walked once per use, so a
 /// structure that doubles at every level would otherwise cost the server exponential work.
 const MAX_VISITS: usize = 1000;
+
+fn overflow() -> AppError {
+    AppError::Validation("a quantity in this structure is too large to cost".into())
+}
+
+/// [`crate::orders::required`] with checked arithmetic: an overflow is a validation error.
+fn required_checked(
+    per_unit: Decimal,
+    quantity: Decimal,
+    scrap_percent: Decimal,
+) -> AppResult<Decimal> {
+    let need = per_unit
+        .checked_mul(quantity)
+        .and_then(|v| v.checked_mul(Decimal::ONE_HUNDRED.checked_add(scrap_percent)?))
+        .ok_or_else(overflow)?
+        / Decimal::ONE_HUNDRED;
+    Ok(need.round_dp_with_strategy(4, RoundingStrategy::AwayFromZero))
+}
 
 fn money(d: Decimal) -> Decimal {
     d.round_dp_with_strategy(4, RoundingStrategy::MidpointAwayFromZero)
@@ -92,7 +109,7 @@ pub(crate) async fn order_costs(
     let l: LabourRow = sqlx::query_as(
         "SELECT COALESCE(sum(planned_minutes::numeric / 60 * cost_rate), 0) AS planned,
                 COALESCE(sum(actual_minutes::numeric / 60 * cost_rate) FILTER (WHERE status = 'done'), 0) AS actual,
-                bool_or(cost_rate IS NULL) FILTER (WHERE planned_minutes > 0) AS missing
+                bool_or(cost_rate IS NULL) FILTER (WHERE planned_minutes > 0 OR (status = 'done' AND actual_minutes > 0)) AS missing
          FROM production.order_operations WHERE production_order_id = $1",
     )
     .bind(production_order_id)
@@ -239,8 +256,11 @@ fn rollup_level<'a>(
             minutes: 0,
         });
         let mut material = Decimal::ZERO;
+        // A subassembly listed on several lines is one need: its quantities are combined before
+        // it is costed, so its setup time and minute rounding count once.
+        let mut built_needs: Vec<(Uuid, Decimal)> = Vec::new();
         for l in &lines {
-            let need = required(l.quantity, quantity, l.scrap_percent);
+            let need = required_checked(l.quantity, quantity, l.scrap_percent)?;
             let component =
                 tradocraft_products::get_product(&mut *conn, l.component_product_id).await?;
             let built = matches!(
@@ -248,21 +268,35 @@ fn rollup_level<'a>(
                 "manufactured" | "configurable"
             ) && has_active_bom(&mut *conn, l.component_product_id).await?;
             if built {
-                rollup_level(
-                    &mut *conn,
-                    company_id,
-                    l.component_product_id,
-                    need,
-                    level + 1,
-                    out,
-                )
-                .await?;
+                match built_needs
+                    .iter_mut()
+                    .find(|(p, _)| *p == l.component_product_id)
+                {
+                    Some(row) => row.1 = row.1.checked_add(need).ok_or_else(overflow)?,
+                    None => built_needs.push((l.component_product_id, need)),
+                }
             } else {
                 match component.standard_cost {
-                    Some(cost) => material += need * cost,
+                    Some(cost) => {
+                        material = need
+                            .checked_mul(cost)
+                            .and_then(|v| material.checked_add(v))
+                            .ok_or_else(overflow)?
+                    }
                     None => out.gap("standard_cost", &component.code),
                 }
             }
+        }
+        for (component_product, need) in built_needs {
+            rollup_level(
+                &mut *conn,
+                company_id,
+                component_product,
+                need,
+                level + 1,
+                out,
+            )
+            .await?;
         }
         let mut labour = Decimal::ZERO;
         let mut minutes = 0_i64;
@@ -274,7 +308,7 @@ fn rollup_level<'a>(
                         op.name, product.code
                     ))
                 })?;
-            minutes += i64::from(m);
+            minutes = minutes.checked_add(i64::from(m)).ok_or_else(overflow)?;
             let rate: Option<Decimal> = sqlx::query_scalar(
                 "SELECT cost_per_hour FROM production.work_centres WHERE id = $1 AND company_id = $2",
             )
@@ -283,7 +317,12 @@ fn rollup_level<'a>(
             .fetch_one(&mut *conn)
             .await?;
             match rate {
-                Some(rate) => labour += Decimal::from(m) / Decimal::from(60) * rate,
+                Some(rate) => {
+                    labour = (Decimal::from(m) / Decimal::from(60))
+                        .checked_mul(rate)
+                        .and_then(|v| labour.checked_add(v))
+                        .ok_or_else(overflow)?
+                }
                 None => out.gap("cost_per_hour", &op.work_centre_code),
             }
         }
@@ -355,4 +394,41 @@ async fn production_cost_rollup(
 /// The cost routes.
 pub fn router() -> OpenApiRouter<AppState> {
     OpenApiRouter::new().routes(routes!(production_cost_rollup))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rust_decimal_macros::dec;
+
+    #[test]
+    fn required_checked_matches_scrap_and_rounds_up() {
+        assert_eq!(
+            required_checked(dec!(2), dec!(10), dec!(5)).unwrap(),
+            dec!(21)
+        );
+        assert_eq!(
+            required_checked(dec!(0.0001), dec!(1), dec!(0)).unwrap(),
+            dec!(0.0001)
+        );
+        assert_eq!(
+            required_checked(dec!(1), dec!(0.00011), dec!(0)).unwrap(),
+            dec!(0.0002),
+            "rounded away from zero to four places"
+        );
+    }
+
+    #[test]
+    fn required_checked_overflow_is_a_validation_error() {
+        for (a, b, c) in [
+            (Decimal::MAX, dec!(2), dec!(0)),
+            (dec!(1), dec!(1), Decimal::MAX),
+            (Decimal::MAX, Decimal::MAX, dec!(0)),
+        ] {
+            assert!(matches!(
+                required_checked(a, b, c),
+                Err(AppError::Validation(_))
+            ));
+        }
+    }
 }
