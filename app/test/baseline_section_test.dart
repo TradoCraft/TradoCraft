@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io' show FileSystemException;
 import 'dart:typed_data';
 
 import 'package:material_ui/material_ui.dart';
@@ -137,8 +138,12 @@ Future<void> _pump(
   WidgetTester tester,
   FakeHttp h, {
   CsvPicker? jsonPicker,
+  Size size = const Size(1400, 2400),
+
+  /// When given, the section is shown only while this is true (to unmount it under an open dialog).
+  ValueNotifier<bool>? shown,
 }) async {
-  tester.view.physicalSize = const Size(1400, 2400);
+  tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   await tester.pumpWidget(
@@ -158,8 +163,13 @@ Future<void> _pump(
           body: Consumer(
             builder: (context, ref, _) {
               ref.watch(meProvider);
-              return const SingleChildScrollView(
+              const section = SingleChildScrollView(
                 child: BaselineSection(opportunityId: 'o1'),
+              );
+              if (shown == null) return section;
+              return ValueListenableBuilder<bool>(
+                valueListenable: shown,
+                builder: (_, on, _) => on ? section : const SizedBox.shrink(),
               );
             },
           ),
@@ -699,6 +709,59 @@ void main() {
       expect(find.text('Import preview'), findsOneWidget);
       gate.complete();
       await tester.pumpAndSettle();
+      expect(find.text('Import preview'), findsNothing);
+    });
+
+    testWidgets('keeps both actions reachable on a narrow screen', (
+      tester,
+    ) async {
+      await _pump(tester, _http(), size: const Size(320, 900));
+      expect(tester.takeException(), isNull, reason: 'no layout overflow');
+      for (final key in [importKey, const ValueKey('baseline-add')]) {
+        final r = tester.getRect(find.byKey(key));
+        expect(r.left, greaterThanOrEqualTo(0), reason: '$key');
+        expect(r.right, lessThanOrEqualTo(320), reason: '$key');
+      }
+    });
+
+    testWidgets('says so when the file cannot be read', (tester) async {
+      final h = _http(onImport: (_) => report());
+      await _pump(
+        tester,
+        h,
+        jsonPicker: () async => throw const FileSystemException('denied'),
+      );
+      await tester.tap(find.byKey(importKey));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.text('The file could not be read.'), findsOneWidget);
+      expect(find.text('Import preview'), findsNothing);
+      expect(importCalls(h), isEmpty, reason: 'nothing was sent');
+    });
+
+    testWidgets('does not touch a screen that was closed during the import', (
+      tester,
+    ) async {
+      final gate = Completer<void>();
+      var n = 0;
+      final shown = ValueNotifier(true);
+      final h = _http(
+        onImport: (_) {
+          n++;
+          if (n == 1) return report();
+          return gate.future.then((_) => report(dry: false));
+        },
+      );
+      await _pump(tester, h, jsonPicker: picks('{}'), shown: shown);
+      await tester.tap(find.byKey(importKey));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('baseline-import-confirm')));
+      await tester.pump();
+      shown.value = false; // the screen goes away while the import runs
+      await tester.pump();
+      gate.complete();
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
       expect(find.text('Import preview'), findsNothing);
     });
   });

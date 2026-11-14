@@ -3056,5 +3056,6 @@
   "baselineImportConfirm": "Importeren",
   "baselineImportDone": "Basislijn geïmporteerd.",
   "baselineImportBadFile": "Dit bestand is geen geldige JSON.",
+  "baselineImportReadFailed": "Het bestand kon niet worden gelezen.",
   "baselineImported": "geïmporteerd"
 }

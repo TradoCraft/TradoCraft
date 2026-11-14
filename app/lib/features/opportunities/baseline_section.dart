@@ -51,7 +51,16 @@ class BaselineSection extends ConsumerWidget {
   Future<void> _importTower(BuildContext context, WidgetRef ref) async {
     final l = context.l10n;
     final messenger = ScaffoldMessenger.of(context);
-    final file = await ref.read(jsonPickerProvider)();
+    final PickedFile? file;
+    try {
+      file = await ref.read(jsonPickerProvider)();
+    } catch (_) {
+      // The picker or reading the chosen file failed (permissions, a file that vanished).
+      messenger.showSnackBar(
+        SnackBar(content: Text(l.baselineImportReadFailed)),
+      );
+      return;
+    }
     if (file == null || !context.mounted) return;
     final Object? doc;
     try {
@@ -87,8 +96,9 @@ class BaselineSection extends ConsumerWidget {
       ),
     );
     if (done == true) {
-      _refresh(ref);
       messenger.showSnackBar(SnackBar(content: Text(l.baselineImportDone)));
+      // The screen may have been closed while the import ran: then there is nothing to refresh.
+      if (context.mounted) _refresh(ref);
     }
   }
 
@@ -320,33 +330,52 @@ class BaselineSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                l.baselineTitle,
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-            ),
-            if (canWrite) ...[
-              OutlinedButton.icon(
-                key: const ValueKey('baseline-import-tower'),
-                icon: const Icon(AppIcons.fileUpload),
-                label: Text(l.baselineImportTower),
-                onPressed: () => _importTower(context, ref),
-              ),
-              const SizedBox(width: 8),
-            ],
-            if (canWrite)
-              FilledButton.tonalIcon(
-                key: const ValueKey('baseline-add'),
-                icon: const Icon(AppIcons.add),
-                label: Text(l.baselineAdd),
-                onPressed: !tree.hasValue || !types.hasValue
-                    ? null
-                    : () => _edit(context, ref, types: typeList, tree: items),
-              ),
-          ],
+        LayoutBuilder(
+          builder: (context, box) {
+            final title = Text(
+              l.baselineTitle,
+              style: Theme.of(context).textTheme.titleMedium,
+            );
+            if (!canWrite) return title;
+            final importButton = OutlinedButton.icon(
+              key: const ValueKey('baseline-import-tower'),
+              icon: const Icon(AppIcons.fileUpload),
+              label: Text(l.baselineImportTower),
+              onPressed: () => _importTower(context, ref),
+            );
+            final addButton = FilledButton.tonalIcon(
+              key: const ValueKey('baseline-add'),
+              icon: const Icon(AppIcons.add),
+              label: Text(l.baselineAdd),
+              onPressed: !tree.hasValue || !types.hasValue
+                  ? null
+                  : () => _edit(context, ref, types: typeList, tree: items),
+            );
+            // Title and both buttons fit on one line from about this width; on a narrow screen
+            // the buttons wrap onto their own line below the title.
+            if (box.maxWidth >= 560) {
+              return Row(
+                children: [
+                  Expanded(child: title),
+                  importButton,
+                  const SizedBox(width: 8),
+                  addButton,
+                ],
+              );
+            }
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                title,
+                const SizedBox(height: 4),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [importButton, addButton],
+                ),
+              ],
+            );
+          },
         ),
         if (tree.hasError || types.hasError)
           Row(

@@ -3056,5 +3056,6 @@
   "baselineImportConfirm": "Importar",
   "baselineImportDone": "Situación actual importada.",
   "baselineImportBadFile": "Este archivo no es un JSON válido.",
+  "baselineImportReadFailed": "No se pudo leer el archivo.",
   "baselineImported": "importado"
 }

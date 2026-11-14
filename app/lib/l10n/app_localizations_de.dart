@@ -9789,5 +9789,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get baselineImportBadFile => 'Diese Datei ist kein gültiges JSON.';
 
   @override
+  String get baselineImportReadFailed =>
+      'Die Datei konnte nicht gelesen werden.';
+
+  @override
   String get baselineImported => 'importiert';
 }

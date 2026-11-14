@@ -9766,5 +9766,8 @@ class AppLocalizationsNl extends AppLocalizations {
   String get baselineImportBadFile => 'Dit bestand is geen geldige JSON.';
 
   @override
+  String get baselineImportReadFailed => 'Het bestand kon niet worden gelezen.';
+
+  @override
   String get baselineImported => 'geïmporteerd';
 }

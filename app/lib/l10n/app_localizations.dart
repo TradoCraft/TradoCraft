@@ -17316,6 +17316,12 @@ abstract class AppLocalizations {
   /// **'This file is not valid JSON.'**
   String get baselineImportBadFile;
 
+  /// No description provided for @baselineImportReadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The file could not be read.'**
+  String get baselineImportReadFailed;
+
   /// No description provided for @baselineImported.
   ///
   /// In en, this message translates to:
