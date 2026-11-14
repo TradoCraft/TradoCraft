@@ -523,7 +523,7 @@ fn cell(v: &serde_json::Value) -> String {
     }
 }
 
-fn slug(name: &str) -> String {
+pub(crate) fn slug(name: &str) -> String {
     let s: String = name
         .chars()
         .map(|c| {
@@ -546,7 +546,7 @@ fn slug(name: &str) -> String {
     }
 }
 
-fn csv_of(result: &ReportRunResult) -> String {
+pub(crate) fn csv_of(result: &ReportRunResult) -> String {
     let header: Vec<&str> = result.columns.iter().map(|c| c.label.as_str()).collect();
     let mut rows: Vec<Vec<String>> = result
         .rows
@@ -631,6 +631,7 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(get_report, update_report, delete_report))
         .routes(routes!(run_report))
         .routes(routes!(export_report))
+        .merge(crate::schedule_routes::router())
 }
 
 #[cfg(test)]

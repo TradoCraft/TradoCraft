@@ -155,6 +155,6 @@ package), filters, and *Copy as CSV* for every table (the app puts the CSV on th
 * Reports of long periods read all tickets of the period into memory for the time figures; fine for the
   size of the company, to be revisited past tens of thousands of tickets in a period.
 
-**Not yet.** A calendar per customer, e-mail actions and macros in rules, scheduled
-report mails, saved report views, a file download instead of the clipboard for CSV, reports on knowledge
-base use, SLA notifications to the customer, and moving the tags/time entries along with a split.
+**Not yet.** A calendar per customer, macros in rules (e-mail actions, scheduled report mails and
+SLA notices to the customer came with ADR 0064 to 0066), saved report views, a file download instead of the
+clipboard for CSV, reports on knowledge base use, and moving the tags/time entries along with a split.

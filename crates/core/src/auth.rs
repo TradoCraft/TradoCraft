@@ -164,6 +164,9 @@ pub enum Permission {
     ReportsRead,
     /// Create, change and delete one's own reports and share them with the company.
     ReportsWrite,
+    /// Mail reports on a schedule to colleagues and outside addresses (ADR 0065). Separate from
+    /// `ReportsRead` because it sends company data out of the application.
+    ReportsSchedule,
     /// Configure the identity providers of the installation (ADR 0055). Also requires the admin
     /// role in the installation's primary company.
     IdentityAdmin,
@@ -178,7 +181,7 @@ pub enum Permission {
 }
 
 impl Permission {
-    pub const ALL: [Permission; 72] = [
+    pub const ALL: [Permission; 73] = [
         Permission::CustomersRead,
         Permission::CustomersWrite,
         Permission::ProductsRead,
@@ -248,6 +251,7 @@ impl Permission {
         Permission::ProductionAdmin,
         Permission::ReportsRead,
         Permission::ReportsWrite,
+        Permission::ReportsSchedule,
         Permission::IdentityAdmin,
         Permission::AuditView,
         Permission::TodoUse,
@@ -324,6 +328,7 @@ impl Permission {
             Permission::ProductionAdmin => "production.admin",
             Permission::ReportsRead => "reports.read",
             Permission::ReportsWrite => "reports.write",
+            Permission::ReportsSchedule => "reports.schedule",
             Permission::IdentityAdmin => "identity.admin",
             Permission::AuditView => "audit.view",
             Permission::TodoUse => "todo.use",
@@ -386,6 +391,7 @@ pub fn role_grants(role: &str, p: Permission) -> bool {
                         | PlanningWrite
                         | DeliveryOverrideClosure
                         | ProductionWrite
+                        | ReportsSchedule
                 )
         }
         "sales" => matches!(

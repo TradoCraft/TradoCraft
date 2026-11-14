@@ -9,9 +9,11 @@ publish.workspace = true
 [dependencies]
 tradocraft-core.workspace = true
 tradocraft-documents.workspace = true
+tradocraft-helpdesk.workspace = true
 anyhow.workspace = true
 axum.workspace = true
 chrono.workspace = true
+chrono-tz = "0.10"
 rust_decimal.workspace = true
 serde.workspace = true
 serde_json.workspace = true

@@ -8298,6 +8298,95 @@
         }
       }
     },
+    "/api/v1/helpdesk/sla-notices": {
+      "get": {
+        "tags": [
+          "helpdesk"
+        ],
+        "operationId": "get_sla_notices",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SlaNoticeSettings"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "helpdesk"
+        ],
+        "summary": "Replaces the rules. Tickets that were created earlier are not acknowledged afterwards; a breach\nnotice can still go out for an open ticket that is late when its rule is switched on.",
+        "operationId": "put_sla_notices",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SlaNoticeSettings"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SlaNoticeSettings"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/helpdesk/sla-policies": {
       "get": {
         "tags": [
@@ -22730,6 +22819,272 @@
         }
       }
     },
+    "/api/v1/report-schedules": {
+      "get": {
+        "tags": [
+          "reports"
+        ],
+        "operationId": "report_schedules_list",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ReportSchedule"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "reports"
+        ],
+        "operationId": "report_schedules_create",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportScheduleInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportSchedule"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/report-schedules/{id}": {
+      "put": {
+        "tags": [
+          "reports"
+        ],
+        "operationId": "report_schedules_update",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportScheduleInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportSchedule"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "reports"
+        ],
+        "operationId": "report_schedules_delete",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/report-schedules/{id}/send": {
+      "post": {
+        "tags": [
+          "reports"
+        ],
+        "summary": "Builds the report now and queues the mail, as the schedule's owner would get it. The next\nscheduled run does not change. A refusal (the owner lost access, too many rows) is a 422 with\nthe reason.",
+        "operationId": "report_schedules_send",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SendNowResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/roles": {
       "get": {
         "tags": [
@@ -33042,6 +33397,51 @@
           }
         }
       },
+      "HelpdeskReportSpec": {
+        "type": "object",
+        "description": "Which helpdesk table to mail and for which period.",
+        "required": [
+          "table",
+          "period"
+        ],
+        "properties": {
+          "category": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "group": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`day` (default) or `week`."
+          },
+          "owner_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "period": {
+            "type": "string",
+            "description": "yesterday | last_7_days | last_week (Monday to Sunday before today) | last_30_days |\nlast_month (the calendar month before this one), counted in the schedule's time zone."
+          },
+          "table": {
+            "type": "string",
+            "description": "One of the tables of `GET /helpdesk/reports/export` (volume, backlog_status, times, sla, ...)."
+          },
+          "team_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
       "HelpdeskSettings": {
         "type": "object",
         "required": [
@@ -43255,6 +43655,236 @@
           }
         }
       },
+      "ReportSchedule": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "source",
+          "frequency",
+          "send_time",
+          "time_zone",
+          "format",
+          "user_ids",
+          "addresses",
+          "active",
+          "owner_id",
+          "owner_name",
+          "next_run_at",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "addresses": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Other recipients."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "day_of_month": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "1 to 28, for monthly."
+          },
+          "format": {
+            "type": "string",
+            "description": "csv | pdf"
+          },
+          "frequency": {
+            "type": "string",
+            "description": "daily | weekly | monthly"
+          },
+          "helpdesk": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/HelpdeskReportSpec"
+              }
+            ]
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "last_error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "last_run_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "last_status": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "sent | failed"
+          },
+          "name": {
+            "type": "string"
+          },
+          "next_run_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "owner_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "owner_name": {
+            "type": "string"
+          },
+          "report_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "report_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "send_time": {
+            "type": "string",
+            "description": "Local time, `HH:MM`."
+          },
+          "source": {
+            "type": "string",
+            "description": "`custom` (a saved report of the report builder) or `helpdesk` (a table of the helpdesk report)."
+          },
+          "time_zone": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "user_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Colleagues who receive it (active members of the company at the time it is sent)."
+          },
+          "weekday": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "1 (Monday) to 7, for weekly."
+          }
+        }
+      },
+      "ReportScheduleInput": {
+        "type": "object",
+        "required": [
+          "name",
+          "source",
+          "frequency",
+          "format"
+        ],
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "addresses": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "day_of_month": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "format": {
+            "type": "string"
+          },
+          "frequency": {
+            "type": "string"
+          },
+          "helpdesk": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/HelpdeskReportSpec",
+                "description": "For `helpdesk`."
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "report_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "For `custom`."
+          },
+          "send_time": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Local time, `HH:MM`. Default 07:00."
+          },
+          "source": {
+            "type": "string"
+          },
+          "time_zone": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "An IANA zone, default `Europe/Brussels`."
+          },
+          "user_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "weekday": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "ReportSort": {
         "type": "object",
         "description": "A sort key, naming an output column.",
@@ -43915,11 +44545,25 @@
       },
       "RuleAction": {
         "type": "object",
-        "description": "One change a rule makes. `kind` decides which of the other fields is used:\n`set_owner` (`user_id`), `set_team` (`team_id`), `set_priority` (`value`), `set_category`\n(`value`), `add_tag` (`value`), `set_internal` (`flag`).",
+        "description": "One change a rule makes. `kind` decides which of the other fields is used:\n`set_owner` (`user_id`), `set_team` (`team_id`), `set_priority` (`value`), `set_category`\n(`value`), `add_tag` (`value`), `set_internal` (`flag`), `send_email` (`recipient`, `team_id` or\n`address`, `subject`, `body`, `period_hours`; ADR 0066).",
         "required": [
           "kind"
         ],
         "properties": {
+          "address": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`send_email` to `address`: the fixed recipient."
+          },
+          "body": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`send_email`: the text, with the same placeholders."
+          },
           "flag": {
             "type": [
               "boolean",
@@ -43928,6 +44572,28 @@
           },
           "kind": {
             "type": "string"
+          },
+          "period_hours": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "`send_email`: at most one mail per ticket and rule in this many hours (default 24)."
+          },
+          "recipient": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`send_email`: customer | assignee | team | address."
+          },
+          "subject": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`send_email`: one line; `{ticket_number}`, `{subject}`, `{customer}`, `{agent}` are replaced."
           },
           "team_id": {
             "type": [
@@ -44347,6 +45013,19 @@
                 "description": "The job after the change."
               }
             ]
+          }
+        }
+      },
+      "SendNowResult": {
+        "type": "object",
+        "required": [
+          "mails"
+        ],
+        "properties": {
+          "mails": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Mails queued."
           }
         }
       },
@@ -45020,6 +45699,53 @@
           },
           "name": {
             "type": "string"
+          }
+        }
+      },
+      "SlaNoticeRule": {
+        "type": "object",
+        "required": [
+          "ack_enabled",
+          "breach_enabled"
+        ],
+        "properties": {
+          "ack_enabled": {
+            "type": "boolean",
+            "description": "Send an acknowledgement (ticket number and target response time) on creation."
+          },
+          "breach_enabled": {
+            "type": "boolean",
+            "description": "Send a notice when the first response time has run out without an answer."
+          },
+          "priority": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "low | normal | high | urgent. Absent: every priority."
+          },
+          "team_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "Absent: every team."
+          }
+        }
+      },
+      "SlaNoticeSettings": {
+        "type": "object",
+        "required": [
+          "rules"
+        ],
+        "properties": {
+          "rules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SlaNoticeRule"
+            },
+            "description": "The most specific rule wins: team and priority, then team, then priority, then neither.\nA ticket that matches no rule gets no notice."
           }
         }
       },

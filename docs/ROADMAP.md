@@ -19,7 +19,7 @@ Module overview: [ARCHITECTURE.md](ARCHITECTURE.md).
 | Helpdesk mailboxes: several per company, Microsoft 365 (Graph) or IMAP/SMTP, replies through the ticket's mailbox | Done, [ADR 0054](adr/0054-helpdesk-mailboxes.md) |
 | User-defined reports (customers, quotations, orders; joins, grouping, charts, CSV and PDF) | Done, [ADR 0042](adr/0042-report-builder.md) |
 | Environment awareness (`/meta/environment`, environment list, banner and switcher in the app) | Done, [ADR 0043](adr/0043-environments.md); clone script, bootstrap wizard and outbound-side-effect switch-off follow |
-| A5 Helpdesk customer mail: e-mail actions in automation rules, SLA notices to the customer, scheduled report mails | Open (builds on ADR 0021) |
+| A5 Helpdesk customer mail (`send_email` automation action, SLA notices to the customer, scheduled report mails) | Done, [ADR 0064](adr/0064-helpdesk-sla-customer-notices.md), [ADR 0065](adr/0065-scheduled-report-mails.md), [ADR 0066](adr/0066-helpdesk-send-email-action.md); mail templates are A6 |
 | A6 Helpdesk reply templates and language detection | Open |
 | A7 Helpdesk ticket checklists | Open |
 | A8 Helpdesk immediate change notification (concurrent updates seen by both people) | Open (shares its push channel with D3) |
@@ -62,11 +62,11 @@ client, Flutter screens, five-language strings, tests and an ADR.
 
 Helpdesk follow-up, done ([ADR 0021](adr/0021-helpdesk-business-hours-automation-reporting.md)): business hours and holidays in the SLA, automation rules, ticket split, reporting with CSV export.
 Per-team business calendars are done (ADR 0021).
-Remaining helpdesk gaps are planned as A5 to A9 below, inspired by Zammad.
-Remaining report builder gaps ([ADR 0042](adr/0042-report-builder.md)): more objects (products, stock, tickets), dashboards, report folders, scheduled report mails.
+Helpdesk customer mail (A5) is done: `send_email` in automation rules, SLA notices to the customer and scheduled report mails (ADR 0064 to 0066). Remaining helpdesk gaps are planned as A6 to A9 below, inspired by Zammad; mail templates (A6) replace the inline text of `send_email`.
+Remaining report builder gaps ([ADR 0042](adr/0042-report-builder.md)): more objects (products, stock, tickets), dashboards, report folders. Scheduled report mails are done (ADR 0065).
 Remaining knowledge base gaps (ADR 0018): non-image attachments, analytics, semantic search, a public web page.
 
-**A5 Helpdesk customer mail** (medium)
+**A5 Helpdesk customer mail** (medium, done, ADR 0064 to 0066)
 - E-mail actions in automation rules (ADR 0021): a `send_email` action with a recipient (customer,
   assignee, team, fixed address), a subject and body from a template (A6), through the outbox so the
   environment switch-off ([ADR 0043](adr/0043-environments.md)) applies. A per-rule guard stops mail

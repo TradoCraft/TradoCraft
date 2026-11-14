@@ -6,6 +6,7 @@ import '../../app/api.dart';
 import '../../l10n/l10n.dart';
 import '../../shared/actions.dart';
 import 'helpdesk_mailboxes.dart';
+import 'sla_notices_card.dart';
 import 'ticket_screen.dart' show teamsProvider, usersProvider;
 import 'tickets_page.dart' show ticketPriorities;
 import '../../shared/app_icons.dart';
@@ -72,6 +73,8 @@ class HelpdeskSettingsPage extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
             const _PoliciesCard(),
+            const SizedBox(height: 16),
+            const SlaNoticesCard(),
             const SizedBox(height: 16),
             const _TeamsCard(),
             const SizedBox(height: 16),

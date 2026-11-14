@@ -11,6 +11,7 @@ tradocraft-helpdesk.workspace = true
 tradocraft-fieldservice.workspace = true
 tradocraft-sales.workspace = true
 tradocraft-todo.workspace = true
+tradocraft-reports.workspace = true
 tradocraft-core.workspace = true
 anyhow.workspace = true
 chrono.workspace = true

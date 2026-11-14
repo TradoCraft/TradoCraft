@@ -17,9 +17,10 @@ class Outcome {
     required this.ruleId,
     required this.ruleName,
   });
-  
-  factory Outcome.fromJson(Map<String, Object?> json) => _$OutcomeFromJson(json);
-  
+
+  factory Outcome.fromJson(Map<String, Object?> json) =>
+      _$OutcomeFromJson(json);
+
   /// The changes that actually change the ticket (actions that change nothing are left out).
   final List<Change> changes;
 

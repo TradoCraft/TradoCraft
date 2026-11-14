@@ -155,7 +155,7 @@ impl Module {
                 ProductionRun,
                 ProductionAdmin,
             ],
-            Module::Reports => &[ReportsRead, ReportsWrite],
+            Module::Reports => &[ReportsRead, ReportsWrite, ReportsSchedule],
             Module::Finance => &[FinanceRead, FinanceWrite, FinanceApprove],
             Module::Todo => &[TodoUse],
         }

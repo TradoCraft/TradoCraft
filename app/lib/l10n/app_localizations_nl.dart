@@ -192,7 +192,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get automationHelp =>
-      'Regels worden in deze volgorde uitgevoerd wanneer een ticket wordt aangemaakt, gewijzigd of door de klant beantwoord. Een regel geldt als al zijn voorwaarden kloppen. Regels wijzigen alleen tickets; ze versturen geen e-mail.';
+      'Regels worden in deze volgorde uitgevoerd wanneer een ticket wordt aangemaakt, gewijzigd of door de klant beantwoord. Een regel geldt als al zijn voorwaarden kloppen. Regels kunnen tickets wijzigen en e-mail versturen.';
 
   @override
   String get automationRules => 'Automatiseringsregels';
@@ -8944,4 +8944,208 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get todoEmailReminders => 'E-mailherinneringen';
+
+  @override
+  String get actionSendEmail => 'E-mail versturen';
+
+  @override
+  String get mailRecipient => 'Ontvanger';
+
+  @override
+  String get mailRecipientCustomer => 'De klant';
+
+  @override
+  String get mailRecipientAssignee => 'De behandelaar';
+
+  @override
+  String get mailRecipientTeam => 'Een team';
+
+  @override
+  String get mailRecipientAddress => 'Een vast adres';
+
+  @override
+  String get mailAddress => 'E-mailadres';
+
+  @override
+  String get mailBody => 'Bericht';
+
+  @override
+  String get mailPeriodHours => 'Hoogstens één mail per ticket binnen (uren)';
+
+  @override
+  String get mailPeriodInvalid =>
+      'De periode moet een geheel aantal uren zijn.';
+
+  @override
+  String mailPlaceholdersHint(String placeholders) {
+    return 'Tijdelijke aanduidingen: $placeholders';
+  }
+
+  @override
+  String actionSendEmailSummary(String recipient, String subject) {
+    return '$recipient: $subject';
+  }
+
+  @override
+  String get slaNotices => 'Berichten aan de klant';
+
+  @override
+  String get slaNoticesHelp =>
+      'Stuur de klant een ontvangstbevestiging met het ticketnummer en de streeftermijn voor een antwoord wanneer een aanvraag per e-mail of via het portaal binnenkomt, en eventueel een bericht wanneer de termijn voor het eerste antwoord verstreken is (alleen tijdens de openingsuren). De meest specifieke regel wint: team en prioriteit, dan team, dan prioriteit, dan alles. Zonder regel wordt niets verstuurd. De mails zijn in de taal van de klant.';
+
+  @override
+  String get slaNoticesNone =>
+      'Er worden geen berichten naar klanten gestuurd.';
+
+  @override
+  String get slaNoticesAllTeams => 'Alle teams';
+
+  @override
+  String get slaNoticesAllPriorities => 'Alle prioriteiten';
+
+  @override
+  String get slaNoticeAck => 'Ontvangstbevestiging';
+
+  @override
+  String get slaNoticeBreach => 'Bericht bij te laat';
+
+  @override
+  String get slaNoticesAdd => 'Regel toevoegen';
+
+  @override
+  String get rsTitle => 'Geplande rapportmails';
+
+  @override
+  String get rsOpen => 'Geplande mails';
+
+  @override
+  String get rsHelp =>
+      'Mail een opgeslagen rapport of een helpdeskrapport volgens een schema, als CSV of PDF, naar collega\'s en andere adressen. Elke mail wordt opgebouwd met de rechten die de eigenaar van het schema op dat moment heeft.';
+
+  @override
+  String get rsNew => 'Nieuw schema';
+
+  @override
+  String get rsEdit => 'Schema';
+
+  @override
+  String get rsEmpty => 'Er zijn geen rapporten gepland.';
+
+  @override
+  String get rsSource => 'Soort rapport';
+
+  @override
+  String get rsSourceCustom => 'Opgeslagen rapport';
+
+  @override
+  String get rsSourceHelpdesk => 'Helpdeskrapport';
+
+  @override
+  String get rsReport => 'Rapport';
+
+  @override
+  String get rsTable => 'Tabel';
+
+  @override
+  String get rsPeriod => 'Periode';
+
+  @override
+  String get rsPeriodYesterday => 'Gisteren';
+
+  @override
+  String get rsPeriodLast7 => 'De laatste 7 dagen';
+
+  @override
+  String get rsPeriodLastWeek => 'Vorige week (maandag tot zondag)';
+
+  @override
+  String get rsPeriodLast30 => 'De laatste 30 dagen';
+
+  @override
+  String get rsPeriodLastMonth => 'Vorige kalendermaand';
+
+  @override
+  String get rsFrequency => 'Frequentie';
+
+  @override
+  String get rsDaily => 'Dagelijks';
+
+  @override
+  String get rsWeekly => 'Wekelijks';
+
+  @override
+  String get rsMonthly => 'Maandelijks';
+
+  @override
+  String get rsWeekday => 'Weekdag';
+
+  @override
+  String get rsDayOfMonth => 'Dag van de maand (1-28)';
+
+  @override
+  String get rsTime => 'Uur (UU:MM)';
+
+  @override
+  String get rsFormat => 'Formaat';
+
+  @override
+  String get rsColleagues => 'Collega\'s';
+
+  @override
+  String get rsAddresses => 'Andere e-mailadressen (gescheiden door komma\'s)';
+
+  @override
+  String get rsMon => 'Maandag';
+
+  @override
+  String get rsTue => 'Dinsdag';
+
+  @override
+  String get rsWed => 'Woensdag';
+
+  @override
+  String get rsThu => 'Donderdag';
+
+  @override
+  String get rsFri => 'Vrijdag';
+
+  @override
+  String get rsSat => 'Zaterdag';
+
+  @override
+  String get rsSun => 'Zondag';
+
+  @override
+  String rsSummary(String when, String format, int recipients) {
+    return '$when · $format · $recipients ontvangers';
+  }
+
+  @override
+  String rsNextRun(String when) {
+    return 'Volgende mail: $when';
+  }
+
+  @override
+  String rsLastSent(String when) {
+    return 'Laatste keer: in de wachtrij gezet $when';
+  }
+
+  @override
+  String rsLastFailed(String when, String reason) {
+    return 'Laatste keer mislukt ($when): $reason';
+  }
+
+  @override
+  String get rsSendNow => 'Nu versturen';
+
+  @override
+  String rsQueued(int count) {
+    return '$count mails in de wachtrij gezet.';
+  }
+
+  @override
+  String get rsPaused => 'Gepauzeerd';
+
+  @override
+  String get rsNeedsRecipient => 'Kies minstens één ontvanger.';
 }

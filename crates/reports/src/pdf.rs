@@ -263,6 +263,47 @@ fn chart(lang: &str, def: &ReportDefinition, result: &ReportRunResult) -> Option
     })
 }
 
+/// The data for a plain table (the helpdesk reports of ADR 0021): text columns, numbers aligned
+/// right when every cell of the column is a number, no chart.
+pub fn from_table(
+    title: &str,
+    filters: Vec<String>,
+    header: &[String],
+    rows: &[Vec<String>],
+    company: &str,
+    lang: &str,
+    today: NaiveDate,
+) -> PdfData {
+    let numeric = |i: usize| {
+        !rows.is_empty()
+            && rows.iter().all(|r| {
+                r.get(i)
+                    .is_some_and(|c| c.is_empty() || c.parse::<f64>().is_ok())
+            })
+    };
+    PdfData {
+        language: lang.to_string(),
+        title: title.to_string(),
+        description: String::new(),
+        company: company.to_string(),
+        generated: format_date(today),
+        filters,
+        logic: "and",
+        columns: header
+            .iter()
+            .enumerate()
+            .map(|(i, h)| PdfColumn {
+                label: h.clone(),
+                align: if numeric(i) { "right" } else { "left" },
+            })
+            .collect(),
+        rows: rows.to_vec(),
+        totals: None,
+        row_count: rows.len() as i64,
+        chart: None,
+    }
+}
+
 /// Turns a run result into the data for the PDF template.
 pub fn build(
     name: &str,

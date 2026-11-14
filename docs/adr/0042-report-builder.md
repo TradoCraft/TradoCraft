@@ -113,5 +113,5 @@ rows (422 above that, the CSV has no such limit).
 * Date-time filters compare by UTC day.
 * Adding an object (products, tickets, ...) means: a catalog entry with its permission, a `FROM`
   and `JOIN` fragment, the links, and a test that it stays inside the company. Nothing else changes.
-* Not done: scheduled report e-mails (still a gap in the roadmap), dashboards, report folders and
+* Scheduled report e-mails were added in ADR 0065. Not done: dashboards, report folders and
   sharing with single roles and multi-level sorting of groups.
