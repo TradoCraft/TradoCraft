@@ -11,7 +11,10 @@
 pub mod archive;
 mod cell;
 pub mod csv;
+pub mod engine;
+pub mod entity;
 mod format;
+mod importable;
 mod limits;
 mod ods_writer;
 mod raw;
@@ -20,7 +23,15 @@ mod table;
 mod writer;
 
 pub use cell::CellValue;
+pub use engine::{
+    column_names, export_request, export_rows, import_request, run_import, ExportFormat,
+    ExportParams, RunOptions,
+};
+pub use entity::{BoxFuture, ImportEntity};
 pub use format::{detect, download, Format};
+pub use importable::{
+    Column, ColumnKind, ImportDescription, Importable, NoProgress, Phase, Progress,
+};
 pub use limits::Limits;
 pub use raw::{RawRow, RawTable};
 pub use table::{bind, Cell, Cells, Row, Table};

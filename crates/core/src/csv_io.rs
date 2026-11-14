@@ -183,6 +183,8 @@ pub struct ImportParams {
     /// Validate and count only; nothing is written.
     #[serde(default)]
     pub dry_run: bool,
+    /// The sheet to read from an XLSX or ODS file (the first sheet when absent); ignored for CSV.
+    pub sheet: Option<String>,
 }
 
 // ---------------------------------------------------------------------------------------------
