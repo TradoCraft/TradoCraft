@@ -158,4 +158,27 @@ void main() {
       'note': [''],
     });
   });
+
+  test('an unchanged stored select value stays valid after its option is removed', () {
+    final stored = [attr('motion', AttributeKind.text, 'gone')];
+    final same = buildAttributes(
+      defs: defs,
+      existing: stored,
+      raw: {'motion': ['gone']},
+    );
+    expect(same.errors, isEmpty);
+    expect(same.attributes.single.value, 'gone');
+    final other = buildAttributes(
+      defs: defs,
+      existing: stored,
+      raw: {'motion': ['sideways']},
+    );
+    expect(other.errors['motion'], AttrError.notInOptions);
+    final fresh = buildAttributes(
+      defs: defs,
+      existing: const [],
+      raw: {'motion': ['gone']},
+    );
+    expect(fresh.errors['motion'], AttrError.notInOptions);
+  });
 }

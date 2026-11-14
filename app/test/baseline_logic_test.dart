@@ -133,6 +133,37 @@ void main() {
       expect(order.errors['dial'], AttrError.rangeOrder);
     });
 
+    test(
+      'an unchanged stored select value stays valid when no longer an option',
+      () {
+        final same = buildValues(
+          defs: _defs,
+          existing: const {'motion': 'gone'},
+          raw: raw({
+            'motion': ['gone'],
+          }),
+        );
+        expect(same.errors, isEmpty);
+        expect(same.values['motion'], 'gone');
+        final other = buildValues(
+          defs: _defs,
+          existing: const {'motion': 'gone'},
+          raw: raw({
+            'motion': ['sideways'],
+          }),
+        );
+        expect(other.errors['motion'], AttrError.notInOptions);
+        final fresh = buildValues(
+          defs: _defs,
+          existing: const {},
+          raw: raw({
+            'motion': ['gone'],
+          }),
+        );
+        expect(fresh.errors['motion'], AttrError.notInOptions);
+      },
+    );
+
     test('keeps stored values of keys that have no active definition', () {
       final r = buildValues(
         defs: [_defs.first],

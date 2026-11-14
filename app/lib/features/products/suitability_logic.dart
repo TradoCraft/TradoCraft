@@ -32,6 +32,13 @@ Map<String, List<String>> rawFromAttributes(
   };
 }
 
+/// Whether [value] may be saved for a select definition: it is one of the current options, or it
+/// is the unchanged [stored] value (an option removed later must not block unrelated edits; the
+/// server accepts it too). Anything newly entered must be a current option.
+bool selectValueAllowed(AttributeDefinition d, String value, String? stored) =>
+    d.options.any((o) => o.value == value) ||
+    (stored != null && value == stored);
+
 num? _number(String s) {
   final n = num.tryParse(s);
   return n != null && n.isFinite ? n : null;
@@ -45,6 +52,7 @@ AttrBuildResult buildAttributes({
   required Map<String, List<String>> raw,
 }) {
   final defined = {for (final d in defs) d.key};
+  final byKey = {for (final a in existing) a.key: a};
   final out = <ProductAttribute>[
     for (final a in existing)
       if (!defined.contains(a.key)) a,
@@ -96,7 +104,11 @@ AttrBuildResult buildAttributes({
         }
       case DefinitionKind.select:
         if (at(0).isEmpty) break;
-        if (!d.options.any((o) => o.value == at(0))) {
+        if (!selectValueAllowed(
+          d,
+          at(0),
+          byKey[d.key]?.kind == AttributeKind.text ? byKey[d.key]?.value : null,
+        )) {
           errors[d.key] = AttrError.notInOptions;
         } else {
           out.add(

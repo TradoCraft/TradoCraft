@@ -96,7 +96,8 @@ ValuesBuildResult buildValues({
         }
       case DefinitionKind.select:
         if (at(0).isEmpty) break;
-        if (!d.options.any((o) => o.value == at(0))) {
+        final stored = _asMap(existing)[d.key];
+        if (!selectValueAllowed(d, at(0), stored is String ? stored : null)) {
           errors[d.key] = AttrError.notInOptions;
         } else {
           out[d.key] = at(0);
