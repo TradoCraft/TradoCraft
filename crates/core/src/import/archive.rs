@@ -29,29 +29,57 @@ use zip::ZipArchive;
 
 use crate::import::Limits;
 
+/// Why an archive is refused.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Refusal {
+    pub message: String,
+    /// Too many entries or too large a declared size (larger limits would accept it), as opposed
+    /// to a damaged archive.
+    pub limit: bool,
+}
+
+impl Refusal {
+    fn damaged(message: String) -> Self {
+        Refusal {
+            message,
+            limit: false,
+        }
+    }
+
+    fn over_limit(message: String) -> Self {
+        Refusal {
+            message,
+            limit: true,
+        }
+    }
+}
+
 /// Refuses an archive with too many entries or too large a declared unpacked size, with one
 /// message. Only the central directory is read; nothing is inflated.
-pub fn check(bytes: &[u8], limits: &Limits) -> Result<(), String> {
-    let mut zip = ZipArchive::new(Cursor::new(bytes))
-        .map_err(|e| format!("the file is a damaged or unsupported zip archive ({e})"))?;
+pub fn check(bytes: &[u8], limits: &Limits) -> Result<(), Refusal> {
+    let mut zip = ZipArchive::new(Cursor::new(bytes)).map_err(|e| {
+        Refusal::damaged(format!(
+            "the file is a damaged or unsupported zip archive ({e})"
+        ))
+    })?;
     if zip.len() > limits.archive_entries {
-        return Err(format!(
+        return Err(Refusal::over_limit(format!(
             "the archive has {} entries; at most {} are accepted",
             zip.len(),
             limits.archive_entries
-        ));
+        )));
     }
     let mut declared: u64 = 0;
     for i in 0..zip.len() {
         let entry = zip
             .by_index_raw(i)
-            .map_err(|e| format!("the file is a damaged zip archive ({e})"))?;
+            .map_err(|e| Refusal::damaged(format!("the file is a damaged zip archive ({e})")))?;
         declared = declared.saturating_add(entry.size());
         if declared > limits.unpacked_bytes {
-            return Err(format!(
+            return Err(Refusal::over_limit(format!(
                 "the archive unpacks to more than the {} MiB that are accepted",
                 limits.unpacked_bytes / (1024 * 1024)
-            ));
+            )));
         }
     }
     Ok(())

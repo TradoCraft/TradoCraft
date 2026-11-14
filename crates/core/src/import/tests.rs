@@ -973,6 +973,55 @@ fn the_job_limits_are_more_generous_than_one_request() {
 }
 
 #[test]
+fn limit_errors_are_told_apart_from_other_problems() {
+    // Every kind of limit, in every format.
+    for format in [Format::Csv, Format::Xlsx, Format::Ods] {
+        for (rows, cols) in [(4, 2), (1, 5), (3, 4)] {
+            let e = raw_err(&grid(format, rows, cols), None, &small());
+            assert!(exceeds_limits(&e), "{format:?} {rows}x{cols} {e:?}");
+        }
+    }
+    let too_big = Limits {
+        file_bytes: 10,
+        ..Limits::request()
+    };
+    assert!(exceeds_limits(&raw_err(
+        b"code,name\n1,a\n",
+        None,
+        &too_big
+    )));
+    let few = Limits {
+        archive_entries: 1,
+        ..Limits::request()
+    };
+    let xlsx = grid(Format::Xlsx, 1, 1);
+    assert!(exceeds_limits(&raw_err(&xlsx, None, &few)));
+    let unpacked = Limits {
+        unpacked_bytes: 1,
+        ..Limits::request()
+    };
+    assert!(exceeds_limits(&raw_err(&xlsx, None, &unpacked)));
+    // Problems of the file itself are not limits, and neither is an unknown sheet.
+    assert!(!exceeds_limits(&raw_err(
+        b"a,\"b\n",
+        None,
+        &Limits::request()
+    )));
+    assert!(!exceeds_limits(&raw_err(b"", None, &Limits::request())));
+    assert!(!exceeds_limits(&raw_err(
+        &xlsx,
+        Some("Nope"),
+        &Limits::request()
+    )));
+    assert!(!exceeds_limits(&raw_err(
+        b"PK\x03\x04 damaged",
+        None,
+        &Limits::request()
+    )));
+    assert!(!exceeds_limits(&[]));
+}
+
+#[test]
 fn a_sparse_xlsx_cell_far_away_is_refused_without_allocating_its_bounding_box() {
     let xlsx = xlsx_with(|s| {
         s.write_string(0, 0, "code").unwrap();

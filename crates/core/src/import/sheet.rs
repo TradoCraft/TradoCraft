@@ -14,7 +14,7 @@ use chrono::{NaiveDate, NaiveDateTime};
 use quick_xml::events::{BytesStart, Event};
 use zip::ZipArchive;
 
-use crate::csv_io::{format_error, RowError};
+use crate::csv_io::{format_error, limit_error, RowError};
 use crate::import::{CellValue, Limits, RawRow, RawTable};
 
 /// Which spreadsheet format to read.
@@ -55,6 +55,10 @@ pub fn read(
 
 fn fatal(message: impl Into<String>) -> Vec<RowError> {
     vec![format_error(1, message)]
+}
+
+fn over_limit(message: impl Into<String>) -> Vec<RowError> {
+    vec![limit_error(1, message)]
 }
 
 fn pick_sheet(names: &[String], wanted: Option<&str>) -> Result<String, Vec<RowError>> {
@@ -186,7 +190,7 @@ impl<'a> Builder<'a> {
         let first = cells[0].0;
         let last = cells[cells.len() - 1].0;
         if last - first + 1 > self.limits.cells_per_row {
-            return Err(vec![format_error(
+            return Err(vec![limit_error(
                 1,
                 format!(
                     "too many columns: at most {} are accepted",
@@ -203,6 +207,7 @@ impl<'a> Builder<'a> {
                     row,
                     column: Some(column_letters(col)),
                     message,
+                    limit: false,
                 }),
             }
         }
@@ -226,7 +231,7 @@ impl<'a> Builder<'a> {
         let width = names.len();
         let last = cells[cells.len() - 1].0;
         if last >= self.first_col && last - self.first_col + 1 > self.limits.cells_per_row {
-            return Err(vec![format_error(
+            return Err(vec![limit_error(
                 1,
                 format!(
                     "too many columns: at most {} are accepted",
@@ -235,7 +240,7 @@ impl<'a> Builder<'a> {
             )]);
         }
         if self.rows.len() >= self.limits.rows {
-            return Err(vec![format_error(
+            return Err(vec![limit_error(
                 1,
                 format!("too many rows: at most {} are accepted", self.limits.rows),
             )]);
@@ -248,6 +253,7 @@ impl<'a> Builder<'a> {
                     row,
                     column: None,
                     message: "a value to the left of the first header column".into(),
+                    limit: false,
                 });
                 failed = true;
                 continue;
@@ -271,6 +277,7 @@ impl<'a> Builder<'a> {
                         row,
                         column: Some(column),
                         message,
+                        limit: false,
                     });
                     failed = true;
                 }
@@ -284,7 +291,7 @@ impl<'a> Builder<'a> {
         }
         self.total_cells += dense.len();
         if self.total_cells > self.limits.total_cells {
-            return Err(vec![format_error(
+            return Err(vec![limit_error(
                 1,
                 format!(
                     "too many cells: at most {} are accepted",
@@ -500,7 +507,7 @@ fn scan_ods_content(
     let mut error_cells: std::collections::HashMap<String, Vec<ErrorCells>> = Default::default();
     let mut errors_seen = 0usize;
     let too_many_columns = || {
-        fatal(format!(
+        over_limit(format!(
             "too many columns: at most {} are accepted",
             limits.cells_per_row
         ))
@@ -586,7 +593,7 @@ fn scan_ods_content(
                     if depth == 1 {
                         total += u128::from(end_row) * u128::from(width);
                         if total > limits.total_cells as u128 {
-                            return Err(fatal(format!(
+                            return Err(over_limit(format!(
                                 "too many cells: at most {} are accepted",
                                 limits.total_cells
                             )));

@@ -141,6 +141,7 @@ fn header_error(row: usize, column: &str, message: impl Into<String>) -> RowErro
         row,
         column: Some(column.to_string()),
         message: message.into(),
+        limit: false,
     }
 }
 
@@ -312,6 +313,7 @@ impl<'a> Cells<'a> {
             row: self.row.line,
             column: column.map(str::to_string),
             message: message.into(),
+            limit: false,
         });
     }
 
@@ -721,6 +723,7 @@ mod tests {
             row: 2,
             column: Some("code".into()),
             message: "the cell holds the spreadsheet error #N/A".into(),
+            limit: false,
         });
         let t = bind(r, &KNOWN, &[], None).unwrap();
         assert_eq!(t.rows.len(), 1);

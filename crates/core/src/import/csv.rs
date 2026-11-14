@@ -1,6 +1,6 @@
 //! The CSV reader: the strict RFC 4180 parser of ADR 0029 producing a [`RawTable`].
 
-use crate::csv_io::{detect_delimiter, format_error, unquote_formula, RowError};
+use crate::csv_io::{detect_delimiter, format_error, limit_error, unquote_formula, RowError};
 use crate::import::{CellValue, Limits, RawRow, RawTable};
 
 /// Ends the current record: pushes the last field and keeps the record unless the line is blank.
@@ -21,14 +21,14 @@ fn finish_record(
         return Ok(());
     }
     if records.len() > limits.rows {
-        return Err(format_error(
+        return Err(limit_error(
             1,
             format!("too many rows: at most {} are accepted", limits.rows),
         ));
     }
     *cells += record.len();
     if *cells > limits.total_cells {
-        return Err(format_error(
+        return Err(limit_error(
             1,
             format!(
                 "too many cells: at most {} are accepted",
@@ -89,7 +89,7 @@ fn parse_records(
                 fields.push(std::mem::take(&mut field));
                 closed = false;
                 if fields.len() >= limits.cells_per_row {
-                    return Err(format_error(
+                    return Err(limit_error(
                         start,
                         format!(
                             "too many columns: at most {} are accepted",

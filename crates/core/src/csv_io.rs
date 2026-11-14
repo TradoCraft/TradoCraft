@@ -106,6 +106,11 @@ pub struct RowError {
     /// Column name; null when the problem concerns the whole row.
     pub column: Option<String>,
     pub message: String,
+    /// The file exceeds a size limit ([`crate::import::Limits`]) rather than being wrong: with
+    /// larger limits it could be read. Not part of the API.
+    #[serde(skip)]
+    #[schema(ignore)]
+    pub limit: bool,
 }
 
 /// Outcome of an import (or of its dry run). `errors` is empty on success; with errors nothing was
@@ -217,6 +222,15 @@ pub(crate) fn format_error(row: usize, message: impl Into<String>) -> RowError {
         row,
         column: None,
         message: message.into(),
+        limit: false,
+    }
+}
+
+/// A format error of the file as a whole: it is larger than the limits allow.
+pub(crate) fn limit_error(row: usize, message: impl Into<String>) -> RowError {
+    RowError {
+        limit: true,
+        ..format_error(row, message)
     }
 }
 

@@ -37,24 +37,41 @@ pub use raw::{RawRow, RawTable};
 pub use table::{bind, Cell, Cells, Row, Table};
 pub use writer::write;
 
-use crate::csv_io::{format_error, RowError};
+use crate::csv_io::{format_error, limit_error, RowError};
 
 fn one(message: impl Into<String>) -> Vec<RowError> {
     vec![format_error(1, message)]
+}
+
+/// Whether a file was refused only because it exceeds `limits` (too large, too many rows, columns
+/// or cells, too large an archive): with larger limits ([`Limits::job`]) it could be read. Other
+/// problems (an unsupported type, a damaged file, an unknown sheet) are not limits.
+pub fn exceeds_limits(errors: &[RowError]) -> bool {
+    errors.iter().any(|e| e.limit)
 }
 
 /// Detects the format of `bytes` and returns it with the checked limits applied: the file size
 /// and, for XLSX and ODS, the archive directory (entry count, declared unpacked size).
 pub fn inspect(bytes: &[u8], limits: &Limits) -> Result<Format, Vec<RowError>> {
     if bytes.len() > limits.file_bytes {
-        return Err(one(format!(
-            "the file is larger than the {} MiB that are accepted",
-            limits.file_bytes / (1024 * 1024)
-        )));
+        return Err(vec![limit_error(
+            1,
+            format!(
+                "the file is larger than the {} MiB that are accepted",
+                limits.file_bytes / (1024 * 1024)
+            ),
+        )]);
     }
     let format = detect(bytes).map_err(one)?;
     if format != Format::Csv {
-        archive::check(bytes, limits).map_err(one)?;
+        archive::check(bytes, limits).map_err(|r| {
+            let error = if r.limit {
+                limit_error(1, r.message)
+            } else {
+                format_error(1, r.message)
+            };
+            vec![error]
+        })?;
     }
     Ok(format)
 }
