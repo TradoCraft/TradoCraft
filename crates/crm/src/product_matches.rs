@@ -132,7 +132,8 @@ fn product_value(v: &AttributeValue) -> Option<ProductValue> {
             min: min.to_f64()?,
             max: max.to_f64()?,
         }),
-        AttributeValue::Text(_) | AttributeValue::Boolean(_) => None,
+        AttributeValue::Boolean(b) => Some(ProductValue::Boolean(*b)),
+        AttributeValue::Text(_) => None,
     }
 }
 

@@ -328,6 +328,7 @@ fn check_definition(
     let matches = match (rule.kind, value) {
         (DefinitionKind::Number, AttributeValue::Number(_))
         | (DefinitionKind::Range, AttributeValue::Range { .. })
+        | (DefinitionKind::Boolean, AttributeValue::Boolean(_))
         | (DefinitionKind::Text, AttributeValue::Text(_)) => true,
         (DefinitionKind::Select, AttributeValue::Text(t)) => {
             if !rule.options.contains(t) && stored != Some(t.as_str()) {
@@ -574,6 +575,16 @@ mod tests {
             AttributeKind::Boolean,
             &b,
             rule(DefinitionKind::Text, &[])
+        ));
+        assert!(ok(
+            AttributeKind::Boolean,
+            &b,
+            rule(DefinitionKind::Boolean, &[])
+        ));
+        assert!(!ok(
+            AttributeKind::Number,
+            &n,
+            rule(DefinitionKind::Boolean, &[])
         ));
         // A select is stored as text and must hold one of its options.
         assert!(ok(

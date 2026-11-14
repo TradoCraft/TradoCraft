@@ -28,6 +28,7 @@ pub enum DefinitionKind {
     Range,
     Select,
     Text,
+    Boolean,
 }
 
 impl DefinitionKind {
@@ -37,6 +38,7 @@ impl DefinitionKind {
             DefinitionKind::Range => "range",
             DefinitionKind::Select => "select",
             DefinitionKind::Text => "text",
+            DefinitionKind::Boolean => "boolean",
         }
     }
 
@@ -46,6 +48,7 @@ impl DefinitionKind {
             "range" => Some(DefinitionKind::Range),
             "select" => Some(DefinitionKind::Select),
             "text" => Some(DefinitionKind::Text),
+            "boolean" => Some(DefinitionKind::Boolean),
             _ => None,
         }
     }
@@ -588,6 +591,7 @@ mod tests {
             DefinitionKind::Number,
             DefinitionKind::Range,
             DefinitionKind::Text,
+            DefinitionKind::Boolean,
         ] {
             assert!(validate(&input(k)).is_ok());
             let mut i = input(k);
@@ -623,6 +627,9 @@ mod tests {
         let mut i = input(DefinitionKind::Text);
         i.unit = Some("mm".into());
         assert!(validate(&i).is_err());
+        let mut i = input(DefinitionKind::Boolean);
+        i.unit = Some("mm".into());
+        assert!(validate(&i).is_err());
         let mut i = input(DefinitionKind::Select);
         i.options = vec![opt("a")];
         i.unit = Some("mm".into());
@@ -652,9 +659,10 @@ mod tests {
             DefinitionKind::Range,
             DefinitionKind::Select,
             DefinitionKind::Text,
+            DefinitionKind::Boolean,
         ] {
             assert_eq!(DefinitionKind::parse(k.as_str()), Some(k));
         }
-        assert_eq!(DefinitionKind::parse("boolean"), None);
+        assert_eq!(DefinitionKind::parse("yesno"), None);
     }
 }

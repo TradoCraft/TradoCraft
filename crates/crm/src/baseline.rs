@@ -79,6 +79,10 @@ fn normalise(def: &AttributeDefinition, v: &Value) -> Result<Option<Value>, Stri
                 _ => Err(bad()),
             }
         }
+        DefinitionKind::Boolean => match v.as_bool() {
+            Some(_) => Ok(Some(v.clone())),
+            None => Err(format!("{key} must be true or false")),
+        },
         DefinitionKind::Select => match v.as_str() {
             Some(s) if def.options.iter().any(|o| o.value == s) => Ok(Some(v.clone())),
             _ => Err(format!(
@@ -607,6 +611,7 @@ mod tests {
             def("dial_size", DefinitionKind::Range, &[]),
             def("motion", DefinitionKind::Select, &["flying", "falling"]),
             def("note", DefinitionKind::Text, &[]),
+            def("lit", DefinitionKind::Boolean, &[]),
         ]
     }
 
@@ -616,6 +621,17 @@ mod tests {
 
     fn err(v: Value) -> String {
         validate_values(&defs(), &v).expect_err(&format!("{v} must be rejected"))
+    }
+
+    #[test]
+    fn booleans_accept_true_and_false_only() {
+        let m = ok(json!({ "lit": false }));
+        assert_eq!(m["lit"], json!(false));
+        assert_eq!(ok(json!({ "lit": true }))["lit"], json!(true));
+        assert!(ok(json!({ "lit": null })).is_empty());
+        for bad in [json!("true"), json!(1), json!(0), json!({})] {
+            assert!(err(json!({ "lit": bad })).contains("lit must be true or false"));
+        }
     }
 
     #[test]

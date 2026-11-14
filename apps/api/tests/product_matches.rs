@@ -199,7 +199,11 @@ async fn the_dial_rule_is_seeded_once(db: PgPool) {
         .await
         .unwrap();
     let list = rules(&app).await;
-    assert_eq!(list.len(), 1, "{list:?}");
+    assert_eq!(list.len(), 2, "{list:?}");
+    let list: Vec<Value> = list
+        .into_iter()
+        .filter(|r| r["name"] == RULE_NAME)
+        .collect();
     let r = &list[0];
     assert_eq!(r["name"], RULE_NAME);
     assert_eq!(r["baseline_type_code"], "clock_dial");
@@ -255,7 +259,7 @@ async fn seed_keeps_what_an_admin_changed_and_a_provisioned_company_gets_the_rul
         .fetch_one(&db)
         .await
         .unwrap();
-    assert_eq!(n, 1);
+    assert_eq!(n, 2);
 }
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
@@ -323,8 +327,8 @@ async fn rule_crud_validation_permissions_and_audit(db: PgPool) {
     assert!(status.is_client_error(), "{status}");
     assert_eq!(
         rules(&app).await.len(),
-        2,
-        "only the seed and the valid rule"
+        3,
+        "only the two seeded rules and the valid rule"
     );
 
     // An inactive definition no longer counts.
@@ -404,13 +408,15 @@ async fn another_companys_rules_are_invisible(db: PgPool) {
         .execute(&db)
         .await
         .unwrap();
-    let other: String =
-        sqlx::query_scalar("SELECT id::text FROM crm.match_rules WHERE company_id = $1::uuid")
-            .bind(OTHER_COMPANY)
-            .fetch_one(&db)
-            .await
-            .unwrap();
-    assert_eq!(rules(&app).await.len(), 1);
+    let other: String = sqlx::query_scalar(
+        "SELECT id::text FROM crm.match_rules WHERE company_id = $1::uuid AND name = $2",
+    )
+    .bind(OTHER_COMPANY)
+    .bind(RULE_NAME)
+    .fetch_one(&db)
+    .await
+    .unwrap();
+    assert_eq!(rules(&app).await.len(), 2);
     let url = format!("/match-rules/{other}");
     assert_eq!(
         api(&app, ADMIN, Method::GET, &url, None).await.0,
@@ -433,7 +439,7 @@ async fn another_companys_rules_are_invisible(db: PgPool) {
             .fetch_one(&db)
             .await
             .unwrap();
-    assert_eq!(n, 1, "untouched");
+    assert_eq!(n, 2, "untouched");
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -883,4 +889,246 @@ async fn matching_can_be_limited_to_one_baseline_item_and_its_children(db: PgPoo
         .await;
         assert_eq!(status, StatusCode::NOT_FOUND);
     }
+}
+
+// ---------------------------------------------------------------------------------------------
+// Optional dial attributes and the illumination rule (seed data, ADR 0068 step 2)
+// ---------------------------------------------------------------------------------------------
+
+/// Sets the product's dial size (600..1250) and can_illuminate together: the PUT replaces them all.
+async fn can_illuminate(app: &axum::Router, product: &str, value: Option<&str>) {
+    let mut attrs = vec![json!({ "key": "dial_size_mm", "kind": "range", "value": "",
+                                  "value_min": "600", "value_max": "1250", "unit": "mm" })];
+    if let Some(v) = value {
+        attrs.push(json!({ "key": "can_illuminate", "kind": "boolean", "value": v }));
+    }
+    let (status, r) = api(
+        app,
+        ADMIN,
+        Method::PUT,
+        &format!("/products/{product}/attributes"),
+        Some(Value::Array(attrs)),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{r}");
+}
+
+fn illumination(p: &Value) -> Vec<(String, String)> {
+    reasons(p)
+        .into_iter()
+        .filter(|r| r.0 == "rule:Illumination supported")
+        .map(|r| (r.1, r.2))
+        .collect()
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn the_dial_attributes_and_the_illumination_rule_are_seeded_once(db: PgPool) {
+    let app = seeded(&db).await;
+    sqlx::query("SELECT crm.seed_baseline_defaults($1::uuid)")
+        .bind(COMPANY)
+        .execute(&db)
+        .await
+        .unwrap();
+    let (status, defs) = api(
+        &app,
+        SALES,
+        Method::GET,
+        "/attribute-definitions?scope=clock_dial",
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{defs}");
+    let kinds: Vec<(String, String)> = defs
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|d| {
+            (
+                d["key"].as_str().unwrap().into(),
+                d["kind"].as_str().unwrap().into(),
+            )
+        })
+        .collect();
+    for (key, kind) in [
+        ("dial_diameter_mm", "number"),
+        ("mounting", "select"),
+        ("wall_thickness_mm", "number"),
+        ("faces", "number"),
+        ("movement", "select"),
+        ("illumination_wanted", "boolean"),
+    ] {
+        assert_eq!(
+            kinds
+                .iter()
+                .filter(|k| **k == (key.to_string(), kind.to_string()))
+                .count(),
+            1,
+            "{key}: {kinds:?}"
+        );
+    }
+    let list = rules(&app).await;
+    assert_eq!(list.len(), 2, "{list:?}");
+    let r = list
+        .iter()
+        .find(|r| r["name"] == "Illumination supported")
+        .unwrap();
+    assert_eq!(r["baseline_type_code"], "clock_dial");
+    assert_eq!(r["baseline_attribute_key"], "illumination_wanted");
+    assert_eq!(r["product_attribute_key"], "can_illuminate");
+    assert_eq!(r["operator"], "requires_if_true");
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn illumination_is_required_supported_unsupported_or_unknown(db: PgPool) {
+    let app = seeded(&db).await;
+    let be3 = grid_id(&app, "BE", 400, 3).await;
+    set_grid(&app, OPP, &be3).await;
+    let dial = add_item(
+        &app,
+        OPP,
+        json!({ "type_code": "clock_dial",
+                 "values": { "dial_diameter_mm": 1000, "illumination_wanted": true } }),
+    )
+    .await;
+    can_illuminate(&app, UNIT_100, Some("true")).await;
+    can_illuminate(&app, BOLT, Some("false")).await;
+    can_illuminate(&app, CTRL, None).await; // no value: unknown
+    let m = matches(&app, OPP, "limit=500").await;
+    assert_eq!(
+        of(&m, UNIT_100)["status"],
+        "suitable",
+        "{}",
+        of(&m, UNIT_100)
+    );
+    assert_eq!(illumination(of(&m, UNIT_100))[0].0, "ok");
+    assert_eq!(of(&m, BOLT)["status"], "unsuitable");
+    assert_eq!(illumination(of(&m, BOLT))[0].0, "fail");
+    assert_eq!(of(&m, CTRL)["status"], "unknown");
+    assert_eq!(illumination(of(&m, CTRL))[0].0, "unknown");
+
+    // illumination_wanted false, and cleared: the rule does not apply.
+    for values in [
+        json!({ "illumination_wanted": false }),
+        json!({ "illumination_wanted": null }),
+    ] {
+        let (status, r) = api(
+            &app,
+            SALES,
+            Method::PUT,
+            &format!("/opportunities/{OPP}/baseline/items/{dial}"),
+            Some(json!({ "type_code": "clock_dial",
+                "values": { "dial_diameter_mm": 1000, "illumination_wanted": values["illumination_wanted"] } })),
+        )
+        .await;
+        assert_eq!(status, StatusCode::OK, "{r} {values}");
+        let m = matches(&app, OPP, "limit=500").await;
+        for p in [UNIT_100, BOLT, CTRL] {
+            assert!(illumination(of(&m, p)).is_empty(), "{p}");
+            assert_eq!(of(&m, p)["status"], "suitable", "{p}");
+        }
+    }
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn missing_dial_attributes_stay_unknown_never_unsuitable(db: PgPool) {
+    let app = seeded(&db).await;
+    let be3 = grid_id(&app, "BE", 400, 3).await;
+    set_grid(&app, OPP, &be3).await;
+    // Nothing optional filled in, not even the diameter.
+    add_item(
+        &app,
+        OPP,
+        json!({ "type_code": "clock_dial", "values": {} }),
+    )
+    .await;
+    can_illuminate(&app, UNIT_100, Some("false")).await;
+    let m = matches(&app, OPP, "limit=500").await;
+    let p = of(&m, UNIT_100);
+    assert_eq!(p["status"], "unknown", "{p}");
+    assert!(reasons(p).iter().all(|r| r.1 != "fail"), "{p}");
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn wall_thickness_is_accepted_with_mounting_wall_and_values_are_validated(db: PgPool) {
+    let app = seeded(&db).await;
+    let ok = json!({ "type_code": "clock_dial",
+        "values": { "mounting": "wall", "wall_thickness_mm": 350, "faces": 4,
+                     "movement": "per_dial_motor", "illumination_wanted": true } });
+    let id = add_item(&app, OPP, ok).await;
+    let (status, item) = api(
+        &app,
+        SALES,
+        Method::GET,
+        &format!("/opportunities/{OPP}/baseline"),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{item}");
+    assert!(item.to_string().contains(&id));
+    for bad in [
+        json!({ "mounting": "ceiling" }),
+        json!({ "movement": "steam" }),
+        json!({ "illumination_wanted": "yes" }),
+        json!({ "faces": "four" }),
+    ] {
+        let (status, r) = api(
+            &app,
+            SALES,
+            Method::POST,
+            &format!("/opportunities/{OPP}/baseline/items"),
+            Some(json!({ "type_code": "clock_dial", "values": bad })),
+        )
+        .await;
+        assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{bad}: {r}");
+    }
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn boolean_definitions_and_rules_are_validated_generically(db: PgPool) {
+    let app = seeded(&db).await;
+    // A unit is refused on a boolean definition; a boolean product attribute rejects text.
+    let (status, r) = api(
+        &app,
+        ADMIN,
+        Method::POST,
+        "/attribute-definitions",
+        Some(json!({ "key": "flag", "label": "Flag", "kind": "boolean", "unit": "mm", "scope": "product" })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{r}");
+    let (status, r) = api(
+        &app,
+        ADMIN,
+        Method::PUT,
+        &format!("/products/{UNIT_100}/attributes"),
+        Some(json!([{ "key": "can_illuminate", "kind": "number", "value": "1" }])),
+    )
+    .await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{r}");
+    // requires_if_true needs boolean attributes on both sides.
+    let (status, r) = api(
+        &app,
+        ADMIN,
+        Method::POST,
+        "/match-rules",
+        Some(rule_body(
+            json!({ "name": "Bad", "baseline_attribute_key": "weight_kg",
+            "product_attribute_key": "can_illuminate", "operator": "requires_if_true" }),
+        )),
+    )
+    .await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{r}");
+    let (status, r) = api(
+        &app,
+        ADMIN,
+        Method::POST,
+        "/match-rules",
+        Some(rule_body(
+            json!({ "name": "Bad2", "baseline_type_code": "clock_dial",
+            "baseline_attribute_key": "illumination_wanted",
+            "product_attribute_key": "can_illuminate", "operator": "at_most" }),
+        )),
+    )
+    .await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{r}");
 }

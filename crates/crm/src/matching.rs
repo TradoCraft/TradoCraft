@@ -21,6 +21,9 @@ pub enum Operator {
     AtMost,
     /// The baseline value is at least the product's `number`.
     AtLeast,
+    /// The baseline value is a boolean; when it is true the product's boolean must be true too.
+    /// A false or missing baseline value means the rule does not apply.
+    RequiresIfTrue,
 }
 
 impl Operator {
@@ -29,6 +32,7 @@ impl Operator {
             Operator::WithinRange => "within_range",
             Operator::AtMost => "at_most",
             Operator::AtLeast => "at_least",
+            Operator::RequiresIfTrue => "requires_if_true",
         }
     }
 
@@ -37,6 +41,7 @@ impl Operator {
             "within_range" => Some(Operator::WithinRange),
             "at_most" => Some(Operator::AtMost),
             "at_least" => Some(Operator::AtLeast),
+            "requires_if_true" => Some(Operator::RequiresIfTrue),
             _ => None,
         }
     }
@@ -75,11 +80,12 @@ pub fn flatten(tree: &[BaselineItem]) -> Vec<BaselineNode> {
     out
 }
 
-/// A product attribute as the matcher sees it (text and boolean attributes are not matchable).
+/// A product attribute as the matcher sees it (text attributes are not matchable).
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ProductValue {
     Number(f64),
     Range { min: f64, max: f64 },
+    Boolean(bool),
 }
 
 /// What is known about one product.
@@ -266,12 +272,51 @@ pub fn node_label(n: &BaselineNode) -> String {
     }
 }
 
+/// `requires_if_true`: only a baseline value of `true` asks anything of the product.
+fn requires_if_true_reason(
+    rule: &Rule,
+    node: &BaselineNode,
+    product: &ProductFacts,
+) -> Option<Reason> {
+    let (bk, pk) = (&rule.baseline_attribute_key, &rule.product_attribute_key);
+    if node.values.get(bk).and_then(Value::as_bool) != Some(true) {
+        return None;
+    }
+    let label = node_label(node);
+    let (status, message) = match product.attributes.get(pk) {
+        Some(ProductValue::Boolean(true)) => (
+            CheckStatus::Ok,
+            format!("{label}: {bk} is required and the product's {pk} is true"),
+        ),
+        Some(ProductValue::Boolean(false)) => (
+            CheckStatus::Fail,
+            format!("{label}: {bk} is required but the product's {pk} is false"),
+        ),
+        Some(_) => (
+            CheckStatus::Unknown,
+            format!("{label}: the product's {pk} cannot be compared this way, the fit is unknown"),
+        ),
+        None => (
+            CheckStatus::Unknown,
+            format!("{label}: {bk} is required and the product has no {pk}, the fit is unknown"),
+        ),
+    };
+    Some(Reason {
+        check: format!("rule:{}", rule.name),
+        status,
+        message,
+    })
+}
+
 /// The reason one baseline item gives for one rule. A product that lacks the attribute (or has it
 /// in a shape the operator cannot use) cannot be judged: `unknown`, never `suitable` by silence.
 fn rule_reason(rule: &Rule, node: &BaselineNode, product: &ProductFacts) -> Option<Reason> {
     let (bk, pk) = (&rule.baseline_attribute_key, &rule.product_attribute_key);
     let label = node_label(node);
     let check = format!("rule:{}", rule.name);
+    if rule.operator == Operator::RequiresIfTrue {
+        return requires_if_true_reason(rule, node, product);
+    }
     let usable = product.attributes.get(pk).filter(|t| {
         matches!(
             (rule.operator, t),
@@ -303,6 +348,7 @@ fn rule_reason(rule: &Rule, node: &BaselineNode, product: &ProductFacts) -> Opti
     let shown = match target {
         ProductValue::Range { min, max } => format!("{min}..{max}"),
         ProductValue::Number(n) => n.to_string(),
+        ProductValue::Boolean(b) => b.to_string(),
     };
     let Some(v) = node.values.get(bk).and_then(Value::as_f64) else {
         return Some(Reason {
@@ -530,6 +576,84 @@ mod tests {
             e.reasons[0].message,
             "clock_dial: dial_diameter_mm 900 is below the minimum dial_size_mm 1000"
         );
+    }
+
+    fn lit_rule() -> Rule {
+        Rule {
+            name: "Illumination supported".into(),
+            baseline_type_code: "clock_dial".into(),
+            baseline_attribute_key: "illumination_wanted".into(),
+            product_attribute_key: "can_illuminate".into(),
+            operator: Operator::RequiresIfTrue,
+            active: true,
+        }
+    }
+
+    fn lit_product(v: Option<bool>) -> ProductFacts {
+        ProductFacts {
+            attributes: v
+                .map(|b| HashMap::from([("can_illuminate".to_string(), ProductValue::Boolean(b))]))
+                .unwrap_or_default(),
+            power: PowerCompatibility::NotApplicable,
+        }
+    }
+
+    fn lit_dial(v: Value) -> BaselineNode {
+        node("clock_dial", None, json!({ "illumination_wanted": v }))
+    }
+
+    #[test]
+    fn requires_if_true_judges_only_when_the_baseline_value_is_true() {
+        let rules = [lit_rule()];
+        for (product, expected) in [
+            (Some(true), MatchStatus::Suitable),
+            (Some(false), MatchStatus::Unsuitable),
+            (None, MatchStatus::Unknown),
+        ] {
+            let e = run(&[lit_dial(json!(true))], &rules, &lit_product(product));
+            assert_eq!(e.status, expected, "{product:?}");
+            assert_eq!(e.reasons.len(), 1);
+            assert_eq!(e.reasons[0].check, "rule:Illumination supported");
+        }
+        let e = run(&[lit_dial(json!(true))], &rules, &lit_product(Some(false)));
+        assert_eq!(
+            e.reasons[0].message,
+            "clock_dial: illumination_wanted is required but the product's can_illuminate is false"
+        );
+    }
+
+    #[test]
+    fn requires_if_true_does_not_apply_when_false_or_unset() {
+        let rules = [lit_rule()];
+        for v in [lit_dial(json!(false)), node("clock_dial", None, json!({ "dial_diameter_mm": 900 }))] {
+            for p in [Some(true), Some(false), None] {
+                let e = run(&[v.clone()], &rules, &lit_product(p));
+                assert!(e.reasons.is_empty(), "{p:?}");
+                assert_eq!(e.status, MatchStatus::Suitable);
+            }
+        }
+    }
+
+    #[test]
+    fn requires_if_true_with_a_product_attribute_of_another_shape_is_unknown() {
+        let p = ProductFacts {
+            attributes: HashMap::from([("can_illuminate".to_string(), ProductValue::Number(1.0))]),
+            power: PowerCompatibility::NotApplicable,
+        };
+        let e = run(&[lit_dial(json!(true))], &[lit_rule()], &p);
+        assert_eq!(e.status, MatchStatus::Unknown);
+    }
+
+    #[test]
+    fn missing_optional_dial_attributes_never_make_a_product_unsuitable() {
+        // The dial size rule with a dial that lacks the diameter, next to the illumination rule.
+        let rules = [rule(Operator::WithinRange), lit_rule()];
+        let n = node("clock_dial", None, json!({ "mounting": null }));
+        let mut p = product(range(600.0, 1250.0));
+        p.attributes
+            .insert("can_illuminate".into(), ProductValue::Boolean(false));
+        let e = run(&[n], &rules, &p);
+        assert_eq!(e.status, MatchStatus::Unknown);
     }
 
     #[test]
