@@ -3,9 +3,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/api.dart';
 import '../../shared/format.dart';
+import '../../shared/power_grid_field.dart';
+import 'baseline_logic.dart';
 import '../../shared/search_picker.dart';
 import '../../l10n/l10n.dart';
 import '../../shared/app_icons.dart';
+
+final _customerCountryProvider = FutureProvider.autoDispose
+    .family<String, String>(
+      (ref, id) async =>
+          (await ref.watch(apiProvider).crm.getCustomer(id: id)).countryCode,
+    );
 
 /// Create or edit an opportunity. Returns the saved opportunity, or null when cancelled.
 Future<Opportunity?> showOpportunityForm(
@@ -37,6 +45,10 @@ class _OpportunityFormState extends ConsumerState<OpportunityForm> {
   late String? _customerId = o?.customerId;
   late String? _customerLabel = o?.customerName;
   late DateTime? _close = o?.expectedClose;
+  late String? _gridId = o?.powerGridId;
+
+  /// ISO country picked with a new customer; an existing opportunity's comes from its customer.
+  String? _pickedCountry;
   String? _error;
 
   Future<void> _save() async {
@@ -48,6 +60,7 @@ class _OpportunityFormState extends ConsumerState<OpportunityForm> {
       setState(() => _error = context.l10n.titleCustomerValueRequired);
       return;
     }
+    final grid = powerGridInput(stored: o?.powerGridId, chosen: _gridId);
     final body = OpportunityInput(
       title: _title.text.trim(),
       customerId: _customerId!,
@@ -55,6 +68,8 @@ class _OpportunityFormState extends ConsumerState<OpportunityForm> {
       probability: probability,
       expectedClose: _close,
       notes: _notes.text,
+      powerGridId: grid.id,
+      clearPowerGrid: grid.clear,
     );
     try {
       final crm = ref.read(apiProvider).crm;
@@ -69,6 +84,12 @@ class _OpportunityFormState extends ConsumerState<OpportunityForm> {
 
   @override
   Widget build(BuildContext context) {
+    // The country of the customer decides which grids are on offer.
+    final country =
+        _pickedCountry ??
+        (o == null
+            ? ''
+            : ref.watch(_customerCountryProvider(o!.customerId)).value ?? '');
     const gap = SizedBox(height: 12, width: 12);
     return AlertDialog(
       title: Text(o == null ? context.l10n.newOpportunity : o!.number),
@@ -95,6 +116,9 @@ class _OpportunityFormState extends ConsumerState<OpportunityForm> {
                 onSelected: (c) => setState(() {
                   _customerId = c.id;
                   _customerLabel = c.name;
+                  _pickedCountry = c.countryCode;
+                  // A grid belongs to the country of the customer.
+                  _gridId = null;
                 }),
               )
             else
@@ -144,6 +168,14 @@ class _OpportunityFormState extends ConsumerState<OpportunityForm> {
                 );
                 if (d != null) setState(() => _close = d);
               },
+            ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: PowerGridField(
+                country: country,
+                selectedId: _gridId,
+                onChanged: (id) => setState(() => _gridId = id),
+              ),
             ),
             TextField(
               controller: _notes,
