@@ -8,11 +8,12 @@ part 'send_now_result.g.dart';
 
 @JsonSerializable()
 class SendNowResult {
-  const SendNowResult({required this.mails});
-
-  factory SendNowResult.fromJson(Map<String, Object?> json) =>
-      _$SendNowResultFromJson(json);
-
+  const SendNowResult({
+    required this.mails,
+  });
+  
+  factory SendNowResult.fromJson(Map<String, Object?> json) => _$SendNowResultFromJson(json);
+  
   /// Mails queued.
   final int mails;
 

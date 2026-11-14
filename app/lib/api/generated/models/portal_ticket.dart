@@ -19,12 +19,11 @@ class PortalTicket {
     required this.updatedAt,
     this.closedAt,
   });
-
-  factory PortalTicket.fromJson(Map<String, Object?> json) =>
-      _$PortalTicketFromJson(json);
-
+  
+  factory PortalTicket.fromJson(Map<String, Object?> json) => _$PortalTicketFromJson(json);
+  
   final String category;
-  @JsonKey(includeIfNull: false, name: 'closed_at')
+  @JsonKey(includeIfNull: false,name: 'closed_at')
   final DateTime? closedAt;
 
   /// Who raised it (colleagues' tickets are visible with the `customer` scope).

@@ -16,10 +16,9 @@ class ScheduleResult {
     required this.conflicts,
     this.job,
   });
-
-  factory ScheduleResult.fromJson(Map<String, Object?> json) =>
-      _$ScheduleResultFromJson(json);
-
+  
+  factory ScheduleResult.fromJson(Map<String, Object?> json) => _$ScheduleResultFromJson(json);
+  
   /// False for a dry run.
   final bool applied;
   final List<Conflict> conflicts;

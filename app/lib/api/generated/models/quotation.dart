@@ -55,10 +55,9 @@ class Quotation {
     this.deliveryCountryCode,
     this.opportunityId,
   });
-
-  factory Quotation.fromJson(Map<String, Object?> json) =>
-      _$QuotationFromJson(json);
-
+  
+  factory Quotation.fromJson(Map<String, Object?> json) => _$QuotationFromJson(json);
+  
   @JsonKey(name: 'company_id')
   final String companyId;
   @JsonKey(name: 'created_at')
@@ -82,21 +81,21 @@ class Quotation {
   final String customerPostalCode;
   @JsonKey(name: 'customer_street')
   final String customerStreet;
-  @JsonKey(includeIfNull: false, name: 'customer_vat_number')
+  @JsonKey(includeIfNull: false,name: 'customer_vat_number')
   final String? customerVatNumber;
 
   /// Country the goods are delivered to (ISO alpha-2).
-  @JsonKey(includeIfNull: false, name: 'delivery_country_code')
+  @JsonKey(includeIfNull: false,name: 'delivery_country_code')
   final String? deliveryCountryCode;
   final String id;
   final List<QuotationLine> lines;
   final String notes;
   final String number;
-  @JsonKey(includeIfNull: false, name: 'opportunity_id')
+  @JsonKey(includeIfNull: false,name: 'opportunity_id')
   final String? opportunityId;
 
   /// The grid at the delivery country the goods are connected to.
-  @JsonKey(includeIfNull: false, name: 'power_grid_id')
+  @JsonKey(includeIfNull: false,name: 'power_grid_id')
   final String? powerGridId;
   @JsonKey(name: 'price_date')
   final DateTime priceDate;
@@ -108,7 +107,7 @@ class Quotation {
   @JsonKey(name: 'quote_date')
   final DateTime quoteDate;
   final int revision;
-  @JsonKey(includeIfNull: false, name: 'sent_at')
+  @JsonKey(includeIfNull: false,name: 'sent_at')
   final DateTime? sentAt;
 
   /// not_required | pending (shipping cost still to be quoted; sending is blocked) | quoted
@@ -119,7 +118,7 @@ class Quotation {
 
   /// Products worth adding; filled together with `warnings`.
   final List<SalesSuggestion> suggestions;
-  @JsonKey(includeIfNull: false, name: 'supersedes_id')
+  @JsonKey(includeIfNull: false,name: 'supersedes_id')
   final String? supersedesId;
   final String total;
   @JsonKey(name: 'updated_at')

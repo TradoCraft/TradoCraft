@@ -21,11 +21,10 @@ class ReaderSummary {
     required this.updatedAt,
     this.categoryId,
   });
-
-  factory ReaderSummary.fromJson(Map<String, Object?> json) =>
-      _$ReaderSummaryFromJson(json);
-
-  @JsonKey(includeIfNull: false, name: 'category_id')
+  
+  factory ReaderSummary.fromJson(Map<String, Object?> json) => _$ReaderSummaryFromJson(json);
+  
+  @JsonKey(includeIfNull: false,name: 'category_id')
   final String? categoryId;
   final bool fallback;
   final String id;

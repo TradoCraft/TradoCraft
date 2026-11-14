@@ -35,14 +35,14 @@ class Entry {
     this.categoryId,
     this.publishedAt,
   });
-
+  
   factory Entry.fromJson(Map<String, Object?> json) => _$EntryFromJson(json);
-
-  @JsonKey(includeIfNull: false, name: 'author_id')
+  
+  @JsonKey(includeIfNull: false,name: 'author_id')
   final String? authorId;
-  @JsonKey(includeIfNull: false, name: 'author_name')
+  @JsonKey(includeIfNull: false,name: 'author_name')
   final String? authorName;
-  @JsonKey(includeIfNull: false, name: 'category_id')
+  @JsonKey(includeIfNull: false,name: 'category_id')
   final String? categoryId;
   @JsonKey(name: 'created_at')
   final DateTime createdAt;
@@ -55,7 +55,7 @@ class Entry {
   final String number;
   @JsonKey(name: 'product_ids')
   final List<String> productIds;
-  @JsonKey(includeIfNull: false, name: 'published_at')
+  @JsonKey(includeIfNull: false,name: 'published_at')
   final DateTime? publishedAt;
   final List<RelatedEntry> related;
   final String slug;

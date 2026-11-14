@@ -8,11 +8,12 @@ part 'todo_settings_input.g.dart';
 
 @JsonSerializable()
 class TodoSettingsInput {
-  const TodoSettingsInput({required this.emailReminders});
-
-  factory TodoSettingsInput.fromJson(Map<String, Object?> json) =>
-      _$TodoSettingsInputFromJson(json);
-
+  const TodoSettingsInput({
+    required this.emailReminders,
+  });
+  
+  factory TodoSettingsInput.fromJson(Map<String, Object?> json) => _$TodoSettingsInputFromJson(json);
+  
   @JsonKey(name: 'email_reminders')
   final bool emailReminders;
 

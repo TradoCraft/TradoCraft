@@ -34,19 +34,18 @@ class DeliveryNote {
     this.plannedDate,
     this.shippedAt,
   });
-
-  factory DeliveryNote.fromJson(Map<String, Object?> json) =>
-      _$DeliveryNoteFromJson(json);
-
+  
+  factory DeliveryNote.fromJson(Map<String, Object?> json) => _$DeliveryNoteFromJson(json);
+  
   final String carrier;
 
   /// Why a delivery on a closure was allowed (policy `override`).
-  @JsonKey(includeIfNull: false, name: 'closure_override_reason')
+  @JsonKey(includeIfNull: false,name: 'closure_override_reason')
   final String? closureOverrideReason;
 
   /// Live: the customer is closed on the planned date of a planned note, also when the closure.
   /// was added after the date was set.
-  @JsonKey(includeIfNull: false, name: 'closure_warning')
+  @JsonKey(includeIfNull: false,name: 'closure_warning')
   final ClosureWarning? closureWarning;
   @JsonKey(name: 'created_at')
   final DateTime createdAt;
@@ -64,7 +63,7 @@ class DeliveryNote {
   final String orderNumber;
   @JsonKey(name: 'order_revision')
   final int orderRevision;
-  @JsonKey(includeIfNull: false, name: 'planned_date')
+  @JsonKey(includeIfNull: false,name: 'planned_date')
   final DateTime? plannedDate;
 
   /// The customer was closed on the planned date when it was saved.
@@ -72,7 +71,7 @@ class DeliveryNote {
   final bool plannedOnClosure;
   @JsonKey(name: 'ship_to')
   final DeliveryShipTo shipTo;
-  @JsonKey(includeIfNull: false, name: 'shipped_at')
+  @JsonKey(includeIfNull: false,name: 'shipped_at')
   final DateTime? shippedAt;
 
   /// planned | shipped | cancelled

@@ -35,10 +35,9 @@ class ReportSchedule {
     this.reportName,
     this.weekday,
   });
-
-  factory ReportSchedule.fromJson(Map<String, Object?> json) =>
-      _$ReportScheduleFromJson(json);
-
+  
+  factory ReportSchedule.fromJson(Map<String, Object?> json) => _$ReportScheduleFromJson(json);
+  
   final bool active;
 
   /// Other recipients.
@@ -47,7 +46,7 @@ class ReportSchedule {
   final DateTime createdAt;
 
   /// 1 to 28, for monthly.
-  @JsonKey(includeIfNull: false, name: 'day_of_month')
+  @JsonKey(includeIfNull: false,name: 'day_of_month')
   final int? dayOfMonth;
 
   /// csv | pdf
@@ -58,13 +57,13 @@ class ReportSchedule {
   @JsonKey(includeIfNull: false)
   final HelpdeskReportSpec? helpdesk;
   final String id;
-  @JsonKey(includeIfNull: false, name: 'last_error')
+  @JsonKey(includeIfNull: false,name: 'last_error')
   final String? lastError;
-  @JsonKey(includeIfNull: false, name: 'last_run_at')
+  @JsonKey(includeIfNull: false,name: 'last_run_at')
   final DateTime? lastRunAt;
 
   /// sent | failed
-  @JsonKey(includeIfNull: false, name: 'last_status')
+  @JsonKey(includeIfNull: false,name: 'last_status')
   final String? lastStatus;
   final String name;
   @JsonKey(name: 'next_run_at')
@@ -73,9 +72,9 @@ class ReportSchedule {
   final String ownerId;
   @JsonKey(name: 'owner_name')
   final String ownerName;
-  @JsonKey(includeIfNull: false, name: 'report_id')
+  @JsonKey(includeIfNull: false,name: 'report_id')
   final String? reportId;
-  @JsonKey(includeIfNull: false, name: 'report_name')
+  @JsonKey(includeIfNull: false,name: 'report_name')
   final String? reportName;
 
   /// Local time, `HH:MM`.

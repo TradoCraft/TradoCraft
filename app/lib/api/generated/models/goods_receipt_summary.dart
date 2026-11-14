@@ -26,10 +26,9 @@ class GoodsReceiptSummary {
     required this.trackingNumber,
     required this.warehouseId,
   });
-
-  factory GoodsReceiptSummary.fromJson(Map<String, Object?> json) =>
-      _$GoodsReceiptSummaryFromJson(json);
-
+  
+  factory GoodsReceiptSummary.fromJson(Map<String, Object?> json) => _$GoodsReceiptSummaryFromJson(json);
+  
   final String carrier;
   @JsonKey(name: 'company_id')
   final String companyId;

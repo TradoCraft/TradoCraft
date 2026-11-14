@@ -9,17 +9,19 @@ part 'mark_paid_input.g.dart';
 /// Payload to record a payment.
 @JsonSerializable()
 class MarkPaidInput {
-  const MarkPaidInput({this.paidAt, this.paymentReference});
-
-  factory MarkPaidInput.fromJson(Map<String, Object?> json) =>
-      _$MarkPaidInputFromJson(json);
-
+  const MarkPaidInput({
+    this.paidAt,
+    this.paymentReference,
+  });
+  
+  factory MarkPaidInput.fromJson(Map<String, Object?> json) => _$MarkPaidInputFromJson(json);
+  
   /// Payment date, default today.
-  @JsonKey(includeIfNull: false, name: 'paid_at')
+  @JsonKey(includeIfNull: false,name: 'paid_at')
   final DateTime? paidAt;
 
   /// Bank or payment reference.
-  @JsonKey(includeIfNull: false, name: 'payment_reference')
+  @JsonKey(includeIfNull: false,name: 'payment_reference')
   final String? paymentReference;
 
   Map<String, Object?> toJson() => _$MarkPaidInputToJson(this);

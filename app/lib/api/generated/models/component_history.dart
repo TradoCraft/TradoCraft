@@ -18,10 +18,9 @@ class ComponentHistory {
     this.removedAt,
     this.removedByName,
   });
-
-  factory ComponentHistory.fromJson(Map<String, Object?> json) =>
-      _$ComponentHistoryFromJson(json);
-
+  
+  factory ComponentHistory.fromJson(Map<String, Object?> json) => _$ComponentHistoryFromJson(json);
+  
   @JsonKey(name: 'added_at')
   final DateTime addedAt;
   @JsonKey(name: 'added_by_name')
@@ -30,9 +29,9 @@ class ComponentHistory {
   final String childId;
   @JsonKey(name: 'product_code')
   final String productCode;
-  @JsonKey(includeIfNull: false, name: 'removed_at')
+  @JsonKey(includeIfNull: false,name: 'removed_at')
   final DateTime? removedAt;
-  @JsonKey(includeIfNull: false, name: 'removed_by_name')
+  @JsonKey(includeIfNull: false,name: 'removed_by_name')
   final String? removedByName;
   @JsonKey(name: 'serial_number')
   final String serialNumber;

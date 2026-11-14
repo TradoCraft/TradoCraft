@@ -28,27 +28,26 @@ class SerialUnit {
     this.parentSerialNumber,
     this.warrantyUntil,
   });
-
-  factory SerialUnit.fromJson(Map<String, Object?> json) =>
-      _$SerialUnitFromJson(json);
-
-  @JsonKey(includeIfNull: false, name: 'bom_id')
+  
+  factory SerialUnit.fromJson(Map<String, Object?> json) => _$SerialUnitFromJson(json);
+  
+  @JsonKey(includeIfNull: false,name: 'bom_id')
   final String? bomId;
-  @JsonKey(includeIfNull: false, name: 'bom_revision')
+  @JsonKey(includeIfNull: false,name: 'bom_revision')
   final int? bomRevision;
   @JsonKey(name: 'created_at')
   final DateTime createdAt;
-  @JsonKey(includeIfNull: false, name: 'customer_id')
+  @JsonKey(includeIfNull: false,name: 'customer_id')
   final String? customerId;
-  @JsonKey(includeIfNull: false, name: 'customer_name')
+  @JsonKey(includeIfNull: false,name: 'customer_name')
   final String? customerName;
   final String id;
   final String notes;
 
   /// The unit this one is currently built into.
-  @JsonKey(includeIfNull: false, name: 'parent_id')
+  @JsonKey(includeIfNull: false,name: 'parent_id')
   final String? parentId;
-  @JsonKey(includeIfNull: false, name: 'parent_serial_number')
+  @JsonKey(includeIfNull: false,name: 'parent_serial_number')
   final String? parentSerialNumber;
   @JsonKey(name: 'product_code')
   final String productCode;
@@ -71,7 +70,7 @@ class SerialUnit {
   final String warrantyStatus;
 
   /// The end of the warranty, if known.
-  @JsonKey(includeIfNull: false, name: 'warranty_until')
+  @JsonKey(includeIfNull: false,name: 'warranty_until')
   final DateTime? warrantyUntil;
 
   Map<String, Object?> toJson() => _$SerialUnitToJson(this);

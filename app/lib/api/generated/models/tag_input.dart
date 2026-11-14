@@ -8,11 +8,12 @@ part 'tag_input.g.dart';
 
 @JsonSerializable()
 class TagInput {
-  const TagInput({required this.tag});
-
-  factory TagInput.fromJson(Map<String, Object?> json) =>
-      _$TagInputFromJson(json);
-
+  const TagInput({
+    required this.tag,
+  });
+  
+  factory TagInput.fromJson(Map<String, Object?> json) => _$TagInputFromJson(json);
+  
   final String tag;
 
   Map<String, Object?> toJson() => _$TagInputToJson(this);

@@ -9,13 +9,14 @@ part 'product_division.g.dart';
 /// The division that normally builds a product.
 @JsonSerializable()
 class ProductDivision {
-  const ProductDivision({this.divisionId});
-
-  factory ProductDivision.fromJson(Map<String, Object?> json) =>
-      _$ProductDivisionFromJson(json);
-
+  const ProductDivision({
+    this.divisionId,
+  });
+  
+  factory ProductDivision.fromJson(Map<String, Object?> json) => _$ProductDivisionFromJson(json);
+  
   /// The division that normally builds the product; empty when none is set.
-  @JsonKey(includeIfNull: false, name: 'division_id')
+  @JsonKey(includeIfNull: false,name: 'division_id')
   final String? divisionId;
 
   Map<String, Object?> toJson() => _$ProductDivisionToJson(this);

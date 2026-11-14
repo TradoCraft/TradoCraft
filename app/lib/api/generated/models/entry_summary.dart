@@ -27,11 +27,10 @@ class EntrySummary {
     this.publishedAt,
     this.score,
   });
-
-  factory EntrySummary.fromJson(Map<String, Object?> json) =>
-      _$EntrySummaryFromJson(json);
-
-  @JsonKey(includeIfNull: false, name: 'category_id')
+  
+  factory EntrySummary.fromJson(Map<String, Object?> json) => _$EntrySummaryFromJson(json);
+  
+  @JsonKey(includeIfNull: false,name: 'category_id')
   final String? categoryId;
   final bool fallback;
   @JsonKey(name: 'helpful_no')
@@ -43,7 +42,7 @@ class EntrySummary {
   /// The language of the title and snippet shown.
   final String language;
   final String number;
-  @JsonKey(includeIfNull: false, name: 'published_at')
+  @JsonKey(includeIfNull: false,name: 'published_at')
   final DateTime? publishedAt;
 
   /// Relevance of a search match (higher is better).

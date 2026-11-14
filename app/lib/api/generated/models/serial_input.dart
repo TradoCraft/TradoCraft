@@ -14,14 +14,13 @@ class SerialInput {
     this.customerId,
     this.notes,
   });
-
-  factory SerialInput.fromJson(Map<String, Object?> json) =>
-      _$SerialInputFromJson(json);
-
+  
+  factory SerialInput.fromJson(Map<String, Object?> json) => _$SerialInputFromJson(json);
+  
   /// BOM revision the unit was built to. Default: the product's active BOM, if any.
-  @JsonKey(includeIfNull: false, name: 'bom_id')
+  @JsonKey(includeIfNull: false,name: 'bom_id')
   final String? bomId;
-  @JsonKey(includeIfNull: false, name: 'customer_id')
+  @JsonKey(includeIfNull: false,name: 'customer_id')
   final String? customerId;
   @JsonKey(includeIfNull: false)
   final String? notes;

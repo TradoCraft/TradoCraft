@@ -22,10 +22,10 @@ class Bom {
     required this.status,
     this.activatedAt,
   });
-
+  
   factory Bom.fromJson(Map<String, Object?> json) => _$BomFromJson(json);
-
-  @JsonKey(includeIfNull: false, name: 'activated_at')
+  
+  @JsonKey(includeIfNull: false,name: 'activated_at')
   final DateTime? activatedAt;
   @JsonKey(name: 'created_at')
   final DateTime createdAt;

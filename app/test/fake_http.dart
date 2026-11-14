@@ -53,7 +53,8 @@ class FakeHttp implements HttpClientAdapter {
         },
       );
     }
-    final json = route(sent);
+    // A route may answer with a Future, to keep a request under way for as long as a test needs.
+    final json = await Future<Object?>.sync(() => route(sent));
     if (json is FakeStatus) {
       return ResponseBody.fromString(
         jsonEncode(json.body),

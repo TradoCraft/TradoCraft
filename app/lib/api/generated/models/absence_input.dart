@@ -15,10 +15,9 @@ class AbsenceInput {
     required this.userId,
     this.note,
   });
-
-  factory AbsenceInput.fromJson(Map<String, Object?> json) =>
-      _$AbsenceInputFromJson(json);
-
+  
+  factory AbsenceInput.fromJson(Map<String, Object?> json) => _$AbsenceInputFromJson(json);
+  
   @JsonKey(name: 'from_date')
   final DateTime fromDate;
   final String kind;

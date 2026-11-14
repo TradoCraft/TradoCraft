@@ -15,10 +15,9 @@ class RemarkHistoryEntry {
     required this.text,
     required this.useCount,
   });
-
-  factory RemarkHistoryEntry.fromJson(Map<String, Object?> json) =>
-      _$RemarkHistoryEntryFromJson(json);
-
+  
+  factory RemarkHistoryEntry.fromJson(Map<String, Object?> json) => _$RemarkHistoryEntryFromJson(json);
+  
   /// Number of the latest quotation that used the text.
   @JsonKey(name: 'last_quotation_number')
   final String lastQuotationNumber;

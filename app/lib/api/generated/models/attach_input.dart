@@ -8,11 +8,12 @@ part 'attach_input.g.dart';
 
 @JsonSerializable()
 class AttachInput {
-  const AttachInput({required this.childId});
-
-  factory AttachInput.fromJson(Map<String, Object?> json) =>
-      _$AttachInputFromJson(json);
-
+  const AttachInput({
+    required this.childId,
+  });
+  
+  factory AttachInput.fromJson(Map<String, Object?> json) => _$AttachInputFromJson(json);
+  
   @JsonKey(name: 'child_id')
   final String childId;
 

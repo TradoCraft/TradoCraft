@@ -8,11 +8,12 @@ part 'warranty_override_input.g.dart';
 
 @JsonSerializable()
 class WarrantyOverrideInput {
-  const WarrantyOverrideInput({required this.reason});
-
-  factory WarrantyOverrideInput.fromJson(Map<String, Object?> json) =>
-      _$WarrantyOverrideInputFromJson(json);
-
+  const WarrantyOverrideInput({
+    required this.reason,
+  });
+  
+  factory WarrantyOverrideInput.fromJson(Map<String, Object?> json) => _$WarrantyOverrideInputFromJson(json);
+  
   /// Why the warranty is void (misuse). Required.
   final String reason;
 

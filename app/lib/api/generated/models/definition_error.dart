@@ -15,10 +15,9 @@ class DefinitionError {
     this.end,
     this.start,
   });
-
-  factory DefinitionError.fromJson(Map<String, Object?> json) =>
-      _$DefinitionErrorFromJson(json);
-
+  
+  factory DefinitionError.fromJson(Map<String, Object?> json) => _$DefinitionErrorFromJson(json);
+  
   @JsonKey(includeIfNull: false)
   final int? end;
   final String message;

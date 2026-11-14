@@ -8,11 +8,13 @@ part 'new_priority_request.g.dart';
 
 @JsonSerializable()
 class NewPriorityRequest {
-  const NewPriorityRequest({required this.message, required this.priority});
-
-  factory NewPriorityRequest.fromJson(Map<String, Object?> json) =>
-      _$NewPriorityRequestFromJson(json);
-
+  const NewPriorityRequest({
+    required this.message,
+    required this.priority,
+  });
+  
+  factory NewPriorityRequest.fromJson(Map<String, Object?> json) => _$NewPriorityRequestFromJson(json);
+  
   final String message;
 
   /// expedite | low

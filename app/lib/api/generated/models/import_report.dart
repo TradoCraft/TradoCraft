@@ -18,10 +18,9 @@ class ImportReport {
     required this.unchanged,
     required this.updated,
   });
-
-  factory ImportReport.fromJson(Map<String, Object?> json) =>
-      _$ImportReportFromJson(json);
-
+  
+  factory ImportReport.fromJson(Map<String, Object?> json) => _$ImportReportFromJson(json);
+  
   final int created;
   final List<RowError> errors;
   final int unchanged;

@@ -17,10 +17,9 @@ class EnvironmentInfo {
     required this.name,
     required this.version,
   });
-
-  factory EnvironmentInfo.fromJson(Map<String, Object?> json) =>
-      _$EnvironmentInfoFromJson(json);
-
+  
+  factory EnvironmentInfo.fromJson(Map<String, Object?> json) => _$EnvironmentInfoFromJson(json);
+  
   /// Name of the database only; never host, user or password.
   @JsonKey(name: 'db_name')
   final String dbName;

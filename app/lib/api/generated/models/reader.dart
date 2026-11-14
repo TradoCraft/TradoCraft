@@ -14,9 +14,9 @@ class Reader {
     required this.userId,
     required this.userName,
   });
-
+  
   factory Reader.fromJson(Map<String, Object?> json) => _$ReaderFromJson(json);
-
+  
   @JsonKey(name: 'last_read_at')
   final DateTime lastReadAt;
   @JsonKey(name: 'user_id')

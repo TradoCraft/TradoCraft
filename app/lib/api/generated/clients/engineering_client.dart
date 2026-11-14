@@ -25,7 +25,9 @@ abstract class EngineeringClient {
   factory EngineeringClient(Dio dio, {String? baseUrl}) = _EngineeringClient;
 
   @GET('/api/v1/boms/{id}')
-  Future<Bom> getBom({@Path('id') required String id});
+  Future<Bom> getBom({
+    @Path('id') required String id,
+  });
 
   /// Replaces the notes and lines of a draft BOM.
   @PUT('/api/v1/boms/{id}')
@@ -37,7 +39,9 @@ abstract class EngineeringClient {
   /// Makes a draft the active revision. The previous active revision becomes obsolete.
   /// Refused if it would create a cycle anywhere in the product structure.
   @POST('/api/v1/boms/{id}/activate')
-  Future<Bom> activateBom({@Path('id') required String id});
+  Future<Bom> activateBom({
+    @Path('id') required String id,
+  });
 
   /// Explodes the active BOM of a product through all levels.
   ///
@@ -49,7 +53,9 @@ abstract class EngineeringClient {
   });
 
   @GET('/api/v1/products/{id}/boms')
-  Future<List<BomSummary>> listBoms({@Path('id') required String id});
+  Future<List<BomSummary>> listBoms({
+    @Path('id') required String id,
+  });
 
   /// Starts a new draft revision, copied from `copy_from` or from the active BOM.
   @POST('/api/v1/products/{id}/boms')
@@ -77,7 +83,9 @@ abstract class EngineeringClient {
   });
 
   @GET('/api/v1/serials/{id}')
-  Future<SerialUnitDetail> getSerial({@Path('id') required String id});
+  Future<SerialUnitDetail> getSerial({
+    @Path('id') required String id,
+  });
 
   /// Records that a serialised component was built into this unit. The component's product must be.
   /// part of the unit's BOM revision, and no more units may be attached than the BOM quantity.

@@ -15,10 +15,9 @@ class DeliveryShipTo {
     required this.postalCode,
     required this.street,
   });
-
-  factory DeliveryShipTo.fromJson(Map<String, Object?> json) =>
-      _$DeliveryShipToFromJson(json);
-
+  
+  factory DeliveryShipTo.fromJson(Map<String, Object?> json) => _$DeliveryShipToFromJson(json);
+  
   final String city;
   @JsonKey(name: 'country_code')
   final String countryCode;

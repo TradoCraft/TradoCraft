@@ -16,10 +16,9 @@ class TargetState {
     this.metAt,
     this.minutesRemaining,
   });
-
-  factory TargetState.fromJson(Map<String, Object?> json) =>
-      _$TargetStateFromJson(json);
-
+  
+  factory TargetState.fromJson(Map<String, Object?> json) => _$TargetStateFromJson(json);
+  
   /// Not breached, not met yet and less than 25 % of the window is left.
   @JsonKey(name: 'at_risk')
   final bool atRisk;
@@ -28,15 +27,15 @@ class TargetState {
   final bool breached;
 
   /// When it is due; empty when the ticket has no service level (internal tickets).
-  @JsonKey(includeIfNull: false, name: 'due_at')
+  @JsonKey(includeIfNull: false,name: 'due_at')
   final DateTime? dueAt;
 
   /// When it was met (first response sent, ticket closed).
-  @JsonKey(includeIfNull: false, name: 'met_at')
+  @JsonKey(includeIfNull: false,name: 'met_at')
   final DateTime? metAt;
 
   /// Whole minutes left (negative when overdue). Empty once the target is met.
-  @JsonKey(includeIfNull: false, name: 'minutes_remaining')
+  @JsonKey(includeIfNull: false,name: 'minutes_remaining')
   final int? minutesRemaining;
 
   Map<String, Object?> toJson() => _$TargetStateToJson(this);

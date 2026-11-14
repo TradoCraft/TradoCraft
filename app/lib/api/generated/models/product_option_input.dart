@@ -16,23 +16,22 @@ class ProductOptionInput {
     this.requiredValue,
     this.sortOrder,
   });
-
-  factory ProductOptionInput.fromJson(Map<String, Object?> json) =>
-      _$ProductOptionInputFromJson(json);
-
+  
+  factory ProductOptionInput.fromJson(Map<String, Object?> json) => _$ProductOptionInputFromJson(json);
+  
   @JsonKey(includeIfNull: false)
   final bool? active;
-  @JsonKey(includeIfNull: false, name: 'default_quantity')
+  @JsonKey(includeIfNull: false,name: 'default_quantity')
   final String? defaultQuantity;
   @JsonKey(name: 'option_product_id')
   final String optionProductId;
 
   /// The name has been replaced because it contains a keyword. Original name: `required`.
-  @JsonKey(includeIfNull: false, name: 'required')
+  @JsonKey(includeIfNull: false,name: 'required')
   final bool? requiredValue;
 
   /// Defaults to the position in the list.
-  @JsonKey(includeIfNull: false, name: 'sort_order')
+  @JsonKey(includeIfNull: false,name: 'sort_order')
   final int? sortOrder;
 
   Map<String, Object?> toJson() => _$ProductOptionInputToJson(this);

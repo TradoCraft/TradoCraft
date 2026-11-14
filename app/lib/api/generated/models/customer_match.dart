@@ -16,10 +16,9 @@ class CustomerMatch {
     required this.matchedOn,
     required this.name,
   });
-
-  factory CustomerMatch.fromJson(Map<String, Object?> json) =>
-      _$CustomerMatchFromJson(json);
-
+  
+  factory CustomerMatch.fromJson(Map<String, Object?> json) => _$CustomerMatchFromJson(json);
+  
   final String code;
   final String id;
   final String language;

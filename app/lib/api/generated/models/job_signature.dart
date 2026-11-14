@@ -16,11 +16,10 @@ class JobSignature {
     required this.signerName,
     this.capturedByName,
   });
-
-  factory JobSignature.fromJson(Map<String, Object?> json) =>
-      _$JobSignatureFromJson(json);
-
-  @JsonKey(includeIfNull: false, name: 'captured_by_name')
+  
+  factory JobSignature.fromJson(Map<String, Object?> json) => _$JobSignatureFromJson(json);
+  
+  @JsonKey(includeIfNull: false,name: 'captured_by_name')
   final String? capturedByName;
   @JsonKey(name: 'decline_reason')
   final String declineReason;

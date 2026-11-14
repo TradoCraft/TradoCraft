@@ -11,11 +11,14 @@ part 'identity_provider_test.g.dart';
 /// A draft configuration (or an existing provider) and optionally a token to try it with.
 @JsonSerializable()
 class IdentityProviderTest {
-  const IdentityProviderTest({this.config, this.id, this.sampleToken});
-
-  factory IdentityProviderTest.fromJson(Map<String, Object?> json) =>
-      _$IdentityProviderTestFromJson(json);
-
+  const IdentityProviderTest({
+    this.config,
+    this.id,
+    this.sampleToken,
+  });
+  
+  factory IdentityProviderTest.fromJson(Map<String, Object?> json) => _$IdentityProviderTestFromJson(json);
+  
   /// A draft configuration to test.
   @JsonKey(includeIfNull: false)
   final IdentityProviderInput? config;
@@ -25,7 +28,7 @@ class IdentityProviderTest {
   final String? id;
 
   /// An access token of this provider. It is checked and discarded: never stored or logged.
-  @JsonKey(includeIfNull: false, name: 'sample_token')
+  @JsonKey(includeIfNull: false,name: 'sample_token')
   final String? sampleToken;
 
   Map<String, Object?> toJson() => _$IdentityProviderTestToJson(this);

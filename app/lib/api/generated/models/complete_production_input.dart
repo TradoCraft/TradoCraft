@@ -5,6 +5,7 @@
 import 'package:json_annotation/json_annotation.dart';
 
 import 'production_component_actual.dart';
+import 'production_operation_actual.dart';
 import 'production_output_input.dart';
 
 part 'complete_production_input.g.dart';
@@ -15,16 +16,22 @@ class CompleteProductionInput {
     required this.output,
     this.components,
     this.note,
+    this.operations,
   });
-
-  factory CompleteProductionInput.fromJson(Map<String, Object?> json) =>
-      _$CompleteProductionInputFromJson(json);
-
+  
+  factory CompleteProductionInput.fromJson(Map<String, Object?> json) => _$CompleteProductionInputFromJson(json);
+  
   /// Actual consumption per component; components that are left out use the BOM quantity.
   @JsonKey(includeIfNull: false)
   final List<ProductionComponentActual>? components;
   @JsonKey(includeIfNull: false)
   final String? note;
+
+  /// The minutes worked per operation. Operations named here are finished; any other.
+  /// operation that is still open is skipped. Never needed: an order without a routing has none,.
+  /// and open operations do not stop an order from being completed.
+  @JsonKey(includeIfNull: false)
+  final List<ProductionOperationActual>? operations;
   final ProductionOutputInput output;
 
   Map<String, Object?> toJson() => _$CompleteProductionInputToJson(this);

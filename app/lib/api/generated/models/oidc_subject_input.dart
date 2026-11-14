@@ -9,11 +9,13 @@ part 'oidc_subject_input.g.dart';
 /// The settings of the user's identity: the issuer-qualified subject to set, or none to clear it.
 @JsonSerializable()
 class OidcSubjectInput {
-  const OidcSubjectInput({this.issuer, this.subject});
-
-  factory OidcSubjectInput.fromJson(Map<String, Object?> json) =>
-      _$OidcSubjectInputFromJson(json);
-
+  const OidcSubjectInput({
+    this.issuer,
+    this.subject,
+  });
+  
+  factory OidcSubjectInput.fromJson(Map<String, Object?> json) => _$OidcSubjectInputFromJson(json);
+  
   /// Issuer of a configured database provider.
   @JsonKey(includeIfNull: false)
   final String? issuer;

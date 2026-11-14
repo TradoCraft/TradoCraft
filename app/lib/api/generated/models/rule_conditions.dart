@@ -23,21 +23,20 @@ class RuleConditions {
     this.tag,
     this.teamId,
   });
-
-  factory RuleConditions.fromJson(Map<String, Object?> json) =>
-      _$RuleConditionsFromJson(json);
-
+  
+  factory RuleConditions.fromJson(Map<String, Object?> json) => _$RuleConditionsFromJson(json);
+  
   @JsonKey(includeIfNull: false)
   final List<String>? categories;
 
   /// email | portal | phone | manual | internal
   @JsonKey(includeIfNull: false)
   final List<String>? channels;
-  @JsonKey(includeIfNull: false, name: 'customer_id')
+  @JsonKey(includeIfNull: false,name: 'customer_id')
   final String? customerId;
 
   /// The language of the customer (nl, fr, en, de, es).
-  @JsonKey(includeIfNull: false, name: 'customer_languages')
+  @JsonKey(includeIfNull: false,name: 'customer_languages')
   final List<String>? customerLanguages;
 
   /// `empty` (nobody owns the ticket) or `set` (somebody does).
@@ -47,17 +46,17 @@ class RuleConditions {
   final List<String>? priorities;
 
   /// The part of the contact's address after the `@`, case-insensitive.
-  @JsonKey(includeIfNull: false, name: 'sender_domain')
+  @JsonKey(includeIfNull: false,name: 'sender_domain')
   final String? senderDomain;
   @JsonKey(includeIfNull: false)
   final List<String>? statuses;
 
   /// Case-insensitive part of the subject.
-  @JsonKey(includeIfNull: false, name: 'subject_contains')
+  @JsonKey(includeIfNull: false,name: 'subject_contains')
   final String? subjectContains;
   @JsonKey(includeIfNull: false)
   final String? tag;
-  @JsonKey(includeIfNull: false, name: 'team_id')
+  @JsonKey(includeIfNull: false,name: 'team_id')
   final String? teamId;
 
   Map<String, Object?> toJson() => _$RuleConditionsToJson(this);

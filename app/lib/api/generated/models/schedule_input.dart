@@ -13,10 +13,9 @@ class ScheduleInput {
     required this.scheduledStart,
     required this.technicianIds,
   });
-
-  factory ScheduleInput.fromJson(Map<String, Object?> json) =>
-      _$ScheduleInputFromJson(json);
-
+  
+  factory ScheduleInput.fromJson(Map<String, Object?> json) => _$ScheduleInputFromJson(json);
+  
   @JsonKey(name: 'scheduled_end')
   final DateTime scheduledEnd;
   @JsonKey(name: 'scheduled_start')

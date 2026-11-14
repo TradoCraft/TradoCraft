@@ -9,11 +9,12 @@ part 'audit_facets.g.dart';
 /// What the filters of the viewer can offer.
 @JsonSerializable()
 class AuditFacets {
-  const AuditFacets({required this.entities});
-
-  factory AuditFacets.fromJson(Map<String, Object?> json) =>
-      _$AuditFacetsFromJson(json);
-
+  const AuditFacets({
+    required this.entities,
+  });
+  
+  factory AuditFacets.fromJson(Map<String, Object?> json) => _$AuditFacetsFromJson(json);
+  
   /// The kinds of record that have events in this company, alphabetically.
   final List<String> entities;
 

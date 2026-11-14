@@ -65,7 +65,9 @@ abstract class HelpdeskClient {
   /// What the customer sees before rating. Reading changes nothing, so mail scanners that open.
   /// links do not use up the token.
   @GET('/api/v1/csat/{token}')
-  Future<CsatInfo> getCsat({@Path('token') required String token});
+  Future<CsatInfo> getCsat({
+    @Path('token') required String token,
+  });
 
   /// Records the rating. The token works once and only until it expires.
   @POST('/api/v1/csat/{token}')
@@ -77,17 +79,23 @@ abstract class HelpdeskClient {
   /// Shows which rules would match the ticket for an event and what they would change, without.
   /// changing anything.
   @POST('/api/v1/helpdesk/automation/dry-run')
-  Future<DryRun> dryRun({@Body() required DryRunInput body});
+  Future<DryRun> dryRun({
+    @Body() required DryRunInput body,
+  });
 
   /// Sets the order in which rules run. The list must contain every rule of the company once.
   @PUT('/api/v1/helpdesk/automation/order')
-  Future<List<Rule>> reorderRules({@Body() required RuleOrder body});
+  Future<List<Rule>> reorderRules({
+    @Body() required RuleOrder body,
+  });
 
   @GET('/api/v1/helpdesk/automation/rules')
   Future<List<Rule>> listRules();
 
   @POST('/api/v1/helpdesk/automation/rules')
-  Future<Rule> createRule({@Body() required RuleInput body});
+  Future<Rule> createRule({
+    @Body() required RuleInput body,
+  });
 
   @PUT('/api/v1/helpdesk/automation/rules/{id}')
   Future<Rule> updateRule({
@@ -96,11 +104,15 @@ abstract class HelpdeskClient {
   });
 
   @DELETE('/api/v1/helpdesk/automation/rules/{id}')
-  Future<void> deleteRule({@Path('id') required String id});
+  Future<void> deleteRule({
+    @Path('id') required String id,
+  });
 
   /// [teamId] - The team the calendar is for; without it the company calendar.
   @GET('/api/v1/helpdesk/calendar')
-  Future<BusinessCalendar> getCalendar({@Query('team_id') String? teamId});
+  Future<BusinessCalendar> getCalendar({
+    @Query('team_id') String? teamId,
+  });
 
   /// Sets the working week and time zone and switches the calendar on or off, for the company or,.
   /// with `team_id`, for one team (which then stops using the company's). Open tickets it applies.
@@ -128,23 +140,31 @@ abstract class HelpdeskClient {
   });
 
   @DELETE('/api/v1/helpdesk/calendar/holidays/{id}')
-  Future<void> deleteHoliday({@Path('id') required String id});
+  Future<void> deleteHoliday({
+    @Path('id') required String id,
+  });
 
   /// Logs a phone call. The caller is looked up by phone number; the call is added to the given.
   /// ticket, or a new ticket is opened for it.
   @POST('/api/v1/helpdesk/calls')
-  Future<TicketDetail> logCall({@Body() required CallInput body});
+  Future<TicketDetail> logCall({
+    @Body() required CallInput body,
+  });
 
   /// Imports a raw e-mail (RFC 5322, e.g. a saved .eml file) as if it had arrived in the mailbox.
   @POST('/api/v1/helpdesk/inbound')
-  Future<InboundResult> inbound({@Body() required String body});
+  Future<InboundResult> inbound({
+    @Body() required String body,
+  });
 
   /// The mailboxes of the company, the default one first.
   @GET('/api/v1/helpdesk/mailboxes')
   Future<List<Mailbox>> listMailboxes();
 
   @POST('/api/v1/helpdesk/mailboxes')
-  Future<Mailbox> createMailbox({@Body() required MailboxInput body});
+  Future<Mailbox> createMailbox({
+    @Body() required MailboxInput body,
+  });
 
   @PUT('/api/v1/helpdesk/mailboxes/{id}')
   Future<Mailbox> updateMailbox({
@@ -155,7 +175,9 @@ abstract class HelpdeskClient {
   /// Removes a mailbox. Its tickets and e-mails stay; replies on them then leave through the.
   /// default mailbox.
   @DELETE('/api/v1/helpdesk/mailboxes/{id}')
-  Future<void> deleteMailbox({@Path('id') required String id});
+  Future<void> deleteMailbox({
+    @Path('id') required String id,
+  });
 
   /// The helpdesk report for a period. Response and resolution times are in business time when the.
   /// ticket's own calendar (its team's, else the company's) is on (see `basis`). Days are the.
@@ -195,7 +217,9 @@ abstract class HelpdeskClient {
   Future<HelpdeskSettings> getSettings();
 
   @PUT('/api/v1/helpdesk/settings')
-  Future<HelpdeskSettings> putSettings({@Body() required SettingsInput body});
+  Future<HelpdeskSettings> putSettings({
+    @Body() required SettingsInput body,
+  });
 
   @GET('/api/v1/helpdesk/sla-notices')
   Future<SlaNoticeSettings> getSlaNotices();
@@ -212,7 +236,9 @@ abstract class HelpdeskClient {
 
   /// Replaces the windows for the given priorities. Open tickets get new due times.
   @PUT('/api/v1/helpdesk/sla-policies')
-  Future<List<SlaPolicy>> putPolicies({@Body() required SlaPoliciesInput body});
+  Future<List<SlaPolicy>> putPolicies({
+    @Body() required SlaPoliciesInput body,
+  });
 
   /// All tags in use at this company, for filters and suggestions.
   @GET('/api/v1/helpdesk/tags')
@@ -222,7 +248,9 @@ abstract class HelpdeskClient {
   Future<List<Team>> listTeams();
 
   @POST('/api/v1/helpdesk/teams')
-  Future<Team> createTeam({@Body() required TeamInput body});
+  Future<Team> createTeam({
+    @Body() required TeamInput body,
+  });
 
   @PUT('/api/v1/helpdesk/teams/{id}')
   Future<Team> updateTeam({
@@ -293,7 +321,9 @@ abstract class HelpdeskClient {
   });
 
   @POST('/api/v1/tickets')
-  Future<TicketDetail> createTicket({@Body() required NewTicketInput body});
+  Future<TicketDetail> createTicket({
+    @Body() required NewTicketInput body,
+  });
 
   /// Production asks a question about an order. It becomes an internal ticket for the salesperson,.
   /// in the customer's language, so they can ask the customer and report back in a note.
@@ -303,7 +333,9 @@ abstract class HelpdeskClient {
   });
 
   @GET('/api/v1/tickets/{id}')
-  Future<TicketDetail> getTicket({@Path('id') required String id});
+  Future<TicketDetail> getTicket({
+    @Path('id') required String id,
+  });
 
   @PUT('/api/v1/tickets/{id}')
   Future<TicketDetail> updateTicket({
@@ -367,7 +399,9 @@ abstract class HelpdeskClient {
   /// The activity timeline: events and messages (customer and colleagues, internal notes.
   /// included), oldest first. Internal: never shown to customers.
   @GET('/api/v1/tickets/{id}/events')
-  Future<List<TimelineItem>> timeline({@Path('id') required String id});
+  Future<List<TimelineItem>> timeline({
+    @Path('id') required String id,
+  });
 
   /// Turns the ticket into a sales lead: creates an opportunity for its customer and links it.
   @POST('/api/v1/tickets/{id}/lead')
@@ -401,7 +435,9 @@ abstract class HelpdeskClient {
 
   /// Colleagues (not the caller) active on the ticket during the last 60 seconds.
   @GET('/api/v1/tickets/{id}/presence')
-  Future<List<PresenceEntry>> presenceList({@Path('id') required String id});
+  Future<List<PresenceEntry>> presenceList({
+    @Path('id') required String id,
+  });
 
   /// Heartbeat: "I am viewing / replying to this ticket". Returns who else is active, so one call.
   /// per beat is enough. Advisory only: nothing is locked.
@@ -413,7 +449,9 @@ abstract class HelpdeskClient {
 
   /// Marks the ticket as read by the caller (call it when the ticket was opened and shown).
   @POST('/api/v1/tickets/{id}/read')
-  Future<void> markRead({@Path('id') required String id});
+  Future<void> markRead({
+    @Path('id') required String id,
+  });
 
   /// Queues an e-mail to the customer. The worker sends it; delivery status shows on the article.
   @POST('/api/v1/tickets/{id}/replies')
@@ -445,7 +483,9 @@ abstract class HelpdeskClient {
   });
 
   @GET('/api/v1/tickets/{id}/time-entries')
-  Future<TimeEntries> listTime({@Path('id') required String id});
+  Future<TimeEntries> listTime({
+    @Path('id') required String id,
+  });
 
   @POST('/api/v1/tickets/{id}/time-entries')
   Future<TimeEntries> addTime({
@@ -462,11 +502,15 @@ abstract class HelpdeskClient {
 
   /// Follow the ticket yourself.
   @PUT('/api/v1/tickets/{id}/watch')
-  Future<List<Watcher>> watch({@Path('id') required String id});
+  Future<List<Watcher>> watch({
+    @Path('id') required String id,
+  });
 
   /// Stop following the ticket. Replying to it later makes you a watcher again.
   @DELETE('/api/v1/tickets/{id}/watch')
-  Future<List<Watcher>> unwatch({@Path('id') required String id});
+  Future<List<Watcher>> unwatch({
+    @Path('id') required String id,
+  });
 
   /// Adds a colleague as a watcher.
   @POST('/api/v1/tickets/{id}/watchers')

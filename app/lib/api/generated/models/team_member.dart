@@ -13,10 +13,9 @@ class TeamMember {
     required this.isLead,
     required this.userId,
   });
-
-  factory TeamMember.fromJson(Map<String, Object?> json) =>
-      _$TeamMemberFromJson(json);
-
+  
+  factory TeamMember.fromJson(Map<String, Object?> json) => _$TeamMemberFromJson(json);
+  
   @JsonKey(name: 'display_name')
   final String displayName;
   @JsonKey(name: 'is_lead')

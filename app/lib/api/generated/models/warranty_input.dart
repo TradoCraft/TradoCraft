@@ -8,16 +8,18 @@ part 'warranty_input.g.dart';
 
 @JsonSerializable()
 class WarrantyInput {
-  const WarrantyInput({this.warrantyNote, this.warrantyUntil});
-
-  factory WarrantyInput.fromJson(Map<String, Object?> json) =>
-      _$WarrantyInputFromJson(json);
-
-  @JsonKey(includeIfNull: false, name: 'warranty_note')
+  const WarrantyInput({
+    this.warrantyNote,
+    this.warrantyUntil,
+  });
+  
+  factory WarrantyInput.fromJson(Map<String, Object?> json) => _$WarrantyInputFromJson(json);
+  
+  @JsonKey(includeIfNull: false,name: 'warranty_note')
   final String? warrantyNote;
 
   /// The last day of the warranty; empty when unknown.
-  @JsonKey(includeIfNull: false, name: 'warranty_until')
+  @JsonKey(includeIfNull: false,name: 'warranty_until')
   final DateTime? warrantyUntil;
 
   Map<String, Object?> toJson() => _$WarrantyInputToJson(this);

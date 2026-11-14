@@ -13,15 +13,14 @@ class UpdateProductionInput {
     this.notes,
     this.plannedReadyDate,
   });
-
-  factory UpdateProductionInput.fromJson(Map<String, Object?> json) =>
-      _$UpdateProductionInputFromJson(json);
-
-  @JsonKey(includeIfNull: false, name: 'division_id')
+  
+  factory UpdateProductionInput.fromJson(Map<String, Object?> json) => _$UpdateProductionInputFromJson(json);
+  
+  @JsonKey(includeIfNull: false,name: 'division_id')
   final String? divisionId;
   @JsonKey(includeIfNull: false)
   final String? notes;
-  @JsonKey(includeIfNull: false, name: 'planned_ready_date')
+  @JsonKey(includeIfNull: false,name: 'planned_ready_date')
   final DateTime? plannedReadyDate;
 
   Map<String, Object?> toJson() => _$UpdateProductionInputToJson(this);

@@ -8,11 +8,13 @@ part 'holiday_input.g.dart';
 
 @JsonSerializable()
 class HolidayInput {
-  const HolidayInput({required this.day, required this.name});
-
-  factory HolidayInput.fromJson(Map<String, Object?> json) =>
-      _$HolidayInputFromJson(json);
-
+  const HolidayInput({
+    required this.day,
+    required this.name,
+  });
+  
+  factory HolidayInput.fromJson(Map<String, Object?> json) => _$HolidayInputFromJson(json);
+  
   final DateTime day;
   final String name;
 

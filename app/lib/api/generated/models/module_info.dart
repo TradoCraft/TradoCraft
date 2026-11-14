@@ -15,10 +15,9 @@ class ModuleInfo {
     required this.permissions,
     required this.requires,
   });
-
-  factory ModuleInfo.fromJson(Map<String, Object?> json) =>
-      _$ModuleInfoFromJson(json);
-
+  
+  factory ModuleInfo.fromJson(Map<String, Object?> json) => _$ModuleInfoFromJson(json);
+  
   final String code;
   final bool enabled;
 

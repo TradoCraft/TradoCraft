@@ -10,16 +10,18 @@ part 'working_hours_input.g.dart';
 
 @JsonSerializable()
 class WorkingHoursInput {
-  const WorkingHoursInput({required this.slots, this.userId});
-
-  factory WorkingHoursInput.fromJson(Map<String, Object?> json) =>
-      _$WorkingHoursInputFromJson(json);
-
+  const WorkingHoursInput({
+    required this.slots,
+    this.userId,
+  });
+  
+  factory WorkingHoursInput.fromJson(Map<String, Object?> json) => _$WorkingHoursInputFromJson(json);
+  
   /// Replaces all rows of that user (or of the default). No rows: the default applies again.
   final List<HoursSlotInput> slots;
 
   /// The user the hours are for; empty sets the company default.
-  @JsonKey(includeIfNull: false, name: 'user_id')
+  @JsonKey(includeIfNull: false,name: 'user_id')
   final String? userId;
 
   Map<String, Object?> toJson() => _$WorkingHoursInputToJson(this);

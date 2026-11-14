@@ -22,9 +22,9 @@ class Rule {
     required this.trigger,
     required this.updatedAt,
   });
-
+  
   factory Rule.fromJson(Map<String, Object?> json) => _$RuleFromJson(json);
-
+  
   final List<RuleAction> actions;
   final bool active;
   final RuleConditions conditions;

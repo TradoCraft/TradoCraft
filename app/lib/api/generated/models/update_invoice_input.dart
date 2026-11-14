@@ -18,20 +18,19 @@ class UpdateInvoiceInput {
     this.lines,
     this.notes,
   });
-
-  factory UpdateInvoiceInput.fromJson(Map<String, Object?> json) =>
-      _$UpdateInvoiceInputFromJson(json);
-
+  
+  factory UpdateInvoiceInput.fromJson(Map<String, Object?> json) => _$UpdateInvoiceInputFromJson(json);
+  
   /// New due date.
-  @JsonKey(includeIfNull: false, name: 'due_date')
+  @JsonKey(includeIfNull: false,name: 'due_date')
   final DateTime? dueDate;
 
   /// New invoice date.
-  @JsonKey(includeIfNull: false, name: 'invoice_date')
+  @JsonKey(includeIfNull: false,name: 'invoice_date')
   final DateTime? invoiceDate;
 
   /// New supplier invoice number.
-  @JsonKey(includeIfNull: false, name: 'invoice_number')
+  @JsonKey(includeIfNull: false,name: 'invoice_number')
   final String? invoiceNumber;
 
   /// Replaces all lines when present.

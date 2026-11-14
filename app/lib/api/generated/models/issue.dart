@@ -18,9 +18,9 @@ class Issue {
     this.field,
     this.rule,
   });
-
+  
   factory Issue.fromJson(Map<String, Object?> json) => _$IssueFromJson(json);
-
+  
   /// The validation id, or a built-in code: required, out_of_range, invalid_value,.
   /// evaluation_error, pin_stale, pin_ignored, rows, no_code, unknown_product.
   final String code;

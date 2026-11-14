@@ -13,10 +13,9 @@ class WorkingHours {
     required this.startTime,
     required this.weekday,
   });
-
-  factory WorkingHours.fromJson(Map<String, Object?> json) =>
-      _$WorkingHoursFromJson(json);
-
+  
+  factory WorkingHours.fromJson(Map<String, Object?> json) => _$WorkingHoursFromJson(json);
+  
   @JsonKey(name: 'end_time')
   final String endTime;
 

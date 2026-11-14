@@ -26,10 +26,9 @@ class ShippingRequest {
     this.requestedAt,
     this.requestedBy,
   });
-
-  factory ShippingRequest.fromJson(Map<String, Object?> json) =>
-      _$ShippingRequestFromJson(json);
-
+  
+  factory ShippingRequest.fromJson(Map<String, Object?> json) => _$ShippingRequestFromJson(json);
+  
   @JsonKey(includeIfNull: false)
   final String? carrier;
   @JsonKey(name: 'created_at')
@@ -38,7 +37,7 @@ class ShippingRequest {
   final String? currency;
   @JsonKey(name: 'customer_name')
   final String customerName;
-  @JsonKey(includeIfNull: false, name: 'delivery_country_code')
+  @JsonKey(includeIfNull: false,name: 'delivery_country_code')
   final String? deliveryCountryCode;
   final String id;
   final String notes;
@@ -48,15 +47,15 @@ class ShippingRequest {
   final String quotationNumber;
   @JsonKey(name: 'quotation_revision')
   final int quotationRevision;
-  @JsonKey(includeIfNull: false, name: 'quoted_amount')
+  @JsonKey(includeIfNull: false,name: 'quoted_amount')
   final String? quotedAmount;
-  @JsonKey(includeIfNull: false, name: 'quoted_at')
+  @JsonKey(includeIfNull: false,name: 'quoted_at')
   final DateTime? quotedAt;
-  @JsonKey(includeIfNull: false, name: 'quoted_by')
+  @JsonKey(includeIfNull: false,name: 'quoted_by')
   final String? quotedBy;
-  @JsonKey(includeIfNull: false, name: 'requested_at')
+  @JsonKey(includeIfNull: false,name: 'requested_at')
   final DateTime? requestedAt;
-  @JsonKey(includeIfNull: false, name: 'requested_by')
+  @JsonKey(includeIfNull: false,name: 'requested_by')
   final String? requestedBy;
 
   /// open | requested | quoted | cancelled

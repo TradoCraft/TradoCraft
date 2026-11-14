@@ -16,12 +16,11 @@ class ReplyInput {
     this.subject,
     this.to,
   });
-
-  factory ReplyInput.fromJson(Map<String, Object?> json) =>
-      _$ReplyInputFromJson(json);
-
+  
+  factory ReplyInput.fromJson(Map<String, Object?> json) => _$ReplyInputFromJson(json);
+  
   /// Files uploaded to the ticket (`POST /tickets/{id}/attachments`) to send with the e-mail.
-  @JsonKey(includeIfNull: false, name: 'attachment_ids')
+  @JsonKey(includeIfNull: false,name: 'attachment_ids')
   final List<String>? attachmentIds;
   final String body;
   @JsonKey(includeIfNull: false)

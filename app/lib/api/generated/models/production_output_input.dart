@@ -15,11 +15,10 @@ class ProductionOutputInput {
     this.lotNumber,
     this.serialNumbers,
   });
-
-  factory ProductionOutputInput.fromJson(Map<String, Object?> json) =>
-      _$ProductionOutputInputFromJson(json);
-
-  @JsonKey(includeIfNull: false, name: 'expiry_date')
+  
+  factory ProductionOutputInput.fromJson(Map<String, Object?> json) => _$ProductionOutputInputFromJson(json);
+  
+  @JsonKey(includeIfNull: false,name: 'expiry_date')
   final DateTime? expiryDate;
 
   /// The stock location the output goes to.
@@ -27,7 +26,7 @@ class ProductionOutputInput {
   final String locationId;
 
   /// Needed for lot-tracked products.
-  @JsonKey(includeIfNull: false, name: 'lot_number')
+  @JsonKey(includeIfNull: false,name: 'lot_number')
   final String? lotNumber;
 
   /// What was built, in the stock unit. May be less than ordered; the order is then closed with.
@@ -35,7 +34,7 @@ class ProductionOutputInput {
   final String quantity;
 
   /// Needed for serial-tracked products: one serial number per unit built.
-  @JsonKey(includeIfNull: false, name: 'serial_numbers')
+  @JsonKey(includeIfNull: false,name: 'serial_numbers')
   final List<String>? serialNumbers;
 
   Map<String, Object?> toJson() => _$ProductionOutputInputToJson(this);

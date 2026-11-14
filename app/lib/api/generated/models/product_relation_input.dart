@@ -19,23 +19,22 @@ class ProductRelationInput {
     this.note,
     this.strength,
   });
-
-  factory ProductRelationInput.fromJson(Map<String, Object?> json) =>
-      _$ProductRelationInputFromJson(json);
-
-  @JsonKey(includeIfNull: false, name: 'a_family_id')
+  
+  factory ProductRelationInput.fromJson(Map<String, Object?> json) => _$ProductRelationInputFromJson(json);
+  
+  @JsonKey(includeIfNull: false,name: 'a_family_id')
   final String? aFamilyId;
 
   /// Exactly one of `a_product_id` and `a_family_id`.
-  @JsonKey(includeIfNull: false, name: 'a_product_id')
+  @JsonKey(includeIfNull: false,name: 'a_product_id')
   final String? aProductId;
   @JsonKey(includeIfNull: false)
   final bool? active;
-  @JsonKey(includeIfNull: false, name: 'b_family_id')
+  @JsonKey(includeIfNull: false,name: 'b_family_id')
   final String? bFamilyId;
 
   /// Exactly one of `b_product_id` and `b_family_id`.
-  @JsonKey(includeIfNull: false, name: 'b_product_id')
+  @JsonKey(includeIfNull: false,name: 'b_product_id')
   final String? bProductId;
   @JsonKey(includeIfNull: false)
   final bool? bidirectional;

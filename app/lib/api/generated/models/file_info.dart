@@ -16,10 +16,9 @@ class FileInfo {
     required this.sizeBytes,
     required this.uploaderName,
   });
-
-  factory FileInfo.fromJson(Map<String, Object?> json) =>
-      _$FileInfoFromJson(json);
-
+  
+  factory FileInfo.fromJson(Map<String, Object?> json) => _$FileInfoFromJson(json);
+  
   /// image/jpeg | image/png | image/webp | application/pdf
   @JsonKey(name: 'content_type')
   final String contentType;

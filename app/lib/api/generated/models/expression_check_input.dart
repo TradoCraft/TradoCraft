@@ -18,10 +18,9 @@ class ExpressionCheckInput {
     this.table,
     this.template,
   });
-
-  factory ExpressionCheckInput.fromJson(Map<String, Object?> json) =>
-      _$ExpressionCheckInputFromJson(json);
-
+  
+  factory ExpressionCheckInput.fromJson(Map<String, Object?> json) => _$ExpressionCheckInputFromJson(json);
+  
   /// The definition the formula belongs to; without it names are not checked.
   @JsonKey(includeIfNull: false)
   final dynamic definition;

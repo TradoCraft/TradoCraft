@@ -37,9 +37,9 @@ class Report {
     required this.topTags,
     required this.volume,
   });
-
+  
   factory Report.fromJson(Map<String, Object?> json) => _$ReportFromJson(json);
-
+  
   @JsonKey(name: 'backlog_by_owner')
   final List<CountRow> backlogByOwner;
   @JsonKey(name: 'backlog_by_priority')

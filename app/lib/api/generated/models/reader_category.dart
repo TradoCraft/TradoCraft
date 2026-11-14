@@ -15,16 +15,15 @@ class ReaderCategory {
     required this.sortOrder,
     this.parentId,
   });
-
-  factory ReaderCategory.fromJson(Map<String, Object?> json) =>
-      _$ReaderCategoryFromJson(json);
-
+  
+  factory ReaderCategory.fromJson(Map<String, Object?> json) => _$ReaderCategoryFromJson(json);
+  
   /// Entries the reader can open in this category, sub-categories included.
   @JsonKey(name: 'entry_count')
   final int entryCount;
   final String id;
   final String name;
-  @JsonKey(includeIfNull: false, name: 'parent_id')
+  @JsonKey(includeIfNull: false,name: 'parent_id')
   final String? parentId;
   @JsonKey(name: 'sort_order')
   final int sortOrder;

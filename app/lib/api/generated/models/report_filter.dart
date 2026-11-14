@@ -11,11 +11,14 @@ part 'report_filter.g.dart';
 /// A filter condition on one field.
 @JsonSerializable()
 class ReportFilter {
-  const ReportFilter({required this.field, required this.op, this.value});
-
-  factory ReportFilter.fromJson(Map<String, Object?> json) =>
-      _$ReportFilterFromJson(json);
-
+  const ReportFilter({
+    required this.field,
+    required this.op,
+    this.value,
+  });
+  
+  factory ReportFilter.fromJson(Map<String, Object?> json) => _$ReportFilterFromJson(json);
+  
   final String field;
   final ReportOp op;
 

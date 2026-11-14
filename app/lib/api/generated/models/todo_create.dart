@@ -23,32 +23,31 @@ class TodoCreate {
     this.parentId,
     this.position,
   });
-
-  factory TodoCreate.fromJson(Map<String, Object?> json) =>
-      _$TodoCreateFromJson(json);
-
+  
+  factory TodoCreate.fromJson(Map<String, Object?> json) => _$TodoCreateFromJson(json);
+  
   /// Hands the item to a colleague. Not allowed for sub-items.
-  @JsonKey(includeIfNull: false, name: 'assignee_id')
+  @JsonKey(includeIfNull: false,name: 'assignee_id')
   final String? assigneeId;
 
   /// Chosen by the client; a repeated create with the same id returns the item that exists.
-  @JsonKey(includeIfNull: false, name: 'client_id')
+  @JsonKey(includeIfNull: false,name: 'client_id')
   final String? clientId;
-  @JsonKey(includeIfNull: false, name: 'due_date')
+  @JsonKey(includeIfNull: false,name: 'due_date')
   final DateTime? dueDate;
-  @JsonKey(includeIfNull: false, name: 'link_id')
+  @JsonKey(includeIfNull: false,name: 'link_id')
   final String? linkId;
-  @JsonKey(includeIfNull: false, name: 'link_kind')
+  @JsonKey(includeIfNull: false,name: 'link_kind')
   final TodoLinkKind? linkKind;
-  @JsonKey(includeIfNull: false, name: 'link_label')
+  @JsonKey(includeIfNull: false,name: 'link_label')
   final String? linkLabel;
-  @JsonKey(includeIfNull: false, name: 'link_location')
+  @JsonKey(includeIfNull: false,name: 'link_location')
   final String? linkLocation;
   @JsonKey(includeIfNull: false)
   final String? notes;
 
   /// Makes this a sub-item of that root item; it then shares the parent's owner and assignee.
-  @JsonKey(includeIfNull: false, name: 'parent_id')
+  @JsonKey(includeIfNull: false,name: 'parent_id')
   final String? parentId;
 
   /// Defaults to the end of its siblings.

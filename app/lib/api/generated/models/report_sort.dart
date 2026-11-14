@@ -11,11 +11,13 @@ part 'report_sort.g.dart';
 /// A sort key, naming an output column.
 @JsonSerializable()
 class ReportSort {
-  const ReportSort({required this.column, this.dir});
-
-  factory ReportSort.fromJson(Map<String, Object?> json) =>
-      _$ReportSortFromJson(json);
-
+  const ReportSort({
+    required this.column,
+    this.dir,
+  });
+  
+  factory ReportSort.fromJson(Map<String, Object?> json) => _$ReportSortFromJson(json);
+  
   /// Output column key, see the module documentation.
   final String column;
   @JsonKey(includeIfNull: false)

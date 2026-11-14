@@ -17,16 +17,15 @@ class EquipmentJob {
     this.completedAt,
     this.scheduledStart,
   });
-
-  factory EquipmentJob.fromJson(Map<String, Object?> json) =>
-      _$EquipmentJobFromJson(json);
-
-  @JsonKey(includeIfNull: false, name: 'completed_at')
+  
+  factory EquipmentJob.fromJson(Map<String, Object?> json) => _$EquipmentJobFromJson(json);
+  
+  @JsonKey(includeIfNull: false,name: 'completed_at')
   final DateTime? completedAt;
   final String id;
   final String kind;
   final String number;
-  @JsonKey(includeIfNull: false, name: 'scheduled_start')
+  @JsonKey(includeIfNull: false,name: 'scheduled_start')
   final DateTime? scheduledStart;
   final String status;
   final String title;

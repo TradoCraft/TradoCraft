@@ -38,7 +38,9 @@ abstract class RepairsClient {
   Future<List<Department>> listDepartments();
 
   @POST('/api/v1/departments')
-  Future<Department> createDepartment({@Body() required DepartmentInput body});
+  Future<Department> createDepartment({
+    @Body() required DepartmentInput body,
+  });
 
   @PUT('/api/v1/departments/{id}')
   Future<Department> updateDepartment({
@@ -63,10 +65,14 @@ abstract class RepairsClient {
 
   /// Registers a parcel at the dock. The same `client_id` again returns the first parcel (200).
   @POST('/api/v1/packages')
-  Future<PackageDetail> createPackage({@Body() required PackageInput body});
+  Future<PackageDetail> createPackage({
+    @Body() required PackageInput body,
+  });
 
   @GET('/api/v1/packages/{id}')
-  Future<PackageDetail> getPackage({@Path('id') required String id});
+  Future<PackageDetail> getPackage({
+    @Path('id') required String id,
+  });
 
   /// Corrects the details of a parcel while it is registered or opened.
   @PUT('/api/v1/packages/{id}')
@@ -166,10 +172,14 @@ abstract class RepairsClient {
 
   /// Registers a repair. Give a `ticket_id` to create it from the ticket where it was announced.
   @POST('/api/v1/repairs')
-  Future<RepairDetail> createRepair({@Body() required NewRepairInput body});
+  Future<RepairDetail> createRepair({
+    @Body() required NewRepairInput body,
+  });
 
   @GET('/api/v1/repairs/{id}')
-  Future<RepairDetail> getRepair({@Path('id') required String id});
+  Future<RepairDetail> getRepair({
+    @Path('id') required String id,
+  });
 
   /// Changes the descriptive fields of a repair (not its status or department).
   @PUT('/api/v1/repairs/{id}')
@@ -202,7 +212,9 @@ abstract class RepairsClient {
 
   /// The parcels a repair arrived in.
   @GET('/api/v1/repairs/{id}/packages')
-  Future<List<Package>> listRepairPackages({@Path('id') required String id});
+  Future<List<Package>> listRepairPackages({
+    @Path('id') required String id,
+  });
 
   /// Adds a photo: the request body is the image itself (JPEG, PNG or WebP, at most 12 MB).
   ///
@@ -250,7 +262,9 @@ abstract class RepairsClient {
   /// The warranty card: the automatic result, the serial unit it is based on, the override, and the.
   /// final status.
   @GET('/api/v1/repairs/{id}/warranty')
-  Future<RepairWarranty> getRepairWarranty({@Path('id') required String id});
+  Future<RepairWarranty> getRepairWarranty({
+    @Path('id') required String id,
+  });
 
   /// Declares the warranty void (misuse). The automatic result stays visible; who, when and why are.
   /// recorded. It cannot turn an out-of-warranty product into an in-warranty one.
@@ -275,5 +289,7 @@ abstract class RepairsClient {
 
   /// The repairs registered for a ticket (the ticket may announce several).
   @GET('/api/v1/tickets/{id}/repairs')
-  Future<List<Repair>> listTicketRepairs({@Path('id') required String id});
+  Future<List<Repair>> listTicketRepairs({
+    @Path('id') required String id,
+  });
 }

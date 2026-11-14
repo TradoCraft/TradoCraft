@@ -10,11 +10,13 @@ part 'ticket_page.g.dart';
 
 @JsonSerializable()
 class TicketPage {
-  const TicketPage({required this.items, required this.total});
-
-  factory TicketPage.fromJson(Map<String, Object?> json) =>
-      _$TicketPageFromJson(json);
-
+  const TicketPage({
+    required this.items,
+    required this.total,
+  });
+  
+  factory TicketPage.fromJson(Map<String, Object?> json) => _$TicketPageFromJson(json);
+  
   final List<Ticket> items;
   final int total;
 

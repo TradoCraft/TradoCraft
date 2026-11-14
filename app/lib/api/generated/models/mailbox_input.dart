@@ -28,26 +28,25 @@ class MailboxInput {
     this.tenantId,
     this.username,
   });
-
-  factory MailboxInput.fromJson(Map<String, Object?> json) =>
-      _$MailboxInputFromJson(json);
-
+  
+  factory MailboxInput.fromJson(Map<String, Object?> json) => _$MailboxInputFromJson(json);
+  
   @JsonKey(includeIfNull: false)
   final bool? active;
   final String address;
-  @JsonKey(includeIfNull: false, name: 'client_id')
+  @JsonKey(includeIfNull: false,name: 'client_id')
   final String? clientId;
-  @JsonKey(includeIfNull: false, name: 'imap_folder')
+  @JsonKey(includeIfNull: false,name: 'imap_folder')
   final String? imapFolder;
-  @JsonKey(includeIfNull: false, name: 'imap_host')
+  @JsonKey(includeIfNull: false,name: 'imap_host')
   final String? imapHost;
-  @JsonKey(includeIfNull: false, name: 'imap_port')
+  @JsonKey(includeIfNull: false,name: 'imap_port')
   final int? imapPort;
-  @JsonKey(includeIfNull: false, name: 'imap_tls')
+  @JsonKey(includeIfNull: false,name: 'imap_tls')
   final bool? imapTls;
-  @JsonKey(includeIfNull: false, name: 'inbound_enabled')
+  @JsonKey(includeIfNull: false,name: 'inbound_enabled')
   final bool? inboundEnabled;
-  @JsonKey(includeIfNull: false, name: 'is_default')
+  @JsonKey(includeIfNull: false,name: 'is_default')
   final bool? isDefault;
 
   /// graph | imap_smtp
@@ -57,15 +56,15 @@ class MailboxInput {
   /// Upper-case letters, digits and underscores, e.g. `SUPPORT`.
   @JsonKey(name: 'secret_ref')
   final String secretRef;
-  @JsonKey(includeIfNull: false, name: 'smtp_host')
+  @JsonKey(includeIfNull: false,name: 'smtp_host')
   final String? smtpHost;
-  @JsonKey(includeIfNull: false, name: 'smtp_port')
+  @JsonKey(includeIfNull: false,name: 'smtp_port')
   final int? smtpPort;
-  @JsonKey(includeIfNull: false, name: 'smtp_security')
+  @JsonKey(includeIfNull: false,name: 'smtp_security')
   final String? smtpSecurity;
-  @JsonKey(includeIfNull: false, name: 'team_id')
+  @JsonKey(includeIfNull: false,name: 'team_id')
   final String? teamId;
-  @JsonKey(includeIfNull: false, name: 'tenant_id')
+  @JsonKey(includeIfNull: false,name: 'tenant_id')
   final String? tenantId;
   @JsonKey(includeIfNull: false)
   final String? username;

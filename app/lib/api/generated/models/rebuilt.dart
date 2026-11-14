@@ -8,11 +8,12 @@ part 'rebuilt.g.dart';
 
 @JsonSerializable()
 class Rebuilt {
-  const Rebuilt({required this.balanceRows});
-
-  factory Rebuilt.fromJson(Map<String, Object?> json) =>
-      _$RebuiltFromJson(json);
-
+  const Rebuilt({
+    required this.balanceRows,
+  });
+  
+  factory Rebuilt.fromJson(Map<String, Object?> json) => _$RebuiltFromJson(json);
+  
   @JsonKey(name: 'balance_rows')
   final int balanceRows;
 

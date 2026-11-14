@@ -8,11 +8,13 @@ part 'report_catalog_link.g.dart';
 
 @JsonSerializable()
 class ReportCatalogLink {
-  const ReportCatalogLink({required this.a, required this.b});
-
-  factory ReportCatalogLink.fromJson(Map<String, Object?> json) =>
-      _$ReportCatalogLinkFromJson(json);
-
+  const ReportCatalogLink({
+    required this.a,
+    required this.b,
+  });
+  
+  factory ReportCatalogLink.fromJson(Map<String, Object?> json) => _$ReportCatalogLinkFromJson(json);
+  
   final String a;
   final String b;
 

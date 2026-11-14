@@ -8,11 +8,13 @@ part 'csat_input.g.dart';
 
 @JsonSerializable()
 class CsatInput {
-  const CsatInput({required this.rating, this.comment});
-
-  factory CsatInput.fromJson(Map<String, Object?> json) =>
-      _$CsatInputFromJson(json);
-
+  const CsatInput({
+    required this.rating,
+    this.comment,
+  });
+  
+  factory CsatInput.fromJson(Map<String, Object?> json) => _$CsatInputFromJson(json);
+  
   @JsonKey(includeIfNull: false)
   final String? comment;
 

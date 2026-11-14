@@ -15,10 +15,9 @@ class TraceSource {
     this.each,
     this.label,
   });
-
-  factory TraceSource.fromJson(Map<String, Object?> json) =>
-      _$TraceSourceFromJson(json);
-
+  
+  factory TraceSource.fromJson(Map<String, Object?> json) => _$TraceSourceFromJson(json);
+  
   /// The `for_each` element.
   @JsonKey(includeIfNull: false)
   final dynamic each;

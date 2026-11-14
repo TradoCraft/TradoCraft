@@ -24,10 +24,9 @@ class FavoriteItemInput {
     this.remarks,
     this.section,
   });
-
-  factory FavoriteItemInput.fromJson(Map<String, Object?> json) =>
-      _$FavoriteItemInputFromJson(json);
-
+  
+  factory FavoriteItemInput.fromJson(Map<String, Object?> json) => _$FavoriteItemInputFromJson(json);
+  
   @JsonKey(includeIfNull: false)
   final String? comment;
 
@@ -38,15 +37,15 @@ class FavoriteItemInput {
 
   /// Position (1-based, in this list) of an earlier item this one belongs to. Omitted: the main.
   /// item, which must be exactly one and first.
-  @JsonKey(includeIfNull: false, name: 'parent_position')
+  @JsonKey(includeIfNull: false,name: 'parent_position')
   final int? parentPosition;
-  @JsonKey(includeIfNull: false, name: 'percent_base')
+  @JsonKey(includeIfNull: false,name: 'percent_base')
   final PercentBase? percentBase;
-  @JsonKey(includeIfNull: false, name: 'percent_of_parent')
+  @JsonKey(includeIfNull: false,name: 'percent_of_parent')
   final String? percentOfParent;
   @JsonKey(name: 'product_id')
   final String productId;
-  @JsonKey(includeIfNull: false, name: 'production_remark')
+  @JsonKey(includeIfNull: false,name: 'production_remark')
   final String? productionRemark;
   final String quantity;
 

@@ -15,10 +15,9 @@ class BalanceDifference {
     required this.productId,
     this.lotId,
   });
-
-  factory BalanceDifference.fromJson(Map<String, Object?> json) =>
-      _$BalanceDifferenceFromJson(json);
-
+  
+  factory BalanceDifference.fromJson(Map<String, Object?> json) => _$BalanceDifferenceFromJson(json);
+  
   /// What the balance table holds.
   @JsonKey(name: 'balance_quantity')
   final String balanceQuantity;
@@ -28,7 +27,7 @@ class BalanceDifference {
   final String ledgerQuantity;
   @JsonKey(name: 'location_id')
   final String locationId;
-  @JsonKey(includeIfNull: false, name: 'lot_id')
+  @JsonKey(includeIfNull: false,name: 'lot_id')
   final String? lotId;
   @JsonKey(name: 'product_id')
   final String productId;

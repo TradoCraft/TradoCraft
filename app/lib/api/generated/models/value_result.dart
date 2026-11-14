@@ -20,10 +20,9 @@ class ValueResult {
     this.calculated,
     this.options,
   });
-
-  factory ValueResult.fromJson(Map<String, Object?> json) =>
-      _$ValueResultFromJson(json);
-
+  
+  factory ValueResult.fromJson(Map<String, Object?> json) => _$ValueResultFromJson(json);
+  
   /// What the formula gives, when the value is pinned.
   @JsonKey(includeIfNull: false)
   final dynamic calculated;

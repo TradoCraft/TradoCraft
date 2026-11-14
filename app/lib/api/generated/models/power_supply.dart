@@ -17,16 +17,15 @@ class PowerSupply {
     this.frequencyHz,
     this.phases,
   });
-
-  factory PowerSupply.fromJson(Map<String, Object?> json) =>
-      _$PowerSupplyFromJson(json);
-
+  
+  factory PowerSupply.fromJson(Map<String, Object?> json) => _$PowerSupplyFromJson(json);
+  
   /// ac | dc
   @JsonKey(name: 'current_type')
   final String currentType;
 
   /// 50 or 60; null means the product works on both (always null for DC).
-  @JsonKey(includeIfNull: false, name: 'frequency_hz')
+  @JsonKey(includeIfNull: false,name: 'frequency_hz')
   final int? frequencyHz;
   final String id;
 

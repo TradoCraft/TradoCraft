@@ -27,10 +27,9 @@ class SupplierProduct {
     required this.unitPrice,
     required this.updatedAt,
   });
-
-  factory SupplierProduct.fromJson(Map<String, Object?> json) =>
-      _$SupplierProductFromJson(json);
-
+  
+  factory SupplierProduct.fromJson(Map<String, Object?> json) => _$SupplierProductFromJson(json);
+  
   @JsonKey(name: 'company_id')
   final String companyId;
   @JsonKey(name: 'created_at')

@@ -28,37 +28,36 @@ class ContractInput {
     this.street,
     this.visitTemplates,
   });
-
-  factory ContractInput.fromJson(Map<String, Object?> json) =>
-      _$ContractInputFromJson(json);
-
-  @JsonKey(includeIfNull: false, name: 'auto_renew')
+  
+  factory ContractInput.fromJson(Map<String, Object?> json) => _$ContractInputFromJson(json);
+  
+  @JsonKey(includeIfNull: false,name: 'auto_renew')
   final bool? autoRenew;
   @JsonKey(includeIfNull: false)
   final String? city;
-  @JsonKey(includeIfNull: false, name: 'contact_id')
+  @JsonKey(includeIfNull: false,name: 'contact_id')
   final String? contactId;
-  @JsonKey(includeIfNull: false, name: 'country_code')
+  @JsonKey(includeIfNull: false,name: 'country_code')
   final String? countryCode;
   @JsonKey(name: 'customer_id')
   final String customerId;
-  @JsonKey(includeIfNull: false, name: 'end_date')
+  @JsonKey(includeIfNull: false,name: 'end_date')
   final DateTime? endDate;
 
   /// Units of the customer covered by the contract.
-  @JsonKey(includeIfNull: false, name: 'equipment_ids')
+  @JsonKey(includeIfNull: false,name: 'equipment_ids')
   final List<String>? equipmentIds;
   @JsonKey(includeIfNull: false)
   final String? notes;
-  @JsonKey(includeIfNull: false, name: 'postal_code')
+  @JsonKey(includeIfNull: false,name: 'postal_code')
   final String? postalCode;
-  @JsonKey(includeIfNull: false, name: 'resolution_hours')
+  @JsonKey(includeIfNull: false,name: 'resolution_hours')
   final int? resolutionHours;
-  @JsonKey(includeIfNull: false, name: 'response_hours')
+  @JsonKey(includeIfNull: false,name: 'response_hours')
   final int? responseHours;
 
   /// The site covered. Left empty, the customer's address is used.
-  @JsonKey(includeIfNull: false, name: 'site_name')
+  @JsonKey(includeIfNull: false,name: 'site_name')
   final String? siteName;
   @JsonKey(name: 'start_date')
   final DateTime startDate;
@@ -67,7 +66,7 @@ class ContractInput {
   final String title;
 
   /// The complete set of visit templates; templates left out are removed.
-  @JsonKey(includeIfNull: false, name: 'visit_templates')
+  @JsonKey(includeIfNull: false,name: 'visit_templates')
   final List<TemplateInput>? visitTemplates;
 
   Map<String, Object?> toJson() => _$ContractInputToJson(this);

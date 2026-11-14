@@ -47,27 +47,27 @@ class Job {
     this.ticketId,
     this.mapsUrl,
   });
-
+  
   factory Job.fromJson(Map<String, Object?> json) => _$JobFromJson(json);
-
+  
   /// The address on one line.
   final String address;
   final String city;
-  @JsonKey(includeIfNull: false, name: 'completed_at')
+  @JsonKey(includeIfNull: false,name: 'completed_at')
   final DateTime? completedAt;
   @JsonKey(name: 'completion_notes')
   final String completionNotes;
 
   /// The person to meet on site.
-  @JsonKey(includeIfNull: false, name: 'contact_id')
+  @JsonKey(includeIfNull: false,name: 'contact_id')
   final String? contactId;
-  @JsonKey(includeIfNull: false, name: 'contact_name')
+  @JsonKey(includeIfNull: false,name: 'contact_name')
   final String? contactName;
 
   /// The maintenance contract this job was generated for.
-  @JsonKey(includeIfNull: false, name: 'contract_id')
+  @JsonKey(includeIfNull: false,name: 'contract_id')
   final String? contractId;
-  @JsonKey(includeIfNull: false, name: 'contract_number')
+  @JsonKey(includeIfNull: false,name: 'contract_number')
   final String? contractNumber;
   @JsonKey(name: 'country_code')
   final String countryCode;
@@ -77,7 +77,7 @@ class Job {
   final String customerName;
 
   /// The day a contract visit is due.
-  @JsonKey(includeIfNull: false, name: 'due_date')
+  @JsonKey(includeIfNull: false,name: 'due_date')
   final DateTime? dueDate;
   final String id;
 
@@ -92,27 +92,27 @@ class Job {
   final double? longitude;
 
   /// Opens navigation to the site.
-  @JsonKey(includeIfNull: false, name: 'maps_url')
+  @JsonKey(includeIfNull: false,name: 'maps_url')
   final String? mapsUrl;
   final String number;
   @JsonKey(name: 'postal_code')
   final String postalCode;
   final String priority;
-  @JsonKey(includeIfNull: false, name: 'repair_id')
+  @JsonKey(includeIfNull: false,name: 'repair_id')
   final String? repairId;
 
   /// When the service report was last e-mailed to the customer.
-  @JsonKey(includeIfNull: false, name: 'report_sent_at')
+  @JsonKey(includeIfNull: false,name: 'report_sent_at')
   final DateTime? reportSentAt;
   @JsonKey(name: 'report_sent_to')
   final String reportSentTo;
-  @JsonKey(includeIfNull: false, name: 'scheduled_end')
+  @JsonKey(includeIfNull: false,name: 'scheduled_end')
   final DateTime? scheduledEnd;
-  @JsonKey(includeIfNull: false, name: 'scheduled_start')
+  @JsonKey(includeIfNull: false,name: 'scheduled_start')
   final DateTime? scheduledStart;
   @JsonKey(name: 'site_name')
   final String siteName;
-  @JsonKey(includeIfNull: false, name: 'started_at')
+  @JsonKey(includeIfNull: false,name: 'started_at')
   final DateTime? startedAt;
 
   /// planned | in_progress | completed | cancelled
@@ -123,7 +123,7 @@ class Job {
   @JsonKey(name: 'tasks_total')
   final int tasksTotal;
   final List<Technician> technicians;
-  @JsonKey(includeIfNull: false, name: 'ticket_id')
+  @JsonKey(includeIfNull: false,name: 'ticket_id')
   final String? ticketId;
   final String title;
 

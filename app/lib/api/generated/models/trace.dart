@@ -15,9 +15,9 @@ class Trace {
     required this.rulePath,
     required this.sources,
   });
-
+  
   factory Trace.fromJson(Map<String, Object?> json) => _$TraceFromJson(json);
-
+  
   final String rule;
 
   /// JSON path of the rule in the definition.

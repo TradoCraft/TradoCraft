@@ -16,10 +16,9 @@ class RepairSuggestion {
     required this.repair,
     required this.score,
   });
-
-  factory RepairSuggestion.fromJson(Map<String, Object?> json) =>
-      _$RepairSuggestionFromJson(json);
-
+  
+  factory RepairSuggestion.fromJson(Map<String, Object?> json) => _$RepairSuggestionFromJson(json);
+  
   /// serial | customer | reference | ticket | product | recent
   final List<String> reasons;
   final Repair repair;

@@ -8,11 +8,12 @@ part 'cancel_production_input.g.dart';
 
 @JsonSerializable()
 class CancelProductionInput {
-  const CancelProductionInput({required this.reason});
-
-  factory CancelProductionInput.fromJson(Map<String, Object?> json) =>
-      _$CancelProductionInputFromJson(json);
-
+  const CancelProductionInput({
+    required this.reason,
+  });
+  
+  factory CancelProductionInput.fromJson(Map<String, Object?> json) => _$CancelProductionInputFromJson(json);
+  
   final String reason;
 
   Map<String, Object?> toJson() => _$CancelProductionInputToJson(this);

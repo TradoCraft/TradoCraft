@@ -19,10 +19,9 @@ class Department {
     required this.openRepairs,
     required this.sortOrder,
   });
-
-  factory Department.fromJson(Map<String, Object?> json) =>
-      _$DepartmentFromJson(json);
-
+  
+  factory Department.fromJson(Map<String, Object?> json) => _$DepartmentFromJson(json);
+  
   final bool active;
   final String code;
   final String id;

@@ -9,11 +9,12 @@ part 'dispute_invoice_input.g.dart';
 /// Payload to dispute an invoice.
 @JsonSerializable()
 class DisputeInvoiceInput {
-  const DisputeInvoiceInput({required this.reason});
-
-  factory DisputeInvoiceInput.fromJson(Map<String, Object?> json) =>
-      _$DisputeInvoiceInputFromJson(json);
-
+  const DisputeInvoiceInput({
+    required this.reason,
+  });
+  
+  factory DisputeInvoiceInput.fromJson(Map<String, Object?> json) => _$DisputeInvoiceInputFromJson(json);
+  
   /// Why the invoice is disputed (required).
   final String reason;
 

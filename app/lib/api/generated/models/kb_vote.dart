@@ -8,10 +8,12 @@ part 'kb_vote.g.dart';
 
 @JsonSerializable()
 class KbVote {
-  const KbVote({required this.helpful});
-
+  const KbVote({
+    required this.helpful,
+  });
+  
   factory KbVote.fromJson(Map<String, Object?> json) => _$KbVoteFromJson(json);
-
+  
   /// true = helpful, false = not helpful
   final bool helpful;
 

@@ -14,10 +14,9 @@ class SetupStatus {
     required this.needsSetup,
     required this.tokenRequired,
   });
-
-  factory SetupStatus.fromJson(Map<String, Object?> json) =>
-      _$SetupStatusFromJson(json);
-
+  
+  factory SetupStatus.fromJson(Map<String, Object?> json) => _$SetupStatusFromJson(json);
+  
   /// `dev` (the admin e-mail becomes the dev user) or `oidc` (sign in through the identity provider).
   @JsonKey(name: 'auth_mode')
   final String authMode;

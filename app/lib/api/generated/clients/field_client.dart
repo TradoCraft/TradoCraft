@@ -39,10 +39,14 @@ abstract class FieldClient {
   });
 
   @POST('/api/v1/field/contracts')
-  Future<ContractDetail> createContract({@Body() required ContractInput body});
+  Future<ContractDetail> createContract({
+    @Body() required ContractInput body,
+  });
 
   @GET('/api/v1/field/contracts/{id}')
-  Future<ContractDetail> getContract({@Path('id') required String id});
+  Future<ContractDetail> getContract({
+    @Path('id') required String id,
+  });
 
   @PUT('/api/v1/field/contracts/{id}')
   Future<ContractDetail> updateContract({
@@ -52,19 +56,27 @@ abstract class FieldClient {
 
   /// Starts a draft contract, or resumes a suspended one: planned jobs are generated again.
   @POST('/api/v1/field/contracts/{id}/activate')
-  Future<ContractDetail> activateContract({@Path('id') required String id});
+  Future<ContractDetail> activateContract({
+    @Path('id') required String id,
+  });
 
   /// Ends a contract for good. Jobs already generated stay.
   @POST('/api/v1/field/contracts/{id}/end')
-  Future<ContractDetail> endContract({@Path('id') required String id});
+  Future<ContractDetail> endContract({
+    @Path('id') required String id,
+  });
 
   /// The jobs generated for (or linked to) a contract, newest first.
   @GET('/api/v1/field/contracts/{id}/jobs')
-  Future<List<Job>> listContractJobs({@Path('id') required String id});
+  Future<List<Job>> listContractJobs({
+    @Path('id') required String id,
+  });
 
   /// Pauses a contract: no jobs are generated until it is activated again.
   @POST('/api/v1/field/contracts/{id}/suspend')
-  Future<ContractDetail> suspendContract({@Path('id') required String id});
+  Future<ContractDetail> suspendContract({
+    @Path('id') required String id,
+  });
 
   /// The visits due from today on, from the active templates, and whether their job exists.
   ///
@@ -106,10 +118,14 @@ abstract class FieldClient {
   });
 
   @POST('/api/v1/field/jobs')
-  Future<JobDetail> createJob({@Body() required JobInput body});
+  Future<JobDetail> createJob({
+    @Body() required JobInput body,
+  });
 
   @GET('/api/v1/field/jobs/{id}')
-  Future<JobDetail> getJob({@Path('id') required String id});
+  Future<JobDetail> getJob({
+    @Path('id') required String id,
+  });
 
   @PUT('/api/v1/field/jobs/{id}')
   Future<JobDetail> updateJob({
@@ -179,7 +195,9 @@ abstract class FieldClient {
 
   /// Takes a completed or cancelled job back into work (planners only).
   @POST('/api/v1/field/jobs/{id}/reopen')
-  Future<JobDetail> reopenJob({@Path('id') required String id});
+  Future<JobDetail> reopenJob({
+    @Path('id') required String id,
+  });
 
   /// The service report of a job as PDF (a watermark marks it as draft until the job is completed).
   ///
@@ -194,11 +212,15 @@ abstract class FieldClient {
   /// and records when and to whom. Sending again is allowed. Refused (409) when there is no.
   /// address or the job is not completed.
   @POST('/api/v1/field/jobs/{id}/report/send')
-  Future<JobDetail> sendJobReport({@Path('id') required String id});
+  Future<JobDetail> sendJobReport({
+    @Path('id') required String id,
+  });
 
   /// The signature image (PNG).
   @GET('/api/v1/field/jobs/{id}/signature')
-  Future<String> getJobSignature({@Path('id') required String id});
+  Future<String> getJobSignature({
+    @Path('id') required String id,
+  });
 
   /// Stores the customer's signature: the request body is a PNG image. A job has one signature;.
   /// a new one replaces the old one until the service report is sent.
@@ -223,7 +245,9 @@ abstract class FieldClient {
 
   /// Starts the job: the technician has arrived and begins. Starting twice changes nothing.
   @POST('/api/v1/field/jobs/{id}/start')
-  Future<JobDetail> startJob({@Path('id') required String id});
+  Future<JobDetail> startJob({
+    @Path('id') required String id,
+  });
 
   @POST('/api/v1/field/jobs/{id}/tasks')
   Future<JobDetail> addJobTask({

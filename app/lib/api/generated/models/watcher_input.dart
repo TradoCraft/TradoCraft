@@ -8,11 +8,12 @@ part 'watcher_input.g.dart';
 
 @JsonSerializable()
 class WatcherInput {
-  const WatcherInput({required this.userId});
-
-  factory WatcherInput.fromJson(Map<String, Object?> json) =>
-      _$WatcherInputFromJson(json);
-
+  const WatcherInput({
+    required this.userId,
+  });
+  
+  factory WatcherInput.fromJson(Map<String, Object?> json) => _$WatcherInputFromJson(json);
+  
   @JsonKey(name: 'user_id')
   final String userId;
 

@@ -10,11 +10,13 @@ part 'integrity.g.dart';
 
 @JsonSerializable()
 class Integrity {
-  const Integrity({required this.differences, required this.ok});
-
-  factory Integrity.fromJson(Map<String, Object?> json) =>
-      _$IntegrityFromJson(json);
-
+  const Integrity({
+    required this.differences,
+    required this.ok,
+  });
+  
+  factory Integrity.fromJson(Map<String, Object?> json) => _$IntegrityFromJson(json);
+  
   final List<BalanceDifference> differences;
 
   /// The balance table equals the sum of the ledger.

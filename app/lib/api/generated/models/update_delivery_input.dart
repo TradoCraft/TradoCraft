@@ -21,19 +21,18 @@ class UpdateDeliveryInput {
     this.shipTo,
     this.trackingNumber,
   });
-
-  factory UpdateDeliveryInput.fromJson(Map<String, Object?> json) =>
-      _$UpdateDeliveryInputFromJson(json);
-
+  
+  factory UpdateDeliveryInput.fromJson(Map<String, Object?> json) => _$UpdateDeliveryInputFromJson(json);
+  
   @JsonKey(includeIfNull: false)
   final String? carrier;
 
   /// Needed to plan on a closed day when the policy is `override`.
-  @JsonKey(includeIfNull: false, name: 'closure_override_reason')
+  @JsonKey(includeIfNull: false,name: 'closure_override_reason')
   final String? closureOverrideReason;
 
   /// The `updated_at` of the note as it was loaded; refused (409) when the note changed since.
-  @JsonKey(includeIfNull: false, name: 'expected_updated_at')
+  @JsonKey(includeIfNull: false,name: 'expected_updated_at')
   final DateTime? expectedUpdatedAt;
 
   /// Replaces all lines; omitted keeps them.
@@ -41,13 +40,13 @@ class UpdateDeliveryInput {
   final List<DeliveryLineInput>? lines;
   @JsonKey(includeIfNull: false)
   final String? notes;
-  @JsonKey(includeIfNull: false, name: 'planned_date')
+  @JsonKey(includeIfNull: false,name: 'planned_date')
   final DateTime? plannedDate;
 
   /// Replaces the ship-to address; omitted keeps it.
-  @JsonKey(includeIfNull: false, name: 'ship_to')
+  @JsonKey(includeIfNull: false,name: 'ship_to')
   final DeliveryShipToInput? shipTo;
-  @JsonKey(includeIfNull: false, name: 'tracking_number')
+  @JsonKey(includeIfNull: false,name: 'tracking_number')
   final String? trackingNumber;
 
   Map<String, Object?> toJson() => _$UpdateDeliveryInputToJson(this);

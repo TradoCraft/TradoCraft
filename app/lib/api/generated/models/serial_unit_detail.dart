@@ -17,10 +17,9 @@ class SerialUnitDetail {
     required this.history,
     required this.unit,
   });
-
-  factory SerialUnitDetail.fromJson(Map<String, Object?> json) =>
-      _$SerialUnitDetailFromJson(json);
-
+  
+  factory SerialUnitDetail.fromJson(Map<String, Object?> json) => _$SerialUnitDetailFromJson(json);
+  
   final List<SerialComponent> components;
   final List<ComponentHistory> history;
   final SerialUnit unit;

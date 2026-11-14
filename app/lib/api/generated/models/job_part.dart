@@ -21,11 +21,10 @@ class JobPart {
     this.serialNumber,
     this.serialUnitId,
   });
-
-  factory JobPart.fromJson(Map<String, Object?> json) =>
-      _$JobPartFromJson(json);
-
-  @JsonKey(includeIfNull: false, name: 'added_by_name')
+  
+  factory JobPart.fromJson(Map<String, Object?> json) => _$JobPartFromJson(json);
+  
+  @JsonKey(includeIfNull: false,name: 'added_by_name')
   final String? addedByName;
   final bool billable;
   @JsonKey(name: 'created_at')
@@ -34,14 +33,14 @@ class JobPart {
 
   /// Chosen by the client.
   final String id;
-  @JsonKey(includeIfNull: false, name: 'product_code')
+  @JsonKey(includeIfNull: false,name: 'product_code')
   final String? productCode;
-  @JsonKey(includeIfNull: false, name: 'product_id')
+  @JsonKey(includeIfNull: false,name: 'product_id')
   final String? productId;
   final String quantity;
-  @JsonKey(includeIfNull: false, name: 'serial_number')
+  @JsonKey(includeIfNull: false,name: 'serial_number')
   final String? serialNumber;
-  @JsonKey(includeIfNull: false, name: 'serial_unit_id')
+  @JsonKey(includeIfNull: false,name: 'serial_unit_id')
   final String? serialUnitId;
   final String unit;
 

@@ -24,11 +24,10 @@ class Revision {
     required this.updatedAt,
     this.activatedAt,
   });
-
-  factory Revision.fromJson(Map<String, Object?> json) =>
-      _$RevisionFromJson(json);
-
-  @JsonKey(includeIfNull: false, name: 'activated_at')
+  
+  factory Revision.fromJson(Map<String, Object?> json) => _$RevisionFromJson(json);
+  
+  @JsonKey(includeIfNull: false,name: 'activated_at')
   final DateTime? activatedAt;
   @JsonKey(name: 'created_at')
   final DateTime createdAt;

@@ -14,10 +14,9 @@ class UserSkill {
     required this.name,
     required this.skillId,
   });
-
-  factory UserSkill.fromJson(Map<String, Object?> json) =>
-      _$UserSkillFromJson(json);
-
+  
+  factory UserSkill.fromJson(Map<String, Object?> json) => _$UserSkillFromJson(json);
+  
   final String code;
 
   /// 1 = basic, 2 = proficient, 3 = expert.

@@ -15,10 +15,9 @@ class ZonePriceEntry {
     required this.zoneCode,
     required this.zoneId,
   });
-
-  factory ZonePriceEntry.fromJson(Map<String, Object?> json) =>
-      _$ZonePriceEntryFromJson(json);
-
+  
+  factory ZonePriceEntry.fromJson(Map<String, Object?> json) => _$ZonePriceEntryFromJson(json);
+  
   final String id;
   @JsonKey(name: 'unit_price')
   final String unitPrice;

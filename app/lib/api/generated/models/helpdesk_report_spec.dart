@@ -17,17 +17,16 @@ class HelpdeskReportSpec {
     this.ownerId,
     this.teamId,
   });
-
-  factory HelpdeskReportSpec.fromJson(Map<String, Object?> json) =>
-      _$HelpdeskReportSpecFromJson(json);
-
+  
+  factory HelpdeskReportSpec.fromJson(Map<String, Object?> json) => _$HelpdeskReportSpecFromJson(json);
+  
   @JsonKey(includeIfNull: false)
   final String? category;
 
   /// `day` (default) or `week`.
   @JsonKey(includeIfNull: false)
   final String? group;
-  @JsonKey(includeIfNull: false, name: 'owner_id')
+  @JsonKey(includeIfNull: false,name: 'owner_id')
   final String? ownerId;
 
   /// yesterday | last_7_days | last_week (Monday to Sunday before today) | last_30_days |.
@@ -36,7 +35,7 @@ class HelpdeskReportSpec {
 
   /// One of the tables of `GET /helpdesk/reports/export` (volume, backlog_status, times, sla, ...).
   final String table;
-  @JsonKey(includeIfNull: false, name: 'team_id')
+  @JsonKey(includeIfNull: false,name: 'team_id')
   final String? teamId;
 
   Map<String, Object?> toJson() => _$HelpdeskReportSpecToJson(this);

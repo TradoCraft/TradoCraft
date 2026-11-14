@@ -13,10 +13,9 @@ class ReaderLink {
     required this.number,
     required this.title,
   });
-
-  factory ReaderLink.fromJson(Map<String, Object?> json) =>
-      _$ReaderLinkFromJson(json);
-
+  
+  factory ReaderLink.fromJson(Map<String, Object?> json) => _$ReaderLinkFromJson(json);
+  
   final String id;
   final String number;
   final String title;

@@ -18,10 +18,9 @@ class ProductAttribute {
     required this.value,
     this.unit,
   });
-
-  factory ProductAttribute.fromJson(Map<String, Object?> json) =>
-      _$ProductAttributeFromJson(json);
-
+  
+  factory ProductAttribute.fromJson(Map<String, Object?> json) => _$ProductAttributeFromJson(json);
+  
   /// Letters, digits and `_`, not starting with a digit, e.g. `kw`.
   final String key;
   final AttributeKind kind;

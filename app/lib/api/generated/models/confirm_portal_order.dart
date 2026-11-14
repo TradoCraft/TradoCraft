@@ -8,11 +8,13 @@ part 'confirm_portal_order.g.dart';
 
 @JsonSerializable()
 class ConfirmPortalOrder {
-  const ConfirmPortalOrder({required this.revision, this.note});
-
-  factory ConfirmPortalOrder.fromJson(Map<String, Object?> json) =>
-      _$ConfirmPortalOrderFromJson(json);
-
+  const ConfirmPortalOrder({
+    required this.revision,
+    this.note,
+  });
+  
+  factory ConfirmPortalOrder.fromJson(Map<String, Object?> json) => _$ConfirmPortalOrderFromJson(json);
+  
   @JsonKey(includeIfNull: false)
   final String? note;
 

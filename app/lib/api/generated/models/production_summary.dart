@@ -9,10 +9,13 @@ part 'production_summary.g.dart';
 @JsonSerializable()
 class ProductionSummary {
   const ProductionSummary({
+    required this.behindSchedule,
     required this.bomRevision,
     required this.createdAt,
     required this.id,
     required this.number,
+    required this.operationCount,
+    required this.operationsDone,
     required this.orderCancelled,
     required this.priority,
     required this.productCode,
@@ -30,31 +33,41 @@ class ProductionSummary {
     this.orderNumber,
     this.plannedReadyDate,
   });
-
-  factory ProductionSummary.fromJson(Map<String, Object?> json) =>
-      _$ProductionSummaryFromJson(json);
-
+  
+  factory ProductionSummary.fromJson(Map<String, Object?> json) => _$ProductionSummaryFromJson(json);
+  
+  /// An operation that is not finished is scheduled after the planned-ready date.
+  @JsonKey(name: 'behind_schedule')
+  final bool behindSchedule;
   @JsonKey(name: 'bom_revision')
   final int bomRevision;
   @JsonKey(name: 'created_at')
   final DateTime createdAt;
-  @JsonKey(includeIfNull: false, name: 'customer_name')
+  @JsonKey(includeIfNull: false,name: 'customer_name')
   final String? customerName;
-  @JsonKey(includeIfNull: false, name: 'division_id')
+  @JsonKey(includeIfNull: false,name: 'division_id')
   final String? divisionId;
-  @JsonKey(includeIfNull: false, name: 'division_name')
+  @JsonKey(includeIfNull: false,name: 'division_name')
   final String? divisionName;
   final String id;
   final String number;
 
+  /// Operations of the routing that was frozen at release (0 without a routing).
+  @JsonKey(name: 'operation_count')
+  final int operationCount;
+
+  /// How many of them are finished.
+  @JsonKey(name: 'operations_done')
+  final int operationsDone;
+
   /// The sales order was cancelled meanwhile: the planner should cancel this order too.
   @JsonKey(name: 'order_cancelled')
   final bool orderCancelled;
-  @JsonKey(includeIfNull: false, name: 'order_id')
+  @JsonKey(includeIfNull: false,name: 'order_id')
   final String? orderId;
-  @JsonKey(includeIfNull: false, name: 'order_number')
+  @JsonKey(includeIfNull: false,name: 'order_number')
   final String? orderNumber;
-  @JsonKey(includeIfNull: false, name: 'planned_ready_date')
+  @JsonKey(includeIfNull: false,name: 'planned_ready_date')
   final DateTime? plannedReadyDate;
 
   /// low | normal | expedite: the priority of the sales order (normal for stock).

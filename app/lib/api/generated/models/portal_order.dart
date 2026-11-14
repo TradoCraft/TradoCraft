@@ -23,14 +23,13 @@ class PortalOrder {
     required this.vatTotal,
     this.confirmedAt,
   });
-
-  factory PortalOrder.fromJson(Map<String, Object?> json) =>
-      _$PortalOrderFromJson(json);
-
+  
+  factory PortalOrder.fromJson(Map<String, Object?> json) => _$PortalOrderFromJson(json);
+  
   /// True while this revision is the latest and waits for the customer's confirmation.
   @JsonKey(name: 'can_confirm')
   final bool canConfirm;
-  @JsonKey(includeIfNull: false, name: 'confirmed_at')
+  @JsonKey(includeIfNull: false,name: 'confirmed_at')
   final DateTime? confirmedAt;
   final String currency;
   @JsonKey(name: 'customer_reference')

@@ -8,11 +8,12 @@ part 'package_close_input.g.dart';
 
 @JsonSerializable()
 class PackageCloseInput {
-  const PackageCloseInput({required this.note});
-
-  factory PackageCloseInput.fromJson(Map<String, Object?> json) =>
-      _$PackageCloseInputFromJson(json);
-
+  const PackageCloseInput({
+    required this.note,
+  });
+  
+  factory PackageCloseInput.fromJson(Map<String, Object?> json) => _$PackageCloseInputFromJson(json);
+  
   /// Why: refused at the dock, sent back, nothing to repair.
   final String note;
 

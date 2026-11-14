@@ -43,7 +43,9 @@ abstract class DeliveryClient {
 
   /// One delivery note with its lines.
   @GET('/api/v1/deliveries/{id}')
-  Future<DeliveryNote> getNote({@Path('id') required String id});
+  Future<DeliveryNote> getNote({
+    @Path('id') required String id,
+  });
 
   /// Changes a planned delivery note: date, carrier, address, notes and lines.
   @PUT('/api/v1/deliveries/{id}')
@@ -99,7 +101,9 @@ abstract class DeliveryClient {
 
   /// The delivery notes of one order.
   @GET('/api/v1/orders/{id}/deliveries')
-  Future<List<DeliverySummary>> listForOrder({@Path('id') required String id});
+  Future<List<DeliverySummary>> listForOrder({
+    @Path('id') required String id,
+  });
 
   /// Plans a delivery for an order: a note with lines proposed from the order's reservations.
   @POST('/api/v1/orders/{id}/deliveries')

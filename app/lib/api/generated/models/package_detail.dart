@@ -19,10 +19,9 @@ class PackageDetail {
     required this.photos,
     required this.repairs,
   });
-
-  factory PackageDetail.fromJson(Map<String, Object?> json) =>
-      _$PackageDetailFromJson(json);
-
+  
+  factory PackageDetail.fromJson(Map<String, Object?> json) => _$PackageDetailFromJson(json);
+  
   final List<PackageEvent> events;
   final Package package;
 

@@ -27,34 +27,33 @@ class Customer {
     this.priceZoneId,
     this.vatNumber,
   });
-
-  factory Customer.fromJson(Map<String, Object?> json) =>
-      _$CustomerFromJson(json);
-
+  
+  factory Customer.fromJson(Map<String, Object?> json) => _$CustomerFromJson(json);
+  
   final bool active;
   final String city;
   final String code;
   @JsonKey(name: 'country_code')
   final String countryCode;
-  @JsonKey(includeIfNull: false, name: 'discount_percent')
+  @JsonKey(includeIfNull: false,name: 'discount_percent')
   final String? discountPercent;
   @JsonKey(includeIfNull: false)
   final String? email;
   final String id;
   final String language;
   final String name;
-  @JsonKey(includeIfNull: false, name: 'payment_terms_days')
+  @JsonKey(includeIfNull: false,name: 'payment_terms_days')
   final int? paymentTermsDays;
   @JsonKey(includeIfNull: false)
   final String? phone;
   @JsonKey(name: 'postal_code')
   final String postalCode;
-  @JsonKey(includeIfNull: false, name: 'price_zone_code')
+  @JsonKey(includeIfNull: false,name: 'price_zone_code')
   final String? priceZoneCode;
-  @JsonKey(includeIfNull: false, name: 'price_zone_id')
+  @JsonKey(includeIfNull: false,name: 'price_zone_id')
   final String? priceZoneId;
   final String street;
-  @JsonKey(includeIfNull: false, name: 'vat_number')
+  @JsonKey(includeIfNull: false,name: 'vat_number')
   final String? vatNumber;
 
   /// `domestic` (VAT charged), `intra_eu` (reverse charge) or `outside_eu`.

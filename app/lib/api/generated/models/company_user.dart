@@ -15,10 +15,9 @@ class CompanyUser {
     required this.id,
     required this.roles,
   });
-
-  factory CompanyUser.fromJson(Map<String, Object?> json) =>
-      _$CompanyUserFromJson(json);
-
+  
+  factory CompanyUser.fromJson(Map<String, Object?> json) => _$CompanyUserFromJson(json);
+  
   @JsonKey(name: 'display_name')
   final String displayName;
   final String email;

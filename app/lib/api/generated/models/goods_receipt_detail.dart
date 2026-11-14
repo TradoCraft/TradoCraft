@@ -29,10 +29,9 @@ class GoodsReceiptDetail {
     required this.warehouseId,
     required this.lines,
   });
-
-  factory GoodsReceiptDetail.fromJson(Map<String, Object?> json) =>
-      _$GoodsReceiptDetailFromJson(json);
-
+  
+  factory GoodsReceiptDetail.fromJson(Map<String, Object?> json) => _$GoodsReceiptDetailFromJson(json);
+  
   final String carrier;
   @JsonKey(name: 'company_id')
   final String companyId;

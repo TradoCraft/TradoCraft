@@ -26,18 +26,17 @@ class ReportDefinition {
     this.joins,
     this.sort,
   });
-
-  factory ReportDefinition.fromJson(Map<String, Object?> json) =>
-      _$ReportDefinitionFromJson(json);
-
+  
+  factory ReportDefinition.fromJson(Map<String, Object?> json) => _$ReportDefinitionFromJson(json);
+  
   @JsonKey(includeIfNull: false)
   final ReportChart? chart;
   final List<ReportColumn> columns;
-  @JsonKey(includeIfNull: false, name: 'filter_logic')
+  @JsonKey(includeIfNull: false,name: 'filter_logic')
   final ReportLogic? filterLogic;
   @JsonKey(includeIfNull: false)
   final List<ReportFilter>? filters;
-  @JsonKey(includeIfNull: false, name: 'group_by')
+  @JsonKey(includeIfNull: false,name: 'group_by')
   final List<ReportGroupBy>? groupBy;
 
   /// Further objects to bring in, each related to one already in the report.

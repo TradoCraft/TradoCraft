@@ -16,10 +16,9 @@ class SavedReportInput {
     this.description,
     this.shared,
   });
-
-  factory SavedReportInput.fromJson(Map<String, Object?> json) =>
-      _$SavedReportInputFromJson(json);
-
+  
+  factory SavedReportInput.fromJson(Map<String, Object?> json) => _$SavedReportInputFromJson(json);
+  
   final ReportDefinition definition;
   @JsonKey(includeIfNull: false)
   final String? description;

@@ -9,11 +9,14 @@ part 'row_error.g.dart';
 /// One problem in an import file.
 @JsonSerializable()
 class RowError {
-  const RowError({required this.message, required this.row, this.column});
-
-  factory RowError.fromJson(Map<String, Object?> json) =>
-      _$RowErrorFromJson(json);
-
+  const RowError({
+    required this.message,
+    required this.row,
+    this.column,
+  });
+  
+  factory RowError.fromJson(Map<String, Object?> json) => _$RowErrorFromJson(json);
+  
   /// Column name; null when the problem concerns the whole row.
   @JsonKey(includeIfNull: false)
   final String? column;

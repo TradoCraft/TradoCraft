@@ -24,10 +24,9 @@ class PurchaseOrderLine {
     required this.supplierProductCode,
     required this.unitPrice,
   });
-
-  factory PurchaseOrderLine.fromJson(Map<String, Object?> json) =>
-      _$PurchaseOrderLineFromJson(json);
-
+  
+  factory PurchaseOrderLine.fromJson(Map<String, Object?> json) => _$PurchaseOrderLineFromJson(json);
+  
   @JsonKey(name: 'created_at')
   final DateTime createdAt;
   final String description;

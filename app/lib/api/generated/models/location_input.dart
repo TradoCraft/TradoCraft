@@ -14,10 +14,9 @@ class LocationInput {
     this.name,
     this.warehouseId,
   });
-
-  factory LocationInput.fromJson(Map<String, Object?> json) =>
-      _$LocationInputFromJson(json);
-
+  
+  factory LocationInput.fromJson(Map<String, Object?> json) => _$LocationInputFromJson(json);
+  
   @JsonKey(includeIfNull: false)
   final bool? active;
   final String code;
@@ -25,7 +24,7 @@ class LocationInput {
   final String? name;
 
   /// Required when creating.
-  @JsonKey(includeIfNull: false, name: 'warehouse_id')
+  @JsonKey(includeIfNull: false,name: 'warehouse_id')
   final String? warehouseId;
 
   Map<String, Object?> toJson() => _$LocationInputToJson(this);

@@ -17,10 +17,9 @@ class TimeEntry {
     required this.userId,
     required this.userName,
   });
-
-  factory TimeEntry.fromJson(Map<String, Object?> json) =>
-      _$TimeEntryFromJson(json);
-
+  
+  factory TimeEntry.fromJson(Map<String, Object?> json) => _$TimeEntryFromJson(json);
+  
   final bool billable;
   @JsonKey(name: 'created_at')
   final DateTime createdAt;

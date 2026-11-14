@@ -16,10 +16,9 @@ class ReportCatalogField {
     required this.name,
     required this.type,
   });
-
-  factory ReportCatalogField.fromJson(Map<String, Object?> json) =>
-      _$ReportCatalogFieldFromJson(json);
-
+  
+  factory ReportCatalogField.fromJson(Map<String, Object?> json) => _$ReportCatalogFieldFromJson(json);
+  
   /// Only the number of records can be shown for this field.
   @JsonKey(name: 'count_only')
   final bool countOnly;

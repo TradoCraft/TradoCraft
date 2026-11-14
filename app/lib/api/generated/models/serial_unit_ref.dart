@@ -17,11 +17,10 @@ class SerialUnitRef {
     this.customerId,
     this.warrantyUntil,
   });
-
-  factory SerialUnitRef.fromJson(Map<String, Object?> json) =>
-      _$SerialUnitRefFromJson(json);
-
-  @JsonKey(includeIfNull: false, name: 'customer_id')
+  
+  factory SerialUnitRef.fromJson(Map<String, Object?> json) => _$SerialUnitRefFromJson(json);
+  
+  @JsonKey(includeIfNull: false,name: 'customer_id')
   final String? customerId;
   final String id;
   @JsonKey(name: 'product_code')
@@ -32,7 +31,7 @@ class SerialUnitRef {
   final String productName;
   @JsonKey(name: 'serial_number')
   final String serialNumber;
-  @JsonKey(includeIfNull: false, name: 'warranty_until')
+  @JsonKey(includeIfNull: false,name: 'warranty_until')
   final DateTime? warrantyUntil;
 
   Map<String, Object?> toJson() => _$SerialUnitRefToJson(this);

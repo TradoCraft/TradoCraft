@@ -23,9 +23,9 @@ class Me {
     required this.roles,
     required this.userId,
   });
-
+  
   factory Me.fromJson(Map<String, Object?> json) => _$MeFromJson(json);
-
+  
   final Company company;
   @JsonKey(name: 'display_name')
   final String displayName;

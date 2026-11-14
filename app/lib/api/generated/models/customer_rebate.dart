@@ -22,31 +22,30 @@ class CustomerRebate {
     this.validFrom,
     this.validTo,
   });
-
-  factory CustomerRebate.fromJson(Map<String, Object?> json) =>
-      _$CustomerRebateFromJson(json);
-
+  
+  factory CustomerRebate.fromJson(Map<String, Object?> json) => _$CustomerRebateFromJson(json);
+  
   @JsonKey(name: 'created_at')
   final DateTime createdAt;
   @JsonKey(name: 'customer_id')
   final String customerId;
-  @JsonKey(includeIfNull: false, name: 'family_code')
+  @JsonKey(includeIfNull: false,name: 'family_code')
   final String? familyCode;
-  @JsonKey(includeIfNull: false, name: 'family_id')
+  @JsonKey(includeIfNull: false,name: 'family_id')
   final String? familyId;
   final String id;
   final String notes;
   final String percent;
-  @JsonKey(includeIfNull: false, name: 'product_code')
+  @JsonKey(includeIfNull: false,name: 'product_code')
   final String? productCode;
-  @JsonKey(includeIfNull: false, name: 'product_id')
+  @JsonKey(includeIfNull: false,name: 'product_id')
   final String? productId;
 
   /// product | family
   final String scope;
-  @JsonKey(includeIfNull: false, name: 'valid_from')
+  @JsonKey(includeIfNull: false,name: 'valid_from')
   final DateTime? validFrom;
-  @JsonKey(includeIfNull: false, name: 'valid_to')
+  @JsonKey(includeIfNull: false,name: 'valid_to')
   final DateTime? validTo;
 
   Map<String, Object?> toJson() => _$CustomerRebateToJson(this);

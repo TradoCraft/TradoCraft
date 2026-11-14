@@ -8,11 +8,13 @@ part 'category_name.g.dart';
 
 @JsonSerializable()
 class CategoryName {
-  const CategoryName({required this.language, required this.name});
-
-  factory CategoryName.fromJson(Map<String, Object?> json) =>
-      _$CategoryNameFromJson(json);
-
+  const CategoryName({
+    required this.language,
+    required this.name,
+  });
+  
+  factory CategoryName.fromJson(Map<String, Object?> json) => _$CategoryNameFromJson(json);
+  
   final String language;
   final String name;
 

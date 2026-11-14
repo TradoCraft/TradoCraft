@@ -20,35 +20,34 @@ class PackageInput {
     this.senderName,
     this.trackingNumber,
   });
-
-  factory PackageInput.fromJson(Map<String, Object?> json) =>
-      _$PackageInputFromJson(json);
-
+  
+  factory PackageInput.fromJson(Map<String, Object?> json) => _$PackageInputFromJson(json);
+  
   @JsonKey(includeIfNull: false)
   final String? carrier;
 
   /// A key chosen by the app: registering the same key again returns the first parcel.
-  @JsonKey(includeIfNull: false, name: 'client_id')
+  @JsonKey(includeIfNull: false,name: 'client_id')
   final String? clientId;
 
   /// intact | damaged | opened | wet. Defaults to intact.
   @JsonKey(includeIfNull: false)
   final String? condition;
-  @JsonKey(includeIfNull: false, name: 'condition_note')
+  @JsonKey(includeIfNull: false,name: 'condition_note')
   final String? conditionNote;
-  @JsonKey(includeIfNull: false, name: 'customer_id')
+  @JsonKey(includeIfNull: false,name: 'customer_id')
   final String? customerId;
-  @JsonKey(includeIfNull: false, name: 'customer_reference')
+  @JsonKey(includeIfNull: false,name: 'customer_reference')
   final String? customerReference;
   @JsonKey(includeIfNull: false)
   final String? notes;
-  @JsonKey(includeIfNull: false, name: 'parcel_count')
+  @JsonKey(includeIfNull: false,name: 'parcel_count')
   final int? parcelCount;
 
   /// The sender as written on the label.
-  @JsonKey(includeIfNull: false, name: 'sender_name')
+  @JsonKey(includeIfNull: false,name: 'sender_name')
   final String? senderName;
-  @JsonKey(includeIfNull: false, name: 'tracking_number')
+  @JsonKey(includeIfNull: false,name: 'tracking_number')
   final String? trackingNumber;
 
   Map<String, Object?> toJson() => _$PackageInputToJson(this);

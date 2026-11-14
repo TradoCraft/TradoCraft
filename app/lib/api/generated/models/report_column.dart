@@ -11,11 +11,14 @@ part 'report_column.g.dart';
 /// A column of a report: a field, optionally summarised, with an optional label.
 @JsonSerializable()
 class ReportColumn {
-  const ReportColumn({required this.field, this.label, this.summary});
-
-  factory ReportColumn.fromJson(Map<String, Object?> json) =>
-      _$ReportColumnFromJson(json);
-
+  const ReportColumn({
+    required this.field,
+    this.label,
+    this.summary,
+  });
+  
+  factory ReportColumn.fromJson(Map<String, Object?> json) => _$ReportColumnFromJson(json);
+  
   /// `object.field`, e.g. `quotation.total`.
   final String field;
 

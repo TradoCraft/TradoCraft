@@ -118,7 +118,7 @@ const linkKinds = <LinkKindInfo>[
     _production,
     AppIcons.precisionManufacturing,
     'production.read',
-    reserved: {'release', 'divisions'},
+    reserved: {'release', 'divisions', 'work-centres', 'capacity'},
   ),
   LinkKindInfo(
     TodoLinkKind.delivery,

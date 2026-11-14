@@ -9,11 +9,14 @@ part 'error_body.g.dart';
 /// Error body returned by every endpoint.
 @JsonSerializable()
 class ErrorBody {
-  const ErrorBody({required this.error, required this.message, this.code});
-
-  factory ErrorBody.fromJson(Map<String, Object?> json) =>
-      _$ErrorBodyFromJson(json);
-
+  const ErrorBody({
+    required this.error,
+    required this.message,
+    this.code,
+  });
+  
+  factory ErrorBody.fromJson(Map<String, Object?> json) => _$ErrorBodyFromJson(json);
+  
   /// Stable identifier for errors a client must tell apart (for example `repair_status_changed`);.
   /// absent for the rest.
   @JsonKey(includeIfNull: false)

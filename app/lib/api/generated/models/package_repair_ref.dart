@@ -19,16 +19,15 @@ class PackageRepairRef {
     required this.status,
     this.linkedByName,
   });
-
-  factory PackageRepairRef.fromJson(Map<String, Object?> json) =>
-      _$PackageRepairRefFromJson(json);
-
+  
+  factory PackageRepairRef.fromJson(Map<String, Object?> json) => _$PackageRepairRefFromJson(json);
+  
   @JsonKey(name: 'customer_name')
   final String customerName;
   final String id;
   @JsonKey(name: 'linked_at')
   final DateTime linkedAt;
-  @JsonKey(includeIfNull: false, name: 'linked_by_name')
+  @JsonKey(includeIfNull: false,name: 'linked_by_name')
   final String? linkedByName;
   final String number;
   @JsonKey(name: 'product_description')

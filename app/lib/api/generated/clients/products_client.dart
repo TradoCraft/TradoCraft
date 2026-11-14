@@ -54,10 +54,14 @@ abstract class ProductsClient {
 
   /// [country] - Only the grids of this country (ISO alpha-2).
   @GET('/api/v1/power-grids')
-  Future<List<PowerGrid>> listPowerGrids({@Query('country') String? country});
+  Future<List<PowerGrid>> listPowerGrids({
+    @Query('country') String? country,
+  });
 
   @POST('/api/v1/power-grids')
-  Future<PowerGrid> createPowerGrid({@Body() required PowerGridInput body});
+  Future<PowerGrid> createPowerGrid({
+    @Body() required PowerGridInput body,
+  });
 
   @PUT('/api/v1/power-grids/{id}')
   Future<PowerGrid> updatePowerGrid({
@@ -70,7 +74,9 @@ abstract class ProductsClient {
 
   /// Creates a price zone in the active company.
   @POST('/api/v1/price-zones')
-  Future<PriceZone> createPriceZone({@Body() required PriceZoneInput body});
+  Future<PriceZone> createPriceZone({
+    @Body() required PriceZoneInput body,
+  });
 
   /// Changes the code, name or sort order of a price zone.
   @PUT('/api/v1/price-zones/{id}')
@@ -81,7 +87,9 @@ abstract class ProductsClient {
 
   /// Deletes a price zone that nothing refers to: refused (409) while zone prices or customer terms use it.
   @DELETE('/api/v1/price-zones/{id}')
-  Future<void> deletePriceZone({@Path('id') required String id});
+  Future<void> deletePriceZone({
+    @Path('id') required String id,
+  });
 
   /// Applies a bulk price change: one new dated price per product and zone.
   /// Refused if any product already has a price starting on the same date.
@@ -144,7 +152,9 @@ abstract class ProductsClient {
   });
 
   @POST('/api/v1/products')
-  Future<Product> createProduct({@Body() required ProductInput body});
+  Future<Product> createProduct({
+    @Body() required ProductInput body,
+  });
 
   /// All products as CSV, ordered by code.
   @GET('/api/v1/products/export')
@@ -161,7 +171,9 @@ abstract class ProductsClient {
   });
 
   @GET('/api/v1/products/{id}')
-  Future<Product> getProduct({@Path('id') required String id});
+  Future<Product> getProduct({
+    @Path('id') required String id,
+  });
 
   @PUT('/api/v1/products/{id}')
   Future<Product> updateProduct({
@@ -184,7 +196,9 @@ abstract class ProductsClient {
 
   /// The options of a product, in display order.
   @GET('/api/v1/products/{id}/options')
-  Future<List<ProductOption>> listOptions({@Path('id') required String id});
+  Future<List<ProductOption>> listOptions({
+    @Path('id') required String id,
+  });
 
   /// Replaces the options of a product with the given list. Quotations already made keep their lines.
   @PUT('/api/v1/products/{id}/options')
@@ -229,7 +243,9 @@ abstract class ProductsClient {
   });
 
   @GET('/api/v1/products/{id}/related')
-  Future<RelatedProducts> getRelatedProducts({@Path('id') required String id});
+  Future<RelatedProducts> getRelatedProducts({
+    @Path('id') required String id,
+  });
 
   /// The names and descriptions of a product in other languages.
   @GET('/api/v1/products/{id}/translations')

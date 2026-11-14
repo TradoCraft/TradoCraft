@@ -15,10 +15,9 @@ class ReportCatalogObject {
     required this.label,
     required this.name,
   });
-
-  factory ReportCatalogObject.fromJson(Map<String, Object?> json) =>
-      _$ReportCatalogObjectFromJson(json);
-
+  
+  factory ReportCatalogObject.fromJson(Map<String, Object?> json) => _$ReportCatalogObjectFromJson(json);
+  
   final List<ReportCatalogField> fields;
   final String label;
   final String name;

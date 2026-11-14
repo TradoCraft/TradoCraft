@@ -33,7 +33,9 @@ abstract class CoreClient {
   /// Switches modules off (or on again) for the whole company. A module cannot stay on when one.
   /// it requires is switched off.
   @PUT('/api/v1/admin/modules')
-  Future<List<ModuleInfo>> setModules({@Body() required ModulesInput body});
+  Future<List<ModuleInfo>> setModules({
+    @Body() required ModulesInput body,
+  });
 
   /// All members of the active company, deactivated ones included.
   @GET('/api/v1/admin/users')
@@ -43,7 +45,9 @@ abstract class CoreClient {
   /// creates the user; an address that already exists (in another company) only gets the.
   /// membership and keeps its name.
   @POST('/api/v1/admin/users')
-  Future<AdminUser> createAdminUser({@Body() required AdminUserCreate body});
+  Future<AdminUser> createAdminUser({
+    @Body() required AdminUserCreate body,
+  });
 
   /// Changes a member's name, roles, module switches and whether the membership is active.
   /// Deactivating only affects this company. You cannot deactivate yourself or drop your own.
@@ -57,7 +61,9 @@ abstract class CoreClient {
   /// Sends the invitation e-mail again. Refused (409) once the person has signed in, because.
   /// there is nothing left to invite them to, and for deactivated members.
   @POST('/api/v1/admin/users/{id}/invite')
-  Future<void> inviteAdminUser({@Path('id') required String id});
+  Future<void> inviteAdminUser({
+    @Path('id') required String id,
+  });
 
   /// The background worker's heartbeat: whether it is running, and its last outage.
   @GET('/api/v1/admin/worker')
@@ -81,7 +87,9 @@ abstract class CoreClient {
 
   /// `POST /setup/bootstrap`: creates the first company of an empty database.
   @POST('/api/v1/setup/bootstrap')
-  Future<BootstrapResult> bootstrap({@Body() required BootstrapRequest body});
+  Future<BootstrapResult> bootstrap({
+    @Body() required BootstrapRequest body,
+  });
 
   /// `GET /setup/status`: no sign-in needed.
   @GET('/api/v1/setup/status')

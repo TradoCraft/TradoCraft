@@ -15,9 +15,9 @@ class Uom {
     required this.factor,
     required this.name,
   });
-
+  
   factory Uom.fromJson(Map<String, Object?> json) => _$UomFromJson(json);
-
+  
   final bool active;
 
   /// unit | weight | length | area | volume | time

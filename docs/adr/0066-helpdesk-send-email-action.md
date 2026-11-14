@@ -1,4 +1,4 @@
-# 0063 — Helpdesk automation: the `send_email` action
+# 0066 — Helpdesk automation: the `send_email` action
 
 **Status:** Accepted
 

@@ -15,10 +15,9 @@ class ExportedModel {
     this.description,
     this.translations,
   });
-
-  factory ExportedModel.fromJson(Map<String, Object?> json) =>
-      _$ExportedModelFromJson(json);
-
+  
+  factory ExportedModel.fromJson(Map<String, Object?> json) => _$ExportedModelFromJson(json);
+  
   final String code;
   @JsonKey(includeIfNull: false)
   final String? description;

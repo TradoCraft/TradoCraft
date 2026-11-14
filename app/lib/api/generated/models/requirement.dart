@@ -16,10 +16,9 @@ class Requirement {
     required this.quantity,
     required this.unit,
   });
-
-  factory Requirement.fromJson(Map<String, Object?> json) =>
-      _$RequirementFromJson(json);
-
+  
+  factory Requirement.fromJson(Map<String, Object?> json) => _$RequirementFromJson(json);
+  
   final String code;
   final String name;
   @JsonKey(name: 'product_id')

@@ -8500,6 +8500,247 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get productionWorkCentres => 'Puestos de trabajo';
+
+  @override
+  String get productionWorkCentreAdd => 'Añadir puesto de trabajo';
+
+  @override
+  String get productionWorkCentreEdit => 'Editar puesto de trabajo';
+
+  @override
+  String get productionWorkCentreCapacity =>
+      'Capacidad (unidades trabajando a la vez)';
+
+  @override
+  String get productionWorkCentreCost => 'Coste por hora';
+
+  @override
+  String productionWorkCentreOpenOps(String count) {
+    return '$count operaciones abiertas';
+  }
+
+  @override
+  String get productionWorkCentreEmpty =>
+      'Aún no hay puestos de trabajo. Añada las máquinas y bancos en los que se ejecutan sus operaciones.';
+
+  @override
+  String get productionWorkingHours => 'Horario de trabajo';
+
+  @override
+  String get productionHoursDefault =>
+      'Sin horario propio: de lunes a viernes 08:00–12:00 y 13:00–17:00.';
+
+  @override
+  String get productionHoursAddBlock => 'Añadir tramo';
+
+  @override
+  String get productionClosures => 'Cierres';
+
+  @override
+  String get productionClosureAdd => 'Añadir cierre';
+
+  @override
+  String get productionClosureWholePlant => 'Toda la planta';
+
+  @override
+  String get productionClosureKind => 'Tipo';
+
+  @override
+  String get productionClosureMaintenance => 'Mantenimiento';
+
+  @override
+  String get productionClosureHoliday => 'Festivo';
+
+  @override
+  String get productionClosureOther => 'Otro';
+
+  @override
+  String get productionClosureEmpty => 'Sin cierres.';
+
+  @override
+  String get productionCapacity => 'Capacidad';
+
+  @override
+  String get productionCapacityLegend =>
+      'Carga de las operaciones abiertas frente a lo que cada puesto puede trabajar. Rojo: sobrecargado.';
+
+  @override
+  String get productionCapacityOverloaded => 'Sobrecargado';
+
+  @override
+  String get productionCapacityEmpty =>
+      'No hay puestos de trabajo que mostrar.';
+
+  @override
+  String get productionCapacityEarlier => 'Antes';
+
+  @override
+  String get productionCapacityLater => 'Después';
+
+  @override
+  String get productionCapacityToday => 'Hoy';
+
+  @override
+  String productionWorkCentreUnits(String count) {
+    return '$count unidades';
+  }
+
+  @override
+  String get productionOperations => 'Operaciones';
+
+  @override
+  String get productionOperationPending => 'Sin empezar';
+
+  @override
+  String get productionOperationDone => 'Hecha';
+
+  @override
+  String get productionOperationSkipped => 'Omitida';
+
+  @override
+  String get productionOperationStart => 'Iniciar operación';
+
+  @override
+  String get productionOperationFinish => 'Terminar operación';
+
+  @override
+  String get productionOperationReopen => 'Reabrir operación';
+
+  @override
+  String get productionOperationMove => 'Mover operación';
+
+  @override
+  String get productionOperationMinutes => 'Minutos trabajados';
+
+  @override
+  String get productionOperationPlanned => 'Previsto';
+
+  @override
+  String get productionOperationWorked => 'Trabajado';
+
+  @override
+  String productionOperationBy(String name) {
+    return 'por $name';
+  }
+
+  @override
+  String get productionScheduleAgain => 'Replanificar';
+
+  @override
+  String get productionStartFrom => 'Empezar desde';
+
+  @override
+  String productionBehindSchedule(String date) {
+    return 'Con retraso: la última operación está prevista para el $date, después de la fecha de finalización prevista.';
+  }
+
+  @override
+  String get productionBehindScheduleShort => 'Con retraso';
+
+  @override
+  String productionUseScheduledEnd(String date) {
+    return 'Usar $date como fecha de finalización prevista';
+  }
+
+  @override
+  String get productionRemark => 'Observación para producción (interna)';
+
+  @override
+  String get productionSubOrders => 'Órdenes de subconjuntos';
+
+  @override
+  String productionSubassemblyOf(String number) {
+    return 'Subconjunto de $number';
+  }
+
+  @override
+  String get productionCost => 'Coste';
+
+  @override
+  String get productionCostPlanned => 'Previsto';
+
+  @override
+  String get productionCostActual => 'Real';
+
+  @override
+  String get productionCostMaterial => 'Material';
+
+  @override
+  String get productionCostLabour => 'Mano de obra';
+
+  @override
+  String get productionCostIncomplete =>
+      'Faltan algunos costes y se han omitido.';
+
+  @override
+  String productionOperationsOpenWarning(String count) {
+    return '$count operaciones siguen abiertas. Indique los minutos trabajados para terminarlas; deje el campo vacío para omitir una.';
+  }
+
+  @override
+  String get productionAutoRelease =>
+      'Lanzar también los subconjuntos que el stock no cubre';
+
+  @override
+  String get productionRouting => 'Ruta de fabricación';
+
+  @override
+  String get productionRoutingNone =>
+      'Sin ruta: las órdenes de producción de este producto no tienen operaciones.';
+
+  @override
+  String get productionRoutingAddOperation => 'Añadir operación';
+
+  @override
+  String get productionRoutingOperation => 'Operación';
+
+  @override
+  String get productionRoutingSetup => 'Preparación (min)';
+
+  @override
+  String get productionRoutingRun => 'Duración por unidad (min)';
+
+  @override
+  String get productionRoutingNoWorkCentres =>
+      'Añada primero puestos de trabajo (Producción, puestos de trabajo).';
+
+  @override
+  String get productionCostRollup => 'Cálculo de costes';
+
+  @override
+  String get productionCostRollupHint =>
+      'Material al coste estándar y mano de obra al coste por hora de los puestos de trabajo, en todos los niveles.';
+
+  @override
+  String get productionCostPerUnit => 'Coste por unidad';
+
+  @override
+  String productionCostGapProduct(String code) {
+    return 'Sin coste estándar: $code';
+  }
+
+  @override
+  String productionCostGapWorkCentre(String code) {
+    return 'Sin coste por hora: $code';
+  }
+
+  @override
+  String get productionCostCalculate => 'Calcular';
+
+  @override
+  String get productionOperationMinutesInvalid =>
+      'Indique los minutos como número entero.';
+
+  @override
+  String get productionRoutingLoadFailed =>
+      'No se pudo cargar la ruta, así que no se puede modificar ahora.';
+
+  @override
+  String get productionRoutingChangedWhileSaving =>
+      'La ruta cambió mientras se guardaba. Guarde de nuevo para incluir los últimos cambios.';
+
+  @override
   String get shortcutBack => 'Atrás';
 
   @override

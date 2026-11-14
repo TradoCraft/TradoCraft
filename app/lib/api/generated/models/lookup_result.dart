@@ -11,11 +11,13 @@ part 'lookup_result.g.dart';
 
 @JsonSerializable()
 class LookupResult {
-  const LookupResult({required this.contacts, required this.customers});
-
-  factory LookupResult.fromJson(Map<String, Object?> json) =>
-      _$LookupResultFromJson(json);
-
+  const LookupResult({
+    required this.contacts,
+    required this.customers,
+  });
+  
+  factory LookupResult.fromJson(Map<String, Object?> json) => _$LookupResultFromJson(json);
+  
   final List<Contact> contacts;
 
   /// Customers whose main phone number or e-mail address matches. Useful when the caller is.

@@ -43,7 +43,9 @@ abstract class InventoryClient {
 
   /// Corrects the stock at a location to a counted quantity, or by a difference.
   @POST('/api/v1/inventory/adjustments')
-  Future<StockMove> adjust({@Body() required AdjustmentInput body});
+  Future<StockMove> adjust({
+    @Body() required AdjustmentInput body,
+  });
 
   /// Recomputes balances and serial locations from the ledger.
   @POST('/api/v1/inventory/balances/rebuild')
@@ -68,13 +70,19 @@ abstract class InventoryClient {
   /// Starts a count of a warehouse (or a location, or a product in it) and snapshots what the system.
   /// expects. Serial-tracked products are not counted.
   @POST('/api/v1/inventory/counts')
-  Future<CountDetail> createCount({@Body() required CountInput body});
+  Future<CountDetail> createCount({
+    @Body() required CountInput body,
+  });
 
   @GET('/api/v1/inventory/counts/{id}')
-  Future<CountDetail> getCount({@Path('id') required String id});
+  Future<CountDetail> getCount({
+    @Path('id') required String id,
+  });
 
   @POST('/api/v1/inventory/counts/{id}/cancel')
-  Future<CountDetail> cancelCount({@Path('id') required String id});
+  Future<CountDetail> cancelCount({
+    @Path('id') required String id,
+  });
 
   /// Enters counted quantities, and adds lines for stock that was not expected.
   @PUT('/api/v1/inventory/counts/{id}/lines')
@@ -86,7 +94,9 @@ abstract class InventoryClient {
   /// Posts the count: one adjustment move for every counted line whose quantity differs from the.
   /// stock at this moment. Lines without a counted quantity are left alone.
   @POST('/api/v1/inventory/counts/{id}/post')
-  Future<CountDetail> postCount({@Path('id') required String id});
+  Future<CountDetail> postCount({
+    @Path('id') required String id,
+  });
 
   /// Compares the balances with the sum of the ledger.
   @GET('/api/v1/inventory/integrity')
@@ -95,10 +105,14 @@ abstract class InventoryClient {
   /// Takes stock out of a location. The reason decides where it goes: a customer (`shipment`),.
   /// production consumption (`consumption`, `repair_use`) or scrap.
   @POST('/api/v1/inventory/issues')
-  Future<StockMove> issue({@Body() required IssueInput body});
+  Future<StockMove> issue({
+    @Body() required IssueInput body,
+  });
 
   @POST('/api/v1/inventory/locations')
-  Future<Location> createLocation({@Body() required LocationInput body});
+  Future<Location> createLocation({
+    @Body() required LocationInput body,
+  });
 
   @PUT('/api/v1/inventory/locations/{id}')
   Future<Location> updateLocation({
@@ -136,7 +150,9 @@ abstract class InventoryClient {
   });
 
   @GET('/api/v1/inventory/moves/{id}')
-  Future<StockMove> getMove({@Path('id') required String id});
+  Future<StockMove> getMove({
+    @Path('id') required String id,
+  });
 
   /// Undoes a move with a new move in the opposite direction. The original stays in the ledger.
   @POST('/api/v1/inventory/moves/{id}/reverse')
@@ -146,7 +162,9 @@ abstract class InventoryClient {
   });
 
   @GET('/api/v1/inventory/order-lines/{id}/reservation')
-  Future<LineReservation> getReservation({@Path('id') required String id});
+  Future<LineReservation> getReservation({
+    @Path('id') required String id,
+  });
 
   /// Sets how much stock is reserved for an order line. Idempotent: the same call twice changes.
   /// nothing the second time.
@@ -159,10 +177,14 @@ abstract class InventoryClient {
   /// Availability (ATP) of every line of the order: what is in the warehouses, what is reserved,.
   /// and what this order's lines still lack. Van stock is not counted.
   @GET('/api/v1/inventory/orders/{id}/availability')
-  Future<OrderAvailability> orderAvailability({@Path('id') required String id});
+  Future<OrderAvailability> orderAvailability({
+    @Path('id') required String id,
+  });
 
   @GET('/api/v1/inventory/products/{id}/uoms')
-  Future<List<ProductUom>> productUoms({@Path('id') required String id});
+  Future<List<ProductUom>> productUoms({
+    @Path('id') required String id,
+  });
 
   /// Replaces the product-specific units (for example a box of 12 pieces).
   @PUT('/api/v1/inventory/products/{id}/uoms')
@@ -173,7 +195,9 @@ abstract class InventoryClient {
 
   /// Receives stock at a location from outside (a manual receipt; purchasing posts its own).
   @POST('/api/v1/inventory/receipts')
-  Future<StockMove> receive({@Body() required ReceiptInput body});
+  Future<StockMove> receive({
+    @Body() required ReceiptInput body,
+  });
 
   /// Active reservations, for example to see which orders hold a product. Paged with `limit` and.
   /// `offset`; a page shorter than `limit` is the last one.
@@ -224,20 +248,26 @@ abstract class InventoryClient {
 
   /// Moves stock between two locations (also from a warehouse to a service van).
   @POST('/api/v1/inventory/transfers')
-  Future<StockMove> transfer({@Body() required TransferInput body});
+  Future<StockMove> transfer({
+    @Body() required TransferInput body,
+  });
 
   @GET('/api/v1/inventory/uoms')
   Future<List<Uom>> listUoms();
 
   @POST('/api/v1/inventory/uoms')
-  Future<Uom> createUom({@Body() required UomInput body});
+  Future<Uom> createUom({
+    @Body() required UomInput body,
+  });
 
   @GET('/api/v1/inventory/warehouses')
   Future<List<Warehouse>> listWarehouses();
 
   /// Creates a warehouse or service van with one default location (`MAIN`, for a van `VAN`).
   @POST('/api/v1/inventory/warehouses')
-  Future<Warehouse> createWarehouse({@Body() required WarehouseInput body});
+  Future<Warehouse> createWarehouse({
+    @Body() required WarehouseInput body,
+  });
 
   @PUT('/api/v1/inventory/warehouses/{id}')
   Future<Warehouse> updateWarehouse({

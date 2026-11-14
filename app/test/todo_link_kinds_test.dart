@@ -56,6 +56,8 @@ void main() {
       '/jobs/equipment/c1',
       '/production/release',
       '/production/divisions',
+      '/production/work-centres',
+      '/production/capacity',
       '/delivery/settings',
       '/kb/categories',
       '/repairs/departments',

@@ -15,10 +15,9 @@ class SalesWarning {
     required this.message,
     required this.productCode,
   });
-
-  factory SalesWarning.fromJson(Map<String, Object?> json) =>
-      _$SalesWarningFromJson(json);
-
+  
+  factory SalesWarning.fromJson(Map<String, Object?> json) => _$SalesWarningFromJson(json);
+  
   /// Machine-readable details: `status` (incompatible | needs_external_supply | unknown_grid),.
   /// `country_code`, `supported` and `available` profiles. For `incompatible_products`:.
   /// `product_codes` (the pair), `note` and `relation_id`.

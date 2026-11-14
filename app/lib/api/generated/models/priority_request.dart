@@ -20,10 +20,9 @@ class PriorityRequest {
     required this.status,
     this.resolvedAt,
   });
-
-  factory PriorityRequest.fromJson(Map<String, Object?> json) =>
-      _$PriorityRequestFromJson(json);
-
+  
+  factory PriorityRequest.fromJson(Map<String, Object?> json) => _$PriorityRequestFromJson(json);
+  
   @JsonKey(name: 'created_at')
   final DateTime createdAt;
   final String id;
@@ -40,7 +39,7 @@ class PriorityRequest {
   final String requestedPriority;
   @JsonKey(name: 'resolution_note')
   final String resolutionNote;
-  @JsonKey(includeIfNull: false, name: 'resolved_at')
+  @JsonKey(includeIfNull: false,name: 'resolved_at')
   final DateTime? resolvedAt;
 
   /// open | applied | dismissed

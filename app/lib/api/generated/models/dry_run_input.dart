@@ -8,11 +8,13 @@ part 'dry_run_input.g.dart';
 
 @JsonSerializable()
 class DryRunInput {
-  const DryRunInput({required this.ticketId, required this.trigger});
-
-  factory DryRunInput.fromJson(Map<String, Object?> json) =>
-      _$DryRunInputFromJson(json);
-
+  const DryRunInput({
+    required this.ticketId,
+    required this.trigger,
+  });
+  
+  factory DryRunInput.fromJson(Map<String, Object?> json) => _$DryRunInputFromJson(json);
+  
   @JsonKey(name: 'ticket_id')
   final String ticketId;
 

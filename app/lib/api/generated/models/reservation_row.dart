@@ -25,28 +25,27 @@ class ReservationRow {
     this.orderNumber,
     this.position,
   });
-
-  factory ReservationRow.fromJson(Map<String, Object?> json) =>
-      _$ReservationRowFromJson(json);
-
+  
+  factory ReservationRow.fromJson(Map<String, Object?> json) => _$ReservationRowFromJson(json);
+  
   /// Already shipped or consumed from this allocation.
   @JsonKey(name: 'consumed_quantity')
   final String consumedQuantity;
   @JsonKey(name: 'created_at')
   final DateTime createdAt;
-  @JsonKey(includeIfNull: false, name: 'customer_name')
+  @JsonKey(includeIfNull: false,name: 'customer_name')
   final String? customerName;
   final String id;
   final String location;
-  @JsonKey(includeIfNull: false, name: 'lot_number')
+  @JsonKey(includeIfNull: false,name: 'lot_number')
   final String? lotNumber;
 
   /// The order, for a sales order line.
-  @JsonKey(includeIfNull: false, name: 'order_id')
+  @JsonKey(includeIfNull: false,name: 'order_id')
   final String? orderId;
-  @JsonKey(includeIfNull: false, name: 'order_line_id')
+  @JsonKey(includeIfNull: false,name: 'order_line_id')
   final String? orderLineId;
-  @JsonKey(includeIfNull: false, name: 'order_number')
+  @JsonKey(includeIfNull: false,name: 'order_number')
   final String? orderNumber;
   @JsonKey(includeIfNull: false)
   final int? position;

@@ -13,10 +13,9 @@ class TodoCounts {
     required this.open,
     required this.overdue,
   });
-
-  factory TodoCounts.fromJson(Map<String, Object?> json) =>
-      _$TodoCountsFromJson(json);
-
+  
+  factory TodoCounts.fromJson(Map<String, Object?> json) => _$TodoCountsFromJson(json);
+  
   /// Open root items on my plate that are due today.
   @JsonKey(name: 'due_today')
   final int dueToday;

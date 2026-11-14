@@ -24,16 +24,15 @@ class IdentityProviderInput {
     this.tokenUse,
     this.verifiedClaim,
   });
-
-  factory IdentityProviderInput.fromJson(Map<String, Object?> json) =>
-      _$IdentityProviderInputFromJson(json);
-
+  
+  factory IdentityProviderInput.fromJson(Map<String, Object?> json) => _$IdentityProviderInputFromJson(json);
+  
   /// Subset of RS256, RS384, RS512, ES256, ES384, PS256, PS384, PS512; default all of them.
   @JsonKey(includeIfNull: false)
   final List<String>? algorithms;
 
   /// When not empty, only these e-mail domains can be bound by e-mail.
-  @JsonKey(includeIfNull: false, name: 'allowed_email_domains')
+  @JsonKey(includeIfNull: false,name: 'allowed_email_domains')
   final List<String>? allowedEmailDomains;
 
   /// The audience tokens must carry (usually the API's application id).
@@ -41,19 +40,19 @@ class IdentityProviderInput {
 
   /// Public client id for the interactive sign-in; none for a provider used with bearer.
   /// tokens only.
-  @JsonKey(includeIfNull: false, name: 'client_id')
+  @JsonKey(includeIfNull: false,name: 'client_id')
   final String? clientId;
 
   /// Acknowledge that this change can lock people out (see the 409 answers).
-  @JsonKey(includeIfNull: false, name: 'confirm_lockout')
+  @JsonKey(includeIfNull: false,name: 'confirm_lockout')
   final bool? confirmLockout;
 
   /// Default `email`.
-  @JsonKey(includeIfNull: false, name: 'email_claim')
+  @JsonKey(includeIfNull: false,name: 'email_claim')
   final String? emailClaim;
 
   /// Default `require_verified_claim`.
-  @JsonKey(includeIfNull: false, name: 'email_policy')
+  @JsonKey(includeIfNull: false,name: 'email_policy')
   final String? emailPolicy;
 
   /// Default true.
@@ -71,11 +70,11 @@ class IdentityProviderInput {
   final String? scopes;
 
   /// `id_token` (default) or `access_token`: the token the interactive sign-in sends.
-  @JsonKey(includeIfNull: false, name: 'token_use')
+  @JsonKey(includeIfNull: false,name: 'token_use')
   final String? tokenUse;
 
   /// Default `email_verified` (Microsoft Entra ID: `xms_edov`).
-  @JsonKey(includeIfNull: false, name: 'verified_claim')
+  @JsonKey(includeIfNull: false,name: 'verified_claim')
   final String? verifiedClaim;
 
   Map<String, Object?> toJson() => _$IdentityProviderInputToJson(this);

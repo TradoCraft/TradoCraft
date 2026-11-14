@@ -18,31 +18,30 @@ class PackageNewRepairInput {
     this.serialNumber,
     this.ticketId,
   });
-
-  factory PackageNewRepairInput.fromJson(Map<String, Object?> json) =>
-      _$PackageNewRepairInputFromJson(json);
-
-  @JsonKey(includeIfNull: false, name: 'contact_id')
+  
+  factory PackageNewRepairInput.fromJson(Map<String, Object?> json) => _$PackageNewRepairInputFromJson(json);
+  
+  @JsonKey(includeIfNull: false,name: 'contact_id')
   final String? contactId;
 
   /// Defaults to the customer of the parcel.
-  @JsonKey(includeIfNull: false, name: 'customer_id')
+  @JsonKey(includeIfNull: false,name: 'customer_id')
   final String? customerId;
 
   /// Defaults to the customer reference of the parcel.
-  @JsonKey(includeIfNull: false, name: 'customer_reference')
+  @JsonKey(includeIfNull: false,name: 'customer_reference')
   final String? customerReference;
 
   /// What is wrong. Defaults to the subject of the ticket, else to "To be determined at intake".
-  @JsonKey(includeIfNull: false, name: 'fault_description')
+  @JsonKey(includeIfNull: false,name: 'fault_description')
   final String? faultDescription;
-  @JsonKey(includeIfNull: false, name: 'product_description')
+  @JsonKey(includeIfNull: false,name: 'product_description')
   final String? productDescription;
-  @JsonKey(includeIfNull: false, name: 'product_id')
+  @JsonKey(includeIfNull: false,name: 'product_id')
   final String? productId;
-  @JsonKey(includeIfNull: false, name: 'serial_number')
+  @JsonKey(includeIfNull: false,name: 'serial_number')
   final String? serialNumber;
-  @JsonKey(includeIfNull: false, name: 'ticket_id')
+  @JsonKey(includeIfNull: false,name: 'ticket_id')
   final String? ticketId;
 
   Map<String, Object?> toJson() => _$PackageNewRepairInputToJson(this);

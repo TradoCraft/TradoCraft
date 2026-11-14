@@ -14,10 +14,9 @@ class FinanceSettings {
     required this.quantityTolerancePct,
     this.updatedAt,
   });
-
-  factory FinanceSettings.fromJson(Map<String, Object?> json) =>
-      _$FinanceSettingsFromJson(json);
-
+  
+  factory FinanceSettings.fromJson(Map<String, Object?> json) => _$FinanceSettingsFromJson(json);
+  
   /// Price difference (percent of the order price) that is still a match.
   @JsonKey(name: 'price_tolerance_pct')
   final String priceTolerancePct;
@@ -27,7 +26,7 @@ class FinanceSettings {
   final String quantityTolerancePct;
 
   /// When the settings were last saved; `None` while the defaults apply.
-  @JsonKey(includeIfNull: false, name: 'updated_at')
+  @JsonKey(includeIfNull: false,name: 'updated_at')
   final DateTime? updatedAt;
 
   Map<String, Object?> toJson() => _$FinanceSettingsToJson(this);

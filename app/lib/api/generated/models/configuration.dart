@@ -29,15 +29,14 @@ class Configuration {
     this.quotationNumber,
     this.result,
   });
-
-  factory Configuration.fromJson(Map<String, Object?> json) =>
-      _$ConfigurationFromJson(json);
-
+  
+  factory Configuration.fromJson(Map<String, Object?> json) => _$ConfigurationFromJson(json);
+  
   @JsonKey(name: 'created_at')
   final DateTime createdAt;
-  @JsonKey(includeIfNull: false, name: 'customer_id')
+  @JsonKey(includeIfNull: false,name: 'customer_id')
   final String? customerId;
-  @JsonKey(includeIfNull: false, name: 'customer_name')
+  @JsonKey(includeIfNull: false,name: 'customer_name')
   final String? customerName;
   final String id;
   final Inputs inputs;
@@ -50,11 +49,11 @@ class Configuration {
   final String name;
 
   /// The model's active revision when it is newer than this configuration's (offer an upgrade).
-  @JsonKey(includeIfNull: false, name: 'newer_revision_id')
+  @JsonKey(includeIfNull: false,name: 'newer_revision_id')
   final String? newerRevisionId;
-  @JsonKey(includeIfNull: false, name: 'quotation_id')
+  @JsonKey(includeIfNull: false,name: 'quotation_id')
   final String? quotationId;
-  @JsonKey(includeIfNull: false, name: 'quotation_number')
+  @JsonKey(includeIfNull: false,name: 'quotation_number')
   final String? quotationNumber;
 
   /// The evaluation when last saved or quoted.

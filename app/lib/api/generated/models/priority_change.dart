@@ -17,10 +17,9 @@ class PriorityChange {
     required this.oldPriority,
     required this.reason,
   });
-
-  factory PriorityChange.fromJson(Map<String, Object?> json) =>
-      _$PriorityChangeFromJson(json);
-
+  
+  factory PriorityChange.fromJson(Map<String, Object?> json) => _$PriorityChangeFromJson(json);
+  
   @JsonKey(name: 'changed_at')
   final DateTime changedAt;
   @JsonKey(name: 'changed_by')

@@ -17,10 +17,9 @@ class UpcomingVisit {
     this.jobId,
     this.jobNumber,
   });
-
-  factory UpcomingVisit.fromJson(Map<String, Object?> json) =>
-      _$UpcomingVisitFromJson(json);
-
+  
+  factory UpcomingVisit.fromJson(Map<String, Object?> json) => _$UpcomingVisitFromJson(json);
+  
   @JsonKey(name: 'due_date')
   final DateTime dueDate;
 
@@ -29,9 +28,9 @@ class UpcomingVisit {
   final DateTime generateOn;
 
   /// The job, once generated.
-  @JsonKey(includeIfNull: false, name: 'job_id')
+  @JsonKey(includeIfNull: false,name: 'job_id')
   final String? jobId;
-  @JsonKey(includeIfNull: false, name: 'job_number')
+  @JsonKey(includeIfNull: false,name: 'job_number')
   final String? jobNumber;
   final String kind;
   @JsonKey(name: 'template_id')

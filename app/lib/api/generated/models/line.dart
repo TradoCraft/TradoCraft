@@ -25,9 +25,9 @@ class Line {
     this.productName,
     this.section,
   });
-
+  
   factory Line.fromJson(Map<String, Object?> json) => _$LineFromJson(json);
-
+  
   final List<Line> children;
   final String code;
   @JsonKey(includeIfNull: false)
@@ -36,18 +36,18 @@ class Line {
   final String? description;
 
   /// parent_list_unit_price | parent_net_unit_price
-  @JsonKey(includeIfNull: false, name: 'percent_base')
+  @JsonKey(includeIfNull: false,name: 'percent_base')
   final String? percentBase;
-  @JsonKey(includeIfNull: false, name: 'percent_of_parent')
+  @JsonKey(includeIfNull: false,name: 'percent_of_parent')
   final String? percentOfParent;
 
   /// The catalogue product with this code, if there is one.
-  @JsonKey(includeIfNull: false, name: 'product_id')
+  @JsonKey(includeIfNull: false,name: 'product_id')
   final String? productId;
 
   /// Its name: translated when the evaluation was asked in a language it has a translation.
   /// for, else the base name.
-  @JsonKey(includeIfNull: false, name: 'product_name')
+  @JsonKey(includeIfNull: false,name: 'product_name')
   final String? productName;
   final String quantity;
   final String rule;

@@ -19,10 +19,9 @@ class PreparedAnswer {
     required this.updatedAt,
     this.category,
   });
-
-  factory PreparedAnswer.fromJson(Map<String, Object?> json) =>
-      _$PreparedAnswerFromJson(json);
-
+  
+  factory PreparedAnswer.fromJson(Map<String, Object?> json) => _$PreparedAnswerFromJson(json);
+  
   final bool active;
   @JsonKey(includeIfNull: false)
   final String? category;

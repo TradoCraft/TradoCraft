@@ -11,10 +11,15 @@ part 'inputs.g.dart';
 /// What the user entered. Unknown names are ignored.
 @JsonSerializable()
 class Inputs {
-  const Inputs({this.groups, this.items, this.pins, this.project});
-
+  const Inputs({
+    this.groups,
+    this.items,
+    this.pins,
+    this.project,
+  });
+  
   factory Inputs.fromJson(Map<String, Object?> json) => _$InputsFromJson(json);
-
+  
   /// Group field values by group name, then field name.
   @JsonKey(includeIfNull: false)
   final dynamic groups;

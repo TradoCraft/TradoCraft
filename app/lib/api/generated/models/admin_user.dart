@@ -18,10 +18,9 @@ class AdminUser {
     required this.roles,
     required this.userId,
   });
-
-  factory AdminUser.fromJson(Map<String, Object?> json) =>
-      _$AdminUserFromJson(json);
-
+  
+  factory AdminUser.fromJson(Map<String, Object?> json) => _$AdminUserFromJson(json);
+  
   /// False when the membership in this company is deactivated.
   final bool active;
 

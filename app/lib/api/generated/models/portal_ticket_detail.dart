@@ -11,11 +11,13 @@ part 'portal_ticket_detail.g.dart';
 
 @JsonSerializable()
 class PortalTicketDetail {
-  const PortalTicketDetail({required this.messages, required this.ticket});
-
-  factory PortalTicketDetail.fromJson(Map<String, Object?> json) =>
-      _$PortalTicketDetailFromJson(json);
-
+  const PortalTicketDetail({
+    required this.messages,
+    required this.ticket,
+  });
+  
+  factory PortalTicketDetail.fromJson(Map<String, Object?> json) => _$PortalTicketDetailFromJson(json);
+  
   final List<PortalMessage> messages;
   final PortalTicket ticket;
 

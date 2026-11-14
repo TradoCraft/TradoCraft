@@ -14,18 +14,17 @@ class CountInput {
     this.note,
     this.productId,
   });
-
-  factory CountInput.fromJson(Map<String, Object?> json) =>
-      _$CountInputFromJson(json);
-
+  
+  factory CountInput.fromJson(Map<String, Object?> json) => _$CountInputFromJson(json);
+  
   /// Count only this location.
-  @JsonKey(includeIfNull: false, name: 'location_id')
+  @JsonKey(includeIfNull: false,name: 'location_id')
   final String? locationId;
   @JsonKey(includeIfNull: false)
   final String? note;
 
   /// Count only this product.
-  @JsonKey(includeIfNull: false, name: 'product_id')
+  @JsonKey(includeIfNull: false,name: 'product_id')
   final String? productId;
   @JsonKey(name: 'warehouse_id')
   final String warehouseId;

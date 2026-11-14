@@ -16,10 +16,9 @@ class PowerGridInput {
     this.active,
     this.name,
   });
-
-  factory PowerGridInput.fromJson(Map<String, Object?> json) =>
-      _$PowerGridInputFromJson(json);
-
+  
+  factory PowerGridInput.fromJson(Map<String, Object?> json) => _$PowerGridInputFromJson(json);
+  
   @JsonKey(includeIfNull: false)
   final bool? active;
   @JsonKey(name: 'country_code')

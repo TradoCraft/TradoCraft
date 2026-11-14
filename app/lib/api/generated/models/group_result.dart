@@ -10,11 +10,13 @@ part 'group_result.g.dart';
 
 @JsonSerializable()
 class GroupResult {
-  const GroupResult({required this.name, required this.values});
-
-  factory GroupResult.fromJson(Map<String, Object?> json) =>
-      _$GroupResultFromJson(json);
-
+  const GroupResult({
+    required this.name,
+    required this.values,
+  });
+  
+  factory GroupResult.fromJson(Map<String, Object?> json) => _$GroupResultFromJson(json);
+  
   final String name;
   final List<ValueResult> values;
 

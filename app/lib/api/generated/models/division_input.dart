@@ -16,20 +16,19 @@ class DivisionInput {
     this.memberUserIds,
     this.sortOrder,
   });
-
-  factory DivisionInput.fromJson(Map<String, Object?> json) =>
-      _$DivisionInputFromJson(json);
-
+  
+  factory DivisionInput.fromJson(Map<String, Object?> json) => _$DivisionInputFromJson(json);
+  
   @JsonKey(includeIfNull: false)
   final bool? active;
   final String code;
 
   /// When present, replaces all members of the division (active users of the company only);.
   /// when absent, the members stay as they are.
-  @JsonKey(includeIfNull: false, name: 'member_user_ids')
+  @JsonKey(includeIfNull: false,name: 'member_user_ids')
   final List<String>? memberUserIds;
   final String name;
-  @JsonKey(includeIfNull: false, name: 'sort_order')
+  @JsonKey(includeIfNull: false,name: 'sort_order')
   final int? sortOrder;
 
   Map<String, Object?> toJson() => _$DivisionInputToJson(this);

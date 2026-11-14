@@ -18,10 +18,9 @@ class PowerCompatibilityReport {
     required this.status,
     required this.supported,
   });
-
-  factory PowerCompatibilityReport.fromJson(Map<String, Object?> json) =>
-      _$PowerCompatibilityReportFromJson(json);
-
+  
+  factory PowerCompatibilityReport.fromJson(Map<String, Object?> json) => _$PowerCompatibilityReportFromJson(json);
+  
   /// The grids the product was checked against.
   final List<PowerGrid> available;
   @JsonKey(name: 'country_code')

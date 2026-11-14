@@ -23,6 +23,9 @@ class _ReleasePageState extends ConsumerState<ReleasePage> {
   String? _error;
   String? _busy;
 
+  /// Also release the subassemblies that stock does not cover.
+  bool _auto = false;
+
   @override
   void initState() {
     super.initState();
@@ -55,6 +58,7 @@ class _ReleasePageState extends ConsumerState<ReleasePage> {
             body: ReleaseProductionInput(
               orderId: t.orderId,
               orderLineId: t.orderLineId,
+              autoReleaseSubassemblies: _auto ? true : null,
             ),
           );
       opened = po.id;
@@ -92,6 +96,14 @@ class _ReleasePageState extends ConsumerState<ReleasePage> {
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [
+                if (canRelease)
+                  SwitchListTile(
+                    key: const ValueKey('auto-release'),
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(l.productionAutoRelease),
+                    value: _auto,
+                    onChanged: (v) => setState(() => _auto = v),
+                  ),
                 for (final t in items)
                   Card(
                     key: ValueKey('release-${t.orderLineId}'),

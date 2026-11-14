@@ -17,12 +17,11 @@ class PublicProvider {
     required this.tokenUse,
     this.clientId,
   });
-
-  factory PublicProvider.fromJson(Map<String, Object?> json) =>
-      _$PublicProviderFromJson(json);
-
+  
+  factory PublicProvider.fromJson(Map<String, Object?> json) => _$PublicProviderFromJson(json);
+  
   /// Public client id of the interactive sign-in.
-  @JsonKey(includeIfNull: false, name: 'client_id')
+  @JsonKey(includeIfNull: false,name: 'client_id')
   final String? clientId;
 
   /// Issuer URL.

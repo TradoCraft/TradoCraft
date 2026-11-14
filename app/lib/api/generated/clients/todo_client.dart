@@ -39,16 +39,22 @@ abstract class TodoClient {
   });
 
   @POST('/api/v1/todo/items')
-  Future<TodoItem> todoCreate({@Body() required TodoCreate body});
+  Future<TodoItem> todoCreate({
+    @Body() required TodoCreate body,
+  });
 
   @GET('/api/v1/todo/items/counts')
   Future<TodoCounts> todoCounts();
 
   @POST('/api/v1/todo/items/reorder')
-  Future<void> todoReorder({@Body() required TodoReorderInput body});
+  Future<void> todoReorder({
+    @Body() required TodoReorderInput body,
+  });
 
   @DELETE('/api/v1/todo/items/{id}')
-  Future<void> todoDelete({@Path('id') required String id});
+  Future<void> todoDelete({
+    @Path('id') required String id,
+  });
 
   @PATCH('/api/v1/todo/items/{id}')
   Future<TodoItem> todoUpdate({
@@ -63,7 +69,9 @@ abstract class TodoClient {
   });
 
   @POST('/api/v1/todo/items/{id}/reopen')
-  Future<TodoItem> todoReopen({@Path('id') required String id});
+  Future<TodoItem> todoReopen({
+    @Path('id') required String id,
+  });
 
   @GET('/api/v1/todo/settings')
   Future<TodoSettings> todoSettingsGet();

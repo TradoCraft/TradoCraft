@@ -19,17 +19,16 @@ class RepairEvent {
     this.toDepartment,
     this.toStatus,
   });
-
-  factory RepairEvent.fromJson(Map<String, Object?> json) =>
-      _$RepairEventFromJson(json);
-
+  
+  factory RepairEvent.fromJson(Map<String, Object?> json) => _$RepairEventFromJson(json);
+  
   @JsonKey(name: 'actor_name')
   final String actorName;
   @JsonKey(name: 'created_at')
   final DateTime createdAt;
-  @JsonKey(includeIfNull: false, name: 'from_department')
+  @JsonKey(includeIfNull: false,name: 'from_department')
   final String? fromDepartment;
-  @JsonKey(includeIfNull: false, name: 'from_status')
+  @JsonKey(includeIfNull: false,name: 'from_status')
   final String? fromStatus;
   final String id;
 
@@ -37,9 +36,9 @@ class RepairEvent {
   /// warranty_auto | warranty_manual | warranty_void | warranty_void_removed.
   final String kind;
   final String note;
-  @JsonKey(includeIfNull: false, name: 'to_department')
+  @JsonKey(includeIfNull: false,name: 'to_department')
   final String? toDepartment;
-  @JsonKey(includeIfNull: false, name: 'to_status')
+  @JsonKey(includeIfNull: false,name: 'to_status')
   final String? toStatus;
 
   Map<String, Object?> toJson() => _$RepairEventToJson(this);

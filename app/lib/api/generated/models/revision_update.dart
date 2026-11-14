@@ -8,11 +8,13 @@ part 'revision_update.g.dart';
 
 @JsonSerializable()
 class RevisionUpdate {
-  const RevisionUpdate({required this.definition, this.notes});
-
-  factory RevisionUpdate.fromJson(Map<String, Object?> json) =>
-      _$RevisionUpdateFromJson(json);
-
+  const RevisionUpdate({
+    required this.definition,
+    this.notes,
+  });
+  
+  factory RevisionUpdate.fromJson(Map<String, Object?> json) => _$RevisionUpdateFromJson(json);
+  
   final dynamic definition;
   @JsonKey(includeIfNull: false)
   final String? notes;

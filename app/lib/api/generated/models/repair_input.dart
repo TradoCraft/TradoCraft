@@ -18,22 +18,21 @@ class RepairInput {
     this.productId,
     this.serialNumber,
   });
-
-  factory RepairInput.fromJson(Map<String, Object?> json) =>
-      _$RepairInputFromJson(json);
-
-  @JsonKey(includeIfNull: false, name: 'contact_id')
+  
+  factory RepairInput.fromJson(Map<String, Object?> json) => _$RepairInputFromJson(json);
+  
+  @JsonKey(includeIfNull: false,name: 'contact_id')
   final String? contactId;
-  @JsonKey(includeIfNull: false, name: 'customer_reference')
+  @JsonKey(includeIfNull: false,name: 'customer_reference')
   final String? customerReference;
   @JsonKey(name: 'fault_description')
   final String faultDescription;
   final String priority;
-  @JsonKey(includeIfNull: false, name: 'product_description')
+  @JsonKey(includeIfNull: false,name: 'product_description')
   final String? productDescription;
-  @JsonKey(includeIfNull: false, name: 'product_id')
+  @JsonKey(includeIfNull: false,name: 'product_id')
   final String? productId;
-  @JsonKey(includeIfNull: false, name: 'serial_number')
+  @JsonKey(includeIfNull: false,name: 'serial_number')
   final String? serialNumber;
   final String warranty;
 

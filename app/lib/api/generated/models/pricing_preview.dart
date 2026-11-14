@@ -28,10 +28,9 @@ class PricingPreview {
     required this.vatTotal,
     required this.warnings,
   });
-
-  factory PricingPreview.fromJson(Map<String, Object?> json) =>
-      _$PricingPreviewFromJson(json);
-
+  
+  factory PricingPreview.fromJson(Map<String, Object?> json) => _$PricingPreviewFromJson(json);
+  
   @JsonKey(name: 'customer_discount_percent')
   final String customerDiscountPercent;
 

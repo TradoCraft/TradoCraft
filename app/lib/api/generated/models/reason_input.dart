@@ -8,11 +8,12 @@ part 'reason_input.g.dart';
 
 @JsonSerializable()
 class ReasonInput {
-  const ReasonInput({this.reason});
-
-  factory ReasonInput.fromJson(Map<String, Object?> json) =>
-      _$ReasonInputFromJson(json);
-
+  const ReasonInput({
+    this.reason,
+  });
+  
+  factory ReasonInput.fromJson(Map<String, Object?> json) => _$ReasonInputFromJson(json);
+  
   @JsonKey(includeIfNull: false)
   final String? reason;
 

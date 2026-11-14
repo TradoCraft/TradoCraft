@@ -199,6 +199,18 @@ class _ProductionQueuePageState extends ConsumerState<ProductionQueuePage> {
             _list.currentState?.reload();
           },
         ),
+        IconButton(
+          key: const ValueKey('capacity'),
+          tooltip: l.productionCapacity,
+          icon: const Icon(AppIcons.barChart),
+          onPressed: () => context.push('/production/capacity'),
+        ),
+        IconButton(
+          key: const ValueKey('work-centres'),
+          tooltip: l.productionWorkCentres,
+          icon: const Icon(AppIcons.precisionManufacturing),
+          onPressed: () => context.push('/production/work-centres'),
+        ),
         if (perms.contains('production.admin'))
           TutorialTarget(id: 'production-divisions', child: IconButton(
             key: const ValueKey('divisions'),
@@ -246,11 +258,37 @@ class _ProductionQueuePageState extends ConsumerState<ProductionQueuePage> {
           l.status,
           (o) =>
               l.productionStatus(o.status) +
+              (o.operationCount > 0
+                  ? ' · ${o.operationsDone}/${o.operationCount}'
+                  : '') +
               (o.shortComponents > 0 ? ' · ${l.productionShort}' : ''),
           flex: 3,
           cell: (context, o) => Row(
             children: [
               Flexible(child: Text(l.productionStatus(o.status))),
+              if (o.operationCount > 0) ...[
+                const SizedBox(width: 6),
+                Tooltip(
+                  message: l.productionOperations,
+                  child: Text(
+                    '${o.operationsDone}/${o.operationCount}',
+                    key: ValueKey('ops-${o.id}'),
+                    style: Theme.of(context).textTheme.labelSmall,
+                  ),
+                ),
+              ],
+              if (o.behindSchedule) ...[
+                const SizedBox(width: 6),
+                Tooltip(
+                  message: l.productionBehindScheduleShort,
+                  child: Icon(
+                    AppIcons.schedule,
+                    key: ValueKey('behind-${o.id}'),
+                    size: 18,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                ),
+              ],
               if (o.shortComponents > 0 || o.orderCancelled) ...[
                 const SizedBox(width: 6),
                 Tooltip(
@@ -286,6 +324,7 @@ class _StockOrderDialog extends ConsumerStatefulWidget {
 class _StockOrderDialogState extends ConsumerState<_StockOrderDialog> {
   Product? _product;
   final _quantity = TextEditingController(text: '1');
+  bool _auto = false;
   String? _error;
   bool _saving = false;
 
@@ -313,6 +352,7 @@ class _StockOrderDialogState extends ConsumerState<_StockOrderDialog> {
             body: ReleaseProductionInput(
               productId: _product!.id,
               quantity: quantity,
+              autoReleaseSubassemblies: _auto ? true : null,
             ),
           );
       if (!mounted) return;
@@ -363,6 +403,13 @@ class _StockOrderDialogState extends ConsumerState<_StockOrderDialog> {
                 decimal: true,
               ),
               decoration: InputDecoration(labelText: l.quantity),
+            ),
+            SwitchListTile(
+              key: const ValueKey('stock-auto-release'),
+              contentPadding: EdgeInsets.zero,
+              title: Text(l.productionAutoRelease),
+              value: _auto,
+              onChanged: (v) => setState(() => _auto = v),
             ),
             if (_error != null) ...[
               const SizedBox(height: 12),

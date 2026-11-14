@@ -25,15 +25,14 @@ class ReportScheduleInput {
     this.userIds,
     this.weekday,
   });
-
-  factory ReportScheduleInput.fromJson(Map<String, Object?> json) =>
-      _$ReportScheduleInputFromJson(json);
-
+  
+  factory ReportScheduleInput.fromJson(Map<String, Object?> json) => _$ReportScheduleInputFromJson(json);
+  
   @JsonKey(includeIfNull: false)
   final bool? active;
   @JsonKey(includeIfNull: false)
   final List<String>? addresses;
-  @JsonKey(includeIfNull: false, name: 'day_of_month')
+  @JsonKey(includeIfNull: false,name: 'day_of_month')
   final int? dayOfMonth;
   final String format;
   final String frequency;
@@ -44,18 +43,18 @@ class ReportScheduleInput {
   final String name;
 
   /// For `custom`.
-  @JsonKey(includeIfNull: false, name: 'report_id')
+  @JsonKey(includeIfNull: false,name: 'report_id')
   final String? reportId;
 
   /// Local time, `HH:MM`. Default 07:00.
-  @JsonKey(includeIfNull: false, name: 'send_time')
+  @JsonKey(includeIfNull: false,name: 'send_time')
   final String? sendTime;
   final String source;
 
   /// An IANA zone, default `Europe/Brussels`.
-  @JsonKey(includeIfNull: false, name: 'time_zone')
+  @JsonKey(includeIfNull: false,name: 'time_zone')
   final String? timeZone;
-  @JsonKey(includeIfNull: false, name: 'user_ids')
+  @JsonKey(includeIfNull: false,name: 'user_ids')
   final List<String>? userIds;
   @JsonKey(includeIfNull: false)
   final int? weekday;

@@ -18,10 +18,9 @@ class PowerGrid {
     required this.phases,
     required this.voltageV,
   });
-
-  factory PowerGrid.fromJson(Map<String, Object?> json) =>
-      _$PowerGridFromJson(json);
-
+  
+  factory PowerGrid.fromJson(Map<String, Object?> json) => _$PowerGridFromJson(json);
+  
   final bool active;
 
   /// ISO 3166 alpha-2.

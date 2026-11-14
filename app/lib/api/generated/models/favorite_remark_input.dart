@@ -9,11 +9,13 @@ part 'favorite_remark_input.g.dart';
 /// The body of the call that adds a customer remark in one language.
 @JsonSerializable()
 class FavoriteRemarkInput {
-  const FavoriteRemarkInput({required this.text, this.overwrite});
-
-  factory FavoriteRemarkInput.fromJson(Map<String, Object?> json) =>
-      _$FavoriteRemarkInputFromJson(json);
-
+  const FavoriteRemarkInput({
+    required this.text,
+    this.overwrite,
+  });
+  
+  factory FavoriteRemarkInput.fromJson(Map<String, Object?> json) => _$FavoriteRemarkInputFromJson(json);
+  
   /// Replace a text that already exists in that language. Default `false`: answer 409 instead.
   @JsonKey(includeIfNull: false)
   final bool? overwrite;

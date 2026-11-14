@@ -19,10 +19,9 @@ class TicketDetail {
     required this.ticket,
     required this.watchers,
   });
-
-  factory TicketDetail.fromJson(Map<String, Object?> json) =>
-      _$TicketDetailFromJson(json);
-
+  
+  factory TicketDetail.fromJson(Map<String, Object?> json) => _$TicketDetailFromJson(json);
+  
   final List<Article> articles;
 
   /// Colleagues who opened the ticket, most recent first ("seen by").

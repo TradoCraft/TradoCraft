@@ -13,10 +13,9 @@ class ZonePriceInput {
     required this.validFrom,
     required this.zoneId,
   });
-
-  factory ZonePriceInput.fromJson(Map<String, Object?> json) =>
-      _$ZonePriceInputFromJson(json);
-
+  
+  factory ZonePriceInput.fromJson(Map<String, Object?> json) => _$ZonePriceInputFromJson(json);
+  
   @JsonKey(name: 'unit_price')
   final String unitPrice;
   @JsonKey(name: 'valid_from')

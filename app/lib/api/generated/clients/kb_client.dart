@@ -27,7 +27,9 @@ abstract class KbClient {
   Future<List<Category>> listKbCategories();
 
   @POST('/api/v1/kb/categories')
-  Future<Category> createKbCategory({@Body() required CategoryInput body});
+  Future<Category> createKbCategory({
+    @Body() required CategoryInput body,
+  });
 
   @PUT('/api/v1/kb/categories/{id}')
   Future<Category> updateKbCategory({
@@ -37,7 +39,9 @@ abstract class KbClient {
 
   /// Deletes a category that has no entries and no sub-categories; otherwise deactivate it.
   @DELETE('/api/v1/kb/categories/{id}')
-  Future<void> deleteKbCategory({@Path('id') required String id});
+  Future<void> deleteKbCategory({
+    @Path('id') required String id,
+  });
 
   /// Lists or searches entries. With `q` the best match comes first and each entry has a snippet.
   ///
@@ -63,10 +67,14 @@ abstract class KbClient {
   });
 
   @POST('/api/v1/kb/entries')
-  Future<Entry> createKbEntry({@Body() required EntryInput body});
+  Future<Entry> createKbEntry({
+    @Body() required EntryInput body,
+  });
 
   @GET('/api/v1/kb/entries/{id}')
-  Future<Entry> getKbEntry({@Path('id') required String id});
+  Future<Entry> getKbEntry({
+    @Path('id') required String id,
+  });
 
   /// Edits an entry. Editing a published entry saves a new version when the texts changed, and.
   /// changing the visibility of a published entry needs the right to publish.
@@ -78,7 +86,9 @@ abstract class KbClient {
 
   /// Retires an entry: hidden from readers, kept for staff.
   @POST('/api/v1/kb/entries/{id}/archive')
-  Future<Entry> archiveKbEntry({@Path('id') required String id});
+  Future<Entry> archiveKbEntry({
+    @Path('id') required String id,
+  });
 
   /// Uploads an image for an entry: the request body is the file (JPEG, PNG or WebP, at most.
   /// 12 MB). Use it in the text as `![description](image:<id>)`.
@@ -108,14 +118,20 @@ abstract class KbClient {
 
   /// Makes a draft or archived entry visible to its audience; saves the first version.
   @POST('/api/v1/kb/entries/{id}/publish')
-  Future<Entry> publishKbEntry({@Path('id') required String id});
+  Future<Entry> publishKbEntry({
+    @Path('id') required String id,
+  });
 
   /// Takes a published entry back to draft.
   @POST('/api/v1/kb/entries/{id}/unpublish')
-  Future<Entry> unpublishKbEntry({@Path('id') required String id});
+  Future<Entry> unpublishKbEntry({
+    @Path('id') required String id,
+  });
 
   @GET('/api/v1/kb/entries/{id}/versions')
-  Future<List<EntryVersion>> listKbVersions({@Path('id') required String id});
+  Future<List<EntryVersion>> listKbVersions({
+    @Path('id') required String id,
+  });
 
   /// Puts the texts of an earlier version back as a new version. History is never rewritten.
   @POST('/api/v1/kb/entries/{id}/versions/{version}/restore')

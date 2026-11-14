@@ -17,21 +17,20 @@ class OpportunityInput {
     this.ownerUserId,
     this.probability,
   });
-
-  factory OpportunityInput.fromJson(Map<String, Object?> json) =>
-      _$OpportunityInputFromJson(json);
-
+  
+  factory OpportunityInput.fromJson(Map<String, Object?> json) => _$OpportunityInputFromJson(json);
+  
   @JsonKey(name: 'customer_id')
   final String customerId;
-  @JsonKey(includeIfNull: false, name: 'expected_close')
+  @JsonKey(includeIfNull: false,name: 'expected_close')
   final DateTime? expectedClose;
-  @JsonKey(includeIfNull: false, name: 'expected_value')
+  @JsonKey(includeIfNull: false,name: 'expected_value')
   final String? expectedValue;
   @JsonKey(includeIfNull: false)
   final String? notes;
 
   /// Defaults to the current user.
-  @JsonKey(includeIfNull: false, name: 'owner_user_id')
+  @JsonKey(includeIfNull: false,name: 'owner_user_id')
   final String? ownerUserId;
 
   /// Defaults to the stage's default probability.

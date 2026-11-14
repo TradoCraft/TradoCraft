@@ -16,12 +16,11 @@ class ReportRunRequest {
     this.limit,
     this.offset,
   });
-
-  factory ReportRunRequest.fromJson(Map<String, Object?> json) =>
-      _$ReportRunRequestFromJson(json);
-
+  
+  factory ReportRunRequest.fromJson(Map<String, Object?> json) => _$ReportRunRequestFromJson(json);
+  
   /// Resolve relative dates as of this day (`YYYY-MM-DD`), see [`resolve_as_of`]. Default today.
-  @JsonKey(includeIfNull: false, name: 'as_of')
+  @JsonKey(includeIfNull: false,name: 'as_of')
   final String? asOf;
   final ReportDefinition definition;
   @JsonKey(includeIfNull: false)

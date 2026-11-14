@@ -26,10 +26,9 @@ class QuotationSummary {
     required this.validUntil,
     this.opportunityId,
   });
-
-  factory QuotationSummary.fromJson(Map<String, Object?> json) =>
-      _$QuotationSummaryFromJson(json);
-
+  
+  factory QuotationSummary.fromJson(Map<String, Object?> json) => _$QuotationSummaryFromJson(json);
+  
   final String currency;
   @JsonKey(name: 'customer_id')
   final String customerId;
@@ -37,7 +36,7 @@ class QuotationSummary {
   final String customerName;
   final String id;
   final String number;
-  @JsonKey(includeIfNull: false, name: 'opportunity_id')
+  @JsonKey(includeIfNull: false,name: 'opportunity_id')
   final String? opportunityId;
 
   /// installation | stock

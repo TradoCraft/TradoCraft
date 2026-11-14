@@ -21,13 +21,12 @@ class NewSupplierInput {
     this.phone,
     this.taxId,
   });
-
-  factory NewSupplierInput.fromJson(Map<String, Object?> json) =>
-      _$NewSupplierInputFromJson(json);
-
+  
+  factory NewSupplierInput.fromJson(Map<String, Object?> json) => _$NewSupplierInputFromJson(json);
+  
   @JsonKey(includeIfNull: false)
   final String? code;
-  @JsonKey(includeIfNull: false, name: 'contact_person')
+  @JsonKey(includeIfNull: false,name: 'contact_person')
   final String? contactPerson;
   final String country;
   @JsonKey(includeIfNull: false)
@@ -37,11 +36,11 @@ class NewSupplierInput {
   final String name;
   @JsonKey(includeIfNull: false)
   final String? notes;
-  @JsonKey(includeIfNull: false, name: 'payment_terms_days')
+  @JsonKey(includeIfNull: false,name: 'payment_terms_days')
   final int? paymentTermsDays;
   @JsonKey(includeIfNull: false)
   final String? phone;
-  @JsonKey(includeIfNull: false, name: 'tax_id')
+  @JsonKey(includeIfNull: false,name: 'tax_id')
   final String? taxId;
 
   Map<String, Object?> toJson() => _$NewSupplierInputToJson(this);

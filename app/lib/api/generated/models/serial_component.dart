@@ -19,10 +19,9 @@ class SerialComponent {
     required this.serialNumber,
     required this.status,
   });
-
-  factory SerialComponent.fromJson(Map<String, Object?> json) =>
-      _$SerialComponentFromJson(json);
-
+  
+  factory SerialComponent.fromJson(Map<String, Object?> json) => _$SerialComponentFromJson(json);
+  
   @JsonKey(name: 'added_at')
   final DateTime addedAt;
   final String id;

@@ -21,10 +21,9 @@ class ProductionToRelease {
     required this.productName,
     required this.toBuild,
   });
-
-  factory ProductionToRelease.fromJson(Map<String, Object?> json) =>
-      _$ProductionToReleaseFromJson(json);
-
+  
+  factory ProductionToRelease.fromJson(Map<String, Object?> json) => _$ProductionToReleaseFromJson(json);
+  
   @JsonKey(name: 'customer_name')
   final String customerName;
   @JsonKey(name: 'order_id')

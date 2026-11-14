@@ -17,23 +17,22 @@ class RebateInput {
     this.validFrom,
     this.validTo,
   });
-
-  factory RebateInput.fromJson(Map<String, Object?> json) =>
-      _$RebateInputFromJson(json);
-
-  @JsonKey(includeIfNull: false, name: 'family_id')
+  
+  factory RebateInput.fromJson(Map<String, Object?> json) => _$RebateInputFromJson(json);
+  
+  @JsonKey(includeIfNull: false,name: 'family_id')
   final String? familyId;
   @JsonKey(includeIfNull: false)
   final String? notes;
   final String percent;
-  @JsonKey(includeIfNull: false, name: 'product_id')
+  @JsonKey(includeIfNull: false,name: 'product_id')
   final String? productId;
 
   /// product | family
   final String scope;
-  @JsonKey(includeIfNull: false, name: 'valid_from')
+  @JsonKey(includeIfNull: false,name: 'valid_from')
   final DateTime? validFrom;
-  @JsonKey(includeIfNull: false, name: 'valid_to')
+  @JsonKey(includeIfNull: false,name: 'valid_to')
   final DateTime? validTo;
 
   Map<String, Object?> toJson() => _$RebateInputToJson(this);

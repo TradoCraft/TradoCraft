@@ -8,11 +8,13 @@ part 'split_input.g.dart';
 
 @JsonSerializable()
 class SplitInput {
-  const SplitInput({required this.articleIds, this.subject});
-
-  factory SplitInput.fromJson(Map<String, Object?> json) =>
-      _$SplitInputFromJson(json);
-
+  const SplitInput({
+    required this.articleIds,
+    this.subject,
+  });
+  
+  factory SplitInput.fromJson(Map<String, Object?> json) => _$SplitInputFromJson(json);
+  
   /// The messages (articles) that move to the new ticket. At least one, and not all of them.
   @JsonKey(name: 'article_ids')
   final List<String> articleIds;

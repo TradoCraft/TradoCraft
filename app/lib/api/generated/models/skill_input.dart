@@ -8,11 +8,13 @@ part 'skill_input.g.dart';
 
 @JsonSerializable()
 class SkillInput {
-  const SkillInput({required this.code, required this.name});
-
-  factory SkillInput.fromJson(Map<String, Object?> json) =>
-      _$SkillInputFromJson(json);
-
+  const SkillInput({
+    required this.code,
+    required this.name,
+  });
+  
+  factory SkillInput.fromJson(Map<String, Object?> json) => _$SkillInputFromJson(json);
+  
   final String code;
   final String name;
 

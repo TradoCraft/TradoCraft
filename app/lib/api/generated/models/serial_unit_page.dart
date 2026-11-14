@@ -10,11 +10,13 @@ part 'serial_unit_page.g.dart';
 
 @JsonSerializable()
 class SerialUnitPage {
-  const SerialUnitPage({required this.items, required this.total});
-
-  factory SerialUnitPage.fromJson(Map<String, Object?> json) =>
-      _$SerialUnitPageFromJson(json);
-
+  const SerialUnitPage({
+    required this.items,
+    required this.total,
+  });
+  
+  factory SerialUnitPage.fromJson(Map<String, Object?> json) => _$SerialUnitPageFromJson(json);
+  
   final List<SerialUnit> items;
   final int total;
 

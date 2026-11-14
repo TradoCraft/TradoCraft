@@ -15,10 +15,9 @@ class ExpressionCheckResult {
     required this.ok,
     required this.type,
   });
-
-  factory ExpressionCheckResult.fromJson(Map<String, Object?> json) =>
-      _$ExpressionCheckResultFromJson(json);
-
+  
+  factory ExpressionCheckResult.fromJson(Map<String, Object?> json) => _$ExpressionCheckResultFromJson(json);
+  
   final List<ExprError> errors;
   final bool ok;
 

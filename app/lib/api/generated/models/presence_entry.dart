@@ -15,10 +15,9 @@ class PresenceEntry {
     required this.userId,
     required this.userName,
   });
-
-  factory PresenceEntry.fromJson(Map<String, Object?> json) =>
-      _$PresenceEntryFromJson(json);
-
+  
+  factory PresenceEntry.fromJson(Map<String, Object?> json) => _$PresenceEntryFromJson(json);
+  
   /// viewing | replying
   final String mode;
   @JsonKey(name: 'seen_at')

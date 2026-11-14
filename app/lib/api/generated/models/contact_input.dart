@@ -25,23 +25,22 @@ class ContactInput {
     this.roles,
     this.title,
   });
-
-  factory ContactInput.fromJson(Map<String, Object?> json) =>
-      _$ContactInputFromJson(json);
-
+  
+  factory ContactInput.fromJson(Map<String, Object?> json) => _$ContactInputFromJson(json);
+  
   @JsonKey(includeIfNull: false)
   final bool? active;
 
   /// formal | informal.
-  @JsonKey(includeIfNull: false, name: 'address_form')
+  @JsonKey(includeIfNull: false,name: 'address_form')
   final String? addressForm;
 
   /// The first one is the primary address.
   @JsonKey(includeIfNull: false)
   final List<String>? emails;
-  @JsonKey(includeIfNull: false, name: 'first_name')
+  @JsonKey(includeIfNull: false,name: 'first_name')
   final String? firstName;
-  @JsonKey(includeIfNull: false, name: 'job_title')
+  @JsonKey(includeIfNull: false,name: 'job_title')
   final String? jobTitle;
 
   /// nl | fr | en | de | es; null = same as the customer.
@@ -53,11 +52,11 @@ class ContactInput {
   final String? notes;
   @JsonKey(includeIfNull: false)
   final List<PhoneInput>? phones;
-  @JsonKey(includeIfNull: false, name: 'portal_access')
+  @JsonKey(includeIfNull: false,name: 'portal_access')
   final bool? portalAccess;
 
   /// own | customer
-  @JsonKey(includeIfNull: false, name: 'portal_scope')
+  @JsonKey(includeIfNull: false,name: 'portal_scope')
   final String? portalScope;
   @JsonKey(includeIfNull: false)
   final List<String>? roles;

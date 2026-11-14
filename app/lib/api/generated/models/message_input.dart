@@ -8,13 +8,15 @@ part 'message_input.g.dart';
 
 @JsonSerializable()
 class MessageInput {
-  const MessageInput({required this.body, this.attachmentIds});
-
-  factory MessageInput.fromJson(Map<String, Object?> json) =>
-      _$MessageInputFromJson(json);
-
+  const MessageInput({
+    required this.body,
+    this.attachmentIds,
+  });
+  
+  factory MessageInput.fromJson(Map<String, Object?> json) => _$MessageInputFromJson(json);
+  
   /// Files uploaded to the ticket (`POST /portal/tickets/{id}/attachments`) to send along.
-  @JsonKey(includeIfNull: false, name: 'attachment_ids')
+  @JsonKey(includeIfNull: false,name: 'attachment_ids')
   final List<String>? attachmentIds;
   final String body;
 

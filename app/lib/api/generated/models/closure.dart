@@ -20,10 +20,9 @@ class Closure {
     required this.source,
     required this.startsOn,
   });
-
-  factory Closure.fromJson(Map<String, Object?> json) =>
-      _$ClosureFromJson(json);
-
+  
+  factory Closure.fromJson(Map<String, Object?> json) => _$ClosureFromJson(json);
+  
   @JsonKey(name: 'created_at')
   final DateTime createdAt;
   @JsonKey(name: 'customer_code')

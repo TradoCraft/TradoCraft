@@ -14,10 +14,9 @@ class AdminUserUpdate {
     required this.displayName,
     required this.roles,
   });
-
-  factory AdminUserUpdate.fromJson(Map<String, Object?> json) =>
-      _$AdminUserUpdateFromJson(json);
-
+  
+  factory AdminUserUpdate.fromJson(Map<String, Object?> json) => _$AdminUserUpdateFromJson(json);
+  
   final bool active;
   @JsonKey(name: 'disabled_modules')
   final List<String> disabledModules;

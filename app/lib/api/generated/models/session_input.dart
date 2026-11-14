@@ -8,11 +8,12 @@ part 'session_input.g.dart';
 
 @JsonSerializable()
 class SessionInput {
-  const SessionInput({required this.token});
-
-  factory SessionInput.fromJson(Map<String, Object?> json) =>
-      _$SessionInputFromJson(json);
-
+  const SessionInput({
+    required this.token,
+  });
+  
+  factory SessionInput.fromJson(Map<String, Object?> json) => _$SessionInputFromJson(json);
+  
   /// The token from the login link.
   final String token;
 

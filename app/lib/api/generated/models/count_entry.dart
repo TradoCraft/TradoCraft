@@ -17,28 +17,27 @@ class CountEntry {
     this.lotNumber,
     this.productId,
   });
-
-  factory CountEntry.fromJson(Map<String, Object?> json) =>
-      _$CountEntryFromJson(json);
-
+  
+  factory CountEntry.fromJson(Map<String, Object?> json) => _$CountEntryFromJson(json);
+  
   /// The counted quantity; null clears it (the line is left alone when posting).
-  @JsonKey(includeIfNull: false, name: 'counted_quantity')
+  @JsonKey(includeIfNull: false,name: 'counted_quantity')
   final String? countedQuantity;
-  @JsonKey(includeIfNull: false, name: 'expiry_date')
+  @JsonKey(includeIfNull: false,name: 'expiry_date')
   final DateTime? expiryDate;
 
   /// An existing line...
-  @JsonKey(includeIfNull: false, name: 'line_id')
+  @JsonKey(includeIfNull: false,name: 'line_id')
   final String? lineId;
-  @JsonKey(includeIfNull: false, name: 'location_id')
+  @JsonKey(includeIfNull: false,name: 'location_id')
   final String? locationId;
-  @JsonKey(includeIfNull: false, name: 'lot_id')
+  @JsonKey(includeIfNull: false,name: 'lot_id')
   final String? lotId;
-  @JsonKey(includeIfNull: false, name: 'lot_number')
+  @JsonKey(includeIfNull: false,name: 'lot_number')
   final String? lotNumber;
 
   /// ...or stock that was not expected: product, location and lot.
-  @JsonKey(includeIfNull: false, name: 'product_id')
+  @JsonKey(includeIfNull: false,name: 'product_id')
   final String? productId;
 
   Map<String, Object?> toJson() => _$CountEntryToJson(this);

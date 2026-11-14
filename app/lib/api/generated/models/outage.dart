@@ -9,10 +9,13 @@ part 'outage.g.dart';
 /// A period without any beat.
 @JsonSerializable()
 class Outage {
-  const Outage({required this.downFrom, required this.downUntil});
-
+  const Outage({
+    required this.downFrom,
+    required this.downUntil,
+  });
+  
   factory Outage.fromJson(Map<String, Object?> json) => _$OutageFromJson(json);
-
+  
   @JsonKey(name: 'down_from')
   final DateTime downFrom;
   @JsonKey(name: 'down_until')

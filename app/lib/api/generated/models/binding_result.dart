@@ -15,10 +15,9 @@ class BindingResult {
     this.userEmail,
     this.userId,
   });
-
-  factory BindingResult.fromJson(Map<String, Object?> json) =>
-      _$BindingResultFromJson(json);
-
+  
+  factory BindingResult.fromJson(Map<String, Object?> json) => _$BindingResultFromJson(json);
+  
   /// `existing_subject`, `would_bind` or `refused`.
   final String outcome;
 
@@ -27,11 +26,11 @@ class BindingResult {
   final String? reason;
 
   /// That user's e-mail address.
-  @JsonKey(includeIfNull: false, name: 'user_email')
+  @JsonKey(includeIfNull: false,name: 'user_email')
   final String? userEmail;
 
   /// The user it resolves to.
-  @JsonKey(includeIfNull: false, name: 'user_id')
+  @JsonKey(includeIfNull: false,name: 'user_id')
   final String? userId;
 
   Map<String, Object?> toJson() => _$BindingResultToJson(this);

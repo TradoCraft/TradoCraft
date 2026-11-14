@@ -67,10 +67,12 @@ Production never writes `sales.*`, `inventory.*` or `engineering.*` directly.
   start, complete dialog with output, actual consumption, scrap and serial units, cancel), a
   Production section on the order screen, and the divisions page.
 
-**Not done yet.** Work centres, routings, operations, labour and the capacity board (C1b, the
-work-centre half of C3); MRP and availability with open production orders and purchase orders (C2);
-cost roll-up and work in progress; phantoms, alternative components and multi-level auto-release; a
-production order PDF (traveller); notifying the production team; the portal showing the promised
-date; and the product's default division in the Flutter product screen (the API has it).
+**Not done yet.** MRP and availability with open production orders and purchase orders (C2);
+work in progress and valuation at actual cost; phantoms and alternative components; notifying the
+production team; the portal showing the promised date; and the product's default division in the Flutter
+product screen (the API has it). Work centres, routings, operations, labour, capacity, multi-level
+auto-release, a production order PDF and the cost roll-up came with C1b
+([ADR 0063](0063-work-centres-routings-and-operations.md)); the work-centre planning board is the
+work-centre half of C3.
 `ready_for_shipping` means every production order of the order is done: a planner must release all
 its manufactured lines first.

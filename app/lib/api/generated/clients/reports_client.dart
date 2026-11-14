@@ -24,7 +24,9 @@ abstract class ReportsClient {
   Future<List<SavedReport>> reportsList();
 
   @POST('/api/v1/custom-reports')
-  Future<SavedReport> reportsCreate({@Body() required SavedReportInput body});
+  Future<SavedReport> reportsCreate({
+    @Body() required SavedReportInput body,
+  });
 
   @GET('/api/v1/custom-reports/catalog')
   Future<ReportCatalog> reportsCatalog();
@@ -35,7 +37,9 @@ abstract class ReportsClient {
   });
 
   @GET('/api/v1/custom-reports/{id}')
-  Future<SavedReport> reportsGet({@Path('id') required String id});
+  Future<SavedReport> reportsGet({
+    @Path('id') required String id,
+  });
 
   @PUT('/api/v1/custom-reports/{id}')
   Future<SavedReport> reportsUpdate({
@@ -44,7 +48,9 @@ abstract class ReportsClient {
   });
 
   @DELETE('/api/v1/custom-reports/{id}')
-  Future<void> reportsDelete({@Path('id') required String id});
+  Future<void> reportsDelete({
+    @Path('id') required String id,
+  });
 
   /// [format] - `csv` (default) or `pdf`.
   ///
@@ -84,11 +90,15 @@ abstract class ReportsClient {
   });
 
   @DELETE('/api/v1/report-schedules/{id}')
-  Future<void> reportSchedulesDelete({@Path('id') required String id});
+  Future<void> reportSchedulesDelete({
+    @Path('id') required String id,
+  });
 
   /// Builds the report now and queues the mail, as the schedule's owner would get it. The next.
   /// scheduled run does not change. A refusal (the owner lost access, too many rows) is a 422 with.
   /// the reason.
   @POST('/api/v1/report-schedules/{id}/send')
-  Future<SendNowResult> reportSchedulesSend({@Path('id') required String id});
+  Future<SendNowResult> reportSchedulesSend({
+    @Path('id') required String id,
+  });
 }

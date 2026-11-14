@@ -8,11 +8,13 @@ part 'contact_email.g.dart';
 
 @JsonSerializable()
 class ContactEmail {
-  const ContactEmail({required this.email, required this.isPrimary});
-
-  factory ContactEmail.fromJson(Map<String, Object?> json) =>
-      _$ContactEmailFromJson(json);
-
+  const ContactEmail({
+    required this.email,
+    required this.isPrimary,
+  });
+  
+  factory ContactEmail.fromJson(Map<String, Object?> json) => _$ContactEmailFromJson(json);
+  
   final String email;
   @JsonKey(name: 'is_primary')
   final bool isPrimary;

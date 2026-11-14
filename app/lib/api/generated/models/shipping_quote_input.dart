@@ -14,10 +14,9 @@ class ShippingQuoteInput {
     this.currency,
     this.notes,
   });
-
-  factory ShippingQuoteInput.fromJson(Map<String, Object?> json) =>
-      _$ShippingQuoteInputFromJson(json);
-
+  
+  factory ShippingQuoteInput.fromJson(Map<String, Object?> json) => _$ShippingQuoteInputFromJson(json);
+  
   final String amount;
 
   /// Carrier chosen; keeps the one entered when marking the request as requested.

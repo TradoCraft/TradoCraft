@@ -9,7 +9,7 @@ part 'rule_action.g.dart';
 /// One change a rule makes. `kind` decides which of the other fields is used:.
 /// `set_owner` (`user_id`), `set_team` (`team_id`), `set_priority` (`value`), `set_category`.
 /// (`value`), `add_tag` (`value`), `set_internal` (`flag`), `send_email` (`recipient`, `team_id` or.
-/// `address`, `subject`, `body`, `period_hours`; ADR 0063).
+/// `address`, `subject`, `body`, `period_hours`; ADR 0066).
 @JsonSerializable()
 class RuleAction {
   const RuleAction({
@@ -24,10 +24,9 @@ class RuleAction {
     this.userId,
     this.value,
   });
-
-  factory RuleAction.fromJson(Map<String, Object?> json) =>
-      _$RuleActionFromJson(json);
-
+  
+  factory RuleAction.fromJson(Map<String, Object?> json) => _$RuleActionFromJson(json);
+  
   /// `send_email` to `address`: the fixed recipient.
   @JsonKey(includeIfNull: false)
   final String? address;
@@ -40,7 +39,7 @@ class RuleAction {
   final String kind;
 
   /// `send_email`: at most one mail per ticket and rule in this many hours (default 24).
-  @JsonKey(includeIfNull: false, name: 'period_hours')
+  @JsonKey(includeIfNull: false,name: 'period_hours')
   final int? periodHours;
 
   /// `send_email`: customer | assignee | team | address.
@@ -50,9 +49,9 @@ class RuleAction {
   /// `send_email`: one line; `{ticket_number}`, `{subject}`, `{customer}`, `{agent}` are replaced.
   @JsonKey(includeIfNull: false)
   final String? subject;
-  @JsonKey(includeIfNull: false, name: 'team_id')
+  @JsonKey(includeIfNull: false,name: 'team_id')
   final String? teamId;
-  @JsonKey(includeIfNull: false, name: 'user_id')
+  @JsonKey(includeIfNull: false,name: 'user_id')
   final String? userId;
   @JsonKey(includeIfNull: false)
   final String? value;

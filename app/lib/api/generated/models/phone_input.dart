@@ -8,11 +8,13 @@ part 'phone_input.g.dart';
 
 @JsonSerializable()
 class PhoneInput {
-  const PhoneInput({required this.number, this.label});
-
-  factory PhoneInput.fromJson(Map<String, Object?> json) =>
-      _$PhoneInputFromJson(json);
-
+  const PhoneInput({
+    required this.number,
+    this.label,
+  });
+  
+  factory PhoneInput.fromJson(Map<String, Object?> json) => _$PhoneInputFromJson(json);
+  
   /// work | mobile | direct | other
   @JsonKey(includeIfNull: false)
   final String? label;

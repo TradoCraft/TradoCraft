@@ -15,10 +15,9 @@ class AdminSummary {
     required this.roles,
     required this.userId,
   });
-
-  factory AdminSummary.fromJson(Map<String, Object?> json) =>
-      _$AdminSummaryFromJson(json);
-
+  
+  factory AdminSummary.fromJson(Map<String, Object?> json) => _$AdminSummaryFromJson(json);
+  
   @JsonKey(name: 'display_name')
   final String displayName;
   final String email;

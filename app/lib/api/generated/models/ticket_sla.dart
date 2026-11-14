@@ -19,10 +19,9 @@ class TicketSla {
     required this.resolutionBreached,
     required this.state,
   });
-
-  factory TicketSla.fromJson(Map<String, Object?> json) =>
-      _$TicketSlaFromJson(json);
-
+  
+  factory TicketSla.fromJson(Map<String, Object?> json) => _$TicketSlaFromJson(json);
+  
   @JsonKey(name: 'first_response')
   final TargetState firstResponse;
   @JsonKey(name: 'first_response_breached')

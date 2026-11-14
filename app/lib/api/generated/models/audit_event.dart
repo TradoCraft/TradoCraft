@@ -20,10 +20,9 @@ class AuditEvent {
     this.userId,
     this.userName,
   });
-
-  factory AuditEvent.fromJson(Map<String, Object?> json) =>
-      _$AuditEventFromJson(json);
-
+  
+  factory AuditEvent.fromJson(Map<String, Object?> json) => _$AuditEventFromJson(json);
+  
   /// What happened (`created`, `updated`, `sent`, ...); the modules name their own.
   final String action;
 
@@ -40,14 +39,14 @@ class AuditEvent {
   final int id;
   @JsonKey(name: 'occurred_at')
   final DateTime occurredAt;
-  @JsonKey(includeIfNull: false, name: 'user_email')
+  @JsonKey(includeIfNull: false,name: 'user_email')
   final String? userEmail;
 
   /// Absent for an event without a staff user, such as a customer acting in the portal; who.
   /// acted is then in `data`.
-  @JsonKey(includeIfNull: false, name: 'user_id')
+  @JsonKey(includeIfNull: false,name: 'user_id')
   final String? userId;
-  @JsonKey(includeIfNull: false, name: 'user_name')
+  @JsonKey(includeIfNull: false,name: 'user_name')
   final String? userName;
 
   Map<String, Object?> toJson() => _$AuditEventToJson(this);

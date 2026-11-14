@@ -24,10 +24,9 @@ class RepricingLine {
     required this.productCode,
     required this.quantity,
   });
-
-  factory RepricingLine.fromJson(Map<String, Object?> json) =>
-      _$RepricingLineFromJson(json);
-
+  
+  factory RepricingLine.fromJson(Map<String, Object?> json) => _$RepricingLineFromJson(json);
+  
   final String description;
   final String difference;
 

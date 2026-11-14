@@ -14,12 +14,11 @@ class CsatStats {
     required this.responses,
     this.averagePercent,
   });
-
-  factory CsatStats.fromJson(Map<String, Object?> json) =>
-      _$CsatStatsFromJson(json);
-
+  
+  factory CsatStats.fromJson(Map<String, Object?> json) => _$CsatStatsFromJson(json);
+  
   /// Average satisfaction: share of "good" ratings, 0-100.
-  @JsonKey(includeIfNull: false, name: 'average_percent')
+  @JsonKey(includeIfNull: false,name: 'average_percent')
   final double? averagePercent;
   final int bad;
   final int good;

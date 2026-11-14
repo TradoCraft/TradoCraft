@@ -34,24 +34,23 @@ class QuotationLine {
     this.productionRemark,
     this.section,
   });
-
-  factory QuotationLine.fromJson(Map<String, Object?> json) =>
-      _$QuotationLineFromJson(json);
-
+  
+  factory QuotationLine.fromJson(Map<String, Object?> json) => _$QuotationLineFromJson(json);
+  
   @JsonKey(includeIfNull: false)
   final String? comment;
 
   /// Remark printed under the description on the documents.
-  @JsonKey(includeIfNull: false, name: 'customer_remark')
+  @JsonKey(includeIfNull: false,name: 'customer_remark')
   final String? customerRemark;
 
   /// Language the customer remark is written in; absent: the quotation language, or unknown.
-  @JsonKey(includeIfNull: false, name: 'customer_remark_language')
+  @JsonKey(includeIfNull: false,name: 'customer_remark_language')
   final String? customerRemarkLanguage;
   final String description;
 
   /// The favorite item the line was loaded from; absent when it was not, or the favorite was deleted.
-  @JsonKey(includeIfNull: false, name: 'favorite_item_id')
+  @JsonKey(includeIfNull: false,name: 'favorite_item_id')
   final String? favoriteItemId;
   @JsonKey(name: 'line_discount_percent')
   final String lineDiscountPercent;
@@ -65,15 +64,15 @@ class QuotationLine {
   final String netUnitPrice;
 
   /// Position of the parent line (this is an option or sub-line of it).
-  @JsonKey(includeIfNull: false, name: 'parent_position')
+  @JsonKey(includeIfNull: false,name: 'parent_position')
   final int? parentPosition;
 
   /// parent_list_unit_price | parent_net_unit_price
-  @JsonKey(includeIfNull: false, name: 'percent_base')
+  @JsonKey(includeIfNull: false,name: 'percent_base')
   final String? percentBase;
 
   /// Set when the line is priced as a percentage of its parent line.
-  @JsonKey(includeIfNull: false, name: 'percent_of_parent')
+  @JsonKey(includeIfNull: false,name: 'percent_of_parent')
   final String? percentOfParent;
   final int position;
 
@@ -86,11 +85,11 @@ class QuotationLine {
   final String pricingType;
   @JsonKey(name: 'product_code')
   final String productCode;
-  @JsonKey(includeIfNull: false, name: 'product_id')
+  @JsonKey(includeIfNull: false,name: 'product_id')
   final String? productId;
 
   /// Internal remark for production (never printed for customers).
-  @JsonKey(includeIfNull: false, name: 'production_remark')
+  @JsonKey(includeIfNull: false,name: 'production_remark')
   final String? productionRemark;
   final String quantity;
 

@@ -15,15 +15,14 @@ class DeliveryLineInput {
     this.lotId,
     this.serialUnitId,
   });
-
-  factory DeliveryLineInput.fromJson(Map<String, Object?> json) =>
-      _$DeliveryLineInputFromJson(json);
-
+  
+  factory DeliveryLineInput.fromJson(Map<String, Object?> json) => _$DeliveryLineInputFromJson(json);
+  
   @JsonKey(name: 'location_id')
   final String locationId;
 
   /// Needed for lot-tracked products.
-  @JsonKey(includeIfNull: false, name: 'lot_id')
+  @JsonKey(includeIfNull: false,name: 'lot_id')
   final String? lotId;
   @JsonKey(name: 'order_line_id')
   final String orderLineId;
@@ -32,7 +31,7 @@ class DeliveryLineInput {
   final String quantity;
 
   /// Needed for serial-tracked products (before shipping).
-  @JsonKey(includeIfNull: false, name: 'serial_unit_id')
+  @JsonKey(includeIfNull: false,name: 'serial_unit_id')
   final String? serialUnitId;
 
   Map<String, Object?> toJson() => _$DeliveryLineInputToJson(this);

@@ -8,11 +8,12 @@ part 'cancel_order_input.g.dart';
 
 @JsonSerializable()
 class CancelOrderInput {
-  const CancelOrderInput({required this.reason});
-
-  factory CancelOrderInput.fromJson(Map<String, Object?> json) =>
-      _$CancelOrderInputFromJson(json);
-
+  const CancelOrderInput({
+    required this.reason,
+  });
+  
+  factory CancelOrderInput.fromJson(Map<String, Object?> json) => _$CancelOrderInputFromJson(json);
+  
   final String reason;
 
   Map<String, Object?> toJson() => _$CancelOrderInputToJson(this);

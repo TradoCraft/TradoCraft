@@ -8,11 +8,12 @@ part 'presence_input.g.dart';
 
 @JsonSerializable()
 class PresenceInput {
-  const PresenceInput({required this.mode});
-
-  factory PresenceInput.fromJson(Map<String, Object?> json) =>
-      _$PresenceInputFromJson(json);
-
+  const PresenceInput({
+    required this.mode,
+  });
+  
+  factory PresenceInput.fromJson(Map<String, Object?> json) => _$PresenceInputFromJson(json);
+  
   /// viewing | replying
   final String mode;
 

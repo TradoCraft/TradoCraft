@@ -8,11 +8,14 @@ part 'answer_text.g.dart';
 
 @JsonSerializable()
 class AnswerText {
-  const AnswerText({required this.body, required this.language, this.subject});
-
-  factory AnswerText.fromJson(Map<String, Object?> json) =>
-      _$AnswerTextFromJson(json);
-
+  const AnswerText({
+    required this.body,
+    required this.language,
+    this.subject,
+  });
+  
+  factory AnswerText.fromJson(Map<String, Object?> json) => _$AnswerTextFromJson(json);
+  
   final String body;
 
   /// nl | fr | en | de | es

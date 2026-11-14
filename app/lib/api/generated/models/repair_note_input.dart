@@ -8,11 +8,12 @@ part 'repair_note_input.g.dart';
 
 @JsonSerializable()
 class RepairNoteInput {
-  const RepairNoteInput({required this.note});
-
-  factory RepairNoteInput.fromJson(Map<String, Object?> json) =>
-      _$RepairNoteInputFromJson(json);
-
+  const RepairNoteInput({
+    required this.note,
+  });
+  
+  factory RepairNoteInput.fromJson(Map<String, Object?> json) => _$RepairNoteInputFromJson(json);
+  
   final String note;
 
   Map<String, Object?> toJson() => _$RepairNoteInputToJson(this);

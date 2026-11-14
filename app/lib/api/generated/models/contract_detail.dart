@@ -36,17 +36,16 @@ class ContractDetail {
     this.contactId,
     this.contactName,
   });
-
-  factory ContractDetail.fromJson(Map<String, Object?> json) =>
-      _$ContractDetailFromJson(json);
-
+  
+  factory ContractDetail.fromJson(Map<String, Object?> json) => _$ContractDetailFromJson(json);
+  
   @JsonKey(name: 'auto_renew')
   final bool autoRenew;
   @JsonKey(name: 'customer_id')
   final String customerId;
   @JsonKey(name: 'customer_name')
   final String customerName;
-  @JsonKey(includeIfNull: false, name: 'end_date')
+  @JsonKey(includeIfNull: false,name: 'end_date')
   final DateTime? endDate;
   final String id;
   final String number;
@@ -54,9 +53,9 @@ class ContractDetail {
   /// Generated jobs that are not finished.
   @JsonKey(name: 'open_jobs')
   final int openJobs;
-  @JsonKey(includeIfNull: false, name: 'resolution_hours')
+  @JsonKey(includeIfNull: false,name: 'resolution_hours')
   final int? resolutionHours;
-  @JsonKey(includeIfNull: false, name: 'response_hours')
+  @JsonKey(includeIfNull: false,name: 'response_hours')
   final int? responseHours;
   @JsonKey(name: 'start_date')
   final DateTime startDate;
@@ -65,9 +64,9 @@ class ContractDetail {
   final String status;
   final String title;
   final String city;
-  @JsonKey(includeIfNull: false, name: 'contact_id')
+  @JsonKey(includeIfNull: false,name: 'contact_id')
   final String? contactId;
-  @JsonKey(includeIfNull: false, name: 'contact_name')
+  @JsonKey(includeIfNull: false,name: 'contact_name')
   final String? contactName;
   @JsonKey(name: 'country_code')
   final String countryCode;

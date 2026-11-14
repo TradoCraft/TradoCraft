@@ -18,21 +18,20 @@ class SetSupplierProductInput {
     this.supplierProductCode,
     this.supplierProductName,
   });
-
-  factory SetSupplierProductInput.fromJson(Map<String, Object?> json) =>
-      _$SetSupplierProductInputFromJson(json);
-
+  
+  factory SetSupplierProductInput.fromJson(Map<String, Object?> json) => _$SetSupplierProductInputFromJson(json);
+  
   @JsonKey(includeIfNull: false)
   final String? currency;
-  @JsonKey(includeIfNull: false, name: 'is_preferred')
+  @JsonKey(includeIfNull: false,name: 'is_preferred')
   final bool? isPreferred;
-  @JsonKey(includeIfNull: false, name: 'lead_time_days')
+  @JsonKey(includeIfNull: false,name: 'lead_time_days')
   final int? leadTimeDays;
   @JsonKey(includeIfNull: false)
   final String? moq;
-  @JsonKey(includeIfNull: false, name: 'supplier_product_code')
+  @JsonKey(includeIfNull: false,name: 'supplier_product_code')
   final String? supplierProductCode;
-  @JsonKey(includeIfNull: false, name: 'supplier_product_name')
+  @JsonKey(includeIfNull: false,name: 'supplier_product_name')
   final String? supplierProductName;
   @JsonKey(name: 'unit_price')
   final String unitPrice;

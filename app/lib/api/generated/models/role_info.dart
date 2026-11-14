@@ -9,11 +9,13 @@ part 'role_info.g.dart';
 /// A role and the permissions it grants (before modules are applied).
 @JsonSerializable()
 class RoleInfo {
-  const RoleInfo({required this.permissions, required this.role});
-
-  factory RoleInfo.fromJson(Map<String, Object?> json) =>
-      _$RoleInfoFromJson(json);
-
+  const RoleInfo({
+    required this.permissions,
+    required this.role,
+  });
+  
+  factory RoleInfo.fromJson(Map<String, Object?> json) => _$RoleInfoFromJson(json);
+  
   /// Sorted permission codes, e.g. `quotations.write`.
   final List<String> permissions;
   final String role;

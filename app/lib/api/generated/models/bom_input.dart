@@ -10,11 +10,13 @@ part 'bom_input.g.dart';
 
 @JsonSerializable()
 class BomInput {
-  const BomInput({required this.lines, this.notes});
-
-  factory BomInput.fromJson(Map<String, Object?> json) =>
-      _$BomInputFromJson(json);
-
+  const BomInput({
+    required this.lines,
+    this.notes,
+  });
+  
+  factory BomInput.fromJson(Map<String, Object?> json) => _$BomInputFromJson(json);
+  
   final List<BomLineInput> lines;
   @JsonKey(includeIfNull: false)
   final String? notes;

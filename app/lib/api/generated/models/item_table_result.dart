@@ -10,11 +10,13 @@ part 'item_table_result.g.dart';
 
 @JsonSerializable()
 class ItemTableResult {
-  const ItemTableResult({required this.rows, required this.table});
-
-  factory ItemTableResult.fromJson(Map<String, Object?> json) =>
-      _$ItemTableResultFromJson(json);
-
+  const ItemTableResult({
+    required this.rows,
+    required this.table,
+  });
+  
+  factory ItemTableResult.fromJson(Map<String, Object?> json) => _$ItemTableResultFromJson(json);
+  
   final List<ItemResult> rows;
   final String table;
 

@@ -18,10 +18,9 @@ class PortalMessage {
     required this.direction,
     required this.id,
   });
-
-  factory PortalMessage.fromJson(Map<String, Object?> json) =>
-      _$PortalMessageFromJson(json);
-
+  
+  factory PortalMessage.fromJson(Map<String, Object?> json) => _$PortalMessageFromJson(json);
+  
   /// Files sent with the message. Files on internal notes are never shown.
   final List<FileInfo> attachments;
   @JsonKey(name: 'author_name')

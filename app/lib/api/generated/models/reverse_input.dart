@@ -8,11 +8,14 @@ part 'reverse_input.g.dart';
 
 @JsonSerializable()
 class ReverseInput {
-  const ReverseInput({required this.id, this.force, this.note});
-
-  factory ReverseInput.fromJson(Map<String, Object?> json) =>
-      _$ReverseInputFromJson(json);
-
+  const ReverseInput({
+    required this.id,
+    this.force,
+    this.note,
+  });
+  
+  factory ReverseInput.fromJson(Map<String, Object?> json) => _$ReverseInputFromJson(json);
+  
   /// Reverse even when that takes stock that is reserved for orders (they then lack stock).
   /// Inventory administrators only, which this endpoint already requires.
   @JsonKey(includeIfNull: false)

@@ -22,16 +22,15 @@ class ExplosionNode {
     required this.unit,
     this.parentIndex,
   });
-
-  factory ExplosionNode.fromJson(Map<String, Object?> json) =>
-      _$ExplosionNodeFromJson(json);
-
+  
+  factory ExplosionNode.fromJson(Map<String, Object?> json) => _$ExplosionNodeFromJson(json);
+  
   final String code;
   @JsonKey(name: 'is_leaf')
   final bool isLeaf;
   final int level;
   final String name;
-  @JsonKey(includeIfNull: false, name: 'parent_index')
+  @JsonKey(includeIfNull: false,name: 'parent_index')
   final int? parentIndex;
   @JsonKey(name: 'product_id')
   final String productId;

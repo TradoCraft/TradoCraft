@@ -8,11 +8,14 @@ part 'holiday.g.dart';
 
 @JsonSerializable()
 class Holiday {
-  const Holiday({required this.day, required this.id, required this.name});
-
-  factory Holiday.fromJson(Map<String, Object?> json) =>
-      _$HolidayFromJson(json);
-
+  const Holiday({
+    required this.day,
+    required this.id,
+    required this.name,
+  });
+  
+  factory Holiday.fromJson(Map<String, Object?> json) => _$HolidayFromJson(json);
+  
   final DateTime day;
   final String id;
   final String name;

@@ -40,10 +40,9 @@ class StockMove {
     this.serialUnitId,
     this.unitCost,
   });
-
-  factory StockMove.fromJson(Map<String, Object?> json) =>
-      _$StockMoveFromJson(json);
-
+  
+  factory StockMove.fromJson(Map<String, Object?> json) => _$StockMoveFromJson(json);
+  
   @JsonKey(name: 'created_at')
   final DateTime createdAt;
   @JsonKey(name: 'created_by_name')
@@ -54,9 +53,9 @@ class StockMove {
   final String? currency;
 
   /// What the user typed, when it was in another unit than the stock unit.
-  @JsonKey(includeIfNull: false, name: 'entered_quantity')
+  @JsonKey(includeIfNull: false,name: 'entered_quantity')
   final String? enteredQuantity;
-  @JsonKey(includeIfNull: false, name: 'entered_uom')
+  @JsonKey(includeIfNull: false,name: 'entered_uom')
   final String? enteredUom;
   @JsonKey(name: 'from_location')
   final String fromLocation;
@@ -66,9 +65,9 @@ class StockMove {
 
   /// receipt | issue | transfer | adjustment
   final String kind;
-  @JsonKey(includeIfNull: false, name: 'lot_id')
+  @JsonKey(includeIfNull: false,name: 'lot_id')
   final String? lotId;
-  @JsonKey(includeIfNull: false, name: 'lot_number')
+  @JsonKey(includeIfNull: false,name: 'lot_number')
   final String? lotNumber;
   final String note;
   @JsonKey(name: 'occurred_at')
@@ -81,24 +80,24 @@ class StockMove {
   final String productName;
   final String quantity;
   final String reason;
-  @JsonKey(includeIfNull: false, name: 'reference_id')
+  @JsonKey(includeIfNull: false,name: 'reference_id')
   final String? referenceId;
-  @JsonKey(includeIfNull: false, name: 'reference_type')
+  @JsonKey(includeIfNull: false,name: 'reference_type')
   final String? referenceType;
 
   /// The move that reversed this one.
-  @JsonKey(includeIfNull: false, name: 'reversed_by')
+  @JsonKey(includeIfNull: false,name: 'reversed_by')
   final String? reversedBy;
 
   /// The move this one reverses.
-  @JsonKey(includeIfNull: false, name: 'reversed_of')
+  @JsonKey(includeIfNull: false,name: 'reversed_of')
   final String? reversedOf;
 
   /// Position in the ledger; moves are shown newest first by this number.
   final int seq;
-  @JsonKey(includeIfNull: false, name: 'serial_number')
+  @JsonKey(includeIfNull: false,name: 'serial_number')
   final String? serialNumber;
-  @JsonKey(includeIfNull: false, name: 'serial_unit_id')
+  @JsonKey(includeIfNull: false,name: 'serial_unit_id')
   final String? serialUnitId;
   @JsonKey(name: 'to_location')
   final String toLocation;
@@ -110,7 +109,7 @@ class StockMove {
 
   /// Cost per stock unit: what the posting module booked, else the standard cost of the product.
   /// at the time of the move. Only with `inventory.cost`.
-  @JsonKey(includeIfNull: false, name: 'unit_cost')
+  @JsonKey(includeIfNull: false,name: 'unit_cost')
   final String? unitCost;
 
   Map<String, Object?> toJson() => _$StockMoveToJson(this);

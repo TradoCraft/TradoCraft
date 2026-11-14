@@ -17,24 +17,23 @@ class ConfigurationInput {
     this.name,
     this.revisionId,
   });
-
-  factory ConfigurationInput.fromJson(Map<String, Object?> json) =>
-      _$ConfigurationInputFromJson(json);
-
-  @JsonKey(includeIfNull: false, name: 'customer_id')
+  
+  factory ConfigurationInput.fromJson(Map<String, Object?> json) => _$ConfigurationInputFromJson(json);
+  
+  @JsonKey(includeIfNull: false,name: 'customer_id')
   final String? customerId;
   @JsonKey(includeIfNull: false)
   final Inputs? inputs;
 
   /// The model; the configuration is made with its active revision ...
-  @JsonKey(includeIfNull: false, name: 'model_id')
+  @JsonKey(includeIfNull: false,name: 'model_id')
   final String? modelId;
   @JsonKey(includeIfNull: false)
   final String? name;
 
   /// ... or this active revision. On an update: moves the configuration to this (active).
   /// revision; left out, it stays on its own.
-  @JsonKey(includeIfNull: false, name: 'revision_id')
+  @JsonKey(includeIfNull: false,name: 'revision_id')
   final String? revisionId;
 
   Map<String, Object?> toJson() => _$ConfigurationInputToJson(this);

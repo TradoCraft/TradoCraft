@@ -8,11 +8,12 @@ part 'delivery_settings.g.dart';
 
 @JsonSerializable()
 class DeliverySettings {
-  const DeliverySettings({required this.closurePolicy});
-
-  factory DeliverySettings.fromJson(Map<String, Object?> json) =>
-      _$DeliverySettingsFromJson(json);
-
+  const DeliverySettings({
+    required this.closurePolicy,
+  });
+  
+  factory DeliverySettings.fromJson(Map<String, Object?> json) => _$DeliverySettingsFromJson(json);
+  
   /// warn: the date is saved and the closure is shown as a warning (default) |.
   /// override: needs `delivery.override_closure` and a reason | block: always refused.
   @JsonKey(name: 'closure_policy')

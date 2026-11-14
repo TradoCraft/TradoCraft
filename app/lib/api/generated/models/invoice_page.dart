@@ -11,11 +11,13 @@ part 'invoice_page.g.dart';
 /// A page of invoices.
 @JsonSerializable()
 class InvoicePage {
-  const InvoicePage({required this.items, required this.total});
-
-  factory InvoicePage.fromJson(Map<String, Object?> json) =>
-      _$InvoicePageFromJson(json);
-
+  const InvoicePage({
+    required this.items,
+    required this.total,
+  });
+  
+  factory InvoicePage.fromJson(Map<String, Object?> json) => _$InvoicePageFromJson(json);
+  
   /// The invoices on this page, newest first.
   final List<InvoiceSummary> items;
 

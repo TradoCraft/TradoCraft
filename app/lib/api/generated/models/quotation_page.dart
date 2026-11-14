@@ -10,11 +10,13 @@ part 'quotation_page.g.dart';
 
 @JsonSerializable()
 class QuotationPage {
-  const QuotationPage({required this.items, required this.total});
-
-  factory QuotationPage.fromJson(Map<String, Object?> json) =>
-      _$QuotationPageFromJson(json);
-
+  const QuotationPage({
+    required this.items,
+    required this.total,
+  });
+  
+  factory QuotationPage.fromJson(Map<String, Object?> json) => _$QuotationPageFromJson(json);
+  
   final List<QuotationSummary> items;
   final int total;
 
