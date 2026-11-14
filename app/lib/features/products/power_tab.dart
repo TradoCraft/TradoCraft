@@ -6,6 +6,7 @@ import '../../app/api.dart';
 import '../../shared/power_text.dart';
 import '../../l10n/l10n.dart';
 import '../../shared/app_icons.dart';
+import 'voltage_range.dart';
 
 final _suppliesProvider = FutureProvider.autoDispose
     .family<List<PowerSupply>, String>(
@@ -46,8 +47,12 @@ class _Row {
     this.phases = 1,
     this.frequency,
     String tolerance = '10',
+    String min = '',
+    String max = '',
   }) : voltage = TextEditingController(text: voltage),
-       tolerance = TextEditingController(text: tolerance);
+       tolerance = TextEditingController(text: tolerance),
+       min = TextEditingController(text: min),
+       max = TextEditingController(text: max);
 
   factory _Row.from(PowerSupply s) => _Row(
     current: s.currentType,
@@ -55,6 +60,8 @@ class _Row {
     phases: s.phases ?? 1,
     frequency: s.frequencyHz,
     tolerance: '${s.tolerancePct}',
+    min: s.voltageMinV == null ? '' : '${s.voltageMinV}',
+    max: s.voltageMaxV == null ? '' : '${s.voltageMaxV}',
   );
 
   String current;
@@ -64,6 +71,13 @@ class _Row {
   /// 50 or 60; null = both.
   int? frequency;
   final TextEditingController tolerance;
+
+  /// Optional explicit voltage range (both or neither).
+  final TextEditingController min;
+  final TextEditingController max;
+
+  /// Inline validation message of this row, if any.
+  String? error;
 
   bool get isAc => current == 'ac';
 }
@@ -87,6 +101,8 @@ class _SupplyEditorState extends ConsumerState<_SupplyEditor> {
     for (final r in _rows) {
       r.voltage.dispose();
       r.tolerance.dispose();
+      r.min.dispose();
+      r.max.dispose();
     }
     super.dispose();
   }
@@ -96,7 +112,9 @@ class _SupplyEditorState extends ConsumerState<_SupplyEditor> {
     final l = context.l10n;
     final out = <PowerSupplyInput>[];
     final seen = <String>{};
+    var rowInvalid = false;
     for (final r in _rows) {
+      r.error = null;
       final v = int.tryParse(r.voltage.text.trim());
       if (v == null || v <= 0) {
         _error = l.powerVoltageInvalid;
@@ -106,6 +124,21 @@ class _SupplyEditorState extends ConsumerState<_SupplyEditor> {
       if (t == null || t < 0 || t > 50) {
         _error = l.powerToleranceInvalid;
         return null;
+      }
+      final range = checkVoltageRange(
+        nominal: v,
+        min: r.min.text,
+        max: r.max.text,
+      );
+      if (range.error != null) {
+        r.error = switch (range.error!) {
+          VoltageRangeError.incomplete => l.powerBoundsIncomplete,
+          VoltageRangeError.invalid => l.powerBoundsInvalid,
+          VoltageRangeError.order => l.powerBoundsOrder,
+          VoltageRangeError.nominalOutside => l.powerBoundsNominal,
+        };
+        rowInvalid = true;
+        continue;
       }
       final phases = r.isAc ? r.phases : null;
       final freq = r.isAc ? r.frequency : null;
@@ -120,13 +153,17 @@ class _SupplyEditorState extends ConsumerState<_SupplyEditor> {
           phases: phases,
           frequencyHz: freq,
           tolerancePct: t,
+          voltageMinV: range.min,
+          voltageMaxV: range.max,
         ),
       );
     }
+    if (rowInvalid) return null;
     return out;
   }
 
   Future<void> _save() async {
+    _error = null;
     final body = _validate();
     setState(() {});
     if (body == null) return;
@@ -162,73 +199,131 @@ class _SupplyEditorState extends ConsumerState<_SupplyEditor> {
           Padding(
             key: ObjectKey(r),
             padding: const EdgeInsets.only(bottom: 12),
-            child: Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              crossAxisAlignment: WrapCrossAlignment.center,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _dropdown<String>(
-                  key: ValueKey('current-$i'),
-                  width: 120,
-                  label: l.currentType,
-                  value: r.current,
-                  items: {'ac': l.currentAc, 'dc': l.currentDc},
-                  onChanged: canWrite
-                      ? (v) => setState(() => r.current = v!)
-                      : null,
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    _dropdown<String>(
+                      key: ValueKey('current-$i'),
+                      width: 120,
+                      label: l.currentType,
+                      value: r.current,
+                      items: {'ac': l.currentAc, 'dc': l.currentDc},
+                      onChanged: canWrite
+                          ? (v) => setState(() => r.current = v!)
+                          : null,
+                    ),
+                    SizedBox(
+                      width: 120,
+                      child: TextField(
+                        key: ValueKey('voltage-$i'),
+                        controller: r.voltage,
+                        enabled: canWrite,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                        ],
+                        decoration: InputDecoration(labelText: l.voltageV),
+                      ),
+                    ),
+                    SizedBox(
+                      width: 120,
+                      child: TextField(
+                        key: ValueKey('vmin-$i'),
+                        controller: r.min,
+                        enabled: canWrite,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                        ],
+                        decoration: InputDecoration(
+                          labelText: l.powerVoltageMin,
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      width: 120,
+                      child: TextField(
+                        key: ValueKey('vmax-$i'),
+                        controller: r.max,
+                        enabled: canWrite,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                        ],
+                        decoration: InputDecoration(
+                          labelText: l.powerVoltageMax,
+                        ),
+                      ),
+                    ),
+                    if (r.isAc) ...[
+                      _dropdown<int>(
+                        key: ValueKey('phases-$i'),
+                        width: 100,
+                        label: l.phases,
+                        value: r.phases,
+                        items: const {1: '1', 3: '3'},
+                        onChanged: canWrite
+                            ? (v) => setState(() => r.phases = v!)
+                            : null,
+                      ),
+                      _dropdown<int?>(
+                        key: ValueKey('frequency-$i'),
+                        width: 150,
+                        label: l.frequencyHz,
+                        value: r.frequency,
+                        items: {null: l.frequencyBoth, 50: '50', 60: '60'},
+                        onChanged: canWrite
+                            ? (v) => setState(() => r.frequency = v)
+                            : null,
+                      ),
+                    ],
+                    SizedBox(
+                      width: 120,
+                      child: TextField(
+                        key: ValueKey('tolerance-$i'),
+                        controller: r.tolerance,
+                        enabled: canWrite,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                        ],
+                        decoration: InputDecoration(labelText: l.tolerancePct),
+                      ),
+                    ),
+                    if (canWrite)
+                      IconButton(
+                        key: ValueKey('remove-$i'),
+                        tooltip: l.remove,
+                        icon: const Icon(AppIcons.delete),
+                        onPressed: () => setState(() => _rows.removeAt(i)),
+                      ),
+                  ],
                 ),
-                SizedBox(
-                  width: 120,
-                  child: TextField(
-                    key: ValueKey('voltage-$i'),
-                    controller: r.voltage,
-                    enabled: canWrite,
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    decoration: InputDecoration(labelText: l.voltageV),
-                  ),
-                ),
-                if (r.isAc) ...[
-                  _dropdown<int>(
-                    key: ValueKey('phases-$i'),
-                    width: 100,
-                    label: l.phases,
-                    value: r.phases,
-                    items: const {1: '1', 3: '3'},
-                    onChanged: canWrite
-                        ? (v) => setState(() => r.phases = v!)
-                        : null,
-                  ),
-                  _dropdown<int?>(
-                    key: ValueKey('frequency-$i'),
-                    width: 150,
-                    label: l.frequencyHz,
-                    value: r.frequency,
-                    items: {null: l.frequencyBoth, 50: '50', 60: '60'},
-                    onChanged: canWrite
-                        ? (v) => setState(() => r.frequency = v)
-                        : null,
-                  ),
-                ],
-                SizedBox(
-                  width: 120,
-                  child: TextField(
-                    key: ValueKey('tolerance-$i'),
-                    controller: r.tolerance,
-                    enabled: canWrite,
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    decoration: InputDecoration(labelText: l.tolerancePct),
-                  ),
-                ),
-                if (canWrite)
-                  IconButton(
-                    key: ValueKey('remove-$i'),
-                    tooltip: l.remove,
-                    icon: const Icon(AppIcons.delete),
-                    onPressed: () => setState(() => _rows.removeAt(i)),
+                if (r.error != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      r.error!,
+                      key: ValueKey('vrow-error-$i'),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
                   ),
               ],
+            ),
+          ),
+        if (_rows.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Text(
+              l.powerBoundsHint,
+              style: Theme.of(context).textTheme.bodySmall,
             ),
           ),
         if (_error != null)
