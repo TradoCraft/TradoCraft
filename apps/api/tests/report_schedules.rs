@@ -531,3 +531,47 @@ async fn the_owner_can_pause_a_schedule_whose_recipient_left(db: PgPool) {
     assert_eq!(r["active"], false);
     assert_eq!(r["user_ids"], s["user_ids"]);
 }
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn pausing_with_other_changes_saves_them_and_a_pure_pause_only_pauses(db: PgPool) {
+    let app = setup(db.clone()).await;
+    let s = schedule(&app, helpdesk("volume")).await;
+    let id = s["id"].as_str().unwrap().to_string();
+    let mut body = helpdesk("volume");
+    body["active"] = json!(false);
+    body["name"] = json!("Renamed volume");
+    body["send_time"] = json!("08:15");
+    body["format"] = json!("pdf");
+    let (status, r) = put(&app, ADMIN, &format!("/report-schedules/{id}"), body).await;
+    assert_eq!(status, StatusCode::OK, "{r}");
+    assert_eq!(r["active"], false);
+    assert_eq!(r["name"], "Renamed volume");
+    assert_eq!(r["send_time"], "08:15");
+    assert_eq!(r["format"], "pdf");
+    // The changes are stored, not only echoed.
+    let (name, format, active): (String, String, bool) =
+        sqlx::query_as("SELECT name, format, active FROM reports.schedules WHERE id = $1::uuid")
+            .bind(&id)
+            .fetch_one(&db)
+            .await
+            .unwrap();
+    assert_eq!(
+        (name.as_str(), format.as_str(), active),
+        ("Renamed volume", "pdf", false)
+    );
+    // Other changes are validated like any edit.
+    let mut bad = helpdesk("volume");
+    bad["active"] = json!(false);
+    bad["send_time"] = json!("25:99");
+    let (status, _) = put(&app, ADMIN, &format!("/report-schedules/{id}"), bad).await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+    // A pure pause of an active schedule still only pauses.
+    let s2 = schedule(&app, helpdesk("volume")).await;
+    let id2 = s2["id"].as_str().unwrap().to_string();
+    let mut pause = helpdesk("volume");
+    pause["active"] = json!(false);
+    let (status, r) = put(&app, ADMIN, &format!("/report-schedules/{id2}"), pause).await;
+    assert_eq!(status, StatusCode::OK, "{r}");
+    assert_eq!(r["active"], false);
+    assert_eq!(r["name"], "Weekly volume");
+}

@@ -43,11 +43,15 @@ async fn new_ticket(app: &axum::Router, subject: &str) -> String {
 
 /// Saves the ticket with another priority (the full update call).
 async fn set_priority(app: &axum::Router, id: &str, priority: &str) {
-    let (_, d) = api(app, SUPPORT, Method::GET, &format!("/tickets/{id}"), None).await;
+    set_priority_as(app, SUPPORT, id, priority).await;
+}
+
+async fn set_priority_as(app: &axum::Router, user: &str, id: &str, priority: &str) {
+    let (_, d) = api(app, user, Method::GET, &format!("/tickets/{id}"), None).await;
     let t = &d["ticket"];
     let (code, r) = put(
         app,
-        SUPPORT,
+        user,
         &format!("/tickets/{id}"),
         json!({
             "subject": t["subject"], "status": t["status"], "priority": priority,
@@ -260,4 +264,45 @@ async fn send_email_actions_are_validated_and_for_administrators(db: PgPool) {
     assert_eq!(status, StatusCode::OK, "{d}");
     assert_eq!(d["rules"][0]["changes"][0]["kind"], "send_email");
     assert!(outbox(&db).await.is_empty());
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn an_assignee_who_is_not_a_member_of_the_company_is_not_mailed(db: PgPool) {
+    let app = setup(db.clone()).await;
+    let id = new_ticket(&app, "Hum").await;
+    sqlx::query("UPDATE helpdesk.tickets SET owner_user_id = $2::uuid WHERE id = $1::uuid")
+        .bind(&id)
+        .bind(SUPPORT_ID)
+        .execute(&db)
+        .await
+        .unwrap();
+    rule(
+        &app,
+        json!({ "name": "Assignee", "trigger": "updated", "conditions": {},
+            "actions": [mail_action("assignee")] }),
+    )
+    .await;
+    // Active as a user, but no longer active in this company.
+    sqlx::query("UPDATE core.user_companies SET active = false WHERE user_id = $1::uuid")
+        .bind(SUPPORT_ID)
+        .execute(&db)
+        .await
+        .unwrap();
+    let active: bool = sqlx::query_scalar("SELECT active FROM core.users WHERE id = $1::uuid")
+        .bind(SUPPORT_ID)
+        .fetch_one(&db)
+        .await
+        .unwrap();
+    assert!(active);
+    set_priority_as(&app, ADMIN, &id, "high").await;
+    assert!(outbox(&db).await.is_empty(), "{:?}", outbox(&db).await);
+    // Control: as a member again the same rule mails the assignee.
+    sqlx::query("UPDATE core.user_companies SET active = true WHERE user_id = $1::uuid")
+        .bind(SUPPORT_ID)
+        .execute(&db)
+        .await
+        .unwrap();
+    set_priority_as(&app, ADMIN, &id, "urgent").await;
+    let to: Vec<String> = outbox(&db).await.into_iter().map(|m| m.0).collect();
+    assert_eq!(to, vec![SUPPORT]);
 }
