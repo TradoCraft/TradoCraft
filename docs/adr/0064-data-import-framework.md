@@ -129,7 +129,20 @@ is a job too; applying it is a second job on the same stored file, which validat
 The job runs as its requester: the worker loads that user with the roles and modules of the job's
 company at run time. If the user is gone or no longer holds `imports.admin` and the entity's write
 permission, the job fails and nothing is written. A running job whose heartbeat is older than five
-minutes (a worker that died; its transaction rolled back) is queued again, at most three attempts.
+minutes (a worker that died; its transaction rolled back) is queued again. The attempt is counted at
+the claim; a stale job that has been claimed three times fails with "the import stopped three
+times without finishing". A cancelled job is never claimed.
+
+One worker step covers it, in this order: requeue or fail stale jobs, run queued jobs (at most ten
+per pass, each in a task of its own so a panic ends only that run), remove old files. The step runs
+in a loop of its own inside the worker process, with the same interval as the main loop and never
+two passes at once, so a long import does not delay mail or SLA escalation; the worker heartbeat
+(ADR 0052) stays with the main loop. Stopping the process cuts a running import off; the job is
+queued again after five minutes.
+
+A file older than 7 days is removed, except when a queued or running job still refers to it. A job
+that waited a week for a worker keeps its file and runs; the file goes in a later pass. For a
+removed file the job row stays with no file.
 
 **7. Audit.** `data.source` is `csv_import`, `xlsx_import` or `ods_import`. A run through the admin
 screen or a job adds `data.import_job` with the job id.
