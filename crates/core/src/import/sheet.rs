@@ -492,6 +492,57 @@ fn scan_ods(
     scan_ods_content(BufReader::new(entry), limits)
 }
 
+/// What the scan needs from the attributes of one `table:table-cell`.
+#[derive(Default)]
+struct CellAttrs {
+    repeat: u64,
+    /// `calamine` keeps the cell: it has a value, a formula or a value type.
+    stored: bool,
+    error: bool,
+    /// Bytes of an `office:string-value`.
+    text: u64,
+}
+
+fn cell_attrs(e: &BytesStart<'_>) -> Result<CellAttrs, Vec<RowError>> {
+    let mut out = CellAttrs {
+        repeat: 1,
+        ..Default::default()
+    };
+    for a in e.attributes().with_checks(false) {
+        let a = a.map_err(|_| fatal("the file has a malformed attribute"))?;
+        match a.key.as_ref() {
+            "table:number-columns-repeated" => {
+                out.repeat = a.value
+                    .trim()
+                    .parse::<u64>()
+                    .ok()
+                    .ok_or_else(|| {
+                        fatal("the file has an invalid table:number-columns-repeated value")
+                    })?;
+            }
+            "office:value"
+            | "office:date-value"
+            | "office:time-value"
+            | "office:boolean-value"
+            | "office:value-type"
+            | "table:formula" => out.stored = true,
+            "office:string-value" => {
+                out.stored = true;
+                out.text = a.value.len() as u64;
+            }
+            "calcext:value-type" => {
+                out.stored = true;
+                out.error = a.value == "error";
+            }
+            _ => {}
+        }
+    }
+    Ok(out)
+}
+
+/// `calamine` stores at most this many cells of one row.
+const ODS_MAX_COLUMNS: u64 = 16_384;
+
 fn scan_ods_content(
     input: impl Read,
     limits: &Limits,
@@ -499,17 +550,31 @@ fn scan_ods_content(
     let mut reader = quick_xml::Reader::from_reader(BufReader::new(input));
     let mut buf = Vec::new();
     let mut depth = 0u32; // nesting of table:table
-    let (mut cursor, mut end_row, mut width) = (0u64, 0u64, 0u64); // current table
-    let (mut row_repeat, mut col, mut row_width) = (1u64, 0u64, 0u64);
-    let mut in_row = false;
-    let mut total = 0u128;
+    // Current table: the row cursor, the used rectangle (rows `first_row..end_row`, columns
+    // `first_col..end_col`, both counted from the sheet origin).
+    let (mut cursor, mut first_row, mut end_row) = (0u64, None::<u64>, 0u64);
+    let (mut first_col, mut end_col) = (u64::MAX, 0u64);
+    // Current row: its repeat count, the column cursor, the first and last stored column.
+    let (mut row_repeat, mut col) = (1u64, 0u64);
+    let (mut row_first, mut row_end) = (None::<u64>, 0u64);
+    let (mut in_row, mut in_cell, mut cell_repeat) = (false, false, 1u64);
+    // What calamine holds at once: the cells it stores per row (from column A, a repeated row is
+    // stored once) and the dense rectangle of every sheet, over all sheets together.
+    let (mut stored, mut dense) = (0u128, 0u128);
+    let mut text = 0u128;
     let mut table_name = String::new();
     let mut error_cells: std::collections::HashMap<String, Vec<ErrorCells>> = Default::default();
     let mut errors_seen = 0usize;
-    let too_many_columns = || {
+    let too_many_cells = || {
         over_limit(format!(
-            "too many columns: at most {} are accepted",
-            limits.cells_per_row
+            "too many cells: at most {} are accepted in the workbook's sheets together",
+            limits.total_cells
+        ))
+    };
+    let too_much_text = || {
+        over_limit(format!(
+            "too much text: the cells hold more than {} bytes of text",
+            limits.unpacked_bytes
         ))
     };
     loop {
@@ -524,21 +589,23 @@ fn scan_ods_content(
         };
         if let Some(e) = e {
             match e.name().as_ref() {
+                "table:table" if depth >= 1 => {
+                    return Err(fatal("tables inside tables are not supported"));
+                }
                 "table:table" if !empty => {
-                    depth += 1;
-                    if depth == 1 {
-                        (cursor, end_row, width) = (0, 0, 0);
-                        table_name = match e.try_get_attribute("table:name") {
-                            Ok(Some(a)) => quick_xml::escape::unescape(&a.value)
-                                .map(|n| n.into_owned())
-                                .unwrap_or_else(|_| a.value.to_string()),
-                            _ => String::new(),
-                        };
-                    }
+                    depth = 1;
+                    (cursor, first_row, end_row) = (0, None, 0);
+                    (first_col, end_col) = (u64::MAX, 0);
+                    table_name = match e.try_get_attribute("table:name") {
+                        Ok(Some(a)) => quick_xml::escape::unescape(&a.value)
+                            .map(|n| n.into_owned())
+                            .unwrap_or_else(|_| a.value.to_string()),
+                        _ => String::new(),
+                    };
                 }
                 "table:table-row" if depth == 1 => {
                     row_repeat = attr_u64(e, "table:number-rows-repeated")?;
-                    (col, row_width) = (0, 0);
+                    (col, row_first, row_end) = (0, None, 0);
                     if empty {
                         cursor = cursor.saturating_add(row_repeat);
                     } else {
@@ -546,12 +613,11 @@ fn scan_ods_content(
                     }
                 }
                 "table:table-cell" | "table:covered-table-cell" if depth == 1 && in_row => {
-                    let repeat = attr_u64(e, "table:number-columns-repeated")?;
-                    if e.try_get_attribute("calcext:value-type")
-                        .ok()
-                        .flatten()
-                        .is_some_and(|a| a.value == "error")
-                    {
+                    if in_cell {
+                        return Err(fatal("cells inside cells are not supported"));
+                    }
+                    let attrs = cell_attrs(e)?;
+                    if attrs.error {
                         errors_seen += 1;
                         if errors_seen > 100_000 {
                             return Err(fatal("the file has too many cells with errors"));
@@ -563,40 +629,73 @@ fn scan_ods_content(
                                 row: cursor,
                                 rows: row_repeat,
                                 col,
-                                cols: repeat,
+                                cols: attrs.repeat,
                             });
                     }
-                    col = col.saturating_add(repeat);
-                    if e.try_get_attribute("office:value-type")
-                        .map_err(|_| fatal("the file has a malformed attribute"))?
-                        .is_some()
-                    {
-                        row_width = col;
+                    if attrs.stored {
+                        row_first.get_or_insert(col);
+                    }
+                    col = col.saturating_add(attrs.repeat);
+                    if attrs.stored {
+                        row_end = col;
+                    }
+                    text += u128::from(attrs.text) * u128::from(attrs.repeat);
+                    if text > u128::from(limits.unpacked_bytes) {
+                        return Err(too_much_text());
+                    }
+                    if !empty {
+                        in_cell = true;
+                        cell_repeat = attrs.repeat;
+                    }
+                }
+                "text:s" if in_cell => {
+                    let n = attr_u64(e, "text:c")?;
+                    text += u128::from(n) * u128::from(cell_repeat);
+                    if text > u128::from(limits.unpacked_bytes) {
+                        return Err(too_much_text());
                     }
                 }
                 _ => {}
             }
+        } else if let Event::Text(t) = &event {
+            if in_cell {
+                text += t.len() as u128 * u128::from(cell_repeat);
+                if text > u128::from(limits.unpacked_bytes) {
+                    return Err(too_much_text());
+                }
+            }
         } else if let Event::End(e) = &event {
             match e.name().as_ref() {
+                "table:table-cell" | "table:covered-table-cell" => in_cell = false,
                 "table:table-row" if depth == 1 && in_row => {
                     in_row = false;
-                    if row_width > 0 {
+                    in_cell = false;
+                    if let Some(first) = row_first {
+                        first_row.get_or_insert(cursor);
                         end_row = cursor.saturating_add(row_repeat);
-                        width = width.max(row_width);
-                        if width > limits.cells_per_row as u64 {
-                            return Err(too_many_columns());
+                        first_col = first_col.min(first);
+                        end_col = end_col.max(row_end.min(ODS_MAX_COLUMNS));
+                        stored += u128::from(row_end.min(ODS_MAX_COLUMNS));
+                        if end_col.saturating_sub(first_col) > limits.cells_per_row as u64 {
+                            return Err(over_limit(format!(
+                                "too many columns: at most {} are accepted",
+                                limits.cells_per_row
+                            )));
+                        }
+                        if stored + dense > limits.total_cells as u128 {
+                            return Err(too_many_cells());
                         }
                     }
                     cursor = cursor.saturating_add(row_repeat);
                 }
                 "table:table" => {
                     if depth == 1 {
-                        total += u128::from(end_row) * u128::from(width);
-                        if total > limits.total_cells as u128 {
-                            return Err(over_limit(format!(
-                                "too many cells: at most {} are accepted",
-                                limits.total_cells
-                            )));
+                        if let Some(first) = first_row {
+                            dense += u128::from(end_row - first)
+                                * u128::from(end_col.saturating_sub(first_col));
+                        }
+                        if stored + dense > limits.total_cells as u128 {
+                            return Err(too_many_cells());
                         }
                     }
                     depth = depth.saturating_sub(1);
@@ -606,5 +705,112 @@ fn scan_ods_content(
         } else if matches!(event, Event::Eof) {
             return Ok(error_cells);
         }
+    }
+}
+
+#[cfg(test)]
+mod scan_tests {
+    use super::*;
+
+    fn content(tables: &str) -> Vec<u8> {
+        format!(
+            r#"<?xml version="1.0"?><office:document-content xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" xmlns:table="urn:oasis:names:tc:opendocument:xmlns:table:1.0" xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0" xmlns:calcext="urn:org:documentfoundation:names:experimental:calc:xmlns:calcext:1.0"><office:body><office:spreadsheet>{tables}</office:spreadsheet></office:body></office:document-content>"#
+        )
+        .into_bytes()
+    }
+
+    fn scan(tables: &str) -> Result<(), String> {
+        scan_ods_content(content(tables).as_slice(), &Limits::request())
+            .map(|_| ())
+            .map_err(|e| e[0].message.clone())
+    }
+
+    fn sheet(rows: &str) -> String {
+        format!(r#"<table:table table:name="S">{rows}</table:table>"#)
+    }
+
+    #[test]
+    fn a_cell_with_a_value_attribute_and_no_value_type_is_not_free() {
+        // 10 000 rows of one cell repeated 16 384 times: 164 million cells in calamine.
+        let rows = r#"<table:table-row><table:table-cell office:value="1" table:number-columns-repeated="16384"/></table:table-row>"#
+            .repeat(10_000);
+        let e = scan(&sheet(&rows)).unwrap_err();
+        assert!(e.contains("too many"), "{e}");
+    }
+
+    #[test]
+    fn every_attribute_that_makes_calamine_keep_a_cell_counts() {
+        for attrs in [
+            r#"table:formula="of:=1""#,
+            r#"office:string-value="x""#,
+            r#"office:date-value="2024-01-01""#,
+            r#"office:time-value="PT1H""#,
+            r#"office:boolean-value="true""#,
+            r#"office:value-type="string""#,
+        ] {
+            let rows = format!(
+                r#"<table:table-row><table:table-cell {attrs} table:number-columns-repeated="16384"/></table:table-row>"#
+            )
+            .repeat(1_000);
+            let e = scan(&sheet(&rows));
+            assert!(e.is_err(), "{attrs}");
+        }
+    }
+
+    #[test]
+    fn repeated_rows_of_valued_cells_without_a_value_type_count() {
+        let rows = r#"<table:table-row table:number-rows-repeated="1000000"><table:table-cell office:value="1"/><table:table-cell office:value="2"/></table:table-row>"#;
+        let e = scan(&sheet(rows)).unwrap_err();
+        assert!(e.contains("too many cells"), "{e}");
+    }
+
+    #[test]
+    fn stored_cells_are_counted_from_column_a_across_all_sheets() {
+        // Narrow (one column) but 100 000 cells to the left of it in every row of two sheets.
+        let rows = r#"<table:table-row table:number-rows-repeated="10"><table:table-cell table:number-columns-repeated="16000"/><table:table-cell office:value="1"/></table:table-row>"#;
+        let one = sheet(rows).repeat(1);
+        assert!(scan(&one).is_ok());
+        let many = (0..20)
+            .map(|i| format!(r#"<table:table table:name="N{i}">{rows}</table:table>"#))
+            .collect::<String>();
+        assert!(scan(&many).is_ok(), "rows repeat, they are stored once");
+        let unrepeated = r#"<table:table-row><table:table-cell table:number-columns-repeated="16000"/><table:table-cell office:value="1"/></table:table-row>"#
+            .repeat(200);
+        let e = scan(&sheet(&unrepeated)).unwrap_err();
+        assert!(e.contains("the workbook's sheets together"), "{e}");
+    }
+
+    #[test]
+    fn a_huge_space_run_in_a_text_is_refused() {
+        let cell = r#"<table:table-cell office:value-type="string"><text:p>a<text:s text:c="4000000000"/></text:p></table:table-cell>"#;
+        let e = scan(&sheet(&format!("<table:table-row>{cell}</table:table-row>"))).unwrap_err();
+        assert!(e.contains("too much text"), "{e}");
+    }
+
+    #[test]
+    fn a_long_text_in_a_repeated_cell_is_counted_every_time() {
+        let long = "x".repeat(1_000_000);
+        let cell = format!(
+            r#"<table:table-cell office:string-value="{long}" table:number-columns-repeated="100"/>"#
+        );
+        let rows = format!("<table:table-row>{cell}</table:table-row>").repeat(1);
+        // 100 MB of text from 1 MB of file.
+        let e = scan(&sheet(&rows)).unwrap_err();
+        assert!(e.contains("too much text"), "{e}");
+    }
+
+    #[test]
+    fn the_width_is_counted_from_the_first_used_column() {
+        let row = format!(
+            "<table:table-row><table:table-cell table:number-columns-repeated=\"150\"/>{}</table:table-row>",
+            r#"<table:table-cell office:value="1"/>"#.repeat(10)
+        );
+        assert!(scan(&sheet(&row.repeat(3))).is_ok());
+    }
+
+    #[test]
+    fn nested_tables_and_cells_are_refused() {
+        let nested = r#"<table:table-row><table:table-cell office:value-type="string"><table:table table:name="in"/><table:table table:name="in2"><table:table-row/></table:table></table:table-cell></table:table-row>"#;
+        assert!(scan(&sheet(nested)).is_err());
     }
 }
