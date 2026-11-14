@@ -1433,3 +1433,34 @@ async fn baseline_definitions_are_readable_with_opportunities_read_alone(db: PgP
     .await;
     assert_eq!(status, StatusCode::FORBIDDEN);
 }
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn the_type_code_product_is_reserved(db: PgPool) {
+    let app = seeded(&db).await;
+    let (status, r) = api(
+        &app,
+        ADMIN,
+        Method::POST,
+        "/baseline-item-types",
+        Some(json!({ "code": "product", "name": "Product", "allowed_parent_codes": [], "allow_top_level": true })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{r}");
+    assert!(r.to_string().contains("reserved"), "{r}");
+    // The database refuses it too.
+    let e = sqlx::query(
+        "INSERT INTO crm.baseline_item_types (id, company_id, code, name, allow_top_level)
+         VALUES (gen_random_uuid(), $1::uuid, 'product', 'P', true)",
+    )
+    .bind(COMPANY)
+    .execute(&db)
+    .await;
+    assert!(e.is_err());
+    // An existing type cannot be renamed to it either (its code is immutable).
+    let id = type_id(&app, "bell").await;
+    let e = sqlx::query("UPDATE crm.baseline_item_types SET code = 'product' WHERE id = $1::uuid")
+        .bind(&id)
+        .execute(&db)
+        .await;
+    assert!(e.is_err());
+}

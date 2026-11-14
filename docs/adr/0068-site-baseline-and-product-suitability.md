@@ -158,7 +158,8 @@ attributes and the tables). Decision 6 is implemented without a second engine.
   `opportunities.read`. The any-of check is `CurrentUser::require_any`.
 * The baseline item type code `product` is reserved (422 on create): it is the product scope of
   the attribute definitions, so a type with that code would share its definitions. The type code
-  is immutable, so updates cannot introduce it. API-level only; no database constraint.
+  is immutable, so updates cannot introduce it. Also a `NOT VALID` check constraint (migration
+  `20270214000001`), so it holds for rows written outside the API.
 * A definition cannot be created for a key (in its scope) that already has stored values: product
   attributes stored without a definition, or baseline items storing the key (409).
 * A stored select value stays valid when the option is removed from the definition, as long as the

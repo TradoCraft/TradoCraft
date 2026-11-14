@@ -98,6 +98,9 @@ pub fn normalise(
     Ok((name.to_string(), codes))
 }
 
+/// The scope of the product attribute definitions; no baseline item type may use it as its code.
+const RESERVED_CODE: &str = "product";
+
 const SELECT: &str =
     "SELECT id, code, name, allowed_parent_codes, allow_top_level, sort_order, active
                       FROM crm.baseline_item_types";
@@ -205,6 +208,11 @@ async fn create_type(
     user.require(Permission::ProductsWrite)?;
     let code = input.code.trim().to_string();
     validate_key(&code).map_err(AppError::Validation)?;
+    if code == RESERVED_CODE {
+        return Err(AppError::Validation(format!(
+            "the type code {RESERVED_CODE} is reserved for the product attributes"
+        )));
+    }
     let (name, parents) = normalise(
         &input.name,
         &input.allowed_parent_codes,
