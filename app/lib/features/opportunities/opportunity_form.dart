@@ -172,6 +172,7 @@ class _OpportunityFormState extends ConsumerState<OpportunityForm> {
             Align(
               alignment: Alignment.centerLeft,
               child: PowerGridField(
+                minGrids: 1,
                 country: country,
                 selectedId: _gridId,
                 onChanged: (id) => setState(() => _gridId = id),

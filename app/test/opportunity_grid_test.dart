@@ -35,13 +35,18 @@ Map<String, Object?> _grid(String id, int voltage) => {
   'active': true,
 };
 
-FakeHttp _http({String? grid, Object? Function(Object?)? onPut}) => FakeHttp({
+FakeHttp _http({
+  String? grid,
+  Object? Function(Object?)? onPut,
+  List<Object?>? grids,
+}) => FakeHttp({
   'GET /api/v1/me': (_) =>
       meJson(['opportunities.read', 'opportunities.write']),
   'GET /api/v1/opportunities/o1': (_) => _opp(grid: grid),
   'PUT /api/v1/opportunities/o1': onPut ?? (_) => _opp(grid: grid),
   'GET /api/v1/customers/c2': (_) => customerJson(),
-  'GET /api/v1/power-grids': (_) => [_grid('g1', 230), _grid('g2', 400)],
+  'GET /api/v1/power-grids': (_) =>
+      grids ?? [_grid('g1', 230), _grid('g2', 400)],
   'GET /api/v1/opportunities/o1/baseline': (_) => [],
   'GET /api/v1/baseline-item-types': (_) => [],
   'GET /api/v1/quotations': (_) => {'items': [], 'total': 0},
@@ -150,5 +155,23 @@ void main() {
     await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
     expect(find.textContaining('customer country'), findsOneWidget);
+  });
+
+  testWidgets('the form offers a single active grid and sends it', (
+    tester,
+  ) async {
+    final h = _http(grids: [_grid('g2', 400)]);
+    await _pump(tester, h, _form(null));
+    expect(find.byKey(const ValueKey('grid-BE-1')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('grid-BE-1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('400 V 3ph 50 Hz').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    expect(
+      (h.bodies['PUT /api/v1/opportunities/o1'] as Map)['power_grid_id'],
+      'g2',
+    );
   });
 }
