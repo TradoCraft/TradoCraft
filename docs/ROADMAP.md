@@ -36,17 +36,13 @@ Module overview: [ARCHITECTURE.md](ARCHITECTURE.md).
 | D1 Worker heartbeat and "worker was down" alert | Done, [ADR 0052](adr/0052-worker-heartbeat.md) |
 | D2 Backup and restore runbook | Done, [ADR 0056](adr/0056-backup-and-restore.md) |
 | D3 Concurrent-edit protection on records | Open |
-| D4 VAT number validation, registry lookup and duplicate warning | Open |
-| D5 Accent-insensitive search | Open |
-| D6 Audit log viewer | Open |
-| D7 Restrict CORS to configured origins | Open |
+| D4 VAT number validation, registry lookup and duplicate warning | Done, [ADR 0058](adr/0058-vat-number-validation-and-lookup.md); the request to the live VIES service is untested (see the ADR) |
+| D5 Accent-insensitive search | Done for customers, contacts, suppliers and products, [ADR 0057](adr/0057-accent-insensitive-search.md); the other lists follow |
+| D6 Audit log viewer | Done, [ADR 0059](adr/0059-audit-trail-viewer.md); field-level changes are recorded for customers and suppliers, other modules adopt `audit::Changes` |
+| D7 Restrict CORS to configured origins | Done, [ADR 0050](adr/0050-portal-surface.md) |
 | D8 Draft autosave | Open |
 | D9 Two-factor authentication | Open |
 | D10 Data import framework (CSV, XLSX, ODS, Parquet) | Open (extends ADR 0029) |
-| D11 VAT number validation, registry lookup and duplicate warning | Done, [ADR 0058](adr/0058-vat-number-validation-and-lookup.md); the request to the live VIES service is untested (see the ADR) |
-| D12 Accent-insensitive search | Done for customers, contacts, suppliers and products, [ADR 0057](adr/0057-accent-insensitive-search.md); the other lists follow |
-| D13 Audit log viewer | Done, [ADR 0059](adr/0059-audit-trail-viewer.md); field-level changes are recorded for customers and suppliers, other modules adopt `audit::Changes` |
-| D14 Restrict CORS to configured origins | Done, [ADR 0050](adr/0050-portal-surface.md) |
 
 ## Sequencing
 
@@ -241,9 +237,13 @@ production.
 - A long text (ticket reply, internal note, knowledge base article, quotation remark) is saved as a
   server-side draft every few seconds and on leaving the screen, per user and record, so a closed
   tab, a crash or a lost connection loses nothing. The draft is offered again on return and removed
-  on send.
-- Local copy in the app when offline (reuse [ADR 0022](adr/0022-technician-offline-queue.md)
-  storage), synced when back online. Interacts with D3: a draft records the record version it began on.
+  once the relevant action succeeds: a send for a reply or note, a save for a quotation remark, a
+  save or publish for a knowledge base article.
+- Between two server saves the app also keeps the text in a local copy on every keystroke batch
+  (reuse [ADR 0022](adr/0022-technician-offline-queue.md) storage), so a crash inside the save
+  interval loses nothing either. Offline, the local copy syncs when the connection is back. The
+  newer of the local and server draft is offered on return. Interacts with D3: a draft records the
+  record version it began on.
 
 **D9 Two-factor authentication** (medium)
 - [ADR 0004](adr/0004-authentication.md) lists MFA as a next step; nothing is built. Decide in the ADR
