@@ -627,9 +627,10 @@ class _ProductsClient implements ProductsClient {
   }
 
   @override
-  Future<String> exportProducts() async {
+  Future<String> exportProducts({Format? format}) async {
     final _extra = <String, dynamic>{};
-    final queryParameters = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{r'format': format?.toJson()};
+    queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
     final _options = _setStreamType<String>(
@@ -657,9 +658,13 @@ class _ProductsClient implements ProductsClient {
   Future<ImportReport> importProducts({
     required String body,
     bool? dryRun,
+    String? sheet,
   }) async {
     final _extra = <String, dynamic>{};
-    final queryParameters = <String, dynamic>{r'dry_run': dryRun};
+    final queryParameters = <String, dynamic>{
+      r'dry_run': dryRun,
+      r'sheet': sheet,
+    };
     queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
     final _data = body;

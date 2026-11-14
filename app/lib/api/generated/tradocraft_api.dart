@@ -19,6 +19,7 @@ import 'clients/favorites_client.dart';
 import 'clients/field_client.dart';
 import 'clients/finance_client.dart';
 import 'clients/purchasing_client.dart';
+import 'clients/imports_client.dart';
 import 'clients/inventory_client.dart';
 import 'clients/kb_client.dart';
 import 'clients/sales_client.dart';
@@ -57,6 +58,7 @@ class TradocraftApi {
   FieldClient? _field;
   FinanceClient? _finance;
   PurchasingClient? _purchasing;
+  ImportsClient? _imports;
   InventoryClient? _inventory;
   KbClient? _kb;
   SalesClient? _sales;
@@ -94,6 +96,8 @@ class TradocraftApi {
   FinanceClient get finance => _finance ??= FinanceClient(_dio, baseUrl: _baseUrl);
 
   PurchasingClient get purchasing => _purchasing ??= PurchasingClient(_dio, baseUrl: _baseUrl);
+
+  ImportsClient get imports => _imports ??= ImportsClient(_dio, baseUrl: _baseUrl);
 
   InventoryClient get inventory => _inventory ??= InventoryClient(_dio, baseUrl: _baseUrl);
 
