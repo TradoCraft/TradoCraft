@@ -14,6 +14,8 @@ enum DefinitionKind {
   select('select'),
   @JsonValue('text')
   text('text'),
+  @JsonValue('boolean')
+  boolean('boolean'),
   /// Default value for all unparsed values, allows backward compatibility when adding new values on the backend.
   $unknown(null);
 

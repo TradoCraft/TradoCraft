@@ -33508,7 +33508,8 @@
           "number",
           "range",
           "select",
-          "text"
+          "text",
+          "boolean"
         ]
       },
       "DelegateInput": {
@@ -38354,7 +38355,7 @@
           },
           "baseline_attribute_key": {
             "type": "string",
-            "description": "A `number` attribute of that type."
+            "description": "An attribute of that type: a `number`, or a `boolean` for `requires_if_true`."
           },
           "baseline_type_code": {
             "type": "string",
@@ -38376,7 +38377,7 @@
           },
           "product_attribute_key": {
             "type": "string",
-            "description": "A product attribute: `range` for `within_range`, `number` for `at_most` and `at_least`."
+            "description": "A product attribute: `range` for `within_range`, `number` for `at_most` and `at_least`, `boolean` for\n`requires_if_true`."
           },
           "sort_order": {
             "type": "integer",
@@ -39315,7 +39316,8 @@
         "enum": [
           "within_range",
           "at_most",
-          "at_least"
+          "at_least",
+          "requires_if_true"
         ]
       },
       "Opportunity": {
