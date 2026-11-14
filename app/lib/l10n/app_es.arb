@@ -2878,7 +2878,7 @@
   "impProgress": "{done} de {total} filas",
   "impCancelJob": "Cancelar la tarea",
   "impDownloadErrors": "Descargar el informe de errores",
-  "impErrorsTotal": "Se muestran los primeros {shown} de {total} problemas. El informe de errores los contiene todos.",
+  "impErrorsTotal": "Se muestran los primeros {shown} de {total} problemas. El informe de errores lista los mismos problemas. En un archivo con muchísimos problemas solo se listan los primeros: corríjalos y vuelva a comprobar.",
   "impApplyHint": "La importación es posible tras una comprobación sin problemas.",
   "impApplyAction": "Importar ahora",
   "impApplyConfirmTitle": "¿Importar {entity}?",

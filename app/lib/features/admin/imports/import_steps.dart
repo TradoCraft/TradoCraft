@@ -13,16 +13,18 @@ import 'job_widgets.dart';
 class FileStep extends ConsumerWidget {
   const FileStep({super.key});
 
-  Future<void> _choose(WidgetRef ref) async {
+  Future<void> _choose(BuildContext context, WidgetRef ref) async {
     final wizard = ref.read(importWizardProvider.notifier);
     final picker = ref.read(importFilePickerProvider);
     PickedFile? picked;
     try {
       picked = await picker();
     } catch (_) {
-      wizard.fail(const FileReadError());
+      // The picker can outlive the step (the person left the screen meanwhile).
+      if (context.mounted) wizard.fail(const FileReadError());
       return;
     }
+    if (!context.mounted) return;
     if (picked != null) await wizard.upload(picked);
   }
 
@@ -44,7 +46,7 @@ class FileStep extends ConsumerWidget {
           children: [
             FilledButton.icon(
               key: const ValueKey('imp-choose-file'),
-              onPressed: s.uploading ? null : () => _choose(ref),
+              onPressed: s.uploading ? null : () => _choose(context, ref),
               icon: const Icon(AppIcons.fileUpload),
               label: Text(file == null ? l.impChooseFile : l.impChooseOther),
             ),

@@ -9185,7 +9185,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String impErrorsTotal(int shown, int total) {
-    return 'De eerste $shown van $total problemen worden getoond. Het foutenrapport bevat ze allemaal.';
+    return 'De eerste $shown van $total problemen worden getoond. Het foutenrapport toont dezelfde problemen. Bij een bestand met heel veel problemen worden alleen de eerste getoond: los deze op en controleer opnieuw.';
   }
 
   @override

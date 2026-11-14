@@ -16305,7 +16305,7 @@ abstract class AppLocalizations {
   /// No description provided for @impErrorsTotal.
   ///
   /// In en, this message translates to:
-  /// **'Showing the first {shown} of {total} problems. The error report has all of them.'**
+  /// **'Showing the first {shown} of {total} problems. The error report lists the same problems. A file with very many problems lists only the first ones: fix these and check again.'**
   String impErrorsTotal(int shown, int total);
 
   /// No description provided for @impApplyHint.

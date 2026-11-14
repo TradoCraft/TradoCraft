@@ -2878,7 +2878,7 @@
   "impProgress": "{done} von {total} Zeilen",
   "impCancelJob": "Auftrag abbrechen",
   "impDownloadErrors": "Fehlerbericht herunterladen",
-  "impErrorsTotal": "Die ersten {shown} von {total} Problemen werden angezeigt. Der Fehlerbericht enthält alle.",
+  "impErrorsTotal": "Die ersten {shown} von {total} Problemen werden angezeigt. Der Fehlerbericht listet dieselben Probleme auf. Bei einer Datei mit sehr vielen Problemen werden nur die ersten aufgeführt: Beheben Sie diese und prüfen Sie erneut.",
   "impApplyHint": "Der Import ist nach einer Prüfung ohne Probleme möglich.",
   "impApplyAction": "Jetzt importieren",
   "impApplyConfirmTitle": "{entity} importieren?",

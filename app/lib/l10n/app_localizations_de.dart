@@ -9206,7 +9206,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String impErrorsTotal(int shown, int total) {
-    return 'Die ersten $shown von $total Problemen werden angezeigt. Der Fehlerbericht enthält alle.';
+    return 'Die ersten $shown von $total Problemen werden angezeigt. Der Fehlerbericht listet dieselben Probleme auf. Bei einer Datei mit sehr vielen Problemen werden nur die ersten aufgeführt: Beheben Sie diese und prüfen Sie erneut.';
   }
 
   @override

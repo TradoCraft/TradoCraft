@@ -185,22 +185,62 @@ final importWizardProvider =
 /// The state and the requests of the import screen. Leaving the screen disposes it, which also
 /// stops the polling of a background job (the job goes on, and shows in the history).
 class ImportWizard extends Notifier<WizardState> {
-  Timer? _timer;
+  // One poll timer and one generation per run slot (`true` = the check, `false` = the import):
+  // starting a check must not stop the polling of a running import. A response is accepted only
+  // while its generation is the slot's current one and the slot still holds the job it asked
+  // about; changing the settings or starting, cancelling or clearing a run moves the generation on.
+  final Map<bool, Timer?> _timers = {true: null, false: null};
+  final Map<bool, int> _generation = {true: 0, false: 0};
   // Only the newest preview request may fill the table (the sheet can change while one is open).
   int _previewSeq = 0;
+  // Only the newest entity choice may propose a mapping once its saved mappings are loaded.
+  int _entitySeq = 0;
+  // The fields of the last proposal: other fields in the state were edited by the person.
+  List<String?>? _proposedFields;
 
   ImportsClient get _api => ref.read(apiProvider).imports;
 
   @override
   WizardState build() {
-    ref.onDispose(() => _timer?.cancel());
+    ref.onDispose(() {
+      for (final t in _timers.values) {
+        t?.cancel();
+      }
+    });
     return const WizardState();
   }
 
+  /// Stops the polling of one slot and drops every response still on its way for it; returns the
+  /// slot's new generation.
+  int _restart(bool dryRun) {
+    _timers[dryRun]?.cancel();
+    _timers[dryRun] = null;
+    return _generation[dryRun] = _generation[dryRun]! + 1;
+  }
+
+  void _restartAll() {
+    _restart(true);
+    _restart(false);
+  }
+
+  /// A response for [id] asked for in generation [gen] still belongs to the slot.
+  bool _owns(bool dryRun, int gen, String? id) =>
+      ref.mounted &&
+      gen == _generation[dryRun] &&
+      id != null &&
+      (dryRun ? state.dry : state.apply).job?.id == id;
+
+  RunState _slot(bool dryRun) => dryRun ? state.dry : state.apply;
+
+  void _put(bool dryRun, RunState r) =>
+      state = dryRun ? state.copyWith(dry: r) : state.copyWith(apply: r);
+
   /// Back to the first step; the chosen entity and its saved mappings stay.
   void reset() {
-    _timer?.cancel();
+    _restartAll();
     _previewSeq++;
+    _entitySeq++;
+    _proposedFields = null;
     state = WizardState(entity: state.entity, saved: state.saved);
   }
 
@@ -211,8 +251,9 @@ class ImportWizard extends Notifier<WizardState> {
       fail(const EmptyFileError());
       return;
     }
-    _timer?.cancel();
+    _restartAll();
     _previewSeq++;
+    _proposedFields = null;
     state = WizardState(
       entity: state.entity,
       saved: state.saved,
@@ -238,6 +279,9 @@ class ImportWizard extends Notifier<WizardState> {
 
   Future<void> selectEntity(ImportDescription e) async {
     if (state.entity?.key == e.key) return;
+    final seq = ++_entitySeq;
+    _restartAll();
+    _proposedFields = null;
     state = state.copyWith(
       entity: e,
       saved: const [],
@@ -248,12 +292,15 @@ class ImportWizard extends Notifier<WizardState> {
       apply: const RunState(),
     );
     await refreshSaved();
+    // Another entity was chosen, or the screen left, while the mappings loaded; or the person
+    // already changed the columns: the proposal would overwrite that.
+    if (!ref.mounted || seq != _entitySeq || _edited) return;
     _propose();
   }
 
   Future<void> selectSheet(String sheet) async {
     if (state.sheet == sheet) return;
-    _timer?.cancel();
+    _restartAll();
     state = state.copyWith(
       sheet: sheet,
       dry: const RunState(),
@@ -300,6 +347,18 @@ class ImportWizard extends Notifier<WizardState> {
     }
   }
 
+  /// The person changed the columns since the last proposal.
+  bool get _edited {
+    final f = state.fields;
+    final p = _proposedFields;
+    if (f.isEmpty) return false;
+    if (p == null || p.length != f.length) return true;
+    for (var i = 0; i < f.length; i++) {
+      if (f[i] != p[i]) return true;
+    }
+    return false;
+  }
+
   /// The first proposal for the file and entity chosen.
   void _propose() {
     final e = state.entity;
@@ -310,6 +369,7 @@ class ImportWizard extends Notifier<WizardState> {
       entity: e,
       saved: state.saved,
     );
+    _proposedFields = proposal.fields;
     state = state.copyWith(
       fields: proposal.fields,
       proposedFrom: proposal.from?.name,
@@ -359,11 +419,8 @@ class ImportWizard extends Notifier<WizardState> {
     final file = state.file;
     final e = state.entity;
     if (sig == null || file == null || e == null || !state.mappingOk) return;
-    RunState slot() => dryRun ? state.dry : state.apply;
-    void put(RunState r) =>
-        state = dryRun ? state.copyWith(dry: r) : state.copyWith(apply: r);
-    _timer?.cancel();
-    put(const RunState(starting: true));
+    final gen = _restart(dryRun);
+    _put(dryRun, const RunState(starting: true));
     try {
       final job = await _api.createImportJob(
         body: CreateJob(
@@ -374,60 +431,52 @@ class ImportWizard extends Notifier<WizardState> {
           dryRun: dryRun,
         ),
       );
-      if (!ref.mounted) return;
-      put(RunState(job: job, signature: sig));
-      if (jobIsActive(job)) _schedulePoll(dryRun);
+      // The settings changed or another run was started meanwhile: this job is not the slot's.
+      if (!ref.mounted || gen != _generation[dryRun]) return;
+      _put(dryRun, RunState(job: job, signature: sig));
+      if (jobIsActive(job)) _schedulePoll(dryRun, job.id);
     } catch (err) {
-      if (ref.mounted) put(slot().copyWith(starting: false, error: err));
+      if (!ref.mounted || gen != _generation[dryRun]) return;
+      _put(dryRun, _slot(dryRun).copyWith(starting: false, error: err));
     }
   }
 
-  void _schedulePoll(bool dryRun) {
-    _timer?.cancel();
-    _timer = Timer(importPollInterval, () => _poll(dryRun));
+  void _schedulePoll(bool dryRun, String id) {
+    _timers[dryRun]?.cancel();
+    final gen = _generation[dryRun]!;
+    _timers[dryRun] = Timer(importPollInterval, () => _poll(dryRun, id, gen));
   }
 
-  Future<void> _poll(bool dryRun) async {
-    final run = dryRun ? state.dry : state.apply;
-    final id = run.job?.id;
-    if (id == null) return;
+  Future<void> _poll(bool dryRun, String id, int gen) async {
+    if (!_owns(dryRun, gen, id)) return;
     try {
       final job = await _api.getImportJob(id: id);
-      if (!ref.mounted) return;
-      final r = (dryRun ? state.dry : state.apply).copyWith(
-        job: job,
-        error: null,
-      );
-      state = dryRun ? state.copyWith(dry: r) : state.copyWith(apply: r);
-      if (jobIsActive(job)) _schedulePoll(dryRun);
+      if (!_owns(dryRun, gen, id)) return;
+      _put(dryRun, _slot(dryRun).copyWith(job: job, error: null));
+      if (jobIsActive(job)) _schedulePoll(dryRun, id);
     } catch (err) {
-      if (!ref.mounted) return;
+      if (!_owns(dryRun, gen, id)) return;
       // A failed poll (a network blip) is shown and tried again; the job itself goes on.
-      final r = (dryRun ? state.dry : state.apply).copyWith(error: err);
-      state = dryRun ? state.copyWith(dry: r) : state.copyWith(apply: r);
-      _schedulePoll(dryRun);
+      _put(dryRun, _slot(dryRun).copyWith(error: err));
+      _schedulePoll(dryRun, id);
     }
   }
 
   /// Cancels the job of a run that is still queued.
   Future<void> cancel({required bool dryRun}) async {
-    final id = (dryRun ? state.dry : state.apply).job?.id;
+    final id = _slot(dryRun).job?.id;
     if (id == null) return;
+    // A poll still on its way would bring back the job as it was before the cancellation.
+    final gen = _restart(dryRun);
     try {
       final job = await _api.cancelImportJob(id: id);
-      if (!ref.mounted) return;
-      _timer?.cancel();
-      final r = (dryRun ? state.dry : state.apply).copyWith(
-        job: job,
-        error: null,
-      );
-      state = dryRun ? state.copyWith(dry: r) : state.copyWith(apply: r);
+      if (!_owns(dryRun, gen, id)) return;
+      _put(dryRun, _slot(dryRun).copyWith(job: job, error: null));
     } catch (err) {
-      if (!ref.mounted) return;
+      if (!_owns(dryRun, gen, id)) return;
       // 409: the worker picked it up in the meantime. Show why and look at the job again.
-      final r = (dryRun ? state.dry : state.apply).copyWith(error: err);
-      state = dryRun ? state.copyWith(dry: r) : state.copyWith(apply: r);
-      _schedulePoll(dryRun);
+      _put(dryRun, _slot(dryRun).copyWith(error: err));
+      _schedulePoll(dryRun, id);
     }
   }
 }

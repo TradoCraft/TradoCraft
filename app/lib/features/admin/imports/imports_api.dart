@@ -5,8 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/api.dart';
 
-/// Uploads the file as raw bytes (`application/octet-stream`). The generated client sends a
-/// string body, which would corrupt a spreadsheet, so this call goes through Dio directly.
+/// Uploads the file as raw bytes (`application/octet-stream`). The generated client takes a
+/// `dart:io` `File` for the binary body, which the web build has not, so this call goes through
+/// Dio directly with the bytes.
 Future<ImportFile> uploadImportFile(
   Dio dio,
   String filename,
@@ -33,11 +34,16 @@ final importEntitiesProvider =
       (ref) => ref.watch(apiProvider).imports.listImportEntities(),
     );
 
-/// The newest [limit] runs of the company.
+/// Runs per request of the history (the API allows at most 200).
+const importJobsPageSize = 50;
+
+/// One page of the runs of the company, newest first, starting at [offset].
 final importJobsProvider = FutureProvider.autoDispose
     .family<ImportJobPage, int>(
-      (ref, limit) =>
-          ref.watch(apiProvider).imports.listImportJobs(limit: limit),
+      (ref, offset) => ref
+          .watch(apiProvider)
+          .imports
+          .listImportJobs(limit: importJobsPageSize, offset: offset),
     );
 
 /// One run with its progress and first errors.

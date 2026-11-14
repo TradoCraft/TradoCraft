@@ -2878,7 +2878,7 @@
   "impProgress": "{done} van {total} rijen",
   "impCancelJob": "Taak annuleren",
   "impDownloadErrors": "Foutenrapport downloaden",
-  "impErrorsTotal": "De eerste {shown} van {total} problemen worden getoond. Het foutenrapport bevat ze allemaal.",
+  "impErrorsTotal": "De eerste {shown} van {total} problemen worden getoond. Het foutenrapport toont dezelfde problemen. Bij een bestand met heel veel problemen worden alleen de eerste getoond: los deze op en controleer opnieuw.",
   "impApplyHint": "Importeren kan na een controle zonder problemen.",
   "impApplyAction": "Nu importeren",
   "impApplyConfirmTitle": "{entity} importeren?",

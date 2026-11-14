@@ -2878,7 +2878,7 @@
   "impProgress": "{done} lignes sur {total}",
   "impCancelJob": "Annuler la tâche",
   "impDownloadErrors": "Télécharger le rapport d'erreurs",
-  "impErrorsTotal": "Les {shown} premiers problèmes sur {total} sont affichés. Le rapport d'erreurs les contient tous.",
+  "impErrorsTotal": "Les {shown} premiers problèmes sur {total} sont affichés. Le rapport d'erreurs liste les mêmes problèmes. Pour un fichier avec un très grand nombre de problèmes, seuls les premiers sont listés : corrigez-les et vérifiez à nouveau.",
   "impApplyHint": "L'import est possible après une vérification sans problème.",
   "impApplyAction": "Importer maintenant",
   "impApplyConfirmTitle": "Importer {entity} ?",

@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:tradocraft_app/app/api.dart';
 import 'package:tradocraft_app/features/admin/admin_page.dart';
+import 'package:tradocraft_app/features/admin/imports/import_wizard.dart';
 import 'package:tradocraft_app/features/admin/imports/mapping_logic.dart';
 import 'package:tradocraft_app/l10n/app_localizations.dart';
 import 'package:tradocraft_app/shared/csv_transfer.dart';
@@ -677,7 +678,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(
         find.text(
-          'Showing the first 100 of 250 problems. The error report has all of them.',
+          'Showing the first 100 of 250 problems. The error report lists the same problems. A file with very many problems lists only the first ones: fix these and check again.',
         ),
         findsOneWidget,
       );
@@ -1159,19 +1160,202 @@ void main() {
       },
     );
 
-    testWidgets('long histories load more', (tester) async {
-      final s = ImportsServer(
-        history: () => {
-          'total': 80,
-          'items': [jobJson()],
+    testWidgets('long histories load successive pages, up to the last one', (
+      tester,
+    ) async {
+      late ImportsServer s;
+      s = ImportsServer(
+        history: () {
+          final offset = (s.http.queries.last['offset'] ?? 0) as int;
+          return {
+            'total': 500,
+            'items': [jobJson(id: 'h$offset')],
+          };
         },
       );
-      await pump(tester, s);
+      await pump(tester, s, picked: null);
       await openHistory(tester);
-      expect(s.http.queries.last, {'limit': 50});
-      await tester.tap(find.byKey(const ValueKey('imp-history-more')));
-      await tester.pumpAndSettle();
-      expect(s.http.queries.last, {'limit': 100});
+      expect(s.http.queries.last['limit'], 50);
+      expect(s.http.queries.last['offset'], 0);
+      final more = find.byKey(const ValueKey('imp-history-more'));
+      // Past 200 jobs the button stays: the pages go on by offset.
+      for (final offset in [50, 100, 150, 200, 250]) {
+        await tester.ensureVisible(more);
+        await tester.tap(more);
+        await tester.pumpAndSettle();
+        expect(s.http.queries.last['offset'], offset);
+        expect(s.http.queries.last['limit'], 50);
+        expect(find.byKey(ValueKey('imp-job-h$offset')), findsOneWidget);
+      }
+      // The earlier pages are still listed.
+      expect(find.byKey(const ValueKey('imp-job-h0')), findsOneWidget);
+      expect(more, findsOneWidget);
+    });
+  });
+
+  group('races in the wizard', () {
+    ({ProviderContainer container, FakeHttp http}) setup(
+      Map<String, Object? Function(Object?)> routes,
+    ) {
+      final http = FakeHttp({
+        'POST /api/v1/imports/files': (_) => fileJson(),
+        'GET /api/v1/imports/files/f1/preview': (_) => previewJson(),
+        'GET /api/v1/imports/mappings': (_) => <Object?>[],
+        ...routes,
+      });
+      final container = ProviderContainer(
+        overrides: [dioProvider.overrideWithValue(fakeDio(http))],
+      );
+      addTearDown(container.dispose);
+      container.listen(importWizardProvider, (_, _) {});
+      return (container: container, http: http);
+    }
+
+    final entity = ImportDescription.fromJson(_entityJson);
+    Map<String, Object?> queued(String id, {bool dry = false}) => {
+      ...jobJson(id: id, status: 'queued', dryRun: dry),
+    };
+
+    Future<void> ready(WidgetTester tester, ProviderContainer c) async {
+      final w = c.read(importWizardProvider.notifier);
+      unawaited(w.selectEntity(entity));
+      await settle(tester);
+      unawaited(w.upload(_xlsx));
+      await settle(tester);
+    }
+
+    testWidgets('a check started during an import does not stop its polling', (
+      tester,
+    ) async {
+      var polls = 0;
+      final t = setup({
+        'POST /api/v1/imports/jobs': (b) =>
+            (b as Map)['dry_run'] == true ? jobJson(id: 'd1') : queued('a1'),
+        'GET /api/v1/imports/jobs/a1': (_) {
+          polls++;
+          return jobJson(id: 'a1', dryRun: false, created: 2);
+        },
+      });
+      final w = t.container.read(importWizardProvider.notifier);
+      await ready(tester, t.container);
+      unawaited(w.run(dryRun: true));
+      await settle(tester);
+      unawaited(w.run(dryRun: false));
+      await settle(tester);
+      expect(t.container.read(importWizardProvider).apply.job?.id, 'a1');
+      // A new check while the import is queued.
+      unawaited(w.run(dryRun: true));
+      await settle(tester);
+      await tester.pump(importPollInterval);
+      await settle(tester);
+      expect(polls, 1);
+      expect(t.container.read(importWizardProvider).apply.job?.status, 'done');
+    });
+
+    testWidgets(
+      'a poll that was on its way when the run was cleared is dropped',
+      (tester) async {
+        final gate = Completer<Object?>();
+        final t = setup({
+          'POST /api/v1/imports/jobs': (_) => queued('j1', dry: true),
+          'GET /api/v1/imports/jobs/j1': (_) => gate.future,
+        });
+        final w = t.container.read(importWizardProvider.notifier);
+        await ready(tester, t.container);
+        unawaited(w.run(dryRun: true));
+        await settle(tester);
+        await tester.pump(importPollInterval);
+        await settle(tester);
+        expect(t.http.requests.last, 'GET /api/v1/imports/jobs/j1');
+        w.reset();
+        gate.complete(jobJson(created: 5));
+        await settle(tester);
+        expect(t.container.read(importWizardProvider).dry.job, isNull);
+      },
+    );
+
+    testWidgets('a job created after the settings changed is not shown', (
+      tester,
+    ) async {
+      final gate = Completer<Object?>();
+      final t = setup({'POST /api/v1/imports/jobs': (_) => gate.future});
+      final w = t.container.read(importWizardProvider.notifier);
+      await ready(tester, t.container);
+      unawaited(w.run(dryRun: true));
+      await settle(tester);
+      unawaited(w.selectSheet('Data'));
+      await settle(tester);
+      gate.complete(jobJson());
+      await settle(tester);
+      final s = t.container.read(importWizardProvider);
+      expect(s.dry.job, isNull);
+      expect(s.dry.starting, isFalse);
+    });
+
+    testWidgets('a cancel answer is not overwritten by a late poll', (
+      tester,
+    ) async {
+      final gate = Completer<Object?>();
+      final t = setup({
+        'POST /api/v1/imports/jobs': (_) => queued('j1', dry: true),
+        'GET /api/v1/imports/jobs/j1': (_) => gate.future,
+        'POST /api/v1/imports/jobs/j1/cancel': (_) =>
+            jobJson(status: 'cancelled'),
+      });
+      final w = t.container.read(importWizardProvider.notifier);
+      await ready(tester, t.container);
+      unawaited(w.run(dryRun: true));
+      await settle(tester);
+      await tester.pump(importPollInterval);
+      await settle(tester);
+      unawaited(w.cancel(dryRun: true));
+      await settle(tester);
+      gate.complete(queued('j1', dry: true));
+      await settle(tester);
+      expect(
+        t.container.read(importWizardProvider).dry.job?.status,
+        'cancelled',
+      );
+    });
+
+    testWidgets(
+      'saved mappings arriving late do not overwrite edited columns',
+      (tester) async {
+        final gate = Completer<Object?>();
+        final t = setup({'GET /api/v1/imports/mappings': (_) => gate.future});
+        final w = t.container.read(importWizardProvider.notifier);
+        unawaited(w.selectEntity(entity));
+        await settle(tester);
+        unawaited(w.upload(_xlsx));
+        await settle(tester);
+        expect(t.container.read(importWizardProvider).fields, [
+          'code',
+          'name',
+          'city',
+        ]);
+        w.setField(2, null);
+        gate.complete([
+          mappingJson('m1', 'Other', {'code': 'code', 'city': 'name'}),
+        ]);
+        await settle(tester);
+        final s = t.container.read(importWizardProvider);
+        expect(s.saved, hasLength(1));
+        expect(s.fields, ['code', 'name', null]);
+      },
+    );
+
+    testWidgets('saved mappings arriving after the screen is gone do nothing', (
+      tester,
+    ) async {
+      final gate = Completer<Object?>();
+      final t = setup({'GET /api/v1/imports/mappings': (_) => gate.future});
+      final w = t.container.read(importWizardProvider.notifier);
+      unawaited(w.selectEntity(entity));
+      await settle(tester);
+      t.container.dispose();
+      gate.complete(<Object?>[]);
+      await settle(tester);
+      expect(tester.takeException(), isNull);
     });
   });
 

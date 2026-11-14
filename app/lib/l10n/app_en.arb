@@ -4244,7 +4244,7 @@
   "@impProgress": {"placeholders": {"done": {"type": "int"}, "total": {"type": "int"}}},
   "impCancelJob": "Cancel job",
   "impDownloadErrors": "Download error report",
-  "impErrorsTotal": "Showing the first {shown} of {total} problems. The error report has all of them.",
+  "impErrorsTotal": "Showing the first {shown} of {total} problems. The error report lists the same problems. A file with very many problems lists only the first ones: fix these and check again.",
   "@impErrorsTotal": {"placeholders": {"shown": {"type": "int"}, "total": {"type": "int"}}},
   "impApplyHint": "Importing is possible after a check without problems.",
   "impApplyAction": "Import now",

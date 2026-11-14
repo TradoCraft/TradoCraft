@@ -13,10 +13,6 @@ import 'job_widgets.dart';
 /// How often the history and the detail of a job refresh while a job is queued or running.
 const historyRefresh = Duration(seconds: 3);
 
-const _pageSize = 50;
-// The API returns at most 200 rows per request.
-const _maxLimit = 200;
-
 /// The runs of the company, newest first.
 class JobHistory extends ConsumerStatefulWidget {
   const JobHistory({super.key});
@@ -26,7 +22,8 @@ class JobHistory extends ConsumerStatefulWidget {
 }
 
 class _JobHistoryState extends ConsumerState<JobHistory> {
-  int _limit = _pageSize;
+  // How many pages are shown: page `i` holds the jobs from offset `i * importJobsPageSize`.
+  int _pages = 1;
   Timer? _timer;
 
   @override
@@ -35,28 +32,53 @@ class _JobHistoryState extends ConsumerState<JobHistory> {
     super.dispose();
   }
 
+  /// Asks the loaded pages again.
+  void _refresh() {
+    for (var i = 0; i < _pages; i++) {
+      ref.invalidate(importJobsProvider(i * importJobsPageSize));
+    }
+  }
+
   /// While a listed job is queued or running, asks again soon.
-  void _follow(ImportJobPage page) {
-    if (!page.items.any(jobIsActive)) {
+  void _follow(List<ImportJob> jobs) {
+    if (!jobs.any(jobIsActive)) {
       _timer?.cancel();
       _timer = null;
       return;
     }
     _timer ??= Timer(historyRefresh, () {
       _timer = null;
-      if (mounted) ref.invalidate(importJobsProvider(_limit));
+      if (mounted) _refresh();
     });
   }
 
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
-    final async = ref.watch(importJobsProvider(_limit));
-    // The previous page stays on screen while a refresh is under way.
-    final page = async.value;
-    if (page != null) {
+    final pages = [
+      for (var i = 0; i < _pages; i++)
+        ref.watch(importJobsProvider(i * importJobsPageSize)),
+    ];
+    // The previous data of a page stays on screen while a refresh is under way; the pages are
+    // shown up to the first one that has nothing yet.
+    final jobs = <ImportJob>[];
+    var total = 0;
+    AsyncValue<ImportJobPage>? pending;
+    for (final p in pages) {
+      final v = p.value;
+      if (v == null) {
+        pending = p;
+        break;
+      }
+      jobs.addAll(v.items);
+      total = v.total;
+    }
+    final first = pages.first.value;
+    // Follow the jobs only once everything shown has settled: a page that is loading would be
+    // asked again over its own request.
+    if (first != null && pending == null && !pages.any((p) => p.isLoading)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _follow(page);
+        if (mounted) _follow(jobs);
       });
     }
     return ListView(
@@ -74,46 +96,62 @@ class _JobHistoryState extends ConsumerState<JobHistory> {
               key: const ValueKey('imp-history-refresh'),
               tooltip: l.impRefresh,
               icon: const Icon(AppIcons.refresh),
-              onPressed: () => ref.invalidate(importJobsProvider(_limit)),
+              onPressed: _refresh,
             ),
           ],
         ),
         const SizedBox(height: 8),
-        if (page == null && async.hasError)
+        if (first == null && pending!.hasError)
           Wrap(
             spacing: 8,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               Text(
-                errorMessage(async.error!),
+                errorMessage(pending.error!),
                 style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
               TextButton(
                 key: const ValueKey('imp-history-retry'),
-                onPressed: () => ref.invalidate(importJobsProvider(_limit)),
+                onPressed: _refresh,
                 child: Text(l.retry),
               ),
             ],
           )
-        else if (page == null)
+        else if (first == null)
           const LinearProgressIndicator()
-        else if (page.items.isEmpty)
+        else if (jobs.isEmpty && pending == null)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 16),
             child: Text(l.impHistoryEmpty),
           )
         else ...[
-          for (final j in page.items) _JobTile(job: j),
-          if (page.total > page.items.length && _limit < _maxLimit)
+          for (final j in jobs) _JobTile(job: j),
+          if (pending != null && pending.hasError)
+            Wrap(
+              spacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Text(
+                  errorMessage(pending.error!),
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+                TextButton(
+                  key: const ValueKey('imp-history-retry'),
+                  onPressed: _refresh,
+                  child: Text(l.retry),
+                ),
+              ],
+            )
+          else if (pending != null)
+            const LinearProgressIndicator()
+          else if (total > jobs.length)
             Padding(
               padding: const EdgeInsets.only(top: 8),
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: TextButton(
                   key: const ValueKey('imp-history-more'),
-                  onPressed: () => setState(
-                    () => _limit = (_limit + _pageSize).clamp(0, _maxLimit),
-                  ),
+                  onPressed: () => setState(() => _pages++),
                   child: Text(l.loadMore),
                 ),
               ),
@@ -234,7 +272,8 @@ class _JobDetailState extends ConsumerState<_JobDetail> {
     final l = context.l10n;
     final async = ref.watch(importJobProvider(widget.id));
     final job = async.value;
-    if (job != null) {
+    // Follow only a settled value: while a refresh is loading it would be asked again over it.
+    if (job != null && !async.isLoading) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _follow(job);
       });
