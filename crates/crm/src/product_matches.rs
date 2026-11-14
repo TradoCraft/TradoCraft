@@ -3,11 +3,14 @@
 //! layer around the pure [`crate::matching`] module; advisory, nothing is hidden.
 
 use axum::extract::{Path, Query, State};
-use axum::Json;
+use axum::{Extension, Json};
 use rust_decimal::prelude::ToPrimitive;
 use serde::{Deserialize, Serialize};
 use sqlx::PgConnection;
 use std::collections::HashMap;
+use std::future::Future;
+use std::pin::Pin;
+use std::sync::Arc;
 use tradocraft_core::{AppError, AppResult, AppState, CurrentUser, Permission};
 use tradocraft_products::attributes::{active_products_with, AttributeValue};
 use tradocraft_products::power::{compatibility_with_grid, PowerCompatibility};
@@ -18,9 +21,34 @@ use uuid::Uuid;
 
 use crate::baseline::BaselineItem;
 use crate::match_rules::list_rules;
-use crate::matching::{evaluate, flatten, MatchStatus, ProductFacts, ProductValue, Reason, Site};
+use crate::matching::{
+    evaluate, flatten, node_label, BaselineNode, BellMotor, MatchStatus, MotorError, ProductFacts,
+    ProductValue, Reason, RequiredMotor, Site,
+};
 
 type ErrorBody = tradocraft_core::error::ErrorBody;
+
+/// The baseline item type whose items get a motor derived.
+pub const BELL_TYPE_CODE: &str = "bell";
+
+/// A boxed future, so the provider can be a trait object.
+pub type BoxFuture<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
+
+/// Derives the motor of bells. Implemented by the configurator crate (its admin lookup tables,
+/// ADR 0068 decision 6), which depends on this crate, hence the inversion; the API installs it as
+/// an [`Extension`]. Returns one result per bell, in order.
+pub trait BellMotorProvider: Send + Sync {
+    fn derive<'a>(
+        &'a self,
+        conn: &'a mut PgConnection,
+        company_id: Uuid,
+        phases: Option<i64>,
+        bells: &'a [BaselineNode],
+    ) -> BoxFuture<'a, AppResult<Vec<Result<RequiredMotor, MotorError>>>>;
+}
+
+/// The installed provider.
+pub type BellMotors = Arc<dyn BellMotorProvider>;
 
 const DEFAULT_LIMIT: i64 = 100;
 const MAX_LIMIT: i64 = 500;
@@ -86,22 +114,25 @@ fn product_value(v: &AttributeValue) -> Option<ProductValue> {
     }
 }
 
-/// (power grid, baseline items) of an opportunity of the company; 404 otherwise.
+/// (power grid, its phases, baseline items) of an opportunity of the company; 404 otherwise.
 async fn load_site(
     conn: &mut PgConnection,
     company_id: Uuid,
     opportunity_id: Uuid,
-) -> AppResult<(Option<Uuid>, Vec<BaselineItem>)> {
-    let found: Option<(Option<Uuid>,)> = sqlx::query_as(
-        "SELECT power_grid_id FROM crm.opportunities WHERE id = $1 AND company_id = $2",
+) -> AppResult<(Option<Uuid>, Option<i64>, Vec<BaselineItem>)> {
+    let found: Option<(Option<Uuid>, Option<i16>)> = sqlx::query_as(
+        "SELECT o.power_grid_id, g.phases
+         FROM crm.opportunities o
+         LEFT JOIN products.power_grids g ON g.id = o.power_grid_id
+         WHERE o.id = $1 AND o.company_id = $2",
     )
     .bind(opportunity_id)
     .bind(company_id)
     .fetch_optional(&mut *conn)
     .await?;
-    let (grid_id,) = found.ok_or(AppError::NotFound("opportunity"))?;
+    let (grid_id, phases) = found.ok_or(AppError::NotFound("opportunity"))?;
     let items = crate::baseline::load_tree(conn, opportunity_id).await?;
-    Ok((grid_id, items))
+    Ok((grid_id, phases.map(i64::from), items))
 }
 
 #[utoipa::path(get, path = "/opportunities/{id}/product-matches", tag = "crm",
@@ -113,13 +144,39 @@ async fn product_matches(
     user: CurrentUser,
     Path(id): Path<Uuid>,
     Query(p): Query<MatchParams>,
+    motors: Option<Extension<BellMotors>>,
 ) -> AppResult<Json<ProductMatchPage>> {
     user.require(Permission::OpportunitiesRead)?;
     user.require(Permission::ProductsRead)?;
     let wanted = p.status.as_deref().map(parse_status).transpose()?;
     let mut conn = state.db.acquire().await?;
-    let (grid_id, tree) = load_site(&mut conn, user.company_id, id).await?;
+    let (grid_id, phases, tree) = load_site(&mut conn, user.company_id, id).await?;
     let baseline = flatten(&tree);
+    let bells: Vec<BaselineNode> = baseline
+        .iter()
+        .filter(|n| n.type_code == BELL_TYPE_CODE)
+        .cloned()
+        .collect();
+    let derived = match (&motors, bells.is_empty()) {
+        (_, true) => Vec::new(),
+        (Some(Extension(m)), false) => m.derive(&mut conn, user.company_id, phases, &bells).await?,
+        (None, false) => bells
+            .iter()
+            .map(|_| {
+                Err(MotorError::MissingData(
+                    "motor tables are not available".into(),
+                ))
+            })
+            .collect(),
+    };
+    let bell_motors: Vec<BellMotor> = bells
+        .iter()
+        .zip(derived)
+        .map(|(n, result)| BellMotor {
+            label: node_label(n),
+            result,
+        })
+        .collect();
     let rules: Vec<_> = list_rules(&mut conn, user.company_id)
         .await?
         .iter()
@@ -129,6 +186,7 @@ async fn product_matches(
     let mut keys: Vec<String> = rules
         .iter()
         .map(|r| r.product_attribute_key.clone())
+        .chain([crate::matching::MOTOR_KW_KEY.to_string()])
         .collect();
     keys.sort();
     keys.dedup();
@@ -139,6 +197,7 @@ async fn product_matches(
         baseline: &baseline,
         rules: &rules,
         has_grid: grid_id.is_some(),
+        bell_motors: &bell_motors,
     };
     let mut counts = StatusCounts::default();
     let mut all = Vec::with_capacity(products.len());

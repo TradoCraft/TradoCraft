@@ -89,11 +89,60 @@ pub struct ProductFacts {
     pub power: PowerCompatibility,
 }
 
+/// The product attribute that says what motor a product is (kW, a `number` attribute).
+pub const MOTOR_KW_KEY: &str = "motor_kw";
+
+/// The motor a bell needs, derived from the admin lookup tables of the configurator
+/// (`tradocraft_configurator::motor`). The derivation lives there; the matcher only compares.
+#[derive(Debug, Clone, PartialEq)]
+pub struct RequiredMotor {
+    pub kw: f64,
+    /// The motor size or class of the matching table row, e.g. `71`.
+    pub size: String,
+    pub brand: String,
+    pub phases: i64,
+    pub weight_per_wheel_kg: f64,
+    /// The motion the tables were read with (`falling` or `flying`).
+    pub effective_motion: String,
+    /// How many weight classes the motion moved the choice up.
+    pub bumped_classes: i64,
+}
+
+/// Why no motor could be derived. The payload is the message shown to the user.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum MotorError {
+    /// No motor in the tables is big enough.
+    TooLarge(String),
+    /// A needed value (weight, motion, phases, tables) is missing or unknown.
+    MissingData(String),
+    /// The tables have no motor for the phases (or brand), or the phases cap the power.
+    NotAvailableForPhases(String),
+}
+
+impl std::fmt::Display for MotorError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let (MotorError::TooLarge(m)
+        | MotorError::MissingData(m)
+        | MotorError::NotAvailableForPhases(m)) = self;
+        f.write_str(m)
+    }
+}
+
+/// The derived motor of one bell of the baseline.
+#[derive(Debug, Clone, PartialEq)]
+pub struct BellMotor {
+    /// How the bell is named in messages, see [`node_label`].
+    pub label: String,
+    pub result: Result<RequiredMotor, MotorError>,
+}
+
 /// What the opportunity offers to match against.
 #[derive(Debug, Clone)]
 pub struct Site<'a> {
     pub baseline: &'a [BaselineNode],
     pub rules: &'a [Rule],
+    /// The derived motor per bell (empty when there are no bells).
+    pub bell_motors: &'a [BellMotor],
     /// Whether the opportunity has a power grid.
     pub has_grid: bool,
 }
@@ -116,7 +165,7 @@ pub enum CheckStatus {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, ToSchema)]
 pub struct Reason {
-    /// `power`, `baseline` or `rule:<rule name>`.
+    /// `power`, `baseline`, `motor` or `rule:<rule name>`.
     pub check: String,
     pub status: CheckStatus,
     pub message: String,
@@ -210,7 +259,7 @@ fn power_reason(power: &PowerCompatibility, has_grid: bool) -> Option<Reason> {
     })
 }
 
-fn node_label(n: &BaselineNode) -> String {
+pub fn node_label(n: &BaselineNode) -> String {
     match &n.name {
         Some(name) => format!("{} \"{name}\"", n.type_code),
         None => n.type_code.clone(),
@@ -265,6 +314,37 @@ fn rule_reason(rule: &Rule, node: &BaselineNode, product: &ProductFacts) -> Opti
     })
 }
 
+/// The reason one bell's motor gives for a product that declares `motor_kw`: its motor must be at
+/// least as strong as the derived one. Phases are covered by the power check.
+fn motor_reason(bell: &BellMotor, product: &ProductFacts) -> Option<Reason> {
+    let ProductValue::Number(have) = product.attributes.get(MOTOR_KW_KEY)? else {
+        return None;
+    };
+    let label = &bell.label;
+    let (status, message) = match &bell.result {
+        Ok(m) => {
+            let fits = *have >= m.kw;
+            (
+                if fits { CheckStatus::Ok } else { CheckStatus::Fail },
+                format!(
+                    "{label}: needs a motor of at least {} kW (size {}, {}), the product's {have} kW is {}",
+                    m.kw,
+                    m.size,
+                    m.brand,
+                    if fits { "enough" } else { "too small" }
+                ),
+            )
+        }
+        Err(e @ MotorError::MissingData(_)) => (CheckStatus::Unknown, format!("{label}: {e}")),
+        Err(e) => (CheckStatus::Fail, format!("{label}: {e}")),
+    };
+    Some(Reason {
+        check: "motor".into(),
+        status,
+        message,
+    })
+}
+
 /// Judges one product. With an empty baseline and no grid there is nothing to judge against, so
 /// the answer is `unknown` with a single reason rather than a vacuous "suitable".
 pub fn evaluate(site: &Site, product: &ProductFacts) -> Evaluation {
@@ -289,6 +369,11 @@ pub fn evaluate(site: &Site, product: &ProductFacts) -> Evaluation {
                 .filter_map(|n| rule_reason(rule, n, product)),
         );
     }
+    reasons.extend(
+        site.bell_motors
+            .iter()
+            .filter_map(|b| motor_reason(b, product)),
+    );
     Evaluation {
         status: overall(&reasons),
         reasons,
@@ -344,6 +429,7 @@ mod tests {
                 baseline,
                 rules,
                 has_grid: true,
+                bell_motors: &[],
             },
             p,
         )
@@ -606,6 +692,7 @@ mod tests {
             baseline: &[dial(800.0)],
             rules: &[],
             has_grid: false,
+            bell_motors: &[],
         };
         let e = evaluate(&site, &p);
         assert_eq!(e.status, MatchStatus::Unknown);
@@ -621,6 +708,7 @@ mod tests {
             baseline: &[],
             rules: &[rule(Operator::WithinRange)],
             has_grid: false,
+            bell_motors: &[],
         };
         for p in [product(None), product(range(1.0, 2.0))] {
             let e = evaluate(&site, &p);
@@ -676,5 +764,118 @@ mod tests {
             overall(&[r(Unknown), r(Fail), r(Ok)]),
             MatchStatus::Unsuitable
         );
+    }
+
+    fn bell(name: &str) -> BaselineNode {
+        node("bell", Some(name), json!({}))
+    }
+
+    fn motor(kw: f64) -> Result<RequiredMotor, MotorError> {
+        Ok(RequiredMotor {
+            kw,
+            size: "71".into(),
+            brand: "mez_1000".into(),
+            phases: 3,
+            weight_per_wheel_kg: 450.0,
+            effective_motion: "falling".into(),
+            bumped_classes: 0,
+        })
+    }
+
+    fn motor_product(kw: Option<f64>) -> ProductFacts {
+        let mut p = product(None);
+        if let Some(kw) = kw {
+            p.attributes
+                .insert(MOTOR_KW_KEY.to_string(), ProductValue::Number(kw));
+        }
+        p
+    }
+
+    fn run_motors(bells: &[BellMotor], p: &ProductFacts) -> Evaluation {
+        evaluate(
+            &Site {
+                baseline: &[bell("Bourdon")],
+                rules: &[],
+                has_grid: true,
+                bell_motors: bells,
+            },
+            p,
+        )
+    }
+
+    fn bell_motor(result: Result<RequiredMotor, MotorError>) -> BellMotor {
+        BellMotor {
+            label: node_label(&bell("Bourdon")),
+            result,
+        }
+    }
+
+    #[test]
+    fn a_motor_at_least_as_strong_as_required_fits_including_the_boundary() {
+        let bells = [bell_motor(motor(0.25))];
+        for (kw, expected) in [
+            (0.25, MatchStatus::Suitable),
+            (0.37, MatchStatus::Suitable),
+            (0.18, MatchStatus::Unsuitable),
+        ] {
+            let e = run_motors(&bells, &motor_product(Some(kw)));
+            assert_eq!(e.status, expected, "{kw}");
+            assert_eq!(e.reasons.len(), 1);
+            assert_eq!(e.reasons[0].check, "motor");
+        }
+        let e = run_motors(&bells, &motor_product(Some(0.18)));
+        assert_eq!(
+            e.reasons[0].message,
+            "bell \"Bourdon\": needs a motor of at least 0.25 kW (size 71, mez_1000), the product's 0.18 kW is too small"
+        );
+        let e = run_motors(&bells, &motor_product(Some(0.37)));
+        assert_eq!(
+            e.reasons[0].message,
+            "bell \"Bourdon\": needs a motor of at least 0.25 kW (size 71, mez_1000), the product's 0.37 kW is enough"
+        );
+    }
+
+    #[test]
+    fn products_without_motor_kw_are_not_judged_by_the_motor_check() {
+        let bells = [bell_motor(motor(0.25))];
+        let e = run_motors(&bells, &motor_product(None));
+        assert_eq!(e.status, MatchStatus::Suitable);
+        assert!(e.reasons.is_empty());
+    }
+
+    #[test]
+    fn motor_errors_map_to_fail_or_unknown_with_the_message() {
+        let cases = [
+            (
+                MotorError::TooLarge("too heavy".into()),
+                CheckStatus::Fail,
+                MatchStatus::Unsuitable,
+            ),
+            (
+                MotorError::NotAvailableForPhases("no 1-phase".into()),
+                CheckStatus::Fail,
+                MatchStatus::Unsuitable,
+            ),
+            (
+                MotorError::MissingData("no weight".into()),
+                CheckStatus::Unknown,
+                MatchStatus::Unknown,
+            ),
+        ];
+        for (err, check, status) in cases {
+            let text = err.to_string();
+            let e = run_motors(&[bell_motor(Err(err))], &motor_product(Some(5.0)));
+            assert_eq!(e.status, status);
+            assert_eq!(e.reasons[0].status, check);
+            assert_eq!(e.reasons[0].message, format!("bell \"Bourdon\": {text}"));
+        }
+    }
+
+    #[test]
+    fn the_product_must_fit_every_bell() {
+        let bells = [bell_motor(motor(0.12)), bell_motor(motor(0.55))];
+        let e = run_motors(&bells, &motor_product(Some(0.25)));
+        assert_eq!(e.status, MatchStatus::Unsuitable);
+        assert_eq!(statuses(&e), [CheckStatus::Ok, CheckStatus::Fail]);
     }
 }
