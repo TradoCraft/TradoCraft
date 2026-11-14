@@ -9,7 +9,7 @@ use crate::csv_io::format_decimal;
 use crate::error::{AppError, AppResult};
 use crate::import::cell::exact_f64;
 use crate::import::format::ODS_MIMETYPE;
-use crate::import::writer::check_sheet_name;
+use crate::import::writer::{check_sheet_name, name_record};
 use crate::import::CellValue;
 
 const MANIFEST: &str = concat!(
@@ -178,10 +178,11 @@ pub(crate) fn write_ods(
         cell(&mut content, &CellValue::text(*h))?;
     }
     content.push_str("</table:table-row>");
-    for row in rows {
+    for (r, row) in rows.into_iter().enumerate() {
         content.push_str("<table:table-row>");
-        for value in &row {
-            cell(&mut content, value)?;
+        for (c, value) in row.iter().enumerate() {
+            let column = header.get(c).copied().unwrap_or_default();
+            cell(&mut content, value).map_err(|e| name_record(e, r + 2, row.first(), column))?;
         }
         content.push_str("</table:table-row>");
     }

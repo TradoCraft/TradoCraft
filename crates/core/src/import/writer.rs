@@ -26,6 +26,24 @@ pub(crate) fn check_sheet_name(name: &str) -> AppResult<()> {
     Ok(())
 }
 
+/// Says which record an error of the writer is about: the sheet row, the record's first value (its
+/// key in every entity export) and the column. One value a format cannot hold otherwise fails a
+/// whole export with nothing to find it by.
+pub(crate) fn name_record(
+    error: AppError,
+    row: usize,
+    first: Option<&CellValue>,
+    column: &str,
+) -> AppError {
+    let AppError::Validation(message) = error else {
+        return error;
+    };
+    let key = first.and_then(CellValue::render).unwrap_or_default();
+    AppError::Validation(format!(
+        "row {row} (first value {key:?}), column {column:?}: {message}"
+    ))
+}
+
 /// Writes `header` and `rows` as one file of `format`. The sheet (XLSX, ODS) is named
 /// `sheet_name`; CSV ignores it.
 ///
@@ -88,8 +106,11 @@ fn write_xlsx(
         sheet.write_string(0, c as u16, *h).map_err(xlsx_error)?;
     }
     for (r, row) in rows.into_iter().enumerate() {
+        let sheet_row = r + 2;
+        let first = row.first().cloned();
         let r = (r + 1) as u32;
         for (c, cell) in row.into_iter().enumerate() {
+            let column = header.get(c).copied().unwrap_or_default();
             let c = c as u16;
             match cell {
                 CellValue::Empty => continue,
@@ -108,7 +129,7 @@ fn write_xlsx(
                     None => sheet.write_string(r, c, t.format("%Y-%m-%dT%H:%M:%S%.f").to_string()),
                 },
             }
-            .map_err(xlsx_error)?;
+            .map_err(|e| name_record(xlsx_error(e), sheet_row, first.as_ref(), column))?;
         }
     }
     workbook.save_to_buffer().map_err(xlsx_error)

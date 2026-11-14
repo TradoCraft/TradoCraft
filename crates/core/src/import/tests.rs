@@ -442,6 +442,22 @@ fn writers_refuse_what_they_cannot_hold() {
     assert!(write(Format::Xlsx, "Data", &["a"], too_long).is_err());
     // A control character XML cannot carry.
     assert!(write(Format::Ods, "Data", &["a"], vec![vec![t("a\u{1}b")]]).is_err());
+    // The error names the record: its row, its first value and the column.
+    let e = write(
+        Format::Ods,
+        "Data",
+        &["code", "name"],
+        vec![
+            vec![t("C1"), t("fine")],
+            vec![t("C2"), t("bad\u{1}name")],
+        ],
+    )
+    .unwrap_err()
+    .to_string();
+    assert!(
+        e.contains("row 3") && e.contains("C2") && e.contains("name") && e.contains("U+0001"),
+        "{e}"
+    );
     // Neither limit applies to CSV.
     assert!(write(Format::Csv, "", &["a"], vec![vec![t(&"x".repeat(40_000))]]).is_ok());
 }
