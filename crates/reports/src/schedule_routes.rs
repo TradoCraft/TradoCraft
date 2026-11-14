@@ -472,6 +472,47 @@ async fn update_schedule(
             "only the owner or an admin can change a schedule".into(),
         ));
     }
+    // The owner pausing a schedule, with the source and recipients as stored, is only a pause: they
+    // are not validated again (the owner may have lost access since), and stay as they are.
+    let same_access = input.source == existing.source
+        && input.report_id == existing.report_id
+        && serde_json::to_value(&input.helpdesk).ok()
+            == serde_json::to_value(&existing.helpdesk).ok()
+        && sorted_ids(&input) == existing.user_ids
+        && {
+            let mut a: Vec<String> = input
+                .addresses
+                .iter()
+                .map(|a| a.trim().to_lowercase())
+                .collect();
+            a.sort();
+            a.dedup();
+            let mut b = existing.addresses.clone();
+            b.sort();
+            a == b
+        };
+    if !input.active && existing.owner_id == user.user_id && same_access {
+        sqlx::query(
+            "UPDATE reports.schedules SET active = false, updated_at = now()
+             WHERE id = $1 AND company_id = $2",
+        )
+        .bind(id)
+        .bind(user.company_id)
+        .execute(&mut *tx)
+        .await?;
+        audit::record(
+            &mut tx,
+            &user,
+            "report_schedule",
+            id,
+            "updated",
+            serde_json::json!({ "name": existing.name, "active": false }),
+        )
+        .await?;
+        let schedule = load(&mut tx, user.company_id, id).await?;
+        tx.commit().await?;
+        return Ok(Json(schedule));
+    }
     // An admin who edits somebody else's schedule makes it their own: from now on it runs with
     // their permissions, which are the ones that were just checked.
     let p = prepare(&mut tx, &user, &input).await?;

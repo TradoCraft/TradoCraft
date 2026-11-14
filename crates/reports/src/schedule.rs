@@ -379,8 +379,14 @@ async fn build_file(
             category: spec.category.clone(),
             group: spec.group.clone(),
         };
-        let report =
-            tradocraft_helpdesk::reports::build(&mut *conn, s.company_id, &params, today).await?;
+        let report = tradocraft_helpdesk::reports::build_in_zone(
+            &mut *conn,
+            s.company_id,
+            &params,
+            today,
+            Some(&s.time_zone),
+        )
+        .await?;
         let table = tradocraft_helpdesk::reports::table(&report, &spec.table)
             .ok_or_else(|| AppError::Validation("unknown table".into()))?;
         let name = format!("helpdesk-{}-{from}-{to}", spec.table);

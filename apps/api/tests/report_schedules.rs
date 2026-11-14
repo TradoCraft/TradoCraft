@@ -503,3 +503,31 @@ async fn schedules_of_another_company_are_invisible_and_only_the_owner_or_an_adm
     .await;
     assert_eq!(status, StatusCode::NOT_FOUND);
 }
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn the_owner_can_pause_a_schedule_whose_recipient_left(db: PgPool) {
+    let app = setup(db.clone()).await;
+    let mut body = helpdesk("volume");
+    body["user_ids"] = json!([SUPPORT_ID]);
+    let s = schedule(&app, body.clone()).await;
+    let id = s["id"].as_str().unwrap().to_string();
+    sqlx::query("UPDATE core.user_companies SET active = false WHERE user_id = $1::uuid")
+        .bind(SUPPORT_ID)
+        .execute(&db)
+        .await
+        .unwrap();
+    // A full edit is still validated.
+    let (status, _) = put(
+        &app,
+        ADMIN,
+        &format!("/report-schedules/{id}"),
+        body.clone(),
+    )
+    .await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+    body["active"] = json!(false);
+    let (status, r) = put(&app, ADMIN, &format!("/report-schedules/{id}"), body).await;
+    assert_eq!(status, StatusCode::OK, "{r}");
+    assert_eq!(r["active"], false);
+    assert_eq!(r["user_ids"], s["user_ids"]);
+}

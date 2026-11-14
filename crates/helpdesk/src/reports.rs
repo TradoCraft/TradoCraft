@@ -453,6 +453,18 @@ pub async fn build(
     p: &ReportParams,
     today: NaiveDate,
 ) -> AppResult<Report> {
+    build_in_zone(conn, company_id, p, today, None).await
+}
+
+/// Like [`build`], with the time zone for date filtering and grouping given. `None` uses the
+/// company business calendar's time zone (UTC when there is none).
+pub async fn build_in_zone(
+    conn: &mut PgConnection,
+    company_id: Uuid,
+    p: &ReportParams,
+    today: NaiveDate,
+    time_zone: Option<&str>,
+) -> AppResult<Report> {
     let to = p.to.unwrap_or(today);
     let from = p.from.unwrap_or(to - Duration::days(29));
     if from > to {
@@ -473,12 +485,17 @@ pub async fn build(
             return Err(AppError::Validation("unknown category".into()));
         }
     }
-    let zone: Option<String> = sqlx::query_scalar(
-        "SELECT time_zone FROM helpdesk.business_calendars WHERE company_id = $1 AND team_id IS NULL",
-    )
-    .bind(company_id)
-    .fetch_optional(&mut *conn)
-    .await?;
+    let zone: Option<String> = match time_zone {
+        Some(z) => Some(z.to_string()),
+        None => {
+            sqlx::query_scalar(
+                "SELECT time_zone FROM helpdesk.business_calendars WHERE company_id = $1 AND team_id IS NULL",
+            )
+            .bind(company_id)
+            .fetch_optional(&mut *conn)
+            .await?
+        }
+    };
     let mut cache = crate::calendar::CalendarCache::default();
     let company_cal = cache.get(conn, company_id, None).await?.is_some();
     let s = Scope {
