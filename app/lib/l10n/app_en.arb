@@ -4401,6 +4401,7 @@
   "baselineTypeParents": "Allowed parent types",
   "baselineTypeTopLevel": "Can stand at the top level",
   "baselineTypeCodeInvalid": "The code must be lowercase letters, digits and underscores, start with a letter and have at most 64 characters.",
+  "baselineTypeCodeReserved": "The code product is reserved for the product attributes; choose another code.",
   "baselineTypeNameRequired": "A name is required.",
   "baselineTypePlacement": "Choose at least one parent type or allow the top level, or items of this type could never be placed.",
   "baselineTypeDeleteConfirm": "Delete type {code}? If it is in use, deactivate it instead.",

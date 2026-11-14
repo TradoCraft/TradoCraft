@@ -9682,6 +9682,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Der Code darf nur Kleinbuchstaben, Ziffern und Unterstriche enthalten, muss mit einem Buchstaben beginnen und höchstens 64 Zeichen haben.';
 
   @override
+  String get baselineTypeCodeReserved =>
+      'Der Code product ist für die Produktattribute reserviert; wählen Sie einen anderen Code.';
+
+  @override
   String get baselineTypeNameRequired => 'Ein Name ist erforderlich.';
 
   @override

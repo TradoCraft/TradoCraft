@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -300,4 +302,112 @@ void main() {
     expect(find.text('Label dial'), findsOneWidget);
     expect(find.byKey(const ValueKey('attrdef-new')), findsOneWidget);
   });
+
+  Map<String, Object?> bellType(String code) => {
+    'id': 't-$code',
+    'code': code,
+    'name': code == 'product' ? 'Legacy product' : 'Bell',
+    'allowed_parent_codes': <String>[],
+    'allow_top_level': true,
+    'sort_order': 0,
+    'active': true,
+  };
+
+  Future<void> fillNew(WidgetTester tester) async {
+    await tester.tap(find.byKey(const ValueKey('attrdef-new')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const ValueKey('attrdef-key')), 'weight');
+    await tester.enterText(
+      find.byKey(const ValueKey('attrdef-label')),
+      'Weight',
+    );
+  }
+
+  testWidgets(
+    'the dialog cannot be dismissed while saving, and the list refreshes',
+    (tester) async {
+      final gate = Completer<void>();
+      final h = FakeHttp({
+        'GET /api/v1/me': (_) => meJson(['products.write']),
+        'GET /api/v1/attribute-definitions': (_) => [],
+        'GET /api/v1/baseline-item-types': (_) => [],
+        'POST /api/v1/attribute-definitions': (b) async {
+          await gate.future;
+          return _def('weight', 'number');
+        },
+      });
+      await _pump(tester, h);
+      await fillNew(tester);
+      await tester.tap(find.byKey(const ValueKey('attrdef-save')));
+      await tester.pump();
+      await tester.tapAt(const Offset(5, 5)); // the barrier
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.byKey(const ValueKey('attrdef-save')), findsOneWidget);
+      final before = h.requests
+          .where((r) => r == 'GET /api/v1/attribute-definitions')
+          .length;
+      gate.complete();
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('attrdef-save')), findsNothing);
+      expect(
+        h.requests
+            .where((r) => r == 'GET /api/v1/attribute-definitions')
+            .length,
+        before + 1,
+      );
+    },
+  );
+
+  testWidgets('a 409 on create is shown and the dialog keeps the input', (
+    tester,
+  ) async {
+    const msg = 'key weight already has stored values';
+    final h = FakeHttp({
+      'GET /api/v1/me': (_) => meJson(['products.write']),
+      'GET /api/v1/attribute-definitions': (_) => [],
+      'GET /api/v1/baseline-item-types': (_) => [],
+      'POST /api/v1/attribute-definitions': (b) =>
+          const FakeStatus(409, {'error': 'conflict', 'message': msg}),
+    });
+    await _pump(tester, h);
+    await fillNew(tester);
+    await tester.tap(find.byKey(const ValueKey('attrdef-save')));
+    await tester.pumpAndSettle();
+    expect(find.text(msg), findsOneWidget);
+    expect(find.byKey(const ValueKey('attrdef-save')), findsOneWidget);
+    expect(
+      tester
+          .widget<TextField>(find.byKey(const ValueKey('attrdef-key')))
+          .controller!
+          .text,
+      'weight',
+    );
+    expect(
+      tester
+          .widget<FilledButton>(find.byKey(const ValueKey('attrdef-save')))
+          .onPressed,
+      isNotNull,
+    );
+  });
+
+  testWidgets(
+    'a baseline type with the code product does not duplicate Product',
+    (tester) async {
+      final h = FakeHttp({
+        'GET /api/v1/me': (_) => meJson(['products.write']),
+        'GET /api/v1/attribute-definitions': (_) => [],
+        'GET /api/v1/baseline-item-types': (_) => [
+          bellType('product'),
+          bellType('bell'),
+        ],
+      });
+      await _pump(tester, h);
+      await fillNew(tester);
+      await tester.tap(find.byKey(const ValueKey('attrdef-scope')));
+      await tester.pumpAndSettle();
+      expect(find.text('Product'), findsWidgets);
+      expect(find.text('Legacy product (product)'), findsNothing);
+      expect(find.text('Bell (bell)'), findsOneWidget);
+    },
+  );
 }

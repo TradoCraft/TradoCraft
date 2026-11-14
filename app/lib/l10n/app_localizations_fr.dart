@@ -9671,6 +9671,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Le code doit contenir des minuscules, chiffres et tirets bas, commencer par une lettre et compter au plus 64 caractères.';
 
   @override
+  String get baselineTypeCodeReserved =>
+      'Le code product est réservé aux attributs de produit ; choisissez un autre code.';
+
+  @override
   String get baselineTypeNameRequired => 'Un nom est requis.';
 
   @override

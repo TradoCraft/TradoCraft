@@ -17142,6 +17142,12 @@ abstract class AppLocalizations {
   /// **'The code must be lowercase letters, digits and underscores, start with a letter and have at most 64 characters.'**
   String get baselineTypeCodeInvalid;
 
+  /// No description provided for @baselineTypeCodeReserved.
+  ///
+  /// In en, this message translates to:
+  /// **'The code product is reserved for the product attributes; choose another code.'**
+  String get baselineTypeCodeReserved;
+
   /// No description provided for @baselineTypeNameRequired.
   ///
   /// In en, this message translates to:

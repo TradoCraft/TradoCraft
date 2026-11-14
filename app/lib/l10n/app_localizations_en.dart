@@ -9617,6 +9617,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'The code must be lowercase letters, digits and underscores, start with a letter and have at most 64 characters.';
 
   @override
+  String get baselineTypeCodeReserved =>
+      'The code product is reserved for the product attributes; choose another code.';
+
+  @override
   String get baselineTypeNameRequired => 'A name is required.';
 
   @override

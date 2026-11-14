@@ -3020,6 +3020,7 @@
   "baselineTypeParents": "Types parents autorisés",
   "baselineTypeTopLevel": "Peut être au niveau supérieur",
   "baselineTypeCodeInvalid": "Le code doit contenir des minuscules, chiffres et tirets bas, commencer par une lettre et compter au plus 64 caractères.",
+  "baselineTypeCodeReserved": "Le code product est réservé aux attributs de produit ; choisissez un autre code.",
   "baselineTypeNameRequired": "Un nom est requis.",
   "baselineTypePlacement": "Choisissez au moins un type parent ou autorisez le niveau supérieur, sinon les éléments de ce type ne pourraient jamais être placés.",
   "baselineTypeDeleteConfirm": "Supprimer le type {code} ? S'il est utilisé, désactivez-le plutôt.",

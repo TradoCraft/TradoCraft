@@ -195,6 +195,9 @@ class _BaselineTypeDialogState extends ConsumerState<BaselineTypeDialog> {
     if (!_editing && !_codePattern.hasMatch(_code.text.trim())) {
       return l.baselineTypeCodeInvalid;
     }
+    if (!_editing && _code.text.trim() == 'product') {
+      return l.baselineTypeCodeReserved;
+    }
     if (_name.text.trim().isEmpty) return l.baselineTypeNameRequired;
     if (int.tryParse(_sort.text.trim()) == null) return l.sortOrderInvalid;
     if (_parents.isEmpty && !_top) return l.baselineTypePlacement;
@@ -211,7 +214,9 @@ class _BaselineTypeDialogState extends ConsumerState<BaselineTypeDialog> {
       _busy = true;
       _error = null;
     });
-    final parents = _parents.toList()..sort();
+    // A parent chip of a code that was typed and then changed is dropped.
+    final known = {for (final t in widget.all) t.code, _code.text.trim()};
+    final parents = _parents.where(known.contains).toList()..sort();
     final crm = ref.read(apiProvider).crm;
     final t = widget.type;
     final ok = await runAction(context, () async {
@@ -250,97 +255,119 @@ class _BaselineTypeDialogState extends ConsumerState<BaselineTypeDialog> {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
+    // The server accepts a type as its own allowed parent, so its chip is offered: when editing,
+    // and when creating once a usable code has been typed (an existing self rule stays removable).
+    final own = _code.text.trim();
     final candidates = [
-      for (final t in widget.all)
-        if (t.code != widget.type?.code) t,
+      ...widget.all.where((t) => t.code != widget.type?.code),
+      if (_editing)
+        widget.type!
+      else if (_codePattern.hasMatch(own) &&
+          own != 'product' &&
+          !widget.all.any((t) => t.code == own))
+        BaselineItemType(
+          id: '',
+          code: own,
+          name: _name.text.trim().isEmpty ? own : _name.text.trim(),
+          allowedParentCodes: const [],
+          allowTopLevel: true,
+          sortOrder: 0,
+          active: true,
+        ),
     ];
-    return AlertDialog(
-      title: Text(_editing ? l.editBaselineType : l.newBaselineType),
-      content: SizedBox(
-        width: 480,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TextField(
-                key: const ValueKey('bltype-code'),
-                controller: _code,
-                enabled: !_editing,
-                autofocus: !_editing,
-                decoration: InputDecoration(labelText: l.code),
-              ),
-              TextField(
-                key: const ValueKey('bltype-name'),
-                controller: _name,
-                decoration: InputDecoration(labelText: l.name),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                l.baselineTypeParents,
-                style: Theme.of(context).textTheme.titleSmall,
-              ),
-              const SizedBox(height: 4),
-              Wrap(
-                spacing: 8,
-                runSpacing: 4,
-                children: [
-                  for (final t in candidates)
-                    FilterChip(
-                      key: ValueKey('bltype-parent-${t.code}'),
-                      label: Text(t.name),
-                      selected: _parents.contains(t.code),
-                      onSelected: (v) => setState(() {
-                        v ? _parents.add(t.code) : _parents.remove(t.code);
-                      }),
-                    ),
-                ],
-              ),
-              SwitchListTile(
-                key: const ValueKey('bltype-top'),
-                contentPadding: EdgeInsets.zero,
-                title: Text(l.baselineTypeTopLevel),
-                value: _top,
-                onChanged: (v) => setState(() => _top = v),
-              ),
-              TextField(
-                key: const ValueKey('bltype-sort'),
-                controller: _sort,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(labelText: l.sortOrder),
-              ),
-              SwitchListTile(
-                key: const ValueKey('bltype-active'),
-                contentPadding: EdgeInsets.zero,
-                title: Text(l.active),
-                value: _active,
-                onChanged: (v) => setState(() => _active = v),
-              ),
-              if (_error != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Text(
-                    _error!,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
+    // Closing the dialog is refused while the save request runs, so the list always refreshes.
+    return PopScope(
+      canPop: !_busy,
+      child: AlertDialog(
+        title: Text(_editing ? l.editBaselineType : l.newBaselineType),
+        content: SizedBox(
+          width: 480,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  key: const ValueKey('bltype-code'),
+                  controller: _code,
+                  enabled: !_editing,
+                  autofocus: !_editing,
+                  onChanged: (_) => setState(() {}),
+                  decoration: InputDecoration(labelText: l.code),
+                ),
+                TextField(
+                  key: const ValueKey('bltype-name'),
+                  controller: _name,
+                  onChanged: (_) => setState(() {}),
+                  decoration: InputDecoration(labelText: l.name),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  l.baselineTypeParents,
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                const SizedBox(height: 4),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    for (final t in candidates)
+                      FilterChip(
+                        key: ValueKey('bltype-parent-${t.code}'),
+                        label: Text(t.name),
+                        selected: _parents.contains(t.code),
+                        onSelected: (v) => setState(() {
+                          v ? _parents.add(t.code) : _parents.remove(t.code);
+                        }),
+                      ),
+                  ],
+                ),
+                SwitchListTile(
+                  key: const ValueKey('bltype-top'),
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(l.baselineTypeTopLevel),
+                  value: _top,
+                  onChanged: (v) => setState(() => _top = v),
+                ),
+                TextField(
+                  key: const ValueKey('bltype-sort'),
+                  controller: _sort,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(labelText: l.sortOrder),
+                ),
+                SwitchListTile(
+                  key: const ValueKey('bltype-active'),
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(l.active),
+                  value: _active,
+                  onChanged: (v) => setState(() => _active = v),
+                ),
+                if (_error != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                      _error!,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
                     ),
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
         ),
+        actions: [
+          TextButton(
+            onPressed: _busy ? null : () => Navigator.pop(context, false),
+            child: Text(l.cancel),
+          ),
+          FilledButton(
+            key: const ValueKey('bltype-save'),
+            onPressed: _busy ? null : _save,
+            child: Text(l.save),
+          ),
+        ],
       ),
-      actions: [
-        TextButton(
-          onPressed: _busy ? null : () => Navigator.pop(context, false),
-          child: Text(l.cancel),
-        ),
-        FilledButton(
-          key: const ValueKey('bltype-save'),
-          onPressed: _busy ? null : _save,
-          child: Text(l.save),
-        ),
-      ],
     );
   }
 }

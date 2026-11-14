@@ -3020,6 +3020,7 @@
   "baselineTypeParents": "Toegestane bovenliggende types",
   "baselineTypeTopLevel": "Mag op het hoogste niveau staan",
   "baselineTypeCodeInvalid": "De code moet uit kleine letters, cijfers en underscores bestaan, met een letter beginnen en maximaal 64 tekens hebben.",
+  "baselineTypeCodeReserved": "De code product is gereserveerd voor de productkenmerken; kies een andere code.",
   "baselineTypeNameRequired": "Een naam is verplicht.",
   "baselineTypePlacement": "Kies minstens één bovenliggend type of sta het hoogste niveau toe, anders kunnen items van dit type nooit geplaatst worden.",
   "baselineTypeDeleteConfirm": "Type {code} verwijderen? Is het in gebruik, deactiveer het dan.",

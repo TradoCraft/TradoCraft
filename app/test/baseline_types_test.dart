@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -153,8 +155,8 @@ void main() {
           .enabled,
       isFalse,
     );
-    // A type is not offered as its own parent.
-    expect(find.byKey(const ValueKey('bltype-parent-bell')), findsNothing);
+    // A type may list itself as an allowed parent (the server permits it), so the chip is there.
+    expect(find.byKey(const ValueKey('bltype-parent-bell')), findsOneWidget);
     expect(
       find.byKey(const ValueKey('bltype-parent-bell_group')),
       findsOneWidget,
@@ -203,4 +205,99 @@ void main() {
     await _pump(tester, _http(perms: const ['users.admin']), const AdminPage());
     expect(find.text('Baseline types'), findsNothing);
   });
+
+  testWidgets('an existing self-parent rule stays visible and removable', (
+    tester,
+  ) async {
+    final h = _http();
+    _types[1] = _type('bell', 'Bell', parents: ['bell_group', 'bell'], sort: 2);
+    addTearDown(
+      () => _types[1] = _type('bell', 'Bell', parents: ['bell_group'], sort: 2),
+    );
+    await _pump(tester, h);
+    await tester.tap(find.byKey(const ValueKey('bltype-edit-bell')));
+    await tester.pumpAndSettle();
+    final chip = find.byKey(const ValueKey('bltype-parent-bell'));
+    expect(tester.widget<FilterChip>(chip).selected, isTrue);
+    await tester.tap(chip);
+    await tester.tap(find.byKey(const ValueKey('bltype-save')));
+    await tester.pumpAndSettle();
+    expect(
+      (h.bodies['PUT /api/v1/baseline-item-types/id-bell']
+          as Map)['allowed_parent_codes'],
+      ['bell_group'],
+    );
+  });
+
+  testWidgets('a new type can list itself as parent once its code is typed', (
+    tester,
+  ) async {
+    final h = _http();
+    await _pump(tester, h);
+    await tester.tap(find.byKey(const ValueKey('bltype-new')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('bltype-parent-sub')), findsNothing);
+    await tester.enterText(find.byKey(const ValueKey('bltype-code')), 'sub');
+    await tester.enterText(find.byKey(const ValueKey('bltype-name')), 'Sub');
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('bltype-parent-sub')));
+    await tester.tap(find.byKey(const ValueKey('bltype-top')));
+    await tester.tap(find.byKey(const ValueKey('bltype-save')));
+    await tester.pumpAndSettle();
+    final body = h.bodies['POST /api/v1/baseline-item-types'] as Map;
+    expect(body['allowed_parent_codes'], ['sub']);
+  });
+
+  testWidgets('the reserved code product is refused before any request', (
+    tester,
+  ) async {
+    final h = _http();
+    await _pump(tester, h);
+    await tester.tap(find.byKey(const ValueKey('bltype-new')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('bltype-code')),
+      'product',
+    );
+    await tester.enterText(find.byKey(const ValueKey('bltype-name')), 'P');
+    await tester.tap(find.byKey(const ValueKey('bltype-save')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('reserved'), findsOneWidget);
+    expect(h.requests, isNot(contains('POST /api/v1/baseline-item-types')));
+  });
+
+  testWidgets(
+    'the dialog cannot be dismissed while saving, and the list refreshes',
+    (tester) async {
+      final gate = Completer<void>();
+      final h = FakeHttp({
+        'GET /api/v1/me': (_) => meJson(['products.write']),
+        'GET /api/v1/baseline-item-types': (_) => _types,
+        'POST /api/v1/baseline-item-types': (b) async {
+          await gate.future;
+          return _type('x', 'X');
+        },
+      });
+      await _pump(tester, h);
+      await tester.tap(find.byKey(const ValueKey('bltype-new')));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(const ValueKey('bltype-code')), 'x');
+      await tester.enterText(find.byKey(const ValueKey('bltype-name')), 'X');
+      await tester.tap(find.byKey(const ValueKey('bltype-save')));
+      await tester.pump();
+      await tester.tapAt(const Offset(5, 5));
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.byKey(const ValueKey('bltype-save')), findsOneWidget);
+      final before = h.requests
+          .where((r) => r == 'GET /api/v1/baseline-item-types')
+          .length;
+      gate.complete();
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('bltype-save')), findsNothing);
+      expect(
+        h.requests.where((r) => r == 'GET /api/v1/baseline-item-types').length,
+        before + 1,
+      );
+    },
+  );
 }

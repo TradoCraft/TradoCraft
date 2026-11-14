@@ -3020,6 +3020,7 @@
   "baselineTypeParents": "Erlaubte übergeordnete Typen",
   "baselineTypeTopLevel": "Darf auf oberster Ebene stehen",
   "baselineTypeCodeInvalid": "Der Code darf nur Kleinbuchstaben, Ziffern und Unterstriche enthalten, muss mit einem Buchstaben beginnen und höchstens 64 Zeichen haben.",
+  "baselineTypeCodeReserved": "Der Code product ist für die Produktattribute reserviert; wählen Sie einen anderen Code.",
   "baselineTypeNameRequired": "Ein Name ist erforderlich.",
   "baselineTypePlacement": "Wählen Sie mindestens einen übergeordneten Typ oder erlauben Sie die oberste Ebene, sonst lassen sich Einträge dieses Typs nie platzieren.",
   "baselineTypeDeleteConfirm": "Typ {code} löschen? Wird er verwendet, deaktivieren Sie ihn stattdessen.",

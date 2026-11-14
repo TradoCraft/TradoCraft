@@ -293,153 +293,160 @@ class _AttributeDefinitionDialogState
     // The scopes on offer: product and the baseline item types (none when they cannot be read).
     final types =
         ref.watch(baselineTypesProvider).value ?? const <BaselineItemType>[];
-    return AlertDialog(
-      title: Text(_editing ? l.editAttrDef : l.newAttrDef),
-      content: SizedBox(
-        width: 480,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TextField(
-                key: const ValueKey('attrdef-key'),
-                controller: _key,
-                enabled: !_editing,
-                autofocus: !_editing,
-                decoration: InputDecoration(labelText: l.attrKey),
-              ),
-              TextField(
-                key: const ValueKey('attrdef-label'),
-                controller: _label,
-                decoration: InputDecoration(labelText: l.attrLabel),
-              ),
-              const SizedBox(height: 8),
-              DropdownButtonFormField<DefinitionKind>(
-                key: const ValueKey('attrdef-kind'),
-                initialValue: _kind,
-                isExpanded: true,
-                decoration: InputDecoration(labelText: l.type),
-                items: [
-                  for (final e in kinds.entries)
-                    DropdownMenuItem(value: e.key, child: Text(e.value)),
-                ],
-                onChanged: _editing
-                    ? null
-                    : (v) => setState(() => _kind = v ?? _kind),
-              ),
-              if (_hasUnit)
+    // Closing the dialog (back, Escape, barrier) is refused while the save request runs, so the
+    // list always refreshes from the dialog's result.
+    return PopScope(
+      canPop: !_busy,
+      child: AlertDialog(
+        title: Text(_editing ? l.editAttrDef : l.newAttrDef),
+        content: SizedBox(
+          width: 480,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                 TextField(
-                  key: const ValueKey('attrdef-unit'),
-                  controller: _unit,
-                  decoration: InputDecoration(labelText: l.unit),
+                  key: const ValueKey('attrdef-key'),
+                  controller: _key,
+                  enabled: !_editing,
+                  autofocus: !_editing,
+                  decoration: InputDecoration(labelText: l.attrKey),
                 ),
-              DropdownButtonFormField<String>(
-                key: const ValueKey('attrdef-scope'),
-                initialValue: _scope,
-                isExpanded: true,
-                decoration: InputDecoration(labelText: l.attrScope),
-                items: [
-                  DropdownMenuItem(
-                    value: 'product',
-                    child: Text(l.attrScopeProduct),
+                TextField(
+                  key: const ValueKey('attrdef-label'),
+                  controller: _label,
+                  decoration: InputDecoration(labelText: l.attrLabel),
+                ),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<DefinitionKind>(
+                  key: const ValueKey('attrdef-kind'),
+                  initialValue: _kind,
+                  isExpanded: true,
+                  decoration: InputDecoration(labelText: l.type),
+                  items: [
+                    for (final e in kinds.entries)
+                      DropdownMenuItem(value: e.key, child: Text(e.value)),
+                  ],
+                  onChanged: _editing
+                      ? null
+                      : (v) => setState(() => _kind = v ?? _kind),
+                ),
+                if (_hasUnit)
+                  TextField(
+                    key: const ValueKey('attrdef-unit'),
+                    controller: _unit,
+                    decoration: InputDecoration(labelText: l.unit),
                   ),
-                  for (final t in types)
+                DropdownButtonFormField<String>(
+                  key: const ValueKey('attrdef-scope'),
+                  initialValue: _scope,
+                  isExpanded: true,
+                  decoration: InputDecoration(labelText: l.attrScope),
+                  items: [
                     DropdownMenuItem(
-                      value: t.code,
-                      child: Text('${t.name} (${t.code})'),
+                      value: 'product',
+                      child: Text(l.attrScopeProduct),
                     ),
-                  // A scope whose type is gone stays visible (and fixed) when editing.
-                  if (_scope != 'product' &&
-                      !types.any((t) => t.code == _scope))
-                    DropdownMenuItem(value: _scope, child: Text(_scope)),
+                    // The code product is reserved; a legacy type with it must not duplicate Product.
+                    for (final t in types)
+                      if (t.code != 'product')
+                        DropdownMenuItem(
+                          value: t.code,
+                          child: Text('${t.name} (${t.code})'),
+                        ),
+                    // A scope whose type is gone stays visible (and fixed) when editing.
+                    if (_scope != 'product' &&
+                        !types.any((t) => t.code == _scope))
+                      DropdownMenuItem(value: _scope, child: Text(_scope)),
+                  ],
+                  // Stored values refer to the scope, so it is fixed once created.
+                  onChanged: _editing
+                      ? null
+                      : (v) => setState(() => _scope = v ?? _scope),
+                ),
+                TextField(
+                  key: const ValueKey('attrdef-sort'),
+                  controller: _sort,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(labelText: l.sortOrder),
+                ),
+                SwitchListTile(
+                  key: const ValueKey('attrdef-active'),
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(l.active),
+                  value: _active,
+                  onChanged: (v) => setState(() => _active = v),
+                ),
+                if (_kind == DefinitionKind.select) ...[
+                  Text(
+                    l.attrOptions,
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  for (final (i, o) in _options.indexed)
+                    Row(
+                      key: ObjectKey(o),
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            key: ValueKey('attrdef-option-value-$i'),
+                            controller: o.value,
+                            decoration: InputDecoration(
+                              labelText: l.attrOptionValue,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextField(
+                            key: ValueKey('attrdef-option-label-$i'),
+                            controller: o.label,
+                            decoration: InputDecoration(
+                              labelText: l.attrOptionLabel,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          key: ValueKey('attrdef-option-remove-$i'),
+                          tooltip: l.remove,
+                          icon: const Icon(Icons.delete_outline),
+                          onPressed: () => setState(() => _options.removeAt(i)),
+                        ),
+                      ],
+                    ),
+                  TextButton.icon(
+                    key: const ValueKey('attrdef-option-add'),
+                    onPressed: () => setState(() => _options.add(_OptionRow())),
+                    icon: const Icon(Icons.add),
+                    label: Text(l.attrAddOption),
+                  ),
                 ],
-                // Stored values refer to the scope, so it is fixed once created.
-                onChanged: _editing
-                    ? null
-                    : (v) => setState(() => _scope = v ?? _scope),
-              ),
-              TextField(
-                key: const ValueKey('attrdef-sort'),
-                controller: _sort,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(labelText: l.sortOrder),
-              ),
-              SwitchListTile(
-                key: const ValueKey('attrdef-active'),
-                contentPadding: EdgeInsets.zero,
-                title: Text(l.active),
-                value: _active,
-                onChanged: (v) => setState(() => _active = v),
-              ),
-              if (_kind == DefinitionKind.select) ...[
-                Text(
-                  l.attrOptions,
-                  style: Theme.of(context).textTheme.titleSmall,
-                ),
-                for (final (i, o) in _options.indexed)
-                  Row(
-                    key: ObjectKey(o),
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          key: ValueKey('attrdef-option-value-$i'),
-                          controller: o.value,
-                          decoration: InputDecoration(
-                            labelText: l.attrOptionValue,
-                          ),
-                        ),
+                if (_error != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                      _error!,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: TextField(
-                          key: ValueKey('attrdef-option-label-$i'),
-                          controller: o.label,
-                          decoration: InputDecoration(
-                            labelText: l.attrOptionLabel,
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                        key: ValueKey('attrdef-option-remove-$i'),
-                        tooltip: l.remove,
-                        icon: const Icon(Icons.delete_outline),
-                        onPressed: () => setState(() => _options.removeAt(i)),
-                      ),
-                    ],
-                  ),
-                TextButton.icon(
-                  key: const ValueKey('attrdef-option-add'),
-                  onPressed: () => setState(() => _options.add(_OptionRow())),
-                  icon: const Icon(Icons.add),
-                  label: Text(l.attrAddOption),
-                ),
-              ],
-              if (_error != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Text(
-                    _error!,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
                     ),
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
         ),
+        actions: [
+          TextButton(
+            onPressed: _busy ? null : () => Navigator.pop(context, false),
+            child: Text(l.cancel),
+          ),
+          FilledButton(
+            key: const ValueKey('attrdef-save'),
+            onPressed: _busy ? null : _save,
+            child: Text(l.save),
+          ),
+        ],
       ),
-      actions: [
-        TextButton(
-          onPressed: _busy ? null : () => Navigator.pop(context, false),
-          child: Text(l.cancel),
-        ),
-        FilledButton(
-          key: const ValueKey('attrdef-save'),
-          onPressed: _busy ? null : _save,
-          child: Text(l.save),
-        ),
-      ],
     );
   }
 }

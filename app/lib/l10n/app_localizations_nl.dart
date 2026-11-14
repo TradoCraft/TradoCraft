@@ -9659,6 +9659,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'De code moet uit kleine letters, cijfers en underscores bestaan, met een letter beginnen en maximaal 64 tekens hebben.';
 
   @override
+  String get baselineTypeCodeReserved =>
+      'De code product is gereserveerd voor de productkenmerken; kies een andere code.';
+
+  @override
   String get baselineTypeNameRequired => 'Een naam is verplicht.';
 
   @override

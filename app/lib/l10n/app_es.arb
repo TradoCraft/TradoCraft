@@ -3020,6 +3020,7 @@
   "baselineTypeParents": "Tipos superiores permitidos",
   "baselineTypeTopLevel": "Puede estar en el nivel superior",
   "baselineTypeCodeInvalid": "El código debe tener minúsculas, dígitos y guiones bajos, empezar por una letra y tener como máximo 64 caracteres.",
+  "baselineTypeCodeReserved": "El código product está reservado para los atributos de producto; elija otro código.",
   "baselineTypeNameRequired": "Se requiere un nombre.",
   "baselineTypePlacement": "Elija al menos un tipo superior o permita el nivel superior; de lo contrario no se podrían colocar elementos de este tipo.",
   "baselineTypeDeleteConfirm": "¿Eliminar el tipo {code}? Si está en uso, desactívelo en su lugar.",
