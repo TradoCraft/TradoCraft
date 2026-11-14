@@ -59,7 +59,13 @@ Widget? detailScreen(Uri uri) {
     case 'orders' when s.length == 2:
       return OrderScreen(key: key, id: id);
     case 'production'
-        when s.length == 2 && !const {'release', 'divisions'}.contains(id):
+        when s.length == 2 &&
+            !const {
+              'release',
+              'divisions',
+              'work-centres',
+              'capacity',
+            }.contains(id):
       return ProductionScreen(key: key, id: id);
     case 'delivery' when s.length == 2 && id != 'settings':
       return DeliveryScreen(key: key, id: id);

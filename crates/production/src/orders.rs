@@ -1,6 +1,12 @@
 //! Production orders: releasing an order (or building for stock), the frozen BOM and its reserved
 //! components, planning dates, start, cancel, and the order status that follows (ADR 0036).
 
+use crate::cost::{order_costs, ProductionOrderCost};
+use crate::operations::{load_operations, snapshot_routing, ProductionOperation};
+use std::collections::HashMap;
+use std::future::Future;
+use std::pin::Pin;
+
 use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use axum::Json;
@@ -13,8 +19,8 @@ use tradocraft_core::{
 };
 use tradocraft_engineering::bom::active_bom_lines;
 use tradocraft_inventory::reservations::{
-    held_by, line_reservation, release_reference, set_reserved, ReservePin, ReserveTarget,
-    PRODUCTION_COMPONENT,
+    check_whole_units, free_to_reserve, held_by, line_reservation, release_reference, set_reserved,
+    ReservePin, ReserveTarget, PRODUCTION_COMPONENT,
 };
 use utoipa::{IntoParams, ToSchema};
 use utoipa_axum::router::OpenApiRouter;
@@ -88,6 +94,12 @@ pub struct ProductionSummary {
     pub status: String,
     pub planned_ready_date: Option<NaiveDate>,
     pub short_components: i64,
+    /// Operations of the routing that was frozen at release (0 without a routing).
+    pub operation_count: i64,
+    /// How many of them are finished.
+    pub operations_done: i64,
+    /// An operation that is not finished is scheduled after the planned-ready date.
+    pub behind_schedule: bool,
     pub created_at: DateTime<Utc>,
 }
 
@@ -105,6 +117,42 @@ pub struct ProductionOrder {
     pub cancel_reason: Option<String>,
     pub components: Vec<ProductionComponent>,
     pub outputs: Vec<ProductionOutput>,
+    pub operations: Vec<ProductionOperation>,
+    /// The production orders released for its subassemblies.
+    pub sub_orders: Vec<ProductionSubOrder>,
+    /// The number of the production order this one is a subassembly of.
+    pub parent_order_number: Option<String>,
+    /// The internal production remark of the sales order line it builds for (never printed for
+    /// the customer).
+    pub production_remark: Option<String>,
+    /// What the order is planned to cost: components at the standard cost frozen at release and
+    /// operations at their planned minutes. Only for users who may see cost.
+    pub planned_cost: Option<ProductionOrderCost>,
+    /// What it cost so far: the components consumed (booked when the order is completed) and the
+    /// minutes of the finished operations. Only for users who may see cost, once it has started
+    /// (also when it was cancelled afterwards).
+    pub actual_cost: Option<ProductionOrderCost>,
+    /// When the last operation that is not finished is scheduled to end: the date to suggest as
+    /// the planned-ready date. Empty without open operations.
+    pub scheduled_end: Option<NaiveDate>,
+}
+
+/// A production order released for a subassembly of another one.
+#[derive(Debug, Clone, Serialize, FromRow, ToSchema)]
+pub struct ProductionSubOrder {
+    pub id: Uuid,
+    pub number: String,
+    pub product_id: Uuid,
+    pub product_code: String,
+    pub product_name: String,
+    pub unit: String,
+    #[schema(value_type = String)]
+    pub quantity: Decimal,
+    /// released | in_progress | completed | cancelled
+    pub status: String,
+    pub planned_ready_date: Option<NaiveDate>,
+    /// When its last open operation is scheduled to end.
+    pub scheduled_end: Option<NaiveDate>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -129,6 +177,13 @@ pub struct ReleaseProductionInput {
     pub planned_ready_date: Option<NaiveDate>,
     /// A subassembly order made for a component of this production order.
     pub parent_order_id: Option<Uuid>,
+    /// The first day work can start, for scheduling the operations; defaults to today.
+    #[serde(default, deserialize_with = "tradocraft_core::serde_util::opt_date")]
+    pub start_date: Option<NaiveDate>,
+    /// Also release production orders for the subassemblies that stock does not cover (for the
+    /// shortfall), and their subassemblies in turn.
+    #[serde(default)]
+    pub auto_release_subassemblies: bool,
     #[serde(default)]
     pub notes: String,
 }
@@ -172,6 +227,14 @@ const SELECT_SUMMARY: &str = "SELECT po.id, po.number, po.product_id, p.code AS 
             AND c.required_quantity > COALESCE((SELECT sum(r.quantity) FROM inventory.reservations r
                  WHERE r.reference_type = 'production_component' AND r.reference_id = c.id
                    AND r.status = 'active'), 0)) AS short_components,
+        (SELECT count(*) FROM production.order_operations x
+          WHERE x.production_order_id = po.id) AS operation_count,
+        (SELECT count(*) FROM production.order_operations x
+          WHERE x.production_order_id = po.id AND x.status = 'done') AS operations_done,
+        (po.status IN ('released', 'in_progress') AND po.planned_ready_date IS NOT NULL
+         AND EXISTS (SELECT 1 FROM production.order_operations x
+                     WHERE x.production_order_id = po.id AND x.status IN ('pending', 'in_progress')
+                       AND x.planned_end > po.planned_ready_date)) AS behind_schedule,
         po.created_at
      FROM production.production_orders po
      JOIN products.products p ON p.id = po.product_id
@@ -224,9 +287,10 @@ pub(crate) async fn lock_order(
 /// Loads a production order with its components and outputs.
 pub(crate) async fn load_order(
     conn: &mut PgConnection,
-    company_id: Uuid,
+    user: &CurrentUser,
     id: Uuid,
 ) -> AppResult<ProductionOrder> {
+    let company_id = user.company_id;
     let summary: ProductionSummary = sqlx::query_as(&format!(
         "{SELECT_SUMMARY} WHERE po.id = $1 AND po.company_id = $2"
     ))
@@ -268,8 +332,54 @@ pub(crate) async fn load_order(
          WHERE o.production_order_id = $1 ORDER BY su.serial_number, o.id",
     )
     .bind(id)
-    .fetch_all(conn)
+    .fetch_all(&mut *conn)
     .await?;
+    let operations = load_operations(conn, user, id).await?;
+    let scheduled_end = operations
+        .iter()
+        .filter(|o| o.is_open())
+        .map(|o| o.planned_end)
+        .max();
+    let sub_orders = sqlx::query_as(
+        "SELECT c.id, c.number, c.product_id, p.code AS product_code, p.name AS product_name, p.unit,
+                c.quantity, c.status, c.planned_ready_date,
+                (SELECT max(x.planned_end) FROM production.order_operations x
+                  WHERE x.production_order_id = c.id AND x.status IN ('pending', 'in_progress')) AS scheduled_end
+         FROM production.production_orders c JOIN products.products p ON p.id = c.product_id
+         WHERE c.parent_order_id = $1 AND c.company_id = $2 ORDER BY c.number",
+    )
+    .bind(id)
+    .bind(company_id)
+    .fetch_all(&mut *conn)
+    .await?;
+    let production_remark: Option<String> = match extra.order_line_id {
+        Some(line) => {
+            sqlx::query_scalar("SELECT production_remark FROM sales.order_lines WHERE id = $1")
+                .bind(line)
+                .fetch_optional(&mut *conn)
+                .await?
+        }
+        None => None,
+    };
+    let parent_order_number: Option<String> =
+        match extra.parent_order_id {
+            Some(parent) => sqlx::query_scalar(
+                "SELECT number FROM production.production_orders WHERE id = $1 AND company_id = $2",
+            )
+            .bind(parent)
+            .bind(company_id)
+            .fetch_optional(&mut *conn)
+            .await?,
+            None => None,
+        };
+    let (planned_cost, actual_cost) = if user.can(Permission::InventoryCost) {
+        let (planned, actual) = order_costs(&mut *conn, id).await?;
+        // Work was recorded once the order began, whatever became of it since (an order that is
+        // cancelled halfway still cost what was worked).
+        (Some(planned), extra.started_at.map(|_| actual))
+    } else {
+        (None, None)
+    };
     Ok(ProductionOrder {
         summary,
         order_line_id: extra.order_line_id,
@@ -281,6 +391,13 @@ pub(crate) async fn load_order(
         cancel_reason: extra.cancel_reason,
         components,
         outputs,
+        operations,
+        sub_orders,
+        parent_order_number,
+        production_remark,
+        planned_cost,
+        actual_cost,
+        scheduled_end,
     })
 }
 
@@ -357,23 +474,35 @@ pub(crate) async fn sync_order_status(
 
 /// A component needs this much for the whole order: BOM quantity x order quantity x (1 + scrap %),
 /// rounded up to four decimals so the order never runs short by rounding.
-fn required(per_unit: Decimal, quantity: Decimal, scrap_percent: Decimal) -> Decimal {
+pub(crate) fn required(per_unit: Decimal, quantity: Decimal, scrap_percent: Decimal) -> Decimal {
     (per_unit * quantity * (Decimal::ONE_HUNDRED + scrap_percent) / Decimal::ONE_HUNDRED)
         .round_dp_with_strategy(4, RoundingStrategy::AwayFromZero)
 }
 
 /// Reserves what a component needs, all or nothing. Short stock is not an error: the component
-/// stays unreserved and is flagged, and `reserve` tries again later.
+/// stays unreserved and is flagged, and `reserve` tries again later. `claimed` is the free stock
+/// that an earlier component of the same release already counts on (see [`release_in_tx`]): it is
+/// not taken either, so the component stays unreserved exactly as if stock were short (a quantity
+/// that `set_reserved` would refuse is still refused). Without a claim for the product nothing
+/// changes (and nothing extra is read).
 async fn try_reserve(
     conn: &mut PgConnection,
     user: &CurrentUser,
     component_id: Uuid,
     product_id: Uuid,
     want: Decimal,
+    claimed: &HashMap<Uuid, Decimal>,
 ) -> AppResult<()> {
     let product = tradocraft_products::get_product(&mut *conn, product_id).await?;
     if product.product_type == "service" {
         return Ok(());
+    }
+    if let Some(taken) = claimed.get(&product_id).filter(|t| **t > Decimal::ZERO) {
+        // Leaving the component unreserved must not hide what `set_reserved` would refuse.
+        check_whole_units(&product.tracking, want)?;
+        if free_to_reserve(&mut *conn, user.company_id, product_id).await? - *taken < want {
+            return Ok(());
+        }
     }
     let target = ReserveTarget {
         reference_type: PRODUCTION_COMPONENT,
@@ -387,7 +516,7 @@ async fn try_reserve(
 }
 
 /// Checks that a division exists in the company and is active.
-async fn check_division(
+pub(crate) async fn check_division(
     conn: &mut PgConnection,
     company_id: Uuid,
     division_id: Uuid,
@@ -408,8 +537,268 @@ async fn check_division(
     }
 }
 
+/// How deep subassemblies are released automatically (an order, its subassemblies, their
+/// subassemblies, and so on).
+const MAX_SUBASSEMBLY_DEPTH: usize = 5;
+
+/// One production order to release.
+struct ReleaseSpec {
+    product_id: Uuid,
+    quantity: Decimal,
+    /// The sales order and its line, or none to build for stock.
+    order: Option<(Uuid, Uuid)>,
+    order_number: Option<String>,
+    division_id: Option<Uuid>,
+    planned_ready_date: Option<NaiveDate>,
+    parent_order_id: Option<Uuid>,
+    start_date: Option<NaiveDate>,
+    notes: String,
+    auto_release_subassemblies: bool,
+}
+
+/// What a release made: the order, and when its work (and that of its subassemblies) is scheduled
+/// to end.
+struct Released {
+    id: Uuid,
+    scheduled_end: Option<NaiveDate>,
+}
+
+type ReleaseFuture<'a> = Pin<Box<dyn Future<Output = AppResult<Released>> + Send + 'a>>;
+
+/// Releases one production order inside the caller's transaction: freezes the active BOM and its
+/// routing, creates the order and its components, reserves them and, when asked, releases a
+/// production order for every subassembly that is short, with the same rules and below this
+/// order. `ancestors` are the products being built above it; `claimed` is the free stock that
+/// earlier components of this release already counted on, so that two components (or branches)
+/// that need the same product do not both rely on the same units: neither the shortfall maths
+/// nor a later reservation (`try_reserve`) takes it again. A reservation stays all or nothing:
+/// a claimed component is not given part of its stock, it is simply left for `reserve`.
+fn release_in_tx<'a>(
+    tx: &'a mut PgConnection,
+    user: &'a CurrentUser,
+    spec: ReleaseSpec,
+    ancestors: &'a mut Vec<Uuid>,
+    claimed: &'a mut HashMap<Uuid, Decimal>,
+) -> ReleaseFuture<'a> {
+    Box::pin(async move {
+        let quantity = spec.quantity;
+        if quantity <= Decimal::ZERO || quantity.round_dp(4) != quantity {
+            return Err(AppError::Validation(
+                "quantity must be more than 0, with at most 4 decimals".into(),
+            ));
+        }
+        let product = tradocraft_products::get_product(&mut *tx, spec.product_id).await?;
+        if product.product_type == "service" || product.product_type == "purchased" {
+            return Err(AppError::Validation(format!(
+                "{} is a {} product and is not built",
+                product.code, product.product_type
+            )));
+        }
+        if ancestors.contains(&spec.product_id) {
+            return Err(AppError::Validation(format!(
+                "{} is part of itself",
+                product.code
+            )));
+        }
+        let (bom_id, bom_revision, lines) = active_bom_lines(&mut *tx, spec.product_id)
+            .await?
+            .ok_or_else(|| {
+                AppError::Validation(format!("{} has no active BOM to build from", product.code))
+            })?;
+        if lines.is_empty() {
+            return Err(AppError::Validation(format!(
+                "the active BOM of {} has no components",
+                product.code
+            )));
+        }
+        let division_id = match spec.division_id {
+            Some(d) => Some(d),
+            None => {
+                sqlx::query_scalar(
+                    "SELECT pd.division_id FROM production.product_divisions pd
+                     JOIN production.divisions d ON d.id = pd.division_id AND d.active
+                     WHERE pd.company_id = $1 AND pd.product_id = $2",
+                )
+                .bind(user.company_id)
+                .bind(spec.product_id)
+                .fetch_optional(&mut *tx)
+                .await?
+            }
+        };
+        if let Some(d) = spec.division_id {
+            check_division(&mut *tx, user.company_id, d).await?;
+        }
+        if let Some(parent) = spec.parent_order_id {
+            lock_order(&mut *tx, user.company_id, parent).await?;
+        }
+        let year = Utc::now().year();
+        let seq = numbering::next_number(&mut *tx, user.company_id, "MO", year).await?;
+        let number = format!("MO{year}-{seq:05}");
+        let id = new_id();
+        sqlx::query(
+            "INSERT INTO production.production_orders
+                 (id, company_id, number, product_id, quantity, bom_id, bom_revision, division_id, order_id,
+                  order_line_id, parent_order_id, planned_ready_date, notes, created_by)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)",
+        )
+        .bind(id)
+        .bind(user.company_id)
+        .bind(&number)
+        .bind(spec.product_id)
+        .bind(quantity)
+        .bind(bom_id)
+        .bind(bom_revision)
+        .bind(division_id)
+        .bind(spec.order.map(|o| o.0))
+        .bind(spec.order.map(|o| o.1))
+        .bind(spec.parent_order_id)
+        .bind(spec.planned_ready_date)
+        .bind(spec.notes.trim())
+        .bind(user.user_id)
+        .execute(&mut *tx)
+        .await?;
+        // Subassemblies that are built from a BOM and that stock could not cover: (product, need).
+        let mut short: Vec<(Uuid, Decimal)> = Vec::new();
+        for (i, l) in lines.iter().enumerate() {
+            let component_id = new_id();
+            let need = required(l.quantity, quantity, l.scrap_percent);
+            // The standard cost is frozen with the component, like the BOM, so the planned and
+            // actual cost of the order do not move when a standard cost is changed later.
+            let component =
+                tradocraft_products::get_product(&mut *tx, l.component_product_id).await?;
+            sqlx::query(
+                "INSERT INTO production.order_components
+                     (id, production_order_id, position, component_product_id, required_quantity, standard_cost)
+                 VALUES ($1, $2, $3, $4, $5, $6)",
+            )
+            .bind(component_id)
+            .bind(id)
+            .bind(i as i32 + 1)
+            .bind(l.component_product_id)
+            .bind(need)
+            .bind(component.standard_cost)
+            .execute(&mut *tx)
+            .await?;
+            try_reserve(
+                &mut *tx,
+                user,
+                component_id,
+                l.component_product_id,
+                need,
+                &*claimed,
+            )
+            .await?;
+            if spec.auto_release_subassemblies
+                && matches!(
+                    component.product_type.as_str(),
+                    "manufactured" | "configurable"
+                )
+            {
+                let held = held_by(
+                    &mut *tx,
+                    user.company_id,
+                    &ReserveTarget {
+                        reference_type: PRODUCTION_COMPONENT,
+                        reference_id: component_id,
+                        product_id: l.component_product_id,
+                    },
+                )
+                .await?;
+                if held < need
+                    && tradocraft_engineering::bom::has_active_bom(&mut *tx, l.component_product_id)
+                        .await?
+                {
+                    // A product the order lists on several rows is one need, built once.
+                    match short.iter_mut().find(|(p, _)| *p == l.component_product_id) {
+                        Some(row) => row.1 += need,
+                        None => short.push((l.component_product_id, need)),
+                    }
+                }
+            }
+        }
+        // The parent row exists, so the subassemblies can point at it. They are built first: this
+        // order's own work starts after the last of them is ready.
+        let mut children_end: Option<NaiveDate> = None;
+        for (component_product, need) in short {
+            if ancestors.len() >= MAX_SUBASSEMBLY_DEPTH {
+                return Err(AppError::Validation(format!(
+                    "subassemblies are nested more than {MAX_SUBASSEMBLY_DEPTH} levels deep"
+                )));
+            }
+            // A serial-tracked need is always whole (a fraction cannot be reserved, so the release
+            // would already have been refused), and so is the free stock: so is the shortfall.
+            // Free stock that an earlier component of this release already counted on is not
+            // counted again (a reservation is all or nothing, so it is still free in the books).
+            let free = free_to_reserve(&mut *tx, user.company_id, component_product).await?;
+            let taken = claimed
+                .get(&component_product)
+                .copied()
+                .unwrap_or(Decimal::ZERO);
+            let available = (free - taken).max(Decimal::ZERO);
+            claimed.insert(component_product, taken + need.min(available));
+            let shortfall = need - available;
+            if shortfall <= Decimal::ZERO {
+                continue;
+            }
+            ancestors.push(spec.product_id);
+            let child = release_in_tx(
+                &mut *tx,
+                user,
+                ReleaseSpec {
+                    product_id: component_product,
+                    quantity: shortfall,
+                    order: None,
+                    order_number: None,
+                    division_id: None,
+                    planned_ready_date: None,
+                    parent_order_id: Some(id),
+                    start_date: spec.start_date,
+                    notes: String::new(),
+                    auto_release_subassemblies: true,
+                },
+                &mut *ancestors,
+                &mut *claimed,
+            )
+            .await?;
+            ancestors.pop();
+            children_end = children_end.max(child.scheduled_end);
+        }
+        let own_start = spec.start_date.unwrap_or_else(tradocraft_core::today);
+        let start = match children_end {
+            Some(end) => own_start.max(end.succ_opt().unwrap_or(end)),
+            None => own_start,
+        };
+        let operations = snapshot_routing(&mut *tx, user, id, bom_id, quantity, start).await?;
+        audit::record(
+            &mut *tx,
+            user,
+            "production_order",
+            id,
+            "released",
+            serde_json::json!({
+                "number": number, "product": product.code, "quantity": quantity, "bom_revision": bom_revision,
+                "order": spec.order_number, "division_id": division_id, "operations": operations,
+                "parent_order_id": spec.parent_order_id,
+            }),
+        )
+        .await?;
+        let own_end: Option<NaiveDate> = sqlx::query_scalar(
+            "SELECT max(planned_end) FROM production.order_operations WHERE production_order_id = $1",
+        )
+        .bind(id)
+        .fetch_one(&mut *tx)
+        .await?;
+        Ok(Released {
+            id,
+            scheduled_end: own_end.max(children_end),
+        })
+    })
+}
+
 /// Releases a line of a sales order, or a quantity for stock, to production: freezes the active
-/// BOM, creates the production order and its components and reserves them.
+/// BOM and its routing, creates the production order and its components and reserves them.
+/// With `auto_release_subassemblies`, subassemblies that stock does not cover get production
+/// orders of their own for the shortfall.
 #[utoipa::path(post, path = "/production-orders", tag = "production", request_body = ReleaseProductionInput,
     responses((status = 201, body = ProductionOrder), (status = 409, body = ErrorBody), (status = 422, body = ErrorBody)))]
 async fn release(
@@ -478,109 +867,149 @@ async fn release(
             ))
         }
     };
-    if quantity <= Decimal::ZERO || quantity.round_dp(4) != quantity {
-        return Err(AppError::Validation(
-            "quantity must be more than 0, with at most 4 decimals".into(),
-        ));
-    }
-    let product = tradocraft_products::get_product(&mut *tx, product_id).await?;
-    if product.product_type == "service" || product.product_type == "purchased" {
-        return Err(AppError::Validation(format!(
-            "{} is a {} product and is not built",
-            product.code, product.product_type
-        )));
-    }
-    let (bom_id, bom_revision, lines) =
-        active_bom_lines(&mut tx, product_id)
-            .await?
-            .ok_or_else(|| {
-                AppError::Validation(format!("{} has no active BOM to build from", product.code))
-            })?;
-    if lines.is_empty() {
-        return Err(AppError::Validation(format!(
-            "the active BOM of {} has no components",
-            product.code
-        )));
-    }
-    let division_id = match input.division_id {
-        Some(d) => Some(d),
-        None => {
-            sqlx::query_scalar(
-                "SELECT pd.division_id FROM production.product_divisions pd
-                 JOIN production.divisions d ON d.id = pd.division_id AND d.active
-                 WHERE pd.company_id = $1 AND pd.product_id = $2",
-            )
-            .bind(user.company_id)
-            .bind(product_id)
-            .fetch_optional(&mut *tx)
-            .await?
-        }
-    };
-    if let Some(d) = input.division_id {
-        check_division(&mut tx, user.company_id, d).await?;
-    }
-    if let Some(parent) = input.parent_order_id {
-        lock_order(&mut tx, user.company_id, parent).await?;
-    }
-    let year = Utc::now().year();
-    let seq = numbering::next_number(&mut tx, user.company_id, "MO", year).await?;
-    let number = format!("MO{year}-{seq:05}");
-    let id = new_id();
-    sqlx::query(
-        "INSERT INTO production.production_orders
-             (id, company_id, number, product_id, quantity, bom_id, bom_revision, division_id, order_id,
-              order_line_id, parent_order_id, planned_ready_date, notes, created_by)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)",
-    )
-    .bind(id)
-    .bind(user.company_id)
-    .bind(&number)
-    .bind(product_id)
-    .bind(quantity)
-    .bind(bom_id)
-    .bind(bom_revision)
-    .bind(division_id)
-    .bind(input.order_id)
-    .bind(input.order_line_id)
-    .bind(input.parent_order_id)
-    .bind(input.planned_ready_date)
-    .bind(input.notes.trim())
-    .bind(user.user_id)
-    .execute(&mut *tx)
-    .await?;
-    for (i, l) in lines.iter().enumerate() {
-        let component_id = new_id();
-        let need = required(l.quantity, quantity, l.scrap_percent);
-        sqlx::query(
-            "INSERT INTO production.order_components
-                 (id, production_order_id, position, component_product_id, required_quantity)
-             VALUES ($1, $2, $3, $4, $5)",
-        )
-        .bind(component_id)
-        .bind(id)
-        .bind(i as i32 + 1)
-        .bind(l.component_product_id)
-        .bind(need)
-        .execute(&mut *tx)
-        .await?;
-        try_reserve(&mut tx, &user, component_id, l.component_product_id, need).await?;
-    }
-    audit::record(
+    let released = release_in_tx(
         &mut tx,
         &user,
-        "production_order",
-        id,
-        "released",
-        serde_json::json!({
-            "number": number, "product": product.code, "quantity": quantity, "bom_revision": bom_revision,
-            "order": order_number, "division_id": division_id,
-        }),
+        ReleaseSpec {
+            product_id,
+            quantity,
+            order: input.order_id.zip(input.order_line_id),
+            order_number,
+            division_id: input.division_id,
+            planned_ready_date: input.planned_ready_date,
+            parent_order_id: input.parent_order_id,
+            start_date: input.start_date,
+            notes: input.notes,
+            auto_release_subassemblies: input.auto_release_subassemblies,
+        },
+        &mut Vec::new(),
+        &mut HashMap::new(),
     )
     .await?;
     if let Some(order_id) = input.order_id {
         sync_order_status(&mut tx, &user, order_id).await?;
     }
-    let out = load_order(&mut tx, user.company_id, id).await?;
+    let out = load_order(&mut tx, &user, released.id).await?;
+    tx.commit().await?;
+    Ok((StatusCode::CREATED, Json(out)))
+}
+
+#[derive(Debug, Default, Deserialize, ToSchema)]
+pub struct ProductionBuildComponentInput {
+    /// Also release the subassemblies of the new production order that are short.
+    #[serde(default)]
+    pub auto_release_subassemblies: bool,
+}
+
+#[derive(FromRow)]
+struct BuildComponent {
+    component_product_id: Uuid,
+}
+
+/// Releases a production order for a component that is built from a BOM and that stock does not
+/// cover, below this order: it builds what is still missing. The order may list the same
+/// component more than once, so this compares everything the order needs of the product with
+/// everything that covers it (reserved, free in stock, already under way in open subassembly
+/// orders): one build serves all its rows, and building again for another row finds it covered.
+#[utoipa::path(post, path = "/production-orders/{id}/components/{component_id}/build", tag = "production",
+    params(("id" = Uuid, Path), ("component_id" = Uuid, Path)), request_body = ProductionBuildComponentInput,
+    responses((status = 201, body = ProductionOrder), (status = 404, body = ErrorBody), (status = 409, body = ErrorBody), (status = 422, body = ErrorBody)))]
+async fn build_component(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Path((id, component_id)): Path<(Uuid, Uuid)>,
+    Json(input): Json<ProductionBuildComponentInput>,
+) -> AppResult<(StatusCode, Json<ProductionOrder>)> {
+    user.require(Permission::ProductionWrite)?;
+    let mut tx = state.db.begin().await?;
+    let po = lock_order(&mut tx, user.company_id, id).await?;
+    if !matches!(po.status.as_str(), "released" | "in_progress") {
+        return Err(AppError::Conflict(format!(
+            "production order {} is {}; no subassembly can be built for it",
+            po.number, po.status
+        )));
+    }
+    let comp: BuildComponent = sqlx::query_as(
+        "SELECT component_product_id FROM production.order_components
+         WHERE id = $1 AND production_order_id = $2",
+    )
+    .bind(component_id)
+    .bind(id)
+    .fetch_optional(&mut *tx)
+    .await?
+    .ok_or(AppError::NotFound("component"))?;
+    let product = tradocraft_products::get_product(&mut *tx, comp.component_product_id).await?;
+    if !matches!(
+        product.product_type.as_str(),
+        "manufactured" | "configurable"
+    ) || !tradocraft_engineering::bom::has_active_bom(&mut tx, comp.component_product_id).await?
+    {
+        return Err(AppError::Validation(format!(
+            "{} is not built from a BOM",
+            product.code
+        )));
+    }
+    let rows: Vec<(Uuid, Decimal)> = sqlx::query_as(
+        "SELECT id, required_quantity FROM production.order_components
+         WHERE production_order_id = $1 AND component_product_id = $2",
+    )
+    .bind(id)
+    .bind(comp.component_product_id)
+    .fetch_all(&mut *tx)
+    .await?;
+    let mut required_total = Decimal::ZERO;
+    let mut held = Decimal::ZERO;
+    for (row, need) in rows {
+        required_total += need;
+        held += held_by(
+            &mut tx,
+            user.company_id,
+            &ReserveTarget {
+                reference_type: PRODUCTION_COMPONENT,
+                reference_id: row,
+                product_id: comp.component_product_id,
+            },
+        )
+        .await?;
+    }
+    let free = free_to_reserve(&mut tx, user.company_id, comp.component_product_id).await?;
+    let under_way: Decimal = sqlx::query_scalar(
+        "SELECT COALESCE(sum(quantity), 0) FROM production.production_orders
+         WHERE company_id = $1 AND parent_order_id = $2 AND product_id = $3
+           AND status IN ('released', 'in_progress')",
+    )
+    .bind(user.company_id)
+    .bind(id)
+    .bind(comp.component_product_id)
+    .fetch_one(&mut *tx)
+    .await?;
+    let shortfall = required_total - held - free - under_way;
+    if shortfall <= Decimal::ZERO {
+        return Err(AppError::Conflict(format!(
+            "stock and the open production orders already cover {}; reserve the components again",
+            product.code
+        )));
+    }
+    let released = release_in_tx(
+        &mut tx,
+        &user,
+        ReleaseSpec {
+            product_id: comp.component_product_id,
+            quantity: shortfall,
+            order: None,
+            order_number: None,
+            division_id: None,
+            planned_ready_date: None,
+            parent_order_id: Some(id),
+            start_date: None,
+            notes: String::new(),
+            auto_release_subassemblies: input.auto_release_subassemblies,
+        },
+        &mut vec![po.product_id],
+        &mut HashMap::new(),
+    )
+    .await?;
+    let out = load_order(&mut tx, &user, released.id).await?;
     tx.commit().await?;
     Ok((StatusCode::CREATED, Json(out)))
 }
@@ -632,7 +1061,7 @@ async fn update_order(
     if let Some(order_id) = po.order_id {
         sync_order_status(&mut tx, &user, order_id).await?;
     }
-    let out = load_order(&mut tx, user.company_id, id).await?;
+    let out = load_order(&mut tx, &user, id).await?;
     tx.commit().await?;
     Ok(Json(out))
 }
@@ -673,10 +1102,18 @@ async fn reserve_components(
         )
         .await?;
         if held < need {
-            try_reserve(&mut tx, &user, component_id, product_id, need).await?;
+            try_reserve(
+                &mut tx,
+                &user,
+                component_id,
+                product_id,
+                need,
+                &HashMap::new(),
+            )
+            .await?;
         }
     }
-    let out = load_order(&mut tx, user.company_id, id).await?;
+    let out = load_order(&mut tx, &user, id).await?;
     tx.commit().await?;
     Ok(Json(out))
 }
@@ -698,16 +1135,30 @@ async fn start_order(
             po.number, po.status
         )));
     }
+    begin_order(&mut tx, &user, id, &po).await?;
+    let out = load_order(&mut tx, &user, id).await?;
+    tx.commit().await?;
+    Ok(Json(out))
+}
+
+/// Puts a released order in progress and moves the sales order along. Starting the order and
+/// starting its first operation do the same.
+pub(crate) async fn begin_order(
+    conn: &mut PgConnection,
+    user: &CurrentUser,
+    id: Uuid,
+    po: &Locked,
+) -> AppResult<()> {
     sqlx::query(
         "UPDATE production.production_orders
          SET status = 'in_progress', started_at = now(), updated_at = now() WHERE id = $1",
     )
     .bind(id)
-    .execute(&mut *tx)
+    .execute(&mut *conn)
     .await?;
     audit::record(
-        &mut tx,
-        &user,
+        conn,
+        user,
         "production_order",
         id,
         "started",
@@ -715,11 +1166,9 @@ async fn start_order(
     )
     .await?;
     if let Some(order_id) = po.order_id {
-        sync_order_status(&mut tx, &user, order_id).await?;
+        sync_order_status(conn, user, order_id).await?;
     }
-    let out = load_order(&mut tx, user.company_id, id).await?;
-    tx.commit().await?;
-    Ok(Json(out))
+    Ok(())
 }
 
 /// Cancels an open production order and releases the components reserved for it.
@@ -765,7 +1214,7 @@ async fn cancel_order(
     if let Some(order_id) = po.order_id {
         sync_order_status(&mut tx, &user, order_id).await?;
     }
-    let out = load_order(&mut tx, user.company_id, id).await?;
+    let out = load_order(&mut tx, &user, id).await?;
     tx.commit().await?;
     Ok(Json(out))
 }
@@ -805,7 +1254,7 @@ async fn get_order(
 ) -> AppResult<Json<ProductionOrder>> {
     user.require(Permission::ProductionRead)?;
     let mut conn = state.db.acquire().await?;
-    Ok(Json(load_order(&mut conn, user.company_id, id).await?))
+    Ok(Json(load_order(&mut conn, &user, id).await?))
 }
 
 /// The production queue: most urgent first (sales order priority, then planned-ready date).
@@ -981,6 +1430,7 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(list_orders, release))
         .routes(routes!(get_order, update_order))
         .routes(routes!(reserve_components))
+        .routes(routes!(build_component))
         .routes(routes!(start_order))
         .routes(routes!(cancel_order))
         .routes(routes!(to_release))

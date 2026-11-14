@@ -24,10 +24,10 @@ Module overview: [ARCHITECTURE.md](ARCHITECTURE.md).
 | B2b Supplier invoices and three-way match (AP register, no ledger) | Backend done, [ADR 0046](adr/0046-supplier-invoices-and-three-way-match.md); Flutter screens follow |
 | B3 Delivery | Done, [ADR 0035](adr/0035-delivery.md) |
 | C1a Production orders | Done, [ADR 0036](adr/0036-production.md) |
-| C1b Work centres, routings, operations | Open (needs C1a) |
+| C1b Work centres, routings, operations | Done, [ADR 0063](adr/0063-work-centres-routings-and-operations.md) |
 | C2 MRP | Open (needs B1, B2, C1) |
 | C3 Planning board, field-jobs half (calendars, absences, skills, conflicts, suggestions, drag-and-drop board) | Done, [ADR 0024](adr/0024-planning-board.md) |
-| C3 Planning board, work-centre half (capacity, finite loading) | Open (needs C1; reuses the resource calendar and `ResourceBoard`) |
+| C3 Planning board, work-centre half (finite loading, drag-and-drop board) | Open; the capacity view and the work-centre calendars are done in C1b ([ADR 0063](adr/0063-work-centres-routings-and-operations.md)); reuses `ResourceBoard` |
 | D1 Worker heartbeat and "worker was down" alert | Done, [ADR 0052](adr/0052-worker-heartbeat.md) |
 | D2 Backup and restore runbook | Done, [ADR 0056](adr/0056-backup-and-restore.md) |
 | D3 Concurrent-edit protection on records | Open |
@@ -91,9 +91,13 @@ Remaining knowledge base gaps (ADR 0018): non-image attachments, analytics, sema
 - Planned-ready dates drive the order statuses `in_planning -> planned -> in_production ->
   ready_for_shipping` and the order's promised date (the latest one); queues sort by order priority.
 
-**C1b Work centres, routings and operations** (large)
-- Work centres, routings on the BOM, operations on the production order, labour and capacity; the
-  work-centre half of C3 builds on it. Also: multi-level auto-release, a production order PDF, cost roll-up.
+**C1b Work centres, routings and operations** (large, done), [ADR 0063](adr/0063-work-centres-routings-and-operations.md)
+- Work centres with opening hours and closures, a routing on the BOM revision (draft-only, copied by a new
+  revision), operations on the production order (snapshotted and scheduled at release, finished with the
+  minutes worked), a capacity grid, multi-level auto-release for the shortfall, a cost roll-up and the
+  planned and actual cost of an order (behind `inventory.cost`), and a traveller PDF.
+- Later: the work-centre planning board (C3), per-person time and a shop-floor offline queue, valuation and
+  work in progress at actual cost, parallel or overlapping operations, routing times in MRP.
 
 **C2 MRP** (large)
 - Reorder rules and an MRP run for make-to-stock and make-to-order: net requirements from orders, stock and

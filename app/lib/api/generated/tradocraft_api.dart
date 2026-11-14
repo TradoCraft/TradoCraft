@@ -8,6 +8,7 @@ import 'clients/admin_client.dart';
 import 'clients/core_client.dart';
 import 'clients/audit_client.dart';
 import 'clients/engineering_client.dart';
+import 'clients/production_client.dart';
 import 'clients/crm_client.dart';
 import 'clients/configurator_client.dart';
 import 'clients/helpdesk_client.dart';
@@ -24,7 +25,6 @@ import 'clients/sales_client.dart';
 import 'clients/products_client.dart';
 import 'clients/planning_client.dart';
 import 'clients/portal_client.dart';
-import 'clients/production_client.dart';
 import 'clients/todo_client.dart';
 
 /// tradocraft API `v0.1.0`.
@@ -46,6 +46,7 @@ class TradocraftApi {
   CoreClient? _core;
   AuditClient? _audit;
   EngineeringClient? _engineering;
+  ProductionClient? _production;
   CrmClient? _crm;
   ConfiguratorClient? _configurator;
   HelpdeskClient? _helpdesk;
@@ -62,7 +63,6 @@ class TradocraftApi {
   ProductsClient? _products;
   PlanningClient? _planning;
   PortalClient? _portal;
-  ProductionClient? _production;
   TodoClient? _todo;
 
   AdminClient get admin => _admin ??= AdminClient(_dio, baseUrl: _baseUrl);
@@ -72,6 +72,8 @@ class TradocraftApi {
   AuditClient get audit => _audit ??= AuditClient(_dio, baseUrl: _baseUrl);
 
   EngineeringClient get engineering => _engineering ??= EngineeringClient(_dio, baseUrl: _baseUrl);
+
+  ProductionClient get production => _production ??= ProductionClient(_dio, baseUrl: _baseUrl);
 
   CrmClient get crm => _crm ??= CrmClient(_dio, baseUrl: _baseUrl);
 
@@ -104,8 +106,6 @@ class TradocraftApi {
   PlanningClient get planning => _planning ??= PlanningClient(_dio, baseUrl: _baseUrl);
 
   PortalClient get portal => _portal ??= PortalClient(_dio, baseUrl: _baseUrl);
-
-  ProductionClient get production => _production ??= ProductionClient(_dio, baseUrl: _baseUrl);
 
   TodoClient get todo => _todo ??= TodoClient(_dio, baseUrl: _baseUrl);
 }

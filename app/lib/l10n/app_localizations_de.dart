@@ -8515,6 +8515,246 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get productionWorkCentres => 'Arbeitsplätze';
+
+  @override
+  String get productionWorkCentreAdd => 'Arbeitsplatz hinzufügen';
+
+  @override
+  String get productionWorkCentreEdit => 'Arbeitsplatz bearbeiten';
+
+  @override
+  String get productionWorkCentreCapacity =>
+      'Kapazität (gleichzeitig arbeitende Einheiten)';
+
+  @override
+  String get productionWorkCentreCost => 'Kosten pro Stunde';
+
+  @override
+  String productionWorkCentreOpenOps(String count) {
+    return '$count offene Arbeitsgänge';
+  }
+
+  @override
+  String get productionWorkCentreEmpty =>
+      'Noch keine Arbeitsplätze. Fügen Sie die Maschinen und Werkbänke hinzu, auf denen Ihre Arbeitsgänge laufen.';
+
+  @override
+  String get productionWorkingHours => 'Arbeitszeiten';
+
+  @override
+  String get productionHoursDefault =>
+      'Keine eigenen Zeiten: Montag bis Freitag 08:00–12:00 und 13:00–17:00.';
+
+  @override
+  String get productionHoursAddBlock => 'Block hinzufügen';
+
+  @override
+  String get productionClosures => 'Schließzeiten';
+
+  @override
+  String get productionClosureAdd => 'Schließzeit hinzufügen';
+
+  @override
+  String get productionClosureWholePlant => 'Gesamter Betrieb';
+
+  @override
+  String get productionClosureKind => 'Art';
+
+  @override
+  String get productionClosureMaintenance => 'Wartung';
+
+  @override
+  String get productionClosureHoliday => 'Feiertag';
+
+  @override
+  String get productionClosureOther => 'Sonstiges';
+
+  @override
+  String get productionClosureEmpty => 'Keine Schließzeiten.';
+
+  @override
+  String get productionCapacity => 'Kapazität';
+
+  @override
+  String get productionCapacityLegend =>
+      'Last der offenen Arbeitsgänge gegenüber dem, was jeder Arbeitsplatz leisten kann. Rot: überlastet.';
+
+  @override
+  String get productionCapacityOverloaded => 'Überlastet';
+
+  @override
+  String get productionCapacityEmpty => 'Keine Arbeitsplätze anzuzeigen.';
+
+  @override
+  String get productionCapacityEarlier => 'Früher';
+
+  @override
+  String get productionCapacityLater => 'Später';
+
+  @override
+  String get productionCapacityToday => 'Heute';
+
+  @override
+  String productionWorkCentreUnits(String count) {
+    return '$count Einheiten';
+  }
+
+  @override
+  String get productionOperations => 'Arbeitsgänge';
+
+  @override
+  String get productionOperationPending => 'Nicht begonnen';
+
+  @override
+  String get productionOperationDone => 'Erledigt';
+
+  @override
+  String get productionOperationSkipped => 'Übersprungen';
+
+  @override
+  String get productionOperationStart => 'Arbeitsgang starten';
+
+  @override
+  String get productionOperationFinish => 'Arbeitsgang abschließen';
+
+  @override
+  String get productionOperationReopen => 'Arbeitsgang wieder öffnen';
+
+  @override
+  String get productionOperationMove => 'Arbeitsgang verschieben';
+
+  @override
+  String get productionOperationMinutes => 'Gearbeitete Minuten';
+
+  @override
+  String get productionOperationPlanned => 'Geplant';
+
+  @override
+  String get productionOperationWorked => 'Gearbeitet';
+
+  @override
+  String productionOperationBy(String name) {
+    return 'von $name';
+  }
+
+  @override
+  String get productionScheduleAgain => 'Neu einplanen';
+
+  @override
+  String get productionStartFrom => 'Beginnen ab';
+
+  @override
+  String productionBehindSchedule(String date) {
+    return 'Im Verzug: der letzte Arbeitsgang ist für den $date geplant, nach dem geplanten Fertigstellungstermin.';
+  }
+
+  @override
+  String get productionBehindScheduleShort => 'Im Verzug';
+
+  @override
+  String productionUseScheduledEnd(String date) {
+    return '$date als geplanten Fertigstellungstermin übernehmen';
+  }
+
+  @override
+  String get productionRemark => 'Hinweis für die Fertigung (intern)';
+
+  @override
+  String get productionSubOrders => 'Aufträge für Baugruppen';
+
+  @override
+  String productionSubassemblyOf(String number) {
+    return 'Baugruppe von $number';
+  }
+
+  @override
+  String get productionCost => 'Kosten';
+
+  @override
+  String get productionCostPlanned => 'Geplant';
+
+  @override
+  String get productionCostActual => 'Tatsächlich';
+
+  @override
+  String get productionCostMaterial => 'Material';
+
+  @override
+  String get productionCostLabour => 'Arbeit';
+
+  @override
+  String get productionCostIncomplete =>
+      'Einige Kosten fehlen und sind nicht enthalten.';
+
+  @override
+  String productionOperationsOpenWarning(String count) {
+    return '$count Arbeitsgänge sind noch offen. Tragen Sie die gearbeiteten Minuten ein, um sie abzuschließen; lassen Sie das Feld leer, um einen zu überspringen.';
+  }
+
+  @override
+  String get productionAutoRelease =>
+      'Auch die Baugruppen freigeben, die der Bestand nicht deckt';
+
+  @override
+  String get productionRouting => 'Arbeitsplan';
+
+  @override
+  String get productionRoutingNone =>
+      'Kein Arbeitsplan: Fertigungsaufträge für dieses Produkt haben keine Arbeitsgänge.';
+
+  @override
+  String get productionRoutingAddOperation => 'Arbeitsgang hinzufügen';
+
+  @override
+  String get productionRoutingOperation => 'Arbeitsgang';
+
+  @override
+  String get productionRoutingSetup => 'Rüsten (Min.)';
+
+  @override
+  String get productionRoutingRun => 'Laufzeit pro Einheit (Min.)';
+
+  @override
+  String get productionRoutingNoWorkCentres =>
+      'Legen Sie zuerst Arbeitsplätze an (Produktion, Arbeitsplätze).';
+
+  @override
+  String get productionCostRollup => 'Kostenzusammenstellung';
+
+  @override
+  String get productionCostRollupHint =>
+      'Material zu Standardkosten und Arbeit zu den Stundensätzen der Arbeitsplätze, über alle Ebenen.';
+
+  @override
+  String get productionCostPerUnit => 'Kosten pro Einheit';
+
+  @override
+  String productionCostGapProduct(String code) {
+    return 'Keine Standardkosten: $code';
+  }
+
+  @override
+  String productionCostGapWorkCentre(String code) {
+    return 'Kein Stundensatz: $code';
+  }
+
+  @override
+  String get productionCostCalculate => 'Berechnen';
+
+  @override
+  String get productionOperationMinutesInvalid =>
+      'Geben Sie die Minuten als ganze Zahl ein.';
+
+  @override
+  String get productionRoutingLoadFailed =>
+      'Der Arbeitsplan konnte nicht geladen werden und kann deshalb jetzt nicht geändert werden.';
+
+  @override
+  String get productionRoutingChangedWhileSaving =>
+      'Der Arbeitsplan wurde während des Speicherns geändert. Speichern Sie erneut, um die letzten Änderungen zu übernehmen.';
+
+  @override
   String get shortcutBack => 'Zurück';
 
   @override

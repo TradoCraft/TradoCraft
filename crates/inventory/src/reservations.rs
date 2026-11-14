@@ -467,6 +467,18 @@ pub async fn held_by(
     .await?)
 }
 
+/// A serial-tracked product ships one unit at a time: a fraction could never be consumed, so it
+/// cannot be reserved. [`set_reserved`] applies this; a caller that decides not to reserve before
+/// getting there calls it too, so that it does not hide a refusal `set_reserved` would give.
+pub fn check_whole_units(tracking: &str, want: Decimal) -> AppResult<()> {
+    if tracking == "serial" && want.fract() != Decimal::ZERO {
+        return Err(AppError::Validation(
+            "a serial-tracked product can only be reserved in whole units".into(),
+        ));
+    }
+    Ok(())
+}
+
 /// Sets how much of a product is held for a reference, in the caller's transaction: more
 /// allocates from free stock (all or nothing), less releases the newest allocations first, 0
 /// releases everything. Returns the quantity that was held before. The owning module checks that
@@ -489,18 +501,13 @@ pub async fn set_reserved(
             "quantity must be 0 or more, with at most 4 decimals".into(),
         ));
     }
-    // A serial-tracked product ships one unit at a time: a fraction could never be consumed.
     if want.fract() != Decimal::ZERO {
         let tracking: Option<String> =
             sqlx::query_scalar("SELECT tracking FROM products.products WHERE id = $1")
                 .bind(t.product_id)
                 .fetch_optional(&mut *conn)
                 .await?;
-        if tracking.as_deref() == Some("serial") {
-            return Err(AppError::Validation(
-                "a serial-tracked product can only be reserved in whole units".into(),
-            ));
-        }
+        check_whole_units(tracking.as_deref().unwrap_or_default(), want)?;
     }
     // Serialise reservations and moves on this product, locking balance rows in the same order
     // (location, lot) as `post_move` does.
@@ -528,15 +535,10 @@ struct Candidate {
     free: Decimal,
 }
 
-async fn allocate(
-    conn: &mut PgConnection,
-    user: &CurrentUser,
-    t: &ReserveTarget<'_>,
-    mut needed: Decimal,
-    pin: &ReservePin,
-) -> AppResult<()> {
-    let candidates: Vec<Candidate> = sqlx::query_as(
-        "SELECT b.location_id, b.lot_id, b.quantity - COALESCE(res.q, 0) AS free
+/// The stock a reservation can draw from: free quantity (on hand minus what is already reserved)
+/// per location and lot, in active warehouses and internal locations, without expired lots. Bound
+/// to `$1` company, `$2` product and the pin: `$3` warehouse, `$4` location, `$5` lot.
+const CANDIDATES: &str = "SELECT b.location_id, b.lot_id, b.quantity - COALESCE(res.q, 0) AS free
          FROM inventory.stock_balances b
          JOIN inventory.locations l ON l.id = b.location_id AND l.kind = 'internal' AND l.active
          JOIN inventory.warehouses w ON w.id = l.warehouse_id AND w.active
@@ -549,10 +551,38 @@ async fn allocate(
            AND ($3::uuid IS NULL OR w.id = $3) AND ($4::uuid IS NULL OR l.id = $4) AND ($5::uuid IS NULL OR b.lot_id = $5)
            AND (w.kind = 'warehouse' OR $3::uuid IS NOT NULL OR $4::uuid IS NOT NULL)
            AND (lot.expiry_date IS NULL OR lot.expiry_date >= current_date)
-           AND b.quantity - COALESCE(res.q, 0) > 0
-         ORDER BY lot.expiry_date NULLS LAST, w.code, l.code
-         FOR UPDATE OF b",
-    )
+           AND b.quantity - COALESCE(res.q, 0) > 0";
+
+/// How much of a product [`set_reserved`] could allocate right now without a pin: free stock in
+/// the normal warehouses (what is not reserved, expired lots left out). A read: nothing is locked,
+/// so it is a figure to plan with, not a promise.
+pub async fn free_to_reserve(
+    conn: &mut PgConnection,
+    company_id: Uuid,
+    product_id: Uuid,
+) -> AppResult<Decimal> {
+    Ok(sqlx::query_scalar(&format!(
+        "SELECT COALESCE(sum(c.free), 0) FROM ({CANDIDATES}) c"
+    ))
+    .bind(company_id)
+    .bind(product_id)
+    .bind(None::<Uuid>)
+    .bind(None::<Uuid>)
+    .bind(None::<Uuid>)
+    .fetch_one(conn)
+    .await?)
+}
+
+async fn allocate(
+    conn: &mut PgConnection,
+    user: &CurrentUser,
+    t: &ReserveTarget<'_>,
+    mut needed: Decimal,
+    pin: &ReservePin,
+) -> AppResult<()> {
+    let candidates: Vec<Candidate> = sqlx::query_as(&format!(
+        "{CANDIDATES} ORDER BY lot.expiry_date NULLS LAST, w.code, l.code FOR UPDATE OF b"
+    ))
     .bind(user.company_id)
     .bind(t.product_id)
     .bind(pin.warehouse_id)

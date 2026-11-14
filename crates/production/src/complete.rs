@@ -20,6 +20,7 @@ use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 use uuid::Uuid;
 
+use crate::operations::{check_actuals, close_operations, ProductionOperationActual};
 use crate::orders::{
     load_order, lock_order, release_components, sync_order_status, ProductionOrder,
 };
@@ -67,6 +68,11 @@ pub struct CompleteProductionInput {
     /// Actual consumption per component; components that are left out use the BOM quantity.
     #[serde(default)]
     pub components: Vec<ProductionComponentActual>,
+    /// The minutes worked per operation. Operations named here are finished; any other
+    /// operation that is still open is skipped. Never needed: an order without a routing has none,
+    /// and open operations do not stop an order from being completed.
+    #[serde(default)]
+    pub operations: Vec<ProductionOperationActual>,
     #[serde(default)]
     pub note: String,
 }
@@ -223,6 +229,7 @@ async fn complete_order(
             ));
         }
     }
+    check_actuals(&mut tx, user.company_id, id, &input.operations).await?;
     let components: Vec<CompRow> = sqlx::query_as(
         "SELECT id, component_product_id, required_quantity FROM production.order_components
          WHERE production_order_id = $1 ORDER BY component_product_id, position",
@@ -396,6 +403,8 @@ async fn complete_order(
         }
     }
     release_components(&mut tx, &user, id).await?;
+    let (operations_done, operations_skipped) =
+        close_operations(&mut tx, &user, id, &input.operations).await?;
     sqlx::query(
         "UPDATE production.production_orders
          SET status = 'completed', completed_at = now(), completed_quantity = $2,
@@ -417,13 +426,14 @@ async fn complete_order(
         serde_json::json!({
             "number": po.number, "ordered": po.quantity, "built": out.quantity,
             "lot": out.lot_number, "serial_numbers": out.serial_numbers,
+            "operations_finished": operations_done, "operations_skipped": operations_skipped,
         }),
     )
     .await?;
     if let Some(order_id) = po.order_id {
         sync_order_status(&mut tx, &user, order_id).await?;
     }
-    let result = load_order(&mut tx, user.company_id, id).await?;
+    let result = load_order(&mut tx, &user, id).await?;
     tx.commit().await?;
     Ok(Json(result))
 }

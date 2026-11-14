@@ -9,9 +9,11 @@ import '../features/configurator/configurator_page.dart';
 import '../features/configurator/runner_screen.dart';
 import '../features/customers/customers_page.dart';
 import '../features/delivery/deliveries_page.dart';
+import '../features/production/capacity_page.dart';
 import '../features/production/divisions_page.dart';
 import '../features/production/production_page.dart';
 import '../features/production/release_page.dart';
+import '../features/production/work_centres_page.dart';
 import '../features/delivery/delivery_settings_page.dart';
 import '../features/helpdesk/answers_page.dart';
 import '../features/helpdesk/automation_page.dart';
@@ -236,6 +238,14 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/production/divisions',
             builder: (_, _) => const DivisionsPage(),
+          ),
+          GoRoute(
+            path: '/production/work-centres',
+            builder: (_, _) => const WorkCentresPage(),
+          ),
+          GoRoute(
+            path: '/production/capacity',
+            builder: (_, _) => const CapacityPage(),
           ),
           GoRoute(
             path: '/production/:id',

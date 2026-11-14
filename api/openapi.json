@@ -1248,6 +1248,118 @@
         }
       }
     },
+    "/api/v1/boms/{id}/routing": {
+      "get": {
+        "tags": [
+          "production"
+        ],
+        "summary": "The routing of a BOM revision: empty operations when it has none.",
+        "operationId": "get_routing",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BomRouting"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "production"
+        ],
+        "summary": "Replaces the routing of a draft BOM revision. Work centres must belong to the company and be\nactive, except ones the routing already uses (deactivating a work centre does not break the\nroutings that have it).",
+        "operationId": "set_routing",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BomRoutingInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BomRouting"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/closures": {
       "get": {
         "tags": [
@@ -16728,7 +16840,7 @@
         "tags": [
           "production"
         ],
-        "summary": "Releases a line of a sales order, or a quantity for stock, to production: freezes the active\nBOM, creates the production order and its components and reserves them.",
+        "summary": "Releases a line of a sales order, or a quantity for stock, to production: freezes the active\nBOM and its routing, creates the production order and its components and reserves them.\nWith `auto_release_subassemblies`, subassemblies that stock does not cover get production\norders of their own for the shortfall.",
         "operationId": "release",
         "requestBody": {
           "content": {
@@ -17030,6 +17142,87 @@
         }
       }
     },
+    "/api/v1/production-orders/{id}/components/{component_id}/build": {
+      "post": {
+        "tags": [
+          "production"
+        ],
+        "summary": "Releases a production order for a component that is built from a BOM and that stock does not\ncover, below this order: it builds what is still missing. The order may list the same\ncomponent more than once, so this compares everything the order needs of the product with\neverything that covers it (reserved, free in stock, already under way in open subassembly\norders): one build serves all its rows, and building again for another row finds it covered.",
+        "operationId": "build_component",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "component_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductionBuildComponentInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductionOrder"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/production-orders/{id}/components/{component_id}/serial-units": {
       "get": {
         "tags": [
@@ -17096,6 +17289,350 @@
         }
       }
     },
+    "/api/v1/production-orders/{id}/operations/{operation_id}": {
+      "put": {
+        "tags": [
+          "production"
+        ],
+        "summary": "Moves an operation to another work centre and/or other dates.",
+        "operationId": "update_production_operation",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "operation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductionOperationUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductionOrder"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/production-orders/{id}/operations/{operation_id}/finish": {
+      "post": {
+        "tags": [
+          "production"
+        ],
+        "summary": "Finishes an operation (also one that was never started: it is started and finished at once).",
+        "operationId": "finish_production_operation",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "operation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductionOperationFinish"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductionOrder"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/production-orders/{id}/operations/{operation_id}/reopen": {
+      "post": {
+        "tags": [
+          "production"
+        ],
+        "summary": "Takes back the finish (or skip) of an operation, for a mistake.",
+        "operationId": "reopen_production_operation",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "operation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductionOrder"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/production-orders/{id}/operations/{operation_id}/start": {
+      "post": {
+        "tags": [
+          "production"
+        ],
+        "summary": "Starts an operation. Starting the first one starts the production order.",
+        "operationId": "start_production_operation",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "operation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductionOrder"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/production-orders/{id}/pdf": {
+      "get": {
+        "tags": [
+          "production"
+        ],
+        "summary": "The production order as a PDF to print and take to the shop floor.",
+        "operationId": "production_order_pdf",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "description": "nl | fr | en | de | es; default: the language of the user, else of the company.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/pdf": {}
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/production-orders/{id}/reserve": {
       "post": {
         "tags": [
@@ -17148,6 +17685,78 @@
         }
       }
     },
+    "/api/v1/production-orders/{id}/schedule": {
+      "post": {
+        "tags": [
+          "production"
+        ],
+        "summary": "Schedules the operations that have not started again from a date, one after the other on the\nwork centres' calendars. The planned-ready date of the order is not changed: the planner\nsets it, with `scheduled_end` as the suggestion.",
+        "operationId": "schedule_production_order",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductionScheduleInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductionOrder"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/production-orders/{id}/start": {
       "post": {
         "tags": [
@@ -17188,6 +17797,271 @@
             }
           },
           "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/production/capacity": {
+      "get": {
+        "tags": [
+          "production"
+        ],
+        "summary": "Capacity against load per work centre and day. Load is the planned minutes of every operation\nof an open production order that is not finished, spread over the working days between its\nplanned dates in proportion to what each day offers. Work that is already late lands on the\nfirst day of the period; an operation that is running still counts in full (no progress is\nrecorded).",
+        "operationId": "production_capacity",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "description": "First day.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "Last day, inclusive; at most 62 days after `from`.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "division_id",
+            "in": "query",
+            "description": "Only the work centres of this division.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductionCapacity"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/production/closures": {
+      "get": {
+        "tags": [
+          "production"
+        ],
+        "summary": "Closures, earliest first.",
+        "operationId": "list_work_centre_closures",
+        "parameters": [
+          {
+            "name": "work_centre_id",
+            "in": "query",
+            "description": "This work centre's closures and the whole-plant ones.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "description": "Only closures that end on or after this day.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "Only closures that start on or before this day.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WorkCentreClosure"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "production"
+        ],
+        "summary": "Adds a closure.",
+        "operationId": "create_work_centre_closure",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkCentreClosureInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkCentreClosure"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/production/closures/{id}": {
+      "put": {
+        "tags": [
+          "production"
+        ],
+        "summary": "Changes a closure.",
+        "operationId": "update_work_centre_closure",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkCentreClosureInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkCentreClosure"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "production"
+        ],
+        "summary": "Removes a closure.",
+        "operationId": "delete_work_centre_closure",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "404": {
             "description": "",
             "content": {
               "application/json": {
@@ -17378,6 +18252,81 @@
         }
       }
     },
+    "/api/v1/production/products/{id}/cost-rollup": {
+      "get": {
+        "tags": [
+          "production"
+        ],
+        "summary": "The cost of building a quantity of a product from its active BOM and routing, through every\nlevel of subassemblies (a subassembly is costed from its own BOM and routing, not from its\nstandard cost). Material uses standard costs, labour the work centres' cost per hour as they\nare now.",
+        "operationId": "production_cost_rollup",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "quantity",
+            "in": "query",
+            "description": "How many to cost; default 1. The setup time of each operation is counted once.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "example": "10"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductionCostRollup"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/production/products/{id}/division": {
       "get": {
         "tags": [
@@ -17487,6 +18436,282 @@
                   "items": {
                     "$ref": "#/components/schemas/ProductionToRelease"
                   }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/production/work-centres": {
+      "get": {
+        "tags": [
+          "production"
+        ],
+        "summary": "The work centres of the company, in their sort order.",
+        "operationId": "list_work_centres",
+        "parameters": [
+          {
+            "name": "active",
+            "in": "query",
+            "description": "Only active (true) or only inactive (false) work centres.",
+            "required": false,
+            "schema": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "division_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WorkCentre"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "production"
+        ],
+        "summary": "Adds a work centre.",
+        "operationId": "create_work_centre",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkCentreInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkCentre"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/production/work-centres/{id}": {
+      "put": {
+        "tags": [
+          "production"
+        ],
+        "summary": "Changes a work centre. Deactivating one hides it from new routings; existing routings and\noperations keep it.",
+        "operationId": "update_work_centre",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkCentreInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkCentre"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "production"
+        ],
+        "summary": "Removes a work centre that nothing uses. One that routings or operations refer to is refused\nwith 409 Conflict: deactivate it instead.",
+        "operationId": "delete_work_centre",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/production/work-centres/{id}/hours": {
+      "put": {
+        "tags": [
+          "production"
+        ],
+        "summary": "Replaces the opening hours of a work centre. No blocks: the default week applies again.",
+        "operationId": "set_work_centre_hours",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkCentreHoursInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkCentre"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
                 }
               }
             }
@@ -27196,6 +28421,56 @@
           }
         }
       },
+      "BomRouting": {
+        "type": "object",
+        "description": "The routing of one BOM revision.",
+        "required": [
+          "bom_id",
+          "product_id",
+          "bom_revision",
+          "bom_status",
+          "operations"
+        ],
+        "properties": {
+          "bom_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "bom_revision": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "bom_status": {
+            "type": "string",
+            "description": "draft | active | obsolete. Only a draft can be changed."
+          },
+          "operations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RoutingOperation"
+            }
+          },
+          "product_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "BomRoutingInput": {
+        "type": "object",
+        "description": "Replaces the whole routing of a draft BOM revision. The order of the list is the order of the\noperations.",
+        "required": [
+          "operations"
+        ],
+        "properties": {
+          "operations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RoutingOperationInput"
+            }
+          }
+        }
+      },
       "BomSummary": {
         "type": "object",
         "required": [
@@ -27914,6 +29189,13 @@
           },
           "note": {
             "type": "string"
+          },
+          "operations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductionOperationActual"
+            },
+            "description": "The minutes worked per operation. Operations named here are finished; any other\noperation that is still open is skipped. Never needed: an order without a routing has none,\nand open operations do not stop an order from being completed."
           },
           "output": {
             "$ref": "#/components/schemas/ProductionOutputInput"
@@ -38185,6 +39467,123 @@
           }
         }
       },
+      "ProductionBuildComponentInput": {
+        "type": "object",
+        "properties": {
+          "auto_release_subassemblies": {
+            "type": "boolean",
+            "description": "Also release the subassemblies of the new production order that are short."
+          }
+        }
+      },
+      "ProductionCapacity": {
+        "type": "object",
+        "required": [
+          "from",
+          "to",
+          "centres"
+        ],
+        "properties": {
+          "centres": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductionCapacityCentre"
+            }
+          },
+          "from": {
+            "type": "string",
+            "format": "date"
+          },
+          "to": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "ProductionCapacityCentre": {
+        "type": "object",
+        "description": "A work centre over the period.",
+        "required": [
+          "id",
+          "code",
+          "name",
+          "active",
+          "capacity",
+          "days",
+          "total_available_minutes",
+          "total_load_minutes"
+        ],
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "capacity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "code": {
+            "type": "string"
+          },
+          "days": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductionCapacityDay"
+            }
+          },
+          "division_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "total_available_minutes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "total_load_minutes": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "ProductionCapacityDay": {
+        "type": "object",
+        "description": "One day of one work centre.",
+        "required": [
+          "date",
+          "available_minutes",
+          "load_minutes",
+          "overloaded"
+        ],
+        "properties": {
+          "available_minutes": {
+            "type": "integer",
+            "format": "int64",
+            "description": "What the work centre can work: the minutes of its hours times its capacity, 0 on a closure."
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "load_minutes": {
+            "type": "integer",
+            "format": "int64",
+            "description": "What the open operations put on the day."
+          },
+          "overloaded": {
+            "type": "boolean",
+            "description": "The load is more than is available."
+          }
+        }
+      },
       "ProductionComponent": {
         "type": "object",
         "required": [
@@ -38301,6 +39700,323 @@
           }
         }
       },
+      "ProductionCostGap": {
+        "type": "object",
+        "description": "Something that could not be costed and was left out.",
+        "required": [
+          "kind",
+          "code"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "The product or work centre code."
+          },
+          "kind": {
+            "type": "string",
+            "description": "standard_cost: a product without a standard cost; cost_per_hour: a work centre without one."
+          }
+        }
+      },
+      "ProductionCostLevel": {
+        "type": "object",
+        "description": "One built product in the roll-up: the product itself and each subassembly below it.",
+        "required": [
+          "level",
+          "product_id",
+          "product_code",
+          "product_name",
+          "unit",
+          "quantity",
+          "material_cost",
+          "labour_cost",
+          "minutes"
+        ],
+        "properties": {
+          "labour_cost": {
+            "type": "string",
+            "description": "Its own routing: operation minutes at the work centres' cost per hour."
+          },
+          "level": {
+            "type": "integer",
+            "format": "int32",
+            "description": "0 for the product asked for, 1 for its subassemblies, and so on."
+          },
+          "material_cost": {
+            "type": "string",
+            "description": "Components that are bought, at their standard cost (subassemblies are costed on their own\nlevel)."
+          },
+          "minutes": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Minutes of its own routing for this quantity."
+          },
+          "product_code": {
+            "type": "string"
+          },
+          "product_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "product_name": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "string",
+            "description": "How many of it are built."
+          },
+          "unit": {
+            "type": "string"
+          }
+        }
+      },
+      "ProductionCostRollup": {
+        "type": "object",
+        "required": [
+          "product_id",
+          "product_code",
+          "product_name",
+          "unit",
+          "quantity",
+          "currency",
+          "material_cost",
+          "labour_cost",
+          "total_cost",
+          "unit_cost",
+          "levels",
+          "gaps"
+        ],
+        "properties": {
+          "currency": {
+            "type": "string",
+            "description": "The company currency."
+          },
+          "gaps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductionCostGap"
+            },
+            "description": "What was left out because it has no cost."
+          },
+          "labour_cost": {
+            "type": "string"
+          },
+          "levels": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductionCostLevel"
+            },
+            "description": "The product and each subassembly, in the order they are met."
+          },
+          "material_cost": {
+            "type": "string"
+          },
+          "product_code": {
+            "type": "string"
+          },
+          "product_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "product_name": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "string"
+          },
+          "total_cost": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "unit_cost": {
+            "type": "string",
+            "description": "Total cost for one unit of the product."
+          }
+        }
+      },
+      "ProductionOperation": {
+        "type": "object",
+        "description": "One operation of a production order.",
+        "required": [
+          "id",
+          "position",
+          "name",
+          "work_centre_id",
+          "work_centre_code",
+          "work_centre_name",
+          "setup_minutes",
+          "run_minutes_per_unit",
+          "planned_minutes",
+          "planned_start",
+          "planned_end",
+          "status",
+          "notes"
+        ],
+        "properties": {
+          "actual_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Total minutes worked, recorded when the operation is finished."
+          },
+          "completed_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "completed_by": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "Who finished (or, at completion of the order, closed) the operation."
+          },
+          "completed_by_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "cost_rate": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Cost of an hour at the work centre when the order was released or the operation moved.\nOnly for users with the cost permission.",
+            "example": "45"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "planned_end": {
+            "type": "string",
+            "format": "date"
+          },
+          "planned_minutes": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Setup plus run time for the quantity of the order, rounded up to whole minutes."
+          },
+          "planned_start": {
+            "type": "string",
+            "format": "date"
+          },
+          "position": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "run_minutes_per_unit": {
+            "type": "string",
+            "example": "2.5"
+          },
+          "setup_minutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "started_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string",
+            "description": "pending | in_progress | done | skipped"
+          },
+          "work_centre_code": {
+            "type": "string"
+          },
+          "work_centre_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "work_centre_name": {
+            "type": "string"
+          }
+        }
+      },
+      "ProductionOperationActual": {
+        "type": "object",
+        "description": "The minutes worked on one operation, given when the order is completed.",
+        "required": [
+          "operation_id"
+        ],
+        "properties": {
+          "actual_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Total minutes worked; defaults to the planned minutes."
+          },
+          "operation_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "ProductionOperationFinish": {
+        "type": "object",
+        "description": "Records that an operation is finished and how many minutes it took.",
+        "properties": {
+          "actual_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Total minutes worked on the operation; defaults to the planned minutes."
+          },
+          "note": {
+            "type": "string",
+            "description": "Added to the notes of the operation."
+          }
+        }
+      },
+      "ProductionOperationUpdate": {
+        "type": "object",
+        "description": "What a planner may change on an operation that is not finished. What is left out stays.",
+        "properties": {
+          "planned_end": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "planned_start": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "work_centre_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "Move the operation to another (active) work centre; its cost rate is taken again."
+          }
+        }
+      },
       "ProductionOrder": {
         "allOf": [
           {
@@ -38311,9 +40027,22 @@
             "required": [
               "notes",
               "components",
-              "outputs"
+              "outputs",
+              "operations",
+              "sub_orders"
             ],
             "properties": {
+              "actual_cost": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ProductionOrderCost",
+                    "description": "What it cost so far: the components consumed (booked when the order is completed) and the\nminutes of the finished operations. Only for users who may see cost, once it has started\n(also when it was cancelled afterwards)."
+                  }
+                ]
+              },
               "cancel_reason": {
                 "type": [
                   "string",
@@ -38342,6 +40071,12 @@
               "notes": {
                 "type": "string"
               },
+              "operations": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ProductionOperation"
+                }
+              },
               "order_line_id": {
                 "type": [
                   "string",
@@ -38362,16 +40097,86 @@
                 ],
                 "format": "uuid"
               },
+              "parent_order_number": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The number of the production order this one is a subassembly of."
+              },
+              "planned_cost": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ProductionOrderCost",
+                    "description": "What the order is planned to cost: components at the standard cost frozen at release and\noperations at their planned minutes. Only for users who may see cost."
+                  }
+                ]
+              },
+              "production_remark": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The internal production remark of the sales order line it builds for (never printed for\nthe customer)."
+              },
+              "scheduled_end": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date",
+                "description": "When the last operation that is not finished is scheduled to end: the date to suggest as\nthe planned-ready date. Empty without open operations."
+              },
               "started_at": {
                 "type": [
                   "string",
                   "null"
                 ],
                 "format": "date-time"
+              },
+              "sub_orders": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ProductionSubOrder"
+                },
+                "description": "The production orders released for its subassemblies."
               }
             }
           }
         ]
+      },
+      "ProductionOrderCost": {
+        "type": "object",
+        "description": "Cost of a production order, in the company currency.",
+        "required": [
+          "material_cost",
+          "labour_cost",
+          "total_cost",
+          "incomplete"
+        ],
+        "properties": {
+          "incomplete": {
+            "type": "boolean",
+            "description": "A component had no standard cost or an operation no rate: its cost is left out."
+          },
+          "labour_cost": {
+            "type": "string",
+            "description": "Operation minutes at the cost per hour the operations had.",
+            "example": "80"
+          },
+          "material_cost": {
+            "type": "string",
+            "description": "Components at the standard cost they had when the order was released.",
+            "example": "83.74"
+          },
+          "total_cost": {
+            "type": "string",
+            "example": "163.74"
+          }
+        }
       },
       "ProductionOutput": {
         "type": "object",
@@ -38486,6 +40291,19 @@
           }
         }
       },
+      "ProductionScheduleInput": {
+        "type": "object",
+        "properties": {
+          "start_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "The first day work can start; defaults to today."
+          }
+        }
+      },
       "ProductionSerialCandidate": {
         "type": "object",
         "required": [
@@ -38511,6 +40329,64 @@
           }
         }
       },
+      "ProductionSubOrder": {
+        "type": "object",
+        "description": "A production order released for a subassembly of another one.",
+        "required": [
+          "id",
+          "number",
+          "product_id",
+          "product_code",
+          "product_name",
+          "unit",
+          "quantity",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "number": {
+            "type": "string"
+          },
+          "planned_ready_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "product_code": {
+            "type": "string"
+          },
+          "product_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "product_name": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "string"
+          },
+          "scheduled_end": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "When its last open operation is scheduled to end."
+          },
+          "status": {
+            "type": "string",
+            "description": "released | in_progress | completed | cancelled"
+          },
+          "unit": {
+            "type": "string"
+          }
+        }
+      },
       "ProductionSummary": {
         "type": "object",
         "required": [
@@ -38527,9 +40403,16 @@
           "order_cancelled",
           "status",
           "short_components",
+          "operation_count",
+          "operations_done",
+          "behind_schedule",
           "created_at"
         ],
         "properties": {
+          "behind_schedule": {
+            "type": "boolean",
+            "description": "An operation that is not finished is scheduled after the planned-ready date."
+          },
           "bom_revision": {
             "type": "integer",
             "format": "int32"
@@ -38563,6 +40446,16 @@
           },
           "number": {
             "type": "string"
+          },
+          "operation_count": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Operations of the routing that was frozen at release (0 without a routing)."
+          },
+          "operations_done": {
+            "type": "integer",
+            "format": "int64",
+            "description": "How many of them are finished."
           },
           "order_cancelled": {
             "type": "boolean",
@@ -40155,6 +42048,10 @@
       "ReleaseProductionInput": {
         "type": "object",
         "properties": {
+          "auto_release_subassemblies": {
+            "type": "boolean",
+            "description": "Also release production orders for the subassemblies that stock does not cover (for the\nshortfall), and their subassemblies in turn."
+          },
           "division_id": {
             "type": [
               "string",
@@ -40210,6 +42107,14 @@
             ],
             "description": "In the stock unit of the product. For an order line it defaults to what is still to be built.",
             "example": "5"
+          },
+          "start_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "The first day work can start, for scheduling the operations; defaults to today."
           }
         }
       },
@@ -41850,6 +43755,84 @@
           },
           "note": {
             "type": "string"
+          }
+        }
+      },
+      "RoutingOperation": {
+        "type": "object",
+        "description": "One operation of a routing.",
+        "required": [
+          "id",
+          "position",
+          "name",
+          "work_centre_id",
+          "work_centre_code",
+          "work_centre_name",
+          "setup_minutes",
+          "run_minutes_per_unit",
+          "notes"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "position": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "run_minutes_per_unit": {
+            "type": "string",
+            "description": "Minutes for each unit built, in the stock unit of the product.",
+            "example": "2.5"
+          },
+          "setup_minutes": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Minutes once per production order, whatever its quantity."
+          },
+          "work_centre_code": {
+            "type": "string"
+          },
+          "work_centre_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "work_centre_name": {
+            "type": "string"
+          }
+        }
+      },
+      "RoutingOperationInput": {
+        "type": "object",
+        "required": [
+          "name",
+          "work_centre_id"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "run_minutes_per_unit": {
+            "type": "string",
+            "example": "2.5"
+          },
+          "setup_minutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "work_centre_id": {
+            "type": "string",
+            "format": "uuid"
           }
         }
       },
@@ -46189,6 +48172,243 @@
           "user_id": {
             "type": "string",
             "format": "uuid"
+          }
+        }
+      },
+      "WorkCentre": {
+        "type": "object",
+        "description": "A work centre with its own opening hours.",
+        "required": [
+          "id",
+          "code",
+          "name",
+          "capacity",
+          "active",
+          "sort_order",
+          "notes",
+          "open_operations",
+          "hours"
+        ],
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "capacity": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Parallel units (machines or crews) the work centre offers at once."
+          },
+          "code": {
+            "type": "string"
+          },
+          "cost_per_hour": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Cost of one hour of work in the company currency. Only for users with the cost permission.",
+            "example": "45"
+          },
+          "division_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "division_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "hours": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkCentreHoursSlot"
+            },
+            "description": "Own opening hours. None: the default week (Monday to Friday 08:00-12:00 and 13:00-17:00)."
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "open_operations": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Operations that are not finished, of production orders that are still open."
+          },
+          "sort_order": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "WorkCentreClosure": {
+        "type": "object",
+        "description": "A period in which a work centre (or the whole plant) does not work.",
+        "required": [
+          "id",
+          "from_date",
+          "to_date",
+          "kind",
+          "note"
+        ],
+        "properties": {
+          "from_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "type": "string",
+            "description": "maintenance | holiday | other"
+          },
+          "note": {
+            "type": "string"
+          },
+          "to_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "work_centre_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "work_centre_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "Empty: the whole plant is closed (a holiday)."
+          }
+        }
+      },
+      "WorkCentreClosureInput": {
+        "type": "object",
+        "required": [
+          "from_date",
+          "to_date"
+        ],
+        "properties": {
+          "from_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "kind": {
+            "type": "string",
+            "description": "maintenance | holiday | other"
+          },
+          "note": {
+            "type": "string"
+          },
+          "to_date": {
+            "type": "string",
+            "format": "date",
+            "description": "Inclusive."
+          },
+          "work_centre_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "Leave empty to close the whole plant."
+          }
+        }
+      },
+      "WorkCentreHoursInput": {
+        "type": "object",
+        "description": "Replaces the opening hours of a work centre.",
+        "required": [
+          "slots"
+        ],
+        "properties": {
+          "slots": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkCentreHoursSlot"
+            },
+            "description": "All blocks; none means the default week applies again."
+          }
+        }
+      },
+      "WorkCentreHoursSlot": {
+        "type": "object",
+        "description": "A block of working time of a work centre.",
+        "required": [
+          "weekday",
+          "start_time",
+          "end_time"
+        ],
+        "properties": {
+          "end_time": {
+            "type": "string"
+          },
+          "start_time": {
+            "type": "string"
+          },
+          "weekday": {
+            "type": "integer",
+            "format": "int32",
+            "description": "1 (Monday) to 7 (Sunday)."
+          }
+        }
+      },
+      "WorkCentreInput": {
+        "type": "object",
+        "description": "Input to create or change a work centre.",
+        "required": [
+          "code",
+          "name"
+        ],
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "capacity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "code": {
+            "type": "string"
+          },
+          "cost_per_hour": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Ignored (the stored rate stays) for users without the cost permission.",
+            "example": "45"
+          },
+          "division_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "sort_order": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
