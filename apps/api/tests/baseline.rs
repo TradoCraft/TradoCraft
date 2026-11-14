@@ -180,7 +180,10 @@ async fn seed_creates_the_tower_setup_and_is_idempotent(db: PgPool) {
             "motor_brand"
         ]
     );
-    assert_eq!(by("product"), ["dial_size_mm", "motor_kw"]);
+    assert_eq!(
+        by("product"),
+        ["dial_size_mm", "motor_kw", "can_illuminate"]
+    );
     let motion = defs
         .as_array()
         .unwrap()
