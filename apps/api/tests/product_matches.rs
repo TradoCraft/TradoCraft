@@ -953,7 +953,7 @@ async fn the_dial_attributes_and_the_illumination_rule_are_seeded_once(db: PgPoo
         ("dial_diameter_mm", "number"),
         ("mounting", "select"),
         ("wall_thickness_mm", "number"),
-        ("faces", "number"),
+        ("faces", "select"),
         ("movement", "select"),
         ("illumination_wanted", "boolean"),
     ] {
@@ -1052,7 +1052,7 @@ async fn missing_dial_attributes_stay_unknown_never_unsuitable(db: PgPool) {
 async fn wall_thickness_is_accepted_with_mounting_wall_and_values_are_validated(db: PgPool) {
     let app = seeded(&db).await;
     let ok = json!({ "type_code": "clock_dial",
-        "values": { "mounting": "wall", "wall_thickness_mm": 350, "faces": 4,
+        "values": { "mounting": "wall", "wall_thickness_mm": 350, "faces": "4",
                      "movement": "per_dial_motor", "illumination_wanted": true } });
     let id = add_item(&app, OPP, ok).await;
     let (status, item) = api(
@@ -1070,7 +1070,61 @@ async fn wall_thickness_is_accepted_with_mounting_wall_and_values_are_validated(
         json!({ "movement": "steam" }),
         json!({ "illumination_wanted": "yes" }),
         json!({ "faces": "four" }),
+        json!({ "faces": "5" }),
+        json!({ "faces": "0" }),
+        json!({ "faces": 3 }),
     ] {
+        let (status, r) = api(
+            &app,
+            SALES,
+            Method::POST,
+            &format!("/opportunities/{OPP}/baseline/items"),
+            Some(json!({ "type_code": "clock_dial", "values": bad })),
+        )
+        .await;
+        assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{bad}: {r}");
+    }
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn faces_is_a_select_of_one_to_four_and_stays_optional(db: PgPool) {
+    let app = seeded(&db).await;
+    let (_, defs) = api(&app, ADMIN, Method::GET, "/attribute-definitions", None).await;
+    let faces = defs
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|d| d["key"] == "faces" && d["scope"] == "clock_dial")
+        .unwrap();
+    assert_eq!(faces["kind"], "select", "{faces}");
+    let opts: Vec<(String, String)> = faces["options"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|o| {
+            (
+                o["value"].as_str().unwrap().into(),
+                o["label"].as_str().unwrap().into(),
+            )
+        })
+        .collect();
+    let want: Vec<(String, String)> = ["1", "2", "3", "4"]
+        .iter()
+        .map(|v| (v.to_string(), v.to_string()))
+        .collect();
+    assert_eq!(opts, want);
+    for ok in [json!({ "faces": "3" }), json!({})] {
+        let (status, r) = api(
+            &app,
+            SALES,
+            Method::POST,
+            &format!("/opportunities/{OPP}/baseline/items"),
+            Some(json!({ "type_code": "clock_dial", "values": ok })),
+        )
+        .await;
+        assert!(status.is_success(), "{ok}: {r}");
+    }
+    for bad in [json!({ "faces": "5" }), json!({ "faces": "0" })] {
         let (status, r) = api(
             &app,
             SALES,

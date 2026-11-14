@@ -201,8 +201,8 @@ attributes and the tables). Decision 6 is implemented without a second engine.
   not recorded the rule does not apply and gives no reason. Nothing in the Rust or Dart logic knows
   about dials or illumination.
 * Seed data on the `clock_dial` type, all optional: `mounting` (select wall / on_dial),
-  `wall_thickness_mm` (number, mm), `faces` (number; there is no integer kind, a decimal is
-  accepted), `movement` (select central / per_dial_motor), `illumination_wanted` (boolean). Product
+  `wall_thickness_mm` (number, mm), `faces` (select 1 / 2 / 3 / 4, the number of faces of the tower), `movement` (select central /
+  per_dial_motor), `illumination_wanted` (boolean). Product
   attribute `can_illuminate` (boolean) and the rule "Illumination supported"
   (`illumination_wanted` -> `can_illuminate`, `requires_if_true`). A missing value on any of them
   is `unknown` or no reason, never `unsuitable`. Only the illumination rule reads the new
@@ -217,5 +217,5 @@ attributes and the tables). Decision 6 is implemented without a second engine.
   values, name, parent and quantity unchanged; afterwards the baseline and the Matches panel
   reload. Without `opportunities.write` the plain summary line stays.
 * Follow-up: the quotation screen can show the baseline with the same chips by reusing
-  `BaselineQuickEditDialog` (it needs only the opportunity id, the item and the definition); a
-  true integer kind for `faces`; select option translations.
+  `BaselineQuickEditDialog` (it needs only the opportunity id, the item and the definition); select
+  option translations.
