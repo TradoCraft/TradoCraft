@@ -1165,7 +1165,7 @@ class _CrmClient implements CrmClient {
   }
 
   @override
-  Future<ImportReport> importBaseline({
+  Future<BaselineImportReport> importBaseline({
     required String id,
     required dynamic body,
     bool? dryRun,
@@ -1179,7 +1179,7 @@ class _CrmClient implements CrmClient {
     queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
     final _data = body;
-    final _options = _setStreamType<ImportReport>(
+    final _options = _setStreamType<BaselineImportReport>(
       Options(method: 'POST', headers: _headers, extra: _extra)
           .compose(
             _dio.options,
@@ -1190,9 +1190,9 @@ class _CrmClient implements CrmClient {
           .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
     );
     final _result = await _dio.fetch<Map<String, Object?>>(_options);
-    late ImportReport _value;
+    late BaselineImportReport _value;
     try {
-      _value = ImportReport.fromJson(_result.data!);
+      _value = BaselineImportReport.fromJson(_result.data!);
     } on Object catch (e, s) {
       errorLogger?.logError(e, s, _options, response: _result);
       rethrow;

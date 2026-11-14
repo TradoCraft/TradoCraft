@@ -7,6 +7,7 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:retrofit/retrofit.dart';
 
+import '../models/baseline_import_report.dart';
 import '../models/baseline_item.dart';
 import '../models/baseline_item_input.dart';
 import '../models/baseline_item_type.dart';
@@ -330,7 +331,7 @@ abstract class CrmClient {
   /// [sourceId] - Identifies the source; an import replaces the items of the same source in the.
   /// opportunity. Default `tower_configurator`, at most 100 characters.
   @POST('/api/v1/opportunities/{id}/baseline/import')
-  Future<ImportReport> importBaseline({
+  Future<BaselineImportReport> importBaseline({
     @Path('id') required String id,
     @Body() required dynamic body,
     @Query('dry_run') bool? dryRun,

@@ -48,6 +48,7 @@ export 'models/audit_event.dart';
 export 'models/audit_facets.dart';
 export 'models/audit_page.dart';
 export 'models/balance_difference.dart';
+export 'models/baseline_import_report.dart';
 export 'models/baseline_item.dart';
 export 'models/baseline_item_input.dart';
 export 'models/baseline_item_type.dart';

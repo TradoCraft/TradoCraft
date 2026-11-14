@@ -13115,7 +13115,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ImportReport"
+                  "$ref": "#/components/schemas/BaselineImportReport"
                 }
               }
             }
@@ -30396,6 +30396,53 @@
           "product_id": {
             "type": "string",
             "format": "uuid"
+          }
+        }
+      },
+      "BaselineImportReport": {
+        "type": "object",
+        "required": [
+          "dry_run",
+          "source_id",
+          "replaced",
+          "created",
+          "items",
+          "warnings",
+          "unmapped_fields"
+        ],
+        "properties": {
+          "created": {
+            "$ref": "#/components/schemas/ImportCounts"
+          },
+          "dry_run": {
+            "type": "boolean"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImportPreviewItem"
+            },
+            "description": "The group first, then its bells."
+          },
+          "replaced": {
+            "type": "integer",
+            "description": "Items of the same source that are (dry run) or were replaced.",
+            "minimum": 0
+          },
+          "source_id": {
+            "type": "string"
+          },
+          "unmapped_fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UnmappedField"
+            }
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImportWarning"
+            }
           }
         }
       },
