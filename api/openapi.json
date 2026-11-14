@@ -8610,6 +8610,639 @@
         }
       }
     },
+    "/api/v1/imports/entities": {
+      "get": {
+        "tags": [
+          "imports"
+        ],
+        "summary": "The entities the caller may import, with their columns.",
+        "operationId": "list_import_entities",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ImportDescription"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/imports/files": {
+      "post": {
+        "tags": [
+          "imports"
+        ],
+        "summary": "Uploads a file (CSV, XLSX or ODS, at most 50 MiB): the request body is the file itself. A file\nof another type, or one that exceeds the archive limits, is refused and not stored.",
+        "operationId": "upload_import_file",
+        "parameters": [
+          {
+            "name": "filename",
+            "in": "query",
+            "description": "The original file name.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "type": "string"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportFile"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The file is larger than 50 MiB"
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/imports/files/{id}/preview": {
+      "get": {
+        "tags": [
+          "imports"
+        ],
+        "summary": "The header, the number of rows and the first 20 rows of an uploaded file.",
+        "operationId": "preview_import_file",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "sheet",
+            "in": "query",
+            "description": "The sheet to read; the first one when absent. Ignored for CSV.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportPreview"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/imports/jobs": {
+      "get": {
+        "tags": [
+          "imports"
+        ],
+        "summary": "The runs of the company, newest first.",
+        "operationId": "list_import_jobs",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Only jobs in this status.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Page size, 50 by default, at most 200.",
+            "required": false,
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportJobPage"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "imports"
+        ],
+        "summary": "Starts an import. A file within the limits of one request runs now and the finished job is\nreturned (200); a larger one is queued for the worker (202).",
+        "operationId": "create_import_job",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateJob"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportJob"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportJob"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/imports/jobs/{id}": {
+      "get": {
+        "tags": [
+          "imports"
+        ],
+        "summary": "One run with its progress and the first 100 errors.",
+        "operationId": "get_import_job",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportJob"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/imports/jobs/{id}/cancel": {
+      "post": {
+        "tags": [
+          "imports"
+        ],
+        "summary": "Cancels a job that is still queued.",
+        "operationId": "cancel_import_job",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportJob"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/imports/jobs/{id}/errors": {
+      "get": {
+        "tags": [
+          "imports"
+        ],
+        "summary": "The errors of a run as CSV (`row`, `column`, `message`).",
+        "operationId": "download_import_errors",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/imports/mappings": {
+      "get": {
+        "tags": [
+          "imports"
+        ],
+        "summary": "The saved mappings of the company, by name.",
+        "operationId": "list_import_mappings",
+        "parameters": [
+          {
+            "name": "entity",
+            "in": "query",
+            "description": "Only the mappings of this entity.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ImportMapping"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "imports"
+        ],
+        "summary": "Saves a mapping; an existing one with the same entity and name is replaced.",
+        "operationId": "save_import_mapping",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MappingInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportMapping"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/imports/mappings/{id}": {
+      "delete": {
+        "tags": [
+          "imports"
+        ],
+        "summary": "Deletes a saved mapping.",
+        "operationId": "delete_import_mapping",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/inventory/adjustments": {
       "post": {
         "tags": [
@@ -29166,6 +29799,56 @@
           }
         }
       },
+      "Column": {
+        "type": "object",
+        "description": "One column of an entity's import file and export, in export order.",
+        "required": [
+          "name",
+          "kind",
+          "required"
+        ],
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/ColumnKind"
+          },
+          "name": {
+            "type": "string"
+          },
+          "required": {
+            "type": "boolean",
+            "description": "Must have a value when the row creates a record (the key column is always required in the\nfile itself)."
+          }
+        }
+      },
+      "ColumnKind": {
+        "type": "string",
+        "description": "What kind of value a column holds. It tells a person (and a mapping screen) how a cell is read\nand tells an export how to type the cell: text columns are always text cells, so `00123` and\n`=x` survive a spreadsheet.",
+        "enum": [
+          "text",
+          "code",
+          "decimal",
+          "integer",
+          "boolean"
+        ]
+      },
+      "ColumnPair": {
+        "type": "object",
+        "description": "One `file column -> field` pair. File columns are compared trimmed and case-insensitively.",
+        "required": [
+          "column",
+          "field"
+        ],
+        "properties": {
+          "column": {
+            "type": "string",
+            "description": "The column as the file names it."
+          },
+          "field": {
+            "type": "string",
+            "description": "The entity's field it feeds."
+          }
+        }
+      },
       "Company": {
         "type": "object",
         "description": "A legal entity (own VAT number, own numbering, own stock and books).",
@@ -30634,6 +31317,44 @@
               "null"
             ],
             "format": "date"
+          }
+        }
+      },
+      "CreateJob": {
+        "type": "object",
+        "required": [
+          "file_id",
+          "entity",
+          "dry_run"
+        ],
+        "properties": {
+          "columns": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ColumnPair"
+            },
+            "description": "`file column -> field` pairs; absent or empty means the header names our columns exactly."
+          },
+          "dry_run": {
+            "type": "boolean",
+            "description": "Validate and count only."
+          },
+          "entity": {
+            "type": "string"
+          },
+          "file_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sheet": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The sheet of a workbook; the first one when absent."
           }
         }
       },
@@ -33529,6 +34250,314 @@
           }
         }
       },
+      "ImportDescription": {
+        "type": "object",
+        "description": "The serialisable description of an importable entity: what a later admin endpoint lists.",
+        "required": [
+          "key",
+          "audit_entity",
+          "key_column",
+          "file_stem",
+          "columns"
+        ],
+        "properties": {
+          "audit_entity": {
+            "type": "string",
+            "description": "Name of the entity in audit events (`customer`, `product`)."
+          },
+          "columns": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Column"
+            }
+          },
+          "file_stem": {
+            "type": "string",
+            "description": "File stem of an export and name of its sheet."
+          },
+          "key": {
+            "type": "string",
+            "description": "Stable key of the entity (`customers`, `products`)."
+          },
+          "key_column": {
+            "type": "string",
+            "description": "The column that identifies a record; upserts match on it."
+          }
+        }
+      },
+      "ImportFile": {
+        "type": "object",
+        "description": "An uploaded file.",
+        "required": [
+          "id",
+          "filename",
+          "format",
+          "size_bytes",
+          "sheets"
+        ],
+        "properties": {
+          "filename": {
+            "type": "string"
+          },
+          "format": {
+            "type": "string",
+            "description": "`csv`, `xlsx` or `ods`, detected from the content."
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sheets": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The sheets of a workbook in order; empty for CSV."
+          },
+          "size_bytes": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "ImportJob": {
+        "type": "object",
+        "description": "One import run.",
+        "required": [
+          "id",
+          "entity",
+          "filename",
+          "format",
+          "dry_run",
+          "status",
+          "total_rows",
+          "processed_rows",
+          "created",
+          "updated",
+          "unchanged",
+          "error_count",
+          "errors",
+          "created_at"
+        ],
+        "properties": {
+          "created": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "dry_run": {
+            "type": "boolean"
+          },
+          "entity": {
+            "type": "string"
+          },
+          "error_count": {
+            "type": "integer",
+            "format": "int32",
+            "description": "All errors found; `errors` holds the first 100 (the list endpoint none), the CSV all that\nwere kept (at most 10 000)."
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StoredError"
+            }
+          },
+          "filename": {
+            "type": "string"
+          },
+          "finished_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "format": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Why a `failed` job could not be carried out."
+          },
+          "phase": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "While running: `reading`, `validating` or `writing`."
+          },
+          "processed_rows": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "requested_by": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "requested_by_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sheet": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "started_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string",
+            "description": "`queued`, `running`, `done`, `failed` or `cancelled`."
+          },
+          "total_rows": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "unchanged": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "updated": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "ImportJobPage": {
+        "type": "object",
+        "required": [
+          "items",
+          "total"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImportJob"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "ImportMapping": {
+        "type": "object",
+        "description": "A saved column mapping.",
+        "required": [
+          "id",
+          "entity",
+          "name",
+          "columns",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "columns": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ColumnPair"
+            }
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "entity": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ImportPreview": {
+        "type": "object",
+        "description": "The start of a file as the person will see it.",
+        "required": [
+          "format",
+          "sheets",
+          "header_row",
+          "columns",
+          "row_count",
+          "rows"
+        ],
+        "properties": {
+          "columns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The header cells as written."
+          },
+          "format": {
+            "type": "string"
+          },
+          "header_row": {
+            "type": "integer",
+            "description": "The row of the header in the file.",
+            "minimum": 0
+          },
+          "row_count": {
+            "type": "integer",
+            "description": "Data rows in the file.",
+            "minimum": 0
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "description": "The first 20 data rows as text, in header order."
+          },
+          "sheet": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The sheet that was read; null for CSV."
+          },
+          "sheets": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "ImportReport": {
         "type": "object",
         "description": "Outcome of an import (or of its dry run). `errors` is empty on success; with errors nothing was\nwritten and the counts are 0.",
@@ -35430,6 +36459,29 @@
           "name": {
             "type": "string",
             "description": "Its name."
+          }
+        }
+      },
+      "MappingInput": {
+        "type": "object",
+        "required": [
+          "entity",
+          "name",
+          "columns"
+        ],
+        "properties": {
+          "columns": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ColumnPair"
+            }
+          },
+          "entity": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "description": "Saving under an existing name replaces that mapping."
           }
         }
       },
@@ -45524,6 +46576,31 @@
           }
         }
       },
+      "StoredError": {
+        "type": "object",
+        "description": "One problem of an import, as stored with the job and shown to the person.",
+        "required": [
+          "row",
+          "message"
+        ],
+        "properties": {
+          "column": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The column the problem concerns; null for the row as a whole."
+          },
+          "message": {
+            "type": "string"
+          },
+          "row": {
+            "type": "integer",
+            "description": "Line (CSV) or sheet row where the problem is; the header is at its own row.",
+            "minimum": 0
+          }
+        }
+      },
       "Suggestion": {
         "type": "object",
         "required": [
@@ -48825,6 +49902,10 @@
     {
       "name": "reports",
       "description": "User-defined reports: build, save, share, run and export"
+    },
+    {
+      "name": "imports",
+      "description": "Data import: upload spreadsheets and CSV files, map their columns, dry-run and apply, with a history of the runs"
     },
     {
       "name": "todo",
