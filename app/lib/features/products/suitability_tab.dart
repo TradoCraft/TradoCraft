@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/api.dart';
 import '../../l10n/l10n.dart';
+import '../opportunities/matches_panel.dart';
 import 'suitability_logic.dart';
 
 final _definitionsProvider =
@@ -158,6 +159,7 @@ class _SuitabilityFormState extends ConsumerState<_SuitabilityForm> {
           .products
           .replaceAttributes(id: widget.product.id, body: r.attributes);
       ref.invalidate(_attributesProvider(widget.product.id));
+      ref.invalidate(productMatchesProvider);
       if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(context.l10n.saved)));

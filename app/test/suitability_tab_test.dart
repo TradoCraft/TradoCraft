@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tradocraft_app/app/api.dart';
+import 'package:tradocraft_app/features/opportunities/matches_panel.dart';
 import 'package:tradocraft_app/features/products/suitability_tab.dart';
 import 'package:tradocraft_app/l10n/app_localizations.dart';
 
@@ -62,7 +63,11 @@ FakeHttp _http({
   'PUT /api/v1/products/p1/attributes': (b) => b,
 });
 
-Future<void> _pump(WidgetTester tester, FakeHttp h) async {
+Future<void> _pump(
+  WidgetTester tester,
+  FakeHttp h, {
+  bool watchMatches = false,
+}) async {
   tester.view.physicalSize = const Size(1400, 1800);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
@@ -77,7 +82,20 @@ Future<void> _pump(WidgetTester tester, FakeHttp h) async {
         ],
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
-          body: SuitabilityTab(product: Product.fromJson(_product)),
+          body: Column(
+            children: [
+              if (watchMatches)
+                Consumer(
+                  builder: (context, ref, _) {
+                    ref.watch(productMatchesProvider(('o1', null)));
+                    return const SizedBox.shrink();
+                  },
+                ),
+              Expanded(
+                child: SuitabilityTab(product: Product.fromJson(_product)),
+              ),
+            ],
+          ),
         ),
       ),
     ),
@@ -237,5 +255,27 @@ void main() {
     await tester.pumpAndSettle();
     await _save(tester);
     expect(h.bodies['PUT /api/v1/products/p1/attributes'], isEmpty);
+  });
+
+  testWidgets('a saved edit refreshes cached product matches elsewhere', (
+    tester,
+  ) async {
+    final h = FakeHttp({
+      'GET /api/v1/me': (_) => meJson(['products.read', 'products.write']),
+      'GET /api/v1/attribute-definitions': (_) => _defs,
+      'GET /api/v1/products/p1/attributes': (_) => <Object?>[],
+      'PUT /api/v1/products/p1/attributes': (b) => b,
+      'GET /api/v1/opportunities/o1/product-matches': (_) => {
+        'items': <Object?>[],
+        'total': 0,
+        'counts': {'suitable': 0, 'unknown': 0, 'unsuitable': 0},
+      },
+    });
+    await _pump(tester, h, watchMatches: true);
+    const get = 'GET /api/v1/opportunities/o1/product-matches';
+    expect(h.requests.where((r) => r == get).length, 1);
+    await tester.enterText(find.byKey(const ValueKey('attr-weight')), '3');
+    await _save(tester);
+    expect(h.requests.where((r) => r == get).length, 2);
   });
 }
