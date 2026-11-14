@@ -459,6 +459,48 @@ void main() {
     });
   });
 
+  group('Esc leaves the form', () {
+    testWidgets('Esc closes a clean tab and goes back one screen first', (
+      t,
+    ) async {
+      await pump(t);
+      ws().open('/orders/a');
+      await t.pumpAndSettle();
+      await t.tap(find.text('push-a'));
+      await t.pumpAndSettle();
+      expect(find.text('screen a-in'), findsOneWidget);
+      expect(await chord(t, LogicalKeyboardKey.escape), isTrue);
+      expect(find.text('screen a-in'), findsNothing);
+      expect(find.text('screen a'), findsOneWidget);
+      expect(await chord(t, LogicalKeyboardKey.escape), isTrue);
+      expect(container.read(workspaceProvider).tabs, isEmpty);
+    });
+
+    testWidgets('Esc asks first when the tab has unsaved edits', (t) async {
+      await pump(t);
+      final id = ws().open('/orders/a');
+      await t.pumpAndSettle();
+      ws().dirtyOf(id).value = true;
+      expect(await chord(t, LogicalKeyboardKey.escape), isTrue);
+      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(container.read(workspaceProvider).tabs, hasLength(1));
+      // Esc again cancels the question (its Cancel button): the tab stays.
+      expect(await chord(t, LogicalKeyboardKey.escape), isTrue);
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(container.read(workspaceProvider).tabs, hasLength(1));
+      // Ctrl+Enter agrees to discard.
+      await chord(t, LogicalKeyboardKey.escape);
+      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(await chord(t, LogicalKeyboardKey.enter, ctrl: true), isTrue);
+      expect(container.read(workspaceProvider).tabs, isEmpty);
+    });
+
+    testWidgets('Esc does nothing in the main area', (t) async {
+      await pump(t);
+      expect(await chord(t, LogicalKeyboardKey.escape), isFalse);
+    });
+  });
+
   group('text fields', () {
     testWidgets('the modifier with a letter inserts nothing', (t) async {
       await pump(t);
