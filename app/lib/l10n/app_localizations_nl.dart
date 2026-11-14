@@ -9543,6 +9543,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get attrKindText => 'Tekst';
 
   @override
+  String get attrKindBoolean => 'Ja/Nee';
+
+  @override
   String get attrOptions => 'Opties';
 
   @override
@@ -9679,4 +9682,40 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get attrScopeProduct => 'Product';
+
+  @override
+  String get matchesTitle => 'Productmatches';
+
+  @override
+  String get matchesEmpty => 'Geen producten om te tonen.';
+
+  @override
+  String matchesShowing(int shown, int total) {
+    return '$shown van $total producten getoond';
+  }
+
+  @override
+  String get matchesSuggest => 'Producten voorstellen';
+
+  @override
+  String matchesForItem(String name) {
+    return 'Producten voor $name';
+  }
+
+  @override
+  String get matchesSuitable => 'Geschikt';
+
+  @override
+  String get matchesUnknown => 'Onbekend';
+
+  @override
+  String get matchesUnsuitable => 'Niet geschikt';
+
+  @override
+  String get matchesNoReason => 'Kon niet worden beoordeeld.';
+
+  @override
+  String baselineUnknownSet(String label) {
+    return '$label: onbekend — invullen';
+  }
 }

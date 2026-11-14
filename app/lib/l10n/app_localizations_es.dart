@@ -9547,6 +9547,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get attrKindText => 'Texto';
 
   @override
+  String get attrKindBoolean => 'Sí/No';
+
+  @override
   String get attrOptions => 'Opciones';
 
   @override
@@ -9683,4 +9686,40 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get attrScopeProduct => 'Producto';
+
+  @override
+  String get matchesTitle => 'Productos adecuados';
+
+  @override
+  String get matchesEmpty => 'No hay productos que mostrar.';
+
+  @override
+  String matchesShowing(int shown, int total) {
+    return 'Mostrando $shown de $total productos';
+  }
+
+  @override
+  String get matchesSuggest => 'Sugerir productos';
+
+  @override
+  String matchesForItem(String name) {
+    return 'Productos para $name';
+  }
+
+  @override
+  String get matchesSuitable => 'Adecuado';
+
+  @override
+  String get matchesUnknown => 'Desconocido';
+
+  @override
+  String get matchesUnsuitable => 'No adecuado';
+
+  @override
+  String get matchesNoReason => 'No se pudo evaluar.';
+
+  @override
+  String baselineUnknownSet(String label) {
+    return '$label: desconocido — completar';
+  }
 }

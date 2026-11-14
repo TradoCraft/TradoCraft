@@ -102,6 +102,13 @@ ValuesBuildResult buildValues({
         } else {
           out[d.key] = at(0);
         }
+      case DefinitionKind.boolean:
+        if (at(0).isEmpty) break;
+        if (at(0) != 'true' && at(0) != 'false') {
+          errors[d.key] = AttrError.notInOptions;
+        } else {
+          out[d.key] = at(0) == 'true';
+        }
       case DefinitionKind.text:
       case DefinitionKind.$unknown:
         if (at(0).isNotEmpty) out[d.key] = at(0);
@@ -110,32 +117,59 @@ ValuesBuildResult buildValues({
   return ValuesBuildResult(out, errors);
 }
 
+/// One stored value as text: numbers and ranges with the unit, a select by its option label, a
+/// boolean as [yes] or [no].
+String describeValue(
+  AttributeDefinition d,
+  Object? v, {
+  String yes = 'Yes',
+  String no = 'No',
+}) {
+  String withUnit(String text) =>
+      (d.unit ?? '').isEmpty ? text : '$text ${d.unit}';
+  return switch (d.kind) {
+    DefinitionKind.range => () {
+      final r = _asMap(v);
+      return withUnit('${_formatNumber(r['min'])}–${_formatNumber(r['max'])}');
+    }(),
+    DefinitionKind.number => withUnit(_formatNumber(v)),
+    DefinitionKind.select =>
+      d.options.where((o) => o.value == v).map((o) => o.label).firstOrNull ??
+          v.toString(),
+    DefinitionKind.boolean =>
+      v == true ? yes : (v == false ? no : v.toString()),
+    _ => v.toString(),
+  };
+}
+
+/// The active definitions that have no value yet, in definition order. A `false` boolean is a
+/// value; "unknown" is only the absence of one.
+List<AttributeDefinition> missingAttributes(
+  List<AttributeDefinition> defs,
+  Object? values,
+) {
+  final m = _asMap(values);
+  return [
+    for (final d in defs)
+      if (d.active && m[d.key] == null) d,
+  ];
+}
+
 /// A one-line summary of the stored values in definition order, for example
 /// `Weight 120 kg · Dial 800–1000 mm · Motion Flying`. Keys without a definition follow as
 /// `key value`.
-String summarizeValues(List<AttributeDefinition> defs, Object? values) {
+String summarizeValues(
+  List<AttributeDefinition> defs,
+  Object? values, {
+  String yes = 'Yes',
+  String no = 'No',
+}) {
   final m = _asMap(values);
   final parts = <String>[];
-  String withUnit(String text, AttributeDefinition d) =>
-      (d.unit ?? '').isEmpty ? text : '$text ${d.unit}';
   for (final d in defs) {
     final v = m[d.key];
     if (v == null) continue;
-    final text = switch (d.kind) {
-      DefinitionKind.range => () {
-        final r = _asMap(v);
-        return withUnit(
-          '${_formatNumber(r['min'])}–${_formatNumber(r['max'])}',
-          d,
-        );
-      }(),
-      DefinitionKind.number => withUnit(_formatNumber(v), d),
-      DefinitionKind.select =>
-        d.options.where((o) => o.value == v).map((o) => o.label).firstOrNull ??
-            v.toString(),
-      _ => v.toString(),
-    };
-    parts.add('${d.label} $text');
+    parts.add('${d.label} ${describeValue(d, v, yes: yes, no: no)}');
   }
   final known = {for (final d in defs) d.key};
   for (final e in m.entries) {

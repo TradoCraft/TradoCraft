@@ -4364,6 +4364,7 @@
   "attrKindRange": "Range",
   "attrKindSelect": "Select",
   "attrKindText": "Text",
+  "attrKindBoolean": "Yes/No",
   "attrOptions": "Options",
   "attrOptionValue": "Value",
   "attrOptionLabel": "Option label",
@@ -4407,5 +4408,18 @@
   "baselineTypeDeleteConfirm": "Delete type {code}? If it is in use, deactivate it instead.",
   "@baselineTypeDeleteConfirm": {"placeholders": {"code": {"type": "String"}}},
   "baselineTypeDeleted": "Baseline type deleted.",
-  "attrScopeProduct": "Product"
+  "attrScopeProduct": "Product",
+  "matchesTitle": "Product matches",
+  "matchesEmpty": "No products to show.",
+  "matchesShowing": "Showing {shown} of {total} products",
+  "@matchesShowing": {"placeholders": {"shown": {"type": "int"}, "total": {"type": "int"}}},
+  "matchesSuggest": "Suggest products",
+  "matchesForItem": "Products for {name}",
+  "@matchesForItem": {"placeholders": {"name": {"type": "String"}}},
+  "matchesSuitable": "Suitable",
+  "matchesUnknown": "Unknown",
+  "matchesUnsuitable": "Not suitable",
+  "matchesNoReason": "Could not be judged.",
+  "baselineUnknownSet": "{label}: unknown — set",
+  "@baselineUnknownSet": {"placeholders": {"label": {"type": "String"}}}
 }

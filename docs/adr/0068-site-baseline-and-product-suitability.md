@@ -170,3 +170,52 @@ attributes and the tables). Decision 6 is implemented without a second engine.
 * Motor tables: column types are checked when loaded (a text `kw` is refused, not read as empty),
   and a matched class without `kw` or `size` is `MissingData`; `TooLarge` is only the real
   overflow.
+
+**Matches panel notes (backend and app).**
+
+* A product that lacks the attribute a rule compares (or has it in a shape the operator cannot use)
+  is now `unknown` with a reason naming the missing attribute, when the baseline has an item of
+  the rule's type. Before, such a product was silently `suitable`. Example: a 2000 mm dial against
+  `dial_size_mm` 600..1250 is `unsuitable` ("dial_diameter_mm 2000 is outside dial_size_mm
+  600..1250"), against 1500..2500 `suitable`, and without `dial_size_mm` `unknown`. Products with
+  no applicable rule at all (no item of the rule's type) are still `suitable` without reasons.
+* `GET /opportunities/{id}/product-matches` returns the products ordered suitable, unknown,
+  unsuitable, each group by name then code; paging applies after the ordering. The optional
+  `item_id` judges against that baseline item and the items inside it only (404 when it is not an
+  item of the opportunity); the power check is unchanged.
+* App: a "Product matches" panel below the baseline on the opportunity screen (needs
+  `products.read`) and a "Suggest products" action per baseline item that opens the same list
+  filtered to that item. Not suitable and unknown products are dimmed with the reasons that are not
+  `ok` beneath. Not run against a real backend yet; covered by widget tests with a fake server.
+* Follow-up: an "only suitable" toggle, and showing the `ok` reasons on demand.
+
+**Optional dial attributes, booleans and illumination (step 2).** Migration `20270215000001`
+(extends `crm.seed_baseline_defaults`, so existing companies, new companies and the dev seed all get it).
+
+* Attribute definitions may be `boolean` for both baseline items and products (baseline values are
+  JSON `true`/`false`, product attributes the existing `boolean` kind; a unit is refused). The
+  matcher sees a product boolean as `ProductValue::Boolean`.
+* New generic match operator `requires_if_true`: the baseline attribute must be a boolean and the
+  product attribute a boolean. When the baseline value is `true` the product's must be `true`
+  (`ok`), `false` is a `fail`, a missing value is `unknown`; when the baseline value is `false` or
+  not recorded the rule does not apply and gives no reason. Nothing in the Rust or Dart logic knows
+  about dials or illumination.
+* Seed data on the `clock_dial` type, all optional: `mounting` (select wall / on_dial),
+  `wall_thickness_mm` (number, mm), `faces` (select 1 / 2 / 3 / 4, the number of faces of the tower), `movement` (select central /
+  per_dial_motor), `illumination_wanted` (boolean). Product
+  attribute `can_illuminate` (boolean) and the rule "Illumination supported"
+  (`illumination_wanted` -> `can_illuminate`, `requires_if_true`). A missing value on any of them
+  is `unknown` or no reason, never `unsuitable`. Only the illumination rule reads the new
+  attributes today; mounting, wall thickness, faces and movement are recorded for rules an
+  administrator adds later. Seed labels are English, like all earlier seeds (definitions have no
+  translations).
+* App: a yes/no attribute is a None/Yes/No dropdown in the baseline form, the Suitability tab and
+  the definition editor (kind "Yes/No"). On the opportunity screen each item of the Baseline
+  section shows one chip per active attribute: the value (tap to change it) or a highlighted
+  "<label>: unknown - set" for an attribute without a value. A tap opens a small dialog for that
+  one attribute (`BaselineQuickEditDialog`) and saves through the item update with the other
+  values, name, parent and quantity unchanged; afterwards the baseline and the Matches panel
+  reload. Without `opportunities.write` the plain summary line stays.
+* Follow-up: the quotation screen can show the baseline with the same chips by reusing
+  `BaselineQuickEditDialog` (it needs only the opportunity id, the item and the definition); select
+  option translations.

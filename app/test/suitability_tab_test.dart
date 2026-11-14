@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tradocraft_app/app/api.dart';
+import 'package:tradocraft_app/features/opportunities/matches_panel.dart';
 import 'package:tradocraft_app/features/products/suitability_tab.dart';
 import 'package:tradocraft_app/l10n/app_localizations.dart';
 
@@ -62,7 +63,11 @@ FakeHttp _http({
   'PUT /api/v1/products/p1/attributes': (b) => b,
 });
 
-Future<void> _pump(WidgetTester tester, FakeHttp h) async {
+Future<void> _pump(
+  WidgetTester tester,
+  FakeHttp h, {
+  bool watchMatches = false,
+}) async {
   tester.view.physicalSize = const Size(1400, 1800);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
@@ -77,7 +82,20 @@ Future<void> _pump(WidgetTester tester, FakeHttp h) async {
         ],
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
-          body: SuitabilityTab(product: Product.fromJson(_product)),
+          body: Column(
+            children: [
+              if (watchMatches)
+                Consumer(
+                  builder: (context, ref, _) {
+                    ref.watch(productMatchesProvider(('o1', null)));
+                    return const SizedBox.shrink();
+                  },
+                ),
+              Expanded(
+                child: SuitabilityTab(product: Product.fromJson(_product)),
+              ),
+            ],
+          ),
         ),
       ),
     ),
@@ -91,14 +109,18 @@ Future<void> _save(WidgetTester tester) async {
 }
 
 void main() {
-  testWidgets('only active product-scope definitions are requested', (tester) async {
+  testWidgets('only active product-scope definitions are requested', (
+    tester,
+  ) async {
     final h = _http();
     await _pump(tester, h);
     final i = h.requests.indexOf('GET /api/v1/attribute-definitions');
     expect(h.queries[i]['scope'], 'product');
   });
 
-  testWidgets('shows an empty state when there are no definitions', (tester) async {
+  testWidgets('shows an empty state when there are no definitions', (
+    tester,
+  ) async {
     await _pump(tester, _http(defs: const []));
     expect(find.byKey(const ValueKey('suitability-empty')), findsOneWidget);
     expect(find.widgetWithText(FilledButton, 'Save'), findsNothing);
@@ -121,7 +143,9 @@ void main() {
     expect(find.byKey(const ValueKey('attr-note')), findsOneWidget);
   });
 
-  testWidgets('saves filled values and preserves unknown attributes', (tester) async {
+  testWidgets('saves filled values and preserves unknown attributes', (
+    tester,
+  ) async {
     final h = _http(
       attrs: [
         {'key': 'color', 'kind': 'text', 'value': 'red'},
@@ -160,7 +184,9 @@ void main() {
     ]);
   });
 
-  testWidgets('invalid values are refused inline and nothing is sent', (tester) async {
+  testWidgets('invalid values are refused inline and nothing is sent', (
+    tester,
+  ) async {
     final h = _http();
     await _pump(tester, h);
     await tester.enterText(find.byKey(const ValueKey('attr-weight')), 'abc');
@@ -168,7 +194,10 @@ void main() {
     await tester.enterText(find.byKey(const ValueKey('attr-dial-max')), '600');
     await _save(tester);
     expect(find.text('Enter a number.'), findsOneWidget);
-    expect(find.text('The minimum must not exceed the maximum.'), findsOneWidget);
+    expect(
+      find.text('The minimum must not exceed the maximum.'),
+      findsOneWidget,
+    );
     expect(h.requests, isNot(contains('PUT /api/v1/products/p1/attributes')));
   });
 
@@ -177,16 +206,76 @@ void main() {
     await _pump(tester, h);
     await tester.enterText(find.byKey(const ValueKey('attr-dial-min')), '900');
     await _save(tester);
-    expect(find.text('Enter both the minimum and the maximum, or neither.'), findsOneWidget);
+    expect(
+      find.text('Enter both the minimum and the maximum, or neither.'),
+      findsOneWidget,
+    );
     expect(h.requests, isNot(contains('PUT /api/v1/products/p1/attributes')));
   });
 
-  testWidgets('without products.write the inputs are read-only', (tester) async {
+  testWidgets('without products.write the inputs are read-only', (
+    tester,
+  ) async {
     await _pump(tester, _http(perms: ['products.read']));
     expect(
       tester.widget<TextField>(find.byKey(const ValueKey('attr-note'))).enabled,
       isFalse,
     );
     expect(find.widgetWithText(FilledButton, 'Save'), findsNothing);
+  });
+
+  testWidgets(
+    'a yes/no attribute is set with a dropdown and saved as a boolean',
+    (tester) async {
+      final h = _http(defs: [def('can_illuminate', 'boolean')]);
+      await _pump(tester, h);
+      await tester.tap(find.byKey(const ValueKey('attr-can_illuminate')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Yes').last);
+      await tester.pumpAndSettle();
+      await _save(tester);
+      expect(h.bodies['PUT /api/v1/products/p1/attributes'], [
+        {'key': 'can_illuminate', 'kind': 'boolean', 'value': 'true'},
+      ]);
+    },
+  );
+
+  testWidgets('a stored boolean is shown and can be cleared', (tester) async {
+    final h = _http(
+      defs: [def('can_illuminate', 'boolean')],
+      attrs: [
+        {'key': 'can_illuminate', 'kind': 'boolean', 'value': 'false'},
+      ],
+    );
+    await _pump(tester, h);
+    expect(find.text('No'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('attr-can_illuminate')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('None').last);
+    await tester.pumpAndSettle();
+    await _save(tester);
+    expect(h.bodies['PUT /api/v1/products/p1/attributes'], isEmpty);
+  });
+
+  testWidgets('a saved edit refreshes cached product matches elsewhere', (
+    tester,
+  ) async {
+    final h = FakeHttp({
+      'GET /api/v1/me': (_) => meJson(['products.read', 'products.write']),
+      'GET /api/v1/attribute-definitions': (_) => _defs,
+      'GET /api/v1/products/p1/attributes': (_) => <Object?>[],
+      'PUT /api/v1/products/p1/attributes': (b) => b,
+      'GET /api/v1/opportunities/o1/product-matches': (_) => {
+        'items': <Object?>[],
+        'total': 0,
+        'counts': {'suitable': 0, 'unknown': 0, 'unsuitable': 0},
+      },
+    });
+    await _pump(tester, h, watchMatches: true);
+    const get = 'GET /api/v1/opportunities/o1/product-matches';
+    expect(h.requests.where((r) => r == get).length, 1);
+    await tester.enterText(find.byKey(const ValueKey('attr-weight')), '3');
+    await _save(tester);
+    expect(h.requests.where((r) => r == get).length, 2);
   });
 }

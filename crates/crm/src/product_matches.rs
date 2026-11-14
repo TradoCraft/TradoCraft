@@ -59,6 +59,9 @@ pub struct MatchParams {
     pub status: Option<String>,
     /// Only products of this family.
     pub family_id: Option<Uuid>,
+    /// Judge against this baseline item (and the items inside it) only, e.g. to suggest products
+    /// for one dial or bell group. 404 when it is not an item of the opportunity.
+    pub item_id: Option<Uuid>,
     /// Default 100, at most 500.
     pub limit: Option<i64>,
     pub offset: Option<i64>,
@@ -84,7 +87,8 @@ pub struct StatusCounts {
 
 #[derive(Debug, Serialize, ToSchema)]
 pub struct ProductMatchPage {
-    /// The requested page of the products with the asked status, in product code order.
+    /// The requested page of the products with the asked status: suitable first, then unknown,
+    /// then unsuitable, each by name.
     pub items: Vec<ProductMatch>,
     /// Number of products with the asked status (all statuses without a filter).
     pub total: i64,
@@ -103,6 +107,24 @@ fn parse_status(s: &str) -> Result<MatchStatus, AppError> {
     }
 }
 
+fn status_rank(s: MatchStatus) -> u8 {
+    match s {
+        MatchStatus::Suitable => 0,
+        MatchStatus::Unknown => 1,
+        MatchStatus::Unsuitable => 2,
+    }
+}
+
+fn find_item(tree: &[BaselineItem], id: Uuid) -> Option<&BaselineItem> {
+    tree.iter().find_map(|i| {
+        if i.id == id {
+            Some(i)
+        } else {
+            find_item(&i.children, id)
+        }
+    })
+}
+
 fn product_value(v: &AttributeValue) -> Option<ProductValue> {
     match v {
         AttributeValue::Number(d) => d.to_f64().map(ProductValue::Number),
@@ -110,7 +132,8 @@ fn product_value(v: &AttributeValue) -> Option<ProductValue> {
             min: min.to_f64()?,
             max: max.to_f64()?,
         }),
-        AttributeValue::Text(_) | AttributeValue::Boolean(_) => None,
+        AttributeValue::Boolean(b) => Some(ProductValue::Boolean(*b)),
+        AttributeValue::Text(_) => None,
     }
 }
 
@@ -151,7 +174,13 @@ async fn product_matches(
     let wanted = p.status.as_deref().map(parse_status).transpose()?;
     let mut conn = state.db.acquire().await?;
     let (grid_id, phases, tree) = load_site(&mut conn, user.company_id, id).await?;
-    let baseline = flatten(&tree);
+    let baseline = match p.item_id {
+        None => flatten(&tree),
+        Some(item_id) => {
+            let item = find_item(&tree, item_id).ok_or(AppError::NotFound("baseline item"))?;
+            flatten(std::slice::from_ref(item))
+        }
+    };
     let bells: Vec<BaselineNode> = baseline
         .iter()
         .filter(|n| n.type_code == BELL_TYPE_CODE)
@@ -230,6 +259,9 @@ async fn product_matches(
             });
         }
     }
+    all.sort_by(|a, b| {
+        (status_rank(a.status), &a.name, &a.code).cmp(&(status_rank(b.status), &b.name, &b.code))
+    });
     let total = all.len() as i64;
     let limit = p.limit.unwrap_or(DEFAULT_LIMIT).clamp(1, MAX_LIMIT) as usize;
     let offset = p.offset.unwrap_or(0).max(0) as usize;

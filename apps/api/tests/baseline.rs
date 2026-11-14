@@ -157,7 +157,17 @@ async fn seed_creates_the_tower_setup_and_is_idempotent(db: PgPool) {
             .map(|d| d["key"].as_str().unwrap().to_string())
             .collect()
     };
-    assert_eq!(by("clock_dial"), ["dial_diameter_mm"]);
+    assert_eq!(
+        by("clock_dial"),
+        [
+            "dial_diameter_mm",
+            "mounting",
+            "wall_thickness_mm",
+            "faces",
+            "movement",
+            "illumination_wanted"
+        ]
+    );
     assert_eq!(
         by("bell"),
         [
@@ -170,7 +180,10 @@ async fn seed_creates_the_tower_setup_and_is_idempotent(db: PgPool) {
             "motor_brand"
         ]
     );
-    assert_eq!(by("product"), ["dial_size_mm", "motor_kw"]);
+    assert_eq!(
+        by("product"),
+        ["dial_size_mm", "motor_kw", "can_illuminate"]
+    );
     let motion = defs
         .as_array()
         .unwrap()
@@ -261,7 +274,7 @@ async fn a_provisioned_company_gets_the_defaults(db: PgPool) {
     .fetch_one(&db)
     .await
     .unwrap();
-    assert_eq!(d, 10);
+    assert_eq!(d, 16);
 }
 
 // ---------------------------------------------------------------------------------------------

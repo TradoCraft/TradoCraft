@@ -16938,6 +16938,12 @@ abstract class AppLocalizations {
   /// **'Text'**
   String get attrKindText;
 
+  /// No description provided for @attrKindBoolean.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes/No'**
+  String get attrKindBoolean;
+
   /// No description provided for @attrOptions.
   ///
   /// In en, this message translates to:
@@ -17177,6 +17183,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Product'**
   String get attrScopeProduct;
+
+  /// No description provided for @matchesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Product matches'**
+  String get matchesTitle;
+
+  /// No description provided for @matchesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No products to show.'**
+  String get matchesEmpty;
+
+  /// No description provided for @matchesShowing.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing {shown} of {total} products'**
+  String matchesShowing(int shown, int total);
+
+  /// No description provided for @matchesSuggest.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggest products'**
+  String get matchesSuggest;
+
+  /// No description provided for @matchesForItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Products for {name}'**
+  String matchesForItem(String name);
+
+  /// No description provided for @matchesSuitable.
+  ///
+  /// In en, this message translates to:
+  /// **'Suitable'**
+  String get matchesSuitable;
+
+  /// No description provided for @matchesUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get matchesUnknown;
+
+  /// No description provided for @matchesUnsuitable.
+  ///
+  /// In en, this message translates to:
+  /// **'Not suitable'**
+  String get matchesUnsuitable;
+
+  /// No description provided for @matchesNoReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not be judged.'**
+  String get matchesNoReason;
+
+  /// No description provided for @baselineUnknownSet.
+  ///
+  /// In en, this message translates to:
+  /// **'{label}: unknown — set'**
+  String baselineUnknownSet(String label);
 }
 
 class _AppLocalizationsDelegate

@@ -62,7 +62,12 @@ void main() {
     expect(r.errors, isEmpty);
     final json = r.attributes.map((a) => a.toJson()).toList();
     expect(json, [
-      {'key': 'weight', 'kind': AttributeKind.number, 'unit': 'kg', 'value': '12.5'},
+      {
+        'key': 'weight',
+        'kind': AttributeKind.number,
+        'unit': 'kg',
+        'value': '12.5',
+      },
       {
         'key': 'dial',
         'kind': AttributeKind.range,
@@ -80,25 +85,39 @@ void main() {
     final r = buildAttributes(
       defs: defs,
       existing: const [],
-      raw: {'weight': [''], 'dial': ['', ''], 'motion': [''], 'note': [' ']},
+      raw: {
+        'weight': [''],
+        'dial': ['', ''],
+        'motion': [''],
+        'note': [' '],
+      },
     );
     expect(r.errors, isEmpty);
     expect(r.attributes, isEmpty);
   });
 
-  test('attributes without a definition are preserved, defined ones replaced', () {
-    final r = buildAttributes(
-      defs: defs,
-      existing: [
-        attr('color', AttributeKind.text, 'red'),
-        attr('weight', AttributeKind.number, '1'),
-        attr('flag', AttributeKind.boolean, 'true'),
-      ],
-      raw: {'weight': ['2']},
-    );
-    expect(r.attributes.map((a) => a.key).toList(), ['color', 'flag', 'weight']);
-    expect(r.attributes.last.value, '2');
-  });
+  test(
+    'attributes without a definition are preserved, defined ones replaced',
+    () {
+      final r = buildAttributes(
+        defs: defs,
+        existing: [
+          attr('color', AttributeKind.text, 'red'),
+          attr('weight', AttributeKind.number, '1'),
+          attr('flag', AttributeKind.boolean, 'true'),
+        ],
+        raw: {
+          'weight': ['2'],
+        },
+      );
+      expect(r.attributes.map((a) => a.key).toList(), [
+        'color',
+        'flag',
+        'weight',
+      ]);
+      expect(r.attributes.last.value, '2');
+    },
+  );
 
   test('a cleared defined attribute is removed but unknown ones stay', () {
     final r = buildAttributes(
@@ -107,7 +126,9 @@ void main() {
         attr('color', AttributeKind.text, 'red'),
         attr('weight', AttributeKind.number, '1'),
       ],
-      raw: {'weight': ['']},
+      raw: {
+        'weight': [''],
+      },
     );
     expect(r.attributes.map((a) => a.key).toList(), ['color']);
   });
@@ -131,7 +152,9 @@ void main() {
       buildAttributes(
         defs: defs,
         existing: const [],
-        raw: {'dial': ['20', '10']},
+        raw: {
+          'dial': ['20', '10'],
+        },
       ).errors,
       {'dial': AttrError.rangeOrder},
     );
@@ -139,7 +162,9 @@ void main() {
       buildAttributes(
         defs: defs,
         existing: const [],
-        raw: {'dial': ['a', '10']},
+        raw: {
+          'dial': ['a', '10'],
+        },
       ).errors,
       {'dial': AttrError.notNumber},
     );
@@ -159,26 +184,78 @@ void main() {
     });
   });
 
-  test('an unchanged stored select value stays valid after its option is removed', () {
-    final stored = [attr('motion', AttributeKind.text, 'gone')];
-    final same = buildAttributes(
-      defs: defs,
-      existing: stored,
-      raw: {'motion': ['gone']},
-    );
-    expect(same.errors, isEmpty);
-    expect(same.attributes.single.value, 'gone');
-    final other = buildAttributes(
-      defs: defs,
-      existing: stored,
-      raw: {'motion': ['sideways']},
-    );
-    expect(other.errors['motion'], AttrError.notInOptions);
-    final fresh = buildAttributes(
-      defs: defs,
-      existing: const [],
-      raw: {'motion': ['gone']},
-    );
-    expect(fresh.errors['motion'], AttrError.notInOptions);
-  });
+  test(
+    'an unchanged stored select value stays valid after its option is removed',
+    () {
+      final stored = [attr('motion', AttributeKind.text, 'gone')];
+      final same = buildAttributes(
+        defs: defs,
+        existing: stored,
+        raw: {
+          'motion': ['gone'],
+        },
+      );
+      expect(same.errors, isEmpty);
+      expect(same.attributes.single.value, 'gone');
+      final other = buildAttributes(
+        defs: defs,
+        existing: stored,
+        raw: {
+          'motion': ['sideways'],
+        },
+      );
+      expect(other.errors['motion'], AttrError.notInOptions);
+      final fresh = buildAttributes(
+        defs: defs,
+        existing: const [],
+        raw: {
+          'motion': ['gone'],
+        },
+      );
+      expect(fresh.errors['motion'], AttrError.notInOptions);
+    },
+  );
+
+  test(
+    'a boolean definition round-trips as true or false and clears when empty',
+    () {
+      final d = [def('can_illuminate', DefinitionKind.boolean)];
+      expect(
+        rawFromAttributes(d, [
+          attr('can_illuminate', AttributeKind.boolean, 'false'),
+        ]),
+        {
+          'can_illuminate': ['false'],
+        },
+      );
+      for (final v in ['true', 'false']) {
+        final r = buildAttributes(
+          defs: d,
+          existing: const [],
+          raw: {
+            'can_illuminate': [v],
+          },
+        );
+        expect(r.errors, isEmpty);
+        expect(r.attributes.single.kind, AttributeKind.boolean);
+        expect(r.attributes.single.value, v);
+      }
+      final cleared = buildAttributes(
+        defs: d,
+        existing: [attr('can_illuminate', AttributeKind.boolean, 'true')],
+        raw: {
+          'can_illuminate': [''],
+        },
+      );
+      expect(cleared.attributes, isEmpty);
+      final bad = buildAttributes(
+        defs: d,
+        existing: const [],
+        raw: {
+          'can_illuminate': ['maybe'],
+        },
+      );
+      expect(bad.errors['can_illuminate'], AttrError.notInOptions);
+    },
+  );
 }

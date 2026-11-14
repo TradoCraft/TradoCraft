@@ -7,6 +7,7 @@ import '../../shared/actions.dart';
 import '../../shared/app_icons.dart';
 import '../products/suitability_logic.dart';
 import 'baseline_logic.dart';
+import 'matches_panel.dart';
 
 final _baselineProvider = FutureProvider.autoDispose
     .family<List<BaselineItem>, String>(
@@ -38,8 +39,10 @@ class BaselineSection extends ConsumerWidget {
   const BaselineSection({super.key, required this.opportunityId});
   final String opportunityId;
 
-  void _refresh(WidgetRef ref) =>
-      ref.invalidate(_baselineProvider(opportunityId));
+  void _refresh(WidgetRef ref) {
+    ref.invalidate(_baselineProvider(opportunityId));
+    ref.invalidate(productMatchesProvider);
+  }
 
   Future<void> _edit(
     BuildContext context,
@@ -98,10 +101,91 @@ class BaselineSection extends ConsumerWidget {
     if (ok) _refresh(ref);
   }
 
+  /// Edits one attribute of an item in place; pops true when saved.
+  Future<void> _quickEdit(
+    BuildContext context,
+    WidgetRef ref,
+    BaselineItem item,
+    AttributeDefinition def,
+  ) async {
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (_) => BaselineQuickEditDialog(
+        opportunityId: opportunityId,
+        item: item,
+        def: def,
+      ),
+    );
+    if (saved == true) _refresh(ref);
+  }
+
+  /// One chip per active attribute of the item: the value, tap to change it; an attribute without
+  /// a value is flagged "unknown - set" (the matcher judges it as unknown until it is filled in).
+  /// Stored values of attributes that are no longer active are shown but not editable.
+  Widget? _valueChips(
+    BuildContext context,
+    WidgetRef ref,
+    BaselineItem item,
+    List<AttributeDefinition> itemDefs,
+  ) {
+    final l = context.l10n;
+    final scheme = Theme.of(context).colorScheme;
+    final stored = item.values is Map ? item.values as Map : const {};
+    final chips = <Widget>[
+      for (final d in itemDefs)
+        if (d.active)
+          stored[d.key] == null
+              ? ActionChip(
+                  key: ValueKey('baseline-chip-${item.id}-${d.key}'),
+                  avatar: Icon(
+                    AppIcons.edit,
+                    size: 16,
+                    color: scheme.onErrorContainer,
+                  ),
+                  backgroundColor: scheme.errorContainer,
+                  label: Text(
+                    l.baselineUnknownSet(d.label),
+                    style: TextStyle(color: scheme.onErrorContainer),
+                  ),
+                  onPressed: () => _quickEdit(context, ref, item, d),
+                )
+              : ActionChip(
+                  key: ValueKey('baseline-chip-${item.id}-${d.key}'),
+                  label: Text(
+                    '${d.label} ${describeValue(d, stored[d.key], yes: l.yes, no: l.no)}',
+                  ),
+                  onPressed: () => _quickEdit(context, ref, item, d),
+                )
+        else if (stored[d.key] != null)
+          Chip(
+            label: Text(
+              '${d.label} ${describeValue(d, stored[d.key], yes: l.yes, no: l.no)}',
+            ),
+          ),
+    ];
+    // Stored values without a (known) definition stay visible, read-only.
+    final known = {for (final d in itemDefs) d.key};
+    for (final e in stored.entries) {
+      if (e.value == null || known.contains(e.key)) continue;
+      chips.add(
+        Chip(
+          key: ValueKey('baseline-undefined-${item.id}-${e.key}'),
+          label: Text('${e.key}: ${e.value}'),
+        ),
+      );
+    }
+    if (chips.isEmpty) return null;
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: Wrap(spacing: 6, runSpacing: 4, children: chips),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final canWrite = can(ref, 'opportunities.write');
+    final canSuggest = can(ref, 'products.read');
     final tree = ref.watch(_baselineProvider(opportunityId));
     final types = ref.watch(_typesProvider);
     final typeList = types.value ?? const <BaselineItemType>[];
@@ -118,9 +202,12 @@ class BaselineSection extends ConsumerWidget {
       final label = (item.name ?? '').isEmpty
           ? typeName
           : '$typeName · ${item.name}';
+      final itemDefs = defs[item.typeCode] ?? const <AttributeDefinition>[];
       final summary = summarizeValues(
-        defs[item.typeCode] ?? const [],
+        itemDefs,
         item.values,
+        yes: l.yes,
+        no: l.no,
       );
       return Column(
         children: [
@@ -130,11 +217,25 @@ class BaselineSection extends ConsumerWidget {
               key: ValueKey('baseline-item-${item.id}'),
               dense: true,
               title: Text(label),
-              subtitle: summary.isEmpty ? null : Text(summary),
+              subtitle: canWrite
+                  ? _valueChips(context, ref, item, itemDefs)
+                  : (summary.isEmpty ? null : Text(summary)),
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (item.quantity != 1) Text(l.baselineQty(item.quantity)),
+                  if (canSuggest)
+                    IconButton(
+                      key: ValueKey('baseline-suggest-${item.id}'),
+                      tooltip: l.matchesSuggest,
+                      icon: const Icon(AppIcons.search),
+                      onPressed: () => showSuggestedProducts(
+                        context,
+                        opportunityId: opportunityId,
+                        itemId: item.id,
+                        itemLabel: label,
+                      ),
+                    ),
                   if (canWrite) ...[
                     IconButton(
                       key: ValueKey('baseline-edit-${item.id}'),
@@ -210,6 +311,130 @@ class BaselineSection extends ConsumerWidget {
         else
           for (final i in items) node(i, 0),
       ],
+    );
+  }
+}
+
+/// Sets one attribute of an existing item without the full item dialog: the same input as the
+/// form, the other values, name, parent and quantity are sent back unchanged. Pops true when saved.
+/// Reusable wherever a baseline item is shown (for example a quotation view of the baseline).
+class BaselineQuickEditDialog extends ConsumerStatefulWidget {
+  const BaselineQuickEditDialog({
+    super.key,
+    required this.opportunityId,
+    required this.item,
+    required this.def,
+  });
+  final String opportunityId;
+  final BaselineItem item;
+  final AttributeDefinition def;
+
+  @override
+  ConsumerState<BaselineQuickEditDialog> createState() =>
+      _BaselineQuickEditDialogState();
+}
+
+class _BaselineQuickEditDialogState
+    extends ConsumerState<BaselineQuickEditDialog> {
+  final _handle = _FieldsHandle();
+  Map<String, AttrError> _errors = {};
+  String? _error;
+  bool _busy = false;
+
+  String _message(AttrError e) {
+    final l = context.l10n;
+    return switch (e) {
+      AttrError.notNumber => l.attrEnterNumber,
+      AttrError.rangeIncomplete => l.attrRangeIncomplete,
+      AttrError.rangeOrder => l.attrRangeOrder,
+      AttrError.notInOptions => l.attrNotInOptions,
+    };
+  }
+
+  Future<void> _save() async {
+    final item = widget.item;
+    final r = buildValues(
+      defs: [widget.def],
+      existing: item.values,
+      raw: _handle.read(),
+    );
+    if (r.errors.isNotEmpty) {
+      setState(() => _errors = r.errors);
+      return;
+    }
+    setState(() {
+      _errors = {};
+      _error = null;
+      _busy = true;
+    });
+    try {
+      await ref
+          .read(apiProvider)
+          .crm
+          .updateItem(
+            id: widget.opportunityId,
+            itemId: item.id,
+            body: BaselineItemUpdate(
+              name: item.name,
+              parentId: item.parentId,
+              quantity: item.quantity,
+              values: r.values,
+            ),
+          );
+      if (mounted) Navigator.pop(context, true);
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = errorMessage(e);
+          _busy = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    // A route pop must not close the dialog while the save is under way.
+    return PopScope(
+      canPop: !_busy,
+      child: AlertDialog(
+        title: Text(widget.def.label),
+        content: SizedBox(
+          width: 360,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _Fields(
+                  defs: [widget.def],
+                  stored: widget.item.values,
+                  handle: _handle,
+                  errors: _errors,
+                  message: _message,
+                ),
+                if (_error != null)
+                  Text(
+                    _error!,
+                    style: TextStyle(color: Theme.of(context).colorScheme.error),
+                  ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: _busy ? null : () => Navigator.pop(context, false),
+            child: Text(l.cancel),
+          ),
+          FilledButton(
+            key: const ValueKey('baseline-quick-save'),
+            onPressed: _busy ? null : _save,
+            child: Text(l.save),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -508,7 +733,7 @@ class _FieldsState extends State<_Fields> {
     final raw = rawFromValues(widget.defs, widget.stored);
     for (final d in widget.defs) {
       final v = raw[d.key]!;
-      if (d.kind == DefinitionKind.select) {
+      if (d.kind == DefinitionKind.select || d.kind == DefinitionKind.boolean) {
         _selected[d.key] = v.first;
       } else {
         _c[d.key] = [for (final t in v) TextEditingController(text: t)];
@@ -516,7 +741,7 @@ class _FieldsState extends State<_Fields> {
     }
     widget.handle.read = () => {
       for (final d in widget.defs)
-        d.key: d.kind == DefinitionKind.select
+        d.key: _selected.containsKey(d.key)
             ? [_selected[d.key] ?? '']
             : [for (final c in _c[d.key]!) c.text],
     };
@@ -591,6 +816,22 @@ class _FieldsState extends State<_Fields> {
             // A stored value that is no longer an option stays visible until changed.
             if (current.isNotEmpty && !known)
               DropdownMenuItem(value: current, child: Text(current)),
+          ],
+          onChanged: (v) => _selected[d.key] = v ?? '',
+        );
+      case DefinitionKind.boolean:
+        return DropdownButtonFormField<String>(
+          key: ValueKey('bl-attr-${d.key}'),
+          initialValue: _selected[d.key] ?? '',
+          isExpanded: true,
+          decoration: InputDecoration(
+            labelText: d.label,
+            errorText: err == null ? null : widget.message(err),
+          ),
+          items: [
+            DropdownMenuItem(value: '', child: Text(l.none)),
+            DropdownMenuItem(value: 'true', child: Text(l.yes)),
+            DropdownMenuItem(value: 'false', child: Text(l.no)),
           ],
           onChanged: (v) => _selected[d.key] = v ?? '',
         );

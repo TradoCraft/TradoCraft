@@ -2984,6 +2984,7 @@
   "attrKindRange": "Bereich",
   "attrKindSelect": "Auswahl",
   "attrKindText": "Text",
+  "attrKindBoolean": "Ja/Nein",
   "attrOptions": "Optionen",
   "attrOptionValue": "Wert",
   "attrOptionLabel": "Optionsbezeichnung",
@@ -3026,5 +3027,17 @@
   "baselineTypeDeleteConfirm": "Typ {code} löschen? Wird er verwendet, deaktivieren Sie ihn stattdessen.",
   "@baselineTypeDeleteConfirm": {"placeholders": {"code": {"type": "String"}}},
   "baselineTypeDeleted": "Eintragstyp gelöscht.",
-  "attrScopeProduct": "Produkt"
+  "attrScopeProduct": "Produkt",
+  "matchesTitle": "Produktzuordnung",
+  "matchesEmpty": "Keine Produkte vorhanden.",
+  "matchesShowing": "{shown} von {total} Produkten angezeigt",
+  "@matchesShowing": {"placeholders": {"shown": {"type": "int"}, "total": {"type": "int"}}},
+  "matchesSuggest": "Produkte vorschlagen",
+  "matchesForItem": "Produkte für {name}",
+  "@matchesForItem": {"placeholders": {"name": {"type": "String"}}},
+  "matchesSuitable": "Geeignet",
+  "matchesUnknown": "Unbekannt",
+  "matchesUnsuitable": "Nicht geeignet",
+  "matchesNoReason": "Konnte nicht beurteilt werden.",
+  "baselineUnknownSet": "{label}: unbekannt — eintragen"
 }

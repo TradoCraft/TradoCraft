@@ -13,6 +13,8 @@ enum Operator {
   atMost('at_most'),
   @JsonValue('at_least')
   atLeast('at_least'),
+  @JsonValue('requires_if_true')
+  requiresIfTrue('requires_if_true'),
   /// Default value for all unparsed values, allows backward compatibility when adding new values on the backend.
   $unknown(null);
 

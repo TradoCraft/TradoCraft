@@ -345,12 +345,16 @@ abstract class CrmClient {
   ///
   /// [familyId] - Only products of this family.
   ///
+  /// [itemId] - Judge against this baseline item (and the items inside it) only, e.g. to suggest products.
+  /// for one dial or bell group. 404 when it is not an item of the opportunity.
+  ///
   /// [limit] - Default 100, at most 500.
   @GET('/api/v1/opportunities/{id}/product-matches')
   Future<ProductMatchPage> productMatches({
     @Path('id') required String id,
     @Query('status') String? status,
     @Query('family_id') String? familyId,
+    @Query('item_id') String? itemId,
     @Query('limit') int? limit,
     @Query('offset') int? offset,
   });

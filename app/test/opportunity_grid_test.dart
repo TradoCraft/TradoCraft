@@ -41,7 +41,12 @@ FakeHttp _http({
   List<Object?>? grids,
 }) => FakeHttp({
   'GET /api/v1/me': (_) =>
-      meJson(['opportunities.read', 'opportunities.write']),
+      meJson(['opportunities.read', 'opportunities.write', 'products.read']),
+  'GET /api/v1/opportunities/o1/product-matches': (_) => {
+    'items': <Object?>[],
+    'total': 0,
+    'counts': {'suitable': 0, 'unknown': 0, 'unsuitable': 0},
+  },
   'GET /api/v1/opportunities/o1': (_) => _opp(grid: grid),
   'PUT /api/v1/opportunities/o1': onPut ?? (_) => _opp(grid: grid),
   'GET /api/v1/customers/c2': (_) => customerJson(),
@@ -95,6 +100,24 @@ void main() {
     expect(find.text('400 V 3ph 50 Hz'), findsOneWidget);
     expect(find.text('Site baseline'), findsOneWidget);
     expect(find.byKey(const ValueKey('baseline-empty')), findsOneWidget);
+  });
+
+  testWidgets('refreshing the screen fetches the matches again', (tester) async {
+    final h = _http(grid: 'g2');
+    await _pump(tester, h, const OpportunityScreen(id: 'o1'));
+    int loads() => h.requests
+        .where((r) => r == 'GET /api/v1/opportunities/o1/product-matches')
+        .length;
+    final before = loads();
+    expect(before, greaterThan(0));
+    await tester.tap(find.text('Edit'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save'));
+    for (var i = 0; i < 3; i++) {
+      await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+      await tester.pumpAndSettle();
+    }
+    expect(loads(), before + 1);
   });
 
   testWidgets('the screen omits the grid when none is set', (tester) async {

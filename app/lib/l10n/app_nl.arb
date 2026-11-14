@@ -2984,6 +2984,7 @@
   "attrKindRange": "Bereik",
   "attrKindSelect": "Keuzelijst",
   "attrKindText": "Tekst",
+  "attrKindBoolean": "Ja/Nee",
   "attrOptions": "Opties",
   "attrOptionValue": "Waarde",
   "attrOptionLabel": "Optielabel",
@@ -3026,5 +3027,17 @@
   "baselineTypeDeleteConfirm": "Type {code} verwijderen? Is het in gebruik, deactiveer het dan.",
   "@baselineTypeDeleteConfirm": {"placeholders": {"code": {"type": "String"}}},
   "baselineTypeDeleted": "Itemtype verwijderd.",
-  "attrScopeProduct": "Product"
+  "attrScopeProduct": "Product",
+  "matchesTitle": "Productmatches",
+  "matchesEmpty": "Geen producten om te tonen.",
+  "matchesShowing": "{shown} van {total} producten getoond",
+  "@matchesShowing": {"placeholders": {"shown": {"type": "int"}, "total": {"type": "int"}}},
+  "matchesSuggest": "Producten voorstellen",
+  "matchesForItem": "Producten voor {name}",
+  "@matchesForItem": {"placeholders": {"name": {"type": "String"}}},
+  "matchesSuitable": "Geschikt",
+  "matchesUnknown": "Onbekend",
+  "matchesUnsuitable": "Niet geschikt",
+  "matchesNoReason": "Kon niet worden beoordeeld.",
+  "baselineUnknownSet": "{label}: onbekend — invullen"
 }

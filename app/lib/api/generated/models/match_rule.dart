@@ -27,7 +27,7 @@ class MatchRule {
   
   final bool active;
 
-  /// A `number` attribute of that type.
+  /// An attribute of that type: a `number`, or a `boolean` for `requires_if_true`.
   @JsonKey(name: 'baseline_attribute_key')
   final String baselineAttributeKey;
 
@@ -43,7 +43,8 @@ class MatchRule {
   @JsonKey(name: 'operator')
   final Operator operatorValue;
 
-  /// A product attribute: `range` for `within_range`, `number` for `at_most` and `at_least`.
+  /// A product attribute: `range` for `within_range`, `number` for `at_most` and `at_least`, `boolean` for.
+  /// `requires_if_true`.
   @JsonKey(name: 'product_attribute_key')
   final String productAttributeKey;
   @JsonKey(name: 'sort_order')

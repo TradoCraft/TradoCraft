@@ -136,6 +136,36 @@ void main() {
     });
   });
 
+  testWidgets('creates a yes/no definition without options or unit', (
+    tester,
+  ) async {
+    final h = FakeHttp({
+      'GET /api/v1/me': (_) => meJson(['products.write']),
+      'GET /api/v1/attribute-definitions': (_) => [],
+      'POST /api/v1/attribute-definitions': (b) => _def('lit', 'boolean'),
+    });
+    await _pump(tester, h);
+    await tester.tap(find.byKey(const ValueKey('attrdef-new')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const ValueKey('attrdef-key')), 'lit');
+    await tester.enterText(find.byKey(const ValueKey('attrdef-label')), 'Lit');
+    await tester.tap(find.byKey(const ValueKey('attrdef-kind')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Yes/No').last);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('attrdef-unit')), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('attrdef-save')));
+    await tester.pumpAndSettle();
+    expect(h.bodies['POST /api/v1/attribute-definitions'], {
+      'key': 'lit',
+      'label': 'Lit',
+      'kind': 'boolean',
+      'scope': 'product',
+      'sort_order': 0,
+      'active': true,
+    });
+  });
+
   testWidgets('refuses an invalid key and duplicate option values', (
     tester,
   ) async {

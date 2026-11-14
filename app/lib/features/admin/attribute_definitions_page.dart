@@ -71,6 +71,7 @@ class AttributeDefinitionsPage extends ConsumerWidget {
       DefinitionKind.number => l.attrKindNumber,
       DefinitionKind.range => l.attrKindRange,
       DefinitionKind.select => l.attrKindSelect,
+      DefinitionKind.boolean => l.attrKindBoolean,
       _ => l.attrKindText,
     };
   }
@@ -289,6 +290,7 @@ class _AttributeDefinitionDialogState
       DefinitionKind.range: l.attrKindRange,
       DefinitionKind.select: l.attrKindSelect,
       DefinitionKind.text: l.attrKindText,
+      DefinitionKind.boolean: l.attrKindBoolean,
     };
     // The scopes on offer: product and the baseline item types (none when they cannot be read).
     final types =

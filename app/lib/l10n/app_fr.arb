@@ -2984,6 +2984,7 @@
   "attrKindRange": "Plage",
   "attrKindSelect": "Liste",
   "attrKindText": "Texte",
+  "attrKindBoolean": "Oui/Non",
   "attrOptions": "Options",
   "attrOptionValue": "Valeur",
   "attrOptionLabel": "Libellé de l’option",
@@ -3026,5 +3027,17 @@
   "baselineTypeDeleteConfirm": "Supprimer le type {code} ? S'il est utilisé, désactivez-le plutôt.",
   "@baselineTypeDeleteConfirm": {"placeholders": {"code": {"type": "String"}}},
   "baselineTypeDeleted": "Type d'élément supprimé.",
-  "attrScopeProduct": "Produit"
+  "attrScopeProduct": "Produit",
+  "matchesTitle": "Produits adaptés",
+  "matchesEmpty": "Aucun produit à afficher.",
+  "matchesShowing": "{shown} produits affichés sur {total}",
+  "@matchesShowing": {"placeholders": {"shown": {"type": "int"}, "total": {"type": "int"}}},
+  "matchesSuggest": "Suggérer des produits",
+  "matchesForItem": "Produits pour {name}",
+  "@matchesForItem": {"placeholders": {"name": {"type": "String"}}},
+  "matchesSuitable": "Adapté",
+  "matchesUnknown": "Inconnu",
+  "matchesUnsuitable": "Non adapté",
+  "matchesNoReason": "N'a pas pu être évalué.",
+  "baselineUnknownSet": "{label} : inconnu — à renseigner"
 }

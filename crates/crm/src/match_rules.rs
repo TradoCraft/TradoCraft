@@ -29,9 +29,10 @@ pub struct MatchRule {
     pub name: String,
     /// Code of the baseline item type whose items the rule reads.
     pub baseline_type_code: String,
-    /// A `number` attribute of that type.
+    /// An attribute of that type: a `number`, or a `boolean` for `requires_if_true`.
     pub baseline_attribute_key: String,
-    /// A product attribute: `range` for `within_range`, `number` for `at_most` and `at_least`.
+    /// A product attribute: `range` for `within_range`, `number` for `at_most` and `at_least`, `boolean` for
+    /// `requires_if_true`.
     pub product_attribute_key: String,
     #[sqlx(try_from = "String")]
     #[schema(value_type = Operator)]
@@ -42,7 +43,7 @@ pub struct MatchRule {
     pub updated_at: DateTime<Utc>,
 }
 
-/// The operator as stored; the table CHECK only admits the three known values.
+/// The operator as stored; the table CHECK only admits the known operators.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, ToSchema)]
 #[serde(transparent)]
 pub struct OperatorColumn(pub Operator);
@@ -117,6 +118,15 @@ fn product_kind_for(op: Operator) -> DefinitionKind {
     match op {
         Operator::WithinRange => DefinitionKind::Range,
         Operator::AtMost | Operator::AtLeast => DefinitionKind::Number,
+        Operator::RequiresIfTrue => DefinitionKind::Boolean,
+    }
+}
+
+/// What the operator needs of the baseline attribute.
+fn baseline_kind_for(op: Operator) -> DefinitionKind {
+    match op {
+        Operator::RequiresIfTrue => DefinitionKind::Boolean,
+        _ => DefinitionKind::Number,
     }
 }
 
@@ -169,10 +179,13 @@ async fn check_references(
             rule.baseline_attribute_key, rule.baseline_type_code
         )));
     };
-    if bdef.kind != DefinitionKind::Number {
+    let baseline_needed = baseline_kind_for(rule.operator);
+    if bdef.kind != baseline_needed {
         return Err(AppError::Validation(format!(
-            "{} must be a number attribute to be compared",
-            rule.baseline_attribute_key
+            "{} must be a {} attribute to be compared with {}",
+            rule.baseline_attribute_key,
+            baseline_needed.as_str(),
+            rule.operator.as_str()
         )));
     }
     let product_defs = active_for_scope(conn, company_id, "product").await?;
@@ -395,5 +408,17 @@ mod tests {
         );
         assert_eq!(product_kind_for(Operator::AtMost), DefinitionKind::Number);
         assert_eq!(product_kind_for(Operator::AtLeast), DefinitionKind::Number);
+        assert_eq!(
+            product_kind_for(Operator::RequiresIfTrue),
+            DefinitionKind::Boolean
+        );
+        assert_eq!(
+            baseline_kind_for(Operator::RequiresIfTrue),
+            DefinitionKind::Boolean
+        );
+        assert_eq!(
+            baseline_kind_for(Operator::WithinRange),
+            DefinitionKind::Number
+        );
     }
 }

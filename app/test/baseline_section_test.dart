@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -72,6 +74,7 @@ final _types = [
 
 final _defs = [
   _def('clock_dial', 'size', 'range', unit: 'mm'),
+  _def('clock_dial', 'lit', 'boolean'),
   _def('bell', 'weight', 'number', unit: 'kg'),
   _def(
     'bell',
@@ -173,9 +176,13 @@ void main() {
     expect(find.text('Bell group · Tower bells'), findsOneWidget);
     expect(find.text('Bell · Big bell'), findsOneWidget);
     expect(find.text('Qty 2'), findsOneWidget);
-    expect(find.text('L-weight 120 kg · L-motion Flying'), findsOneWidget);
+    // With write access each value is a chip; an empty attribute asks to be set.
+    expect(find.text('L-weight 120 kg'), findsOneWidget);
+    expect(find.text('L-motion Flying'), findsOneWidget);
+    expect(find.text('L-note: unknown — set'), findsOneWidget);
     expect(find.text('Clock dial'), findsOneWidget);
     expect(find.text('L-size 800–1000 mm'), findsOneWidget);
+    expect(find.text('L-lit: unknown — set'), findsOneWidget);
     // Definitions are requested per item type scope.
     final scopes = {
       for (final (i, r) in h.requests.indexed)
@@ -193,6 +200,9 @@ void main() {
     await _pump(tester, _http(perms: const ['opportunities.read']));
     expect(find.byKey(const ValueKey('baseline-item-b1')), findsOneWidget);
     expect(find.byKey(const ValueKey('baseline-add')), findsNothing);
+    // Read-only keeps the plain summary line and offers no chips to tap.
+    expect(find.text('L-weight 120 kg · L-motion Flying'), findsOneWidget);
+    expect(find.byKey(const ValueKey('baseline-chip-b1-note')), findsNothing);
     expect(find.byKey(const ValueKey('baseline-edit-b1')), findsNothing);
     expect(find.byKey(const ValueKey('baseline-delete-b1')), findsNothing);
   });
@@ -326,6 +336,167 @@ void main() {
     expect(body['parent_id'], 'g1');
     expect(body['quantity'], 2);
     expect(body.containsKey('type_code'), isFalse);
+  });
+
+  testWidgets('an empty attribute is set in place without the full dialog', (
+    tester,
+  ) async {
+    final h = _http();
+    await _pump(tester, h);
+    final before = h.requests
+        .where((r) => r == 'GET /api/v1/opportunities/o1/baseline')
+        .length;
+    await tester.tap(find.byKey(const ValueKey('baseline-chip-b1-note')));
+    await tester.pumpAndSettle();
+    // Only that attribute is asked for, not the type, parent or quantity.
+    expect(find.byKey(const ValueKey('bl-attr-note')), findsOneWidget);
+    expect(find.byKey(const ValueKey('bl-attr-weight')), findsNothing);
+    expect(find.byKey(const ValueKey('baseline-type')), findsNothing);
+    await tester.enterText(
+      find.byKey(const ValueKey('bl-attr-note')),
+      'cracked',
+    );
+    await tester.tap(find.byKey(const ValueKey('baseline-quick-save')));
+    await tester.pumpAndSettle();
+    final body =
+        h.bodies['PUT /api/v1/opportunities/o1/baseline/items/b1']
+            as Map<String, Object?>;
+    // The other values, the parent and the quantity travel along unchanged.
+    expect(body['values'], {
+      'weight': 120.0,
+      'motion': 'flying',
+      'note': 'cracked',
+    });
+    expect(body['parent_id'], 'g1');
+    expect(body['quantity'], 2);
+    expect(body['name'], 'Big bell');
+    final after = h.requests
+        .where((r) => r == 'GET /api/v1/opportunities/o1/baseline')
+        .length;
+    expect(after, before + 1, reason: 'the tree is reloaded after saving');
+  });
+
+  testWidgets('a value chip edits that value; clearing it removes it', (
+    tester,
+  ) async {
+    final h = _http();
+    await _pump(tester, h);
+    await tester.tap(find.byKey(const ValueKey('baseline-chip-b1-weight')));
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<TextField>(find.byKey(const ValueKey('bl-attr-weight')))
+          .controller!
+          .text,
+      '120',
+    );
+    await tester.enterText(find.byKey(const ValueKey('bl-attr-weight')), '');
+    await tester.tap(find.byKey(const ValueKey('baseline-quick-save')));
+    await tester.pumpAndSettle();
+    final body =
+        h.bodies['PUT /api/v1/opportunities/o1/baseline/items/b1']
+            as Map<String, Object?>;
+    expect(body['values'], {'motion': 'flying'});
+  });
+
+  testWidgets(
+    'a yes/no attribute is set to yes or no, false counts as filled',
+    (tester) async {
+      final h = FakeHttp({
+        ..._http().routes,
+        'PUT /api/v1/opportunities/o1/baseline/items/d1': (_) =>
+            _item('d1', 'clock_dial'),
+      });
+      await _pump(tester, h);
+      await tester.tap(find.byKey(const ValueKey('baseline-chip-d1-lit')));
+      await tester.pumpAndSettle();
+      await _choose(tester, 'bl-attr-lit', 'No');
+      await tester.tap(find.byKey(const ValueKey('baseline-quick-save')));
+      await tester.pumpAndSettle();
+      final body =
+          h.bodies['PUT /api/v1/opportunities/o1/baseline/items/d1']
+              as Map<String, Object?>;
+      expect(body['values'], {
+        'size': {'min': 800, 'max': 1000},
+        'lit': false,
+      });
+    },
+  );
+
+  testWidgets('stored values without a definition stay visible, read-only', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      _http(
+        tree: [
+          _item(
+            'b1',
+            'bell',
+            values: {'weight': 120.0, 'legacy_code': 'X-9'},
+          ),
+        ],
+      ),
+    );
+    expect(find.byKey(const ValueKey('baseline-chip-b1-weight')), findsOneWidget);
+    final undefined = find.byKey(const ValueKey('baseline-undefined-b1-legacy_code'));
+    expect(undefined, findsOneWidget);
+    expect(
+      find.descendant(of: undefined, matching: find.text('legacy_code: X-9')),
+      findsOneWidget,
+    );
+    expect(find.byType(ActionChip).evaluate().any((e) {
+      final k = (e.widget.key as ValueKey?)?.value;
+      return k == 'baseline-chip-b1-legacy_code';
+    }), isFalse);
+  });
+
+  testWidgets('the quick-edit dialog cannot be popped while saving', (
+    tester,
+  ) async {
+    final gate = Completer<void>();
+    final h = FakeHttp({
+      ..._http().routes,
+      'PUT /api/v1/opportunities/o1/baseline/items/b1': (_) async {
+        await gate.future;
+        return _item('b1', 'bell');
+      },
+    });
+    await _pump(tester, h);
+    await tester.tap(find.byKey(const ValueKey('baseline-chip-b1-note')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const ValueKey('bl-attr-note')), 'x');
+    await tester.tap(find.byKey(const ValueKey('baseline-quick-save')));
+    await tester.pump();
+    await tester.pump();
+    final nav = Navigator.of(
+      tester.element(find.byKey(const ValueKey('baseline-quick-save'))),
+    );
+    await nav.maybePop();
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.byKey(const ValueKey('baseline-quick-save')), findsOneWidget);
+    gate.complete();
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('baseline-quick-save')), findsNothing);
+  });
+
+  testWidgets('a refused value stays in the dialog with the message', (
+    tester,
+  ) async {
+    final h = FakeHttp({
+      ..._http().routes,
+      'PUT /api/v1/opportunities/o1/baseline/items/b1': (_) =>
+          const FakeStatus(422, {'error': 'validation', 'message': 'nope'}),
+    });
+    await _pump(tester, h);
+    await tester.tap(find.byKey(const ValueKey('baseline-chip-b1-note')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const ValueKey('bl-attr-note')), 'x');
+    await tester.tap(find.byKey(const ValueKey('baseline-quick-save')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('bl-attr-note')), findsOneWidget);
+    expect(find.textContaining('nope'), findsOneWidget);
   });
 
   testWidgets('deleting asks first and surfaces a refusal', (tester) async {
