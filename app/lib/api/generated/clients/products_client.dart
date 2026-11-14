@@ -2,6 +2,8 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, unused_import, invalid_annotation_target, unnecessary_import
 
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:retrofit/retrofit.dart';
 
@@ -172,9 +174,11 @@ abstract class ProductsClient {
   /// [dryRun] - Validate and count only; nothing is written.
   ///
   /// [sheet] - The sheet to read from an XLSX or ODS file (the first sheet when absent); ignored for CSV.
+  ///
+  /// [body] - The raw bytes of a file.
   @POST('/api/v1/products/import')
   Future<ImportReport> importProducts({
-    @Body() required String body,
+    @Body() required File body,
     @Query('dry_run') bool? dryRun,
     @Query('sheet') String? sheet,
   });

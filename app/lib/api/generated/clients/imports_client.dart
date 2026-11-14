@@ -2,6 +2,8 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, unused_import, invalid_annotation_target, unnecessary_import
 
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:retrofit/retrofit.dart';
 
@@ -28,9 +30,11 @@ abstract class ImportsClient {
   /// of another type, or one that exceeds the archive limits, is refused and not stored.
   ///
   /// [filename] - The original file name.
+  ///
+  /// [body] - The raw bytes of a file.
   @POST('/api/v1/imports/files')
   Future<ImportFile> uploadImportFile({
-    @Body() required String body,
+    @Body() required File body,
     @Query('filename') String? filename,
   });
 

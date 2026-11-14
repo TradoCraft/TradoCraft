@@ -54,14 +54,14 @@ class _ImportsClient implements ImportsClient {
 
   @override
   Future<ImportFile> uploadImportFile({
-    required String body,
+    required File body,
     String? filename,
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{r'filename': filename};
     queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
-    final _data = body;
+    final _data = body.openRead();
     final _options = _setStreamType<ImportFile>(
       Options(method: 'POST', headers: _headers, extra: _extra)
           .compose(

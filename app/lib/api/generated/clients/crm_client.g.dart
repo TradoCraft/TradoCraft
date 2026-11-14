@@ -241,7 +241,7 @@ class _CrmClient implements CrmClient {
 
   @override
   Future<ImportReport> importCustomers({
-    required String body,
+    required File body,
     bool? dryRun,
     String? sheet,
   }) async {
@@ -252,7 +252,7 @@ class _CrmClient implements CrmClient {
     };
     queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
-    final _data = body;
+    final _data = body.openRead();
     final _options = _setStreamType<ImportReport>(
       Options(method: 'POST', headers: _headers, extra: _extra)
           .compose(
