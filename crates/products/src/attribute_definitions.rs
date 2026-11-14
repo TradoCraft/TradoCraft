@@ -114,7 +114,9 @@ pub fn validate_key(key: &str) -> Result<(), String> {
 fn required_text(name: &str, value: &str) -> Result<String, String> {
     let v = value.trim();
     if v.is_empty() || v.len() > MAX_TEXT {
-        return Err(format!("{name} is required (at most {MAX_TEXT} characters)"));
+        return Err(format!(
+            "{name} is required (at most {MAX_TEXT} characters)"
+        ));
     }
     Ok(v.to_string())
 }
@@ -169,6 +171,243 @@ pub fn validate(input: &AttributeDefinitionInput) -> Result<AttributeDefinitionI
     })
 }
 
+#[derive(FromRow)]
+struct Row {
+    id: Uuid,
+    key: String,
+    label: String,
+    kind: String,
+    unit: Option<String>,
+    options: SqlJson<Vec<SelectOption>>,
+    scope: String,
+    sort_order: i32,
+    active: bool,
+}
+
+impl Row {
+    fn into_api(self) -> AttributeDefinition {
+        AttributeDefinition {
+            id: self.id,
+            key: self.key,
+            label: self.label,
+            // The table CHECK only admits the four kinds.
+            kind: DefinitionKind::parse(&self.kind).unwrap_or(DefinitionKind::Text),
+            unit: self.unit,
+            options: self.options.0,
+            scope: self.scope,
+            sort_order: self.sort_order,
+            active: self.active,
+        }
+    }
+}
+
+const SELECT: &str = "SELECT id, key, label, kind, unit, options, scope, sort_order, active
+                      FROM products.attribute_definitions";
+
+async fn load(db: &sqlx::PgPool, company_id: Uuid, id: Uuid) -> AppResult<AttributeDefinition> {
+    sqlx::query_as::<_, Row>(&format!("{SELECT} WHERE id = $1 AND company_id = $2"))
+        .bind(id)
+        .bind(company_id)
+        .fetch_optional(db)
+        .await?
+        .map(Row::into_api)
+        .ok_or(AppError::NotFound("attribute definition"))
+}
+
+fn checked(input: &AttributeDefinitionInput) -> AppResult<AttributeDefinitionInput> {
+    validate(input).map_err(AppError::Validation)
+}
+
+#[derive(Debug, Deserialize, IntoParams)]
+pub struct ListQuery {
+    /// Only definitions of this scope (`product` or a baseline item type code).
+    scope: Option<String>,
+}
+
+#[utoipa::path(get, path = "/attribute-definitions", tag = "products", params(ListQuery),
+    responses((status = 200, body = Vec<AttributeDefinition>)))]
+async fn list_definitions(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Query(q): Query<ListQuery>,
+) -> AppResult<Json<Vec<AttributeDefinition>>> {
+    user.require(Permission::ProductsRead)?;
+    let rows: Vec<Row> = sqlx::query_as(&format!(
+        "{SELECT} WHERE company_id = $1 AND ($2::text IS NULL OR scope = $2)
+         ORDER BY scope, sort_order, key"
+    ))
+    .bind(user.company_id)
+    .bind(q.scope.as_deref().map(str::trim))
+    .fetch_all(&state.db)
+    .await?;
+    Ok(Json(rows.into_iter().map(Row::into_api).collect()))
+}
+
+#[utoipa::path(get, path = "/attribute-definitions/{id}", tag = "products", params(("id" = Uuid, Path)),
+    responses((status = 200, body = AttributeDefinition), (status = 404, body = ErrorBody)))]
+async fn get_definition(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Path(id): Path<Uuid>,
+) -> AppResult<Json<AttributeDefinition>> {
+    user.require(Permission::ProductsRead)?;
+    Ok(Json(load(&state.db, user.company_id, id).await?))
+}
+
+#[utoipa::path(post, path = "/attribute-definitions", tag = "products", request_body = AttributeDefinitionInput,
+    responses((status = 201, body = AttributeDefinition), (status = 409, body = ErrorBody),
+        (status = 422, body = ErrorBody)))]
+async fn create_definition(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Json(input): Json<AttributeDefinitionInput>,
+) -> AppResult<(StatusCode, Json<AttributeDefinition>)> {
+    user.require(Permission::ProductsWrite)?;
+    let input = checked(&input)?;
+    let id = new_id();
+    let mut tx = state.db.begin().await?;
+    sqlx::query(
+        "INSERT INTO products.attribute_definitions
+            (id, company_id, key, label, kind, unit, options, scope, sort_order, active)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+    )
+    .bind(id)
+    .bind(user.company_id)
+    .bind(&input.key)
+    .bind(&input.label)
+    .bind(input.kind.as_str())
+    .bind(&input.unit)
+    .bind(SqlJson(&input.options))
+    .bind(&input.scope)
+    .bind(input.sort_order)
+    .bind(input.active)
+    .execute(&mut *tx)
+    .await?;
+    audit::record(
+        &mut tx,
+        &user,
+        "attribute_definition",
+        id,
+        "created",
+        serde_json::json!({ "key": input.key, "scope": input.scope }),
+    )
+    .await?;
+    tx.commit().await?;
+    Ok((
+        StatusCode::CREATED,
+        Json(load(&state.db, user.company_id, id).await?),
+    ))
+}
+
+#[utoipa::path(put, path = "/attribute-definitions/{id}", tag = "products", params(("id" = Uuid, Path)),
+    request_body = AttributeDefinitionInput,
+    responses((status = 200, body = AttributeDefinition), (status = 404, body = ErrorBody),
+        (status = 409, body = ErrorBody), (status = 422, body = ErrorBody)))]
+async fn update_definition(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Path(id): Path<Uuid>,
+    Json(input): Json<AttributeDefinitionInput>,
+) -> AppResult<Json<AttributeDefinition>> {
+    user.require(Permission::ProductsWrite)?;
+    let input = checked(&input)?;
+    let mut tx = state.db.begin().await?;
+    let r = sqlx::query(
+        "UPDATE products.attribute_definitions
+         SET key = $3, label = $4, kind = $5, unit = $6, options = $7, scope = $8,
+             sort_order = $9, active = $10, updated_at = now()
+         WHERE id = $1 AND company_id = $2",
+    )
+    .bind(id)
+    .bind(user.company_id)
+    .bind(&input.key)
+    .bind(&input.label)
+    .bind(input.kind.as_str())
+    .bind(&input.unit)
+    .bind(SqlJson(&input.options))
+    .bind(&input.scope)
+    .bind(input.sort_order)
+    .bind(input.active)
+    .execute(&mut *tx)
+    .await?;
+    if r.rows_affected() == 0 {
+        return Err(AppError::NotFound("attribute definition"));
+    }
+    audit::record(
+        &mut tx,
+        &user,
+        "attribute_definition",
+        id,
+        "updated",
+        serde_json::json!({ "key": input.key }),
+    )
+    .await?;
+    tx.commit().await?;
+    Ok(Json(load(&state.db, user.company_id, id).await?))
+}
+
+/// Deletes an unused definition. A definition whose key is stored on products is refused with 409
+/// (deactivate it with `active: false` instead, which keeps the stored values readable).
+#[utoipa::path(delete, path = "/attribute-definitions/{id}", tag = "products", params(("id" = Uuid, Path)),
+    responses((status = 204), (status = 404, body = ErrorBody), (status = 409, body = ErrorBody)))]
+async fn delete_definition(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Path(id): Path<Uuid>,
+) -> AppResult<StatusCode> {
+    user.require(Permission::ProductsWrite)?;
+    let mut tx = state.db.begin().await?;
+    let (key, scope): (String, String) = sqlx::query_as(
+        "SELECT key, scope FROM products.attribute_definitions
+         WHERE id = $1 AND company_id = $2 FOR UPDATE",
+    )
+    .bind(id)
+    .bind(user.company_id)
+    .fetch_optional(&mut *tx)
+    .await?
+    .ok_or(AppError::NotFound("attribute definition"))?;
+    // Product attributes are shared master data keyed by `key`; baseline values (later phases)
+    // add their own usage check next to this one.
+    let used: i64 = if scope == "product" {
+        sqlx::query_scalar("SELECT count(*) FROM products.product_attributes WHERE key = $1")
+            .bind(&key)
+            .fetch_one(&mut *tx)
+            .await?
+    } else {
+        0
+    };
+    if used > 0 {
+        return Err(AppError::Conflict(format!(
+            "attribute {key} is in use on {used} products and cannot be deleted; deactivate it instead"
+        )));
+    }
+    sqlx::query("DELETE FROM products.attribute_definitions WHERE id = $1")
+        .bind(id)
+        .execute(&mut *tx)
+        .await?;
+    audit::record(
+        &mut tx,
+        &user,
+        "attribute_definition",
+        id,
+        "deleted",
+        serde_json::json!({ "key": key }),
+    )
+    .await?;
+    tx.commit().await?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
+pub fn router() -> OpenApiRouter<AppState> {
+    OpenApiRouter::new()
+        .routes(routes!(list_definitions, create_definition))
+        .routes(routes!(
+            get_definition,
+            update_definition,
+            delete_definition
+        ))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -198,7 +437,16 @@ mod tests {
         for ok in ["a", "dial_size", "d090", "bell_2_weight"] {
             assert!(validate_key(ok).is_ok(), "{ok}");
         }
-        for bad in ["", "Dial", "1dial", "_x", "dial-size", "dial size", "diaL", "é"] {
+        for bad in [
+            "",
+            "Dial",
+            "1dial",
+            "_x",
+            "dial-size",
+            "dial size",
+            "diaL",
+            "é",
+        ] {
             assert!(validate_key(bad).is_err(), "{bad}");
         }
         assert!(validate_key(&"a".repeat(64)).is_ok());
@@ -207,7 +455,11 @@ mod tests {
 
     #[test]
     fn plain_kinds_accept_no_options() {
-        for k in [DefinitionKind::Number, DefinitionKind::Range, DefinitionKind::Text] {
+        for k in [
+            DefinitionKind::Number,
+            DefinitionKind::Range,
+            DefinitionKind::Text,
+        ] {
             assert!(validate(&input(k)).is_ok());
             let mut i = input(k);
             i.options = vec![opt("a")];

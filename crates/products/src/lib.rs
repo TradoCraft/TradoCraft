@@ -984,4 +984,5 @@ pub fn router() -> OpenApiRouter<AppState> {
         .merge(translations::router())
         .merge(options::router())
         .merge(attributes::router())
+        .merge(attribute_definitions::router())
 }
