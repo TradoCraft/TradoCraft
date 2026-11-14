@@ -411,7 +411,7 @@ pub struct ImportPreviewItem {
 }
 
 #[derive(Debug, Serialize, ToSchema)]
-pub struct ImportReport {
+pub struct BaselineImportReport {
     pub dry_run: bool,
     pub source_id: String,
     /// Items of the same source that are (dry run) or were replaced.
@@ -457,7 +457,7 @@ async fn active_type(
 #[utoipa::path(post, path = "/opportunities/{id}/baseline/import", tag = "crm",
     params(("id" = Uuid, Path), ImportQuery),
     request_body(content = Value, content_type = "application/json"),
-    responses((status = 200, body = ImportReport), (status = 404, body = ErrorBody),
+    responses((status = 200, body = BaselineImportReport), (status = 404, body = ErrorBody),
         (status = 422, body = ErrorBody)))]
 async fn import_baseline(
     State(state): State<AppState>,
@@ -465,7 +465,7 @@ async fn import_baseline(
     Path(opportunity_id): Path<Uuid>,
     Query(q): Query<ImportQuery>,
     body: Bytes,
-) -> AppResult<Json<ImportReport>> {
+) -> AppResult<Json<BaselineImportReport>> {
     user.require(Permission::OpportunitiesWrite)?;
     let source = source_id(&q.source_id)?;
     let doc: Value = serde_json::from_slice(&body)
@@ -510,7 +510,7 @@ async fn import_baseline(
         name: b.name.clone(),
         values: Value::Object(b.values.clone()),
     }));
-    let report = ImportReport {
+    let report = BaselineImportReport {
         dry_run: q.dry_run,
         source_id: source.clone(),
         replaced,

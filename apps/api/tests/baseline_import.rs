@@ -473,3 +473,13 @@ async fn the_source_of_an_item_can_be_read_back(db: PgPool) {
     .await;
     assert_eq!(status, StatusCode::NOT_FOUND);
 }
+
+#[test]
+fn the_openapi_spec_describes_the_baseline_import_response_under_its_own_schema() {
+    // The CSV import already owns the `ImportReport` schema; sharing the name would make the
+    // generated client parse this response as a CSV report.
+    let doc = serde_json::to_value(tradocraft_api::openapi()).unwrap();
+    let schema = &doc["paths"]["/api/v1/opportunities/{id}/baseline/import"]["post"]["responses"]
+        ["200"]["content"]["application/json"]["schema"]["$ref"];
+    assert_eq!(schema, "#/components/schemas/BaselineImportReport");
+}
