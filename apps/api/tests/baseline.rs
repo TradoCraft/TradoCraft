@@ -1266,3 +1266,17 @@ async fn opportunity_baseline_audit_of_power_grid_and_unrelated_opportunities_st
     assert!(o.as_object().unwrap().contains_key("power_grid_id"));
     assert!(o["power_grid_id"].is_null());
 }
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn a_failing_baseline_default_seed_rolls_the_dev_company_back(db: PgPool) {
+    sqlx::query("DROP FUNCTION crm.seed_baseline_defaults(uuid)")
+        .execute(&db)
+        .await
+        .unwrap();
+    assert!(tradocraft_api::seed_if_empty(&db).await.is_err());
+    let n: i64 = sqlx::query_scalar("SELECT count(*) FROM core.companies")
+        .fetch_one(&db)
+        .await
+        .unwrap();
+    assert_eq!(n, 0, "the company insert must not survive a failed seed");
+}

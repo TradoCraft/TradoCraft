@@ -195,12 +195,16 @@ pub async fn seed_if_empty(db: &sqlx::PgPool) -> anyhow::Result<bool> {
     if companies > 0 {
         return Ok(false);
     }
-    sqlx::raw_sql(DEV_SEED_SQL).execute(db).await?;
+    // One transaction: a failing baseline-defaults step must not leave a company behind that
+    // would stop the next start from seeding.
+    let mut tx = db.begin().await?;
+    sqlx::raw_sql(DEV_SEED_SQL).execute(&mut *tx).await?;
     // Companies created by provisioning get these themselves; the dev seed inserts its company
     // directly.
     sqlx::query("SELECT crm.seed_baseline_defaults(id) FROM core.companies")
-        .execute(db)
+        .execute(&mut *tx)
         .await?;
+    tx.commit().await?;
     seed_configurators(db).await?;
     Ok(true)
 }
