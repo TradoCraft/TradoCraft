@@ -8649,6 +8649,47 @@ class AppLocalizationsDe extends AppLocalizations {
   String get todoReorder => 'Zum Sortieren ziehen';
 
   @override
+  String get changeProduct => 'Produkt ändern';
+
+  @override
+  String changeProductOf(String product) {
+    return 'Neues Hauptprodukt für $product';
+  }
+
+  @override
+  String get changeProductNew => 'Neues Produkt';
+
+  @override
+  String changeProductNetNote(String product) {
+    return '$product hat einen Nettopreis: der Positionsrabatt wurde entfernt.';
+  }
+
+  @override
+  String changeProductIndicativeNote(String product) {
+    return '$product hat einen Richtpreis: Preis vor dem Versand bestätigen.';
+  }
+
+  @override
+  String optionsNotApplicable(int count, String product) {
+    return '$count Option(en) gelten nicht für $product: bitte entfernen.';
+  }
+
+  @override
+  String removeNamedLine(String code) {
+    return '$code entfernen';
+  }
+
+  @override
+  String optionNotOffered(String product) {
+    return 'Nicht verfügbar mit $product';
+  }
+
+  @override
+  String sentWithNotApplicable(int count) {
+    return 'Versendet mit $count Option(en), die nicht zu ihrem Hauptprodukt passen.';
+  }
+
+  @override
   String get tabCustomer => 'Kunde';
 
   @override

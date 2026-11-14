@@ -8628,6 +8628,47 @@ class AppLocalizationsNl extends AppLocalizations {
   String get todoReorder => 'Slepen om te ordenen';
 
   @override
+  String get changeProduct => 'Product wijzigen';
+
+  @override
+  String changeProductOf(String product) {
+    return 'Nieuw hoofdproduct voor $product';
+  }
+
+  @override
+  String get changeProductNew => 'Nieuw product';
+
+  @override
+  String changeProductNetNote(String product) {
+    return '$product heeft een nettoprijs: de regelkorting is gewist.';
+  }
+
+  @override
+  String changeProductIndicativeNote(String product) {
+    return '$product heeft een indicatieve prijs: bevestig de prijs voor het verzenden.';
+  }
+
+  @override
+  String optionsNotApplicable(int count, String product) {
+    return '$count optie(s) gelden niet voor $product: verwijder ze.';
+  }
+
+  @override
+  String removeNamedLine(String code) {
+    return '$code verwijderen';
+  }
+
+  @override
+  String optionNotOffered(String product) {
+    return 'Niet aangeboden bij $product';
+  }
+
+  @override
+  String sentWithNotApplicable(int count) {
+    return 'Verzonden met $count optie(s) die niet bij hun hoofdproduct horen.';
+  }
+
+  @override
   String get tabCustomer => 'Klant';
 
   @override

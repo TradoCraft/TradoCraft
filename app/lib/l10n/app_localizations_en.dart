@@ -8596,6 +8596,47 @@ class AppLocalizationsEn extends AppLocalizations {
   String get todoReorder => 'Drag to reorder';
 
   @override
+  String get changeProduct => 'Change product';
+
+  @override
+  String changeProductOf(String product) {
+    return 'New main product for $product';
+  }
+
+  @override
+  String get changeProductNew => 'New product';
+
+  @override
+  String changeProductNetNote(String product) {
+    return '$product has a net price: the line discount was cleared.';
+  }
+
+  @override
+  String changeProductIndicativeNote(String product) {
+    return '$product has an indicative price: confirm the price before sending.';
+  }
+
+  @override
+  String optionsNotApplicable(int count, String product) {
+    return '$count option(s) do not apply to $product: remove them.';
+  }
+
+  @override
+  String removeNamedLine(String code) {
+    return 'Remove $code';
+  }
+
+  @override
+  String optionNotOffered(String product) {
+    return 'Not offered with $product';
+  }
+
+  @override
+  String sentWithNotApplicable(int count) {
+    return 'Sent with $count option(s) that do not apply to their main product.';
+  }
+
+  @override
   String get tabCustomer => 'Customer';
 
   @override

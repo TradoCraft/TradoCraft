@@ -15384,6 +15384,60 @@ abstract class AppLocalizations {
   /// **'Drag to reorder'**
   String get todoReorder;
 
+  /// No description provided for @changeProduct.
+  ///
+  /// In en, this message translates to:
+  /// **'Change product'**
+  String get changeProduct;
+
+  /// No description provided for @changeProductOf.
+  ///
+  /// In en, this message translates to:
+  /// **'New main product for {product}'**
+  String changeProductOf(String product);
+
+  /// No description provided for @changeProductNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New product'**
+  String get changeProductNew;
+
+  /// No description provided for @changeProductNetNote.
+  ///
+  /// In en, this message translates to:
+  /// **'{product} has a net price: the line discount was cleared.'**
+  String changeProductNetNote(String product);
+
+  /// No description provided for @changeProductIndicativeNote.
+  ///
+  /// In en, this message translates to:
+  /// **'{product} has an indicative price: confirm the price before sending.'**
+  String changeProductIndicativeNote(String product);
+
+  /// No description provided for @optionsNotApplicable.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} option(s) do not apply to {product}: remove them.'**
+  String optionsNotApplicable(int count, String product);
+
+  /// No description provided for @removeNamedLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {code}'**
+  String removeNamedLine(String code);
+
+  /// No description provided for @optionNotOffered.
+  ///
+  /// In en, this message translates to:
+  /// **'Not offered with {product}'**
+  String optionNotOffered(String product);
+
+  /// No description provided for @sentWithNotApplicable.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent with {count} option(s) that do not apply to their main product.'**
+  String sentWithNotApplicable(int count);
+
   /// No description provided for @tabCustomer.
   ///
   /// In en, this message translates to:
