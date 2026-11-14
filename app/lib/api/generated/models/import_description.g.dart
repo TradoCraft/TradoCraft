@@ -10,7 +10,7 @@ ImportDescription _$ImportDescriptionFromJson(Map<String, dynamic> json) =>
     ImportDescription(
       auditEntity: json['audit_entity'] as String,
       columns: (json['columns'] as List<dynamic>)
-          .map((e) => Column.fromJson(e as Map<String, dynamic>))
+          .map((e) => ImportColumn.fromJson(e as Map<String, dynamic>))
           .toList(),
       fileStem: json['file_stem'] as String,
       key: json['key'] as String,

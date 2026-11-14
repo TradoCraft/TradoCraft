@@ -2,7 +2,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../api/generated/export.dart' hide Column;
+import '../api/generated/export.dart';
 import '../l10n/l10n.dart';
 import '../shared/format.dart';
 import '../shared/order_widgets.dart';

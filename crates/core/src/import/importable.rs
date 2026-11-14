@@ -37,6 +37,7 @@ pub enum ColumnKind {
 
 /// One column of an entity's import file and export, in export order.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, ToSchema)]
+#[schema(as = ImportColumn)]
 pub struct Column {
     pub name: &'static str,
     pub kind: ColumnKind,

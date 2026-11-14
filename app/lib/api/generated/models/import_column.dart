@@ -6,18 +6,18 @@ import 'package:json_annotation/json_annotation.dart';
 
 import 'column_kind.dart';
 
-part 'column.g.dart';
+part 'import_column.g.dart';
 
 /// One column of an entity's import file and export, in export order.
 @JsonSerializable()
-class Column {
-  const Column({
+class ImportColumn {
+  const ImportColumn({
     required this.kind,
     required this.name,
     required this.requiredValue,
   });
   
-  factory Column.fromJson(Map<String, Object?> json) => _$ColumnFromJson(json);
+  factory ImportColumn.fromJson(Map<String, Object?> json) => _$ImportColumnFromJson(json);
   
   final ColumnKind kind;
   final String name;
@@ -28,5 +28,5 @@ class Column {
   @JsonKey(name: 'required')
   final bool requiredValue;
 
-  Map<String, Object?> toJson() => _$ColumnToJson(this);
+  Map<String, Object?> toJson() => _$ImportColumnToJson(this);
 }

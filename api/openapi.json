@@ -29799,27 +29799,6 @@
           }
         }
       },
-      "Column": {
-        "type": "object",
-        "description": "One column of an entity's import file and export, in export order.",
-        "required": [
-          "name",
-          "kind",
-          "required"
-        ],
-        "properties": {
-          "kind": {
-            "$ref": "#/components/schemas/ColumnKind"
-          },
-          "name": {
-            "type": "string"
-          },
-          "required": {
-            "type": "boolean",
-            "description": "Must have a value when the row creates a record (the key column is always required in the\nfile itself)."
-          }
-        }
-      },
       "ColumnKind": {
         "type": "string",
         "description": "What kind of value a column holds. It tells a person (and a mapping screen) how a cell is read\nand tells an export how to type the cell: text columns are always text cells, so `00123` and\n`=x` survive a spreadsheet.",
@@ -34250,6 +34229,27 @@
           }
         }
       },
+      "ImportColumn": {
+        "type": "object",
+        "description": "One column of an entity's import file and export, in export order.",
+        "required": [
+          "name",
+          "kind",
+          "required"
+        ],
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/ColumnKind"
+          },
+          "name": {
+            "type": "string"
+          },
+          "required": {
+            "type": "boolean",
+            "description": "Must have a value when the row creates a record (the key column is always required in the\nfile itself)."
+          }
+        }
+      },
       "ImportDescription": {
         "type": "object",
         "description": "The serialisable description of an importable entity: what a later admin endpoint lists.",
@@ -34268,7 +34268,7 @@
           "columns": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/Column"
+              "$ref": "#/components/schemas/ImportColumn"
             }
           },
           "file_stem": {

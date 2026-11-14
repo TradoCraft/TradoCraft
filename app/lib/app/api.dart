@@ -7,7 +7,7 @@ import 'session.dart';
 
 // The generated import-column model `Column` would shadow Flutter's `Column` widget in every file
 // that imports this barrel; import it from api/generated/models/column.dart (prefixed) where needed.
-export '../api/generated/export.dart' hide Column;
+export '../api/generated/export.dart';
 
 final dioProvider = Provider<Dio>((ref) {
   final session = ref.watch(sessionProvider);

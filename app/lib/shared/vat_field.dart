@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:material_ui/material_ui.dart';
 
-import '../api/generated/export.dart' hide Column;
+import '../api/generated/export.dart';
 import '../l10n/l10n.dart';
 import 'app_icons.dart';
 

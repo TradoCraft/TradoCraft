@@ -4,7 +4,7 @@
 
 import 'package:json_annotation/json_annotation.dart';
 
-import 'column.dart';
+import 'import_column.dart';
 
 part 'import_description.g.dart';
 
@@ -24,7 +24,7 @@ class ImportDescription {
   /// Name of the entity in audit events (`customer`, `product`).
   @JsonKey(name: 'audit_entity')
   final String auditEntity;
-  final List<Column> columns;
+  final List<ImportColumn> columns;
 
   /// File stem of an export and name of its sheet.
   @JsonKey(name: 'file_stem')

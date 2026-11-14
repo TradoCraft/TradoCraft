@@ -5,7 +5,7 @@ import 'package:file_selector/file_selector.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:printing/printing.dart';
 
-import '../api/generated/export.dart' hide Column;
+import '../api/generated/export.dart';
 import '../l10n/l10n.dart';
 import 'photos.dart';
 import 'app_icons.dart';
