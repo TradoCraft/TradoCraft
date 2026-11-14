@@ -13062,6 +13062,87 @@
         }
       }
     },
+    "/api/v1/opportunities/{id}/baseline/import": {
+      "post": {
+        "tags": [
+          "crm"
+        ],
+        "summary": "Previews (`dry_run=true`) or runs the import of a tower configurator export (the JSON as the\nbody) into the baseline: one bell group named from the source holding one bell per source\nbell. Items of the same source that an earlier import created are replaced; items entered by\nhand are never removed (those inside a replaced group move to the top level).",
+        "operationId": "import_baseline",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "dry_run",
+            "in": "query",
+            "description": "`true` returns the preview and writes nothing.",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "source_id",
+            "in": "query",
+            "description": "Identifies the source; an import replaces the items of the same source in the\nopportunity. Default `tower_configurator`, at most 100 characters.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportReport"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/opportunities/{id}/baseline/items": {
       "post": {
         "tags": [
@@ -13233,6 +13314,57 @@
             }
           },
           "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/opportunities/{id}/baseline/items/{item_id}/source": {
+      "get": {
+        "tags": [
+          "crm"
+        ],
+        "summary": "The source of an imported item as it was received (the whole bell, or the document without\nits bells for the group). 404 for an item entered by hand.",
+        "operationId": "get_source",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
             "description": "",
             "content": {
               "application/json": {
@@ -30295,6 +30427,13 @@
             "type": "string",
             "format": "uuid"
           },
+          "import_source": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Id of the import that created the item (e.g. `tower_configurator`); `None` for items\nentered by hand. A re-import of the same source replaces these items and only these."
+          },
           "name": {
             "type": [
               "string",
@@ -36033,6 +36172,28 @@
           }
         }
       },
+      "ImportCounts": {
+        "type": "object",
+        "required": [
+          "bell_group",
+          "bell",
+          "clock_dial"
+        ],
+        "properties": {
+          "bell": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "bell_group": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "clock_dial": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
       "ImportDescription": {
         "type": "object",
         "description": "The serialisable description of an importable entity: what a later admin endpoint lists.",
@@ -36341,6 +36502,26 @@
           }
         }
       },
+      "ImportPreviewItem": {
+        "type": "object",
+        "required": [
+          "type_code",
+          "name",
+          "values"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "type_code": {
+            "type": "string"
+          },
+          "values": {
+            "type": "object",
+            "description": "Mapped attribute values keyed by definition key."
+          }
+        }
+      },
       "ImportReport": {
         "type": "object",
         "description": "Outcome of an import (or of its dry run). `errors` is empty on success; with errors nothing was\nwritten and the counts are 0.",
@@ -36368,6 +36549,30 @@
           "updated": {
             "type": "integer",
             "minimum": 0
+          }
+        }
+      },
+      "ImportWarning": {
+        "type": "object",
+        "description": "Something in the source that could not be used as is. The import carries on.",
+        "required": [
+          "field",
+          "message"
+        ],
+        "properties": {
+          "bell": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Identifier of the bell, `None` for a warning about the document."
+          },
+          "field": {
+            "type": "string",
+            "description": "Source field the warning is about."
+          },
+          "message": {
+            "type": "string"
           }
         }
       },
@@ -50870,6 +51075,25 @@
               "string",
               "null"
             ]
+          }
+        }
+      },
+      "UnmappedField": {
+        "type": "object",
+        "description": "A source field that has no baseline attribute. It is kept in the item's `source_data`.",
+        "required": [
+          "field",
+          "count"
+        ],
+        "properties": {
+          "count": {
+            "type": "integer",
+            "description": "How many bells carry it (1 for a top-level section).",
+            "minimum": 0
+          },
+          "field": {
+            "type": "string",
+            "description": "`bells[].properties.<name>`, `bells[].<name>` or a top-level section name."
           }
         }
       },

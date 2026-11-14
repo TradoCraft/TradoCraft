@@ -17,6 +17,7 @@ BaselineItem _$BaselineItemFromJson(Map<String, dynamic> json) => BaselineItem(
   typeCode: json['type_code'] as String,
   updatedAt: DateTime.parse(json['updated_at'] as String),
   values: json['values'],
+  importSource: json['import_source'] as String?,
   name: json['name'] as String?,
   parentId: json['parent_id'] as String?,
 );
@@ -26,6 +27,7 @@ Map<String, dynamic> _$BaselineItemToJson(BaselineItem instance) =>
       'children': instance.children,
       'created_at': instance.createdAt.toIso8601String(),
       'id': instance.id,
+      'import_source': ?instance.importSource,
       'name': ?instance.name,
       'parent_id': ?instance.parentId,
       'quantity': instance.quantity,
