@@ -61,3 +61,45 @@ have no reference data and start empty.
   `kind` while stored values use the definition (product attributes with the key, or baseline items
   of that type storing it). Label, unit, options, sort order and active stay editable; shrinking the
   options does not revalidate stored values.
+
+**Phase 5a notes (matching engine, without motor derivation).** Migration `20270212000001`
+(`crm.match_rules`; `crm.seed_baseline_defaults` now also seeds the rule). Motor derivation
+(decision 6) is not part of this phase.
+
+* Verdict: per product `suitable`, `unsuitable` or `unknown` with a list of reasons `{check, status,
+  message}`; `check` is `power`, `baseline` or `rule:<rule name>`, `status` is `ok`, `fail` or
+  `unknown`. Any `fail` makes the product unsuitable, otherwise any `unknown` makes it unknown,
+  otherwise it is suitable. Missing data is never `unsuitable`. A product with nothing applicable
+  (not electrical, no rule applies) is `suitable` with no reasons.
+* No data at all: an opportunity with an empty baseline **and** no power grid says nothing about
+  any product, so every product is `unknown` with the single reason `baseline` / "no baseline
+  data" instead of a vacuous `suitable`. With a grid but an empty baseline the products are judged
+  on power alone.
+* Power reuses `products::power::check` (new `compatibility_with_grid`, which `check_products`
+  now shares). Compatible and needs-external-supply give `ok` reasons, incompatible a `fail` that
+  names the supported supplies and the site grid, an electrical product without an opportunity grid
+  is `unknown`, a non-electrical product gets no power reason.
+* Rules (`GET|POST /match-rules`, `GET|PUT|DELETE /match-rules/{id}`; read `opportunities.read`,
+  write `products.write`, audited as `match_rule`): `name` (unique per company),
+  `baseline_type_code`, `baseline_attribute_key` (an active `number` definition of that type),
+  `product_attribute_key` (an active product definition), `operator`, `active`, `sort_order`.
+  `within_range` needs a `range` product attribute (baseline value within min..max, bounds
+  included), `at_most` / `at_least` a `number` one (baseline value <= / >= the product value);
+  anything else is 422. Nothing references a rule, so it can always be deleted; renaming or
+  deleting a definition later leaves the rule in place and it simply reads no data (`unknown` or
+  not applicable). The seed adds `Dial size fits product` (`clock_dial.dial_diameter_mm`
+  `within_range` product `dial_size_mm`) once per company name; like the types it is re-created by
+  a re-run of the seed function if an administrator deleted it.
+* Evaluation per active rule and product: a product without the attribute (or in the wrong shape)
+  is not judged by the rule, nor is a baseline without an item of the type. Otherwise every item of
+  that type, nested ones included and quantity ignored, gives one reason: `ok` / `fail` with the
+  numbers, or `unknown` when the item lacks the value. The product must fit all items.
+* `GET /opportunities/{id}/product-matches?status=&family_id=&limit=&offset=` (needs
+  `opportunities.read` and `products.read`; another company's opportunity is 404, a bad `status`
+  422) returns `{items, total, counts}` for the active products in code order. Because the status
+  is computed, all active products are evaluated in memory (four queries: opportunity, baseline,
+  rules, products with their rule attributes and supplies, no per-product queries) and then
+  filtered and paged; `limit` defaults to 100, at most 500. `counts` gives the number per status
+  within the family filter, ignoring the status filter. Products are catalogue-wide (they have no
+  company), the opportunity, baseline and rules are the company's.
+* The matcher is the pure `crates/crm/src/matching.rs`; loading is `product_matches.rs`.
