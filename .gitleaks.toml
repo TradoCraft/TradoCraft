@@ -1,0 +1,7 @@
+# gitleaks configuration (ADR 0069): the default rules, plus the findings that are not secrets.
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "RSA keys generated for the tests' mock identity provider (apps/api/tests/common/idp.rs). They sign tokens for the test run only and protect nothing."
+paths = ['''^apps/api/tests/common/keys/test_rsa_[0-9]+\.pem$''']
