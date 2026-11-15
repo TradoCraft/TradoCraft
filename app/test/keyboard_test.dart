@@ -319,6 +319,52 @@ void main() {
       expect(find.text('dlg'), findsNothing);
     });
 
+    testWidgets('Esc does not close a dismissible dialog while text is composing', (
+      t,
+    ) async {
+      final controller = TextEditingController();
+      addTearDown(controller.dispose);
+      await pump(
+        t,
+        Builder(
+          builder: (c) => TextButton(
+            onPressed: () => showDialog<void>(
+              context: c,
+              builder: (d) => AlertDialog(
+                content: TextField(controller: controller, autofocus: true),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(d),
+                    child: const Text('Cancel'),
+                  ),
+                ],
+              ),
+            ),
+            child: const Text('Open'),
+          ),
+        ),
+      );
+      await t.tap(find.text('Open'));
+      await t.pumpAndSettle();
+      controller.value = const TextEditingValue(
+        text: 'ab',
+        selection: TextSelection.collapsed(offset: 2),
+        composing: TextRange(start: 0, end: 2),
+      );
+      await t.pump();
+      await chord(t, LogicalKeyboardKey.escape);
+      await t.pumpAndSettle();
+      expect(find.byType(AlertDialog), findsOneWidget);
+      controller.value = const TextEditingValue(
+        text: 'ab',
+        selection: TextSelection.collapsed(offset: 2),
+      );
+      await t.pump();
+      await chord(t, LogicalKeyboardKey.escape);
+      await t.pumpAndSettle();
+      expect(find.byType(AlertDialog), findsNothing);
+    });
+
     testWidgets('Esc on a page without a handler or Cancel does nothing', (
       t,
     ) async {
@@ -949,6 +995,115 @@ void main() {
       await t.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
       expect(handled, isTrue);
       expect(saved, 1);
+    });
+
+    testWidgets('Esc reaches the page while a button has the focus too', (t) async {
+      var cancelled = 0;
+      final f = FocusNode();
+      addTearDown(f.dispose);
+      await pump(
+        t,
+        ShortcutScope(
+          actions: {ShortcutAction.cancel: () => cancelled++},
+          child: TextButton(focusNode: f, onPressed: () {}, child: const Text('Other')),
+        ),
+      );
+      f.requestFocus();
+      await t.pump();
+      await t.sendKeyEvent(LogicalKeyboardKey.escape);
+      await t.pump();
+      expect(cancelled, 1);
+    });
+
+    testWidgets('a dialog still closes with its own Esc, the page handler does not run', (t) async {
+      var cancelled = 0;
+      late BuildContext ctx;
+      await pump(
+        t,
+        ShortcutScope(
+          actions: {ShortcutAction.cancel: () => cancelled++},
+          child: Builder(
+            builder: (c) {
+              ctx = c;
+              return const TextField();
+            },
+          ),
+        ),
+      );
+      await t.tap(find.byType(TextField));
+      await t.pump();
+      showDialog<void>(
+        context: ctx,
+        builder: (_) => const AlertDialog(content: TextField(autofocus: true)),
+      );
+      await t.pumpAndSettle();
+      await t.sendKeyEvent(LogicalKeyboardKey.escape);
+      await t.pumpAndSettle();
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(cancelled, 0);
+    });
+
+    testWidgets('Esc reaches the page while the cursor is in a text field', (t) async {
+      var cancelled = 0;
+      final f = FocusNode();
+      addTearDown(f.dispose);
+      await pump(
+        t,
+        ShortcutScope(
+          actions: {ShortcutAction.cancel: () => cancelled++},
+          child: TextField(focusNode: f),
+        ),
+      );
+      f.requestFocus();
+      await t.pump();
+      await t.sendKeyEvent(LogicalKeyboardKey.escape);
+      await t.pump();
+      expect(cancelled, 1);
+    });
+
+    testWidgets('Enter still lands on the next field when the platform also sends "done" for the old one', (
+      t,
+    ) async {
+      // On the web and on the desktop the text input reports an Enter as the action "done", which
+      // unfocuses the field it is delivered to. If the focus had already moved, "done" would land on
+      // the new field and leave nothing focused.
+      final a = FocusNode(), b = FocusNode();
+      addTearDown(a.dispose);
+      addTearDown(b.dispose);
+      await pump(t, Column(children: [TextField(focusNode: a), TextField(focusNode: b)]));
+      a.requestFocus();
+      await t.pump();
+      await t.sendKeyEvent(LogicalKeyboardKey.enter);
+      await t.testTextInput.receiveAction(TextInputAction.done);
+      await t.pump();
+      await t.pump();
+      expect(b.hasFocus, isTrue);
+    });
+
+    testWidgets('Enter leaves alone a focus the person moved elsewhere before the frame', (
+      t,
+    ) async {
+      final a = FocusNode(), b = FocusNode(), c = FocusNode();
+      addTearDown(a.dispose);
+      addTearDown(b.dispose);
+      addTearDown(c.dispose);
+      await pump(
+        t,
+        Column(
+          children: [
+            TextField(focusNode: a),
+            TextField(focusNode: b),
+            TextButton(focusNode: c, onPressed: () {}, child: const Text('Other')),
+          ],
+        ),
+      );
+      a.requestFocus();
+      await t.pump();
+      await t.sendKeyEvent(LogicalKeyboardKey.enter);
+      c.requestFocus();
+      await t.pump();
+      expect(c.hasFocus, isTrue);
+      expect(b.hasFocus, isFalse);
     });
 
     testWidgets('Enter and Shift+Enter skip the action buttons between fields', (t) async {

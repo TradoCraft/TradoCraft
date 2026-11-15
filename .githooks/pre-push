@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# Pre-push hook (ADR 0069): the security checks that CI runs, before the push leaves this machine.
+#
+#   Turn it on once per clone:   git config core.hooksPath .githooks
+#   Skip it for one push:        git push --no-verify
+#
+# * A lockfile (or osv-scanner.toml) among the pushed changes: scripts/security-check.sh osv.
+# * The pushed commits are scanned for secrets (scripts/security-check.sh secrets).
+# A finding stops the push. A check that could not run (tool missing, offline) only warns: a broken
+# tool must not stop you from pushing, and CI runs the same checks anyway.
+set -uo pipefail
+
+ROOT="$(git rev-parse --show-toplevel)"
+ZERO=0000000000000000000000000000000000000000
+
+status=0
+osv_needed=0
+ranges=()
+
+while read -r _local_ref local_sha _remote_ref remote_sha; do
+  [ "$local_sha" = "$ZERO" ] && continue # deleting a branch: nothing is pushed
+  if [ "$remote_sha" = "$ZERO" ]; then
+    # A new branch: what it adds on top of main.
+    base="$(git merge-base "$local_sha" origin/main 2>/dev/null || true)"
+  else
+    base="$remote_sha"
+  fi
+  range="${base:+$base..}$local_sha"
+  ranges+=("$range")
+  if git log --name-only --pretty=format: "$range" 2>/dev/null |
+    grep -qE '(^|/)(Cargo\.lock|pubspec\.lock|package-lock\.json)$|^osv-scanner\.toml$'; then
+    osv_needed=1
+  fi
+done
+
+check() {
+  "$ROOT/scripts/security-check.sh" "$1"
+  case $? in
+    0) ;;
+    1) status=1 ;;
+    *) echo "pre-push: the $1 check did not run, pushing anyway (CI runs it too)." >&2 ;;
+  esac
+}
+
+[ "$osv_needed" -eq 1 ] && check osv
+for range in "${ranges[@]}"; do
+  SECURITY_CHECK_RANGE="$range" check secrets
+done
+
+if [ "$status" -ne 0 ]; then
+  echo "pre-push: push stopped by the security checks above (git push --no-verify skips them)." >&2
+fi
+exit "$status"
