@@ -3,14 +3,15 @@
 #
 #   scripts/security-check.sh osv       known vulnerabilities in the lockfiles (osv-scanner, needs the network)
 #   scripts/security-check.sh secrets   secrets committed to the git history (gitleaks)
-#   scripts/security-check.sh           both
+#   scripts/security-check.sh licenses  licences and sources of the Rust dependencies (cargo-deny, deny.toml)
+#   scripts/security-check.sh           all three
 #
 # SECURITY_CHECK_RANGE=<git revision range> limits `secrets` to those commits (the pre-push hook
 # uses it); without it the whole history is scanned.
 #
 # Exit code: 0 clean, 1 something was found, 2 a check could not run (tool missing, offline).
 # A check that could not run is never reported as a pass.
-# shellcheck disable=SC2329  # osv and secrets are called through run
+# shellcheck disable=SC2329  # osv, secrets and licenses are called through run
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -19,6 +20,7 @@ cd "$ROOT" || exit 2
 # Keep in step with the pinned versions in .github/workflows/security.yml.
 OSV_SCANNER_VERSION=2.7.1
 GITLEAKS_VERSION=8.30.1
+CARGO_DENY_VERSION=0.20.2
 
 LOCKFILES=(Cargo.lock app/pubspec.lock e2e/package-lock.json)
 
@@ -80,6 +82,32 @@ EOF
   esac
 }
 
+licenses() {
+  if ! command -v cargo-deny >/dev/null 2>&1; then
+    cat >&2 <<EOF
+licenses: cargo-deny is not installed, so the licence check did not run.
+  Install v${CARGO_DENY_VERSION} from https://github.com/EmbarkStudios/cargo-deny/releases/tag/${CARGO_DENY_VERSION}
+  (or: cargo install cargo-deny --locked --version ${CARGO_DENY_VERSION})
+EOF
+    return 2
+  fi
+  cargo-deny check licenses bans sources
+  case $? in
+    0)
+      echo "licenses: licences and sources are within deny.toml"
+      return 0
+      ;;
+    1)
+      echo "licenses: a dependency breaks the policy in deny.toml, see above. Replace it, or review the licence and allow it there with a reason." >&2
+      return 1
+      ;;
+    *)
+      echo "licenses: cargo-deny could not finish, so the licence check did not run." >&2
+      return 2
+      ;;
+  esac
+}
+
 rc=0
 run() {
   "$1"
@@ -94,12 +122,14 @@ run() {
 case "${1:-all}" in
   osv) run osv ;;
   secrets) run secrets ;;
+  licenses) run licenses ;;
   all)
     run osv
     run secrets
+    run licenses
     ;;
   *)
-    echo "usage: scripts/security-check.sh [osv|secrets|all]" >&2
+    echo "usage: scripts/security-check.sh [osv|secrets|licenses|all]" >&2
     exit 64
     ;;
 esac
