@@ -99,7 +99,14 @@ fn decode_jpeg(bytes: &[u8]) -> Result<(), String> {
     Ok(())
 }
 
-/// The document is well-formed XML whose root element is `svg`.
+/// Every attribute of the element parses: quoted values, no duplicate names. The XML reader
+/// reads attributes lazily, so without this check `<svg a="1" a="2">` or `<svg width=10>` passes.
+fn attributes_are_valid(element: &quick_xml::events::BytesStart<'_>) -> bool {
+    element.attributes().all(|attribute| attribute.is_ok())
+}
+
+/// The document is well-formed XML whose root element is `svg`, and every element's attributes
+/// are well-formed.
 fn svg_is_well_formed(text: &str) -> bool {
     use quick_xml::events::Event;
     let mut reader = quick_xml::Reader::from_str(text);
@@ -107,6 +114,9 @@ fn svg_is_well_formed(text: &str) -> bool {
     loop {
         match reader.read_event() {
             Ok(Event::Start(e)) => {
+                if !attributes_are_valid(&e) {
+                    return false;
+                }
                 if depth == 0 {
                     if root_seen || e.local_name().as_ref() != "svg" {
                         return false;
@@ -116,6 +126,9 @@ fn svg_is_well_formed(text: &str) -> bool {
                 depth += 1;
             }
             Ok(Event::Empty(e)) => {
+                if !attributes_are_valid(&e) {
+                    return false;
+                }
                 if depth == 0 {
                     if root_seen || e.local_name().as_ref() != "svg" {
                         return false;
@@ -338,6 +351,11 @@ mod tests {
             "<svg></svg><svg></svg>",
             "<?xml version=\"1.0\"?><svg>",
             "<!-- <svg> -->",
+            // Attributes: duplicated names and unquoted values, on the root and on children.
+            "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"1\" width=\"2\"></svg>",
+            "<svg xmlns=\"http://www.w3.org/2000/svg\"><rect x=\"1\" x=\"2\"/></svg>",
+            "<svg xmlns=\"http://www.w3.org/2000/svg\" width=10></svg>",
+            "<svg xmlns=\"http://www.w3.org/2000/svg\"><rect height=5/></svg>",
         ] {
             assert!(check(svg.as_bytes()).is_err(), "{svg}");
         }

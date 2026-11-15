@@ -151,6 +151,9 @@ class _GenerateDialogState extends ConsumerState<GenerateDialog> {
   Future<void> _generate() async {
     final plan = _plan;
     if (_running || plan == null) return;
+    // The destination is fixed now: a folder picker that finishes later must not change where
+    // this run writes, what the summary says or what Open folder opens.
+    final folder = _folder;
     setState(() {
       _running = true;
       _done = 0;
@@ -160,12 +163,21 @@ class _GenerateDialogState extends ConsumerState<GenerateDialog> {
       final picked = [for (final i in _selected.toList()..sort()) plan[i]];
       final dio = ref.read(dioProvider);
       final export = ref.read(fileExportProvider);
-      final downloads = await ref.read(downloadsFolderProvider)();
+      // Only needed to tell the person where the files went; a chosen folder does not depend on it.
+      String? downloads;
+      if (folder == null) {
+        try {
+          downloads = await ref.read(downloadsFolderProvider)();
+        } catch (e) {
+          if (mounted) setState(() => _loadError = e);
+          return;
+        }
+      }
       if (!mounted) return;
       final results = await generateFiles(
         entries: picked,
         export: export,
-        baseFolder: _folder,
+        baseFolder: folder,
         render: (e) => renderPriceList(
           dio,
           widget.list.id,
@@ -186,7 +198,7 @@ class _GenerateDialogState extends ConsumerState<GenerateDialog> {
       if (!mounted) return;
       setState(() {
         _results = results;
-        _usedFolder = _folder ?? downloads;
+        _usedFolder = folder ?? downloads;
       });
     } finally {
       if (mounted) setState(() => _running = false);

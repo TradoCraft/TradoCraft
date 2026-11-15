@@ -673,7 +673,10 @@ void main() {
       late List<(String, String)> written;
       late List<String> opened;
 
-      List<Override> fakes({Set<String> failing = const {}}) {
+      List<Override> fakes({
+        Set<String> failing = const {},
+        Future<String?> Function()? downloads,
+      }) {
         written = [];
         opened = [];
         return [
@@ -688,7 +691,7 @@ void main() {
               },
             ),
           ),
-          downloadsFolderProvider.overrideWithValue(() async => '/dl'),
+          downloadsFolderProvider.overrideWithValue(downloads ?? () async => '/dl'),
           pathOpenerProvider.overrideWithValue((p) async => opened.add(p)),
         ];
       }
@@ -766,6 +769,25 @@ void main() {
         expect(written.length, 3);
         expect(find.text('3 of 4 files saved'), findsOneWidget);
         expect(find.textContaining('PL/Z1/nl/Pumps.xlsx: Bad state: disk full'), findsOneWidget);
+      });
+
+      testWidgets('a Downloads folder that cannot be resolved is reported and nothing is rendered', (
+        tester,
+      ) async {
+        routes();
+        await open(
+          tester,
+          fakes(downloads: () async => throw StateError('no downloads')),
+        );
+        await tester.tap(find.byKey(const ValueKey('plgen-go')));
+        await tester.pumpAndSettle();
+        expect(find.textContaining('no downloads'), findsOneWidget);
+        expect(http.requests, isNot(contains('POST /api/v1/price-lists/pl1/render')));
+        expect(written, isEmpty);
+        // The dialog is usable again: Retry reloads the plan.
+        await tester.tap(find.byKey(const ValueKey('plgen-retry')));
+        await tester.pumpAndSettle();
+        expect(find.byKey(const ValueKey('plgen-go')), findsOneWidget);
       });
 
       testWidgets('an empty plan says so and cannot be generated', (tester) async {
