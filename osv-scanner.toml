@@ -6,16 +6,9 @@
 #
 # Last reviewed: 2026-11-15.
 
-# jsonwebtoken 9.3.1: type confusion in the library's own claim validation (fixed in 10.3.0).
-# TradoCraft switches that validation off and checks the claims itself, so the flaw is not reachable.
-[[IgnoredVulns]]
-id = "GHSA-h395-gr6q-cpjc"
-ignoreUntil = 2027-01-15
-reason = "check_token (crates/core/src/identity.rs) sets validate_exp, validate_nbf and validate_aud to false, clears required_spec_claims and checks iss, aud, exp and nbf by hand; a claim of the wrong type fails closed. Only the signature check uses the library. Upgrade to jsonwebtoken 10.3 is still to do."
-
-# libsqlite3-sys and rsa are entries of Cargo.lock only: no workspace crate depends on them on any
-# target or feature (`cargo tree -i <crate> --workspace --target all -e all` prints nothing), because
-# the database is PostgreSQL. They are not compiled into any TradoCraft binary.
+# libsqlite3-sys is an entry of Cargo.lock only: no workspace crate depends on it on any target or
+# feature (`cargo tree -i libsqlite3-sys --workspace --target all -e all` prints nothing), because the
+# database is PostgreSQL. It is not compiled into any TradoCraft binary.
 [[IgnoredVulns]]
 id = "RUSTSEC-2026-0459"
 ignoreUntil = 2027-02-15
@@ -24,7 +17,7 @@ reason = "libsqlite3-sys is in Cargo.lock only and not compiled: TradoCraft uses
 [[IgnoredVulns]]
 id = "RUSTSEC-2023-0071"
 ignoreUntil = 2027-02-15
-reason = "rsa is in Cargo.lock only and not compiled: no workspace crate depends on it (the database is PostgreSQL)."
+reason = "rsa is compiled: jsonwebtoken's rust_crypto backend uses it to verify RS*/PS* signatures. The flaw (Marvin, a timing side channel) concerns private-key operations, and TradoCraft only verifies tokens with the identity provider's public keys; it holds no RSA private key outside the tests. No fixed version exists. The aws_lc_rs backend would avoid the crate but brings aws-lc-sys under the OpenSSL licence, which does not fit an AGPL project (deny.toml)."
 
 # Notices that a crate is no longer maintained. No vulnerability is known.
 [[IgnoredVulns]]

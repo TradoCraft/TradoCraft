@@ -37,7 +37,7 @@ axum = { version = "0.8", features = ["macros"] }
 calamine = { version = "0.38", default-features = false, features = ["dates"] }
 quick-xml = "0.42"
 chrono = { version = "0.4", default-features = false, features = ["clock", "std", "serde"] }
-jsonwebtoken = "10"
+jsonwebtoken = { version = "10", features = ["rust_crypto"] }
 regex = "1"
 rust_xlsxwriter = { version = "0.102", default-features = false }
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
