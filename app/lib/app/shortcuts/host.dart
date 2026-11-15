@@ -582,7 +582,8 @@ class _EscapeAction extends Action<_EscapeIntent> {
   final _ShortcutsHostState _host;
 
   @override
-  bool isEnabled(_EscapeIntent intent) => _host._escapeAction() != null;
+  bool isEnabled(_EscapeIntent intent) =>
+      !_host._composing && _host._escapeAction() != null;
 
   @override
   Object? invoke(_EscapeIntent intent) {
