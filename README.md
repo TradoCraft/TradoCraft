@@ -171,9 +171,9 @@ has its own small database pool. The API stays on the internal network. Locally 
 cargo run -p tradocraft-portal-api    # after the API has started once (it migrates the database)
 ```
 
-The API itself answers browsers only from `CORS_ALLOWED_ORIGINS` (any origin with
-`AUTH_MODE=dev`, none by default with `AUTH_MODE=oidc`); the Windows and mobile apps are not
-affected.
+The API itself answers browsers only from `CORS_ALLOWED_ORIGINS` (pages served from this machine,
+`localhost` or `127.0.0.1` on any port, with `AUTH_MODE=dev`; none by default with
+`AUTH_MODE=oidc`; `*` answers every origin); the Windows and mobile apps are not affected.
 
 Repairs and field service (seed users, all in development authentication): `support@example.com`
 registers and routes repairs; `electronics@example.com` and `mechanic@example.com` work in their

@@ -1,8 +1,17 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
+
+// The release key is read from android/key.properties (not committed, see android/README.md).
+val keystoreProperties = Properties().apply {
+    val file = rootProject.file("key.properties")
+    if (file.exists()) file.inputStream().use { load(it) }
+}
+val hasReleaseKey = keystoreProperties.getProperty("storeFile") != null
 
 android {
     namespace = "be.tradocraft.tradocraft_app"
@@ -29,11 +38,28 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        if (hasReleaseKey) {
+            create("release") {
+                storeFile = rootProject.file(keystoreProperties.getProperty("storeFile"))
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            // A release is signed with your own key (key.properties). Without one it falls back to
+            // the debug key so `flutter run --release` works, but such a build is not to be
+            // distributed: anybody can sign an update with the same debug key.
+            signingConfig = if (hasReleaseKey) {
+                signingConfigs.getByName("release")
+            } else {
+                logger.warn("WARNING: no android/key.properties, the release is signed with the DEBUG key. Do not distribute it.")
+                signingConfigs.getByName("debug")
+            }
         }
     }
 }
