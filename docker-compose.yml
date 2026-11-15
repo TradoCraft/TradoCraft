@@ -6,9 +6,16 @@
 # X-Dev-User header (AUTH_MODE=dev), so anybody who can reach it can sign in as any user. Do not
 # publish these ports, put a proxy in front, or reuse this file on a server: set AUTH_MODE=oidc
 # (docs/adr/0004-authentication.md), SEED_DEV_DATA=false and a database password of your own.
+# Binding to 127.0.0.1 is not isolation on Docker Engine before 28.0.0: there, other hosts on the
+# same layer-2 network (the same LAN or Wi-Fi) can reach a port published on loopback. Update
+# Docker, or do not run this stack on a network you do not trust.
 # The database password defaults to "tradocraft"; choose another with POSTGRES_PASSWORD in the
-# environment or in a .env file next to this one (it applies the first time the volume is created; use letters and digits, it is part of the
-# database URL).
+# environment or in a .env file next to this one (use letters and digits, it is part of the
+# database URL). It takes effect only when the pgdata volume is first created: changing it later does not change the password of the existing
+# database role, and the API and worker then fail to connect. Either set it back, change the role
+# password inside the running database (docker compose exec db psql -U tradocraft -c
+# "ALTER USER tradocraft PASSWORD '...'"), or start over with `docker compose down -v`, which
+# DELETES the volume and all data in it.
 services:
   db:
     image: postgres:16
