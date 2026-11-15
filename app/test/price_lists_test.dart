@@ -676,13 +676,14 @@ void main() {
       List<Override> fakes({
         Set<String> failing = const {},
         Future<String?> Function()? downloads,
+        Future<String?> Function()? exportDownloads,
       }) {
         written = [];
         opened = [];
         return [
           fileExportProvider.overrideWithValue(
             FileExport(
-              downloads: () async => '/dl',
+              downloads: exportDownloads ?? () async => '/dl',
               fallback: (_, _) async => true,
               writer: (base, rel, bytes) async {
                 if (failing.contains(rel)) throw StateError('disk full');
@@ -775,19 +776,47 @@ void main() {
         tester,
       ) async {
         routes();
+        var calls = 0;
         await open(
           tester,
-          fakes(downloads: () async => throw StateError('no downloads')),
+          fakes(
+            downloads: () async {
+              if (calls++ == 0) throw StateError('no downloads');
+              return '/dl';
+            },
+          ),
         );
         await tester.tap(find.byKey(const ValueKey('plgen-go')));
         await tester.pumpAndSettle();
         expect(find.textContaining('no downloads'), findsOneWidget);
         expect(http.requests, isNot(contains('POST /api/v1/price-lists/pl1/render')));
         expect(written, isEmpty);
-        // The dialog is usable again: Retry reloads the plan.
-        await tester.tap(find.byKey(const ValueKey('plgen-retry')));
+
+        // Trying again works, and the old error does not stay on screen over the new result.
+        await tester.tap(find.byKey(const ValueKey('plgen-go')));
         await tester.pumpAndSettle();
-        expect(find.byKey(const ValueKey('plgen-go')), findsOneWidget);
+        expect(find.textContaining('no downloads'), findsNothing);
+        expect(find.byKey(const ValueKey('plgen-summary')), findsOneWidget);
+        expect(written.length, 4);
+      });
+
+      testWidgets('every file goes to the Downloads folder resolved at the start of the run', (
+        tester,
+      ) async {
+        routes();
+        var n = 0;
+        // The export object would answer differently on every call; the run must not ask it.
+        await open(
+          tester,
+          fakes(exportDownloads: () async => '/other${++n}'),
+        );
+        await tester.tap(find.byKey(const ValueKey('plgen-go')));
+        await tester.pumpAndSettle();
+        expect(written.length, 4);
+        expect(written.map((w) => w.$1).toSet(), {'/dl'});
+        expect(find.text('Folder: /dl'), findsOneWidget);
+        await tester.tap(find.byKey(const ValueKey('plgen-open')));
+        expect(opened, ['/dl']);
       });
 
       testWidgets('an empty plan says so and cannot be generated', (tester) async {

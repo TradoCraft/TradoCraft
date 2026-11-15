@@ -158,6 +158,8 @@ class _GenerateDialogState extends ConsumerState<GenerateDialog> {
       _running = true;
       _done = 0;
       _results = null;
+      // A Downloads error from an earlier run must not stay on screen over this one.
+      _loadError = null;
     });
     try {
       final picked = [for (final i in _selected.toList()..sort()) plan[i]];
@@ -177,7 +179,10 @@ class _GenerateDialogState extends ConsumerState<GenerateDialog> {
       final results = await generateFiles(
         entries: picked,
         export: export,
-        baseFolder: folder,
+        // The folder resolved once above, so every file, the summary and Open folder agree even if
+        // the platform would answer differently on a later call. Null (web, mobile) keeps the
+        // platform's own download or share mechanism.
+        baseFolder: folder ?? downloads,
         render: (e) => renderPriceList(
           dio,
           widget.list.id,
