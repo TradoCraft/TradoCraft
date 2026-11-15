@@ -368,11 +368,19 @@ class _ShortcutsHostState extends ConsumerState<ShortcutsHost>
     }
     if (e is KeyDownEvent) {
       final focus = FocusManager.instance.primaryFocus!;
-      // The next field, not the next control: the buttons between the fields are skipped. After the
-      // last field the ordinary traversal goes on (to Save, for instance).
-      if (!_moveToField(focus, back: back)) {
-        back ? focus.previousFocus() : focus.nextFocus();
-      }
+      // The text input also reports this Enter to the field as its action "done", which unfocuses
+      // the field it is delivered to. Moving the focus right now would let that "done" land on the
+      // new field and leave nothing focused (seen in Firefox), so the move waits until the frame is
+      // through and the old field has had it.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || focus.context == null) return;
+        // The next field, not the next control: the buttons between the fields are skipped. After
+        // the last field the ordinary traversal goes on (to Save, for instance).
+        if (!_moveToField(focus, back: back)) {
+          back ? focus.previousFocus() : focus.nextFocus();
+        }
+      });
+      WidgetsBinding.instance.ensureVisualUpdate();
     }
     return true;
   }

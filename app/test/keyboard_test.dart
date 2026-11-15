@@ -951,6 +951,25 @@ void main() {
       expect(saved, 1);
     });
 
+    testWidgets('Enter still lands on the next field when the platform also sends "done" for the old one', (
+      t,
+    ) async {
+      // On the web and on the desktop the text input reports an Enter as the action "done", which
+      // unfocuses the field it is delivered to. If the focus had already moved, "done" would land on
+      // the new field and leave nothing focused.
+      final a = FocusNode(), b = FocusNode();
+      addTearDown(a.dispose);
+      addTearDown(b.dispose);
+      await pump(t, Column(children: [TextField(focusNode: a), TextField(focusNode: b)]));
+      a.requestFocus();
+      await t.pump();
+      await t.sendKeyEvent(LogicalKeyboardKey.enter);
+      await t.testTextInput.receiveAction(TextInputAction.done);
+      await t.pump();
+      await t.pump();
+      expect(b.hasFocus, isTrue);
+    });
+
     testWidgets('Enter and Shift+Enter skip the action buttons between fields', (t) async {
       final a = FocusNode(), b = FocusNode();
       addTearDown(a.dispose);
