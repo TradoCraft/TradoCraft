@@ -11,6 +11,7 @@ import '../models/attribute_definition.dart';
 import '../models/attribute_definition_input.dart';
 import '../models/bulk_price_change_input.dart';
 import '../models/bulk_price_preview.dart';
+import '../models/export_plan_entry.dart';
 import '../models/format.dart';
 import '../models/import_report.dart';
 import '../models/packaging_category.dart';
@@ -20,6 +21,16 @@ import '../models/power_grid.dart';
 import '../models/power_grid_input.dart';
 import '../models/power_supply.dart';
 import '../models/power_supply_input.dart';
+import '../models/price_list.dart';
+import '../models/price_list_export.dart';
+import '../models/price_list_export_input.dart';
+import '../models/price_list_group.dart';
+import '../models/price_list_group_input.dart';
+import '../models/price_list_input.dart';
+import '../models/price_list_item.dart';
+import '../models/price_list_item_input.dart';
+import '../models/price_list_item_update.dart';
+import '../models/price_list_zone_input.dart';
 import '../models/price_zone.dart';
 import '../models/price_zone_input.dart';
 import '../models/product.dart';
@@ -34,6 +45,7 @@ import '../models/product_relation.dart';
 import '../models/product_relation_input.dart';
 import '../models/product_translation.dart';
 import '../models/related_products.dart';
+import '../models/render_format.dart';
 import '../models/zone_price_entry.dart';
 import '../models/zone_price_input.dart';
 
@@ -102,6 +114,150 @@ abstract class ProductsClient {
   Future<PowerGrid> updatePowerGrid({
     @Path('id') required String id,
     @Body() required PowerGridInput body,
+  });
+
+  @GET('/api/v1/price-lists')
+  Future<List<PriceList>> listPriceLists();
+
+  @POST('/api/v1/price-lists')
+  Future<PriceList> createPriceList({
+    @Body() required PriceListInput body,
+  });
+
+  @GET('/api/v1/price-lists/{id}')
+  Future<PriceList> getPriceList({
+    @Path('id') required String id,
+  });
+
+  @PUT('/api/v1/price-lists/{id}')
+  Future<PriceList> updatePriceList({
+    @Path('id') required String id,
+    @Body() required PriceListInput body,
+  });
+
+  /// Deletes a price list with its zones, groups, items and export profiles. The products and prices are untouched.
+  @DELETE('/api/v1/price-lists/{id}')
+  Future<void> deletePriceList({
+    @Path('id') required String id,
+  });
+
+  /// Every file the export profiles produce for the list: per zone, per language of that zone, the.
+  /// whole list and then each profile, with a sanitized relative path computed here.
+  ///
+  /// [format] - `pdf` (default) or `xlsx`.
+  @GET('/api/v1/price-lists/{id}/export-plan')
+  Future<List<ExportPlanEntry>> getExportPlan({
+    @Path('id') required String id,
+    @Query('format') RenderFormat? format,
+  });
+
+  @GET('/api/v1/price-lists/{id}/exports')
+  Future<List<PriceListExport>> listExports({
+    @Path('id') required String id,
+  });
+
+  @POST('/api/v1/price-lists/{id}/exports')
+  Future<PriceListExport> createExport({
+    @Path('id') required String id,
+    @Body() required PriceListExportInput body,
+  });
+
+  /// Creates one profile per top-level group that has no single-chapter profile yet (code.
+  /// `ch-<last 12 hex of the group id>`, name = the group title in the company's default language).
+  /// Idempotent: a second call creates nothing. Returns all profiles of the list.
+  @POST('/api/v1/price-lists/{id}/exports/per-chapter')
+  Future<List<PriceListExport>> createPerChapterExports({
+    @Path('id') required String id,
+  });
+
+  @PUT('/api/v1/price-lists/{id}/exports/{export_id}')
+  Future<PriceListExport> updateExport({
+    @Path('id') required String id,
+    @Path('export_id') required String exportId,
+    @Body() required PriceListExportInput body,
+  });
+
+  @DELETE('/api/v1/price-lists/{id}/exports/{export_id}')
+  Future<void> deleteExport({
+    @Path('id') required String id,
+    @Path('export_id') required String exportId,
+  });
+
+  @GET('/api/v1/price-lists/{id}/groups')
+  Future<List<PriceListGroup>> listGroups({
+    @Path('id') required String id,
+  });
+
+  @POST('/api/v1/price-lists/{id}/groups')
+  Future<PriceListGroup> createGroup({
+    @Path('id') required String id,
+    @Body() required PriceListGroupInput body,
+  });
+
+  @PUT('/api/v1/price-lists/{id}/groups/{group_id}')
+  Future<PriceListGroup> updateGroup({
+    @Path('id') required String id,
+    @Path('group_id') required String groupId,
+    @Body() required PriceListGroupInput body,
+  });
+
+  /// Deletes an empty group: refused (409) while it has sub-groups or items, or while an export.
+  /// profile still uses it (remove it from the profile first).
+  @DELETE('/api/v1/price-lists/{id}/groups/{group_id}')
+  Future<void> deleteGroup({
+    @Path('id') required String id,
+    @Path('group_id') required String groupId,
+  });
+
+  @GET('/api/v1/price-lists/{id}/items')
+  Future<List<PriceListItem>> listItems({
+    @Path('id') required String id,
+  });
+
+  @POST('/api/v1/price-lists/{id}/items')
+  Future<PriceListItem> createItem({
+    @Path('id') required String id,
+    @Body() required PriceListItemInput body,
+  });
+
+  @PUT('/api/v1/price-lists/{id}/items/{item_id}')
+  Future<PriceListItem> updateItem({
+    @Path('id') required String id,
+    @Path('item_id') required String itemId,
+    @Body() required PriceListItemUpdate body,
+  });
+
+  @DELETE('/api/v1/price-lists/{id}/items/{item_id}')
+  Future<void> deleteItem({
+    @Path('id') required String id,
+    @Path('item_id') required String itemId,
+  });
+
+  /// Renders the list for one of its zones, at the list date, as PDF or Excel, in one of that.
+  /// zone's languages. With `export_id` only that profile's chapters are printed.
+  ///
+  /// [zoneId] - Zone to print; required when the list has several zones.
+  ///
+  /// [lang] - One of the languages of that zone; defaults to its first.
+  ///
+  /// [exportId] - Export profile: only its chapters (with everything below them). Whole list when absent.
+  ///
+  /// [format] - `pdf` (default) or `xlsx`.
+  @POST('/api/v1/price-lists/{id}/render')
+  Future<List<int>> renderPriceList({
+    @Path('id') required String id,
+    @Query('zone_id') String? zoneId,
+    @Query('lang') String? lang,
+    @Query('export_id') String? exportId,
+    @Query('format') RenderFormat? format,
+  });
+
+  /// Replaces the zones of a list (and with them the languages published per zone). The order of.
+  /// the request is the print order. An empty array leaves a list that cannot be rendered.
+  @PUT('/api/v1/price-lists/{id}/zones')
+  Future<PriceList> replaceZones({
+    @Path('id') required String id,
+    @Body() required List<PriceListZoneInput> body,
   });
 
   @GET('/api/v1/price-zones')

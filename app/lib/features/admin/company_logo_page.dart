@@ -1,0 +1,196 @@
+import 'dart:typed_data';
+
+import 'package:file_selector/file_selector.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:material_ui/material_ui.dart';
+
+import '../../app/api.dart';
+import '../../l10n/l10n.dart';
+import '../../shared/actions.dart';
+import '../../shared/app_icons.dart';
+import '../../shared/attachments.dart' show fileSize;
+import '../../shared/csv_transfer.dart' show PickedFile;
+import '../price_lists/price_lists_api.dart';
+
+/// Lets the person choose a logo file; null when they cancel. Replaced in tests.
+typedef LogoPicker = Future<PickedFile?> Function();
+
+final logoPickerProvider = Provider<LogoPicker>((_) => () async {
+  final f = await openFile(
+    acceptedTypeGroups: const [
+      XTypeGroup(
+        label: 'PNG, JPEG, SVG',
+        extensions: ['png', 'jpg', 'jpeg', 'svg'],
+        mimeTypes: ['image/png', 'image/jpeg', 'image/svg+xml'],
+        uniformTypeIdentifiers: ['public.png', 'public.jpeg', 'public.svg-image'],
+      ),
+    ],
+  );
+  if (f == null) return null;
+  return (name: f.name, bytes: await f.readAsBytes());
+});
+
+/// The company logo for administrators: preview, upload with type and size checks, remove.
+class CompanyLogoPage extends ConsumerStatefulWidget {
+  const CompanyLogoPage({super.key});
+
+  @override
+  ConsumerState<CompanyLogoPage> createState() => _CompanyLogoPageState();
+}
+
+class _CompanyLogoPageState extends ConsumerState<CompanyLogoPage> {
+  String? _error;
+  bool _busy = false;
+
+  void _refresh() {
+    ref.invalidate(companyLogoBytesProvider);
+    ref.invalidate(companyLogoInfoProvider);
+  }
+
+  Future<void> _choose() async {
+    final l = context.l10n;
+    final file = await ref.read(logoPickerProvider)();
+    if (file == null || !mounted) return;
+    // The server checks again; these checks only save a round trip.
+    if (file.bytes.length > maxLogoBytes) {
+      setState(() => _error = l.logoTooBig);
+      return;
+    }
+    if (logoContentType(file.bytes) == null) {
+      setState(() => _error = l.logoBadType);
+      return;
+    }
+    setState(() {
+      _error = null;
+      _busy = true;
+    });
+    final ok = await runAction(
+      context,
+      () async => uploadLogo(ref.read(dioProvider), file.bytes),
+      success: l.logoSaved,
+    );
+    if (!mounted) return;
+    setState(() => _busy = false);
+    if (ok) _refresh();
+  }
+
+  Future<void> _remove() async {
+    final l = context.l10n;
+    final sure = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        content: Text(l.logoRemoveConfirm),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(l.cancel),
+          ),
+          FilledButton(
+            key: const ValueKey('logo-remove-confirm'),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(l.logoRemove),
+          ),
+        ],
+      ),
+    );
+    if (sure != true || !mounted) return;
+    final ok = await runAction(
+      context,
+      () => ref.read(apiProvider).core.deleteLogo(),
+      success: l.logoRemoved,
+    );
+    if (ok && mounted) _refresh();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final logo = ref.watch(companyLogoBytesProvider);
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        Text(l.logoTitle, style: Theme.of(context).textTheme.headlineSmall),
+        const SizedBox(height: 4),
+        Text(l.logoHint),
+        const SizedBox(height: 12),
+        logo.when(
+          loading: () => const LinearProgressIndicator(),
+          error: (e, _) => Row(
+            children: [
+              Expanded(child: Text(errorMessage(e))),
+              TextButton(
+                key: const ValueKey('logo-retry'),
+                onPressed: _refresh,
+                child: Text(l.retry),
+              ),
+            ],
+          ),
+          data: (bytes) => bytes == null
+              ? Text(l.logoNone, key: const ValueKey('logo-none'))
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      key: const ValueKey('logo-preview'),
+                      constraints: const BoxConstraints(
+                        maxWidth: 320,
+                        maxHeight: 160,
+                      ),
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        border: Border.all(
+                          color: Theme.of(context).colorScheme.outlineVariant,
+                        ),
+                      ),
+                      child: _preview(bytes),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${logoContentType(bytes) ?? ''} · ${fileSize(bytes.length)}',
+                    ),
+                  ],
+                ),
+        ),
+        if (_error != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              _error!,
+              key: const ValueKey('logo-error'),
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 12,
+          runSpacing: 8,
+          children: [
+            FilledButton.icon(
+              key: const ValueKey('logo-choose'),
+              onPressed: _busy ? null : _choose,
+              icon: const Icon(AppIcons.fileUpload),
+              label: Text(l.logoChoose),
+            ),
+            if (logo.value != null)
+              OutlinedButton.icon(
+                key: const ValueKey('logo-remove'),
+                onPressed: _busy ? null : _remove,
+                icon: const Icon(Icons.delete_outline),
+                label: Text(l.logoRemove),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _preview(Uint8List bytes) => logoContentType(bytes) == 'image/svg+xml'
+      ? SvgPicture.memory(bytes, fit: BoxFit.contain)
+      : Image.memory(
+          bytes,
+          fit: BoxFit.contain,
+          errorBuilder: (_, _, _) => const Icon(AppIcons.brokenImage),
+        );
+}

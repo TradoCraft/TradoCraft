@@ -10,6 +10,7 @@ import '../models/admin_user_create.dart';
 import '../models/admin_user_update.dart';
 import '../models/bootstrap_request.dart';
 import '../models/bootstrap_result.dart';
+import '../models/company_logo_info.dart';
 import '../models/company_user.dart';
 import '../models/environment_info.dart';
 import '../models/me.dart';
@@ -25,6 +26,21 @@ part 'core_client.g.dart';
 @RestApi()
 abstract class CoreClient {
   factory CoreClient(Dio dio, {String? baseUrl}) = _CoreClient;
+
+  /// The company logo image. 404 when none was uploaded.
+  @GET('/api/v1/admin/company/logo')
+  Future<String> getLogo();
+
+  /// Sets or replaces the company logo: the request body is the image file (PNG, JPEG or SVG, at.
+  /// most 512 KB). The type is taken from the file's content, not from the request headers.
+  @PUT('/api/v1/admin/company/logo')
+  Future<CompanyLogoInfo> putLogo({
+    @Body() required String body,
+  });
+
+  /// Removes the company logo. 404 when there is none.
+  @DELETE('/api/v1/admin/company/logo')
+  Future<void> deleteLogo();
 
   /// The module catalogue with the company's switches.
   @GET('/api/v1/admin/modules')

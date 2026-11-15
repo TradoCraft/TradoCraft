@@ -9727,4 +9727,274 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get baselineImported => 'imported';
+
+  @override
+  String get plTitle => 'Price lists';
+
+  @override
+  String get plNew => 'New price list';
+
+  @override
+  String get plEdit => 'Edit price list';
+
+  @override
+  String get plNone => 'No price lists yet.';
+
+  @override
+  String plDeleteConfirm(String code) {
+    return 'Delete price list $code with its groups and items? Products and prices are not affected.';
+  }
+
+  @override
+  String get plDeleted => 'Price list deleted';
+
+  @override
+  String get plShowLogo => 'Print the company logo';
+
+  @override
+  String plProductCount(int count) {
+    return '$count products';
+  }
+
+  @override
+  String get plOpen => 'Edit layout';
+
+  @override
+  String get plBack => 'Price lists';
+
+  @override
+  String get plGroups => 'Groups';
+
+  @override
+  String get plAddGroup => 'Add group';
+
+  @override
+  String get plAddSubgroup => 'Add subgroup';
+
+  @override
+  String get plGroupTitle => 'Group title';
+
+  @override
+  String get plGroupTitleRequired => 'Enter a title in at least one language.';
+
+  @override
+  String get plPageBreak => 'Page break before';
+
+  @override
+  String get plShowTitle => 'Print title';
+
+  @override
+  String get plGapMm => 'Gap (mm)';
+
+  @override
+  String get plGapInvalid => 'The gap must be a number from 0 to 50.';
+
+  @override
+  String get plIndent => 'Make subgroup of the group above';
+
+  @override
+  String get plOutdent => 'Move up one level';
+
+  @override
+  String get plDepthMax => 'Groups can be nested at most four levels deep.';
+
+  @override
+  String plDeleteGroupConfirm(String title) {
+    return 'Delete group \"$title\"? Only empty groups can be deleted.';
+  }
+
+  @override
+  String get plNoGroups => 'Add a group first, then add products to it.';
+
+  @override
+  String get plTitleHidden => 'title not printed';
+
+  @override
+  String get plItems => 'Products';
+
+  @override
+  String get plAddProduct => 'Add product';
+
+  @override
+  String get plSortKey => 'Sort key';
+
+  @override
+  String get plSortKeyInvalid =>
+      'Use dotted letters and digits, for example 2.10.3.';
+
+  @override
+  String get plGroup => 'Group';
+
+  @override
+  String get plPriceOnRequest => 'Price on request';
+
+  @override
+  String get plNet => 'Net';
+
+  @override
+  String get plIndicative => 'Indicative';
+
+  @override
+  String get plHidden => 'Hidden';
+
+  @override
+  String get plDescriptionOverride => 'Description (replaces the product name)';
+
+  @override
+  String get plNoItems => 'No products in this list yet.';
+
+  @override
+  String get plNotPrintedNote =>
+      'Hidden products, and products without a zone price that are not \"price on request\", are not printed.';
+
+  @override
+  String get plNotPrinted => 'not printed';
+
+  @override
+  String get plGenerate => 'Generate';
+
+  @override
+  String get plGeneratePdf => 'PDF';
+
+  @override
+  String get plGenerateXlsx => 'Excel';
+
+  @override
+  String get adminCompany => 'Company';
+
+  @override
+  String get logoTitle => 'Company logo';
+
+  @override
+  String get logoHint =>
+      'PNG, JPEG or SVG, at most 512 KB. Printed in the header of price lists.';
+
+  @override
+  String get logoNone => 'No logo uploaded.';
+
+  @override
+  String get logoChoose => 'Choose file';
+
+  @override
+  String get logoRemove => 'Remove logo';
+
+  @override
+  String get logoRemoveConfirm => 'Remove the company logo?';
+
+  @override
+  String get logoTooBig => 'The file is larger than 512 KB.';
+
+  @override
+  String get logoBadType => 'Only PNG, JPEG or SVG files are accepted.';
+
+  @override
+  String get logoSaved => 'Logo saved';
+
+  @override
+  String get logoRemoved => 'Logo removed';
+
+  @override
+  String get open => 'Open';
+
+  @override
+  String fileSavedTo(String path) {
+    return 'Saved to $path';
+  }
+
+  @override
+  String get plZones => 'Zones and languages';
+
+  @override
+  String get plZonesHint =>
+      'The list is published for these zones, in this order, each in its own languages. The first language of a zone is its default.';
+
+  @override
+  String get plNoZones =>
+      'No zones yet. Add a zone to be able to generate files.';
+
+  @override
+  String get plAddZone => 'Add zone';
+
+  @override
+  String get plExports => 'Export profiles';
+
+  @override
+  String get plExportsHint =>
+      'Each profile is one file per zone and language, with the chapters you choose. The whole list is always generated as well.';
+
+  @override
+  String get plNoExports => 'No export profiles yet.';
+
+  @override
+  String get plAddExport => 'Add profile';
+
+  @override
+  String get plEditExport => 'Edit export profile';
+
+  @override
+  String get plPerChapter => 'One profile per chapter';
+
+  @override
+  String get plWholeList => 'Whole list';
+
+  @override
+  String plExportDeleteConfirm(String name) {
+    return 'Delete export profile \"$name\"?';
+  }
+
+  @override
+  String get plExportCodeLength => 'The code can have at most 32 characters.';
+
+  @override
+  String get plChapters => 'Chapters';
+
+  @override
+  String get plChaptersHint =>
+      'The top-level groups in this file. None ticked means the whole list.';
+
+  @override
+  String get plFileName => 'File name template (optional)';
+
+  @override
+  String plFileNameHint(String placeholders) {
+    return 'Placeholders: $placeholders. Without a template the profile name is used.';
+  }
+
+  @override
+  String get plGroupInUseTitle => 'Group is in use';
+
+  @override
+  String plGenSummary(int written, int total) {
+    return '$written of $total files saved';
+  }
+
+  @override
+  String plGenTargetFolder(String folder) {
+    return 'Folder: $folder';
+  }
+
+  @override
+  String get plGenSentToBrowser =>
+      'The files were handed to the browser or the share sheet.';
+
+  @override
+  String get plGenDownloads => 'Folder: Downloads';
+
+  @override
+  String get plGenChooseFolder => 'Choose folder';
+
+  @override
+  String get plGenNothing =>
+      'Nothing to generate: add zones and chapters first.';
+
+  @override
+  String plGenProgress(int current, int total, String file) {
+    return 'File $current of $total: $file';
+  }
+
+  @override
+  String get plGenOpenFolder => 'Open folder';
+
+  @override
+  String get plGenBack => 'Back to the plan';
 }

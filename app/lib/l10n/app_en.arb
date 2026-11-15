@@ -4439,5 +4439,140 @@
   "baselineImportDone": "Baseline imported.",
   "baselineImportBadFile": "This file is not valid JSON.",
   "baselineImportReadFailed": "The file could not be read.",
-  "baselineImported": "imported"
+  "baselineImported": "imported",
+  "plTitle": "Price lists",
+  "plNew": "New price list",
+  "plEdit": "Edit price list",
+  "plNone": "No price lists yet.",
+  "plDeleteConfirm": "Delete price list {code} with its groups and items? Products and prices are not affected.",
+  "@plDeleteConfirm": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "plDeleted": "Price list deleted",
+  "plShowLogo": "Print the company logo",
+  "plProductCount": "{count} products",
+  "@plProductCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "plOpen": "Edit layout",
+  "plBack": "Price lists",
+  "plGroups": "Groups",
+  "plAddGroup": "Add group",
+  "plAddSubgroup": "Add subgroup",
+  "plGroupTitle": "Group title",
+  "plGroupTitleRequired": "Enter a title in at least one language.",
+  "plPageBreak": "Page break before",
+  "plShowTitle": "Print title",
+  "plGapMm": "Gap (mm)",
+  "plGapInvalid": "The gap must be a number from 0 to 50.",
+  "plIndent": "Make subgroup of the group above",
+  "plOutdent": "Move up one level",
+  "plDepthMax": "Groups can be nested at most four levels deep.",
+  "plDeleteGroupConfirm": "Delete group \"{title}\"? Only empty groups can be deleted.",
+  "@plDeleteGroupConfirm": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "plNoGroups": "Add a group first, then add products to it.",
+  "plTitleHidden": "title not printed",
+  "plItems": "Products",
+  "plAddProduct": "Add product",
+  "plSortKey": "Sort key",
+  "plSortKeyInvalid": "Use dotted letters and digits, for example 2.10.3.",
+  "plGroup": "Group",
+  "plPriceOnRequest": "Price on request",
+  "plNet": "Net",
+  "plIndicative": "Indicative",
+  "plHidden": "Hidden",
+  "plDescriptionOverride": "Description (replaces the product name)",
+  "plNoItems": "No products in this list yet.",
+  "plNotPrintedNote": "Hidden products, and products without a zone price that are not \"price on request\", are not printed.",
+  "plNotPrinted": "not printed",
+  "plGenerate": "Generate",
+  "plGeneratePdf": "PDF",
+  "plGenerateXlsx": "Excel",
+  "adminCompany": "Company",
+  "logoTitle": "Company logo",
+  "logoHint": "PNG, JPEG or SVG, at most 512 KB. Printed in the header of price lists.",
+  "logoNone": "No logo uploaded.",
+  "logoChoose": "Choose file",
+  "logoRemove": "Remove logo",
+  "logoRemoveConfirm": "Remove the company logo?",
+  "logoTooBig": "The file is larger than 512 KB.",
+  "logoBadType": "Only PNG, JPEG or SVG files are accepted.",
+  "logoSaved": "Logo saved",
+  "logoRemoved": "Logo removed",
+  "open": "Open",
+  "fileSavedTo": "Saved to {path}",
+  "@fileSavedTo": {
+    "placeholders": {
+      "path": {"type": "String"}
+    }
+  },
+  "plZones": "Zones and languages",
+  "plZonesHint": "The list is published for these zones, in this order, each in its own languages. The first language of a zone is its default.",
+  "plNoZones": "No zones yet. Add a zone to be able to generate files.",
+  "plAddZone": "Add zone",
+  "plExports": "Export profiles",
+  "plExportsHint": "Each profile is one file per zone and language, with the chapters you choose. The whole list is always generated as well.",
+  "plNoExports": "No export profiles yet.",
+  "plAddExport": "Add profile",
+  "plEditExport": "Edit export profile",
+  "plPerChapter": "One profile per chapter",
+  "plWholeList": "Whole list",
+  "plExportDeleteConfirm": "Delete export profile \"{name}\"?",
+  "@plExportDeleteConfirm": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "plExportCodeLength": "The code can have at most 32 characters.",
+  "plChapters": "Chapters",
+  "plChaptersHint": "The top-level groups in this file. None ticked means the whole list.",
+  "plFileName": "File name template (optional)",
+  "plFileNameHint": "Placeholders: {placeholders}. Without a template the profile name is used.",
+  "@plFileNameHint": {
+    "placeholders": {
+      "placeholders": {"type": "String"}
+    }
+  },
+  "plGroupInUseTitle": "Group is in use",
+  "plGenSummary": "{written} of {total} files saved",
+  "@plGenSummary": {
+    "placeholders": {
+      "written": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "plGenTargetFolder": "Folder: {folder}",
+  "@plGenTargetFolder": {
+    "placeholders": {
+      "folder": {"type": "String"}
+    }
+  },
+  "plGenSentToBrowser": "The files were handed to the browser or the share sheet.",
+  "plGenDownloads": "Folder: Downloads",
+  "plGenChooseFolder": "Choose folder",
+  "plGenNothing": "Nothing to generate: add zones and chapters first.",
+  "plGenProgress": "File {current} of {total}: {file}",
+  "@plGenProgress": {
+    "placeholders": {
+      "current": {"type": "int"},
+      "total": {"type": "int"},
+      "file": {"type": "String"}
+    }
+  },
+  "plGenOpenFolder": "Open folder",
+  "plGenBack": "Back to the plan"
 }

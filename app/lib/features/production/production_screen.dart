@@ -3,7 +3,6 @@ import 'dart:typed_data';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:printing/printing.dart';
 
 import '../../app/api.dart';
 import '../../l10n/l10n.dart';
@@ -15,6 +14,7 @@ import 'complete_dialog.dart';
 import 'order_operations.dart';
 import 'production_page.dart';
 import '../tutorial/targets.dart';
+import '../../shared/file_export.dart';
 
 /// One production order: division, planned-ready date, the frozen components with what is
 /// reserved, start, complete (backflush) and cancel.
@@ -183,9 +183,12 @@ class _ProductionScreenState extends ConsumerState<ProductionScreen> {
         ref.read(dioProvider),
         '/api/v1/production-orders/${po.id}/pdf',
       );
-      await Printing.layoutPdf(
-        name: '${po.number}.pdf',
-        onLayout: (_) async => Uint8List.fromList(bytes),
+      if (!mounted) return;
+      await saveExport(
+        context,
+        ref,
+        '${po.number}.pdf',
+        Uint8List.fromList(bytes),
       );
     });
   }

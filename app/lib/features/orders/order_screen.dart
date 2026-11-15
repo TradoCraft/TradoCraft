@@ -2,7 +2,6 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:printing/printing.dart';
 
 import '../../app/api.dart';
 import '../../app/workspace.dart' show TabScope;
@@ -19,6 +18,7 @@ import '../../shared/app_icons.dart';
 import '../../shared/load_failed.dart';
 import '../todo/object_todos_button.dart';
 import '../tutorial/targets.dart';
+import '../../shared/file_export.dart';
 
 final _historyProvider = FutureProvider.autoDispose
     .family<List<PriorityChange>, String>(
@@ -420,9 +420,12 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
       ref.read(dioProvider),
       '/api/v1/orders/${o.order.id}/revisions/${o.revision}/pdf',
     );
-    await Printing.layoutPdf(
-      name: '${o.order.number}-r${o.revision}.pdf',
-      onLayout: (_) async => Uint8List.fromList(bytes),
+    if (!mounted) return;
+    await saveExport(
+      context,
+      ref,
+      '${o.order.number}-r${o.revision}.pdf',
+      Uint8List.fromList(bytes),
     );
   });
 

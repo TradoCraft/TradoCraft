@@ -9,6 +9,7 @@ import '../../l10n/l10n.dart';
 import 'attribute_definitions_page.dart';
 import 'audit_trail_page.dart';
 import 'baseline_types_page.dart';
+import 'company_logo_page.dart';
 import 'identity_providers_page.dart';
 import 'imports/imports_page.dart';
 import 'modules_page.dart';
@@ -35,6 +36,7 @@ class _AdminPageState extends ConsumerState<AdminPage> {
     final tabs = [
       if (isAdmin) 'users',
       if (isAdmin) 'modules',
+      if (isAdmin) 'company',
       if (can(ref, 'prices.write')) 'zones',
       if (can(ref, 'products.write')) 'attributes',
       if (can(ref, 'products.write')) 'baseline',
@@ -64,6 +66,7 @@ class _AdminPageState extends ConsumerState<AdminPage> {
                           label: Text(switch (t) {
                             'users' => l.adminUsers,
                             'modules' => l.adminModules,
+                            'company' => l.adminCompany,
                             'attributes' => l.adminAttributes,
                             'baseline' => l.adminBaselineTypes,
                             'identity' => l.adminIdentityProviders,
@@ -91,6 +94,7 @@ class _AdminPageState extends ConsumerState<AdminPage> {
         Expanded(
           child: switch (tab) {
             'modules' => const ModulesPage(),
+            'company' => const CompanyLogoPage(),
             'zones' => const PriceZonesPage(),
             'attributes' => const AttributeDefinitionsPage(),
             'baseline' => const BaselineTypesPage(),
