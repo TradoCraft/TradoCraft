@@ -386,6 +386,10 @@ class _ShortcutsHostState extends ConsumerState<ShortcutsHost>
       // through and the old field has had it.
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted || focus.context == null) return;
+        // The person (or the app) already chose another control: leave that choice alone. Nothing
+        // focused, or only a scope, is what "done" leaves behind.
+        final now = FocusManager.instance.primaryFocus;
+        if (now != null && now != focus && now is! FocusScopeNode) return;
         // The next field, not the next control: the buttons between the fields are skipped. After
         // the last field the ordinary traversal goes on (to Save, for instance).
         if (!_moveToField(focus, back: back)) {
@@ -582,11 +586,13 @@ class _EscapeAction extends Action<_EscapeIntent> {
   final _ShortcutsHostState _host;
 
   @override
-  bool isEnabled(_EscapeIntent intent) =>
-      !_host._composing && _host._escapeAction() != null;
+  bool isEnabled(_EscapeIntent intent) => _host._escapeAction() != null;
 
   @override
   Object? invoke(_EscapeIntent intent) {
+    // Esc belongs to the input method while it composes (it cancels the composition). The action
+    // stays enabled so the key is not passed on to the framework's own dismissing of dialogs.
+    if (_host._composing) return null;
     BrowserDefaults.markHandled();
     // A held key repeats: Esc runs once.
     if (_host._lastKeyRepeated) return null;

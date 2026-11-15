@@ -319,6 +319,52 @@ void main() {
       expect(find.text('dlg'), findsNothing);
     });
 
+    testWidgets('Esc does not close a dismissible dialog while text is composing', (
+      t,
+    ) async {
+      final controller = TextEditingController();
+      addTearDown(controller.dispose);
+      await pump(
+        t,
+        Builder(
+          builder: (c) => TextButton(
+            onPressed: () => showDialog<void>(
+              context: c,
+              builder: (d) => AlertDialog(
+                content: TextField(controller: controller, autofocus: true),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(d),
+                    child: const Text('Cancel'),
+                  ),
+                ],
+              ),
+            ),
+            child: const Text('Open'),
+          ),
+        ),
+      );
+      await t.tap(find.text('Open'));
+      await t.pumpAndSettle();
+      controller.value = const TextEditingValue(
+        text: 'ab',
+        selection: TextSelection.collapsed(offset: 2),
+        composing: TextRange(start: 0, end: 2),
+      );
+      await t.pump();
+      await chord(t, LogicalKeyboardKey.escape);
+      await t.pumpAndSettle();
+      expect(find.byType(AlertDialog), findsOneWidget);
+      controller.value = const TextEditingValue(
+        text: 'ab',
+        selection: TextSelection.collapsed(offset: 2),
+      );
+      await t.pump();
+      await chord(t, LogicalKeyboardKey.escape);
+      await t.pumpAndSettle();
+      expect(find.byType(AlertDialog), findsNothing);
+    });
+
     testWidgets('Esc on a page without a handler or Cancel does nothing', (
       t,
     ) async {
@@ -1032,6 +1078,32 @@ void main() {
       await t.pump();
       await t.pump();
       expect(b.hasFocus, isTrue);
+    });
+
+    testWidgets('Enter leaves alone a focus the person moved elsewhere before the frame', (
+      t,
+    ) async {
+      final a = FocusNode(), b = FocusNode(), c = FocusNode();
+      addTearDown(a.dispose);
+      addTearDown(b.dispose);
+      addTearDown(c.dispose);
+      await pump(
+        t,
+        Column(
+          children: [
+            TextField(focusNode: a),
+            TextField(focusNode: b),
+            TextButton(focusNode: c, onPressed: () {}, child: const Text('Other')),
+          ],
+        ),
+      );
+      a.requestFocus();
+      await t.pump();
+      await t.sendKeyEvent(LogicalKeyboardKey.enter);
+      c.requestFocus();
+      await t.pump();
+      expect(c.hasFocus, isTrue);
+      expect(b.hasFocus, isFalse);
     });
 
     testWidgets('Enter and Shift+Enter skip the action buttons between fields', (t) async {
