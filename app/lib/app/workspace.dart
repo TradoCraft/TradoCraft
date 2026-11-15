@@ -859,8 +859,8 @@ class _TabChip extends StatelessWidget {
                         tooltip: context.l10n.closeTab,
                         iconSize: 16,
                         constraints: const BoxConstraints(
-                          minWidth: 36,
-                          minHeight: 36,
+                          minWidth: 56,
+                          minHeight: 56,
                         ),
                         visualDensity: VisualDensity.compact,
                         icon: const Icon(AppIcons.close),
