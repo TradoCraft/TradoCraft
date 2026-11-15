@@ -6,6 +6,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'actions.dart';
+import 'browser_defaults.dart';
 import 'button_scan.dart';
 import 'key_hint.dart';
 import 'platform.dart';
@@ -65,9 +66,13 @@ class _ShortcutsHostState extends ConsumerState<ShortcutsHost>
   /// that gets the focus from the keyboard is selected whole; one that is clicked keeps the caret.
   bool _byKeyboard = false;
 
+  /// Whether the key event being handled is an auto-repeat of a held key.
+  bool _lastKeyRepeated = false;
+
   @override
   void initState() {
     super.initState();
+    BrowserDefaults.install();
     HardwareKeyboard.instance.addHandler(_onKey);
     WidgetsBinding.instance.addObserver(this);
     _rootScope = FocusManager.instance.rootScope;
@@ -193,6 +198,7 @@ class _ShortcutsHostState extends ConsumerState<ShortcutsHost>
 
   bool _onKey(KeyEvent e) {
     if (e is KeyDownEvent) _byKeyboard = true;
+    _lastKeyRepeated = e is KeyRepeatEvent;
     final isModifier = _modifierKeys.contains(e.logicalKey);
     if (isModifier) _stale = false;
     if (_stale) return false;
@@ -205,6 +211,7 @@ class _ShortcutsHostState extends ConsumerState<ShortcutsHost>
       if (run == null) return false;
       // A held key repeats: swallow the repeats, run once.
       if (e is KeyDownEvent) run();
+      BrowserDefaults.markHandled();
       return true;
     }
     // Enter is taken here, not after the focus tree: the app's default shortcuts swallow it there.
@@ -213,7 +220,9 @@ class _ShortcutsHostState extends ConsumerState<ShortcutsHost>
     if ((e.logicalKey == LogicalKeyboardKey.enter ||
             e.logicalKey == LogicalKeyboardKey.numpadEnter) &&
         _bare(kb)) {
-      return _enter(e, back: kb.isShiftPressed);
+      final took = _enter(e, back: kb.isShiftPressed);
+      if (took) BrowserDefaults.markHandled();
+      return took;
     }
     return _autoKey(e, editing);
   }
@@ -307,6 +316,7 @@ class _ShortcutsHostState extends ConsumerState<ShortcutsHost>
     final target = _current().byLetter[letter];
     if (target == null || target.onPressed == null) return false;
     if (e is KeyDownEvent) _press(target);
+    BrowserDefaults.markHandled();
     return true;
   }
 
@@ -330,23 +340,25 @@ class _ShortcutsHostState extends ConsumerState<ShortcutsHost>
   /// Esc: the registered cancel handler of the topmost layer; in a dialog its Cancel or Close
   /// button, else the dialog's own pop (which a `PopScope` can veto); on a page its Cancel button.
   bool _escape(KeyEvent e) {
+    final run = _escapeAction();
+    if (run == null) return false;
+    if (e is KeyDownEvent) run();
+    BrowserDefaults.markHandled();
+    return true;
+  }
+
+  /// What Esc does right now, or null when there is nothing for it to do.
+  VoidCallback? _escapeAction() {
     final handler = _registry.resolve(ShortcutAction.cancel);
-    if (handler != null) {
-      if (e is KeyDownEvent) handler();
-      return true;
-    }
+    if (handler != null) return handler;
     final s = _current(fresh: true);
     final cancel = s.cancelTarget;
-    if (cancel != null) {
-      if (e is KeyDownEvent) _press(cancel);
-      return true;
-    }
+    if (cancel != null && cancel.onPressed != null) return () => _press(cancel);
     final popup = s.popup;
     if (popup != null && popup.barrierDismissible && popup.isCurrent) {
-      if (e is KeyDownEvent) popup.navigator?.maybePop();
-      return true;
+      return () => popup.navigator?.maybePop();
     }
-    return false;
+    return null;
   }
 
   /// Enter in a single-line field that does not submit moves to the next field, Shift+Enter back.
@@ -368,11 +380,23 @@ class _ShortcutsHostState extends ConsumerState<ShortcutsHost>
     }
     if (e is KeyDownEvent) {
       final focus = FocusManager.instance.primaryFocus!;
-      // The next field, not the next control: the buttons between the fields are skipped. After the
-      // last field the ordinary traversal goes on (to Save, for instance).
-      if (!_moveToField(focus, back: back)) {
-        back ? focus.previousFocus() : focus.nextFocus();
-      }
+      // The text input also reports this Enter to the field as its action "done", which unfocuses
+      // the field it is delivered to. Moving the focus right now would let that "done" land on the
+      // new field and leave nothing focused (seen in Firefox), so the move waits until the frame is
+      // through and the old field has had it.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || focus.context == null) return;
+        // The person (or the app) already chose another control: leave that choice alone. Nothing
+        // focused, or only a scope, is what "done" leaves behind.
+        final now = FocusManager.instance.primaryFocus;
+        if (now != null && now != focus && now is! FocusScopeNode) return;
+        // The next field, not the next control: the buttons between the fields are skipped. After
+        // the last field the ordinary traversal goes on (to Save, for instance).
+        if (!_moveToField(focus, back: back)) {
+          back ? focus.previousFocus() : focus.nextFocus();
+        }
+      });
+      WidgetsBinding.instance.ensureVisualUpdate();
     }
     return true;
   }
@@ -513,10 +537,23 @@ class _ShortcutsHostState extends ConsumerState<ShortcutsHost>
             }
             return false;
           },
-          child: Listener(
-            behavior: HitTestBehavior.translucent,
-            onPointerDown: (_) => _byKeyboard = false,
-            child: widget.child,
+          // While a widget has the focus, Esc never reaches the root focus node: the app's shortcuts
+          // turn it into the framework's "dismiss" intent, which a text field answers itself (it
+          // only hides its toolbar) and never forwards to the action of an ancestor. So the host
+          // has an Esc shortcut of its own. It sits outside the navigator, so anything inside the
+          // page that handles Esc itself (a menu, a list of suggestions) is closer and goes first.
+          child: Shortcuts(
+            shortcuts: const {
+              SingleActivator(LogicalKeyboardKey.escape): _EscapeIntent(),
+            },
+            child: Actions(
+              actions: {_EscapeIntent: _EscapeAction(this)},
+              child: Listener(
+                behavior: HitTestBehavior.translucent,
+                onPointerDown: (_) => _byKeyboard = false,
+                child: widget.child,
+              ),
+            ),
           ),
         ),
         Positioned.fill(
@@ -534,6 +571,33 @@ class _ShortcutsHostState extends ConsumerState<ShortcutsHost>
         ),
       ],
     );
+  }
+}
+
+/// The Esc key of the host (see [ShortcutAction.cancel]).
+class _EscapeIntent extends Intent {
+  const _EscapeIntent();
+}
+
+/// Runs what Esc does now; enabled only when there is something for it to do, so otherwise the
+/// key goes on to the rest of the app.
+class _EscapeAction extends Action<_EscapeIntent> {
+  _EscapeAction(this._host);
+  final _ShortcutsHostState _host;
+
+  @override
+  bool isEnabled(_EscapeIntent intent) => _host._escapeAction() != null;
+
+  @override
+  Object? invoke(_EscapeIntent intent) {
+    // Esc belongs to the input method while it composes (it cancels the composition). The action
+    // stays enabled so the key is not passed on to the framework's own dismissing of dialogs.
+    if (_host._composing) return null;
+    BrowserDefaults.markHandled();
+    // A held key repeats: Esc runs once.
+    if (_host._lastKeyRepeated) return null;
+    _host._escapeAction()?.call();
+    return null;
   }
 }
 
