@@ -951,6 +951,70 @@ void main() {
       expect(saved, 1);
     });
 
+    testWidgets('Esc reaches the page while a button has the focus too', (t) async {
+      var cancelled = 0;
+      final f = FocusNode();
+      addTearDown(f.dispose);
+      await pump(
+        t,
+        ShortcutScope(
+          actions: {ShortcutAction.cancel: () => cancelled++},
+          child: TextButton(focusNode: f, onPressed: () {}, child: const Text('Other')),
+        ),
+      );
+      f.requestFocus();
+      await t.pump();
+      await t.sendKeyEvent(LogicalKeyboardKey.escape);
+      await t.pump();
+      expect(cancelled, 1);
+    });
+
+    testWidgets('a dialog still closes with its own Esc, the page handler does not run', (t) async {
+      var cancelled = 0;
+      late BuildContext ctx;
+      await pump(
+        t,
+        ShortcutScope(
+          actions: {ShortcutAction.cancel: () => cancelled++},
+          child: Builder(
+            builder: (c) {
+              ctx = c;
+              return const TextField();
+            },
+          ),
+        ),
+      );
+      await t.tap(find.byType(TextField));
+      await t.pump();
+      showDialog<void>(
+        context: ctx,
+        builder: (_) => const AlertDialog(content: TextField(autofocus: true)),
+      );
+      await t.pumpAndSettle();
+      await t.sendKeyEvent(LogicalKeyboardKey.escape);
+      await t.pumpAndSettle();
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(cancelled, 0);
+    });
+
+    testWidgets('Esc reaches the page while the cursor is in a text field', (t) async {
+      var cancelled = 0;
+      final f = FocusNode();
+      addTearDown(f.dispose);
+      await pump(
+        t,
+        ShortcutScope(
+          actions: {ShortcutAction.cancel: () => cancelled++},
+          child: TextField(focusNode: f),
+        ),
+      );
+      f.requestFocus();
+      await t.pump();
+      await t.sendKeyEvent(LogicalKeyboardKey.escape);
+      await t.pump();
+      expect(cancelled, 1);
+    });
+
     testWidgets('Enter still lands on the next field when the platform also sends "done" for the old one', (
       t,
     ) async {
