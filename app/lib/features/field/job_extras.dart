@@ -2,7 +2,6 @@ import 'dart:typed_data';
 
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:printing/printing.dart';
 
 import '../../app/api.dart';
 import '../../l10n/l10n.dart';
@@ -15,6 +14,7 @@ import 'offline/offline_queue.dart';
 import 'offline/offline_ui.dart' show showQueuedSnack;
 import 'signature_dialog.dart';
 import '../../shared/app_icons.dart';
+import '../../shared/file_export.dart';
 
 /// A chip saying whether a unit is in warranty.
 class WarrantyChip extends StatelessWidget {
@@ -243,9 +243,12 @@ class JobExtras extends ConsumerWidget {
                   ref.read(dioProvider),
                   '/api/v1/field/jobs/${j.id}/report',
                 );
-                await Printing.layoutPdf(
-                  name: '${j.number}-service-report.pdf',
-                  onLayout: (_) async => Uint8List.fromList(bytes),
+                if (!context.mounted) return;
+                await saveExport(
+                  context,
+                  ref,
+                  '${j.number}-service-report.pdf',
+                  Uint8List.fromList(bytes),
                 );
               }),
             ),

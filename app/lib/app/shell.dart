@@ -163,6 +163,7 @@ final _allDestinations = [
   ),
   _Dest('/customers', (l) => l.customers, AppIcons.business, 'customers.read'),
   _Dest('/products', (l) => l.products, AppIcons.inventory2, 'products.read'),
+  _Dest('/price-lists', (l) => l.plTitle, AppIcons.article, 'price_lists.read'),
   _Dest(
     '/purchasing',
     (l) => l.purchasing,

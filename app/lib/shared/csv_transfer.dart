@@ -9,6 +9,7 @@ import '../app/api.dart';
 import '../l10n/l10n.dart';
 import 'app_icons.dart';
 import 'csv_import_dialog.dart';
+import 'file_export_platform.dart';
 
 /// A file the person chose: its name and raw bytes.
 typedef PickedFile = ({String name, Uint8List bytes});
@@ -125,7 +126,7 @@ Future<bool> shareCsvFile(XFile file, String filename, {ShareFn? share}) async {
 }
 
 /// Browser: a download. Android and iOS: the share sheet (there is no save dialog there).
-/// Desktop: a "save as" dialog.
+/// Desktop: written to the Downloads folder (a "save as" dialog only if it cannot be found).
 Future<bool> saveCsvFile(String filename, Uint8List bytes) async {
   final file = XFile.fromData(
     bytes,
@@ -141,6 +142,12 @@ Future<bool> saveCsvFile(String filename, Uint8List bytes) async {
     case TargetPlatform.iOS:
       return shareCsvFile(file, filename);
     default:
+      // Desktop: straight into the Downloads folder, never over an existing file.
+      final folder = await defaultDownloadsFolder();
+      if (folder != null) {
+        await writeUnique(folder, filename, bytes);
+        return true;
+      }
       final target = await getSaveLocation(
         suggestedName: filename,
         acceptedTypeGroups: _saveTypesFor(filename),

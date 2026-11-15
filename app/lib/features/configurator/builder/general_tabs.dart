@@ -9,7 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/api.dart';
 import '../../../l10n/l10n.dart';
 import '../../../shared/app_icons.dart';
-import '../../../shared/csv_transfer.dart' show shareCsvFile;
+import '../../../shared/csv_transfer.dart' show saveCsvFile;
 import '../definition.dart';
 import '../runner_screen.dart';
 import '../runner_state.dart';
@@ -45,27 +45,9 @@ final jsonPickerProvider = Provider<Future<PickedFile?> Function()>(
 
 /// Saves or shares a JSON file; false when cancelled. Replaced in tests.
 final jsonSaverProvider = Provider<Future<bool> Function(String, Uint8List)>(
-  (_) => (filename, bytes) async {
-    final file = XFile.fromData(
-      bytes,
-      mimeType: 'application/json',
-      name: filename,
-    );
-    if (kIsWeb) {
-      await file.saveTo(filename);
-      return true;
-    }
-    switch (defaultTargetPlatform) {
-      case TargetPlatform.android:
-      case TargetPlatform.iOS:
-        return shareCsvFile(file, filename);
-      default:
-        final target = await getSaveLocation(suggestedName: filename);
-        if (target == null) return false;
-        await file.saveTo(target.path);
-        return true;
-    }
-  },
+  // The same platform rules as the CSV saver: Downloads on desktop, share on mobile, download in
+  // the browser.
+  (_) => saveCsvFile,
 );
 
 /// Reads a chosen file as an export (`{format, model, definition}`) or a bare definition.

@@ -9797,4 +9797,276 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get baselineImported => 'geïmporteerd';
+
+  @override
+  String get plTitle => 'Prijslijsten';
+
+  @override
+  String get plNew => 'Nieuwe prijslijst';
+
+  @override
+  String get plEdit => 'Prijslijst bewerken';
+
+  @override
+  String get plNone => 'Nog geen prijslijsten.';
+
+  @override
+  String plDeleteConfirm(String code) {
+    return 'Prijslijst $code met groepen en artikelen verwijderen? Producten en prijzen blijven ongewijzigd.';
+  }
+
+  @override
+  String get plDeleted => 'Prijslijst verwijderd';
+
+  @override
+  String get plShowLogo => 'Bedrijfslogo afdrukken';
+
+  @override
+  String plProductCount(int count) {
+    return '$count producten';
+  }
+
+  @override
+  String get plOpen => 'Opmaak bewerken';
+
+  @override
+  String get plBack => 'Prijslijsten';
+
+  @override
+  String get plGroups => 'Groepen';
+
+  @override
+  String get plAddGroup => 'Groep toevoegen';
+
+  @override
+  String get plAddSubgroup => 'Subgroep toevoegen';
+
+  @override
+  String get plGroupTitle => 'Titel van de groep';
+
+  @override
+  String get plGroupTitleRequired => 'Geef een titel in minstens één taal.';
+
+  @override
+  String get plPageBreak => 'Nieuwe pagina voor deze groep';
+
+  @override
+  String get plShowTitle => 'Titel afdrukken';
+
+  @override
+  String get plGapMm => 'Witruimte (mm)';
+
+  @override
+  String get plGapInvalid => 'De witruimte moet een getal van 0 tot 50 zijn.';
+
+  @override
+  String get plIndent => 'Subgroep maken van de groep erboven';
+
+  @override
+  String get plOutdent => 'Een niveau hoger plaatsen';
+
+  @override
+  String get plDepthMax =>
+      'Groepen kunnen maximaal vier niveaus diep genest worden.';
+
+  @override
+  String plDeleteGroupConfirm(String title) {
+    return 'Groep \"$title\" verwijderen? Alleen lege groepen kunnen verwijderd worden.';
+  }
+
+  @override
+  String get plNoGroups => 'Voeg eerst een groep toe en daarna producten.';
+
+  @override
+  String get plTitleHidden => 'titel niet afgedrukt';
+
+  @override
+  String get plItems => 'Producten';
+
+  @override
+  String get plAddProduct => 'Product toevoegen';
+
+  @override
+  String get plSortKey => 'Sorteersleutel';
+
+  @override
+  String get plSortKeyInvalid =>
+      'Gebruik cijfers en letters gescheiden door punten, bv. 2.10.3.';
+
+  @override
+  String get plGroup => 'Groep';
+
+  @override
+  String get plPriceOnRequest => 'Prijs op aanvraag';
+
+  @override
+  String get plNet => 'Netto';
+
+  @override
+  String get plIndicative => 'Indicatief';
+
+  @override
+  String get plHidden => 'Verborgen';
+
+  @override
+  String get plDescriptionOverride => 'Omschrijving (vervangt de productnaam)';
+
+  @override
+  String get plNoItems => 'Nog geen producten in deze lijst.';
+
+  @override
+  String get plNotPrintedNote =>
+      'Verborgen producten en producten zonder zoneprijs die niet \"prijs op aanvraag\" zijn, worden niet afgedrukt.';
+
+  @override
+  String get plNotPrinted => 'niet afgedrukt';
+
+  @override
+  String get plGenerate => 'Genereren';
+
+  @override
+  String get plGeneratePdf => 'PDF';
+
+  @override
+  String get plGenerateXlsx => 'Excel';
+
+  @override
+  String get adminCompany => 'Bedrijf';
+
+  @override
+  String get logoTitle => 'Bedrijfslogo';
+
+  @override
+  String get logoHint =>
+      'PNG, JPEG of SVG, maximaal 512 KB. Wordt afgedrukt in de hoofding van prijslijsten.';
+
+  @override
+  String get logoNone => 'Geen logo opgeladen.';
+
+  @override
+  String get logoChoose => 'Bestand kiezen';
+
+  @override
+  String get logoRemove => 'Logo verwijderen';
+
+  @override
+  String get logoRemoveConfirm => 'Het bedrijfslogo verwijderen?';
+
+  @override
+  String get logoTooBig => 'Het bestand is groter dan 512 KB.';
+
+  @override
+  String get logoBadType =>
+      'Alleen PNG-, JPEG- of SVG-bestanden zijn toegelaten.';
+
+  @override
+  String get logoSaved => 'Logo bewaard';
+
+  @override
+  String get logoRemoved => 'Logo verwijderd';
+
+  @override
+  String get open => 'Openen';
+
+  @override
+  String fileSavedTo(String path) {
+    return 'Bewaard in $path';
+  }
+
+  @override
+  String get plZones => 'Zones en talen';
+
+  @override
+  String get plZonesHint =>
+      'De prijslijst wordt voor deze zones gepubliceerd, in deze volgorde, elk in zijn eigen talen. De eerste taal van een zone is de standaardtaal.';
+
+  @override
+  String get plNoZones =>
+      'Nog geen zones. Voeg een zone toe om bestanden te kunnen genereren.';
+
+  @override
+  String get plAddZone => 'Zone toevoegen';
+
+  @override
+  String get plExports => 'Exportprofielen';
+
+  @override
+  String get plExportsHint =>
+      'Elk profiel geeft één bestand per zone en taal, met de gekozen hoofdstukken. De volledige lijst wordt altijd ook gegenereerd.';
+
+  @override
+  String get plNoExports => 'Nog geen exportprofielen.';
+
+  @override
+  String get plAddExport => 'Profiel toevoegen';
+
+  @override
+  String get plEditExport => 'Exportprofiel bewerken';
+
+  @override
+  String get plPerChapter => 'Eén profiel per hoofdstuk';
+
+  @override
+  String get plWholeList => 'Volledige lijst';
+
+  @override
+  String plExportDeleteConfirm(String name) {
+    return 'Exportprofiel \"$name\" verwijderen?';
+  }
+
+  @override
+  String get plExportCodeLength => 'De code mag maximaal 32 tekens hebben.';
+
+  @override
+  String get plChapters => 'Hoofdstukken';
+
+  @override
+  String get plChaptersHint =>
+      'De hoofdgroepen in dit bestand. Niets aangevinkt betekent de volledige lijst.';
+
+  @override
+  String get plFileName => 'Sjabloon voor bestandsnaam (optioneel)';
+
+  @override
+  String plFileNameHint(String placeholders) {
+    return 'Plaatshouders: $placeholders. Zonder sjabloon wordt de profielnaam gebruikt.';
+  }
+
+  @override
+  String get plGroupInUseTitle => 'Groep is in gebruik';
+
+  @override
+  String plGenSummary(int written, int total) {
+    return '$written van $total bestanden bewaard';
+  }
+
+  @override
+  String plGenTargetFolder(String folder) {
+    return 'Map: $folder';
+  }
+
+  @override
+  String get plGenSentToBrowser =>
+      'De bestanden werden aan de browser of het deelmenu doorgegeven.';
+
+  @override
+  String get plGenDownloads => 'Map: Downloads';
+
+  @override
+  String get plGenChooseFolder => 'Map kiezen';
+
+  @override
+  String get plGenNothing =>
+      'Niets te genereren: voeg eerst zones en hoofdstukken toe.';
+
+  @override
+  String plGenProgress(int current, int total, String file) {
+    return 'Bestand $current van $total: $file';
+  }
+
+  @override
+  String get plGenOpenFolder => 'Map openen';
+
+  @override
+  String get plGenBack => 'Terug naar het plan';
 }

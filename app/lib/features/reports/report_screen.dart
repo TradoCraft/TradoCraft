@@ -5,7 +5,6 @@ import 'package:dio/dio.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:printing/printing.dart';
 
 import '../../app/api.dart';
 import '../../l10n/l10n.dart';
@@ -14,6 +13,7 @@ import '../../shared/app_icons.dart';
 import '../../shared/csv_transfer.dart';
 import 'report_result_view.dart';
 import 'reports_page.dart';
+import '../../shared/file_export.dart';
 
 /// Rows fetched per request.
 const reportPageSize = 100;
@@ -146,10 +146,8 @@ class _SavedReportScreenState extends ConsumerState<SavedReportScreen> {
       );
       final base = reportFileBase(report.name);
       if (format == 'pdf') {
-        await Printing.layoutPdf(
-          name: '$base.pdf',
-          onLayout: (_) async => bytes,
-        );
+        if (!mounted) return;
+        await saveExport(context, ref, '$base.pdf', bytes);
       } else {
         await saveCsv('$base.csv', bytes);
       }

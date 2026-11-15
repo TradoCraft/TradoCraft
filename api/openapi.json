@@ -72,6 +72,128 @@
         }
       }
     },
+    "/api/v1/admin/company/logo": {
+      "get": {
+        "tags": [
+          "core"
+        ],
+        "summary": "The company logo image. 404 when none was uploaded.",
+        "operationId": "get_logo",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "core"
+        ],
+        "summary": "Sets or replaces the company logo: the request body is the image file (PNG, JPEG or SVG, at\nmost 512 KB). The type is taken from the file's content, not from the request headers.",
+        "operationId": "put_logo",
+        "requestBody": {
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "type": "string"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanyLogoInfo"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "core"
+        ],
+        "summary": "Removes the company logo. 404 when there is none.",
+        "operationId": "delete_logo",
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/identity-providers": {
       "get": {
         "tags": [
@@ -18057,6 +18179,1176 @@
         }
       }
     },
+    "/api/v1/price-lists": {
+      "get": {
+        "tags": [
+          "products"
+        ],
+        "operationId": "list_price_lists",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PriceList"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "products"
+        ],
+        "operationId": "create_price_list",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PriceListInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PriceList"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/price-lists/{id}": {
+      "get": {
+        "tags": [
+          "products"
+        ],
+        "operationId": "get_price_list",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PriceList"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "products"
+        ],
+        "operationId": "update_price_list",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PriceListInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PriceList"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "products"
+        ],
+        "summary": "Deletes a price list with its zones, groups, items and export profiles. The products and prices are untouched.",
+        "operationId": "delete_price_list",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/price-lists/{id}/export-plan": {
+      "get": {
+        "tags": [
+          "products"
+        ],
+        "summary": "Every file the export profiles produce for the list: per zone, per language of that zone, the\nwhole list and then each profile, with a sanitized relative path computed here.",
+        "operationId": "get_export_plan",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "description": "`pdf` (default) or `xlsx`.",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "$ref": "#/components/schemas/RenderFormat"
+                }
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ExportPlanEntry"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/price-lists/{id}/exports": {
+      "get": {
+        "tags": [
+          "products"
+        ],
+        "operationId": "list_exports",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PriceListExport"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "products"
+        ],
+        "operationId": "create_export",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PriceListExportInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PriceListExport"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/price-lists/{id}/exports/per-chapter": {
+      "post": {
+        "tags": [
+          "products"
+        ],
+        "summary": "Creates one profile per top-level group that has no single-chapter profile yet (code\n`ch-<last 12 hex of the group id>`, name = the group title in the company's default language).\nIdempotent: a second call creates nothing. Returns all profiles of the list.",
+        "operationId": "create_per_chapter_exports",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PriceListExport"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/price-lists/{id}/exports/{export_id}": {
+      "put": {
+        "tags": [
+          "products"
+        ],
+        "operationId": "update_export",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "export_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PriceListExportInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PriceListExport"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "products"
+        ],
+        "operationId": "delete_export",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "export_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/price-lists/{id}/groups": {
+      "get": {
+        "tags": [
+          "products"
+        ],
+        "operationId": "list_groups",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PriceListGroup"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "products"
+        ],
+        "operationId": "create_group",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PriceListGroupInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PriceListGroup"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/price-lists/{id}/groups/{group_id}": {
+      "put": {
+        "tags": [
+          "products"
+        ],
+        "operationId": "update_group",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "group_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PriceListGroupInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PriceListGroup"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "products"
+        ],
+        "summary": "Deletes an empty group: refused (409) while it has sub-groups or items, or while an export\nprofile still uses it (remove it from the profile first).",
+        "operationId": "delete_group",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "group_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/price-lists/{id}/items": {
+      "get": {
+        "tags": [
+          "products"
+        ],
+        "operationId": "list_items",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PriceListItem"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "products"
+        ],
+        "operationId": "create_item",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PriceListItemInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PriceListItem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/price-lists/{id}/items/{item_id}": {
+      "put": {
+        "tags": [
+          "products"
+        ],
+        "operationId": "update_item",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PriceListItemUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PriceListItem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "products"
+        ],
+        "operationId": "delete_item",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/price-lists/{id}/render": {
+      "post": {
+        "tags": [
+          "products"
+        ],
+        "summary": "Renders the list for one of its zones, at the list date, as PDF or Excel, in one of that\nzone's languages. With `export_id` only that profile's chapters are printed.",
+        "operationId": "render_price_list",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "zone_id",
+            "in": "query",
+            "description": "Zone to print; required when the list has several zones.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "description": "One of the languages of that zone; defaults to its first.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "export_id",
+            "in": "query",
+            "description": "Export profile: only its chapters (with everything below them). Whole list when absent.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "description": "`pdf` (default) or `xlsx`.",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "$ref": "#/components/schemas/RenderFormat"
+                }
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The rendered file (PDF or XLSX) as raw bytes",
+            "content": {
+              "application/octet-stream": {}
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/price-lists/{id}/zones": {
+      "put": {
+        "tags": [
+          "products"
+        ],
+        "summary": "Replaces the zones of a list (and with them the languages published per zone). The order of\nthe request is the print order. An empty array leaves a list that cannot be rendered.",
+        "operationId": "replace_zones",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/PriceListZoneInput"
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PriceList"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/price-zones": {
       "get": {
         "tags": [
@@ -31810,6 +33102,29 @@
           }
         }
       },
+      "CompanyLogoInfo": {
+        "type": "object",
+        "description": "The stored company logo (without the image itself).",
+        "required": [
+          "content_type",
+          "size_bytes",
+          "updated_at"
+        ],
+        "properties": {
+          "content_type": {
+            "type": "string",
+            "description": "`image/png`, `image/jpeg` or `image/svg+xml`."
+          },
+          "size_bytes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "CompanyUser": {
         "type": "object",
         "description": "A colleague in the active company (for assigning tickets, owners, ...).",
@@ -35079,6 +36394,44 @@
           },
           "unit": {
             "type": "string"
+          }
+        }
+      },
+      "ExportPlanEntry": {
+        "type": "object",
+        "description": "One file to produce.",
+        "required": [
+          "zone_id",
+          "zone_code",
+          "lang",
+          "format",
+          "relative_path"
+        ],
+        "properties": {
+          "export_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "`null`: the whole list."
+          },
+          "format": {
+            "$ref": "#/components/schemas/RenderFormat"
+          },
+          "lang": {
+            "type": "string"
+          },
+          "relative_path": {
+            "type": "string",
+            "description": "Forward-slash path, `<list>/<zone>/<lang>/<file>.<ext>`, every segment sanitized and the\nwhole path unique (ignoring case) within the plan."
+          },
+          "zone_code": {
+            "type": "string"
+          },
+          "zone_id": {
+            "type": "string",
+            "format": "uuid"
           }
         }
       },
@@ -41765,6 +43118,468 @@
           }
         }
       },
+      "PriceList": {
+        "type": "object",
+        "required": [
+          "id",
+          "code",
+          "name",
+          "zones",
+          "valid_from",
+          "settings",
+          "item_count"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "item_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "settings": {
+            "$ref": "#/components/schemas/PriceListSettings"
+          },
+          "valid_from": {
+            "type": "string",
+            "format": "date"
+          },
+          "zones": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PriceListZone"
+            },
+            "description": "Zones in print order. Prices are those valid on `valid_from` in each zone."
+          }
+        }
+      },
+      "PriceListExport": {
+        "type": "object",
+        "description": "Which chapters go into one file. One group is an individual chapter, several a combination.",
+        "required": [
+          "id",
+          "code",
+          "name",
+          "sort_order",
+          "group_ids"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "file_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional file name template (placeholders `{list}`, `{zone}`, `{lang}`, `{name}`,\n`{code}`); the name is used when absent."
+          },
+          "group_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Top-level groups of the list; empty means the whole list."
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "sort_order": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "PriceListExportInput": {
+        "type": "object",
+        "required": [
+          "code",
+          "name"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Unique per list, at most 32 characters."
+          },
+          "file_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "group_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Top-level groups of this list; empty means the whole list."
+          },
+          "name": {
+            "type": "string"
+          },
+          "sort_order": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "PriceListGroup": {
+        "type": "object",
+        "required": [
+          "id",
+          "sort_order",
+          "title",
+          "page_break",
+          "show_title",
+          "gap_mm"
+        ],
+        "properties": {
+          "gap_mm": {
+            "type": "string",
+            "description": "Millimetres of space before an untitled group (0 to 50), always two decimals."
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "page_break": {
+            "type": "boolean",
+            "description": "Start a new page before this group (top-level groups only)."
+          },
+          "parent_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "show_title": {
+            "type": "boolean",
+            "description": "False: the title is kept for the editor but never printed."
+          },
+          "sort_order": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "title": {
+            "type": "object",
+            "description": "Title per language code.",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "PriceListGroupInput": {
+        "type": "object",
+        "required": [
+          "title"
+        ],
+        "properties": {
+          "gap_mm": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Millimetres of space before the group when its title is not printed, 0 to 50 (default 0)."
+          },
+          "page_break": {
+            "type": "boolean"
+          },
+          "parent_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "show_title": {
+            "type": "boolean",
+            "description": "Print the title (default true). When false the title is only for the editor."
+          },
+          "sort_order": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "title": {
+            "type": "object",
+            "description": "Title per language code (nl, fr, en, de, es); at least one.",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "PriceListInput": {
+        "type": "object",
+        "required": [
+          "code",
+          "name",
+          "valid_from"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "settings": {
+            "$ref": "#/components/schemas/PriceListSettings"
+          },
+          "valid_from": {
+            "type": "string",
+            "format": "date",
+            "description": "Accepts `2027-01-01` and the datetime string the Dart client sends."
+          }
+        }
+      },
+      "PriceListItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "product_id",
+          "product_code",
+          "product_name",
+          "group_id",
+          "sort_key",
+          "price_on_request",
+          "net",
+          "indicative",
+          "hidden",
+          "description"
+        ],
+        "properties": {
+          "description": {
+            "type": "object",
+            "description": "Replaces the product name in that language.",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "group_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "hidden": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "indicative": {
+            "type": "boolean"
+          },
+          "net": {
+            "type": "boolean"
+          },
+          "price_on_request": {
+            "type": "boolean"
+          },
+          "product_code": {
+            "type": "string"
+          },
+          "product_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "product_name": {
+            "type": "string"
+          },
+          "sort_key": {
+            "type": "string",
+            "description": "Dotted position inside the group, e.g. `2.10`."
+          }
+        }
+      },
+      "PriceListItemInput": {
+        "type": "object",
+        "required": [
+          "product_id",
+          "group_id"
+        ],
+        "properties": {
+          "description": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "group_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "hidden": {
+            "type": "boolean"
+          },
+          "indicative": {
+            "type": "boolean"
+          },
+          "net": {
+            "type": "boolean"
+          },
+          "price_on_request": {
+            "type": "boolean"
+          },
+          "product_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sort_key": {
+            "type": "string"
+          }
+        }
+      },
+      "PriceListItemUpdate": {
+        "type": "object",
+        "description": "Change of an item; the product of an item never changes (remove and add instead).",
+        "required": [
+          "group_id"
+        ],
+        "properties": {
+          "description": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "group_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "hidden": {
+            "type": "boolean"
+          },
+          "indicative": {
+            "type": "boolean"
+          },
+          "net": {
+            "type": "boolean"
+          },
+          "price_on_request": {
+            "type": "boolean"
+          },
+          "sort_key": {
+            "type": "string"
+          }
+        }
+      },
+      "PriceListSettings": {
+        "type": "object",
+        "description": "Presentation of a list. No row means defaults apply to every key.",
+        "properties": {
+          "accent_color": {
+            "type": "string",
+            "description": "Colour of the title and chapter headings, `#rrggbb`.",
+            "default": "#1f4e79"
+          },
+          "currency_symbol": {
+            "type": "string",
+            "description": "Printed before prices; empty uses the company currency (EUR as the euro sign).",
+            "default": ""
+          },
+          "footer_text": {
+            "type": "string",
+            "description": "Printed in the page footer after the company name.",
+            "default": ""
+          },
+          "show_logo": {
+            "type": "boolean",
+            "description": "Print the company logo in the PDF header when one is uploaded.",
+            "default": true
+          },
+          "show_unit": {
+            "type": "boolean",
+            "description": "Show the unit column.",
+            "default": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "PriceListZone": {
+        "type": "object",
+        "description": "A zone a list is published for.",
+        "required": [
+          "price_zone_id",
+          "price_zone_code",
+          "price_zone_name",
+          "languages",
+          "sort_order"
+        ],
+        "properties": {
+          "languages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Languages published for this zone; the first is the default."
+          },
+          "price_zone_code": {
+            "type": "string"
+          },
+          "price_zone_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "price_zone_name": {
+            "type": "string"
+          },
+          "sort_order": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "PriceListZoneInput": {
+        "type": "object",
+        "description": "One zone of a list; the position in the request is the print order.",
+        "required": [
+          "price_zone_id",
+          "languages"
+        ],
+        "properties": {
+          "languages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Subset of nl, fr, en, de, es; the first is the default."
+          },
+          "price_zone_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
       "PriceZone": {
         "type": "object",
         "required": [
@@ -45599,6 +47414,13 @@
             "description": "Number of quotation lines that carry the text."
           }
         }
+      },
+      "RenderFormat": {
+        "type": "string",
+        "enum": [
+          "pdf",
+          "xlsx"
+        ]
       },
       "RenderedAnswer": {
         "type": "object",

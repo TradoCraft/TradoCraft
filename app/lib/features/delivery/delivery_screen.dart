@@ -3,7 +3,6 @@ import 'dart:typed_data';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:printing/printing.dart';
 
 import '../../app/api.dart';
 import '../../l10n/l10n.dart';
@@ -11,6 +10,7 @@ import '../../shared/actions.dart';
 import '../../shared/app_icons.dart';
 import '../../shared/format.dart';
 import '../planning/board_model.dart';
+import '../../shared/file_export.dart';
 
 /// A line of the note being edited: what is picked, from where, and which serial number.
 class _Pick {
@@ -273,10 +273,8 @@ class _DeliveryScreenState extends ConsumerState<DeliveryScreen> {
       ref.read(dioProvider),
       '/api/v1/deliveries/${n.id}/pdf',
     );
-    await Printing.layoutPdf(
-      name: '${n.number}.pdf',
-      onLayout: (_) async => Uint8List.fromList(bytes),
-    );
+    if (!mounted) return;
+    await saveExport(context, ref, '${n.number}.pdf', Uint8List.fromList(bytes));
   });
 
   Future<void> _run(Future<void> Function() action) async {

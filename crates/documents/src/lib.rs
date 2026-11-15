@@ -12,6 +12,8 @@ use rust_decimal::{Decimal, RoundingStrategy};
 use serde::Serialize;
 use tradocraft_core::DocumentConfig;
 
+pub mod price_list;
+
 /// Formats a money amount as `1.234,56` (Belgian/continental notation).
 pub fn format_amount(d: Decimal) -> String {
     format_grouped(

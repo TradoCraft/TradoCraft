@@ -23,7 +23,7 @@ pub const DEV_SEED_SQL: &str = include_str!("../../../seed/dev_seed.sql");
 #[openapi(
     info(title = "tradocraft API", description = "Business platform API (CRM, products, pricing, sales, engineering, helpdesk, customer portal)."),
     // Query parameters are not collected from the routes: list the enums they use.
-    components(schemas(tradocraft_todo::TodoScope)),
+    components(schemas(tradocraft_todo::TodoScope, tradocraft_products::price_list_plan::RenderFormat)),
     modifiers(&Security),
     security(("bearer" = [])),
     tags(

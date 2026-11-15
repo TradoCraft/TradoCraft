@@ -41,6 +41,8 @@ import '../features/shipping/shipping_page.dart';
 import '../features/login/login_page.dart';
 import '../features/setup/setup_page.dart';
 import '../features/opportunities/opportunities_page.dart';
+import '../features/price_lists/price_list_editor_page.dart';
+import '../features/price_lists/price_lists_page.dart';
 import '../features/products/products_page.dart';
 import '../features/finance/finance_page.dart';
 import '../features/purchasing/purchasing_page.dart';
@@ -311,6 +313,17 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/suppliers/:id',
             builder: (_, s) => DetailPortal(location: s.uri.toString()),
+          ),
+          GoRoute(
+            path: '/price-lists',
+            builder: (_, _) => const PriceListsPage(),
+          ),
+          GoRoute(
+            path: '/price-lists/:id',
+            builder: (_, s) => PriceListEditorPage(
+              key: ValueKey(s.uri.toString()),
+              id: s.pathParameters['id']!,
+            ),
           ),
           GoRoute(path: '/admin', builder: (_, _) => const AdminPage()),
           GoRoute(

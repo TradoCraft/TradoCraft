@@ -17375,6 +17375,492 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'imported'**
   String get baselineImported;
+
+  /// No description provided for @plTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Price lists'**
+  String get plTitle;
+
+  /// No description provided for @plNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New price list'**
+  String get plNew;
+
+  /// No description provided for @plEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit price list'**
+  String get plEdit;
+
+  /// No description provided for @plNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No price lists yet.'**
+  String get plNone;
+
+  /// No description provided for @plDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete price list {code} with its groups and items? Products and prices are not affected.'**
+  String plDeleteConfirm(String code);
+
+  /// No description provided for @plDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Price list deleted'**
+  String get plDeleted;
+
+  /// No description provided for @plShowLogo.
+  ///
+  /// In en, this message translates to:
+  /// **'Print the company logo'**
+  String get plShowLogo;
+
+  /// No description provided for @plProductCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} products'**
+  String plProductCount(int count);
+
+  /// No description provided for @plOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit layout'**
+  String get plOpen;
+
+  /// No description provided for @plBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Price lists'**
+  String get plBack;
+
+  /// No description provided for @plGroups.
+  ///
+  /// In en, this message translates to:
+  /// **'Groups'**
+  String get plGroups;
+
+  /// No description provided for @plAddGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'Add group'**
+  String get plAddGroup;
+
+  /// No description provided for @plAddSubgroup.
+  ///
+  /// In en, this message translates to:
+  /// **'Add subgroup'**
+  String get plAddSubgroup;
+
+  /// No description provided for @plGroupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Group title'**
+  String get plGroupTitle;
+
+  /// No description provided for @plGroupTitleRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a title in at least one language.'**
+  String get plGroupTitleRequired;
+
+  /// No description provided for @plPageBreak.
+  ///
+  /// In en, this message translates to:
+  /// **'Page break before'**
+  String get plPageBreak;
+
+  /// No description provided for @plShowTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Print title'**
+  String get plShowTitle;
+
+  /// No description provided for @plGapMm.
+  ///
+  /// In en, this message translates to:
+  /// **'Gap (mm)'**
+  String get plGapMm;
+
+  /// No description provided for @plGapInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'The gap must be a number from 0 to 50.'**
+  String get plGapInvalid;
+
+  /// No description provided for @plIndent.
+  ///
+  /// In en, this message translates to:
+  /// **'Make subgroup of the group above'**
+  String get plIndent;
+
+  /// No description provided for @plOutdent.
+  ///
+  /// In en, this message translates to:
+  /// **'Move up one level'**
+  String get plOutdent;
+
+  /// No description provided for @plDepthMax.
+  ///
+  /// In en, this message translates to:
+  /// **'Groups can be nested at most four levels deep.'**
+  String get plDepthMax;
+
+  /// No description provided for @plDeleteGroupConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete group \"{title}\"? Only empty groups can be deleted.'**
+  String plDeleteGroupConfirm(String title);
+
+  /// No description provided for @plNoGroups.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a group first, then add products to it.'**
+  String get plNoGroups;
+
+  /// No description provided for @plTitleHidden.
+  ///
+  /// In en, this message translates to:
+  /// **'title not printed'**
+  String get plTitleHidden;
+
+  /// No description provided for @plItems.
+  ///
+  /// In en, this message translates to:
+  /// **'Products'**
+  String get plItems;
+
+  /// No description provided for @plAddProduct.
+  ///
+  /// In en, this message translates to:
+  /// **'Add product'**
+  String get plAddProduct;
+
+  /// No description provided for @plSortKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort key'**
+  String get plSortKey;
+
+  /// No description provided for @plSortKeyInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Use dotted letters and digits, for example 2.10.3.'**
+  String get plSortKeyInvalid;
+
+  /// No description provided for @plGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'Group'**
+  String get plGroup;
+
+  /// No description provided for @plPriceOnRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Price on request'**
+  String get plPriceOnRequest;
+
+  /// No description provided for @plNet.
+  ///
+  /// In en, this message translates to:
+  /// **'Net'**
+  String get plNet;
+
+  /// No description provided for @plIndicative.
+  ///
+  /// In en, this message translates to:
+  /// **'Indicative'**
+  String get plIndicative;
+
+  /// No description provided for @plHidden.
+  ///
+  /// In en, this message translates to:
+  /// **'Hidden'**
+  String get plHidden;
+
+  /// No description provided for @plDescriptionOverride.
+  ///
+  /// In en, this message translates to:
+  /// **'Description (replaces the product name)'**
+  String get plDescriptionOverride;
+
+  /// No description provided for @plNoItems.
+  ///
+  /// In en, this message translates to:
+  /// **'No products in this list yet.'**
+  String get plNoItems;
+
+  /// No description provided for @plNotPrintedNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Hidden products, and products without a zone price that are not \"price on request\", are not printed.'**
+  String get plNotPrintedNote;
+
+  /// No description provided for @plNotPrinted.
+  ///
+  /// In en, this message translates to:
+  /// **'not printed'**
+  String get plNotPrinted;
+
+  /// No description provided for @plGenerate.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate'**
+  String get plGenerate;
+
+  /// No description provided for @plGeneratePdf.
+  ///
+  /// In en, this message translates to:
+  /// **'PDF'**
+  String get plGeneratePdf;
+
+  /// No description provided for @plGenerateXlsx.
+  ///
+  /// In en, this message translates to:
+  /// **'Excel'**
+  String get plGenerateXlsx;
+
+  /// No description provided for @adminCompany.
+  ///
+  /// In en, this message translates to:
+  /// **'Company'**
+  String get adminCompany;
+
+  /// No description provided for @logoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Company logo'**
+  String get logoTitle;
+
+  /// No description provided for @logoHint.
+  ///
+  /// In en, this message translates to:
+  /// **'PNG, JPEG or SVG, at most 512 KB. Printed in the header of price lists.'**
+  String get logoHint;
+
+  /// No description provided for @logoNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No logo uploaded.'**
+  String get logoNone;
+
+  /// No description provided for @logoChoose.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose file'**
+  String get logoChoose;
+
+  /// No description provided for @logoRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove logo'**
+  String get logoRemove;
+
+  /// No description provided for @logoRemoveConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove the company logo?'**
+  String get logoRemoveConfirm;
+
+  /// No description provided for @logoTooBig.
+  ///
+  /// In en, this message translates to:
+  /// **'The file is larger than 512 KB.'**
+  String get logoTooBig;
+
+  /// No description provided for @logoBadType.
+  ///
+  /// In en, this message translates to:
+  /// **'Only PNG, JPEG or SVG files are accepted.'**
+  String get logoBadType;
+
+  /// No description provided for @logoSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Logo saved'**
+  String get logoSaved;
+
+  /// No description provided for @logoRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Logo removed'**
+  String get logoRemoved;
+
+  /// No description provided for @open.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get open;
+
+  /// No description provided for @fileSavedTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved to {path}'**
+  String fileSavedTo(String path);
+
+  /// No description provided for @plZones.
+  ///
+  /// In en, this message translates to:
+  /// **'Zones and languages'**
+  String get plZones;
+
+  /// No description provided for @plZonesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The list is published for these zones, in this order, each in its own languages. The first language of a zone is its default.'**
+  String get plZonesHint;
+
+  /// No description provided for @plNoZones.
+  ///
+  /// In en, this message translates to:
+  /// **'No zones yet. Add a zone to be able to generate files.'**
+  String get plNoZones;
+
+  /// No description provided for @plAddZone.
+  ///
+  /// In en, this message translates to:
+  /// **'Add zone'**
+  String get plAddZone;
+
+  /// No description provided for @plExports.
+  ///
+  /// In en, this message translates to:
+  /// **'Export profiles'**
+  String get plExports;
+
+  /// No description provided for @plExportsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Each profile is one file per zone and language, with the chapters you choose. The whole list is always generated as well.'**
+  String get plExportsHint;
+
+  /// No description provided for @plNoExports.
+  ///
+  /// In en, this message translates to:
+  /// **'No export profiles yet.'**
+  String get plNoExports;
+
+  /// No description provided for @plAddExport.
+  ///
+  /// In en, this message translates to:
+  /// **'Add profile'**
+  String get plAddExport;
+
+  /// No description provided for @plEditExport.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit export profile'**
+  String get plEditExport;
+
+  /// No description provided for @plPerChapter.
+  ///
+  /// In en, this message translates to:
+  /// **'One profile per chapter'**
+  String get plPerChapter;
+
+  /// No description provided for @plWholeList.
+  ///
+  /// In en, this message translates to:
+  /// **'Whole list'**
+  String get plWholeList;
+
+  /// No description provided for @plExportDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete export profile \"{name}\"?'**
+  String plExportDeleteConfirm(String name);
+
+  /// No description provided for @plExportCodeLength.
+  ///
+  /// In en, this message translates to:
+  /// **'The code can have at most 32 characters.'**
+  String get plExportCodeLength;
+
+  /// No description provided for @plChapters.
+  ///
+  /// In en, this message translates to:
+  /// **'Chapters'**
+  String get plChapters;
+
+  /// No description provided for @plChaptersHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The top-level groups in this file. None ticked means the whole list.'**
+  String get plChaptersHint;
+
+  /// No description provided for @plFileName.
+  ///
+  /// In en, this message translates to:
+  /// **'File name template (optional)'**
+  String get plFileName;
+
+  /// No description provided for @plFileNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Placeholders: {placeholders}. Without a template the profile name is used.'**
+  String plFileNameHint(String placeholders);
+
+  /// No description provided for @plGroupInUseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Group is in use'**
+  String get plGroupInUseTitle;
+
+  /// No description provided for @plGenSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{written} of {total} files saved'**
+  String plGenSummary(int written, int total);
+
+  /// No description provided for @plGenTargetFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Folder: {folder}'**
+  String plGenTargetFolder(String folder);
+
+  /// No description provided for @plGenSentToBrowser.
+  ///
+  /// In en, this message translates to:
+  /// **'The files were handed to the browser or the share sheet.'**
+  String get plGenSentToBrowser;
+
+  /// No description provided for @plGenDownloads.
+  ///
+  /// In en, this message translates to:
+  /// **'Folder: Downloads'**
+  String get plGenDownloads;
+
+  /// No description provided for @plGenChooseFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose folder'**
+  String get plGenChooseFolder;
+
+  /// No description provided for @plGenNothing.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to generate: add zones and chapters first.'**
+  String get plGenNothing;
+
+  /// No description provided for @plGenProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'File {current} of {total}: {file}'**
+  String plGenProgress(int current, int total, String file);
+
+  /// No description provided for @plGenOpenFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Open folder'**
+  String get plGenOpenFolder;
+
+  /// No description provided for @plGenBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to the plan'**
+  String get plGenBack;
 }
 
 class _AppLocalizationsDelegate

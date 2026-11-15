@@ -19,7 +19,7 @@ The header comment of `20270106000001_modules_users_admin.sql` cites ADR 0027, t
   | Module (code) | Permissions | Requires |
   |---|---|---|
   | `customers` | customers.read/write, contacts.write, opportunities.read/write, rebates.write | none |
-  | `products` | products.read/write, prices.write, inventory.cost | none |
+  | `products` | products.read/write, prices.write, price_lists.read/write, inventory.cost | none |
   | `sales` | quotations.read/write, orders.read/write, prices.backdate, shipping.manage | customers, products |
   | `engineering` | bom.read/write, serials.read/write | products |
   | `inventory` | inventory.read/write/admin | products |

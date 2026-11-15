@@ -2,13 +2,14 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:file_selector/file_selector.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:printing/printing.dart';
 
 import '../api/generated/export.dart';
 import '../l10n/l10n.dart';
 import 'photos.dart';
 import 'app_icons.dart';
+import 'file_export.dart';
 
 /// Lets the person choose files to attach (JPEG, PNG, WebP or PDF). Replaced in tests.
 typedef AttachmentPicker = Future<List<PickedPhoto>> Function(
@@ -63,9 +64,10 @@ String fileSize(int bytes) {
   return '$bytes B';
 }
 
-/// Shows an image in a dialog, or opens a PDF in the print/preview dialog of the system.
+/// Shows an image in a dialog, or saves a PDF to the Downloads folder (see `saveExport`).
 Future<void> openAttachment(
   BuildContext context,
+  WidgetRef ref,
   Dio dio,
   String path,
   FileInfo file,
@@ -101,10 +103,9 @@ Future<void> openAttachment(
         ),
       );
     } else {
-      await Printing.layoutPdf(
-        name: file.filename,
-        onLayout: (_) async => bytes,
-      );
+      // The file name comes from the sender: only its last segment is used.
+      final name = file.filename.split(RegExp(r'[\\/]')).last.trim();
+      await saveExport(context, ref, name.isEmpty || name == '..' ? 'attachment.pdf' : name, bytes);
     }
   } catch (e) {
     final data = e is DioException ? e.response?.data : null;
@@ -122,7 +123,7 @@ Future<void> openAttachment(
 }
 
 /// The files of a message, as chips that open the file. [pathFor] gives the API path of a file.
-class AttachmentChips extends StatelessWidget {
+class AttachmentChips extends ConsumerWidget {
   const AttachmentChips({
     super.key,
     required this.files,
@@ -135,7 +136,7 @@ class AttachmentChips extends StatelessWidget {
   final String Function(String fileId) pathFor;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     if (files.isEmpty) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.only(top: 8),
@@ -153,7 +154,7 @@ class AttachmentChips extends StatelessWidget {
                 size: 18,
               ),
               label: Text('${f.filename} · ${fileSize(f.sizeBytes)}'),
-              onPressed: () => openAttachment(context, dio, pathFor(f.id), f),
+              onPressed: () => openAttachment(context, ref, dio, pathFor(f.id), f),
             ),
         ],
       ),
