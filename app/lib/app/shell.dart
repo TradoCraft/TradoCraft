@@ -83,6 +83,7 @@ const _sectionArt = {
   '/products': 'product',
   '/purchasing': 'purchasing',
   '/finance': 'finance',
+  '/reports': 'reports',
   '/admin': 'admin',
 };
 

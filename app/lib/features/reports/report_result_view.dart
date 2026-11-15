@@ -89,6 +89,14 @@ class ReportResultView extends StatelessWidget {
                         DataCell(
                           Text(
                             reportCell(context, result.columns[i].type, row[i]),
+                            style: result.columns[i].type ==
+                                    ReportFieldType.number
+                                ? const TextStyle(
+                                    fontFeatures: [
+                                      FontFeature.tabularFigures(),
+                                    ],
+                                  )
+                                : null,
                           ),
                         ),
                     ],
@@ -106,7 +114,10 @@ class ReportResultView extends StatelessWidget {
                                     result.columns[i].type,
                                     result.totals![i],
                                   ),
-                            style: const TextStyle(fontWeight: FontWeight.w700),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontFeatures: [FontFeature.tabularFigures()],
+                            ),
                           ),
                         ),
                     ],
@@ -248,6 +259,9 @@ class _Bars extends StatelessWidget {
                         ? '${texts[i]} (${(positive[i] / sum * 100).toStringAsFixed(1).replaceAll('.', ',')} %)'
                         : texts[i],
                     textAlign: TextAlign.end,
+                    style: const TextStyle(
+                      fontFeatures: [FontFeature.tabularFigures()],
+                    ),
                   ),
                 ),
               ],

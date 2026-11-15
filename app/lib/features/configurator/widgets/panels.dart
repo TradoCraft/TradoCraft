@@ -143,7 +143,13 @@ class LinesPanel extends StatelessWidget {
               children: [
                 SizedBox(
                   width: 48,
-                  child: Text(number(l.quantity), textAlign: TextAlign.end),
+                  child: Text(
+                    number(l.quantity),
+                    textAlign: TextAlign.end,
+                    style: const TextStyle(
+                      fontFeatures: [FontFeature.tabularFigures()],
+                    ),
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -183,10 +189,17 @@ class LinesPanel extends StatelessWidget {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Text(money(pl.lineTotal)),
+                      Text(
+                        money(pl.lineTotal),
+                        style: const TextStyle(
+                          fontFeatures: [FontFeature.tabularFigures()],
+                        ),
+                      ),
                       Text(
                         '× ${money(pl.netUnitPrice)}',
-                        style: theme.textTheme.bodySmall,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
                       ),
                     ],
                   ),
@@ -238,7 +251,9 @@ class LinesPanel extends StatelessWidget {
                     const Spacer(),
                     Text(
                       p == null ? '…' : money(p.subtotal),
-                      style: theme.textTheme.titleMedium,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
                     ),
                   ],
                 ),

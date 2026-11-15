@@ -266,7 +266,8 @@ class _ColumnHeader extends StatelessWidget {
         PopupMenuButton<String>(
           key: ValueKey('bulk-${table.name}-${e.name}'),
           tooltip: context.l10n.cfgSetForAll,
-          padding: EdgeInsets.zero,
+          padding: const EdgeInsets.all(6),
+          constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
           iconSize: 18,
           icon: const Icon(AppIcons.arrowDropDown),
           itemBuilder: (_) => [

@@ -211,7 +211,12 @@ class EntityListState<T> extends State<EntityList<T>> {
                 widget.filters!,
               ],
               const SizedBox(width: 12),
-              Text(context.l10n.countOf(_items.length, _total)),
+              Text(
+                context.l10n.countOf(_items.length, _total),
+                style: const TextStyle(
+                  fontFeatures: [FontFeature.tabularFigures()],
+                ),
+              ),
             ],
           ),
           if (widget.moreFilters != null) ...[
@@ -300,7 +305,15 @@ class EntityListState<T> extends State<EntityList<T>> {
             _cell(
               c,
               c.cell?.call(context, item) ??
-                  Text(c.value(item), overflow: TextOverflow.ellipsis),
+                  Text(
+                    c.value(item),
+                    overflow: TextOverflow.ellipsis,
+                    style: c.numeric
+                        ? const TextStyle(
+                            fontFeatures: [FontFeature.tabularFigures()],
+                          )
+                        : null,
+                  ),
             ),
         ],
       ),

@@ -69,7 +69,10 @@ class SlaBadge extends StatelessWidget {
           child: Text(
             compact ? slaStateLabel(l, sla.state) : slaSummary(l, sla),
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(color: color),
+            style: TextStyle(
+              color: color,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
           ),
         ),
       ],
@@ -113,7 +116,10 @@ class SlaSection extends StatelessWidget {
               child: Text(
                 text,
                 textAlign: TextAlign.end,
-                style: TextStyle(color: color),
+                style: TextStyle(
+                  color: color,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
               ),
             ),
           ],

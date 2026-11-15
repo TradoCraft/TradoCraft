@@ -745,7 +745,7 @@ class WorkspaceTabStrip extends ConsumerWidget {
     return Material(
       color: scheme.surfaceContainerHighest,
       child: SizedBox(
-        height: 40,
+        height: 48,
         child: ListView(
           scrollDirection: Axis.horizontal,
           children: [
@@ -816,7 +816,7 @@ class _TabChip extends StatelessWidget {
               child: Padding(
                 padding: EdgeInsets.only(
                   left: 12,
-                  right: onClose == null ? 12 : 2,
+                  right: onClose == null ? 12 : 4,
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -858,6 +858,10 @@ class _TabChip extends StatelessWidget {
                       IconButton(
                         tooltip: context.l10n.closeTab,
                         iconSize: 16,
+                        constraints: const BoxConstraints(
+                          minWidth: 56,
+                          minHeight: 56,
+                        ),
                         visualDensity: VisualDensity.compact,
                         icon: const Icon(AppIcons.close),
                         onPressed: onClose,
