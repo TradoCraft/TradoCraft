@@ -151,17 +151,22 @@ async fn main() -> anyhow::Result<()> {
         other => anyhow::bail!("unknown AUTH_MODE {other} (expected oidc or dev)"),
     };
 
-    // Browser origins that may call the API (ADR 0050). Development answers any origin; with
-    // real sign-in only the listed ones are answered. Native clients send no Origin header.
+    // Browser origins that may call the API (ADR 0050). Development answers pages served from this
+    // machine only (a page on the internet must not reach a developer's local API with the
+    // trusted X-Dev-User header); with real sign-in only the listed ones are answered. Native
+    // clients send no Origin header.
     let cors = match env("CORS_ALLOWED_ORIGINS") {
         Some(list) => {
             CorsConfig::parse(&list).map_err(|e| anyhow::anyhow!("CORS_ALLOWED_ORIGINS: {e}"))?
         }
-        None if auth_mode == "dev" => CorsConfig::Any,
+        None if auth_mode == "dev" => CorsConfig::Loopback,
         None => CorsConfig::Origins(Vec::new()),
     };
     match &cors {
         CorsConfig::Any => tracing::warn!("CORS: any browser origin is answered"),
+        CorsConfig::Loopback => tracing::info!(
+            "CORS: browser pages served from this machine are answered; set CORS_ALLOWED_ORIGINS for others"
+        ),
         CorsConfig::Origins(o) if o.is_empty() => tracing::info!(
             "CORS: no browser origin is answered; set CORS_ALLOWED_ORIGINS for the web app"
         ),

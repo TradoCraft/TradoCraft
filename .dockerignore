@@ -2,3 +2,13 @@ target
 app
 .git
 docs
+.env
+.env.*
+.claude
+e2e
+.github
+*.pem
+*.key
+*.jks
+key.properties
+!.env.example

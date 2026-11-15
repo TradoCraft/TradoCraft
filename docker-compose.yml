@@ -1,12 +1,20 @@
 # Local development stack: PostgreSQL + API (development authentication, seed data).
 #   docker compose up --build
 # API: http://localhost:8080  ·  API docs: http://localhost:8080/docs
+#
+# FOR THIS MACHINE ONLY. Every published port is bound to loopback, and the API trusts the
+# X-Dev-User header (AUTH_MODE=dev), so anybody who can reach it can sign in as any user. Do not
+# publish these ports, put a proxy in front, or reuse this file on a server: set AUTH_MODE=oidc
+# (docs/adr/0004-authentication.md), SEED_DEV_DATA=false and a database password of your own.
+# The database password defaults to "tradocraft"; choose another with POSTGRES_PASSWORD in the
+# environment or in a .env file next to this one (it applies the first time the volume is created; use letters and digits, it is part of the
+# database URL).
 services:
   db:
     image: postgres:16
     environment:
       POSTGRES_USER: tradocraft
-      POSTGRES_PASSWORD: tradocraft
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tradocraft}
       POSTGRES_DB: tradocraft
     ports:
       - "127.0.0.1:5433:5432"   # 5433: the host often already runs its own PostgreSQL on 5432
@@ -23,7 +31,7 @@ services:
       db:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://tradocraft:tradocraft@db/tradocraft
+      DATABASE_URL: postgresql://tradocraft:${POSTGRES_PASSWORD:-tradocraft}@db/tradocraft
       AUTH_MODE: dev            # never on a reachable server; use oidc in production
       # Inside the container the API binds 0.0.0.0, which dev auth only accepts when
       # acknowledged. This is safe solely because the port above is published on loopback.
@@ -57,7 +65,7 @@ services:
       - api                     # the API migrates the database; this server never does
     restart: on-failure         # until the API has migrated and seeded an empty database
     environment:
-      DATABASE_URL: postgresql://tradocraft:tradocraft@db/tradocraft
+      DATABASE_URL: postgresql://tradocraft:${POSTGRES_PASSWORD:-tradocraft}@db/tradocraft
       PORTAL_BIND_ADDR: 0.0.0.0:8090
       # Browser origins that are answered. Left out: the companies' portal_url (the demo
       # company's is http://localhost:8081).
@@ -74,7 +82,7 @@ services:
     depends_on:
       - api
     environment:
-      DATABASE_URL: postgresql://tradocraft:tradocraft@db/tradocraft
+      DATABASE_URL: postgresql://tradocraft:${POSTGRES_PASSWORD:-tradocraft}@db/tradocraft
       # Development: outgoing e-mails are written to /app/outbox instead of being sent.
       MAIL_TRANSPORT: files
       MAIL_FILES_DIR: /app/outbox
