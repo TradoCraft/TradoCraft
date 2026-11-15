@@ -1038,18 +1038,10 @@ packages:
     dependency: "direct dev"
     description:
       name: swagger_parser
-      sha256: "9ab3018749081b1fbc6764b2d06787215a048a6d96d23fdc8ee638df22720413"
+      sha256: "80c54a8a002cce03c047f48cbc93668d179dc3d1711b5ecfb406fb65bf1e551f"
       url: "https://pub.dev"
     source: hosted
-    version: "2.1.1"
-  swagger_parser_core:
-    dependency: transitive
-    description:
-      name: swagger_parser_core
-      sha256: "92bdd3bbb7d737dcc86cff48d620259e0e44bad20bb1ff17672117558e4b6f04"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.0.2"
+    version: "1.46.0"
   term_glyph:
     dependency: transitive
     description:
