@@ -745,7 +745,7 @@ class WorkspaceTabStrip extends ConsumerWidget {
     return Material(
       color: scheme.surfaceContainerHighest,
       child: SizedBox(
-        height: 40,
+        height: 48,
         child: ListView(
           scrollDirection: Axis.horizontal,
           children: [
