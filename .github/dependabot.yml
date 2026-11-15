@@ -24,6 +24,11 @@ updates:
     groups:
       pub-minor-and-patch:
         update-types: [minor, patch]
+    ignore:
+      # 2.x needs a new generator config, unique operation ids in the OpenAPI document and changes
+      # the generated enums ($unknown); migrate by hand (scripts/generate-api-client.sh), not by bump.
+      - dependency-name: "swagger_parser"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: npm
     directory: /e2e
