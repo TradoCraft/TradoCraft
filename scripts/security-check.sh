@@ -92,20 +92,19 @@ EOF
     return 2
   fi
   cargo-deny check licenses bans sources
-  case $? in
-    0)
-      echo "licenses: licences and sources are within deny.toml"
-      return 0
-      ;;
-    1)
-      echo "licenses: a dependency breaks the policy in deny.toml, see above. Replace it, or review the licence and allow it there with a reason." >&2
-      return 1
-      ;;
-    *)
-      echo "licenses: cargo-deny could not finish, so the licence check did not run." >&2
-      return 2
-      ;;
-  esac
+  # Unlike the other tools, cargo-deny exits 1 when it could not run (no Cargo.toml, no network)
+  # and with other non-zero codes (2 in v0.20.2; a bit set of the failed checks in the docs) when a
+  # check failed, a broken deny.toml included. Death by a signal (128 and up) is not a finding.
+  local r=$?
+  if [ "$r" -eq 0 ]; then
+    echo "licenses: licences and sources are within deny.toml"
+    return 0
+  elif [ "$r" -eq 1 ] || [ "$r" -ge 128 ]; then
+    echo "licenses: cargo-deny could not finish, so the licence check did not run." >&2
+    return 2
+  fi
+  echo "licenses: a dependency breaks the policy in deny.toml, see above. Replace it, or review the licence and allow it there with a reason." >&2
+  return 1
 }
 
 rc=0
