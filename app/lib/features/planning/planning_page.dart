@@ -288,37 +288,47 @@ class _PlanningPageState extends ConsumerState<PlanningPage> {
   /// The conflicts of the placement under the pointer while dragging.
   Widget _banner(BuildContext context, Board b) {
     final c = _previewConflicts;
-    if (_preview == null) return const SizedBox.shrink();
-    final l = context.l10n;
-    final names = {for (final t in b.technicians) t.userId: t.displayName};
-    final skills = {for (final s in b.skills) s.id: s.name};
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      key: const ValueKey('planning-conflict-banner'),
-      width: double.infinity,
-      margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: c == null
-            ? scheme.surfaceContainerHighest
-            : hasErrors(c)
-            ? scheme.errorContainer
+    final Widget content;
+    if (_preview == null) {
+      content = const SizedBox.shrink();
+    } else {
+      final l = context.l10n;
+      final names = {for (final t in b.technicians) t.userId: t.displayName};
+      final skills = {for (final s in b.skills) s.id: s.name};
+      final scheme = Theme.of(context).colorScheme;
+      content = Container(
+        key: const ValueKey('planning-conflict-banner'),
+        width: double.infinity,
+        margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: c == null
+              ? scheme.surfaceContainerHighest
+              : hasErrors(c)
+              ? scheme.errorContainer
+              : c.isEmpty
+              ? Colors.green.withValues(alpha: 0.15)
+              : Colors.orange.withValues(alpha: 0.2),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: c == null
+            ? Text(l.planningChecking)
             : c.isEmpty
-            ? Colors.green.withValues(alpha: 0.15)
-            : Colors.orange.withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: c == null
-          ? Text(l.planningChecking)
-          : c.isEmpty
-          ? Text(l.planningNoConflicts)
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                for (final x in c)
-                  Text('• ${conflictText(l, x, names, skills)}'),
-              ],
-            ),
+            ? Text(l.planningNoConflicts)
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (final x in c)
+                    Text('• ${conflictText(l, x, names, skills)}'),
+                ],
+              ),
+      );
+    }
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOutCubic,
+      alignment: Alignment.topCenter,
+      child: content,
     );
   }
 

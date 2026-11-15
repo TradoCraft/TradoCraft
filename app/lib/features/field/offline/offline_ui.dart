@@ -71,64 +71,74 @@ class PendingSyncBanner extends ConsumerWidget {
       listenable: queue,
       builder: (context, _) {
         final ops = jobId == null ? queue.ops : queue.forJob(jobId!);
-        if (ops.isEmpty) return const SizedBox.shrink();
-        final l = context.l10n;
-        final scheme = Theme.of(context).colorScheme;
-        final failed = ops.where((o) => o.failed).length;
-        final color = failed > 0
-            ? scheme.errorContainer
-            : scheme.tertiaryContainer;
-        final onColor = failed > 0
-            ? scheme.onErrorContainer
-            : scheme.onTertiaryContainer;
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: Material(
-            key: const ValueKey('pending-sync-banner'),
-            color: color,
-            borderRadius: BorderRadius.circular(8),
-            child: InkWell(
+        final Widget content;
+        if (ops.isEmpty) {
+          content = const SizedBox.shrink();
+        } else {
+          final l = context.l10n;
+          final scheme = Theme.of(context).colorScheme;
+          final failed = ops.where((o) => o.failed).length;
+          final color = failed > 0
+              ? scheme.errorContainer
+              : scheme.tertiaryContainer;
+          final onColor = failed > 0
+              ? scheme.onErrorContainer
+              : scheme.onTertiaryContainer;
+          content = Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Material(
+              key: const ValueKey('pending-sync-banner'),
+              color: color,
               borderRadius: BorderRadius.circular(8),
-              onTap: () => showSyncQueue(context, jobId: jobId),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 10,
-                ),
-                child: Row(
-                  children: [
-                    queue.running
-                        ? SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: () => showSyncQueue(context, jobId: jobId),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
+                  child: Row(
+                    children: [
+                      queue.running
+                          ? SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: onColor,
+                              ),
+                            )
+                          : Icon(
+                              failed > 0
+                                  ? AppIcons.syncProblem
+                                  : AppIcons.cloudUpload,
+                              size: 20,
                               color: onColor,
                             ),
-                          )
-                        : Icon(
-                            failed > 0
-                                ? AppIcons.syncProblem
-                                : AppIcons.cloudUpload,
-                            size: 20,
-                            color: onColor,
-                          ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        [
-                          l.offlineWaiting(ops.length),
-                          if (failed > 0) l.offlineFailedCount(failed),
-                        ].join(' · '),
-                        style: TextStyle(color: onColor),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          [
+                            l.offlineWaiting(ops.length),
+                            if (failed > 0) l.offlineFailedCount(failed),
+                          ].join(' · '),
+                          style: TextStyle(color: onColor),
+                        ),
                       ),
-                    ),
-                    Icon(AppIcons.chevronRight, color: onColor),
-                  ],
+                      Icon(AppIcons.chevronRight, color: onColor),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
+          );
+        }
+        return AnimatedSize(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+          alignment: Alignment.topCenter,
+          child: content,
         );
       },
     );

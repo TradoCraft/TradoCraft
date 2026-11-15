@@ -548,31 +548,49 @@ class PresenceBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (others.isEmpty) return const SizedBox.shrink();
-    final l = context.l10n;
-    final theme = Theme.of(context);
-    final replying = others.where((o) => o.mode == 'replying').toList();
-    final shown = replying.isNotEmpty ? replying : others;
-    final names = shown.map((o) => o.userName).join(', ');
-    final text = replying.isNotEmpty
-        ? l.collabReplying(replying.length, names)
-        : l.collabViewing(shown.length, names);
-    return Container(
-      key: const ValueKey('presence-banner'),
-      color: replying.isNotEmpty
+    final Widget content;
+    if (others.isEmpty) {
+      content = const SizedBox.shrink();
+    } else {
+      final l = context.l10n;
+      final theme = Theme.of(context);
+      final dark = theme.brightness == Brightness.dark;
+      final replying = others.where((o) => o.mode == 'replying').toList();
+      final shown = replying.isNotEmpty ? replying : others;
+      final names = shown.map((o) => o.userName).join(', ');
+      final text = replying.isNotEmpty
+          ? l.collabReplying(replying.length, names)
+          : l.collabViewing(shown.length, names);
+      final bg = replying.isNotEmpty
+          ? (dark ? const Color(0xFF3E2F14) : Colors.amber.shade100)
+          : theme.colorScheme.surfaceContainerLow;
+      final fg = replying.isNotEmpty && dark
           ? Colors.amber.shade100
-          : theme.colorScheme.surfaceContainerLow,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        children: [
-          Icon(
-            replying.isNotEmpty ? AppIcons.editNote : AppIcons.visibility,
-            size: 18,
-          ),
-          const SizedBox(width: 8),
-          Expanded(child: Text(text)),
-        ],
-      ),
+          : theme.colorScheme.onSurface;
+      content = Container(
+        key: const ValueKey('presence-banner'),
+        color: bg,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Row(
+          children: [
+            Icon(
+              replying.isNotEmpty ? AppIcons.editNote : AppIcons.visibility,
+              size: 18,
+              color: fg,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(text, style: TextStyle(color: fg)),
+            ),
+          ],
+        ),
+      );
+    }
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOutCubic,
+      alignment: Alignment.topCenter,
+      child: content,
     );
   }
 }

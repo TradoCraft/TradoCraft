@@ -784,7 +784,9 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
               decoration: InputDecoration(
                 labelText: _reply ? l.message : l.internalNote,
                 filled: !_reply,
-                fillColor: Colors.amber.shade50,
+                fillColor: theme.brightness == Brightness.dark
+                    ? Colors.amber.withValues(alpha: 0.14)
+                    : Colors.amber.shade50,
               ),
             ),
             const SizedBox(height: 8),
@@ -1320,7 +1322,9 @@ class _ArticleCard extends StatelessWidget {
         Alignment.centerLeft,
       ),
       _ => (
-        Colors.amber.shade100,
+        theme.brightness == Brightness.dark
+            ? const Color(0xFF3E2F14)
+            : Colors.amber.shade100,
         AppIcons.lock,
         '${l.internalNote} · ${a.authorName ?? ''}',
         Alignment.center,

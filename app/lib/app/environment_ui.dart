@@ -67,12 +67,17 @@ class EnvironmentBanner extends ConsumerWidget {
             color: colors.background,
             child: InkWell(
               onTap: () => showEnvironmentSwitcher(context),
-              child: SizedBox(
-                width: double.infinity,
-                height: 26,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  minWidth: double.infinity,
+                  minHeight: 36,
+                ),
                 child: Center(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     child: Text(
                       '${kind.toUpperCase()} · ${env.name}',
                       maxLines: 1,

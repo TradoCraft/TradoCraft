@@ -183,7 +183,13 @@ class BarList extends StatelessWidget {
                 ),
                 SizedBox(
                   width: 40,
-                  child: Text('${r.count}', textAlign: TextAlign.end),
+                  child: Text(
+                    '${r.count}',
+                    textAlign: TextAlign.end,
+                    style: const TextStyle(
+                      fontFeatures: [FontFeature.tabularFigures()],
+                    ),
+                  ),
                 ),
               ],
             ),

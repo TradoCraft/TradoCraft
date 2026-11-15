@@ -816,7 +816,7 @@ class _TabChip extends StatelessWidget {
               child: Padding(
                 padding: EdgeInsets.only(
                   left: 12,
-                  right: onClose == null ? 12 : 2,
+                  right: onClose == null ? 12 : 4,
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -858,6 +858,10 @@ class _TabChip extends StatelessWidget {
                       IconButton(
                         tooltip: context.l10n.closeTab,
                         iconSize: 16,
+                        constraints: const BoxConstraints(
+                          minWidth: 36,
+                          minHeight: 36,
+                        ),
                         visualDensity: VisualDensity.compact,
                         icon: const Icon(AppIcons.close),
                         onPressed: onClose,

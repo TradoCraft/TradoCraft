@@ -1537,6 +1537,7 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
       child: TextField(
         controller: c,
         textAlign: TextAlign.right,
+        style: const TextStyle(fontFeatures: [FontFeature.tabularFigures()]),
         keyboardType: TextInputType.numberWithOptions(
           decimal: true,
           signed: signed,
@@ -1788,7 +1789,14 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
       width: widths[i],
       child: Align(
         alignment: right ? Alignment.centerRight : Alignment.centerLeft,
-        child: child,
+        child: right
+            ? DefaultTextStyle.merge(
+                style: const TextStyle(
+                  fontFeatures: [FontFeature.tabularFigures()],
+                ),
+                child: child,
+              )
+            : child,
       ),
     );
     Text h(String s) => Text(s, style: theme.textTheme.labelLarge);
@@ -1984,15 +1992,20 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
     ),
   );
 
-  Widget _totalRow(String label, String value, {TextStyle? style}) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 2),
-    child: Row(
-      children: [
-        Expanded(child: Text(label, style: style)),
-        Text(value, style: style),
-      ],
-    ),
-  );
+  Widget _totalRow(String label, String value, {TextStyle? style}) {
+    final tabular = (style ?? const TextStyle()).copyWith(
+      fontFeatures: const [FontFeature.tabularFigures()],
+    );
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          Expanded(child: Text(label, style: tabular)),
+          Text(value, style: tabular),
+        ],
+      ),
+    );
+  }
 }
 
 class _TableRow {
@@ -2146,6 +2159,9 @@ class RevisionDialog extends ConsumerWidget {
                               child: Text(
                                 money(l.oldLineTotal),
                                 textAlign: TextAlign.right,
+                                style: const TextStyle(
+                                  fontFeatures: [FontFeature.tabularFigures()],
+                                ),
                               ),
                             ),
                             Padding(
@@ -2153,6 +2169,9 @@ class RevisionDialog extends ConsumerWidget {
                               child: Text(
                                 money(l.newLineTotal),
                                 textAlign: TextAlign.right,
+                                style: const TextStyle(
+                                  fontFeatures: [FontFeature.tabularFigures()],
+                                ),
                               ),
                             ),
                             Padding(
@@ -2277,11 +2296,15 @@ class RevisionDialog extends ConsumerWidget {
     ];
   }
 
-  static TextStyle? _diffStyle(ThemeData theme, String value) {
+  static TextStyle _diffStyle(ThemeData theme, String value) {
     final v = double.tryParse(value) ?? 0;
-    if (v == 0) return null;
     return TextStyle(
-      color: v > 0 ? theme.colorScheme.error : Colors.green.shade700,
+      color: v == 0
+          ? null
+          : v > 0
+          ? theme.colorScheme.error
+          : Colors.green.shade700,
+      fontFeatures: const [FontFeature.tabularFigures()],
     );
   }
 }
