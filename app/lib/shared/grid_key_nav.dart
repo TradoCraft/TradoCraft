@@ -66,6 +66,9 @@ class _GridKeyNavState extends State<GridKeyNav> {
     if (!n.canRequestFocus || n.skipTraversal || n.context == null) {
       return false;
     }
+    // A focused row that scrolled out is kept alive by the list but not laid out: its position is
+    // not a number. It is not a cell on the screen, so it must not take part in the ordering.
+    if (!n.rect.isFinite) return false;
     final include = widget.include;
     if (include != null) return include(n);
     final es = n.context!.findAncestorStateOfType<EditableTextState>();
@@ -112,9 +115,9 @@ class _GridKeyNavState extends State<GridKeyNav> {
   }
 
   KeyEventResult _onKey(FocusNode _, KeyEvent e) =>
-      _handle(e, retry: true) ? KeyEventResult.handled : KeyEventResult.ignored;
+      _handle(e) ? KeyEventResult.handled : KeyEventResult.ignored;
 
-  bool _handle(KeyEvent e, {required bool retry}) {
+  bool _handle(KeyEvent e) {
     if (e is KeyUpEvent) return false;
     final kb = HardwareKeyboard.instance;
     if (kb.isAltPressed || kb.isMetaPressed || kb.isShiftPressed) return false;
@@ -123,12 +126,13 @@ class _GridKeyNavState extends State<GridKeyNav> {
     final current = FocusManager.instance.primaryFocus;
     if (current == null) return false;
     final editing = _isField(current);
-    final multiline =
-        current.context
-            ?.findAncestorStateOfType<EditableTextState>()
-            ?.widget
-            .maxLines !=
-        1;
+    final field = current.context?.findAncestorStateOfType<EditableTextState>();
+    final multiline = field?.widget.maxLines != 1;
+    // An accent or a CJK character is being composed: the arrows belong to the input method.
+    final composing = field?.textEditingValue.composing;
+    if (composing != null && composing.isValid && !composing.isCollapsed) {
+      return false;
+    }
 
     final vertical = key == LogicalKeyboardKey.arrowDown ||
         key == LogicalKeyboardKey.arrowUp;
@@ -170,7 +174,7 @@ class _GridKeyNavState extends State<GridKeyNav> {
 
     final controller = widget.scrollController;
     final atEdge = down ? r == rows.length - 1 : r == 0;
-    if (controller != null && controller.hasClients && retry) {
+    if (controller != null && controller.hasClients) {
       // The row wanted may not be built yet: scroll toward it and look again.
       if (wantEdge || (target == null && atEdge)) {
         final p = controller.position;
@@ -180,9 +184,16 @@ class _GridKeyNavState extends State<GridKeyNav> {
                   ? math.min(p.maxScrollExtent, p.pixels + p.viewportDimension / 2)
                   : math.max(p.minScrollExtent, p.pixels - p.viewportDimension / 2));
         if (to != p.pixels) {
+          // The focused row may scroll out and be disposed, so remember where it was: the column,
+          // and the line it sat on once the content has moved by the scroll.
+          final x = current.rect.center.dx, y = current.rect.center.dy;
+          final before = p.pixels;
           controller.jumpTo(to);
+          final moved = controller.position.pixels - before;
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) _handle(e, retry: false);
+            if (mounted) {
+              _afterScroll(down: down, edge: wantEdge, x: x, y: y - moved);
+            }
           });
           WidgetsBinding.instance.ensureVisualUpdate();
           return true;
@@ -192,6 +203,33 @@ class _GridKeyNavState extends State<GridKeyNav> {
     if (target == null || identical(target, current)) return target != null;
     _go(target);
     return true;
+  }
+
+  /// Focuses the wanted cell once the list has scrolled and built its new rows: the last or first
+  /// row for an edge key, else the first row below (above) the line where the focused row was.
+  void _afterScroll({
+    required bool down,
+    required bool edge,
+    required double x,
+    required double y,
+  }) {
+    final rows = _rows();
+    if (rows.isEmpty) return;
+    List<FocusNode>? row;
+    if (edge) {
+      row = down ? rows.last : rows.first;
+    } else {
+      double dy(List<FocusNode> r) => r.first.rect.center.dy;
+      final beyond = rows.where((r) => down ? dy(r) > y + 1 : dy(r) < y - 1);
+      row = beyond.isEmpty ? null : (down ? beyond.first : beyond.last);
+    }
+    if (row == null) return;
+    _go(
+      row.reduce(
+        (a, b) =>
+            (a.rect.center.dx - x).abs() <= (b.rect.center.dx - x).abs() ? a : b,
+      ),
+    );
   }
 
   @override

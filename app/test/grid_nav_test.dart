@@ -102,6 +102,54 @@ void main() {
     });
   });
 
+  group('GridKeyNav and an input method', () {
+    testWidgets('arrow keys stay with the input method while text is composed', (
+      t,
+    ) async {
+      final ctrls = List.generate(3, (_) => TextEditingController());
+      final nodes = List.generate(3, (_) => FocusNode());
+      addTearDown(() {
+        for (final c in ctrls) {
+          c.dispose();
+        }
+        for (final n in nodes) {
+          n.dispose();
+        }
+      });
+      await t.pumpWidget(
+        _app(
+          GridKeyNav(
+            child: Column(
+              children: [
+                for (var i = 0; i < 3; i++)
+                  TextField(controller: ctrls[i], focusNode: nodes[i]),
+              ],
+            ),
+          ),
+        ),
+      );
+      nodes[0].requestFocus();
+      await t.pump();
+      // An accent or a CJK character is being composed: Down belongs to the input method.
+      ctrls[0].value = const TextEditingValue(
+        text: 'ab',
+        selection: TextSelection.collapsed(offset: 2),
+        composing: TextRange(start: 0, end: 2),
+      );
+      await t.pump();
+      await _key(t, LogicalKeyboardKey.arrowDown);
+      expect(nodes[0].hasFocus, isTrue, reason: 'composing: the key is not ours');
+      // The composition is done: Down moves on as usual.
+      ctrls[0].value = const TextEditingValue(
+        text: 'ab',
+        selection: TextSelection.collapsed(offset: 2),
+      );
+      await t.pump();
+      await _key(t, LogicalKeyboardKey.arrowDown);
+      expect(nodes[1].hasFocus, isTrue);
+    });
+  });
+
   group('EntityList keyboard', () {
     Future<List<String>> pumpList(WidgetTester t, {int count = 60}) async {
       t.view.physicalSize = const Size(1200, 800);
@@ -130,12 +178,16 @@ void main() {
       return opened;
     }
 
+    /// Whether the focus node handed to this row's `InkWell` has the focus. (`Focus.of` finds an
+    /// enclosing node, which has the focus whenever any row does, so it cannot tell rows apart.)
     bool rowFocused(WidgetTester t, String text) {
       final row = find.ancestor(
         of: find.text(text),
         matching: find.byType(InkWell),
       );
-      return Focus.of(t.element(row.first)).hasFocus;
+      // A row that is not built (scrolled away) certainly does not have the focus.
+      if (row.evaluate().isEmpty) return false;
+      return t.widget<InkWell>(row.first).focusNode!.hasFocus;
     }
 
     testWidgets('Down from the search field enters the rows, arrows move', (
@@ -146,8 +198,10 @@ void main() {
       await t.pump();
       await _key(t, LogicalKeyboardKey.arrowDown);
       expect(rowFocused(t, 'Item 00'), isTrue);
+      expect(rowFocused(t, 'Item 01'), isFalse);
       await _key(t, LogicalKeyboardKey.arrowDown);
       expect(rowFocused(t, 'Item 01'), isTrue);
+      expect(rowFocused(t, 'Item 00'), isFalse);
       await _key(t, LogicalKeyboardKey.arrowUp);
       expect(rowFocused(t, 'Item 00'), isTrue);
     });
