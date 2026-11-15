@@ -9,7 +9,10 @@ import 'package:go_router/go_router.dart';
 import 'package:printing/printing.dart';
 
 import '../../app/api.dart';
+import '../../app/shortcuts/actions.dart';
+import '../../app/shortcuts/registry.dart';
 import '../../app/workspace.dart' show TabScope;
+import '../../shared/grid_key_nav.dart';
 import '../../shared/actions.dart';
 import '../../shared/format.dart';
 import '../../shared/sales_hints.dart';
@@ -344,6 +347,7 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
   @override
   void dispose() {
     _debounce?.cancel();
+    _scroll.dispose();
     _notes.dispose();
     _country.dispose();
     for (final l in _lines) {
@@ -700,10 +704,11 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
         ),
       );
     }
-    return Scaffold(
+    final page = Scaffold(
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : ListView(
+              controller: _scroll,
               padding: const EdgeInsets.all(16),
               children: [
                 Wrap(
@@ -761,6 +766,50 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
               ],
             ),
     );
+    // Alt+L adds a line without the mouse: the cursor goes to the add-product picker.
+    return ShortcutScope(
+      actions: {
+        ShortcutAction.addLine: _editable && canWrite && !_loading
+            ? _focusAddProduct
+            : null,
+      },
+      child: page,
+    );
+  }
+
+  /// The picker under the lines table (a type-ahead field), so a line is added from the keyboard.
+  final _addProductKey = GlobalKey();
+
+  /// The scroll position of the page, to bring a picker that is not built yet into the list.
+  final _scroll = ScrollController();
+
+  /// The page is a lazy list: a picker far below the visible part is not built, so it has no
+  /// context. Scroll toward the end until it is, then focus it.
+  void _focusAddProduct({int attempts = 0}) {
+    if (!mounted) return;
+    final ctx = _addProductKey.currentContext;
+    if (ctx == null) {
+      if (attempts >= 8 || !_scroll.hasClients) return;
+      _scroll.jumpTo(_scroll.position.maxScrollExtent);
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _focusAddProduct(attempts: attempts + 1),
+      );
+      WidgetsBinding.instance.ensureVisualUpdate();
+      return;
+    }
+    EditableTextState? field;
+    void visit(Element e) {
+      if (field != null) return;
+      if (e is StatefulElement && e.state is EditableTextState) {
+        field = e.state as EditableTextState;
+        return;
+      }
+      e.visitChildren(visit);
+    }
+
+    (ctx as Element).visitChildren(visit);
+    field?.widget.focusNode.requestFocus();
+    Scrollable.ensureVisible(ctx, duration: Duration.zero);
   }
 
   List<Widget> _actions(bool canWrite) {
@@ -1067,6 +1116,7 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
       Align(
         alignment: Alignment.centerLeft,
         child: SizedBox(
+          key: _addProductKey,
           width: 420,
           child: SearchPicker<Product>(
             label: context.l10n.addProduct,
@@ -1742,7 +1792,7 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
       ),
     );
     Text h(String s) => Text(s, style: theme.textTheme.labelLarge);
-    return SingleChildScrollView(
+    final table = SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1859,6 +1909,8 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
         ],
       ),
     );
+    // Spreadsheet keys inside the lines: arrows between lines, Ctrl+arrows to the ends.
+    return GridKeyNav(child: table);
   }
 
   /// The mark of an option that its main product does not offer: gentle, theme-based colours

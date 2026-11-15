@@ -635,6 +635,19 @@ class _TabHostState extends ConsumerState<_TabHost> {
     root.go(location);
   }
 
+  /// Esc: leaves the form. Unsaved edits are asked about first (the prompt of the close button);
+  /// otherwise one screen back, and at the tab's first screen the tab closes.
+  void _escape() {
+    final n = ref.read(workspaceProvider.notifier);
+    if (n.isDirty(_id)) {
+      requestCloseTab(context, ref, _id);
+    } else if (_canPop) {
+      _navigator.currentState?.maybePop();
+    } else {
+      n.close(_id);
+    }
+  }
+
   @override
   void didUpdateWidget(_TabHost old) {
     super.didUpdateWidget(old);
@@ -656,6 +669,7 @@ class _TabHostState extends ConsumerState<_TabHost> {
           ShortcutAction.back: _canPop
               ? () => _navigator.currentState?.maybePop()
               : null,
+          ShortcutAction.cancel: _escape,
         },
         child: InheritedGoRouter(
           goRouter: _router,

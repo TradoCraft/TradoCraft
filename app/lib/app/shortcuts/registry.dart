@@ -25,6 +25,10 @@ class ShortcutStack extends ChangeNotifier {
   /// True while the primary modifier is held; badges ([KeyHint]) show only then.
   final modifierHeld = ValueNotifier<bool>(false);
 
+  /// True while the standard modifier (Ctrl, Cmd on macOS) is held alone; the standard-chord
+  /// badges show only then.
+  final standardHeld = ValueNotifier<bool>(false);
+
   final _entries = <Object, _Entry>{};
   int _seq = 0;
   bool _notifyQueued = false;
@@ -71,6 +75,9 @@ class ShortcutStack extends ChangeNotifier {
     return null;
   }
 
+  /// Whether a dialog, sheet or menu is open (an entry of the dialog layer exists).
+  bool get hasDialog => _entries.values.any((e) => e.layer == ShortcutLayer.dialog);
+
   /// Whether [action] would do something now.
   bool isEnabled(ShortcutAction action) => resolve(action) != null;
 
@@ -88,6 +95,7 @@ class ShortcutStack extends ChangeNotifier {
   void dispose() {
     _disposed = true;
     modifierHeld.dispose();
+    standardHeld.dispose();
     super.dispose();
   }
 }

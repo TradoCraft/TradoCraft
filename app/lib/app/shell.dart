@@ -11,6 +11,7 @@ import 'profile.dart';
 import 'profile_badge.dart';
 import 'session.dart';
 import 'shortcuts/actions.dart';
+import 'shortcuts/help_dialog.dart';
 import 'shortcuts/key_hint.dart';
 import 'shortcuts/registry.dart';
 import 'worker_ui.dart';
@@ -244,6 +245,7 @@ class AppShell extends ConsumerWidget {
     final canTodo = perms?.contains('todo.use') ?? false;
     final shellActions = <ShortcutAction, VoidCallback?>{
       ShortcutAction.home: () => go(0),
+      ShortcutAction.help: () => showShortcutHelp(context),
       if (canTodo) ShortcutAction.newTodo: () => showTodoQuickAdd(context, ref),
       for (
         var i = 0;

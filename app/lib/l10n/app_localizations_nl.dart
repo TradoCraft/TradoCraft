@@ -8773,6 +8773,33 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get shortcutConfirm => 'Bevestigen';
+
+  @override
+  String get shortcutCancel => 'Annuleren of verlaten';
+
+  @override
+  String get shortcutFind => 'Zoeken';
+
+  @override
+  String get shortcutAddLine => 'Regel toevoegen';
+
+  @override
+  String get shortcutHelpStandard => 'Standaardtoetsen';
+
+  @override
+  String get shortcutHelpNavigation => 'Navigatie';
+
+  @override
+  String shortcutHelpAltKeys(String modifier) {
+    return 'Houd $modifier ingedrukt om bij elke knop een toets te zien; druk erop om de knop te gebruiken.';
+  }
+
+  @override
+  String get shortcutHelpEnter =>
+      'Enter gaat naar het volgende veld. Omhoog en omlaag wisselen van rij, Ctrl met een pijl springt naar het uiteinde.';
+
+  @override
   String get moduleTodo => 'Taken';
 
   @override

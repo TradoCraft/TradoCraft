@@ -8739,6 +8739,33 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get shortcutConfirm => 'Confirm';
+
+  @override
+  String get shortcutCancel => 'Cancel or leave';
+
+  @override
+  String get shortcutFind => 'Find';
+
+  @override
+  String get shortcutAddLine => 'Add line';
+
+  @override
+  String get shortcutHelpStandard => 'Standard keys';
+
+  @override
+  String get shortcutHelpNavigation => 'Navigation';
+
+  @override
+  String shortcutHelpAltKeys(String modifier) {
+    return 'Hold $modifier to see a key on every button; press it to use the button.';
+  }
+
+  @override
+  String get shortcutHelpEnter =>
+      'Enter moves to the next field. Up and Down move between rows, Ctrl with an arrow jumps to the far end.';
+
+  @override
   String get moduleTodo => 'To-do';
 
   @override

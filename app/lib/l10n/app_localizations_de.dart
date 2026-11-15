@@ -8794,6 +8794,33 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get shortcutConfirm => 'Bestätigen';
+
+  @override
+  String get shortcutCancel => 'Abbrechen oder verlassen';
+
+  @override
+  String get shortcutFind => 'Suchen';
+
+  @override
+  String get shortcutAddLine => 'Zeile hinzufügen';
+
+  @override
+  String get shortcutHelpStandard => 'Standardtasten';
+
+  @override
+  String get shortcutHelpNavigation => 'Navigation';
+
+  @override
+  String shortcutHelpAltKeys(String modifier) {
+    return '$modifier gedrückt halten, um an jeder Schaltfläche eine Taste zu sehen; Taste drücken, um die Schaltfläche auszulösen.';
+  }
+
+  @override
+  String get shortcutHelpEnter =>
+      'Enter springt zum nächsten Feld. Hoch und Runter wechseln die Zeile, Strg mit Pfeil springt ans Ende.';
+
+  @override
   String get moduleTodo => 'Aufgaben';
 
   @override

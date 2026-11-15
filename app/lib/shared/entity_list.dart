@@ -7,6 +7,7 @@ import '../app/workspace.dart' show OpenInTab;
 import '../l10n/l10n.dart';
 import '../features/tutorial/targets.dart';
 import 'app_icons.dart';
+import 'grid_key_nav.dart';
 
 /// Column of a generic entity list.
 class EntityColumn<T> {
@@ -88,6 +89,10 @@ class EntityList<T> extends StatefulWidget {
 class EntityListState<T> extends State<EntityList<T>> {
   static const _pageSize = 50;
   final _search = TextEditingController();
+  final _scroll = ScrollController();
+
+  /// One focus node per row index, so the arrow keys can move between rows ([GridKeyNav]).
+  final _rowNodes = <int, FocusNode>{};
   Timer? _debounce;
   List<T> _items = [];
   int _total = 0;
@@ -104,6 +109,10 @@ class EntityListState<T> extends State<EntityList<T>> {
   void dispose() {
     _debounce?.cancel();
     _search.dispose();
+    _scroll.dispose();
+    for (final n in _rowNodes.values) {
+      n.dispose();
+    }
     super.dispose();
   }
 
@@ -160,7 +169,14 @@ class EntityListState<T> extends State<EntityList<T>> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => GridKeyNav(
+    include: _rowNodes.containsValue,
+    scrollController: _scroll,
+    enterFromOutside: true,
+    child: _body(context),
+  );
+
+  Widget _body(BuildContext context) {
     final theme = Theme.of(context);
     final wide = MediaQuery.sizeOf(context).width >= 700;
     return Padding(
@@ -230,6 +246,7 @@ class EntityListState<T> extends State<EntityList<T>> {
             ),
           Expanded(
             child: ListView.separated(
+              controller: _scroll,
               itemCount: _items.length + 1,
               separatorBuilder: (_, _) => const Divider(height: 1),
               itemBuilder: (context, i) {
@@ -238,7 +255,10 @@ class EntityListState<T> extends State<EntityList<T>> {
                 final onTap = widget.onOpen == null
                     ? null
                     : () => _after(widget.onOpen!(item));
-                final row = wide ? _row(item, onTap) : _tile(item, onTap);
+                final node = _rowNodes.putIfAbsent(i, FocusNode.new);
+                final row = wide
+                    ? _row(item, onTap, node)
+                    : _tile(item, onTap, node);
                 return OpenInTab(
                   location: widget.locationOf?.call(item),
                   child: row,
@@ -269,7 +289,8 @@ class EntityListState<T> extends State<EntityList<T>> {
     ),
   );
 
-  Widget _row(T item, VoidCallback? onTap) => InkWell(
+  Widget _row(T item, VoidCallback? onTap, FocusNode node) => InkWell(
+    focusNode: node,
     onTap: onTap,
     child: Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -286,9 +307,10 @@ class EntityListState<T> extends State<EntityList<T>> {
     ),
   );
 
-  Widget _tile(T item, VoidCallback? onTap) {
+  Widget _tile(T item, VoidCallback? onTap, FocusNode node) {
     final cols = widget.columns;
     return ListTile(
+      focusNode: node,
       onTap: onTap,
       title: Text(cols.length > 1 ? cols[1].value(item) : cols[0].value(item)),
       subtitle: Text(
