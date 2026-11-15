@@ -386,8 +386,9 @@ Future<FakeApi> _pump(
   String status, {
   bool configured = false,
   bool keys = false,
+  Size size = const Size(1400, 1000),
 }) async {
-  tester.view.physicalSize = const Size(1400, 1000);
+  tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   final fake = FakeApi(status, configured: configured);
@@ -902,6 +903,25 @@ void main() {
         tester.widget<EditableText>(picker).focusNode.hasFocus,
         isTrue,
       );
+    });
+
+    testWidgets('Alt+L scrolls to the add-product picker when it is not built yet', (
+      tester,
+    ) async {
+      // A short window: the page is a lazy list, the picker is far below what is built.
+      await _pump(tester, 'draft', keys: true, size: const Size(1400, 240));
+      expect(find.byType(SearchPicker<Product>), findsNothing);
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.altLeft);
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.keyL);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.keyL);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.altLeft);
+      await tester.pumpAndSettle();
+      final picker = find.descendant(
+        of: find.byType(SearchPicker<Product>),
+        matching: find.byType(EditableText),
+      );
+      expect(picker, findsOneWidget);
+      expect(tester.widget<EditableText>(picker).focusNode.hasFocus, isTrue);
     });
 
     testWidgets('a sent quotation has no add-line shortcut', (tester) async {

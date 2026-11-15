@@ -347,6 +347,7 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
   @override
   void dispose() {
     _debounce?.cancel();
+    _scroll.dispose();
     _notes.dispose();
     _country.dispose();
     for (final l in _lines) {
@@ -707,6 +708,7 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : ListView(
+              controller: _scroll,
               padding: const EdgeInsets.all(16),
               children: [
                 Wrap(
@@ -778,9 +780,23 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
   /// The picker under the lines table (a type-ahead field), so a line is added from the keyboard.
   final _addProductKey = GlobalKey();
 
-  void _focusAddProduct() {
+  /// The scroll position of the page, to bring a picker that is not built yet into the list.
+  final _scroll = ScrollController();
+
+  /// The page is a lazy list: a picker far below the visible part is not built, so it has no
+  /// context. Scroll toward the end until it is, then focus it.
+  void _focusAddProduct({int attempts = 0}) {
+    if (!mounted) return;
     final ctx = _addProductKey.currentContext;
-    if (ctx == null) return;
+    if (ctx == null) {
+      if (attempts >= 8 || !_scroll.hasClients) return;
+      _scroll.jumpTo(_scroll.position.maxScrollExtent);
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _focusAddProduct(attempts: attempts + 1),
+      );
+      WidgetsBinding.instance.ensureVisualUpdate();
+      return;
+    }
     EditableTextState? field;
     void visit(Element e) {
       if (field != null) return;
