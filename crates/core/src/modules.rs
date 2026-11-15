@@ -97,7 +97,14 @@ impl Module {
                 RebatesWrite,
                 ClosuresWrite,
             ],
-            Module::Products => &[ProductsRead, ProductsWrite, PricesWrite, InventoryCost],
+            Module::Products => &[
+                ProductsRead,
+                ProductsWrite,
+                PricesWrite,
+                PriceListsRead,
+                PriceListsWrite,
+                InventoryCost,
+            ],
             Module::Sales => &[
                 QuotationsRead,
                 QuotationsWrite,

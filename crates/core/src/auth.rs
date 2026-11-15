@@ -60,6 +60,10 @@ pub enum Permission {
     ClosuresWrite,
     /// Price a quotation on an earlier price list than its quote date.
     PricesBackdate,
+    /// See the printable price lists (ADR 0069) and render them as PDF or Excel.
+    PriceListsRead,
+    /// Design price lists: groups, item order and flags (ADR 0069).
+    PriceListsWrite,
     HelpdeskRead,
     /// Create tickets, write internal notes, change status and links.
     HelpdeskWrite,
@@ -184,7 +188,7 @@ pub enum Permission {
 }
 
 impl Permission {
-    pub const ALL: [Permission; 74] = [
+    pub const ALL: [Permission; 76] = [
         Permission::CustomersRead,
         Permission::CustomersWrite,
         Permission::ProductsRead,
@@ -202,6 +206,8 @@ impl Permission {
         Permission::RebatesWrite,
         Permission::ClosuresWrite,
         Permission::PricesBackdate,
+        Permission::PriceListsRead,
+        Permission::PriceListsWrite,
         Permission::HelpdeskRead,
         Permission::HelpdeskWrite,
         Permission::HelpdeskReply,
@@ -280,6 +286,8 @@ impl Permission {
             Permission::RebatesWrite => "rebates.write",
             Permission::ClosuresWrite => "closures.write",
             Permission::PricesBackdate => "prices.backdate",
+            Permission::PriceListsRead => "price_lists.read",
+            Permission::PriceListsWrite => "price_lists.write",
             Permission::HelpdeskRead => "helpdesk.read",
             Permission::HelpdeskWrite => "helpdesk.write",
             Permission::HelpdeskReply => "helpdesk.reply",
@@ -401,7 +409,8 @@ pub fn role_grants(role: &str, p: Permission) -> bool {
         }
         "sales" => matches!(
             p,
-            CustomersRead
+            PriceListsRead
+                | CustomersRead
                 | ClosuresWrite
                 | CustomersWrite
                 | ProductsRead
@@ -499,7 +508,9 @@ pub fn role_grants(role: &str, p: Permission) -> bool {
         ),
         "product_manager" => matches!(
             p,
-            CustomersRead
+            PriceListsRead
+                | PriceListsWrite
+                | CustomersRead
                 | ProductsRead
                 | ProductsWrite
                 | PricesWrite
@@ -566,7 +577,8 @@ pub fn role_grants(role: &str, p: Permission) -> bool {
         ),
         "viewer" => matches!(
             p,
-            RepairsRead
+            PriceListsRead
+                | RepairsRead
                 | PackagesRead
                 | FieldRead
                 | PlanningRead

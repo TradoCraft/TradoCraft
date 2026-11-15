@@ -14,6 +14,7 @@ pub mod files;
 pub mod identity;
 pub mod identity_admin;
 pub mod import;
+pub mod logo;
 pub mod mail;
 pub mod modules;
 pub mod numbering;

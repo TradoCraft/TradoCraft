@@ -31,6 +31,8 @@ pub use import::{products_import, Products};
 pub mod options;
 pub mod packaging;
 pub mod power;
+pub mod price_list_plan;
+pub mod price_lists;
 pub mod relations;
 pub mod translations;
 
@@ -853,16 +855,17 @@ async fn delete_price_zone(
     .fetch_optional(&mut *tx)
     .await?
     .ok_or(AppError::NotFound("price zone"))?;
-    let (prices, terms): (i64, i64) = sqlx::query_as(
+    let (prices, terms, lists): (i64, i64, i64) = sqlx::query_as(
         "SELECT (SELECT count(*) FROM pricing.zone_prices WHERE zone_id = $1),
-                (SELECT count(*) FROM crm.customer_terms WHERE price_zone_id = $1)",
+                (SELECT count(*) FROM crm.customer_terms WHERE price_zone_id = $1),
+                (SELECT count(*) FROM pricing.price_list_zones WHERE price_zone_id = $1)",
     )
     .bind(id)
     .fetch_one(&mut *tx)
     .await?;
-    if prices > 0 || terms > 0 {
+    if prices > 0 || terms > 0 || lists > 0 {
         return Err(AppError::Conflict(format!(
-            "price zone {code} is in use ({prices} zone prices, {terms} customers) and cannot be deleted"
+            "price zone {code} is in use ({prices} zone prices, {terms} customers, {lists} price lists) and cannot be deleted"
         )));
     }
     sqlx::query("DELETE FROM pricing.price_zones WHERE id = $1")
@@ -978,6 +981,7 @@ pub fn router() -> OpenApiRouter<AppState> {
         .merge(families::router())
         .merge(packaging::router())
         .merge(power::router())
+        .merge(price_lists::router())
         .merge(relations::router())
         .merge(bulk::router())
         .merge(import::router())

@@ -1,8 +1,10 @@
 //! Administration of the company's users and modules (ADR 0028). Everything here needs
 //! `users.admin`, which only the admin role holds.
 
-use axum::extract::{Path, State};
-use axum::http::StatusCode;
+use axum::body::Bytes;
+use axum::extract::{DefaultBodyLimit, Path, State};
+use axum::http::{header, StatusCode};
+use axum::response::{IntoResponse, Response};
 use axum::Json;
 use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, PgConnection};
@@ -12,6 +14,7 @@ use utoipa_axum::routes;
 use uuid::Uuid;
 
 use crate::auth::{role_grants, Permission, ROLES};
+use crate::logo::{self, MAX_LOGO_BYTES};
 use crate::modules::{self, Module};
 use crate::{audit, mail, new_id, AppError, AppResult, AppState, CurrentUser};
 
@@ -143,6 +146,114 @@ async fn set_modules(
     .await?;
     tx.commit().await?;
     Ok(Json(catalogue(&disabled)))
+}
+
+// ---------------------------------------------------------------------------------------------
+// Logo
+// ---------------------------------------------------------------------------------------------
+
+/// The stored company logo (without the image itself).
+#[derive(Debug, Serialize, ToSchema)]
+pub struct CompanyLogoInfo {
+    /// `image/png`, `image/jpeg` or `image/svg+xml`.
+    pub content_type: String,
+    pub size_bytes: i64,
+    pub updated_at: chrono::DateTime<chrono::Utc>,
+}
+
+/// The company logo image. 404 when none was uploaded.
+#[utoipa::path(get, path = "/admin/company/logo", tag = "core",
+    responses((status = 200, content_type = "application/octet-stream", body = String),
+              (status = 403, body = ErrorBody), (status = 404, body = ErrorBody)))]
+async fn get_logo(State(state): State<AppState>, user: CurrentUser) -> AppResult<Response> {
+    user.require(Permission::UsersAdmin)?;
+    let mut conn = state.db.acquire().await?;
+    let found = logo::load(&mut conn, user.company_id)
+        .await?
+        .ok_or(AppError::NotFound("company logo"))?;
+    Ok((
+        [
+            (header::CONTENT_TYPE, found.content_type),
+            (header::CACHE_CONTROL, "private, no-cache".to_string()),
+            (header::X_CONTENT_TYPE_OPTIONS, "nosniff".to_string()),
+            // An SVG opened directly may not run or load anything.
+            (
+                header::CONTENT_SECURITY_POLICY,
+                "default-src 'none'; style-src 'unsafe-inline'; sandbox".to_string(),
+            ),
+        ],
+        found.bytes,
+    )
+        .into_response())
+}
+
+/// Sets or replaces the company logo: the request body is the image file (PNG, JPEG or SVG, at
+/// most 512 KB). The type is taken from the file's content, not from the request headers.
+#[utoipa::path(put, path = "/admin/company/logo", tag = "core",
+    request_body(content = String, content_type = "application/octet-stream"),
+    responses((status = 200, body = CompanyLogoInfo), (status = 403, body = ErrorBody),
+              (status = 422, body = ErrorBody)))]
+async fn put_logo(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    body: Bytes,
+) -> AppResult<Json<CompanyLogoInfo>> {
+    user.require(Permission::UsersAdmin)?;
+    let content_type = logo::validate(&body)?;
+    let mut tx = state.db.begin().await?;
+    let updated_at: chrono::DateTime<chrono::Utc> = sqlx::query_scalar(
+        "INSERT INTO core.company_logos (company_id, content_type, bytes) VALUES ($1, $2, $3)
+         ON CONFLICT (company_id) DO UPDATE
+            SET content_type = EXCLUDED.content_type, bytes = EXCLUDED.bytes, updated_at = now()
+         RETURNING updated_at",
+    )
+    .bind(user.company_id)
+    .bind(content_type)
+    .bind(&body[..])
+    .fetch_one(&mut *tx)
+    .await?;
+    audit::record(
+        &mut tx,
+        &user,
+        "company",
+        user.company_id,
+        "logo_set",
+        serde_json::json!({ "content_type": content_type, "size_bytes": body.len() }),
+    )
+    .await?;
+    tx.commit().await?;
+    Ok(Json(CompanyLogoInfo {
+        content_type: content_type.to_string(),
+        size_bytes: body.len() as i64,
+        updated_at,
+    }))
+}
+
+/// Removes the company logo. 404 when there is none.
+#[utoipa::path(delete, path = "/admin/company/logo", tag = "core",
+    responses((status = 204), (status = 403, body = ErrorBody), (status = 404, body = ErrorBody)))]
+async fn delete_logo(State(state): State<AppState>, user: CurrentUser) -> AppResult<StatusCode> {
+    user.require(Permission::UsersAdmin)?;
+    let mut tx = state.db.begin().await?;
+    let deleted = sqlx::query("DELETE FROM core.company_logos WHERE company_id = $1")
+        .bind(user.company_id)
+        .execute(&mut *tx)
+        .await?
+        .rows_affected();
+    if deleted == 0 {
+        return Err(AppError::NotFound("company logo"));
+    }
+    audit::record(
+        &mut tx,
+        &user,
+        "company",
+        user.company_id,
+        "logo_removed",
+        serde_json::json!({}),
+    )
+    .await?;
+    tx.commit().await?;
+    Ok(StatusCode::NO_CONTENT)
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -510,6 +621,11 @@ pub fn router() -> OpenApiRouter<AppState> {
     OpenApiRouter::new()
         .routes(routes!(list_roles))
         .routes(routes!(get_modules, set_modules))
+        .merge(
+            OpenApiRouter::new()
+                .routes(routes!(get_logo, put_logo, delete_logo))
+                .layer(DefaultBodyLimit::max(MAX_LOGO_BYTES + 64 * 1024)),
+        )
         .routes(routes!(list_admin_users, create_admin_user))
         .routes(routes!(update_admin_user))
         .routes(routes!(invite_admin_user))
