@@ -30,16 +30,25 @@ Future<String> writeUnique(
   await base.create(recursive: true);
   final realBase = await base.resolveSymbolicLinks();
   final dirSegments = segments.sublist(0, segments.length - 1);
-  final target = Directory(p.joinAll([realBase, ...dirSegments]));
-  if (!p.isWithin(realBase, target.path) && target.path != realBase) {
-    throw UnsafePathException(relativePath);
+  // Walk down one level at a time from the resolved base. Nothing is created through a link and
+  // every level is re-resolved after creation, so no write can leave the base.
+  var current = realBase;
+  for (final seg in dirSegments) {
+    final next = p.join(current, seg);
+    final type = FileSystemEntity.typeSync(next, followLinks: false);
+    if (type == FileSystemEntityType.notFound) {
+      await Directory(next).create();
+    } else if (type != FileSystemEntityType.directory) {
+      // A symbolic link, a file or anything else.
+      throw UnsafePathException(relativePath);
+    }
+    final real = await Directory(next).resolveSymbolicLinks();
+    if (!p.isWithin(realBase, real)) {
+      throw UnsafePathException(relativePath);
+    }
+    current = real;
   }
-  await target.create(recursive: true);
-  // A symbolic link inside the base could point elsewhere: check the real directory.
-  final realTarget = await target.resolveSymbolicLinks();
-  if (realTarget != realBase && !p.isWithin(realBase, realTarget)) {
-    throw UnsafePathException(relativePath);
-  }
+  final realTarget = current;
   final name = segments.last;
   for (var n = 1; ; n++) {
     final candidate = p.join(realTarget, n == 1 ? name : numberedName(name, n));

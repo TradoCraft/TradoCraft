@@ -115,7 +115,10 @@ class _GenerateDialogState extends ConsumerState<GenerateDialog> {
     _loadPlan();
   }
 
+  int _planRequest = 0;
+
   Future<void> _loadPlan() async {
+    final request = ++_planRequest;
     setState(() {
       _plan = null;
       _loadError = null;
@@ -127,7 +130,7 @@ class _GenerateDialogState extends ConsumerState<GenerateDialog> {
         format: _format,
       );
       final exports = await products.listExports(id: widget.list.id);
-      if (!mounted) return;
+      if (!mounted || request != _planRequest) return;
       setState(() {
         _plan = plan;
         _profileNames = {for (final e in exports) e.id: e.name};
@@ -136,7 +139,7 @@ class _GenerateDialogState extends ConsumerState<GenerateDialog> {
           ..addAll(List.generate(plan.length, (i) => i));
       });
     } catch (e) {
-      if (mounted) setState(() => _loadError = e);
+      if (mounted && request == _planRequest) setState(() => _loadError = e);
     }
   }
 
@@ -146,43 +149,48 @@ class _GenerateDialogState extends ConsumerState<GenerateDialog> {
   }
 
   Future<void> _generate() async {
-    final plan = _plan!;
-    final picked = [for (final i in _selected.toList()..sort()) plan[i]];
-    final dio = ref.read(dioProvider);
-    final export = ref.read(fileExportProvider);
-    final downloads = await ref.read(downloadsFolderProvider)();
+    final plan = _plan;
+    if (_running || plan == null) return;
     setState(() {
       _running = true;
       _done = 0;
       _results = null;
     });
-    final results = await generateFiles(
-      entries: picked,
-      export: export,
-      baseFolder: _folder,
-      render: (e) => renderPriceList(
-        dio,
-        widget.list.id,
-        zoneId: e.zoneId,
-        lang: e.lang,
-        format: e.format.json ?? _format.json!,
-        exportId: e.exportId,
-      ),
-      onProgress: (done, next) {
-        if (mounted) {
-          setState(() {
-            _done = done;
-            _current = next;
-          });
-        }
-      },
-    );
-    if (!mounted) return;
-    setState(() {
-      _running = false;
-      _results = results;
-      _usedFolder = _folder ?? downloads;
-    });
+    try {
+      final picked = [for (final i in _selected.toList()..sort()) plan[i]];
+      final dio = ref.read(dioProvider);
+      final export = ref.read(fileExportProvider);
+      final downloads = await ref.read(downloadsFolderProvider)();
+      if (!mounted) return;
+      final results = await generateFiles(
+        entries: picked,
+        export: export,
+        baseFolder: _folder,
+        render: (e) => renderPriceList(
+          dio,
+          widget.list.id,
+          zoneId: e.zoneId,
+          lang: e.lang,
+          format: e.format.json ?? _format.json!,
+          exportId: e.exportId,
+        ),
+        onProgress: (done, next) {
+          if (mounted) {
+            setState(() {
+              _done = done;
+              _current = next;
+            });
+          }
+        },
+      );
+      if (!mounted) return;
+      setState(() {
+        _results = results;
+        _usedFolder = _folder ?? downloads;
+      });
+    } finally {
+      if (mounted) setState(() => _running = false);
+    }
   }
 
   String _profileLabel(ExportPlanEntry e) {

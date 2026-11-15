@@ -50,8 +50,15 @@ class _CompanyLogoPageState extends ConsumerState<CompanyLogoPage> {
 
   Future<void> _choose() async {
     final l = context.l10n;
-    final file = await ref.read(logoPickerProvider)();
-    if (file == null || !mounted) return;
+    final PickedFile? picked;
+    try {
+      picked = await ref.read(logoPickerProvider)();
+    } catch (e) {
+      if (mounted) setState(() => _error = errorMessage(e));
+      return;
+    }
+    if (picked == null || !mounted) return;
+    final file = picked;
     // The server checks again; these checks only save a round trip.
     if (file.bytes.length > maxLogoBytes) {
       setState(() => _error = l.logoTooBig);
@@ -95,11 +102,17 @@ class _CompanyLogoPageState extends ConsumerState<CompanyLogoPage> {
       ),
     );
     if (sure != true || !mounted) return;
-    final ok = await runAction(
-      context,
-      () => ref.read(apiProvider).core.deleteLogo(),
-      success: l.logoRemoved,
-    );
+    setState(() => _busy = true);
+    var ok = false;
+    try {
+      ok = await runAction(
+        context,
+        () => ref.read(apiProvider).core.deleteLogo(),
+        success: l.logoRemoved,
+      );
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
     if (ok && mounted) _refresh();
   }
 

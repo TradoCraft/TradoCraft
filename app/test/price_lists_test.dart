@@ -281,6 +281,18 @@ void main() {
       expect(compareSortKeys('2', '1.9'), greaterThan(0));
       expect(compareSortKeys('', '1'), lessThan(0));
     });
+
+    test('sort keys follow the server order (numbers before text, total order)', () {
+      final keys = ['1.10', '1.2', '', '1', '2.1.1', '1.2.a', '1.b', '10'];
+      keys.sort(compareSortKeys);
+      expect(keys, ['', '1', '1.2', '1.2.a', '1.10', '1.b', '2.1.1', '10']);
+      expect(compareSortKeys('1.a', '1.2'), greaterThan(0));
+      expect(compareSortKeys('1.2', '1.a'), lessThan(0));
+      expect(compareSortKeys('a', 'B'), lessThan(0));
+      expect(compareSortKeys('B', 'a'), greaterThan(0));
+      expect(compareSortKeys('a', 'A'), greaterThan(0));
+      expect(compareSortKeys('', ''), 0);
+    });
   });
 
   group('editor', () {
@@ -302,9 +314,9 @@ void main() {
         'GET /api/v1/price-lists/pl1': (_) => _list(),
         'GET /api/v1/price-lists/pl1/groups': (_) => groups,
         'GET /api/v1/price-lists/pl1/items': (_) => items,
-        'PUT /api/v1/price-lists/pl1/groups/g1': (_) => groups[0],
-        'PUT /api/v1/price-lists/pl1/groups/g2': (_) => groups[1],
-        'PUT /api/v1/price-lists/pl1/groups/g3': (_) => groups[2],
+        'PUT /api/v1/price-lists/pl1/groups/g1': (b) => groups[0] = {...groups[0], ...(b! as Map).cast<String, Object?>()},
+        'PUT /api/v1/price-lists/pl1/groups/g2': (b) => groups[1] = {...groups[1], ...(b! as Map).cast<String, Object?>()},
+        'PUT /api/v1/price-lists/pl1/groups/g3': (b) => groups[2] = {...groups[2], ...(b! as Map).cast<String, Object?>()},
         'POST /api/v1/price-lists/pl1/groups': (_) => groups[0],
         'POST /api/v1/price-lists/pl1/items': (_) => items[0],
         'PUT /api/v1/price-lists/pl1/items/i1': (_) => items[1],
@@ -408,10 +420,11 @@ void main() {
       expect(http.requests, isNot(contains('PUT /api/v1/price-lists/pl1/groups/g3')));
 
       http.bodies.clear();
-      await tester.tap(find.byKey(const ValueKey('plg-in-g2')));
+      // The fixtures were updated: g2 is now first, so g1 nests under it.
+      await tester.tap(find.byKey(const ValueKey('plg-in-g1')));
       await tester.pumpAndSettle();
-      final body = http.bodies['PUT /api/v1/price-lists/pl1/groups/g2']! as Map;
-      expect(body['parent_id'], 'g1');
+      final body = http.bodies['PUT /api/v1/price-lists/pl1/groups/g1']! as Map;
+      expect(body['parent_id'], 'g2');
       expect(body['page_break'], false);
     });
 
@@ -509,6 +522,42 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('plz-del-Z1')));
       await tester.pumpAndSettle();
       expect(http.bodies['PUT /api/v1/price-lists/pl1/zones'], <Object?>[]);
+    });
+
+    testWidgets('zones: two changes in a row both survive', (tester) async {
+      var zones = [
+        _plZone('z1', 'Z1', 'Retail', ['nl'], 1),
+        _plZone('z2', 'Z2', 'Wholesale', ['en'], 2),
+      ];
+      http.routes['GET /api/v1/price-lists/pl1'] = (_) => _list(zones: zones);
+      http.routes['PUT /api/v1/price-lists/pl1/zones'] = (b) {
+        final body = b! as List;
+        final order = [for (final z in body) (z as Map)['price_zone_id']];
+        zones = [
+          for (var i = 0; i < order.length; i++)
+            {
+              ...zones.firstWhere((z) => z['price_zone_id'] == order[i]),
+              'sort_order': i + 1,
+              'languages': (body[i] as Map)['languages'],
+            },
+        ];
+        return _list(zones: zones);
+      };
+      await _pump(tester, http, start: '/price-lists/pl1');
+      await tester.tap(find.byKey(const ValueKey('plz-Z1-fr')));
+      await tester.pump();
+      // Mid-flight the controls are disabled, so this second click cannot overwrite the first.
+      expect(
+        tester.widget<FilterChip>(find.byKey(const ValueKey('plz-Z2-nl'))).onSelected,
+        isNull,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('plz-Z2-nl')));
+      await tester.pumpAndSettle();
+      expect(http.bodies['PUT /api/v1/price-lists/pl1/zones'], [
+        {'price_zone_id': 'z1', 'languages': ['nl', 'fr']},
+        {'price_zone_id': 'z2', 'languages': ['nl', 'en']},
+      ]);
     });
 
     testWidgets('zones: moving a zone down sends the new print order', (tester) async {

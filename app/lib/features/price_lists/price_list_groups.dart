@@ -68,14 +68,30 @@ String groupTitle(PriceListGroup g, String lang) {
   return '—';
 }
 
-/// Dotted sort keys compare segment by segment, numbers as numbers (`1.2` before `1.10`).
+final _digits = RegExp(r'^[0-9]+$');
+
+/// Orders dotted sort keys like the server: an empty key first; segment by segment, numbers
+/// numerically and before text, text case-insensitively (then case-sensitively); a key before the
+/// keys it is a prefix of.
 int compareSortKeys(String a, String b) {
+  if (a.isEmpty || b.isEmpty) {
+    return a.isEmpty == b.isEmpty ? 0 : (a.isEmpty ? -1 : 1);
+  }
   final x = a.split('.'), y = b.split('.');
   for (var i = 0; i < x.length && i < y.length; i++) {
-    final nx = int.tryParse(x[i]), ny = int.tryParse(y[i]);
-    final c = (nx != null && ny != null)
-        ? nx.compareTo(ny)
-        : x[i].compareTo(y[i]);
+    final nx = _digits.hasMatch(x[i]) ? BigInt.parse(x[i]) : null;
+    final ny = _digits.hasMatch(y[i]) ? BigInt.parse(y[i]) : null;
+    final int c;
+    if (nx != null && ny != null) {
+      c = nx.compareTo(ny);
+    } else if (nx != null) {
+      c = -1;
+    } else if (ny != null) {
+      c = 1;
+    } else {
+      final ci = x[i].toLowerCase().compareTo(y[i].toLowerCase());
+      c = ci != 0 ? ci : x[i].compareTo(y[i]);
+    }
     if (c != 0) return c;
   }
   return x.length.compareTo(y.length);

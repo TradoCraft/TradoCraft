@@ -27,20 +27,33 @@ class ZonesPanel extends ConsumerStatefulWidget {
 class _ZonesPanelState extends ConsumerState<ZonesPanel> {
   String? _toAdd;
 
+  /// True from the click until the refreshed list has arrived: a second edit built from the old
+  /// list would overwrite the first, so the zone controls stay disabled meanwhile.
+  bool _saving = false;
+
   List<PriceListZone> get _zones => [...widget.list.zones]
     ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
 
   Future<void> _save(List<PriceListZoneInput> body) async {
-    final ok = await runAction(
-      context,
-      () => ref
-          .read(apiProvider)
-          .products
-          .replaceZones(id: widget.list.id, body: body),
-    );
-    if (ok && mounted) {
-      ref.invalidate(priceListProvider(widget.list.id));
-      ref.invalidate(priceListsProvider);
+    if (_saving) return;
+    setState(() => _saving = true);
+    try {
+      final id = widget.list.id;
+      final ok = await runAction(
+        context,
+        () => ref.read(apiProvider).products.replaceZones(id: id, body: body),
+      );
+      if (ok && mounted) {
+        ref.invalidate(priceListsProvider);
+        ref.invalidate(priceListProvider(id));
+        try {
+          await ref.read(priceListProvider(id).future);
+        } catch (_) {
+          // The page shows its own load error.
+        }
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
     }
   }
 
@@ -135,6 +148,7 @@ class _ZonesPanelState extends ConsumerState<ZonesPanel> {
                         // A zone keeps at least one language.
                         onSelected:
                             !widget.canWrite ||
+                                _saving ||
                                 (zones[i].languages.length == 1 &&
                                     zones[i].languages.contains(c))
                             ? null
@@ -145,13 +159,13 @@ class _ZonesPanelState extends ConsumerState<ZonesPanel> {
                         key: ValueKey('plz-up-${zones[i].priceZoneCode}'),
                         tooltip: l.moveUp,
                         icon: const Icon(AppIcons.arrowUpward),
-                        onPressed: i == 0 ? null : () => _move(i, -1),
+                        onPressed: _saving || i == 0 ? null : () => _move(i, -1),
                       ),
                       IconButton(
                         key: ValueKey('plz-down-${zones[i].priceZoneCode}'),
                         tooltip: l.moveDown,
                         icon: const Icon(AppIcons.arrowDownward),
-                        onPressed: i == zones.length - 1
+                        onPressed: _saving || i == zones.length - 1
                             ? null
                             : () => _move(i, 1),
                       ),
@@ -159,7 +173,7 @@ class _ZonesPanelState extends ConsumerState<ZonesPanel> {
                         key: ValueKey('plz-del-${zones[i].priceZoneCode}'),
                         tooltip: l.delete,
                         icon: const Icon(Icons.delete_outline),
-                        onPressed: () => _remove(i),
+                        onPressed: _saving ? null : () => _remove(i),
                       ),
                     ],
                   ],
@@ -193,7 +207,7 @@ class _ZonesPanelState extends ConsumerState<ZonesPanel> {
                   ),
                   FilledButton.tonalIcon(
                     key: const ValueKey('plz-add'),
-                    onPressed: _toAdd == null ? null : _add,
+                    onPressed: _saving || _toAdd == null ? null : _add,
                     icon: const Icon(AppIcons.add),
                     label: Text(l.plAddZone),
                   ),
