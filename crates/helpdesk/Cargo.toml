@@ -12,7 +12,7 @@ tradocraft-crm.workspace = true
 tradocraft-sales.workspace = true
 tradocraft-documents.workspace = true
 anyhow.workspace = true
-async-imap = { version = "0.10", default-features = false, features = ["runtime-tokio"] }
+async-imap = { version = "0.12", default-features = false, features = ["runtime-tokio"] }
 axum.workspace = true
 base64 = "0.22"
 chrono.workspace = true
