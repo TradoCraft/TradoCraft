@@ -1,6 +1,6 @@
 # 0060 — Keyboard shortcuts with hint badges
 
-**Status:** Accepted (phase A, the core and the navigation shell; screens adopt it in phase B)
+**Status:** Accepted (phase A, the core and the navigation shell; addendum 2026-11: standard chords and automatic keys)
 
 **Context.** People who work in several business applications expect the same few keys everywhere: a letter with
 Alt to create, save or go back, digits for the menu, a palette on Ctrl/Cmd+K. Our app had one global key handler
@@ -22,8 +22,8 @@ Command palette and help always use Ctrl or Cmd.
 | B | Back: pops the active tab's route; offered only when the tab has a screen to go back to | A |
 | H | Home: the first permitted menu entry (`go(0)`: shows the main area, then its path) | A |
 | 1-9 | Menu entry n of the permission-filtered navigation (web: Alt+Shift+1-9) | A |
-| C | Create (list create button, detail header) | B |
-| S | Save | B |
+| Ctrl+N | Create (web: Alt+C; see the addendum) | B |
+| Ctrl+S | Save (was Alt+S; see the addendum) | B |
 | J | Discard: reset the form if it can, else the unsaved-changes prompt | B |
 | Q | Focus the scope's search field | B |
 | N | Load more on lists (the previous-page key P is not implemented: no list pages yet) | B |
@@ -99,3 +99,95 @@ because they read the same registry the key handler uses. The web chords differ 
 digits. Previous page (P) stays hidden until its feature exists. New to-do (Shift+T) is live: the shell scope offers it when the
 user holds `todo.use` (the server drops the permission when the module is off), the dialog it opens is modal for
 shortcuts, and the account menu offers the same action so it never depends on the keyboard.
+
+## Addendum (2026-11): standard Ctrl chords, automatic Alt keys, data-entry keys
+
+**Why.** Phase A defined Save, Create, Search, Discard and Load more but wired none of them: only Back, Home and the
+menu digits had handlers, and the badge existed in two places while the app has about 840 buttons and 316 text
+fields. Users on Windows and Linux also expect Ctrl+S to save, not Alt+S. Editing every call site was not an
+option, so the keys now work from the widget tree itself.
+
+**Two kinds of chord.** The *standard chords* use Ctrl (Cmd on macOS) and mean the same on every screen. The *fixed
+navigation chords* stay on Alt (Ctrl on macOS): Back B, Home H, Discard J, Next page N, Search Q, Search articles F,
+Add line L, the menu digits (web: Alt+Shift+digit), Shift+T and Shift+S. `ShortcutChord.mod` says which
+(`ChordMod.primary`, `standard`, `none`); the standard modifier is `standardModifierLabel` ("Ctrl", "Cmd").
+
+| Chord | Action | What it does |
+| --- | --- | --- |
+| Ctrl+S | `save` | The registered save handler of the topmost layer, else presses its Save button. |
+| Ctrl+Enter | `confirm` | A dialog: its Save button, else its last `FilledButton`, else a confirming word. A page: its Save button only. |
+| Esc | `cancel` | The registered cancel handler; else a dialog's Cancel/Close button, else the dialog's own pop (so a `PopScope` can still veto); on a page its Cancel/Close button. A workspace tab registers a handler: unsaved edits (`TabScope.reportDirty`) raise the existing unsaved-changes prompt, otherwise one screen back, at the first screen the tab closes. |
+| Ctrl+F | `find` | The registered handler (also for Alt+Q), else focuses the first search field of the layer (hint or label "Search", or a search icon). |
+| Ctrl+N | `create` | Presses the "New" button of the layer. On the web Ctrl+N belongs to the browser, so Alt+C is used (`webOverride`). |
+| Alt+L | `addLine` | Quotation: puts the cursor in the add-product picker (draft only). |
+| Ctrl+K, Ctrl+/ | palette, help | Help lists the chords in effect (`help_dialog.dart`). The palette is still not built. |
+
+A registered `ShortcutScope` handler always wins over the generic search; the dialog layer still stops the search, so
+a button below an open dialog is never reached.
+
+**Which labels count (generic button search).** `classifyLabel` in `button_scan.dart` compares the normalized label
+(lower case, accents folded, punctuation dropped) with the app's own strings, in the language of the user. To teach
+the keys a new label, add the l10n string to that function; no screen changes.
+
+| Role | Labels (l10n keys) |
+| --- | --- |
+| Save | `save`, `saveChanges`, `saveDraft`, and anything starting with the word `save` |
+| Cancel | `cancel`, `close` |
+| Confirm | `confirm`, `ok`, `yes`, `apply`, `send`, `create`, `delete`, `discardChanges` |
+| Create | `newItem` and anything starting with it ("New customer") |
+
+**Automatic Alt keys.** While Alt (Ctrl on macOS) is held, every enabled button of the topmost layer shows a letter
+badge; pressing the letter presses the button. `scanTree` walks the element tree once when the modifier goes down
+(the result is cached while it is held and recomputed when a popup comes or goes, after a press, and when the
+cached elements leave the tree). It reads `ButtonStyleButton` (Text, Filled, Elevated, Outlined, also `.icon`) and
+`IconButton`. The label is the `Text` inside, else the tooltip, the nearest `Tooltip` or `Semantics` label, or the
+icon's semantic label; a button without a label gets no key. The topmost layer is the current popup route (dialog,
+sheet) if there is one, else the current routes of the visible page; hidden tabs, off-stage parts and covered routes
+are skipped, as are disabled buttons and buttons that already sit in a `KeyHint`.
+Letters (`assignLetters`): the first letter of the first word still free in the layer, else the next free letter of
+the label, else the next free letter; accents folded (é to e), a-z only. Save and Cancel choose first, so they get
+S and C wherever they sit. Never assigned: the letters of the Alt chords in effect (B, H, J, N, Q, F, L; C too on the
+web, where Create is Alt+C). On desktop C is free, so Cancel gets C. Badges are drawn by `ShortcutsHost` in a layer
+above the app at the global rectangles of the buttons (no layout change, `IgnorePointer`, `ExcludeSemantics`) and
+follow scrolling. While Ctrl (Cmd) is held the standard badges show instead: S, Enter, Esc, N on the buttons those
+chords press, F on the search field. A button that shows a `KeyHint` is not given a second badge.
+To give a button an explicit key: wrap it in `KeyHint(action:)` and register that action in a `ShortcutScope`
+(it wins over the automatic letter), or register `save`/`confirm`/`cancel`/`find`/`create` in a `ShortcutScope`.
+
+**Data entry** (all in `ShortcutsHost`, no screen changes).
+- *Enter* in a single-line text field with no `onSubmitted`/`onEditingComplete` (and no search/send action) moves
+  to the next focus like Tab, Shift+Enter back. Fields that submit, multi-line fields and buttons are untouched.
+  It is taken in the HardwareKeyboard handler because the app's default shortcuts swallow Enter before the root
+  focus node sees it. The last field leads to the buttons (Tab order).
+- *Autofocus*: when a dialog or sheet opens, the cursor goes to its first editable field unless a field has
+  `autofocus` or one already has the focus. Chosen at route level (the registry already tells when a popup opens)
+  because wrapping 800 `AlertDialog`s was not an option. Forms on pages are not covered (a page has no moment of
+  "opening" that is not a route change); phase 2 can add an opt-in helper to the main forms.
+- *Select all*: a field with a number keyboard that gets the focus from the keyboard (Tab, Enter) selects its whole
+  content so typing replaces it; a click keeps the caret where it landed.
+- *Esc* is processed after the focused widget (a root focus-node fallback), so popup menus, autocompletes and
+  dropdowns keep their own Esc.
+- *Lists and tables*: `GridKeyNav` (`shared/grid_key_nav.dart`) wraps a region. Up/Down move to the same column of the
+  next/previous row, Ctrl+Up/Down to the first/last row, Ctrl+Left/Right to the first/last field of the row; Home/End
+  jump to the first/last row when a row (not a text field) has the focus, and stay caret keys inside a text field
+  (Excel does the same). Rows are found by position, so any layout works. `EntityList` uses it for its rows (Down from
+  the search field enters, Enter opens through the row's `InkWell`, a lazy list scrolls to unbuilt rows); the
+  quotation lines table uses it for its fields.
+
+**Guards kept.** Key repeat is swallowed, never re-run; modifier state is cleared when the app lifecycle changes
+and no chord counts until the next modifier event (a key-up that went to another window); nothing fires while an
+input method is composing; on macOS the emacs Ctrl letters in a text field stay text editing.
+
+**Web.** Browsers keep Ctrl+N, Ctrl+T, Ctrl+W: Create is Alt+C there and Ctrl+N shows no badge. Ctrl+S is handled only
+when a Save target exists; a handled key is `preventDefault`ed by the engine, an unhandled one is left to the
+browser (its own "save page"). **This was not checked in a real browser**: tests run without a browser, so whether
+Chrome, Firefox and Safari let Ctrl+S, Ctrl+F (left to the browser's find-in-page when the page has no search field),
+Alt+letter and Alt+L reach the page must be verified by hand, as for the Alt chords above. Alt+letter
+auto keys are the most exposed: any browser menu mnemonic that wins (Alt+F, Alt+E, Alt+V, Alt+H) would swallow it;
+F and H are already reserved.
+
+**Phase 2 (not done).** Discard (J), Load more (N) and the Alt+Q search have no handler of their own (Q now also
+works through Ctrl+F). The command palette does not exist. Forms on pages do not autofocus their first field. Every
+screen whose Save/Cancel buttons are not named with the l10n words above, icon-only buttons without tooltip, buttons
+that are not Material buttons (`InkWell`, `PopupMenuButton`, `Checkbox`, `FloatingActionButton`), and tables other
+than the two above need explicit wiring or a `GridKeyNav`.

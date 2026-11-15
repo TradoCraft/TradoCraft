@@ -1,0 +1,123 @@
+# Dependency vulnerabilities, committed secrets and the software bill of materials (ADR 0069).
+# The checks are scripts/security-check.sh, the same ones you can run (or let the pre-push hook run)
+# on your own machine.
+name: Security
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    # New advisories appear without any change here, so this runs weekly even when nobody pushes.
+    - cron: "17 4 * * 1"
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Tool versions and the SHA-256 of what is downloaded. To update one, change the version and the
+# checksum together (the checksum is in the SHA256SUMS file of the tool's release); the downloads are
+# checked against these values.
+env:
+  OSV_SCANNER_VERSION: "2.7.1"
+  OSV_SCANNER_SHA256: fb7dab19a8bd9bbe5c3189f09d4b7ee1820c9553a23bac202648a56efd2f6ee8
+  GITLEAKS_VERSION: "8.30.1"
+  GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+  CARGO_DENY_VERSION: "0.20.2"
+  CARGO_DENY_SHA256: 9f12ed4c49936e09b48bf862b595cde2fe64fcbd9d74dfacac6131ca824c8d5f
+  SYFT_VERSION: "1.57.1"
+  SYFT_SHA256: bf52519eb57f675d47c07d43213cb6dff6449f3d6d1147ff6701ed91f44eef0c
+
+jobs:
+  vulnerabilities:
+    # Known vulnerabilities in Cargo.lock, app/pubspec.lock and e2e/package-lock.json, minus the
+    # reviewed exceptions in osv-scanner.toml (each with a reason and an expiry date).
+    if: github.event_name != 'release'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install osv-scanner
+        run: |
+          curl -sSfL -o osv-scanner "https://github.com/google/osv-scanner/releases/download/v${OSV_SCANNER_VERSION}/osv-scanner_linux_amd64"
+          echo "${OSV_SCANNER_SHA256}  osv-scanner" | sha256sum -c -
+          sudo install -m 0755 osv-scanner /usr/local/bin/osv-scanner
+      - run: scripts/security-check.sh osv
+
+  secrets:
+    # The whole git history: a secret that was committed and removed again is still leaked.
+    if: github.event_name != 'release'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install gitleaks
+        run: |
+          curl -sSfL -o gitleaks.tar.gz "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          echo "${GITLEAKS_SHA256}  gitleaks.tar.gz" | sha256sum -c -
+          tar -xzf gitleaks.tar.gz gitleaks
+          sudo install -m 0755 gitleaks /usr/local/bin/gitleaks
+      - run: scripts/security-check.sh secrets
+
+  licenses:
+    # Licences and sources of the Rust dependencies against deny.toml: TradoCraft is AGPL, so a
+    # dependency under an incompatible licence must not slip in unnoticed.
+    if: github.event_name != 'release'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install cargo-deny
+        run: |
+          curl -sSfL -o cargo-deny.tar.gz "https://github.com/EmbarkStudios/cargo-deny/releases/download/${CARGO_DENY_VERSION}/cargo-deny-${CARGO_DENY_VERSION}-x86_64-unknown-linux-musl.tar.gz"
+          echo "${CARGO_DENY_SHA256}  cargo-deny.tar.gz" | sha256sum -c -
+          tar -xzf cargo-deny.tar.gz --strip-components=1 "cargo-deny-${CARGO_DENY_VERSION}-x86_64-unknown-linux-musl/cargo-deny"
+          sudo install -m 0755 cargo-deny /usr/local/bin/cargo-deny
+      - run: scripts/security-check.sh licenses
+
+  sbom:
+    # A CycloneDX software bill of materials of what ships (Rust crates and Dart packages), attached
+    # to every release. Run it by hand from the Actions tab to get one as a build artifact.
+    if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write # to attach the file to the release
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install syft
+        run: |
+          curl -sSfL -o syft.tar.gz "https://github.com/anchore/syft/releases/download/v${SYFT_VERSION}/syft_${SYFT_VERSION}_linux_amd64.tar.gz"
+          echo "${SYFT_SHA256}  syft.tar.gz" | sha256sum -c -
+          tar -xzf syft.tar.gz syft
+          sudo install -m 0755 syft /usr/local/bin/syft
+      - name: Write the SBOM
+        env:
+          VERSION: ${{ github.event.release.tag_name || github.sha }}
+        run: |
+          syft scan dir:. \
+            --exclude './target' --exclude './app/build' --exclude './e2e/node_modules' \
+            --source-name tradocraft --source-version "${VERSION}" \
+            -o cyclonedx-json=tradocraft.cdx.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: sbom
+          path: tradocraft.cdx.json
+          if-no-files-found: error
+      - name: Attach it to the release
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: gh release upload "${TAG}" tradocraft.cdx.json --clobber

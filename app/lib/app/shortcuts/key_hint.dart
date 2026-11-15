@@ -39,7 +39,7 @@ class KeyHint extends ConsumerWidget {
                 top: -6,
                 right: -8,
                 child: IgnorePointer(
-                  child: ExcludeSemantics(child: _Badge(action.hintLabel)),
+                  child: ExcludeSemantics(child: KeyBadge(action.hintLabel)),
                 ),
               ),
           ],
@@ -56,15 +56,26 @@ class KeyHint extends ConsumerWidget {
   }
 }
 
-class _Badge extends StatelessWidget {
-  const _Badge(this.label);
+/// The small dark badge that names a key. [badgeKey] tells the kinds apart in tests.
+class KeyBadge extends StatelessWidget {
+  /// Creates a badge saying [label].
+  const KeyBadge(
+    this.label, {
+    super.key,
+    this.badgeKey = const ValueKey('key-hint-badge'),
+  });
+
+  /// The key text.
   final String label;
+
+  /// The key of the badge's box.
+  final Key badgeKey;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return DecoratedBox(
-      key: const ValueKey('key-hint-badge'),
+      key: badgeKey,
       decoration: BoxDecoration(
         color: scheme.inverseSurface,
         borderRadius: BorderRadius.circular(4),

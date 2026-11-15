@@ -15636,6 +15636,54 @@ abstract class AppLocalizations {
   /// **'Shortcut: {keys}'**
   String shortcutHint(String keys);
 
+  /// No description provided for @shortcutConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get shortcutConfirm;
+
+  /// No description provided for @shortcutCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel or leave'**
+  String get shortcutCancel;
+
+  /// No description provided for @shortcutFind.
+  ///
+  /// In en, this message translates to:
+  /// **'Find'**
+  String get shortcutFind;
+
+  /// No description provided for @shortcutAddLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Add line'**
+  String get shortcutAddLine;
+
+  /// No description provided for @shortcutHelpStandard.
+  ///
+  /// In en, this message translates to:
+  /// **'Standard keys'**
+  String get shortcutHelpStandard;
+
+  /// No description provided for @shortcutHelpNavigation.
+  ///
+  /// In en, this message translates to:
+  /// **'Navigation'**
+  String get shortcutHelpNavigation;
+
+  /// No description provided for @shortcutHelpAltKeys.
+  ///
+  /// In en, this message translates to:
+  /// **'Hold {modifier} to see a key on every button; press it to use the button.'**
+  String shortcutHelpAltKeys(String modifier);
+
+  /// No description provided for @shortcutHelpEnter.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter moves to the next field. Up and Down move between rows, Ctrl with an arrow jumps to the far end.'**
+  String get shortcutHelpEnter;
+
   /// No description provided for @moduleTodo.
   ///
   /// In en, this message translates to:

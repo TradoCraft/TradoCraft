@@ -122,3 +122,22 @@ async fn an_empty_list_answers_no_origin_and_any_answers_all(db: PgPool) {
         Some("*")
     );
 }
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn loopback_answers_pages_of_this_machine_only(db: PgPool) {
+    let app = app(db, &CorsConfig::Loopback);
+    for ok in [
+        "http://localhost:8081",
+        "http://127.0.0.1:5000",
+        "http://[::1]:3000",
+    ] {
+        assert_eq!(allowed(&app, ok).await.as_deref(), Some(ok));
+    }
+    for bad in [
+        "https://evil.example",
+        "http://localhost.evil.example",
+        "http://192.168.1.5:8081",
+    ] {
+        assert_eq!(allowed(&app, bad).await, None, "{bad}");
+    }
+}

@@ -10,8 +10,11 @@ use tower_http::cors::{AllowHeaders, AllowOrigin, Any, CorsLayer};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CorsConfig {
-    /// Every origin: local development and tests only.
+    /// Every origin: tests only. `CORS_ALLOWED_ORIGINS=*` asks for it explicitly.
     Any,
+    /// Pages served from this machine (`localhost`, `127.0.0.1`, `[::1]`, any port): the default
+    /// of `AUTH_MODE=dev`, so a web page on the internet cannot reach a developer's local API.
+    Loopback,
     /// Exactly these origins (`https://portal.example.com`); empty refuses every browser origin.
     Origins(Vec<String>),
 }
@@ -51,11 +54,27 @@ impl CorsConfig {
             .allow_headers(AllowHeaders::mirror_request());
         match self {
             CorsConfig::Any => layer.allow_origin(Any),
+            CorsConfig::Loopback => layer.allow_origin(AllowOrigin::predicate(|origin, _| {
+                origin.to_str().is_ok_and(is_loopback_origin)
+            })),
             CorsConfig::Origins(origins) => layer.allow_origin(AllowOrigin::list(
                 origins.iter().filter_map(|o| HeaderValue::from_str(o).ok()),
             )),
         }
     }
+}
+
+/// Whether an `Origin` header value names this machine: `http(s)://localhost`, `127.0.0.1` or
+/// `[::1]` with any port. A host that merely starts with `localhost` does not count.
+pub fn is_loopback_origin(origin: &str) -> bool {
+    origin_of(origin).is_some_and(|o| {
+        Url::parse(&o).is_ok_and(|u| match u.host() {
+            Some(url::Host::Domain(d)) => d == "localhost",
+            Some(url::Host::Ipv4(ip)) => ip.is_loopback(),
+            Some(url::Host::Ipv6(ip)) => ip.is_loopback(),
+            None => false,
+        })
+    })
 }
 
 /// The origin (`scheme://host[:port]`) of an http(s) URL, as a browser sends it in the `Origin`
@@ -105,6 +124,31 @@ mod tests {
         assert_eq!(origin_of("ftp://example.com"), None);
         assert_eq!(origin_of("https://user@example.com"), None);
         assert_eq!(origin_of("https://"), None);
+    }
+
+    #[test]
+    fn loopback_origins_are_this_machine_only() {
+        for ok in [
+            "http://localhost:8081",
+            "http://localhost",
+            "https://localhost:3000",
+            "http://127.0.0.1:5000",
+            "http://[::1]:8081",
+        ] {
+            assert!(is_loopback_origin(ok), "{ok}");
+        }
+        for bad in [
+            "https://evil.example",
+            "http://localhost.evil.example",
+            "http://127.0.0.1.evil.example",
+            "http://192.168.1.5:8081",
+            "http://0.0.0.0:8081",
+            "null",
+            "file://",
+            "",
+        ] {
+            assert!(!is_loopback_origin(bad), "{bad}");
+        }
     }
 
     #[test]

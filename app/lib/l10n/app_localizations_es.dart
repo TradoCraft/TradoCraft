@@ -8780,6 +8780,33 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get shortcutConfirm => 'Confirmar';
+
+  @override
+  String get shortcutCancel => 'Cancelar o salir';
+
+  @override
+  String get shortcutFind => 'Buscar';
+
+  @override
+  String get shortcutAddLine => 'Añadir línea';
+
+  @override
+  String get shortcutHelpStandard => 'Teclas estándar';
+
+  @override
+  String get shortcutHelpNavigation => 'Navegación';
+
+  @override
+  String shortcutHelpAltKeys(String modifier) {
+    return 'Mantén $modifier para ver una tecla en cada botón; púlsala para usar el botón.';
+  }
+
+  @override
+  String get shortcutHelpEnter =>
+      'Intro pasa al campo siguiente. Arriba y Abajo cambian de fila, Ctrl con una flecha salta al extremo.';
+
+  @override
   String get moduleTodo => 'Tareas';
 
   @override

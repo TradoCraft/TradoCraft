@@ -1,0 +1,68 @@
+# Dependency updates (ADR 0069). Security updates open as soon as an advisory appears; these are the
+# regular weekly updates, with minor and patch versions of one ecosystem grouped into one pull request
+# so a week of small bumps is one review, not twenty. Major versions come one at a time.
+version: 2
+updates:
+  - package-ecosystem: cargo
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      cargo-minor-and-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: pub
+    directory: /app
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      pub-minor-and-patch:
+        update-types: [minor, patch]
+    ignore:
+      # 2.x needs a new generator config, unique operation ids in the OpenAPI document and changes
+      # the generated enums ($unknown); migrate by hand (scripts/generate-api-client.sh), not by bump.
+      - dependency-name: "swagger_parser"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: npm
+    directory: /e2e
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      npm-minor-and-patch:
+        update-types: [minor, patch]
+    ignore:
+      # The type definitions must match the Node version the e2e job runs (node-version in
+      # .github/workflows/ci.yml); raise both together by hand.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "chore(ci)"
+
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "chore(deps)"
+
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "chore(deps)"

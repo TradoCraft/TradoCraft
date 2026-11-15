@@ -163,13 +163,16 @@ void main() {
     bool alt = false,
     bool ctrl = false,
     bool shift = false,
+    bool meta = false,
   }) async {
     if (alt) await tester.sendKeyDownEvent(LogicalKeyboardKey.altLeft);
     if (ctrl) await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+    if (meta) await tester.sendKeyDownEvent(LogicalKeyboardKey.metaLeft);
     if (shift) await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
     final handled = await tester.sendKeyDownEvent(key);
     await tester.sendKeyUpEvent(key);
     if (shift) await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+    if (meta) await tester.sendKeyUpEvent(LogicalKeyboardKey.metaLeft);
     if (ctrl) await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
     if (alt) await tester.sendKeyUpEvent(LogicalKeyboardKey.altLeft);
     await tester.pumpAndSettle();
@@ -244,8 +247,8 @@ void main() {
         await chord(t, LogicalKeyboardKey.digit2, alt: true, ctrl: true),
         isFalse,
       );
-      // Home needs no handler outside the shell; Create has no scope yet (phase B).
-      expect(await chord(t, LogicalKeyboardKey.keyC, alt: true), isFalse);
+      // Home needs no handler outside the shell; Create is Ctrl+N and nothing offers it here.
+      expect(await chord(t, LogicalKeyboardKey.keyN, ctrl: true), isFalse);
     });
 
     testWidgets('H shows the first permitted section and the main area', (
@@ -345,15 +348,15 @@ void main() {
       ws().open('/orders/a');
       ws().open('/orders/b');
       await t.pumpAndSettle();
-      expect(await chord(t, LogicalKeyboardKey.keyS, alt: true), isTrue);
+      expect(await chord(t, LogicalKeyboardKey.keyS, ctrl: true), isTrue);
       expect(_saved, ['b']);
       ws().focus(container.read(workspaceProvider).tabs.first.id);
       await t.pumpAndSettle();
-      expect(await chord(t, LogicalKeyboardKey.keyS, alt: true), isTrue);
+      expect(await chord(t, LogicalKeyboardKey.keyS, ctrl: true), isTrue);
       expect(_saved, ['b', 'a']);
       ws().focusHome();
       await t.pumpAndSettle();
-      expect(await chord(t, LogicalKeyboardKey.keyS, alt: true), isFalse);
+      expect(await chord(t, LogicalKeyboardKey.keyS, ctrl: true), isFalse);
       expect(_saved, ['b', 'a']);
     });
 
@@ -373,7 +376,7 @@ void main() {
       await t.pumpAndSettle();
       expect(await chord(t, LogicalKeyboardKey.digit1, alt: true), isFalse);
       expect(find.text('ORDERS LIST'), findsOneWidget);
-      expect(await chord(t, LogicalKeyboardKey.keyS, alt: true), isTrue);
+      expect(await chord(t, LogicalKeyboardKey.keyS, ctrl: true), isTrue);
       expect(dialogSaves, 1);
       Navigator.of(t.element(find.text('a dialog'))).pop();
       await t.pumpAndSettle();
@@ -451,8 +454,75 @@ void main() {
         ),
       );
       await t.pumpAndSettle();
-      expect(await chord(t, LogicalKeyboardKey.keyS, alt: true), isFalse);
+      expect(await chord(t, LogicalKeyboardKey.keyS, ctrl: true), isFalse);
       expect(_saved, isEmpty);
+    });
+  });
+
+  group('help', () {
+    testWidgets('Ctrl+/ lists the chords in effect and closes with Esc', (
+      t,
+    ) async {
+      await pump(t);
+      expect(await chord(t, LogicalKeyboardKey.slash, ctrl: true), isTrue);
+      expect(find.text('Keyboard shortcuts'), findsNWidgets(2)); // title and its own row
+      for (final keys in [
+        'Ctrl+S',
+        'Ctrl+Enter',
+        'Esc',
+        'Ctrl+F',
+        'Ctrl+N',
+        'Alt+B',
+        'Alt+H',
+        'Alt+L',
+        'Alt+1 - 9',
+      ]) {
+        expect(find.text(keys), findsOneWidget, reason: keys);
+      }
+      expect(await chord(t, LogicalKeyboardKey.escape), isTrue);
+      expect(find.text('Keyboard shortcuts'), findsNothing);
+    });
+  });
+
+  group('Esc leaves the form', () {
+    testWidgets('Esc closes a clean tab and goes back one screen first', (
+      t,
+    ) async {
+      await pump(t);
+      ws().open('/orders/a');
+      await t.pumpAndSettle();
+      await t.tap(find.text('push-a'));
+      await t.pumpAndSettle();
+      expect(find.text('screen a-in'), findsOneWidget);
+      expect(await chord(t, LogicalKeyboardKey.escape), isTrue);
+      expect(find.text('screen a-in'), findsNothing);
+      expect(find.text('screen a'), findsOneWidget);
+      expect(await chord(t, LogicalKeyboardKey.escape), isTrue);
+      expect(container.read(workspaceProvider).tabs, isEmpty);
+    });
+
+    testWidgets('Esc asks first when the tab has unsaved edits', (t) async {
+      await pump(t);
+      final id = ws().open('/orders/a');
+      await t.pumpAndSettle();
+      ws().dirtyOf(id).value = true;
+      expect(await chord(t, LogicalKeyboardKey.escape), isTrue);
+      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(container.read(workspaceProvider).tabs, hasLength(1));
+      // Esc again cancels the question (its Cancel button): the tab stays.
+      expect(await chord(t, LogicalKeyboardKey.escape), isTrue);
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(container.read(workspaceProvider).tabs, hasLength(1));
+      // Ctrl+Enter agrees to discard.
+      await chord(t, LogicalKeyboardKey.escape);
+      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(await chord(t, LogicalKeyboardKey.enter, ctrl: true), isTrue);
+      expect(container.read(workspaceProvider).tabs, isEmpty);
+    });
+
+    testWidgets('Esc does nothing in the main area', (t) async {
+      await pump(t);
+      expect(await chord(t, LogicalKeyboardKey.escape), isFalse);
     });
   });
 
@@ -470,13 +540,15 @@ void main() {
         character: 'z',
       );
       expect(handled, isFalse);
-      // A handled one (Save) is consumed, not typed.
+      await t.sendKeyUpEvent(LogicalKeyboardKey.altLeft);
+      // A handled one (Ctrl+S, Save) is consumed, not typed.
+      await t.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
       final saved = await t.sendKeyDownEvent(
         LogicalKeyboardKey.keyS,
         character: 's',
       );
       expect(saved, isTrue);
-      await t.sendKeyUpEvent(LogicalKeyboardKey.altLeft);
+      await t.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
       await t.pump();
       expect(
         t
@@ -515,8 +587,8 @@ void main() {
         // (The text field's own shortcut takes the key, so the return value says nothing.)
         await chord(t, LogicalKeyboardKey.keyB, ctrl: true);
         expect(find.text('screen a-in'), findsOneWidget);
-        // Digits and Save are no text keys: still ours.
-        expect(await chord(t, LogicalKeyboardKey.keyS, ctrl: true), isTrue);
+        // Digits and Save (Cmd+S) are no text keys: still ours.
+        expect(await chord(t, LogicalKeyboardKey.keyS, meta: true), isTrue);
       } finally {
         debugDefaultTargetPlatformOverride = null;
       }
@@ -612,6 +684,10 @@ void main() {
       expect(ShortcutAction.menu2.describe(web: false), 'Alt+2');
       expect(ShortcutAction.menu2.describe(web: true), 'Alt+Shift+2');
       expect(ShortcutAction.save.hintLabelFor(web: true), 'S');
+      expect(ShortcutAction.save.describe(web: false), 'Ctrl+S');
+      expect(ShortcutAction.create.describe(web: true), 'Alt+C');
+      expect(ShortcutAction.create.describe(web: false), 'Ctrl+N');
+      expect(ShortcutAction.cancel.describe(), 'Esc');
       expect(ShortcutAction.kbShare.hintLabelFor(web: false), '⇧S');
     });
   });

@@ -7,3 +7,6 @@ bool get isMac => defaultTargetPlatform == TargetPlatform.macOS;
 /// The modifier of the shortcuts in the style of common business-app shortcuts: Alt, and Ctrl on
 /// macOS (where Option types special characters and Cmd belongs to the system and the browser).
 String get primaryModifierLabel => isMac ? 'Ctrl' : 'Alt';
+
+/// The modifier of the standard chords (save, confirm, find, create): Ctrl, Cmd on macOS.
+String get standardModifierLabel => isMac ? 'Cmd' : 'Ctrl';

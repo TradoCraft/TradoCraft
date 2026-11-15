@@ -79,6 +79,8 @@ async fn main() -> anyhow::Result<()> {
     };
     match &cors {
         CorsConfig::Any => tracing::warn!("CORS: any browser origin is answered"),
+        // Only the staff API's development default; the portal builds its list from origins.
+        CorsConfig::Loopback => tracing::info!("CORS: browser pages of this machine are answered"),
         CorsConfig::Origins(o) if o.is_empty() => anyhow::bail!(
             "no portal origin is known: set portal_url on the company (Settings) or \
              PORTAL_ALLOWED_ORIGINS, e.g. https://portal.example.com"

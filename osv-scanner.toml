@@ -1,0 +1,36 @@
+# Known vulnerabilities that were looked at and are accepted for now (ADR 0069).
+#
+# Every entry needs a reason and an expiry date. When the date passes, osv-scanner reports the
+# vulnerability again and the check fails, so an exception is a decision to look again, not a way to
+# silence a finding. Fix a vulnerability rather than adding it here whenever a fix exists and fits.
+#
+# Last reviewed: 2026-11-15.
+
+# libsqlite3-sys is an entry of Cargo.lock only: no workspace crate depends on it on any target or
+# feature (`cargo tree -i libsqlite3-sys --workspace --target all -e all` prints nothing), because the
+# database is PostgreSQL. It is not compiled into any TradoCraft binary.
+[[IgnoredVulns]]
+id = "RUSTSEC-2026-0459"
+ignoreUntil = 2027-02-15
+reason = "libsqlite3-sys is in Cargo.lock only and not compiled: TradoCraft uses PostgreSQL, no workspace crate depends on it."
+
+[[IgnoredVulns]]
+id = "RUSTSEC-2023-0071"
+ignoreUntil = 2027-02-15
+reason = "rsa is compiled: jsonwebtoken's rust_crypto backend uses it to verify RS*/PS* signatures. The flaw (Marvin, a timing side channel) concerns private-key operations, and TradoCraft only verifies tokens with the identity provider's public keys; it holds no RSA private key outside the tests. No fixed version exists. The aws_lc_rs backend would avoid the crate but brings aws-lc-sys under the OpenSSL licence, which does not fit an AGPL project (deny.toml)."
+
+[[IgnoredVulns]]
+id = "RUSTSEC-2026-0387"
+ignoreUntil = 2027-02-15
+reason = "crypto-bigint 0.5.5 (fixed in 0.7.6, which rsa 0.9 and elliptic-curve 0.13 cannot use yet) is compiled through jsonwebtoken's rust_crypto backend (rsa, p256, p384). Its timing variability affects operations on secret integers; TradoCraft only verifies tokens with the identity provider's public keys and holds no private key outside the tests. Look again when jsonwebtoken or the RustCrypto crates move to crypto-bigint 0.7."
+
+# Notices that a crate is no longer maintained. No vulnerability is known.
+[[IgnoredVulns]]
+id = "RUSTSEC-2024-0436"
+ignoreUntil = 2027-02-15
+reason = "paste is unmaintained; it is a build-time proc macro used through utoipa-axum, no known vulnerability."
+
+[[IgnoredVulns]]
+id = "RUSTSEC-2026-0441"
+ignoreUntil = 2027-02-15
+reason = "pin-utils is unmaintained; used through async-imap (helpdesk mail), no known vulnerability."

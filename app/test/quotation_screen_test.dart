@@ -1,13 +1,14 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter/services.dart';
 import 'package:tradocraft_app/app/api.dart';
+import 'package:tradocraft_app/app/shortcuts/host.dart';
 import 'package:tradocraft_app/features/quotations/quotation_screen.dart';
 import 'package:tradocraft_app/l10n/app_localizations.dart';
 import 'package:tradocraft_app/shared/search_picker.dart';
@@ -384,8 +385,10 @@ Future<FakeApi> _pump(
   WidgetTester tester,
   String status, {
   bool configured = false,
+  bool keys = false,
+  Size size = const Size(1400, 1000),
 }) async {
-  tester.view.physicalSize = const Size(1400, 1000);
+  tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   final fake = FakeApi(status, configured: configured);
@@ -401,6 +404,7 @@ Future<FakeApi> _pump(
           ...GlobalMaterialLocalizations.delegates,
         ],
         supportedLocales: AppLocalizations.supportedLocales,
+        builder: keys ? (c, child) => ShortcutsHost(child: child!) : null,
         home: QuotationScreen(id: _quotationId),
       ),
     ),
@@ -870,5 +874,80 @@ void main() {
       isNot(contains('POST /api/v1/quotations/$_quotationId/convert')),
     );
     expect(find.text('order page o1'), findsNothing);
+  });
+
+  group('keyboard', () {
+    String? focusedText() {
+      final f = FocusManager.instance.primaryFocus;
+      return f?.context?.findAncestorWidgetOfExactType<EditableText>() == null
+          ? null
+          : f!.context!.findAncestorWidgetOfExactType<EditableText>()!
+                .controller
+                .text;
+    }
+
+    testWidgets('Alt+L puts the cursor in the add-product picker', (
+      tester,
+    ) async {
+      await _pump(tester, 'draft', keys: true);
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.altLeft);
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.keyL);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.keyL);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.altLeft);
+      await tester.pumpAndSettle();
+      final picker = find.descendant(
+        of: find.byType(SearchPicker<Product>),
+        matching: find.byType(EditableText),
+      );
+      expect(
+        tester.widget<EditableText>(picker).focusNode.hasFocus,
+        isTrue,
+      );
+    });
+
+    testWidgets('Alt+L scrolls to the add-product picker when it is not built yet', (
+      tester,
+    ) async {
+      // A short window: the page is a lazy list, the picker is far below what is built.
+      await _pump(tester, 'draft', keys: true, size: const Size(1400, 240));
+      expect(find.byType(SearchPicker<Product>), findsNothing);
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.altLeft);
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.keyL);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.keyL);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.altLeft);
+      await tester.pumpAndSettle();
+      final picker = find.descendant(
+        of: find.byType(SearchPicker<Product>),
+        matching: find.byType(EditableText),
+      );
+      expect(picker, findsOneWidget);
+      expect(tester.widget<EditableText>(picker).focusNode.hasFocus, isTrue);
+    });
+
+    testWidgets('a sent quotation has no add-line shortcut', (tester) async {
+      await _pump(tester, 'sent', keys: true);
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.altLeft);
+      final handled = await tester.sendKeyDownEvent(LogicalKeyboardKey.keyL);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.keyL);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.altLeft);
+      expect(handled, isFalse);
+    });
+
+    testWidgets('Ctrl+Right and Ctrl+Left jump along a line', (tester) async {
+      await _pump(tester, 'draft', keys: true);
+      final qty = find.bySemanticsLabel('Quantity');
+      await tester.tap(find.descendant(of: qty, matching: find.byType(TextField)));
+      await tester.pump();
+      expect(focusedText(), '1');
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+      await tester.pump();
+      // The last field of the line is its discount.
+      expect(focusedText(), '0');
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+      await tester.pump();
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+      expect(focusedText(), '1');
+    });
   });
 }
