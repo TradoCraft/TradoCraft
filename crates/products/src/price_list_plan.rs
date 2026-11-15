@@ -8,8 +8,21 @@ use serde::Serialize;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-/// Longest path segment, in characters, extension included.
-const MAX_SEGMENT: usize = 80;
+/// Longest path segment, in UTF-8 bytes (file systems limit bytes, usually 255), extension and
+/// collision suffix included. Kept well below 255 for file systems with smaller limits.
+const MAX_SEGMENT: usize = 200;
+
+/// `s` cut to at most `max` bytes, only on a character boundary.
+fn cut_bytes(s: &str, max: usize) -> &str {
+    if s.len() <= max {
+        return s;
+    }
+    let mut end = max;
+    while !s.is_char_boundary(end) {
+        end -= 1;
+    }
+    &s[..end]
+}
 
 const RESERVED: [&str; 22] = [
     "CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8",
@@ -48,9 +61,10 @@ fn sanitize_to(input: &str, max: usize) -> String {
         replaced = replaced.replace("..", ".");
     }
     let trimmed = replaced.trim_start_matches(['.', ' ']);
-    let mut out: String = trimmed.chars().take(max).collect();
-    let end = out.trim_end_matches(['.', ' ']).len();
-    out.truncate(end);
+    // Room for the `_` a reserved device name may get below.
+    let mut out: String = cut_bytes(trimmed, max.saturating_sub(1))
+        .trim_end_matches(['.', ' '])
+        .to_string();
     // CON, CON.txt and con are all the console device on Windows.
     let device = out
         .split('.')
@@ -68,8 +82,10 @@ fn sanitize_to(input: &str, max: usize) -> String {
 }
 
 /// A file name `stem.ext` whose stem is sanitized; the extension is fixed by the caller.
-fn file_segment(stem: &str, ext: &str) -> String {
-    format!("{}.{ext}", sanitize_to(stem, MAX_SEGMENT - ext.len() - 1))
+/// `suffix` (such as ` (2)`) is appended to the stem and counted in the byte budget.
+fn file_segment(stem: &str, ext: &str, suffix: &str) -> String {
+    let budget = MAX_SEGMENT - ext.len() - 1 - suffix.len();
+    format!("{}{suffix}.{ext}", sanitize_to(stem, budget))
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, serde::Deserialize, ToSchema)]
@@ -153,14 +169,11 @@ pub fn export_plan(
                     (Some(e.id), stem)
                 }));
             for (export_id, stem) in files {
-                let mut file = file_segment(&stem, ext);
+                let mut file = file_segment(&stem, ext, "");
                 let mut n = 1;
                 while !used.insert(format!("{dir}/{file}").to_lowercase()) {
                     n += 1;
-                    file = file_segment(
-                        &format!("{} ({n})", sanitize_to(&stem, MAX_SEGMENT - 16)),
-                        ext,
-                    );
+                    file = file_segment(&stem, ext, &format!(" ({n})"));
                 }
                 out.push(ExportPlanEntry {
                     zone_id: z.id,
@@ -239,15 +252,54 @@ mod tests {
     }
 
     #[test]
-    fn length_is_capped_in_characters_without_trailing_dots() {
+    fn length_is_capped_in_bytes_without_trailing_dots() {
         let long = "é".repeat(500);
-        assert_eq!(sanitize_segment(&long).chars().count(), MAX_SEGMENT);
+        let s = sanitize_segment(&long);
+        assert!(
+            s.len() <= MAX_SEGMENT && MAX_SEGMENT - s.len() < 3,
+            "{}",
+            s.len()
+        );
         let dotted = format!("{}.....", "a".repeat(MAX_SEGMENT - 2));
         let s = sanitize_segment(&dotted);
-        assert!(!s.ends_with('.') && s.chars().count() <= MAX_SEGMENT, "{s}");
-        let f = file_segment(&long, "xlsx");
-        assert_eq!(f.chars().count(), MAX_SEGMENT);
+        assert!(!s.ends_with('.') && s.len() <= MAX_SEGMENT, "{s}");
+        let f = file_segment(&long, "xlsx", "");
+        assert!(f.len() <= MAX_SEGMENT);
         assert!(f.ends_with(".xlsx"));
+    }
+
+    #[test]
+    fn multibyte_names_are_cut_on_character_boundaries() {
+        for unit in ["é", "😀", "漢", "a😀"] {
+            let long = unit.repeat(500);
+            let s = sanitize_segment(&long);
+            assert!(s.len() <= MAX_SEGMENT, "{unit}: {}", s.len());
+            assert!(s.chars().all(|c| unit.contains(c)), "{unit}");
+            let f = file_segment(&long, "pdf", " (12)");
+            assert!(f.len() <= MAX_SEGMENT, "{unit}: {}", f.len());
+            assert!(f.ends_with(" (12).pdf"), "{f}");
+        }
+        // A reserved name that only forms after the cut still fits.
+        let s = sanitize_segment(&format!("CON{}", "x".repeat(300)));
+        assert!(s.len() <= MAX_SEGMENT);
+    }
+
+    #[test]
+    fn colliding_multibyte_files_stay_within_the_limit() {
+        let zones = [zone(1, &"漢".repeat(300), &["en"])];
+        let name = "😀".repeat(300);
+        let exports = [export(1, &name, None), export(2, &name, None)];
+        let plan = export_plan(&name, &zones, &exports, RenderFormat::Xlsx);
+        let mut seen = HashSet::new();
+        for e in &plan {
+            assert!(seen.insert(e.relative_path.to_lowercase()));
+            for segment in e.relative_path.split('/') {
+                assert!(segment.len() <= MAX_SEGMENT, "{}", segment.len());
+            }
+        }
+        // list file, then two profiles with the same name: " (2)" and " (3)" suffixes.
+        assert!(plan.iter().any(|e| e.relative_path.ends_with(" (2).xlsx")));
+        assert!(plan.iter().any(|e| e.relative_path.ends_with(" (3).xlsx")));
     }
 
     fn zone(n: u128, name: &str, langs: &[&str]) -> PlanZone {

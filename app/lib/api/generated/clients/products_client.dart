@@ -244,7 +244,7 @@ abstract class ProductsClient {
   ///
   /// [format] - `pdf` (default) or `xlsx`.
   @POST('/api/v1/price-lists/{id}/render')
-  Future<List<int>> renderPriceList({
+  Future<void> renderPriceList({
     @Path('id') required String id,
     @Query('zone_id') String? zoneId,
     @Query('lang') String? lang,

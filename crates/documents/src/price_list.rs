@@ -142,19 +142,24 @@ pub async fn render_pdf(
     crate::render_pdf_with_files(config, "price_list", doc, files).await
 }
 
-/// Renders the price list as an Excel workbook: one sheet, group titles as rows.
-pub fn render_xlsx(doc: &PriceListDoc) -> Result<Vec<u8>, XlsxError> {
-    let mut wb = Workbook::new();
-    let ws = wb.add_worksheet();
-    // Sheet names are limited to 31 characters and may not contain []:*?/\
-    let sheet: String = doc
-        .title
+/// A valid Excel sheet name from a title: at most 31 characters, none of `[]:*?/\\`, and no
+/// apostrophe at either end. Empty when nothing usable is left (the default name is kept then).
+fn sheet_name(title: &str) -> String {
+    let cleaned: String = title
         .chars()
         .filter(|c| !"[]:*?/\\".contains(*c))
         .take(31)
         .collect();
-    if !sheet.trim().is_empty() {
-        ws.set_name(sheet.trim())?;
+    cleaned.trim().trim_matches('\'').trim().to_string()
+}
+
+/// Renders the price list as an Excel workbook: one sheet, group titles as rows.
+pub fn render_xlsx(doc: &PriceListDoc) -> Result<Vec<u8>, XlsxError> {
+    let mut wb = Workbook::new();
+    let ws = wb.add_worksheet();
+    let sheet = sheet_name(&doc.title);
+    if !sheet.is_empty() {
+        ws.set_name(&sheet)?;
     }
     let bold = Format::new().set_bold();
     let right = Format::new().set_align(rust_xlsxwriter::FormatAlign::Right);
@@ -276,5 +281,18 @@ mod tests {
         let bytes = render_xlsx(&doc()).unwrap();
         assert_eq!(&bytes[..2], b"PK");
         assert!(bytes.len() > 1000);
+    }
+
+    #[test]
+    fn sheet_names_never_start_or_end_with_an_apostrophe() {
+        assert_eq!(sheet_name("'Prijslijst'"), "Prijslijst");
+        assert_eq!(sheet_name("''Rock 'n' roll''"), "Rock 'n' roll");
+        assert_eq!(sheet_name("'[x]'"), "x");
+        assert_eq!(sheet_name("'''"), "");
+        let mut d = doc();
+        d.title = "'Prijslijst 2027'".into();
+        assert!(render_xlsx(&d).is_ok());
+        d.title = "''".into();
+        assert!(render_xlsx(&d).is_ok());
     }
 }

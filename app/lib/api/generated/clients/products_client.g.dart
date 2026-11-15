@@ -888,7 +888,7 @@ class _ProductsClient implements ProductsClient {
   }
 
   @override
-  Future<List<int>> renderPriceList({
+  Future<void> renderPriceList({
     required String id,
     String? zoneId,
     String? lang,
@@ -905,7 +905,7 @@ class _ProductsClient implements ProductsClient {
     queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
-    final _options = _setStreamType<List<int>>(
+    final _options = _setStreamType<void>(
       Options(method: 'POST', headers: _headers, extra: _extra)
           .compose(
             _dio.options,
@@ -915,15 +915,7 @@ class _ProductsClient implements ProductsClient {
           )
           .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
     );
-    final _result = await _dio.fetch<List<dynamic>>(_options);
-    late List<int> _value;
-    try {
-      _value = _result.data!.cast<int>();
-    } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options, response: _result);
-      rethrow;
-    }
-    return _value;
+    await _dio.fetch<void>(_options);
   }
 
   @override

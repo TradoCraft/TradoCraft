@@ -1866,7 +1866,8 @@ fn file_stem(parts: &[&str]) -> String {
 /// zone's languages. With `export_id` only that profile's chapters are printed.
 #[utoipa::path(post, path = "/price-lists/{id}/render", tag = "products",
     params(("id" = Uuid, Path), RenderParams),
-    responses((status = 200, content_type = "application/octet-stream", body = Vec<u8>),
+    responses((status = 200, content_type = "application/octet-stream",
+        description = "The rendered file (PDF or XLSX) as raw bytes"),
         (status = 404, body = ErrorBody), (status = 422, body = ErrorBody)))]
 async fn render_price_list(
     State(state): State<AppState>,
@@ -1921,10 +1922,17 @@ async fn render_price_list(
             None
         };
 
+    // One snapshot for everything the document is made of, so a concurrent edit cannot give a
+    // list whose items and chapters disagree. Committed before rendering: no connection is held
+    // while Typst or Excel work.
+    let mut tx = sqlx::Connection::begin(&mut *conn).await?;
+    sqlx::query("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY")
+        .execute(&mut *tx)
+        .await?;
     let all_groups: Vec<AssembleGroup> =
         sqlx::query_as::<_, PriceListGroup>(&format!("{SELECT_GROUP} WHERE g.price_list_id = $1"))
             .bind(id)
-            .fetch_all(&mut *conn)
+            .fetch_all(&mut *tx)
             .await?
             .into_iter()
             .map(|g| AssembleGroup {
@@ -1953,7 +1961,7 @@ async fn render_price_list(
          WHERE i.price_list_id = $1 AND p.active",
     )
     .bind(id)
-    .fetch_all(&mut *conn)
+    .fetch_all(&mut *tx)
     .await?;
     let product_ids: Vec<Uuid> = rows.iter().map(|r| r.product_id).collect();
 
@@ -1964,7 +1972,7 @@ async fn render_price_list(
     )
     .bind(&product_ids)
     .bind(&chain)
-    .fetch_all(&mut *conn)
+    .fetch_all(&mut *tx)
     .await?;
     for (product, language, name) in tr {
         translations
@@ -1987,8 +1995,9 @@ async fn render_price_list(
     .bind(zone.price_zone_id)
     .bind(&product_ids)
     .bind(list.valid_from)
-    .fetch_all(&mut *conn)
+    .fetch_all(&mut *tx)
     .await?;
+    tx.commit().await?;
     drop(conn);
     let mut history: HashMap<Uuid, Vec<ZonePrice>> = HashMap::new();
     for r in price_rows {

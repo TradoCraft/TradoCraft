@@ -484,6 +484,10 @@ async fn company_logo_is_validated_and_printed_on_the_pdf(db: PgPool) {
         v
     };
     for bad in [
+        PNG[..PNG.len() - 12].to_vec(),
+        PNG[..30].to_vec(),
+        vec![0xFF, 0xD8, 0xFF, 0xE0, 1, 2],
+        b"<svg xmlns='http://www.w3.org/2000/svg'><rect/>".to_vec(),
         b"GIF89a......".to_vec(),
         b"%PDF-1.7".to_vec(),
         b"<svg xmlns='http://www.w3.org/2000/svg'><script>alert(1)</script></svg>".to_vec(),

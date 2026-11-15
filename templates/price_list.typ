@@ -40,6 +40,7 @@
   align(right, price-cell(r)),
 )
 
+#let table-emitted = false
 #for (i, s) in d.sections.enumerate() {
   if s.page_break and s.level == 0 and i > 0 { pagebreak(weak: true) }
   if s.show_title {
@@ -50,7 +51,7 @@
       if s.level == 0 { line(length: 100%, stroke: 0.7pt + accent) }
     })
   } else {
-    // Untitled group: no title block and (unless it opens the list) no repeated column header,
+    // Untitled group: no title block and (unless it is the first table of the list) no repeated column header,
     // only a gap.
     v(s.gap_mm * 1mm)
   }
@@ -59,7 +60,7 @@
       columns: columns,
       stroke: (x, y) => (bottom: 0.3pt + luma(220)),
       inset: (x: 4pt, y: 3.5pt),
-      ..if s.show_title or i == 0 {
+      ..if s.show_title or not table-emitted {
         (table.header(
           [#text(fill: luma(100), l.code)], [#text(fill: luma(100), l.description)],
           ..if d.show_unit { ([#text(fill: luma(100), l.unit)],) } else { () },
@@ -68,6 +69,7 @@
       } else { () },
       ..s.rows.map(row-cells).flatten(),
     ))
+    table-emitted = true
   }
 }
 

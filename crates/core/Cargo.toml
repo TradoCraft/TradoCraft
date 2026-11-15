@@ -12,6 +12,8 @@ axum.workspace = true
 base64 = "0.22"
 calamine.workspace = true
 quick-xml.workspace = true
+png = { version = "0.18", default-features = false }
+zune-jpeg = { version = "0.5", default-features = false, features = ["std"] }
 rust_xlsxwriter.workspace = true
 url = "2"
 chrono.workspace = true

@@ -19256,18 +19256,9 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "The rendered file (PDF or XLSX) as raw bytes",
             "content": {
-              "application/octet-stream": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "integer",
-                    "format": "int32",
-                    "minimum": 0
-                  }
-                }
-              }
+              "application/octet-stream": {}
             }
           },
           "404": {
