@@ -10007,6 +10007,18 @@ class AppLocalizationsNl extends AppLocalizations {
   String get plPerChapter => 'Eén profiel per hoofdstuk';
 
   @override
+  String get plPerLevelTitle => 'Eén profiel per niveau';
+
+  @override
+  String get plPerLevelHint =>
+      'Kies het niveau van de groepen die elk een profiel krijgen (niveau 1 = bovenste niveau). Groepen die al een eigen profiel hebben, worden overgeslagen.';
+
+  @override
+  String plLevelN(int n) {
+    return 'Niveau $n';
+  }
+
+  @override
   String get plWholeList => 'Volledige lijst';
 
   @override
@@ -10022,7 +10034,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get plChaptersHint =>
-      'De hoofdgroepen in dit bestand. Niets aangevinkt betekent de volledige lijst.';
+      'Vink de groepen aan die in dit bestand komen, op elk niveau. Alles onder een aangevinkte groep wordt automatisch meegenomen. Niets aangevinkt betekent de volledige lijst.';
 
   @override
   String get plFileName => 'Sjabloon voor bestandsnaam (optioneel)';

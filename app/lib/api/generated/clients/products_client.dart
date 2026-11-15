@@ -162,12 +162,16 @@ abstract class ProductsClient {
     @Body() required PriceListExportInput body,
   });
 
-  /// Creates one profile per top-level group that has no single-chapter profile yet (code.
-  /// `ch-<last 12 hex of the group id>`, name = the group title in the company's default language).
-  /// Idempotent: a second call creates nothing. Returns all profiles of the list.
+  /// Creates one profile per group at depth `level` (default 1, the top level) that has no profile.
+  /// consisting of exactly that group yet (code `ch-<last 12 hex of the group id>`, name = the group.
+  /// title in the company's default language). Idempotent: a second call creates nothing. Returns.
+  /// all profiles of the list.
+  ///
+  /// [level] - 1-based depth of the groups to create a profile for (1 = top level, the default; at most 4).
   @POST('/api/v1/price-lists/{id}/exports/per-chapter')
   Future<List<PriceListExport>> createPerChapterExports({
     @Path('id') required String id,
+    @Query('level') int? level,
   });
 
   @PUT('/api/v1/price-lists/{id}/exports/{export_id}')

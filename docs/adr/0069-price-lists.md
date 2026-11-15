@@ -154,3 +154,39 @@ the Flutter app (including the bulk export that walks the plan).
 **Consequences.** One list prints for every zone and language it is published for, and the plan
 tells a client exactly which files that is. A hidden or unpriced product silently does not
 appear, which is why the editor must show which items are not printed and why.
+
+## Amendment (2026-11-16): sections above chapters, profiles on any level
+
+**Why.** A customer lays a list out as section (level 1) > chapter (2) > titled group (3) >
+subchapter (4, untitled, gap only). Each section is exported as its own document and individual
+chapters or combinations of chapters as others. The first version let profiles select top-level
+groups only, honoured page breaks on top-level groups only, and sized PDF headings by the absolute
+tree level, so hidden section and chapter nodes would have shrunk every heading below them.
+
+**Change.**
+
+1. *Profiles on any group.* `price_list_export_groups` may reference a group of any depth (migration
+   `20270218000001_price_list_exports_any_level.sql` drops the two triggers and their functions;
+   migration 20270217000001 is unchanged). A profile prints every selected group with all its
+   descendants. A group is included when it or any ancestor is selected, so overlapping
+   selections print once; print order is tree order (`sort_order`), never selection order. A
+   selected group whose parent is not printed becomes a root of the file. The composite foreign
+   keys still tie a profile group to the profile's own list, and a group used by a profile still
+   cannot be deleted (409 naming the profiles). The rule "a used group cannot be moved below another
+   group" is gone: moving a group changes what a profile prints but breaks no invariant.
+2. *Page break on any group.* `page_break` is accepted and honoured at every level. In the
+   template it applies to the first thing printed from the group (its title, or its rows when it is
+   untitled), so a hidden section or chapter node hands its break to what follows; nothing breaks
+   before the first printed content, and consecutive breaks never leave a blank page.
+3. *Printed level.* `assemble` computes `print_level`, the number of ancestors whose title is
+   printed, and the document data carries it next to `level` (kept for compatibility). The
+   template uses `print_level` for the font size, the accent colour and the rule under the title: only
+   `print_level` 0 gets the large accent heading with a rule.
+4. *Profiles per level.* `POST /price-lists/{id}/exports/per-chapter` takes an optional `level`
+   query parameter (1-based depth, default 1, at most 4; otherwise 422) and creates one profile per
+   group at that depth that has no profile consisting of exactly that group yet. Codes stay
+   `ch-<last 12 hex of the group id>`, so the call stays idempotent.
+
+The export plan is unchanged: it lists files per zone, language and profile and does not look at
+groups. The Flutter app shows all groups of the list as an indented tree in the profile dialog,
+offers the page break switch on every group, and asks the level before creating profiles per level.

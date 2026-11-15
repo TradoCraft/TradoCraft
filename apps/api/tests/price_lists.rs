@@ -745,7 +745,7 @@ async fn zones_export_profiles_render_and_plan(db: PgPool) {
     assert_eq!(status, StatusCode::OK);
     assert_eq!(&x[..2], b"PK");
 
-    // Export profiles: a chapter, a combination; only top-level groups of this list.
+    // Export profiles: a chapter, a combination; groups of this list at any depth.
     let ex = format!("{base}/exports");
     let (status, e) = post(
         &app,
@@ -760,10 +760,6 @@ async fn zones_export_profiles_render_and_plan(db: PgPool) {
         (
             json!({ "code": "PUMPS", "name": "Dup", "group_ids": [] }),
             StatusCode::CONFLICT,
-        ),
-        (
-            json!({ "code": "SUB", "name": "Sub", "group_ids": [a_sub_id] }),
-            StatusCode::UNPROCESSABLE_ENTITY,
         ),
         (
             json!({ "code": "TWICE", "name": "Twice", "group_ids": [a_id, a_id] }),
@@ -884,7 +880,7 @@ async fn zones_export_profiles_render_and_plan(db: PgPool) {
         assert_eq!(path.split('/').count(), 4, "{path}");
     }
 
-    // A group a profile uses cannot be deleted or moved below another group.
+    // A group a profile uses cannot be deleted; moving it is fine.
     let (status, e) = call(
         &app,
         ADMIN,
@@ -903,7 +899,7 @@ async fn zones_export_profiles_render_and_plan(db: PgPool) {
         Some(json!({ "parent_id": b_id, "title": { "nl": "Leeg" } })),
     )
     .await;
-    assert_eq!(status, StatusCode::CONFLICT);
+    assert_eq!(status, StatusCode::OK);
     // Plain edits of the group are fine; after the profile goes the group can go.
     let (status, _) = call(
         &app,
@@ -1074,7 +1070,7 @@ async fn an_export_cannot_link_a_group_of_another_list(db: PgPool) {
 }
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
-async fn export_links_only_top_level_groups_and_block_group_changes(db: PgPool) {
+async fn export_links_any_group_deleting_a_used_group_stays_blocked(db: PgPool) {
     let app = setup(db.clone()).await;
     let base = new_list(&app, "TOP").await;
     let top = new_group(&app, &base, json!({ "title": { "nl": "Top" } })).await;
@@ -1085,14 +1081,16 @@ async fn export_links_only_top_level_groups_and_block_group_changes(db: PgPool) 
         json!({ "parent_id": top, "title": { "nl": "Sub" } }),
     )
     .await;
-    let (status, e) = post(
+    // A sub-group is a valid profile group now, also next to its own parent.
+    let (status, s) = post(
         &app,
         ADMIN,
         &format!("{base}/exports"),
-        json!({ "code": "S", "name": "S", "group_ids": [sub] }),
+        json!({ "code": "S", "name": "S", "group_ids": [sub, top] }),
     )
     .await;
-    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{e}");
+    assert_eq!(status, StatusCode::CREATED, "{s}");
+    assert_eq!(s["group_ids"], json!([sub, top]), "profile order is kept");
     let (status, e) = post(
         &app,
         ADMIN,
@@ -1101,30 +1099,23 @@ async fn export_links_only_top_level_groups_and_block_group_changes(db: PgPool) 
     )
     .await;
     assert_eq!(status, StatusCode::CREATED, "{e}");
-    assert_eq!(e["group_ids"], json!([other, top]), "profile order is kept");
+    assert_eq!(e["group_ids"], json!([other, top]));
 
-    // The database refuses a sub-group in a profile, whatever the API says.
+    // A group of another list is still refused by the database, whatever the API says.
+    let foreign = new_list(&app, "FOREIGN").await;
+    let foreign_group = new_group(&app, &foreign, json!({ "title": { "nl": "F" } })).await;
     let err = sqlx::query(
         "INSERT INTO pricing.price_list_export_groups (export_id, group_id, price_list_id, company_id, sort_order)
          SELECT e.id, $2, e.price_list_id, e.company_id, 9 FROM pricing.price_list_exports e WHERE e.id = $1",
     )
     .bind(uuid::Uuid::parse_str(e["id"].as_str().unwrap()).unwrap())
-    .bind(uuid::Uuid::parse_str(&sub).unwrap())
+    .bind(uuid::Uuid::parse_str(&foreign_group).unwrap())
     .execute(&db)
     .await
     .unwrap_err();
-    assert_eq!(db_code(&err).as_deref(), Some("23514"), "{err}");
+    assert_eq!(db_code(&err).as_deref(), Some("23503"), "{err}");
 
-    // ... and refuses to move a used group below another one.
-    let err = sqlx::query("UPDATE pricing.price_list_groups SET parent_id = $2 WHERE id = $1")
-        .bind(uuid::Uuid::parse_str(&other).unwrap())
-        .bind(uuid::Uuid::parse_str(&top).unwrap())
-        .execute(&db)
-        .await
-        .unwrap_err();
-    assert_eq!(db_code(&err).as_deref(), Some("23514"), "{err}");
-
-    // API: moving it is a 409, so is deleting it, and the message names the profile.
+    // Moving a used group below another one is allowed now (and so is the database).
     let (status, m) = call(
         &app,
         ADMIN,
@@ -1133,7 +1124,14 @@ async fn export_links_only_top_level_groups_and_block_group_changes(db: PgPool) 
         Some(json!({ "parent_id": top, "title": { "nl": "Other" } })),
     )
     .await;
-    assert_eq!(status, StatusCode::CONFLICT, "{m}");
+    assert_eq!(status, StatusCode::OK, "{m}");
+    sqlx::query("UPDATE pricing.price_list_groups SET parent_id = NULL WHERE id = $1")
+        .bind(uuid::Uuid::parse_str(&other).unwrap())
+        .execute(&db)
+        .await
+        .unwrap();
+
+    // Deleting it is a 409 naming the profile, and the database refuses too.
     let (status, m) = call(
         &app,
         ADMIN,
@@ -1144,7 +1142,6 @@ async fn export_links_only_top_level_groups_and_block_group_changes(db: PgPool) 
     .await;
     assert_eq!(status, StatusCode::CONFLICT, "{m}");
     assert!(m.to_string().contains('T'), "{m}");
-    // The database alone also refuses the delete (foreign key from the link).
     let err = sqlx::query("DELETE FROM pricing.price_list_groups WHERE id = $1")
         .bind(uuid::Uuid::parse_str(&other).unwrap())
         .execute(&db)
@@ -1171,6 +1168,137 @@ async fn export_links_only_top_level_groups_and_block_group_changes(db: PgPool) 
     )
     .await;
     assert_eq!(status, StatusCode::NO_CONTENT);
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn sections_chapters_profiles_page_breaks_and_per_level_exports(db: PgPool) {
+    let app = setup(db).await;
+    let base = new_list(&app, "SEC").await;
+    put_zones(
+        &app,
+        &base,
+        json!([{ "price_zone_id": Z1, "languages": ["nl"] }]),
+    )
+    .await;
+    // section (hidden) > chapter (hidden) > titled group, twice.
+    let hidden = |extra: Value| {
+        let mut b = json!({ "show_title": false, "title": { "nl": "verborgen" } });
+        b.as_object_mut()
+            .unwrap()
+            .extend(extra.as_object().unwrap().clone());
+        b
+    };
+    let section = new_group(&app, &base, hidden(json!({ "title": { "nl": "Sectie" } }))).await;
+    let ch_a = new_group(
+        &app,
+        &base,
+        hidden(json!({ "parent_id": section, "sort_order": 1, "title": { "nl": "Hoofdstuk A" } })),
+    )
+    .await;
+    let ch_b = new_group(
+        &app,
+        &base,
+        hidden(json!({ "parent_id": section, "sort_order": 2, "title": { "nl": "Hoofdstuk B" } })),
+    )
+    .await;
+    let pumps = new_group(
+        &app,
+        &base,
+        json!({ "parent_id": ch_a, "title": { "nl": "Pompgroep" } }),
+    )
+    .await;
+    // A page break on a child group is accepted and returned.
+    let (status, hoses) = post(
+        &app,
+        ADMIN,
+        &format!("{base}/groups"),
+        json!({ "parent_id": ch_b, "title": { "nl": "Slanggroep" }, "page_break": true }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{hoses}");
+    assert_eq!(hoses["page_break"], true);
+    let hoses = hoses["id"].as_str().unwrap().to_string();
+    for (product, group) in [(PUMP, &pumps), (HOSE, &hoses)] {
+        let (status, i) = post(
+            &app,
+            ADMIN,
+            &format!("{base}/items"),
+            json!({ "product_id": product, "group_id": group }),
+        )
+        .await;
+        assert_eq!(status, StatusCode::CREATED, "{i}");
+    }
+    let ex = format!("{base}/exports");
+    let (status, p) = post(
+        &app,
+        ADMIN,
+        &ex,
+        json!({ "code": "CHA", "name": "Hoofdstuk A", "group_ids": [ch_a] }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{p}");
+    let cha_id = p["id"].as_str().unwrap().to_string();
+
+    let render = |q: String| {
+        let app = app.clone();
+        let base = base.clone();
+        async move {
+            let (status, _, pdf) = raw(
+                &app,
+                Who::Staff(ADMIN),
+                Method::POST,
+                &format!("{base}/render?{q}"),
+                None,
+            )
+            .await;
+            assert_eq!(status, StatusCode::OK);
+            text(&pdf)
+        }
+    };
+    // The profile on a level-2 group prints that subtree only.
+    if let Some(t) = render(format!("export_id={cha_id}")).await {
+        assert!(t.contains("Pompgroep") && t.contains("PUMP"), "{t}");
+        assert!(!t.contains("Slanggroep"), "{t}");
+        assert!(!t.contains("Hoofdstuk A") && !t.contains("Sectie"), "{t}");
+    }
+    // The whole list: both groups print and the page break splits them over two pages.
+    if let Some(t) = render(String::new()).await {
+        let pages: Vec<&str> = t.split('\u{c}').filter(|p| !p.trim().is_empty()).collect();
+        assert_eq!(pages.len(), 2, "{t}");
+        assert!(pages[0].contains("Pompgroep") && !pages[0].contains("Slanggroep"));
+        assert!(pages[1].contains("Slanggroep"));
+    }
+
+    // Per level: level 2 creates profiles for both chapters except A (exists), idempotently.
+    let (status, all) = post(&app, ADMIN, &format!("{ex}/per-chapter?level=2"), json!({})).await;
+    assert_eq!(status, StatusCode::OK, "{all}");
+    let all = all.as_array().unwrap();
+    assert_eq!(all.len(), 2, "{all:?}");
+    let b = all
+        .iter()
+        .find(|e| e["group_ids"] == json!([ch_b]))
+        .unwrap();
+    assert_eq!(b["name"], "Hoofdstuk B");
+    let (_, again) = post(&app, ADMIN, &format!("{ex}/per-chapter?level=2"), json!({})).await;
+    assert_eq!(again.as_array().unwrap().len(), 2, "idempotent");
+    // Level 1 creates the section profile; level 3 the two titled groups.
+    let (_, l1) = post(&app, ADMIN, &format!("{ex}/per-chapter"), json!({})).await;
+    assert_eq!(l1.as_array().unwrap().len(), 3);
+    let (_, l3) = post(&app, ADMIN, &format!("{ex}/per-chapter?level=3"), json!({})).await;
+    assert_eq!(l3.as_array().unwrap().len(), 5);
+    for bad in ["0", "5", "x"] {
+        let (status, e) = post(
+            &app,
+            ADMIN,
+            &format!("{ex}/per-chapter?level={bad}"),
+            json!({}),
+        )
+        .await;
+        assert!(
+            status == StatusCode::UNPROCESSABLE_ENTITY || status == StatusCode::BAD_REQUEST,
+            "{bad}: {status} {e}"
+        );
+    }
 }
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]

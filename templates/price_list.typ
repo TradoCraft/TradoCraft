@@ -41,14 +41,27 @@
 )
 
 #let table-emitted = false
-#for (i, s) in d.sections.enumerate() {
-  if s.page_break and s.level == 0 and i > 0 { pagebreak(weak: true) }
+// A page break asked for by a group applies to the first thing printed from it on (its title, or
+// its rows when untitled), so a hidden section or chapter node hands its break to what follows.
+// Nothing breaks before the first printed content, and consecutive breaks never leave a blank page.
+#let printed = false
+#let pending-break = false
+#for s in d.sections {
+  if s.page_break { pending-break = true }
+  if s.show_title or s.rows.len() > 0 {
+    if pending-break and printed { pagebreak(weak: true) }
+    pending-break = false
+    printed = true
+  }
   if s.show_title {
-    let size = if s.level == 0 { 12pt } else if s.level == 1 { 10.5pt } else { 9.5pt }
-    v(if s.level == 0 { 4mm } else { 2mm })
+    // Styling follows the number of printed ancestor titles, not the depth in the tree: hidden
+    // section and chapter nodes do not shrink the headings below them.
+    let pl = s.print_level
+    let size = if pl == 0 { 12pt } else if pl == 1 { 10.5pt } else { 9.5pt }
+    v(if pl == 0 { 4mm } else { 2mm })
     block(width: 100%, below: 1.5mm, {
-      text(size, weight: "bold", fill: if s.level == 0 { accent } else { black }, s.title)
-      if s.level == 0 { line(length: 100%, stroke: 0.7pt + accent) }
+      text(size, weight: "bold", fill: if pl == 0 { accent } else { black }, s.title)
+      if pl == 0 { line(length: 100%, stroke: 0.7pt + accent) }
     })
   } else {
     // Untitled group: no title block and (unless it is the first table of the list) no repeated column header,

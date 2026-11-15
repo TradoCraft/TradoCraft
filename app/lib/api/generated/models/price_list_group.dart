@@ -25,7 +25,7 @@ class PriceListGroup {
   final String gapMm;
   final String id;
 
-  /// Start a new page before this group (top-level groups only).
+  /// Start a new page before this group (any level; not before the first printed content).
   @JsonKey(name: 'page_break')
   final bool pageBreak;
   @JsonKey(includeIfNull: false,name: 'parent_id')

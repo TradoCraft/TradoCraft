@@ -23,7 +23,7 @@ class PriceListExportInput {
   @JsonKey(includeIfNull: false,name: 'file_name')
   final String? fileName;
 
-  /// Top-level groups of this list; empty means the whole list.
+  /// Groups of this list, of any depth; empty means the whole list.
   @JsonKey(includeIfNull: false,name: 'group_ids')
   final List<String>? groupIds;
   final String name;

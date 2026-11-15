@@ -4539,6 +4539,14 @@
   "plAddExport": "Add profile",
   "plEditExport": "Edit export profile",
   "plPerChapter": "One profile per chapter",
+  "plPerLevelTitle": "One profile per level",
+  "plPerLevelHint": "Choose the level of the groups that each get a profile (level 1 = top level). Groups that already have a profile of their own are skipped.",
+  "plLevelN": "Level {n}",
+  "@plLevelN": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
   "plWholeList": "Whole list",
   "plExportDeleteConfirm": "Delete export profile \"{name}\"?",
   "@plExportDeleteConfirm": {
@@ -4548,7 +4556,7 @@
   },
   "plExportCodeLength": "The code can have at most 32 characters.",
   "plChapters": "Chapters",
-  "plChaptersHint": "The top-level groups in this file. None ticked means the whole list.",
+  "plChaptersHint": "Tick the groups in this file, at any level. Everything below a ticked group is included automatically. None ticked means the whole list.",
   "plFileName": "File name template (optional)",
   "plFileNameHint": "Placeholders: {placeholders}. Without a template the profile name is used.",
   "@plFileNameHint": {

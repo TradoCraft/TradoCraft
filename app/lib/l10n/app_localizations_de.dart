@@ -10033,6 +10033,18 @@ class AppLocalizationsDe extends AppLocalizations {
   String get plPerChapter => 'Ein Profil pro Kapitel';
 
   @override
+  String get plPerLevelTitle => 'Ein Profil pro Ebene';
+
+  @override
+  String get plPerLevelHint =>
+      'Wählen Sie die Ebene der Gruppen, die je ein Profil erhalten (Ebene 1 = oberste Ebene). Gruppen mit eigenem Profil werden übersprungen.';
+
+  @override
+  String plLevelN(int n) {
+    return 'Ebene $n';
+  }
+
+  @override
   String get plWholeList => 'Gesamte Liste';
 
   @override
@@ -10048,7 +10060,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get plChaptersHint =>
-      'Die obersten Gruppen in dieser Datei. Keine Auswahl bedeutet die gesamte Liste.';
+      'Haken Sie die Gruppen dieser Datei an, auf jeder Ebene. Alles unterhalb einer angehakten Gruppe wird automatisch einbezogen. Keine Auswahl bedeutet die gesamte Liste.';
 
   @override
   String get plFileName => 'Vorlage für den Dateinamen (optional)';

@@ -99,10 +99,12 @@ pub struct PriceListRow {
 }
 
 /// A titled group with its own rows. Sections come in document order (a group before its
-/// sub-groups); `level` is 0 for a chapter.
+/// sub-groups). `level` is the absolute depth in the tree (0 for a top-level group);
+/// `print_level` is the number of ancestors whose title is printed and drives the styling.
 #[derive(Debug, Clone, Serialize)]
 pub struct PriceListSection {
     pub level: usize,
+    pub print_level: usize,
     /// Empty when `show_title` is false.
     pub title: String,
     /// False for an untitled group: no title block, only `gap_mm` of space before its rows.
@@ -242,6 +244,7 @@ mod tests {
             labels: labels("nl"),
             sections: vec![PriceListSection {
                 level: 0,
+                print_level: 0,
                 title: "Klokken".into(),
                 show_title: true,
                 gap_mm: 0.0,
