@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -58,6 +60,10 @@ class _ShortcutsHostState extends ConsumerState<ShortcutsHost>
   FocusNode? _rootScope;
   FocusNode? _lastFocus;
   Object? _autofocused;
+
+  /// Whether the last thing the person did was press a key (not click or touch). A number field
+  /// that gets the focus from the keyboard is selected whole; one that is clicked keeps the caret.
+  bool _byKeyboard = false;
 
   @override
   void initState() {
@@ -132,9 +138,11 @@ class _ShortcutsHostState extends ConsumerState<ShortcutsHost>
   }
 
   /// A tree walk of the topmost layer; cached while a modifier is held.
-  ScanResult _current() {
+  ScanResult _current({bool fresh = false}) {
     final s = _scan;
-    if (s != null && s.alive) return s;
+    // Dispatching a chord looks again: a button may have been enabled or disabled since the scan
+    // that the badges use (Save is off while a save runs, and back on while Ctrl is still held).
+    if (!fresh && s != null && s.alive) return s;
     return _scan = scanTree(
       context as Element,
       dialogOpen: _registry.hasDialog,
@@ -184,6 +192,7 @@ class _ShortcutsHostState extends ConsumerState<ShortcutsHost>
   // ---- chords ---------------------------------------------------------------------------------
 
   bool _onKey(KeyEvent e) {
+    if (e is KeyDownEvent) _byKeyboard = true;
     final isModifier = _modifierKeys.contains(e.logicalKey);
     if (isModifier) _stale = false;
     if (_stale) return false;
@@ -222,14 +231,14 @@ class _ShortcutsHostState extends ConsumerState<ShortcutsHost>
     // so what is left is the generic search in the topmost layer.
     switch (action) {
       case ShortcutAction.save:
-        return _pressing(() => _current().saveTarget);
+        return _pressing(() => _current(fresh: true).saveTarget);
       case ShortcutAction.confirm:
-        return _pressing(() => _current().confirmTarget);
+        return _pressing(() => _current(fresh: true).confirmTarget);
       case ShortcutAction.create:
-        return _pressing(() => _current().createTarget);
+        return _pressing(() => _current(fresh: true).createTarget);
       case ShortcutAction.find:
       case ShortcutAction.search:
-        final s = _current();
+        final s = _current(fresh: true);
         final field = s.searchFields.firstOrNull;
         if (field == null) return null;
         return () => _focusField(field);
@@ -326,7 +335,7 @@ class _ShortcutsHostState extends ConsumerState<ShortcutsHost>
       if (e is KeyDownEvent) handler();
       return true;
     }
-    final s = _current();
+    final s = _current(fresh: true);
     final cancel = s.cancelTarget;
     if (cancel != null) {
       if (e is KeyDownEvent) _press(cancel);
@@ -359,9 +368,61 @@ class _ShortcutsHostState extends ConsumerState<ShortcutsHost>
     }
     if (e is KeyDownEvent) {
       final focus = FocusManager.instance.primaryFocus!;
-      back ? focus.previousFocus() : focus.nextFocus();
+      // The next field, not the next control: the buttons between the fields are skipped. After the
+      // last field the ordinary traversal goes on (to Save, for instance).
+      if (!_moveToField(focus, back: back)) {
+        back ? focus.previousFocus() : focus.nextFocus();
+      }
     }
     return true;
+  }
+
+  /// Moves to the next (previous) editable field of the focus scope in reading order; false when
+  /// there is none.
+  bool _moveToField(FocusNode from, {required bool back}) {
+    final scope = from.nearestScope;
+    if (scope == null) return false;
+    final fields = _readingOrder([
+      for (final n in scope.traversalDescendants)
+        if (n.canRequestFocus && _isEditable(n)) n,
+    ]);
+    final i = fields.indexOf(from);
+    final j = back ? i - 1 : i + 1;
+    if (i < 0 || j < 0 || j >= fields.length) return false;
+    final to = fields[j];
+    to.requestFocus();
+    final c = to.context;
+    if (c != null) Scrollable.ensureVisible(c, duration: Duration.zero);
+    return true;
+  }
+
+  static bool _isEditable(FocusNode n) {
+    final es = n.context?.findAncestorStateOfType<EditableTextState>();
+    return es != null && !es.widget.readOnly;
+  }
+
+  /// Top to bottom, and left to right within a line.
+  static List<FocusNode> _readingOrder(List<FocusNode> nodes) {
+    nodes.sort((a, b) {
+      final c = a.rect.center.dy.compareTo(b.rect.center.dy);
+      return c != 0 ? c : a.rect.center.dx.compareTo(b.rect.center.dx);
+    });
+    final rows = <List<FocusNode>>[];
+    for (final n in nodes) {
+      if (rows.isNotEmpty) {
+        final last = rows.last.first.rect;
+        if ((n.rect.center.dy - last.center.dy).abs() <
+            math.min(n.rect.height, last.height) / 2) {
+          rows.last.add(n);
+          continue;
+        }
+      }
+      rows.add([n]);
+    }
+    return [
+      for (final r in rows)
+        ...(r..sort((a, b) => a.rect.center.dx.compareTo(b.rect.center.dx))),
+    ];
   }
 
   // ---- focus ----------------------------------------------------------------------------------
@@ -373,10 +434,9 @@ class _ShortcutsHostState extends ConsumerState<ShortcutsHost>
     final es = node?.context?.findAncestorStateOfType<EditableTextState>();
     if (es == null) return;
     // A number or amount field reached with the keyboard is selected whole, so typing replaces it.
-    // (A click keeps the caret where it landed.)
-    if (FocusManager.instance.highlightMode != FocusHighlightMode.traditional) {
-      return;
-    }
+    // (A click keeps the caret where it landed; a mouse also puts the focus highlight in the
+    // keyboard mode, so that mode cannot tell the two apart.)
+    if (!_byKeyboard) return;
     if (es.widget.keyboardType.index != TextInputType.number.index) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || FocusManager.instance.primaryFocus != node) return;
@@ -453,7 +513,11 @@ class _ShortcutsHostState extends ConsumerState<ShortcutsHost>
             }
             return false;
           },
-          child: widget.child,
+          child: Listener(
+            behavior: HitTestBehavior.translucent,
+            onPointerDown: (_) => _byKeyboard = false,
+            child: widget.child,
+          ),
         ),
         Positioned.fill(
           child: IgnorePointer(

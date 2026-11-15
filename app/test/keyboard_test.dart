@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -837,6 +838,144 @@ void main() {
       await t.tap(find.byType(TextField));
       await t.pumpAndSettle();
       expect(amount.selection.isCollapsed, isTrue);
+    });
+
+    testWidgets('a mouse click on a number field keeps the caret where it landed', (
+      t,
+    ) async {
+      final amount = TextEditingController(text: '1234.50');
+      addTearDown(amount.dispose);
+      await pump(
+        t,
+        TextField(
+          controller: amount,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        ),
+      );
+      // A real mouse puts the focus highlight in "traditional" mode, like the keyboard does.
+      final g = await t.startGesture(
+        t.getCenter(find.byType(TextField)),
+        kind: PointerDeviceKind.mouse,
+      );
+      await g.up();
+      await t.pumpAndSettle();
+      expect(amount.selection.isCollapsed, isTrue);
+    });
+  });
+
+  group('review fixes', () {
+    testWidgets('Ctrl+/ opens help with and without Shift (the slash needs Shift on some layouts)', (
+      t,
+    ) async {
+      var help = 0, saved = 0;
+      await pump(
+        t,
+        ShortcutScope(
+          actions: {ShortcutAction.help: () => help++},
+          child: TextButton(onPressed: () => saved++, child: const Text('Save')),
+        ),
+      );
+      expect(await chord(t, LogicalKeyboardKey.slash, ctrl: true), isTrue);
+      expect(await chord(t, LogicalKeyboardKey.slash, ctrl: true, shift: true), isTrue);
+      expect(help, 2);
+      // The exact Shift check stays for everything else: Ctrl+Shift+S is not Save.
+      expect(await chord(t, LogicalKeyboardKey.keyS, ctrl: true, shift: true), isFalse);
+      expect(saved, 0);
+    });
+
+    testWidgets('a dialog with only a search field keeps it for Ctrl+F, the page behind loses it', (
+      t,
+    ) async {
+      late BuildContext ctx;
+      await pump(
+        t,
+        Builder(
+          builder: (c) {
+            ctx = c;
+            return const Column(
+              children: [TextField(decoration: InputDecoration(hintText: 'Search'))],
+            );
+          },
+        ),
+      );
+      showDialog<void>(
+        context: ctx,
+        builder: (_) => const AlertDialog(
+          content: TextField(decoration: InputDecoration(hintText: 'Search')),
+        ),
+      );
+      await t.pumpAndSettle();
+      // Focus is on the dialog's field by autofocus; move it away first.
+      FocusManager.instance.primaryFocus?.unfocus();
+      await t.pump();
+      expect(await chord(t, LogicalKeyboardKey.keyF, ctrl: true), isTrue);
+      final dialogField = find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.byType(EditableText),
+      );
+      expect(t.widget<EditableText>(dialogField).focusNode.hasFocus, isTrue);
+    });
+
+    test('Save draft counts as Save in every language, also where it does not start with Save', () async {
+      for (final code in ['en', 'nl', 'de', 'fr', 'es']) {
+        final l = await AppLocalizations.delegate.load(Locale(code));
+        expect(classifyLabel(l.saveDraft, l), ButtonRole.save, reason: code);
+        expect(classifyLabel(l.save, l), ButtonRole.save, reason: code);
+      }
+    });
+
+    testWidgets('Ctrl+S reaches Save again when it is enabled while Ctrl is still held', (
+      t,
+    ) async {
+      var saved = 0;
+      final busy = ValueNotifier(true);
+      addTearDown(busy.dispose);
+      await pump(
+        t,
+        ValueListenableBuilder<bool>(
+          valueListenable: busy,
+          builder: (_, b, _) => TextButton(
+            onPressed: b ? null : () => saved++,
+            child: const Text('Save'),
+          ),
+        ),
+      );
+      await t.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      await t.pump();
+      busy.value = false; // the save that was running has finished
+      await t.pump();
+      final handled = await t.sendKeyDownEvent(LogicalKeyboardKey.keyS);
+      await t.sendKeyUpEvent(LogicalKeyboardKey.keyS);
+      await t.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+      expect(handled, isTrue);
+      expect(saved, 1);
+    });
+
+    testWidgets('Enter and Shift+Enter skip the action buttons between fields', (t) async {
+      final a = FocusNode(), b = FocusNode();
+      addTearDown(a.dispose);
+      addTearDown(b.dispose);
+      await pump(
+        t,
+        Column(
+          children: [
+            TextField(focusNode: a),
+            IconButton(onPressed: () {}, tooltip: 'Remove', icon: const Icon(Icons.close)),
+            TextButton(onPressed: () {}, child: const Text('Other')),
+            TextField(focusNode: b),
+          ],
+        ),
+      );
+      a.requestFocus();
+      await t.pump();
+      await t.sendKeyEvent(LogicalKeyboardKey.enter);
+      await t.pump();
+      expect(b.hasFocus, isTrue, reason: 'the buttons between the fields are skipped');
+      await t.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+      await t.sendKeyEvent(LogicalKeyboardKey.enter);
+      await t.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+      await t.pump();
+      expect(a.hasFocus, isTrue);
     });
   });
 }

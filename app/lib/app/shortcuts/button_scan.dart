@@ -112,7 +112,9 @@ ButtonRole classifyLabel(String label, AppLocalizations l) {
     return n == w || n.startsWith('$w ');
   }
 
-  if (starts(l.save)) return ButtonRole.save;
+  // "Save draft" does not start with the word "Save" in every language (Dutch "Concept opslaan",
+  // German "Entwurf speichern"), so it is matched on its own.
+  if (exact([l.saveDraft]) || starts(l.save)) return ButtonRole.save;
   if (exact([l.cancel, l.close])) return ButtonRole.cancel;
   if (exact([
     l.confirm,
@@ -365,8 +367,16 @@ ScanResult scanTree(
     layer = popups.where((t) => t.route == popup).toList();
     layerFields = fields.where((f) => f.$2 == popup).toList();
   } else if (dialogOpen) {
+    // A dialog without an enabled, labelled button (only fields, or only disabled buttons) is
+    // still the layer: its search field counts, the page behind it does not.
+    final dialogFields = fields
+        .where((f) => f.$2 is PopupRoute && current(f.$2))
+        .toList();
+    popup = dialogFields.lastOrNull?.$2;
     layer = [];
-    layerFields = [];
+    layerFields = popup == null
+        ? []
+        : dialogFields.where((f) => f.$2 == popup).toList();
   } else {
     layer = live;
     layerFields = fields.where((f) => current(f.$2)).toList();

@@ -25,7 +25,13 @@ class ShortcutChord {
     this.physical,
     this.shift = false,
     this.mod = ChordMod.primary,
+    this.anyShift = false,
   });
+
+  /// Whether Shift may be held or not. For a character that some keyboard layouts only reach with
+  /// Shift (the slash is Shift+7 on German, Dutch and many other layouts): the key event then
+  /// carries the character, and Shift must not stop the chord.
+  final bool anyShift;
 
   /// The modifier the chord needs.
   final ChordMod mod;
@@ -162,8 +168,14 @@ enum ShortcutAction {
   /// The command palette: Ctrl or Cmd with K.
   palette(ShortcutChord(LogicalKeyboardKey.keyK, mod: ChordMod.standard)),
 
-  /// The shortcut help: Ctrl or Cmd with the slash.
-  help(ShortcutChord(LogicalKeyboardKey.slash, mod: ChordMod.standard));
+  /// The shortcut help: Ctrl or Cmd with the slash (with Shift where the layout needs it).
+  help(
+    ShortcutChord(
+      LogicalKeyboardKey.slash,
+      mod: ChordMod.standard,
+      anyShift: true,
+    ),
+  );
 
   const ShortcutAction(this.chord, {this.webOverride});
 
@@ -279,7 +291,7 @@ enum ShortcutAction {
     for (final a in values) {
       final c = a.chordFor(web: web);
       if (c.mod == ChordMod.none) continue;
-      if (shift != c.shift) continue;
+      if (!c.anyShift && shift != c.shift) continue;
       final keyOk =
           event.logicalKey == c.key ||
           (c.key == LogicalKeyboardKey.enter &&
