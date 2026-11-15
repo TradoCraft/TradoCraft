@@ -1,0 +1,38 @@
+# Known vulnerabilities that were looked at and are accepted for now (ADR 0069).
+#
+# Every entry needs a reason and an expiry date. When the date passes, osv-scanner reports the
+# vulnerability again and the check fails, so an exception is a decision to look again, not a way to
+# silence a finding. Fix a vulnerability rather than adding it here whenever a fix exists and fits.
+#
+# Last reviewed: 2026-11-15.
+
+# jsonwebtoken 9.3.1: type confusion in the library's own claim validation (fixed in 10.3.0).
+# TradoCraft switches that validation off and checks the claims itself, so the flaw is not reachable.
+[[IgnoredVulns]]
+id = "GHSA-h395-gr6q-cpjc"
+ignoreUntil = 2027-01-15
+reason = "check_token (crates/core/src/identity.rs) sets validate_exp, validate_nbf and validate_aud to false, clears required_spec_claims and checks iss, aud, exp and nbf by hand; a claim of the wrong type fails closed. Only the signature check uses the library. Upgrade to jsonwebtoken 10.3 is still to do."
+
+# libsqlite3-sys and rsa are entries of Cargo.lock only: no workspace crate depends on them on any
+# target or feature (`cargo tree -i <crate> --workspace --target all -e all` prints nothing), because
+# the database is PostgreSQL. They are not compiled into any TradoCraft binary.
+[[IgnoredVulns]]
+id = "RUSTSEC-2026-0459"
+ignoreUntil = 2027-02-15
+reason = "libsqlite3-sys is in Cargo.lock only and not compiled: TradoCraft uses PostgreSQL, no workspace crate depends on it."
+
+[[IgnoredVulns]]
+id = "RUSTSEC-2023-0071"
+ignoreUntil = 2027-02-15
+reason = "rsa is in Cargo.lock only and not compiled: no workspace crate depends on it (the database is PostgreSQL)."
+
+# Notices that a crate is no longer maintained. No vulnerability is known.
+[[IgnoredVulns]]
+id = "RUSTSEC-2024-0436"
+ignoreUntil = 2027-02-15
+reason = "paste is unmaintained; it is a build-time proc macro used through utoipa-axum, no known vulnerability."
+
+[[IgnoredVulns]]
+id = "RUSTSEC-2026-0441"
+ignoreUntil = 2027-02-15
+reason = "pin-utils is unmaintained; used through async-imap (helpdesk mail), no known vulnerability."
