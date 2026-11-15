@@ -35,6 +35,11 @@ updates:
     groups:
       npm-minor-and-patch:
         update-types: [minor, patch]
+    ignore:
+      # The type definitions must match the Node version the e2e job runs (node-version in
+      # .github/workflows/ci.yml); raise both together by hand.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: /
