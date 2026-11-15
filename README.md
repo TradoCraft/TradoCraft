@@ -15,6 +15,10 @@ our own processes.
 > with revisions, serial numbers with as-built genealogy, generated Dart API client and a Flutter app.
 > See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the target architecture and roadmap.
 
+
+https://github.com/user-attachments/assets/5c0a13d6-0781-4483-b2d3-06a2690ea5f5
+
+
 ## Repository layout
 
 ```
