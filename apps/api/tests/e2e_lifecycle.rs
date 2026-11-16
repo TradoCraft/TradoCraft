@@ -47,6 +47,7 @@ async fn step_register_customer(app: &axum::Router, flow: &mut E2eFlow) {
             "postal_code": "0155",
             "city": "Oslo",
             "country_code": TEST_CUSTOMER_COUNTRY,
+            "vat_regime": "domestic",
             "language": TEST_CUSTOMER_LANGUAGE,
             "price_zone_id": ZONE_INDUSTRY,
         })),

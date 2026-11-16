@@ -19,8 +19,19 @@ pub const DEFAULT_VALID_DAYS: i64 = 30;
 pub struct Priced {
     pub customer: QuotingCustomer,
     pub price_date: NaiveDate,
+    pub vat_regime: String,
+    pub building_construction_year: Option<i32>,
     pub lines: Vec<QuotationLine>,
     pub totals: Totals,
+}
+
+/// Date, purpose, and VAT context passed into [`price_lines`].
+pub struct PriceContext<'a> {
+    pub quote_date: NaiveDate,
+    pub price_date: NaiveDate,
+    pub purpose: &'a str,
+    pub vat_regime_override: Option<&'a str>,
+    pub building_construction_year: Option<i32>,
 }
 
 impl Priced {
@@ -163,6 +174,7 @@ pub async fn expand_options(
                     product_id: o.option_product_id,
                     quantity,
                     line_discount_percent: Decimal::ZERO,
+                    vat_rate: None,
                     description: None,
                     unit_price: None,
                     parent_position: Some(me),
@@ -235,7 +247,7 @@ pub async fn price_lines(
     db: &PgPool,
     company_id: Uuid,
     customer_id: Uuid,
-    price_date: NaiveDate,
+    ctx: &PriceContext<'_>,
     inputs: &[QuotationLineInput],
 ) -> AppResult<Priced> {
     validate_structure(inputs)?;
@@ -243,6 +255,21 @@ pub async fn price_lines(
     let expanded = expand_options(db, inputs).await?;
     let inputs = &expanded[..];
     let customer = get_customer_for_quoting(db, company_id, customer_id).await?;
+    let company = tradocraft_core::company::get_company(db, company_id).await?;
+    let vat_rules =
+        tradocraft_core::vat_rates::load_country_rules(db, &company.country_code).await?;
+    let has_vat_number = customer
+        .customer
+        .vat_number
+        .as_deref()
+        .is_some_and(|v| !v.trim().is_empty());
+    let vat_regime = tradocraft_core::vat::resolve_quotation_vat_regime(
+        &customer.customer.vat_regime,
+        ctx.purpose,
+        has_vat_number,
+        ctx.vat_regime_override,
+    );
+    let price_date = ctx.price_date;
     let rules = rebate_rules(db, company_id, customer_id).await?;
     let mut ids: Vec<Uuid> = inputs.iter().map(|l| l.product_id).collect();
     ids.sort();
@@ -337,16 +364,24 @@ pub async fn price_lines(
                 qp.product.code
             )));
         }
+        let line_vat_rate = tradocraft_core::vat_rates::resolve_rate_from_rules(
+            &vat_rules,
+            &tradocraft_core::vat_rates::VatResolutionContext {
+                country_code: &company.country_code,
+                category: &qp.product.vat_category,
+                product_override: input.vat_rate.or(qp.product.vat_rate_override),
+                vat_regime: Some(&vat_regime),
+                purpose: Some(ctx.purpose),
+                building_construction_year: ctx.building_construction_year,
+                as_of: ctx.quote_date,
+            },
+        );
         let p = price_line(&LineInput {
             list_unit_price: list_price,
             quantity: input.quantity,
             customer_discount_percent: rebate,
             line_discount_percent: input.line_discount_percent,
-            vat_rate: if customer.customer.vat_regime == "domestic" {
-                qp.product.vat_rate
-            } else {
-                Decimal::ZERO
-            },
+            vat_rate: line_vat_rate,
         })
         .map_err(|e| AppError::Validation(format!("line {n}: {e}")))?;
         lines.push(QuotationLine {
@@ -393,6 +428,8 @@ pub async fn price_lines(
     Ok(Priced {
         customer,
         price_date,
+        vat_regime,
+        building_construction_year: ctx.building_construction_year,
         lines,
         totals,
     })
@@ -452,6 +489,7 @@ pub fn line_inputs(
                 product_id,
                 quantity: l.quantity,
                 line_discount_percent: l.line_discount_percent,
+                vat_rate: None,
                 description: Some(l.description.clone()),
                 unit_price: (keep_confirmed_prices
                     && l.pricing_type == "indicative"
@@ -473,8 +511,71 @@ pub fn line_inputs(
         .collect()
 }
 
+pub fn validate_vat_override(
+    value: Option<&str>,
+    clear: Option<bool>,
+) -> AppResult<Option<String>> {
+    let trimmed = value
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(str::to_string);
+    if clear == Some(true) && trimmed.is_some() {
+        return Err(AppError::Validation(
+            "cannot both set and clear vat_regime_override".into(),
+        ));
+    }
+    if let Some(ref r) = trimmed {
+        if !tradocraft_core::vat::is_valid_vat_regime(r) {
+            return Err(AppError::Validation(format!(
+                "vat_regime_override must be one of {}",
+                tradocraft_core::vat::VAT_REGIMES.join(", ")
+            )));
+        }
+    }
+    Ok(trimmed)
+}
+
+pub fn validate_building_year(year: Option<i32>, clear: Option<bool>) -> AppResult<Option<i32>> {
+    if clear == Some(true) && year.is_some() {
+        return Err(AppError::Validation(
+            "cannot both set and clear building_construction_year".into(),
+        ));
+    }
+    if let Some(y) = year {
+        if !(800..=2200).contains(&y) {
+            return Err(AppError::Validation(
+                "building_construction_year must be between 800 and 2200".into(),
+            ));
+        }
+    }
+    Ok(year)
+}
+
+pub async fn opportunity_building_year(
+    conn: &mut PgConnection,
+    company_id: Uuid,
+    opportunity_id: Uuid,
+) -> AppResult<Option<i32>> {
+    let year: Option<Option<i32>> = sqlx::query_scalar(
+        "SELECT building_construction_year FROM crm.opportunities WHERE id = $1 AND company_id = $2",
+    )
+    .bind(opportunity_id)
+    .bind(company_id)
+    .fetch_optional(&mut *conn)
+    .await?;
+    Ok(year.flatten())
+}
+
 pub fn validate_input(input: &QuotationInput) -> AppResult<()> {
     check_grid_clear(input.clear_power_grid, input.power_grid_id)?;
+    validate_vat_override(
+        input.vat_regime_override.as_deref(),
+        input.clear_vat_regime_override,
+    )?;
+    validate_building_year(
+        input.building_construction_year,
+        input.clear_building_construction_year,
+    )?;
     if input.lines.is_empty() {
         return Err(AppError::Validation(
             "a quotation needs at least one line".into(),
@@ -500,6 +601,14 @@ pub fn validate_input(input: &QuotationInput) -> AppResult<()> {
                 "line {}: unit price cannot be negative",
                 i + 1
             )));
+        }
+        if let Some(rate) = l.vat_rate {
+            if rate < Decimal::ZERO || rate >= Decimal::from(100) {
+                return Err(AppError::Validation(format!(
+                    "line {}: vat_rate must be between 0 (inclusive) and 100 (exclusive)",
+                    i + 1
+                )));
+            }
         }
     }
     Ok(())
@@ -527,6 +636,8 @@ pub struct NewQuotation<'a> {
     pub purpose: &'a str,
     pub delivery_country_code: Option<&'a str>,
     pub power_grid_id: Option<Uuid>,
+    pub vat_regime_override: Option<&'a str>,
+    pub building_construction_year: Option<i32>,
 }
 
 pub const PURPOSES: [&str; 2] = ["installation", "stock"];
@@ -764,9 +875,10 @@ pub async fn insert_quotation(
             customer_street, customer_postal_code, customer_city, customer_country_code, customer_language,
             price_zone_code, customer_discount_percent, currency, quote_date, valid_until, notes,
             subtotal, vat_total, total, supersedes_id, created_by, opportunity_id, price_date,
-            purpose, delivery_country_code, power_grid_id, vat_regime)
+            purpose, delivery_country_code, power_grid_id, vat_regime, vat_regime_override,
+            building_construction_year)
          VALUES ($1, $2, $3, $4, 'draft', $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18,
-                 $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29)",
+                 $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31)",
     )
     .bind(id)
     .bind(user.company_id)
@@ -796,7 +908,9 @@ pub async fn insert_quotation(
     .bind(q.purpose)
     .bind(q.delivery_country_code)
     .bind(q.power_grid_id)
-    .bind(&c.customer.vat_regime)
+    .bind(&q.priced.vat_regime)
+    .bind(q.vat_regime_override)
+    .bind(q.building_construction_year)
     .execute(&mut *conn)
     .await?;
     insert_lines(conn, id, &q.priced.lines).await?;
@@ -867,7 +981,8 @@ pub async fn insert_lines(
 }
 
 const SELECT_HEADER: &str = "SELECT id, company_id, number, revision, status, customer_id, opportunity_id, customer_name,
-    customer_vat_number, vat_regime, customer_street, customer_postal_code, customer_city,
+    customer_vat_number, vat_regime, vat_regime_override, building_construction_year,
+    customer_street, customer_postal_code, customer_city,
     customer_country_code::text AS customer_country_code, customer_language::text AS customer_language,
     price_zone_code, customer_discount_percent, purpose, delivery_country_code::text AS delivery_country_code, power_grid_id, shipping_status,
     currency::text AS currency, quote_date, price_date, valid_until,

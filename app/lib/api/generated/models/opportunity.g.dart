@@ -20,6 +20,8 @@ Opportunity _$OpportunityFromJson(Map<String, dynamic> json) => Opportunity(
   stage: OpportunityStage.fromJson(json['stage'] as String),
   title: json['title'] as String,
   updatedAt: DateTime.parse(json['updated_at'] as String),
+  buildingConstructionYear: (json['building_construction_year'] as num?)
+      ?.toInt(),
   closedAt: json['closed_at'] == null
       ? null
       : DateTime.parse(json['closed_at'] as String),
@@ -32,6 +34,7 @@ Opportunity _$OpportunityFromJson(Map<String, dynamic> json) => Opportunity(
 
 Map<String, dynamic> _$OpportunityToJson(Opportunity instance) =>
     <String, dynamic>{
+      'building_construction_year': ?instance.buildingConstructionYear,
       'closed_at': ?instance.closedAt?.toIso8601String(),
       'created_at': instance.createdAt.toIso8601String(),
       'customer_id': instance.customerId,

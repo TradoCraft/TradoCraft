@@ -52,6 +52,8 @@ pub struct PurchaseOrderLine {
     pub unit_price: Decimal,
     #[schema(value_type = String)]
     pub line_total: Decimal,
+    #[schema(required = false, value_type = String, example = "21.00")]
+    pub vat_rate: Decimal,
     pub created_at: DateTime<Utc>,
 }
 
@@ -73,6 +75,11 @@ pub struct NewPoLineInput {
     pub quantity: Decimal,
     #[schema(value_type = String)]
     pub unit_price: Decimal,
+    /// Optional explicit VAT rate (%). When omitted, domestic suppliers resolve from the product's
+    /// VAT category on the order date and cross-border suppliers default to `0`.
+    #[serde(default)]
+    #[schema(required = false, value_type = Option<String>, example = "21.00")]
+    pub vat_rate: Option<Decimal>,
 }
 
 /// Payload to create a draft purchase order.
@@ -140,7 +147,7 @@ pub async fn load(
         "SELECT l.id, l.purchase_order_id, l.line_number, l.product_id,
                 p.code AS product_code, p.name AS product_name,
                 l.supplier_product_code, l.description, l.quantity,
-                l.quantity_received, l.unit_price, l.line_total, l.created_at
+                l.quantity_received, l.unit_price, l.line_total, l.vat_rate, l.created_at
          FROM purchasing.purchase_order_lines l
          JOIN products.products p ON p.id = l.product_id
          WHERE l.purchase_order_id = $1
@@ -197,16 +204,16 @@ pub async fn create(
     }
 
     // Verify supplier belongs to company
-    let supplier_curr: Option<String> = sqlx::query_scalar(
-        "SELECT currency FROM purchasing.suppliers WHERE company_id = $1 AND id = $2 AND active = true",
+    let supplier_meta: Option<(String, String)> = sqlx::query_as(
+        "SELECT currency, country FROM purchasing.suppliers WHERE company_id = $1 AND id = $2 AND active = true",
     )
     .bind(user.company_id)
     .bind(input.supplier_id)
     .fetch_optional(&mut *conn)
     .await?;
 
-    let default_currency = match supplier_curr {
-        Some(c) => c,
+    let (default_currency, supplier_country) = match supplier_meta {
+        Some(m) => m,
         None => return Err(AppError::NotFound("active supplier not found")),
     };
 
@@ -218,11 +225,17 @@ pub async fn create(
     let number = format!("PO{order_year}-{seq:05}");
     let id = new_id();
 
-    let (subtotal, validated_lines) = validate_lines(conn, input.lines).await?;
-
-    // For POs, tax_total defaults to zero unless explicit tax calculation is wired
-    let tax_total = Decimal::ZERO;
-    let total = subtotal + tax_total;
+    let (subtotal, tax_total, validated_lines) = validate_lines(
+        conn,
+        user.company_id,
+        &supplier_country,
+        order_date,
+        input.lines,
+    )
+    .await?;
+    let total = subtotal
+        .checked_add(tax_total)
+        .ok_or_else(|| AppError::Validation("amount too large".into()))?;
 
     sqlx::query(
         "INSERT INTO purchasing.purchase_orders (
@@ -265,20 +278,34 @@ pub async fn create(
     load(conn, user.company_id, id).await
 }
 
-/// A validated line: line number, input and rounded line total.
-type ValidatedLine = (i32, NewPoLineInput, Decimal);
+/// A validated line: line number, input, rounded line total, and effective VAT rate.
+type ValidatedLine = (i32, NewPoLineInput, Decimal, Decimal);
 
-/// Validates the lines of a purchase order and returns their subtotal.
+/// Validates the lines of a purchase order, resolves line VAT rates, and returns `(subtotal, tax_total, lines)`.
 async fn validate_lines(
     conn: &mut PgConnection,
+    company_id: Uuid,
+    supplier_country: &str,
+    order_date: NaiveDate,
     lines: Vec<NewPoLineInput>,
-) -> AppResult<(Decimal, Vec<ValidatedLine>)> {
+) -> AppResult<(Decimal, Decimal, Vec<ValidatedLine>)> {
     if lines.is_empty() {
         return Err(AppError::Validation(
             "purchase order must contain at least one line".into(),
         ));
     }
+    let company = tradocraft_core::company::get_company(&mut *conn, company_id).await?;
+    let domestic = supplier_country
+        .trim()
+        .eq_ignore_ascii_case(&company.country_code);
+    let rules = if domestic {
+        tradocraft_core::vat_rates::load_country_rules(&mut *conn, &company.country_code).await?
+    } else {
+        Vec::new()
+    };
+
     let mut subtotal = Decimal::ZERO;
+    let mut tax_total = Decimal::ZERO;
     let mut validated_lines = Vec::new();
 
     for (idx, line) in lines.into_iter().enumerate() {
@@ -301,18 +328,47 @@ async fn validate_lines(
             )));
         }
 
-        let product_exists: bool =
-            sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM products.products WHERE id = $1)")
-                .bind(line.product_id)
-                .fetch_one(&mut *conn)
-                .await?;
+        let product_vat: Option<(String, Option<Decimal>)> = sqlx::query_as(
+            "SELECT vat_category, vat_rate_override FROM products.products WHERE id = $1",
+        )
+        .bind(line.product_id)
+        .fetch_optional(&mut *conn)
+        .await?;
 
-        if !product_exists {
-            return Err(AppError::Validation(format!(
-                "line {}: product not found",
-                idx + 1
-            )));
-        }
+        let (vat_category, vat_override) = match product_vat {
+            Some(v) => v,
+            None => {
+                return Err(AppError::Validation(format!(
+                    "line {}: product not found",
+                    idx + 1
+                )));
+            }
+        };
+
+        let vat_rate = match line.vat_rate {
+            Some(r) => {
+                if r < Decimal::ZERO || r >= Decimal::from(100) || r.scale() > 2 {
+                    return Err(AppError::Validation(format!(
+                        "line {}: vat_rate must be between 0 (inclusive) and 100 (exclusive) with at most 2 decimals",
+                        idx + 1
+                    )));
+                }
+                r
+            }
+            None if domestic => tradocraft_core::vat_rates::resolve_rate_from_rules(
+                &rules,
+                &tradocraft_core::vat_rates::VatResolutionContext {
+                    country_code: &company.country_code,
+                    category: &vat_category,
+                    product_override: vat_override,
+                    vat_regime: Some("domestic"),
+                    purpose: None,
+                    building_construction_year: None,
+                    as_of: order_date,
+                },
+            ),
+            None => Decimal::ZERO,
+        };
 
         let overflow = || AppError::Validation(format!("line {}: amount too large", idx + 1));
         let line_total = line
@@ -320,11 +376,15 @@ async fn validate_lines(
             .checked_mul(line.unit_price)
             .ok_or_else(overflow)?
             .round_dp_with_strategy(2, RoundingStrategy::MidpointAwayFromZero);
+        let line_tax = (line_total.checked_mul(vat_rate).ok_or_else(overflow)?
+            / Decimal::from(100))
+        .round_dp_with_strategy(2, RoundingStrategy::MidpointAwayFromZero);
         subtotal = subtotal.checked_add(line_total).ok_or_else(overflow)?;
-        validated_lines.push((idx as i32 + 1, line, line_total));
+        tax_total = tax_total.checked_add(line_tax).ok_or_else(overflow)?;
+        validated_lines.push((idx as i32 + 1, line, line_total, vat_rate));
     }
 
-    Ok((subtotal, validated_lines))
+    Ok((subtotal, tax_total, validated_lines))
 }
 
 /// Inserts validated lines for a purchase order.
@@ -333,14 +393,14 @@ async fn insert_lines(
     id: Uuid,
     validated_lines: Vec<ValidatedLine>,
 ) -> AppResult<()> {
-    for (line_num, line, line_total) in validated_lines {
+    for (line_num, line, line_total, vat_rate) in validated_lines {
         let line_id = new_id();
         sqlx::query(
             "INSERT INTO purchasing.purchase_order_lines (
                 id, purchase_order_id, line_number, product_id, supplier_product_code,
-                description, quantity, quantity_received, unit_price, line_total, created_at
+                description, quantity, quantity_received, unit_price, line_total, vat_rate, created_at
              )
-             VALUES ($1, $2, $3, $4, $5, $6, $7, 0, $8, $9, now())",
+             VALUES ($1, $2, $3, $4, $5, $6, $7, 0, $8, $9, $10, now())",
         )
         .bind(line_id)
         .bind(id)
@@ -351,6 +411,7 @@ async fn insert_lines(
         .bind(line.quantity)
         .bind(line.unit_price)
         .bind(line_total)
+        .bind(vat_rate)
         .execute(&mut *conn)
         .await?;
     }
@@ -385,20 +446,36 @@ pub async fn update(
         None => po.summary.notes.clone(),
     };
     let mut subtotal = po.summary.subtotal;
+    let mut tax_total = po.summary.tax_total;
     if let Some(lines) = input.lines {
-        let (st, validated) = validate_lines(conn, lines).await?;
+        let supplier_country: String =
+            sqlx::query_scalar("SELECT country FROM purchasing.suppliers WHERE id = $1")
+                .bind(po.summary.supplier_id)
+                .fetch_one(&mut *conn)
+                .await?;
+        let (st, tt, validated) = validate_lines(
+            conn,
+            user.company_id,
+            &supplier_country,
+            po.summary.order_date,
+            lines,
+        )
+        .await?;
         sqlx::query("DELETE FROM purchasing.purchase_order_lines WHERE purchase_order_id = $1")
             .bind(id)
             .execute(&mut *conn)
             .await?;
         insert_lines(conn, id, validated).await?;
         subtotal = st;
+        tax_total = tt;
     }
-    let total = subtotal + po.summary.tax_total;
+    let total = subtotal
+        .checked_add(tax_total)
+        .ok_or_else(|| AppError::Validation("amount too large".into()))?;
     sqlx::query(
         "UPDATE purchasing.purchase_orders
          SET expected_delivery_date = $3, currency = $4, notes = $5,
-             subtotal = $6, total = $7, updated_at = now()
+             subtotal = $6, tax_total = $7, total = $8, updated_at = now()
          WHERE company_id = $1 AND id = $2",
     )
     .bind(user.company_id)
@@ -407,6 +484,7 @@ pub async fn update(
     .bind(&currency)
     .bind(&notes)
     .bind(subtotal)
+    .bind(tax_total)
     .bind(total)
     .execute(&mut *conn)
     .await?;

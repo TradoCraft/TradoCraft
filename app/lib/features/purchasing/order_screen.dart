@@ -420,6 +420,7 @@ class _LinesTable extends StatelessWidget {
           DataColumn(label: Text(l.quantity), numeric: true),
           DataColumn(label: Text(l.purchQtyReceived), numeric: true),
           DataColumn(label: Text(l.unitPrice), numeric: true),
+          DataColumn(label: Text(l.vatPercent), numeric: true),
           DataColumn(label: Text(l.purchLineTotal), numeric: true),
         ],
         rows: [
@@ -437,6 +438,11 @@ class _LinesTable extends StatelessWidget {
                   ),
                 ),
                 DataCell(Text(money(line.unitPrice, currency: currency))),
+                DataCell(
+                  Text(
+                    line.vatRate == null ? '' : '${number(line.vatRate!)} %',
+                  ),
+                ),
                 DataCell(Text(money(line.lineTotal, currency: currency))),
               ],
             ),

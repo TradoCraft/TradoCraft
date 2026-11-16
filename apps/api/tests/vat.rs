@@ -834,3 +834,609 @@ async fn the_supplier_lookup_uses_the_same_service(db: PgPool) {
     assert_eq!(c["vies"]["name"], "ACME NV");
     assert_eq!(c["vies"]["city"], "BRUXELLES");
 }
+
+// ---- country VAT rates, auto regimes, building age, purchasing & AP -----------------------------
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn country_vat_rates_read_filter_and_admin_crud(db: PgPool) {
+    let app = setup(db).await;
+
+    // Historical temporal lookup for DE COVID period vs 2021.
+    let (status, de_covid) = get(&app, SALES, "/vat-rates?country_code=DE&as_of=2020-08-15").await;
+    assert_eq!(status, StatusCode::OK, "{de_covid}");
+    let covid_rows = de_covid.as_array().unwrap();
+    assert_eq!(
+        common::dec(
+            &covid_rows
+                .iter()
+                .find(|r| r["category"] == "standard")
+                .unwrap()["rate"]
+        ),
+        "16.00".parse().unwrap()
+    );
+    assert_eq!(
+        common::dec(
+            &covid_rows
+                .iter()
+                .find(|r| r["category"] == "reduced")
+                .unwrap()["rate"]
+        ),
+        "5.00".parse().unwrap()
+    );
+
+    let (_, de_2021) = get(&app, SALES, "/vat-rates?country_code=DE&as_of=2021-01-15").await;
+    let post_rows = de_2021.as_array().unwrap();
+    assert_eq!(
+        common::dec(
+            &post_rows
+                .iter()
+                .find(|r| r["category"] == "standard")
+                .unwrap()["rate"]
+        ),
+        "19.00".parse().unwrap()
+    );
+
+    // Non-admins cannot mutate VAT rules.
+    let new_rule = json!({
+        "country_code": "BE",
+        "category": "standard",
+        "rate": "22.00",
+        "start_date": "2028-01-01",
+        "close_previous": false,
+        "notes": "Future rate"
+    });
+    assert_eq!(
+        send(
+            &app,
+            SALES,
+            Method::POST,
+            "/admin/vat-rates",
+            new_rule.clone()
+        )
+        .await
+        .0,
+        StatusCode::FORBIDDEN
+    );
+
+    // Overlapping date range without close_previous is refused with 409.
+    assert_eq!(
+        send(&app, ADMIN, Method::POST, "/admin/vat-rates", new_rule)
+            .await
+            .0,
+        StatusCode::CONFLICT
+    );
+
+    // With close_previous: true, the open rule closes on 2027-12-31 and the new one is created.
+    let (status, created) = send(
+        &app,
+        ADMIN,
+        Method::POST,
+        "/admin/vat-rates",
+        json!({
+            "country_code": "BE",
+            "category": "standard",
+            "rate": "22.00",
+            "start_date": "2028-01-01",
+            "close_previous": true,
+            "notes": "Future rate"
+        }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{created}");
+    let rule_id = created["id"].as_str().unwrap().to_string();
+
+    let (_, be_rules) = get(&app, ADMIN, "/vat-rates?country_code=BE&category=standard").await;
+    let prev = be_rules
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|r| r["id"] != rule_id.as_str())
+        .unwrap();
+    assert_eq!(prev["end_date"], "2027-12-31");
+
+    // Update & delete.
+    let (status, updated) = send(
+        &app,
+        ADMIN,
+        Method::PUT,
+        &format!("/admin/vat-rates/{rule_id}"),
+        json!({
+            "country_code": "BE",
+            "category": "standard",
+            "rate": "22.50",
+            "start_date": "2028-01-01",
+            "notes": "Amended"
+        }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{updated}");
+    assert_eq!(common::dec(&updated["rate"]), "22.50".parse().unwrap());
+
+    let (status, _) = call(
+        &app,
+        ADMIN,
+        Method::DELETE,
+        &format!("/api/v1/admin/vat-rates/{rule_id}"),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn product_vat_resolves_by_company_country_category_and_override(db: PgPool) {
+    let app = setup(db.clone()).await;
+
+    // Create reduced-category and custom-override products in BE company.
+    let (status, red) = send(
+        &app,
+        ADMIN,
+        Method::POST,
+        "/products",
+        json!({ "code": "VAT-RED", "name": "Reduced", "vat_category": "reduced" }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{red}");
+    assert_eq!(red["vat_category"], "reduced");
+    assert_eq!(common::dec(&red["vat_rate"]), "6.00".parse().unwrap());
+
+    let (status, ov) = send(
+        &app,
+        ADMIN,
+        Method::POST,
+        "/products",
+        json!({ "code": "VAT-OV", "name": "Custom", "vat_rate_override": "12.00" }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{ov}");
+    assert_eq!(common::dec(&ov["vat_rate"]), "12.00".parse().unwrap());
+
+    // Switch company country to Germany: standard becomes 19%, reduced becomes 7%, override stays 12%.
+    sqlx::query("UPDATE core.companies SET country_code = 'DE' WHERE id = $1::uuid")
+        .bind(COMPANY)
+        .execute(&db)
+        .await
+        .unwrap();
+
+    let (_, got_red) = get(
+        &app,
+        SALES,
+        &format!("/products/{}", red["id"].as_str().unwrap()),
+    )
+    .await;
+    assert_eq!(common::dec(&got_red["vat_rate"]), "7.00".parse().unwrap());
+
+    let (_, got_ov) = get(
+        &app,
+        SALES,
+        &format!("/products/{}", ov["id"].as_str().unwrap()),
+    )
+    .await;
+    assert_eq!(common::dec(&got_ov["vat_rate"]), "12.00".parse().unwrap());
+
+    // Default seeded standard product UNIT-100 resolves to 19% for DE.
+    let (_, got_unit) = get(
+        &app,
+        SALES,
+        "/products/00000000-0000-7000-8000-000000000301",
+    )
+    .await;
+    assert_eq!(common::dec(&got_unit["vat_rate"]), "19.00".parse().unwrap());
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn customer_default_vat_regime_derives_from_company_country_and_vat_number(db: PgPool) {
+    let app = setup(db).await;
+
+    let cases = [
+        ("C-BE", "BE", Some(GOOD_BE), "domestic"),
+        ("C-NL-B2B", "NL", Some("NL004495445B01"), "intra_eu"),
+        ("C-NL-B2C", "NL", None, "domestic"),
+        ("C-NO", "NO", None, "outside_eu"),
+        ("C-CH", "CH", Some("CHE123456789MWST"), "outside_eu"),
+    ];
+    for (code, country, vat, expected) in cases {
+        let (status, c) = send(
+            &app,
+            SALES,
+            Method::POST,
+            "/customers",
+            json!({
+                "code": code,
+                "name": format!("Name {code}"),
+                "country_code": country,
+                "vat_number": vat,
+                "price_zone_id": ZONE,
+            }),
+        )
+        .await;
+        assert_eq!(status, StatusCode::CREATED, "{code}: {c}");
+        assert_eq!(c["vat_regime"], expected, "{code}");
+    }
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn quotation_vat_handles_b2b_reverse_charge_override_and_building_age(db: PgPool) {
+    let app = setup(db).await;
+    let unit_100 = "00000000-0000-7000-8000-000000000301";
+
+    // 1. Domestic B2B (ALPHA) + installation -> automatic domestic_reverse_charge (0% VAT).
+    let (status, q_rc) = send(
+        &app,
+        SALES,
+        Method::POST,
+        "/quotations",
+        json!({
+            "customer_id": ALPHA,
+            "purpose": "installation",
+            "lines": [{ "product_id": unit_100, "quantity": "1" }],
+        }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{q_rc}");
+    assert_eq!(q_rc["vat_regime"], "domestic_reverse_charge");
+    assert_eq!(common::dec(&q_rc["vat_total"]), "0.00".parse().unwrap());
+
+    // 2. Explicit override forces domestic 21% VAT even for B2B installation.
+    let (status, q_ov) = send(
+        &app,
+        SALES,
+        Method::POST,
+        "/quotations",
+        json!({
+            "customer_id": ALPHA,
+            "purpose": "installation",
+            "vat_regime_override": "domestic",
+            "lines": [{ "product_id": unit_100, "quantity": "1" }],
+        }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{q_ov}");
+    assert_eq!(q_ov["vat_regime"], "domestic");
+    assert_eq!(
+        common::dec(&q_ov["lines"][0]["vat_rate"]),
+        "21.00".parse().unwrap()
+    );
+
+    // 3. Domestic B2C (no VAT number): aged building (>= 10 yrs) gets 6% BE construction rate on installation.
+    let (status, b2c) = send(
+        &app,
+        SALES,
+        Method::POST,
+        "/customers",
+        customer("C-B2C", None),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{b2c}");
+    let b2c_id = b2c["id"].as_str().unwrap();
+
+    let (status, opp) = send(
+        &app,
+        SALES,
+        Method::POST,
+        "/opportunities",
+        json!({
+            "title": "Renovation",
+            "customer_id": b2c_id,
+            "building_construction_year": 2010,
+        }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{opp}");
+    let opp_id = opp["id"].as_str().unwrap();
+
+    // Quotation linked to opportunity inherits building_construction_year -> 6% VAT.
+    let (status, q_old) = send(
+        &app,
+        SALES,
+        Method::POST,
+        "/quotations",
+        json!({
+            "customer_id": b2c_id,
+            "opportunity_id": opp_id,
+            "purpose": "installation",
+            "quote_date": "2026-11-05",
+            "lines": [{ "product_id": unit_100, "quantity": "1" }],
+        }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{q_old}");
+    assert_eq!(q_old["vat_regime"], "domestic");
+    assert_eq!(q_old["building_construction_year"], 2010);
+    assert_eq!(
+        common::dec(&q_old["lines"][0]["vat_rate"]),
+        "6.00".parse().unwrap()
+    );
+
+    // An explicit false still inherits, while true suppresses inheritance on create.
+    for (clear, expected_year, expected_rate) in
+        [(false, json!(2010), "6.00"), (true, json!(null), "21.00")]
+    {
+        let (status, created) = send(
+            &app,
+            SALES,
+            Method::POST,
+            "/quotations",
+            json!({
+                "customer_id": b2c_id, "opportunity_id": opp_id,
+                "purpose": "installation", "quote_date": "2026-11-05",
+                "clear_building_construction_year": clear,
+                "lines": [{ "product_id": unit_100, "quantity": "1" }],
+            }),
+        )
+        .await;
+        assert_eq!(status, StatusCode::CREATED, "{created}");
+        assert_eq!(created["building_construction_year"], expected_year);
+        assert_eq!(
+            common::dec(&created["lines"][0]["vat_rate"]),
+            expected_rate.parse().unwrap()
+        );
+    }
+
+    // An explicit clear must agree in preview and save, and survive subsequent saves.
+    let mut cleared = json!({
+        "customer_id": b2c_id, "opportunity_id": opp_id,
+        "purpose": "installation", "quote_date": "2026-11-05",
+        "clear_building_construction_year": true,
+        "lines": [{ "product_id": unit_100, "quantity": "1" }],
+    });
+    let (status, preview) = send(
+        &app,
+        SALES,
+        Method::POST,
+        "/pricing/preview",
+        cleared.clone(),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{preview}");
+    assert!(preview["building_construction_year"].is_null());
+    let uri = format!("/quotations/{}", q_old["id"].as_str().unwrap());
+    let (status, saved) = send(&app, SALES, Method::PUT, &uri, cleared.clone()).await;
+    assert_eq!(status, StatusCode::OK, "{saved}");
+    assert!(saved["building_construction_year"].is_null());
+    cleared
+        .as_object_mut()
+        .unwrap()
+        .remove("clear_building_construction_year");
+    let (status, saved) = send(&app, SALES, Method::PUT, &uri, cleared.clone()).await;
+    assert_eq!(status, StatusCode::OK, "{saved}");
+    assert!(saved["building_construction_year"].is_null());
+    let (status, other) = send(
+        &app,
+        SALES,
+        Method::POST,
+        "/opportunities",
+        json!({
+            "title": "New building", "customer_id": b2c_id, "building_construction_year": 2022,
+        }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{other}");
+    cleared["opportunity_id"] = other["id"].clone();
+    let (status, saved) = send(&app, SALES, Method::PUT, &uri, cleared).await;
+    assert_eq!(status, StatusCode::OK, "{saved}");
+    assert_eq!(saved["building_construction_year"], 2022);
+
+    // New building (< 10 years old) stays at 21% standard rate.
+    let (status, q_new) = send(
+        &app,
+        SALES,
+        Method::POST,
+        "/quotations",
+        json!({
+            "customer_id": b2c_id,
+            "purpose": "installation",
+            "quote_date": "2026-11-05",
+            "building_construction_year": 2022,
+            "lines": [{ "product_id": unit_100, "quantity": "1" }],
+        }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{q_new}");
+    assert_eq!(
+        common::dec(&q_new["lines"][0]["vat_rate"]),
+        "21.00".parse().unwrap()
+    );
+
+    // Stock purpose does not use building-age construction rate.
+    let (status, q_stock) = send(
+        &app,
+        SALES,
+        Method::POST,
+        "/quotations",
+        json!({
+            "customer_id": b2c_id,
+            "purpose": "stock",
+            "quote_date": "2026-11-05",
+            "building_construction_year": 2010,
+            "lines": [{ "product_id": unit_100, "quantity": "1" }],
+        }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{q_stock}");
+    assert_eq!(
+        common::dec(&q_stock["lines"][0]["vat_rate"]),
+        "21.00".parse().unwrap()
+    );
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn purchasing_and_invoice_default_vat_by_supplier_country(db: PgPool) {
+    let app = setup(db).await;
+    let frame = "00000000-0000-7000-8000-000000000307";
+
+    let (status, be_sup) = send(
+        &app,
+        ADMIN,
+        Method::POST,
+        "/suppliers",
+        json!({ "name": "BE Sup", "code": "SUP-BE", "country": "BE" }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{be_sup}");
+
+    let (status, de_sup) = send(
+        &app,
+        ADMIN,
+        Method::POST,
+        "/suppliers",
+        json!({ "name": "DE Sup", "code": "SUP-DE", "country": "DE" }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{de_sup}");
+
+    // Domestic supplier defaults PO line VAT to company product rate (21%) and computes tax_total.
+    let (status, po_be) = send(
+        &app,
+        ADMIN,
+        Method::POST,
+        "/purchase-orders",
+        json!({
+            "supplier_id": be_sup["id"],
+            "lines": [{ "product_id": frame, "quantity": "2", "unit_price": "100.00" }],
+        }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{po_be}");
+    assert_eq!(
+        common::dec(&po_be["lines"][0]["vat_rate"]),
+        "21.00".parse().unwrap()
+    );
+    assert_eq!(common::dec(&po_be["subtotal"]), "200.00".parse().unwrap());
+    assert_eq!(common::dec(&po_be["tax_total"]), "42.00".parse().unwrap());
+    assert_eq!(common::dec(&po_be["total"]), "242.00".parse().unwrap());
+
+    // Foreign supplier defaults PO line VAT to 0%.
+    let (status, po_de) = send(
+        &app,
+        ADMIN,
+        Method::POST,
+        "/purchase-orders",
+        json!({
+            "supplier_id": de_sup["id"],
+            "lines": [{ "product_id": frame, "quantity": "2", "unit_price": "100.00" }],
+        }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{po_de}");
+    assert_eq!(
+        common::dec(&po_de["lines"][0]["vat_rate"]),
+        "0.00".parse().unwrap()
+    );
+    assert_eq!(common::dec(&po_de["tax_total"]), "0.00".parse().unwrap());
+
+    // Free-text invoice defaults to 21% for domestic supplier and 0% for foreign supplier.
+    let (status, inv_be) = send(
+        &app,
+        ADMIN,
+        Method::POST,
+        "/supplier-invoices",
+        json!({
+            "supplier_id": be_sup["id"],
+            "invoice_number": "INV-BE-1",
+            "invoice_date": "2026-11-05",
+            "lines": [{ "description": "Service", "quantity": "1", "unit_price": "100.00" }],
+        }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{inv_be}");
+    assert_eq!(common::dec(&inv_be["vat_total"]), "21.00".parse().unwrap());
+
+    let (status, inv_de) = send(
+        &app,
+        ADMIN,
+        Method::POST,
+        "/supplier-invoices",
+        json!({
+            "supplier_id": de_sup["id"],
+            "invoice_number": "INV-DE-1",
+            "invoice_date": "2026-11-05",
+            "lines": [{ "description": "Service", "quantity": "1", "unit_price": "100.00" }],
+        }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{inv_de}");
+    assert_eq!(common::dec(&inv_de["vat_total"]), "0.00".parse().unwrap());
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn seeded_ee_ro_rate_boundaries(db: PgPool) {
+    use tradocraft_core::vat_rates::{
+        load_country_rules, resolve_rate_from_rules, VatResolutionContext,
+    };
+    for (country, category, before, on, old, new) in [
+        ("EE", "standard", "2025-06-30", "2025-07-01", "22", "24"),
+        ("RO", "standard", "2025-07-31", "2025-08-01", "19", "21"),
+        ("RO", "reduced", "2025-07-31", "2025-08-01", "5", "11"),
+        ("RO", "intermediate", "2025-07-31", "2025-08-01", "9", "11"),
+    ] {
+        let mut conn = db.acquire().await.unwrap();
+        let rules = load_country_rules(&mut *conn, country).await.unwrap();
+        for (date, expected) in [(before, old), (on, new)] {
+            let ctx = VatResolutionContext {
+                country_code: country,
+                category,
+                product_override: None,
+                vat_regime: Some("domestic"),
+                purpose: None,
+                building_construction_year: None,
+                as_of: date.parse().unwrap(),
+            };
+            assert_eq!(
+                resolve_rate_from_rules(&rules, &ctx),
+                expected.parse().unwrap()
+            );
+        }
+    }
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn concurrent_country_vat_creates_cannot_overlap(db: PgPool) {
+    let app = setup(db).await;
+    let body = json!({"country_code": "ZZ", "category": "standard", "rate": "20", "start_date": "2025-01-01"});
+    let (a, b) = tokio::join!(
+        send(&app, ADMIN, Method::POST, "/admin/vat-rates", body.clone()),
+        send(&app, ADMIN, Method::POST, "/admin/vat-rates", body),
+    );
+    assert!(
+        matches!(
+            (a.0, b.0),
+            (StatusCode::CREATED, StatusCode::CONFLICT)
+                | (StatusCode::CONFLICT, StatusCode::CREATED)
+        ),
+        "{a:?} {b:?}"
+    );
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn concurrent_country_vat_updates_cannot_overlap(db: PgPool) {
+    let app = setup(db).await;
+    let mut ids = Vec::new();
+    for year in [2020, 2021] {
+        let (status, row) = send(
+            &app,
+            ADMIN,
+            Method::POST,
+            "/admin/vat-rates",
+            json!({
+                "country_code": "ZZ", "category": "standard", "rate": "20",
+                "start_date": format!("{year}-01-01"), "end_date": format!("{year}-12-31"),
+            }),
+        )
+        .await;
+        assert_eq!(status, StatusCode::CREATED, "{row}");
+        ids.push(format!("/admin/vat-rates/{}", row["id"].as_str().unwrap()));
+    }
+    let body = json!({"country_code": "zz", "category": "standard", "rate": "20", "start_date": "2025-01-01"});
+    let (a, b) = tokio::join!(
+        send(&app, ADMIN, Method::PUT, &ids[0], body.clone()),
+        send(&app, ADMIN, Method::PUT, &ids[1], body),
+    );
+    assert!(
+        matches!(
+            (a.0, b.0),
+            (StatusCode::OK, StatusCode::CONFLICT) | (StatusCode::CONFLICT, StatusCode::OK)
+        ),
+        "{a:?} {b:?}"
+    );
+}

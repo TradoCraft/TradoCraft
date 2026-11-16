@@ -482,6 +482,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get codeNameRequired => 'Code und Name sind erforderlich.';
 
   @override
+  String get poLineVatInvalid =>
+      'Der MwSt.-Satz muss zwischen 0 und 100 liegen.';
+
+  @override
   String get codeNameVatRequired =>
       'Code, Name und MwSt.-Satz sind Pflichtfelder.';
 
@@ -10107,4 +10111,103 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get plGenBack => 'Zurück zum Plan';
+
+  @override
+  String get vatRegimeDomesticReverseCharge =>
+      'Inländisches Reverse-Charge (Bauleistungen)';
+
+  @override
+  String get vatRegimeOverride => 'MwSt.-Regime überschreiben';
+
+  @override
+  String get vatRegimeAuto => 'Automatisch (Standard)';
+
+  @override
+  String get domesticReverseChargeNotice =>
+      'Steuerschuldnerschaft des Leistungsempfängers (Bauleistungen)';
+
+  @override
+  String get buildingConstructionYear => 'Baujahr des Gebäudes';
+
+  @override
+  String get buildingConstructionYearHint =>
+      'Optional (800–2200) für Renovierungs-MwSt.';
+
+  @override
+  String get buildingConstructionYearError =>
+      'Jahr zwischen 800 und 2200 eingeben';
+
+  @override
+  String get vatCategory => 'MwSt.-Kategorie';
+
+  @override
+  String get vatCategoryStandard => 'Regelsatz';
+
+  @override
+  String get vatCategoryIntermediate => 'Zwischensatz';
+
+  @override
+  String get vatCategoryReduced => 'Ermäßigt';
+
+  @override
+  String get vatCategoryZero => 'Nullsatz';
+
+  @override
+  String get vatCategoryConstruction => 'Bau (Renovierung)';
+
+  @override
+  String get vatRateOverride => 'Abweichender MwSt.-Satz (%)';
+
+  @override
+  String get vatRateOverrideHint =>
+      'Leer lassen für den Landessatz des Unternehmens';
+
+  @override
+  String get adminVatRates => 'MwSt.-Sätze';
+
+  @override
+  String get vatRatesTitle => 'Länderspezifische MwSt.-Sätze';
+
+  @override
+  String get vatRateAdd => 'MwSt.-Satz hinzufügen';
+
+  @override
+  String get vatRateEdit => 'MwSt.-Satz bearbeiten';
+
+  @override
+  String get vatRateCountry => 'Ländercode';
+
+  @override
+  String get vatRateCategory => 'Kategorie';
+
+  @override
+  String get vatRatePercent => 'Satz (%)';
+
+  @override
+  String get vatRateMinBuildingAge => 'Mindestalter Gebäude (Jahre)';
+
+  @override
+  String get vatRateStartDate => 'Startdatum (JJJJ-MM-TT)';
+
+  @override
+  String get vatRateEndDate => 'Enddatum (optional)';
+
+  @override
+  String get vatRateNotes => 'Notizen';
+
+  @override
+  String get vatRateClosePrevious =>
+      'Vorherige offene Regel automatisch schließen';
+
+  @override
+  String get vatRateOverlapError =>
+      'Zeitraum überschneidet sich mit einer bestehenden Regel';
+
+  @override
+  String vatRateDeleteConfirm(String country, String category) {
+    return 'MwSt.-Regel für $country ($category) löschen?';
+  }
+
+  @override
+  String get vatRateOngoing => 'Unbefristet';
 }

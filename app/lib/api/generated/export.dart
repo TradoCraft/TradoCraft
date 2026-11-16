@@ -120,6 +120,8 @@ export 'models/count_input.dart';
 export 'models/count_line.dart';
 export 'models/count_page.dart';
 export 'models/count_row.dart';
+export 'models/country_vat_rate.dart';
+export 'models/country_vat_rate_input.dart';
 export 'models/create_delivery_input.dart';
 export 'models/create_job.dart';
 export 'models/csat_info.dart';

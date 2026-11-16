@@ -28,8 +28,11 @@ async fn api(
 }
 
 async fn quote(app: &axum::Router, product: &str, extra: Value) -> Value {
-    let mut body =
-        json!({ "customer_id": ALPHA, "lines": [{ "product_id": product, "quantity": "1" }] });
+    let mut body = json!({
+        "customer_id": ALPHA,
+        "vat_regime_override": "domestic",
+        "lines": [{ "product_id": product, "quantity": "1" }]
+    });
     for (k, v) in extra.as_object().unwrap() {
         body[k] = v.clone();
     }

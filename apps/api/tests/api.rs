@@ -21,6 +21,7 @@ fn quote_body() -> Value {
     json!({
         "customer_id": ALPHA,
         "quote_date": "2026-11-05",
+        "vat_regime_override": "domestic",
         "lines": [
             { "product_id": UNIT_100, "quantity": "2", "line_discount_percent": "3" },
             { "product_id": HOSE_25, "quantity": "12.5" }

@@ -42,6 +42,9 @@ class _OpportunityFormState extends ConsumerState<OpportunityForm> {
     text: o == null ? '' : '${o!.probability}',
   );
   late final _notes = TextEditingController(text: o?.notes);
+  late final _buildingYear = TextEditingController(
+    text: o?.buildingConstructionYear?.toString(),
+  );
   late String? _customerId = o?.customerId;
   late String? _customerLabel = o?.customerName;
   late DateTime? _close = o?.expectedClose;
@@ -56,8 +59,15 @@ class _OpportunityFormState extends ConsumerState<OpportunityForm> {
     final probability = _probability.text.trim().isEmpty
         ? null
         : int.tryParse(_probability.text.trim());
+    final yearText = _buildingYear.text.trim();
+    final buildingYear = yearText.isEmpty ? null : int.tryParse(yearText);
     if (_title.text.trim().isEmpty || _customerId == null || value == null) {
       setState(() => _error = context.l10n.titleCustomerValueRequired);
+      return;
+    }
+    if (yearText.isNotEmpty &&
+        (buildingYear == null || buildingYear < 800 || buildingYear > 2200)) {
+      setState(() => _error = context.l10n.buildingConstructionYearError);
       return;
     }
     final grid = powerGridInput(stored: o?.powerGridId, chosen: _gridId);
@@ -68,6 +78,13 @@ class _OpportunityFormState extends ConsumerState<OpportunityForm> {
       probability: probability,
       expectedClose: _close,
       notes: _notes.text,
+      buildingConstructionYear: buildingYear,
+      clearBuildingConstructionYear:
+          o != null &&
+              buildingYear == null &&
+              o!.buildingConstructionYear != null
+          ? true
+          : null,
       powerGridId: grid.id,
       clearPowerGrid: grid.clear,
     );
@@ -178,6 +195,17 @@ class _OpportunityFormState extends ConsumerState<OpportunityForm> {
                 onChanged: (id) => setState(() => _gridId = id),
               ),
             ),
+            gap,
+            TextField(
+              key: const ValueKey('opportunity-building-year'),
+              controller: _buildingYear,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                labelText: context.l10n.buildingConstructionYear,
+                hintText: context.l10n.buildingConstructionYearHint,
+              ),
+            ),
+            gap,
             TextField(
               controller: _notes,
               maxLines: 3,

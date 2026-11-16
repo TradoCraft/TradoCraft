@@ -27,10 +27,15 @@ class PricingPreview {
     required this.vatGroups,
     required this.vatTotal,
     required this.warnings,
+    this.buildingConstructionYear,
+    this.vatRegime,
   });
   
   factory PricingPreview.fromJson(Map<String, Object?> json) => _$PricingPreviewFromJson(json);
   
+  /// Building construction year used during preview calculation.
+  @JsonKey(includeIfNull: false,name: 'building_construction_year')
+  final int? buildingConstructionYear;
   @JsonKey(name: 'customer_discount_percent')
   final String customerDiscountPercent;
 
@@ -54,6 +59,10 @@ class PricingPreview {
   final int unconfirmedLines;
   @JsonKey(name: 'vat_groups')
   final List<VatGroup> vatGroups;
+
+  /// Effective VAT regime resolved for this preview.
+  @JsonKey(includeIfNull: false,name: 'vat_regime')
+  final String? vatRegime;
   @JsonKey(name: 'vat_total')
   final String vatTotal;
 

@@ -12,6 +12,8 @@ import '../models/bootstrap_request.dart';
 import '../models/bootstrap_result.dart';
 import '../models/company_logo_info.dart';
 import '../models/company_user.dart';
+import '../models/country_vat_rate.dart';
+import '../models/country_vat_rate_input.dart';
 import '../models/environment_info.dart';
 import '../models/me.dart';
 import '../models/module_info.dart';
@@ -81,6 +83,24 @@ abstract class CoreClient {
     @Path('id') required String id,
   });
 
+  @POST('/api/v1/admin/vat-rates')
+  Future<CountryVatRate> createVatRate({
+    @Body() required CountryVatRateInput body,
+  });
+
+  /// [id] - VAT rate rule id
+  @PUT('/api/v1/admin/vat-rates/{id}')
+  Future<CountryVatRate> updateVatRate({
+    @Path('id') required String id,
+    @Body() required CountryVatRateInput body,
+  });
+
+  /// [id] - VAT rate rule id
+  @DELETE('/api/v1/admin/vat-rates/{id}')
+  Future<void> deleteVatRate({
+    @Path('id') required String id,
+  });
+
   /// The background worker's heartbeat: whether it is running, and its last outage.
   @GET('/api/v1/admin/worker')
   Future<WorkerStatus> getWorker();
@@ -113,4 +133,11 @@ abstract class CoreClient {
 
   @GET('/api/v1/users')
   Future<List<CompanyUser>> listUsers();
+
+  @GET('/api/v1/vat-rates')
+  Future<List<CountryVatRate>> listVatRates({
+    @Query('country_code') String? countryCode,
+    @Query('category') String? category,
+    @Query('as_of') DateTime? asOf,
+  });
 }

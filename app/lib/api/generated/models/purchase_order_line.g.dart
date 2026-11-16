@@ -21,6 +21,7 @@ PurchaseOrderLine _$PurchaseOrderLineFromJson(Map<String, dynamic> json) =>
       quantityReceived: json['quantity_received'] as String,
       supplierProductCode: json['supplier_product_code'] as String,
       unitPrice: json['unit_price'] as String,
+      vatRate: json['vat_rate'] as String?,
     );
 
 Map<String, dynamic> _$PurchaseOrderLineToJson(PurchaseOrderLine instance) =>
@@ -38,4 +39,5 @@ Map<String, dynamic> _$PurchaseOrderLineToJson(PurchaseOrderLine instance) =>
       'quantity_received': instance.quantityReceived,
       'supplier_product_code': instance.supplierProductCode,
       'unit_price': instance.unitPrice,
+      'vat_rate': ?instance.vatRate,
     };

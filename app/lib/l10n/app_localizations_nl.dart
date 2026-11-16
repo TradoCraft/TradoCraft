@@ -480,6 +480,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get codeNameRequired => 'Code en naam zijn verplicht.';
 
   @override
+  String get poLineVatInvalid => 'Het btw-tarief moet tussen 0 en 100 liggen.';
+
+  @override
   String get codeNameVatRequired => 'Code, naam en btw-tarief zijn verplicht.';
 
   @override
@@ -10081,4 +10084,102 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get plGenBack => 'Terug naar het plan';
+
+  @override
+  String get vatRegimeDomesticReverseCharge =>
+      'Medecontractant (werken in onroerende staat)';
+
+  @override
+  String get vatRegimeOverride => 'BTW-regime overschrijven';
+
+  @override
+  String get vatRegimeAuto => 'Automatisch (standaard)';
+
+  @override
+  String get domesticReverseChargeNotice =>
+      'BTW verlegd — werken in onroerende staat';
+
+  @override
+  String get buildingConstructionYear => 'Bouwjaar gebouw';
+
+  @override
+  String get buildingConstructionYearHint =>
+      'Optioneel (800–2200) voor renovatie-BTW';
+
+  @override
+  String get buildingConstructionYearError =>
+      'Geef een jaartal tussen 800 en 2200 in';
+
+  @override
+  String get vatCategory => 'BTW-categorie';
+
+  @override
+  String get vatCategoryStandard => 'Standaard';
+
+  @override
+  String get vatCategoryIntermediate => 'Tussentarief';
+
+  @override
+  String get vatCategoryReduced => 'Verlaagd';
+
+  @override
+  String get vatCategoryZero => 'Nultarief';
+
+  @override
+  String get vatCategoryConstruction => 'Bouw (renovatie)';
+
+  @override
+  String get vatRateOverride => 'Afwijkend BTW-percentage (%)';
+
+  @override
+  String get vatRateOverrideHint =>
+      'Laat leeg om het standaardtarief van het bedrijfsland te gebruiken';
+
+  @override
+  String get adminVatRates => 'BTW-tarieven';
+
+  @override
+  String get vatRatesTitle => 'BTW-tarieven per land';
+
+  @override
+  String get vatRateAdd => 'BTW-tarief toevoegen';
+
+  @override
+  String get vatRateEdit => 'BTW-tarief bewerken';
+
+  @override
+  String get vatRateCountry => 'Landcode';
+
+  @override
+  String get vatRateCategory => 'Categorie';
+
+  @override
+  String get vatRatePercent => 'Tarief (%)';
+
+  @override
+  String get vatRateMinBuildingAge => 'Min. ouderdom gebouw (jaar)';
+
+  @override
+  String get vatRateStartDate => 'Startdatum (JJJJ-MM-DD)';
+
+  @override
+  String get vatRateEndDate => 'Einddatum (optioneel)';
+
+  @override
+  String get vatRateNotes => 'Opmerkingen';
+
+  @override
+  String get vatRateClosePrevious => 'Vorige open regel automatisch afsluiten';
+
+  @override
+  String get vatRateOverlapError =>
+      'Datums overlappen met een bestaande regel voor dit land en deze categorie';
+
+  @override
+  String vatRateDeleteConfirm(String country, String category) {
+    return 'BTW-regel voor $country ($category) verwijderen?';
+  }
+
+  @override
+  String get vatRateOngoing => 'Lopend';
 }

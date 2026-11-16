@@ -11,6 +11,8 @@ class OpportunityInput {
   const OpportunityInput({
     required this.customerId,
     required this.title,
+    this.buildingConstructionYear,
+    this.clearBuildingConstructionYear,
     this.clearPowerGrid,
     this.expectedClose,
     this.expectedValue,
@@ -22,6 +24,14 @@ class OpportunityInput {
   
   factory OpportunityInput.fromJson(Map<String, Object?> json) => _$OpportunityInputFromJson(json);
   
+  /// Year the building at the site was constructed (800..=2200). On update kept when omitted.
+  @JsonKey(includeIfNull: false,name: 'building_construction_year')
+  final int? buildingConstructionYear;
+
+  /// `true` clears the stored construction year on update; combined with `building_construction_year` it is a 422.
+  @JsonKey(includeIfNull: false,name: 'clear_building_construction_year')
+  final bool? clearBuildingConstructionYear;
+
   /// `true` clears the stored grid on update; combined with `power_grid_id` it is a 422.
   @JsonKey(includeIfNull: false,name: 'clear_power_grid')
   final bool? clearPowerGrid;

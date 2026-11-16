@@ -31,6 +31,8 @@ class Product {
     this.reorderMax,
     this.reorderMin,
     this.standardCost,
+    this.vatCategory,
+    this.vatRateOverride,
     this.weightG,
     this.widthMm,
   });
@@ -90,8 +92,16 @@ class Product {
   /// lot-tracked products are stocked per lot or batch.
   final String tracking;
   final String unit;
+
+  /// VAT category used to resolve country-specific default rates (`standard`, `intermediate`, `reduced`, `zero`).
+  @JsonKey(includeIfNull: false,name: 'vat_category')
+  final String? vatCategory;
   @JsonKey(name: 'vat_rate')
   final String vatRate;
+
+  /// Optional explicit VAT rate overriding the country-category rate.
+  @JsonKey(includeIfNull: false,name: 'vat_rate_override')
+  final String? vatRateOverride;
 
   /// Packed weight in grams.
   @JsonKey(includeIfNull: false,name: 'weight_g')

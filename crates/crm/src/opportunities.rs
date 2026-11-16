@@ -89,6 +89,9 @@ pub struct Opportunity {
     pub notes: String,
     /// The power grid of the site; belongs to the customer's country (ADR 0068).
     pub power_grid_id: Option<Uuid>,
+    /// Year the building at the site was constructed (used for renovation VAT rules).
+    #[schema(required = false)]
+    pub building_construction_year: Option<i32>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     pub closed_at: Option<DateTime<Utc>>,
@@ -115,6 +118,14 @@ pub struct OpportunityInput {
     /// `true` clears the stored grid on update; combined with `power_grid_id` it is a 422.
     #[serde(default)]
     pub clear_power_grid: Option<bool>,
+    /// Year the building at the site was constructed (800..=2200). On update kept when omitted.
+    #[serde(default)]
+    #[schema(required = false)]
+    pub building_construction_year: Option<i32>,
+    /// `true` clears the stored construction year on update; combined with `building_construction_year` it is a 422.
+    #[serde(default)]
+    #[schema(required = false)]
+    pub clear_building_construction_year: Option<bool>,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -159,7 +170,8 @@ pub struct ListParams {
 const SELECT: &str =
     "SELECT o.id, o.number, o.title, o.customer_id, c.name AS customer_name, o.owner_user_id,
         u.display_name AS owner_name, o.stage, o.expected_value, o.probability, o.expected_close,
-        o.lost_reason, o.notes, o.power_grid_id, o.created_at, o.updated_at, o.closed_at
+        o.lost_reason, o.notes, o.power_grid_id, o.building_construction_year,
+        o.created_at, o.updated_at, o.closed_at
      FROM crm.opportunities o
      JOIN crm.customers c ON c.id = o.customer_id
      JOIN core.users u ON u.id = o.owner_user_id";
@@ -191,6 +203,20 @@ impl OpportunityInput {
             return Err(AppError::Validation(
                 "expected_value cannot be negative".into(),
             ));
+        }
+        if self.clear_building_construction_year == Some(true)
+            && self.building_construction_year.is_some()
+        {
+            return Err(AppError::Validation(
+                "cannot both set and clear building_construction_year".into(),
+            ));
+        }
+        if let Some(year) = self.building_construction_year {
+            if !(800..=2200).contains(&year) {
+                return Err(AppError::Validation(
+                    "building_construction_year must be between 800 and 2200".into(),
+                ));
+            }
         }
         validate_probability(self.probability)
     }
@@ -442,8 +468,8 @@ pub async fn create(
     let id = new_id();
     sqlx::query(
         "INSERT INTO crm.opportunities (id, company_id, number, title, customer_id, owner_user_id, expected_value,
-                                        probability, expected_close, notes, power_grid_id)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)",
+                                        probability, expected_close, notes, power_grid_id, building_construction_year)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)",
     )
     .bind(id)
     .bind(user.company_id)
@@ -456,6 +482,7 @@ pub async fn create(
     .bind(input.expected_close)
     .bind(&input.notes)
     .bind(power_grid_id)
+    .bind(input.building_construction_year)
     .execute(&mut *conn)
     .await?;
     audit::record(
@@ -514,9 +541,17 @@ async fn update_opportunity(
     let owner = input.owner_user_id.unwrap_or(current.owner_user_id);
     ensure_owner_in_company(&mut tx, user.company_id, owner).await?;
     let power_grid_id = resolve_grid(&mut tx, &input, current.power_grid_id).await?;
+    let building_year = if input.clear_building_construction_year == Some(true) {
+        None
+    } else {
+        input
+            .building_construction_year
+            .or(current.building_construction_year)
+    };
     sqlx::query(
         "UPDATE crm.opportunities SET title = $2, customer_id = $3, owner_user_id = $4, expected_value = $5,
-                probability = $6, expected_close = $7, notes = $8, power_grid_id = $9, updated_at = now()
+                probability = $6, expected_close = $7, notes = $8, power_grid_id = $9,
+                building_construction_year = $10, updated_at = now()
          WHERE id = $1",
     )
     .bind(id)
@@ -528,6 +563,7 @@ async fn update_opportunity(
     .bind(input.expected_close)
     .bind(&input.notes)
     .bind(power_grid_id)
+    .bind(building_year)
     .execute(&mut *tx)
     .await?;
     audit::record(

@@ -96,7 +96,7 @@ async fn export_round_trip_is_unchanged(db: PgPool) {
     let app = setup(db.clone()).await;
     for (entity, header) in [
         ("customers", "code,name,vat_number,email,phone,street,postal_code,city,country_code,language,active,price_zone_code,discount_percent,payment_terms_days,vat_regime"),
-        ("products", "code,name,description,unit,product_type,vat_rate,tracking,family_code,pricing_type,active,reorder_min,reorder_max,lead_time_days,barcode,packaging_category_code,length_mm,width_mm,height_mm,weight_g,default_production_remark"),
+        ("products", "code,name,description,unit,product_type,vat_rate,tracking,family_code,pricing_type,active,reorder_min,reorder_max,lead_time_days,barcode,packaging_category_code,length_mm,width_mm,height_mm,weight_g,default_production_remark,vat_category,vat_rate_override"),
     ] {
         let (status, csv) = export(&app, VIEWER, entity).await;
         assert_eq!(status, StatusCode::OK);
@@ -836,4 +836,38 @@ async fn customer_code_created_during_the_import_is_updated(db: PgPool) {
             .await
             .unwrap();
     assert_eq!(names, ["Racer"]);
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn customer_import_derives_only_without_active_company_terms(db: PgPool) {
+    let app = setup(db.clone()).await;
+    // Existing company terms keep an explicit regime even when country defaults differ.
+    sqlx::query("UPDATE crm.customer_terms SET vat_regime = 'outside_eu' WHERE customer_id = '00000000-0000-7000-8000-000000000401'")
+        .execute(&db).await.unwrap();
+    let (status, r) = import(&app, ADMIN, "customers", false, "code,city\nC0001,Gent\n").await;
+    assert_eq!(status, StatusCode::OK, "{r}");
+    let (_, got) = common::call(&app, ADMIN, Method::GET, "/api/v1/customers?q=C0001", None).await;
+    assert_eq!(got["items"][0]["vat_regime"], "outside_eu");
+    // A shared customer without active-company terms must not inherit its global regime.
+    sqlx::query(
+        "DELETE FROM crm.customer_terms WHERE customer_id = '00000000-0000-7000-8000-000000000401'",
+    )
+    .execute(&db)
+    .await
+    .unwrap();
+    sqlx::query("UPDATE crm.customers SET vat_regime = 'outside_eu' WHERE code = 'C0001'")
+        .execute(&db)
+        .await
+        .unwrap();
+    let (status, r) = import(
+        &app,
+        ADMIN,
+        "customers",
+        false,
+        "code,price_zone_code\nC0001,Z2\n",
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{r}");
+    let (_, got) = common::call(&app, ADMIN, Method::GET, "/api/v1/customers?q=C0001", None).await;
+    assert_eq!(got["items"][0]["vat_regime"], "domestic");
 }

@@ -23,7 +23,8 @@ use utoipa_axum::routes;
 use uuid::Uuid;
 
 use crate::{
-    insert_customer, update_customer_row, upsert_terms, Customer, CustomerInput, SELECT_CUSTOMER,
+    insert_customer, resolve_customer_vat_regime, update_customer_row, upsert_terms, Customer,
+    CustomerInput, SELECT_CUSTOMER,
 };
 
 /// The columns, in export order. `code` is the key; the others are optional in an import file.
@@ -77,11 +78,17 @@ pub struct CustomerChange {
     zone: Option<Uuid>,
 }
 
+pub struct CustomerContext {
+    zones: HashMap<String, Uuid>,
+    company_country: String,
+}
+
 /// Whether the stored customer already equals what the row would write (so nothing is written).
 fn same(existing: &Customer, i: &CustomerInput, zone: Option<Uuid>) -> bool {
+    let target_regime = i.vat_regime.as_deref().unwrap_or(&existing.vat_regime);
     existing.name == i.name
         && existing.vat_number == i.vat_number
-        && existing.vat_regime == i.vat_regime
+        && existing.vat_regime == target_regime
         && existing.email == i.email
         && existing.phone == i.phone
         && existing.street == i.street
@@ -102,8 +109,8 @@ pub struct Customers;
 impl Importable for Customers {
     type Stored = Customer;
     type Change = CustomerChange;
-    /// The price zones of the active company, by code.
-    type Context = HashMap<String, Uuid>;
+    /// The price zones and country of the active company.
+    type Context = CustomerContext;
 
     const KEY: &'static str = "customers";
     const AUDIT_ENTITY: &'static str = "customer";
@@ -117,14 +124,19 @@ impl Importable for Customers {
         user: &CurrentUser,
         _table: &Table,
     ) -> AppResult<Self::Context> {
-        Ok(sqlx::query_as::<_, (String, Uuid)>(
+        let zones = sqlx::query_as::<_, (String, Uuid)>(
             "SELECT code, id FROM pricing.price_zones WHERE company_id = $1",
         )
         .bind(user.company_id)
-        .fetch_all(conn)
+        .fetch_all(&mut *conn)
         .await?
         .into_iter()
-        .collect())
+        .collect();
+        let company = tradocraft_core::company::get_company(conn, user.company_id).await?;
+        Ok(CustomerContext {
+            zones,
+            company_country: company.country_code,
+        })
     }
 
     async fn load(
@@ -154,19 +166,24 @@ impl Importable for Customers {
     async fn plan_row(
         _conn: &mut PgConnection,
         _user: &CurrentUser,
-        zones: &mut Self::Context,
+        ctx: &mut Self::Context,
         key: &str,
         current: Option<&Customer>,
         _row: &Row,
         cells: &mut Cells<'_>,
     ) -> AppResult<CustomerChange> {
+        let CustomerContext {
+            zones,
+            company_country,
+        } = ctx;
         // Start from the stored values (or the API defaults) and overlay the columns of the file.
         let mut input = match current {
             Some(c) => CustomerInput {
                 code: c.code.clone(),
                 name: c.name.clone(),
                 vat_number: c.vat_number.clone(),
-                vat_regime: c.vat_regime.clone(),
+                // customer_terms.price_zone_id is NOT NULL: None means no active-company terms.
+                vat_regime: c.price_zone_id.map(|_| c.vat_regime.clone()),
                 email: c.email.clone(),
                 phone: c.phone.clone(),
                 street: c.street.clone(),
@@ -183,13 +200,13 @@ impl Importable for Customers {
                 code: key.to_string(),
                 name: String::new(),
                 vat_number: None,
-                vat_regime: "domestic".to_string(),
+                vat_regime: None,
                 email: None,
                 phone: None,
                 street: String::new(),
                 postal_code: String::new(),
                 city: String::new(),
-                country_code: "BE".into(),
+                country_code: company_country.clone(),
                 language: "nl".into(),
                 active: true,
                 price_zone_id: Uuid::nil(),
@@ -199,7 +216,9 @@ impl Importable for Customers {
         };
         cells.text("name").apply(&mut input.name);
         cells.text("vat_number").apply_opt(&mut input.vat_number);
-        cells.trimmed("vat_regime").apply(&mut input.vat_regime);
+        if let Cell::Value(v) = cells.trimmed("vat_regime") {
+            input.vat_regime = Some(v);
+        }
         cells.text("email").apply_opt(&mut input.email);
         cells.text("phone").apply_opt(&mut input.phone);
         cells.text("street").apply(&mut input.street);
@@ -249,6 +268,16 @@ impl Importable for Customers {
         input.name = input.name.trim().to_string();
         input.country_code = input.country_code.to_uppercase();
         input.language = input.language.to_lowercase();
+        if input.vat_regime.is_none() {
+            input.vat_regime = Some(
+                tradocraft_core::vat::default_vat_regime(
+                    company_country,
+                    &input.country_code,
+                    input.vat_number.as_deref(),
+                )
+                .to_string(),
+            );
+        }
         input.price_zone_id = zone.unwrap_or_default();
 
         if input.name.is_empty() {
@@ -292,8 +321,10 @@ impl Importable for Customers {
         id: Uuid,
         change: &CustomerChange,
     ) -> AppResult<()> {
-        insert_customer(conn, id, &change.input).await?;
-        upsert_terms(conn, user.company_id, id, &change.input).await
+        let (vat_regime, _) =
+            resolve_customer_vat_regime(conn, user.company_id, &change.input, None).await?;
+        insert_customer(conn, id, &change.input, &vat_regime).await?;
+        upsert_terms(conn, user.company_id, id, &change.input, &vat_regime).await
     }
 
     async fn update(
@@ -302,10 +333,13 @@ impl Importable for Customers {
         id: Uuid,
         change: &CustomerChange,
     ) -> AppResult<()> {
-        update_customer_row(conn, id, &change.input).await?;
+        let (vat_regime, is_primary) =
+            resolve_customer_vat_regime(conn, user.company_id, &change.input, None).await?;
+        let global = (is_primary || change.zone.is_none()).then_some(vat_regime.as_str());
+        update_customer_row(conn, id, &change.input, global).await?;
         // Terms are written only when the customer has a zone (the file gave one or it had one).
         if change.zone.is_some() {
-            upsert_terms(conn, user.company_id, id, &change.input).await?;
+            upsert_terms(conn, user.company_id, id, &change.input, &vat_regime).await?;
         }
         Ok(())
     }

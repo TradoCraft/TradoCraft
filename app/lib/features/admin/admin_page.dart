@@ -15,6 +15,7 @@ import 'imports/imports_page.dart';
 import 'modules_page.dart';
 import 'price_zones_page.dart';
 import 'users_page.dart';
+import 'vat_rates_page.dart';
 
 /// Administration: one destination with a switch between users, modules, price zones,
 /// attribute definitions, baseline types, identity providers, the audit trail and data import (each shown with its own permission).
@@ -37,6 +38,7 @@ class _AdminPageState extends ConsumerState<AdminPage> {
       if (isAdmin) 'users',
       if (isAdmin) 'modules',
       if (isAdmin) 'company',
+      if (isAdmin) 'vat',
       if (can(ref, 'prices.write')) 'zones',
       if (can(ref, 'products.write')) 'attributes',
       if (can(ref, 'products.write')) 'baseline',
@@ -67,6 +69,7 @@ class _AdminPageState extends ConsumerState<AdminPage> {
                             'users' => l.adminUsers,
                             'modules' => l.adminModules,
                             'company' => l.adminCompany,
+                            'vat' => l.adminVatRates,
                             'attributes' => l.adminAttributes,
                             'baseline' => l.adminBaselineTypes,
                             'identity' => l.adminIdentityProviders,
@@ -95,6 +98,7 @@ class _AdminPageState extends ConsumerState<AdminPage> {
           child: switch (tab) {
             'modules' => const ModulesPage(),
             'company' => const CompanyLogoPage(),
+            'vat' => const VatRatesPage(),
             'zones' => const PriceZonesPage(),
             'attributes' => const AttributeDefinitionsPage(),
             'baseline' => const BaselineTypesPage(),

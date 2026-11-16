@@ -149,7 +149,8 @@ pub struct InvoiceLineInput {
     /// Unit price excluding VAT (at most 4 decimals).
     #[schema(value_type = String)]
     pub unit_price: Decimal,
-    /// VAT rate in percent, default 0.
+    /// VAT rate in percent (defaults to linked PO line rate, else company standard rate for
+    /// domestic suppliers and 0 for foreign suppliers).
     #[schema(value_type = Option<String>)]
     pub vat_rate: Option<Decimal>,
 }
@@ -272,8 +273,12 @@ struct ValidLine {
     vat: Decimal,
 }
 
-/// Validates line input against the purchase order (if any) and computes the line amounts.
-fn validate_lines(
+/// Validates line input against the purchase order (if any), resolves default VAT rates, and computes the line amounts.
+async fn validate_lines(
+    conn: &mut PgConnection,
+    company_id: Uuid,
+    supplier_country: &str,
+    invoice_date: NaiveDate,
     inputs: Vec<InvoiceLineInput>,
     po: Option<&PurchaseOrderDetail>,
 ) -> AppResult<Vec<ValidLine>> {
@@ -282,6 +287,28 @@ fn validate_lines(
             "invoice must contain at least one line".into(),
         ));
     }
+    let company = tradocraft_core::company::get_company(&mut *conn, company_id).await?;
+    let domestic = supplier_country
+        .trim()
+        .eq_ignore_ascii_case(&company.country_code);
+    let default_standard = if domestic {
+        tradocraft_core::vat_rates::resolve_vat_rate(
+            conn,
+            &tradocraft_core::vat_rates::VatResolutionContext {
+                country_code: &company.country_code,
+                category: "standard",
+                product_override: None,
+                vat_regime: Some("domestic"),
+                purpose: None,
+                building_construction_year: None,
+                as_of: invoice_date,
+            },
+        )
+        .await?
+    } else {
+        Decimal::ZERO
+    };
+
     let mut out = Vec::new();
     for (idx, l) in inputs.into_iter().enumerate() {
         let n = idx + 1;
@@ -297,14 +324,9 @@ fn validate_lines(
                 "quantity and unit price allow at most 4 decimal places",
             ));
         }
-        let vat_rate = l.vat_rate.unwrap_or(Decimal::ZERO);
-        if vat_rate < Decimal::ZERO || vat_rate > Decimal::from(100) || vat_rate.scale() > 2 {
-            return Err(bad(
-                "VAT rate must be between 0 and 100 with at most 2 decimals",
-            ));
-        }
         let mut product_id = l.product_id;
         let mut description = l.description.unwrap_or_default().trim().to_string();
+        let mut po_line_vat = None;
         if let Some(pl_id) = l.purchase_order_line_id {
             let po =
                 po.ok_or_else(|| bad("an order line needs an invoice with a purchase order"))?;
@@ -314,11 +336,18 @@ fn validate_lines(
                 .find(|x| x.id == pl_id)
                 .ok_or_else(|| bad("order line does not belong to the purchase order"))?;
             product_id = Some(pl.product_id);
+            po_line_vat = Some(pl.vat_rate);
             if description.is_empty() {
                 description = pl.product_name.clone();
             }
         } else if description.is_empty() {
             return Err(bad("a free-text line needs a description"));
+        }
+        let vat_rate = l.vat_rate.or(po_line_vat).unwrap_or(default_standard);
+        if vat_rate < Decimal::ZERO || vat_rate > Decimal::from(100) || vat_rate.scale() > 2 {
+            return Err(bad(
+                "VAT rate must be between 0 and 100 with at most 2 decimals",
+            ));
         }
         let overflow = || bad("amount too large");
         let net = money(l.quantity.checked_mul(l.unit_price).ok_or_else(overflow)?);
@@ -616,7 +645,7 @@ async fn prefill(
                 description: None,
                 quantity: open,
                 unit_price: l.unit_price,
-                vat_rate: None,
+                vat_rate: Some(l.vat_rate),
             })
         })
         .collect())
@@ -706,7 +735,15 @@ pub async fn create(
             }
         },
     };
-    let valid = validate_lines(lines, po.as_ref())?;
+    let valid = validate_lines(
+        conn,
+        user.company_id,
+        &supplier.country,
+        input.invoice_date,
+        lines,
+        po.as_ref(),
+    )
+    .await?;
     let due_date = input
         .due_date
         .unwrap_or(input.invoice_date + Duration::days(supplier.payment_terms_days as i64));
@@ -831,7 +868,17 @@ pub async fn update(
             Some(p) => Some(po_orders::load(conn, user.company_id, p).await?),
             None => None,
         };
-        let valid = validate_lines(lines, po.as_ref())?;
+        let supplier = suppliers::load(conn, user.company_id, inv.supplier_id).await?;
+        let invoice_date = input.invoice_date.unwrap_or(inv.invoice_date);
+        let valid = validate_lines(
+            conn,
+            user.company_id,
+            &supplier.country,
+            invoice_date,
+            lines,
+            po.as_ref(),
+        )
+        .await?;
         sqlx::query("DELETE FROM finance.supplier_invoice_lines WHERE invoice_id = $1")
             .bind(id)
             .execute(&mut *conn)

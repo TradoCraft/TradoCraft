@@ -26,6 +26,7 @@ class QuotationLineInput {
     this.productionRemark,
     this.section,
     this.unitPrice,
+    this.vatRate,
   });
   
   factory QuotationLineInput.fromJson(Map<String, Object?> json) => _$QuotationLineInputFromJson(json);
@@ -91,6 +92,10 @@ class QuotationLineInput {
   /// confirmed before the quotation can be sent. Not allowed for other products.
   @JsonKey(includeIfNull: false,name: 'unit_price')
   final String? unitPrice;
+
+  /// Optional explicit VAT rate override for this line (omitted: resolved from country, product category, regime, and building age).
+  @JsonKey(includeIfNull: false,name: 'vat_rate')
+  final String? vatRate;
 
   Map<String, Object?> toJson() => _$QuotationLineInputToJson(this);
 }

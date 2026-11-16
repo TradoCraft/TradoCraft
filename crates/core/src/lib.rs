@@ -23,6 +23,7 @@ pub mod serde_util;
 pub mod state;
 pub mod vat;
 pub mod vat_check;
+pub mod vat_rates;
 pub mod vies;
 pub mod worker;
 

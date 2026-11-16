@@ -13,7 +13,10 @@ class QuotationInput {
   const QuotationInput({
     required this.customerId,
     required this.lines,
+    this.buildingConstructionYear,
+    this.clearBuildingConstructionYear,
     this.clearPowerGrid,
+    this.clearVatRegimeOverride,
     this.deliveryCountryCode,
     this.notes,
     this.opportunityId,
@@ -22,14 +25,27 @@ class QuotationInput {
     this.purpose,
     this.quoteDate,
     this.validDays,
+    this.vatRegimeOverride,
   });
   
   factory QuotationInput.fromJson(Map<String, Object?> json) => _$QuotationInputFromJson(json);
   
+  /// Year the site's building was constructed (800..=2200). Inherited from `opportunity_id` when omitted on create.
+  @JsonKey(includeIfNull: false,name: 'building_construction_year')
+  final int? buildingConstructionYear;
+
+  /// `true` clears `building_construction_year` on update; refused (422) together with a year.
+  @JsonKey(includeIfNull: false,name: 'clear_building_construction_year')
+  final bool? clearBuildingConstructionYear;
+
   /// `true` clears the stored grid ("any grid of the delivery country"); it wins over the keep.
   /// rule above and is refused (422) together with a `power_grid_id`. Absent or `false`: no effect.
   @JsonKey(includeIfNull: false,name: 'clear_power_grid')
   final bool? clearPowerGrid;
+
+  /// `true` clears any previous `vat_regime_override` on update so auto-resolution applies again.
+  @JsonKey(includeIfNull: false,name: 'clear_vat_regime_override')
+  final bool? clearVatRegimeOverride;
   @JsonKey(name: 'customer_id')
   final String customerId;
 
@@ -66,6 +82,11 @@ class QuotationInput {
   /// Defaults to 30 days.
   @JsonKey(includeIfNull: false,name: 'valid_days')
   final int? validDays;
+
+  /// Explicit VAT regime override (`domestic`, `domestic_reverse_charge`, `intra_eu`, `outside_eu`).
+  /// When omitted on create, derived from customer regime and purpose; on update kept unless cleared.
+  @JsonKey(includeIfNull: false,name: 'vat_regime_override')
+  final String? vatRegimeOverride;
 
   Map<String, Object?> toJson() => _$QuotationInputToJson(this);
 }

@@ -470,6 +470,82 @@ fn luhn_valid(s: &str) -> bool {
     !s.is_empty() && sum % 10 == 0
 }
 
+/// Supported customer and quotation VAT regimes.
+pub const VAT_REGIMES: [&str; 4] = [
+    "domestic",
+    "intra_eu",
+    "outside_eu",
+    "domestic_reverse_charge",
+];
+
+/// Whether `regime` is one of [`VAT_REGIMES`].
+pub fn is_valid_vat_regime(regime: &str) -> bool {
+    VAT_REGIMES.contains(&regime)
+}
+
+/// Whether `iso_country` participates in the EU VAT area (the 27 EU member states,
+/// including `GR` -> `EL`, plus Northern Ireland `XI`).
+pub fn is_eu_vat_country(iso_country: &str) -> bool {
+    vies_prefix(iso_country).is_some()
+}
+
+/// Derive a customer's default VAT regime from company country, customer country,
+/// and whether the customer supplied a VAT registration number.
+///
+/// - Same country -> `"domestic"`
+/// - Both EU VAT countries & customer has a VAT number (B2B) -> `"intra_eu"`
+/// - Both EU VAT countries & no VAT number (B2C) -> `"domestic"`
+/// - Cross-border outside the EU VAT area -> `"outside_eu"`
+pub fn default_vat_regime(
+    company_country: &str,
+    customer_country: &str,
+    vat_number: Option<&str>,
+) -> &'static str {
+    let co = company_country.trim().to_ascii_uppercase();
+    let cu = customer_country.trim().to_ascii_uppercase();
+    if co == cu {
+        return "domestic";
+    }
+    let has_vat = vat_number.is_some_and(|v| !v.trim().is_empty());
+    if is_eu_vat_country(&co) && is_eu_vat_country(&cu) {
+        if has_vat {
+            "intra_eu"
+        } else {
+            "domestic"
+        }
+    } else {
+        "outside_eu"
+    }
+}
+
+/// Determine the effective VAT regime for a quotation.
+///
+/// An explicit non-empty `override_regime` wins. Otherwise a `"domestic"` B2B
+/// customer (`has_vat_number`) with `purpose == "installation"` automatically gets
+/// `"domestic_reverse_charge"` (work-on-immovable-property reverse charge).
+pub fn resolve_quotation_vat_regime(
+    customer_regime: &str,
+    purpose: &str,
+    has_vat_number: bool,
+    override_regime: Option<&str>,
+) -> String {
+    if let Some(ov) = override_regime.map(str::trim).filter(|s| !s.is_empty()) {
+        return ov.to_string();
+    }
+    if customer_regime == "domestic" && purpose == "installation" && has_vat_number {
+        return "domestic_reverse_charge".to_string();
+    }
+    customer_regime.to_string()
+}
+
+/// Whether a VAT regime produces 0% VAT on customer-facing lines and totals.
+pub fn vat_exempt_for_regime(regime: &str) -> bool {
+    matches!(
+        regime,
+        "intra_eu" | "outside_eu" | "domestic_reverse_charge"
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -778,5 +854,92 @@ mod tests {
         for raw in BAD_CHECK {
             assert_eq!(verdict(raw), Verdict::BadChecksum, "{raw}");
         }
+    }
+
+    #[test]
+    fn eu_vat_country_handles_gr_and_xi() {
+        assert!(is_eu_vat_country("BE"));
+        assert!(is_eu_vat_country("gr"));
+        assert!(is_eu_vat_country("XI"));
+        assert!(!is_eu_vat_country("GB"));
+        assert!(!is_eu_vat_country("CH"));
+        assert!(!is_eu_vat_country("NO"));
+    }
+
+    #[test]
+    fn default_vat_regime_covers_domestic_eu_b2b_b2c_and_export() {
+        assert_eq!(
+            default_vat_regime("BE", "BE", Some("BE0428759497")),
+            "domestic"
+        );
+        assert_eq!(default_vat_regime("BE", "BE", None), "domestic");
+        assert_eq!(
+            default_vat_regime("BE", "NL", Some("NL123456789B01")),
+            "intra_eu"
+        );
+        assert_eq!(
+            default_vat_regime("BE", "GR", Some("EL123456789")),
+            "intra_eu"
+        );
+        assert_eq!(
+            default_vat_regime("BE", "XI", Some("XI123456789")),
+            "intra_eu"
+        );
+        assert_eq!(default_vat_regime("BE", "NL", None), "domestic");
+        assert_eq!(default_vat_regime("BE", "NL", Some("   ")), "domestic");
+        assert_eq!(
+            default_vat_regime("BE", "GB", Some("GB123456789")),
+            "outside_eu"
+        );
+        assert_eq!(default_vat_regime("BE", "CH", None), "outside_eu");
+        assert_eq!(
+            default_vat_regime("CH", "BE", Some("BE0428759497")),
+            "outside_eu"
+        );
+        assert_eq!(default_vat_regime("CH", "CH", None), "domestic");
+    }
+
+    #[test]
+    fn quotation_vat_regime_applies_installation_reverse_charge_and_override() {
+        assert_eq!(
+            resolve_quotation_vat_regime("domestic", "installation", true, None),
+            "domestic_reverse_charge"
+        );
+        // B2C domestic installation keeps domestic so age-based VAT can apply.
+        assert_eq!(
+            resolve_quotation_vat_regime("domestic", "installation", false, None),
+            "domestic"
+        );
+        // B2B supply_only or stock stays domestic.
+        assert_eq!(
+            resolve_quotation_vat_regime("domestic", "supply_only", true, None),
+            "domestic"
+        );
+        assert_eq!(
+            resolve_quotation_vat_regime("domestic", "stock", true, None),
+            "domestic"
+        );
+        // Cross-border regimes stay intra_eu / outside_eu even on installation.
+        assert_eq!(
+            resolve_quotation_vat_regime("intra_eu", "installation", true, None),
+            "intra_eu"
+        );
+        assert_eq!(
+            resolve_quotation_vat_regime("outside_eu", "installation", false, None),
+            "outside_eu"
+        );
+        // Explicit override takes precedence over auto-derivation.
+        assert_eq!(
+            resolve_quotation_vat_regime("domestic", "installation", true, Some("domestic")),
+            "domestic"
+        );
+    }
+
+    #[test]
+    fn vat_exempt_regimes_match_expected() {
+        assert!(!vat_exempt_for_regime("domestic"));
+        assert!(vat_exempt_for_regime("intra_eu"));
+        assert!(vat_exempt_for_regime("outside_eu"));
+        assert!(vat_exempt_for_regime("domestic_reverse_charge"));
     }
 }

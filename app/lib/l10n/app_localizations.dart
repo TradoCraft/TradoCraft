@@ -992,6 +992,12 @@ abstract class AppLocalizations {
   /// **'Code and name are required.'**
   String get codeNameRequired;
 
+  /// No description provided for @poLineVatInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'VAT rate must be between 0 and 100.'**
+  String get poLineVatInvalid;
+
   /// No description provided for @codeNameVatRequired.
   ///
   /// In en, this message translates to:
@@ -17879,6 +17885,186 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Back to the plan'**
   String get plGenBack;
+
+  /// No description provided for @vatRegimeDomesticReverseCharge.
+  ///
+  /// In en, this message translates to:
+  /// **'Domestic reverse charge (construction)'**
+  String get vatRegimeDomesticReverseCharge;
+
+  /// No description provided for @vatRegimeOverride.
+  ///
+  /// In en, this message translates to:
+  /// **'VAT regime override'**
+  String get vatRegimeOverride;
+
+  /// No description provided for @vatRegimeAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic (default)'**
+  String get vatRegimeAuto;
+
+  /// No description provided for @domesticReverseChargeNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'VAT reverse charge — work on immovable property'**
+  String get domesticReverseChargeNotice;
+
+  /// No description provided for @buildingConstructionYear.
+  ///
+  /// In en, this message translates to:
+  /// **'Building construction year'**
+  String get buildingConstructionYear;
+
+  /// No description provided for @buildingConstructionYearHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional (800–2200) for renovation VAT rules'**
+  String get buildingConstructionYearHint;
+
+  /// No description provided for @buildingConstructionYearError.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a year between 800 and 2200'**
+  String get buildingConstructionYearError;
+
+  /// No description provided for @vatCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'VAT category'**
+  String get vatCategory;
+
+  /// No description provided for @vatCategoryStandard.
+  ///
+  /// In en, this message translates to:
+  /// **'Standard'**
+  String get vatCategoryStandard;
+
+  /// No description provided for @vatCategoryIntermediate.
+  ///
+  /// In en, this message translates to:
+  /// **'Intermediate'**
+  String get vatCategoryIntermediate;
+
+  /// No description provided for @vatCategoryReduced.
+  ///
+  /// In en, this message translates to:
+  /// **'Reduced'**
+  String get vatCategoryReduced;
+
+  /// No description provided for @vatCategoryZero.
+  ///
+  /// In en, this message translates to:
+  /// **'Zero rate'**
+  String get vatCategoryZero;
+
+  /// No description provided for @vatCategoryConstruction.
+  ///
+  /// In en, this message translates to:
+  /// **'Construction (renovation)'**
+  String get vatCategoryConstruction;
+
+  /// No description provided for @vatRateOverride.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom VAT rate override (%)'**
+  String get vatRateOverride;
+
+  /// No description provided for @vatRateOverrideHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave empty to use the company\'s country default'**
+  String get vatRateOverrideHint;
+
+  /// No description provided for @adminVatRates.
+  ///
+  /// In en, this message translates to:
+  /// **'VAT rates'**
+  String get adminVatRates;
+
+  /// No description provided for @vatRatesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Country VAT rates'**
+  String get vatRatesTitle;
+
+  /// No description provided for @vatRateAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add VAT rate'**
+  String get vatRateAdd;
+
+  /// No description provided for @vatRateEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit VAT rate'**
+  String get vatRateEdit;
+
+  /// No description provided for @vatRateCountry.
+  ///
+  /// In en, this message translates to:
+  /// **'Country code'**
+  String get vatRateCountry;
+
+  /// No description provided for @vatRateCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get vatRateCategory;
+
+  /// No description provided for @vatRatePercent.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate (%)'**
+  String get vatRatePercent;
+
+  /// No description provided for @vatRateMinBuildingAge.
+  ///
+  /// In en, this message translates to:
+  /// **'Min. building age (years)'**
+  String get vatRateMinBuildingAge;
+
+  /// No description provided for @vatRateStartDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Start date (YYYY-MM-DD)'**
+  String get vatRateStartDate;
+
+  /// No description provided for @vatRateEndDate.
+  ///
+  /// In en, this message translates to:
+  /// **'End date (optional)'**
+  String get vatRateEndDate;
+
+  /// No description provided for @vatRateNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get vatRateNotes;
+
+  /// No description provided for @vatRateClosePrevious.
+  ///
+  /// In en, this message translates to:
+  /// **'Close previous open rule automatically'**
+  String get vatRateClosePrevious;
+
+  /// No description provided for @vatRateOverlapError.
+  ///
+  /// In en, this message translates to:
+  /// **'Dates overlap an existing rule for this country and category'**
+  String get vatRateOverlapError;
+
+  /// No description provided for @vatRateDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete VAT rate rule for {country} ({category})?'**
+  String vatRateDeleteConfirm(String country, String category);
+
+  /// No description provided for @vatRateOngoing.
+  ///
+  /// In en, this message translates to:
+  /// **'Ongoing'**
+  String get vatRateOngoing;
 }
 
 class _AppLocalizationsDelegate

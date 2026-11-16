@@ -74,6 +74,14 @@ pub struct ConfiguredQuotationInput {
     /// Defaults to the customer's country for an installation.
     pub delivery_country_code: Option<String>,
     pub power_grid_id: Option<Uuid>,
+    /// Optional explicit VAT regime override (`domestic`, `domestic_reverse_charge`, `intra_eu`, `outside_eu`).
+    #[serde(default)]
+    #[schema(required = false)]
+    pub vat_regime_override: Option<String>,
+    /// Optional building construction year for renovation VAT rules (`800..=2200`).
+    #[serde(default)]
+    #[schema(required = false)]
+    pub building_construction_year: Option<i32>,
     /// Defaults to 30 days.
     pub valid_days: Option<i64>,
     #[serde(default)]
@@ -169,6 +177,7 @@ pub fn flatten(lines: &[ConfiguredLineInput], resolve: &dyn Fn(&str) -> Option<U
                 product_id,
                 quantity: l.quantity,
                 line_discount_percent: Decimal::ZERO,
+                vat_rate: None,
                 description: l.description.clone(),
                 unit_price: l.unit_price,
                 parent_position: parent,
@@ -309,6 +318,10 @@ pub async fn import(
         delivery_country_code: input.delivery_country_code.clone(),
         power_grid_id: input.power_grid_id,
         clear_power_grid: None,
+        vat_regime_override: input.vat_regime_override.clone(),
+        clear_vat_regime_override: None,
+        building_construction_year: input.building_construction_year,
+        clear_building_construction_year: None,
         lines: flat.lines,
     };
 

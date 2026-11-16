@@ -207,6 +207,12 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
 
   /// A specific power grid of the delivery country; null = any grid of that country.
   String? _gridId;
+
+  /// Explicit VAT regime override; null = server auto-resolution.
+  String? _vatRegimeOverride;
+
+  /// Optional construction year of the site building for renovation VAT rules.
+  final _buildingYear = TextEditingController();
   PricingPreview? _preview;
   String? _previewError;
 
@@ -286,8 +292,22 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
     setState(() {
       _opportunities = [...opportunities, ?extra];
       _opportunitiesLoaded = true;
-      if (drop && _opportunityId == linked) _opportunityId = null;
+      if (drop && _opportunityId == linked) {
+        _opportunityId = null;
+      } else if (_id == null &&
+          _opportunityId != null &&
+          _buildingYear.text.trim().isEmpty) {
+        final opp = _opportunities
+            .where((o) => o.id == _opportunityId)
+            .firstOrNull;
+        if (opp?.buildingConstructionYear != null) {
+          _buildingYear.text = '${opp!.buildingConstructionYear}';
+        }
+      }
     });
+    if (drop || (_id == null && _buildingYear.text.trim().isNotEmpty)) {
+      _refreshPreview();
+    }
   }
 
   /// The same screen object is reused for another quotation when its `id` changes (a tab that
@@ -316,6 +336,8 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
       _notes.clear();
       _country.clear();
       _gridId = null;
+      _vatRegimeOverride = null;
+      _buildingYear.clear();
       _purpose = 'installation';
       _preview = null;
       _previewError = null;
@@ -350,6 +372,7 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
     _scroll.dispose();
     _notes.dispose();
     _country.dispose();
+    _buildingYear.dispose();
     for (final l in _lines) {
       l.dispose();
     }
@@ -389,6 +412,8 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
           _purpose = q.purpose;
           _country.text = q.deliveryCountryCode ?? '';
           _gridId = q.powerGridId;
+          _vatRegimeOverride = q.vatRegimeOverride;
+          _buildingYear.text = q.buildingConstructionYear?.toString() ?? '';
         });
         _refreshPreview();
         _loadCatalogues();
@@ -422,6 +447,8 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
     setState(() {
       _q = q;
       _id = q.id;
+      _vatRegimeOverride = q.vatRegimeOverride;
+      _buildingYear.text = q.buildingConstructionYear?.toString() ?? '';
       _error = null;
     });
     // Loaded or saved: what is on screen is what the server has.
@@ -479,6 +506,21 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
     return c.length == 2 ? c : null;
   }
 
+  int? get _buildingYearOrNull {
+    final t = _buildingYear.text.trim();
+    if (t.isEmpty) return null;
+    final v = int.tryParse(t);
+    return (v != null && v >= 800 && v <= 2200) ? v : null;
+  }
+
+  String _vatRegimeLabel(AppLocalizations l, String regime) => switch (regime) {
+    'domestic' => l.vatRegimeDomestic,
+    'domestic_reverse_charge' => l.vatRegimeDomesticReverseCharge,
+    'intra_eu' => l.vatRegimeIntraEu,
+    'outside_eu' => l.vatRegimeOutsideEu,
+    _ => regime,
+  };
+
   void _onEdited() {
     _setDirty(true);
     _debounce?.cancel();
@@ -498,11 +540,20 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
       final p = await _api.sales.preview(
         body: PricingPreviewInput(
           customerId: customer.id,
+          opportunityId: _opportunityId,
           quoteDate: _q?.quoteDate,
           priceDate: _priceDate,
           purpose: _purpose,
           deliveryCountryCode: _countryOrNull,
           powerGridId: _purpose == 'stock' ? null : _gridId,
+          vatRegimeOverride: _vatRegimeOverride,
+          buildingConstructionYear: _purpose == 'stock'
+              ? null
+              : _buildingYearOrNull,
+          clearBuildingConstructionYear:
+              _purpose != 'stock' && _buildingYear.text.trim().isEmpty
+              ? true
+              : null,
           // The saved draft, so that its quoted shipping cost is part of the totals.
           quotationId: _editable ? _id : null,
           lines: inputs,
@@ -543,6 +594,11 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
     if (country.isNotEmpty && country.length != 2) {
       throw context.l10n.deliveryCountryInvalid;
     }
+    final yearText = _purpose == 'stock' ? '' : _buildingYear.text.trim();
+    final buildingYear = _purpose == 'stock' ? null : _buildingYearOrNull;
+    if (yearText.isNotEmpty && buildingYear == null) {
+      throw context.l10n.buildingConstructionYearError;
+    }
     final body = QuotationInput(
       customerId: _customer!.id,
       opportunityId: _opportunityId,
@@ -553,6 +609,17 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
       // "Any grid" replacing a stored grid must be said explicitly: omitting keeps the stored one.
       clearPowerGrid:
           _purpose != 'stock' && _gridId == null && _q?.powerGridId != null
+          ? true
+          : null,
+      vatRegimeOverride: _vatRegimeOverride,
+      clearVatRegimeOverride:
+          _vatRegimeOverride == null && _q?.vatRegimeOverride != null
+          ? true
+          : null,
+      buildingConstructionYear: buildingYear,
+      clearBuildingConstructionYear:
+          yearText.isEmpty &&
+              (_purpose != 'stock' || _q?.buildingConstructionYear != null)
           ? true
           : null,
       notes: _notes.text,
@@ -961,7 +1028,17 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
             ],
             onChanged: (v) {
               _setDirty(true);
-              setState(() => _opportunityId = v);
+              final opp = v == null
+                  ? null
+                  : _opportunities.where((o) => o.id == v).firstOrNull;
+              setState(() {
+                _opportunityId = v;
+                if (_buildingYear.text.trim().isEmpty &&
+                    opp?.buildingConstructionYear != null) {
+                  _buildingYear.text = '${opp!.buildingConstructionYear}';
+                }
+              });
+              _refreshPreview();
             },
           ),
         ),
@@ -1018,6 +1095,56 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
             ),
           ),
           _gridField(),
+          SizedBox(
+            key: const ValueKey('vat-regime-override'),
+            width: 240,
+            child: DropdownButtonFormField<String?>(
+              key: ValueKey('vat-regime-val-$_vatRegimeOverride'),
+              initialValue: _vatRegimeOverride,
+              isExpanded: true,
+              decoration: InputDecoration(
+                labelText: context.l10n.vatRegimeOverride,
+              ),
+              items: [
+                DropdownMenuItem<String?>(
+                  value: null,
+                  child: Text(context.l10n.vatRegimeAuto),
+                ),
+                for (final r in const [
+                  'domestic',
+                  'domestic_reverse_charge',
+                  'intra_eu',
+                  'outside_eu',
+                ])
+                  DropdownMenuItem<String?>(
+                    value: r,
+                    child: Text(_vatRegimeLabel(context.l10n, r)),
+                  ),
+              ],
+              onChanged: _busy
+                  ? null
+                  : (v) {
+                      setState(() => _vatRegimeOverride = v);
+                      _setDirty(true);
+                      _refreshPreview();
+                    },
+            ),
+          ),
+          if (_purpose == 'installation')
+            SizedBox(
+              width: 210,
+              child: TextField(
+                key: const ValueKey('buildingConstructionYear'),
+                controller: _buildingYear,
+                enabled: !_busy,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: context.l10n.buildingConstructionYear,
+                  hintText: context.l10n.buildingConstructionYearHint,
+                ),
+                onChanged: (_) => _onEdited(),
+              ),
+            ),
         ],
       ),
       const SizedBox(height: 12),
@@ -1152,6 +1279,7 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
           preview.vatGroups,
           preview.total,
           'EUR',
+          vatRegime: preview.vatRegime ?? _q?.vatRegime,
         ),
       const SizedBox(height: 16),
       TextField(
@@ -1741,6 +1869,15 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
       children: [
         InfoItem(context.l10n.purpose, context.l10n.purposeName(q.purpose)),
         InfoItem(context.l10n.deliveryCountry, q.deliveryCountryCode ?? ''),
+        InfoItem(
+          context.l10n.vatRegime,
+          _vatRegimeLabel(context.l10n, q.vatRegime),
+        ),
+        if (q.buildingConstructionYear != null)
+          InfoItem(
+            context.l10n.buildingConstructionYear,
+            '${q.buildingConstructionYear}',
+          ),
       ],
     ),
     if (q.priceDate != q.quoteDate)
@@ -1768,7 +1905,14 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
       ],
     ),
     const SizedBox(height: 16),
-    _totals(theme, q.subtotal, q.vatGroups, q.total, q.currency),
+    _totals(
+      theme,
+      q.subtotal,
+      q.vatGroups,
+      q.total,
+      q.currency,
+      vatRegime: q.vatRegime,
+    ),
     if (q.notes.isNotEmpty) ...[
       const SizedBox(height: 16),
       Text(context.l10n.notes, style: theme.textTheme.labelLarge),
@@ -1965,12 +2109,14 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
     String subtotal,
     List<VatGroup> vat,
     String total,
-    String currency,
-  ) => Align(
+    String currency, {
+    String? vatRegime,
+  }) => Align(
     alignment: Alignment.centerRight,
     child: SizedBox(
       width: 340,
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _totalRow(
             context.l10n.totalExclVat,
@@ -1990,6 +2136,17 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
             money(total, currency: currency),
             style: theme.textTheme.titleMedium,
           ),
+          if (vatRegime == 'domestic_reverse_charge')
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                context.l10n.domesticReverseChargeNotice,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontStyle: FontStyle.italic,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
         ],
       ),
     ),

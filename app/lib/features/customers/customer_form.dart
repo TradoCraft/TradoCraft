@@ -92,6 +92,7 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
   );
   late String _language = c?.language ?? widget.initialLanguage ?? 'nl';
   late String _vatRegime = c?.vatRegime ?? 'domestic';
+  bool _vatRegimeManuallyChanged = false;
   late String? _zoneId = c?.priceZoneId;
   bool _saving = false;
   String? _error;
@@ -102,6 +103,16 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
   @override
   void initState() {
     super.initState();
+    if (c == null) {
+      final co = ref.read(meProvider).value?.company.countryCode ?? '';
+      if (co.isNotEmpty) {
+        _vatRegime = deriveDefaultVatRegime(
+          companyCountry: co,
+          customerCountry: _country.text,
+          vatNumber: _vat.text,
+        );
+      }
+    }
     // In the customer screen an edit marks the tab as holding unsaved changes (ADR 0041). A
     // controller also notifies for a cursor or selection move: only a changed text counts.
     for (final t in [
@@ -122,7 +133,22 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
         if (t.text == last) return;
         last = t.text;
         _markDirty();
+        if (t == _country || t == _vat) _syncAutoVatRegime();
       });
+    }
+  }
+
+  void _syncAutoVatRegime() {
+    if (c != null || _vatRegimeManuallyChanged) return;
+    final co = ref.read(meProvider).value?.company.countryCode ?? '';
+    if (co.isEmpty) return;
+    final derived = deriveDefaultVatRegime(
+      companyCountry: co,
+      customerCountry: _country.text,
+      vatNumber: _vat.text,
+    );
+    if (derived != _vatRegime) {
+      setState(() => _vatRegime = derived);
     }
   }
 
@@ -221,6 +247,7 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
     fill(_street, v.street);
     fill(_postal, v.postalCode);
     fill(_city, v.city);
+    _syncAutoVatRegime();
     return filled;
   }
 
@@ -242,6 +269,7 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(meProvider, (_, _) => _syncAutoVatRegime());
     final zones = ref.watch(priceZonesProvider);
     const gap = SizedBox(width: 12, height: 12);
     final content = Form(
@@ -284,6 +312,7 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
             ),
             gap,
             DropdownButtonFormField<String>(
+              key: ValueKey('vat-regime-$_vatRegime'),
               isExpanded:
                   true, // a long regime name must not overflow a narrow form
               initialValue: _vatRegime,
@@ -292,6 +321,10 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
                 DropdownMenuItem(
                   value: 'domestic',
                   child: Text(context.l10n.vatRegimeDomestic),
+                ),
+                DropdownMenuItem(
+                  value: 'domestic_reverse_charge',
+                  child: Text(context.l10n.vatRegimeDomesticReverseCharge),
                 ),
                 DropdownMenuItem(
                   value: 'intra_eu',
@@ -305,7 +338,10 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
               onChanged: _locked
                   ? null
                   : (v) {
-                      setState(() => _vatRegime = v!);
+                      setState(() {
+                        _vatRegime = v!;
+                        _vatRegimeManuallyChanged = true;
+                      });
                       _markDirty();
                     },
             ),

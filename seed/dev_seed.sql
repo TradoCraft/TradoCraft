@@ -59,18 +59,18 @@ CROSS JOIN (VALUES
         ('00000000-0000-7000-8000-000000000205'::uuid, 1.00)
      ) AS zf(zone_id, factor);
 
-INSERT INTO crm.customers (id, code, name, vat_number, email, phone, street, postal_code, city, country_code, language) VALUES
+INSERT INTO crm.customers (id, code, name, vat_number, email, phone, street, postal_code, city, country_code, language, vat_regime) VALUES
     ('00000000-0000-7000-8000-000000000401', 'C0001', 'Alpha Installaties NV', 'BE0000000097', 'info@alpha.example', '+32 3 000 00 01',
-     'Havenlaan 10', '2000', 'Antwerpen', 'BE', 'nl'),
+     'Havenlaan 10', '2000', 'Antwerpen', 'BE', 'nl', 'domestic'),
     ('00000000-0000-7000-8000-000000000402', 'C0002', 'Bêta Industrie SA', 'BE0000000196', 'contact@beta.example', '+32 4 000 00 02',
-     'Rue de l''Usine 5', '4000', 'Liège', 'BE', 'fr'),
+     'Rue de l''Usine 5', '4000', 'Liège', 'BE', 'fr', 'domestic'),
     ('00000000-0000-7000-8000-000000000403', 'C0003', 'Gamma Trading GmbH', 'DE000000000', 'office@gamma.example', '+49 221 000 003',
-     'Werkstraße 3', '50667', 'Köln', 'DE', 'en');
+     'Werkstraße 3', '50667', 'Köln', 'DE', 'en', 'intra_eu');
 
-INSERT INTO crm.customer_terms (customer_id, company_id, price_zone_id, discount_percent, payment_terms_days) VALUES
-    ('00000000-0000-7000-8000-000000000401', '00000000-0000-7000-8000-000000000001', '00000000-0000-7000-8000-000000000202', 5, 30),
-    ('00000000-0000-7000-8000-000000000402', '00000000-0000-7000-8000-000000000001', '00000000-0000-7000-8000-000000000203', 0, 60),
-    ('00000000-0000-7000-8000-000000000403', '00000000-0000-7000-8000-000000000001', '00000000-0000-7000-8000-000000000204', 2.5, 30);
+INSERT INTO crm.customer_terms (customer_id, company_id, price_zone_id, discount_percent, payment_terms_days, vat_regime) VALUES
+    ('00000000-0000-7000-8000-000000000401', '00000000-0000-7000-8000-000000000001', '00000000-0000-7000-8000-000000000202', 5, 30, 'domestic'),
+    ('00000000-0000-7000-8000-000000000402', '00000000-0000-7000-8000-000000000001', '00000000-0000-7000-8000-000000000203', 0, 60, 'domestic'),
+    ('00000000-0000-7000-8000-000000000403', '00000000-0000-7000-8000-000000000001', '00000000-0000-7000-8000-000000000204', 2.5, 30, 'intra_eu');
 
 -- Serial tracking: finished units, pumps and controllers get individual serial numbers.
 UPDATE products.products SET tracking = 'serial'

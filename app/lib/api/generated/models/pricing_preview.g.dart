@@ -28,10 +28,14 @@ PricingPreview _$PricingPreviewFromJson(Map<String, dynamic> json) =>
       warnings: (json['warnings'] as List<dynamic>)
           .map((e) => SalesWarning.fromJson(e as Map<String, dynamic>))
           .toList(),
+      buildingConstructionYear: (json['building_construction_year'] as num?)
+          ?.toInt(),
+      vatRegime: json['vat_regime'] as String?,
     );
 
 Map<String, dynamic> _$PricingPreviewToJson(PricingPreview instance) =>
     <String, dynamic>{
+      'building_construction_year': ?instance.buildingConstructionYear,
       'customer_discount_percent': instance.customerDiscountPercent,
       'lines': instance.lines,
       'price_date': instance.priceDate.toIso8601String(),
@@ -42,6 +46,7 @@ Map<String, dynamic> _$PricingPreviewToJson(PricingPreview instance) =>
       'total': instance.total,
       'unconfirmed_lines': instance.unconfirmedLines,
       'vat_groups': instance.vatGroups,
+      'vat_regime': ?instance.vatRegime,
       'vat_total': instance.vatTotal,
       'warnings': instance.warnings,
     };

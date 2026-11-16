@@ -15,6 +15,7 @@ class ConfiguredQuotationInput {
     required this.externalRef,
     required this.lines,
     required this.source,
+    this.buildingConstructionYear,
     this.configuration,
     this.deliveryCountryCode,
     this.notes,
@@ -23,10 +24,15 @@ class ConfiguredQuotationInput {
     this.purpose,
     this.strict,
     this.validDays,
+    this.vatRegimeOverride,
   });
   
   factory ConfiguredQuotationInput.fromJson(Map<String, Object?> json) => _$ConfiguredQuotationInputFromJson(json);
   
+  /// Optional building construction year for renovation VAT rules (`800..=2200`).
+  @JsonKey(includeIfNull: false,name: 'building_construction_year')
+  final int? buildingConstructionYear;
+
   /// The configurator's own payload, stored verbatim on the quotation for traceability.
   @JsonKey(includeIfNull: false)
   final dynamic configuration;
@@ -67,6 +73,10 @@ class ConfiguredQuotationInput {
   /// Defaults to 30 days.
   @JsonKey(includeIfNull: false,name: 'valid_days')
   final int? validDays;
+
+  /// Optional explicit VAT regime override (`domestic`, `domestic_reverse_charge`, `intra_eu`, `outside_eu`).
+  @JsonKey(includeIfNull: false,name: 'vat_regime_override')
+  final String? vatRegimeOverride;
 
   Map<String, Object?> toJson() => _$ConfiguredQuotationInputToJson(this);
 }

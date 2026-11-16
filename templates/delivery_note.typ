@@ -50,7 +50,7 @@
       *#d.ship_to.name* \
       #d.ship_to.street \
       #d.ship_to.city_line \
-      #if d.ship_to.country_code != "BE" [#d.ship_to.country_code]
+      #if d.ship_to.country_code != d.company.country_code [#d.ship_to.country_code]
     ])
   ],
 )

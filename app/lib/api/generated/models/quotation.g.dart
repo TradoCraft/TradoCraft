@@ -7,7 +7,8 @@ part of 'quotation.dart';
 // **************************************************************************
 
 Quotation _$QuotationFromJson(Map<String, dynamic> json) => Quotation(
-  total: json['total'] as String,
+  updatedAt: DateTime.parse(json['updated_at'] as String),
+  companyId: json['company_id'] as String,
   createdAt: DateTime.parse(json['created_at'] as String),
   createdBy: json['created_by'] as String,
   currency: json['currency'] as String,
@@ -19,7 +20,6 @@ Quotation _$QuotationFromJson(Map<String, dynamic> json) => Quotation(
   customerName: json['customer_name'] as String,
   customerPostalCode: json['customer_postal_code'] as String,
   customerStreet: json['customer_street'] as String,
-  companyId: json['company_id'] as String,
   id: json['id'] as String,
   lines: (json['lines'] as List<dynamic>)
       .map((e) => QuotationLine.fromJson(e as Map<String, dynamic>))
@@ -40,24 +40,28 @@ Quotation _$QuotationFromJson(Map<String, dynamic> json) => Quotation(
   suggestions: (json['suggestions'] as List<dynamic>)
       .map((e) => SalesSuggestion.fromJson(e as Map<String, dynamic>))
       .toList(),
-  vatTotal: json['vat_total'] as String,
   vatGroups: (json['vat_groups'] as List<dynamic>)
       .map((e) => VatGroup.fromJson(e as Map<String, dynamic>))
       .toList(),
   vatRegime: json['vat_regime'] as String,
+  vatTotal: json['vat_total'] as String,
   validUntil: DateTime.parse(json['valid_until'] as String),
-  updatedAt: DateTime.parse(json['updated_at'] as String),
-  customerVatNumber: json['customer_vat_number'] as String?,
+  total: json['total'] as String,
   supersedesId: json['supersedes_id'] as String?,
+  customerVatNumber: json['customer_vat_number'] as String?,
   sentAt: json['sent_at'] == null
       ? null
       : DateTime.parse(json['sent_at'] as String),
   powerGridId: json['power_grid_id'] as String?,
   deliveryCountryCode: json['delivery_country_code'] as String?,
+  vatRegimeOverride: json['vat_regime_override'] as String?,
+  buildingConstructionYear: (json['building_construction_year'] as num?)
+      ?.toInt(),
   opportunityId: json['opportunity_id'] as String?,
 );
 
 Map<String, dynamic> _$QuotationToJson(Quotation instance) => <String, dynamic>{
+  'building_construction_year': ?instance.buildingConstructionYear,
   'company_id': instance.companyId,
   'created_at': instance.createdAt.toIso8601String(),
   'created_by': instance.createdBy,
@@ -94,6 +98,7 @@ Map<String, dynamic> _$QuotationToJson(Quotation instance) => <String, dynamic>{
   'valid_until': instance.validUntil.toIso8601String(),
   'vat_groups': instance.vatGroups,
   'vat_regime': instance.vatRegime,
+  'vat_regime_override': ?instance.vatRegimeOverride,
   'vat_total': instance.vatTotal,
   'warnings': instance.warnings,
 };

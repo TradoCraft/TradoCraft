@@ -32,12 +32,9 @@ use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 use uuid::Uuid;
 
-/// The VAT regimes of a customer: VAT charged, reverse charge inside the EU, or export.
-pub const VAT_REGIMES: [&str; 3] = ["domestic", "intra_eu", "outside_eu"];
-
-fn default_vat_regime() -> String {
-    "domestic".to_string()
-}
+/// The VAT regimes of a customer: VAT charged, domestic construction reverse charge,
+/// reverse charge inside the EU, or export outside the EU VAT area.
+pub use tradocraft_core::vat::VAT_REGIMES;
 
 #[derive(Debug, Clone, Serialize, FromRow, ToSchema)]
 pub struct Customer {
@@ -45,7 +42,7 @@ pub struct Customer {
     pub code: String,
     pub name: String,
     pub vat_number: Option<String>,
-    /// `domestic` (VAT charged), `intra_eu` (reverse charge) or `outside_eu`.
+    /// `domestic` (VAT charged), `domestic_reverse_charge`, `intra_eu` (reverse charge) or `outside_eu`.
     pub vat_regime: String,
     pub email: Option<String>,
     pub phone: Option<String>,
@@ -68,9 +65,11 @@ pub struct CustomerInput {
     pub code: String,
     pub name: String,
     pub vat_number: Option<String>,
-    /// `domestic` (default), `intra_eu` or `outside_eu`.
-    #[serde(default = "default_vat_regime")]
-    pub vat_regime: String,
+    /// `domestic`, `domestic_reverse_charge`, `intra_eu` or `outside_eu`. When omitted on create,
+    /// derived automatically from the active company's country, the customer's country, and `vat_number`.
+    #[serde(default)]
+    #[schema(required = false)]
+    pub vat_regime: Option<String>,
     pub email: Option<String>,
     pub phone: Option<String>,
     #[serde(default)]
@@ -127,11 +126,14 @@ impl CustomerInput {
         {
             out.push("discount_percent must be between -100 and 100".to_string());
         }
-        if !VAT_REGIMES.contains(&self.vat_regime.as_str()) {
-            out.push(format!(
-                "vat_regime must be one of {}",
-                VAT_REGIMES.join(", ")
-            ));
+        if let Some(ref regime) = self.vat_regime {
+            let trimmed = regime.trim();
+            if !trimmed.is_empty() && !vat::is_valid_vat_regime(trimmed) {
+                out.push(format!(
+                    "vat_regime must be one of {}",
+                    VAT_REGIMES.join(", ")
+                ));
+            }
         }
         if self.payment_terms_days < 0 {
             out.push("payment_terms_days cannot be negative".to_string());
@@ -175,7 +177,8 @@ pub struct ListParams {
 }
 
 pub(crate) const SELECT_CUSTOMER: &str = r#"
-    SELECT c.id, c.code, c.name, c.vat_number, c.vat_regime, c.email, c.phone, c.street, c.postal_code, c.city,
+    SELECT c.id, c.code, c.name, c.vat_number, COALESCE(t.vat_regime, c.vat_regime) AS vat_regime,
+           c.email, c.phone, c.street, c.postal_code, c.city,
            c.country_code::text AS country_code, c.language::text AS language, c.active,
            t.price_zone_id, z.code AS price_zone_code, t.discount_percent, t.payment_terms_days
     FROM crm.customers c
@@ -323,25 +326,54 @@ async fn ensure_zone_in_company(
     }
 }
 
+pub(crate) async fn resolve_customer_vat_regime(
+    conn: &mut sqlx::PgConnection,
+    company_id: Uuid,
+    input: &CustomerInput,
+    existing: Option<&str>,
+) -> AppResult<(String, bool)> {
+    let company = tradocraft_core::company::get_company(&mut *conn, company_id).await?;
+    let regime = if let Some(explicit) = input
+        .vat_regime
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+    {
+        explicit.to_string()
+    } else if let Some(prev) = existing {
+        prev.to_string()
+    } else {
+        vat::default_vat_regime(
+            &company.country_code,
+            &input.country_code,
+            input.vat_number.as_deref(),
+        )
+        .to_string()
+    };
+    Ok((regime, company.is_primary))
+}
+
 pub(crate) async fn upsert_terms(
     conn: &mut sqlx::PgConnection,
     company_id: Uuid,
     id: Uuid,
     input: &CustomerInput,
+    vat_regime: &str,
 ) -> AppResult<()> {
     ensure_zone_in_company(conn, company_id, input.price_zone_id).await?;
     sqlx::query(
-        "INSERT INTO crm.customer_terms (customer_id, company_id, price_zone_id, discount_percent, payment_terms_days)
-         VALUES ($1, $2, $3, $4, $5)
+        "INSERT INTO crm.customer_terms (customer_id, company_id, price_zone_id, discount_percent, payment_terms_days, vat_regime)
+         VALUES ($1, $2, $3, $4, $5, $6)
          ON CONFLICT (customer_id, company_id) DO UPDATE
          SET price_zone_id = EXCLUDED.price_zone_id, discount_percent = EXCLUDED.discount_percent,
-             payment_terms_days = EXCLUDED.payment_terms_days",
+             payment_terms_days = EXCLUDED.payment_terms_days, vat_regime = EXCLUDED.vat_regime",
     )
     .bind(id)
     .bind(company_id)
     .bind(input.price_zone_id)
     .bind(input.discount_percent)
     .bind(input.payment_terms_days)
+    .bind(vat_regime)
     .execute(conn)
     .await?;
     Ok(())
@@ -352,6 +384,7 @@ pub(crate) async fn insert_customer(
     conn: &mut sqlx::PgConnection,
     id: Uuid,
     input: &CustomerInput,
+    vat_regime: &str,
 ) -> AppResult<()> {
     sqlx::query(
         "INSERT INTO crm.customers (id, code, name, vat_number, email, phone, street, postal_code, city,
@@ -370,21 +403,24 @@ pub(crate) async fn insert_customer(
     .bind(input.country_code.to_uppercase())
     .bind(input.language.to_lowercase())
     .bind(input.active)
-    .bind(&input.vat_regime)
+    .bind(vat_regime)
     .execute(conn)
     .await?;
     Ok(())
 }
 
 /// Updates a customer row (not its terms); `NotFound` if the id is unknown.
+/// Only writes `crm.customers.vat_regime` when `global_regime` is `Some` (e.g. primary company or termless customer).
 pub(crate) async fn update_customer_row(
     conn: &mut sqlx::PgConnection,
     id: Uuid,
     input: &CustomerInput,
+    global_regime: Option<&str>,
 ) -> AppResult<()> {
     let updated = sqlx::query(
         "UPDATE crm.customers SET code = $2, name = $3, vat_number = $4, email = $5, phone = $6, street = $7,
-                postal_code = $8, city = $9, country_code = $10, language = $11, active = $12, vat_regime = $13, updated_at = now()
+                postal_code = $8, city = $9, country_code = $10, language = $11, active = $12,
+                vat_regime = COALESCE($13, vat_regime), updated_at = now()
          WHERE id = $1",
     )
     .bind(id)
@@ -399,7 +435,7 @@ pub(crate) async fn update_customer_row(
     .bind(input.country_code.to_uppercase())
     .bind(input.language.to_lowercase())
     .bind(input.active)
-    .bind(&input.vat_regime)
+    .bind(global_regime)
     .execute(&mut *conn)
     .await?;
     if updated.rows_affected() == 0 {
@@ -422,8 +458,10 @@ async fn create_customer(
     }
     let id = new_id();
     let mut tx = state.db.begin().await?;
-    insert_customer(&mut tx, id, &input).await?;
-    upsert_terms(&mut tx, user.company_id, id, &input).await?;
+    let (vat_regime, _) =
+        resolve_customer_vat_regime(&mut tx, user.company_id, &input, None).await?;
+    insert_customer(&mut tx, id, &input, &vat_regime).await?;
+    upsert_terms(&mut tx, user.company_id, id, &input, &vat_regime).await?;
     audit::record(
         &mut tx,
         &user,
@@ -455,14 +493,23 @@ async fn update_customer(
     if let Some(m) = input.vat_problem(before.vat_number.as_deref()) {
         return Err(AppError::Validation(m));
     }
-    update_customer_row(&mut tx, id, &input).await?;
-    upsert_terms(&mut tx, user.company_id, id, &input).await?;
+    let (vat_regime, is_primary) =
+        resolve_customer_vat_regime(&mut tx, user.company_id, &input, Some(&before.vat_regime))
+            .await?;
+    update_customer_row(
+        &mut tx,
+        id,
+        &input,
+        is_primary.then_some(vat_regime.as_str()),
+    )
+    .await?;
+    upsert_terms(&mut tx, user.company_id, id, &input, &vat_regime).await?;
     // What changed, field by field, for the audit viewer (ADR 0059).
     let changes = audit::Changes::new()
         .field("code", before.code.as_str(), input.code.trim())
         .field("name", before.name.as_str(), input.name.trim())
         .field("vat_number", &before.vat_number, &input.vat_number)
-        .field("vat_regime", &before.vat_regime, &input.vat_regime)
+        .field("vat_regime", &before.vat_regime, &vat_regime)
         .field("email", &before.email, &input.email)
         .field("phone", &before.phone, &input.phone)
         .field("street", &before.street, &input.street)

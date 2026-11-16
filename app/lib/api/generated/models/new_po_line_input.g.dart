@@ -13,6 +13,7 @@ NewPoLineInput _$NewPoLineInputFromJson(Map<String, dynamic> json) =>
       unitPrice: json['unit_price'] as String,
       description: json['description'] as String?,
       supplierProductCode: json['supplier_product_code'] as String?,
+      vatRate: json['vat_rate'] as String?,
     );
 
 Map<String, dynamic> _$NewPoLineInputToJson(NewPoLineInput instance) =>
@@ -22,4 +23,5 @@ Map<String, dynamic> _$NewPoLineInputToJson(NewPoLineInput instance) =>
       'quantity': instance.quantity,
       'supplier_product_code': ?instance.supplierProductCode,
       'unit_price': instance.unitPrice,
+      'vat_rate': ?instance.vatRate,
     };

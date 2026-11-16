@@ -23,6 +23,9 @@ pub struct Doc {
     pub company: Party,
     pub customer: Party,
     pub lines: Vec<DocLine>,
+    /// False for reverse charge (`intra_eu`, `domestic_reverse_charge`) and export (`outside_eu`).
+    pub show_vat: bool,
+    pub vat_regime: String,
     pub vat_groups: Vec<Vat>,
     pub subtotal: String,
     pub vat_total: String,
@@ -133,6 +136,8 @@ pub fn document(company: &Company, o: &Order, c: &CustomerSnapshot, language: &s
                 }
             })
             .collect(),
+        show_vat: !tradocraft_core::vat::vat_exempt_for_regime(&o.order.vat_regime),
+        vat_regime: o.order.vat_regime.clone(),
         vat_groups: order_totals(&o.lines)
             .vat_groups
             .iter()
