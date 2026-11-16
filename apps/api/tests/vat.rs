@@ -1148,6 +1148,31 @@ async fn quotation_vat_handles_b2b_reverse_charge_override_and_building_age(db: 
         "6.00".parse().unwrap()
     );
 
+    // An explicit false still inherits, while true suppresses inheritance on create.
+    for (clear, expected_year, expected_rate) in
+        [(false, json!(2010), "6.00"), (true, json!(null), "21.00")]
+    {
+        let (status, created) = send(
+            &app,
+            SALES,
+            Method::POST,
+            "/quotations",
+            json!({
+                "customer_id": b2c_id, "opportunity_id": opp_id,
+                "purpose": "installation", "quote_date": "2026-11-05",
+                "clear_building_construction_year": clear,
+                "lines": [{ "product_id": unit_100, "quantity": "1" }],
+            }),
+        )
+        .await;
+        assert_eq!(status, StatusCode::CREATED, "{created}");
+        assert_eq!(created["building_construction_year"], expected_year);
+        assert_eq!(
+            common::dec(&created["lines"][0]["vat_rate"]),
+            expected_rate.parse().unwrap()
+        );
+    }
+
     // An explicit clear must agree in preview and save, and survive subsequent saves.
     let mut cleared = json!({
         "customer_id": b2c_id, "opportunity_id": opp_id,

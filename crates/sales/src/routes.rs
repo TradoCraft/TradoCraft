@@ -232,10 +232,10 @@ pub(crate) async fn create_draft(
     }
     let building_year = match (explicit_year, input.opportunity_id) {
         (Some(y), _) => Some(y),
-        (None, Some(opp)) => {
+        (None, Some(opp)) if input.clear_building_construction_year != Some(true) => {
             service::opportunity_building_year(&mut *tx, user.company_id, opp).await?
         }
-        (None, None) => None,
+        (None, _) => None,
     };
     let price_ctx = service::PriceContext {
         quote_date,
