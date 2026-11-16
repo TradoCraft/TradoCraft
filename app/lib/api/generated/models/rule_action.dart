@@ -32,7 +32,7 @@ class RuleAction {
   @JsonKey(includeIfNull: false)
   final String? address;
 
-  /// `send_email`: a prepared answer (A6, ADR 0071). When set, `subject` and `body` are ignored and.
+  /// `send_email`: a prepared answer (A6, ADR 0072). When set, `subject` and `body` are ignored and.
   /// cleared; the answer's text in the ticket's language is sent.
   @JsonKey(includeIfNull: false,name: 'answer_id')
   final String? answerId;
