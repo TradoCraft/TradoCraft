@@ -21,6 +21,52 @@ use crate::render::{render, PLACEHOLDERS};
 
 type ErrorBody = tradocraft_core::error::ErrorBody;
 
+pub const KINDS: [&str; 4] = ["reply", "internal_note", "handover", "notice"];
+
+fn default_kind() -> String {
+    "reply".into()
+}
+
+/// Lower-cased, trimmed, de-duplicated keywords (at most 20 of at most 40 characters).
+pub fn clean_keywords(raw: &[String]) -> AppResult<Vec<String>> {
+    let mut out: Vec<String> = Vec::new();
+    for k in raw {
+        let k = k.trim().to_lowercase();
+        if k.is_empty() {
+            continue;
+        }
+        if k.chars().count() > 40 {
+            return Err(AppError::Validation(
+                "a keyword is at most 40 characters".into(),
+            ));
+        }
+        if !out.contains(&k) {
+            out.push(k);
+        }
+    }
+    if out.len() > 20 {
+        return Err(AppError::Validation("at most 20 keywords".into()));
+    }
+    Ok(out)
+}
+
+/// The team must belong to the company.
+async fn check_team(conn: &mut PgConnection, company_id: Uuid, team: Option<Uuid>) -> AppResult<()> {
+    let Some(team) = team else { return Ok(()) };
+    let ok: bool = sqlx::query_scalar(
+        "SELECT EXISTS (SELECT 1 FROM helpdesk.teams WHERE id = $1 AND company_id = $2)",
+    )
+    .bind(team)
+    .bind(company_id)
+    .fetch_one(conn)
+    .await?;
+    if ok {
+        Ok(())
+    } else {
+        Err(AppError::NotFound("team"))
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow, ToSchema)]
 pub struct AnswerText {
     /// nl | fr | en | de | es
@@ -37,6 +83,12 @@ pub struct PreparedAnswer {
     pub code: String,
     pub name: String,
     pub category: Option<String>,
+    /// reply | internal_note | handover | notice
+    pub kind: String,
+    /// Absent: usable by every team.
+    pub team_id: Option<Uuid>,
+    /// Lower-case words; a ticket subject containing one ranks the answer higher.
+    pub keywords: Vec<String>,
     pub active: bool,
     pub updated_at: DateTime<Utc>,
     pub texts: Vec<AnswerText>,
@@ -47,6 +99,11 @@ pub struct PreparedAnswerInput {
     pub code: String,
     pub name: String,
     pub category: Option<String>,
+    #[serde(default = "default_kind")]
+    pub kind: String,
+    pub team_id: Option<Uuid>,
+    #[serde(default)]
+    pub keywords: Vec<String>,
     #[serde(default = "default_true")]
     pub active: bool,
     /// At least one language; missing languages fall back to English, then any other.
@@ -62,6 +119,10 @@ pub struct ListParams {
     /// Searches code, name and texts.
     pub q: Option<String>,
     pub active: Option<bool>,
+    /// reply | internal_note | handover | notice
+    pub kind: Option<String>,
+    /// Answers a ticket of this team can use: company-wide ones and this team's own.
+    pub team_id: Option<Uuid>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -81,6 +142,9 @@ struct Row {
     code: String,
     name: String,
     category: Option<String>,
+    kind: String,
+    team_id: Option<Uuid>,
+    keywords: Vec<String>,
     active: bool,
     updated_at: DateTime<Utc>,
 }
@@ -118,7 +182,7 @@ async fn texts(conn: &mut PgConnection, ids: &[Uuid]) -> AppResult<Vec<(Uuid, An
 
 async fn load(conn: &mut PgConnection, company_id: Uuid, id: Uuid) -> AppResult<PreparedAnswer> {
     let r: Row = sqlx::query_as(
-        "SELECT id, code, name, category, active, updated_at FROM helpdesk.prepared_answers WHERE id = $1 AND company_id = $2",
+        "SELECT id, code, name, category, kind, team_id, keywords, active, updated_at FROM helpdesk.prepared_answers WHERE id = $1 AND company_id = $2",
     )
     .bind(id)
     .bind(company_id)
@@ -131,6 +195,9 @@ async fn load(conn: &mut PgConnection, company_id: Uuid, id: Uuid) -> AppResult<
         code: r.code,
         name: r.name,
         category: r.category,
+        kind: r.kind,
+        team_id: r.team_id,
+        keywords: r.keywords,
         active: r.active,
         updated_at: r.updated_at,
         texts: t.into_iter().map(|(_, t)| t).collect(),
@@ -142,6 +209,13 @@ impl PreparedAnswerInput {
         if self.code.trim().is_empty() || self.name.trim().is_empty() {
             return Err(AppError::Validation("code and name are required".into()));
         }
+        if !KINDS.contains(&self.kind.as_str()) {
+            return Err(AppError::Validation(format!(
+                "kind must be one of {}",
+                KINDS.join(", ")
+            )));
+        }
+        clean_keywords(&self.keywords)?;
         let filled: Vec<&AnswerText> = self
             .texts
             .iter()
@@ -207,16 +281,20 @@ async fn list_answers(
         p.q.as_deref()
             .map(|q| format!("%{}%", q.trim().to_lowercase()));
     let rows: Vec<Row> = sqlx::query_as(
-        "SELECT a.id, a.code, a.name, a.category, a.active, a.updated_at FROM helpdesk.prepared_answers a
+        "SELECT a.id, a.code, a.name, a.category, a.kind, a.team_id, a.keywords, a.active, a.updated_at FROM helpdesk.prepared_answers a
          WHERE a.company_id = $1 AND ($3::boolean IS NULL OR a.active = $3)
            AND ($2::text IS NULL OR lower(a.code) LIKE $2 OR lower(a.name) LIKE $2
                 OR EXISTS (SELECT 1 FROM helpdesk.prepared_answer_texts t
                            WHERE t.answer_id = a.id AND lower(t.body) LIKE $2))
+           AND ($4::text IS NULL OR a.kind = $4)
+           AND ($5::uuid IS NULL OR a.team_id IS NULL OR a.team_id = $5)
          ORDER BY a.category NULLS LAST, a.name",
     )
     .bind(user.company_id)
     .bind(&pattern)
     .bind(p.active)
+    .bind(&p.kind)
+    .bind(p.team_id)
     .fetch_all(&state.db)
     .await?;
     let mut conn = state.db.acquire().await?;
@@ -234,6 +312,9 @@ async fn list_answers(
                 code: r.code,
                 name: r.name,
                 category: r.category,
+                kind: r.kind,
+                team_id: r.team_id,
+                keywords: r.keywords,
                 active: r.active,
                 updated_at: r.updated_at,
             })
@@ -258,15 +339,20 @@ async fn create_answer(
 ) -> AppResult<(StatusCode, Json<PreparedAnswer>)> {
     user.require(Permission::AnswersWrite)?;
     input.validate()?;
+    let keywords = clean_keywords(&input.keywords)?;
     let mut tx = state.db.begin().await?;
+    check_team(&mut tx, user.company_id, input.team_id).await?;
     let id = new_id();
-    sqlx::query("INSERT INTO helpdesk.prepared_answers (id, company_id, code, name, category, active) VALUES ($1, $2, $3, $4, $5, $6)")
+    sqlx::query("INSERT INTO helpdesk.prepared_answers (id, company_id, code, name, category, active, kind, team_id, keywords) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)")
         .bind(id)
         .bind(user.company_id)
         .bind(input.code.trim())
         .bind(input.name.trim())
         .bind(input.category.as_deref().map(str::trim).filter(|c| !c.is_empty()))
         .bind(input.active)
+        .bind(&input.kind)
+        .bind(input.team_id)
+        .bind(&keywords)
         .execute(&mut *tx)
         .await?;
     save_texts(&mut tx, id, &input).await?;
@@ -276,7 +362,7 @@ async fn create_answer(
         "prepared_answer",
         id,
         "created",
-        serde_json::json!({ "code": input.code }),
+        serde_json::json!({ "code": input.code, "kind": input.kind, "team_id": input.team_id }),
     )
     .await?;
     let a = load(&mut tx, user.company_id, id).await?;
@@ -294,9 +380,12 @@ async fn update_answer(
 ) -> AppResult<Json<PreparedAnswer>> {
     user.require(Permission::AnswersWrite)?;
     input.validate()?;
+    let keywords = clean_keywords(&input.keywords)?;
     let mut tx = state.db.begin().await?;
+    check_team(&mut tx, user.company_id, input.team_id).await?;
     let r = sqlx::query(
-        "UPDATE helpdesk.prepared_answers SET code = $3, name = $4, category = $5, active = $6, updated_at = now()
+        "UPDATE helpdesk.prepared_answers SET code = $3, name = $4, category = $5, active = $6, kind = $7,
+                team_id = $8, keywords = $9, updated_at = now()
          WHERE id = $1 AND company_id = $2",
     )
     .bind(id)
@@ -305,6 +394,9 @@ async fn update_answer(
     .bind(input.name.trim())
     .bind(input.category.as_deref().map(str::trim).filter(|c| !c.is_empty()))
     .bind(input.active)
+    .bind(&input.kind)
+    .bind(input.team_id)
+    .bind(&keywords)
     .execute(&mut *tx)
     .await?;
     if r.rows_affected() == 0 {
@@ -317,7 +409,7 @@ async fn update_answer(
         "prepared_answer",
         id,
         "updated",
-        serde_json::json!({}),
+        serde_json::json!({ "kind": input.kind, "team_id": input.team_id }),
     )
     .await?;
     let a = load(&mut tx, user.company_id, id).await?;
@@ -518,5 +610,14 @@ mod tests {
             Some(("nl", true))
         );
         assert!(pick_text(&[], "nl", "nl").is_none());
+    }
+
+    #[test]
+    fn keywords_are_trimmed_lowercased_and_unique() {
+        let raw = vec![" Firmware ".to_string(), "firmware".into(), "".into(), "Update".into()];
+        assert_eq!(clean_keywords(&raw).unwrap(), ["firmware", "update"]);
+        assert!(clean_keywords(&["x".repeat(41)]).is_err());
+        let many: Vec<String> = (0..21).map(|i| format!("k{i}")).collect();
+        assert!(clean_keywords(&many).is_err());
     }
 }
