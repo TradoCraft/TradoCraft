@@ -120,3 +120,43 @@ async fn the_list_filters_by_kind_and_by_the_team_that_can_use_the_answer(db: Pg
     assert_eq!(status, StatusCode::OK, "{moved}");
     assert_eq!(moved["team_id"], rd.as_str());
 }
+
+/// A ticket made by hand; its id is read back from the database.
+async fn manual_ticket(app: &axum::Router, db: &PgPool, user: &str, subject: &str, extra: Value) -> String {
+    let mut body = json!({ "subject": subject, "body": "asked", "category": "question" });
+    for (k, v) in extra.as_object().unwrap() {
+        body[k] = v.clone();
+    }
+    let (status, r) = post(app, user, "/tickets", body).await;
+    assert_eq!(status, StatusCode::CREATED, "{r}");
+    sqlx::query_scalar("SELECT id::text FROM helpdesk.tickets WHERE subject = $1")
+        .bind(subject)
+        .fetch_one(db)
+        .await
+        .unwrap()
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn the_team_name_is_filled_in_for_a_ticket_of_that_team(db: PgPool) {
+    let app = setup(db.clone()).await;
+    let rd = team(&app, "R&D").await;
+    let (_, a) = post(
+        &app,
+        SUPPORT,
+        "/prepared-answers",
+        answer("who", json!({ "texts": [{ "language": "en", "body": "Team: {{team.name}}" }] })),
+    )
+    .await;
+    let ticket = manual_ticket(&app, &db, SUPPORT, "Needs R&D", json!({})).await;
+    sqlx::query("UPDATE helpdesk.tickets SET team_id = $2::uuid WHERE id = $1::uuid")
+        .bind(&ticket)
+        .bind(&rd)
+        .execute(&db)
+        .await
+        .unwrap();
+    let uri = format!("/tickets/{ticket}/prepared-answers/{}/render", a["id"].as_str().unwrap());
+    let (status, r) = post(&app, SUPPORT, &uri, json!({})).await;
+    assert_eq!(status, StatusCode::OK, "{r}");
+    assert_eq!(r["body"], "Team: R&D");
+}
+

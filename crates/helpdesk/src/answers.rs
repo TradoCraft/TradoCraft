@@ -180,7 +180,7 @@ async fn texts(conn: &mut PgConnection, ids: &[Uuid]) -> AppResult<Vec<(Uuid, An
         .collect())
 }
 
-async fn load(conn: &mut PgConnection, company_id: Uuid, id: Uuid) -> AppResult<PreparedAnswer> {
+pub async fn load(conn: &mut PgConnection, company_id: Uuid, id: Uuid) -> AppResult<PreparedAnswer> {
     let r: Row = sqlx::query_as(
         "SELECT id, code, name, category, kind, team_id, keywords, active, updated_at FROM helpdesk.prepared_answers WHERE id = $1 AND company_id = $2",
     )
@@ -433,10 +433,21 @@ pub fn pick_text<'a>(
         .map(|t| (t, true))
 }
 
-/// The values for the placeholders of a ticket.
+/// The values for the placeholders of a ticket, for the logged-in agent.
 pub async fn ticket_values(
     conn: &mut PgConnection,
     user: &CurrentUser,
+    ticket_id: Uuid,
+) -> AppResult<(String, BTreeMap<String, String>)> {
+    ticket_values_for(conn, user.company_id, &user.display_name, ticket_id).await
+}
+
+/// The same without a logged-in user: `agent_name` is who the text speaks for (the ticket's
+/// owner in automation mail).
+pub async fn ticket_values_for(
+    conn: &mut PgConnection,
+    company_id: Uuid,
+    agent_name: &str,
     ticket_id: Uuid,
 ) -> AppResult<(String, BTreeMap<String, String>)> {
     #[derive(FromRow)]
@@ -452,6 +463,7 @@ pub async fn ticket_values(
         customer_name: Option<String>,
         company_name: String,
         company_language: String,
+        team_name: Option<String>,
         quotation_number: Option<String>,
         quotation_revision: Option<i32>,
         quotation_total: Option<rust_decimal::Decimal>,
@@ -462,18 +474,20 @@ pub async fn ticket_values(
         "SELECT t.language::text AS language, t.number, t.subject, t.contact_name, ct.first_name AS contact_first_name,
                 ct.last_name AS contact_last_name, ct.title AS contact_title, ct.address_form AS contact_address_form,
                 c.name AS customer_name, co.name AS company_name, co.default_language::text AS company_language,
+                tm.name AS team_name,
                 q.number AS quotation_number, q.revision AS quotation_revision, q.total AS quotation_total,
                 o.number AS order_number, o.customer_reference AS order_reference
          FROM helpdesk.tickets t
          JOIN core.companies co ON co.id = t.company_id
          LEFT JOIN crm.customers c ON c.id = t.customer_id
          LEFT JOIN crm.contacts ct ON ct.id = t.contact_id
+         LEFT JOIN helpdesk.teams tm ON tm.id = t.team_id
          LEFT JOIN sales.quotations q ON q.id = t.quotation_id
          LEFT JOIN sales.orders o ON o.id = t.order_id
          WHERE t.id = $1 AND t.company_id = $2",
     )
     .bind(ticket_id)
-    .bind(user.company_id)
+    .bind(company_id)
     .fetch_optional(conn)
     .await?
     .ok_or(AppError::NotFound("ticket"))?;
@@ -518,7 +532,8 @@ pub async fn ticket_values(
         ),
         ("ticket.number".to_string(), v.number),
         ("ticket.subject".to_string(), v.subject),
-        ("agent.name".to_string(), user.display_name.clone()),
+        ("agent.name".to_string(), agent_name.to_string()),
+        ("team.name".to_string(), v.team_name.unwrap_or_default()),
         ("company.name".to_string(), v.company_name),
         (
             "quotation.number".to_string(),
