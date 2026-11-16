@@ -433,6 +433,149 @@ pub fn pick_text<'a>(
         .map(|t| (t, true))
 }
 
+/// What the ranking needs to know about one answer.
+pub struct Candidate<'a> {
+    pub code: &'a str,
+    pub name: &'a str,
+    pub keywords: &'a [String],
+    pub team_id: Option<Uuid>,
+    /// The answer has a text in the ticket's own language.
+    pub has_language: bool,
+}
+
+/// How well an answer fits a ticket, or `None` when a typed query matches nothing. Higher is better:
+/// exact code 100, code prefix 60, name or keyword hit 30 or 25; keywords found in the ticket
+/// subject +20 each (at most 40); the ticket's own team +15; a text in the ticket's language +5.
+pub fn score(
+    c: &Candidate,
+    q: &str,
+    ticket_team: Option<Uuid>,
+    ticket_subject: &str,
+) -> Option<i32> {
+    let q = q.trim().to_lowercase();
+    let code = c.code.to_lowercase();
+    let mut s = 0;
+    if !q.is_empty() {
+        s += if code == q {
+            100
+        } else if code.starts_with(&q) {
+            60
+        } else if c.name.to_lowercase().contains(&q) {
+            30
+        } else if c.keywords.iter().any(|k| k.contains(&q)) {
+            25
+        } else {
+            return None;
+        };
+    }
+    let subject = ticket_subject.to_lowercase();
+    let hits = c.keywords.iter().filter(|k| subject.contains(k.as_str())).count() as i32;
+    s += (hits * 20).min(40);
+    if c.team_id.is_some() && c.team_id == ticket_team {
+        s += 15;
+    }
+    if c.has_language {
+        s += 5;
+    }
+    Some(s)
+}
+
+#[derive(Debug, Deserialize, IntoParams)]
+pub struct SuggestParams {
+    /// Typed text: a code, part of a name or a keyword. Empty: the best fits for the ticket.
+    pub q: Option<String>,
+    /// reply | internal_note | handover | notice. Absent: every kind.
+    pub kind: Option<String>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct SuggestedAnswer {
+    pub answer_id: Uuid,
+    pub code: String,
+    pub name: String,
+    pub kind: String,
+    pub team_id: Option<Uuid>,
+    /// Language of the text used.
+    pub language: String,
+    pub fallback: bool,
+    pub subject: String,
+    pub body: String,
+    pub score: i32,
+}
+
+/// The best prepared answers for a ticket, filled in and in the ticket's language, at most ten.
+/// Answers of other teams are left out.
+#[utoipa::path(get, path = "/tickets/{id}/prepared-answers/suggest", tag = "helpdesk",
+    params(("id" = Uuid, Path), SuggestParams),
+    responses((status = 200, body = Vec<SuggestedAnswer>), (status = 404, body = ErrorBody)))]
+async fn suggest(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Path(ticket_id): Path<Uuid>,
+    Query(p): Query<SuggestParams>,
+) -> AppResult<Json<Vec<SuggestedAnswer>>> {
+    user.require(Permission::HelpdeskRead)?;
+    let mut conn = state.db.acquire().await?;
+    let (language, values) = ticket_values(&mut conn, &user, ticket_id).await?;
+    let team: Option<Uuid> =
+        sqlx::query_scalar("SELECT team_id FROM helpdesk.tickets WHERE id = $1 AND company_id = $2")
+            .bind(ticket_id)
+            .bind(user.company_id)
+            .fetch_one(&mut *conn)
+            .await?;
+    let rows: Vec<Row> = sqlx::query_as(
+        "SELECT a.id, a.code, a.name, a.category, a.kind, a.team_id, a.keywords, a.active, a.updated_at
+         FROM helpdesk.prepared_answers a
+         WHERE a.company_id = $1 AND a.active AND ($2::text IS NULL OR a.kind = $2)
+           AND (a.team_id IS NULL OR a.team_id = $3)",
+    )
+    .bind(user.company_id)
+    .bind(&p.kind)
+    .bind(team)
+    .fetch_all(&mut *conn)
+    .await?;
+    let ids: Vec<Uuid> = rows.iter().map(|r| r.id).collect();
+    let all = texts(&mut conn, &ids).await?;
+    let subject = values.get("ticket.subject").cloned().unwrap_or_default();
+    let q = p.q.clone().unwrap_or_default();
+    let mut ranked: Vec<(i32, Row)> = rows
+        .into_iter()
+        .filter_map(|r| {
+            let has_language = all.iter().any(|(id, t)| *id == r.id && t.language == language);
+            let s = score(
+                &Candidate { code: &r.code, name: &r.name, keywords: &r.keywords, team_id: r.team_id, has_language },
+                &q,
+                team,
+                &subject,
+            )?;
+            Some((s, r))
+        })
+        .collect();
+    ranked.sort_by(|a, b| b.0.cmp(&a.0).then_with(|| a.1.name.cmp(&b.1.name)));
+    ranked.truncate(10);
+    let mut out = Vec::new();
+    for (s, r) in ranked {
+        let mine: Vec<AnswerText> =
+            all.iter().filter(|(id, _)| *id == r.id).map(|(_, t)| t.clone()).collect();
+        let Some((text, fallback)) = pick_text(&mine, &language, &values["__company_language"]) else {
+            continue;
+        };
+        out.push(SuggestedAnswer {
+            answer_id: r.id,
+            code: r.code,
+            name: r.name,
+            kind: r.kind,
+            team_id: r.team_id,
+            language: text.language.clone(),
+            fallback,
+            subject: render(&text.subject, &values),
+            body: render(&text.body, &values),
+            score: s,
+        });
+    }
+    Ok(Json(out))
+}
+
 /// The values for the placeholders of a ticket, for the logged-in agent.
 pub async fn ticket_values(
     conn: &mut PgConnection,
@@ -594,6 +737,7 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(placeholders))
         .routes(routes!(update_answer))
         .routes(routes!(render_answer))
+        .routes(routes!(suggest))
 }
 
 #[cfg(test)]
@@ -634,5 +778,36 @@ mod tests {
         assert!(clean_keywords(&["x".repeat(41)]).is_err());
         let many: Vec<String> = (0..21).map(|i| format!("k{i}")).collect();
         assert!(clean_keywords(&many).is_err());
+    }
+
+    fn cand<'a>(code: &'a str, name: &'a str, keywords: &'a [String], team: Option<Uuid>, has_language: bool) -> Candidate<'a> {
+        Candidate { code, name, keywords, team_id: team, has_language }
+    }
+
+    #[test]
+    fn an_exact_code_beats_a_prefix_beats_a_name_match() {
+        let none: Vec<String> = vec![];
+        let exact = score(&cand("pump", "Pump", &none, None, true), "pump", None, "").unwrap();
+        let prefix = score(&cand("pump-fault", "Fault", &none, None, true), "pump", None, "").unwrap();
+        let name = score(&cand("f1", "About the pump", &none, None, true), "pump", None, "").unwrap();
+        assert!(exact > prefix && prefix > name, "{exact} {prefix} {name}");
+        assert_eq!(score(&cand("zzz", "Other", &none, None, true), "pump", None, ""), None);
+    }
+
+    #[test]
+    fn keywords_in_the_subject_team_and_language_raise_the_score() {
+        let kw = vec!["firmware".to_string()];
+        let team = Uuid::from_u128(7);
+        let base = score(&cand("a", "A", &kw, None, false), "", None, "Pump noise").unwrap();
+        let with_kw = score(&cand("a", "A", &kw, None, false), "", None, "Firmware update").unwrap();
+        let with_team = score(&cand("a", "A", &kw, Some(team), false), "", Some(team), "Pump noise").unwrap();
+        let with_lang = score(&cand("a", "A", &kw, None, true), "", None, "Pump noise").unwrap();
+        assert!(with_kw > base && with_team > base && with_lang > base);
+    }
+
+    #[test]
+    fn a_keyword_alone_can_match_the_query() {
+        let kw = vec!["firmware".to_string()];
+        assert!(score(&cand("a", "A", &kw, None, true), "firm", None, "").is_some());
     }
 }

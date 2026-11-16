@@ -234,3 +234,37 @@ async fn a_detected_language_is_marked_as_detected_and_a_known_customer_is_not(d
     assert_eq!(language_of(&db, "OK").await.1, "record");
 }
 
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn suggestions_are_ranked_rendered_in_the_ticket_language_and_scoped_to_the_team(db: PgPool) {
+    let app = setup(db.clone()).await;
+    let rd = team(&app, "R&D").await;
+    let net = team(&app, "Network").await;
+    post(&app, SUPPORT, "/prepared-answers", answer("firmware", json!({ "keywords": ["firmware"] }))).await;
+    post(&app, SUPPORT, "/prepared-answers", answer("generic", json!({}))).await;
+    post(&app, SUPPORT, "/prepared-answers", answer("rd-only", json!({ "team_id": rd, "keywords": ["firmware"] }))).await;
+    post(&app, SUPPORT, "/prepared-answers", answer("net-only", json!({ "team_id": net, "keywords": ["firmware"] }))).await;
+    post(&app, SUPPORT, "/prepared-answers", answer("note", json!({ "kind": "internal_note" }))).await;
+    let ticket = manual_ticket(&app, &db, SUPPORT, "Firmware update fails", json!({})).await;
+    sqlx::query("UPDATE helpdesk.tickets SET team_id = $2::uuid, language = 'en' WHERE id = $1::uuid")
+        .bind(&ticket)
+        .bind(&rd)
+        .execute(&db)
+        .await
+        .unwrap();
+    let (status, r) = get(&app, SUPPORT, &format!("/tickets/{ticket}/prepared-answers/suggest?kind=reply")).await;
+    assert_eq!(status, StatusCode::OK, "{r}");
+    let codes: Vec<&str> = r.as_array().unwrap().iter().map(|s| s["code"].as_str().unwrap()).collect();
+    // The R&D answer ranks first (keyword and team), the network's and the note are left out.
+    assert_eq!(codes.first(), Some(&"rd-only"), "{codes:?}");
+    assert!(codes.contains(&"firmware") && codes.contains(&"generic"));
+    assert!(!codes.contains(&"net-only") && !codes.contains(&"note"), "{codes:?}");
+    let first = &r[0];
+    assert_eq!(first["language"], "en");
+    assert_eq!(first["subject"], "Re: Firmware update fails");
+    // A query narrows the list; nothing matches a nonsense query.
+    let (_, q) = get(&app, SUPPORT, &format!("/tickets/{ticket}/prepared-answers/suggest?kind=reply&q=gener")).await;
+    assert_eq!(q.as_array().unwrap().len(), 1);
+    let (_, none) = get(&app, SUPPORT, &format!("/tickets/{ticket}/prepared-answers/suggest?q=zzzz")).await;
+    assert!(none.as_array().unwrap().is_empty());
+}
+
