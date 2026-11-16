@@ -245,13 +245,35 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
   }) async {
     setState(() => _busy = true);
     TicketDetail? d;
-    final ok = await runAction(
-      context,
-      () async => d = await action(),
-      success: success,
-    );
+    final messenger = ScaffoldMessenger.of(context);
+    final l = context.l10n;
+    var ok = false;
+    try {
+      d = await action();
+      ok = true;
+      if (success != null) {
+        messenger.showSnackBar(SnackBar(content: Text(success)));
+      }
+    } catch (e) {
+      final isChecklistBlocked =
+          errorCode(e) == 'checklist_incomplete' ||
+          (errorStatus(e) == 409 &&
+              e is DioException &&
+              e.response?.data is Map &&
+              (e.response?.data as Map)['error'] == 'checklist_incomplete');
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            isChecklistBlocked
+                ? l.ticketCloseBlockedChecklist
+                : errorMessage(e),
+          ),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
+    }
     if (mounted) setState(() => _busy = false);
-    if (ok && d != null) _apply(d!);
+    if (ok && d != null) _apply(d);
   }
 
   Future<void> _saveProperties() => _run(
@@ -988,6 +1010,13 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
         const Divider(height: 32),
         TimeSection(ticketId: t.id, canWrite: canWrite),
         const Divider(height: 32),
+        TicketChecklistCard(
+          ticketId: t.id,
+          teamId: t.teamId,
+          category: t.category,
+          canWrite: canWrite,
+        ),
+        const Divider(height: 32),
         ActivitySection(
           ticketId: t.id,
           version: '${t.updatedAt}-${d.articles.length}-${d.watchers.length}',
@@ -1511,6 +1540,433 @@ class _AnswerPickerState extends ConsumerState<_AnswerPicker> {
           child: Text(l.cancel),
         ),
       ],
+    );
+  }
+}
+
+/// Sorts active checklist templates so templates matching [teamId] or [category] appear first.
+List<ChecklistTemplate> sortChecklistTemplates(
+  List<ChecklistTemplate> templates, {
+  String? teamId,
+  String? category,
+}) {
+  int score(ChecklistTemplate t) =>
+      (teamId != null && t.teamId == teamId ? 1 : 0) +
+      (category != null && t.category == category ? 1 : 0);
+
+  final sorted = [...templates]
+    ..sort((a, b) {
+      final diff = score(b).compareTo(score(a));
+      if (diff != 0) return diff;
+      return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+    });
+  return sorted;
+}
+
+/// Checklist section on a ticket: apply template, toggle/edit/reorder/delete items, and add items.
+class TicketChecklistCard extends ConsumerStatefulWidget {
+  const TicketChecklistCard({
+    super.key,
+    required this.ticketId,
+    required this.category,
+    this.teamId,
+    this.canWrite = true,
+  });
+
+  final String ticketId;
+  final String? teamId;
+  final String category;
+  final bool canWrite;
+
+  @override
+  ConsumerState<TicketChecklistCard> createState() =>
+      _TicketChecklistCardState();
+}
+
+class _TicketChecklistCardState extends ConsumerState<TicketChecklistCard> {
+  final _addController = TextEditingController();
+  List<ChecklistItem> _items = const [];
+  List<ChecklistTemplate> _templates = const [];
+  bool _loading = true;
+  bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void didUpdateWidget(covariant TicketChecklistCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.ticketId != widget.ticketId) {
+      _load();
+    }
+  }
+
+  @override
+  void dispose() {
+    _addController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    final api = ref.read(apiProvider);
+    final itemsFuture = api.helpdesk
+        .listTicketChecklist(id: widget.ticketId)
+        .then((v) => v, onError: (Object _) => <ChecklistItem>[]);
+    final templatesFuture = api.helpdesk
+        .listTemplates(active: true)
+        .then((v) => v, onError: (Object _) => <ChecklistTemplate>[]);
+    final results = await Future.wait([itemsFuture, templatesFuture]);
+    if (!mounted) return;
+    final items = [...results[0] as List<ChecklistItem>]
+      ..sort((a, b) => a.position.compareTo(b.position));
+    setState(() {
+      _items = items;
+      _templates = results[1] as List<ChecklistTemplate>;
+      _loading = false;
+    });
+  }
+
+  Future<void> _mutate(Future<void> Function() action) async {
+    setState(() => _busy = true);
+    await runAction(context, action);
+    if (mounted) setState(() => _busy = false);
+  }
+
+  Future<void> _toggleDone(ChecklistItem item, bool done) => _mutate(() async {
+    final updated = await ref
+        .read(apiProvider)
+        .helpdesk
+        .updateTicketChecklistItem(
+          id: widget.ticketId,
+          itemId: item.id,
+          body: UpdateChecklistItemInput(done: done),
+        );
+    if (!mounted) return;
+    setState(() {
+      _items = [
+        for (final existing in _items)
+          existing.id == updated.id ? updated : existing,
+      ];
+    });
+  });
+
+  Future<void> _editItem(ChecklistItem item) async {
+    final l = context.l10n;
+    final controller = TextEditingController(text: item.description);
+    final next = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l.edit),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: InputDecoration(labelText: l.checklistTitle),
+          onSubmitted: (_) => Navigator.pop(context, controller.text.trim()),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(l.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            child: Text(l.save),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (next == null || next.isEmpty || next == item.description || !mounted) {
+      return;
+    }
+    await _mutate(() async {
+      final updated = await ref
+          .read(apiProvider)
+          .helpdesk
+          .updateTicketChecklistItem(
+            id: widget.ticketId,
+            itemId: item.id,
+            body: UpdateChecklistItemInput(description: next),
+          );
+      if (!mounted) return;
+      setState(() {
+        _items = [
+          for (final existing in _items)
+            existing.id == updated.id ? updated : existing,
+        ];
+      });
+    });
+  }
+
+  Future<void> _moveItem(int index, int delta) async {
+    final targetIndex = index + delta;
+    if (targetIndex < 0 || targetIndex >= _items.length) return;
+    final item = _items[index];
+    final targetPosition = _items[targetIndex].position;
+    await _mutate(() async {
+      await ref
+          .read(apiProvider)
+          .helpdesk
+          .updateTicketChecklistItem(
+            id: widget.ticketId,
+            itemId: item.id,
+            body: UpdateChecklistItemInput(position: targetPosition),
+          );
+      final refreshed = await ref
+          .read(apiProvider)
+          .helpdesk
+          .listTicketChecklist(id: widget.ticketId);
+      if (!mounted) return;
+      setState(() {
+        _items = [...refreshed]
+          ..sort((a, b) => a.position.compareTo(b.position));
+      });
+    });
+  }
+
+  Future<void> _deleteItem(ChecklistItem item) => _mutate(() async {
+    await ref
+        .read(apiProvider)
+        .helpdesk
+        .deleteTicketChecklistItem(id: widget.ticketId, itemId: item.id);
+    if (!mounted) return;
+    setState(() {
+      _items = _items.where((e) => e.id != item.id).toList();
+    });
+  });
+
+  Future<void> _addItem() async {
+    final text = _addController.text.trim();
+    if (text.isEmpty) return;
+    await _mutate(() async {
+      final created = await ref
+          .read(apiProvider)
+          .helpdesk
+          .addTicketChecklistItem(
+            id: widget.ticketId,
+            body: AddChecklistItemInput(description: text),
+          );
+      if (!mounted) return;
+      _addController.clear();
+      setState(() {
+        _items = [..._items, created]
+          ..sort((a, b) => a.position.compareTo(b.position));
+      });
+    });
+  }
+
+  Future<void> _applyTemplate(String templateId) => _mutate(() async {
+    final applied = await ref
+        .read(apiProvider)
+        .helpdesk
+        .applyTemplate(
+          id: widget.ticketId,
+          body: ApplyTemplateInput(templateId: templateId),
+        );
+    if (!mounted) return;
+    setState(() {
+      _items = [...applied]..sort((a, b) => a.position.compareTo(b.position));
+    });
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    final total = _items.length;
+    final done = _items.where((e) => e.done).length;
+    final sortedTemplates = sortChecklistTemplates(
+      _templates,
+      teamId: widget.teamId,
+      category: widget.category,
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            const Icon(AppIcons.checklist, size: 18),
+            const SizedBox(width: 6),
+            Text(l.checklistTitle, style: theme.textTheme.titleMedium),
+            if (total > 0) ...[
+              const SizedBox(width: 8),
+              ChecklistProgressBadge(done: done, total: total),
+            ],
+            const Spacer(),
+            if (widget.canWrite)
+              PopupMenuButton<String>(
+                key: const ValueKey('checklist-apply-template'),
+                tooltip: l.checklistApplyTemplate,
+                enabled: !_busy,
+                onSelected: _applyTemplate,
+                itemBuilder: (_) {
+                  if (sortedTemplates.isEmpty) {
+                    return [
+                      PopupMenuItem<String>(
+                        enabled: false,
+                        child: Text(l.checklistNoTemplates),
+                      ),
+                    ];
+                  }
+                  return [
+                    for (final tpl in sortedTemplates)
+                      PopupMenuItem<String>(
+                        value: tpl.id,
+                        child: Text(tpl.name),
+                      ),
+                  ];
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(AppIcons.add, size: 16),
+                      const SizedBox(width: 4),
+                      Text(
+                        l.checklistApplyTemplate,
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        if (_loading)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 8),
+            child: LinearProgressIndicator(),
+          )
+        else if (_items.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Text(
+              l.checklistEmpty,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.outline,
+              ),
+            ),
+          )
+        else
+          for (var i = 0; i < _items.length; i++)
+            _buildItemRow(context, _items[i], i),
+        if (widget.canWrite) ...[
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  key: const ValueKey('checklist-add-input'),
+                  controller: _addController,
+                  decoration: InputDecoration(
+                    hintText: l.checklistAddItem,
+                    isDense: true,
+                  ),
+                  onSubmitted: (_) => _addItem(),
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                key: const ValueKey('checklist-add-button'),
+                icon: const Icon(AppIcons.add),
+                tooltip: l.checklistAddItem,
+                onPressed: _busy ? null : _addItem,
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildItemRow(BuildContext context, ChecklistItem item, int index) {
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    final meta = [
+      if (item.doneByName != null && item.doneByName!.isNotEmpty)
+        item.doneByName!,
+      if (item.doneAt != null) date(item.doneAt),
+    ].join(' · ');
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Checkbox(
+            value: item.done,
+            visualDensity: VisualDensity.compact,
+            onChanged: widget.canWrite && !_busy
+                ? (v) => _toggleDone(item, v ?? false)
+                : null,
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.description,
+                    style: item.done
+                        ? TextStyle(
+                            decoration: TextDecoration.lineThrough,
+                            color: theme.colorScheme.outline,
+                          )
+                        : null,
+                  ),
+                  if (item.done && meta.isNotEmpty)
+                    Text(
+                      meta,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.outline,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          if (widget.canWrite) ...[
+            IconButton(
+              icon: const Icon(AppIcons.edit, size: 16),
+              tooltip: l.edit,
+              visualDensity: VisualDensity.compact,
+              onPressed: _busy ? null : () => _editItem(item),
+            ),
+            IconButton(
+              icon: const Icon(AppIcons.arrowUpward, size: 16),
+              visualDensity: VisualDensity.compact,
+              onPressed: _busy || index == 0
+                  ? null
+                  : () => _moveItem(index, -1),
+            ),
+            IconButton(
+              icon: const Icon(AppIcons.arrowDownward, size: 16),
+              visualDensity: VisualDensity.compact,
+              onPressed: _busy || index == _items.length - 1
+                  ? null
+                  : () => _moveItem(index, 1),
+            ),
+            IconButton(
+              icon: const Icon(AppIcons.delete, size: 16),
+              tooltip: l.delete,
+              visualDensity: VisualDensity.compact,
+              onPressed: _busy ? null : () => _deleteItem(item),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }
