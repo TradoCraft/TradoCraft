@@ -97,7 +97,7 @@ pub struct RuleAction {
     /// `send_email`: at most one mail per ticket and rule in this many hours (default 24).
     #[serde(default)]
     pub period_hours: Option<i32>,
-    /// `send_email`: a prepared answer (A6, ADR 0071). When set, `subject` and `body` are ignored and
+    /// `send_email`: a prepared answer (A6, ADR 0072). When set, `subject` and `body` are ignored and
     /// cleared; the answer's text in the ticket's language is sent.
     #[serde(default)]
     pub answer_id: Option<Uuid>,

@@ -1,4 +1,4 @@
--- A6 (ADR 0071): what a prepared answer is for, which team owns it, and words that rank it.
+-- A6 (ADR 0072): what a prepared answer is for, which team owns it, and words that rank it.
 ALTER TABLE helpdesk.prepared_answers
     ADD COLUMN kind text NOT NULL DEFAULT 'reply'
         CHECK (kind IN ('reply', 'internal_note', 'handover', 'notice')),

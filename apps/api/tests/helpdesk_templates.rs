@@ -1,4 +1,4 @@
-//! Prepared answers as templates: kinds, team scope, keywords, suggestions, mail rules (ADR 0071).
+//! Prepared answers as templates: kinds, team scope, keywords, suggestions, mail rules (ADR 0072).
 
 mod common;
 

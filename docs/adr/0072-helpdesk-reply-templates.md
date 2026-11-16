@@ -1,4 +1,4 @@
-# 0071 Helpdesk reply templates and ticket language
+# 0072 Helpdesk reply templates and ticket language
 
 **Status:** Accepted. Extends [ADR 0013](0013-helpdesk-email-and-languages.md) and [ADR 0066](0066-helpdesk-send-email-action.md).
 
