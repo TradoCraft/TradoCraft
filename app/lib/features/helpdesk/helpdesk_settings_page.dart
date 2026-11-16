@@ -8,7 +8,7 @@ import '../../shared/actions.dart';
 import 'helpdesk_mailboxes.dart';
 import 'sla_notices_card.dart';
 import 'ticket_screen.dart' show teamsProvider, usersProvider;
-import 'tickets_page.dart' show ticketPriorities;
+import 'tickets_page.dart' show ticketCategories, ticketPriorities;
 import '../../shared/app_icons.dart';
 
 final _policiesProvider = FutureProvider.autoDispose<List<SlaPolicy>>(
@@ -17,6 +17,10 @@ final _policiesProvider = FutureProvider.autoDispose<List<SlaPolicy>>(
 
 final _settingsProvider = FutureProvider.autoDispose<HelpdeskSettings>(
   (ref) => ref.watch(apiProvider).helpdesk.getSettings(),
+);
+
+final _templatesProvider = FutureProvider.autoDispose<List<ChecklistTemplate>>(
+  (ref) => ref.watch(apiProvider).helpdesk.listTemplates(),
 );
 
 /// Helpdesk administration: service levels per priority, teams and their members, the
@@ -77,6 +81,8 @@ class HelpdeskSettingsPage extends ConsumerWidget {
             const SlaNoticesCard(),
             const SizedBox(height: 16),
             const _TeamsCard(),
+            const SizedBox(height: 16),
+            const _ChecklistTemplatesCard(),
             const SizedBox(height: 16),
             const MailboxesCard(),
             const SizedBox(height: 16),
@@ -249,6 +255,8 @@ class _TeamsCard extends ConsumerWidget {
                       subtitle: Text(
                         [
                           if (!t.active) l.inactive,
+                          if (t.requireChecklistDone)
+                            l.teamRequireChecklistDone,
                           for (final m in t.members)
                             m.isLead
                                 ? '${m.displayName} (${l.teamLead})'
@@ -279,6 +287,7 @@ class TeamEditor extends ConsumerStatefulWidget {
 class _TeamEditorState extends ConsumerState<TeamEditor> {
   late final _name = TextEditingController(text: widget.team?.name);
   late bool _active = widget.team?.active ?? true;
+  late bool _requireChecklistDone = widget.team?.requireChecklistDone ?? false;
   late final Map<String, bool> _members = {
     for (final m in widget.team?.members ?? const <TeamMember>[])
       m.userId: m.isLead,
@@ -289,6 +298,7 @@ class _TeamEditorState extends ConsumerState<TeamEditor> {
     final input = TeamInput(
       name: _name.text.trim(),
       active: _active,
+      requireChecklistDone: _requireChecklistDone,
       members: [
         for (final e in _members.entries)
           MemberInput(userId: e.key, isLead: e.value),
@@ -330,6 +340,13 @@ class _TeamEditorState extends ConsumerState<TeamEditor> {
                 title: Text(l.active),
                 value: _active,
                 onChanged: (v) => setState(() => _active = v),
+              ),
+              SwitchListTile(
+                key: const ValueKey('team-require-checklist-done'),
+                contentPadding: EdgeInsets.zero,
+                title: Text(l.teamRequireChecklistDone),
+                value: _requireChecklistDone,
+                onChanged: (v) => setState(() => _requireChecklistDone = v),
               ),
               Text(
                 l.teamMembers,
@@ -459,6 +476,305 @@ class _SettingsCardState extends ConsumerState<_SettingsCard> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _ChecklistTemplatesCard extends ConsumerWidget {
+  const _ChecklistTemplatesCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    final templates = ref.watch(_templatesProvider);
+    final teams = {
+      for (final t in ref.watch(teamsProvider).value ?? const <Team>[])
+        t.id: t.name,
+    };
+
+    Future<void> edit([ChecklistTemplate? tpl]) async {
+      final saved = await showDialog<bool>(
+        context: context,
+        builder: (_) => _ChecklistTemplateEditor(template: tpl),
+      );
+      if (saved == true) {
+        ref.invalidate(_templatesProvider);
+      }
+    }
+
+    Future<void> remove(ChecklistTemplate tpl) async {
+      final sure = await showDialog<bool>(
+        context: context,
+        builder: (c) => AlertDialog(
+          title: Text(tpl.name),
+          content: Text(l.remove),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(c, false),
+              child: Text(l.cancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(c, true),
+              child: Text(l.remove),
+            ),
+          ],
+        ),
+      );
+      if (sure != true || !context.mounted) return;
+      final ok = await runAction(
+        context,
+        () => ref.read(apiProvider).helpdesk.deleteTemplate(id: tpl.id),
+      );
+      if (ok) ref.invalidate(_templatesProvider);
+    }
+
+    return Card(
+      key: const ValueKey('checklist-templates'),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text(
+                  l.checklistTemplatesTitle,
+                  style: theme.textTheme.titleMedium,
+                ),
+                const Spacer(),
+                FilledButton.icon(
+                  key: const ValueKey('new-checklist-template'),
+                  onPressed: edit,
+                  icon: const Icon(AppIcons.add),
+                  label: Text(l.checklistTemplateNew),
+                ),
+              ],
+            ),
+            templates.when(
+              loading: () => const LinearProgressIndicator(),
+              error: (e, _) => Text(errorMessage(e)),
+              data: (list) => list.isEmpty
+                  ? Padding(
+                      padding: const EdgeInsets.only(top: 12),
+                      child: Text(l.checklistNoTemplates),
+                    )
+                  : Column(
+                      children: [
+                        for (final tpl in list)
+                          ListTile(
+                            key: ValueKey('checklist-template-${tpl.id}'),
+                            title: Text(tpl.name),
+                            subtitle: Text(
+                              [
+                                if (!tpl.active) l.inactive,
+                                if (tpl.teamName != null &&
+                                    tpl.teamName!.isNotEmpty)
+                                  tpl.teamName!
+                                else if (tpl.teamId != null &&
+                                    teams.containsKey(tpl.teamId))
+                                  teams[tpl.teamId]!,
+                                if (tpl.category != null &&
+                                    tpl.category!.isNotEmpty)
+                                  l.ticketCategory(tpl.category!),
+                                '${l.checklistTitle}: ${tpl.items.length}',
+                              ].join(' · '),
+                            ),
+                            trailing: IconButton(
+                              key: ValueKey(
+                                'delete-checklist-template-${tpl.id}',
+                              ),
+                              tooltip: l.remove,
+                              icon: const Icon(AppIcons.delete),
+                              onPressed: () => remove(tpl),
+                            ),
+                            onTap: () => edit(tpl),
+                          ),
+                      ],
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ChecklistTemplateEditor extends ConsumerStatefulWidget {
+  const _ChecklistTemplateEditor({this.template});
+  final ChecklistTemplate? template;
+
+  @override
+  ConsumerState<_ChecklistTemplateEditor> createState() =>
+      _ChecklistTemplateEditorState();
+}
+
+class _ChecklistTemplateEditorState
+    extends ConsumerState<_ChecklistTemplateEditor> {
+  late final _name = TextEditingController(text: widget.template?.name);
+  late final _items = TextEditingController(
+    text: ([...?widget.template?.items]
+          ..sort((a, b) => a.position.compareTo(b.position)))
+        .map((e) => e.description)
+        .join('\n'),
+  );
+  late String? _teamId = widget.template?.teamId;
+  late String? _category = widget.template?.category;
+  late bool _active = widget.template?.active ?? true;
+  bool _busy = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _items.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final l = context.l10n;
+    final name = _name.text.trim();
+    final items = _items.text
+        .split('\n')
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .map((s) => ChecklistTemplateItemInput(description: s))
+        .toList();
+    if (name.isEmpty) {
+      setState(() => _error = l.required);
+      return;
+    }
+    if (items.isEmpty) {
+      setState(() => _error = l.checklistTemplateItemsHint);
+      return;
+    }
+
+    final input = ChecklistTemplateInput(
+      name: name,
+      teamId: _teamId,
+      category: _category,
+      active: _active,
+      items: items,
+    );
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final api = ref.read(apiProvider).helpdesk;
+      if (widget.template == null) {
+        await api.createTemplate(body: input);
+      } else {
+        await api.updateTemplate(id: widget.template!.id, body: input);
+      }
+      if (mounted) Navigator.pop(context, true);
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _error = errorMessage(e);
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final teams = (ref.watch(teamsProvider).value ?? const <Team>[])
+        .where((t) => t.active || t.id == _teamId)
+        .toList();
+    return AlertDialog(
+      title: Text(
+        widget.template == null
+            ? l.checklistTemplateNew
+            : widget.template!.name,
+      ),
+      content: SizedBox(
+        width: 480,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                key: const ValueKey('checklist-template-name'),
+                controller: _name,
+                decoration: InputDecoration(labelText: l.checklistTemplateName),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String?>(
+                key: const ValueKey('checklist-template-team'),
+                initialValue: teams.any((t) => t.id == _teamId) ? _teamId : null,
+                isExpanded: true,
+                decoration: InputDecoration(labelText: l.team),
+                items: [
+                  DropdownMenuItem<String?>(value: null, child: Text(l.all)),
+                  for (final t in teams)
+                    DropdownMenuItem<String?>(value: t.id, child: Text(t.name)),
+                ],
+                onChanged: (v) => setState(() => _teamId = v),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String?>(
+                key: const ValueKey('checklist-template-category'),
+                initialValue: ticketCategories.contains(_category)
+                    ? _category
+                    : null,
+                isExpanded: true,
+                decoration: InputDecoration(labelText: l.category),
+                items: [
+                  DropdownMenuItem<String?>(value: null, child: Text(l.all)),
+                  for (final c in ticketCategories)
+                    DropdownMenuItem<String?>(
+                      value: c,
+                      child: Text(l.ticketCategory(c)),
+                    ),
+                ],
+                onChanged: (v) => setState(() => _category = v),
+              ),
+              SwitchListTile(
+                key: const ValueKey('checklist-template-active'),
+                contentPadding: EdgeInsets.zero,
+                title: Text(l.active),
+                value: _active,
+                onChanged: (v) => setState(() => _active = v),
+              ),
+              TextField(
+                key: const ValueKey('checklist-template-items'),
+                controller: _items,
+                minLines: 4,
+                maxLines: 10,
+                decoration: InputDecoration(
+                  labelText: l.checklistTemplateItemsHint,
+                  alignLabelWithHint: true,
+                ),
+              ),
+              if (_error != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    _error!,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _busy ? null : () => Navigator.pop(context),
+          child: Text(l.cancel),
+        ),
+        FilledButton(
+          key: const ValueKey('save-checklist-template'),
+          onPressed: _busy ? null : _save,
+          child: Text(l.save),
+        ),
+      ],
     );
   }
 }
