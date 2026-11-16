@@ -3180,5 +3180,19 @@
   "vatRateClosePrevious": "Cerrar automáticamente la regla abierta anterior",
   "vatRateOverlapError": "Las fechas se solapan con una regla existente para este país y categoría",
   "vatRateDeleteConfirm": "¿Eliminar la regla de IVA para {country} ({category})?",
-  "vatRateOngoing": "Vigente"
+  "vatRateOngoing": "Vigente",
+  "checklistTitle": "Lista de comprobación",
+  "checklistProgress": "{done}/{total}",
+  "checklistAddItem": "Añadir elemento",
+  "checklistApplyTemplate": "Aplicar plantilla",
+  "checklistNoTemplates": "No hay plantillas disponibles",
+  "checklistEmpty": "Aún no hay elementos",
+  "checklistTemplatesTitle": "Plantillas de lista",
+  "checklistTemplateNew": "Nueva plantilla de lista",
+  "checklistTemplateName": "Nombre de la plantilla",
+  "checklistTemplateItemsHint": "Elementos (uno por línea)",
+  "teamRequireChecklistDone": "Exigir lista completada antes de cerrar",
+  "ticketCloseBlockedChecklist": "Complete todos los elementos de la lista antes de cerrar este ticket",
+  "automationActionApplyChecklist": "Aplicar lista",
+  "automationTemplateLabel": "Plantilla de lista"
 }

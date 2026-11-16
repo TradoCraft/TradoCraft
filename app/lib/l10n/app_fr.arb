@@ -3180,5 +3180,19 @@
   "vatRateClosePrevious": "Clôturer automatiquement la règle ouverte précédente",
   "vatRateOverlapError": "Les dates chevauchent une règle existante pour ce pays et cette catégorie",
   "vatRateDeleteConfirm": "Supprimer la règle TVA pour {country} ({category}) ?",
-  "vatRateOngoing": "En cours"
+  "vatRateOngoing": "En cours",
+  "checklistTitle": "Liste de contrôle",
+  "checklistProgress": "{done}/{total}",
+  "checklistAddItem": "Ajouter un élément",
+  "checklistApplyTemplate": "Appliquer un modèle",
+  "checklistNoTemplates": "Aucun modèle de liste disponible",
+  "checklistEmpty": "Aucun élément pour le moment",
+  "checklistTemplatesTitle": "Modèles de liste de contrôle",
+  "checklistTemplateNew": "Nouveau modèle de liste",
+  "checklistTemplateName": "Nom du modèle",
+  "checklistTemplateItemsHint": "Éléments (un par ligne)",
+  "teamRequireChecklistDone": "Exiger la liste terminée avant clôture",
+  "ticketCloseBlockedChecklist": "Terminez tous les éléments de la liste avant de fermer ce ticket",
+  "automationActionApplyChecklist": "Appliquer une liste",
+  "automationTemplateLabel": "Modèle de liste"
 }

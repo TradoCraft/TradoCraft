@@ -10199,4 +10199,50 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get vatRateOngoing => 'En cours';
+
+  @override
+  String get checklistTitle => 'Liste de contrôle';
+
+  @override
+  String checklistProgress(int done, int total) {
+    return '$done/$total';
+  }
+
+  @override
+  String get checklistAddItem => 'Ajouter un élément';
+
+  @override
+  String get checklistApplyTemplate => 'Appliquer un modèle';
+
+  @override
+  String get checklistNoTemplates => 'Aucun modèle de liste disponible';
+
+  @override
+  String get checklistEmpty => 'Aucun élément pour le moment';
+
+  @override
+  String get checklistTemplatesTitle => 'Modèles de liste de contrôle';
+
+  @override
+  String get checklistTemplateNew => 'Nouveau modèle de liste';
+
+  @override
+  String get checklistTemplateName => 'Nom du modèle';
+
+  @override
+  String get checklistTemplateItemsHint => 'Éléments (un par ligne)';
+
+  @override
+  String get teamRequireChecklistDone =>
+      'Exiger la liste terminée avant clôture';
+
+  @override
+  String get ticketCloseBlockedChecklist =>
+      'Terminez tous les éléments de la liste avant de fermer ce ticket';
+
+  @override
+  String get automationActionApplyChecklist => 'Appliquer une liste';
+
+  @override
+  String get automationTemplateLabel => 'Modèle de liste';
 }

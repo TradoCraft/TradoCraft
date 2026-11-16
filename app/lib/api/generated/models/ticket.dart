@@ -11,50 +11,52 @@ part 'ticket.g.dart';
 @JsonSerializable()
 class Ticket {
   const Ticket({
-    required this.priority,
+    required this.updatedAt,
     required this.category,
+    required this.checklistDone,
+    required this.checklistTotal,
     required this.contactEmail,
     required this.contactName,
     required this.createdAt,
-    required this.number,
     required this.articleCount,
     required this.id,
     required this.internal,
-    required this.tags,
-    required this.subject,
-    required this.status,
-    required this.sla,
-    required this.watching,
-    required this.unread,
     required this.language,
-    required this.updatedAt,
+    required this.number,
+    required this.watching,
+    required this.priority,
+    required this.sla,
+    required this.status,
+    required this.subject,
+    required this.tags,
     required this.timeMinutes,
-    this.firstResponseAt,
+    required this.unread,
+    this.escalatedBy,
     this.mergedIntoId,
     this.mergedIntoNumber,
-    this.escalatedByName,
+    this.csatRating,
     this.opportunityId,
     this.opportunityNumber,
     this.orderId,
     this.orderNumber,
     this.ownerName,
-    this.ownerUserId,
-    this.escalatedBy,
+    this.customerId,
+    this.customerName,
     this.quotationId,
     this.quotationNumber,
     this.quotationRevision,
     this.quotationStatus,
     this.escalatedAt,
-    this.customerName,
-    this.customerId,
+    this.closedAt,
+    this.escalatedByName,
     this.suggestedCategory,
-    this.csatRating,
+    this.firstResponseAt,
     this.teamId,
     this.teamName,
-    this.csatRatedAt,
     this.contactId,
-    this.closedAt,
     this.csatComment,
+    this.csatRatedAt,
+    this.ownerUserId,
   });
   
   factory Ticket.fromJson(Map<String, Object?> json) => _$TicketFromJson(json);
@@ -64,6 +66,10 @@ class Ticket {
 
   /// question | lead | quote_change | order_confirmation | production_question | service | complaint | other
   final String category;
+  @JsonKey(name: 'checklist_done')
+  final int checklistDone;
+  @JsonKey(name: 'checklist_total')
+  final int checklistTotal;
   @JsonKey(includeIfNull: false,name: 'closed_at')
   final DateTime? closedAt;
   @JsonKey(name: 'contact_email')

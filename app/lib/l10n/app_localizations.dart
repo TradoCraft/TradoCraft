@@ -18065,6 +18065,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Ongoing'**
   String get vatRateOngoing;
+
+  /// No description provided for @checklistTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Checklist'**
+  String get checklistTitle;
+
+  /// No description provided for @checklistProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'{done}/{total}'**
+  String checklistProgress(int done, int total);
+
+  /// No description provided for @checklistAddItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Add checklist item'**
+  String get checklistAddItem;
+
+  /// No description provided for @checklistApplyTemplate.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply template'**
+  String get checklistApplyTemplate;
+
+  /// No description provided for @checklistNoTemplates.
+  ///
+  /// In en, this message translates to:
+  /// **'No checklist templates available'**
+  String get checklistNoTemplates;
+
+  /// No description provided for @checklistEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No checklist items yet'**
+  String get checklistEmpty;
+
+  /// No description provided for @checklistTemplatesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Checklist templates'**
+  String get checklistTemplatesTitle;
+
+  /// No description provided for @checklistTemplateNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New checklist template'**
+  String get checklistTemplateNew;
+
+  /// No description provided for @checklistTemplateName.
+  ///
+  /// In en, this message translates to:
+  /// **'Template name'**
+  String get checklistTemplateName;
+
+  /// No description provided for @checklistTemplateItemsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Items (one per line)'**
+  String get checklistTemplateItemsHint;
+
+  /// No description provided for @teamRequireChecklistDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Require checklist done before closing'**
+  String get teamRequireChecklistDone;
+
+  /// No description provided for @ticketCloseBlockedChecklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete all checklist items before closing this ticket'**
+  String get ticketCloseBlockedChecklist;
+
+  /// No description provided for @automationActionApplyChecklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply checklist'**
+  String get automationActionApplyChecklist;
+
+  /// No description provided for @automationTemplateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Checklist template'**
+  String get automationTemplateLabel;
 }
 
 class _AppLocalizationsDelegate

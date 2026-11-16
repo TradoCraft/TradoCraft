@@ -10137,4 +10137,50 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get vatRateOngoing => 'Ongoing';
+
+  @override
+  String get checklistTitle => 'Checklist';
+
+  @override
+  String checklistProgress(int done, int total) {
+    return '$done/$total';
+  }
+
+  @override
+  String get checklistAddItem => 'Add checklist item';
+
+  @override
+  String get checklistApplyTemplate => 'Apply template';
+
+  @override
+  String get checklistNoTemplates => 'No checklist templates available';
+
+  @override
+  String get checklistEmpty => 'No checklist items yet';
+
+  @override
+  String get checklistTemplatesTitle => 'Checklist templates';
+
+  @override
+  String get checklistTemplateNew => 'New checklist template';
+
+  @override
+  String get checklistTemplateName => 'Template name';
+
+  @override
+  String get checklistTemplateItemsHint => 'Items (one per line)';
+
+  @override
+  String get teamRequireChecklistDone =>
+      'Require checklist done before closing';
+
+  @override
+  String get ticketCloseBlockedChecklist =>
+      'Complete all checklist items before closing this ticket';
+
+  @override
+  String get automationActionApplyChecklist => 'Apply checklist';
+
+  @override
+  String get automationTemplateLabel => 'Checklist template';
 }

@@ -3180,5 +3180,19 @@
   "vatRateClosePrevious": "Vorherige offene Regel automatisch schließen",
   "vatRateOverlapError": "Zeitraum überschneidet sich mit einer bestehenden Regel",
   "vatRateDeleteConfirm": "MwSt.-Regel für {country} ({category}) löschen?",
-  "vatRateOngoing": "Unbefristet"
+  "vatRateOngoing": "Unbefristet",
+  "checklistTitle": "Checkliste",
+  "checklistProgress": "{done}/{total}",
+  "checklistAddItem": "Checklistenpunkt hinzufügen",
+  "checklistApplyTemplate": "Vorlage anwenden",
+  "checklistNoTemplates": "Keine Checklistenvorlagen verfügbar",
+  "checklistEmpty": "Noch keine Checklistenpunkte",
+  "checklistTemplatesTitle": "Checklistenvorlagen",
+  "checklistTemplateNew": "Neue Checklistenvorlage",
+  "checklistTemplateName": "Vorlagenname",
+  "checklistTemplateItemsHint": "Punkte (einer pro Zeile)",
+  "teamRequireChecklistDone": "Checkliste vor dem Schließen abschließen",
+  "ticketCloseBlockedChecklist": "Schließen Sie alle Checklistenpunkte ab, bevor Sie dieses Ticket schließen",
+  "automationActionApplyChecklist": "Checkliste anwenden",
+  "automationTemplateLabel": "Checklistenvorlage"
 }
