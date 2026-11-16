@@ -600,8 +600,7 @@ class _RuleEditorState extends ConsumerState<RuleEditor> {
           ),
         DropdownButtonFormField<String?>(
           key: ValueKey('mail-template-$i'),
-          initialValue:
-              answers.any((x) => x.id == a.answerId) ? a.answerId : null,
+          initialValue: a.answerId,
           isExpanded: true,
           decoration: InputDecoration(labelText: l.mailTemplate, isDense: true),
           items: [
@@ -609,10 +608,16 @@ class _RuleEditorState extends ConsumerState<RuleEditor> {
               value: null,
               child: Text(l.mailTemplateNone),
             ),
-            for (final x in answers)
+            if (a.answerId != null && !answers.any((x) => x.id == a.answerId))
+              DropdownMenuItem<String?>(
+                value: a.answerId,
+                enabled: false,
+                child: Text('${a.answerId} (${l.answerUnavailable})'),
+              ),
+            for (final x in answers.where((x) => x.active || x.id == a.answerId))
               DropdownMenuItem<String?>(
                 value: x.id,
-                child: Text('${x.code} · ${x.name}'),
+                child: Text('${x.code} · ${x.name}${x.active ? '' : ' (${l.inactive})'}'),
               ),
           ],
           onChanged: (v) => setState(
@@ -1172,5 +1177,5 @@ class _DryRunDialogState extends ConsumerState<_DryRunDialog> {
 }
 
 final _mailAnswersProvider = FutureProvider.autoDispose<List<PreparedAnswer>>(
-  (ref) => ref.watch(apiProvider).helpdesk.listAnswers(active: true),
+  (ref) => ref.watch(apiProvider).helpdesk.listAnswers(),
 );

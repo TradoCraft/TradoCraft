@@ -210,7 +210,7 @@ async fn the_team_name_is_filled_in_for_a_ticket_of_that_team(db: PgPool) {
         "/prepared-answers",
         answer(
             "who",
-            json!({ "texts": [{ "language": "en", "body": "Team: {{team.name}}" }] }),
+            json!({ "texts": [{ "language": "en", "subject": "Team", "body": "Team: {{team.name}}" }] }),
         ),
     )
     .await;
@@ -534,20 +534,13 @@ async fn a_rule_with_a_template_is_validated_when_saved(db: PgPool) {
         r["message"].as_str().unwrap().contains("contact.nme"),
         "{r}"
     );
-    // Every language needs a subject.
-    let (_, nosub) = post(
+    // Every filled language now needs a subject when the answer itself is saved.
+    let (status, _) = post(
         &app,
         SUPPORT,
         "/prepared-answers",
         json!({ "code": "nosub", "name": "No subject",
         "texts": [{ "language": "en", "body": "Hi" }] }),
-    )
-    .await;
-    let (status, _) = post(
-        &app,
-        ADMIN,
-        "/helpdesk/automation/rules",
-        mail_rule(Some(nosub["id"].as_str().unwrap())),
     )
     .await;
     assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
@@ -631,4 +624,95 @@ async fn a_rule_can_route_tickets_by_their_language(db: PgPool) {
     )
     .await;
     assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn edited_template_placeholders_are_checked_before_the_mail_guard(db: PgPool) {
+    use tradocraft_helpdesk::{
+        automail,
+        automation::{Rule, RuleAction},
+    };
+    let app = setup(db.clone()).await;
+    let ticket = manual_ticket(&app, &db, SUPPORT, "Validate before claim", json!({})).await;
+    let (_, a) = post(
+        &app,
+        SUPPORT,
+        "/prepared-answers",
+        answer("guard", json!({})),
+    )
+    .await;
+    let id = a["id"].as_str().unwrap();
+    let (_, saved) = post(
+        &app,
+        ADMIN,
+        "/helpdesk/automation/rules",
+        mail_rule(Some(id)),
+    )
+    .await;
+    let action: RuleAction = serde_json::from_value(saved["actions"][0].clone()).unwrap();
+    let rule = Rule {
+        id: saved["id"].as_str().unwrap().parse().unwrap(),
+        name: "Guard".into(),
+        active: true,
+        position: 0,
+        trigger: "created".into(),
+        conditions: Default::default(),
+        actions: vec![action.clone()],
+        stop_on_match: false,
+        updated_at: chrono::Utc::now(),
+    };
+    let company = sqlx::query_scalar("SELECT company_id FROM helpdesk.tickets WHERE id = $1::uuid")
+        .bind(&ticket)
+        .fetch_one(&db)
+        .await
+        .unwrap();
+    let ticket_id = ticket.parse().unwrap();
+    let mut conn = db.acquire().await.unwrap();
+    // Check both fields, including a language other than the ticket's own.
+    for field in ["subject", "body"] {
+        let mut texts = json!([
+            {"language": "en", "subject": "Hello", "body": "Hello"},
+            {"language": "fr", "subject": "Salut", "body": "Bonjour"}
+        ]);
+        texts[1][field] = json!("{{contact.nme}}");
+        let (status, _) = put(
+            &app,
+            SUPPORT,
+            &format!("/prepared-answers/{id}"),
+            answer("guard", json!({"texts": texts})),
+        )
+        .await;
+        assert_eq!(
+            status,
+            StatusCode::OK,
+            "manual answers may contain unknown placeholders"
+        );
+        let err = automail::send(&mut conn, company, ticket_id, &rule, 0, &action)
+            .await
+            .unwrap_err();
+        assert!(matches!(err, tradocraft_core::AppError::Validation(_)));
+        let claims: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM helpdesk.automation_mail_log WHERE rule_id = $1",
+        )
+        .bind(rule.id)
+        .fetch_one(&mut *conn)
+        .await
+        .unwrap();
+        assert_eq!(claims, 0);
+        assert!(outbox(&db).await.is_empty());
+    }
+    put(
+        &app,
+        SUPPORT,
+        &format!("/prepared-answers/{id}"),
+        answer("guard", json!({})),
+    )
+    .await;
+    assert_eq!(
+        automail::send(&mut conn, company, ticket_id, &rule, 0, &action)
+            .await
+            .unwrap(),
+        1
+    );
+    assert_eq!(outbox(&db).await.len(), 1);
 }

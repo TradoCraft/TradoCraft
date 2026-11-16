@@ -1,7 +1,7 @@
 //! Prepared answers ("text modules"): reusable replies with one text per language and
 //! `{{placeholders}}`. Rendered for a ticket in its language; the agent edits before sending.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 
 use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
@@ -245,6 +245,12 @@ impl PreparedAnswerInput {
             if seen.contains(&t.language) {
                 return Err(AppError::Validation(format!(
                     "language {} appears twice",
+                    t.language
+                )));
+            }
+            if t.subject.trim().is_empty() {
+                return Err(AppError::Validation(format!(
+                    "subject is required for language {}",
                     t.language
                 )));
             }
@@ -551,12 +557,15 @@ async fn suggest(
     let all = texts(&mut conn, &ids).await?;
     let subject = values.get("ticket.subject").cloned().unwrap_or_default();
     let q = p.q.clone().unwrap_or_default();
+    let language_ids: HashSet<Uuid> = all
+        .iter()
+        .filter(|(_, t)| t.language == language)
+        .map(|(id, _)| *id)
+        .collect();
     let mut ranked: Vec<(i32, Row)> = rows
         .into_iter()
         .filter_map(|r| {
-            let has_language = all
-                .iter()
-                .any(|(id, t)| *id == r.id && t.language == language);
+            let has_language = language_ids.contains(&r.id);
             let s = score(
                 &Candidate {
                     code: &r.code,
@@ -775,6 +784,30 @@ mod tests {
             subject: String::new(),
             body: l.into(),
         }
+    }
+
+    #[test]
+    fn filled_languages_require_subjects_but_empty_bodies_are_ignored() {
+        let mut input: PreparedAnswerInput = serde_json::from_value(serde_json::json!({
+            "code": "reply", "name": "Reply",
+            "texts": [
+                {"language": "en", "subject": "Hello", "body": "Body"},
+                {"language": "fr", "subject": "", "body": "  "}
+            ]
+        }))
+        .unwrap();
+        assert!(input.validate().is_ok());
+        input.texts[1].body = "Bonjour".into();
+        for subject in ["", "  \n "] {
+            input.texts[1].subject = subject.into();
+            assert!(input.validate().is_err());
+        }
+        input.texts[1].subject = "Salut".into();
+        assert!(input.validate().is_ok());
+        input.texts[1].language = "xx".into();
+        assert!(input.validate().is_err());
+        input.texts[1].language = "en".into();
+        assert!(input.validate().is_err());
     }
 
     #[test]

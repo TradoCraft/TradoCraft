@@ -18137,6 +18137,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Ongoing'**
   String get vatRateOngoing;
+
+  /// No description provided for @answerUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Unavailable'**
+  String get answerUnavailable;
 }
 
 class _AppLocalizationsDelegate

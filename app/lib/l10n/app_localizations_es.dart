@@ -10242,4 +10242,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get vatRateOngoing => 'Vigente';
+
+  @override
+  String get answerUnavailable => 'No disponible';
 }

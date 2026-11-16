@@ -10253,4 +10253,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get vatRateOngoing => 'En cours';
+
+  @override
+  String get answerUnavailable => 'Indisponible';
 }

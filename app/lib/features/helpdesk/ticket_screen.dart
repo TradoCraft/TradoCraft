@@ -1472,6 +1472,9 @@ class _AnswerPickerState extends ConsumerState<_AnswerPicker> {
               child: FutureBuilder<List<SuggestedAnswer>>(
                 future: _answers,
                 builder: (context, snap) {
+                  if (snap.connectionState != ConnectionState.done) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
                   if (snap.hasError) {
                     return Center(
                       child: TextButton(

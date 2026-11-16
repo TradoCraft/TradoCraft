@@ -268,6 +268,20 @@ pub async fn send(
     if to.is_empty() {
         return Ok(0);
     }
+    // Answers can change after the rule was saved. Validate before consuming the loop guard.
+    let answer = if let Some(answer_id) = a.answer_id {
+        let answer = crate::answers::load(&mut *conn, company_id, answer_id).await?;
+        for t in &answer.texts {
+            crate::render::check_placeholders(
+                &format!("template {} subject", t.language),
+                &t.subject,
+            )?;
+            crate::render::check_placeholders(&format!("template {} body", t.language), &t.body)?;
+        }
+        Some(answer)
+    } else {
+        None
+    };
     let period = a.period_hours.unwrap_or(DEFAULT_PERIOD_HOURS);
     if !claim(
         conn,
@@ -281,7 +295,7 @@ pub async fn send(
     {
         return Ok(0);
     }
-    let (subject, body) = if let Some(answer_id) = a.answer_id {
+    let (subject, body) = if let Some(answer) = answer {
         let (language, values) = crate::answers::ticket_values_for(
             conn,
             company_id,
@@ -289,7 +303,6 @@ pub async fn send(
             ticket_id,
         )
         .await?;
-        let answer = crate::answers::load(&mut *conn, company_id, answer_id).await?;
         let (text, _) =
             crate::answers::pick_text(&answer.texts, &language, &values["__company_language"])
                 .ok_or_else(|| AppError::Validation("the template has no text".into()))?;

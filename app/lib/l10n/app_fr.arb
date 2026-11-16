@@ -3192,5 +3192,6 @@
   "vatRateClosePrevious": "Clôturer automatiquement la règle ouverte précédente",
   "vatRateOverlapError": "Les dates chevauchent une règle existante pour ce pays et cette catégorie",
   "vatRateDeleteConfirm": "Supprimer la règle TVA pour {country} ({category}) ?",
-  "vatRateOngoing": "En cours"
+  "vatRateOngoing": "En cours",
+  "answerUnavailable": "Indisponible"
 }

@@ -3192,5 +3192,6 @@
   "vatRateClosePrevious": "Vorige open regel automatisch afsluiten",
   "vatRateOverlapError": "Datums overlappen met een bestaande regel voor dit land en deze categorie",
   "vatRateDeleteConfirm": "BTW-regel voor {country} ({category}) verwijderen?",
-  "vatRateOngoing": "Lopend"
+  "vatRateOngoing": "Lopend",
+  "answerUnavailable": "Niet beschikbaar"
 }

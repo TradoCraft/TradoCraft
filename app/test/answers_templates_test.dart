@@ -89,11 +89,12 @@ void main() {
         'active': true,
         'trigger': 'ticket_created',
         'stop_on_match': false,
+        'position': 0,
         'conditions': {},
         'actions': [
           {'kind': 'send_email', 'recipient': 'customer', 'answer_id': 'a-ops'},
         ],
-        'created_at': '2026-11-16T09:00:00Z',
+        'updated_at': '2026-11-16T09:00:00Z',
       },
     });
     await _pump(
@@ -133,6 +134,50 @@ void main() {
     expect(actions.first['subject'], isNull);
     expect(actions.first['body'], isNull);
   });
+
+  testWidgets('a failed team lookup keeps the scoped team selected', (tester) async {
+    final http = FakeHttp({
+      'GET /api/v1/prepared-answers/placeholders': (_) => <String>[],
+      'PUT /api/v1/prepared-answers/a-fw': (_) => _answer('fw', teamId: 'team1'),
+    });
+    await _pump(tester, http, Scaffold(body: AnswerEditor(
+      answer: PreparedAnswer.fromJson(_answer('fw', teamId: 'team1')),
+    )));
+    final field = tester.widget<DropdownButtonFormField<String?>>(
+      find.byKey(const ValueKey('answer-team')),
+    );
+    expect(field.initialValue, 'team1');
+    expect(find.text('team1 (Unavailable)'), findsOneWidget);
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    expect((http.bodies['PUT /api/v1/prepared-answers/a-fw'] as Map)['team_id'], 'team1');
+  });
+
+  for (final available in [false, true]) {
+    testWidgets('referenced answer stays selected (available: $available)', (tester) async {
+      final http = FakeHttp({
+        'GET /api/v1/helpdesk/teams': (_) => <Object?>[],
+        'GET /api/v1/users': (_) => <Object?>[],
+        if (available) 'GET /api/v1/prepared-answers': (_) => [
+          {..._answer('ops'), 'active': false},
+        ],
+      });
+      final rule = Rule.fromJson({
+        'id': 'r1', 'name': 'Notify', 'active': true, 'trigger': 'created',
+        'stop_on_match': false,
+        'position': 0, 'conditions': <String, dynamic>{},
+        'actions': [{'kind': 'send_email', 'recipient': 'customer', 'answer_id': 'a-ops'}],
+        'updated_at': '2026-11-16T09:00:00Z',
+      });
+      await _pump(tester, http, Scaffold(body: RuleEditor(rule: rule)));
+      final field = tester.widget<DropdownButtonFormField<String?>>(
+        find.byKey(const ValueKey('mail-template-0')),
+      );
+      expect(field.initialValue, 'a-ops');
+      expect(find.text(available ? 'ops · Answer ops (inactive)' : 'a-ops (Unavailable)'), findsOneWidget);
+      expect(find.byKey(const ValueKey('mail-subject-0')), findsNothing);
+    });
+  }
 
   testWidgets('editing an existing answer with teamId renders while teams load and preserves teamId on save', (tester) async {
     final http = FakeHttp({

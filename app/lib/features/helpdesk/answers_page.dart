@@ -255,13 +255,17 @@ class _AnswerEditorState extends ConsumerState<AnswerEditor>
                   width: 200,
                   child: DropdownButtonFormField<String?>(
                     key: const ValueKey('answer-team'),
-                    initialValue: teams.any((t) => t.id == _teamId)
-                        ? _teamId
-                        : null,
+                    initialValue: _teamId,
                     isExpanded: true,
                     decoration: InputDecoration(labelText: l.answerTeam, isDense: true),
                     items: [
                       DropdownMenuItem<String?>(value: null, child: Text(l.answerAllTeams)),
+                      if (_teamId != null && !teams.any((t) => t.id == _teamId))
+                        DropdownMenuItem<String?>(
+                          value: _teamId,
+                          enabled: false,
+                          child: Text('$_teamId (${l.answerUnavailable})'),
+                        ),
                       for (final t in teams)
                         DropdownMenuItem<String?>(value: t.id, child: Text(t.name)),
                     ],

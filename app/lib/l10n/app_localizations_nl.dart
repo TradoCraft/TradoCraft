@@ -10236,4 +10236,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get vatRateOngoing => 'Lopend';
+
+  @override
+  String get answerUnavailable => 'Niet beschikbaar';
 }

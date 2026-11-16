@@ -3192,5 +3192,6 @@
   "vatRateClosePrevious": "Vorherige offene Regel automatisch schließen",
   "vatRateOverlapError": "Zeitraum überschneidet sich mit einer bestehenden Regel",
   "vatRateDeleteConfirm": "MwSt.-Regel für {country} ({category}) löschen?",
-  "vatRateOngoing": "Unbefristet"
+  "vatRateOngoing": "Unbefristet",
+  "answerUnavailable": "Nicht verfügbar"
 }

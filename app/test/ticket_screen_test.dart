@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -37,6 +38,7 @@ class _Fake implements HttpClientAdapter {
   _Fake({this.internal = false});
   final bool internal;
   final requests = <String>[];
+  Completer<void>? searchGate;
 
   @override
   Future<ResponseBody> fetch(
@@ -46,6 +48,9 @@ class _Fake implements HttpClientAdapter {
   ) async {
     final key = '${o.method} ${o.path}';
     requests.add(key);
+    if (o.path.endsWith('/prepared-answers/suggest') && searchGate != null) {
+      await searchGate!.future;
+    }
     final Object? json = switch (key) {
       'GET /api/v1/tickets/t1' => {
         'ticket': _ticket(internal: internal),
@@ -166,6 +171,22 @@ Future<_Fake> _pump(
 }
 
 void main() {
+  testWidgets('previous answers cannot be selected while a new search loads', (tester) async {
+    final fake = await _pump(tester, locale: 'en');
+    await tester.tap(find.text('Insert prepared answer'));
+    await tester.pumpAndSettle();
+    expect(find.text('Delivery time'), findsOneWidget);
+    final gate = Completer<void>();
+    fake.searchGate = gate;
+    await tester.enterText(find.widgetWithText(TextField, 'Search'), 'new');
+    await tester.pump();
+    expect(find.byKey(const ValueKey('suggest-delivery-time')), findsNothing);
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    gate.complete();
+    await tester.pumpAndSettle();
+    expect(find.text('Delivery time'), findsOneWidget);
+  });
+
   testWidgets(
     'prepared answer is filled in for the ticket and stays editable',
     (tester) async {

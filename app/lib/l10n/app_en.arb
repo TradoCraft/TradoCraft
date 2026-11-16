@@ -4654,5 +4654,6 @@
       "category": {"type": "String"}
     }
   },
-  "vatRateOngoing": "Ongoing"
+  "vatRateOngoing": "Ongoing",
+  "answerUnavailable": "Unavailable"
 }
