@@ -9962,6 +9962,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get plPerChapter => 'One profile per chapter';
 
   @override
+  String get plPerLevelTitle => 'One profile per level';
+
+  @override
+  String get plPerLevelHint =>
+      'Choose the level of the groups that each get a profile (level 1 = top level). Groups that already have a profile of their own are skipped.';
+
+  @override
+  String plLevelN(int n) {
+    return 'Level $n';
+  }
+
+  @override
   String get plWholeList => 'Whole list';
 
   @override
@@ -9977,7 +9989,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get plChaptersHint =>
-      'The top-level groups in this file. None ticked means the whole list.';
+      'Tick the groups in this file, at any level. Everything below a ticked group is included automatically. None ticked means the whole list.';
 
   @override
   String get plFileName => 'File name template (optional)';

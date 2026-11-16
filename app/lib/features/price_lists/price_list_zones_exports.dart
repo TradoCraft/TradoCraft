@@ -239,7 +239,7 @@ class ExportsPanel extends ConsumerWidget {
 
   String get _lang => list.publishedLanguages.first;
 
-  List<PriceListGroup> get _chapters => childrenOf(groups, null);
+  List<PriceListGroup> get _chapters => groups;
 
   Future<void> _edit(
     BuildContext context,
@@ -303,9 +303,17 @@ class ExportsPanel extends ConsumerWidget {
   }
 
   Future<void> _perChapter(BuildContext context, WidgetRef ref) async {
+    final level = await showDialog<int>(
+      context: context,
+      builder: (_) => const PerLevelDialog(),
+    );
+    if (level == null || !context.mounted) return;
     final ok = await runAction(
       context,
-      () => ref.read(apiProvider).products.createPerChapterExports(id: list.id),
+      () => ref
+          .read(apiProvider)
+          .products
+          .createPerChapterExports(id: list.id, level: level),
       success: context.l10n.saved,
     );
     if (ok) ref.invalidate(priceListExportsProvider(list.id));
@@ -430,7 +438,7 @@ class ExportDialog extends StatefulWidget {
   });
   final PriceListExport? profile;
 
-  /// The top-level groups of the list, in print order.
+  /// All groups of the list; shown as an indented tree.
   final List<PriceListGroup> chapters;
   final String lang;
 
@@ -472,8 +480,8 @@ class _ExportDialogState extends State<ExportDialog> {
         name: _name.text.trim(),
         // Print order, whatever the order of ticking was.
         groupIds: [
-          for (final g in widget.chapters)
-            if (_groups.contains(g.id)) g.id,
+          for (final n in flattenGroups(widget.chapters))
+            if (_groups.contains(n.group.id)) n.group.id,
         ],
         fileName: file.isEmpty ? null : file,
         sortOrder: widget.profile?.sortOrder,
@@ -510,16 +518,24 @@ class _ExportDialogState extends State<ExportDialog> {
                 l.plChaptersHint,
                 style: Theme.of(context).textTheme.bodySmall,
               ),
-              for (final g in widget.chapters)
+              // Ticking a group does not tick the groups below it: they are included by the server.
+              for (final n in flattenGroups(widget.chapters))
                 CheckboxListTile(
-                  key: ValueKey('pe-group-${g.id}'),
+                  key: ValueKey('pe-group-${n.group.id}'),
                   dense: true,
                   controlAffinity: ListTileControlAffinity.leading,
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(groupTitle(g, widget.lang)),
-                  value: _groups.contains(g.id),
+                  contentPadding: EdgeInsets.only(left: n.depth * 20.0),
+                  title: Text(
+                    groupTitle(n.group, widget.lang),
+                    style: n.group.showTitle
+                        ? null
+                        : const TextStyle(fontStyle: FontStyle.italic),
+                  ),
+                  value: _groups.contains(n.group.id),
                   onChanged: (on) => setState(
-                    () => on == true ? _groups.add(g.id) : _groups.remove(g.id),
+                    () => on == true
+                        ? _groups.add(n.group.id)
+                        : _groups.remove(n.group.id),
                   ),
                 ),
               const SizedBox(height: 8),
@@ -553,6 +569,57 @@ class _ExportDialogState extends State<ExportDialog> {
           key: const ValueKey('pe-save'),
           onPressed: _save,
           child: Text(l.save),
+        ),
+      ],
+    );
+  }
+}
+
+/// Asks the level (1 = top level) of the groups that get a profile each; pops the level.
+class PerLevelDialog extends StatefulWidget {
+  const PerLevelDialog({super.key});
+
+  @override
+  State<PerLevelDialog> createState() => _PerLevelDialogState();
+}
+
+class _PerLevelDialogState extends State<PerLevelDialog> {
+  int _level = 1;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    return AlertDialog(
+      title: Text(l.plPerLevelTitle),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(l.plPerLevelHint),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            children: [
+              for (var n = 1; n <= 4; n++)
+                ChoiceChip(
+                  key: ValueKey('ple-level-$n'),
+                  label: Text(l.plLevelN(n)),
+                  selected: _level == n,
+                  onSelected: (_) => setState(() => _level = n),
+                ),
+            ],
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(l.cancel),
+        ),
+        FilledButton(
+          key: const ValueKey('ple-level-ok'),
+          onPressed: () => Navigator.pop(context, _level),
+          child: Text(l.plPerChapter),
         ),
       ],
     );

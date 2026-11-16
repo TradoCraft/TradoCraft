@@ -18572,7 +18572,7 @@
         "tags": [
           "products"
         ],
-        "summary": "Creates one profile per top-level group that has no single-chapter profile yet (code\n`ch-<last 12 hex of the group id>`, name = the group title in the company's default language).\nIdempotent: a second call creates nothing. Returns all profiles of the list.",
+        "summary": "Creates one profile per group at depth `level` (default 1, the top level) that has no profile\nconsisting of exactly that group yet (code `ch-<last 12 hex of the group id>`, name = the group\ntitle in the company's default language). Idempotent: a second call creates nothing. Returns\nall profiles of the list.",
         "operationId": "create_per_chapter_exports",
         "parameters": [
           {
@@ -18582,6 +18582,19 @@
             "schema": {
               "type": "string",
               "format": "uuid"
+            }
+          },
+          {
+            "name": "level",
+            "in": "query",
+            "description": "1-based depth of the groups to create a profile for (1 = top level, the default; at most 4).",
+            "required": false,
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
             }
           }
         ],
@@ -18600,6 +18613,16 @@
             }
           },
           "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "",
             "content": {
               "application/json": {
@@ -43162,7 +43185,7 @@
       },
       "PriceListExport": {
         "type": "object",
-        "description": "Which chapters go into one file. One group is an individual chapter, several a combination.",
+        "description": "Which groups go into one file. One group is an individual chapter (or section), several a\ncombination; each is printed with everything below it.",
         "required": [
           "id",
           "code",
@@ -43187,7 +43210,7 @@
               "type": "string",
               "format": "uuid"
             },
-            "description": "Top-level groups of the list; empty means the whole list."
+            "description": "Groups of the list, of any depth; empty means the whole list."
           },
           "id": {
             "type": "string",
@@ -43225,7 +43248,7 @@
               "type": "string",
               "format": "uuid"
             },
-            "description": "Top-level groups of this list; empty means the whole list."
+            "description": "Groups of this list, of any depth; empty means the whole list."
           },
           "name": {
             "type": "string"
@@ -43257,7 +43280,7 @@
           },
           "page_break": {
             "type": "boolean",
-            "description": "Start a new page before this group (top-level groups only)."
+            "description": "Start a new page before this group (any level; not before the first printed content)."
           },
           "parent_id": {
             "type": [

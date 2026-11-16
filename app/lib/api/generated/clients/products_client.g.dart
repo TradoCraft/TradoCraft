@@ -576,9 +576,11 @@ class _ProductsClient implements ProductsClient {
   @override
   Future<List<PriceListExport>> createPerChapterExports({
     required String id,
+    int? level,
   }) async {
     final _extra = <String, dynamic>{};
-    final queryParameters = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{r'level': level};
+    queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
     final _options = _setStreamType<List<PriceListExport>>(

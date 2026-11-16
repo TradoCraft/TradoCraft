@@ -10021,6 +10021,18 @@ class AppLocalizationsFr extends AppLocalizations {
   String get plPerChapter => 'Un profil par chapitre';
 
   @override
+  String get plPerLevelTitle => 'Un profil par niveau';
+
+  @override
+  String get plPerLevelHint =>
+      'Choisissez le niveau des groupes qui reçoivent chacun un profil (niveau 1 = premier niveau). Les groupes qui ont déjà leur propre profil sont ignorés.';
+
+  @override
+  String plLevelN(int n) {
+    return 'Niveau $n';
+  }
+
+  @override
   String get plWholeList => 'Liste complète';
 
   @override
@@ -10037,7 +10049,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get plChaptersHint =>
-      'Les groupes de premier niveau de ce fichier. Aucune case cochée signifie la liste complète.';
+      'Cochez les groupes de ce fichier, à n\'importe quel niveau. Tout ce qui se trouve sous un groupe coché est inclus automatiquement. Aucune case cochée signifie la liste complète.';
 
   @override
   String get plFileName => 'Modèle de nom de fichier (facultatif)';

@@ -6,7 +6,8 @@ import 'package:json_annotation/json_annotation.dart';
 
 part 'price_list_export.g.dart';
 
-/// Which chapters go into one file. One group is an individual chapter, several a combination.
+/// Which groups go into one file. One group is an individual chapter (or section), several a.
+/// combination; each is printed with everything below it.
 @JsonSerializable()
 class PriceListExport {
   const PriceListExport({
@@ -27,7 +28,7 @@ class PriceListExport {
   @JsonKey(includeIfNull: false,name: 'file_name')
   final String? fileName;
 
-  /// Top-level groups of the list; empty means the whole list.
+  /// Groups of the list, of any depth; empty means the whole list.
   @JsonKey(name: 'group_ids')
   final List<String> groupIds;
   final String id;

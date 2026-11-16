@@ -425,7 +425,8 @@ void main() {
       await tester.pumpAndSettle();
       final body = http.bodies['PUT /api/v1/price-lists/pl1/groups/g1']! as Map;
       expect(body['parent_id'], 'g2');
-      expect(body['page_break'], false);
+      // The page break of g1 is kept when it moves below another group.
+      expect(body['page_break'], true);
     });
 
     testWidgets('refuses to nest beyond four levels', (tester) async {
@@ -629,7 +630,18 @@ void main() {
       await tester.ensureVisible(find.byKey(const ValueKey('ple-exp-per-chapter')));
       await tester.tap(find.byKey(const ValueKey('ple-exp-per-chapter')));
       await tester.pumpAndSettle();
-      expect(http.requests, contains('POST /api/v1/price-lists/pl1/exports/per-chapter'));
+      await tester.tap(find.byKey(const ValueKey('ple-level-ok')));
+      await tester.pumpAndSettle();
+      expect(
+        http.requests,
+        contains('POST /api/v1/price-lists/pl1/exports/per-chapter'),
+      );
+      expect(
+        http.queries
+            .lastWhere((q) => q.containsKey('level'))['level']
+            .toString(),
+        '1',
+      );
       expect(find.text('Valves  (ch-2)'), findsOneWidget);
 
       await tester.tap(find.byKey(const ValueKey('ple-exp-edit-ch-2')));
@@ -648,6 +660,140 @@ void main() {
       await tester.pumpAndSettle();
       expect(http.requests, contains('DELETE /api/v1/price-lists/pl1/exports/e1'));
       expect(find.text('Pumps  (ch-1)'), findsNothing);
+    });
+
+    testWidgets('export profiles: one per level asks the level and sends it', (
+      tester,
+    ) async {
+      http.routes['POST /api/v1/price-lists/pl1/exports/per-chapter'] = (_) =>
+          exports;
+      await _pump(tester, http, start: '/price-lists/pl1');
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('ple-exp-per-chapter')),
+      );
+      await tester.tap(find.byKey(const ValueKey('ple-exp-per-chapter')));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('level 1 = top level'), findsOneWidget);
+      for (final n in [1, 2, 3, 4]) {
+        expect(find.byKey(ValueKey('ple-level-$n')), findsOneWidget);
+      }
+      expect(find.byKey(const ValueKey('ple-level-5')), findsNothing);
+      await tester.tap(find.byKey(const ValueKey('ple-level-3')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('ple-level-ok')));
+      await tester.pumpAndSettle();
+      expect(
+        http.queries
+            .lastWhere((q) => q.containsKey('level'))['level']
+            .toString(),
+        '3',
+      );
+
+      // Cancelling sends nothing.
+      http.requests.clear();
+      await tester.tap(find.byKey(const ValueKey('ple-exp-per-chapter')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      expect(
+        http.requests,
+        isNot(contains('POST /api/v1/price-lists/pl1/exports/per-chapter')),
+      );
+    });
+
+    testWidgets('export profile dialog lists all groups as an indented tree', (
+      tester,
+    ) async {
+      groups = [
+        _group('g1', 'Section', sort: 10, showTitle: false),
+        _group('g2', 'Chapter', parent: 'g1', sort: 10),
+        _group('g3', 'Subchapter', parent: 'g2', sort: 10),
+        _group('g4', 'Other chapter', parent: 'g1', sort: 20),
+      ];
+      http.routes['POST /api/v1/price-lists/pl1/exports'] = (b) {
+        final m = b! as Map;
+        exports.add(
+          _export(
+            'e1',
+            m['code']! as String,
+            m['name']! as String,
+            groups: List<String>.from(m['group_ids'] as List),
+          ),
+        );
+        return exports.last;
+      };
+      await _pump(tester, http, start: '/price-lists/pl1');
+      await tester.ensureVisible(find.byKey(const ValueKey('ple-exp-add')));
+      await tester.tap(find.byKey(const ValueKey('ple-exp-add')));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('included automatically'), findsOneWidget);
+      for (final id in ['g1', 'g2', 'g3', 'g4']) {
+        expect(find.byKey(ValueKey('pe-group-$id')), findsOneWidget);
+      }
+      double x(String text) => tester
+          .getTopLeft(
+            find.descendant(
+              of: find.byType(AlertDialog),
+              matching: find.text(text),
+            ),
+          )
+          .dx;
+      expect(x('Chapter'), greaterThan(x('Section')));
+      expect(x('Subchapter'), greaterThan(x('Chapter')));
+      expect(x('Other chapter'), x('Chapter'));
+      // A hidden-title group is shown in italics like in the groups panel.
+      final section = tester.widget<Text>(
+        find.descendant(
+          of: find.byKey(const ValueKey('pe-group-g1')),
+          matching: find.text('Section'),
+        ),
+      );
+      expect(section.style?.fontStyle, FontStyle.italic);
+
+      await tester.enterText(
+        find.byKey(const ValueKey('pe-name')),
+        'Chapter file',
+      );
+      await tester.enterText(find.byKey(const ValueKey('pe-code')), 'CH');
+      await tester.tap(find.byKey(const ValueKey('pe-group-g2')));
+      await tester.pumpAndSettle();
+      // Ticking a parent does not tick its children.
+      expect(
+        tester
+            .widget<CheckboxListTile>(find.byKey(const ValueKey('pe-group-g3')))
+            .value,
+        isFalse,
+      );
+      await tester.tap(find.byKey(const ValueKey('pe-group-g4')));
+      await tester.tap(find.byKey(const ValueKey('pe-save')));
+      await tester.pumpAndSettle();
+      expect(
+        (http.bodies['POST /api/v1/price-lists/pl1/exports']!
+            as Map)['group_ids'],
+        ['g2', 'g4'],
+      );
+      // The list shows the titles of the selected groups.
+      expect(find.textContaining('Chapter, Other chapter'), findsOneWidget);
+    });
+
+    testWidgets('the page break switch is offered for a subgroup and sent', (
+      tester,
+    ) async {
+      groups = [
+        _group('g1', 'Section', sort: 10),
+        _group('g2', 'Chapter', parent: 'g1', sort: 10),
+      ];
+      http.routes['PUT /api/v1/price-lists/pl1/groups/g2'] = (b) => groups[1];
+      await _pump(tester, http, start: '/price-lists/pl1');
+      await tester.tap(find.byKey(const ValueKey('plg-edit-g2')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('plg-page-break')), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('plg-page-break')));
+      await tester.tap(find.byKey(const ValueKey('plg-ok')));
+      await tester.pumpAndSettle();
+      final body = http.bodies['PUT /api/v1/price-lists/pl1/groups/g2']! as Map;
+      expect(body['parent_id'], 'g1');
+      expect(body['page_break'], true);
     });
 
     testWidgets('deleting a group used by an export profile shows the server message', (

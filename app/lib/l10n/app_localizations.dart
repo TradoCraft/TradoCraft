@@ -17760,6 +17760,24 @@ abstract class AppLocalizations {
   /// **'One profile per chapter'**
   String get plPerChapter;
 
+  /// No description provided for @plPerLevelTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'One profile per level'**
+  String get plPerLevelTitle;
+
+  /// No description provided for @plPerLevelHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the level of the groups that each get a profile (level 1 = top level). Groups that already have a profile of their own are skipped.'**
+  String get plPerLevelHint;
+
+  /// No description provided for @plLevelN.
+  ///
+  /// In en, this message translates to:
+  /// **'Level {n}'**
+  String plLevelN(int n);
+
   /// No description provided for @plWholeList.
   ///
   /// In en, this message translates to:
@@ -17787,7 +17805,7 @@ abstract class AppLocalizations {
   /// No description provided for @plChaptersHint.
   ///
   /// In en, this message translates to:
-  /// **'The top-level groups in this file. None ticked means the whole list.'**
+  /// **'Tick the groups in this file, at any level. Everything below a ticked group is included automatically. None ticked means the whole list.'**
   String get plChaptersHint;
 
   /// No description provided for @plFileName.

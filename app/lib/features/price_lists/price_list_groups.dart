@@ -112,8 +112,7 @@ PriceListGroupInput groupInput(
     parentId: parent,
     sortOrder: sortOrder ?? g.sortOrder,
     title: title ?? g.title,
-    // Page breaks are honoured on chapters only.
-    pageBreak: parent == null ? (pageBreak ?? g.pageBreak) : false,
+    pageBreak: pageBreak ?? g.pageBreak,
     showTitle: showTitle ?? g.showTitle,
     gapMm: gapMm ?? g.gapMm,
   );
@@ -178,7 +177,7 @@ class PriceListGroupsPanel extends ConsumerWidget {
           parentId: parent?.id,
           sortOrder: next,
           title: edited.title,
-          pageBreak: parent == null && edited.pageBreak,
+          pageBreak: edited.pageBreak,
           showTitle: edited.showTitle,
           gapMm: edited.gapMm,
         ),
@@ -485,7 +484,7 @@ class GroupDialog extends StatefulWidget {
   final List<String> languages;
   final PriceListGroup? group;
 
-  /// The parent of a new group (null: a chapter). A page break applies to chapters only.
+  /// The parent of a new group (null: a top-level group).
   final PriceListGroup? parent;
 
   @override
@@ -501,9 +500,6 @@ class _GroupDialogState extends State<GroupDialog> {
   late bool _pageBreak = widget.group?.pageBreak ?? false;
   late bool _showTitle = widget.group?.showTitle ?? true;
   String? _error;
-
-  bool get _chapter =>
-      widget.group == null ? widget.parent == null : widget.group!.parentId == null;
 
   @override
   void dispose() {
@@ -532,7 +528,7 @@ class _GroupDialogState extends State<GroupDialog> {
     }
     Navigator.pop<GroupEdit>(context, (
       title: title,
-      pageBreak: _chapter && _pageBreak,
+      pageBreak: _pageBreak,
       showTitle: _showTitle,
       // Kept as it was while the title is printed (the server ignores it then).
       gapMm: _showTitle || gap == null ? (widget.group?.gapMm ?? '0') : gap.toStringAsFixed(2),
@@ -559,14 +555,13 @@ class _GroupDialogState extends State<GroupDialog> {
                     labelText: '${l.plGroupTitle} (${languageName(e.key)})',
                   ),
                 ),
-              if (_chapter)
-                SwitchListTile(
-                  key: const ValueKey('plg-page-break'),
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(l.plPageBreak),
-                  value: _pageBreak,
-                  onChanged: (v) => setState(() => _pageBreak = v),
-                ),
+              SwitchListTile(
+                key: const ValueKey('plg-page-break'),
+                contentPadding: EdgeInsets.zero,
+                title: Text(l.plPageBreak),
+                value: _pageBreak,
+                onChanged: (v) => setState(() => _pageBreak = v),
+              ),
               SwitchListTile(
                 key: const ValueKey('plg-show-title'),
                 contentPadding: EdgeInsets.zero,

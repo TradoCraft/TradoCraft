@@ -4,7 +4,7 @@
 //! more price zones (each with its own languages) on one date. It stores no prices; they are
 //! looked up in the zone prices (valid on the list's `valid_from`, through
 //! [`resolve_zone_price`]) every time the list is rendered, so a list can never disagree with the
-//! zone it is printed for. Export profiles select chapters (top-level groups) for a file. [`assemble`] is pure and decides what is
+//! zone it is printed for. Export profiles select groups of any depth (with everything below them) for a file. [`assemble`] is pure and decides what is
 //! printed in which order; the handlers load the data, call it and hand the result to
 //! `tradocraft-documents` for PDF or Excel.
 
@@ -94,7 +94,11 @@ pub struct AssembledRow {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct AssembledSection {
+    /// Absolute depth in the tree (0 for a top-level group).
     pub level: usize,
+    /// Number of ancestors whose title is printed; styling follows this, not `level`, so hidden
+    /// section or chapter nodes do not shrink the headings below them.
+    pub print_level: usize,
     /// Empty when the group is untitled (`show_title` false).
     pub title: String,
     pub show_title: bool,
@@ -196,6 +200,7 @@ pub fn assemble(
     fn walk(
         parent: Option<Uuid>,
         level: usize,
+        print_level: usize,
         children: &HashMap<Option<Uuid>, Vec<&AssembleGroup>>,
         by_group: &HashMap<Uuid, Vec<&AssembleItem>>,
         chain: &[String],
@@ -236,6 +241,7 @@ pub fn assemble(
             let at = out.len();
             out.push(AssembledSection {
                 level,
+                print_level,
                 title: if g.show_title {
                     pick(&g.title, chain).unwrap_or_default()
                 } else {
@@ -246,59 +252,105 @@ pub fn assemble(
                 page_break: g.page_break,
                 rows,
             });
-            walk(Some(g.id), level + 1, children, by_group, chain, out);
+            walk(
+                Some(g.id),
+                level + 1,
+                print_level + usize::from(g.show_title),
+                children,
+                by_group,
+                chain,
+                out,
+            );
             if out.len() == at + 1 && out[at].rows.is_empty() {
                 out.pop();
             }
         }
     }
     let mut out = Vec::new();
-    walk(None, 0, &children, &by_group, chain, &mut out);
+    walk(None, 0, 0, &children, &by_group, chain, &mut out);
     out
 }
 
-/// The groups an export profile prints: the chosen top-level groups with all their descendants.
-/// An empty `chosen` is the whole list. Order is not decided here; [`assemble`] orders by
-/// `sort_order`, so a profile never reorders the chapters of the list.
+/// The groups an export profile prints: every chosen group (of any depth) with all its
+/// descendants. A group is kept when it or any ancestor is chosen, so overlapping selections are
+/// printed once. An empty `chosen` is the whole list. The result keeps the order of `groups` and
+/// [`assemble`] orders by `sort_order`, so a profile never reorders the list: print order is tree
+/// order, not selection order.
 pub fn select_groups(groups: &[AssembleGroup], chosen: &[Uuid]) -> Vec<AssembleGroup> {
     if chosen.is_empty() {
         return groups.to_vec();
     }
-    let mut keep: HashSet<Uuid> = groups
+    let parents: HashMap<Uuid, Option<Uuid>> = groups.iter().map(|g| (g.id, g.parent_id)).collect();
+    let chosen: HashSet<Uuid> = chosen.iter().copied().collect();
+    let kept: HashSet<Uuid> = groups
         .iter()
-        .filter(|g| g.parent_id.is_none() && chosen.contains(&g.id))
+        .filter(|g| {
+            let mut cursor = Some(g.id);
+            // The tree is validated acyclic; the step cap only guards against corrupt data.
+            for _ in 0..=groups.len() {
+                let Some(id) = cursor else { return false };
+                if chosen.contains(&id) {
+                    return true;
+                }
+                cursor = parents.get(&id).copied().flatten();
+            }
+            false
+        })
         .map(|g| g.id)
         .collect();
-    // Parents may come in any order, so grow the set until nothing is added.
-    loop {
-        let before = keep.len();
-        for g in groups {
-            if g.parent_id.is_some_and(|p| keep.contains(&p)) {
-                keep.insert(g.id);
-            }
-        }
-        if keep.len() == before {
-            break;
-        }
-    }
     groups
         .iter()
-        .filter(|g| keep.contains(&g.id))
-        .cloned()
+        .filter(|g| kept.contains(&g.id))
+        .map(|g| {
+            let mut g = g.clone();
+            // The parent of a selected group is not printed: it becomes a root of the selection.
+            if g.parent_id.is_some_and(|p| !kept.contains(&p)) {
+                g.parent_id = None;
+            }
+            g
+        })
         .collect()
 }
 
-/// Checks the groups of an export profile: no duplicates, all of them top-level groups of the
-/// list. `top_level` are the ids of the list's top-level groups.
-pub fn check_export_groups(top_level: &HashSet<Uuid>, ids: &[Uuid]) -> Result<(), &'static str> {
+/// Checks the groups of an export profile: no duplicates, all of them groups of the list.
+/// `all` are the ids of the list's groups.
+pub fn check_export_groups(all: &HashSet<Uuid>, ids: &[Uuid]) -> Result<(), &'static str> {
     let unique: HashSet<&Uuid> = ids.iter().collect();
     if unique.len() != ids.len() {
         return Err("group_ids contains a group twice");
     }
-    if ids.iter().any(|id| !top_level.contains(id)) {
-        return Err("group_ids must be top-level groups (chapters) of this price list");
+    if ids.iter().any(|id| !all.contains(id)) {
+        return Err("group_ids must be groups of this price list");
     }
     Ok(())
+}
+
+/// `(id, parent_id, sort_order, titles)` of a group.
+pub type GroupTitles = (Uuid, Option<Uuid>, i32, Texts);
+
+/// The groups at 1-based `depth` (1 = top level) as `(id, title)`, in tree order (siblings by
+/// `sort_order` then id, parents before their children). `groups` are
+/// `(id, parent_id, sort_order, title)`.
+pub fn groups_at_depth(groups: &[GroupTitles], depth: usize) -> Vec<(Uuid, Texts)> {
+    let mut children: HashMap<Option<Uuid>, Vec<&GroupTitles>> = HashMap::new();
+    for g in groups {
+        children.entry(g.1).or_default().push(g);
+    }
+    for list in children.values_mut() {
+        list.sort_by_key(|g| (g.2, g.0));
+    }
+    let mut level: Vec<Option<Uuid>> = vec![None];
+    for _ in 1..depth {
+        level = level
+            .iter()
+            .flat_map(|p| children.get(p).into_iter().flatten().map(|g| Some(g.0)))
+            .collect();
+    }
+    level
+        .iter()
+        .flat_map(|p| children.get(p).into_iter().flatten())
+        .map(|g| (g.0, g.3.clone()))
+        .collect()
 }
 
 /// Validates the position of a group in the tree. `groups` are `(id, parent_id)` of the list as
@@ -499,7 +551,7 @@ pub struct PriceListGroup {
     /// Title per language code.
     #[schema(value_type = BTreeMap<String, String>)]
     pub title: SqlJson<Texts>,
-    /// Start a new page before this group (top-level groups only).
+    /// Start a new page before this group (any level; not before the first printed content).
     pub page_break: bool,
     /// False: the title is kept for the editor but never printed.
     pub show_title: bool,
@@ -1114,10 +1166,6 @@ async fn update_group(
     let mut tx = state.db.begin().await?;
     lock_list(&mut tx, user.company_id, id).await?;
     let title = validate_group(&mut tx, id, Some(group_id), &input).await?;
-    if input.parent_id.is_some() {
-        // Profiles only select chapters, so a group a profile uses must stay top-level.
-        ensure_not_in_export(&mut tx, id, group_id, "moved below another group").await?;
-    }
     let updated = sqlx::query(
         "UPDATE pricing.price_list_groups SET parent_id = $3, sort_order = $4, page_break = $5, show_title = $6, gap_mm = $7
          WHERE id = $1 AND price_list_id = $2",
@@ -1417,14 +1465,15 @@ async fn delete_item(
 // Export profiles
 // ---------------------------------------------------------------------------------------------
 
-/// Which chapters go into one file. One group is an individual chapter, several a combination.
+/// Which groups go into one file. One group is an individual chapter (or section), several a
+/// combination; each is printed with everything below it.
 #[derive(Debug, Clone, Serialize, FromRow, ToSchema)]
 pub struct PriceListExport {
     pub id: Uuid,
     pub code: String,
     pub name: String,
     pub sort_order: i32,
-    /// Top-level groups of the list; empty means the whole list.
+    /// Groups of the list, of any depth; empty means the whole list.
     pub group_ids: Vec<Uuid>,
     /// Optional file name template (placeholders `{list}`, `{zone}`, `{lang}`, `{name}`,
     /// `{code}`); the name is used when absent.
@@ -1438,8 +1487,7 @@ const SELECT_EXPORT: &str = "SELECT e.id, e.code, e.name, e.sort_order,
         e.file_name
      FROM pricing.price_list_exports e";
 
-/// Replaces the chapters of a profile. The foreign keys prove the groups belong to the same list;
-/// the top-level rule is the trigger on the link table (and `check_export_groups` before it).
+/// Replaces the groups of a profile. The foreign keys prove the groups belong to the same list.
 async fn replace_export_groups(
     db: &mut PgConnection,
     company_id: Uuid,
@@ -1484,7 +1532,7 @@ pub struct PriceListExportInput {
     pub name: String,
     #[serde(default)]
     pub sort_order: i32,
-    /// Top-level groups of this list; empty means the whole list.
+    /// Groups of this list, of any depth; empty means the whole list.
     #[serde(default)]
     pub group_ids: Vec<Uuid>,
     #[serde(default)]
@@ -1523,18 +1571,22 @@ impl PriceListExportInput {
     }
 }
 
-async fn top_level_groups(db: &mut PgConnection, list_id: Uuid) -> AppResult<Vec<(Uuid, Texts)>> {
-    let rows: Vec<(Uuid, SqlJson<Texts>)> = sqlx::query_as(
-        "SELECT g.id,
+/// Every group of the list as `(id, parent_id, sort_order, titles)`.
+async fn list_group_titles(db: &mut PgConnection, list_id: Uuid) -> AppResult<Vec<GroupTitles>> {
+    let rows: Vec<(Uuid, Option<Uuid>, i32, SqlJson<Texts>)> = sqlx::query_as(
+        "SELECT g.id, g.parent_id, g.sort_order,
                 COALESCE((SELECT jsonb_object_agg(t.language::text, t.title)
                           FROM pricing.price_list_group_titles t WHERE t.group_id = g.id), '{}'::jsonb)
          FROM pricing.price_list_groups g
-         WHERE g.price_list_id = $1 AND g.parent_id IS NULL ORDER BY g.sort_order, g.id",
+         WHERE g.price_list_id = $1",
     )
     .bind(list_id)
     .fetch_all(db)
     .await?;
-    Ok(rows.into_iter().map(|(i, t)| (i, t.0)).collect())
+    Ok(rows
+        .into_iter()
+        .map(|(i, p, o, t)| (i, p, o, t.0))
+        .collect())
 }
 
 async fn check_export_input(
@@ -1542,12 +1594,12 @@ async fn check_export_input(
     list_id: Uuid,
     input: &PriceListExportInput,
 ) -> AppResult<()> {
-    let top: HashSet<Uuid> = top_level_groups(tx, list_id)
+    let all: HashSet<Uuid> = list_group_titles(tx, list_id)
         .await?
         .into_iter()
-        .map(|(id, _)| id)
+        .map(|g| g.0)
         .collect();
-    check_export_groups(&top, &input.group_ids).map_err(|m| AppError::Validation(m.into()))
+    check_export_groups(&all, &input.group_ids).map_err(|m| AppError::Validation(m.into()))
 }
 
 fn export_code_taken() -> AppError {
@@ -1717,24 +1769,39 @@ async fn delete_export(
     Ok(StatusCode::NO_CONTENT)
 }
 
-/// Creates one profile per top-level group that has no single-chapter profile yet (code
-/// `ch-<last 12 hex of the group id>`, name = the group title in the company's default language).
-/// Idempotent: a second call creates nothing. Returns all profiles of the list.
+#[derive(Debug, Deserialize, IntoParams)]
+pub struct PerChapterParams {
+    /// 1-based depth of the groups to create a profile for (1 = top level, the default; at most 4).
+    pub level: Option<usize>,
+}
+
+/// Creates one profile per group at depth `level` (default 1, the top level) that has no profile
+/// consisting of exactly that group yet (code `ch-<last 12 hex of the group id>`, name = the group
+/// title in the company's default language). Idempotent: a second call creates nothing. Returns
+/// all profiles of the list.
 #[utoipa::path(post, path = "/price-lists/{id}/exports/per-chapter", tag = "products",
-    params(("id" = Uuid, Path)),
-    responses((status = 200, body = Vec<PriceListExport>), (status = 404, body = ErrorBody)))]
+    params(("id" = Uuid, Path), PerChapterParams),
+    responses((status = 200, body = Vec<PriceListExport>), (status = 404, body = ErrorBody),
+        (status = 422, body = ErrorBody)))]
 async fn create_per_chapter_exports(
     State(state): State<AppState>,
     user: CurrentUser,
     Path(id): Path<Uuid>,
+    Query(params): Query<PerChapterParams>,
 ) -> AppResult<Json<Vec<PriceListExport>>> {
     user.require(Permission::PriceListsWrite)?;
+    let level = params.level.unwrap_or(1);
+    if !(1..=MAX_DEPTH).contains(&level) {
+        return Err(AppError::Validation(format!(
+            "level must be between 1 and {MAX_DEPTH}"
+        )));
+    }
     let mut tx = state.db.begin().await?;
     lock_list(&mut tx, user.company_id, id).await?;
     let company = get_company(&mut *tx, user.company_id)
         .await
         .map_err(AppError::from)?;
-    let chapters = top_level_groups(&mut tx, id).await?;
+    let chapters = groups_at_depth(&list_group_titles(&mut tx, id).await?, level);
     let existing = load_exports(&mut tx, id).await?;
     let mut next_order = existing
         .iter()
@@ -2055,6 +2122,7 @@ async fn render_price_list(
             .into_iter()
             .map(|s| PriceListSection {
                 level: s.level,
+                print_level: s.print_level,
                 title: s.title,
                 show_title: s.show_title,
                 gap_mm: s.gap_mm.to_f64().unwrap_or(0.0),
@@ -2389,7 +2457,7 @@ mod tests {
     }
 
     #[test]
-    fn profile_selects_chapters_with_descendants_in_list_order() {
+    fn profile_selects_groups_of_any_depth_with_descendants_in_list_order() {
         let groups = [
             group(1, None, 30, &[("nl", "C")]),
             group(2, None, 10, &[("nl", "A")]),
@@ -2403,9 +2471,21 @@ mod tests {
         let picked = select_groups(&groups, &[id(1), id(2)]);
         let ids: Vec<Uuid> = picked.iter().map(|g| g.id).collect();
         assert_eq!(ids, [id(1), id(2), id(3), id(4)]);
-        // Empty = whole list; a sub-group id on its own selects nothing (chapters only).
+        // Empty = whole list; a nested group selects itself and its descendants only.
         assert_eq!(select_groups(&groups, &[]).len(), 6);
-        assert!(select_groups(&groups, &[id(3)]).is_empty());
+        let nested: Vec<Uuid> = select_groups(&groups, &[id(3)])
+            .iter()
+            .map(|g| g.id)
+            .collect();
+        assert_eq!(nested, [id(3), id(4)]);
+        // Overlap: a group and its ancestor/descendant are included once.
+        let overlap: Vec<Uuid> = select_groups(&groups, &[id(4), id(2), id(3)])
+            .iter()
+            .map(|g| g.id)
+            .collect();
+        assert_eq!(overlap, [id(2), id(3), id(4)]);
+        // An unknown id selects nothing.
+        assert!(select_groups(&groups, &[id(99)]).is_empty());
 
         let items = [
             item(4, "", "DEEP", Some(dec!(1))),
@@ -2429,21 +2509,92 @@ mod tests {
             .map(|r| r.code.as_str())
             .collect();
         assert_eq!(codes, ["DEEP", "CEE"]);
-        // Only chapter B: A and C vanish, B stays with its descendant's item.
         let b = assemble(&select_groups(&groups, &[id(5)]), &items, &chain(&["nl"]));
         assert_eq!(
             b.iter().map(|s| s.title.as_str()).collect::<Vec<_>>(),
             ["B", "B sub"]
         );
+        // A profile on a nested group prints that subtree only, and its levels count from it.
+        let sub = assemble(&select_groups(&groups, &[id(3)]), &items, &chain(&["nl"]));
+        assert_eq!(
+            sub.iter()
+                .map(|s| (s.title.as_str(), s.level))
+                .collect::<Vec<_>>(),
+            [("A sub", 0), ("A subsub", 1)]
+        );
     }
 
     #[test]
-    fn profile_groups_must_be_unique_top_level_groups() {
-        let top: HashSet<Uuid> = [Uuid::from_u128(1), Uuid::from_u128(2)].into();
-        assert!(check_export_groups(&top, &[]).is_ok());
-        assert!(check_export_groups(&top, &[Uuid::from_u128(1), Uuid::from_u128(2)]).is_ok());
-        assert!(check_export_groups(&top, &[Uuid::from_u128(1), Uuid::from_u128(1)]).is_err());
-        assert!(check_export_groups(&top, &[Uuid::from_u128(3)]).is_err());
+    fn print_level_counts_only_ancestors_with_a_printed_title() {
+        // section (hidden) > chapter (hidden) > titled group > untitled subchapter > titled leaf
+        let groups = [
+            untitled(group(1, None, 0, &[("nl", "Sectie")]), Decimal::ZERO),
+            untitled(group(2, Some(1), 0, &[("nl", "Hoofdstuk")]), Decimal::ZERO),
+            group(3, Some(2), 0, &[("nl", "Groep")]),
+            untitled(group(4, Some(3), 0, &[("nl", "Sub")]), dec!(5)),
+            group(5, Some(4), 0, &[("nl", "Blad")]),
+            group(6, Some(3), 1, &[("nl", "Kind")]),
+        ];
+        let items = [
+            item(4, "", "A", Some(dec!(1))),
+            item(5, "", "B", Some(dec!(1))),
+            item(6, "", "C", Some(dec!(1))),
+        ];
+        let out = assemble(&groups, &items, &chain(&["nl"]));
+        let got: Vec<(&str, usize, usize)> = out
+            .iter()
+            .map(|s| (s.title.as_str(), s.level, s.print_level))
+            .collect();
+        assert_eq!(
+            got,
+            [
+                ("", 0, 0),
+                ("", 1, 0),
+                ("Groep", 2, 0),
+                ("", 3, 1),
+                ("Blad", 4, 1),
+                ("Kind", 3, 1)
+            ]
+        );
+    }
+
+    #[test]
+    fn groups_at_depth_are_in_tree_order() {
+        let g = |n: u128, p: Option<u128>, o: i32| {
+            (
+                Uuid::from_u128(n),
+                p.map(Uuid::from_u128),
+                o,
+                texts(&[("nl", &format!("g{n}"))]),
+            )
+        };
+        let groups = [
+            g(1, None, 20),
+            g(2, None, 10),
+            g(3, Some(1), 0),
+            g(4, Some(2), 5),
+            g(5, Some(2), 1),
+            g(6, Some(5), 0),
+        ];
+        let ids = |d| -> Vec<u128> {
+            groups_at_depth(&groups, d)
+                .iter()
+                .map(|(i, _)| i.as_u128())
+                .collect()
+        };
+        assert_eq!(ids(1), [2, 1]);
+        assert_eq!(ids(2), [5, 4, 3]);
+        assert_eq!(ids(3), [6]);
+        assert!(ids(4).is_empty());
+    }
+
+    #[test]
+    fn profile_groups_must_be_unique_groups_of_the_list() {
+        let all: HashSet<Uuid> = [Uuid::from_u128(1), Uuid::from_u128(2)].into();
+        assert!(check_export_groups(&all, &[]).is_ok());
+        assert!(check_export_groups(&all, &[Uuid::from_u128(1), Uuid::from_u128(2)]).is_ok());
+        assert!(check_export_groups(&all, &[Uuid::from_u128(1), Uuid::from_u128(1)]).is_err());
+        assert!(check_export_groups(&all, &[Uuid::from_u128(3)]).is_err());
     }
 
     #[test]
