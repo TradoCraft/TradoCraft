@@ -57,6 +57,8 @@ pub struct Ticket {
     pub suggested_category: Option<String>,
     /// nl | fr | en | de | es — the language to answer in.
     pub language: String,
+    /// record | detected | agent: where `language` came from.
+    pub language_source: String,
     pub customer_id: Option<Uuid>,
     pub customer_name: Option<String>,
     /// The person at the customer this ticket is about (see the contacts of the customer).
@@ -344,7 +346,7 @@ pub struct InboundResult {
 }
 
 const SELECT: &str = "SELECT t.id, t.number, t.subject, t.status, t.priority, t.category, t.suggested_category,
-        t.language::text AS language, t.customer_id, c.name AS customer_name, t.contact_id, t.contact_name, t.contact_email,
+        t.language::text AS language, t.language_source, t.customer_id, c.name AS customer_name, t.contact_id, t.contact_name, t.contact_email,
         t.owner_user_id, u.display_name AS owner_name, t.internal,
         t.quotation_id, q.number AS quotation_number, q.revision AS quotation_revision, q.status AS quotation_status,
         t.opportunity_id, op.number AS opportunity_number, t.order_id, o.number AS order_number,
@@ -712,6 +714,7 @@ async fn create_ticket(
         (Some(c), "") => c.primary_email().unwrap_or_default().to_string(),
         (_, e) => e.to_lowercase(),
     };
+    let language_given = input.language.is_some();
     let language = match &input.language {
         Some(l) if is_language(l) => l.clone(),
         Some(_) => {
@@ -722,6 +725,18 @@ async fn create_ticket(
         }
         None => match &contact {
             Some(c) => c.effective_language.clone(),
+            None if customer_id.is_none() && input.internal => {
+                // A question between colleagues: the creator's language, else the company's.
+                let own: Option<String> =
+                    sqlx::query_scalar("SELECT language::text FROM core.users WHERE id = $1")
+                        .bind(user.user_id)
+                        .fetch_one(&mut *tx)
+                        .await?;
+                match own {
+                    Some(l) => l,
+                    None => customer_language(&mut tx, None, user.company_id).await?,
+                }
+            }
             None => customer_language(&mut tx, customer_id, user.company_id).await?,
         },
     };
@@ -729,8 +744,10 @@ async fn create_ticket(
     let id = new_id();
     sqlx::query(
         "INSERT INTO helpdesk.tickets (id, company_id, number, subject, status, category, language, customer_id,
-                                       contact_id, contact_name, contact_email, owner_user_id, internal, created_by)
-         VALUES ($1, $2, $3, $4, 'open', $5, $6, $7, $8, $9, $10, $11, $12, $11)",
+                                       contact_id, contact_name, contact_email, owner_user_id, internal, created_by,
+                                       language_source)
+         VALUES ($1, $2, $3, $4, 'open', $5, $6, $7, $8, $9, $10, $11, $12, $11,
+                 CASE WHEN $13 THEN 'agent' ELSE 'record' END)",
     )
     .bind(id)
     .bind(user.company_id)
@@ -744,6 +761,7 @@ async fn create_ticket(
     .bind(&contact_email)
     .bind(user.user_id)
     .bind(input.internal)
+    .bind(language_given)
     .execute(&mut *tx)
     .await?;
     add_note(&mut tx, &user, id, &input.body).await?;
@@ -852,7 +870,9 @@ async fn update_ticket(
         }
     }
     sqlx::query(
-        "UPDATE helpdesk.tickets SET subject = $2, priority = $3, category = $4, language = $5, owner_user_id = $6,
+        "UPDATE helpdesk.tickets SET subject = $2, priority = $3, category = $4, language = $5,
+                language_source = CASE WHEN language::text <> $5 THEN 'agent' ELSE language_source END,
+                owner_user_id = $6,
                 customer_id = $7, contact_name = $8, contact_email = $9, quotation_id = $10, opportunity_id = $11,
                 contact_id = $12, updated_at = now()
          WHERE id = $1",

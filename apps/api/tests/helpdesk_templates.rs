@@ -160,3 +160,77 @@ async fn the_team_name_is_filled_in_for_a_ticket_of_that_team(db: PgPool) {
     assert_eq!(r["body"], "Team: R&D");
 }
 
+async fn language_of(db: &PgPool, subject: &str) -> (String, String) {
+    sqlx::query_as(
+        "SELECT language::text, language_source FROM helpdesk.tickets WHERE subject = $1",
+    )
+    .bind(subject)
+    .fetch_one(db)
+    .await
+    .unwrap()
+}
+
+fn mail(from: &str, subject: &str, body: &str) -> Vec<u8> {
+    format!("From: {from}\r\nTo: sales@example.com\r\nSubject: {subject}\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n{body}\r\n").into_bytes()
+}
+
+async fn receive(app: &axum::Router, from: &str, subject: &str, body: &str) -> String {
+    let (status, r) = call_raw(app, SUPPORT, "/api/v1/helpdesk/inbound", "message/rfc822", mail(from, subject, body)).await;
+    assert_eq!(status, StatusCode::OK, "{r}");
+    r["ticket_id"].as_str().unwrap().to_string()
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn an_internal_ticket_takes_the_creators_language(db: PgPool) {
+    let app = setup(db.clone()).await;
+    sqlx::query("UPDATE core.companies SET default_language = 'en'").execute(&db).await.unwrap();
+    sqlx::query("UPDATE core.users SET language = 'fr' WHERE email = $1")
+        .bind(SUPPORT)
+        .execute(&db)
+        .await
+        .unwrap();
+    manual_ticket(&app, &db, SUPPORT, "Switch config", json!({ "internal": true })).await;
+    assert_eq!(language_of(&db, "Switch config").await, ("fr".into(), "record".into()));
+    // Without a language on the creator the company default applies.
+    sqlx::query("UPDATE core.users SET language = NULL WHERE email = $1").bind(SUPPORT).execute(&db).await.unwrap();
+    manual_ticket(&app, &db, SUPPORT, "Switch config 2", json!({ "internal": true })).await;
+    assert_eq!(language_of(&db, "Switch config 2").await, ("en".into(), "record".into()));
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn a_language_given_or_changed_by_an_agent_is_marked_as_theirs(db: PgPool) {
+    let app = setup(db.clone()).await;
+    let id = manual_ticket(&app, &db, SUPPORT, "Given", json!({ "language": "de" })).await;
+    assert_eq!(language_of(&db, "Given").await, ("de".into(), "agent".into()));
+    let other = manual_ticket(&app, &db, SUPPORT, "Not given", json!({})).await;
+    assert_eq!(language_of(&db, "Not given").await.1, "record");
+    // Saving the ticket with the same language keeps the source; another language makes it the agent's.
+    let body = |lang: &str| json!({ "subject": "Not given", "status": "open", "priority": "normal", "category": "question", "language": lang });
+    let current = language_of(&db, "Not given").await.0;
+    let (status, r) = put(&app, SUPPORT, &format!("/tickets/{other}"), body(&current)).await;
+    assert_eq!(status, StatusCode::OK, "{r}");
+    assert_eq!(language_of(&db, "Not given").await.1, "record");
+    let changed = if current == "es" { "nl" } else { "es" };
+    let (status, r) = put(&app, SUPPORT, &format!("/tickets/{other}"), body(changed)).await;
+    assert_eq!(status, StatusCode::OK, "{r}");
+    assert_eq!(language_of(&db, "Not given").await, (changed.into(), "agent".into()));
+    let _ = id;
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn a_detected_language_is_marked_as_detected_and_a_known_customer_is_not(db: PgPool) {
+    let app = setup(db.clone()).await;
+    // Unknown sender, French text: the detector decides.
+    receive(
+        &app,
+        "inconnu@nowhere.example",
+        "Commande",
+        "Bonjour, nous avons bien reçu le devis et nous voudrions passer la commande. Merci et cordialement",
+    )
+    .await;
+    assert_eq!(language_of(&db, "Commande").await, ("fr".into(), "detected".into()));
+    // Unknown sender, no usable text: the company default, not marked as detected.
+    receive(&app, "other@nowhere.example", "OK", "OK").await;
+    assert_eq!(language_of(&db, "OK").await.1, "record");
+}
+
