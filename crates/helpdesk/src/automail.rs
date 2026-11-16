@@ -141,7 +141,10 @@ pub async fn validate_action(
             ));
         }
         for t in &answer.texts {
-            crate::render::check_placeholders(&format!("template {} subject", t.language), &t.subject)?;
+            crate::render::check_placeholders(
+                &format!("template {} subject", t.language),
+                &t.subject,
+            )?;
             crate::render::check_placeholders(&format!("template {} body", t.language), &t.body)?;
         }
         a.subject = None;

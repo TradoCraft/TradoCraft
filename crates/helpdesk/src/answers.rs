@@ -51,7 +51,11 @@ pub fn clean_keywords(raw: &[String]) -> AppResult<Vec<String>> {
 }
 
 /// The team must belong to the company.
-async fn check_team(conn: &mut PgConnection, company_id: Uuid, team: Option<Uuid>) -> AppResult<()> {
+async fn check_team(
+    conn: &mut PgConnection,
+    company_id: Uuid,
+    team: Option<Uuid>,
+) -> AppResult<()> {
     let Some(team) = team else { return Ok(()) };
     let ok: bool = sqlx::query_scalar(
         "SELECT EXISTS (SELECT 1 FROM helpdesk.teams WHERE id = $1 AND company_id = $2)",
@@ -180,7 +184,11 @@ async fn texts(conn: &mut PgConnection, ids: &[Uuid]) -> AppResult<Vec<(Uuid, An
         .collect())
 }
 
-pub async fn load(conn: &mut PgConnection, company_id: Uuid, id: Uuid) -> AppResult<PreparedAnswer> {
+pub async fn load(
+    conn: &mut PgConnection,
+    company_id: Uuid,
+    id: Uuid,
+) -> AppResult<PreparedAnswer> {
     let r: Row = sqlx::query_as(
         "SELECT id, code, name, category, kind, team_id, keywords, active, updated_at FROM helpdesk.prepared_answers WHERE id = $1 AND company_id = $2",
     )
@@ -469,7 +477,11 @@ pub fn score(
         };
     }
     let subject = ticket_subject.to_lowercase();
-    let hits = c.keywords.iter().filter(|k| subject.contains(k.as_str())).count() as i32;
+    let hits = c
+        .keywords
+        .iter()
+        .filter(|k| subject.contains(k.as_str()))
+        .count() as i32;
     s += (hits * 20).min(40);
     if c.team_id.is_some() && c.team_id == ticket_team {
         s += 15;
@@ -517,12 +529,13 @@ async fn suggest(
     user.require(Permission::HelpdeskRead)?;
     let mut conn = state.db.acquire().await?;
     let (language, values) = ticket_values(&mut conn, &user, ticket_id).await?;
-    let team: Option<Uuid> =
-        sqlx::query_scalar("SELECT team_id FROM helpdesk.tickets WHERE id = $1 AND company_id = $2")
-            .bind(ticket_id)
-            .bind(user.company_id)
-            .fetch_one(&mut *conn)
-            .await?;
+    let team: Option<Uuid> = sqlx::query_scalar(
+        "SELECT team_id FROM helpdesk.tickets WHERE id = $1 AND company_id = $2",
+    )
+    .bind(ticket_id)
+    .bind(user.company_id)
+    .fetch_one(&mut *conn)
+    .await?;
     let rows: Vec<Row> = sqlx::query_as(
         "SELECT a.id, a.code, a.name, a.category, a.kind, a.team_id, a.keywords, a.active, a.updated_at
          FROM helpdesk.prepared_answers a
@@ -541,9 +554,17 @@ async fn suggest(
     let mut ranked: Vec<(i32, Row)> = rows
         .into_iter()
         .filter_map(|r| {
-            let has_language = all.iter().any(|(id, t)| *id == r.id && t.language == language);
+            let has_language = all
+                .iter()
+                .any(|(id, t)| *id == r.id && t.language == language);
             let s = score(
-                &Candidate { code: &r.code, name: &r.name, keywords: &r.keywords, team_id: r.team_id, has_language },
+                &Candidate {
+                    code: &r.code,
+                    name: &r.name,
+                    keywords: &r.keywords,
+                    team_id: r.team_id,
+                    has_language,
+                },
                 &q,
                 team,
                 &subject,
@@ -555,9 +576,13 @@ async fn suggest(
     ranked.truncate(10);
     let mut out = Vec::new();
     for (s, r) in ranked {
-        let mine: Vec<AnswerText> =
-            all.iter().filter(|(id, _)| *id == r.id).map(|(_, t)| t.clone()).collect();
-        let Some((text, fallback)) = pick_text(&mine, &language, &values["__company_language"]) else {
+        let mine: Vec<AnswerText> = all
+            .iter()
+            .filter(|(id, _)| *id == r.id)
+            .map(|(_, t)| t.clone())
+            .collect();
+        let Some((text, fallback)) = pick_text(&mine, &language, &values["__company_language"])
+        else {
             continue;
         };
         out.push(SuggestedAnswer {
@@ -773,25 +798,57 @@ mod tests {
 
     #[test]
     fn keywords_are_trimmed_lowercased_and_unique() {
-        let raw = vec![" Firmware ".to_string(), "firmware".into(), "".into(), "Update".into()];
+        let raw = vec![
+            " Firmware ".to_string(),
+            "firmware".into(),
+            "".into(),
+            "Update".into(),
+        ];
         assert_eq!(clean_keywords(&raw).unwrap(), ["firmware", "update"]);
         assert!(clean_keywords(&["x".repeat(41)]).is_err());
         let many: Vec<String> = (0..21).map(|i| format!("k{i}")).collect();
         assert!(clean_keywords(&many).is_err());
     }
 
-    fn cand<'a>(code: &'a str, name: &'a str, keywords: &'a [String], team: Option<Uuid>, has_language: bool) -> Candidate<'a> {
-        Candidate { code, name, keywords, team_id: team, has_language }
+    fn cand<'a>(
+        code: &'a str,
+        name: &'a str,
+        keywords: &'a [String],
+        team: Option<Uuid>,
+        has_language: bool,
+    ) -> Candidate<'a> {
+        Candidate {
+            code,
+            name,
+            keywords,
+            team_id: team,
+            has_language,
+        }
     }
 
     #[test]
     fn an_exact_code_beats_a_prefix_beats_a_name_match() {
         let none: Vec<String> = vec![];
         let exact = score(&cand("pump", "Pump", &none, None, true), "pump", None, "").unwrap();
-        let prefix = score(&cand("pump-fault", "Fault", &none, None, true), "pump", None, "").unwrap();
-        let name = score(&cand("f1", "About the pump", &none, None, true), "pump", None, "").unwrap();
+        let prefix = score(
+            &cand("pump-fault", "Fault", &none, None, true),
+            "pump",
+            None,
+            "",
+        )
+        .unwrap();
+        let name = score(
+            &cand("f1", "About the pump", &none, None, true),
+            "pump",
+            None,
+            "",
+        )
+        .unwrap();
         assert!(exact > prefix && prefix > name, "{exact} {prefix} {name}");
-        assert_eq!(score(&cand("zzz", "Other", &none, None, true), "pump", None, ""), None);
+        assert_eq!(
+            score(&cand("zzz", "Other", &none, None, true), "pump", None, ""),
+            None
+        );
     }
 
     #[test]
@@ -799,8 +856,20 @@ mod tests {
         let kw = vec!["firmware".to_string()];
         let team = Uuid::from_u128(7);
         let base = score(&cand("a", "A", &kw, None, false), "", None, "Pump noise").unwrap();
-        let with_kw = score(&cand("a", "A", &kw, None, false), "", None, "Firmware update").unwrap();
-        let with_team = score(&cand("a", "A", &kw, Some(team), false), "", Some(team), "Pump noise").unwrap();
+        let with_kw = score(
+            &cand("a", "A", &kw, None, false),
+            "",
+            None,
+            "Firmware update",
+        )
+        .unwrap();
+        let with_team = score(
+            &cand("a", "A", &kw, Some(team), false),
+            "",
+            Some(team),
+            "Pump noise",
+        )
+        .unwrap();
         let with_lang = score(&cand("a", "A", &kw, None, true), "", None, "Pump noise").unwrap();
         assert!(with_kw > base && with_team > base && with_lang > base);
     }

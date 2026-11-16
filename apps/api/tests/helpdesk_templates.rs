@@ -66,7 +66,13 @@ async fn an_answer_has_a_kind_a_team_and_clean_keywords(db: PgPool) {
     assert_eq!(a["team_id"], rd.as_str());
     assert_eq!(a["keywords"], json!(["firmware", "update"]));
     // Default kind is a reply, company-wide.
-    let (_, plain) = post(&app, SUPPORT, "/prepared-answers", answer("plain", json!({}))).await;
+    let (_, plain) = post(
+        &app,
+        SUPPORT,
+        "/prepared-answers",
+        answer("plain", json!({})),
+    )
+    .await;
     assert_eq!(plain["kind"], "reply");
     assert!(plain["team_id"].is_null());
     assert_eq!(plain["keywords"], json!([]));
@@ -75,18 +81,33 @@ async fn an_answer_has_a_kind_a_team_and_clean_keywords(db: PgPool) {
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
 async fn kind_team_and_keywords_are_validated(db: PgPool) {
     let app = setup(db).await;
-    let (status, _) = post(&app, SUPPORT, "/prepared-answers", answer("a", json!({ "kind": "shout" }))).await;
+    let (status, _) = post(
+        &app,
+        SUPPORT,
+        "/prepared-answers",
+        answer("a", json!({ "kind": "shout" })),
+    )
+    .await;
     assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
     let (status, _) = post(
         &app,
         SUPPORT,
         "/prepared-answers",
-        answer("b", json!({ "team_id": "00000000-0000-7000-8000-00000000dead" })),
+        answer(
+            "b",
+            json!({ "team_id": "00000000-0000-7000-8000-00000000dead" }),
+        ),
     )
     .await;
     assert_eq!(status, StatusCode::NOT_FOUND);
     let long = "x".repeat(41);
-    let (status, _) = post(&app, SUPPORT, "/prepared-answers", answer("c", json!({ "keywords": [long] }))).await;
+    let (status, _) = post(
+        &app,
+        SUPPORT,
+        "/prepared-answers",
+        answer("c", json!({ "keywords": [long] })),
+    )
+    .await;
     assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
 }
 
@@ -99,11 +120,34 @@ async fn the_list_filters_by_kind_and_by_the_team_that_can_use_the_answer(db: Pg
         .unwrap();
     let rd = team(&app, "R&D").await;
     let net = team(&app, "Network").await;
-    post(&app, SUPPORT, "/prepared-answers", answer("everyone", json!({}))).await;
-    post(&app, SUPPORT, "/prepared-answers", answer("rd-note", json!({ "kind": "internal_note", "team_id": rd }))).await;
-    post(&app, SUPPORT, "/prepared-answers", answer("net-reply", json!({ "team_id": net }))).await;
+    post(
+        &app,
+        SUPPORT,
+        "/prepared-answers",
+        answer("everyone", json!({})),
+    )
+    .await;
+    post(
+        &app,
+        SUPPORT,
+        "/prepared-answers",
+        answer("rd-note", json!({ "kind": "internal_note", "team_id": rd })),
+    )
+    .await;
+    post(
+        &app,
+        SUPPORT,
+        "/prepared-answers",
+        answer("net-reply", json!({ "team_id": net })),
+    )
+    .await;
     let codes = |v: &Value| -> Vec<String> {
-        let mut c: Vec<String> = v.as_array().unwrap().iter().map(|a| a["code"].as_str().unwrap().to_string()).collect();
+        let mut c: Vec<String> = v
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|a| a["code"].as_str().unwrap().to_string())
+            .collect();
         c.sort();
         c
     };
@@ -115,14 +159,34 @@ async fn the_list_filters_by_kind_and_by_the_team_that_can_use_the_answer(db: Pg
     let (_, for_net) = get(&app, SUPPORT, &format!("/prepared-answers?team_id={net}")).await;
     assert_eq!(codes(&for_net), ["everyone", "net-reply"]);
     // Update keeps working and can move an answer to another team.
-    let id = all.as_array().unwrap().iter().find(|a| a["code"] == "net-reply").unwrap()["id"].as_str().unwrap().to_string();
-    let (status, moved) = put(&app, SUPPORT, &format!("/prepared-answers/{id}"), answer("net-reply", json!({ "team_id": rd }))).await;
+    let id = all
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|a| a["code"] == "net-reply")
+        .unwrap()["id"]
+        .as_str()
+        .unwrap()
+        .to_string();
+    let (status, moved) = put(
+        &app,
+        SUPPORT,
+        &format!("/prepared-answers/{id}"),
+        answer("net-reply", json!({ "team_id": rd })),
+    )
+    .await;
     assert_eq!(status, StatusCode::OK, "{moved}");
     assert_eq!(moved["team_id"], rd.as_str());
 }
 
 /// A ticket made by hand; its id is read back from the database.
-async fn manual_ticket(app: &axum::Router, db: &PgPool, user: &str, subject: &str, extra: Value) -> String {
+async fn manual_ticket(
+    app: &axum::Router,
+    db: &PgPool,
+    user: &str,
+    subject: &str,
+    extra: Value,
+) -> String {
     let mut body = json!({ "subject": subject, "body": "asked", "category": "question" });
     for (k, v) in extra.as_object().unwrap() {
         body[k] = v.clone();
@@ -144,7 +208,10 @@ async fn the_team_name_is_filled_in_for_a_ticket_of_that_team(db: PgPool) {
         &app,
         SUPPORT,
         "/prepared-answers",
-        answer("who", json!({ "texts": [{ "language": "en", "body": "Team: {{team.name}}" }] })),
+        answer(
+            "who",
+            json!({ "texts": [{ "language": "en", "body": "Team: {{team.name}}" }] }),
+        ),
     )
     .await;
     let ticket = manual_ticket(&app, &db, SUPPORT, "Needs R&D", json!({})).await;
@@ -154,7 +221,10 @@ async fn the_team_name_is_filled_in_for_a_ticket_of_that_team(db: PgPool) {
         .execute(&db)
         .await
         .unwrap();
-    let uri = format!("/tickets/{ticket}/prepared-answers/{}/render", a["id"].as_str().unwrap());
+    let uri = format!(
+        "/tickets/{ticket}/prepared-answers/{}/render",
+        a["id"].as_str().unwrap()
+    );
     let (status, r) = post(&app, SUPPORT, &uri, json!({})).await;
     assert_eq!(status, StatusCode::OK, "{r}");
     assert_eq!(r["body"], "Team: R&D");
@@ -175,7 +245,14 @@ fn mail(from: &str, subject: &str, body: &str) -> Vec<u8> {
 }
 
 async fn receive(app: &axum::Router, from: &str, subject: &str, body: &str) -> String {
-    let (status, r) = call_raw(app, SUPPORT, "/api/v1/helpdesk/inbound", "message/rfc822", mail(from, subject, body)).await;
+    let (status, r) = call_raw(
+        app,
+        SUPPORT,
+        "/api/v1/helpdesk/inbound",
+        "message/rfc822",
+        mail(from, subject, body),
+    )
+    .await;
     assert_eq!(status, StatusCode::OK, "{r}");
     r["ticket_id"].as_str().unwrap().to_string()
 }
@@ -183,25 +260,55 @@ async fn receive(app: &axum::Router, from: &str, subject: &str, body: &str) -> S
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
 async fn an_internal_ticket_takes_the_creators_language(db: PgPool) {
     let app = setup(db.clone()).await;
-    sqlx::query("UPDATE core.companies SET default_language = 'en'").execute(&db).await.unwrap();
+    sqlx::query("UPDATE core.companies SET default_language = 'en'")
+        .execute(&db)
+        .await
+        .unwrap();
     sqlx::query("UPDATE core.users SET language = 'fr' WHERE email = $1")
         .bind(SUPPORT)
         .execute(&db)
         .await
         .unwrap();
-    manual_ticket(&app, &db, SUPPORT, "Switch config", json!({ "internal": true })).await;
-    assert_eq!(language_of(&db, "Switch config").await, ("fr".into(), "record".into()));
+    manual_ticket(
+        &app,
+        &db,
+        SUPPORT,
+        "Switch config",
+        json!({ "internal": true }),
+    )
+    .await;
+    assert_eq!(
+        language_of(&db, "Switch config").await,
+        ("fr".into(), "record".into())
+    );
     // Without a language on the creator the company default applies.
-    sqlx::query("UPDATE core.users SET language = NULL WHERE email = $1").bind(SUPPORT).execute(&db).await.unwrap();
-    manual_ticket(&app, &db, SUPPORT, "Switch config 2", json!({ "internal": true })).await;
-    assert_eq!(language_of(&db, "Switch config 2").await, ("en".into(), "record".into()));
+    sqlx::query("UPDATE core.users SET language = NULL WHERE email = $1")
+        .bind(SUPPORT)
+        .execute(&db)
+        .await
+        .unwrap();
+    manual_ticket(
+        &app,
+        &db,
+        SUPPORT,
+        "Switch config 2",
+        json!({ "internal": true }),
+    )
+    .await;
+    assert_eq!(
+        language_of(&db, "Switch config 2").await,
+        ("en".into(), "record".into())
+    );
 }
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
 async fn a_language_given_or_changed_by_an_agent_is_marked_as_theirs(db: PgPool) {
     let app = setup(db.clone()).await;
     let id = manual_ticket(&app, &db, SUPPORT, "Given", json!({ "language": "de" })).await;
-    assert_eq!(language_of(&db, "Given").await, ("de".into(), "agent".into()));
+    assert_eq!(
+        language_of(&db, "Given").await,
+        ("de".into(), "agent".into())
+    );
     let other = manual_ticket(&app, &db, SUPPORT, "Not given", json!({})).await;
     assert_eq!(language_of(&db, "Not given").await.1, "record");
     // Saving the ticket with the same language keeps the source; another language makes it the agent's.
@@ -213,7 +320,10 @@ async fn a_language_given_or_changed_by_an_agent_is_marked_as_theirs(db: PgPool)
     let changed = if current == "es" { "nl" } else { "es" };
     let (status, r) = put(&app, SUPPORT, &format!("/tickets/{other}"), body(changed)).await;
     assert_eq!(status, StatusCode::OK, "{r}");
-    assert_eq!(language_of(&db, "Not given").await, (changed.into(), "agent".into()));
+    assert_eq!(
+        language_of(&db, "Not given").await,
+        (changed.into(), "agent".into())
+    );
     let _ = id;
 }
 
@@ -228,7 +338,10 @@ async fn a_detected_language_is_marked_as_detected_and_a_known_customer_is_not(d
         "Bonjour, nous avons bien reçu le devis et nous voudrions passer la commande. Merci et cordialement",
     )
     .await;
-    assert_eq!(language_of(&db, "Commande").await, ("fr".into(), "detected".into()));
+    assert_eq!(
+        language_of(&db, "Commande").await,
+        ("fr".into(), "detected".into())
+    );
     // Unknown sender, no usable text: the company default, not marked as detected.
     receive(&app, "other@nowhere.example", "OK", "OK").await;
     assert_eq!(language_of(&db, "OK").await.1, "record");
@@ -239,35 +352,95 @@ async fn suggestions_are_ranked_rendered_in_the_ticket_language_and_scoped_to_th
     let app = setup(db.clone()).await;
     let rd = team(&app, "R&D").await;
     let net = team(&app, "Network").await;
-    post(&app, SUPPORT, "/prepared-answers", answer("firmware", json!({ "keywords": ["firmware"] }))).await;
-    post(&app, SUPPORT, "/prepared-answers", answer("generic", json!({}))).await;
-    post(&app, SUPPORT, "/prepared-answers", answer("rd-only", json!({ "team_id": rd, "keywords": ["firmware"] }))).await;
-    post(&app, SUPPORT, "/prepared-answers", answer("net-only", json!({ "team_id": net, "keywords": ["firmware"] }))).await;
-    post(&app, SUPPORT, "/prepared-answers", answer("note", json!({ "kind": "internal_note" }))).await;
+    post(
+        &app,
+        SUPPORT,
+        "/prepared-answers",
+        answer("firmware", json!({ "keywords": ["firmware"] })),
+    )
+    .await;
+    post(
+        &app,
+        SUPPORT,
+        "/prepared-answers",
+        answer("generic", json!({})),
+    )
+    .await;
+    post(
+        &app,
+        SUPPORT,
+        "/prepared-answers",
+        answer(
+            "rd-only",
+            json!({ "team_id": rd, "keywords": ["firmware"] }),
+        ),
+    )
+    .await;
+    post(
+        &app,
+        SUPPORT,
+        "/prepared-answers",
+        answer(
+            "net-only",
+            json!({ "team_id": net, "keywords": ["firmware"] }),
+        ),
+    )
+    .await;
+    post(
+        &app,
+        SUPPORT,
+        "/prepared-answers",
+        answer("note", json!({ "kind": "internal_note" })),
+    )
+    .await;
     let ticket = manual_ticket(&app, &db, SUPPORT, "Firmware update fails", json!({})).await;
-    sqlx::query("UPDATE helpdesk.tickets SET team_id = $2::uuid, language = 'en' WHERE id = $1::uuid")
-        .bind(&ticket)
-        .bind(&rd)
-        .execute(&db)
-        .await
-        .unwrap();
-    let (status, r) = get(&app, SUPPORT, &format!("/tickets/{ticket}/prepared-answers/suggest?kind=reply")).await;
+    sqlx::query(
+        "UPDATE helpdesk.tickets SET team_id = $2::uuid, language = 'en' WHERE id = $1::uuid",
+    )
+    .bind(&ticket)
+    .bind(&rd)
+    .execute(&db)
+    .await
+    .unwrap();
+    let (status, r) = get(
+        &app,
+        SUPPORT,
+        &format!("/tickets/{ticket}/prepared-answers/suggest?kind=reply"),
+    )
+    .await;
     assert_eq!(status, StatusCode::OK, "{r}");
-    let codes: Vec<&str> = r.as_array().unwrap().iter().map(|s| s["code"].as_str().unwrap()).collect();
+    let codes: Vec<&str> = r
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|s| s["code"].as_str().unwrap())
+        .collect();
     // The R&D answer ranks first (keyword and team), the network's and the note are left out.
     assert_eq!(codes.first(), Some(&"rd-only"), "{codes:?}");
     assert!(codes.contains(&"firmware") && codes.contains(&"generic"));
-    assert!(!codes.contains(&"net-only") && !codes.contains(&"note"), "{codes:?}");
+    assert!(
+        !codes.contains(&"net-only") && !codes.contains(&"note"),
+        "{codes:?}"
+    );
     let first = &r[0];
     assert_eq!(first["language"], "en");
     assert_eq!(first["subject"], "Re: Firmware update fails");
     // A query narrows the list; nothing matches a nonsense query.
-    let (_, q) = get(&app, SUPPORT, &format!("/tickets/{ticket}/prepared-answers/suggest?kind=reply&q=gener")).await;
+    let (_, q) = get(
+        &app,
+        SUPPORT,
+        &format!("/tickets/{ticket}/prepared-answers/suggest?kind=reply&q=gener"),
+    )
+    .await;
     assert_eq!(q.as_array().unwrap().len(), 1);
-    let (_, none) = get(&app, SUPPORT, &format!("/tickets/{ticket}/prepared-answers/suggest?q=zzzz")).await;
+    let (_, none) = get(
+        &app,
+        SUPPORT,
+        &format!("/tickets/{ticket}/prepared-answers/suggest?q=zzzz"),
+    )
+    .await;
     assert!(none.as_array().unwrap().is_empty());
 }
-
 
 async fn outbox(db: &PgPool) -> Vec<(String, String, String)> {
     sqlx::query_as(
@@ -279,7 +452,8 @@ async fn outbox(db: &PgPool) -> Vec<(String, String, String)> {
 }
 
 fn mail_rule(answer: Option<&str>) -> Value {
-    let mut action = json!({ "kind": "send_email", "recipient": "address", "address": "ops@example.com" });
+    let mut action =
+        json!({ "kind": "send_email", "recipient": "address", "address": "ops@example.com" });
     match answer {
         Some(id) => action["answer_id"] = json!(id),
         None => {
@@ -304,7 +478,13 @@ async fn a_send_email_rule_uses_the_template_in_the_ticket_language(db: PgPool) 
     )
     .await;
     let id = a["id"].as_str().unwrap();
-    let (status, r) = post(&app, ADMIN, "/helpdesk/automation/rules", mail_rule(Some(id))).await;
+    let (status, r) = post(
+        &app,
+        ADMIN,
+        "/helpdesk/automation/rules",
+        mail_rule(Some(id)),
+    )
+    .await;
     assert_eq!(status, StatusCode::CREATED, "{r}");
     receive(
         &app,
@@ -325,18 +505,51 @@ async fn a_send_email_rule_uses_the_template_in_the_ticket_language(db: PgPool) 
 async fn a_rule_with_a_template_is_validated_when_saved(db: PgPool) {
     let app = setup(db).await;
     // Unknown template.
-    let (status, _) = post(&app, ADMIN, "/helpdesk/automation/rules", mail_rule(Some("00000000-0000-7000-8000-00000000dead"))).await;
+    let (status, _) = post(
+        &app,
+        ADMIN,
+        "/helpdesk/automation/rules",
+        mail_rule(Some("00000000-0000-7000-8000-00000000dead")),
+    )
+    .await;
     assert_eq!(status, StatusCode::NOT_FOUND);
     // A typo in a placeholder would reach the customer: refused.
-    let (_, typo) = post(&app, SUPPORT, "/prepared-answers", json!({ "code": "typo", "name": "Typo",
-        "texts": [{ "language": "en", "subject": "Hi", "body": "Dear {{contact.nme}}" }] })).await;
-    let (status, r) = post(&app, ADMIN, "/helpdesk/automation/rules", mail_rule(Some(typo["id"].as_str().unwrap()))).await;
+    let (_, typo) = post(
+        &app,
+        SUPPORT,
+        "/prepared-answers",
+        json!({ "code": "typo", "name": "Typo",
+        "texts": [{ "language": "en", "subject": "Hi", "body": "Dear {{contact.nme}}" }] }),
+    )
+    .await;
+    let (status, r) = post(
+        &app,
+        ADMIN,
+        "/helpdesk/automation/rules",
+        mail_rule(Some(typo["id"].as_str().unwrap())),
+    )
+    .await;
     assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{r}");
-    assert!(r["message"].as_str().unwrap().contains("contact.nme"), "{r}");
+    assert!(
+        r["message"].as_str().unwrap().contains("contact.nme"),
+        "{r}"
+    );
     // Every language needs a subject.
-    let (_, nosub) = post(&app, SUPPORT, "/prepared-answers", json!({ "code": "nosub", "name": "No subject",
-        "texts": [{ "language": "en", "body": "Hi" }] })).await;
-    let (status, _) = post(&app, ADMIN, "/helpdesk/automation/rules", mail_rule(Some(nosub["id"].as_str().unwrap()))).await;
+    let (_, nosub) = post(
+        &app,
+        SUPPORT,
+        "/prepared-answers",
+        json!({ "code": "nosub", "name": "No subject",
+        "texts": [{ "language": "en", "body": "Hi" }] }),
+    )
+    .await;
+    let (status, _) = post(
+        &app,
+        ADMIN,
+        "/helpdesk/automation/rules",
+        mail_rule(Some(nosub["id"].as_str().unwrap())),
+    )
+    .await;
     assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
 }
 
@@ -354,10 +567,27 @@ async fn inline_mail_rules_keep_working_and_internal_tickets_get_no_customer_mai
         { "kind": "send_email", "recipient": "customer", "subject": "Hi", "body": "Hi" }] });
     post(&app, ADMIN, "/helpdesk/automation/rules", to_customer).await;
     let before = outbox(&db).await.len();
-    manual_ticket(&app, &db, SUPPORT, "Colleague question", json!({ "internal": true })).await;
+    manual_ticket(
+        &app,
+        &db,
+        SUPPORT,
+        "Colleague question",
+        json!({ "internal": true }),
+    )
+    .await;
     let after: Vec<_> = outbox(&db).await;
-    assert!(after.iter().skip(before).all(|m| m.0 != "customer@example.com"), "{after:?}");
-    assert_eq!(after.len(), before + 1, "only the inline ops mail: {after:?}");
+    assert!(
+        after
+            .iter()
+            .skip(before)
+            .all(|m| m.0 != "customer@example.com"),
+        "{after:?}"
+    );
+    assert_eq!(
+        after.len(),
+        before + 1,
+        "only the inline ops mail: {after:?}"
+    );
 }
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
@@ -380,11 +610,13 @@ async fn a_rule_can_route_tickets_by_their_language(db: PgPool) {
     let team_of = |subject: &'static str| {
         let db = db.clone();
         async move {
-            sqlx::query_scalar::<_, Option<String>>("SELECT team_id::text FROM helpdesk.tickets WHERE subject = $1")
-                .bind(subject)
-                .fetch_one(&db)
-                .await
-                .unwrap()
+            sqlx::query_scalar::<_, Option<String>>(
+                "SELECT team_id::text FROM helpdesk.tickets WHERE subject = $1",
+            )
+            .bind(subject)
+            .fetch_one(&db)
+            .await
+            .unwrap()
         }
     };
     assert_eq!(team_of("Bonjour").await.as_deref(), Some(fr.as_str()));

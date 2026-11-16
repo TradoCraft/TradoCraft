@@ -88,8 +88,12 @@ mod tests {
 
     #[test]
     fn unknown_placeholders_are_found_by_the_check() {
-        assert!(check_placeholders("body", "Dear {{contact.name}}, {{ team.name }} {x} { }").is_ok());
-        let e = check_placeholders("body", "Dear {{contact.nme}}").unwrap_err().to_string();
+        assert!(
+            check_placeholders("body", "Dear {{contact.name}}, {{ team.name }} {x} { }").is_ok()
+        );
+        let e = check_placeholders("body", "Dear {{contact.nme}}")
+            .unwrap_err()
+            .to_string();
         assert!(e.contains("contact.nme"), "{e}");
         assert!(e.contains("body"), "{e}");
     }
