@@ -75,6 +75,8 @@ pub struct Ticket {
     pub order_id: Option<Uuid>,
     pub order_number: Option<String>,
     pub article_count: i64,
+    pub checklist_total: i64,
+    pub checklist_done: i64,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     pub first_response_at: Option<DateTime<Utc>>,
@@ -349,6 +351,8 @@ const SELECT: &str = "SELECT t.id, t.number, t.subject, t.status, t.priority, t.
         t.quotation_id, q.number AS quotation_number, q.revision AS quotation_revision, q.status AS quotation_status,
         t.opportunity_id, op.number AS opportunity_number, t.order_id, o.number AS order_number,
         (SELECT count(*) FROM helpdesk.articles a WHERE a.ticket_id = t.id) AS article_count,
+        (SELECT count(*) FROM helpdesk.ticket_checklist_items c WHERE c.ticket_id = t.id) AS checklist_total,
+        (SELECT count(*) FROM helpdesk.ticket_checklist_items c WHERE c.ticket_id = t.id AND c.done) AS checklist_done,
         t.created_at, t.updated_at, t.first_response_at, t.closed_at,
         t.team_id, tm.name AS team_name,
         coalesce((SELECT array_agg(g.tag ORDER BY g.tag) FROM helpdesk.ticket_tags g WHERE g.ticket_id = t.id), '{}') AS tags,
@@ -464,6 +468,16 @@ pub async fn add_linked_note(
     Ok(())
 }
 
+#[allow(dead_code)]
+pub(crate) fn should_block_close(
+    target_status: &str,
+    was_closed: bool,
+    team_requires_checklist_done: bool,
+    open_items: i64,
+) -> bool {
+    target_status == "closed" && !was_closed && team_requires_checklist_done && open_items > 0
+}
+
 async fn set_status(
     conn: &mut PgConnection,
     user: &CurrentUser,
@@ -476,6 +490,30 @@ async fn set_status(
         .fetch_one(&mut *conn)
         .await?;
     let was_closed = old == "closed";
+    if status == "closed" && !was_closed {
+        let blocked: bool = sqlx::query_scalar(
+            "SELECT EXISTS (
+                SELECT 1
+                FROM helpdesk.tickets t
+                JOIN helpdesk.teams tm ON tm.id = t.team_id
+                WHERE t.id = $1
+                  AND tm.require_checklist_done
+                  AND EXISTS (
+                      SELECT 1 FROM helpdesk.ticket_checklist_items c
+                      WHERE c.ticket_id = t.id AND NOT c.done
+                  )
+            )",
+        )
+        .bind(ticket_id)
+        .fetch_one(&mut *conn)
+        .await?;
+        if blocked {
+            return Err(AppError::ConflictCode(
+                "checklist_incomplete",
+                "Complete all checklist items before closing this ticket".into(),
+            ));
+        }
+    }
     if old != status {
         crate::collab::record_event(
             conn,
@@ -1542,3 +1580,36 @@ pub fn router() -> OpenApiRouter<AppState> {
         .merge(crate::csat::router())
         .merge(crate::collab::router())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_should_block_close() {
+        // open items + team requires -> true
+        assert!(should_block_close("closed", false, true, 2));
+        assert!(should_block_close("closed", false, true, 1));
+
+        // all done -> false
+        assert!(!should_block_close("closed", false, true, 0));
+
+        // no items -> false
+        assert!(!should_block_close("closed", false, true, 0));
+
+        // team doesn't require -> false
+        assert!(!should_block_close("closed", false, false, 2));
+        assert!(!should_block_close("closed", false, false, 0));
+
+        // already closed -> false
+        assert!(!should_block_close("closed", true, true, 2));
+        assert!(!should_block_close("closed", true, false, 2));
+
+        // non-closed target -> false
+        assert!(!should_block_close("open", false, true, 2));
+        assert!(!should_block_close("pending_customer", false, true, 2));
+        assert!(!should_block_close("pending_internal", false, true, 2));
+        assert!(!should_block_close("new", false, true, 2));
+    }
+}
+
