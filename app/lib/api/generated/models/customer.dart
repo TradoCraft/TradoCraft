@@ -56,7 +56,7 @@ class Customer {
   @JsonKey(includeIfNull: false,name: 'vat_number')
   final String? vatNumber;
 
-  /// `domestic` (VAT charged), `intra_eu` (reverse charge) or `outside_eu`.
+  /// `domestic` (VAT charged), `domestic_reverse_charge`, `intra_eu` (reverse charge) or `outside_eu`.
   @JsonKey(name: 'vat_regime')
   final String vatRegime;
 

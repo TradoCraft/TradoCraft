@@ -47,6 +47,12 @@ pub struct Product {
     pub product_type: String,
     #[schema(value_type = String, example = "21")]
     pub vat_rate: Decimal,
+    /// VAT category used to resolve country-specific default rates (`standard`, `intermediate`, `reduced`, `zero`).
+    #[schema(required = false)]
+    pub vat_category: String,
+    /// Optional explicit VAT rate overriding the country-category rate.
+    #[schema(required = false, value_type = Option<String>, example = "12.00")]
+    pub vat_rate_override: Option<Decimal>,
     /// none | serial | lot — serial-tracked products get an individual serial number per unit,
     /// lot-tracked products are stocked per lot or batch.
     pub tracking: String,
@@ -100,8 +106,19 @@ pub struct ProductInput {
     pub unit: String,
     #[serde(default = "default_type")]
     pub product_type: String,
-    #[schema(value_type = String, example = "21")]
-    pub vat_rate: Decimal,
+    /// Explicit VAT rate (kept for backwards compatibility). If `vat_category` / `vat_rate_override`
+    /// are omitted, resolved via country rules and only treated as an override if no category matches.
+    #[serde(default)]
+    #[schema(required = false, value_type = Option<String>, example = "21")]
+    pub vat_rate: Option<Decimal>,
+    /// `standard` (default), `intermediate`, `reduced`, or `zero`.
+    #[serde(default)]
+    #[schema(required = false)]
+    pub vat_category: Option<String>,
+    /// Optional explicit VAT rate override (null clears any previous override).
+    #[serde(default)]
+    #[schema(required = false, value_type = Option<String>, example = "12.00")]
+    pub vat_rate_override: Option<Decimal>,
     /// none | serial | lot. Services are not tracked.
     #[serde(default = "default_tracking")]
     pub tracking: String,
@@ -181,8 +198,28 @@ impl ProductInput {
                 PRICING_TYPES.join(", ")
             ));
         }
-        if self.vat_rate < Decimal::ZERO {
+        if self.vat_rate.is_some_and(|r| r < Decimal::ZERO)
+            || self.vat_rate_override.is_some_and(|r| r < Decimal::ZERO)
+        {
             out.push("vat_rate cannot be negative".to_string());
+        }
+        if self.vat_rate.is_some_and(|r| r >= Decimal::from(100))
+            || self
+                .vat_rate_override
+                .is_some_and(|r| r >= Decimal::from(100))
+        {
+            out.push("vat_rate must be below 100".to_string());
+        }
+        if let Some(ref cat) = self.vat_category {
+            let trimmed = cat.trim();
+            if !trimmed.is_empty()
+                && !tradocraft_core::vat_rates::is_valid_product_vat_category(trimmed)
+            {
+                out.push(format!(
+                    "vat_category must be one of {}",
+                    tradocraft_core::vat_rates::PRODUCT_VAT_CATEGORIES.join(", ")
+                ));
+            }
         }
         if self.tracking != "none" && self.product_type == "service" {
             out.push("services cannot be tracked".to_string());
@@ -310,7 +347,8 @@ pub struct ZonePriceInput {
 /// The product columns with the family and packaging category codes; `p` is the products table.
 macro_rules! product_columns {
     () => {
-        "SELECT p.id, p.code, p.name, p.description, p.unit, p.product_type, p.vat_rate, p.tracking,
+        "SELECT p.id, p.code, p.name, p.description, p.unit, p.product_type, p.vat_rate,
+                p.vat_category, p.vat_rate_override, p.tracking,
                p.family_id, f.code AS family_code, p.pricing_type, p.active, p.standard_cost, p.reorder_min,
                p.reorder_max, p.lead_time_days, p.barcode, p.packaging_category_id,
                pc.code AS packaging_category_code, p.length_mm, p.width_mm, p.height_mm, p.weight_g,
@@ -381,6 +419,43 @@ pub async fn active_ids_by_code<'e>(
     Ok(rows.into_iter().collect())
 }
 
+pub(crate) fn apply_resolved_vat(
+    products: &mut [Product],
+    country_code: &str,
+    rules: &[tradocraft_core::vat_rates::CountryVatRate],
+    as_of: NaiveDate,
+) {
+    for p in products {
+        p.vat_rate = tradocraft_core::vat_rates::resolve_rate_from_rules(
+            rules,
+            &tradocraft_core::vat_rates::VatResolutionContext {
+                country_code,
+                category: &p.vat_category,
+                product_override: p.vat_rate_override,
+                vat_regime: None,
+                purpose: None,
+                building_construction_year: None,
+                as_of,
+            },
+        );
+    }
+}
+
+pub(crate) async fn resolve_products_for_company(
+    db: &sqlx::PgPool,
+    company_id: Uuid,
+    as_of: NaiveDate,
+    products: &mut [Product],
+) -> AppResult<()> {
+    if products.is_empty() {
+        return Ok(());
+    }
+    let company = tradocraft_core::company::get_company(db, company_id).await?;
+    let rules = tradocraft_core::vat_rates::load_country_rules(db, &company.country_code).await?;
+    apply_resolved_vat(products, &company.country_code, &rules, as_of);
+    Ok(())
+}
+
 /// Like [`get_products_for_quoting`], but the products in `price_optional` may lack a zone price
 /// (their `list_unit_price` is then zero): used for lines priced from another line, such as a
 /// percentage of their parent line.
@@ -393,10 +468,12 @@ pub async fn get_products_for_quoting_with(
     product_ids: &[Uuid],
     price_optional: &[Uuid],
 ) -> AppResult<HashMap<Uuid, QuotingProduct>> {
-    let products: Vec<Product> = sqlx::query_as(&format!("{SELECT_PRODUCT} WHERE id = ANY($1)"))
-        .bind(product_ids)
-        .fetch_all(db)
-        .await?;
+    let mut products: Vec<Product> =
+        sqlx::query_as(&format!("{SELECT_PRODUCT} WHERE id = ANY($1)"))
+            .bind(product_ids)
+            .fetch_all(db)
+            .await?;
+    resolve_products_for_company(db, company_id, date, &mut products).await?;
     #[derive(FromRow)]
     struct Row {
         product_id: Uuid,
@@ -473,7 +550,7 @@ async fn list_products(
         tradocraft_core::search::matches("code", "$1"),
         tradocraft_core::search::matches("name", "$1"),
     );
-    let items = sqlx::query_as(&format!(
+    let mut items: Vec<Product> = sqlx::query_as(&format!(
         "{SELECT_PRODUCT} {filter} ORDER BY code LIMIT $3 OFFSET $4"
     ))
     .bind(&pattern)
@@ -482,6 +559,13 @@ async fn list_products(
     .bind(p.offset.unwrap_or(0).max(0))
     .bind(p.family_id)
     .fetch_all(&state.db)
+    .await?;
+    resolve_products_for_company(
+        &state.db,
+        user.company_id,
+        tradocraft_core::today(),
+        &mut items,
+    )
     .await?;
     let total = sqlx::query_scalar(&format!(
         "SELECT count(*) FROM products.products {}",
@@ -507,7 +591,82 @@ async fn get_product_handler(
     Path(id): Path<Uuid>,
 ) -> AppResult<Json<Product>> {
     user.require(Permission::ProductsRead)?;
-    Ok(Json(get_product(&state.db, id).await?.for_user(&user)))
+    let mut product = get_product(&state.db, id).await?;
+    resolve_products_for_company(
+        &state.db,
+        user.company_id,
+        tradocraft_core::today(),
+        std::slice::from_mut(&mut product),
+    )
+    .await?;
+    Ok(Json(product.for_user(&user)))
+}
+
+async fn resolve_product_fields(
+    conn: &mut sqlx::PgConnection,
+    company_id: Uuid,
+    input: &ProductInput,
+) -> AppResult<(String, Option<Decimal>, Decimal)> {
+    let company = tradocraft_core::company::get_company(&mut *conn, company_id).await?;
+    let today = tradocraft_core::today();
+    let rules =
+        tradocraft_core::vat_rates::load_country_rules(&mut *conn, &company.country_code).await?;
+
+    if let Some(ov) = input.vat_rate_override {
+        let cat = input
+            .vat_category
+            .as_deref()
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .unwrap_or("standard")
+            .to_ascii_lowercase();
+        return Ok((cat, Some(ov), ov));
+    }
+    if let Some(cat_raw) = input
+        .vat_category
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+    {
+        let cat = cat_raw.to_ascii_lowercase();
+        let rate = tradocraft_core::vat_rates::resolve_rate_from_rules(
+            &rules,
+            &tradocraft_core::vat_rates::VatResolutionContext {
+                country_code: &company.country_code,
+                category: &cat,
+                product_override: None,
+                vat_regime: None,
+                purpose: None,
+                building_construction_year: None,
+                as_of: today,
+            },
+        );
+        return Ok((cat, None, rate));
+    }
+    if let Some(explicit) = input.vat_rate {
+        if let Some(inferred) = tradocraft_core::vat_rates::infer_category_for_rate(
+            &rules,
+            &company.country_code,
+            explicit,
+            today,
+        ) {
+            return Ok((inferred.to_string(), None, explicit));
+        }
+        return Ok(("standard".to_string(), Some(explicit), explicit));
+    }
+    let rate = tradocraft_core::vat_rates::resolve_rate_from_rules(
+        &rules,
+        &tradocraft_core::vat_rates::VatResolutionContext {
+            country_code: &company.country_code,
+            category: "standard",
+            product_override: None,
+            vat_regime: None,
+            purpose: None,
+            building_construction_year: None,
+            as_of: today,
+        },
+    );
+    Ok(("standard".to_string(), None, rate))
 }
 
 /// Inserts a product (validation is the caller's job). The standard cost is stored only when
@@ -515,16 +674,19 @@ async fn get_product_handler(
 pub(crate) async fn insert_product(
     conn: &mut sqlx::PgConnection,
     id: Uuid,
+    company_id: Uuid,
     input: &ProductInput,
     write_cost: bool,
 ) -> AppResult<()> {
     check_packaging(conn, input.packaging_category_id, None).await?;
+    let (vat_category, vat_rate_override, vat_rate) =
+        resolve_product_fields(conn, company_id, input).await?;
     sqlx::query(
-        "INSERT INTO products.products (id, code, name, description, unit, product_type, vat_rate, active, tracking,
-                                        family_id, pricing_type, standard_cost, reorder_min, reorder_max,
-                                        lead_time_days, barcode, packaging_category_id, length_mm, width_mm,
-                                        height_mm, weight_g, default_production_remark)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)",
+        "INSERT INTO products.products (id, code, name, description, unit, product_type, vat_rate, vat_category,
+                                        vat_rate_override, active, tracking, family_id, pricing_type, standard_cost,
+                                        reorder_min, reorder_max, lead_time_days, barcode, packaging_category_id,
+                                        length_mm, width_mm, height_mm, weight_g, default_production_remark)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)",
     )
     .bind(id)
     .bind(input.code.trim())
@@ -532,7 +694,9 @@ pub(crate) async fn insert_product(
     .bind(&input.description)
     .bind(&input.unit)
     .bind(&input.product_type)
-    .bind(input.vat_rate)
+    .bind(vat_rate)
+    .bind(&vat_category)
+    .bind(vat_rate_override)
     .bind(input.active)
     .bind(&input.tracking)
     .bind(input.family_id)
@@ -584,6 +748,7 @@ pub(crate) async fn check_service_conversion(
 pub(crate) async fn update_product_row(
     conn: &mut sqlx::PgConnection,
     id: Uuid,
+    company_id: Uuid,
     input: &ProductInput,
     write_cost: bool,
 ) -> AppResult<()> {
@@ -598,9 +763,15 @@ pub(crate) async fn update_product_row(
     .ok_or(AppError::NotFound("product"))?;
     check_service_conversion(conn, id, &stored_type, &input.product_type).await?;
     check_packaging(conn, input.packaging_category_id, current_packaging).await?;
+    let (vat_category, vat_rate_override, vat_rate) =
+        resolve_product_fields(conn, company_id, input).await?;
+    sqlx::query("SELECT set_config('tradocraft.updating_product', '1', true)")
+        .execute(&mut *conn)
+        .await?;
     let updated = sqlx::query(
         "UPDATE products.products SET code = $2, name = $3, description = $4, unit = $5, product_type = $6,
-                vat_rate = $7, active = $8, tracking = $9, family_id = $10, pricing_type = $11,
+                vat_rate = $7, vat_category = $24, vat_rate_override = $25, active = $8, tracking = $9,
+                family_id = $10, pricing_type = $11,
                 standard_cost = CASE WHEN $12 THEN $13 ELSE standard_cost END,
                 reorder_min = $14, reorder_max = $15, lead_time_days = $16, barcode = $17,
                 packaging_category_id = $18, length_mm = $19, width_mm = $20, height_mm = $21, weight_g = $22,
@@ -613,7 +784,7 @@ pub(crate) async fn update_product_row(
     .bind(&input.description)
     .bind(&input.unit)
     .bind(&input.product_type)
-    .bind(input.vat_rate)
+    .bind(vat_rate)
     .bind(input.active)
     .bind(&input.tracking)
     .bind(input.family_id)
@@ -630,6 +801,8 @@ pub(crate) async fn update_product_row(
     .bind(input.height_mm)
     .bind(input.weight_g)
     .bind(input.default_production_remark.trim())
+    .bind(&vat_category)
+    .bind(vat_rate_override)
     .execute(&mut *conn)
     .await?;
     if updated.rows_affected() == 0 {
@@ -649,7 +822,14 @@ async fn create_product(
     input.validate()?;
     let id = new_id();
     let mut tx = state.db.begin().await?;
-    insert_product(&mut tx, id, &input, user.can(Permission::InventoryCost)).await?;
+    insert_product(
+        &mut tx,
+        id,
+        user.company_id,
+        &input,
+        user.can(Permission::InventoryCost),
+    )
+    .await?;
     audit::record(
         &mut tx,
         &user,
@@ -660,10 +840,15 @@ async fn create_product(
     )
     .await?;
     tx.commit().await?;
-    Ok((
-        StatusCode::CREATED,
-        Json(get_product(&state.db, id).await?.for_user(&user)),
-    ))
+    let mut product = get_product(&state.db, id).await?;
+    resolve_products_for_company(
+        &state.db,
+        user.company_id,
+        tradocraft_core::today(),
+        std::slice::from_mut(&mut product),
+    )
+    .await?;
+    Ok((StatusCode::CREATED, Json(product.for_user(&user))))
 }
 
 #[utoipa::path(put, path = "/products/{id}", tag = "products", params(("id" = Uuid, Path)),
@@ -678,7 +863,14 @@ async fn update_product(
     user.require(Permission::ProductsWrite)?;
     input.validate()?;
     let mut tx = state.db.begin().await?;
-    update_product_row(&mut tx, id, &input, user.can(Permission::InventoryCost)).await?;
+    update_product_row(
+        &mut tx,
+        id,
+        user.company_id,
+        &input,
+        user.can(Permission::InventoryCost),
+    )
+    .await?;
     audit::record(
         &mut tx,
         &user,
@@ -689,7 +881,15 @@ async fn update_product(
     )
     .await?;
     tx.commit().await?;
-    Ok(Json(get_product(&state.db, id).await?.for_user(&user)))
+    let mut product = get_product(&state.db, id).await?;
+    resolve_products_for_company(
+        &state.db,
+        user.company_id,
+        tradocraft_core::today(),
+        std::slice::from_mut(&mut product),
+    )
+    .await?;
+    Ok(Json(product.for_user(&user)))
 }
 
 #[utoipa::path(get, path = "/price-zones", tag = "products",

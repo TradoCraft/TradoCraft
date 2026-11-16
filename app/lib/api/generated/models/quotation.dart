@@ -16,7 +16,8 @@ part 'quotation.g.dart';
 @JsonSerializable()
 class Quotation {
   const Quotation({
-    required this.total,
+    required this.updatedAt,
+    required this.companyId,
     required this.createdAt,
     required this.createdBy,
     required this.currency,
@@ -28,7 +29,6 @@ class Quotation {
     required this.customerName,
     required this.customerPostalCode,
     required this.customerStreet,
-    required this.companyId,
     required this.id,
     required this.lines,
     required this.notes,
@@ -43,21 +43,26 @@ class Quotation {
     required this.status,
     required this.subtotal,
     required this.suggestions,
-    required this.vatTotal,
     required this.vatGroups,
     required this.vatRegime,
+    required this.vatTotal,
     required this.validUntil,
-    required this.updatedAt,
-    this.customerVatNumber,
+    required this.total,
     this.supersedesId,
+    this.customerVatNumber,
     this.sentAt,
     this.powerGridId,
     this.deliveryCountryCode,
+    this.vatRegimeOverride,
+    this.buildingConstructionYear,
     this.opportunityId,
   });
   
   factory Quotation.fromJson(Map<String, Object?> json) => _$QuotationFromJson(json);
   
+  /// Construction year of the building at the site, if known.
+  @JsonKey(includeIfNull: false,name: 'building_construction_year')
+  final int? buildingConstructionYear;
   @JsonKey(name: 'company_id')
   final String companyId;
   @JsonKey(name: 'created_at')
@@ -128,10 +133,14 @@ class Quotation {
   @JsonKey(name: 'vat_groups')
   final List<VatGroup> vatGroups;
 
-  /// `domestic` (VAT charged), `intra_eu` (reverse charge) or `outside_eu`: VAT is only shown and.
-  /// charged for `domestic`.
+  /// `domestic` (VAT charged), `domestic_reverse_charge`, `intra_eu` (reverse charge) or `outside_eu`:.
+  /// VAT is only shown and charged for `domestic`.
   @JsonKey(name: 'vat_regime')
   final String vatRegime;
+
+  /// Explicit VAT regime override set by the user (null means automatically derived).
+  @JsonKey(includeIfNull: false,name: 'vat_regime_override')
+  final String? vatRegimeOverride;
   @JsonKey(name: 'vat_total')
   final String vatTotal;
 

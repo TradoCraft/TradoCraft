@@ -61,8 +61,10 @@ class PoLineDraft {
     this.description = '',
     String quantity = '',
     String unitPrice = '',
+    String vatRate = '',
   }) : qty = TextEditingController(text: quantity),
-       price = TextEditingController(text: unitPrice);
+       price = TextEditingController(text: unitPrice),
+       vat = TextEditingController(text: vatRate);
 
   /// Starts from a stored [line].
   factory PoLineDraft.fromLine(PurchaseOrderLine line) => PoLineDraft(
@@ -72,6 +74,7 @@ class PoLineDraft {
     description: line.description,
     quantity: trimDecimal(line.quantity),
     unitPrice: trimDecimal(line.unitPrice),
+    vatRate: line.vatRate == null ? '' : trimDecimal(line.vatRate!),
   );
 
   /// The chosen product, null until one is picked.
@@ -92,10 +95,14 @@ class PoLineDraft {
   /// Unit price field.
   final TextEditingController price;
 
+  /// Optional VAT rate override field (empty = server auto-resolves).
+  final TextEditingController vat;
+
   /// Releases the controllers.
   void dispose() {
     qty.dispose();
     price.dispose();
+    vat.dispose();
   }
 }
 
@@ -120,6 +127,13 @@ String trimDecimal(String v) =>
     if (p == null || double.parse(p) < 0 || _scale(p) > 4) {
       return (null, l.purchLinePriceInvalid);
     }
+    String? v;
+    if (d.vat.text.trim().isNotEmpty) {
+      v = parseDecimalInput(d.vat.text);
+      if (v == null || double.parse(v) < 0 || double.parse(v) > 100) {
+        return (null, l.codeNameVatRequired);
+      }
+    }
     out.add(
       NewPoLineInput(
         productId: d.productId!,
@@ -127,6 +141,7 @@ String trimDecimal(String v) =>
         unitPrice: p,
         supplierProductCode: d.supplierCode,
         description: d.description,
+        vatRate: v,
       ),
     );
   }
@@ -233,6 +248,16 @@ class _PoLinesEditorState extends ConsumerState<PoLinesEditor> {
                     key: ValueKey('po-line-price-$i'),
                     controller: widget.lines[i].price,
                     decoration: InputDecoration(labelText: l.unitPrice),
+                    onChanged: (_) => _changed(),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                SizedBox(
+                  width: 72,
+                  child: TextField(
+                    key: ValueKey('po-line-vat-$i'),
+                    controller: widget.lines[i].vat,
+                    decoration: InputDecoration(labelText: l.vatPercent),
                     onChanged: (_) => _changed(),
                   ),
                 ),

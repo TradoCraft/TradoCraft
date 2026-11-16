@@ -24,6 +24,7 @@ class Opportunity {
     required this.stage,
     required this.title,
     required this.updatedAt,
+    this.buildingConstructionYear,
     this.closedAt,
     this.expectedClose,
     this.lostReason,
@@ -32,6 +33,9 @@ class Opportunity {
   
   factory Opportunity.fromJson(Map<String, Object?> json) => _$OpportunityFromJson(json);
   
+  /// Year the building at the site was constructed (used for renovation VAT rules).
+  @JsonKey(includeIfNull: false,name: 'building_construction_year')
+  final int? buildingConstructionYear;
   @JsonKey(includeIfNull: false,name: 'closed_at')
   final DateTime? closedAt;
   @JsonKey(name: 'created_at')

@@ -4583,5 +4583,41 @@
     }
   },
   "plGenOpenFolder": "Open folder",
-  "plGenBack": "Back to the plan"
+  "plGenBack": "Back to the plan",
+  "vatRegimeDomesticReverseCharge": "Domestic reverse charge (construction)",
+  "vatRegimeOverride": "VAT regime override",
+  "vatRegimeAuto": "Automatic (default)",
+  "domesticReverseChargeNotice": "VAT reverse charge — work on immovable property",
+  "buildingConstructionYear": "Building construction year",
+  "buildingConstructionYearHint": "Optional (800–2200) for renovation VAT rules",
+  "buildingConstructionYearError": "Enter a year between 800 and 2200",
+  "vatCategory": "VAT category",
+  "vatCategoryStandard": "Standard",
+  "vatCategoryIntermediate": "Intermediate",
+  "vatCategoryReduced": "Reduced",
+  "vatCategoryZero": "Zero rate",
+  "vatCategoryConstruction": "Construction (renovation)",
+  "vatRateOverride": "Custom VAT rate override (%)",
+  "vatRateOverrideHint": "Leave empty to use the company's country default",
+  "adminVatRates": "VAT rates",
+  "vatRatesTitle": "Country VAT rates",
+  "vatRateAdd": "Add VAT rate",
+  "vatRateEdit": "Edit VAT rate",
+  "vatRateCountry": "Country code",
+  "vatRateCategory": "Category",
+  "vatRatePercent": "Rate (%)",
+  "vatRateMinBuildingAge": "Min. building age (years)",
+  "vatRateStartDate": "Start date (YYYY-MM-DD)",
+  "vatRateEndDate": "End date (optional)",
+  "vatRateNotes": "Notes",
+  "vatRateClosePrevious": "Close previous open rule automatically",
+  "vatRateOverlapError": "Dates overlap an existing rule for this country and category",
+  "vatRateDeleteConfirm": "Delete VAT rate rule for {country} ({category})?",
+  "@vatRateDeleteConfirm": {
+    "placeholders": {
+      "country": {"type": "String"},
+      "category": {"type": "String"}
+    }
+  },
+  "vatRateOngoing": "Ongoing"
 }

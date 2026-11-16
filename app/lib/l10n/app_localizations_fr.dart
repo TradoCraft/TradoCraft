@@ -10084,4 +10084,103 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get plGenBack => 'Retour au plan';
+
+  @override
+  String get vatRegimeDomesticReverseCharge =>
+      'Cocontractant (travaux immobiliers)';
+
+  @override
+  String get vatRegimeOverride => 'Forcer le régime TVA';
+
+  @override
+  String get vatRegimeAuto => 'Automatique (par défaut)';
+
+  @override
+  String get domesticReverseChargeNotice =>
+      'Autoliquidation — travaux immobiliers (art. 20 AR n° 1)';
+
+  @override
+  String get buildingConstructionYear => 'Année de construction du bâtiment';
+
+  @override
+  String get buildingConstructionYearHint =>
+      'Optionnel (800–2200) pour le taux TVA rénovation';
+
+  @override
+  String get buildingConstructionYearError =>
+      'Entrez une année entre 800 et 2200';
+
+  @override
+  String get vatCategory => 'Catégorie TVA';
+
+  @override
+  String get vatCategoryStandard => 'Normal';
+
+  @override
+  String get vatCategoryIntermediate => 'Intermédiaire';
+
+  @override
+  String get vatCategoryReduced => 'Réduit';
+
+  @override
+  String get vatCategoryZero => 'Taux zéro';
+
+  @override
+  String get vatCategoryConstruction => 'Construction (rénovation)';
+
+  @override
+  String get vatRateOverride => 'Taux TVA personnalisé (%)';
+
+  @override
+  String get vatRateOverrideHint =>
+      'Laisser vide pour utiliser le taux du pays de la société';
+
+  @override
+  String get adminVatRates => 'Taux de TVA';
+
+  @override
+  String get vatRatesTitle => 'Taux de TVA par pays';
+
+  @override
+  String get vatRateAdd => 'Ajouter un taux TVA';
+
+  @override
+  String get vatRateEdit => 'Modifier le taux TVA';
+
+  @override
+  String get vatRateCountry => 'Code pays';
+
+  @override
+  String get vatRateCategory => 'Catégorie';
+
+  @override
+  String get vatRatePercent => 'Taux (%)';
+
+  @override
+  String get vatRateMinBuildingAge => 'Âge min. bâtiment (ans)';
+
+  @override
+  String get vatRateStartDate => 'Date de début (AAAA-MM-JJ)';
+
+  @override
+  String get vatRateEndDate => 'Date de fin (optionnel)';
+
+  @override
+  String get vatRateNotes => 'Notes';
+
+  @override
+  String get vatRateClosePrevious =>
+      'Clôturer automatiquement la règle ouverte précédente';
+
+  @override
+  String get vatRateOverlapError =>
+      'Les dates chevauchent une règle existante pour ce pays et cette catégorie';
+
+  @override
+  String vatRateDeleteConfirm(String country, String category) {
+    return 'Supprimer la règle TVA pour $country ($category) ?';
+  }
+
+  @override
+  String get vatRateOngoing => 'En cours';
 }

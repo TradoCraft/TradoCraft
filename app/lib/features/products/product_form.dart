@@ -31,7 +31,17 @@ class _ProductFormState extends ConsumerState<ProductForm> {
   late final _name = TextEditingController(text: p?.name);
   late final _description = TextEditingController(text: p?.description);
   late final _unit = TextEditingController(text: p?.unit ?? 'pcs');
-  late final _vat = TextEditingController(text: number(p?.vatRate ?? '21'));
+  late String _vatCategory = const {
+    'standard',
+    'intermediate',
+    'reduced',
+    'zero',
+  }.contains(p?.vatCategory)
+      ? p!.vatCategory!
+      : 'standard';
+  late final _vatOverride = TextEditingController(
+    text: p?.vatRateOverride != null ? number(p!.vatRateOverride!) : '',
+  );
   late String _type = p?.productType ?? 'purchased';
   late String _tracking = p?.tracking ?? 'none';
   late final _cost = TextEditingController(text: number(p?.standardCost));
@@ -63,8 +73,20 @@ class _ProductFormState extends ConsumerState<ProductForm> {
   }
 
   Future<void> _save() async {
-    final vat = parseDecimalInput(_vat.text);
-    if (_code.text.trim().isEmpty || _name.text.trim().isEmpty || vat == null) {
+    final overrideText = _vatOverride.text.trim();
+    final overrideRate = overrideText.isEmpty
+        ? null
+        : parseDecimalInput(overrideText);
+    final overrideNum = overrideRate == null
+        ? null
+        : double.tryParse(overrideRate);
+    if (_code.text.trim().isEmpty ||
+        _name.text.trim().isEmpty ||
+        (overrideText.isNotEmpty &&
+            (overrideRate == null ||
+                overrideNum == null ||
+                overrideNum < 0 ||
+                overrideNum > 100))) {
       setState(() => _error = context.l10n.codeNameVatRequired);
       return;
     }
@@ -101,7 +123,9 @@ class _ProductFormState extends ConsumerState<ProductForm> {
       description: _description.text,
       unit: _unit.text.trim(),
       productType: _type,
-      vatRate: vat,
+      vatCategory: _vatCategory,
+      vatRateOverride: overrideRate,
+      vatRate: overrideRate,
       tracking: _type == 'service' ? 'none' : _tracking,
       familyId: _familyId,
       pricingType: _pricing,
@@ -152,6 +176,75 @@ class _ProductFormState extends ConsumerState<ProductForm> {
           ),
       ],
       onChanged: (v) => setState(() => _packagingId = v),
+    );
+  }
+
+  Widget _vatFields(BuildContext context, SizedBox gap) {
+    final co = ref.watch(meProvider).value?.company.countryCode ?? '';
+    final rates = ref.watch(vatRatesProvider).value ?? const [];
+    final overrideText = _vatOverride.text.trim();
+    final overrideRate = overrideText.isEmpty
+        ? null
+        : parseDecimalInput(overrideText);
+    final categoryRate = co.isEmpty
+        ? p?.vatRate
+        : (resolveCountryCategoryRate(
+                rates,
+                countryCode: co,
+                category: _vatCategory,
+              ) ??
+              p?.vatRate);
+    final effectiveRate = overrideRate ?? categoryRate;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(
+          child: DropdownButtonFormField<String>(
+            initialValue: _vatCategory,
+            isExpanded: true,
+            decoration: InputDecoration(labelText: context.l10n.vatCategory),
+            items: [
+              DropdownMenuItem(
+                value: 'standard',
+                child: Text(context.l10n.vatCategoryStandard),
+              ),
+              DropdownMenuItem(
+                value: 'intermediate',
+                child: Text(context.l10n.vatCategoryIntermediate),
+              ),
+              DropdownMenuItem(
+                value: 'reduced',
+                child: Text(context.l10n.vatCategoryReduced),
+              ),
+              DropdownMenuItem(
+                value: 'zero',
+                child: Text(context.l10n.vatCategoryZero),
+              ),
+            ],
+            onChanged: (v) => setState(() => _vatCategory = v!),
+          ),
+        ),
+        gap,
+        SizedBox(
+          width: 150,
+          child: TextField(
+            key: const ValueKey('product-vat-override'),
+            controller: _vatOverride,
+            decoration: InputDecoration(
+              labelText: context.l10n.vatRateOverride,
+              hintText: context.l10n.vatRateOverrideHint,
+            ),
+            onChanged: (_) => setState(() {}),
+          ),
+        ),
+        if (effectiveRate != null) ...[
+          gap,
+          Chip(
+            key: const ValueKey('product-resolved-vat'),
+            label: Text('${number(effectiveRate)} %'),
+          ),
+        ],
+      ],
     );
   }
 
@@ -216,18 +309,10 @@ class _ProductFormState extends ConsumerState<ProductForm> {
                     decoration: InputDecoration(labelText: context.l10n.unit),
                   ),
                 ),
-                gap,
-                SizedBox(
-                  width: 90,
-                  child: TextField(
-                    controller: _vat,
-                    decoration: InputDecoration(
-                      labelText: context.l10n.vatPercent,
-                    ),
-                  ),
-                ),
               ],
             ),
+            gap,
+            _vatFields(context, gap),
             gap,
             Row(
               children: [

@@ -44,18 +44,35 @@ async fn preview(
         Some(qid) => shipping::quoted_amount_for_preview(&mut conn, user.company_id, qid).await?,
         None => None,
     };
-    let mut p = service::price_lines(
-        &state.db,
-        user.company_id,
-        input.customer_id,
-        price_date,
-        &input.lines,
-    )
-    .await?;
     let purpose = input
         .purpose
         .as_deref()
         .map_or(Ok("installation"), service::validate_purpose)?;
+    let vat_regime_override =
+        service::validate_vat_override(input.vat_regime_override.as_deref(), None)?;
+    let mut building_year =
+        service::validate_building_year(input.building_construction_year, None)?;
+    if building_year.is_none() {
+        if let Some(opp_id) = input.opportunity_id {
+            building_year =
+                service::opportunity_building_year(&mut conn, user.company_id, opp_id).await?;
+        }
+    }
+    let price_ctx = service::PriceContext {
+        quote_date,
+        price_date,
+        purpose,
+        vat_regime_override: vat_regime_override.as_deref(),
+        building_construction_year: building_year,
+    };
+    let mut p = service::price_lines(
+        &state.db,
+        user.company_id,
+        input.customer_id,
+        &price_ctx,
+        &input.lines,
+    )
+    .await?;
     let country = service::resolve_delivery_country(
         input.delivery_country_code.as_deref(),
         None,
@@ -88,6 +105,7 @@ async fn preview(
             p.totals = service::stored_totals(&p.lines);
         }
     }
+    let unconfirmed_lines = p.unconfirmed_lines();
     Ok(Json(PricingPreview {
         warnings,
         suggestions,
@@ -95,7 +113,9 @@ async fn preview(
         customer_discount_percent: p.customer.discount_percent,
         quote_date,
         price_date,
-        unconfirmed_lines: p.unconfirmed_lines(),
+        vat_regime: p.vat_regime,
+        building_construction_year: p.building_construction_year,
+        unconfirmed_lines,
         vat_groups: service::vat_groups(&p.totals),
         subtotal: p.totals.subtotal,
         vat_total: p.totals.vat_total,
@@ -192,19 +212,45 @@ pub(crate) async fn create_draft(
     let quote_date = input.quote_date.unwrap_or_else(service::today);
     let price_date = input.price_date.unwrap_or(quote_date);
     let backdated = service::check_price_date(user, quote_date, price_date)?;
-    let priced = service::price_lines(
-        db,
-        user.company_id,
-        input.customer_id,
-        price_date,
-        &input.lines,
-    )
-    .await?;
-    let company = get_company(db, user.company_id).await?;
     let purpose = input
         .purpose
         .as_deref()
         .map_or(Ok("installation"), service::validate_purpose)?;
+    let vat_regime_override = service::validate_vat_override(
+        input.vat_regime_override.as_deref(),
+        input.clear_vat_regime_override,
+    )?;
+    let explicit_year = service::validate_building_year(
+        input.building_construction_year,
+        input.clear_building_construction_year,
+    )?;
+    if let Some(opp) = input.opportunity_id {
+        tradocraft_crm::opportunities::link_quotation(&mut *tx, user, opp, input.customer_id)
+            .await?;
+    }
+    let building_year = match (explicit_year, input.opportunity_id) {
+        (Some(y), _) => Some(y),
+        (None, Some(opp)) => {
+            service::opportunity_building_year(&mut *tx, user.company_id, opp).await?
+        }
+        (None, None) => None,
+    };
+    let price_ctx = service::PriceContext {
+        quote_date,
+        price_date,
+        purpose,
+        vat_regime_override: vat_regime_override.as_deref(),
+        building_construction_year: building_year,
+    };
+    let priced = service::price_lines(
+        db,
+        user.company_id,
+        input.customer_id,
+        &price_ctx,
+        &input.lines,
+    )
+    .await?;
+    let company = get_company(db, user.company_id).await?;
     let delivery_country = service::resolve_delivery_country(
         input.delivery_country_code.as_deref(),
         None,
@@ -219,10 +265,6 @@ pub(crate) async fn create_draft(
         delivery_country.as_deref(),
     )
     .await?;
-    if let Some(opp) = input.opportunity_id {
-        tradocraft_crm::opportunities::link_quotation(&mut *tx, user, opp, input.customer_id)
-            .await?;
-    }
     let number = service::allocate_number(&mut *tx, user.company_id, quote_date).await?;
     let id = service::insert_quotation(
         &mut *tx,
@@ -240,6 +282,8 @@ pub(crate) async fn create_draft(
             purpose,
             delivery_country_code: delivery_country.as_deref(),
             power_grid_id,
+            vat_regime_override: vat_regime_override.as_deref(),
+            building_construction_year: building_year,
         },
     )
     .await?;
@@ -349,19 +393,54 @@ pub(crate) async fn update_draft(
     // Only a change to an earlier price list needs the permission; keeping one is fine.
     let backdated = price_date != current.price_date
         && service::check_price_date(user, quote_date, price_date)?;
-    let priced = service::price_lines(
-        db,
-        user.company_id,
-        input.customer_id,
-        price_date,
-        &input.lines,
-    )
-    .await?;
-    let c = &priced.customer;
     let purpose = input
         .purpose
         .as_deref()
         .map_or(Ok(current.purpose.as_str()), service::validate_purpose)?;
+    let explicit_override = service::validate_vat_override(
+        input.vat_regime_override.as_deref(),
+        input.clear_vat_regime_override,
+    )?;
+    let vat_regime_override = if input.clear_vat_regime_override == Some(true) {
+        None
+    } else if explicit_override.is_some() {
+        explicit_override
+    } else if input.customer_id == current.customer_id {
+        current.vat_regime_override.clone()
+    } else {
+        None
+    };
+    let explicit_year = service::validate_building_year(
+        input.building_construction_year,
+        input.clear_building_construction_year,
+    )?;
+    let building_year = if input.clear_building_construction_year == Some(true) {
+        None
+    } else if let Some(y) = explicit_year {
+        Some(y)
+    } else if let Some(y) = current.building_construction_year {
+        Some(y)
+    } else if let Some(opp) = input.opportunity_id {
+        service::opportunity_building_year(&mut *tx, user.company_id, opp).await?
+    } else {
+        None
+    };
+    let price_ctx = service::PriceContext {
+        quote_date,
+        price_date,
+        purpose,
+        vat_regime_override: vat_regime_override.as_deref(),
+        building_construction_year: building_year,
+    };
+    let priced = service::price_lines(
+        db,
+        user.company_id,
+        input.customer_id,
+        &price_ctx,
+        &input.lines,
+    )
+    .await?;
+    let c = &priced.customer;
     // A new customer means a new default country, unless one is given.
     let kept = if c.customer.id == current.customer_id {
         current.delivery_country_code.clone()
@@ -396,7 +475,8 @@ pub(crate) async fn update_draft(
             customer_street = $5, customer_postal_code = $6, customer_city = $7, customer_country_code = $8,
             customer_language = $9, price_zone_code = $10, customer_discount_percent = $11, quote_date = $12,
             valid_until = $13, notes = $14, subtotal = $15, vat_total = $16, total = $17, opportunity_id = $18,
-            price_date = $19, purpose = $20, delivery_country_code = $21, power_grid_id = $22, vat_regime = $23, updated_at = now()
+            price_date = $19, purpose = $20, delivery_country_code = $21, power_grid_id = $22,
+            vat_regime = $23, vat_regime_override = $24, building_construction_year = $25, updated_at = now()
          WHERE id = $1",
     )
     .bind(id)
@@ -421,7 +501,9 @@ pub(crate) async fn update_draft(
     .bind(purpose)
     .bind(&delivery_country)
     .bind(power_grid_id)
-    .bind(&c.customer.vat_regime)
+    .bind(&priced.vat_regime)
+    .bind(&vat_regime_override)
+    .bind(building_year)
     .execute(&mut *tx)
     .await?;
     sqlx::query("DELETE FROM sales.quotation_lines WHERE quotation_id = $1")
@@ -626,8 +708,21 @@ async fn repricing(
     drop(conn);
     let today = service::today();
     let inputs = service::line_inputs(&q.lines, false)?;
-    let now =
-        service::price_lines(&state.db, user.company_id, q.customer_id, today, &inputs).await?;
+    let price_ctx = service::PriceContext {
+        quote_date: today,
+        price_date: today,
+        purpose: &q.purpose,
+        vat_regime_override: q.vat_regime_override.as_deref(),
+        building_construction_year: q.building_construction_year,
+    };
+    let now = service::price_lines(
+        &state.db,
+        user.company_id,
+        q.customer_id,
+        &price_ctx,
+        &inputs,
+    )
+    .await?;
     let lines: Vec<RepricingLine> = q
         .lines
         .iter()
@@ -727,12 +822,14 @@ pub(crate) async fn revise(
                     customer_street, customer_postal_code, customer_city, customer_country_code, customer_language,
                     price_zone_code, customer_discount_percent, currency, quote_date, valid_until, notes,
                     subtotal, vat_total, total, supersedes_id, created_by, opportunity_id, price_date,
-                    purpose, delivery_country_code, power_grid_id, vat_regime)
+                    purpose, delivery_country_code, power_grid_id, vat_regime, vat_regime_override,
+                    building_construction_year)
                  SELECT $2, company_id, number, revision + 1, 'draft', customer_id, customer_name,
                     customer_vat_number, customer_street, customer_postal_code, customer_city,
                     customer_country_code, customer_language, price_zone_code, customer_discount_percent, currency,
                     $3, $4, notes, subtotal, vat_total, total, id, $5, opportunity_id, price_date,
-                    purpose, delivery_country_code, power_grid_id, vat_regime
+                    purpose, delivery_country_code, power_grid_id, vat_regime, vat_regime_override,
+                    building_construction_year
                  FROM sales.quotations WHERE id = $1",
             )
             .bind(id)
@@ -748,8 +845,16 @@ pub(crate) async fn revise(
         }
         RevisionPricing::Current => {
             let inputs = service::line_inputs(&old.lines, false)?;
+            let price_ctx = service::PriceContext {
+                quote_date: today,
+                price_date: today,
+                purpose: &old.purpose,
+                vat_regime_override: old.vat_regime_override.as_deref(),
+                building_construction_year: old.building_construction_year,
+            };
             let priced =
-                service::price_lines(db, user.company_id, old.customer_id, today, &inputs).await?;
+                service::price_lines(db, user.company_id, old.customer_id, &price_ctx, &inputs)
+                    .await?;
             let created = service::insert_quotation(
                 &mut *tx,
                 user,
@@ -766,6 +871,8 @@ pub(crate) async fn revise(
                     purpose: &old.purpose,
                     delivery_country_code: old.delivery_country_code.as_deref(),
                     power_grid_id: old.power_grid_id,
+                    vat_regime_override: old.vat_regime_override.as_deref(),
+                    building_construction_year: old.building_construction_year,
                 },
             )
             .await?;

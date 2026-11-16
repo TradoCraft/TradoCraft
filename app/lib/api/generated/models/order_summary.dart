@@ -27,13 +27,18 @@ class OrderSummary {
     required this.status,
     required this.subtotal,
     required this.total,
+    this.buildingConstructionYear,
     this.deliveryCountryCode,
     this.powerGridId,
     this.promisedDate,
+    this.vatRegime,
   });
   
   factory OrderSummary.fromJson(Map<String, Object?> json) => _$OrderSummaryFromJson(json);
   
+  /// Construction year of the building at the site, if known.
+  @JsonKey(includeIfNull: false,name: 'building_construction_year')
+  final int? buildingConstructionYear;
   final String currency;
 
   /// The latest revision.
@@ -84,6 +89,10 @@ class OrderSummary {
   final String status;
   final String subtotal;
   final String total;
+
+  /// `domestic`, `domestic_reverse_charge`, `intra_eu`, or `outside_eu`.
+  @JsonKey(includeIfNull: false,name: 'vat_regime')
+  final String? vatRegime;
 
   Map<String, Object?> toJson() => _$OrderSummaryToJson(this);
 }

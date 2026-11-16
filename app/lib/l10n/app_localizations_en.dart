@@ -10024,4 +10024,102 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get plGenBack => 'Back to the plan';
+
+  @override
+  String get vatRegimeDomesticReverseCharge =>
+      'Domestic reverse charge (construction)';
+
+  @override
+  String get vatRegimeOverride => 'VAT regime override';
+
+  @override
+  String get vatRegimeAuto => 'Automatic (default)';
+
+  @override
+  String get domesticReverseChargeNotice =>
+      'VAT reverse charge — work on immovable property';
+
+  @override
+  String get buildingConstructionYear => 'Building construction year';
+
+  @override
+  String get buildingConstructionYearHint =>
+      'Optional (800–2200) for renovation VAT rules';
+
+  @override
+  String get buildingConstructionYearError =>
+      'Enter a year between 800 and 2200';
+
+  @override
+  String get vatCategory => 'VAT category';
+
+  @override
+  String get vatCategoryStandard => 'Standard';
+
+  @override
+  String get vatCategoryIntermediate => 'Intermediate';
+
+  @override
+  String get vatCategoryReduced => 'Reduced';
+
+  @override
+  String get vatCategoryZero => 'Zero rate';
+
+  @override
+  String get vatCategoryConstruction => 'Construction (renovation)';
+
+  @override
+  String get vatRateOverride => 'Custom VAT rate override (%)';
+
+  @override
+  String get vatRateOverrideHint =>
+      'Leave empty to use the company\'s country default';
+
+  @override
+  String get adminVatRates => 'VAT rates';
+
+  @override
+  String get vatRatesTitle => 'Country VAT rates';
+
+  @override
+  String get vatRateAdd => 'Add VAT rate';
+
+  @override
+  String get vatRateEdit => 'Edit VAT rate';
+
+  @override
+  String get vatRateCountry => 'Country code';
+
+  @override
+  String get vatRateCategory => 'Category';
+
+  @override
+  String get vatRatePercent => 'Rate (%)';
+
+  @override
+  String get vatRateMinBuildingAge => 'Min. building age (years)';
+
+  @override
+  String get vatRateStartDate => 'Start date (YYYY-MM-DD)';
+
+  @override
+  String get vatRateEndDate => 'End date (optional)';
+
+  @override
+  String get vatRateNotes => 'Notes';
+
+  @override
+  String get vatRateClosePrevious => 'Close previous open rule automatically';
+
+  @override
+  String get vatRateOverlapError =>
+      'Dates overlap an existing rule for this country and category';
+
+  @override
+  String vatRateDeleteConfirm(String country, String category) {
+    return 'Delete VAT rate rule for $country ($category)?';
+  }
+
+  @override
+  String get vatRateOngoing => 'Ongoing';
 }

@@ -886,6 +886,206 @@
         }
       }
     },
+    "/api/v1/admin/vat-rates": {
+      "post": {
+        "tags": [
+          "core"
+        ],
+        "operationId": "create_vat_rate",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CountryVatRateInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CountryVatRate"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/vat-rates/{id}": {
+      "put": {
+        "tags": [
+          "core"
+        ],
+        "operationId": "update_vat_rate",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "VAT rate rule id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CountryVatRateInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CountryVatRate"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "core"
+        ],
+        "operationId": "delete_vat_rate",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "VAT rate rule id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/api/v1/admin/worker": {
       "get": {
         "tags": [
@@ -30929,6 +31129,80 @@
           }
         }
       }
+    },
+    "/api/v1/vat-rates": {
+      "get": {
+        "tags": [
+          "core"
+        ],
+        "operationId": "list_vat_rates",
+        "parameters": [
+          {
+            "name": "country_code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CountryVatRate"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -33541,6 +33815,14 @@
           "lines"
         ],
         "properties": {
+          "building_construction_year": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Optional building construction year for renovation VAT rules (`800..=2200`)."
+          },
           "configuration": {
             "type": "object",
             "description": "The configurator's own payload, stored verbatim on the quotation for traceability."
@@ -33605,6 +33887,13 @@
             ],
             "format": "int64",
             "description": "Defaults to 30 days."
+          },
+          "vat_regime_override": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional explicit VAT regime override (`domestic`, `domestic_reverse_charge`, `intra_eu`, `outside_eu`)."
           }
         }
       },
@@ -34501,6 +34790,109 @@
           }
         }
       },
+      "CountryVatRate": {
+        "type": "object",
+        "description": "A country VAT rate rule with an effective date range and optional building-age threshold.",
+        "required": [
+          "id",
+          "country_code",
+          "category",
+          "rate",
+          "start_date",
+          "notes",
+          "updated_at"
+        ],
+        "properties": {
+          "category": {
+            "type": "string"
+          },
+          "country_code": {
+            "type": "string"
+          },
+          "end_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "min_building_age_years": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "rate": {
+            "type": "string",
+            "example": "21.00"
+          },
+          "start_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CountryVatRateInput": {
+        "type": "object",
+        "description": "Request payload for creating or updating a country VAT rate rule.",
+        "required": [
+          "country_code",
+          "category",
+          "rate"
+        ],
+        "properties": {
+          "category": {
+            "type": "string"
+          },
+          "close_previous": {
+            "type": "boolean",
+            "description": "When creating a new rate period, set `end_date = start_date - 1` on any\nearlier rule for the same `(country_code, category, min_building_age_years)`\nthat would otherwise remain open past the new start date."
+          },
+          "country_code": {
+            "type": "string"
+          },
+          "end_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "min_building_age_years": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "rate": {
+            "type": "string",
+            "example": "21.00"
+          },
+          "start_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          }
+        }
+      },
       "CreateDeliveryInput": {
         "type": "object",
         "properties": {
@@ -34734,7 +35126,7 @@
           },
           "vat_regime": {
             "type": "string",
-            "description": "`domestic` (VAT charged), `intra_eu` (reverse charge) or `outside_eu`."
+            "description": "`domestic` (VAT charged), `domestic_reverse_charge`, `intra_eu` (reverse charge) or `outside_eu`."
           }
         }
       },
@@ -34823,8 +35215,11 @@
             ]
           },
           "vat_regime": {
-            "type": "string",
-            "description": "`domestic` (default), `intra_eu` or `outside_eu`."
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`domestic`, `domestic_reverse_charge`, `intra_eu` or `outside_eu`. When omitted on create,\nderived automatically from the active company's country, the customer's country, and `vat_number`."
           }
         }
       },
@@ -38191,7 +38586,7 @@
               "string",
               "null"
             ],
-            "description": "VAT rate in percent, default 0."
+            "description": "VAT rate in percent (defaults to linked PO line rate, else company standard rate for\ndomestic suppliers and 0 for foreign suppliers)."
           }
         }
       },
@@ -40593,6 +40988,14 @@
           },
           "unit_price": {
             "type": "string"
+          },
+          "vat_rate": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional explicit VAT rate (%). When omitted, domestic suppliers resolve from the product's\nVAT category on the order date and cross-border suppliers default to `0`.",
+            "example": "21.00"
           }
         }
       },
@@ -40941,6 +41344,14 @@
           "updated_at"
         ],
         "properties": {
+          "building_construction_year": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Year the building at the site was constructed (used for renovation VAT rules)."
+          },
           "closed_at": {
             "type": [
               "string",
@@ -41023,6 +41434,21 @@
           "customer_id"
         ],
         "properties": {
+          "building_construction_year": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Year the building at the site was constructed (800..=2200). On update kept when omitted."
+          },
+          "clear_building_construction_year": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "`true` clears the stored construction year on update; combined with `building_construction_year` it is a 422."
+          },
           "clear_power_grid": {
             "type": [
               "boolean",
@@ -41487,6 +41913,14 @@
           "salesperson_name"
         ],
         "properties": {
+          "building_construction_year": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Construction year of the building at the site, if known."
+          },
           "currency": {
             "type": "string"
           },
@@ -41574,6 +42008,10 @@
           },
           "total": {
             "type": "string"
+          },
+          "vat_regime": {
+            "type": "string",
+            "description": "`domestic`, `domestic_reverse_charge`, `intra_eu`, or `outside_eu`."
           }
         }
       },
@@ -43643,6 +44081,14 @@
           "suggestions"
         ],
         "properties": {
+          "building_construction_year": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Building construction year used during preview calculation."
+          },
           "customer_discount_percent": {
             "type": "string"
           },
@@ -43688,6 +44134,10 @@
               "$ref": "#/components/schemas/VatGroup"
             }
           },
+          "vat_regime": {
+            "type": "string",
+            "description": "Effective VAT regime resolved for this preview."
+          },
           "vat_total": {
             "type": "string"
           },
@@ -43707,6 +44157,14 @@
           "lines"
         ],
         "properties": {
+          "building_construction_year": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Building construction year for renovation VAT preview (800..=2200)."
+          },
           "customer_id": {
             "type": "string",
             "format": "uuid"
@@ -43723,6 +44181,14 @@
             "items": {
               "$ref": "#/components/schemas/QuotationLineInput"
             }
+          },
+          "opportunity_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "Optional opportunity to inherit `building_construction_year` from when omitted."
           },
           "power_grid_id": {
             "type": [
@@ -43760,6 +44226,13 @@
               "null"
             ],
             "format": "date"
+          },
+          "vat_regime_override": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Explicit VAT regime override to preview (`domestic`, `domestic_reverse_charge`, `intra_eu`, `outside_eu`)."
           }
         }
       },
@@ -44010,9 +44483,21 @@
           "unit": {
             "type": "string"
           },
+          "vat_category": {
+            "type": "string",
+            "description": "VAT category used to resolve country-specific default rates (`standard`, `intermediate`, `reduced`, `zero`)."
+          },
           "vat_rate": {
             "type": "string",
             "example": "21"
+          },
+          "vat_rate_override": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional explicit VAT rate overriding the country-category rate.",
+            "example": "12.00"
           },
           "weight_g": {
             "type": [
@@ -44138,8 +44623,7 @@
         "type": "object",
         "required": [
           "code",
-          "name",
-          "vat_rate"
+          "name"
         ],
         "properties": {
           "active": {
@@ -44237,9 +44721,28 @@
           "unit": {
             "type": "string"
           },
+          "vat_category": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`standard` (default), `intermediate`, `reduced`, or `zero`."
+          },
           "vat_rate": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Explicit VAT rate (kept for backwards compatibility). If `vat_category` / `vat_rate_override`\nare omitted, resolved via country rules and only treated as an override if no category matches.",
             "example": "21"
+          },
+          "vat_rate_override": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional explicit VAT rate override (null clears any previous override).",
+            "example": "12.00"
           },
           "weight_g": {
             "type": [
@@ -46022,6 +46525,10 @@
           },
           "unit_price": {
             "type": "string"
+          },
+          "vat_rate": {
+            "type": "string",
+            "example": "21.00"
           }
         }
       },
@@ -46153,6 +46660,14 @@
           "suggestions"
         ],
         "properties": {
+          "building_construction_year": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Construction year of the building at the site, if known."
+          },
           "company_id": {
             "type": "string",
             "format": "uuid"
@@ -46306,7 +46821,14 @@
           },
           "vat_regime": {
             "type": "string",
-            "description": "`domestic` (VAT charged), `intra_eu` (reverse charge) or `outside_eu`: VAT is only shown and\ncharged for `domestic`."
+            "description": "`domestic` (VAT charged), `domestic_reverse_charge`, `intra_eu` (reverse charge) or `outside_eu`:\nVAT is only shown and charged for `domestic`."
+          },
+          "vat_regime_override": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Explicit VAT regime override set by the user (null means automatically derived)."
           },
           "vat_total": {
             "type": "string"
@@ -46327,12 +46849,34 @@
           "lines"
         ],
         "properties": {
+          "building_construction_year": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Year the site's building was constructed (800..=2200). Inherited from `opportunity_id` when omitted on create."
+          },
+          "clear_building_construction_year": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "`true` clears `building_construction_year` on update; refused (422) together with a year."
+          },
           "clear_power_grid": {
             "type": [
               "boolean",
               "null"
             ],
             "description": "`true` clears the stored grid (\"any grid of the delivery country\"); it wins over the keep\nrule above and is refused (422) together with a `power_grid_id`. Absent or `false`: no effect."
+          },
+          "clear_vat_regime_override": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "`true` clears any previous `vat_regime_override` on update so auto-resolution applies again."
           },
           "customer_id": {
             "type": "string",
@@ -46400,6 +46944,13 @@
             ],
             "format": "int64",
             "description": "Defaults to 30 days."
+          },
+          "vat_regime_override": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Explicit VAT regime override (`domestic`, `domestic_reverse_charge`, `intra_eu`, `outside_eu`).\nWhen omitted on create, derived from customer regime and purpose; on update kept unless cleared."
           }
         }
       },
@@ -46637,6 +47188,14 @@
             ],
             "description": "Confirmed unit price (before rebates) for an indicative product. Indicative lines must be\nconfirmed before the quotation can be sent. Not allowed for other products.",
             "example": "6500"
+          },
+          "vat_rate": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional explicit VAT rate override for this line (omitted: resolved from country, product category, regime, and building age).",
+            "example": "21"
           }
         }
       },

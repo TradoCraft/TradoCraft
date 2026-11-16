@@ -15,6 +15,7 @@ class NewPoLineInput {
     required this.unitPrice,
     this.description,
     this.supplierProductCode,
+    this.vatRate,
   });
   
   factory NewPoLineInput.fromJson(Map<String, Object?> json) => _$NewPoLineInputFromJson(json);
@@ -28,6 +29,11 @@ class NewPoLineInput {
   final String? supplierProductCode;
   @JsonKey(name: 'unit_price')
   final String unitPrice;
+
+  /// Optional explicit VAT rate (%). When omitted, domestic suppliers resolve from the product's.
+  /// VAT category on the order date and cross-border suppliers default to `0`.
+  @JsonKey(includeIfNull: false,name: 'vat_rate')
+  final String? vatRate;
 
   Map<String, Object?> toJson() => _$NewPoLineInputToJson(this);
 }

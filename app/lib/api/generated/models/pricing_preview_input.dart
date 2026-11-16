@@ -13,16 +13,22 @@ class PricingPreviewInput {
   const PricingPreviewInput({
     required this.customerId,
     required this.lines,
+    this.buildingConstructionYear,
     this.deliveryCountryCode,
+    this.opportunityId,
     this.powerGridId,
     this.priceDate,
     this.purpose,
     this.quotationId,
     this.quoteDate,
+    this.vatRegimeOverride,
   });
   
   factory PricingPreviewInput.fromJson(Map<String, Object?> json) => _$PricingPreviewInputFromJson(json);
   
+  /// Building construction year for renovation VAT preview (800..=2200).
+  @JsonKey(includeIfNull: false,name: 'building_construction_year')
+  final int? buildingConstructionYear;
   @JsonKey(name: 'customer_id')
   final String customerId;
 
@@ -30,6 +36,10 @@ class PricingPreviewInput {
   @JsonKey(includeIfNull: false,name: 'delivery_country_code')
   final String? deliveryCountryCode;
   final List<QuotationLineInput> lines;
+
+  /// Optional opportunity to inherit `building_construction_year` from when omitted.
+  @JsonKey(includeIfNull: false,name: 'opportunity_id')
+  final String? opportunityId;
   @JsonKey(includeIfNull: false,name: 'power_grid_id')
   final String? powerGridId;
 
@@ -49,6 +59,10 @@ class PricingPreviewInput {
   final String? quotationId;
   @JsonKey(includeIfNull: false,name: 'quote_date')
   final DateTime? quoteDate;
+
+  /// Explicit VAT regime override to preview (`domestic`, `domestic_reverse_charge`, `intra_eu`, `outside_eu`).
+  @JsonKey(includeIfNull: false,name: 'vat_regime_override')
+  final String? vatRegimeOverride;
 
   Map<String, Object?> toJson() => _$PricingPreviewInputToJson(this);
 }

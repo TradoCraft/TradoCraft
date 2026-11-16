@@ -25,15 +25,19 @@ OrderSummary _$OrderSummaryFromJson(Map<String, dynamic> json) => OrderSummary(
   status: json['status'] as String,
   subtotal: json['subtotal'] as String,
   total: json['total'] as String,
+  buildingConstructionYear: (json['building_construction_year'] as num?)
+      ?.toInt(),
   deliveryCountryCode: json['delivery_country_code'] as String?,
   powerGridId: json['power_grid_id'] as String?,
   promisedDate: json['promised_date'] == null
       ? null
       : DateTime.parse(json['promised_date'] as String),
+  vatRegime: json['vat_regime'] as String?,
 );
 
 Map<String, dynamic> _$OrderSummaryToJson(OrderSummary instance) =>
     <String, dynamic>{
+      'building_construction_year': ?instance.buildingConstructionYear,
       'currency': instance.currency,
       'current_revision': instance.currentRevision,
       'customer_id': instance.customerId,
@@ -55,4 +59,5 @@ Map<String, dynamic> _$OrderSummaryToJson(OrderSummary instance) =>
       'status': instance.status,
       'subtotal': instance.subtotal,
       'total': instance.total,
+      'vat_regime': ?instance.vatRegime,
     };

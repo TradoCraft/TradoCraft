@@ -56,6 +56,70 @@ final priceZonesProvider = FutureProvider<List<PriceZone>>(
   (ref) => ref.watch(apiProvider).products.listPriceZones(),
 );
 
+final vatRatesProvider = FutureProvider<List<CountryVatRate>>(
+  (ref) => ref.watch(apiProvider).core.listVatRates(),
+);
+
+const _euVatCountries = <String>{
+  'AT', 'BE', 'BG', 'CY', 'CZ', 'DE', 'DK', 'EE', 'EL', 'ES', 'FI', 'FR',
+  'GR', 'HR', 'HU', 'IE', 'IT', 'LT', 'LU', 'LV', 'MT', 'NL', 'PL', 'PT',
+  'RO', 'SE', 'SI', 'SK', 'XI',
+};
+
+/// Whether [countryCode] is in the EU VAT area (EU-27 plus XI).
+bool isEuVatCountry(String countryCode) =>
+    _euVatCountries.contains(countryCode.trim().toUpperCase());
+
+/// Mirrors backend `tradocraft_core::vat::default_vat_regime`.
+String deriveDefaultVatRegime({
+  required String companyCountry,
+  required String customerCountry,
+  required String? vatNumber,
+}) {
+  final co = companyCountry.trim().toUpperCase();
+  final cu = customerCountry.trim().toUpperCase();
+  if (co == cu) return 'domestic';
+  final hasVat = vatNumber != null && vatNumber.trim().isNotEmpty;
+  if (isEuVatCountry(co) && isEuVatCountry(cu)) {
+    return hasVat ? 'intra_eu' : 'domestic';
+  }
+  return 'outside_eu';
+}
+
+/// Resolves the active rate for a country + category on [asOf] from loaded rules.
+String? resolveCountryCategoryRate(
+  List<CountryVatRate> rules, {
+  required String countryCode,
+  required String category,
+  DateTime? asOf,
+}) {
+  final date = asOf ?? DateTime.now();
+  final day = DateTime(date.year, date.month, date.day);
+  final cc = countryCode.trim().toUpperCase();
+  final active = rules.where((r) {
+    if (r.countryCode.toUpperCase() != cc) return false;
+    final start = DateTime(r.startDate.year, r.startDate.month, r.startDate.day);
+    final end = r.endDate == null
+        ? null
+        : DateTime(r.endDate!.year, r.endDate!.month, r.endDate!.day);
+    return !start.isAfter(day) && (end == null || !day.isAfter(end));
+  }).toList()
+    ..sort((a, b) => b.startDate.compareTo(a.startDate));
+  String? findCat(String cat) {
+    for (final r in active) {
+      if (r.category == cat) return r.rate;
+    }
+    return null;
+  }
+
+  return switch (category) {
+    'zero' => findCat('zero') ?? '0',
+    'reduced' => findCat('reduced') ?? findCat('standard'),
+    'intermediate' => findCat('intermediate') ?? findCat('standard'),
+    _ => findCat('standard'),
+  };
+}
+
 /// The stable `code` the API adds to errors a client must tell apart (null when absent).
 String? errorCode(Object error) {
   if (error is DioException) {

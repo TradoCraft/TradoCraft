@@ -1151,6 +1151,8 @@ async fn quote_configuration(
         purpose: input.purpose,
         delivery_country_code: None,
         power_grid_id: None,
+        vat_regime_override: None,
+        building_construction_year: None,
         valid_days: input.valid_days,
         notes: input.notes.unwrap_or_else(|| {
             format!(

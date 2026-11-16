@@ -15,6 +15,8 @@ ConfiguredQuotationInput _$ConfiguredQuotationInputFromJson(
       .map((e) => ConfiguredLineInput.fromJson(e as Map<String, dynamic>))
       .toList(),
   source: json['source'] as String,
+  buildingConstructionYear: (json['building_construction_year'] as num?)
+      ?.toInt(),
   configuration: json['configuration'],
   deliveryCountryCode: json['delivery_country_code'] as String?,
   notes: json['notes'] as String?,
@@ -23,11 +25,13 @@ ConfiguredQuotationInput _$ConfiguredQuotationInputFromJson(
   purpose: json['purpose'] as String?,
   strict: json['strict'] as bool?,
   validDays: (json['valid_days'] as num?)?.toInt(),
+  vatRegimeOverride: json['vat_regime_override'] as String?,
 );
 
 Map<String, dynamic> _$ConfiguredQuotationInputToJson(
   ConfiguredQuotationInput instance,
 ) => <String, dynamic>{
+  'building_construction_year': ?instance.buildingConstructionYear,
   'configuration': ?instance.configuration,
   'customer_id': instance.customerId,
   'delivery_country_code': ?instance.deliveryCountryCode,
@@ -40,4 +44,5 @@ Map<String, dynamic> _$ConfiguredQuotationInputToJson(
   'source': instance.source,
   'strict': ?instance.strict,
   'valid_days': ?instance.validDays,
+  'vat_regime_override': ?instance.vatRegimeOverride,
 };

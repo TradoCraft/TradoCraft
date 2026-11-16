@@ -50,6 +50,12 @@ pub struct OrderSummary {
     pub customer_reference: String,
     /// installation | stock. Locked once the order is confirmed.
     pub purpose: String,
+    /// `domestic`, `domestic_reverse_charge`, `intra_eu`, or `outside_eu`.
+    #[schema(required = false)]
+    pub vat_regime: String,
+    /// Construction year of the building at the site, if known.
+    #[schema(required = false)]
+    pub building_construction_year: Option<i32>,
     /// Country the goods are delivered to (ISO alpha-2).
     pub delivery_country_code: Option<String>,
     /// The grid at the delivery country the goods are connected to (copied from the quotation).
@@ -216,7 +222,8 @@ pub struct ListParams {
 
 const SELECT: &str = "SELECT o.id, o.number, o.status, o.priority, o.current_revision, o.quotation_id,
         q.number AS quotation_number, q.revision AS quotation_revision, o.customer_id, o.customer_name,
-        o.customer_reference, o.purpose, o.delivery_country_code::text AS delivery_country_code,
+        o.customer_reference, o.purpose, o.vat_regime, o.building_construction_year,
+        o.delivery_country_code::text AS delivery_country_code,
         o.power_grid_id, o.order_date, o.promised_date, o.currency::text AS currency, o.subtotal, o.total, o.salesperson_id,
         u.display_name AS salesperson_name
      FROM sales.orders o
@@ -630,8 +637,9 @@ pub async fn convert_quotation(
     sqlx::query(
         "INSERT INTO sales.orders (id, company_id, number, status, current_revision, quotation_id, customer_id,
                                    customer_name, customer_reference, order_date, currency, subtotal, vat_total,
-                                   total, salesperson_id, notes, created_by, purpose, delivery_country_code, power_grid_id)
-         VALUES ($1, $2, $3, 'draft', 1, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)",
+                                   total, salesperson_id, notes, created_by, purpose, delivery_country_code,
+                                   power_grid_id, vat_regime, building_construction_year)
+         VALUES ($1, $2, $3, 'draft', 1, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)",
     )
     .bind(id)
     .bind(user.company_id)
@@ -651,6 +659,8 @@ pub async fn convert_quotation(
     .bind(&q.purpose)
     .bind(&q.delivery_country_code)
     .bind(q.power_grid_id)
+    .bind(&q.vat_regime)
+    .bind(q.building_construction_year)
     .execute(&mut *conn)
     .await?;
     sqlx::query(

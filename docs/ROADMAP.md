@@ -37,6 +37,7 @@ Module overview: [ARCHITECTURE.md](ARCHITECTURE.md).
 | D2 Backup and restore runbook | Done, [ADR 0056](adr/0056-backup-and-restore.md) |
 | D3 Concurrent-edit protection on records | Open |
 | D4 VAT number validation, registry lookup and duplicate warning | Done, [ADR 0058](adr/0058-vat-number-validation-and-lookup.md); the request to the live VIES service is untested (see the ADR) |
+| D4b Country-aware, temporal, and building-age VAT defaults | Done, [ADR 0071](adr/0071-country-vat-defaults.md) |
 | D5 Accent-insensitive search | Done for customers, contacts, suppliers and products, [ADR 0057](adr/0057-accent-insensitive-search.md); the other lists follow |
 | D6 Audit log viewer | Done, [ADR 0059](adr/0059-audit-trail-viewer.md); field-level changes are recorded for customers and suppliers, other modules adopt `audit::Changes` |
 | D7 Restrict CORS to configured origins | Done, [ADR 0050](adr/0050-portal-surface.md) |

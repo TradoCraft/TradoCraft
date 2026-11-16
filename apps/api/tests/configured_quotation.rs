@@ -21,6 +21,7 @@ fn payload() -> Value {
         "../../../seed/configured_quotation_example.json"
     ))
     .unwrap();
+    p["vat_regime_override"] = json!("domestic");
     p["lines"][0]["children"]
         .as_array_mut()
         .unwrap()

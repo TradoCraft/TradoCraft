@@ -39,7 +39,8 @@ class InvoiceLineInput {
   @JsonKey(name: 'unit_price')
   final String unitPrice;
 
-  /// VAT rate in percent, default 0.
+  /// VAT rate in percent (defaults to linked PO line rate, else company standard rate for.
+  /// domestic suppliers and 0 for foreign suppliers).
   @JsonKey(includeIfNull: false,name: 'vat_rate')
   final String? vatRate;
 

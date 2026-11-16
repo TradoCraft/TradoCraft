@@ -23,6 +23,7 @@ class PurchaseOrderLine {
     required this.quantityReceived,
     required this.supplierProductCode,
     required this.unitPrice,
+    this.vatRate,
   });
   
   factory PurchaseOrderLine.fromJson(Map<String, Object?> json) => _$PurchaseOrderLineFromJson(json);
@@ -50,6 +51,8 @@ class PurchaseOrderLine {
   final String supplierProductCode;
   @JsonKey(name: 'unit_price')
   final String unitPrice;
+  @JsonKey(includeIfNull: false,name: 'vat_rate')
+  final String? vatRate;
 
   Map<String, Object?> toJson() => _$PurchaseOrderLineToJson(this);
 }

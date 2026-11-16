@@ -55,7 +55,8 @@ class CustomerInput {
   @JsonKey(includeIfNull: false,name: 'vat_number')
   final String? vatNumber;
 
-  /// `domestic` (default), `intra_eu` or `outside_eu`.
+  /// `domestic`, `domestic_reverse_charge`, `intra_eu` or `outside_eu`. When omitted on create,.
+  /// derived automatically from the active company's country, the customer's country, and `vat_number`.
   @JsonKey(includeIfNull: false,name: 'vat_regime')
   final String? vatRegime;
 

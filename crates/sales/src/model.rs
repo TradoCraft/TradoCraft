@@ -46,6 +46,10 @@ pub struct QuotationLineInput {
     #[serde(default)]
     #[schema(value_type = String, example = "0")]
     pub line_discount_percent: Decimal,
+    /// Optional explicit VAT rate override for this line (omitted: resolved from country, product category, regime, and building age).
+    #[serde(default)]
+    #[schema(required = false, value_type = Option<String>, example = "21")]
+    pub vat_rate: Option<Decimal>,
     /// Overrides the product name on the document.
     pub description: Option<String>,
     /// Confirmed unit price (before rebates) for an indicative product. Indicative lines must be
@@ -152,12 +156,33 @@ pub struct QuotationInput {
     /// `true` clears the stored grid ("any grid of the delivery country"); it wins over the keep
     /// rule above and is refused (422) together with a `power_grid_id`. Absent or `false`: no effect.
     pub clear_power_grid: Option<bool>,
+    /// Explicit VAT regime override (`domestic`, `domestic_reverse_charge`, `intra_eu`, `outside_eu`).
+    /// When omitted on create, derived from customer regime and purpose; on update kept unless cleared.
+    #[serde(default)]
+    #[schema(required = false)]
+    pub vat_regime_override: Option<String>,
+    /// `true` clears any previous `vat_regime_override` on update so auto-resolution applies again.
+    #[serde(default)]
+    #[schema(required = false)]
+    pub clear_vat_regime_override: Option<bool>,
+    /// Year the site's building was constructed (800..=2200). Inherited from `opportunity_id` when omitted on create.
+    #[serde(default)]
+    #[schema(required = false)]
+    pub building_construction_year: Option<i32>,
+    /// `true` clears `building_construction_year` on update; refused (422) together with a year.
+    #[serde(default)]
+    #[schema(required = false)]
+    pub clear_building_construction_year: Option<bool>,
     pub lines: Vec<QuotationLineInput>,
 }
 
 #[derive(Debug, Clone, Deserialize, ToSchema)]
 pub struct PricingPreviewInput {
     pub customer_id: Uuid,
+    /// Optional opportunity to inherit `building_construction_year` from when omitted.
+    #[serde(default)]
+    #[schema(required = false)]
+    pub opportunity_id: Option<Uuid>,
     #[serde(default, deserialize_with = "tradocraft_core::serde_util::opt_date")]
     pub quote_date: Option<NaiveDate>,
     /// Price list date; defaults to the quote date.
@@ -168,6 +193,14 @@ pub struct PricingPreviewInput {
     /// Defaults to the customer's country.
     pub delivery_country_code: Option<String>,
     pub power_grid_id: Option<Uuid>,
+    /// Explicit VAT regime override to preview (`domestic`, `domestic_reverse_charge`, `intra_eu`, `outside_eu`).
+    #[serde(default)]
+    #[schema(required = false)]
+    pub vat_regime_override: Option<String>,
+    /// Building construction year for renovation VAT preview (800..=2200).
+    #[serde(default)]
+    #[schema(required = false)]
+    pub building_construction_year: Option<i32>,
     /// The saved draft quotation being edited. When it belongs to the caller's company (else 404)
     /// and is a draft with a quoted shipping cost, and a product line still needs a shipping quote,
     /// the preview also contains the `SHIPPING` line (as `shipping::shipping_line` builds it) in
@@ -281,6 +314,12 @@ pub struct PricingPreview {
     pub customer_discount_percent: Decimal,
     pub quote_date: NaiveDate,
     pub price_date: NaiveDate,
+    /// Effective VAT regime resolved for this preview.
+    #[schema(required = false)]
+    pub vat_regime: String,
+    /// Building construction year used during preview calculation.
+    #[schema(required = false)]
+    pub building_construction_year: Option<i32>,
     /// Indicative prices still to confirm; the quotation cannot be sent while this is not 0.
     pub unconfirmed_lines: i32,
     /// The priced product lines in input order, then (only when the input had a `quotation_id`
@@ -340,9 +379,15 @@ pub struct QuotationHeader {
     pub opportunity_id: Option<Uuid>,
     pub customer_name: String,
     pub customer_vat_number: Option<String>,
-    /// `domestic` (VAT charged), `intra_eu` (reverse charge) or `outside_eu`: VAT is only shown and
-    /// charged for `domestic`.
+    /// `domestic` (VAT charged), `domestic_reverse_charge`, `intra_eu` (reverse charge) or `outside_eu`:
+    /// VAT is only shown and charged for `domestic`.
     pub vat_regime: String,
+    /// Explicit VAT regime override set by the user (null means automatically derived).
+    #[schema(required = false)]
+    pub vat_regime_override: Option<String>,
+    /// Construction year of the building at the site, if known.
+    #[schema(required = false)]
+    pub building_construction_year: Option<i32>,
     pub customer_street: String,
     pub customer_postal_code: String,
     pub customer_city: String,
@@ -390,9 +435,15 @@ pub struct Quotation {
     pub opportunity_id: Option<Uuid>,
     pub customer_name: String,
     pub customer_vat_number: Option<String>,
-    /// `domestic` (VAT charged), `intra_eu` (reverse charge) or `outside_eu`: VAT is only shown and
-    /// charged for `domestic`.
+    /// `domestic` (VAT charged), `domestic_reverse_charge`, `intra_eu` (reverse charge) or `outside_eu`:
+    /// VAT is only shown and charged for `domestic`.
     pub vat_regime: String,
+    /// Explicit VAT regime override set by the user (null means automatically derived).
+    #[schema(required = false)]
+    pub vat_regime_override: Option<String>,
+    /// Construction year of the building at the site, if known.
+    #[schema(required = false)]
+    pub building_construction_year: Option<i32>,
     pub customer_street: String,
     pub customer_postal_code: String,
     pub customer_city: String,
@@ -447,6 +498,8 @@ impl Quotation {
             customer_name: h.customer_name,
             customer_vat_number: h.customer_vat_number,
             vat_regime: h.vat_regime,
+            vat_regime_override: h.vat_regime_override,
+            building_construction_year: h.building_construction_year,
             customer_street: h.customer_street,
             customer_postal_code: h.customer_postal_code,
             customer_city: h.customer_city,

@@ -629,6 +629,7 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(list_admin_users, create_admin_user))
         .routes(routes!(update_admin_user))
         .routes(routes!(invite_admin_user))
+        .merge(crate::vat_rates::router())
 }
 
 #[cfg(test)]

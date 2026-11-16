@@ -175,6 +175,11 @@ class _OpportunityScreenState extends ConsumerState<OpportunityScreen> {
                     InfoItem(context.l10n.lostReason, o.lostReason!),
                   if (o.powerGridId != null)
                     InfoItem(context.l10n.powerGrid, _gridText(o.powerGridId!)),
+                  if (o.buildingConstructionYear != null)
+                    InfoItem(
+                      context.l10n.buildingConstructionYear,
+                      '${o.buildingConstructionYear}',
+                    ),
                 ],
               ),
               if (o.notes.isNotEmpty) Text(o.notes),

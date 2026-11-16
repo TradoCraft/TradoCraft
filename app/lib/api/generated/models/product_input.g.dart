@@ -9,7 +9,6 @@ part of 'product_input.dart';
 ProductInput _$ProductInputFromJson(Map<String, dynamic> json) => ProductInput(
   code: json['code'] as String,
   name: json['name'] as String,
-  vatRate: json['vat_rate'] as String,
   active: json['active'] as bool?,
   barcode: json['barcode'] as String?,
   defaultProductionRemark: json['default_production_remark'] as String?,
@@ -26,6 +25,9 @@ ProductInput _$ProductInputFromJson(Map<String, dynamic> json) => ProductInput(
   standardCost: json['standard_cost'] as String?,
   tracking: json['tracking'] as String?,
   unit: json['unit'] as String?,
+  vatCategory: json['vat_category'] as String?,
+  vatRate: json['vat_rate'] as String?,
+  vatRateOverride: json['vat_rate_override'] as String?,
   weightG: (json['weight_g'] as num?)?.toInt(),
   widthMm: (json['width_mm'] as num?)?.toInt(),
 );
@@ -50,7 +52,9 @@ Map<String, dynamic> _$ProductInputToJson(ProductInput instance) =>
       'standard_cost': ?instance.standardCost,
       'tracking': ?instance.tracking,
       'unit': ?instance.unit,
-      'vat_rate': instance.vatRate,
+      'vat_category': ?instance.vatCategory,
+      'vat_rate': ?instance.vatRate,
+      'vat_rate_override': ?instance.vatRateOverride,
       'weight_g': ?instance.weightG,
       'width_mm': ?instance.widthMm,
     };

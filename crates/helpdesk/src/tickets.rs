@@ -1142,6 +1142,8 @@ async fn create_lead(
             notes: format!("From ticket {}", ticket.number),
             power_grid_id: None,
             clear_power_grid: None,
+            building_construction_year: None,
+            clear_building_construction_year: None,
         },
     )
     .await?;

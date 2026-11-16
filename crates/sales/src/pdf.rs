@@ -232,7 +232,7 @@ pub fn document(company: &Company, q: &Quotation) -> Doc {
             .collect(),
         groups: groups(&q.lines),
         has_indicative: q.lines.iter().any(|l| !l.price_confirmed),
-        show_vat: h.vat_regime == "domestic",
+        show_vat: !tradocraft_core::vat::vat_exempt_for_regime(&h.vat_regime),
         vat_regime: h.vat_regime.clone(),
         vat_groups: q
             .vat_groups

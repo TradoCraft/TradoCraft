@@ -86,7 +86,7 @@
       *#d.customer.name* \
       #d.customer.street \
       #d.customer.city_line \
-      #if d.customer.country_code != "BE" [#d.customer.country_code \ ]
+      #if d.customer.country_code != d.company.country_code [#d.customer.country_code \ ]
       #if d.customer.vat_number != "" [#l.vat #d.customer.vat_number]
     ])
   ],

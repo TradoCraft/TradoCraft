@@ -11,7 +11,6 @@ class ProductInput {
   const ProductInput({
     required this.code,
     required this.name,
-    required this.vatRate,
     this.active,
     this.barcode,
     this.defaultProductionRemark,
@@ -28,6 +27,9 @@ class ProductInput {
     this.standardCost,
     this.tracking,
     this.unit,
+    this.vatCategory,
+    this.vatRate,
+    this.vatRateOverride,
     this.weightG,
     this.widthMm,
   });
@@ -81,8 +83,19 @@ class ProductInput {
   final String? tracking;
   @JsonKey(includeIfNull: false)
   final String? unit;
-  @JsonKey(name: 'vat_rate')
-  final String vatRate;
+
+  /// `standard` (default), `intermediate`, `reduced`, or `zero`.
+  @JsonKey(includeIfNull: false,name: 'vat_category')
+  final String? vatCategory;
+
+  /// Explicit VAT rate (kept for backwards compatibility). If `vat_category` / `vat_rate_override`.
+  /// are omitted, resolved via country rules and only treated as an override if no category matches.
+  @JsonKey(includeIfNull: false,name: 'vat_rate')
+  final String? vatRate;
+
+  /// Optional explicit VAT rate override (null clears any previous override).
+  @JsonKey(includeIfNull: false,name: 'vat_rate_override')
+  final String? vatRateOverride;
   @JsonKey(includeIfNull: false,name: 'weight_g')
   final int? weightG;
   @JsonKey(includeIfNull: false,name: 'width_mm')

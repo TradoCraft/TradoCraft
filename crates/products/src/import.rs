@@ -31,13 +31,13 @@ use crate::{
 
 /// The columns, in export order. `code` is the key; the others are optional in an import file.
 /// `required` means a new product needs a value.
-const COLUMNS: [Column; 20] = [
+const COLUMNS: [Column; 22] = [
     Column::new("code", ColumnKind::Code, true),
     Column::new("name", ColumnKind::Text, true),
     Column::new("description", ColumnKind::Text, false),
     Column::new("unit", ColumnKind::Text, false),
     Column::new("product_type", ColumnKind::Code, false),
-    Column::new("vat_rate", ColumnKind::Decimal, true),
+    Column::new("vat_rate", ColumnKind::Decimal, false),
     Column::new("tracking", ColumnKind::Code, false),
     Column::new("family_code", ColumnKind::Code, false),
     Column::new("pricing_type", ColumnKind::Code, false),
@@ -52,6 +52,8 @@ const COLUMNS: [Column; 20] = [
     Column::new("height_mm", ColumnKind::Integer, false),
     Column::new("weight_g", ColumnKind::Integer, false),
     Column::new("default_production_remark", ColumnKind::Text, false),
+    Column::new("vat_category", ColumnKind::Code, false),
+    Column::new("vat_rate_override", ColumnKind::Decimal, false),
 ];
 
 /// One product as the cells of an export row, in [`COLUMNS`] order.
@@ -80,16 +82,21 @@ fn export_row(p: &Product) -> Vec<CellValue> {
         int(p.height_mm),
         int(p.weight_g),
         CellValue::text(&p.default_production_remark),
+        CellValue::text(&p.vat_category),
+        dec(p.vat_rate_override),
     ]
 }
 
 /// Whether the stored product already equals what the row would write (so nothing is written).
 fn same(p: &Product, i: &ProductInput) -> bool {
+    let target_cat = i.vat_category.as_deref().unwrap_or(&p.vat_category);
     p.name == i.name
         && p.description == i.description
         && p.unit == i.unit
         && p.product_type == i.product_type
-        && p.vat_rate == i.vat_rate
+        && i.vat_rate.is_none_or(|r| p.vat_rate == r)
+        && p.vat_category == target_cat
+        && p.vat_rate_override == i.vat_rate_override
         && p.tracking == i.tracking
         && p.family_id == i.family_id
         && p.pricing_type == i.pricing_type
@@ -158,6 +165,8 @@ pub struct ProductContext {
     barcode_owner: HashMap<String, String>,
     /// Barcodes seen so far in the file: barcode -> first line.
     seen_barcodes: HashMap<String, usize>,
+    company_country: String,
+    vat_rules: Vec<tradocraft_core::vat_rates::CountryVatRate>,
 }
 
 /// The products as an importable entity.
@@ -177,12 +186,16 @@ impl Importable for Products {
 
     async fn context(
         conn: &mut PgConnection,
-        _user: &CurrentUser,
+        user: &CurrentUser,
         table: &Table,
     ) -> AppResult<ProductContext> {
         let families = code_map(conn, "SELECT code, id FROM products.product_families").await?;
         let categories =
             code_map(conn, "SELECT code, id FROM products.packaging_categories").await?;
+        let company = tradocraft_core::company::get_company(&mut *conn, user.company_id).await?;
+        let vat_rules =
+            tradocraft_core::vat_rates::load_country_rules(&mut *conn, &company.country_code)
+                .await?;
         let barcodes: Vec<String> = table
             .rows
             .iter()
@@ -202,25 +215,35 @@ impl Importable for Products {
             categories,
             barcode_owner,
             seen_barcodes: HashMap::new(),
+            company_country: company.country_code,
+            vat_rules,
         })
     }
 
     async fn load(
         conn: &mut PgConnection,
-        _user: &CurrentUser,
+        user: &CurrentUser,
         keys: &[String],
     ) -> AppResult<Vec<(String, Product)>> {
         // Read and lock the rows we are going to change (as a manual edit does) in one statement,
         // so a concurrent edit cannot slip in between the read and the lock.
-        Ok(sqlx::query_as::<_, Product>(&format!(
+        let company = tradocraft_core::company::get_company(&mut *conn, user.company_id).await?;
+        let vat_rules =
+            tradocraft_core::vat_rates::load_country_rules(&mut *conn, &company.country_code)
+                .await?;
+        let mut products = sqlx::query_as::<_, Product>(&format!(
             "{SELECT_PRODUCT_LOCKABLE} WHERE p.code = ANY($1) ORDER BY p.id FOR UPDATE OF p"
         ))
         .bind(keys)
         .fetch_all(conn)
-        .await?
-        .into_iter()
-        .map(|p| (p.code.clone(), p))
-        .collect())
+        .await?;
+        crate::apply_resolved_vat(
+            &mut products,
+            &company.country_code,
+            &vat_rules,
+            tradocraft_core::today(),
+        );
+        Ok(products.into_iter().map(|p| (p.code.clone(), p)).collect())
     }
 
     fn stored_id(stored: &Product) -> Uuid {
@@ -241,6 +264,8 @@ impl Importable for Products {
             categories,
             barcode_owner,
             seen_barcodes,
+            company_country,
+            vat_rules,
         } = context;
         let before = cells.error_count();
         // Start from the stored values (or the API defaults) and overlay the columns of the file.
@@ -251,7 +276,9 @@ impl Importable for Products {
                 description: p.description.clone(),
                 unit: p.unit.clone(),
                 product_type: p.product_type.clone(),
-                vat_rate: p.vat_rate,
+                vat_rate: Some(p.vat_rate),
+                vat_category: Some(p.vat_category.clone()),
+                vat_rate_override: p.vat_rate_override,
                 tracking: p.tracking.clone(),
                 family_id: p.family_id,
                 pricing_type: p.pricing_type.clone(),
@@ -274,7 +301,9 @@ impl Importable for Products {
                 description: String::new(),
                 unit: "pcs".into(),
                 product_type: "purchased".into(),
-                vat_rate: Decimal::ZERO,
+                vat_rate: None,
+                vat_category: None,
+                vat_rate_override: None,
                 tracking: "none".into(),
                 family_id: None,
                 pricing_type: "list".into(),
@@ -299,8 +328,54 @@ impl Importable for Products {
         cells.trimmed("tracking").apply(&mut input.tracking);
         cells.trimmed("pricing_type").apply(&mut input.pricing_type);
         cells.boolean("active").apply(&mut input.active);
-        let vat = bounded(cells, "vat_rate", 2, Decimal::new(99999, 2));
-        vat.apply(&mut input.vat_rate);
+
+        let cat_cell = cells.trimmed("vat_category");
+        let cat_given = !matches!(cat_cell, Cell::Absent);
+        cat_cell.apply_opt(&mut input.vat_category);
+        if let Some(ref mut c) = input.vat_category {
+            *c = c.to_ascii_lowercase();
+        }
+        let ov_cell = bounded(cells, "vat_rate_override", 2, Decimal::new(99999, 2));
+        let ov_given = !matches!(ov_cell, Cell::Absent);
+        ov_cell.apply_opt(&mut input.vat_rate_override);
+        let vat_cell = bounded(cells, "vat_rate", 2, Decimal::new(99999, 2));
+        if let Cell::Value(v) = vat_cell {
+            input.vat_rate = Some(v);
+            // When CSV updates only `vat_rate` without `vat_category` or `vat_rate_override`,
+            // infer category/override from the company country rules if the rate changed.
+            if !cat_given && !ov_given && current.is_none_or(|p| p.vat_rate != v) {
+                let today = tradocraft_core::today();
+                if let Some(inferred) = tradocraft_core::vat_rates::infer_category_for_rate(
+                    vat_rules,
+                    company_country,
+                    v,
+                    today,
+                ) {
+                    input.vat_category = Some(inferred.to_string());
+                    input.vat_rate_override = None;
+                } else {
+                    input.vat_category = Some("standard".to_string());
+                    input.vat_rate_override = Some(v);
+                }
+            }
+        } else if (cat_given || ov_given) && input.vat_rate_override.is_some() {
+            input.vat_rate = input.vat_rate_override;
+        } else if cat_given && input.vat_rate_override.is_none() {
+            let cat = input.vat_category.as_deref().unwrap_or("standard");
+            input.vat_rate = Some(tradocraft_core::vat_rates::resolve_rate_from_rules(
+                vat_rules,
+                &tradocraft_core::vat_rates::VatResolutionContext {
+                    country_code: company_country,
+                    category: cat,
+                    product_override: None,
+                    vat_regime: None,
+                    purpose: None,
+                    building_construction_year: None,
+                    as_of: tradocraft_core::today(),
+                },
+            ));
+        }
+
         bounded(cells, "reorder_min", 4, Decimal::new(99_999_999_999_999, 4))
             .apply_opt(&mut input.reorder_min);
         bounded(cells, "reorder_max", 4, Decimal::new(99_999_999_999_999, 4))
@@ -333,7 +408,11 @@ impl Importable for Products {
             };
             cells.error(Some("name"), message);
         }
-        if current.is_none() && row.get_trimmed("vat_rate").is_none() {
+        if current.is_none()
+            && row.get_trimmed("vat_rate").is_none()
+            && row.get_trimmed("vat_category").is_none()
+            && row.get_trimmed("vat_rate_override").is_none()
+        {
             cells.error(Some("vat_rate"), "vat_rate is required for a new product");
         }
         // Same rules as the API, all of them; each message names the field it is about.
@@ -393,26 +472,33 @@ impl Importable for Products {
 
     async fn create(
         conn: &mut PgConnection,
-        _user: &CurrentUser,
+        user: &CurrentUser,
         id: Uuid,
         change: &ProductInput,
     ) -> AppResult<()> {
-        insert_product(conn, id, change, false).await
+        insert_product(conn, id, user.company_id, change, false).await
     }
 
     async fn update(
         conn: &mut PgConnection,
-        _user: &CurrentUser,
+        user: &CurrentUser,
         id: Uuid,
         change: &ProductInput,
     ) -> AppResult<()> {
-        update_product_row(conn, id, change, false).await
+        update_product_row(conn, id, user.company_id, change, false).await
     }
 
-    async fn export(pool: &PgPool, _user: &CurrentUser) -> AppResult<Vec<Vec<CellValue>>> {
-        let products: Vec<Product> = sqlx::query_as(&format!("{SELECT_PRODUCT} ORDER BY code"))
+    async fn export(pool: &PgPool, user: &CurrentUser) -> AppResult<Vec<Vec<CellValue>>> {
+        let mut products: Vec<Product> = sqlx::query_as(&format!("{SELECT_PRODUCT} ORDER BY code"))
             .fetch_all(pool)
             .await?;
+        crate::resolve_products_for_company(
+            pool,
+            user.company_id,
+            tradocraft_core::today(),
+            &mut products,
+        )
+        .await?;
         Ok(products.iter().map(export_row).collect())
     }
 }

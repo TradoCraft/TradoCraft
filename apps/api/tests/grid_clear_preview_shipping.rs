@@ -50,7 +50,11 @@ fn lines(product: &str) -> Value {
 }
 
 async fn quote(app: &axum::Router, product: &str, extra: Value) -> Value {
-    let mut body = json!({ "customer_id": ALPHA, "lines": lines(product) });
+    let mut body = json!({
+        "customer_id": ALPHA,
+        "vat_regime_override": "domestic",
+        "lines": lines(product)
+    });
     for (k, v) in extra.as_object().unwrap() {
         body[k] = v.clone();
     }
@@ -289,7 +293,11 @@ async fn quotation_update_clears_the_grid_explicitly(db: PgPool) {
 // ---------------------------------------------------------------------------------------------
 
 async fn preview(app: &axum::Router, user: &str, extra: Value) -> (StatusCode, Value) {
-    let mut body = json!({ "customer_id": ALPHA, "lines": lines(PANEL) });
+    let mut body = json!({
+        "customer_id": ALPHA,
+        "vat_regime_override": "domestic",
+        "lines": lines(PANEL)
+    });
     for (k, v) in extra.as_object().unwrap() {
         body[k] = v.clone();
     }

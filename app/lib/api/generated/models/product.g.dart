@@ -29,6 +29,8 @@ Product _$ProductFromJson(Map<String, dynamic> json) => Product(
   reorderMax: json['reorder_max'] as String?,
   reorderMin: json['reorder_min'] as String?,
   standardCost: json['standard_cost'] as String?,
+  vatCategory: json['vat_category'] as String?,
+  vatRateOverride: json['vat_rate_override'] as String?,
   weightG: (json['weight_g'] as num?)?.toInt(),
   widthMm: (json['width_mm'] as num?)?.toInt(),
 );
@@ -55,7 +57,9 @@ Map<String, dynamic> _$ProductToJson(Product instance) => <String, dynamic>{
   'standard_cost': ?instance.standardCost,
   'tracking': instance.tracking,
   'unit': instance.unit,
+  'vat_category': ?instance.vatCategory,
   'vat_rate': instance.vatRate,
+  'vat_rate_override': ?instance.vatRateOverride,
   'weight_g': ?instance.weightG,
   'width_mm': ?instance.widthMm,
 };
