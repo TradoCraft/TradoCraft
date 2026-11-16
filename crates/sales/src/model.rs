@@ -201,6 +201,10 @@ pub struct PricingPreviewInput {
     #[serde(default)]
     #[schema(required = false)]
     pub building_construction_year: Option<i32>,
+    /// Explicitly clear the year instead of inheriting from the opportunity.
+    #[serde(default)]
+    #[schema(required = false)]
+    pub clear_building_construction_year: Option<bool>,
     /// The saved draft quotation being edited. When it belongs to the caller's company (else 404)
     /// and is a draft with a quoted shipping cost, and a product line still needs a shipping quote,
     /// the preview also contains the `SHIPPING` line (as `shipping::shipping_line` builds it) in

@@ -158,6 +158,7 @@ class FakeApi implements HttpClientAdapter {
   /// [failGatedCustomer] the answer is then a server error.
   Completer<void>? customerGate;
   bool failGatedCustomer = false;
+  Completer<void>? saveGate;
 
   @override
   Future<ResponseBody> fetch(
@@ -303,6 +304,7 @@ class FakeApi implements HttpClientAdapter {
           'total': '8920.12',
         };
       case 'PUT /api/v1/quotations/$_quotationId':
+        if (saveGate != null) await saveGate!.future;
         json = _quotation(status, configured: configured);
       case 'POST /api/v1/quotations/$_quotationId/convert':
         json = {
@@ -563,6 +565,50 @@ Future<FakeApi> _pumpSwitched(WidgetTester tester, {bool fail = false}) async {
 }
 
 void main() {
+  testWidgets(
+    'dropping a linked opportunity refreshes a saved blank-year draft',
+    (tester) async {
+      final fake = await _pumpLinkedDraft(tester, ['c2']);
+      await _changeCustomer(tester, 'c2');
+      fake.gates['c2']!.complete();
+      await tester.pumpAndSettle();
+      final body = fake.bodies['POST /api/v1/pricing/preview'] as Map;
+      expect(body['opportunity_id'], isNull);
+      expect(body['clear_building_construction_year'], isTrue);
+    },
+  );
+
+  testWidgets('VAT and building year controls are disabled during save', (
+    tester,
+  ) async {
+    final fake = await _pumpLinkedDraft(tester, []);
+    fake.saveGate = Completer<void>();
+    await tester.tap(find.text('Save draft'));
+    await tester.pump();
+    final year = tester.widget<TextField>(
+      find.byKey(const ValueKey('buildingConstructionYear')),
+    );
+    expect(year.enabled, isFalse);
+    final vat = tester.widget<DropdownButtonFormField<String?>>(
+      find.descendant(
+        of: find.byKey(const ValueKey('vat-regime-override')),
+        matching: find.byType(DropdownButtonFormField<String?>),
+      ),
+    );
+    expect(vat.onChanged, isNull);
+    fake.saveGate!.complete();
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<TextField>(
+            find.byKey(const ValueKey('buildingConstructionYear')),
+          )
+          .enabled,
+      isTrue,
+    );
+  });
+
+
   testWidgets('a slow load of the previous quotation does not overwrite the new one', (
     tester,
   ) async {

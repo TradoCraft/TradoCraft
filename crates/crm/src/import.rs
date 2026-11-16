@@ -182,7 +182,8 @@ impl Importable for Customers {
                 code: c.code.clone(),
                 name: c.name.clone(),
                 vat_number: c.vat_number.clone(),
-                vat_regime: Some(c.vat_regime.clone()),
+                // customer_terms.price_zone_id is NOT NULL: None means no active-company terms.
+                vat_regime: c.price_zone_id.map(|_| c.vat_regime.clone()),
                 email: c.email.clone(),
                 phone: c.phone.clone(),
                 street: c.street.clone(),
@@ -267,7 +268,7 @@ impl Importable for Customers {
         input.name = input.name.trim().to_string();
         input.country_code = input.country_code.to_uppercase();
         input.language = input.language.to_lowercase();
-        if current.is_none() && input.vat_regime.is_none() {
+        if input.vat_regime.is_none() {
             input.vat_regime = Some(
                 tradocraft_core::vat::default_vat_regime(
                     company_country,

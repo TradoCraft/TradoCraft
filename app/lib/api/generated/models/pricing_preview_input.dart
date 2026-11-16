@@ -14,6 +14,7 @@ class PricingPreviewInput {
     required this.customerId,
     required this.lines,
     this.buildingConstructionYear,
+    this.clearBuildingConstructionYear,
     this.deliveryCountryCode,
     this.opportunityId,
     this.powerGridId,
@@ -29,6 +30,10 @@ class PricingPreviewInput {
   /// Building construction year for renovation VAT preview (800..=2200).
   @JsonKey(includeIfNull: false,name: 'building_construction_year')
   final int? buildingConstructionYear;
+
+  /// Explicitly clear the year instead of inheriting from the opportunity.
+  @JsonKey(includeIfNull: false,name: 'clear_building_construction_year')
+  final bool? clearBuildingConstructionYear;
   @JsonKey(name: 'customer_id')
   final String customerId;
 

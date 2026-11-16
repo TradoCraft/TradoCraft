@@ -383,6 +383,18 @@ async fn list_vat_rates(
     Ok(Json(rows))
 }
 
+// Acquire before row locks so close_previous cannot deadlock with an update.
+async fn lock_country(conn: &mut sqlx::PgConnection, country: &str) -> AppResult<()> {
+    sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))")
+        .bind(format!(
+            "country_vat_rates:{}",
+            country.trim().to_ascii_uppercase()
+        ))
+        .execute(conn)
+        .await?;
+    Ok(())
+}
+
 #[utoipa::path(
     post,
     path = "/admin/vat-rates",
@@ -405,6 +417,7 @@ async fn create_vat_rate(
     let n = validate_input(body, crate::today())?;
 
     let mut tx = state.db.begin().await?;
+    lock_country(&mut tx, &n.country_code).await?;
 
     if n.close_previous {
         sqlx::query(
@@ -494,6 +507,7 @@ async fn update_vat_rate(
     user.require(Permission::UsersAdmin)?;
 
     let mut tx = state.db.begin().await?;
+    lock_country(&mut tx, &body.country_code).await?;
     let existing = sqlx::query_as::<_, CountryVatRate>(
         "SELECT id, country_code, category, rate, min_building_age_years,
                 start_date, end_date, notes, updated_at

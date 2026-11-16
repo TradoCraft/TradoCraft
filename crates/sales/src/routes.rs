@@ -50,9 +50,11 @@ async fn preview(
         .map_or(Ok("installation"), service::validate_purpose)?;
     let vat_regime_override =
         service::validate_vat_override(input.vat_regime_override.as_deref(), None)?;
-    let mut building_year =
-        service::validate_building_year(input.building_construction_year, None)?;
-    if building_year.is_none() {
+    let mut building_year = service::validate_building_year(
+        input.building_construction_year,
+        input.clear_building_construction_year,
+    )?;
+    if building_year.is_none() && input.clear_building_construction_year != Some(true) {
         if let Some(opp_id) = input.opportunity_id {
             building_year =
                 service::opportunity_building_year(&mut conn, user.company_id, opp_id).await?;
@@ -418,8 +420,8 @@ pub(crate) async fn update_draft(
         None
     } else if let Some(y) = explicit_year {
         Some(y)
-    } else if let Some(y) = current.building_construction_year {
-        Some(y)
+    } else if input.opportunity_id == current.opportunity_id {
+        current.building_construction_year
     } else if let Some(opp) = input.opportunity_id {
         service::opportunity_building_year(&mut *tx, user.company_id, opp).await?
     } else {

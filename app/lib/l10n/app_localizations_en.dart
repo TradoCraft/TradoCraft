@@ -479,6 +479,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get codeNameRequired => 'Code and name are required.';
 
   @override
+  String get poLineVatInvalid => 'VAT rate must be between 0 and 100.';
+
+  @override
   String get codeNameVatRequired => 'Code, name and VAT rate are required.';
 
   @override

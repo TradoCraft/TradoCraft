@@ -233,7 +233,9 @@ pub async fn create(
         input.lines,
     )
     .await?;
-    let total = subtotal + tax_total;
+    let total = subtotal
+        .checked_add(tax_total)
+        .ok_or_else(|| AppError::Validation("amount too large".into()))?;
 
     sqlx::query(
         "INSERT INTO purchasing.purchase_orders (
@@ -374,8 +376,9 @@ async fn validate_lines(
             .checked_mul(line.unit_price)
             .ok_or_else(overflow)?
             .round_dp_with_strategy(2, RoundingStrategy::MidpointAwayFromZero);
-        let line_tax = (line_total * vat_rate / Decimal::from(100))
-            .round_dp_with_strategy(2, RoundingStrategy::MidpointAwayFromZero);
+        let line_tax = (line_total.checked_mul(vat_rate).ok_or_else(overflow)?
+            / Decimal::from(100))
+        .round_dp_with_strategy(2, RoundingStrategy::MidpointAwayFromZero);
         subtotal = subtotal.checked_add(line_total).ok_or_else(overflow)?;
         tax_total = tax_total.checked_add(line_tax).ok_or_else(overflow)?;
         validated_lines.push((idx as i32 + 1, line, line_total, vat_rate));
@@ -466,7 +469,9 @@ pub async fn update(
         subtotal = st;
         tax_total = tt;
     }
-    let total = subtotal + tax_total;
+    let total = subtotal
+        .checked_add(tax_total)
+        .ok_or_else(|| AppError::Validation("amount too large".into()))?;
     sqlx::query(
         "UPDATE purchasing.purchase_orders
          SET expected_delivery_date = $3, currency = $4, notes = $5,

@@ -62,7 +62,8 @@ INSERT INTO core.country_vat_rates (country_code, category, rate, min_building_a
     -- Estonia (EE)
     ('EE', 'standard',     18.00, NULL, DATE '2000-01-01', DATE '2009-06-30', 'Historical standard rate'),
     ('EE', 'standard',     20.00, NULL, DATE '2009-07-01', DATE '2023-12-31', 'Historical standard rate'),
-    ('EE', 'standard',     22.00, NULL, DATE '2024-01-01', NULL, 'Standard VAT rate'),
+    ('EE', 'standard',     22.00, NULL, DATE '2024-01-01', DATE '2025-06-30', 'Historical standard rate'),
+    ('EE', 'standard',     24.00, NULL, DATE '2025-07-01', NULL, 'Standard VAT rate'),
     ('EE', 'reduced',       9.00, NULL, DATE '2000-01-01', NULL, 'Reduced rate'),
     ('EE', 'zero',          0.00, NULL, DATE '2000-01-01', NULL, 'Zero rate'),
     -- Spain (ES)
@@ -155,9 +156,12 @@ INSERT INTO core.country_vat_rates (country_code, category, rate, min_building_a
     ('PT', 'reduced',       6.00, NULL, DATE '2000-01-01', NULL, 'Reduced rate'),
     ('PT', 'zero',          0.00, NULL, DATE '2000-01-01', NULL, 'Zero rate'),
     -- Romania (RO)
-    ('RO', 'standard',     19.00, NULL, DATE '2000-01-01', NULL, 'Standard VAT rate'),
-    ('RO', 'intermediate',  9.00, NULL, DATE '2000-01-01', NULL, 'Intermediate rate'),
-    ('RO', 'reduced',       5.00, NULL, DATE '2000-01-01', NULL, 'Reduced rate'),
+    ('RO', 'standard',     19.00, NULL, DATE '2000-01-01', DATE '2025-07-31', 'Standard VAT rate'),
+    ('RO', 'standard', 21.00, NULL, DATE '2025-08-01', NULL, 'VAT rate from August 2025'),
+    ('RO', 'intermediate',  9.00, NULL, DATE '2000-01-01', DATE '2025-07-31', 'Intermediate rate'),
+    ('RO', 'intermediate', 11.00, NULL, DATE '2025-08-01', NULL, 'VAT rate from August 2025'),
+    ('RO', 'reduced',       5.00, NULL, DATE '2000-01-01', DATE '2025-07-31', 'Reduced rate'),
+    ('RO', 'reduced', 11.00, NULL, DATE '2025-08-01', NULL, 'VAT rate from August 2025'),
     ('RO', 'zero',          0.00, NULL, DATE '2000-01-01', NULL, 'Zero rate'),
     -- Sweden (SE)
     ('SE', 'standard',     25.00, NULL, DATE '2000-01-01', NULL, 'Standard VAT rate'),
@@ -218,6 +222,16 @@ ALTER TABLE products.products
     ADD COLUMN vat_rate_override NUMERIC(5, 2) NULL
         CHECK (vat_rate_override IS NULL OR (vat_rate_override >= 0 AND vat_rate_override < 100));
 
+-- Preserve legacy product rates; abort rather than silently discard an invalid rate.
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM products.products WHERE NOT (vat_rate >= 0 AND vat_rate < 100)) THEN
+        RAISE EXCEPTION 'Existing product VAT rates must be in [0, 100) before migration';
+    END IF;
+END;
+$$;
+UPDATE products.products SET vat_rate_override = vat_rate;
+
 -- Keep direct SQL `UPDATE products.products SET vat_rate = ...` compatible with vat_rate_override.
 CREATE OR REPLACE FUNCTION products.sync_direct_vat_rate_update()
 RETURNS trigger LANGUAGE plpgsql AS $$
@@ -247,22 +261,11 @@ ALTER TABLE crm.customer_terms
     ADD COLUMN vat_regime TEXT NULL
         CHECK (vat_regime IS NULL OR vat_regime IN ('domestic', 'domestic_reverse_charge', 'intra_eu', 'outside_eu'));
 
--- Backfill existing cross-border terms in existing databases where customer still had 'domestic' default.
+-- Legacy selections have no provenance: preserve all stored regimes, including domestic.
 UPDATE crm.customer_terms t
-SET vat_regime = CASE
-    WHEN upper(c.country_code::text) = upper(comp.country_code::text) THEN 'domestic'
-    WHEN upper(comp.country_code::text) = ANY(ARRAY['AT','BE','BG','CY','CZ','DE','DK','EE','EL','GR','ES','FI','FR','HR','HU','IE','IT','LT','LU','LV','MT','NL','PL','PT','RO','SE','SI','SK','XI'])
-     AND upper(c.country_code::text) = ANY(ARRAY['AT','BE','BG','CY','CZ','DE','DK','EE','EL','GR','ES','FI','FR','HR','HU','IE','IT','LT','LU','LV','MT','NL','PL','PT','RO','SE','SI','SK','XI'])
-     AND coalesce(trim(c.vat_number), '') <> '' THEN 'intra_eu'
-    WHEN upper(comp.country_code::text) = ANY(ARRAY['AT','BE','BG','CY','CZ','DE','DK','EE','EL','GR','ES','FI','FR','HR','HU','IE','IT','LT','LU','LV','MT','NL','PL','PT','RO','SE','SI','SK','XI'])
-     AND upper(c.country_code::text) = ANY(ARRAY['AT','BE','BG','CY','CZ','DE','DK','EE','EL','GR','ES','FI','FR','HR','HU','IE','IT','LT','LU','LV','MT','NL','PL','PT','RO','SE','SI','SK','XI']) THEN 'domestic'
-    ELSE 'outside_eu'
-END
-FROM crm.customers c, core.companies comp
-WHERE c.id = t.customer_id
-  AND comp.id = t.company_id
-  AND t.vat_regime IS NULL
-  AND upper(c.country_code::text) <> upper(comp.country_code::text);
+SET vat_regime = c.vat_regime
+FROM crm.customers c
+WHERE c.id = t.customer_id AND t.vat_regime IS NULL;
 
 ALTER TABLE crm.opportunities
     ADD COLUMN building_construction_year INT NULL

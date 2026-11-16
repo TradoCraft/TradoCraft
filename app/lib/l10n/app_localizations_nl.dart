@@ -480,6 +480,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get codeNameRequired => 'Code en naam zijn verplicht.';
 
   @override
+  String get poLineVatInvalid => 'Het btw-tarief moet tussen 0 en 100 liggen.';
+
+  @override
   String get codeNameVatRequired => 'Code, naam en btw-tarief zijn verplicht.';
 
   @override
@@ -10082,7 +10085,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get domesticReverseChargeNotice =>
-      'BTW verlegd — werken in onroerende staat (art. 20 KB nr. 1)';
+      'BTW verlegd — werken in onroerende staat';
 
   @override
   String get buildingConstructionYear => 'Bouwjaar gebouw';

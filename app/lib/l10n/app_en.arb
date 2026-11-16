@@ -196,6 +196,7 @@
   "closuresShowPast": "Show past closures",
   "code": "Code",
   "codeNameRequired": "Code and name are required.",
+  "poLineVatInvalid": "VAT rate must be between 0 and 100.",
   "codeNameVatRequired": "Code, name and VAT rate are required.",
   "completeJob": "Complete job",
   "completionNotes": "What was done (and anything left open)",

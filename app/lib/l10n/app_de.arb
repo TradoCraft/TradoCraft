@@ -148,6 +148,7 @@
   "closuresShowPast": "Vergangene Schließzeiten anzeigen",
   "code": "Code",
   "codeNameRequired": "Code und Name sind erforderlich.",
+  "poLineVatInvalid": "Der MwSt.-Satz muss zwischen 0 und 100 liegen.",
   "codeNameVatRequired": "Code, Name und MwSt.-Satz sind Pflichtfelder.",
   "completeJob": "Einsatz abschließen",
   "completionNotes": "Was wurde getan (und was offen bleibt)",

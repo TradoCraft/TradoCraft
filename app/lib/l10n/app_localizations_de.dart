@@ -482,6 +482,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get codeNameRequired => 'Code und Name sind erforderlich.';
 
   @override
+  String get poLineVatInvalid =>
+      'Der MwSt.-Satz muss zwischen 0 und 100 liegen.';
+
+  @override
   String get codeNameVatRequired =>
       'Code, Name und MwSt.-Satz sind Pflichtfelder.';
 

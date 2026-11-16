@@ -305,7 +305,7 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
         }
       }
     });
-    if (_id == null && _buildingYear.text.trim().isNotEmpty) {
+    if (drop || (_id == null && _buildingYear.text.trim().isNotEmpty)) {
       _refreshPreview();
     }
   }
@@ -550,6 +550,10 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
           buildingConstructionYear: _purpose == 'stock'
               ? null
               : _buildingYearOrNull,
+          clearBuildingConstructionYear:
+              _purpose != 'stock' && _buildingYear.text.trim().isEmpty
+              ? true
+              : null,
           // The saved draft, so that its quoted shipping cost is part of the totals.
           quotationId: _editable ? _id : null,
           lines: inputs,
@@ -614,7 +618,8 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
           : null,
       buildingConstructionYear: buildingYear,
       clearBuildingConstructionYear:
-          buildingYear == null && _q?.buildingConstructionYear != null
+          yearText.isEmpty &&
+              (_purpose != 'stock' || _q?.buildingConstructionYear != null)
           ? true
           : null,
       notes: _notes.text,
@@ -1116,11 +1121,13 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
                     child: Text(_vatRegimeLabel(context.l10n, r)),
                   ),
               ],
-              onChanged: (v) {
-                setState(() => _vatRegimeOverride = v);
-                _setDirty(true);
-                _refreshPreview();
-              },
+              onChanged: _busy
+                  ? null
+                  : (v) {
+                      setState(() => _vatRegimeOverride = v);
+                      _setDirty(true);
+                      _refreshPreview();
+                    },
             ),
           ),
           if (_purpose == 'installation')
@@ -1129,6 +1136,7 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
               child: TextField(
                 key: const ValueKey('buildingConstructionYear'),
                 controller: _buildingYear,
+                enabled: !_busy,
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(
                   labelText: context.l10n.buildingConstructionYear,

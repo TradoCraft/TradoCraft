@@ -131,7 +131,7 @@ String trimDecimal(String v) =>
     if (d.vat.text.trim().isNotEmpty) {
       v = parseDecimalInput(d.vat.text);
       if (v == null || double.parse(v) < 0 || double.parse(v) > 100) {
-        return (null, l.codeNameVatRequired);
+        return (null, l.poLineVatInvalid);
       }
     }
     out.add(

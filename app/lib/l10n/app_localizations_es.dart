@@ -481,6 +481,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get codeNameRequired => 'El código y el nombre son obligatorios.';
 
   @override
+  String get poLineVatInvalid => 'El tipo de IVA debe estar entre 0 y 100.';
+
+  @override
   String get codeNameVatRequired =>
       'El código, el nombre y el tipo de IVA son obligatorios.';
 

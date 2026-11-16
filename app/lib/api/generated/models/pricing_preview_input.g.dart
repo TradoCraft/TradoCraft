@@ -14,6 +14,8 @@ PricingPreviewInput _$PricingPreviewInputFromJson(Map<String, dynamic> json) =>
           .toList(),
       buildingConstructionYear: (json['building_construction_year'] as num?)
           ?.toInt(),
+      clearBuildingConstructionYear:
+          json['clear_building_construction_year'] as bool?,
       deliveryCountryCode: json['delivery_country_code'] as String?,
       opportunityId: json['opportunity_id'] as String?,
       powerGridId: json['power_grid_id'] as String?,
@@ -32,6 +34,7 @@ Map<String, dynamic> _$PricingPreviewInputToJson(
   PricingPreviewInput instance,
 ) => <String, dynamic>{
   'building_construction_year': ?instance.buildingConstructionYear,
+  'clear_building_construction_year': ?instance.clearBuildingConstructionYear,
   'customer_id': instance.customerId,
   'delivery_country_code': ?instance.deliveryCountryCode,
   'lines': instance.lines,

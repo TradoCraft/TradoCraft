@@ -44165,6 +44165,13 @@
             "format": "int32",
             "description": "Building construction year for renovation VAT preview (800..=2200)."
           },
+          "clear_building_construction_year": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Explicitly clear the year instead of inheriting from the opportunity."
+          },
           "customer_id": {
             "type": "string",
             "format": "uuid"

@@ -1148,6 +1148,50 @@ async fn quotation_vat_handles_b2b_reverse_charge_override_and_building_age(db: 
         "6.00".parse().unwrap()
     );
 
+    // An explicit clear must agree in preview and save, and survive subsequent saves.
+    let mut cleared = json!({
+        "customer_id": b2c_id, "opportunity_id": opp_id,
+        "purpose": "installation", "quote_date": "2026-11-05",
+        "clear_building_construction_year": true,
+        "lines": [{ "product_id": unit_100, "quantity": "1" }],
+    });
+    let (status, preview) = send(
+        &app,
+        SALES,
+        Method::POST,
+        "/pricing/preview",
+        cleared.clone(),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{preview}");
+    assert!(preview["building_construction_year"].is_null());
+    let uri = format!("/quotations/{}", q_old["id"].as_str().unwrap());
+    let (status, saved) = send(&app, SALES, Method::PUT, &uri, cleared.clone()).await;
+    assert_eq!(status, StatusCode::OK, "{saved}");
+    assert!(saved["building_construction_year"].is_null());
+    cleared
+        .as_object_mut()
+        .unwrap()
+        .remove("clear_building_construction_year");
+    let (status, saved) = send(&app, SALES, Method::PUT, &uri, cleared.clone()).await;
+    assert_eq!(status, StatusCode::OK, "{saved}");
+    assert!(saved["building_construction_year"].is_null());
+    let (status, other) = send(
+        &app,
+        SALES,
+        Method::POST,
+        "/opportunities",
+        json!({
+            "title": "New building", "customer_id": b2c_id, "building_construction_year": 2022,
+        }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{other}");
+    cleared["opportunity_id"] = other["id"].clone();
+    let (status, saved) = send(&app, SALES, Method::PUT, &uri, cleared).await;
+    assert_eq!(status, StatusCode::OK, "{saved}");
+    assert_eq!(saved["building_construction_year"], 2022);
+
     // New building (< 10 years old) stays at 21% standard rate.
     let (status, q_new) = send(
         &app,
@@ -1288,4 +1332,86 @@ async fn purchasing_and_invoice_default_vat_by_supplier_country(db: PgPool) {
     .await;
     assert_eq!(status, StatusCode::CREATED, "{inv_de}");
     assert_eq!(common::dec(&inv_de["vat_total"]), "0.00".parse().unwrap());
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn seeded_ee_ro_rate_boundaries(db: PgPool) {
+    use tradocraft_core::vat_rates::{
+        load_country_rules, resolve_rate_from_rules, VatResolutionContext,
+    };
+    for (country, category, before, on, old, new) in [
+        ("EE", "standard", "2025-06-30", "2025-07-01", "22", "24"),
+        ("RO", "standard", "2025-07-31", "2025-08-01", "19", "21"),
+        ("RO", "reduced", "2025-07-31", "2025-08-01", "5", "11"),
+        ("RO", "intermediate", "2025-07-31", "2025-08-01", "9", "11"),
+    ] {
+        let mut conn = db.acquire().await.unwrap();
+        let rules = load_country_rules(&mut *conn, country).await.unwrap();
+        for (date, expected) in [(before, old), (on, new)] {
+            let ctx = VatResolutionContext {
+                country_code: country,
+                category,
+                product_override: None,
+                vat_regime: Some("domestic"),
+                purpose: None,
+                building_construction_year: None,
+                as_of: date.parse().unwrap(),
+            };
+            assert_eq!(
+                resolve_rate_from_rules(&rules, &ctx),
+                expected.parse().unwrap()
+            );
+        }
+    }
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn concurrent_country_vat_creates_cannot_overlap(db: PgPool) {
+    let app = setup(db).await;
+    let body = json!({"country_code": "ZZ", "category": "standard", "rate": "20", "start_date": "2025-01-01"});
+    let (a, b) = tokio::join!(
+        send(&app, ADMIN, Method::POST, "/admin/vat-rates", body.clone()),
+        send(&app, ADMIN, Method::POST, "/admin/vat-rates", body),
+    );
+    assert!(
+        matches!(
+            (a.0, b.0),
+            (StatusCode::CREATED, StatusCode::CONFLICT)
+                | (StatusCode::CONFLICT, StatusCode::CREATED)
+        ),
+        "{a:?} {b:?}"
+    );
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn concurrent_country_vat_updates_cannot_overlap(db: PgPool) {
+    let app = setup(db).await;
+    let mut ids = Vec::new();
+    for year in [2020, 2021] {
+        let (status, row) = send(
+            &app,
+            ADMIN,
+            Method::POST,
+            "/admin/vat-rates",
+            json!({
+                "country_code": "ZZ", "category": "standard", "rate": "20",
+                "start_date": format!("{year}-01-01"), "end_date": format!("{year}-12-31"),
+            }),
+        )
+        .await;
+        assert_eq!(status, StatusCode::CREATED, "{row}");
+        ids.push(format!("/admin/vat-rates/{}", row["id"].as_str().unwrap()));
+    }
+    let body = json!({"country_code": "zz", "category": "standard", "rate": "20", "start_date": "2025-01-01"});
+    let (a, b) = tokio::join!(
+        send(&app, ADMIN, Method::PUT, &ids[0], body.clone()),
+        send(&app, ADMIN, Method::PUT, &ids[1], body),
+    );
+    assert!(
+        matches!(
+            (a.0, b.0),
+            (StatusCode::OK, StatusCode::CONFLICT) | (StatusCode::CONFLICT, StatusCode::OK)
+        ),
+        "{a:?} {b:?}"
+    );
 }

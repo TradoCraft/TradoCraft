@@ -481,6 +481,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get codeNameRequired => 'Le code et le nom sont obligatoires.';
 
   @override
+  String get poLineVatInvalid =>
+      'Le taux de TVA doit être compris entre 0 et 100.';
+
+  @override
   String get codeNameVatRequired =>
       'Le code, le nom et le taux de TVA sont obligatoires.';
 
@@ -10097,7 +10101,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get domesticReverseChargeNotice =>
-      'Autoliquidation — travaux immobiliers (art. 20 AR n° 1)';
+      'Autoliquidation — travaux immobiliers';
 
   @override
   String get buildingConstructionYear => 'Année de construction du bâtiment';

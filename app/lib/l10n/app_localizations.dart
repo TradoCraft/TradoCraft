@@ -992,6 +992,12 @@ abstract class AppLocalizations {
   /// **'Code and name are required.'**
   String get codeNameRequired;
 
+  /// No description provided for @poLineVatInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'VAT rate must be between 0 and 100.'**
+  String get poLineVatInvalid;
+
   /// No description provided for @codeNameVatRequired.
   ///
   /// In en, this message translates to:
