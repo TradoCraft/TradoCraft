@@ -359,3 +359,44 @@ async fn inline_mail_rules_keep_working_and_internal_tickets_get_no_customer_mai
     assert!(after.iter().skip(before).all(|m| m.0 != "customer@example.com"), "{after:?}");
     assert_eq!(after.len(), before + 1, "only the inline ops mail: {after:?}");
 }
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn a_rule_can_route_tickets_by_their_language(db: PgPool) {
+    let app = setup(db.clone()).await;
+    let fr = team(&app, "Support FR").await;
+    let (status, r) = post(
+        &app,
+        ADMIN,
+        "/helpdesk/automation/rules",
+        json!({ "name": "French to FR", "trigger": "created",
+                "conditions": { "ticket_languages": ["fr"] },
+                "actions": [{ "kind": "set_team", "team_id": fr }] }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{r}");
+    assert_eq!(r["conditions"]["ticket_languages"], json!(["fr"]));
+    manual_ticket(&app, &db, SUPPORT, "Bonjour", json!({ "language": "fr" })).await;
+    manual_ticket(&app, &db, SUPPORT, "Hallo", json!({ "language": "de" })).await;
+    let team_of = |subject: &'static str| {
+        let db = db.clone();
+        async move {
+            sqlx::query_scalar::<_, Option<String>>("SELECT team_id::text FROM helpdesk.tickets WHERE subject = $1")
+                .bind(subject)
+                .fetch_one(&db)
+                .await
+                .unwrap()
+        }
+    };
+    assert_eq!(team_of("Bonjour").await.as_deref(), Some(fr.as_str()));
+    assert_ne!(team_of("Hallo").await.as_deref(), Some(fr.as_str()));
+    // An unknown language code is refused.
+    let (status, _) = post(
+        &app,
+        ADMIN,
+        "/helpdesk/automation/rules",
+        json!({ "name": "Bad", "trigger": "created", "conditions": { "ticket_languages": ["xx"] },
+                "actions": [{ "kind": "set_priority", "value": "high" }] }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+}
