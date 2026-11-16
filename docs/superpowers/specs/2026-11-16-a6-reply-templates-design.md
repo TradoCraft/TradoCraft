@@ -131,3 +131,32 @@ ADR 0071, and the roadmap updated (A6 status, corrected description).
 - Keywords only rank suggestions; nothing is sent automatically.
 - The detector stays as it is. `language_source` shows how often agents override a detection, which is
   the data needed to judge it later.
+
+## Revision after reading the code (supersedes the lines above where they conflict)
+
+Found while writing the plan; each point replaces the earlier text.
+
+- **No `shortcut` column.** `prepared_answers.code` is already unique per company and is the shortcut
+  (`/code` in the picker). Keywords only rank suggestions.
+- **Language order stays as it is today** (contact or customer language beats the detector, which only
+  decides for an unknown sender). New: an `internal` ticket without contact or customer takes the
+  language of its creator (`core.users.language`), then the company default. `language_source` is
+  `record` (taken from contact, customer, creator or company), `detected`, or `agent` (given or
+  changed by an agent). The earlier chain that put detection first is dropped.
+- **Customer-only mail on internal tickets needs no new work:** `automail::send` already skips the
+  `customer` recipient for internal tickets, and SLA notices only go to the channels `email` and
+  `portal`. The plan adds a test that pins this.
+- **SLA notices are deferred to a follow-up (A6b).** They are built-in five-language texts with
+  deadline data that prepared-answer placeholders cannot express yet, and rendering needs a system
+  context without a logged-in user. A6 covers the `send_email` action only; an A6b entry goes on the
+  roadmap.
+- **The new condition is `ticket_languages`** (the ticket's own language). The existing
+  `customer_languages` condition stays.
+- **`answer_id` on `send_email` is stored in the rule's JSON**, so it needs no migration. When set,
+  the inline subject and body are ignored and cleared. Every language variant of the answer must have
+  a subject and only known placeholders when the rule is saved. (Answers themselves still accept
+  unknown placeholders: agents rely on them staying visible.)
+- **Permissions:** `answers.write` (already held by support, sales and admin) manages templates; there
+  is no new permission and no team-lead management. Reading stays `helpdesk.read`.
+- **New placeholder:** `{{team.name}}`. `{x}` (A5) and `{{x}}` (answers) stay separate syntaxes: A5
+  rules with inline text keep `{x}`, templates use `{{x}}`.
