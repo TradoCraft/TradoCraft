@@ -28,6 +28,7 @@ pub struct Team {
     pub id: Uuid,
     pub name: String,
     pub active: bool,
+    pub require_checklist_done: bool,
     pub members: Vec<TeamMember>,
     pub created_at: DateTime<Utc>,
 }
@@ -44,6 +45,8 @@ pub struct TeamInput {
     pub name: String,
     #[serde(default = "yes")]
     pub active: bool,
+    #[serde(default)]
+    pub require_checklist_done: bool,
     /// The complete member list: members not listed are removed.
     #[serde(default)]
     pub members: Vec<MemberInput>,
@@ -79,6 +82,7 @@ struct TeamRow {
     id: Uuid,
     name: String,
     active: bool,
+    require_checklist_done: bool,
     created_at: DateTime<Utc>,
 }
 
@@ -88,7 +92,7 @@ async fn load_teams(
     only: Option<Uuid>,
 ) -> AppResult<Vec<Team>> {
     let rows: Vec<TeamRow> = sqlx::query_as(
-        "SELECT id, name, active, created_at FROM helpdesk.teams
+        "SELECT id, name, active, require_checklist_done, created_at FROM helpdesk.teams
          WHERE company_id = $1 AND ($2::uuid IS NULL OR id = $2) ORDER BY lower(name)",
     )
     .bind(company_id)
@@ -109,6 +113,7 @@ async fn load_teams(
             id: r.id,
             name: r.name,
             active: r.active,
+            require_checklist_done: r.require_checklist_done,
             members,
             created_at: r.created_at,
         });
@@ -186,12 +191,13 @@ async fn create_team(
     let mut tx = state.db.begin().await?;
     let id = new_id();
     sqlx::query(
-        "INSERT INTO helpdesk.teams (id, company_id, name, active) VALUES ($1, $2, $3, $4)",
+        "INSERT INTO helpdesk.teams (id, company_id, name, active, require_checklist_done) VALUES ($1, $2, $3, $4, $5)",
     )
     .bind(id)
     .bind(user.company_id)
     .bind(input.name.trim())
     .bind(input.active)
+    .bind(input.require_checklist_done)
     .execute(&mut *tx)
     .await?;
     save_members(&mut tx, user.company_id, id, &input.members).await?;
@@ -201,7 +207,10 @@ async fn create_team(
         "helpdesk_team",
         id,
         "created",
-        serde_json::json!({ "name": input.name.trim() }),
+        serde_json::json!({
+            "name": input.name.trim(),
+            "require_checklist_done": input.require_checklist_done,
+        }),
     )
     .await?;
     let team = load_teams(&mut tx, user.company_id, Some(id))
@@ -226,12 +235,13 @@ async fn update_team(
     }
     let mut tx = state.db.begin().await?;
     let updated = sqlx::query(
-        "UPDATE helpdesk.teams SET name = $3, active = $4 WHERE id = $1 AND company_id = $2",
+        "UPDATE helpdesk.teams SET name = $3, active = $4, require_checklist_done = $5 WHERE id = $1 AND company_id = $2",
     )
     .bind(id)
     .bind(user.company_id)
     .bind(input.name.trim())
     .bind(input.active)
+    .bind(input.require_checklist_done)
     .execute(&mut *tx)
     .await?;
     if updated.rows_affected() == 0 {
@@ -255,7 +265,11 @@ async fn update_team(
         "helpdesk_team",
         id,
         "updated",
-        serde_json::json!({ "name": input.name.trim(), "active": input.active }),
+        serde_json::json!({
+            "name": input.name.trim(),
+            "active": input.active,
+            "require_checklist_done": input.require_checklist_done,
+        }),
     )
     .await?;
     let team = load_teams(&mut tx, user.company_id, Some(id))
@@ -433,4 +447,31 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(update_team))
         .routes(routes!(get_settings, put_settings))
         .routes(routes!(assign))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn team_input_deserializes_require_checklist_done() {
+        let json_default = r#"{"name": "Support"}"#;
+        let input_default: TeamInput =
+            serde_json::from_str(json_default).expect("deserialize default");
+        assert_eq!(input_default.name, "Support");
+        assert!(input_default.active);
+        assert!(!input_default.require_checklist_done);
+
+        let json_true = r#"{"name": "Hardware", "require_checklist_done": true}"#;
+        let input_true: TeamInput =
+            serde_json::from_str(json_true).expect("deserialize true");
+        assert_eq!(input_true.name, "Hardware");
+        assert!(input_true.require_checklist_done);
+
+        let json_false = r#"{"name": "Field", "require_checklist_done": false}"#;
+        let input_false: TeamInput =
+            serde_json::from_str(json_false).expect("deserialize false");
+        assert_eq!(input_false.name, "Field");
+        assert!(!input_false.require_checklist_done);
+    }
 }
