@@ -268,3 +268,94 @@ async fn suggestions_are_ranked_rendered_in_the_ticket_language_and_scoped_to_th
     assert!(none.as_array().unwrap().is_empty());
 }
 
+
+async fn outbox(db: &PgPool) -> Vec<(String, String, String)> {
+    sqlx::query_as(
+        "SELECT to_address, subject, body FROM core.mail_outbox WHERE delivery = 'queued' ORDER BY created_at, id",
+    )
+    .fetch_all(db)
+    .await
+    .unwrap()
+}
+
+fn mail_rule(answer: Option<&str>) -> Value {
+    let mut action = json!({ "kind": "send_email", "recipient": "address", "address": "ops@example.com" });
+    match answer {
+        Some(id) => action["answer_id"] = json!(id),
+        None => {
+            action["subject"] = json!("Inline {ticket_number}");
+            action["body"] = json!("Inline body");
+        }
+    }
+    json!({ "name": "Mail ops", "trigger": "created", "actions": [action] })
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn a_send_email_rule_uses_the_template_in_the_ticket_language(db: PgPool) {
+    let app = setup(db.clone()).await;
+    let (_, a) = post(
+        &app,
+        SUPPORT,
+        "/prepared-answers",
+        json!({ "code": "ops", "name": "Ops", "texts": [
+            { "language": "en", "subject": "New {{ticket.number}}", "body": "English for {{ticket.subject}}" },
+            { "language": "fr", "subject": "Nouveau {{ticket.number}}", "body": "Français pour {{ticket.subject}}" }
+        ] }),
+    )
+    .await;
+    let id = a["id"].as_str().unwrap();
+    let (status, r) = post(&app, ADMIN, "/helpdesk/automation/rules", mail_rule(Some(id))).await;
+    assert_eq!(status, StatusCode::CREATED, "{r}");
+    receive(
+        &app,
+        "inconnu@nowhere.example",
+        "Commande",
+        "Bonjour, nous avons bien reçu le devis et nous voudrions passer la commande. Merci et cordialement",
+    )
+    .await;
+    let mails = outbox(&db).await;
+    assert_eq!(mails.len(), 1, "{mails:?}");
+    let (to, subject, body) = &mails[0];
+    assert_eq!(to, "ops@example.com");
+    assert!(subject.starts_with("Nouveau T"), "{subject}");
+    assert_eq!(body, "Français pour Commande");
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn a_rule_with_a_template_is_validated_when_saved(db: PgPool) {
+    let app = setup(db).await;
+    // Unknown template.
+    let (status, _) = post(&app, ADMIN, "/helpdesk/automation/rules", mail_rule(Some("00000000-0000-7000-8000-00000000dead"))).await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    // A typo in a placeholder would reach the customer: refused.
+    let (_, typo) = post(&app, SUPPORT, "/prepared-answers", json!({ "code": "typo", "name": "Typo",
+        "texts": [{ "language": "en", "subject": "Hi", "body": "Dear {{contact.nme}}" }] })).await;
+    let (status, r) = post(&app, ADMIN, "/helpdesk/automation/rules", mail_rule(Some(typo["id"].as_str().unwrap()))).await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{r}");
+    assert!(r["message"].as_str().unwrap().contains("contact.nme"), "{r}");
+    // Every language needs a subject.
+    let (_, nosub) = post(&app, SUPPORT, "/prepared-answers", json!({ "code": "nosub", "name": "No subject",
+        "texts": [{ "language": "en", "body": "Hi" }] })).await;
+    let (status, _) = post(&app, ADMIN, "/helpdesk/automation/rules", mail_rule(Some(nosub["id"].as_str().unwrap()))).await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn inline_mail_rules_keep_working_and_internal_tickets_get_no_customer_mail(db: PgPool) {
+    let app = setup(db.clone()).await;
+    let (status, r) = post(&app, ADMIN, "/helpdesk/automation/rules", mail_rule(None)).await;
+    assert_eq!(status, StatusCode::CREATED, "{r}");
+    receive(&app, "anna@nowhere.example", "Hello", "Hello there").await;
+    let mails = outbox(&db).await;
+    assert_eq!(mails.len(), 1);
+    assert!(mails[0].1.starts_with("Inline T"), "{:?}", mails[0]);
+    // A rule that mails the customer does nothing for an internal ticket.
+    let to_customer = json!({ "name": "To customer", "trigger": "created", "actions": [
+        { "kind": "send_email", "recipient": "customer", "subject": "Hi", "body": "Hi" }] });
+    post(&app, ADMIN, "/helpdesk/automation/rules", to_customer).await;
+    let before = outbox(&db).await.len();
+    manual_ticket(&app, &db, SUPPORT, "Colleague question", json!({ "internal": true })).await;
+    let after: Vec<_> = outbox(&db).await;
+    assert!(after.iter().skip(before).all(|m| m.0 != "customer@example.com"), "{after:?}");
+    assert_eq!(after.len(), before + 1, "only the inline ops mail: {after:?}");
+}
