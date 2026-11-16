@@ -70,6 +70,7 @@ class AnswersPage extends ConsumerWidget {
                       subtitle: Text(
                         [
                           a.code,
+                          if (a.kind != 'reply') l.answerKindName(a.kind),
                           if (a.category != null) a.category!,
                           if (!a.active) l.inactive,
                         ].join(' · '),
@@ -117,6 +118,9 @@ class _AnswerEditorState extends ConsumerState<AnswerEditor>
   late final _name = TextEditingController(text: a?.name);
   late final _category = TextEditingController(text: a?.category);
   late bool _active = a?.active ?? true;
+  late String _kind = a?.kind ?? 'reply';
+  late String? _teamId = a?.teamId;
+  late final _keywords = TextEditingController(text: a?.keywords.join(', '));
   late final Map<String, (TextEditingController, TextEditingController)>
   _texts = {
     for (final c in languageCodes)
@@ -150,6 +154,13 @@ class _AnswerEditorState extends ConsumerState<AnswerEditor>
       name: _name.text.trim(),
       category: _category.text.trim().isEmpty ? null : _category.text.trim(),
       active: _active,
+      kind: _kind,
+      teamId: _teamId,
+      keywords: _keywords.text
+          .split(',')
+          .map((k) => k.trim().toLowerCase())
+          .where((k) => k.isNotEmpty)
+          .toList(),
       texts: [
         for (final c in languageCodes)
           if (_texts[c]!.$2.text.trim().isNotEmpty)
@@ -167,7 +178,9 @@ class _AnswerEditorState extends ConsumerState<AnswerEditor>
       } else {
         await api.updateAnswer(id: a!.id, body: input);
       }
-      if (mounted) Navigator.pop(context, true);
+      if (mounted && Navigator.of(context).canPop()) {
+        Navigator.pop(context, true);
+      }
     } catch (e) {
       setState(() => _error = errorMessage(e));
     }
@@ -178,6 +191,7 @@ class _AnswerEditorState extends ConsumerState<AnswerEditor>
     final l = context.l10n;
     final placeholders =
         ref.watch(_placeholdersProvider).value ?? const <String>[];
+    final teams = ref.watch(_teamsProvider).value ?? const <Team>[];
     const gap = SizedBox(height: 12, width: 12);
     return AlertDialog(
       title: Text(a == null ? l.newAnswer : a!.name),
@@ -216,6 +230,56 @@ class _AnswerEditorState extends ConsumerState<AnswerEditor>
                   onChanged: (v) => setState(() => _active = v ?? true),
                 ),
                 Text(l.active),
+              ],
+            ),
+            gap,
+            Row(
+              children: [
+                SizedBox(
+                  width: 200,
+                  child: DropdownButtonFormField<String>(
+                    key: const ValueKey('answer-kind'),
+                    initialValue: _kind,
+                    isExpanded: true,
+                    decoration: InputDecoration(labelText: l.answerKind, isDense: true),
+                    items: [
+                      for (final k in const ['reply', 'internal_note', 'handover', 'notice'])
+                        DropdownMenuItem(value: k, child: Text(l.answerKindName(k))),
+                    ],
+                    onChanged: (v) => setState(() => _kind = v ?? 'reply'),
+                  ),
+                ),
+                gap,
+                SizedBox(
+                  key: ValueKey('answer-team-box-${teams.length}'),
+                  width: 200,
+                  child: DropdownButtonFormField<String?>(
+                    key: const ValueKey('answer-team'),
+                    initialValue: teams.any((t) => t.id == _teamId)
+                        ? _teamId
+                        : null,
+                    isExpanded: true,
+                    decoration: InputDecoration(labelText: l.answerTeam, isDense: true),
+                    items: [
+                      DropdownMenuItem<String?>(value: null, child: Text(l.answerAllTeams)),
+                      for (final t in teams)
+                        DropdownMenuItem<String?>(value: t.id, child: Text(t.name)),
+                    ],
+                    onChanged: (v) => setState(() => _teamId = v),
+                  ),
+                ),
+                gap,
+                Expanded(
+                  child: TextField(
+                    key: const ValueKey('answer-keywords'),
+                    controller: _keywords,
+                    decoration: InputDecoration(
+                      labelText: l.answerKeywords,
+                      helperText: l.answerKeywordsHelp,
+                      isDense: true,
+                    ),
+                  ),
+                ),
               ],
             ),
             gap,
@@ -293,4 +357,8 @@ class _AnswerEditorState extends ConsumerState<AnswerEditor>
 
 final _placeholdersProvider = FutureProvider<List<String>>(
   (ref) => ref.watch(apiProvider).helpdesk.placeholders(),
+);
+
+final _teamsProvider = FutureProvider.autoDispose<List<Team>>(
+  (ref) => ref.watch(apiProvider).helpdesk.listTeams(),
 );

@@ -101,35 +101,20 @@ class _Fake implements HttpClientAdapter {
       ],
       'GET /api/v1/quotations' => {'items': [], 'total': 0},
       'GET /api/v1/opportunities' => {'items': [], 'total': 0},
-      'GET /api/v1/prepared-answers' => [
+      'GET /api/v1/tickets/t1/prepared-answers/suggest' => [
         {
-          'id': 'p1',
+          'answer_id': 'p1',
           'code': 'delivery-time',
           'name': 'Delivery time',
-          'category': 'General',
-          'active': true,
-          'updated_at': '2026-11-05T10:00:00Z',
-          'texts': [
-            {
-              'language': 'en',
-              'subject': '',
-              'body': 'Our delivery time is 6 to 8 weeks.',
-            },
-            {
-              'language': 'de',
-              'subject': '',
-              'body': 'Unsere Lieferzeit beträgt 6 bis 8 Wochen.',
-            },
-          ],
+          'score': 100,
+          'kind': 'reply',
+          'language': 'de',
+          'subject': '',
+          'body':
+              'Sehr geehrte(r) Klaus Weber,\nunsere Lieferzeit beträgt 6 bis 8 Wochen.',
+          'fallback': false,
         },
       ],
-      'POST /api/v1/tickets/t1/prepared-answers/p1/render' => {
-        'answer_id': 'p1',
-        'language': 'de',
-        'fallback': false,
-        'subject': '',
-        'body': 'Sehr geehrte(r) Klaus Weber,\nunsere Lieferzeit beträgt 6 bis 8 Wochen.',
-      },
       _ => null,
     };
     if (json == null) {
@@ -199,7 +184,7 @@ void main() {
 
       expect(
         fake.requests,
-        contains('POST /api/v1/tickets/t1/prepared-answers/p1/render'),
+        contains('GET /api/v1/tickets/t1/prepared-answers/suggest'),
       );
       final body = tester
           .widget<TextField>(find.widgetWithText(TextField, 'Message'))

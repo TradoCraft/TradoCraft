@@ -531,6 +531,7 @@ export 'models/stock_move.dart';
 export 'models/stock_row.dart';
 export 'models/stock_row_page.dart';
 export 'models/stored_error.dart';
+export 'models/suggested_answer.dart';
 export 'models/suggestion.dart';
 export 'models/suggestion_out.dart';
 export 'models/suggestion_reason.dart';

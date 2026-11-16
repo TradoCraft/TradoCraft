@@ -1742,6 +1742,60 @@ class AppLocalizationsFr extends AppLocalizations {
       'Réponses réutilisables aux questions récurrentes, un texte par langue. Les variables comme «quotation.number» sont complétées pour le ticket ; le texte reste modifiable avant l\'envoi.';
 
   @override
+  String get answerKind => 'Type';
+
+  @override
+  String answerKindName(String kind) {
+    String _temp0 = intl.Intl.selectLogic(kind, {
+      'reply': 'Réponse',
+      'internal_note': 'Note interne',
+      'handover': 'Passation',
+      'notice': 'Avis',
+      'other': '$kind',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String get answerTeam => 'Équipe';
+
+  @override
+  String get answerAllTeams => 'Toutes les équipes';
+
+  @override
+  String get answerKeywords => 'Mots-clés (séparés par des virgules)';
+
+  @override
+  String get answerKeywordsHelp =>
+      'Les tickets dont l\'objet contient un mot-clé verront cette réponse suggérée en premier.';
+
+  @override
+  String get answerShortcutHint => 'Tapez /code pour insérer une réponse';
+
+  @override
+  String ticketLanguageSource(String source) {
+    String _temp0 = intl.Intl.selectLogic(source, {
+      'record': 'Tirée du contact ou du client',
+      'detected': 'Détectée à partir du message',
+      'agent': 'Définie par un agent',
+      'other': '$source',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String get ticketLanguage => 'Langue du ticket';
+
+  @override
+  String get mailTemplate => 'Modèle (facultatif)';
+
+  @override
+  String get mailTemplateNone => 'Rédiger le texte ici';
+
+  @override
+  String get ticketLanguageCondition => 'Langue du ticket';
+
+  @override
   String get preview => 'Aperçu';
 
   @override

@@ -29,6 +29,9 @@ RuleConditions _$RuleConditionsFromJson(Map<String, dynamic> json) =>
       subjectContains: json['subject_contains'] as String?,
       tag: json['tag'] as String?,
       teamId: json['team_id'] as String?,
+      ticketLanguages: (json['ticket_languages'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
     );
 
 Map<String, dynamic> _$RuleConditionsToJson(RuleConditions instance) =>
@@ -44,4 +47,5 @@ Map<String, dynamic> _$RuleConditionsToJson(RuleConditions instance) =>
       'subject_contains': ?instance.subjectContains,
       'tag': ?instance.tag,
       'team_id': ?instance.teamId,
+      'ticket_languages': ?instance.ticketLanguages,
     };

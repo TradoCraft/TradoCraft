@@ -20,19 +20,20 @@ class Ticket {
     required this.articleCount,
     required this.id,
     required this.internal,
-    required this.tags,
+    required this.language,
     required this.subject,
     required this.status,
     required this.sla,
     required this.watching,
+    required this.languageSource,
     required this.unread,
-    required this.language,
     required this.updatedAt,
     required this.timeMinutes,
-    this.firstResponseAt,
+    required this.tags,
+    this.escalatedByName,
     this.mergedIntoId,
     this.mergedIntoNumber,
-    this.escalatedByName,
+    this.firstResponseAt,
     this.opportunityId,
     this.opportunityNumber,
     this.orderId,
@@ -103,6 +104,10 @@ class Ticket {
 
   /// nl | fr | en | de | es — the language to answer in.
   final String language;
+
+  /// record | detected | agent: where `language` came from.
+  @JsonKey(name: 'language_source')
+  final String languageSource;
 
   /// Set when this ticket was merged into another one (it is closed).
   @JsonKey(includeIfNull: false,name: 'merged_into_id')

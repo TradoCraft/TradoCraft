@@ -22,6 +22,7 @@ class RuleConditions {
     this.subjectContains,
     this.tag,
     this.teamId,
+    this.ticketLanguages,
   });
   
   factory RuleConditions.fromJson(Map<String, Object?> json) => _$RuleConditionsFromJson(json);
@@ -58,6 +59,10 @@ class RuleConditions {
   final String? tag;
   @JsonKey(includeIfNull: false,name: 'team_id')
   final String? teamId;
+
+  /// The language of the ticket itself (nl, fr, en, de, es), which may differ from its customer's.
+  @JsonKey(includeIfNull: false,name: 'ticket_languages')
+  final List<String>? ticketLanguages;
 
   Map<String, Object?> toJson() => _$RuleConditionsToJson(this);
 }
