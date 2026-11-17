@@ -1,4 +1,4 @@
-//! Price list document (ADR 0069): the data handed to `templates/price_list.typ` and the Excel
+//! Price list document (ADR 0074): the data handed to `templates/price_list.typ` and the Excel
 //! rendering of the same data. Every value is already formatted and every label already chosen
 //! here, so the template only lays out and the two formats cannot drift apart.
 

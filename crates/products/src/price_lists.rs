@@ -1,4 +1,4 @@
-//! Printable price lists (ADR 0069).
+//! Printable price lists (ADR 0074).
 //!
 //! A price list is a layout: a tree of titled groups with products in it, published for one or
 //! more price zones (each with its own languages) on one date. It stores no prices; they are

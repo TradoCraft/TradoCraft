@@ -1,4 +1,4 @@
-# 0069 — Price lists
+# 0074 — Price lists
 
 **Status:** Proposed (builds on [ADR 0002](0002-money-and-pricing.md), [ADR 0009](0009-pdf-with-typst.md) and [ADR 0012](0012-rebates-price-dates-and-price-changes.md))
 

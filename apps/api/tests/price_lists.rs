@@ -1,4 +1,4 @@
-//! Price lists (ADR 0069): CRUD with tree validation, permissions, audit and the PDF/Excel render.
+//! Price lists (ADR 0074): CRUD with tree validation, permissions, audit and the PDF/Excel render.
 
 mod common;
 
@@ -950,7 +950,7 @@ async fn zones_export_profiles_render_and_plan(db: PgPool) {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Normalised persistence (ADR 0069): constraints that hold below the API
+// Normalised persistence (ADR 0074): constraints that hold below the API
 // ---------------------------------------------------------------------------------------------
 
 async fn new_list(app: &axum::Router, code: &str) -> String {

@@ -1,4 +1,4 @@
-//! The export plan of a price list (ADR 0069): every file an administrator's export profiles
+//! The export plan of a price list (ADR 0074): every file an administrator's export profiles
 //! produce, with a relative path computed here so no client builds file names from user text.
 //! Everything in this module is pure.
 

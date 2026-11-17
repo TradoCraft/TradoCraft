@@ -1,4 +1,4 @@
-// Price list template (ADR 0069). Data comes from data.json (see crates/documents/src/price_list.rs).
+// Price list template (ADR 0074). Data comes from data.json (see crates/documents/src/price_list.rs).
 // Prices, labels and group titles are chosen and formatted by the API; this template never calculates.
 #let d = json("data.json")
 #let l = d.labels
