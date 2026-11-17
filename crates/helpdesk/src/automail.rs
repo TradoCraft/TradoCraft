@@ -131,22 +131,42 @@ pub async fn validate_action(
         }
         _ => {}
     }
-    let subject = one_line(a.subject.as_deref().unwrap_or(""));
-    let body = a.body.as_deref().unwrap_or("").trim().to_string();
-    if subject.is_empty() || subject.chars().count() > 200 {
-        return Err(AppError::Validation(
-            "send_email: a subject of at most 200 characters is required".into(),
-        ));
+    if let Some(answer_id) = a.answer_id {
+        // The text comes from a prepared answer: every language needs a subject, and a placeholder
+        // that does not exist would reach the recipient as it is.
+        let answer = crate::answers::load(&mut *conn, company_id, answer_id).await?;
+        if answer.texts.is_empty() || answer.texts.iter().any(|t| t.subject.trim().is_empty()) {
+            return Err(AppError::Validation(
+                "send_email: the template needs a subject in every language it has".into(),
+            ));
+        }
+        for t in &answer.texts {
+            crate::render::check_placeholders(
+                &format!("template {} subject", t.language),
+                &t.subject,
+            )?;
+            crate::render::check_placeholders(&format!("template {} body", t.language), &t.body)?;
+        }
+        a.subject = None;
+        a.body = None;
+    } else {
+        let subject = one_line(a.subject.as_deref().unwrap_or(""));
+        let body = a.body.as_deref().unwrap_or("").trim().to_string();
+        if subject.is_empty() || subject.chars().count() > 200 {
+            return Err(AppError::Validation(
+                "send_email: a subject of at most 200 characters is required".into(),
+            ));
+        }
+        if body.is_empty() || body.chars().count() > 5000 {
+            return Err(AppError::Validation(
+                "send_email: a body of at most 5000 characters is required".into(),
+            ));
+        }
+        check_template("subject", &subject)?;
+        check_template("body", &body)?;
+        a.subject = Some(subject);
+        a.body = Some(body);
     }
-    if body.is_empty() || body.chars().count() > 5000 {
-        return Err(AppError::Validation(
-            "send_email: a body of at most 5000 characters is required".into(),
-        ));
-    }
-    check_template("subject", &subject)?;
-    check_template("body", &body)?;
-    a.subject = Some(subject);
-    a.body = Some(body);
     let period = a.period_hours.unwrap_or(DEFAULT_PERIOD_HOURS);
     if !(1..=MAX_PERIOD_HOURS).contains(&period) {
         return Err(AppError::Validation(format!(
@@ -248,6 +268,20 @@ pub async fn send(
     if to.is_empty() {
         return Ok(0);
     }
+    // Answers can change after the rule was saved. Validate before consuming the loop guard.
+    let answer = if let Some(answer_id) = a.answer_id {
+        let answer = crate::answers::load(&mut *conn, company_id, answer_id).await?;
+        for t in &answer.texts {
+            crate::render::check_placeholders(
+                &format!("template {} subject", t.language),
+                &t.subject,
+            )?;
+            crate::render::check_placeholders(&format!("template {} body", t.language), &t.body)?;
+        }
+        Some(answer)
+    } else {
+        None
+    };
     let period = a.period_hours.unwrap_or(DEFAULT_PERIOD_HOURS);
     if !claim(
         conn,
@@ -261,18 +295,37 @@ pub async fn send(
     {
         return Ok(0);
     }
-    let customer = t
-        .customer_name
-        .filter(|n| !n.trim().is_empty())
-        .unwrap_or(t.contact_name);
-    let vars = Vars {
-        ticket_number: &t.number,
-        subject: &t.subject,
-        customer: &customer,
-        agent: t.agent_name.as_deref().unwrap_or(""),
+    let (subject, body) = if let Some(answer) = answer {
+        let (language, values) = crate::answers::ticket_values_for(
+            conn,
+            company_id,
+            t.agent_name.as_deref().unwrap_or(""),
+            ticket_id,
+        )
+        .await?;
+        let (text, _) =
+            crate::answers::pick_text(&answer.texts, &language, &values["__company_language"])
+                .ok_or_else(|| AppError::Validation("the template has no text".into()))?;
+        (
+            one_line(&crate::render::render(&text.subject, &values)),
+            crate::render::render(&text.body, &values),
+        )
+    } else {
+        let customer = t
+            .customer_name
+            .filter(|n| !n.trim().is_empty())
+            .unwrap_or(t.contact_name);
+        let vars = Vars {
+            ticket_number: &t.number,
+            subject: &t.subject,
+            customer: &customer,
+            agent: t.agent_name.as_deref().unwrap_or(""),
+        };
+        (
+            one_line(&render(a.subject.as_deref().unwrap_or(""), &vars)),
+            render(a.body.as_deref().unwrap_or(""), &vars),
+        )
     };
-    let subject = one_line(&render(a.subject.as_deref().unwrap_or(""), &vars));
-    let body = render(a.body.as_deref().unwrap_or(""), &vars);
     for address in &to {
         mail::enqueue(conn, company_id, address, &subject, &body).await?;
     }

@@ -574,6 +574,18 @@
   "postalCode": "PLZ",
   "preparedAnswers": "Textbausteine",
   "preparedAnswersHelp": "Wiederverwendbare Antworten auf wiederkehrende Fragen, ein Text pro Sprache. Platzhalter wie «quotation.number» werden für das Ticket ausgefüllt; der Text kann vor dem Senden noch bearbeitet werden.",
+  "answerKind": "Art",
+  "answerKindName": "{kind, select, reply{Antwort} internal_note{Interne Notiz} handover{Übergabe} notice{Hinweis} other{{kind}}}",
+  "answerTeam": "Team",
+  "answerAllTeams": "Alle Teams",
+  "answerKeywords": "Schlagwörter (durch Kommas getrennt)",
+  "answerKeywordsHelp": "Tickets, deren Betreff ein Schlagwort enthält, erhalten diese Antwort zuerst vorgeschlagen.",
+  "answerShortcutHint": "Geben Sie /code ein, um eine Antwort einzufügen",
+  "ticketLanguageSource": "{source, select, record{Vom Kontakt oder Kunden übernommen} detected{Aus der Nachricht erkannt} agent{Von einem Agenten festgelegt} other{{source}}}",
+  "ticketLanguage": "Ticketsprache",
+  "mailTemplate": "Vorlage (optional)",
+  "mailTemplateNone": "Text hier verfassen",
+  "ticketLanguageCondition": "Ticketsprache",
   "preview": "Vorschau",
   "priceListOf": "Preisliste vom {date}",
   "priceListValidOn": "Preisliste gültig am",
@@ -3180,5 +3192,6 @@
   "vatRateClosePrevious": "Vorherige offene Regel automatisch schließen",
   "vatRateOverlapError": "Zeitraum überschneidet sich mit einer bestehenden Regel",
   "vatRateDeleteConfirm": "MwSt.-Regel für {country} ({category}) löschen?",
-  "vatRateOngoing": "Unbefristet"
+  "vatRateOngoing": "Unbefristet",
+  "answerUnavailable": "Nicht verfügbar"
 }

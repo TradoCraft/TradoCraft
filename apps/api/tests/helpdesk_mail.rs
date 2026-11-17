@@ -160,6 +160,64 @@ async fn the_loop_guard_allows_one_mail_per_ticket_and_rule_in_the_period(db: Pg
 }
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn failed_mail_does_not_abort_ticket_or_consume_the_guard(db: PgPool) {
+    let app = setup(db.clone()).await;
+    let mut failing = mail_action("address");
+    failing["address"] = json!("fail@example.com");
+    let mut succeeding = mail_action("address");
+    succeeding["address"] = json!("ok@example.com");
+    let saved = rule(
+        &app,
+        json!({ "name": "Mail after update", "trigger": "updated", "actions": [
+            { "kind": "set_owner", "user_id": SUPPORT_ID }, failing, succeeding
+        ] }),
+    )
+    .await;
+    let id = new_ticket(&app, "Valve").await;
+    // A database error after the guard was claimed must not poison the ticket transaction.
+    sqlx::raw_sql(
+        "CREATE FUNCTION reject_test_mail() RETURNS trigger LANGUAGE plpgsql AS $$
+         BEGIN
+           IF NEW.to_address = 'fail@example.com' THEN RAISE EXCEPTION 'test mail failure'; END IF;
+           RETURN NEW;
+         END $$;
+         CREATE TRIGGER reject_test_mail BEFORE INSERT ON core.mail_outbox
+         FOR EACH ROW EXECUTE FUNCTION reject_test_mail();",
+    )
+    .execute(&db)
+    .await
+    .unwrap();
+    set_priority(&app, &id, "high").await;
+    let (_, ticket) = api(&app, SUPPORT, Method::GET, &format!("/tickets/{id}"), None).await;
+    assert_eq!(ticket["ticket"]["priority"], "high");
+    assert_eq!(ticket["ticket"]["owner_user_id"], SUPPORT_ID);
+    let mails = outbox(&db).await;
+    assert_eq!(mails.len(), 1);
+    assert_eq!(mails[0].0, "ok@example.com");
+    let claims: Vec<i32> = sqlx::query_scalar(
+        "SELECT action_no FROM helpdesk.automation_mail_log WHERE rule_id = $1::uuid ORDER BY action_no",
+    )
+    .bind(saved["id"].as_str().unwrap())
+    .fetch_all(&db)
+    .await
+    .unwrap();
+    assert_eq!(claims, vec![2]);
+
+    sqlx::query("DROP TRIGGER reject_test_mail ON core.mail_outbox")
+        .execute(&db)
+        .await
+        .unwrap();
+    set_priority(&app, &id, "urgent").await;
+    let mails = outbox(&db).await;
+    assert_eq!(mails.len(), 2);
+    assert_eq!(
+        mails.iter().filter(|m| m.0 == "fail@example.com").count(),
+        1
+    );
+    assert_eq!(mails.iter().filter(|m| m.0 == "ok@example.com").count(), 1);
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
 async fn recipients_are_the_customer_the_assignee_the_team_or_a_fixed_address(db: PgPool) {
     let app = setup(db.clone()).await;
     let (_, team) = post(

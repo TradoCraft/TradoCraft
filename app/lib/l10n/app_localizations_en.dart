@@ -1734,6 +1734,60 @@ class AppLocalizationsEn extends AppLocalizations {
       'Reusable answers to recurring questions, one text per language. Placeholders such as «quotation.number» are filled in for the ticket; the text can still be edited before sending.';
 
   @override
+  String get answerKind => 'Kind';
+
+  @override
+  String answerKindName(String kind) {
+    String _temp0 = intl.Intl.selectLogic(kind, {
+      'reply': 'Reply',
+      'internal_note': 'Internal note',
+      'handover': 'Hand-over',
+      'notice': 'Notice',
+      'other': '$kind',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String get answerTeam => 'Team';
+
+  @override
+  String get answerAllTeams => 'All teams';
+
+  @override
+  String get answerKeywords => 'Keywords (comma separated)';
+
+  @override
+  String get answerKeywordsHelp =>
+      'Tickets whose subject contains a keyword get this answer suggested first.';
+
+  @override
+  String get answerShortcutHint => 'Type /code to insert an answer';
+
+  @override
+  String ticketLanguageSource(String source) {
+    String _temp0 = intl.Intl.selectLogic(source, {
+      'record': 'Taken from the contact or customer',
+      'detected': 'Detected from the message',
+      'agent': 'Set by an agent',
+      'other': '$source',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String get ticketLanguage => 'Ticket language';
+
+  @override
+  String get mailTemplate => 'Template (optional)';
+
+  @override
+  String get mailTemplateNone => 'Write the text here';
+
+  @override
+  String get ticketLanguageCondition => 'Ticket language';
+
+  @override
   String get preview => 'Preview';
 
   @override
@@ -10137,4 +10191,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get vatRateOngoing => 'Ongoing';
+
+  @override
+  String get answerUnavailable => 'Unavailable';
 }

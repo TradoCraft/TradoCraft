@@ -14,7 +14,7 @@ use axum::http::StatusCode;
 use axum::Json;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use sqlx::{FromRow, PgConnection};
+use sqlx::{Connection, FromRow, PgConnection};
 use tradocraft_core::{audit, new_id, AppError, AppResult, AppState, CurrentUser, Permission};
 use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
@@ -55,6 +55,9 @@ pub struct RuleConditions {
     /// The language of the customer (nl, fr, en, de, es).
     #[serde(default)]
     pub customer_languages: Vec<String>,
+    /// The language of the ticket itself (nl, fr, en, de, es), which may differ from its customer's.
+    #[serde(default)]
+    pub ticket_languages: Vec<String>,
     /// email | portal | phone | manual | internal
     #[serde(default)]
     pub channels: Vec<String>,
@@ -94,6 +97,10 @@ pub struct RuleAction {
     /// `send_email`: at most one mail per ticket and rule in this many hours (default 24).
     #[serde(default)]
     pub period_hours: Option<i32>,
+    /// `send_email`: a prepared answer (A6, ADR 0072). When set, `subject` and `body` are ignored and
+    /// cleared; the answer's text in the ticket's language is sent.
+    #[serde(default)]
+    pub answer_id: Option<Uuid>,
 }
 
 #[derive(Debug, Clone, Serialize, ToSchema)]
@@ -150,6 +157,7 @@ pub struct Facts {
     pub team_id: Option<Uuid>,
     pub owner_user_id: Option<Uuid>,
     pub internal: bool,
+    pub language: String,
 }
 
 /// A change a rule made (or, in a dry run, would make).
@@ -194,6 +202,7 @@ pub fn matches(c: &RuleConditions, f: &Facts) -> bool {
             || f.customer_language
                 .as_deref()
                 .is_some_and(|l| c.customer_languages.iter().any(|x| x == l)))
+        && any_of(&c.ticket_languages, &f.language)
         && any_of(&c.channels, &f.channel)
         && c.subject_contains
             .as_deref()
@@ -400,10 +409,11 @@ async fn load_facts(
         team_id: Option<Uuid>,
         owner_user_id: Option<Uuid>,
         internal: bool,
+        language: String,
     }
     let r: Row = sqlx::query_as(
         "SELECT t.priority, t.category, t.status, t.customer_id, c.language::text AS customer_language, t.channel,
-                t.subject, t.contact_email, t.team_id, t.owner_user_id, t.internal
+                t.subject, t.contact_email, t.team_id, t.owner_user_id, t.internal, t.language::text AS language
          FROM helpdesk.tickets t LEFT JOIN crm.customers c ON c.id = t.customer_id
          WHERE t.id = $1 AND t.company_id = $2",
     )
@@ -431,6 +441,7 @@ async fn load_facts(
         team_id: r.team_id,
         owner_user_id: r.owner_user_id,
         internal: r.internal,
+        language: r.language,
     })
 }
 
@@ -500,7 +511,17 @@ async fn run_rules(
         };
         for (no, a) in rule.actions.iter().enumerate() {
             if a.kind == "send_email" {
-                crate::automail::send(conn, company_id, ticket_id, rule, no, a).await?;
+                // Roll back partial outbox writes and the guard if this action fails. A savepoint
+                // also recovers the caller's transaction from a database error in the mail action.
+                let mut mail_tx = conn.begin().await?;
+                match crate::automail::send(&mut mail_tx, company_id, ticket_id, rule, no, a).await
+                {
+                    Ok(_) => mail_tx.commit().await?,
+                    Err(error) => {
+                        mail_tx.rollback().await?;
+                        tracing::warn!(rule_id = %rule.id, ticket_id = %ticket_id, action_no = no, error = ?error, "automation mail failed");
+                    }
+                }
             }
         }
     }
@@ -630,6 +651,11 @@ async fn validate(
     check_list(
         "customer_languages",
         &c.customer_languages,
+        &tradocraft_core::LANGUAGES,
+    )?;
+    check_list(
+        "ticket_languages",
+        &c.ticket_languages,
         &tradocraft_core::LANGUAGES,
     )?;
     check_list("channels", &c.channels, &CHANNELS)?;
@@ -971,7 +997,23 @@ mod tests {
             team_id: None,
             owner_user_id: None,
             internal: false,
+            language: "nl".into(),
         }
+    }
+
+    #[test]
+    fn a_ticket_language_condition_matches_the_tickets_own_language() {
+        let mut f = facts();
+        f.language = "de".into();
+        let c = RuleConditions {
+            ticket_languages: vec!["de".into(), "fr".into()],
+            ..Default::default()
+        };
+        assert!(matches(&c, &f));
+        f.language = "nl".into();
+        assert!(!matches(&c, &f));
+        // Without the condition every language matches.
+        assert!(matches(&RuleConditions::default(), &f));
     }
 
     fn act(kind: &str) -> RuleAction {
@@ -986,6 +1028,7 @@ mod tests {
             subject: None,
             body: None,
             period_hours: None,
+            answer_id: None,
         }
     }
 

@@ -518,7 +518,7 @@ async fn unknown_senders_become_leads_once_linked_to_a_customer(db: PgPool) {
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
 async fn prepared_answers_fall_back_and_are_managed_with_permission(db: PgPool) {
     let app = setup(db).await;
-    let body = json!({ "code": "hello", "name": "Hello", "texts": [{ "language": "en", "body": "Hello {{contact.name}}" }] });
+    let body = json!({ "code": "hello", "name": "Hello", "texts": [{ "language": "en", "subject": "Hello", "body": "Hello {{contact.name}}" }] });
     let (status, _) = call(
         &app,
         SALES,

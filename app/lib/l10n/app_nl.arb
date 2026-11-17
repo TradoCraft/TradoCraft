@@ -574,6 +574,18 @@
   "postalCode": "Postcode",
   "preparedAnswers": "Standaardantwoorden",
   "preparedAnswersHelp": "Herbruikbare antwoorden op terugkerende vragen, één tekst per taal. Plaatshouders zoals «quotation.number» worden ingevuld voor het ticket; de tekst kan nog aangepast worden voor verzending.",
+  "answerKind": "Type",
+  "answerKindName": "{kind, select, reply{Antwoord} internal_note{Interne notitie} handover{Overdracht} notice{Melding} other{{kind}}}",
+  "answerTeam": "Team",
+  "answerAllTeams": "Alle teams",
+  "answerKeywords": "Trefwoorden (door komma's gescheiden)",
+  "answerKeywordsHelp": "Tickets waarvan het onderwerp een trefwoord bevat, krijgen dit antwoord eerst voorgesteld.",
+  "answerShortcutHint": "Typ /code om een antwoord in te voegen",
+  "ticketLanguageSource": "{source, select, record{Overgenomen van de contactpersoon of klant} detected{Gedetecteerd uit het bericht} agent{Ingesteld door een medewerker} other{{source}}}",
+  "ticketLanguage": "Taal van het ticket",
+  "mailTemplate": "Sjabloon (optioneel)",
+  "mailTemplateNone": "Schrijf de tekst hier",
+  "ticketLanguageCondition": "Taal van het ticket",
   "preview": "Voorbeeld",
   "priceListOf": "Prijslijst van {date}",
   "priceListValidOn": "Prijslijst geldig op",
@@ -3180,5 +3192,6 @@
   "vatRateClosePrevious": "Vorige open regel automatisch afsluiten",
   "vatRateOverlapError": "Datums overlappen met een bestaande regel voor dit land en deze categorie",
   "vatRateDeleteConfirm": "BTW-regel voor {country} ({category}) verwijderen?",
-  "vatRateOngoing": "Lopend"
+  "vatRateOngoing": "Lopend",
+  "answerUnavailable": "Niet beschikbaar"
 }

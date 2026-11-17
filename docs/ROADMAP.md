@@ -20,7 +20,8 @@ Module overview: [ARCHITECTURE.md](ARCHITECTURE.md).
 | User-defined reports (customers, quotations, orders; joins, grouping, charts, CSV and PDF) | Done, [ADR 0042](adr/0042-report-builder.md) |
 | Environment awareness (`/meta/environment`, environment list, banner and switcher in the app) | Done, [ADR 0043](adr/0043-environments.md); clone script, bootstrap wizard and outbound-side-effect switch-off follow |
 | A5 Helpdesk customer mail (`send_email` automation action, SLA notices to the customer, scheduled report mails) | Done, [ADR 0064](adr/0064-helpdesk-sla-customer-notices.md), [ADR 0065](adr/0065-scheduled-report-mails.md), [ADR 0066](adr/0066-helpdesk-send-email-action.md); mail templates are A6 |
-| A6 Helpdesk reply templates and language detection | Open |
+| A6 Helpdesk reply templates and language | Done, [ADR 0072](adr/0072-helpdesk-reply-templates.md) (builds on the prepared answers of ADR 0013); SLA notices to the customer still use built-in texts, see A6b |
+| A6b Helpdesk SLA notices from templates | Open (needs deadline placeholders and rendering without a user) |
 | A7 Helpdesk ticket checklists | Open |
 | A8 Helpdesk immediate change notification (concurrent updates seen by both people) | Open (shares its push channel with D3) |
 | A9 Helpdesk ticket bundles (linked tickets) | Open (merge and split are done, ADR 0017 and ADR 0021) |
@@ -79,15 +80,7 @@ Remaining knowledge base gaps (ADR 0018): non-image attachments, analytics, sema
   ([ADR 0042](adr/0042-report-builder.md)) mailed on a schedule (daily, weekly, monthly) to users or
   addresses as CSV or PDF, run by the worker. One scheduler serves both report kinds.
 
-**A6 Reply templates and language detection** (medium)
-- Templates (text modules): per company or team, with placeholders (customer, ticket number, agent,
-  order), one variant per language (nl, fr, en, de, es), a shortcut or search in the reply editor,
-  and optional keyword triggers. The same templates feed the A5 mails.
-- Language detection: the language of an incoming ticket or e-mail is detected, stored on the ticket
-  and proposed as the reply and notice language; the agent can override it. Falls back to the
-  customer's language, then the company default. Decide in the ADR between a small offline detector
-  crate and an external service (offline first, since customer text should not leave the system).
-- Optional automation condition `language` so tickets can route to a team by language.
+**A6 Reply templates and language detection** (medium, done, [ADR 0072](adr/0072-helpdesk-reply-templates.md)): Prepared answers remain the single template model and gained `kind` (`reply`, `internal_note`, `handover`, `notice`), optional `team_id` scope, and `keywords`. `GET /tickets/{id}/prepared-answers/suggest` returns ranked, filled-in suggestions (excluding other teams' templates), `send_email` automation actions can reference a prepared answer via `answer_id` (validated for subjects and known placeholders on save), tickets record `language_source` (`record`, `detected`, `agent`) with creator-language fallback on internal tickets, and automation rules can match `ticket_languages`. SLA notices to the customer still use built-in texts (deferred to A6b).
 
 **A7 Ticket checklists** (small-medium)
 - A checklist per ticket (ordered items, done flag, who and when), applied from checklist templates

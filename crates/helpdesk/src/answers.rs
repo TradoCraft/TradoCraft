@@ -1,7 +1,7 @@
 //! Prepared answers ("text modules"): reusable replies with one text per language and
 //! `{{placeholders}}`. Rendered for a ticket in its language; the agent edits before sending.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 
 use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
@@ -21,6 +21,56 @@ use crate::render::{render, PLACEHOLDERS};
 
 type ErrorBody = tradocraft_core::error::ErrorBody;
 
+pub const KINDS: [&str; 4] = ["reply", "internal_note", "handover", "notice"];
+
+fn default_kind() -> String {
+    "reply".into()
+}
+
+/// Lower-cased, trimmed, de-duplicated keywords (at most 20 of at most 40 characters).
+pub fn clean_keywords(raw: &[String]) -> AppResult<Vec<String>> {
+    let mut out: Vec<String> = Vec::new();
+    for k in raw {
+        let k = k.trim().to_lowercase();
+        if k.is_empty() {
+            continue;
+        }
+        if k.chars().count() > 40 {
+            return Err(AppError::Validation(
+                "a keyword is at most 40 characters".into(),
+            ));
+        }
+        if !out.contains(&k) {
+            out.push(k);
+        }
+    }
+    if out.len() > 20 {
+        return Err(AppError::Validation("at most 20 keywords".into()));
+    }
+    Ok(out)
+}
+
+/// The team must belong to the company.
+async fn check_team(
+    conn: &mut PgConnection,
+    company_id: Uuid,
+    team: Option<Uuid>,
+) -> AppResult<()> {
+    let Some(team) = team else { return Ok(()) };
+    let ok: bool = sqlx::query_scalar(
+        "SELECT EXISTS (SELECT 1 FROM helpdesk.teams WHERE id = $1 AND company_id = $2)",
+    )
+    .bind(team)
+    .bind(company_id)
+    .fetch_one(conn)
+    .await?;
+    if ok {
+        Ok(())
+    } else {
+        Err(AppError::NotFound("team"))
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow, ToSchema)]
 pub struct AnswerText {
     /// nl | fr | en | de | es
@@ -37,6 +87,12 @@ pub struct PreparedAnswer {
     pub code: String,
     pub name: String,
     pub category: Option<String>,
+    /// reply | internal_note | handover | notice
+    pub kind: String,
+    /// Absent: usable by every team.
+    pub team_id: Option<Uuid>,
+    /// Lower-case words; a ticket subject containing one ranks the answer higher.
+    pub keywords: Vec<String>,
     pub active: bool,
     pub updated_at: DateTime<Utc>,
     pub texts: Vec<AnswerText>,
@@ -47,6 +103,11 @@ pub struct PreparedAnswerInput {
     pub code: String,
     pub name: String,
     pub category: Option<String>,
+    #[serde(default = "default_kind")]
+    pub kind: String,
+    pub team_id: Option<Uuid>,
+    #[serde(default)]
+    pub keywords: Vec<String>,
     #[serde(default = "default_true")]
     pub active: bool,
     /// At least one language; missing languages fall back to English, then any other.
@@ -62,6 +123,10 @@ pub struct ListParams {
     /// Searches code, name and texts.
     pub q: Option<String>,
     pub active: Option<bool>,
+    /// reply | internal_note | handover | notice
+    pub kind: Option<String>,
+    /// Answers a ticket of this team can use: company-wide ones and this team's own.
+    pub team_id: Option<Uuid>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -81,6 +146,9 @@ struct Row {
     code: String,
     name: String,
     category: Option<String>,
+    kind: String,
+    team_id: Option<Uuid>,
+    keywords: Vec<String>,
     active: bool,
     updated_at: DateTime<Utc>,
 }
@@ -116,9 +184,13 @@ async fn texts(conn: &mut PgConnection, ids: &[Uuid]) -> AppResult<Vec<(Uuid, An
         .collect())
 }
 
-async fn load(conn: &mut PgConnection, company_id: Uuid, id: Uuid) -> AppResult<PreparedAnswer> {
+pub async fn load(
+    conn: &mut PgConnection,
+    company_id: Uuid,
+    id: Uuid,
+) -> AppResult<PreparedAnswer> {
     let r: Row = sqlx::query_as(
-        "SELECT id, code, name, category, active, updated_at FROM helpdesk.prepared_answers WHERE id = $1 AND company_id = $2",
+        "SELECT id, code, name, category, kind, team_id, keywords, active, updated_at FROM helpdesk.prepared_answers WHERE id = $1 AND company_id = $2",
     )
     .bind(id)
     .bind(company_id)
@@ -131,6 +203,9 @@ async fn load(conn: &mut PgConnection, company_id: Uuid, id: Uuid) -> AppResult<
         code: r.code,
         name: r.name,
         category: r.category,
+        kind: r.kind,
+        team_id: r.team_id,
+        keywords: r.keywords,
         active: r.active,
         updated_at: r.updated_at,
         texts: t.into_iter().map(|(_, t)| t).collect(),
@@ -142,6 +217,13 @@ impl PreparedAnswerInput {
         if self.code.trim().is_empty() || self.name.trim().is_empty() {
             return Err(AppError::Validation("code and name are required".into()));
         }
+        if !KINDS.contains(&self.kind.as_str()) {
+            return Err(AppError::Validation(format!(
+                "kind must be one of {}",
+                KINDS.join(", ")
+            )));
+        }
+        clean_keywords(&self.keywords)?;
         let filled: Vec<&AnswerText> = self
             .texts
             .iter()
@@ -163,6 +245,12 @@ impl PreparedAnswerInput {
             if seen.contains(&t.language) {
                 return Err(AppError::Validation(format!(
                     "language {} appears twice",
+                    t.language
+                )));
+            }
+            if t.subject.trim().is_empty() {
+                return Err(AppError::Validation(format!(
+                    "subject is required for language {}",
                     t.language
                 )));
             }
@@ -207,16 +295,20 @@ async fn list_answers(
         p.q.as_deref()
             .map(|q| format!("%{}%", q.trim().to_lowercase()));
     let rows: Vec<Row> = sqlx::query_as(
-        "SELECT a.id, a.code, a.name, a.category, a.active, a.updated_at FROM helpdesk.prepared_answers a
+        "SELECT a.id, a.code, a.name, a.category, a.kind, a.team_id, a.keywords, a.active, a.updated_at FROM helpdesk.prepared_answers a
          WHERE a.company_id = $1 AND ($3::boolean IS NULL OR a.active = $3)
            AND ($2::text IS NULL OR lower(a.code) LIKE $2 OR lower(a.name) LIKE $2
                 OR EXISTS (SELECT 1 FROM helpdesk.prepared_answer_texts t
                            WHERE t.answer_id = a.id AND lower(t.body) LIKE $2))
+           AND ($4::text IS NULL OR a.kind = $4)
+           AND ($5::uuid IS NULL OR a.team_id IS NULL OR a.team_id = $5)
          ORDER BY a.category NULLS LAST, a.name",
     )
     .bind(user.company_id)
     .bind(&pattern)
     .bind(p.active)
+    .bind(&p.kind)
+    .bind(p.team_id)
     .fetch_all(&state.db)
     .await?;
     let mut conn = state.db.acquire().await?;
@@ -234,6 +326,9 @@ async fn list_answers(
                 code: r.code,
                 name: r.name,
                 category: r.category,
+                kind: r.kind,
+                team_id: r.team_id,
+                keywords: r.keywords,
                 active: r.active,
                 updated_at: r.updated_at,
             })
@@ -258,15 +353,20 @@ async fn create_answer(
 ) -> AppResult<(StatusCode, Json<PreparedAnswer>)> {
     user.require(Permission::AnswersWrite)?;
     input.validate()?;
+    let keywords = clean_keywords(&input.keywords)?;
     let mut tx = state.db.begin().await?;
+    check_team(&mut tx, user.company_id, input.team_id).await?;
     let id = new_id();
-    sqlx::query("INSERT INTO helpdesk.prepared_answers (id, company_id, code, name, category, active) VALUES ($1, $2, $3, $4, $5, $6)")
+    sqlx::query("INSERT INTO helpdesk.prepared_answers (id, company_id, code, name, category, active, kind, team_id, keywords) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)")
         .bind(id)
         .bind(user.company_id)
         .bind(input.code.trim())
         .bind(input.name.trim())
         .bind(input.category.as_deref().map(str::trim).filter(|c| !c.is_empty()))
         .bind(input.active)
+        .bind(&input.kind)
+        .bind(input.team_id)
+        .bind(&keywords)
         .execute(&mut *tx)
         .await?;
     save_texts(&mut tx, id, &input).await?;
@@ -276,7 +376,7 @@ async fn create_answer(
         "prepared_answer",
         id,
         "created",
-        serde_json::json!({ "code": input.code }),
+        serde_json::json!({ "code": input.code, "kind": input.kind, "team_id": input.team_id }),
     )
     .await?;
     let a = load(&mut tx, user.company_id, id).await?;
@@ -294,9 +394,12 @@ async fn update_answer(
 ) -> AppResult<Json<PreparedAnswer>> {
     user.require(Permission::AnswersWrite)?;
     input.validate()?;
+    let keywords = clean_keywords(&input.keywords)?;
     let mut tx = state.db.begin().await?;
+    check_team(&mut tx, user.company_id, input.team_id).await?;
     let r = sqlx::query(
-        "UPDATE helpdesk.prepared_answers SET code = $3, name = $4, category = $5, active = $6, updated_at = now()
+        "UPDATE helpdesk.prepared_answers SET code = $3, name = $4, category = $5, active = $6, kind = $7,
+                team_id = $8, keywords = $9, updated_at = now()
          WHERE id = $1 AND company_id = $2",
     )
     .bind(id)
@@ -305,6 +408,9 @@ async fn update_answer(
     .bind(input.name.trim())
     .bind(input.category.as_deref().map(str::trim).filter(|c| !c.is_empty()))
     .bind(input.active)
+    .bind(&input.kind)
+    .bind(input.team_id)
+    .bind(&keywords)
     .execute(&mut *tx)
     .await?;
     if r.rows_affected() == 0 {
@@ -317,7 +423,7 @@ async fn update_answer(
         "prepared_answer",
         id,
         "updated",
-        serde_json::json!({}),
+        serde_json::json!({ "kind": input.kind, "team_id": input.team_id }),
     )
     .await?;
     let a = load(&mut tx, user.company_id, id).await?;
@@ -341,10 +447,184 @@ pub fn pick_text<'a>(
         .map(|t| (t, true))
 }
 
-/// The values for the placeholders of a ticket.
+/// What the ranking needs to know about one answer.
+pub struct Candidate<'a> {
+    pub code: &'a str,
+    pub name: &'a str,
+    pub keywords: &'a [String],
+    pub team_id: Option<Uuid>,
+    /// The answer has a text in the ticket's own language.
+    pub has_language: bool,
+}
+
+/// How well an answer fits a ticket, or `None` when a typed query matches nothing. Higher is better:
+/// exact code 100, code prefix 60, name or keyword hit 30 or 25; keywords found in the ticket
+/// subject +20 each (at most 40); the ticket's own team +15; a text in the ticket's language +5.
+pub fn score(
+    c: &Candidate,
+    q: &str,
+    ticket_team: Option<Uuid>,
+    ticket_subject: &str,
+) -> Option<i32> {
+    let q = q.trim().to_lowercase();
+    let code = c.code.to_lowercase();
+    let mut s = 0;
+    if !q.is_empty() {
+        s += if code == q {
+            100
+        } else if code.starts_with(&q) {
+            60
+        } else if c.name.to_lowercase().contains(&q) {
+            30
+        } else if c.keywords.iter().any(|k| k.contains(&q)) {
+            25
+        } else {
+            return None;
+        };
+    }
+    let subject = ticket_subject.to_lowercase();
+    let hits = c
+        .keywords
+        .iter()
+        .filter(|k| subject.contains(k.as_str()))
+        .count() as i32;
+    s += (hits * 20).min(40);
+    if c.team_id.is_some() && c.team_id == ticket_team {
+        s += 15;
+    }
+    if c.has_language {
+        s += 5;
+    }
+    Some(s)
+}
+
+#[derive(Debug, Deserialize, IntoParams)]
+pub struct SuggestParams {
+    /// Typed text: a code, part of a name or a keyword. Empty: the best fits for the ticket.
+    pub q: Option<String>,
+    /// reply | internal_note | handover | notice. Absent: every kind.
+    pub kind: Option<String>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct SuggestedAnswer {
+    pub answer_id: Uuid,
+    pub code: String,
+    pub name: String,
+    pub kind: String,
+    pub team_id: Option<Uuid>,
+    /// Language of the text used.
+    pub language: String,
+    pub fallback: bool,
+    pub subject: String,
+    pub body: String,
+    pub score: i32,
+}
+
+/// The best prepared answers for a ticket, filled in and in the ticket's language, at most ten.
+/// Answers of other teams are left out.
+#[utoipa::path(get, path = "/tickets/{id}/prepared-answers/suggest", tag = "helpdesk",
+    params(("id" = Uuid, Path), SuggestParams),
+    responses((status = 200, body = Vec<SuggestedAnswer>), (status = 404, body = ErrorBody)))]
+async fn suggest(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Path(ticket_id): Path<Uuid>,
+    Query(p): Query<SuggestParams>,
+) -> AppResult<Json<Vec<SuggestedAnswer>>> {
+    user.require(Permission::HelpdeskRead)?;
+    let mut conn = state.db.acquire().await?;
+    let (language, values) = ticket_values(&mut conn, &user, ticket_id).await?;
+    let team: Option<Uuid> = sqlx::query_scalar(
+        "SELECT team_id FROM helpdesk.tickets WHERE id = $1 AND company_id = $2",
+    )
+    .bind(ticket_id)
+    .bind(user.company_id)
+    .fetch_one(&mut *conn)
+    .await?;
+    let rows: Vec<Row> = sqlx::query_as(
+        "SELECT a.id, a.code, a.name, a.category, a.kind, a.team_id, a.keywords, a.active, a.updated_at
+         FROM helpdesk.prepared_answers a
+         WHERE a.company_id = $1 AND a.active AND ($2::text IS NULL OR a.kind = $2)
+           AND (a.team_id IS NULL OR a.team_id = $3)",
+    )
+    .bind(user.company_id)
+    .bind(&p.kind)
+    .bind(team)
+    .fetch_all(&mut *conn)
+    .await?;
+    let ids: Vec<Uuid> = rows.iter().map(|r| r.id).collect();
+    let all = texts(&mut conn, &ids).await?;
+    let subject = values.get("ticket.subject").cloned().unwrap_or_default();
+    let q = p.q.clone().unwrap_or_default();
+    let language_ids: HashSet<Uuid> = all
+        .iter()
+        .filter(|(_, t)| t.language == language)
+        .map(|(id, _)| *id)
+        .collect();
+    let mut ranked: Vec<(i32, Row)> = rows
+        .into_iter()
+        .filter_map(|r| {
+            let has_language = language_ids.contains(&r.id);
+            let s = score(
+                &Candidate {
+                    code: &r.code,
+                    name: &r.name,
+                    keywords: &r.keywords,
+                    team_id: r.team_id,
+                    has_language,
+                },
+                &q,
+                team,
+                &subject,
+            )?;
+            Some((s, r))
+        })
+        .collect();
+    ranked.sort_by(|a, b| b.0.cmp(&a.0).then_with(|| a.1.name.cmp(&b.1.name)));
+    ranked.truncate(10);
+    let mut out = Vec::new();
+    for (s, r) in ranked {
+        let mine: Vec<AnswerText> = all
+            .iter()
+            .filter(|(id, _)| *id == r.id)
+            .map(|(_, t)| t.clone())
+            .collect();
+        let Some((text, fallback)) = pick_text(&mine, &language, &values["__company_language"])
+        else {
+            continue;
+        };
+        out.push(SuggestedAnswer {
+            answer_id: r.id,
+            code: r.code,
+            name: r.name,
+            kind: r.kind,
+            team_id: r.team_id,
+            language: text.language.clone(),
+            fallback,
+            subject: render(&text.subject, &values),
+            body: render(&text.body, &values),
+            score: s,
+        });
+    }
+    Ok(Json(out))
+}
+
+/// The values for the placeholders of a ticket, for the logged-in agent.
 pub async fn ticket_values(
     conn: &mut PgConnection,
     user: &CurrentUser,
+    ticket_id: Uuid,
+) -> AppResult<(String, BTreeMap<String, String>)> {
+    ticket_values_for(conn, user.company_id, &user.display_name, ticket_id).await
+}
+
+/// The same without a logged-in user: `agent_name` is who the text speaks for (the ticket's
+/// owner in automation mail).
+pub async fn ticket_values_for(
+    conn: &mut PgConnection,
+    company_id: Uuid,
+    agent_name: &str,
     ticket_id: Uuid,
 ) -> AppResult<(String, BTreeMap<String, String>)> {
     #[derive(FromRow)]
@@ -360,6 +640,7 @@ pub async fn ticket_values(
         customer_name: Option<String>,
         company_name: String,
         company_language: String,
+        team_name: Option<String>,
         quotation_number: Option<String>,
         quotation_revision: Option<i32>,
         quotation_total: Option<rust_decimal::Decimal>,
@@ -370,18 +651,20 @@ pub async fn ticket_values(
         "SELECT t.language::text AS language, t.number, t.subject, t.contact_name, ct.first_name AS contact_first_name,
                 ct.last_name AS contact_last_name, ct.title AS contact_title, ct.address_form AS contact_address_form,
                 c.name AS customer_name, co.name AS company_name, co.default_language::text AS company_language,
+                tm.name AS team_name,
                 q.number AS quotation_number, q.revision AS quotation_revision, q.total AS quotation_total,
                 o.number AS order_number, o.customer_reference AS order_reference
          FROM helpdesk.tickets t
          JOIN core.companies co ON co.id = t.company_id
          LEFT JOIN crm.customers c ON c.id = t.customer_id
          LEFT JOIN crm.contacts ct ON ct.id = t.contact_id
+         LEFT JOIN helpdesk.teams tm ON tm.id = t.team_id
          LEFT JOIN sales.quotations q ON q.id = t.quotation_id
          LEFT JOIN sales.orders o ON o.id = t.order_id
          WHERE t.id = $1 AND t.company_id = $2",
     )
     .bind(ticket_id)
-    .bind(user.company_id)
+    .bind(company_id)
     .fetch_optional(conn)
     .await?
     .ok_or(AppError::NotFound("ticket"))?;
@@ -426,7 +709,8 @@ pub async fn ticket_values(
         ),
         ("ticket.number".to_string(), v.number),
         ("ticket.subject".to_string(), v.subject),
-        ("agent.name".to_string(), user.display_name.clone()),
+        ("agent.name".to_string(), agent_name.to_string()),
+        ("team.name".to_string(), v.team_name.unwrap_or_default()),
         ("company.name".to_string(), v.company_name),
         (
             "quotation.number".to_string(),
@@ -487,6 +771,7 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(placeholders))
         .routes(routes!(update_answer))
         .routes(routes!(render_answer))
+        .routes(routes!(suggest))
 }
 
 #[cfg(test)]
@@ -499,6 +784,30 @@ mod tests {
             subject: String::new(),
             body: l.into(),
         }
+    }
+
+    #[test]
+    fn filled_languages_require_subjects_but_empty_bodies_are_ignored() {
+        let mut input: PreparedAnswerInput = serde_json::from_value(serde_json::json!({
+            "code": "reply", "name": "Reply",
+            "texts": [
+                {"language": "en", "subject": "Hello", "body": "Body"},
+                {"language": "fr", "subject": "", "body": "  "}
+            ]
+        }))
+        .unwrap();
+        assert!(input.validate().is_ok());
+        input.texts[1].body = "Bonjour".into();
+        for subject in ["", "  \n "] {
+            input.texts[1].subject = subject.into();
+            assert!(input.validate().is_err());
+        }
+        input.texts[1].subject = "Salut".into();
+        assert!(input.validate().is_ok());
+        input.texts[1].language = "xx".into();
+        assert!(input.validate().is_err());
+        input.texts[1].language = "en".into();
+        assert!(input.validate().is_err());
     }
 
     #[test]
@@ -518,5 +827,89 @@ mod tests {
             Some(("nl", true))
         );
         assert!(pick_text(&[], "nl", "nl").is_none());
+    }
+
+    #[test]
+    fn keywords_are_trimmed_lowercased_and_unique() {
+        let raw = vec![
+            " Firmware ".to_string(),
+            "firmware".into(),
+            "".into(),
+            "Update".into(),
+        ];
+        assert_eq!(clean_keywords(&raw).unwrap(), ["firmware", "update"]);
+        assert!(clean_keywords(&["x".repeat(41)]).is_err());
+        let many: Vec<String> = (0..21).map(|i| format!("k{i}")).collect();
+        assert!(clean_keywords(&many).is_err());
+    }
+
+    fn cand<'a>(
+        code: &'a str,
+        name: &'a str,
+        keywords: &'a [String],
+        team: Option<Uuid>,
+        has_language: bool,
+    ) -> Candidate<'a> {
+        Candidate {
+            code,
+            name,
+            keywords,
+            team_id: team,
+            has_language,
+        }
+    }
+
+    #[test]
+    fn an_exact_code_beats_a_prefix_beats_a_name_match() {
+        let none: Vec<String> = vec![];
+        let exact = score(&cand("pump", "Pump", &none, None, true), "pump", None, "").unwrap();
+        let prefix = score(
+            &cand("pump-fault", "Fault", &none, None, true),
+            "pump",
+            None,
+            "",
+        )
+        .unwrap();
+        let name = score(
+            &cand("f1", "About the pump", &none, None, true),
+            "pump",
+            None,
+            "",
+        )
+        .unwrap();
+        assert!(exact > prefix && prefix > name, "{exact} {prefix} {name}");
+        assert_eq!(
+            score(&cand("zzz", "Other", &none, None, true), "pump", None, ""),
+            None
+        );
+    }
+
+    #[test]
+    fn keywords_in_the_subject_team_and_language_raise_the_score() {
+        let kw = vec!["firmware".to_string()];
+        let team = Uuid::from_u128(7);
+        let base = score(&cand("a", "A", &kw, None, false), "", None, "Pump noise").unwrap();
+        let with_kw = score(
+            &cand("a", "A", &kw, None, false),
+            "",
+            None,
+            "Firmware update",
+        )
+        .unwrap();
+        let with_team = score(
+            &cand("a", "A", &kw, Some(team), false),
+            "",
+            Some(team),
+            "Pump noise",
+        )
+        .unwrap();
+        let with_lang = score(&cand("a", "A", &kw, None, true), "", None, "Pump noise").unwrap();
+        assert!(with_kw > base && with_team > base && with_lang > base);
+    }
+
+    #[test]
+    fn a_keyword_alone_can_match_the_query() {
+        let kw = vec!["firmware".to_string()];
+        assert!(score(&cand("a", "A", &kw, None, true), "firm", None, "").is_some());
     }
 }

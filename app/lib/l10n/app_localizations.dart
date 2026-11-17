@@ -3296,6 +3296,78 @@ abstract class AppLocalizations {
   /// **'Reusable answers to recurring questions, one text per language. Placeholders such as «quotation.number» are filled in for the ticket; the text can still be edited before sending.'**
   String get preparedAnswersHelp;
 
+  /// No description provided for @answerKind.
+  ///
+  /// In en, this message translates to:
+  /// **'Kind'**
+  String get answerKind;
+
+  /// No description provided for @answerKindName.
+  ///
+  /// In en, this message translates to:
+  /// **'{kind, select, reply{Reply} internal_note{Internal note} handover{Hand-over} notice{Notice} other{{kind}}}'**
+  String answerKindName(String kind);
+
+  /// No description provided for @answerTeam.
+  ///
+  /// In en, this message translates to:
+  /// **'Team'**
+  String get answerTeam;
+
+  /// No description provided for @answerAllTeams.
+  ///
+  /// In en, this message translates to:
+  /// **'All teams'**
+  String get answerAllTeams;
+
+  /// No description provided for @answerKeywords.
+  ///
+  /// In en, this message translates to:
+  /// **'Keywords (comma separated)'**
+  String get answerKeywords;
+
+  /// No description provided for @answerKeywordsHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Tickets whose subject contains a keyword get this answer suggested first.'**
+  String get answerKeywordsHelp;
+
+  /// No description provided for @answerShortcutHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Type /code to insert an answer'**
+  String get answerShortcutHint;
+
+  /// No description provided for @ticketLanguageSource.
+  ///
+  /// In en, this message translates to:
+  /// **'{source, select, record{Taken from the contact or customer} detected{Detected from the message} agent{Set by an agent} other{{source}}}'**
+  String ticketLanguageSource(String source);
+
+  /// No description provided for @ticketLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Ticket language'**
+  String get ticketLanguage;
+
+  /// No description provided for @mailTemplate.
+  ///
+  /// In en, this message translates to:
+  /// **'Template (optional)'**
+  String get mailTemplate;
+
+  /// No description provided for @mailTemplateNone.
+  ///
+  /// In en, this message translates to:
+  /// **'Write the text here'**
+  String get mailTemplateNone;
+
+  /// No description provided for @ticketLanguageCondition.
+  ///
+  /// In en, this message translates to:
+  /// **'Ticket language'**
+  String get ticketLanguageCondition;
+
   /// No description provided for @preview.
   ///
   /// In en, this message translates to:
@@ -18065,6 +18137,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Ongoing'**
   String get vatRateOngoing;
+
+  /// No description provided for @answerUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Unavailable'**
+  String get answerUnavailable;
 }
 
 class _AppLocalizationsDelegate

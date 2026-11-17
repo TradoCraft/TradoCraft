@@ -353,35 +353,27 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
   }
 
   Future<void> _insertAnswer() async {
-    final answer = await showDialog<PreparedAnswer>(
+    final answer = await showDialog<SuggestedAnswer>(
       context: context,
-      builder: (_) => const _AnswerPicker(),
+      builder: (_) => _AnswerPicker(
+        ticketId: widget.id,
+        kind: _reply ? 'reply' : 'internal_note',
+      ),
     );
     if (answer == null || !mounted) return;
     final l = context.l10n;
-    try {
-      final r = await _api.helpdesk.renderAnswer(
-        id: widget.id,
-        answerId: answer.id,
-      );
-      setState(() {
-        if (r.subject.isNotEmpty) _replySubject.text = r.subject;
-        _body.text = _body.text.trim().isEmpty
-            ? r.body
-            : '${_body.text.trimRight()}\n\n${r.body}';
-        _answerInfo = r.fallback
-            ? l.answerFallback(
-                languageName(_language),
-                languageName(r.language),
-              )
-            : null;
-      });
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(errorMessage(e))));
-      }
-    }
+    setState(() {
+      if (answer.subject.isNotEmpty) _replySubject.text = answer.subject;
+      _body.text = _body.text.trim().isEmpty
+          ? answer.body
+          : '${_body.text.trimRight()}\n\n${answer.body}';
+      _answerInfo = answer.fallback
+          ? l.answerFallback(
+              languageName(_language),
+              languageName(answer.language),
+            )
+          : null;
+    });
   }
 
   /// Moves the ticket to a team (and keeps or changes its owner).
@@ -716,12 +708,11 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
                   onSelectionChanged: (s) =>
                       setState(() => _replyChosen = s.first),
                 ),
-                if (_reply)
-                  OutlinedButton.icon(
-                    onPressed: _insertAnswer,
-                    icon: const Icon(AppIcons.textSnippet),
-                    label: Text(l.insertPreparedAnswer),
-                  ),
+                OutlinedButton.icon(
+                  onPressed: _insertAnswer,
+                  icon: const Icon(AppIcons.textSnippet),
+                  label: Text(l.insertPreparedAnswer),
+                ),
                 if (_reply && canKb)
                   OutlinedButton.icon(
                     key: const ValueKey('insert-article'),
@@ -909,17 +900,29 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
         ),
         gap,
         Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-              child: DropdownButtonFormField<String>(
-                isExpanded: true,
-                initialValue: _language,
-                decoration: InputDecoration(labelText: l.customerLanguage),
-                items: [
-                  for (final c in languageCodes)
-                    DropdownMenuItem(value: c, child: Text(languageName(c))),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  DropdownButtonFormField<String>(
+                    isExpanded: true,
+                    initialValue: _language,
+                    decoration: InputDecoration(labelText: l.customerLanguage),
+                    items: [
+                      for (final c in languageCodes)
+                        DropdownMenuItem(value: c, child: Text(languageName(c))),
+                    ],
+                    onChanged: (v) => setState(() => _language = v!),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    l.ticketLanguageSource(t.languageSource),
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
                 ],
-                onChanged: (v) => setState(() => _language = v!),
               ),
             ),
             const SizedBox(width: 8),
@@ -1419,9 +1422,11 @@ class _ArticleCard extends StatelessWidget {
   }
 }
 
-/// Searchable list of prepared answers; returns the chosen one.
+/// Ranked prepared answers for this ticket; returns the chosen one. Typing `/code` or a word narrows it.
 class _AnswerPicker extends ConsumerStatefulWidget {
-  const _AnswerPicker();
+  const _AnswerPicker({required this.ticketId, required this.kind});
+  final String ticketId;
+  final String kind;
 
   @override
   ConsumerState<_AnswerPicker> createState() => _AnswerPickerState();
@@ -1429,10 +1434,16 @@ class _AnswerPicker extends ConsumerStatefulWidget {
 
 class _AnswerPickerState extends ConsumerState<_AnswerPicker> {
   String _q = '';
-  late Future<List<PreparedAnswer>> _answers = ref
+  late Future<List<SuggestedAnswer>> _answers = _load();
+
+  Future<List<SuggestedAnswer>> _load() => ref
       .read(apiProvider)
       .helpdesk
-      .listAnswers(active: true);
+      .suggest(
+        id: widget.ticketId,
+        q: _q.startsWith('/') ? _q.substring(1) : _q,
+        kind: widget.kind,
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -1449,52 +1460,38 @@ class _AnswerPickerState extends ConsumerState<_AnswerPicker> {
               decoration: InputDecoration(
                 prefixIcon: const Icon(AppIcons.search),
                 hintText: l.search,
+                helperText: l.answerShortcutHint,
               ),
-              onChanged: (v) => setState(() => _q = v.toLowerCase()),
+              onChanged: (v) => setState(() {
+                _q = v.trim();
+                _answers = _load();
+              }),
             ),
             const SizedBox(height: 8),
             Expanded(
-              child: FutureBuilder<List<PreparedAnswer>>(
+              child: FutureBuilder<List<SuggestedAnswer>>(
                 future: _answers,
                 builder: (context, snap) {
+                  if (snap.connectionState != ConnectionState.done) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
                   if (snap.hasError) {
                     return Center(
                       child: TextButton(
-                        onPressed: () => setState(
-                          () => _answers = ref
-                              .read(apiProvider)
-                              .helpdesk
-                              .listAnswers(active: true),
-                        ),
+                        onPressed: () => setState(() => _answers = _load()),
                         child: Text(errorMessage(snap.error!)),
                       ),
                     );
                   }
-                  final list = (snap.data ?? const <PreparedAnswer>[])
-                      .where(
-                        (a) =>
-                            _q.isEmpty ||
-                            '${a.code} ${a.name} ${a.category ?? ''}'
-                                .toLowerCase()
-                                .contains(_q),
-                      )
-                      .toList();
+                  final list = snap.data ?? const <SuggestedAnswer>[];
                   return ListView(
                     children: [
                       for (final a in list)
                         ListTile(
+                          key: ValueKey('suggest-${a.code}'),
                           title: Text(a.name),
-                          subtitle: Text(
-                            [
-                              a.code,
-                              if (a.category != null) a.category!,
-                            ].join(' · '),
-                          ),
-                          trailing: Text(
-                            a.texts
-                                .map((t) => t.language.toUpperCase())
-                                .join(' '),
-                          ),
+                          subtitle: Text(a.code),
+                          trailing: Text(a.language.toUpperCase()),
                           onTap: () => Navigator.pop(context, a),
                         ),
                     ],

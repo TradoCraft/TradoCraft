@@ -15,6 +15,7 @@ class RuleAction {
   const RuleAction({
     required this.kind,
     this.address,
+    this.answerId,
     this.body,
     this.flag,
     this.periodHours,
@@ -30,6 +31,11 @@ class RuleAction {
   /// `send_email` to `address`: the fixed recipient.
   @JsonKey(includeIfNull: false)
   final String? address;
+
+  /// `send_email`: a prepared answer (A6, ADR 0072). When set, `subject` and `body` are ignored and.
+  /// cleared; the answer's text in the ticket's language is sent.
+  @JsonKey(includeIfNull: false,name: 'answer_id')
+  final String? answerId;
 
   /// `send_email`: the text, with the same placeholders.
   @JsonKey(includeIfNull: false)
