@@ -14,7 +14,7 @@ use axum::http::StatusCode;
 use axum::Json;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use sqlx::{FromRow, PgConnection};
+use sqlx::{Connection, FromRow, PgConnection};
 use tradocraft_core::{audit, new_id, AppError, AppResult, AppState, CurrentUser, Permission};
 use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
@@ -511,7 +511,17 @@ async fn run_rules(
         };
         for (no, a) in rule.actions.iter().enumerate() {
             if a.kind == "send_email" {
-                crate::automail::send(conn, company_id, ticket_id, rule, no, a).await?;
+                // Roll back partial outbox writes and the guard if this action fails. A savepoint
+                // also recovers the caller's transaction from a database error in the mail action.
+                let mut mail_tx = conn.begin().await?;
+                match crate::automail::send(&mut mail_tx, company_id, ticket_id, rule, no, a).await
+                {
+                    Ok(_) => mail_tx.commit().await?,
+                    Err(error) => {
+                        mail_tx.rollback().await?;
+                        tracing::warn!(rule_id = %rule.id, ticket_id = %ticket_id, action_no = no, error = ?error, "automation mail failed");
+                    }
+                }
             }
         }
     }

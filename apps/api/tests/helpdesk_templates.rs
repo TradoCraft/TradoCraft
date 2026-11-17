@@ -627,6 +627,41 @@ async fn a_rule_can_route_tickets_by_their_language(db: PgPool) {
 }
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn edited_invalid_template_does_not_block_ticket_or_later_mail(db: PgPool) {
+    let app = setup(db.clone()).await;
+    let (_, template) = post(
+        &app,
+        SUPPORT,
+        "/prepared-answers",
+        answer("mail", json!({})),
+    )
+    .await;
+    let id = template["id"].as_str().unwrap();
+    let mut rule = mail_rule(Some(id));
+    rule["actions"] = json!([
+        { "kind": "set_priority", "value": "high" },
+        { "kind": "send_email", "recipient": "address", "address": "bad@example.com", "answer_id": id },
+        { "kind": "send_email", "recipient": "address", "address": "ok@example.com", "subject": "Hi", "body": "Hi" }
+    ]);
+    let (status, saved) = post(&app, ADMIN, "/helpdesk/automation/rules", rule).await;
+    assert_eq!(status, StatusCode::CREATED, "{saved}");
+    let (status, _) = put(
+        &app,
+        SUPPORT,
+        &format!("/prepared-answers/{id}"),
+        answer("mail", json!({ "texts": [{ "language": "en", "subject": "Hello", "body": "{{contact.nme}}" }] })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    let ticket = manual_ticket(&app, &db, SUPPORT, "Template failure", json!({})).await;
+    let (_, response) = get(&app, SUPPORT, &format!("/tickets/{ticket}")).await;
+    assert_eq!(response["ticket"]["priority"], "high");
+    let mails = outbox(&db).await;
+    assert_eq!(mails.len(), 1);
+    assert_eq!(mails[0].0, "ok@example.com");
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
 async fn edited_template_placeholders_are_checked_before_the_mail_guard(db: PgPool) {
     use tradocraft_helpdesk::{
         automail,
