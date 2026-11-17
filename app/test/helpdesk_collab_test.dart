@@ -116,6 +116,7 @@ FakeHttp _http({
       'name': 'Level 2',
       'active': true,
       'members': <Object?>[],
+      'require_checklist_done': false,
       'created_at': '2026-11-01T09:00:00Z',
     },
   ],

@@ -22,10 +22,15 @@ const actionKinds = [
   'add_tag',
   'set_internal',
   'send_email',
+  'apply_checklist',
 ];
 
 final _rulesProvider = FutureProvider.autoDispose<List<Rule>>(
   (ref) => ref.watch(apiProvider).helpdesk.listRules(),
+);
+
+final _templatesProvider = FutureProvider.autoDispose<List<ChecklistTemplate>>(
+  (ref) => ref.watch(apiProvider).helpdesk.listTemplates(),
 );
 
 extension _RuleLabels on AppLocalizations {
@@ -50,6 +55,7 @@ extension _RuleLabels on AppLocalizations {
     'set_category' => actionSetCategory,
     'add_tag' => actionAddTag,
     'send_email' => actionSendEmail,
+    'apply_checklist' => automationActionApplyChecklist,
     _ => actionSetInternal,
   };
 
@@ -75,6 +81,7 @@ List<String> ruleSummary(
   Rule r, {
   Map<String, String> teams = const {},
   Map<String, String> users = const {},
+  Map<String, String> templates = const {},
 }) {
   final c = r.conditions;
   String join(Iterable<String> v) => v.join(', ');
@@ -87,6 +94,8 @@ List<String> ruleSummary(
       '${l.status}: ${join(c.statuses!.map(l.ticketStatus))}',
     if (c.customerLanguages?.isNotEmpty ?? false)
       '${l.customerLanguage}: ${join(c.customerLanguages!.map(languageName))}',
+    if (c.ticketLanguages?.isNotEmpty ?? false)
+      '${l.ticketLanguageCondition}: ${join(c.ticketLanguages!.map(languageName))}',
     if (c.channels?.isNotEmpty ?? false)
       '${l.channel}: ${join(c.channels!.map(l.channelName))}',
     if (c.subjectContains?.isNotEmpty ?? false)
@@ -109,6 +118,8 @@ List<String> ruleSummary(
         'add_tag' => '→ ${l.actionAddTag}: ${a.value}',
         'send_email' =>
           '→ ${l.actionSendEmail}: ${l.actionSendEmailSummary(l.mailRecipientName(a.recipient), a.subject ?? '')}',
+        'apply_checklist' =>
+          '→ ${l.automationActionApplyChecklist}: ${templates[a.templateId] ?? '…'}',
         _ => '→ ${l.actionSetInternal}: ${a.flag == true ? l.yes : l.no}',
       },
   ];
@@ -132,6 +143,12 @@ class AutomationPage extends ConsumerWidget {
     final users = {
       for (final u in ref.watch(usersProvider).value ?? const <CompanyUser>[])
         u.id: u.displayName,
+    };
+    final templates = {
+      for (final t
+          in ref.watch(_templatesProvider).value ??
+              const <ChecklistTemplate>[])
+        t.id: t.name,
     };
     final api = ref.read(apiProvider).helpdesk;
 
@@ -227,6 +244,7 @@ class AutomationPage extends ConsumerWidget {
                                     list[i],
                                     teams: teams,
                                     users: users,
+                                    templates: templates,
                                   ))
                                     Text(line),
                                 ],
@@ -352,8 +370,9 @@ class _MailTexts {
     recipient: a.recipient ?? 'customer',
     teamId: a.recipient == 'team' ? a.teamId : null,
     address: a.recipient == 'address' ? address.text.trim() : null,
-    subject: subject.text.trim(),
-    body: body.text.trim(),
+    answerId: a.answerId,
+    subject: a.answerId == null ? subject.text.trim() : null,
+    body: a.answerId == null ? body.text.trim() : null,
     periodHours: int.tryParse(period.text.trim()),
   );
 
@@ -394,6 +413,9 @@ class _RuleEditorState extends ConsumerState<RuleEditor> {
   late final Set<String> _statuses = {...?widget.rule?.conditions.statuses};
   late final Set<String> _languages = {
     ...?widget.rule?.conditions.customerLanguages,
+  };
+  late final Set<String> _ticketLanguages = {
+    ...?widget.rule?.conditions.ticketLanguages,
   };
   late final Set<String> _channels = {...?widget.rule?.conditions.channels};
   late String? _teamId = widget.rule?.conditions.teamId;
@@ -462,6 +484,7 @@ class _RuleEditorState extends ConsumerState<RuleEditor> {
         categories: _categories.toList(),
         statuses: _statuses.toList(),
         customerLanguages: _languages.toList(),
+        ticketLanguages: _ticketLanguages.toList(),
         channels: _channels.toList(),
         customerId: _customerId,
         subjectContains: text(_subject),
@@ -528,11 +551,20 @@ class _RuleEditorState extends ConsumerState<RuleEditor> {
     final a = _actions[i];
     final t = _mailTexts.putIfAbsent(i, () => _MailTexts(a));
     final recipient = a.recipient ?? 'customer';
-    RuleAction with_({String? r, String? team}) => RuleAction(
-      kind: a.kind,
-      recipient: r ?? recipient,
-      teamId: team ?? a.teamId,
-    );
+    final answers =
+        ref.watch(_mailAnswersProvider).value ?? const <PreparedAnswer>[];
+    RuleAction with_({
+      String? r,
+      String? team,
+      String? answer,
+      bool clearAnswer = false,
+    }) =>
+        RuleAction(
+          kind: a.kind,
+          recipient: r ?? recipient,
+          teamId: team ?? a.teamId,
+          answerId: clearAnswer ? null : (answer ?? a.answerId),
+        );
     return Column(
       key: ValueKey('action-value-$i'),
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -582,25 +614,55 @@ class _RuleEditorState extends ConsumerState<RuleEditor> {
               isDense: true,
             ),
           ),
-        TextField(
-          key: ValueKey('mail-subject-$i'),
-          controller: t.subject,
-          decoration: InputDecoration(labelText: l.subject, isDense: true),
-        ),
-        TextField(
-          key: ValueKey('mail-body-$i'),
-          controller: t.body,
-          minLines: 3,
-          maxLines: 8,
-          decoration: InputDecoration(
-            labelText: l.mailBody,
-            helperText: l.mailPlaceholdersHint(
-              '{ticket_number}, {subject}, {customer}, {agent}',
+        DropdownButtonFormField<String?>(
+          key: ValueKey('mail-template-$i'),
+          initialValue: a.answerId,
+          isExpanded: true,
+          decoration: InputDecoration(labelText: l.mailTemplate, isDense: true),
+          items: [
+            DropdownMenuItem<String?>(
+              value: null,
+              child: Text(l.mailTemplateNone),
             ),
-            helperMaxLines: 2,
-            isDense: true,
+            if (a.answerId != null && !answers.any((x) => x.id == a.answerId))
+              DropdownMenuItem<String?>(
+                value: a.answerId,
+                enabled: false,
+                child: Text('${a.answerId} (${l.answerUnavailable})'),
+              ),
+            for (final x in answers.where((x) => x.active || x.id == a.answerId))
+              DropdownMenuItem<String?>(
+                value: x.id,
+                child: Text('${x.code} · ${x.name}${x.active ? '' : ' (${l.inactive})'}'),
+              ),
+          ],
+          onChanged: (v) => setState(
+            () => _actions[i] = _mailTexts[i]!.build(
+              v == null ? with_(clearAnswer: true) : with_(answer: v),
+            ),
           ),
         ),
+        if (a.answerId == null) ...[
+          TextField(
+            key: ValueKey('mail-subject-$i'),
+            controller: t.subject,
+            decoration: InputDecoration(labelText: l.subject, isDense: true),
+          ),
+          TextField(
+            key: ValueKey('mail-body-$i'),
+            controller: t.body,
+            minLines: 3,
+            maxLines: 8,
+            decoration: InputDecoration(
+              labelText: l.mailBody,
+              helperText: l.mailPlaceholdersHint(
+                '{ticket_number}, {subject}, {customer}, {agent}',
+              ),
+              helperMaxLines: 2,
+              isDense: true,
+            ),
+          ),
+        ],
         TextField(
           key: ValueKey('mail-period-$i'),
           controller: t.period,
@@ -614,7 +676,12 @@ class _RuleEditorState extends ConsumerState<RuleEditor> {
     );
   }
 
-  Widget _actionRow(int i, List<Team> teams, List<CompanyUser> users) {
+  Widget _actionRow(
+    int i,
+    List<Team> teams,
+    List<CompanyUser> users,
+    List<ChecklistTemplate> templates,
+  ) {
     final l = context.l10n;
     final a = _actions[i];
     Widget value;
@@ -680,6 +747,28 @@ class _RuleEditorState extends ConsumerState<RuleEditor> {
         );
       case 'send_email':
         value = _mailFields(i, teams);
+      case 'apply_checklist':
+        final available = templates
+            .where((t) => t.active || t.id == a.templateId)
+            .toList();
+        value = DropdownButtonFormField<String>(
+          key: ValueKey('action-value-$i'),
+          initialValue: available.any((t) => t.id == a.templateId)
+              ? a.templateId
+              : null,
+          isExpanded: true,
+          decoration: InputDecoration(
+            labelText: l.automationTemplateLabel,
+            isDense: true,
+          ),
+          items: [
+            for (final t in available)
+              DropdownMenuItem(value: t.id, child: Text(t.name)),
+          ],
+          onChanged: (v) => setState(
+            () => _actions[i] = RuleAction(kind: a.kind, templateId: v),
+          ),
+        );
       default:
         value = SwitchListTile(
           key: ValueKey('action-value-$i'),
@@ -744,6 +833,8 @@ class _RuleEditorState extends ConsumerState<RuleEditor> {
     final theme = Theme.of(context);
     final teams = ref.watch(teamsProvider).value ?? const <Team>[];
     final users = ref.watch(usersProvider).value ?? const <CompanyUser>[];
+    final templates =
+        ref.watch(_templatesProvider).value ?? const <ChecklistTemplate>[];
     return AlertDialog(
       title: Text(widget.rule == null ? l.newRule : widget.rule!.name),
       content: SizedBox(
@@ -828,6 +919,13 @@ class _RuleEditorState extends ConsumerState<RuleEditor> {
                 _languages,
                 languageName,
                 'cond-language',
+              ),
+              _chips(
+                l.ticketLanguageCondition,
+                ruleLanguages,
+                _ticketLanguages,
+                languageName,
+                'cond-ticket-language',
               ),
               _chips(
                 l.channel,
@@ -953,7 +1051,7 @@ class _RuleEditorState extends ConsumerState<RuleEditor> {
               const Divider(),
               Text(l.ruleActions, style: theme.textTheme.titleSmall),
               for (var i = 0; i < _actions.length; i++)
-                _actionRow(i, teams, users),
+                _actionRow(i, teams, users, templates),
               TextButton.icon(
                 key: const ValueKey('add-action'),
                 icon: const Icon(AppIcons.add),
@@ -1122,3 +1220,7 @@ class _DryRunDialogState extends ConsumerState<_DryRunDialog> {
     );
   }
 }
+
+final _mailAnswersProvider = FutureProvider.autoDispose<List<PreparedAnswer>>(
+  (ref) => ref.watch(apiProvider).helpdesk.listAnswers(),
+);

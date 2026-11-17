@@ -14,7 +14,7 @@ use axum::http::StatusCode;
 use axum::Json;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use sqlx::{FromRow, PgConnection};
+use sqlx::{Connection, FromRow, PgConnection};
 use tradocraft_core::{audit, new_id, AppError, AppResult, AppState, CurrentUser, Permission};
 use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
@@ -27,7 +27,7 @@ type ErrorBody = tradocraft_core::error::ErrorBody;
 
 pub const TRIGGERS: [&str; 3] = ["created", "updated", "customer_replied"];
 pub const CHANNELS: [&str; 5] = ["email", "portal", "phone", "manual", "internal"];
-pub const ACTION_KINDS: [&str; 7] = [
+pub const ACTION_KINDS: [&str; 8] = [
     "set_owner",
     "set_team",
     "set_priority",
@@ -35,6 +35,7 @@ pub const ACTION_KINDS: [&str; 7] = [
     "add_tag",
     "set_internal",
     "send_email",
+    "apply_checklist",
 ];
 
 // ---------------------------------------------------------------------------------------------
@@ -55,6 +56,9 @@ pub struct RuleConditions {
     /// The language of the customer (nl, fr, en, de, es).
     #[serde(default)]
     pub customer_languages: Vec<String>,
+    /// The language of the ticket itself (nl, fr, en, de, es), which may differ from its customer's.
+    #[serde(default)]
+    pub ticket_languages: Vec<String>,
     /// email | portal | phone | manual | internal
     #[serde(default)]
     pub channels: Vec<String>,
@@ -71,7 +75,7 @@ pub struct RuleConditions {
 /// One change a rule makes. `kind` decides which of the other fields is used:
 /// `set_owner` (`user_id`), `set_team` (`team_id`), `set_priority` (`value`), `set_category`
 /// (`value`), `add_tag` (`value`), `set_internal` (`flag`), `send_email` (`recipient`, `team_id` or
-/// `address`, `subject`, `body`, `period_hours`; ADR 0063).
+/// `address`, `subject`, `body`, `period_hours`; ADR 0063), `apply_checklist` (`template_id`).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 pub struct RuleAction {
     pub kind: String,
@@ -94,6 +98,13 @@ pub struct RuleAction {
     /// `send_email`: at most one mail per ticket and rule in this many hours (default 24).
     #[serde(default)]
     pub period_hours: Option<i32>,
+    /// `apply_checklist`: the checklist template to apply to the ticket.
+    #[serde(default)]
+    pub template_id: Option<Uuid>,
+    /// `send_email`: a prepared answer (A6, ADR 0072). When set, `subject` and `body` are ignored and
+    /// cleared; the answer's text in the ticket's language is sent.
+    #[serde(default)]
+    pub answer_id: Option<Uuid>,
 }
 
 #[derive(Debug, Clone, Serialize, ToSchema)]
@@ -150,6 +161,7 @@ pub struct Facts {
     pub team_id: Option<Uuid>,
     pub owner_user_id: Option<Uuid>,
     pub internal: bool,
+    pub language: String,
 }
 
 /// A change a rule made (or, in a dry run, would make).
@@ -194,6 +206,7 @@ pub fn matches(c: &RuleConditions, f: &Facts) -> bool {
             || f.customer_language
                 .as_deref()
                 .is_some_and(|l| c.customer_languages.iter().any(|x| x == l)))
+        && any_of(&c.ticket_languages, &f.language)
         && any_of(&c.channels, &f.channel)
         && c.subject_contains
             .as_deref()
@@ -282,6 +295,11 @@ pub fn apply(a: &RuleAction, f: &mut Facts) -> Option<RuleChange> {
             kind: a.kind.clone(),
             from: None,
             to: a.recipient.clone(),
+        }),
+        "apply_checklist" if a.template_id.is_some() => Some(RuleChange {
+            kind: a.kind.clone(),
+            from: None,
+            to: a.template_id.map(|u| u.to_string()),
         }),
         _ => None,
     }
@@ -400,10 +418,11 @@ async fn load_facts(
         team_id: Option<Uuid>,
         owner_user_id: Option<Uuid>,
         internal: bool,
+        language: String,
     }
     let r: Row = sqlx::query_as(
         "SELECT t.priority, t.category, t.status, t.customer_id, c.language::text AS customer_language, t.channel,
-                t.subject, t.contact_email, t.team_id, t.owner_user_id, t.internal
+                t.subject, t.contact_email, t.team_id, t.owner_user_id, t.internal, t.language::text AS language
          FROM helpdesk.tickets t LEFT JOIN crm.customers c ON c.id = t.customer_id
          WHERE t.id = $1 AND t.company_id = $2",
     )
@@ -431,6 +450,7 @@ async fn load_facts(
         team_id: r.team_id,
         owner_user_id: r.owner_user_id,
         internal: r.internal,
+        language: r.language,
     })
 }
 
@@ -500,7 +520,17 @@ async fn run_rules(
         };
         for (no, a) in rule.actions.iter().enumerate() {
             if a.kind == "send_email" {
-                crate::automail::send(conn, company_id, ticket_id, rule, no, a).await?;
+                // Roll back partial outbox writes and the guard if this action fails. A savepoint
+                // also recovers the caller's transaction from a database error in the mail action.
+                let mut mail_tx = conn.begin().await?;
+                match crate::automail::send(&mut mail_tx, company_id, ticket_id, rule, no, a).await
+                {
+                    Ok(_) => mail_tx.commit().await?,
+                    Err(error) => {
+                        mail_tx.rollback().await?;
+                        tracing::warn!(rule_id = %rule.id, ticket_id = %ticket_id, action_no = no, error = ?error, "automation mail failed");
+                    }
+                }
             }
         }
     }
@@ -581,6 +611,24 @@ async fn apply_change(
             .await?
             .rows_affected()
         }
+        "apply_checklist" => {
+            let Some(template_id) = Uuid::parse_str(&to).ok() else {
+                return Ok(false);
+            };
+            match crate::checklists::apply_template_to_ticket(
+                conn,
+                company_id,
+                ticket_id,
+                template_id,
+                true,
+            )
+            .await
+            {
+                Ok((_, applied)) => return Ok(applied),
+                Err(AppError::NotFound(_)) | Err(AppError::Validation(_)) => 0,
+                Err(e) => return Err(e),
+            }
+        }
         _ => 0,
     };
     if done == 0 {
@@ -630,6 +678,11 @@ async fn validate(
     check_list(
         "customer_languages",
         &c.customer_languages,
+        &tradocraft_core::LANGUAGES,
+    )?;
+    check_list(
+        "ticket_languages",
+        &c.ticket_languages,
         &tradocraft_core::LANGUAGES,
     )?;
     check_list("channels", &c.channels, &CHANNELS)?;
@@ -689,6 +742,21 @@ async fn validate(
                 )?)
             }
             "send_email" => crate::automail::validate_action(conn, company_id, a).await?,
+            "apply_checklist" => {
+                let template_id = a.template_id.ok_or_else(|| {
+                    AppError::Validation("apply_checklist needs a template_id".into())
+                })?;
+                let ok: bool = sqlx::query_scalar(
+                    "SELECT EXISTS (SELECT 1 FROM helpdesk.checklist_templates WHERE id = $1 AND company_id = $2)",
+                )
+                .bind(template_id)
+                .bind(company_id)
+                .fetch_one(&mut *conn)
+                .await?;
+                if !ok {
+                    return Err(AppError::Validation("checklist template not found".into()));
+                }
+            }
             _ => {
                 if a.flag.is_none() {
                     return Err(AppError::Validation("set_internal needs flag".into()));
@@ -971,7 +1039,23 @@ mod tests {
             team_id: None,
             owner_user_id: None,
             internal: false,
+            language: "nl".into(),
         }
+    }
+
+    #[test]
+    fn a_ticket_language_condition_matches_the_tickets_own_language() {
+        let mut f = facts();
+        f.language = "de".into();
+        let c = RuleConditions {
+            ticket_languages: vec!["de".into(), "fr".into()],
+            ..Default::default()
+        };
+        assert!(matches(&c, &f));
+        f.language = "nl".into();
+        assert!(!matches(&c, &f));
+        // Without the condition every language matches.
+        assert!(matches(&RuleConditions::default(), &f));
     }
 
     fn act(kind: &str) -> RuleAction {
@@ -986,6 +1070,8 @@ mod tests {
             subject: None,
             body: None,
             period_hours: None,
+            template_id: None,
+            answer_id: None,
         }
     }
 
@@ -1240,5 +1326,44 @@ mod tests {
         assert_eq!(end.priority, "normal");
         assert_eq!(out[0].changes.len(), 1);
         assert_eq!(out[1].changes.len(), 1);
+    }
+
+    #[test]
+    fn apply_checklist_emits_change_with_template_id() {
+        assert!(ACTION_KINDS.contains(&"apply_checklist"));
+        let mut f = facts();
+        assert_eq!(apply(&act("apply_checklist"), &mut f), None);
+
+        let tid = Uuid::from_u128(42);
+        let action = RuleAction {
+            template_id: Some(tid),
+            ..act("apply_checklist")
+        };
+        let change = apply(&action, &mut f).expect("expected RuleChange for apply_checklist");
+        assert_eq!(
+            change,
+            RuleChange {
+                kind: "apply_checklist".into(),
+                from: None,
+                to: Some(tid.to_string()),
+            }
+        );
+    }
+
+    #[test]
+    fn apply_checklist_action_deserializes_template_id() {
+        let tid = Uuid::from_u128(99);
+        let json = serde_json::json!({
+            "kind": "apply_checklist",
+            "template_id": tid,
+        });
+        let parsed: RuleAction = serde_json::from_value(json).unwrap();
+        assert_eq!(parsed.kind, "apply_checklist");
+        assert_eq!(parsed.template_id, Some(tid));
+
+        let other: RuleAction =
+            serde_json::from_value(serde_json::json!({"kind": "set_priority", "value": "high"}))
+                .unwrap();
+        assert_eq!(other.template_id, None);
     }
 }

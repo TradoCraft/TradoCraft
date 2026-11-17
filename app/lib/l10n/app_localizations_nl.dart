@@ -1737,6 +1737,60 @@ class AppLocalizationsNl extends AppLocalizations {
       'Herbruikbare antwoorden op terugkerende vragen, één tekst per taal. Plaatshouders zoals «quotation.number» worden ingevuld voor het ticket; de tekst kan nog aangepast worden voor verzending.';
 
   @override
+  String get answerKind => 'Type';
+
+  @override
+  String answerKindName(String kind) {
+    String _temp0 = intl.Intl.selectLogic(kind, {
+      'reply': 'Antwoord',
+      'internal_note': 'Interne notitie',
+      'handover': 'Overdracht',
+      'notice': 'Melding',
+      'other': '$kind',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String get answerTeam => 'Team';
+
+  @override
+  String get answerAllTeams => 'Alle teams';
+
+  @override
+  String get answerKeywords => 'Trefwoorden (door komma\'s gescheiden)';
+
+  @override
+  String get answerKeywordsHelp =>
+      'Tickets waarvan het onderwerp een trefwoord bevat, krijgen dit antwoord eerst voorgesteld.';
+
+  @override
+  String get answerShortcutHint => 'Typ /code om een antwoord in te voegen';
+
+  @override
+  String ticketLanguageSource(String source) {
+    String _temp0 = intl.Intl.selectLogic(source, {
+      'record': 'Overgenomen van de contactpersoon of klant',
+      'detected': 'Gedetecteerd uit het bericht',
+      'agent': 'Ingesteld door een medewerker',
+      'other': '$source',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String get ticketLanguage => 'Taal van het ticket';
+
+  @override
+  String get mailTemplate => 'Sjabloon (optioneel)';
+
+  @override
+  String get mailTemplateNone => 'Schrijf de tekst hier';
+
+  @override
+  String get ticketLanguageCondition => 'Taal van het ticket';
+
+  @override
   String get preview => 'Voorbeeld';
 
   @override
@@ -10194,4 +10248,53 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get recordConflictMessage =>
       'Iemand anders heeft wijzigingen aan dit record opgeslagen. Herlaad om die wijzigingen te zien voordat u opnieuw opslaat.';
+
+  @override
+  String get checklistTitle => 'Checklist';
+
+  @override
+  String checklistProgress(int done, int total) {
+    return '$done/$total';
+  }
+
+  @override
+  String get checklistAddItem => 'Checklistpunt toevoegen';
+
+  @override
+  String get checklistApplyTemplate => 'Sjabloon toepassen';
+
+  @override
+  String get checklistNoTemplates => 'Geen checklistsjablonen beschikbaar';
+
+  @override
+  String get checklistEmpty => 'Nog geen checklistpunten';
+
+  @override
+  String get checklistTemplatesTitle => 'Checklistsjablonen';
+
+  @override
+  String get checklistTemplateNew => 'Nieuw checklistsjabloon';
+
+  @override
+  String get checklistTemplateName => 'Sjabloonnaam';
+
+  @override
+  String get checklistTemplateItemsHint => 'Punten (één per regel)';
+
+  @override
+  String get teamRequireChecklistDone =>
+      'Checklist verplicht voltooien voor sluiten';
+
+  @override
+  String get ticketCloseBlockedChecklist =>
+      'Voltooi alle checklistpunten voordat u dit ticket sluit';
+
+  @override
+  String get automationActionApplyChecklist => 'Checklist toepassen';
+
+  @override
+  String get automationTemplateLabel => 'Checklistsjabloon';
+
+  @override
+  String get answerUnavailable => 'Niet beschikbaar';
 }

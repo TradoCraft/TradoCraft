@@ -20,7 +20,8 @@ Module overview: [ARCHITECTURE.md](ARCHITECTURE.md).
 | User-defined reports (customers, quotations, orders; joins, grouping, charts, CSV and PDF) | Done, [ADR 0042](adr/0042-report-builder.md) |
 | Environment awareness (`/meta/environment`, environment list, banner and switcher in the app) | Done, [ADR 0043](adr/0043-environments.md); clone script, bootstrap wizard and outbound-side-effect switch-off follow |
 | A5 Helpdesk customer mail (`send_email` automation action, SLA notices to the customer, scheduled report mails) | Done, [ADR 0064](adr/0064-helpdesk-sla-customer-notices.md), [ADR 0065](adr/0065-scheduled-report-mails.md), [ADR 0066](adr/0066-helpdesk-send-email-action.md); mail templates are A6 |
-| A6 Helpdesk reply templates and language detection | Open |
+| A6 Helpdesk reply templates and language | Done, [ADR 0072](adr/0072-helpdesk-reply-templates.md) (builds on the prepared answers of ADR 0013); SLA notices to the customer still use built-in texts, see A6b |
+| A6b Helpdesk SLA notices from templates | Open (needs deadline placeholders and rendering without a user) |
 | A7 Helpdesk ticket checklists | Open |
 | A8 Helpdesk immediate change notification (concurrent updates seen by both people) | Open (shares its push channel with D3) |
 | A9 Helpdesk ticket bundles (linked tickets) | Open (merge and split are done, ADR 0017 and ADR 0021) |
@@ -35,7 +36,7 @@ Module overview: [ARCHITECTURE.md](ARCHITECTURE.md).
 | C3 Planning board, work-centre half (finite loading, drag-and-drop board) | Open; the capacity view and the work-centre calendars are done in C1b ([ADR 0063](adr/0063-work-centres-routings-and-operations.md)); reuses `ResourceBoard` |
 | D1 Worker heartbeat and "worker was down" alert | Done, [ADR 0052](adr/0052-worker-heartbeat.md) |
 | D2 Backup and restore runbook | Done, [ADR 0056](adr/0056-backup-and-restore.md) |
-| D3 Concurrent-edit protection on records | Done for customers, quotations, orders and tickets (shared SSE push channel + Flutter UI), [ADR 0072](adr/0072-concurrent-edit-protection.md); other records follow |
+| D3 Concurrent-edit protection on records | Done for customers, quotations, orders and tickets (shared SSE push channel + Flutter UI), [ADR 0073](adr/0073-concurrent-edit-protection.md); other records follow |
 | D4 VAT number validation, registry lookup and duplicate warning | Done, [ADR 0058](adr/0058-vat-number-validation-and-lookup.md); the request to the live VIES service is untested (see the ADR) |
 | D4b Country-aware, temporal, and building-age VAT defaults | Done, [ADR 0071](adr/0071-country-vat-defaults.md) |
 | D5 Accent-insensitive search | Done for customers, contacts, suppliers and products, [ADR 0057](adr/0057-accent-insensitive-search.md); the other lists follow |
@@ -79,15 +80,7 @@ Remaining knowledge base gaps (ADR 0018): non-image attachments, analytics, sema
   ([ADR 0042](adr/0042-report-builder.md)) mailed on a schedule (daily, weekly, monthly) to users or
   addresses as CSV or PDF, run by the worker. One scheduler serves both report kinds.
 
-**A6 Reply templates and language detection** (medium)
-- Templates (text modules): per company or team, with placeholders (customer, ticket number, agent,
-  order), one variant per language (nl, fr, en, de, es), a shortcut or search in the reply editor,
-  and optional keyword triggers. The same templates feed the A5 mails.
-- Language detection: the language of an incoming ticket or e-mail is detected, stored on the ticket
-  and proposed as the reply and notice language; the agent can override it. Falls back to the
-  customer's language, then the company default. Decide in the ADR between a small offline detector
-  crate and an external service (offline first, since customer text should not leave the system).
-- Optional automation condition `language` so tickets can route to a team by language.
+**A6 Reply templates and language detection** (medium, done, [ADR 0072](adr/0072-helpdesk-reply-templates.md)): Prepared answers remain the single template model and gained `kind` (`reply`, `internal_note`, `handover`, `notice`), optional `team_id` scope, and `keywords`. `GET /tickets/{id}/prepared-answers/suggest` returns ranked, filled-in suggestions (excluding other teams' templates), `send_email` automation actions can reference a prepared answer via `answer_id` (validated for subjects and known placeholders on save), tickets record `language_source` (`record`, `detected`, `agent`) with creator-language fallback on internal tickets, and automation rules can match `ticket_languages`. SLA notices to the customer still use built-in texts (deferred to A6b).
 
 **A7 Ticket checklists** (small-medium)
 - A checklist per ticket (ordered items, done flag, who and when), applied from checklist templates

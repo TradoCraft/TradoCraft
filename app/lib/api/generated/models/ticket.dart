@@ -11,51 +11,54 @@ part 'ticket.g.dart';
 @JsonSerializable()
 class Ticket {
   const Ticket({
-    required this.updatedAt,
+    required this.priority,
     required this.category,
+    required this.checklistDone,
+    required this.checklistTotal,
     required this.contactEmail,
     required this.contactName,
     required this.createdAt,
-    required this.tags,
     required this.articleCount,
     required this.id,
     required this.internal,
     required this.language,
-    required this.number,
-    required this.priority,
-    required this.watching,
-    required this.sla,
-    required this.status,
     required this.subject,
-    required this.timeMinutes,
+    required this.status,
+    required this.sla,
+    required this.watching,
+    required this.updatedAt,
+    required this.number,
+    required this.languageSource,
     required this.unread,
+    required this.timeMinutes,
+    required this.tags,
     this.firstResponseAt,
     this.mergedIntoId,
-    this.mergedIntoNumber,
-    this.customerId,
+    this.escalatedBy,
+    this.escalatedByName,
     this.opportunityId,
     this.opportunityNumber,
     this.orderId,
     this.orderNumber,
     this.ownerName,
     this.ownerUserId,
-    this.customerName,
     this.escalatedAt,
+    this.quotationId,
     this.quotationNumber,
     this.quotationRevision,
     this.quotationStatus,
-    this.escalatedBy,
-    this.escalatedByName,
-    this.contactId,
+    this.customerName,
+    this.customerId,
+    this.csatRating,
     this.suggestedCategory,
-    this.quotationId,
+    this.csatRatedAt,
     this.teamId,
     this.teamName,
-    this.closedAt,
-    this.csatRatedAt,
-    this.csatRating,
-    this.version,
     this.csatComment,
+    this.contactId,
+    this.closedAt,
+    this.version,
+    this.mergedIntoNumber,
   });
   
   factory Ticket.fromJson(Map<String, Object?> json) => _$TicketFromJson(json);
@@ -65,6 +68,10 @@ class Ticket {
 
   /// question | lead | quote_change | order_confirmation | production_question | service | complaint | other
   final String category;
+  @JsonKey(name: 'checklist_done')
+  final int checklistDone;
+  @JsonKey(name: 'checklist_total')
+  final int checklistTotal;
   @JsonKey(includeIfNull: false,name: 'closed_at')
   final DateTime? closedAt;
   @JsonKey(name: 'contact_email')
@@ -104,6 +111,10 @@ class Ticket {
 
   /// nl | fr | en | de | es — the language to answer in.
   final String language;
+
+  /// record | detected | agent: where `language` came from.
+  @JsonKey(name: 'language_source')
+  final String languageSource;
 
   /// Set when this ticket was merged into another one (it is closed).
   @JsonKey(includeIfNull: false,name: 'merged_into_id')

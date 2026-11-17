@@ -61,6 +61,8 @@ pub struct Ticket {
     pub suggested_category: Option<String>,
     /// nl | fr | en | de | es — the language to answer in.
     pub language: String,
+    /// record | detected | agent: where `language` came from.
+    pub language_source: String,
     pub customer_id: Option<Uuid>,
     pub customer_name: Option<String>,
     /// The person at the customer this ticket is about (see the contacts of the customer).
@@ -79,6 +81,8 @@ pub struct Ticket {
     pub order_id: Option<Uuid>,
     pub order_number: Option<String>,
     pub article_count: i64,
+    pub checklist_total: i64,
+    pub checklist_done: i64,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     pub first_response_at: Option<DateTime<Utc>>,
@@ -352,11 +356,13 @@ pub struct InboundResult {
 }
 
 const SELECT: &str = "SELECT t.id, t.version, t.number, t.subject, t.status, t.priority, t.category, t.suggested_category,
-        t.language::text AS language, t.customer_id, c.name AS customer_name, t.contact_id, t.contact_name, t.contact_email,
+        t.language::text AS language, t.language_source, t.customer_id, c.name AS customer_name, t.contact_id, t.contact_name, t.contact_email,
         t.owner_user_id, u.display_name AS owner_name, t.internal,
         t.quotation_id, q.number AS quotation_number, q.revision AS quotation_revision, q.status AS quotation_status,
         t.opportunity_id, op.number AS opportunity_number, t.order_id, o.number AS order_number,
         (SELECT count(*) FROM helpdesk.articles a WHERE a.ticket_id = t.id) AS article_count,
+        (SELECT count(*) FROM helpdesk.ticket_checklist_items c WHERE c.ticket_id = t.id) AS checklist_total,
+        (SELECT count(*) FROM helpdesk.ticket_checklist_items c WHERE c.ticket_id = t.id AND c.done) AS checklist_done,
         t.created_at, t.updated_at, t.first_response_at, t.closed_at,
         t.team_id, tm.name AS team_name,
         coalesce((SELECT array_agg(g.tag ORDER BY g.tag) FROM helpdesk.ticket_tags g WHERE g.ticket_id = t.id), '{}') AS tags,
@@ -446,6 +452,7 @@ pub(crate) async fn add_note(
     ticket_id: Uuid,
     body: &str,
 ) -> AppResult<Uuid> {
+    crate::checklists::lock_ticket(conn, user.company_id, ticket_id).await?;
     let id = new_id();
     sqlx::query(
         "INSERT INTO helpdesk.articles (id, ticket_id, kind, from_name, body, author_user_id) VALUES ($1, $2, 'note', $3, $4, $5)",
@@ -472,6 +479,49 @@ pub async fn add_linked_note(
     Ok(())
 }
 
+#[allow(dead_code)]
+pub(crate) fn should_block_close(
+    target_status: &str,
+    was_closed: bool,
+    team_requires_checklist_done: bool,
+    open_items: i64,
+) -> bool {
+    target_status == "closed" && !was_closed && team_requires_checklist_done && open_items > 0
+}
+
+async fn check_close_gate(
+    conn: &mut PgConnection,
+    ticket_id: Uuid,
+    target_status: &str,
+    was_closed: bool,
+) -> AppResult<()> {
+    if target_status == "closed" && !was_closed {
+        let blocked: bool = sqlx::query_scalar(
+            "SELECT EXISTS (
+                SELECT 1
+                FROM helpdesk.tickets t
+                JOIN helpdesk.teams tm ON tm.id = t.team_id
+                WHERE t.id = $1
+                  AND tm.require_checklist_done
+                  AND EXISTS (
+                      SELECT 1 FROM helpdesk.ticket_checklist_items c
+                      WHERE c.ticket_id = t.id AND NOT c.done
+                  )
+            )",
+        )
+        .bind(ticket_id)
+        .fetch_one(&mut *conn)
+        .await?;
+        if blocked {
+            return Err(AppError::ConflictCode(
+                "checklist_incomplete",
+                "Complete all checklist items before closing this ticket".into(),
+            ));
+        }
+    }
+    Ok(())
+}
+
 async fn set_status(
     conn: &mut PgConnection,
     user: &CurrentUser,
@@ -479,11 +529,13 @@ async fn set_status(
     status: &str,
 ) -> AppResult<()> {
     check_one_of("status", status, &STATUSES)?;
+    crate::checklists::lock_ticket(conn, user.company_id, ticket_id).await?;
     let old: String = sqlx::query_scalar("SELECT status FROM helpdesk.tickets WHERE id = $1")
         .bind(ticket_id)
         .fetch_one(&mut *conn)
         .await?;
     let was_closed = old == "closed";
+    check_close_gate(conn, ticket_id, status, was_closed).await?;
     if old != status {
         crate::collab::record_event(
             conn,
@@ -720,6 +772,7 @@ async fn create_ticket(
         (Some(c), "") => c.primary_email().unwrap_or_default().to_string(),
         (_, e) => e.to_lowercase(),
     };
+    let language_given = input.language.is_some();
     let language = match &input.language {
         Some(l) if is_language(l) => l.clone(),
         Some(_) => {
@@ -730,6 +783,18 @@ async fn create_ticket(
         }
         None => match &contact {
             Some(c) => c.effective_language.clone(),
+            None if customer_id.is_none() && input.internal => {
+                // A question between colleagues: the creator's language, else the company's.
+                let own: Option<String> =
+                    sqlx::query_scalar("SELECT language::text FROM core.users WHERE id = $1")
+                        .bind(user.user_id)
+                        .fetch_one(&mut *tx)
+                        .await?;
+                match own {
+                    Some(l) => l,
+                    None => customer_language(&mut tx, None, user.company_id).await?,
+                }
+            }
             None => customer_language(&mut tx, customer_id, user.company_id).await?,
         },
     };
@@ -737,8 +802,10 @@ async fn create_ticket(
     let id = new_id();
     sqlx::query(
         "INSERT INTO helpdesk.tickets (id, company_id, number, subject, status, category, language, customer_id,
-                                       contact_id, contact_name, contact_email, owner_user_id, internal, created_by)
-         VALUES ($1, $2, $3, $4, 'open', $5, $6, $7, $8, $9, $10, $11, $12, $11)",
+                                       contact_id, contact_name, contact_email, owner_user_id, internal, created_by,
+                                       language_source)
+         VALUES ($1, $2, $3, $4, 'open', $5, $6, $7, $8, $9, $10, $11, $12, $11,
+                 CASE WHEN $13 THEN 'agent' ELSE 'record' END)",
     )
     .bind(id)
     .bind(user.company_id)
@@ -752,6 +819,7 @@ async fn create_ticket(
     .bind(&contact_email)
     .bind(user.user_id)
     .bind(input.internal)
+    .bind(language_given)
     .execute(&mut *tx)
     .await?;
     add_note(&mut tx, &user, id, &input.body).await?;
@@ -799,18 +867,12 @@ async fn update_ticket(
         return Err(AppError::Validation("subject is required".into()));
     }
     let mut tx = state.db.begin().await?;
-    let locked_version: i64 = sqlx::query_scalar(
-        "SELECT version FROM helpdesk.tickets WHERE id = $1 AND company_id = $2 FOR UPDATE",
-    )
-    .bind(id)
-    .bind(user.company_id)
-    .fetch_optional(&mut *tx)
-    .await?
-    .ok_or(AppError::NotFound("ticket"))?;
+    crate::checklists::lock_ticket(&mut tx, user.company_id, id).await?;
+    // Read after the row lock, so this is the latest committed version (ADR 0073).
     let old = load_ticket(&mut tx, user.company_id, id).await?;
     tradocraft_core::concurrency::check_version(
         input.expected_version,
-        locked_version,
+        old.version,
         &format!("ticket {}", old.number),
     )?;
     let mut input = input;
@@ -873,7 +935,9 @@ async fn update_ticket(
         }
     }
     sqlx::query(
-        "UPDATE helpdesk.tickets SET subject = $2, priority = $3, category = $4, language = $5, owner_user_id = $6,
+        "UPDATE helpdesk.tickets SET subject = $2, priority = $3, category = $4, language = $5,
+                language_source = CASE WHEN language::text <> $5 THEN 'agent' ELSE language_source END,
+                owner_user_id = $6,
                 customer_id = $7, contact_name = $8, contact_email = $9, quotation_id = $10, opportunity_id = $11,
                 contact_id = $12, updated_at = now()
          WHERE id = $1",
@@ -911,6 +975,7 @@ async fn update_ticket(
         .await?;
     set_status(&mut tx, &user, id, &input.status).await?;
     crate::automation::run(&mut tx, user.company_id, id, "updated").await?;
+    check_close_gate(&mut tx, id, &input.status, old.status == "closed").await?;
     audit::record(
         &mut tx,
         &user,
@@ -922,14 +987,9 @@ async fn update_ticket(
     .await?;
     let d = load_detail(&mut tx, user.company_id, id).await?;
     tx.commit().await?;
-    state.live_events.publish_record_change(
-        &user,
-        "ticket",
-        id,
-        d.ticket.version,
-        "updated",
-        None,
-    );
+    state
+        .live_events
+        .publish_record_change(&user, "ticket", id, d.ticket.version, "updated", None);
     Ok(Json(d))
 }
 
@@ -947,7 +1007,8 @@ async fn add_note_handler(
         return Err(AppError::Validation("the note is empty".into()));
     }
     let mut tx = state.db.begin().await?;
-    load_ticket(&mut tx, user.company_id, id).await?;
+    crate::checklists::lock_ticket(&mut tx, user.company_id, id).await?;
+    let original = load_ticket(&mut tx, user.company_id, id).await?;
     let note_id = add_note(&mut tx, &user, id, &input.body).await?;
     crate::collab::add_watcher(&mut tx, user.company_id, id, user.user_id).await?;
     crate::attachments::link(&mut tx, id, note_id, &input.attachment_ids, None).await?;
@@ -955,6 +1016,7 @@ async fn add_note_handler(
         Some(s) => {
             set_status(&mut tx, &user, id, s).await?;
             crate::automation::run(&mut tx, user.company_id, id, "updated").await?;
+            check_close_gate(&mut tx, id, s, original.status == "closed").await?;
         }
         None => {
             sqlx::query("UPDATE helpdesk.tickets SET updated_at = now() WHERE id = $1")
@@ -965,14 +1027,9 @@ async fn add_note_handler(
     }
     let d = load_detail(&mut tx, user.company_id, id).await?;
     tx.commit().await?;
-    state.live_events.publish_record_change(
-        &user,
-        "ticket",
-        id,
-        d.ticket.version,
-        "note",
-        None,
-    );
+    state
+        .live_events
+        .publish_record_change(&user, "ticket", id, d.ticket.version, "note", None);
     Ok((StatusCode::CREATED, Json(d)))
 }
 
@@ -1011,6 +1068,7 @@ async fn reply(
         return Err(AppError::Validation("the message is empty".into()));
     }
     let mut tx = state.db.begin().await?;
+    crate::checklists::lock_ticket(&mut tx, user.company_id, id).await?;
     let ticket = load_ticket(&mut tx, user.company_id, id).await?;
     let to: Vec<String> = if input.to.is_empty() {
         let fallback: Option<String> = match ticket.customer_id {
@@ -1129,6 +1187,13 @@ async fn reply(
     )
     .await?;
     crate::automation::run(&mut tx, user.company_id, id, "updated").await?;
+    check_close_gate(
+        &mut tx,
+        id,
+        input.status.as_deref().unwrap_or("pending_customer"),
+        ticket.status == "closed",
+    )
+    .await?;
     audit::record(
         &mut tx,
         &user,
@@ -1140,14 +1205,9 @@ async fn reply(
     .await?;
     let d = load_detail(&mut tx, user.company_id, id).await?;
     tx.commit().await?;
-    state.live_events.publish_record_change(
-        &user,
-        "ticket",
-        id,
-        d.ticket.version,
-        "note",
-        None,
-    );
+    state
+        .live_events
+        .publish_record_change(&user, "ticket", id, d.ticket.version, "note", None);
     Ok((StatusCode::CREATED, Json(d)))
 }
 
@@ -1206,14 +1266,9 @@ async fn create_lead(
     .await?;
     let d = load_detail(&mut tx, user.company_id, id).await?;
     tx.commit().await?;
-    state.live_events.publish_record_change(
-        &user,
-        "ticket",
-        id,
-        d.ticket.version,
-        "note",
-        None,
-    );
+    state
+        .live_events
+        .publish_record_change(&user, "ticket", id, d.ticket.version, "note", None);
     Ok((StatusCode::CREATED, Json(d)))
 }
 
@@ -1273,14 +1328,9 @@ async fn convert(
     .await?;
     let d = load_detail(&mut tx, user.company_id, id).await?;
     tx.commit().await?;
-    state.live_events.publish_record_change(
-        &user,
-        "ticket",
-        id,
-        d.ticket.version,
-        "note",
-        None,
-    );
+    state
+        .live_events
+        .publish_record_change(&user, "ticket", id, d.ticket.version, "note", None);
     Ok((StatusCode::CREATED, Json(d)))
 }
 
@@ -1364,14 +1414,9 @@ async fn production_question(
     .await?;
     let d = load_detail(&mut tx, user.company_id, id).await?;
     tx.commit().await?;
-    state.live_events.publish_record_change(
-        &user,
-        "ticket",
-        id,
-        d.ticket.version,
-        "note",
-        None,
-    );
+    state
+        .live_events
+        .publish_record_change(&user, "ticket", id, d.ticket.version, "note", None);
     Ok((StatusCode::CREATED, Json(d)))
 }
 
@@ -1434,6 +1479,7 @@ async fn log_call(
     let ticket_id = match input.ticket_id {
         Some(t) => {
             let ticket = load_ticket(&mut tx, user.company_id, t).await?;
+            crate::checklists::lock_ticket(&mut tx, user.company_id, t).await?;
             if let Some(c) = &contact {
                 if ticket.customer_id.is_some_and(|tc| tc != c.customer_id) {
                     return Err(AppError::Validation(
@@ -1610,4 +1656,36 @@ pub fn router() -> OpenApiRouter<AppState> {
         .merge(crate::extras::router())
         .merge(crate::csat::router())
         .merge(crate::collab::router())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_should_block_close() {
+        // open items + team requires -> true
+        assert!(should_block_close("closed", false, true, 2));
+        assert!(should_block_close("closed", false, true, 1));
+
+        // all done -> false
+        assert!(!should_block_close("closed", false, true, 0));
+
+        // no items -> false
+        assert!(!should_block_close("closed", false, true, 0));
+
+        // team doesn't require -> false
+        assert!(!should_block_close("closed", false, false, 2));
+        assert!(!should_block_close("closed", false, false, 0));
+
+        // already closed -> false
+        assert!(!should_block_close("closed", true, true, 2));
+        assert!(!should_block_close("closed", true, false, 2));
+
+        // non-closed target -> false
+        assert!(!should_block_close("open", false, true, 2));
+        assert!(!should_block_close("pending_customer", false, true, 2));
+        assert!(!should_block_close("pending_internal", false, true, 2));
+        assert!(!should_block_close("new", false, true, 2));
+    }
 }

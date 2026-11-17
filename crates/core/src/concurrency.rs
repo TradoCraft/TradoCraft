@@ -1,4 +1,4 @@
-//! Concurrent-edit protection (ADR 0072): optimistic concurrency on a row version.
+//! Concurrent-edit protection (ADR 0073): optimistic concurrency on a row version.
 //!
 //! A record that people edit by hand has a `version` column that a trigger raises on every update.
 //! The API returns it; a save sends it back as `expected_version`. The check runs after the row is

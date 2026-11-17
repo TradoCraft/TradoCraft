@@ -229,6 +229,7 @@ pub async fn ingest_from(
     let new_ticket = existing.is_none();
     let (ticket_id, ticket_number) = match existing {
         Some(t) => {
+            crate::checklists::lock_ticket(&mut tx, company_id, t.id).await?;
             // A customer reply reopens the ticket; links found now are added if still empty.
             sqlx::query(
                 "UPDATE helpdesk.tickets SET
@@ -274,6 +275,11 @@ pub async fn ingest_from(
                 .map(|c| c.language.clone())
                 .or(detected.map(str::to_string))
                 .unwrap_or(default_language);
+            let language_source = if customer.is_none() && detected.is_some() {
+                "detected"
+            } else {
+                "record"
+            };
             let year = chrono::Utc::now().year();
             let n = tradocraft_core::numbering::next_number(&mut tx, company_id, "ticket", year)
                 .await?;
@@ -282,9 +288,9 @@ pub async fn ingest_from(
             sqlx::query(
                 "INSERT INTO helpdesk.tickets (id, company_id, number, subject, category, suggested_category, language,
                                                customer_id, contact_name, contact_email, owner_user_id, quotation_id, contact_id, channel,
-                                               mailbox_id, team_id)
+                                               mailbox_id, team_id, language_source)
                  VALUES ($1, $2, $3, $4, $5, $5, $6, $7, $8, $9, $10, $11, $12, 'email', $13,
-                         (SELECT id FROM helpdesk.teams WHERE id = $14 AND company_id = $2 AND active))",
+                         (SELECT id FROM helpdesk.teams WHERE id = $14 AND company_id = $2 AND active), $15)",
             )
             .bind(id)
             .bind(company_id)
@@ -306,6 +312,7 @@ pub async fn ingest_from(
             .bind(contact.as_ref().map(|c| c.id))
             .bind(source.map(|s| s.mailbox_id))
             .bind(source.and_then(|s| s.team_id))
+            .bind(language_source)
             .execute(&mut *tx)
             .await?;
             crate::teams::assign_default_team(&mut tx, company_id, id).await?;

@@ -1,4 +1,4 @@
--- Concurrent-edit protection (ADR 0072, roadmap D3).
+-- Concurrent-edit protection (ADR 0073, roadmap D3).
 --
 -- A row version on the records people edit by hand. The API returns it, the app sends it back as
 -- `expected_version` when saving, and a save against an older version is refused (409

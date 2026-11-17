@@ -26,6 +26,7 @@ Map<String, Object?> _team() => {
   'members': [
     {'user_id': 'u1', 'display_name': 'Support Agent', 'is_lead': true},
   ],
+  'require_checklist_done': false,
   'created_at': '2026-11-01T09:00:00Z',
 };
 

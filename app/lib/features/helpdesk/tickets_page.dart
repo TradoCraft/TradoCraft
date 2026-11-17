@@ -295,6 +295,14 @@ class _TicketsPageState extends ConsumerState<TicketsPage> {
                   ),
                 ),
               ),
+              if (t.checklistTotal > 0) ...[
+                const SizedBox(width: 6),
+                ChecklistProgressBadge(
+                  key: ValueKey('checklist-badge-${t.id}'),
+                  done: t.checklistDone,
+                  total: t.checklistTotal,
+                ),
+              ],
             ],
           ),
         ),
@@ -552,6 +560,54 @@ class _NewTicketDialogState extends ConsumerState<NewTicketDialog> {
         ),
         FilledButton(onPressed: _save, child: Text(l.create)),
       ],
+    );
+  }
+}
+
+/// Compact badge showing checklist progress (`done/total`), styled green when complete.
+class ChecklistProgressBadge extends StatelessWidget {
+  const ChecklistProgressBadge({
+    super.key,
+    required this.done,
+    required this.total,
+  });
+
+  final int done;
+  final int total;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    final complete = done == total;
+    final fg = complete
+        ? Colors.green.shade800
+        : theme.colorScheme.onSurfaceVariant;
+    final bg = complete
+        ? Colors.green.withValues(alpha: 0.14)
+        : theme.colorScheme.surfaceContainerHighest;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(AppIcons.checklist, size: 14, color: fg),
+          const SizedBox(width: 4),
+          Text(
+            l.checklistProgress(done, total),
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: fg,
+              fontWeight: complete ? FontWeight.w600 : FontWeight.normal,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

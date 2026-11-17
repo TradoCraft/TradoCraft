@@ -3296,6 +3296,78 @@ abstract class AppLocalizations {
   /// **'Reusable answers to recurring questions, one text per language. Placeholders such as «quotation.number» are filled in for the ticket; the text can still be edited before sending.'**
   String get preparedAnswersHelp;
 
+  /// No description provided for @answerKind.
+  ///
+  /// In en, this message translates to:
+  /// **'Kind'**
+  String get answerKind;
+
+  /// No description provided for @answerKindName.
+  ///
+  /// In en, this message translates to:
+  /// **'{kind, select, reply{Reply} internal_note{Internal note} handover{Hand-over} notice{Notice} other{{kind}}}'**
+  String answerKindName(String kind);
+
+  /// No description provided for @answerTeam.
+  ///
+  /// In en, this message translates to:
+  /// **'Team'**
+  String get answerTeam;
+
+  /// No description provided for @answerAllTeams.
+  ///
+  /// In en, this message translates to:
+  /// **'All teams'**
+  String get answerAllTeams;
+
+  /// No description provided for @answerKeywords.
+  ///
+  /// In en, this message translates to:
+  /// **'Keywords (comma separated)'**
+  String get answerKeywords;
+
+  /// No description provided for @answerKeywordsHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Tickets whose subject contains a keyword get this answer suggested first.'**
+  String get answerKeywordsHelp;
+
+  /// No description provided for @answerShortcutHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Type /code to insert an answer'**
+  String get answerShortcutHint;
+
+  /// No description provided for @ticketLanguageSource.
+  ///
+  /// In en, this message translates to:
+  /// **'{source, select, record{Taken from the contact or customer} detected{Detected from the message} agent{Set by an agent} other{{source}}}'**
+  String ticketLanguageSource(String source);
+
+  /// No description provided for @ticketLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Ticket language'**
+  String get ticketLanguage;
+
+  /// No description provided for @mailTemplate.
+  ///
+  /// In en, this message translates to:
+  /// **'Template (optional)'**
+  String get mailTemplate;
+
+  /// No description provided for @mailTemplateNone.
+  ///
+  /// In en, this message translates to:
+  /// **'Write the text here'**
+  String get mailTemplateNone;
+
+  /// No description provided for @ticketLanguageCondition.
+  ///
+  /// In en, this message translates to:
+  /// **'Ticket language'**
+  String get ticketLanguageCondition;
+
   /// No description provided for @preview.
   ///
   /// In en, this message translates to:
@@ -18083,6 +18155,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Someone else saved changes to this record. Reload to see their changes before saving again.'**
   String get recordConflictMessage;
+
+  /// No description provided for @checklistTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Checklist'**
+  String get checklistTitle;
+
+  /// No description provided for @checklistProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'{done}/{total}'**
+  String checklistProgress(int done, int total);
+
+  /// No description provided for @checklistAddItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Add checklist item'**
+  String get checklistAddItem;
+
+  /// No description provided for @checklistApplyTemplate.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply template'**
+  String get checklistApplyTemplate;
+
+  /// No description provided for @checklistNoTemplates.
+  ///
+  /// In en, this message translates to:
+  /// **'No checklist templates available'**
+  String get checklistNoTemplates;
+
+  /// No description provided for @checklistEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No checklist items yet'**
+  String get checklistEmpty;
+
+  /// No description provided for @checklistTemplatesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Checklist templates'**
+  String get checklistTemplatesTitle;
+
+  /// No description provided for @checklistTemplateNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New checklist template'**
+  String get checklistTemplateNew;
+
+  /// No description provided for @checklistTemplateName.
+  ///
+  /// In en, this message translates to:
+  /// **'Template name'**
+  String get checklistTemplateName;
+
+  /// No description provided for @checklistTemplateItemsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Items (one per line)'**
+  String get checklistTemplateItemsHint;
+
+  /// No description provided for @teamRequireChecklistDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Require checklist done before closing'**
+  String get teamRequireChecklistDone;
+
+  /// No description provided for @ticketCloseBlockedChecklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete all checklist items before closing this ticket'**
+  String get ticketCloseBlockedChecklist;
+
+  /// No description provided for @automationActionApplyChecklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply checklist'**
+  String get automationActionApplyChecklist;
+
+  /// No description provided for @automationTemplateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Checklist template'**
+  String get automationTemplateLabel;
+
+  /// No description provided for @answerUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Unavailable'**
+  String get answerUnavailable;
 }
 
 class _AppLocalizationsDelegate

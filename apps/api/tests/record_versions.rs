@@ -1,4 +1,4 @@
-//! Concurrent-edit protection (ADR 0072, D3): customers, quotations, orders and tickets carry a
+//! Concurrent-edit protection (ADR 0073, D3): customers, quotations, orders and tickets carry a
 //! row version; a save made from an older version is refused with 409 `record_changed`, a save
 //! without one behaves as before, two saves that start from the same version cannot both succeed,
 //! and updates emit a live SSE event on `GET /api/v1/events/records`.
@@ -139,7 +139,9 @@ async fn a_stale_quotation_save_is_refused(db: PgPool) {
     )
     .await;
     assert_eq!(status, StatusCode::OK, "{saved}");
-    assert_eq!(version(&saved), v0 + 1);
+    // A quotation save updates the row more than once (header, then totals), so the version moves
+    // on by at least one, not exactly one.
+    assert!(version(&saved) > v0);
 
     let (status, err) = api_as(
         &app,
@@ -166,6 +168,17 @@ async fn a_stale_order_save_is_refused(db: PgPool) {
     .await;
     assert_eq!(status, StatusCode::CREATED, "{q}");
     let qid = q["id"].as_str().unwrap();
+
+    // Only a sent (or accepted) quotation can become an order.
+    let (status, sent) = api_as(
+        &app,
+        SALES,
+        Method::POST,
+        &format!("/quotations/{qid}/send"),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{sent}");
 
     let (status, o) = api_as(
         &app,
@@ -327,7 +340,9 @@ async fn sse_record_events_streams_updates_and_validates_entity_type(db: PgPool)
     // Open SSE stream for customer ALPHA.
     let req = Request::builder()
         .method(Method::GET)
-        .uri(format!("/api/v1/events/records?entity_type=customer&record_id={ALPHA}"))
+        .uri(format!(
+            "/api/v1/events/records?entity_type=customer&record_id={ALPHA}"
+        ))
         .header("x-dev-user", SALES)
         .body(Body::empty())
         .unwrap();

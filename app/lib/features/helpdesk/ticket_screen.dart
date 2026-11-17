@@ -61,6 +61,8 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
   bool _missing = false;
   bool _busy = false;
 
+  int _checklistRefresh = 0;
+
   // Properties.
   final _subject = TextEditingController();
   final _contactName = TextEditingController();
@@ -274,13 +276,40 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
     if (_busy) return false;
     setState(() => _busy = true);
     TicketDetail? d;
-    final ok = await runAction(
-      context,
-      () async => d = await action(),
-      success: success,
-    );
-    if (mounted) setState(() => _busy = false);
-    if (ok && d != null) _apply(d!);
+    final messenger = ScaffoldMessenger.of(context);
+    final l = context.l10n;
+    var ok = false;
+    try {
+      d = await action();
+      ok = true;
+      if (success != null) {
+        messenger.showSnackBar(SnackBar(content: Text(success)));
+      }
+    } catch (e) {
+      final isChecklistBlocked =
+          errorCode(e) == 'checklist_incomplete' ||
+          (errorStatus(e) == 409 &&
+              e is DioException &&
+              e.response?.data is Map &&
+              (e.response?.data as Map)['error'] == 'checklist_incomplete');
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            isChecklistBlocked
+                ? l.ticketCloseBlockedChecklist
+                : errorMessage(e),
+          ),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
+    }
+    if (mounted) {
+      setState(() {
+        _busy = false;
+        if (ok) _checklistRefresh++;
+      });
+    }
+    if (ok && d != null) _apply(d);
     return ok;
   }
 
@@ -343,7 +372,7 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
     if (!mounted) return;
     List<String> split(String s) =>
         s.split(RegExp(r'[,;\s]+')).where((e) => e.isNotEmpty).toList();
-    await _run(
+    final sent = await _run(
       () => _reply
           ? _api.helpdesk.reply(
               id: widget.id,
@@ -368,7 +397,7 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
             ),
       success: _reply ? l.replyQueued : l.noteAdded,
     );
-    if (_d != null) {
+    if (sent && mounted && _d != null) {
       setState(() {
         _body.clear();
         _replySubject.clear();
@@ -404,35 +433,27 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
   }
 
   Future<void> _insertAnswer() async {
-    final answer = await showDialog<PreparedAnswer>(
+    final answer = await showDialog<SuggestedAnswer>(
       context: context,
-      builder: (_) => const _AnswerPicker(),
+      builder: (_) => _AnswerPicker(
+        ticketId: widget.id,
+        kind: _reply ? 'reply' : 'internal_note',
+      ),
     );
     if (answer == null || !mounted) return;
     final l = context.l10n;
-    try {
-      final r = await _api.helpdesk.renderAnswer(
-        id: widget.id,
-        answerId: answer.id,
-      );
-      setState(() {
-        if (r.subject.isNotEmpty) _replySubject.text = r.subject;
-        _body.text = _body.text.trim().isEmpty
-            ? r.body
-            : '${_body.text.trimRight()}\n\n${r.body}';
-        _answerInfo = r.fallback
-            ? l.answerFallback(
-                languageName(_language),
-                languageName(r.language),
-              )
-            : null;
-      });
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(errorMessage(e))));
-      }
-    }
+    setState(() {
+      if (answer.subject.isNotEmpty) _replySubject.text = answer.subject;
+      _body.text = _body.text.trim().isEmpty
+          ? answer.body
+          : '${_body.text.trimRight()}\n\n${answer.body}';
+      _answerInfo = answer.fallback
+          ? l.answerFallback(
+              languageName(_language),
+              languageName(answer.language),
+            )
+          : null;
+    });
   }
 
   /// Moves the ticket to a team (and keeps or changes its owner).
@@ -805,12 +826,11 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
                   onSelectionChanged: (s) =>
                       setState(() => _replyChosen = s.first),
                 ),
-                if (_reply)
-                  OutlinedButton.icon(
-                    onPressed: _insertAnswer,
-                    icon: const Icon(AppIcons.textSnippet),
-                    label: Text(l.insertPreparedAnswer),
-                  ),
+                OutlinedButton.icon(
+                  onPressed: _insertAnswer,
+                  icon: const Icon(AppIcons.textSnippet),
+                  label: Text(l.insertPreparedAnswer),
+                ),
                 if (_reply && canKb)
                   OutlinedButton.icon(
                     key: const ValueKey('insert-article'),
@@ -1001,17 +1021,29 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
         ),
         gap,
         Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-              child: DropdownButtonFormField<String>(
-                isExpanded: true,
-                initialValue: _language,
-                decoration: InputDecoration(labelText: l.customerLanguage),
-                items: [
-                  for (final c in languageCodes)
-                    DropdownMenuItem(value: c, child: Text(languageName(c))),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  DropdownButtonFormField<String>(
+                    isExpanded: true,
+                    initialValue: _language,
+                    decoration: InputDecoration(labelText: l.customerLanguage),
+                    items: [
+                      for (final c in languageCodes)
+                        DropdownMenuItem(value: c, child: Text(languageName(c))),
+                    ],
+                    onChanged: (v) => setState(() => _language = v!),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    l.ticketLanguageSource(t.languageSource),
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
                 ],
-                onChanged: (v) => setState(() => _language = v!),
               ),
             ),
             const SizedBox(width: 8),
@@ -1080,6 +1112,14 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
         ),
         const Divider(height: 32),
         TimeSection(ticketId: t.id, canWrite: canWrite),
+        const Divider(height: 32),
+        TicketChecklistCard(
+          ticketId: t.id,
+          refreshVersion: _checklistRefresh,
+          teamId: t.teamId,
+          category: t.category,
+          canWrite: canWrite,
+        ),
         const Divider(height: 32),
         ActivitySection(
           ticketId: t.id,
@@ -1518,9 +1558,11 @@ class _ArticleCard extends StatelessWidget {
   }
 }
 
-/// Searchable list of prepared answers; returns the chosen one.
+/// Ranked prepared answers for this ticket; returns the chosen one. Typing `/code` or a word narrows it.
 class _AnswerPicker extends ConsumerStatefulWidget {
-  const _AnswerPicker();
+  const _AnswerPicker({required this.ticketId, required this.kind});
+  final String ticketId;
+  final String kind;
 
   @override
   ConsumerState<_AnswerPicker> createState() => _AnswerPickerState();
@@ -1528,10 +1570,16 @@ class _AnswerPicker extends ConsumerStatefulWidget {
 
 class _AnswerPickerState extends ConsumerState<_AnswerPicker> {
   String _q = '';
-  late Future<List<PreparedAnswer>> _answers = ref
+  late Future<List<SuggestedAnswer>> _answers = _load();
+
+  Future<List<SuggestedAnswer>> _load() => ref
       .read(apiProvider)
       .helpdesk
-      .listAnswers(active: true);
+      .suggest(
+        id: widget.ticketId,
+        q: _q.startsWith('/') ? _q.substring(1) : _q,
+        kind: widget.kind,
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -1548,52 +1596,38 @@ class _AnswerPickerState extends ConsumerState<_AnswerPicker> {
               decoration: InputDecoration(
                 prefixIcon: const Icon(AppIcons.search),
                 hintText: l.search,
+                helperText: l.answerShortcutHint,
               ),
-              onChanged: (v) => setState(() => _q = v.toLowerCase()),
+              onChanged: (v) => setState(() {
+                _q = v.trim();
+                _answers = _load();
+              }),
             ),
             const SizedBox(height: 8),
             Expanded(
-              child: FutureBuilder<List<PreparedAnswer>>(
+              child: FutureBuilder<List<SuggestedAnswer>>(
                 future: _answers,
                 builder: (context, snap) {
+                  if (snap.connectionState != ConnectionState.done) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
                   if (snap.hasError) {
                     return Center(
                       child: TextButton(
-                        onPressed: () => setState(
-                          () => _answers = ref
-                              .read(apiProvider)
-                              .helpdesk
-                              .listAnswers(active: true),
-                        ),
+                        onPressed: () => setState(() => _answers = _load()),
                         child: Text(errorMessage(snap.error!)),
                       ),
                     );
                   }
-                  final list = (snap.data ?? const <PreparedAnswer>[])
-                      .where(
-                        (a) =>
-                            _q.isEmpty ||
-                            '${a.code} ${a.name} ${a.category ?? ''}'
-                                .toLowerCase()
-                                .contains(_q),
-                      )
-                      .toList();
+                  final list = snap.data ?? const <SuggestedAnswer>[];
                   return ListView(
                     children: [
                       for (final a in list)
                         ListTile(
+                          key: ValueKey('suggest-${a.code}'),
                           title: Text(a.name),
-                          subtitle: Text(
-                            [
-                              a.code,
-                              if (a.category != null) a.category!,
-                            ].join(' · '),
-                          ),
-                          trailing: Text(
-                            a.texts
-                                .map((t) => t.language.toUpperCase())
-                                .join(' '),
-                          ),
+                          subtitle: Text(a.code),
+                          trailing: Text(a.language.toUpperCase()),
                           onTap: () => Navigator.pop(context, a),
                         ),
                     ],
@@ -1610,6 +1644,504 @@ class _AnswerPickerState extends ConsumerState<_AnswerPicker> {
           child: Text(l.cancel),
         ),
       ],
+    );
+  }
+}
+
+/// Sorts active checklist templates so templates matching [teamId] or [category] appear first.
+List<ChecklistTemplate> sortChecklistTemplates(
+  List<ChecklistTemplate> templates, {
+  String? teamId,
+  String? category,
+}) {
+  int score(ChecklistTemplate t) =>
+      (teamId != null && t.teamId == teamId ? 1 : 0) +
+      (category != null && t.category == category ? 1 : 0);
+
+  final sorted = [...templates]
+    ..sort((a, b) {
+      final diff = score(b).compareTo(score(a));
+      if (diff != 0) return diff;
+      return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+    });
+  return sorted;
+}
+
+/// Checklist section on a ticket: apply template, toggle/edit/reorder/delete items, and add items.
+class TicketChecklistCard extends ConsumerStatefulWidget {
+  const TicketChecklistCard({
+    super.key,
+    required this.ticketId,
+    required this.category,
+    this.teamId,
+    this.canWrite = true,
+    this.refreshVersion = 0,
+  });
+
+  final String ticketId;
+  final String? teamId;
+  final String category;
+  final bool canWrite;
+  final int refreshVersion;
+
+  @override
+  ConsumerState<TicketChecklistCard> createState() =>
+      _TicketChecklistCardState();
+}
+
+class _TicketChecklistCardState extends ConsumerState<TicketChecklistCard> {
+  final _addController = TextEditingController();
+  List<ChecklistItem> _items = const [];
+  List<ChecklistTemplate> _templates = const [];
+  bool _loading = true;
+  bool _busy = false;
+  bool _refreshPending = false;
+  Object? _loadError;
+  int _generation = 0;
+
+  bool _owns(int generation) => mounted && generation == _generation;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void didUpdateWidget(covariant TicketChecklistCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.ticketId != widget.ticketId) {
+      _items = const [];
+      _templates = const [];
+      _addController.clear();
+      _busy = false;
+      _refreshPending = false;
+      _load();
+    } else if (oldWidget.refreshVersion != widget.refreshVersion) {
+      if (_busy) {
+        _refreshPending = true;
+      } else {
+        _load();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _addController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    final generation = ++_generation;
+    final ticketId = widget.ticketId;
+    setState(() {
+      _loading = true;
+      _loadError = null;
+    });
+    final api = ref.read(apiProvider);
+    try {
+      final results = await Future.wait([
+        api.helpdesk.listTicketChecklist(id: ticketId),
+        api.helpdesk.listTemplates(active: true),
+      ]);
+      if (!_owns(generation)) return;
+      setState(() {
+        _items = [...results[0] as List<ChecklistItem>]
+          ..sort((a, b) => a.position.compareTo(b.position));
+        _templates = results[1] as List<ChecklistTemplate>;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!_owns(generation)) return;
+      setState(() {
+        _loadError = e;
+        _loading = false;
+      });
+    }
+  }
+
+  Future<void> _mutate(Future<void> Function(String, int) action) async {
+    if (_busy || _loading || _loadError != null || !widget.canWrite) return;
+    final ticketId = widget.ticketId;
+    final generation = _generation;
+    setState(() => _busy = true);
+    await runAction(context, () async {
+      try {
+        await action(ticketId, generation);
+      } catch (_) {
+        if (_owns(generation)) rethrow;
+      }
+    });
+    if (!_owns(generation)) return;
+    setState(() => _busy = false);
+    if (_refreshPending) {
+      _refreshPending = false;
+      await _load();
+    }
+  }
+
+  Future<void> _toggleDone(ChecklistItem item, bool done) =>
+      _mutate((ticketId, generation) async {
+        final updated = await ref
+            .read(apiProvider)
+            .helpdesk
+            .updateTicketChecklistItem(
+              id: ticketId,
+              itemId: item.id,
+              body: UpdateChecklistItemInput(done: done),
+            );
+        if (!_owns(generation)) return;
+        setState(() {
+          _items = [
+            for (final existing in _items)
+              existing.id == updated.id ? updated : existing,
+          ];
+        });
+      });
+
+  Future<void> _editItem(ChecklistItem item) async {
+    final generation = _generation;
+    final l = context.l10n;
+    final controller = TextEditingController(text: item.description);
+    final next = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l.edit),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: InputDecoration(labelText: l.checklistTitle),
+          onSubmitted: (_) => Navigator.pop(context, controller.text.trim()),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(l.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            child: Text(l.save),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (next == null ||
+        next.isEmpty ||
+        next == item.description ||
+        !_owns(generation)) {
+      return;
+    }
+    await _mutate((ticketId, generation) async {
+      final updated = await ref
+          .read(apiProvider)
+          .helpdesk
+          .updateTicketChecklistItem(
+            id: ticketId,
+            itemId: item.id,
+            body: UpdateChecklistItemInput(description: next),
+          );
+      if (!_owns(generation)) return;
+      setState(() {
+        _items = [
+          for (final existing in _items)
+            existing.id == updated.id ? updated : existing,
+        ];
+      });
+    });
+  }
+
+  Future<void> _moveItem(int index, int delta) async {
+    final targetIndex = index + delta;
+    if (targetIndex < 0 || targetIndex >= _items.length) return;
+    final item = _items[index];
+    final targetPosition = _items[targetIndex].position;
+    await _mutate((ticketId, generation) async {
+      await ref
+          .read(apiProvider)
+          .helpdesk
+          .updateTicketChecklistItem(
+            id: ticketId,
+            itemId: item.id,
+            body: UpdateChecklistItemInput(position: targetPosition),
+          );
+      if (!_owns(generation)) return;
+      final refreshed = await ref
+          .read(apiProvider)
+          .helpdesk
+          .listTicketChecklist(id: ticketId);
+      if (!_owns(generation)) return;
+      setState(() {
+        _items = [...refreshed]
+          ..sort((a, b) => a.position.compareTo(b.position));
+      });
+    });
+  }
+
+  Future<void> _deleteItem(ChecklistItem item) =>
+      _mutate((ticketId, generation) async {
+        await ref
+            .read(apiProvider)
+            .helpdesk
+            .deleteTicketChecklistItem(id: ticketId, itemId: item.id);
+        if (!_owns(generation)) return;
+        setState(() {
+          _items = _items.where((e) => e.id != item.id).toList();
+        });
+      });
+
+  Future<void> _addItem() async {
+    if (_busy || _loading || _loadError != null) return;
+    final text = _addController.text.trim();
+    if (text.isEmpty) return;
+    await _mutate((ticketId, generation) async {
+      final created = await ref
+          .read(apiProvider)
+          .helpdesk
+          .addTicketChecklistItem(
+            id: ticketId,
+            body: AddChecklistItemInput(description: text),
+          );
+      if (!_owns(generation)) return;
+      _addController.clear();
+      setState(() {
+        _items = [..._items, created]
+          ..sort((a, b) => a.position.compareTo(b.position));
+      });
+    });
+  }
+
+  Future<void> _applyTemplate(String templateId) =>
+      _mutate((ticketId, generation) async {
+        final applied = await ref
+            .read(apiProvider)
+            .helpdesk
+            .applyTemplate(
+              id: ticketId,
+              body: ApplyTemplateInput(templateId: templateId),
+            );
+        if (!_owns(generation)) return;
+        setState(() {
+          _items = [...applied]
+            ..sort((a, b) => a.position.compareTo(b.position));
+        });
+      });
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    final total = _items.length;
+    final done = _items.where((e) => e.done).length;
+    final sortedTemplates = sortChecklistTemplates(
+      _templates,
+      teamId: widget.teamId,
+      category: widget.category,
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          runSpacing: 4,
+          children: [
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(AppIcons.checklist, size: 18),
+                const SizedBox(width: 6),
+                Text(l.checklistTitle, style: theme.textTheme.titleMedium),
+                if (total > 0) ...[
+                  const SizedBox(width: 8),
+                  ChecklistProgressBadge(done: done, total: total),
+                ],
+              ],
+            ),
+            if (widget.canWrite)
+              PopupMenuButton<String>(
+                key: const ValueKey('checklist-apply-template'),
+                tooltip: l.checklistApplyTemplate,
+                enabled: !_busy && !_loading && _loadError == null,
+                onSelected: _applyTemplate,
+                itemBuilder: (_) {
+                  if (sortedTemplates.isEmpty) {
+                    return [
+                      PopupMenuItem<String>(
+                        enabled: false,
+                        child: Text(l.checklistNoTemplates),
+                      ),
+                    ];
+                  }
+                  return [
+                    for (final tpl in sortedTemplates)
+                      PopupMenuItem<String>(
+                        value: tpl.id,
+                        child: Text(tpl.name),
+                      ),
+                  ];
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(AppIcons.add, size: 16),
+                      const SizedBox(width: 4),
+                      Text(
+                        l.checklistApplyTemplate,
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        if (_loading)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 8),
+            child: LinearProgressIndicator(),
+          )
+        else if (_loadError != null)
+          Row(
+            children: [
+              Expanded(child: Text(errorMessage(_loadError!))),
+              TextButton(onPressed: _load, child: Text(l.retry)),
+            ],
+          )
+        else if (_items.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Text(
+              l.checklistEmpty,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.outline,
+              ),
+            ),
+          )
+        else
+          for (var i = 0; i < _items.length; i++)
+            _buildItemRow(context, _items[i], i),
+        if (widget.canWrite) ...[
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  key: const ValueKey('checklist-add-input'),
+                  controller: _addController,
+                  enabled: !_busy && !_loading && _loadError == null,
+                  decoration: InputDecoration(
+                    hintText: l.checklistAddItem,
+                    isDense: true,
+                  ),
+                  onSubmitted: _busy || _loading || _loadError != null
+                      ? null
+                      : (_) => _addItem(),
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                key: const ValueKey('checklist-add-button'),
+                icon: const Icon(AppIcons.add),
+                tooltip: l.checklistAddItem,
+                onPressed: _busy || _loading || _loadError != null
+                    ? null
+                    : _addItem,
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildItemRow(BuildContext context, ChecklistItem item, int index) {
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    final meta = [
+      if (item.doneByName != null && item.doneByName!.isNotEmpty)
+        item.doneByName!,
+      if (item.doneAt != null) date(item.doneAt),
+    ].join(' · ');
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Checkbox(
+            value: item.done,
+            visualDensity: VisualDensity.compact,
+            onChanged: widget.canWrite && !_busy
+                ? (v) => _toggleDone(item, v ?? false)
+                : null,
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.description,
+                    style: item.done
+                        ? TextStyle(
+                            decoration: TextDecoration.lineThrough,
+                            color: theme.colorScheme.outline,
+                          )
+                        : null,
+                  ),
+                  if (item.done && meta.isNotEmpty)
+                    Text(
+                      meta,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.outline,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          if (widget.canWrite) ...[
+            IconButton(
+              icon: const Icon(AppIcons.edit, size: 16),
+              tooltip: l.edit,
+              visualDensity: VisualDensity.compact,
+              onPressed: _busy ? null : () => _editItem(item),
+            ),
+            IconButton(
+              icon: const Icon(AppIcons.arrowUpward, size: 16),
+              visualDensity: VisualDensity.compact,
+              onPressed: _busy || index == 0
+                  ? null
+                  : () => _moveItem(index, -1),
+            ),
+            IconButton(
+              icon: const Icon(AppIcons.arrowDownward, size: 16),
+              visualDensity: VisualDensity.compact,
+              onPressed: _busy || index == _items.length - 1
+                  ? null
+                  : () => _moveItem(index, 1),
+            ),
+            IconButton(
+              icon: const Icon(AppIcons.delete, size: 16),
+              tooltip: l.delete,
+              visualDensity: VisualDensity.compact,
+              onPressed: _busy ? null : () => _deleteItem(item),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

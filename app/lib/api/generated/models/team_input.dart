@@ -14,6 +14,7 @@ class TeamInput {
     required this.name,
     this.active,
     this.members,
+    this.requireChecklistDone,
   });
   
   factory TeamInput.fromJson(Map<String, Object?> json) => _$TeamInputFromJson(json);
@@ -25,6 +26,8 @@ class TeamInput {
   @JsonKey(includeIfNull: false)
   final List<MemberInput>? members;
   final String name;
+  @JsonKey(includeIfNull: false,name: 'require_checklist_done')
+  final bool? requireChecklistDone;
 
   Map<String, Object?> toJson() => _$TeamInputToJson(this);
 }

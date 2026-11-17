@@ -5,10 +5,15 @@
 import 'package:dio/dio.dart';
 import 'package:retrofit/retrofit.dart';
 
+import '../models/add_checklist_item_input.dart';
+import '../models/apply_template_input.dart';
 import '../models/assignment_input.dart';
 import '../models/business_calendar.dart';
 import '../models/calendar_input.dart';
 import '../models/call_input.dart';
+import '../models/checklist_item.dart';
+import '../models/checklist_template.dart';
+import '../models/checklist_template_input.dart';
 import '../models/convert_ticket_input.dart';
 import '../models/csat_info.dart';
 import '../models/csat_input.dart';
@@ -43,6 +48,7 @@ import '../models/sla_notice_settings.dart';
 import '../models/sla_policies_input.dart';
 import '../models/sla_policy.dart';
 import '../models/split_input.dart';
+import '../models/suggested_answer.dart';
 import '../models/tag_count.dart';
 import '../models/tag_input.dart';
 import '../models/team.dart';
@@ -53,6 +59,7 @@ import '../models/ticket_page.dart';
 import '../models/time_entries.dart';
 import '../models/time_entry_input.dart';
 import '../models/timeline_item.dart';
+import '../models/update_checklist_item_input.dart';
 import '../models/watcher.dart';
 import '../models/watcher_input.dart';
 
@@ -149,6 +156,29 @@ abstract class HelpdeskClient {
   @POST('/api/v1/helpdesk/calls')
   Future<TicketDetail> logCall({
     @Body() required CallInput body,
+  });
+
+  @GET('/api/v1/helpdesk/checklist-templates')
+  Future<List<ChecklistTemplate>> listTemplates({
+    @Query('team_id') String? teamId,
+    @Query('category') String? category,
+    @Query('active') bool? active,
+  });
+
+  @POST('/api/v1/helpdesk/checklist-templates')
+  Future<ChecklistTemplate> createTemplate({
+    @Body() required ChecklistTemplateInput body,
+  });
+
+  @PUT('/api/v1/helpdesk/checklist-templates/{id}')
+  Future<ChecklistTemplate> updateTemplate({
+    @Path('id') required String id,
+    @Body() required ChecklistTemplateInput body,
+  });
+
+  @DELETE('/api/v1/helpdesk/checklist-templates/{id}')
+  Future<void> deleteTemplate({
+    @Path('id') required String id,
   });
 
   /// Imports a raw e-mail (RFC 5322, e.g. a saved .eml file) as if it had arrived in the mailbox.
@@ -258,11 +288,47 @@ abstract class HelpdeskClient {
     @Body() required TeamInput body,
   });
 
+  @GET('/api/v1/helpdesk/tickets/{id}/checklist')
+  Future<List<ChecklistItem>> listTicketChecklist({
+    @Path('id') required String id,
+  });
+
+  @POST('/api/v1/helpdesk/tickets/{id}/checklist')
+  Future<ChecklistItem> addTicketChecklistItem({
+    @Path('id') required String id,
+    @Body() required AddChecklistItemInput body,
+  });
+
+  @POST('/api/v1/helpdesk/tickets/{id}/checklist/apply-template')
+  Future<List<ChecklistItem>> applyTemplate({
+    @Path('id') required String id,
+    @Body() required ApplyTemplateInput body,
+  });
+
+  @DELETE('/api/v1/helpdesk/tickets/{id}/checklist/{item_id}')
+  Future<void> deleteTicketChecklistItem({
+    @Path('id') required String id,
+    @Path('item_id') required String itemId,
+  });
+
+  @PATCH('/api/v1/helpdesk/tickets/{id}/checklist/{item_id}')
+  Future<ChecklistItem> updateTicketChecklistItem({
+    @Path('id') required String id,
+    @Path('item_id') required String itemId,
+    @Body() required UpdateChecklistItemInput body,
+  });
+
   /// [q] - Searches code, name and texts.
+  ///
+  /// [kind] - reply | internal_note | handover | notice.
+  ///
+  /// [teamId] - Answers a ticket of this team can use: company-wide ones and this team's own.
   @GET('/api/v1/prepared-answers')
   Future<List<PreparedAnswer>> listAnswers({
     @Query('q') String? q,
     @Query('active') bool? active,
+    @Query('kind') String? kind,
+    @Query('team_id') String? teamId,
   });
 
   @POST('/api/v1/prepared-answers')
@@ -424,6 +490,19 @@ abstract class HelpdeskClient {
   Future<TicketDetail> addNote({
     @Path('id') required String id,
     @Body() required NoteInput body,
+  });
+
+  /// The best prepared answers for a ticket, filled in and in the ticket's language, at most ten.
+  /// Answers of other teams are left out.
+  ///
+  /// [q] - Typed text: a code, part of a name or a keyword. Empty: the best fits for the ticket.
+  ///
+  /// [kind] - reply | internal_note | handover | notice. Absent: every kind.
+  @GET('/api/v1/tickets/{id}/prepared-answers/suggest')
+  Future<List<SuggestedAnswer>> suggest({
+    @Path('id') required String id,
+    @Query('q') String? q,
+    @Query('kind') String? kind,
   });
 
   /// Fills in a prepared answer for a ticket, in the ticket's language. Nothing is sent.

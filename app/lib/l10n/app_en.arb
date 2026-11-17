@@ -836,6 +836,32 @@
   "postalCode": "Postal code",
   "preparedAnswers": "Prepared answers",
   "preparedAnswersHelp": "Reusable answers to recurring questions, one text per language. Placeholders such as «quotation.number» are filled in for the ticket; the text can still be edited before sending.",
+  "answerKind": "Kind",
+  "answerKindName": "{kind, select, reply{Reply} internal_note{Internal note} handover{Hand-over} notice{Notice} other{{kind}}}",
+  "@answerKindName": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "answerTeam": "Team",
+  "answerAllTeams": "All teams",
+  "answerKeywords": "Keywords (comma separated)",
+  "answerKeywordsHelp": "Tickets whose subject contains a keyword get this answer suggested first.",
+  "answerShortcutHint": "Type /code to insert an answer",
+  "ticketLanguageSource": "{source, select, record{Taken from the contact or customer} detected{Detected from the message} agent{Set by an agent} other{{source}}}",
+  "@ticketLanguageSource": {
+    "placeholders": {
+      "source": {
+        "type": "String"
+      }
+    }
+  },
+  "ticketLanguage": "Ticket language",
+  "mailTemplate": "Template (optional)",
+  "mailTemplateNone": "Write the text here",
+  "ticketLanguageCondition": "Ticket language",
   "preview": "Preview",
   "priceListOf": "Price list of {date}",
   "@priceListOf": {
@@ -4636,5 +4662,26 @@
       "name": {"type": "String"}
     }
   },
-  "recordConflictMessage": "Someone else saved changes to this record. Reload to see their changes before saving again."
+  "recordConflictMessage": "Someone else saved changes to this record. Reload to see their changes before saving again.",
+  "checklistTitle": "Checklist",
+  "checklistProgress": "{done}/{total}",
+  "@checklistProgress": {
+    "placeholders": {
+      "done": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "checklistAddItem": "Add checklist item",
+  "checklistApplyTemplate": "Apply template",
+  "checklistNoTemplates": "No checklist templates available",
+  "checklistEmpty": "No checklist items yet",
+  "checklistTemplatesTitle": "Checklist templates",
+  "checklistTemplateNew": "New checklist template",
+  "checklistTemplateName": "Template name",
+  "checklistTemplateItemsHint": "Items (one per line)",
+  "teamRequireChecklistDone": "Require checklist done before closing",
+  "ticketCloseBlockedChecklist": "Complete all checklist items before closing this ticket",
+  "automationActionApplyChecklist": "Apply checklist",
+  "automationTemplateLabel": "Checklist template",
+  "answerUnavailable": "Unavailable"
 }

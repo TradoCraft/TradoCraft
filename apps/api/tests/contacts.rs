@@ -531,8 +531,8 @@ async fn prepared_answers_greet_the_person_the_way_they_want(db: PgPool) {
         "/api/v1/prepared-answers",
         json!({
             "code": "hi", "name": "Hi",
-            "texts": [{ "language": "nl", "body": "{{contact.salutation}}\n\nBedankt." },
-                      { "language": "fr", "body": "{{contact.salutation}}\n\nMerci." }]
+            "texts": [{ "language": "nl", "subject": "Bedankt", "body": "{{contact.salutation}}\n\nBedankt." },
+                      { "language": "fr", "subject": "Merci", "body": "{{contact.salutation}}\n\nMerci." }]
         }),
     )
     .await;

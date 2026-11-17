@@ -8632,6 +8632,226 @@
         }
       }
     },
+    "/api/v1/helpdesk/checklist-templates": {
+      "get": {
+        "tags": [
+          "helpdesk"
+        ],
+        "operationId": "list_templates",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "active",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ChecklistTemplate"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "helpdesk"
+        ],
+        "operationId": "create_template",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChecklistTemplateInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChecklistTemplate"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/helpdesk/checklist-templates/{id}": {
+      "put": {
+        "tags": [
+          "helpdesk"
+        ],
+        "operationId": "update_template",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChecklistTemplateInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChecklistTemplate"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "helpdesk"
+        ],
+        "operationId": "delete_template",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/helpdesk/inbound": {
       "post": {
         "tags": [
@@ -9518,6 +9738,284 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/helpdesk/tickets/{id}/checklist": {
+      "get": {
+        "tags": [
+          "helpdesk"
+        ],
+        "operationId": "list_ticket_checklist",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ChecklistItem"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "helpdesk"
+        ],
+        "operationId": "add_ticket_checklist_item",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddChecklistItemInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChecklistItem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/helpdesk/tickets/{id}/checklist/apply-template": {
+      "post": {
+        "tags": [
+          "helpdesk"
+        ],
+        "operationId": "apply_template",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplyTemplateInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ChecklistItem"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/helpdesk/tickets/{id}/checklist/{item_id}": {
+      "delete": {
+        "tags": [
+          "helpdesk"
+        ],
+        "operationId": "delete_ticket_checklist_item",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "helpdesk"
+        ],
+        "operationId": "update_ticket_checklist_item",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateChecklistItemInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChecklistItem"
                 }
               }
             }
@@ -18302,6 +18800,31 @@
                 "boolean",
                 "null"
               ]
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "description": "reply | internal_note | handover | notice",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "query",
+            "description": "Answers a ticket of this team can use: company-wide ones and this team's own.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "uuid"
             }
           }
         ],
@@ -29821,6 +30344,75 @@
         }
       }
     },
+    "/api/v1/tickets/{id}/prepared-answers/suggest": {
+      "get": {
+        "tags": [
+          "helpdesk"
+        ],
+        "summary": "The best prepared answers for a ticket, filled in and in the ticket's language, at most ten.\nAnswers of other teams are left out.",
+        "operationId": "suggest",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Typed text: a code, part of a name or a keyword. Empty: the best fits for the ticket.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "description": "reply | internal_note | handover | notice. Absent: every kind.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SuggestedAnswer"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/tickets/{id}/prepared-answers/{answer_id}/render": {
       "post": {
         "tags": [
@@ -31366,6 +31958,17 @@
           }
         }
       },
+      "AddChecklistItemInput": {
+        "type": "object",
+        "required": [
+          "description"
+        ],
+        "properties": {
+          "description": {
+            "type": "string"
+          }
+        }
+      },
       "AdjustmentInput": {
         "type": "object",
         "required": [
@@ -31642,6 +32245,18 @@
           },
           "subject": {
             "type": "string"
+          }
+        }
+      },
+      "ApplyTemplateInput": {
+        "type": "object",
+        "required": [
+          "template_id"
+        ],
+        "properties": {
+          "template_id": {
+            "type": "string",
+            "format": "uuid"
           }
         }
       },
@@ -33263,6 +33878,184 @@
           "fail",
           "unknown"
         ]
+      },
+      "ChecklistItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "ticket_id",
+          "position",
+          "description",
+          "done"
+        ],
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "done": {
+            "type": "boolean"
+          },
+          "done_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "done_by": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "done_by_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "position": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "template_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "ticket_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "ChecklistTemplate": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "active",
+          "items",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "category": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChecklistTemplateItem"
+            }
+          },
+          "name": {
+            "type": "string"
+          },
+          "team_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "team_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ChecklistTemplateInput": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "category": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChecklistTemplateItemInput"
+            }
+          },
+          "name": {
+            "type": "string"
+          },
+          "team_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
+      "ChecklistTemplateItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "position",
+          "description"
+        ],
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "position": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "ChecklistTemplateItemInput": {
+        "type": "object",
+        "required": [
+          "description"
+        ],
+        "properties": {
+          "description": {
+            "type": "string"
+          }
+        }
       },
       "Closure": {
         "type": "object",
@@ -43563,6 +44356,8 @@
           "id",
           "code",
           "name",
+          "kind",
+          "keywords",
           "active",
           "updated_at",
           "texts"
@@ -43585,8 +44380,27 @@
             "type": "string",
             "format": "uuid"
           },
+          "keywords": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Lower-case words; a ticket subject containing one ranks the answer higher."
+          },
+          "kind": {
+            "type": "string",
+            "description": "reply | internal_note | handover | notice"
+          },
           "name": {
             "type": "string"
+          },
+          "team_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "Absent: usable by every team."
           },
           "texts": {
             "type": "array",
@@ -43620,8 +44434,24 @@
           "code": {
             "type": "string"
           },
+          "keywords": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "kind": {
+            "type": "string"
+          },
           "name": {
             "type": "string"
+          },
+          "team_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
           },
           "texts": {
             "type": "array",
@@ -50114,7 +50944,7 @@
       },
       "RuleAction": {
         "type": "object",
-        "description": "One change a rule makes. `kind` decides which of the other fields is used:\n`set_owner` (`user_id`), `set_team` (`team_id`), `set_priority` (`value`), `set_category`\n(`value`), `add_tag` (`value`), `set_internal` (`flag`), `send_email` (`recipient`, `team_id` or\n`address`, `subject`, `body`, `period_hours`; ADR 0063).",
+        "description": "One change a rule makes. `kind` decides which of the other fields is used:\n`set_owner` (`user_id`), `set_team` (`team_id`), `set_priority` (`value`), `set_category`\n(`value`), `add_tag` (`value`), `set_internal` (`flag`), `send_email` (`recipient`, `team_id` or\n`address`, `subject`, `body`, `period_hours`; ADR 0063), `apply_checklist` (`template_id`).",
         "required": [
           "kind"
         ],
@@ -50125,6 +50955,14 @@
               "null"
             ],
             "description": "`send_email` to `address`: the fixed recipient."
+          },
+          "answer_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "`send_email`: a prepared answer (A6, ADR 0072). When set, `subject` and `body` are ignored and\ncleared; the answer's text in the ticket's language is sent."
           },
           "body": {
             "type": [
@@ -50170,6 +51008,14 @@
               "null"
             ],
             "format": "uuid"
+          },
+          "template_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "`apply_checklist`: the checklist template to apply to the ticket."
           },
           "user_id": {
             "type": [
@@ -50286,6 +51132,13 @@
               "null"
             ],
             "format": "uuid"
+          },
+          "ticket_languages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The language of the ticket itself (nl, fr, en, de, es), which may differ from its customer's."
           }
         }
       },
@@ -51779,6 +52632,59 @@
           }
         }
       },
+      "SuggestedAnswer": {
+        "type": "object",
+        "required": [
+          "answer_id",
+          "code",
+          "name",
+          "kind",
+          "language",
+          "fallback",
+          "subject",
+          "body",
+          "score"
+        ],
+        "properties": {
+          "answer_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "body": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "fallback": {
+            "type": "boolean"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "language": {
+            "type": "string",
+            "description": "Language of the text used."
+          },
+          "name": {
+            "type": "string"
+          },
+          "score": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "team_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
       "Suggestion": {
         "type": "object",
         "required": [
@@ -52160,6 +53066,7 @@
           "id",
           "name",
           "active",
+          "require_checklist_done",
           "members",
           "created_at"
         ],
@@ -52183,6 +53090,9 @@
           },
           "name": {
             "type": "string"
+          },
+          "require_checklist_done": {
+            "type": "boolean"
           }
         }
       },
@@ -52232,6 +53142,9 @@
           },
           "name": {
             "type": "string"
+          },
+          "require_checklist_done": {
+            "type": "boolean"
           }
         }
       },
@@ -52390,10 +53303,13 @@
           "priority",
           "category",
           "language",
+          "language_source",
           "contact_name",
           "contact_email",
           "internal",
           "article_count",
+          "checklist_total",
+          "checklist_done",
           "created_at",
           "updated_at",
           "tags",
@@ -52410,6 +53326,14 @@
           "category": {
             "type": "string",
             "description": "question | lead | quote_change | order_confirmation | production_question | service | complaint | other"
+          },
+          "checklist_done": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "checklist_total": {
+            "type": "integer",
+            "format": "int64"
           },
           "closed_at": {
             "type": [
@@ -52507,6 +53431,10 @@
           "language": {
             "type": "string",
             "description": "nl | fr | en | de | es — the language to answer in."
+          },
+          "language_source": {
+            "type": "string",
+            "description": "record | detected | agent: where `language` came from."
           },
           "merged_into_id": {
             "type": [
@@ -53767,6 +54695,30 @@
           },
           "title": {
             "type": "string"
+          }
+        }
+      },
+      "UpdateChecklistItemInput": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "done": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "position": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
           }
         }
       },

@@ -453,8 +453,9 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
           _buildingYear.text = q.buildingConstructionYear?.toString() ?? '';
         });
         _apply(q);
+        // Also refreshes the preview (the lines are already set), so it is not called again here:
+        // a second request would supersede the first and only repeat it.
         unawaited(_selectCustomer(customer));
-        _refreshPreview();
         _loadCatalogues();
       } else {
         _apply(q);

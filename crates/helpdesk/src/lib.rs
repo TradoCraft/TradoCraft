@@ -8,6 +8,7 @@ pub mod attachments;
 pub mod automail;
 pub mod automation;
 pub mod calendar;
+pub mod checklists;
 pub mod classify;
 pub mod collab;
 pub mod csat;
@@ -35,6 +36,7 @@ pub fn router() -> OpenApiRouter<AppState> {
     tickets::router()
         .merge(answers::router())
         .merge(calendar::router())
+        .merge(checklists::router())
         .merge(sla_notice::router())
         .merge(automation::router())
         .merge(split::router())

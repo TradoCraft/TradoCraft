@@ -1,4 +1,4 @@
-# 0072 — Concurrent-edit protection and shared live-events channel
+# 0073 — Concurrent-edit protection and shared live-events channel
 
 **Status:** Accepted (customers, quotations, orders, tickets, shared SSE channel, and Flutter screens)
 
@@ -30,7 +30,7 @@ who else has a ticket open is already handled by soft presence (ADR 0023).
    and refuse a save that was not stale. An integer round-trips exactly.
 
 *What changed (optimistic concurrency).*
-* Migration `20270219000001_record_versions.sql`: `version bigint NOT NULL DEFAULT 1` on
+* Migration `20270219000002_record_versions.sql`: `version bigint NOT NULL DEFAULT 1` on
   `crm.customers`, `sales.quotations`, `sales.orders` and `helpdesk.tickets`, and one trigger
   function, `core.bump_row_version()`, that raises it on every update of the row. Adding the column
   does not rewrite the tables.

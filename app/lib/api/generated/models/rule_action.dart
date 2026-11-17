@@ -9,18 +9,20 @@ part 'rule_action.g.dart';
 /// One change a rule makes. `kind` decides which of the other fields is used:.
 /// `set_owner` (`user_id`), `set_team` (`team_id`), `set_priority` (`value`), `set_category`.
 /// (`value`), `add_tag` (`value`), `set_internal` (`flag`), `send_email` (`recipient`, `team_id` or.
-/// `address`, `subject`, `body`, `period_hours`; ADR 0063).
+/// `address`, `subject`, `body`, `period_hours`; ADR 0063), `apply_checklist` (`template_id`).
 @JsonSerializable()
 class RuleAction {
   const RuleAction({
     required this.kind,
     this.address,
+    this.answerId,
     this.body,
     this.flag,
     this.periodHours,
     this.recipient,
     this.subject,
     this.teamId,
+    this.templateId,
     this.userId,
     this.value,
   });
@@ -30,6 +32,11 @@ class RuleAction {
   /// `send_email` to `address`: the fixed recipient.
   @JsonKey(includeIfNull: false)
   final String? address;
+
+  /// `send_email`: a prepared answer (A6, ADR 0072). When set, `subject` and `body` are ignored and.
+  /// cleared; the answer's text in the ticket's language is sent.
+  @JsonKey(includeIfNull: false,name: 'answer_id')
+  final String? answerId;
 
   /// `send_email`: the text, with the same placeholders.
   @JsonKey(includeIfNull: false)
@@ -51,6 +58,10 @@ class RuleAction {
   final String? subject;
   @JsonKey(includeIfNull: false,name: 'team_id')
   final String? teamId;
+
+  /// `apply_checklist`: the checklist template to apply to the ticket.
+  @JsonKey(includeIfNull: false,name: 'template_id')
+  final String? templateId;
   @JsonKey(includeIfNull: false,name: 'user_id')
   final String? userId;
   @JsonKey(includeIfNull: false)

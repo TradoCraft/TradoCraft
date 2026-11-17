@@ -235,6 +235,7 @@ pub async fn add_message(
     check_text(None, body)?;
     // Only a ticket the customer may see can be answered; this also checks the company.
     let visible = get(conn, v, ticket_id).await?;
+    crate::checklists::lock_ticket(conn, v.company_id, ticket_id).await?;
     let contact = tradocraft_crm::contacts::get_contact(conn, v.contact_id).await?;
     let email = contact.primary_email().unwrap_or_default().to_string();
     let article_id = insert_message(conn, ticket_id, &contact, &email, "", body).await?;

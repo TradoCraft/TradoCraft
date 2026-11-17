@@ -49,6 +49,7 @@ Map<String, Object?> _team() => {
   'name': 'Support NL',
   'active': true,
   'members': <Object?>[],
+  'require_checklist_done': false,
   'created_at': '2026-11-01T09:00:00Z',
 };
 

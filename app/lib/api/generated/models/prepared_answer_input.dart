@@ -16,6 +16,9 @@ class PreparedAnswerInput {
     required this.texts,
     this.active,
     this.category,
+    this.keywords,
+    this.kind,
+    this.teamId,
   });
   
   factory PreparedAnswerInput.fromJson(Map<String, Object?> json) => _$PreparedAnswerInputFromJson(json);
@@ -25,7 +28,13 @@ class PreparedAnswerInput {
   @JsonKey(includeIfNull: false)
   final String? category;
   final String code;
+  @JsonKey(includeIfNull: false)
+  final List<String>? keywords;
+  @JsonKey(includeIfNull: false)
+  final String? kind;
   final String name;
+  @JsonKey(includeIfNull: false,name: 'team_id')
+  final String? teamId;
 
   /// At least one language; missing languages fall back to English, then any other.
   final List<AnswerText> texts;

@@ -14,10 +14,13 @@ class PreparedAnswer {
     required this.active,
     required this.code,
     required this.id,
+    required this.keywords,
+    required this.kind,
     required this.name,
     required this.texts,
     required this.updatedAt,
     this.category,
+    this.teamId,
   });
   
   factory PreparedAnswer.fromJson(Map<String, Object?> json) => _$PreparedAnswerFromJson(json);
@@ -29,7 +32,17 @@ class PreparedAnswer {
   /// Short code to find the answer quickly, e.g. `order-confirmed`.
   final String code;
   final String id;
+
+  /// Lower-case words; a ticket subject containing one ranks the answer higher.
+  final List<String> keywords;
+
+  /// reply | internal_note | handover | notice
+  final String kind;
   final String name;
+
+  /// Absent: usable by every team.
+  @JsonKey(includeIfNull: false,name: 'team_id')
+  final String? teamId;
   final List<AnswerText> texts;
   @JsonKey(name: 'updated_at')
   final DateTime updatedAt;

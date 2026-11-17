@@ -1,4 +1,4 @@
-//! Shared Server-Sent Events (SSE) push channel for live record updates (ADR 0072, D3 / A8).
+//! Shared Server-Sent Events (SSE) push channel for live record updates (ADR 0073, D3 / A8).
 //!
 //! When a record is updated, the handler publishes a `RecordEvent` after the transaction commits.
 //! Open edit/detail screens subscribe to `GET /api/v1/events/records?entity_type=...&record_id=...`
@@ -200,8 +200,14 @@ mod tests {
 
     #[test]
     fn permission_mapping_covers_supported_entities() {
-        assert_eq!(permission_for("customer").unwrap(), Permission::CustomersRead);
-        assert_eq!(permission_for("quotation").unwrap(), Permission::QuotationsRead);
+        assert_eq!(
+            permission_for("customer").unwrap(),
+            Permission::CustomersRead
+        );
+        assert_eq!(
+            permission_for("quotation").unwrap(),
+            Permission::QuotationsRead
+        );
         assert_eq!(permission_for("order").unwrap(), Permission::OrdersRead);
         assert_eq!(permission_for("ticket").unwrap(), Permission::HelpdeskRead);
         assert!(permission_for("unknown").is_err());

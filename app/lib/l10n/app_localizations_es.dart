@@ -1740,6 +1740,60 @@ class AppLocalizationsEs extends AppLocalizations {
       'Respuestas reutilizables a preguntas frecuentes, un texto por idioma. Los marcadores como «quotation.number» se rellenan para el ticket; el texto puede editarse antes de enviarlo.';
 
   @override
+  String get answerKind => 'Tipo';
+
+  @override
+  String answerKindName(String kind) {
+    String _temp0 = intl.Intl.selectLogic(kind, {
+      'reply': 'Respuesta',
+      'internal_note': 'Nota interna',
+      'handover': 'Traspaso',
+      'notice': 'Aviso',
+      'other': '$kind',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String get answerTeam => 'Equipo';
+
+  @override
+  String get answerAllTeams => 'Todos los equipos';
+
+  @override
+  String get answerKeywords => 'Palabras clave (separadas por comas)';
+
+  @override
+  String get answerKeywordsHelp =>
+      'Los tickets cuyo asunto contenga una palabra clave recibirán esta respuesta sugerida primero.';
+
+  @override
+  String get answerShortcutHint => 'Escriba /code para insertar una respuesta';
+
+  @override
+  String ticketLanguageSource(String source) {
+    String _temp0 = intl.Intl.selectLogic(source, {
+      'record': 'Tomada del contacto o cliente',
+      'detected': 'Detectada a partir del mensaje',
+      'agent': 'Establecida por un agente',
+      'other': '$source',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String get ticketLanguage => 'Idioma del ticket';
+
+  @override
+  String get mailTemplate => 'Plantilla (opcional)';
+
+  @override
+  String get mailTemplateNone => 'Escribir el texto aquí';
+
+  @override
+  String get ticketLanguageCondition => 'Idioma del ticket';
+
+  @override
   String get preview => 'Vista previa';
 
   @override
@@ -10200,4 +10254,53 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get recordConflictMessage =>
       'Otra persona guardó cambios en este registro. Recargue para ver sus cambios antes de volver a guardar.';
+
+  @override
+  String get checklistTitle => 'Lista de comprobación';
+
+  @override
+  String checklistProgress(int done, int total) {
+    return '$done/$total';
+  }
+
+  @override
+  String get checklistAddItem => 'Añadir elemento';
+
+  @override
+  String get checklistApplyTemplate => 'Aplicar plantilla';
+
+  @override
+  String get checklistNoTemplates => 'No hay plantillas disponibles';
+
+  @override
+  String get checklistEmpty => 'Aún no hay elementos';
+
+  @override
+  String get checklistTemplatesTitle => 'Plantillas de lista';
+
+  @override
+  String get checklistTemplateNew => 'Nueva plantilla de lista';
+
+  @override
+  String get checklistTemplateName => 'Nombre de la plantilla';
+
+  @override
+  String get checklistTemplateItemsHint => 'Elementos (uno por línea)';
+
+  @override
+  String get teamRequireChecklistDone =>
+      'Exigir lista completada antes de cerrar';
+
+  @override
+  String get ticketCloseBlockedChecklist =>
+      'Complete todos los elementos de la lista antes de cerrar este ticket';
+
+  @override
+  String get automationActionApplyChecklist => 'Aplicar lista';
+
+  @override
+  String get automationTemplateLabel => 'Plantilla de lista';
+
+  @override
+  String get answerUnavailable => 'No disponible';
 }

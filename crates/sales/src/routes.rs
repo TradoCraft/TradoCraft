@@ -361,14 +361,9 @@ async fn update_quotation(
     let mut q = service::load_quotation(&mut tx, user.company_id, id, false).await?;
     quotation_hints(&mut tx, &mut q).await?;
     tx.commit().await?;
-    state.live_events.publish_record_change(
-        &user,
-        "quotation",
-        id,
-        q.version,
-        "updated",
-        None,
-    );
+    state
+        .live_events
+        .publish_record_change(&user, "quotation", id, q.version, "updated", None);
     Ok(Json(q))
 }
 
