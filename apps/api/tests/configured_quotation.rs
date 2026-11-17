@@ -515,3 +515,53 @@ async fn extra_seed_files_run_in_name_order(db: PgPool) {
         .await
         .is_err());
 }
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn reimport_publishes_the_final_committed_version(db: PgPool) {
+    use axum::body::Body;
+    use axum::http::Request;
+    use http_body_util::BodyExt;
+    use tower::ServiceExt;
+    let app = setup(db.clone()).await;
+    let (status, first) = import(&app, INTEGRATION, payload()).await;
+    assert_eq!(status, StatusCode::CREATED);
+    let id = first["quotation"]["id"].as_str().unwrap();
+    let res = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .uri(format!(
+                    "/api/v1/events/records?entity_type=quotation&record_id={id}"
+                ))
+                .header("x-dev-user", SALES)
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(res.status(), StatusCode::OK);
+    let mut body = res.into_body();
+    let (status, saved) = import(&app, INTEGRATION, payload()).await;
+    assert_eq!(status, StatusCode::OK);
+    let frame = tokio::time::timeout(std::time::Duration::from_secs(3), body.frame())
+        .await
+        .unwrap()
+        .unwrap()
+        .unwrap()
+        .into_data()
+        .unwrap();
+    let text = String::from_utf8(frame.to_vec()).unwrap();
+    let data = text
+        .lines()
+        .find_map(|line| line.strip_prefix("data: "))
+        .unwrap();
+    let event: Value = serde_json::from_str(data).unwrap();
+    let committed: i64 =
+        sqlx::query_scalar("SELECT version FROM sales.quotations WHERE id = $1::text::uuid")
+            .bind(id)
+            .fetch_one(&db)
+            .await
+            .unwrap();
+    assert_eq!(event["version"], committed);
+    assert_eq!(event["version"], saved["quotation"]["version"]);
+}

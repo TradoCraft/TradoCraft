@@ -145,21 +145,40 @@ async fn stream_record_events(
 
     tokio::spawn(async move {
         loop {
-            match rx.recv().await {
+            let received = tokio::select! {
+                _ = tx.closed() => break,
+                received = rx.recv() => received,
+            };
+            let event = match received {
                 Ok(ev)
                     if ev.company_id == company_id
                         && ev.entity_type == entity_type
                         && ev.record_id == record_id =>
                 {
-                    if let Ok(event) = Event::default().event("record_changed").json_data(&ev) {
-                        if tx.send(Ok(event)).await.is_err() {
-                            break;
-                        }
-                    }
+                    Event::default().event("record_changed").json_data(&ev).ok()
                 }
-                Ok(_) => {}
-                Err(broadcast::error::RecvError::Lagged(_)) => {}
+                Ok(_) => continue,
+                Err(broadcast::error::RecvError::Lagged(_)) => {
+                    Some(Event::default().event("resync").data("{}"))
+                }
                 Err(broadcast::error::RecvError::Closed) => break,
+            };
+            // Revalidate membership and permissions immediately before delivery.
+            let member = tokio::select! {
+                _ = tx.closed() => break,
+                member = CurrentUser::for_member(&state.db, user.user_id, company_id) => member,
+            };
+            let Ok(member) = member else { break };
+            if member
+                .require(permission_for(&entity_type).expect("validated selector"))
+                .is_err()
+            {
+                break;
+            }
+            if let Some(event) = event {
+                if tx.send(Ok(event)).await.is_err() {
+                    break;
+                }
             }
         }
     });

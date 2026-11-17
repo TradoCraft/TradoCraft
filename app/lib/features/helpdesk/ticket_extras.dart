@@ -159,11 +159,13 @@ class TagsSection extends ConsumerStatefulWidget {
     required this.tags,
     required this.canWrite,
     required this.onChanged,
+    this.onAction,
   });
   final String ticketId;
   final List<String> tags;
   final bool canWrite;
   final ValueChanged<TicketDetail> onChanged;
+  final Future<bool> Function(Future<TicketDetail> Function())? onAction;
 
   @override
   ConsumerState<TagsSection> createState() => _TagsSectionState();
@@ -178,31 +180,36 @@ class _TagsSectionState extends ConsumerState<TagsSection> {
     super.dispose();
   }
 
+  Future<bool> _change(Future<TicketDetail> Function() action) async {
+    if (widget.onAction != null) {
+      return widget.onAction!(action);
+    }
+    return runAction(context, () async => widget.onChanged(await action()));
+  }
+
   Future<void> _add() async {
     final tag = _new.text.trim();
     if (tag.isEmpty) return;
-    final ok = await runAction(context, () async {
-      widget.onChanged(
-        await ref
-            .read(apiProvider)
-            .helpdesk
-            .addTag(
-              id: widget.ticketId,
-              body: TagInput(tag: tag),
-            ),
-      );
-    });
-    if (ok) _new.clear();
+    final ok = await _change(
+      () => ref
+          .read(apiProvider)
+          .helpdesk
+          .addTag(
+            id: widget.ticketId,
+            body: TagInput(tag: tag),
+          ),
+    );
+    if (ok && mounted) _new.clear();
   }
 
-  Future<void> _remove(String tag) => runAction(context, () async {
-    widget.onChanged(
-      await ref
+  Future<void> _remove(String tag) async {
+    await _change(
+      () => ref
           .read(apiProvider)
           .helpdesk
           .removeTag(id: widget.ticketId, tag: tag),
     );
-  });
+  }
 
   @override
   Widget build(BuildContext context) {

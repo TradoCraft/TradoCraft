@@ -44,7 +44,14 @@ fn customer_body(name: &str, expected: Option<i64>) -> Value {
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
 async fn a_stale_customer_save_is_refused_and_a_fresh_one_goes_through(db: PgPool) {
     let app = setup(db).await;
-    let (status, loaded) = api_as(&app, SALES, Method::GET, &format!("/customers/{ALPHA}"), None).await;
+    let (status, loaded) = api_as(
+        &app,
+        SALES,
+        Method::GET,
+        &format!("/customers/{ALPHA}"),
+        None,
+    )
+    .await;
     assert_eq!(status, StatusCode::OK, "{loaded}");
     let v0 = version(&loaded);
 
@@ -72,7 +79,14 @@ async fn a_stale_customer_save_is_refused_and_a_fresh_one_goes_through(db: PgPoo
     assert_eq!(status, StatusCode::CONFLICT, "{err}");
     assert_eq!(err["code"], "record_changed");
 
-    let (_, after) = api_as(&app, SALES, Method::GET, &format!("/customers/{ALPHA}"), None).await;
+    let (_, after) = api_as(
+        &app,
+        SALES,
+        Method::GET,
+        &format!("/customers/{ALPHA}"),
+        None,
+    )
+    .await;
     assert_eq!(after["name"], "Alpha First");
     assert_eq!(version(&after), v0 + 1);
 
@@ -264,7 +278,14 @@ async fn a_stale_ticket_save_is_refused(db: PgPool) {
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
 async fn two_simultaneous_saves_from_the_same_version_give_one_ok_and_one_409(db: PgPool) {
     let app = setup(db).await;
-    let (_, loaded) = api_as(&app, SALES, Method::GET, &format!("/customers/{ALPHA}"), None).await;
+    let (_, loaded) = api_as(
+        &app,
+        SALES,
+        Method::GET,
+        &format!("/customers/{ALPHA}"),
+        None,
+    )
+    .await;
     let v0 = version(&loaded);
 
     let path = format!("/customers/{ALPHA}");
@@ -335,4 +356,75 @@ async fn sse_record_events_streams_updates_and_validates_entity_type(db: PgPool)
     assert!(text.contains("event: record_changed"), "{text}");
     assert!(text.contains("Admin User"), "{text}");
     assert!(text.contains(ALPHA), "{text}");
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn sse_stops_after_membership_deactivation(db: PgPool) {
+    let app = setup(db.clone()).await;
+    let req = Request::builder()
+        .uri(format!(
+            "/api/v1/events/records?entity_type=customer&record_id={ALPHA}"
+        ))
+        .header("x-dev-user", SALES)
+        .body(Body::empty())
+        .unwrap();
+    let res = app.clone().oneshot(req).await.unwrap();
+    assert_eq!(res.status(), StatusCode::OK);
+    let mut body = res.into_body();
+    sqlx::query("UPDATE core.user_companies SET active = false WHERE user_id = (SELECT id FROM core.users WHERE email = $1)")
+        .bind(SALES).execute(&db).await.unwrap();
+    let (status, saved) = api_as(
+        &app,
+        "admin@example.com",
+        Method::PUT,
+        &format!("/customers/{ALPHA}"),
+        Some(customer_body("After deactivation", None)),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{saved}");
+    let frame = tokio::time::timeout(std::time::Duration::from_secs(3), body.frame())
+        .await
+        .expect("revoked stream closes promptly");
+    assert!(frame.is_none(), "revoked member must not receive an event");
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn order_reads_return_the_committed_version_and_revision(db: PgPool) {
+    let app = setup(db.clone()).await;
+    let (status, q) = api_as(
+        &app,
+        SALES,
+        Method::POST,
+        "/quotations",
+        Some(quotation_body("snapshot fixture", None)),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED);
+    let qid = q["id"].as_str().unwrap();
+    // Prepare a sent quotation without invoking the unrelated PDF renderer.
+    sqlx::query("UPDATE sales.quotations SET status = 'sent' WHERE id = $1::text::uuid")
+        .bind(qid)
+        .execute(&db)
+        .await
+        .unwrap();
+    let (status, created) = api_as(
+        &app,
+        SALES,
+        Method::POST,
+        &format!("/quotations/{qid}/convert"),
+        Some(json!({"customer_reference":"snapshot"})),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{created}");
+    let oid = created["order"]["id"].as_str().unwrap();
+    for path in [
+        format!("/orders/{oid}"),
+        format!("/orders/{oid}/revisions/1"),
+    ] {
+        let (status, read) = api_as(&app, SALES, Method::GET, &path, None).await;
+        assert_eq!(status, StatusCode::OK, "{read}");
+        assert_eq!(read["version"], created["version"]);
+        assert_eq!(read["order"], created["order"]);
+        assert_eq!(read["lines"], created["lines"]);
+    }
 }

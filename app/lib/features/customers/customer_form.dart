@@ -126,7 +126,9 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
         onExternalChange: (ev) {
           if (!mounted) return;
           setState(() {
-            _conflictMessage = context.l10n.recordUpdatedBy(ev.changedByName);
+            _conflictMessage = ev.kind == 'resync'
+                ? context.l10n.recordConflictMessage
+                : context.l10n.recordUpdatedBy(ev.changedByName);
             _isConflict = false;
           });
         },
@@ -203,6 +205,7 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
   }
 
   Future<void> _save() async {
+    if (_saving) return;
     if (!_form.currentState!.validate()) return;
     setState(() {
       _saving = true;
@@ -252,6 +255,7 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
   }
 
   Future<void> _reloadCustomer() async {
+    if (_saving) return;
     final id = c?.id;
     if (id == null) return;
     setState(() => _saving = true);
@@ -371,7 +375,7 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
               RecordConflictBanner(
                 message: _conflictMessage!,
                 isConflict: _isConflict,
-                onReload: _reloadCustomer,
+                onReload: _saving ? null : _reloadCustomer,
                 onDismiss: () => setState(() => _conflictMessage = null),
               ),
               gap,

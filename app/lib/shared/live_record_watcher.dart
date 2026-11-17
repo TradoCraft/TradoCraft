@@ -92,12 +92,15 @@ class RecordLiveWatcher {
         final body = response.data;
         if (body == null) break;
         backoffSeconds = 2;
+        await _checkVersion();
         await _consumeStream(body.stream);
       } on DioException catch (e) {
         final code = e.response?.statusCode;
         if (code == 401 || code == 403 || code == 404) break;
       } catch (_) {
         // Connection refused or cancelled: back off and retry.
+      } finally {
+        cancel.cancel();
       }
       if (_disposed) break;
       final wait = Completer<void>();
@@ -108,6 +111,36 @@ class RecordLiveWatcher {
       await wait.future;
       if (backoffSeconds < 16) backoffSeconds *= 2;
     }
+  }
+
+  // Use the existing read models and the same onChange version filter as push events.
+  // Check on every connection too: a disconnected client can have missed updates.
+  Future<void> _checkVersion() async {
+    final resource = switch (entityType) {
+      'customer' => 'customers',
+      'quotation' => 'quotations',
+      'order' => 'orders',
+      'ticket' => 'tickets',
+      _ => null,
+    };
+    if (resource == null) return;
+    final response = await dio.get<Map<String, dynamic>>(
+      '/api/v1/$resource/$recordId',
+      cancelToken: _cancel,
+    );
+    if (_disposed) return;
+    final data = response.data!;
+    final record = entityType == 'ticket'
+        ? data['ticket'] as Map<String, dynamic>
+        : data;
+    onChange(
+      RecordChangeEvent.fromJson({
+        ...record,
+        'entity_type': entityType,
+        'record_id': recordId,
+        'kind': 'resync',
+      }),
+    );
   }
 
   Future<void> _consumeStream(Stream<List<int>> byteStream) async {
@@ -121,6 +154,7 @@ class RecordLiveWatcher {
     await for (final line in lines) {
       if (_disposed) break;
       if (line.isEmpty) {
+        if (currentEvent == 'resync') await _checkVersion();
         if (currentEvent == 'record_changed' && dataLines.isNotEmpty) {
           try {
             final map =
@@ -168,6 +202,7 @@ RecordLiveWatcher watchRecordChanges(
       final meId = ref.read(meProvider).value?.userId;
       if (meId != null && ev.changedById == meId) return;
       final cur = currentVersion();
+      if (ev.kind == 'resync' && (cur == null || ev.version <= 0)) return;
       if (cur != null && ev.version <= cur) return;
       onExternalChange(ev);
     },
@@ -189,7 +224,7 @@ class RecordConflictBanner extends StatelessWidget {
 
   final String message;
   final bool isConflict;
-  final VoidCallback onReload;
+  final VoidCallback? onReload;
   final VoidCallback? onDismiss;
 
   @override
@@ -216,9 +251,8 @@ class RecordConflictBanner extends StatelessWidget {
           Expanded(
             child: Text(
               message,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: fg),
+              style: Theme.of(context).textTheme.bodyMedium
+                  ?.copyWith(color: fg),
             ),
           ),
           const SizedBox(width: 8),
@@ -239,4 +273,12 @@ class RecordConflictBanner extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Keeps editor controllers intact while preventing pointer and keyboard edits.
+extension RecordEditorLock on Widget {
+  Widget lockRecordEditing(bool locked) => ExcludeFocus(
+    excluding: locked,
+    child: AbsorbPointer(absorbing: locked, child: this),
+  );
 }

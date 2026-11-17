@@ -231,6 +231,15 @@ async fn import_configured(
 ) -> AppResult<(StatusCode, Json<ConfiguredImportResult>)> {
     user.require(Permission::QuotationsImport)?;
     let result = import(&state.db, &user, input).await?;
+    // import owns and commits its transaction, including the final metadata update.
+    state.live_events.publish_record_change(
+        &user,
+        "quotation",
+        result.quotation.id,
+        result.quotation.version,
+        "updated",
+        None,
+    );
     let status = if result.action == "updated" {
         StatusCode::OK
     } else {

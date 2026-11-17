@@ -12,7 +12,7 @@ use axum::Json;
 use chrono::{DateTime, Datelike, NaiveDate, Utc};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
-use sqlx::{FromRow, PgConnection};
+use sqlx::{Connection, FromRow, PgConnection};
 use tradocraft_core::company::get_company;
 use tradocraft_core::mail::Attachment;
 use tradocraft_core::{
@@ -475,8 +475,25 @@ async fn insert_lines(
     Ok(())
 }
 
-/// Loads an order with one of its revisions (the latest by default).
+/// Reads the complete order from one committed snapshot for callers without a parent lock.
 pub async fn load_order(
+    conn: &mut PgConnection,
+    company_id: Uuid,
+    id: Uuid,
+    revision: Option<i32>,
+) -> AppResult<Order> {
+    let mut tx = conn.begin().await?;
+    sqlx::query("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY")
+        .execute(&mut *tx)
+        .await?;
+    let order = load_order_locked(&mut tx, company_id, id, revision).await?;
+    tx.commit().await?;
+    Ok(order)
+}
+
+/// Caller holds the parent row lock, or a repeatable-read snapshot for an unlocked read.
+/// Loads an order with one of its revisions (the latest by default).
+pub(crate) async fn load_order_locked(
     conn: &mut PgConnection,
     company_id: Uuid,
     id: Uuid,
@@ -725,7 +742,7 @@ async fn convert(
 ) -> AppResult<(StatusCode, Json<Order>)> {
     let mut tx = state.db.begin().await?;
     let order_id = convert_quotation(&mut tx, &user, id, &input).await?;
-    let order = load_order(&mut tx, user.company_id, order_id, None).await?;
+    let order = load_order_locked(&mut tx, user.company_id, order_id, None).await?;
     tx.commit().await?;
     Ok((StatusCode::CREATED, Json(order)))
 }
@@ -956,16 +973,11 @@ async fn edit_order(
         serde_json::json!({ "revision": head.current_revision }),
     )
     .await?;
-    let order = load_order(&mut tx, user.company_id, id, None).await?;
+    let order = load_order_locked(&mut tx, user.company_id, id, None).await?;
     tx.commit().await?;
-    state.live_events.publish_record_change(
-        &user,
-        "order",
-        id,
-        order.version,
-        "updated",
-        None,
-    );
+    state
+        .live_events
+        .publish_record_change(&user, "order", id, order.version, "updated", None);
     Ok(Json(order))
 }
 
@@ -1036,7 +1048,7 @@ async fn new_revision(
         serde_json::json!({ "revision": new, "supersedes": old }),
     )
     .await?;
-    let order = load_order(&mut tx, user.company_id, id, None).await?;
+    let order = load_order_locked(&mut tx, user.company_id, id, None).await?;
     tx.commit().await?;
     Ok((StatusCode::CREATED, Json(order)))
 }
@@ -1197,7 +1209,7 @@ async fn send_order(
         .bind(id)
         .execute(&mut *tx)
         .await?;
-    let order = load_order(&mut tx, user.company_id, id, None).await?;
+    let order = load_order_locked(&mut tx, user.company_id, id, None).await?;
     let pdf = render_confirmation(&state, user.company_id, &order, &snapshot, &to.language).await?;
     let company = get_company(&state.db, user.company_id).await?;
     let (subject, body) = order_doc::confirmation_mail(
@@ -1376,7 +1388,7 @@ async fn confirm(
         &input.note,
     )
     .await?;
-    let mut order = load_order(&mut tx, user.company_id, id, None).await?;
+    let mut order = load_order_locked(&mut tx, user.company_id, id, None).await?;
     let customer_country: String = sqlx::query_scalar(
         "SELECT customer_country_code::text FROM sales.quotations WHERE id = $1",
     )
@@ -1472,16 +1484,11 @@ async fn cancel(
         serde_json::json!({ "from": head.status, "reason": input.reason.trim() }),
     )
     .await?;
-    let order = load_order(&mut tx, user.company_id, id, None).await?;
+    let order = load_order_locked(&mut tx, user.company_id, id, None).await?;
     tx.commit().await?;
-    state.live_events.publish_record_change(
-        &user,
-        "order",
-        id,
-        order.version,
-        "updated",
-        None,
-    );
+    state
+        .live_events
+        .publish_record_change(&user, "order", id, order.version, "updated", None);
     Ok(Json(order))
 }
 

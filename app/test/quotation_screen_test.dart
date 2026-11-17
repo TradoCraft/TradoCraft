@@ -159,6 +159,8 @@ class FakeApi implements HttpClientAdapter {
   Completer<void>? customerGate;
   bool failGatedCustomer = false;
   Completer<void>? saveGate;
+  int version = 1;
+  bool conflictOnSave = false;
 
   @override
   Future<ResponseBody> fetch(
@@ -172,11 +174,14 @@ class FakeApi implements HttpClientAdapter {
     Object? json;
     switch (key) {
       case 'GET /api/v1/quotations/$_quotationId':
-        json = _quotation(
-          status,
-          configured: configured,
-          opportunityId: linkedOpportunity,
-        );
+        json = {
+          ..._quotation(
+            status,
+            configured: configured,
+            opportunityId: linkedOpportunity,
+          ),
+          'version': version,
+        };
       case 'GET /api/v1/customers':
         json = {
           'items': [
@@ -305,6 +310,15 @@ class FakeApi implements HttpClientAdapter {
         };
       case 'PUT /api/v1/quotations/$_quotationId':
         if (saveGate != null) await saveGate!.future;
+        if (conflictOnSave) {
+          return ResponseBody.fromString(
+            '{"code":"record_changed","message":"changed"}',
+            409,
+            headers: {
+              Headers.contentTypeHeader: [Headers.jsonContentType],
+            },
+          );
+        }
         json = _quotation(status, configured: configured);
       case 'POST /api/v1/quotations/$_quotationId/convert':
         json = {
@@ -565,6 +579,50 @@ Future<FakeApi> _pumpSwitched(WidgetTester tester, {bool fail = false}) async {
 }
 
 void main() {
+  testWidgets('failed reload preserves the save baseline and permits retry', (
+    tester,
+  ) async {
+    final fake = await _pumpLinkedDraft(tester, []);
+    fake.conflictOnSave = true;
+    await tester.tap(find.text('Save draft'));
+    await tester.pumpAndSettle();
+    expect(find.text('Reload'), findsOneWidget);
+    fake.version = 2;
+    fake.customerGate = Completer<void>();
+    fake.failGatedCustomer = true;
+    await tester.tap(find.text('Reload'));
+    await tester.pump();
+    fake.customerGate!.complete();
+    await tester.pumpAndSettle();
+    expect(find.text('Reload'), findsOneWidget);
+    fake.conflictOnSave = false;
+    await tester.tap(find.text('Save draft'));
+    await tester.pumpAndSettle();
+    final body = fake.bodies['PUT /api/v1/quotations/$_quotationId'] as Map;
+    expect(body['expected_version'], 1);
+    expect(find.text('Reload'), findsNothing);
+  });
+
+  testWidgets('a save finishing after disposal does not restart the watcher', (
+    tester,
+  ) async {
+    final fake = await _pumpLinkedDraft(tester, []);
+    fake.saveGate = Completer<void>();
+    await tester.tap(find.text('Save draft'));
+    await tester.pump();
+    await tester.pumpWidget(const SizedBox());
+    final subscriptions = fake.requests
+        .where((r) => r.contains('/events/records'))
+        .length;
+    fake.saveGate!.complete();
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(
+      fake.requests.where((r) => r.contains('/events/records')).length,
+      subscriptions,
+    );
+  });
+
   testWidgets(
     'dropping a linked opportunity refreshes a saved blank-year draft',
     (tester) async {
@@ -608,20 +666,23 @@ void main() {
     );
   });
 
-
-  testWidgets('a slow load of the previous quotation does not overwrite the new one', (
-    tester,
-  ) async {
-    final fake = await _pumpSwitched(tester);
-    expect(tester.takeException(), isNull);
-    expect(find.textContaining('Q-B'), findsWidgets);
-    expect(find.textContaining('Q2026-00001'), findsNothing);
-    expect(find.text('Notes B'), findsOneWidget);
-    await tester.tap(find.text('Save draft'));
-    await tester.pumpAndSettle();
-    expect(fake.bodies.containsKey('PUT /api/v1/quotations/q2'), isTrue);
-    expect(fake.bodies.containsKey('PUT /api/v1/quotations/$_quotationId'), isFalse);
-  });
+  testWidgets(
+    'a slow load of the previous quotation does not overwrite the new one',
+    (tester) async {
+      final fake = await _pumpSwitched(tester);
+      expect(tester.takeException(), isNull);
+      expect(find.textContaining('Q-B'), findsWidgets);
+      expect(find.textContaining('Q2026-00001'), findsNothing);
+      expect(find.text('Notes B'), findsOneWidget);
+      await tester.tap(find.text('Save draft'));
+      await tester.pumpAndSettle();
+      expect(fake.bodies.containsKey('PUT /api/v1/quotations/q2'), isTrue);
+      expect(
+        fake.bodies.containsKey('PUT /api/v1/quotations/$_quotationId'),
+        isFalse,
+      );
+    },
+  );
 
   testWidgets('an error from the stale load shows no error banner', (
     tester,
@@ -945,30 +1006,28 @@ void main() {
         of: find.byType(SearchPicker<Product>),
         matching: find.byType(EditableText),
       );
-      expect(
-        tester.widget<EditableText>(picker).focusNode.hasFocus,
-        isTrue,
-      );
-    });
-
-    testWidgets('Alt+L scrolls to the add-product picker when it is not built yet', (
-      tester,
-    ) async {
-      // A short window: the page is a lazy list, the picker is far below what is built.
-      await _pump(tester, 'draft', keys: true, size: const Size(1400, 240));
-      expect(find.byType(SearchPicker<Product>), findsNothing);
-      await tester.sendKeyDownEvent(LogicalKeyboardKey.altLeft);
-      await tester.sendKeyDownEvent(LogicalKeyboardKey.keyL);
-      await tester.sendKeyUpEvent(LogicalKeyboardKey.keyL);
-      await tester.sendKeyUpEvent(LogicalKeyboardKey.altLeft);
-      await tester.pumpAndSettle();
-      final picker = find.descendant(
-        of: find.byType(SearchPicker<Product>),
-        matching: find.byType(EditableText),
-      );
-      expect(picker, findsOneWidget);
       expect(tester.widget<EditableText>(picker).focusNode.hasFocus, isTrue);
     });
+
+    testWidgets(
+      'Alt+L scrolls to the add-product picker when it is not built yet',
+      (tester) async {
+        // A short window: the page is a lazy list, the picker is far below what is built.
+        await _pump(tester, 'draft', keys: true, size: const Size(1400, 240));
+        expect(find.byType(SearchPicker<Product>), findsNothing);
+        await tester.sendKeyDownEvent(LogicalKeyboardKey.altLeft);
+        await tester.sendKeyDownEvent(LogicalKeyboardKey.keyL);
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.keyL);
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.altLeft);
+        await tester.pumpAndSettle();
+        final picker = find.descendant(
+          of: find.byType(SearchPicker<Product>),
+          matching: find.byType(EditableText),
+        );
+        expect(picker, findsOneWidget);
+        expect(tester.widget<EditableText>(picker).focusNode.hasFocus, isTrue);
+      },
+    );
 
     testWidgets('a sent quotation has no add-line shortcut', (tester) async {
       await _pump(tester, 'sent', keys: true);
@@ -982,7 +1041,9 @@ void main() {
     testWidgets('Ctrl+Right and Ctrl+Left jump along a line', (tester) async {
       await _pump(tester, 'draft', keys: true);
       final qty = find.bySemanticsLabel('Quantity');
-      await tester.tap(find.descendant(of: qty, matching: find.byType(TextField)));
+      await tester.tap(
+        find.descendant(of: qty, matching: find.byType(TextField)),
+      );
       await tester.pump();
       expect(focusedText(), '1');
       await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
