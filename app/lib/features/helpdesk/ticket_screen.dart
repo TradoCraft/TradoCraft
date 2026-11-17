@@ -1608,6 +1608,7 @@ class _TicketChecklistCardState extends ConsumerState<TicketChecklistCard> {
   List<ChecklistTemplate> _templates = const [];
   bool _loading = true;
   bool _busy = false;
+  bool _refreshPending = false;
   Object? _loadError;
   int _generation = 0;
 
@@ -1626,11 +1627,15 @@ class _TicketChecklistCardState extends ConsumerState<TicketChecklistCard> {
       _items = const [];
       _templates = const [];
       _addController.clear();
-    }
-    if (oldWidget.ticketId != widget.ticketId ||
-        oldWidget.refreshVersion != widget.refreshVersion) {
       _busy = false;
+      _refreshPending = false;
       _load();
+    } else if (oldWidget.refreshVersion != widget.refreshVersion) {
+      if (_busy) {
+        _refreshPending = true;
+      } else {
+        _load();
+      }
     }
   }
 
@@ -1681,7 +1686,12 @@ class _TicketChecklistCardState extends ConsumerState<TicketChecklistCard> {
         if (_owns(generation)) rethrow;
       }
     });
-    if (_owns(generation)) setState(() => _busy = false);
+    if (!_owns(generation)) return;
+    setState(() => _busy = false);
+    if (_refreshPending) {
+      _refreshPending = false;
+      await _load();
+    }
   }
 
   Future<void> _toggleDone(ChecklistItem item, bool done) =>

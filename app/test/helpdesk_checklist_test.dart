@@ -242,6 +242,85 @@ void main() {
     },
   );
 
+  for (final fails in [false, true]) {
+    testWidgets('same-ticket refresh waits for pending add (fails: $fails)', (
+      tester,
+    ) async {
+      final pending = Completer<Object?>();
+      final refresh = Completer<Object?>();
+      var loads = 0;
+      var templateLoads = 0;
+      var additions = 0;
+      final http = FakeHttp({
+        'GET /api/v1/helpdesk/tickets/t1/checklist': (_) =>
+            ++loads == 1 ? [] : refresh.future,
+        'GET /api/v1/helpdesk/checklist-templates': (_) {
+          templateLoads++;
+          return [];
+        },
+        'POST /api/v1/helpdesk/tickets/t1/checklist': (_) {
+          additions++;
+          return pending.future;
+        },
+      });
+      var version = 0;
+      late StateSetter rebuild;
+      await _pump(
+        tester,
+        http,
+        StatefulBuilder(
+          builder: (context, setState) {
+            rebuild = setState;
+            return Scaffold(
+              body: TicketChecklistCard(
+                ticketId: 't1',
+                category: 'service',
+                refreshVersion: version,
+              ),
+            );
+          },
+        ),
+      );
+      final input = find.byKey(const ValueKey('checklist-add-input'));
+      await tester.enterText(input, 'Submitted item');
+      final submit = tester.widget<TextField>(input).onSubmitted!;
+      submit('Submitted item');
+      await tester.pumpAndSettle();
+      for (var i = 0; i < 2; i++) {
+        rebuild(() => version++);
+        await tester.pumpAndSettle();
+      }
+      expect(loads, 1);
+      expect(templateLoads, 1);
+      expect(tester.widget<TextField>(input).enabled, isFalse);
+      submit('Submitted item');
+      await tester.pumpAndSettle();
+      expect(additions, 1);
+
+      pending.complete(
+        fails
+            ? const FakeStatus(500, {'message': 'Add failed'})
+            : _item(id: 'added', description: 'Submitted item', position: 1),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(loads, 2);
+      expect(templateLoads, 2);
+      // The mutation result must apply before the deferred load completes.
+      expect(
+        tester.widget<TextField>(input).controller!.text,
+        fails ? 'Submitted item' : '',
+      );
+      if (fails) expect(find.text('Add failed'), findsOneWidget);
+      refresh.complete([
+        _item(id: 'fresh', description: 'Refreshed item', position: 1),
+      ]);
+      await tester.pumpAndSettle();
+      expect(find.text('Refreshed item'), findsOneWidget);
+      expect(tester.widget<TextField>(input).enabled, isTrue);
+    });
+  }
+
   testWidgets('failed checklist load retries instead of showing empty', (
     tester,
   ) async {
@@ -338,6 +417,7 @@ void main() {
         },
       });
       String ticketId = 't1';
+      var version = 0;
       late StateSetter rebuild;
       await _pump(
         tester,
@@ -348,6 +428,7 @@ void main() {
             return Scaffold(
               body: TicketChecklistCard(
                 ticketId: ticketId,
+                refreshVersion: version,
                 category: 'service',
               ),
             );
@@ -364,6 +445,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
       expect(additions, 1);
       expect(tester.widget<TextField>(input).enabled, isFalse);
+      rebuild(() => version++);
+      await tester.pumpAndSettle();
       rebuild(() => ticketId = 't2');
       await tester.pumpAndSettle();
       await tester.enterText(input, 'Next ticket draft');
