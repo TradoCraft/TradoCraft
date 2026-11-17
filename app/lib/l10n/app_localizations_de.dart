@@ -10267,5 +10267,51 @@ class AppLocalizationsDe extends AppLocalizations {
   String get vatRateOngoing => 'Unbefristet';
 
   @override
+  String get checklistTitle => 'Checkliste';
+
+  @override
+  String checklistProgress(int done, int total) {
+    return '$done/$total';
+  }
+
+  @override
+  String get checklistAddItem => 'Checklistenpunkt hinzufügen';
+
+  @override
+  String get checklistApplyTemplate => 'Vorlage anwenden';
+
+  @override
+  String get checklistNoTemplates => 'Keine Checklistenvorlagen verfügbar';
+
+  @override
+  String get checklistEmpty => 'Noch keine Checklistenpunkte';
+
+  @override
+  String get checklistTemplatesTitle => 'Checklistenvorlagen';
+
+  @override
+  String get checklistTemplateNew => 'Neue Checklistenvorlage';
+
+  @override
+  String get checklistTemplateName => 'Vorlagenname';
+
+  @override
+  String get checklistTemplateItemsHint => 'Punkte (einer pro Zeile)';
+
+  @override
+  String get teamRequireChecklistDone =>
+      'Checkliste vor dem Schließen abschließen';
+
+  @override
+  String get ticketCloseBlockedChecklist =>
+      'Schließen Sie alle Checklistenpunkte ab, bevor Sie dieses Ticket schließen';
+
+  @override
+  String get automationActionApplyChecklist => 'Checkliste anwenden';
+
+  @override
+  String get automationTemplateLabel => 'Checklistenvorlage';
+
+  @override
   String get answerUnavailable => 'Nicht verfügbar';
 }

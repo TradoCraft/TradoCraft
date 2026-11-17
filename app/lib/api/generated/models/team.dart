@@ -16,6 +16,7 @@ class Team {
     required this.id,
     required this.members,
     required this.name,
+    required this.requireChecklistDone,
   });
   
   factory Team.fromJson(Map<String, Object?> json) => _$TeamFromJson(json);
@@ -26,6 +27,8 @@ class Team {
   final String id;
   final List<TeamMember> members;
   final String name;
+  @JsonKey(name: 'require_checklist_done')
+  final bool requireChecklistDone;
 
   Map<String, Object?> toJson() => _$TeamToJson(this);
 }

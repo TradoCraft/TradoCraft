@@ -10244,5 +10244,51 @@ class AppLocalizationsEs extends AppLocalizations {
   String get vatRateOngoing => 'Vigente';
 
   @override
+  String get checklistTitle => 'Lista de comprobación';
+
+  @override
+  String checklistProgress(int done, int total) {
+    return '$done/$total';
+  }
+
+  @override
+  String get checklistAddItem => 'Añadir elemento';
+
+  @override
+  String get checklistApplyTemplate => 'Aplicar plantilla';
+
+  @override
+  String get checklistNoTemplates => 'No hay plantillas disponibles';
+
+  @override
+  String get checklistEmpty => 'Aún no hay elementos';
+
+  @override
+  String get checklistTemplatesTitle => 'Plantillas de lista';
+
+  @override
+  String get checklistTemplateNew => 'Nueva plantilla de lista';
+
+  @override
+  String get checklistTemplateName => 'Nombre de la plantilla';
+
+  @override
+  String get checklistTemplateItemsHint => 'Elementos (uno por línea)';
+
+  @override
+  String get teamRequireChecklistDone =>
+      'Exigir lista completada antes de cerrar';
+
+  @override
+  String get ticketCloseBlockedChecklist =>
+      'Complete todos los elementos de la lista antes de cerrar este ticket';
+
+  @override
+  String get automationActionApplyChecklist => 'Aplicar lista';
+
+  @override
+  String get automationTemplateLabel => 'Plantilla de lista';
+
+  @override
   String get answerUnavailable => 'No disponible';
 }

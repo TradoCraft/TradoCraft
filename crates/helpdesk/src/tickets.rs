@@ -77,6 +77,8 @@ pub struct Ticket {
     pub order_id: Option<Uuid>,
     pub order_number: Option<String>,
     pub article_count: i64,
+    pub checklist_total: i64,
+    pub checklist_done: i64,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     pub first_response_at: Option<DateTime<Utc>>,
@@ -351,6 +353,8 @@ const SELECT: &str = "SELECT t.id, t.number, t.subject, t.status, t.priority, t.
         t.quotation_id, q.number AS quotation_number, q.revision AS quotation_revision, q.status AS quotation_status,
         t.opportunity_id, op.number AS opportunity_number, t.order_id, o.number AS order_number,
         (SELECT count(*) FROM helpdesk.articles a WHERE a.ticket_id = t.id) AS article_count,
+        (SELECT count(*) FROM helpdesk.ticket_checklist_items c WHERE c.ticket_id = t.id) AS checklist_total,
+        (SELECT count(*) FROM helpdesk.ticket_checklist_items c WHERE c.ticket_id = t.id AND c.done) AS checklist_done,
         t.created_at, t.updated_at, t.first_response_at, t.closed_at,
         t.team_id, tm.name AS team_name,
         coalesce((SELECT array_agg(g.tag ORDER BY g.tag) FROM helpdesk.ticket_tags g WHERE g.ticket_id = t.id), '{}') AS tags,
@@ -440,6 +444,7 @@ pub(crate) async fn add_note(
     ticket_id: Uuid,
     body: &str,
 ) -> AppResult<Uuid> {
+    crate::checklists::lock_ticket(conn, user.company_id, ticket_id).await?;
     let id = new_id();
     sqlx::query(
         "INSERT INTO helpdesk.articles (id, ticket_id, kind, from_name, body, author_user_id) VALUES ($1, $2, 'note', $3, $4, $5)",
@@ -466,6 +471,49 @@ pub async fn add_linked_note(
     Ok(())
 }
 
+#[allow(dead_code)]
+pub(crate) fn should_block_close(
+    target_status: &str,
+    was_closed: bool,
+    team_requires_checklist_done: bool,
+    open_items: i64,
+) -> bool {
+    target_status == "closed" && !was_closed && team_requires_checklist_done && open_items > 0
+}
+
+async fn check_close_gate(
+    conn: &mut PgConnection,
+    ticket_id: Uuid,
+    target_status: &str,
+    was_closed: bool,
+) -> AppResult<()> {
+    if target_status == "closed" && !was_closed {
+        let blocked: bool = sqlx::query_scalar(
+            "SELECT EXISTS (
+                SELECT 1
+                FROM helpdesk.tickets t
+                JOIN helpdesk.teams tm ON tm.id = t.team_id
+                WHERE t.id = $1
+                  AND tm.require_checklist_done
+                  AND EXISTS (
+                      SELECT 1 FROM helpdesk.ticket_checklist_items c
+                      WHERE c.ticket_id = t.id AND NOT c.done
+                  )
+            )",
+        )
+        .bind(ticket_id)
+        .fetch_one(&mut *conn)
+        .await?;
+        if blocked {
+            return Err(AppError::ConflictCode(
+                "checklist_incomplete",
+                "Complete all checklist items before closing this ticket".into(),
+            ));
+        }
+    }
+    Ok(())
+}
+
 async fn set_status(
     conn: &mut PgConnection,
     user: &CurrentUser,
@@ -473,11 +521,13 @@ async fn set_status(
     status: &str,
 ) -> AppResult<()> {
     check_one_of("status", status, &STATUSES)?;
+    crate::checklists::lock_ticket(conn, user.company_id, ticket_id).await?;
     let old: String = sqlx::query_scalar("SELECT status FROM helpdesk.tickets WHERE id = $1")
         .bind(ticket_id)
         .fetch_one(&mut *conn)
         .await?;
     let was_closed = old == "closed";
+    check_close_gate(conn, ticket_id, status, was_closed).await?;
     if old != status {
         crate::collab::record_event(
             conn,
@@ -809,6 +859,7 @@ async fn update_ticket(
         return Err(AppError::Validation("subject is required".into()));
     }
     let mut tx = state.db.begin().await?;
+    crate::checklists::lock_ticket(&mut tx, user.company_id, id).await?;
     let old = load_ticket(&mut tx, user.company_id, id).await?;
     let mut input = input;
     if let Some(c) = input.contact_id {
@@ -910,6 +961,7 @@ async fn update_ticket(
         .await?;
     set_status(&mut tx, &user, id, &input.status).await?;
     crate::automation::run(&mut tx, user.company_id, id, "updated").await?;
+    check_close_gate(&mut tx, id, &input.status, old.status == "closed").await?;
     audit::record(
         &mut tx,
         &user,
@@ -938,7 +990,8 @@ async fn add_note_handler(
         return Err(AppError::Validation("the note is empty".into()));
     }
     let mut tx = state.db.begin().await?;
-    load_ticket(&mut tx, user.company_id, id).await?;
+    crate::checklists::lock_ticket(&mut tx, user.company_id, id).await?;
+    let original = load_ticket(&mut tx, user.company_id, id).await?;
     let note_id = add_note(&mut tx, &user, id, &input.body).await?;
     crate::collab::add_watcher(&mut tx, user.company_id, id, user.user_id).await?;
     crate::attachments::link(&mut tx, id, note_id, &input.attachment_ids, None).await?;
@@ -946,6 +999,7 @@ async fn add_note_handler(
         Some(s) => {
             set_status(&mut tx, &user, id, s).await?;
             crate::automation::run(&mut tx, user.company_id, id, "updated").await?;
+            check_close_gate(&mut tx, id, s, original.status == "closed").await?;
         }
         None => {
             sqlx::query("UPDATE helpdesk.tickets SET updated_at = now() WHERE id = $1")
@@ -994,6 +1048,7 @@ async fn reply(
         return Err(AppError::Validation("the message is empty".into()));
     }
     let mut tx = state.db.begin().await?;
+    crate::checklists::lock_ticket(&mut tx, user.company_id, id).await?;
     let ticket = load_ticket(&mut tx, user.company_id, id).await?;
     let to: Vec<String> = if input.to.is_empty() {
         let fallback: Option<String> = match ticket.customer_id {
@@ -1112,6 +1167,13 @@ async fn reply(
     )
     .await?;
     crate::automation::run(&mut tx, user.company_id, id, "updated").await?;
+    check_close_gate(
+        &mut tx,
+        id,
+        input.status.as_deref().unwrap_or("pending_customer"),
+        ticket.status == "closed",
+    )
+    .await?;
     audit::record(
         &mut tx,
         &user,
@@ -1385,6 +1447,7 @@ async fn log_call(
     let ticket_id = match input.ticket_id {
         Some(t) => {
             let ticket = load_ticket(&mut tx, user.company_id, t).await?;
+            crate::checklists::lock_ticket(&mut tx, user.company_id, t).await?;
             if let Some(c) = &contact {
                 if ticket.customer_id.is_some_and(|tc| tc != c.customer_id) {
                     return Err(AppError::Validation(
@@ -1561,4 +1624,36 @@ pub fn router() -> OpenApiRouter<AppState> {
         .merge(crate::extras::router())
         .merge(crate::csat::router())
         .merge(crate::collab::router())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_should_block_close() {
+        // open items + team requires -> true
+        assert!(should_block_close("closed", false, true, 2));
+        assert!(should_block_close("closed", false, true, 1));
+
+        // all done -> false
+        assert!(!should_block_close("closed", false, true, 0));
+
+        // no items -> false
+        assert!(!should_block_close("closed", false, true, 0));
+
+        // team doesn't require -> false
+        assert!(!should_block_close("closed", false, false, 2));
+        assert!(!should_block_close("closed", false, false, 0));
+
+        // already closed -> false
+        assert!(!should_block_close("closed", true, true, 2));
+        assert!(!should_block_close("closed", true, false, 2));
+
+        // non-closed target -> false
+        assert!(!should_block_close("open", false, true, 2));
+        assert!(!should_block_close("pending_customer", false, true, 2));
+        assert!(!should_block_close("pending_internal", false, true, 2));
+        assert!(!should_block_close("new", false, true, 2));
+    }
 }

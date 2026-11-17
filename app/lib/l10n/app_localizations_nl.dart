@@ -10238,5 +10238,51 @@ class AppLocalizationsNl extends AppLocalizations {
   String get vatRateOngoing => 'Lopend';
 
   @override
+  String get checklistTitle => 'Checklist';
+
+  @override
+  String checklistProgress(int done, int total) {
+    return '$done/$total';
+  }
+
+  @override
+  String get checklistAddItem => 'Checklistpunt toevoegen';
+
+  @override
+  String get checklistApplyTemplate => 'Sjabloon toepassen';
+
+  @override
+  String get checklistNoTemplates => 'Geen checklistsjablonen beschikbaar';
+
+  @override
+  String get checklistEmpty => 'Nog geen checklistpunten';
+
+  @override
+  String get checklistTemplatesTitle => 'Checklistsjablonen';
+
+  @override
+  String get checklistTemplateNew => 'Nieuw checklistsjabloon';
+
+  @override
+  String get checklistTemplateName => 'Sjabloonnaam';
+
+  @override
+  String get checklistTemplateItemsHint => 'Punten (één per regel)';
+
+  @override
+  String get teamRequireChecklistDone =>
+      'Checklist verplicht voltooien voor sluiten';
+
+  @override
+  String get ticketCloseBlockedChecklist =>
+      'Voltooi alle checklistpunten voordat u dit ticket sluit';
+
+  @override
+  String get automationActionApplyChecklist => 'Checklist toepassen';
+
+  @override
+  String get automationTemplateLabel => 'Checklistsjabloon';
+
+  @override
   String get answerUnavailable => 'Niet beschikbaar';
 }

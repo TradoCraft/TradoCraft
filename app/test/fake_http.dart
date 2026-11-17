@@ -232,6 +232,8 @@ Map<String, Object?> ticketExtras() => {
   'tags': <String>[],
   'time_minutes': 0,
   'language_source': 'record',
+  'checklist_total': 0,
+  'checklist_done': 0,
   'sla': {
     'state': 'none',
     'paused': false,

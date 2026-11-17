@@ -106,6 +106,7 @@ Map<String, Object?> _team() => {
   'members': [
     {'user_id': 'u1', 'display_name': 'Support Agent', 'is_lead': true},
   ],
+  'require_checklist_done': false,
   'created_at': '2026-11-01T09:00:00Z',
 };
 
@@ -391,6 +392,7 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('confirm-merge')));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 600));
+      await tester.pumpAndSettle();
       expect(http.bodies['POST /api/v1/tickets/t1/merge'], {'target_id': 't9'});
       expect(find.text('Tickets merged'), findsOneWidget);
     },
@@ -456,6 +458,7 @@ void main() {
     expect(http.bodies['POST /api/v1/helpdesk/teams'], {
       'name': 'Sales desk',
       'active': true,
+      'require_checklist_done': false,
       'members': [
         {'user_id': 'u1', 'is_lead': true},
       ],
@@ -463,6 +466,7 @@ void main() {
 
     // Default team and survey.
     await tester.ensureVisible(find.byKey(const ValueKey('csat-enabled')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('csat-enabled')));
     await tester.pump();
     await tester.tap(find.byKey(const ValueKey('save-settings')));

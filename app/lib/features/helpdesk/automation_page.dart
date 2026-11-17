@@ -22,10 +22,15 @@ const actionKinds = [
   'add_tag',
   'set_internal',
   'send_email',
+  'apply_checklist',
 ];
 
 final _rulesProvider = FutureProvider.autoDispose<List<Rule>>(
   (ref) => ref.watch(apiProvider).helpdesk.listRules(),
+);
+
+final _templatesProvider = FutureProvider.autoDispose<List<ChecklistTemplate>>(
+  (ref) => ref.watch(apiProvider).helpdesk.listTemplates(),
 );
 
 extension _RuleLabels on AppLocalizations {
@@ -50,6 +55,7 @@ extension _RuleLabels on AppLocalizations {
     'set_category' => actionSetCategory,
     'add_tag' => actionAddTag,
     'send_email' => actionSendEmail,
+    'apply_checklist' => automationActionApplyChecklist,
     _ => actionSetInternal,
   };
 
@@ -75,6 +81,7 @@ List<String> ruleSummary(
   Rule r, {
   Map<String, String> teams = const {},
   Map<String, String> users = const {},
+  Map<String, String> templates = const {},
 }) {
   final c = r.conditions;
   String join(Iterable<String> v) => v.join(', ');
@@ -111,6 +118,8 @@ List<String> ruleSummary(
         'add_tag' => '→ ${l.actionAddTag}: ${a.value}',
         'send_email' =>
           '→ ${l.actionSendEmail}: ${l.actionSendEmailSummary(l.mailRecipientName(a.recipient), a.subject ?? '')}',
+        'apply_checklist' =>
+          '→ ${l.automationActionApplyChecklist}: ${templates[a.templateId] ?? '…'}',
         _ => '→ ${l.actionSetInternal}: ${a.flag == true ? l.yes : l.no}',
       },
   ];
@@ -134,6 +143,12 @@ class AutomationPage extends ConsumerWidget {
     final users = {
       for (final u in ref.watch(usersProvider).value ?? const <CompanyUser>[])
         u.id: u.displayName,
+    };
+    final templates = {
+      for (final t
+          in ref.watch(_templatesProvider).value ??
+              const <ChecklistTemplate>[])
+        t.id: t.name,
     };
     final api = ref.read(apiProvider).helpdesk;
 
@@ -229,6 +244,7 @@ class AutomationPage extends ConsumerWidget {
                                     list[i],
                                     teams: teams,
                                     users: users,
+                                    templates: templates,
                                   ))
                                     Text(line),
                                 ],
@@ -660,7 +676,12 @@ class _RuleEditorState extends ConsumerState<RuleEditor> {
     );
   }
 
-  Widget _actionRow(int i, List<Team> teams, List<CompanyUser> users) {
+  Widget _actionRow(
+    int i,
+    List<Team> teams,
+    List<CompanyUser> users,
+    List<ChecklistTemplate> templates,
+  ) {
     final l = context.l10n;
     final a = _actions[i];
     Widget value;
@@ -726,6 +747,28 @@ class _RuleEditorState extends ConsumerState<RuleEditor> {
         );
       case 'send_email':
         value = _mailFields(i, teams);
+      case 'apply_checklist':
+        final available = templates
+            .where((t) => t.active || t.id == a.templateId)
+            .toList();
+        value = DropdownButtonFormField<String>(
+          key: ValueKey('action-value-$i'),
+          initialValue: available.any((t) => t.id == a.templateId)
+              ? a.templateId
+              : null,
+          isExpanded: true,
+          decoration: InputDecoration(
+            labelText: l.automationTemplateLabel,
+            isDense: true,
+          ),
+          items: [
+            for (final t in available)
+              DropdownMenuItem(value: t.id, child: Text(t.name)),
+          ],
+          onChanged: (v) => setState(
+            () => _actions[i] = RuleAction(kind: a.kind, templateId: v),
+          ),
+        );
       default:
         value = SwitchListTile(
           key: ValueKey('action-value-$i'),
@@ -790,6 +833,8 @@ class _RuleEditorState extends ConsumerState<RuleEditor> {
     final theme = Theme.of(context);
     final teams = ref.watch(teamsProvider).value ?? const <Team>[];
     final users = ref.watch(usersProvider).value ?? const <CompanyUser>[];
+    final templates =
+        ref.watch(_templatesProvider).value ?? const <ChecklistTemplate>[];
     return AlertDialog(
       title: Text(widget.rule == null ? l.newRule : widget.rule!.name),
       content: SizedBox(
@@ -1006,7 +1051,7 @@ class _RuleEditorState extends ConsumerState<RuleEditor> {
               const Divider(),
               Text(l.ruleActions, style: theme.textTheme.titleSmall),
               for (var i = 0; i < _actions.length; i++)
-                _actionRow(i, teams, users),
+                _actionRow(i, teams, users, templates),
               TextButton.icon(
                 key: const ValueKey('add-action'),
                 icon: const Icon(AppIcons.add),

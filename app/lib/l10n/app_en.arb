@@ -4655,5 +4655,25 @@
     }
   },
   "vatRateOngoing": "Ongoing",
+  "checklistTitle": "Checklist",
+  "checklistProgress": "{done}/{total}",
+  "@checklistProgress": {
+    "placeholders": {
+      "done": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "checklistAddItem": "Add checklist item",
+  "checklistApplyTemplate": "Apply template",
+  "checklistNoTemplates": "No checklist templates available",
+  "checklistEmpty": "No checklist items yet",
+  "checklistTemplatesTitle": "Checklist templates",
+  "checklistTemplateNew": "New checklist template",
+  "checklistTemplateName": "Template name",
+  "checklistTemplateItemsHint": "Items (one per line)",
+  "teamRequireChecklistDone": "Require checklist done before closing",
+  "ticketCloseBlockedChecklist": "Complete all checklist items before closing this ticket",
+  "automationActionApplyChecklist": "Apply checklist",
+  "automationTemplateLabel": "Checklist template",
   "answerUnavailable": "Unavailable"
 }

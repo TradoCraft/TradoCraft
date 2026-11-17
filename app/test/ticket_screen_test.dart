@@ -171,6 +171,17 @@ Future<_Fake> _pump(
 }
 
 void main() {
+  testWidgets('a failed send preserves the composer draft', (tester) async {
+    final fake = await _pump(tester, locale: 'en');
+    final message = find.widgetWithText(TextField, 'Message');
+    await tester.enterText(message, 'Keep this reply');
+    await tester.ensureVisible(find.text('Send'));
+    await tester.tap(find.text('Send'));
+    await tester.pumpAndSettle();
+    expect(fake.requests, contains('POST /api/v1/tickets/t1/replies'));
+    expect(tester.widget<TextField>(message).controller!.text, 'Keep this reply');
+  });
+
   testWidgets('previous answers cannot be selected while a new search loads', (tester) async {
     final fake = await _pump(tester, locale: 'en');
     await tester.tap(find.text('Insert prepared answer'));

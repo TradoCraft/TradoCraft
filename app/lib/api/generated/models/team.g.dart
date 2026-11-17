@@ -14,6 +14,7 @@ Team _$TeamFromJson(Map<String, dynamic> json) => Team(
       .map((e) => TeamMember.fromJson(e as Map<String, dynamic>))
       .toList(),
   name: json['name'] as String,
+  requireChecklistDone: json['require_checklist_done'] as bool,
 );
 
 Map<String, dynamic> _$TeamToJson(Team instance) => <String, dynamic>{
@@ -22,4 +23,5 @@ Map<String, dynamic> _$TeamToJson(Team instance) => <String, dynamic>{
   'id': instance.id,
   'members': instance.members,
   'name': instance.name,
+  'require_checklist_done': instance.requireChecklistDone,
 };

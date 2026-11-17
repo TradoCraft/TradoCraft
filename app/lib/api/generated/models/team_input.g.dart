@@ -12,10 +12,12 @@ TeamInput _$TeamInputFromJson(Map<String, dynamic> json) => TeamInput(
   members: (json['members'] as List<dynamic>?)
       ?.map((e) => MemberInput.fromJson(e as Map<String, dynamic>))
       .toList(),
+  requireChecklistDone: json['require_checklist_done'] as bool?,
 );
 
 Map<String, dynamic> _$TeamInputToJson(TeamInput instance) => <String, dynamic>{
   'active': ?instance.active,
   'members': ?instance.members,
   'name': instance.name,
+  'require_checklist_done': ?instance.requireChecklistDone,
 };

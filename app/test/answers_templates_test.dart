@@ -50,7 +50,7 @@ void main() {
   testWidgets('the answer editor saves kind, team and keywords', (tester) async {
     final http = FakeHttp({
       'GET /api/v1/helpdesk/teams': (_) => [
-        {'id': 'team1', 'name': 'R&D', 'active': true, 'members': [], 'created_at': '2026-11-01T09:00:00Z'},
+        {'id': 'team1', 'name': 'R&D', 'active': true, 'members': [], 'require_checklist_done': false, 'created_at': '2026-11-01T09:00:00Z'},
       ],
       'GET /api/v1/prepared-answers/placeholders': (_) => ['ticket.number', 'team.name'],
       'POST /api/v1/prepared-answers': (_) => _answer('fw', kind: 'internal_note', teamId: 'team1'),
@@ -182,7 +182,7 @@ void main() {
   testWidgets('editing an existing answer with teamId renders while teams load and preserves teamId on save', (tester) async {
     final http = FakeHttp({
       'GET /api/v1/helpdesk/teams': (_) => [
-        {'id': 'team1', 'name': 'R&D', 'active': true, 'members': [], 'created_at': '2026-11-01T09:00:00Z'},
+        {'id': 'team1', 'name': 'R&D', 'active': true, 'members': [], 'require_checklist_done': false, 'created_at': '2026-11-01T09:00:00Z'},
       ],
       'GET /api/v1/prepared-answers/placeholders': (_) => <String>[],
       'PUT /api/v1/prepared-answers/a-fw': (_) => _answer('fw', teamId: 'team1'),
