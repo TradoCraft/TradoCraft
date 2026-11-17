@@ -612,12 +612,13 @@ class _ChecklistTemplateEditor extends ConsumerStatefulWidget {
 class _ChecklistTemplateEditorState
     extends ConsumerState<_ChecklistTemplateEditor> {
   late final _name = TextEditingController(text: widget.template?.name);
-  late final _items = TextEditingController(
-    text: ([...?widget.template?.items]
-          ..sort((a, b) => a.position.compareTo(b.position)))
-        .map((e) => e.description)
-        .join('\n'),
-  );
+  late final _items = [
+    for (final item in ([
+      ...?widget.template?.items,
+    ]..sort((a, b) => a.position.compareTo(b.position))))
+      TextEditingController(text: item.description),
+    if (widget.template == null) TextEditingController(),
+  ];
   late String? _teamId = widget.template?.teamId;
   late String? _category = widget.template?.category;
   late bool _active = widget.template?.active ?? true;
@@ -627,18 +628,18 @@ class _ChecklistTemplateEditorState
   @override
   void dispose() {
     _name.dispose();
-    _items.dispose();
+    for (final item in _items) {
+      item.dispose();
+    }
     super.dispose();
   }
 
   Future<void> _save() async {
     final l = context.l10n;
     final name = _name.text.trim();
-    final items = _items.text
-        .split('\n')
-        .map((s) => s.trim())
-        .where((s) => s.isNotEmpty)
-        .map((s) => ChecklistTemplateItemInput(description: s))
+    final items = _items
+        .where((item) => item.text.trim().isNotEmpty)
+        .map((item) => ChecklistTemplateItemInput(description: item.text))
         .toList();
     if (name.isEmpty) {
       setState(() => _error = l.required);
@@ -705,7 +706,9 @@ class _ChecklistTemplateEditorState
               const SizedBox(height: 12),
               DropdownButtonFormField<String?>(
                 key: const ValueKey('checklist-template-team'),
-                initialValue: teams.any((t) => t.id == _teamId) ? _teamId : null,
+                initialValue: teams.any((t) => t.id == _teamId)
+                    ? _teamId
+                    : null,
                 isExpanded: true,
                 decoration: InputDecoration(labelText: l.team),
                 items: [
@@ -740,15 +743,41 @@ class _ChecklistTemplateEditorState
                 value: _active,
                 onChanged: (v) => setState(() => _active = v),
               ),
-              TextField(
-                key: const ValueKey('checklist-template-items'),
-                controller: _items,
-                minLines: 4,
-                maxLines: 10,
-                decoration: InputDecoration(
-                  labelText: l.checklistTemplateItemsHint,
-                  alignLabelWithHint: true,
+              for (var i = 0; i < _items.length; i++)
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        key: ValueKey('checklist-template-item-$i'),
+                        controller: _items[i],
+                        minLines: 1,
+                        maxLines: null,
+                        decoration: InputDecoration(
+                          labelText: l.checklistTitle,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: l.remove,
+                      icon: const Icon(AppIcons.delete),
+                      onPressed: _busy
+                          ? null
+                          : () {
+                              final removed = _items[i];
+                              setState(() => _items.removeAt(i));
+                              WidgetsBinding.instance.addPostFrameCallback(
+                                (_) => removed.dispose(),
+                              );
+                            },
+                    ),
+                  ],
                 ),
+              TextButton.icon(
+                onPressed: _busy
+                    ? null
+                    : () => setState(() => _items.add(TextEditingController())),
+                icon: const Icon(AppIcons.add),
+                label: Text(l.checklistAddItem),
               ),
               if (_error != null)
                 Padding(

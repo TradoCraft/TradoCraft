@@ -603,7 +603,7 @@ async fn apply_change(
             )
             .await
             {
-                Ok(_) => 1,
+                Ok((_, applied)) => return Ok(applied),
                 Err(AppError::NotFound(_)) | Err(AppError::Validation(_)) => 0,
                 Err(e) => return Err(e),
             }

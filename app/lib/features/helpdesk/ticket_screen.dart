@@ -849,11 +849,14 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
                   ),
                 ),
                 const Spacer(),
-                TutorialTarget(id: 'ticket-send', child: FilledButton.icon(
-                  onPressed: _busy ? null : _send,
-                  icon: Icon(_reply ? AppIcons.send : AppIcons.noteAdd),
-                  label: Text(_reply ? l.send : l.addNote),
-                )),
+                TutorialTarget(
+                  id: 'ticket-send',
+                  child: FilledButton.icon(
+                    onPressed: _busy ? null : _send,
+                    icon: Icon(_reply ? AppIcons.send : AppIcons.noteAdd),
+                    label: Text(_reply ? l.send : l.addNote),
+                  ),
+                ),
               ],
             ),
           ],
@@ -1056,11 +1059,14 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
                 ),
               ),
               if (_customerId == null && canWrite)
-                TutorialTarget(id: 'ticket-new-customer', child: TextButton.icon(
-                  onPressed: _newCustomer,
-                  icon: const Icon(AppIcons.personAddAlt),
-                  label: Text(l.newCustomer),
-                )),
+                TutorialTarget(
+                  id: 'ticket-new-customer',
+                  child: TextButton.icon(
+                    onPressed: _newCustomer,
+                    icon: const Icon(AppIcons.personAddAlt),
+                    label: Text(l.newCustomer),
+                  ),
+                ),
             ],
           ),
         ),
@@ -1261,19 +1267,22 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
                 },
               ),
             if (t.customerId != null && perms.contains('quotations.write'))
-              TutorialTarget(id: 'ticket-new-quotation', child: OutlinedButton.icon(
-                icon: const Icon(AppIcons.add),
-                label: Text(l.newQuotation),
-                onPressed: () async {
-                  final opp = t.opportunityId == null
-                      ? ''
-                      : '&opportunity=${t.opportunityId}';
-                  await context.push(
-                    '/quotations/new?customer=${t.customerId}$opp',
-                  );
-                  _loadLinks();
-                },
-              )),
+              TutorialTarget(
+                id: 'ticket-new-quotation',
+                child: OutlinedButton.icon(
+                  icon: const Icon(AppIcons.add),
+                  label: Text(l.newQuotation),
+                  onPressed: () async {
+                    final opp = t.opportunityId == null
+                        ? ''
+                        : '&opportunity=${t.opportunityId}';
+                    await context.push(
+                      '/quotations/new?customer=${t.customerId}$opp',
+                    );
+                    _loadLinks();
+                  },
+                ),
+              ),
             if (t.orderId != null)
               OutlinedButton.icon(
                 icon: const Icon(AppIcons.inventory),
@@ -1589,6 +1598,10 @@ class _TicketChecklistCardState extends ConsumerState<TicketChecklistCard> {
   List<ChecklistTemplate> _templates = const [];
   bool _loading = true;
   bool _busy = false;
+  Object? _loadError;
+  int _generation = 0;
+
+  bool _owns(int generation) => mounted && generation == _generation;
 
   @override
   void initState() {
@@ -1600,6 +1613,10 @@ class _TicketChecklistCardState extends ConsumerState<TicketChecklistCard> {
   void didUpdateWidget(covariant TicketChecklistCard oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.ticketId != widget.ticketId) {
+      _items = const [];
+      _templates = const [];
+      _busy = false;
+      _addController.clear();
       _load();
     }
   }
@@ -1611,49 +1628,70 @@ class _TicketChecklistCardState extends ConsumerState<TicketChecklistCard> {
   }
 
   Future<void> _load() async {
+    final generation = ++_generation;
+    final ticketId = widget.ticketId;
+    setState(() {
+      _loading = true;
+      _loadError = null;
+    });
     final api = ref.read(apiProvider);
-    final itemsFuture = api.helpdesk
-        .listTicketChecklist(id: widget.ticketId)
-        .then((v) => v, onError: (Object _) => <ChecklistItem>[]);
-    final templatesFuture = api.helpdesk
-        .listTemplates(active: true)
-        .then((v) => v, onError: (Object _) => <ChecklistTemplate>[]);
-    final results = await Future.wait([itemsFuture, templatesFuture]);
-    if (!mounted) return;
-    final items = [...results[0] as List<ChecklistItem>]
-      ..sort((a, b) => a.position.compareTo(b.position));
-    setState(() {
-      _items = items;
-      _templates = results[1] as List<ChecklistTemplate>;
-      _loading = false;
-    });
+    try {
+      final results = await Future.wait([
+        api.helpdesk.listTicketChecklist(id: ticketId),
+        api.helpdesk.listTemplates(active: true),
+      ]);
+      if (!_owns(generation)) return;
+      setState(() {
+        _items = [...results[0] as List<ChecklistItem>]
+          ..sort((a, b) => a.position.compareTo(b.position));
+        _templates = results[1] as List<ChecklistTemplate>;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!_owns(generation)) return;
+      setState(() {
+        _loadError = e;
+        _loading = false;
+      });
+    }
   }
 
-  Future<void> _mutate(Future<void> Function() action) async {
+  Future<void> _mutate(Future<void> Function(String, int) action) async {
+    if (_busy || _loading || _loadError != null || !widget.canWrite) return;
+    final ticketId = widget.ticketId;
+    final generation = _generation;
     setState(() => _busy = true);
-    await runAction(context, action);
-    if (mounted) setState(() => _busy = false);
+    await runAction(context, () async {
+      try {
+        await action(ticketId, generation);
+      } catch (_) {
+        if (_owns(generation)) rethrow;
+      }
+    });
+    if (_owns(generation)) setState(() => _busy = false);
   }
 
-  Future<void> _toggleDone(ChecklistItem item, bool done) => _mutate(() async {
-    final updated = await ref
-        .read(apiProvider)
-        .helpdesk
-        .updateTicketChecklistItem(
-          id: widget.ticketId,
-          itemId: item.id,
-          body: UpdateChecklistItemInput(done: done),
-        );
-    if (!mounted) return;
-    setState(() {
-      _items = [
-        for (final existing in _items)
-          existing.id == updated.id ? updated : existing,
-      ];
-    });
-  });
+  Future<void> _toggleDone(ChecklistItem item, bool done) =>
+      _mutate((ticketId, generation) async {
+        final updated = await ref
+            .read(apiProvider)
+            .helpdesk
+            .updateTicketChecklistItem(
+              id: ticketId,
+              itemId: item.id,
+              body: UpdateChecklistItemInput(done: done),
+            );
+        if (!_owns(generation)) return;
+        setState(() {
+          _items = [
+            for (final existing in _items)
+              existing.id == updated.id ? updated : existing,
+          ];
+        });
+      });
 
   Future<void> _editItem(ChecklistItem item) async {
+    final generation = _generation;
     final l = context.l10n;
     final controller = TextEditingController(text: item.description);
     final next = await showDialog<String>(
@@ -1679,19 +1717,22 @@ class _TicketChecklistCardState extends ConsumerState<TicketChecklistCard> {
       ),
     );
     controller.dispose();
-    if (next == null || next.isEmpty || next == item.description || !mounted) {
+    if (next == null ||
+        next.isEmpty ||
+        next == item.description ||
+        !_owns(generation)) {
       return;
     }
-    await _mutate(() async {
+    await _mutate((ticketId, generation) async {
       final updated = await ref
           .read(apiProvider)
           .helpdesk
           .updateTicketChecklistItem(
-            id: widget.ticketId,
+            id: ticketId,
             itemId: item.id,
             body: UpdateChecklistItemInput(description: next),
           );
-      if (!mounted) return;
+      if (!_owns(generation)) return;
       setState(() {
         _items = [
           for (final existing in _items)
@@ -1706,20 +1747,21 @@ class _TicketChecklistCardState extends ConsumerState<TicketChecklistCard> {
     if (targetIndex < 0 || targetIndex >= _items.length) return;
     final item = _items[index];
     final targetPosition = _items[targetIndex].position;
-    await _mutate(() async {
+    await _mutate((ticketId, generation) async {
       await ref
           .read(apiProvider)
           .helpdesk
           .updateTicketChecklistItem(
-            id: widget.ticketId,
+            id: ticketId,
             itemId: item.id,
             body: UpdateChecklistItemInput(position: targetPosition),
           );
+      if (!_owns(generation)) return;
       final refreshed = await ref
           .read(apiProvider)
           .helpdesk
-          .listTicketChecklist(id: widget.ticketId);
-      if (!mounted) return;
+          .listTicketChecklist(id: ticketId);
+      if (!_owns(generation)) return;
       setState(() {
         _items = [...refreshed]
           ..sort((a, b) => a.position.compareTo(b.position));
@@ -1727,29 +1769,31 @@ class _TicketChecklistCardState extends ConsumerState<TicketChecklistCard> {
     });
   }
 
-  Future<void> _deleteItem(ChecklistItem item) => _mutate(() async {
-    await ref
-        .read(apiProvider)
-        .helpdesk
-        .deleteTicketChecklistItem(id: widget.ticketId, itemId: item.id);
-    if (!mounted) return;
-    setState(() {
-      _items = _items.where((e) => e.id != item.id).toList();
-    });
-  });
+  Future<void> _deleteItem(ChecklistItem item) =>
+      _mutate((ticketId, generation) async {
+        await ref
+            .read(apiProvider)
+            .helpdesk
+            .deleteTicketChecklistItem(id: ticketId, itemId: item.id);
+        if (!_owns(generation)) return;
+        setState(() {
+          _items = _items.where((e) => e.id != item.id).toList();
+        });
+      });
 
   Future<void> _addItem() async {
+    if (_busy || _loading || _loadError != null) return;
     final text = _addController.text.trim();
     if (text.isEmpty) return;
-    await _mutate(() async {
+    await _mutate((ticketId, generation) async {
       final created = await ref
           .read(apiProvider)
           .helpdesk
           .addTicketChecklistItem(
-            id: widget.ticketId,
+            id: ticketId,
             body: AddChecklistItemInput(description: text),
           );
-      if (!mounted) return;
+      if (!_owns(generation)) return;
       _addController.clear();
       setState(() {
         _items = [..._items, created]
@@ -1758,19 +1802,21 @@ class _TicketChecklistCardState extends ConsumerState<TicketChecklistCard> {
     });
   }
 
-  Future<void> _applyTemplate(String templateId) => _mutate(() async {
-    final applied = await ref
-        .read(apiProvider)
-        .helpdesk
-        .applyTemplate(
-          id: widget.ticketId,
-          body: ApplyTemplateInput(templateId: templateId),
-        );
-    if (!mounted) return;
-    setState(() {
-      _items = [...applied]..sort((a, b) => a.position.compareTo(b.position));
-    });
-  });
+  Future<void> _applyTemplate(String templateId) =>
+      _mutate((ticketId, generation) async {
+        final applied = await ref
+            .read(apiProvider)
+            .helpdesk
+            .applyTemplate(
+              id: ticketId,
+              body: ApplyTemplateInput(templateId: templateId),
+            );
+        if (!_owns(generation)) return;
+        setState(() {
+          _items = [...applied]
+            ..sort((a, b) => a.position.compareTo(b.position));
+        });
+      });
 
   @override
   Widget build(BuildContext context) {
@@ -1801,7 +1847,7 @@ class _TicketChecklistCardState extends ConsumerState<TicketChecklistCard> {
               PopupMenuButton<String>(
                 key: const ValueKey('checklist-apply-template'),
                 tooltip: l.checklistApplyTemplate,
-                enabled: !_busy,
+                enabled: !_busy && !_loading && _loadError == null,
                 onSelected: _applyTemplate,
                 itemBuilder: (_) {
                   if (sortedTemplates.isEmpty) {
@@ -1848,6 +1894,13 @@ class _TicketChecklistCardState extends ConsumerState<TicketChecklistCard> {
             padding: EdgeInsets.symmetric(vertical: 8),
             child: LinearProgressIndicator(),
           )
+        else if (_loadError != null)
+          Row(
+            children: [
+              Expanded(child: Text(errorMessage(_loadError!))),
+              TextButton(onPressed: _load, child: Text(l.retry)),
+            ],
+          )
         else if (_items.isEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 4),
@@ -1869,11 +1922,14 @@ class _TicketChecklistCardState extends ConsumerState<TicketChecklistCard> {
                 child: TextField(
                   key: const ValueKey('checklist-add-input'),
                   controller: _addController,
+                  enabled: !_busy && !_loading && _loadError == null,
                   decoration: InputDecoration(
                     hintText: l.checklistAddItem,
                     isDense: true,
                   ),
-                  onSubmitted: (_) => _addItem(),
+                  onSubmitted: _busy || _loading || _loadError != null
+                      ? null
+                      : (_) => _addItem(),
                 ),
               ),
               const SizedBox(width: 8),
@@ -1881,7 +1937,9 @@ class _TicketChecklistCardState extends ConsumerState<TicketChecklistCard> {
                 key: const ValueKey('checklist-add-button'),
                 icon: const Icon(AppIcons.add),
                 tooltip: l.checklistAddItem,
-                onPressed: _busy ? null : _addItem,
+                onPressed: _busy || _loading || _loadError != null
+                    ? null
+                    : _addItem,
               ),
             ],
           ),

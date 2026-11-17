@@ -310,6 +310,24 @@ async fn ensure_ticket(
     }
 }
 
+/// Serialize checklist writes and close checks on the scoped parent row.
+/// Call within a transaction and retain the lock through commit.
+pub(crate) async fn lock_ticket(
+    conn: &mut PgConnection,
+    company_id: Uuid,
+    ticket_id: Uuid,
+) -> AppResult<()> {
+    sqlx::query_scalar::<_, Uuid>(
+        "SELECT id FROM helpdesk.tickets WHERE id = $1 AND company_id = $2 FOR UPDATE",
+    )
+    .bind(ticket_id)
+    .bind(company_id)
+    .fetch_optional(conn)
+    .await?
+    .ok_or(AppError::NotFound("ticket"))?;
+    Ok(())
+}
+
 async fn load_ticket_checklist(
     conn: &mut PgConnection,
     ticket_id: Uuid,
@@ -355,7 +373,8 @@ pub async fn apply_template_to_ticket(
     ticket_id: Uuid,
     template_id: Uuid,
     require_active: bool,
-) -> AppResult<Vec<ChecklistItem>> {
+) -> AppResult<(Vec<ChecklistItem>, bool)> {
+    lock_ticket(conn, company_id, ticket_id).await?;
     let active: Option<bool> = sqlx::query_scalar(
         "SELECT active FROM helpdesk.checklist_templates WHERE id = $1 AND company_id = $2",
     )
@@ -416,7 +435,10 @@ pub async fn apply_template_to_ticket(
         }
     }
 
-    load_ticket_checklist(conn, ticket_id).await
+    Ok((
+        load_ticket_checklist(conn, ticket_id).await?,
+        inserted.rows_affected() > 0,
+    ))
 }
 
 #[utoipa::path(
@@ -671,7 +693,7 @@ async fn add_ticket_checklist_item(
     }
 
     let mut tx = state.db.begin().await?;
-    ensure_ticket(&mut tx, user.company_id, ticket_id).await?;
+    lock_ticket(&mut tx, user.company_id, ticket_id).await?;
 
     let item_id = new_id();
     sqlx::query(
@@ -728,7 +750,7 @@ async fn update_ticket_checklist_item(
     };
 
     let mut tx = state.db.begin().await?;
-    ensure_ticket(&mut tx, user.company_id, ticket_id).await?;
+    lock_ticket(&mut tx, user.company_id, ticket_id).await?;
 
     let exists: bool = sqlx::query_scalar(
         "SELECT EXISTS (SELECT 1 FROM helpdesk.ticket_checklist_items WHERE id = $1 AND ticket_id = $2)",
@@ -757,7 +779,7 @@ async fn update_ticket_checklist_item(
             sqlx::query(
                 "UPDATE helpdesk.ticket_checklist_items
                  SET done = true, done_by = $3, done_at = now()
-                 WHERE id = $1 AND ticket_id = $2",
+                 WHERE id = $1 AND ticket_id = $2 AND NOT done",
             )
             .bind(item_id)
             .bind(ticket_id)
@@ -831,7 +853,7 @@ async fn delete_ticket_checklist_item(
 ) -> AppResult<StatusCode> {
     user.require(Permission::HelpdeskWrite)?;
     let mut tx = state.db.begin().await?;
-    ensure_ticket(&mut tx, user.company_id, ticket_id).await?;
+    lock_ticket(&mut tx, user.company_id, ticket_id).await?;
 
     let res = sqlx::query(
         "DELETE FROM helpdesk.ticket_checklist_items WHERE id = $1 AND ticket_id = $2",
@@ -869,8 +891,8 @@ async fn apply_template(
 ) -> AppResult<Json<Vec<ChecklistItem>>> {
     user.require(Permission::HelpdeskWrite)?;
     let mut tx = state.db.begin().await?;
-    ensure_ticket(&mut tx, user.company_id, ticket_id).await?;
-    let items = apply_template_to_ticket(
+    lock_ticket(&mut tx, user.company_id, ticket_id).await?;
+    let (items, _) = apply_template_to_ticket(
         &mut tx,
         user.company_id,
         ticket_id,

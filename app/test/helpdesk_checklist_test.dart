@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tradocraft_app/app/api.dart';
 import 'package:tradocraft_app/features/helpdesk/ticket_screen.dart';
+import 'package:tradocraft_app/features/helpdesk/helpdesk_settings_page.dart';
 import 'package:tradocraft_app/features/helpdesk/tickets_page.dart';
 import 'package:tradocraft_app/l10n/app_localizations.dart';
 
@@ -100,6 +103,181 @@ Future<void> _pump(WidgetTester tester, FakeHttp http, Widget home) async {
 
 void main() {
   testWidgets(
+    'metadata save preserves multiline template descriptions and order',
+    (tester) async {
+      final template = _template(id: 'tpl', name: 'Existing');
+      template['items'] = [
+        {
+          'id': 'first',
+          'description': 'Inspect motor\nRecord reading',
+          'position': 1,
+        },
+        {'id': 'second', 'description': 'Verify serial', 'position': 2},
+      ];
+      final http = FakeHttp({
+        'GET /api/v1/me': (_) => meJson([..._perms, 'helpdesk.admin']),
+        'GET /api/v1/helpdesk/teams': (_) => [],
+        'GET /api/v1/helpdesk/checklist-templates': (_) => [template],
+        'PUT /api/v1/helpdesk/checklist-templates/tpl': (_) => template,
+      });
+      await _pump(tester, http, const HelpdeskSettingsPage());
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('checklist-template-tpl')),
+      );
+      await tester.tap(find.byKey(const ValueKey('checklist-template-tpl')));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('checklist-template-name')),
+        'Renamed',
+      );
+      await tester.tap(find.byKey(const ValueKey('save-checklist-template')));
+      await tester.pumpAndSettle();
+      final body =
+          http.bodies['PUT /api/v1/helpdesk/checklist-templates/tpl'] as Map;
+      expect(body['items'], [
+        {'description': 'Inspect motor\nRecord reading'},
+        {'description': 'Verify serial'},
+      ]);
+    },
+  );
+
+  testWidgets('failed checklist load retries instead of showing empty', (
+    tester,
+  ) async {
+    var attempts = 0;
+    final http = FakeHttp({
+      'GET /api/v1/helpdesk/tickets/t1/checklist': (_) => ++attempts == 1
+          ? const FakeStatus(500, {'message': 'Load failed'})
+          : [],
+      'GET /api/v1/helpdesk/checklist-templates': (_) => [],
+    });
+    await _pump(
+      tester,
+      http,
+      const Scaffold(
+        body: TicketChecklistCard(ticketId: 't1', category: 'service'),
+      ),
+    );
+    expect(find.text('Retry'), findsOneWidget);
+    await tester.tap(find.text('Retry'));
+    await tester.pumpAndSettle();
+    expect(attempts, 2);
+    expect(find.text('Retry'), findsNothing);
+  });
+
+  testWidgets(
+    'ticket switch discards old load and disables additions while loading',
+    (tester) async {
+      final pending = Completer<Object?>();
+      final http = FakeHttp({
+        'GET /api/v1/helpdesk/tickets/t1/checklist': (_) => pending.future,
+        'GET /api/v1/helpdesk/tickets/t2/checklist': (_) => [
+          _item(id: 'new', description: 'New ticket item', position: 1),
+        ],
+        'GET /api/v1/helpdesk/checklist-templates': (_) => [],
+      });
+      String ticketId = 't1';
+      late StateSetter rebuild;
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [dioProvider.overrideWithValue(fakeDio(http))],
+          child: MaterialApp(
+            localizationsDelegates: [
+              AppLocalizations.delegate,
+              ...GlobalMaterialLocalizations.delegates,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: StatefulBuilder(
+              builder: (context, setState) {
+                rebuild = setState;
+                return Scaffold(
+                  body: TicketChecklistCard(
+                    ticketId: ticketId,
+                    category: 'service',
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(
+        tester
+            .widget<TextField>(
+              find.byKey(const ValueKey('checklist-add-input')),
+            )
+            .enabled,
+        isFalse,
+      );
+      rebuild(() => ticketId = 't2');
+      await tester.pumpAndSettle();
+      expect(find.text('New ticket item'), findsOneWidget);
+      pending.complete([
+        _item(id: 'old', description: 'Old ticket item', position: 1),
+      ]);
+      await tester.pumpAndSettle();
+      expect(find.text('Old ticket item'), findsNothing);
+      expect(find.text('New ticket item'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'pending add ignores keyboard resubmission and preserves ticket ownership',
+    (tester) async {
+      final pending = Completer<Object?>();
+      var additions = 0;
+      final http = FakeHttp({
+        'GET /api/v1/helpdesk/tickets/t1/checklist': (_) => [],
+        'GET /api/v1/helpdesk/tickets/t2/checklist': (_) => [],
+        'GET /api/v1/helpdesk/checklist-templates': (_) => [],
+        'POST /api/v1/helpdesk/tickets/t1/checklist': (_) {
+          additions++;
+          return pending.future;
+        },
+      });
+      String ticketId = 't1';
+      late StateSetter rebuild;
+      await _pump(
+        tester,
+        http,
+        StatefulBuilder(
+          builder: (context, setState) {
+            rebuild = setState;
+            return Scaffold(
+              body: TicketChecklistCard(
+                ticketId: ticketId,
+                category: 'service',
+              ),
+            );
+          },
+        ),
+      );
+      final input = find.byKey(const ValueKey('checklist-add-input'));
+      await tester.enterText(input, 'Submitted item');
+      // Keep the original callback to exercise the guard before the next rebuild.
+      final submit = tester.widget<TextField>(input).onSubmitted!;
+      submit('Submitted item');
+      submit('Submitted item');
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(additions, 1);
+      expect(tester.widget<TextField>(input).enabled, isFalse);
+      rebuild(() => ticketId = 't2');
+      await tester.pumpAndSettle();
+      await tester.enterText(input, 'Next ticket draft');
+      pending.complete(
+        _item(id: 'old', description: 'Submitted item', position: 1),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<TextField>(input).controller!.text,
+        'Next ticket draft',
+      );
+      expect(find.text('Submitted item'), findsNothing);
+    },
+  );
+  testWidgets(
     'ticket list shows checklist progress badge when total > 0 and hides when 0',
     (tester) async {
       final http = FakeHttp({
@@ -166,11 +344,7 @@ void main() {
         'GET /api/v1/helpdesk/tickets/t1/checklist': (_) => items,
         'GET /api/v1/helpdesk/checklist-templates': (_) => [
           _template(id: 'tpl-other', name: 'AAA General'),
-          _template(
-            id: 'tpl-cat',
-            name: 'Service Checks',
-            category: 'service',
-          ),
+          _template(id: 'tpl-cat', name: 'Service Checks', category: 'service'),
           _template(
             id: 'tpl-both',
             name: 'Level 2 Service',

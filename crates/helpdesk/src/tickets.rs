@@ -478,19 +478,13 @@ pub(crate) fn should_block_close(
     target_status == "closed" && !was_closed && team_requires_checklist_done && open_items > 0
 }
 
-async fn set_status(
+async fn check_close_gate(
     conn: &mut PgConnection,
-    user: &CurrentUser,
     ticket_id: Uuid,
-    status: &str,
+    target_status: &str,
+    was_closed: bool,
 ) -> AppResult<()> {
-    check_one_of("status", status, &STATUSES)?;
-    let old: String = sqlx::query_scalar("SELECT status FROM helpdesk.tickets WHERE id = $1")
-        .bind(ticket_id)
-        .fetch_one(&mut *conn)
-        .await?;
-    let was_closed = old == "closed";
-    if status == "closed" && !was_closed {
+    if target_status == "closed" && !was_closed {
         let blocked: bool = sqlx::query_scalar(
             "SELECT EXISTS (
                 SELECT 1
@@ -514,6 +508,23 @@ async fn set_status(
             ));
         }
     }
+    Ok(())
+}
+
+async fn set_status(
+    conn: &mut PgConnection,
+    user: &CurrentUser,
+    ticket_id: Uuid,
+    status: &str,
+) -> AppResult<()> {
+    check_one_of("status", status, &STATUSES)?;
+    crate::checklists::lock_ticket(conn, user.company_id, ticket_id).await?;
+    let old: String = sqlx::query_scalar("SELECT status FROM helpdesk.tickets WHERE id = $1")
+        .bind(ticket_id)
+        .fetch_one(&mut *conn)
+        .await?;
+    let was_closed = old == "closed";
+    check_close_gate(conn, ticket_id, status, was_closed).await?;
     if old != status {
         crate::collab::record_event(
             conn,
@@ -829,6 +840,7 @@ async fn update_ticket(
         return Err(AppError::Validation("subject is required".into()));
     }
     let mut tx = state.db.begin().await?;
+    crate::checklists::lock_ticket(&mut tx, user.company_id, id).await?;
     let old = load_ticket(&mut tx, user.company_id, id).await?;
     let mut input = input;
     if let Some(c) = input.contact_id {
@@ -928,6 +940,7 @@ async fn update_ticket(
         .await?;
     set_status(&mut tx, &user, id, &input.status).await?;
     crate::automation::run(&mut tx, user.company_id, id, "updated").await?;
+    check_close_gate(&mut tx, id, &input.status, old.status == "closed").await?;
     audit::record(
         &mut tx,
         &user,
@@ -956,7 +969,8 @@ async fn add_note_handler(
         return Err(AppError::Validation("the note is empty".into()));
     }
     let mut tx = state.db.begin().await?;
-    load_ticket(&mut tx, user.company_id, id).await?;
+    crate::checklists::lock_ticket(&mut tx, user.company_id, id).await?;
+    let original = load_ticket(&mut tx, user.company_id, id).await?;
     let note_id = add_note(&mut tx, &user, id, &input.body).await?;
     crate::collab::add_watcher(&mut tx, user.company_id, id, user.user_id).await?;
     crate::attachments::link(&mut tx, id, note_id, &input.attachment_ids, None).await?;
@@ -964,6 +978,7 @@ async fn add_note_handler(
         Some(s) => {
             set_status(&mut tx, &user, id, s).await?;
             crate::automation::run(&mut tx, user.company_id, id, "updated").await?;
+            check_close_gate(&mut tx, id, s, original.status == "closed").await?;
         }
         None => {
             sqlx::query("UPDATE helpdesk.tickets SET updated_at = now() WHERE id = $1")
@@ -1012,6 +1027,7 @@ async fn reply(
         return Err(AppError::Validation("the message is empty".into()));
     }
     let mut tx = state.db.begin().await?;
+    crate::checklists::lock_ticket(&mut tx, user.company_id, id).await?;
     let ticket = load_ticket(&mut tx, user.company_id, id).await?;
     let to: Vec<String> = if input.to.is_empty() {
         let fallback: Option<String> = match ticket.customer_id {
@@ -1130,6 +1146,13 @@ async fn reply(
     )
     .await?;
     crate::automation::run(&mut tx, user.company_id, id, "updated").await?;
+    check_close_gate(
+        &mut tx,
+        id,
+        input.status.as_deref().unwrap_or("pending_customer"),
+        ticket.status == "closed",
+    )
+    .await?;
     audit::record(
         &mut tx,
         &user,
@@ -1612,4 +1635,3 @@ mod tests {
         assert!(!should_block_close("new", false, true, 2));
     }
 }
-
