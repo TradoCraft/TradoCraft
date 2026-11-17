@@ -1,4 +1,4 @@
--- Export profiles may select a group of any depth (ADR 0069, amendment 2026-11-16): the print
+-- Export profiles may select a group of any depth (ADR 0074, amendment 2026-11-16): the print
 -- selects the group and everything below it. The "top-level only" rule and the rule that a used
 -- group cannot be moved below another group are gone. The composite foreign keys keep a profile's
 -- groups inside the profile's own list, and a group a profile uses still cannot be deleted

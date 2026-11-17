@@ -1,8 +1,8 @@
--- Printable price lists (ADR 0069). A price list is a layout: which products, under which titled
+-- Printable price lists (ADR 0074). A price list is a layout: which products, under which titled
 -- groups, in which order. It stores no prices; they come from pricing.zone_prices of each zone the
 -- list covers, valid on the list's valid_from, when the list is rendered.
 
--- Normalisation rules used below (ADR 0069):
+-- Normalisation rules used below (ADR 0074):
 --  * No arrays and no per-key jsonb for data that has its own identity or is looked up: titles,
 --    descriptions, zone languages and export chapters are rows with keys and constraints.
 --  * Every child table carries company_id and a composite foreign key (parent_id, company_id), so
