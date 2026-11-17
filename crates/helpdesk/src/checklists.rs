@@ -376,7 +376,7 @@ pub async fn apply_template_to_ticket(
 ) -> AppResult<(Vec<ChecklistItem>, bool)> {
     lock_ticket(conn, company_id, ticket_id).await?;
     let active: Option<bool> = sqlx::query_scalar(
-        "SELECT active FROM helpdesk.checklist_templates WHERE id = $1 AND company_id = $2",
+        "SELECT active FROM helpdesk.checklist_templates WHERE id = $1 AND company_id = $2 FOR SHARE",
     )
     .bind(template_id)
     .bind(company_id)

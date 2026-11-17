@@ -241,7 +241,7 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
     }
   }
 
-  Future<void> _run(
+  Future<bool> _run(
     Future<TicketDetail> Function() action, {
     String? success,
   }) async {
@@ -281,6 +281,7 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
       });
     }
     if (ok && d != null) _apply(d);
+    return ok;
   }
 
   Future<void> _saveProperties() => _run(
@@ -321,7 +322,7 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
     if (!mounted) return;
     List<String> split(String s) =>
         s.split(RegExp(r'[,;\s]+')).where((e) => e.isNotEmpty).toList();
-    await _run(
+    final sent = await _run(
       () => _reply
           ? _api.helpdesk.reply(
               id: widget.id,
@@ -346,7 +347,7 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
             ),
       success: _reply ? l.replyQueued : l.noteAdded,
     );
-    if (_d != null) {
+    if (sent && mounted && _d != null) {
       setState(() {
         _body.clear();
         _replySubject.clear();
