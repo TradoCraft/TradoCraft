@@ -18745,6 +18745,31 @@
                 "null"
               ]
             }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "description": "reply | internal_note | handover | notice",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "team_id",
+            "in": "query",
+            "description": "Answers a ticket of this team can use: company-wide ones and this team's own.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "uuid"
+            }
           }
         ],
         "responses": {
@@ -30246,6 +30271,75 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/TicketDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tickets/{id}/prepared-answers/suggest": {
+      "get": {
+        "tags": [
+          "helpdesk"
+        ],
+        "summary": "The best prepared answers for a ticket, filled in and in the ticket's language, at most ten.\nAnswers of other teams are left out.",
+        "operationId": "suggest",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Typed text: a code, part of a name or a keyword. Empty: the best fits for the ticket.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "description": "reply | internal_note | handover | notice. Absent: every kind.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SuggestedAnswer"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
                 }
               }
             }
@@ -44170,6 +44264,8 @@
           "id",
           "code",
           "name",
+          "kind",
+          "keywords",
           "active",
           "updated_at",
           "texts"
@@ -44192,8 +44288,27 @@
             "type": "string",
             "format": "uuid"
           },
+          "keywords": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Lower-case words; a ticket subject containing one ranks the answer higher."
+          },
+          "kind": {
+            "type": "string",
+            "description": "reply | internal_note | handover | notice"
+          },
           "name": {
             "type": "string"
+          },
+          "team_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "Absent: usable by every team."
           },
           "texts": {
             "type": "array",
@@ -44227,8 +44342,24 @@
           "code": {
             "type": "string"
           },
+          "keywords": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "kind": {
+            "type": "string"
+          },
           "name": {
             "type": "string"
+          },
+          "team_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
           },
           "texts": {
             "type": "array",
@@ -50720,6 +50851,14 @@
             ],
             "description": "`send_email` to `address`: the fixed recipient."
           },
+          "answer_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "`send_email`: a prepared answer (A6, ADR 0072). When set, `subject` and `body` are ignored and\ncleared; the answer's text in the ticket's language is sent."
+          },
           "body": {
             "type": [
               "string",
@@ -50888,6 +51027,13 @@
               "null"
             ],
             "format": "uuid"
+          },
+          "ticket_languages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The language of the ticket itself (nl, fr, en, de, es), which may differ from its customer's."
           }
         }
       },
@@ -52381,6 +52527,59 @@
           }
         }
       },
+      "SuggestedAnswer": {
+        "type": "object",
+        "required": [
+          "answer_id",
+          "code",
+          "name",
+          "kind",
+          "language",
+          "fallback",
+          "subject",
+          "body",
+          "score"
+        ],
+        "properties": {
+          "answer_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "body": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "fallback": {
+            "type": "boolean"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "language": {
+            "type": "string",
+            "description": "Language of the text used."
+          },
+          "name": {
+            "type": "string"
+          },
+          "score": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "team_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
       "Suggestion": {
         "type": "object",
         "required": [
@@ -52999,6 +53198,7 @@
           "priority",
           "category",
           "language",
+          "language_source",
           "contact_name",
           "contact_email",
           "internal",
@@ -53126,6 +53326,10 @@
           "language": {
             "type": "string",
             "description": "nl | fr | en | de | es — the language to answer in."
+          },
+          "language_source": {
+            "type": "string",
+            "description": "record | detected | agent: where `language` came from."
           },
           "merged_into_id": {
             "type": [

@@ -463,14 +463,12 @@ mod tests {
         assert!(!input_default.require_checklist_done);
 
         let json_true = r#"{"name": "Hardware", "require_checklist_done": true}"#;
-        let input_true: TeamInput =
-            serde_json::from_str(json_true).expect("deserialize true");
+        let input_true: TeamInput = serde_json::from_str(json_true).expect("deserialize true");
         assert_eq!(input_true.name, "Hardware");
         assert!(input_true.require_checklist_done);
 
         let json_false = r#"{"name": "Field", "require_checklist_done": false}"#;
-        let input_false: TeamInput =
-            serde_json::from_str(json_false).expect("deserialize false");
+        let input_false: TeamInput = serde_json::from_str(json_false).expect("deserialize false");
         assert_eq!(input_false.name, "Field");
         assert!(!input_false.require_checklist_done);
     }

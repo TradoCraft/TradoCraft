@@ -1744,6 +1744,61 @@ class AppLocalizationsDe extends AppLocalizations {
       'Wiederverwendbare Antworten auf wiederkehrende Fragen, ein Text pro Sprache. Platzhalter wie «quotation.number» werden für das Ticket ausgefüllt; der Text kann vor dem Senden noch bearbeitet werden.';
 
   @override
+  String get answerKind => 'Art';
+
+  @override
+  String answerKindName(String kind) {
+    String _temp0 = intl.Intl.selectLogic(kind, {
+      'reply': 'Antwort',
+      'internal_note': 'Interne Notiz',
+      'handover': 'Übergabe',
+      'notice': 'Hinweis',
+      'other': '$kind',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String get answerTeam => 'Team';
+
+  @override
+  String get answerAllTeams => 'Alle Teams';
+
+  @override
+  String get answerKeywords => 'Schlagwörter (durch Kommas getrennt)';
+
+  @override
+  String get answerKeywordsHelp =>
+      'Tickets, deren Betreff ein Schlagwort enthält, erhalten diese Antwort zuerst vorgeschlagen.';
+
+  @override
+  String get answerShortcutHint =>
+      'Geben Sie /code ein, um eine Antwort einzufügen';
+
+  @override
+  String ticketLanguageSource(String source) {
+    String _temp0 = intl.Intl.selectLogic(source, {
+      'record': 'Vom Kontakt oder Kunden übernommen',
+      'detected': 'Aus der Nachricht erkannt',
+      'agent': 'Von einem Agenten festgelegt',
+      'other': '$source',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String get ticketLanguage => 'Ticketsprache';
+
+  @override
+  String get mailTemplate => 'Vorlage (optional)';
+
+  @override
+  String get mailTemplateNone => 'Text hier verfassen';
+
+  @override
+  String get ticketLanguageCondition => 'Ticketsprache';
+
+  @override
   String get preview => 'Vorschau';
 
   @override
@@ -10256,4 +10311,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get automationTemplateLabel => 'Checklistenvorlage';
+
+  @override
+  String get answerUnavailable => 'Nicht verfügbar';
 }

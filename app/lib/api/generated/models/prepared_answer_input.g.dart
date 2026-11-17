@@ -15,6 +15,11 @@ PreparedAnswerInput _$PreparedAnswerInputFromJson(Map<String, dynamic> json) =>
           .toList(),
       active: json['active'] as bool?,
       category: json['category'] as String?,
+      keywords: (json['keywords'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
+      kind: json['kind'] as String?,
+      teamId: json['team_id'] as String?,
     );
 
 Map<String, dynamic> _$PreparedAnswerInputToJson(
@@ -23,6 +28,9 @@ Map<String, dynamic> _$PreparedAnswerInputToJson(
   'active': ?instance.active,
   'category': ?instance.category,
   'code': instance.code,
+  'keywords': ?instance.keywords,
+  'kind': ?instance.kind,
   'name': instance.name,
+  'team_id': ?instance.teamId,
   'texts': instance.texts,
 };

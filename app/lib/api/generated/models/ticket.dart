@@ -22,6 +22,7 @@ class Ticket {
     required this.id,
     required this.internal,
     required this.language,
+    required this.languageSource,
     required this.number,
     required this.watching,
     required this.priority,
@@ -31,31 +32,31 @@ class Ticket {
     required this.tags,
     required this.timeMinutes,
     required this.unread,
-    this.escalatedBy,
+    this.escalatedByName,
     this.mergedIntoId,
     this.mergedIntoNumber,
-    this.csatRating,
+    this.customerId,
     this.opportunityId,
     this.opportunityNumber,
     this.orderId,
     this.orderNumber,
     this.ownerName,
-    this.customerId,
     this.customerName,
+    this.escalatedAt,
     this.quotationId,
     this.quotationNumber,
     this.quotationRevision,
     this.quotationStatus,
-    this.escalatedAt,
+    this.escalatedBy,
     this.closedAt,
-    this.escalatedByName,
-    this.suggestedCategory,
     this.firstResponseAt,
+    this.suggestedCategory,
+    this.contactId,
     this.teamId,
     this.teamName,
-    this.contactId,
     this.csatComment,
     this.csatRatedAt,
+    this.csatRating,
     this.ownerUserId,
   });
   
@@ -109,6 +110,10 @@ class Ticket {
 
   /// nl | fr | en | de | es — the language to answer in.
   final String language;
+
+  /// record | detected | agent: where `language` came from.
+  @JsonKey(name: 'language_source')
+  final String languageSource;
 
   /// Set when this ticket was merged into another one (it is closed).
   @JsonKey(includeIfNull: false,name: 'merged_into_id')

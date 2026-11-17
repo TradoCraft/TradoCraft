@@ -10,9 +10,7 @@ use axum::Json;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, PgConnection};
-use tradocraft_core::{
-    audit, new_id, AppError, AppResult, AppState, CurrentUser, Permission,
-};
+use tradocraft_core::{audit, new_id, AppError, AppResult, AppState, CurrentUser, Permission};
 use utoipa::{IntoParams, ToSchema};
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
@@ -109,7 +107,9 @@ pub struct ValidatedTemplateInput {
 }
 
 /// Validates and trims a `ChecklistTemplateInput`.
-pub fn validate_template_input(input: &ChecklistTemplateInput) -> AppResult<ValidatedTemplateInput> {
+pub fn validate_template_input(
+    input: &ChecklistTemplateInput,
+) -> AppResult<ValidatedTemplateInput> {
     let name = input.name.trim().to_string();
     if name.is_empty() {
         return Err(AppError::Validation("template name is required".into()));
@@ -467,7 +467,12 @@ async fn list_templates(
     )
     .bind(user.company_id)
     .bind(p.team_id)
-    .bind(p.category.as_deref().map(str::trim).filter(|c| !c.is_empty()))
+    .bind(
+        p.category
+            .as_deref()
+            .map(str::trim)
+            .filter(|c| !c.is_empty()),
+    )
     .bind(p.active)
     .fetch_all(&state.db)
     .await?;
@@ -620,13 +625,12 @@ async fn delete_template(
 ) -> AppResult<StatusCode> {
     user.require(Permission::HelpdeskAdmin)?;
     let mut tx = state.db.begin().await?;
-    let res = sqlx::query(
-        "DELETE FROM helpdesk.checklist_templates WHERE id = $1 AND company_id = $2",
-    )
-    .bind(id)
-    .bind(user.company_id)
-    .execute(&mut *tx)
-    .await?;
+    let res =
+        sqlx::query("DELETE FROM helpdesk.checklist_templates WHERE id = $1 AND company_id = $2")
+            .bind(id)
+            .bind(user.company_id)
+            .execute(&mut *tx)
+            .await?;
 
     if res.rows_affected() == 0 {
         return Err(AppError::NotFound("checklist template"));
@@ -812,22 +816,18 @@ async fn update_ticket_checklist_item(
         let reordered = reorder_items(&ids, item_id, new_pos);
         // Two-pass update via negative temporary positions so UNIQUE (ticket_id, position) never collides.
         for (idx, &iid) in reordered.iter().enumerate() {
-            sqlx::query(
-                "UPDATE helpdesk.ticket_checklist_items SET position = $1 WHERE id = $2",
-            )
-            .bind(-(idx as i32 + 1))
-            .bind(iid)
-            .execute(&mut *tx)
-            .await?;
+            sqlx::query("UPDATE helpdesk.ticket_checklist_items SET position = $1 WHERE id = $2")
+                .bind(-(idx as i32 + 1))
+                .bind(iid)
+                .execute(&mut *tx)
+                .await?;
         }
         for (idx, &iid) in reordered.iter().enumerate() {
-            sqlx::query(
-                "UPDATE helpdesk.ticket_checklist_items SET position = $1 WHERE id = $2",
-            )
-            .bind(idx as i32 + 1)
-            .bind(iid)
-            .execute(&mut *tx)
-            .await?;
+            sqlx::query("UPDATE helpdesk.ticket_checklist_items SET position = $1 WHERE id = $2")
+                .bind(idx as i32 + 1)
+                .bind(iid)
+                .execute(&mut *tx)
+                .await?;
         }
     }
 
@@ -855,13 +855,12 @@ async fn delete_ticket_checklist_item(
     let mut tx = state.db.begin().await?;
     lock_ticket(&mut tx, user.company_id, ticket_id).await?;
 
-    let res = sqlx::query(
-        "DELETE FROM helpdesk.ticket_checklist_items WHERE id = $1 AND ticket_id = $2",
-    )
-    .bind(item_id)
-    .bind(ticket_id)
-    .execute(&mut *tx)
-    .await?;
+    let res =
+        sqlx::query("DELETE FROM helpdesk.ticket_checklist_items WHERE id = $1 AND ticket_id = $2")
+            .bind(item_id)
+            .bind(ticket_id)
+            .execute(&mut *tx)
+            .await?;
 
     if res.rows_affected() == 0 {
         return Err(AppError::NotFound("checklist item"));
@@ -892,14 +891,9 @@ async fn apply_template(
     user.require(Permission::HelpdeskWrite)?;
     let mut tx = state.db.begin().await?;
     lock_ticket(&mut tx, user.company_id, ticket_id).await?;
-    let (items, _) = apply_template_to_ticket(
-        &mut tx,
-        user.company_id,
-        ticket_id,
-        input.template_id,
-        true,
-    )
-    .await?;
+    let (items, _) =
+        apply_template_to_ticket(&mut tx, user.company_id, ticket_id, input.template_id, true)
+            .await?;
     tx.commit().await?;
     Ok(Json(items))
 }
@@ -973,10 +967,7 @@ mod tests {
                 team_id: Some(id(10)),
                 category: Some("service".into()),
                 active: true,
-                items: vec![
-                    "Verify serial number".into(),
-                    "Send confirmation".into(),
-                ],
+                items: vec!["Verify serial number".into(), "Send confirmation".into(),],
             }
         );
 

@@ -94,6 +94,8 @@ List<String> ruleSummary(
       '${l.status}: ${join(c.statuses!.map(l.ticketStatus))}',
     if (c.customerLanguages?.isNotEmpty ?? false)
       '${l.customerLanguage}: ${join(c.customerLanguages!.map(languageName))}',
+    if (c.ticketLanguages?.isNotEmpty ?? false)
+      '${l.ticketLanguageCondition}: ${join(c.ticketLanguages!.map(languageName))}',
     if (c.channels?.isNotEmpty ?? false)
       '${l.channel}: ${join(c.channels!.map(l.channelName))}',
     if (c.subjectContains?.isNotEmpty ?? false)
@@ -368,8 +370,9 @@ class _MailTexts {
     recipient: a.recipient ?? 'customer',
     teamId: a.recipient == 'team' ? a.teamId : null,
     address: a.recipient == 'address' ? address.text.trim() : null,
-    subject: subject.text.trim(),
-    body: body.text.trim(),
+    answerId: a.answerId,
+    subject: a.answerId == null ? subject.text.trim() : null,
+    body: a.answerId == null ? body.text.trim() : null,
     periodHours: int.tryParse(period.text.trim()),
   );
 
@@ -410,6 +413,9 @@ class _RuleEditorState extends ConsumerState<RuleEditor> {
   late final Set<String> _statuses = {...?widget.rule?.conditions.statuses};
   late final Set<String> _languages = {
     ...?widget.rule?.conditions.customerLanguages,
+  };
+  late final Set<String> _ticketLanguages = {
+    ...?widget.rule?.conditions.ticketLanguages,
   };
   late final Set<String> _channels = {...?widget.rule?.conditions.channels};
   late String? _teamId = widget.rule?.conditions.teamId;
@@ -478,6 +484,7 @@ class _RuleEditorState extends ConsumerState<RuleEditor> {
         categories: _categories.toList(),
         statuses: _statuses.toList(),
         customerLanguages: _languages.toList(),
+        ticketLanguages: _ticketLanguages.toList(),
         channels: _channels.toList(),
         customerId: _customerId,
         subjectContains: text(_subject),
@@ -544,11 +551,20 @@ class _RuleEditorState extends ConsumerState<RuleEditor> {
     final a = _actions[i];
     final t = _mailTexts.putIfAbsent(i, () => _MailTexts(a));
     final recipient = a.recipient ?? 'customer';
-    RuleAction with_({String? r, String? team}) => RuleAction(
-      kind: a.kind,
-      recipient: r ?? recipient,
-      teamId: team ?? a.teamId,
-    );
+    final answers =
+        ref.watch(_mailAnswersProvider).value ?? const <PreparedAnswer>[];
+    RuleAction with_({
+      String? r,
+      String? team,
+      String? answer,
+      bool clearAnswer = false,
+    }) =>
+        RuleAction(
+          kind: a.kind,
+          recipient: r ?? recipient,
+          teamId: team ?? a.teamId,
+          answerId: clearAnswer ? null : (answer ?? a.answerId),
+        );
     return Column(
       key: ValueKey('action-value-$i'),
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -598,25 +614,55 @@ class _RuleEditorState extends ConsumerState<RuleEditor> {
               isDense: true,
             ),
           ),
-        TextField(
-          key: ValueKey('mail-subject-$i'),
-          controller: t.subject,
-          decoration: InputDecoration(labelText: l.subject, isDense: true),
-        ),
-        TextField(
-          key: ValueKey('mail-body-$i'),
-          controller: t.body,
-          minLines: 3,
-          maxLines: 8,
-          decoration: InputDecoration(
-            labelText: l.mailBody,
-            helperText: l.mailPlaceholdersHint(
-              '{ticket_number}, {subject}, {customer}, {agent}',
+        DropdownButtonFormField<String?>(
+          key: ValueKey('mail-template-$i'),
+          initialValue: a.answerId,
+          isExpanded: true,
+          decoration: InputDecoration(labelText: l.mailTemplate, isDense: true),
+          items: [
+            DropdownMenuItem<String?>(
+              value: null,
+              child: Text(l.mailTemplateNone),
             ),
-            helperMaxLines: 2,
-            isDense: true,
+            if (a.answerId != null && !answers.any((x) => x.id == a.answerId))
+              DropdownMenuItem<String?>(
+                value: a.answerId,
+                enabled: false,
+                child: Text('${a.answerId} (${l.answerUnavailable})'),
+              ),
+            for (final x in answers.where((x) => x.active || x.id == a.answerId))
+              DropdownMenuItem<String?>(
+                value: x.id,
+                child: Text('${x.code} · ${x.name}${x.active ? '' : ' (${l.inactive})'}'),
+              ),
+          ],
+          onChanged: (v) => setState(
+            () => _actions[i] = _mailTexts[i]!.build(
+              v == null ? with_(clearAnswer: true) : with_(answer: v),
+            ),
           ),
         ),
+        if (a.answerId == null) ...[
+          TextField(
+            key: ValueKey('mail-subject-$i'),
+            controller: t.subject,
+            decoration: InputDecoration(labelText: l.subject, isDense: true),
+          ),
+          TextField(
+            key: ValueKey('mail-body-$i'),
+            controller: t.body,
+            minLines: 3,
+            maxLines: 8,
+            decoration: InputDecoration(
+              labelText: l.mailBody,
+              helperText: l.mailPlaceholdersHint(
+                '{ticket_number}, {subject}, {customer}, {agent}',
+              ),
+              helperMaxLines: 2,
+              isDense: true,
+            ),
+          ),
+        ],
         TextField(
           key: ValueKey('mail-period-$i'),
           controller: t.period,
@@ -873,6 +919,13 @@ class _RuleEditorState extends ConsumerState<RuleEditor> {
                 _languages,
                 languageName,
                 'cond-language',
+              ),
+              _chips(
+                l.ticketLanguageCondition,
+                ruleLanguages,
+                _ticketLanguages,
+                languageName,
+                'cond-ticket-language',
               ),
               _chips(
                 l.channel,
@@ -1167,3 +1220,7 @@ class _DryRunDialogState extends ConsumerState<_DryRunDialog> {
     );
   }
 }
+
+final _mailAnswersProvider = FutureProvider.autoDispose<List<PreparedAnswer>>(
+  (ref) => ref.watch(apiProvider).helpdesk.listAnswers(),
+);

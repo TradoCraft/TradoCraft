@@ -9,6 +9,7 @@ part of 'rule_action.dart';
 RuleAction _$RuleActionFromJson(Map<String, dynamic> json) => RuleAction(
   kind: json['kind'] as String,
   address: json['address'] as String?,
+  answerId: json['answer_id'] as String?,
   body: json['body'] as String?,
   flag: json['flag'] as bool?,
   periodHours: (json['period_hours'] as num?)?.toInt(),
@@ -23,6 +24,7 @@ RuleAction _$RuleActionFromJson(Map<String, dynamic> json) => RuleAction(
 Map<String, dynamic> _$RuleActionToJson(RuleAction instance) =>
     <String, dynamic>{
       'address': ?instance.address,
+      'answer_id': ?instance.answerId,
       'body': ?instance.body,
       'flag': ?instance.flag,
       'kind': instance.kind,
