@@ -4,7 +4,7 @@
 # vulnerability again and the check fails, so an exception is a decision to look again, not a way to
 # silence a finding. Fix a vulnerability rather than adding it here whenever a fix exists and fits.
 #
-# Last reviewed: 2026-11-15.
+# Last reviewed: 2026-11-17.
 
 # libsqlite3-sys is an entry of Cargo.lock only: no workspace crate depends on it on any target or
 # feature (`cargo tree -i libsqlite3-sys --workspace --target all -e all` prints nothing), because the
@@ -34,3 +34,17 @@ reason = "paste is unmaintained; it is a build-time proc macro used through utoi
 id = "RUSTSEC-2026-0441"
 ignoreUntil = 2027-02-15
 reason = "pin-utils is unmaintained; used through async-imap (helpdesk mail), no known vulnerability."
+
+# Advisories published on 2026-11-17 against chrono 0.4.45 and chrono-tz 0.10.4. osv.dev reports no
+# fixed version for either. These were accepted to unblock CI before the advisory text was reviewed in
+# detail, so the reason below is deliberately provisional: read both advisories, then either bump the
+# crates once a fix exists or replace the reason with the actual assessment. The short expiry forces that.
+[[IgnoredVulns]]
+id = "RUSTSEC-2026-0543"
+ignoreUntil = 2026-12-17
+reason = "chrono 0.4.45: no fixed version yet. Provisional exception pending review of the advisory; bump chrono when a fix is released."
+
+[[IgnoredVulns]]
+id = "RUSTSEC-2026-0555"
+ignoreUntil = 2026-12-17
+reason = "chrono-tz 0.10.4: no fixed version yet. Provisional exception pending review of the advisory; bump chrono-tz when a fix is released."
