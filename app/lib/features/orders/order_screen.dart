@@ -8,6 +8,7 @@ import '../../app/workspace.dart' show TabScope;
 import '../../l10n/l10n.dart';
 import '../../shared/actions.dart';
 import '../../shared/format.dart';
+import '../../shared/live_record_watcher.dart';
 import '../../shared/order_widgets.dart';
 import '../../shared/power_grid_field.dart';
 import '../../shared/sales_hints.dart';
@@ -48,6 +49,9 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
   bool _changed = false;
   String? _error;
   bool _missing = false;
+  RecordLiveWatcher? _watcher;
+  String? _conflictMessage;
+  bool _isConflict = false;
 
   bool _editing = false;
   final _qty = <int, TextEditingController>{};
@@ -68,10 +72,24 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
   void initState() {
     super.initState();
     _load(() => _api.getOrder(id: widget.id));
+    _watcher = watchRecordChanges(
+      ref,
+      entityType: 'order',
+      recordId: widget.id,
+      currentVersion: () => _order?.version,
+      onExternalChange: (ev) {
+        if (!mounted) return;
+        setState(() {
+          _conflictMessage = context.l10n.recordUpdatedBy(ev.changedByName);
+          _isConflict = false;
+        });
+      },
+    );
   }
 
   @override
   void dispose() {
+    _watcher?.dispose();
     _disposeEditors();
     _notes.dispose();
     _reference.dispose();
@@ -120,6 +138,8 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
       _stockReload++;
       _order = o;
       _editing = false;
+      _conflictMessage = null;
+      _isConflict = false;
       _disposeEditors();
     });
     ref.invalidate(_historyProvider(widget.id));
@@ -135,7 +155,17 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
       await action();
       _changed = true;
     } catch (e) {
-      if (mounted) setState(() => _error = errorMessage(e));
+      if (mounted) {
+        if (isRecordChangedError(e)) {
+          setState(() {
+            _conflictMessage = context.l10n.recordConflictMessage;
+            _isConflict = true;
+            _error = null;
+          });
+        } else {
+          setState(() => _error = errorMessage(e));
+        }
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -228,6 +258,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
                 o.order.powerGridId != null
             ? true
             : null,
+        expectedVersion: o.version,
       ),
     );
     if (!mounted) return;
@@ -871,6 +902,16 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
                 ),
             ],
           ),
+          if (_conflictMessage != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: RecordConflictBanner(
+                message: _conflictMessage!,
+                isConflict: _isConflict,
+                onReload: () => _load(() => _api.getOrder(id: widget.id)),
+                onDismiss: () => setState(() => _conflictMessage = null),
+              ),
+            ),
           if (_error != null)
             Padding(
               padding: const EdgeInsets.only(top: 8),

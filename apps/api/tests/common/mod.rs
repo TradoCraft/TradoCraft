@@ -57,6 +57,7 @@ async fn seeded_state(db: PgPool) -> AppState {
                 .into(),
             template_dir: root.join("templates"),
         }),
+        live_events: tradocraft_core::live_events::LiveEvents::new(),
     }
 }
 

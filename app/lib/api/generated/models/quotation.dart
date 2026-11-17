@@ -16,7 +16,7 @@ part 'quotation.g.dart';
 @JsonSerializable()
 class Quotation {
   const Quotation({
-    required this.updatedAt,
+    required this.validUntil,
     required this.companyId,
     required this.createdAt,
     required this.createdBy,
@@ -33,29 +33,30 @@ class Quotation {
     required this.lines,
     required this.notes,
     required this.number,
-    required this.revision,
     required this.priceDate,
     required this.priceZoneCode,
     required this.purpose,
     required this.quoteDate,
+    required this.revision,
     required this.warnings,
     required this.shippingStatus,
     required this.status,
     required this.subtotal,
     required this.suggestions,
     required this.vatGroups,
-    required this.vatRegime,
+    required this.updatedAt,
     required this.vatTotal,
-    required this.validUntil,
+    required this.vatRegime,
     required this.total,
     this.supersedesId,
-    this.customerVatNumber,
-    this.sentAt,
-    this.powerGridId,
     this.deliveryCountryCode,
-    this.vatRegimeOverride,
-    this.buildingConstructionYear,
+    this.sentAt,
     this.opportunityId,
+    this.buildingConstructionYear,
+    this.vatRegimeOverride,
+    this.customerVatNumber,
+    this.version,
+    this.powerGridId,
   });
   
   factory Quotation.fromJson(Map<String, Object?> json) => _$QuotationFromJson(json);
@@ -143,6 +144,11 @@ class Quotation {
   final String? vatRegimeOverride;
   @JsonKey(name: 'vat_total')
   final String vatTotal;
+
+  /// Raised on every change. Send it back as `expected_version` when saving: a quotation someone.
+  /// else changed meanwhile is refused (409 `record_changed`).
+  @JsonKey(includeIfNull: false)
+  final int? version;
 
   /// Hints about the lines (power grid fit, incompatible products); filled when the quotation is.
   /// created or updated, empty otherwise. Never blocking.

@@ -118,6 +118,7 @@ async fn main() -> anyhow::Result<()> {
             typst_bin: PathBuf::from(env("TYPST_BIN").unwrap_or_else(|| "typst".into())),
             template_dir: PathBuf::from(env("TEMPLATE_DIR").unwrap_or_else(|| "templates".into())),
         }),
+        live_events: tradocraft_core::live_events::LiveEvents::new(),
     };
     let listener = tokio::net::TcpListener::bind(addr).await?;
     tracing::info!(

@@ -322,6 +322,7 @@ pub async fn import(
         clear_vat_regime_override: None,
         building_construction_year: input.building_construction_year,
         clear_building_construction_year: None,
+        expected_version: None,
         lines: flat.lines,
     };
 

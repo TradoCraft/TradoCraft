@@ -3180,5 +3180,8 @@
   "vatRateClosePrevious": "Vorige open regel automatisch afsluiten",
   "vatRateOverlapError": "Datums overlappen met een bestaande regel voor dit land en deze categorie",
   "vatRateDeleteConfirm": "BTW-regel voor {country} ({category}) verwijderen?",
-  "vatRateOngoing": "Lopend"
+  "vatRateOngoing": "Lopend",
+  "reloadRecord": "Herladen",
+  "recordUpdatedBy": "Bijgewerkt door {name}. Herlaad om de laatste wijzigingen te zien.",
+  "recordConflictMessage": "Iemand anders heeft wijzigingen aan dit record opgeslagen. Herlaad om die wijzigingen te zien voordat u opnieuw opslaat."
 }

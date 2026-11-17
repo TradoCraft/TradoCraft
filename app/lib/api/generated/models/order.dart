@@ -32,6 +32,7 @@ class Order {
     this.confirmedBy,
     this.confirmedRevision,
     this.confirmedVia,
+    this.version,
   });
   
   factory Order.fromJson(Map<String, Object?> json) => _$OrderFromJson(json);
@@ -68,6 +69,11 @@ class Order {
   final List<SalesSuggestion> suggestions;
   @JsonKey(name: 'vat_total')
   final String vatTotal;
+
+  /// Raised on every change to the order. Send it back as `expected_version` when saving: an.
+  /// order someone else changed meanwhile is refused (409 `record_changed`).
+  @JsonKey(includeIfNull: false)
+  final int? version;
 
   /// Power grid and incompatible-product hints; only filled by the confirm call. Never blocking.
   final List<SalesWarning> warnings;

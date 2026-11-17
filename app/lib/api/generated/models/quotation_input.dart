@@ -18,6 +18,7 @@ class QuotationInput {
     this.clearPowerGrid,
     this.clearVatRegimeOverride,
     this.deliveryCountryCode,
+    this.expectedVersion,
     this.notes,
     this.opportunityId,
     this.powerGridId,
@@ -53,6 +54,11 @@ class QuotationInput {
   /// installation (on update: unchanged when omitted, unless the customer changes).
   @JsonKey(includeIfNull: false,name: 'delivery_country_code')
   final String? deliveryCountryCode;
+
+  /// The `version` the form was loaded with. On an update, a quotation that has changed since is.
+  /// refused (409 `record_changed`); left out, the save always goes through. Ignored on create.
+  @JsonKey(includeIfNull: false,name: 'expected_version')
+  final int? expectedVersion;
   final List<QuotationLineInput> lines;
   @JsonKey(includeIfNull: false)
   final String? notes;

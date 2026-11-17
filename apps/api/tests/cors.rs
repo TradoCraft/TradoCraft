@@ -22,6 +22,7 @@ fn app(db: PgPool, cors: &CorsConfig) -> axum::Router {
                 typst_bin: "typst".into(),
                 template_dir: "templates".into(),
             }),
+            live_events: tradocraft_core::live_events::LiveEvents::new(),
         },
         EnvironmentConfig::default(),
         BootstrapConfig::default(),

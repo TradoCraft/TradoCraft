@@ -11,49 +11,50 @@ part 'ticket.g.dart';
 @JsonSerializable()
 class Ticket {
   const Ticket({
-    required this.priority,
+    required this.updatedAt,
     required this.category,
     required this.contactEmail,
     required this.contactName,
     required this.createdAt,
-    required this.number,
+    required this.tags,
     required this.articleCount,
     required this.id,
     required this.internal,
-    required this.tags,
-    required this.subject,
-    required this.status,
-    required this.sla,
-    required this.watching,
-    required this.unread,
     required this.language,
-    required this.updatedAt,
+    required this.number,
+    required this.priority,
+    required this.watching,
+    required this.sla,
+    required this.status,
+    required this.subject,
     required this.timeMinutes,
+    required this.unread,
     this.firstResponseAt,
     this.mergedIntoId,
     this.mergedIntoNumber,
-    this.escalatedByName,
+    this.customerId,
     this.opportunityId,
     this.opportunityNumber,
     this.orderId,
     this.orderNumber,
     this.ownerName,
     this.ownerUserId,
-    this.escalatedBy,
-    this.quotationId,
+    this.customerName,
+    this.escalatedAt,
     this.quotationNumber,
     this.quotationRevision,
     this.quotationStatus,
-    this.escalatedAt,
-    this.customerName,
-    this.customerId,
+    this.escalatedBy,
+    this.escalatedByName,
+    this.contactId,
     this.suggestedCategory,
-    this.csatRating,
+    this.quotationId,
     this.teamId,
     this.teamName,
-    this.csatRatedAt,
-    this.contactId,
     this.closedAt,
+    this.csatRatedAt,
+    this.csatRating,
+    this.version,
     this.csatComment,
   });
   
@@ -161,6 +162,11 @@ class Ticket {
   final bool unread;
   @JsonKey(name: 'updated_at')
   final DateTime updatedAt;
+
+  /// Raised on every change. Send it back as `expected_version` when saving: a ticket someone.
+  /// else changed meanwhile is refused (409 `record_changed`).
+  @JsonKey(includeIfNull: false)
+  final int? version;
 
   /// For the caller: they follow the ticket. Filled like `unread`.
   final bool watching;

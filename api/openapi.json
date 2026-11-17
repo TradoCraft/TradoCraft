@@ -4344,6 +4344,16 @@
                 }
               }
             }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -5612,6 +5622,52 @@
             }
           },
           "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/events/records": {
+      "get": {
+        "tags": [
+          "core"
+        ],
+        "operationId": "stream_record_events",
+        "parameters": [
+          {
+            "name": "entity_type",
+            "in": "query",
+            "description": "`customer` | `quotation` | `order` | `ticket`",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "record_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Server-sent events stream of record changes",
+            "content": {
+              "text/event-stream": {}
+            }
+          },
+          "422": {
             "description": "",
             "content": {
               "application/json": {
@@ -29006,6 +29062,16 @@
               }
             }
           },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
           "422": {
             "description": "",
             "content": {
@@ -35150,6 +35216,11 @@
           "vat_regime": {
             "type": "string",
             "description": "`domestic` (VAT charged), `domestic_reverse_charge`, `intra_eu` (reverse charge) or `outside_eu`."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Raised on every change. Send it back as `expected_version` when saving: a customer someone\nelse changed meanwhile is refused (409 `record_changed`)."
           }
         }
       },
@@ -35204,6 +35275,14 @@
               "string",
               "null"
             ]
+          },
+          "expected_version": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "The `version` the form was loaded with. On an update, a customer that has changed since is\nrefused (409 `record_changed`); left out, the save always goes through. Ignored on create."
           },
           "language": {
             "type": "string"
@@ -41649,6 +41728,11 @@
           "vat_total": {
             "type": "string"
           },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Raised on every change to the order. Send it back as `expected_version` when saving: an\norder someone else changed meanwhile is refused (409 `record_changed`)."
+          },
           "warnings": {
             "type": "array",
             "items": {
@@ -41716,6 +41800,14 @@
               "null"
             ],
             "description": "Delivery country (ISO alpha-2); unchanged when omitted."
+          },
+          "expected_version": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "The `version` the form was loaded with. An order that has changed since is refused (409\n`record_changed`); left out, the save always goes through."
           },
           "lines": {
             "type": "array",
@@ -46863,6 +46955,11 @@
           "vat_total": {
             "type": "string"
           },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Raised on every change. Send it back as `expected_version` when saving: a quotation someone\nelse changed meanwhile is refused (409 `record_changed`)."
+          },
           "warnings": {
             "type": "array",
             "items": {
@@ -46918,6 +47015,14 @@
               "null"
             ],
             "description": "ISO 3166 alpha-2 country the goods go to. Defaults to the customer's country for an\ninstallation (on update: unchanged when omitted, unless the customer changes)."
+          },
+          "expected_version": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "The `version` the form was loaded with. On an update, a quotation that has changed since is\nrefused (409 `record_changed`); left out, the save always goes through. Ignored on create."
           },
           "lines": {
             "type": "array",
@@ -52540,6 +52645,11 @@
             "type": "string",
             "format": "date-time"
           },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Raised on every change. Send it back as `expected_version` when saving: a ticket someone\nelse changed meanwhile is refused (409 `record_changed`)."
+          },
           "watching": {
             "type": "boolean",
             "description": "For the caller: they follow the ticket. Filled like `unread`."
@@ -52613,6 +52723,14 @@
               "null"
             ],
             "format": "uuid"
+          },
+          "expected_version": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "The `version` the form was loaded with. A ticket that has changed since is refused (409\n`record_changed`); left out, the save always goes through."
           },
           "language": {
             "type": "string"

@@ -35,7 +35,7 @@ Module overview: [ARCHITECTURE.md](ARCHITECTURE.md).
 | C3 Planning board, work-centre half (finite loading, drag-and-drop board) | Open; the capacity view and the work-centre calendars are done in C1b ([ADR 0063](adr/0063-work-centres-routings-and-operations.md)); reuses `ResourceBoard` |
 | D1 Worker heartbeat and "worker was down" alert | Done, [ADR 0052](adr/0052-worker-heartbeat.md) |
 | D2 Backup and restore runbook | Done, [ADR 0056](adr/0056-backup-and-restore.md) |
-| D3 Concurrent-edit protection on records | Open |
+| D3 Concurrent-edit protection on records | Done for customers, quotations, orders and tickets (shared SSE push channel + Flutter UI), [ADR 0072](adr/0072-concurrent-edit-protection.md); other records follow |
 | D4 VAT number validation, registry lookup and duplicate warning | Done, [ADR 0058](adr/0058-vat-number-validation-and-lookup.md); the request to the live VIES service is untested (see the ADR) |
 | D4b Country-aware, temporal, and building-age VAT defaults | Done, [ADR 0071](adr/0071-country-vat-defaults.md) |
 | D5 Accent-insensitive search | Done for customers, contacts, suppliers and products, [ADR 0057](adr/0057-accent-insensitive-search.md); the other lists follow |

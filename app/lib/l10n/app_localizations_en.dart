@@ -10137,4 +10137,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get vatRateOngoing => 'Ongoing';
+
+  @override
+  String get reloadRecord => 'Reload';
+
+  @override
+  String recordUpdatedBy(String name) {
+    return 'Updated by $name. Reload to see the latest changes.';
+  }
+
+  @override
+  String get recordConflictMessage =>
+      'Someone else saved changes to this record. Reload to see their changes before saving again.';
 }

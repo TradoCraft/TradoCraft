@@ -17,6 +17,7 @@ class OrderEditInput {
     this.clearPowerGrid,
     this.customerReference,
     this.deliveryCountryCode,
+    this.expectedVersion,
     this.notes,
     this.powerGridId,
     this.purpose,
@@ -34,6 +35,11 @@ class OrderEditInput {
   /// Delivery country (ISO alpha-2); unchanged when omitted.
   @JsonKey(includeIfNull: false,name: 'delivery_country_code')
   final String? deliveryCountryCode;
+
+  /// The `version` the form was loaded with. An order that has changed since is refused (409.
+  /// `record_changed`); left out, the save always goes through.
+  @JsonKey(includeIfNull: false,name: 'expected_version')
+  final int? expectedVersion;
   final List<OrderLineEdit> lines;
   @JsonKey(includeIfNull: false)
   final String? notes;

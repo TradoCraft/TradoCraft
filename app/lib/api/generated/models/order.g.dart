@@ -33,6 +33,7 @@ Order _$OrderFromJson(Map<String, dynamic> json) => Order(
   confirmedBy: json['confirmed_by'] as String?,
   confirmedRevision: (json['confirmed_revision'] as num?)?.toInt(),
   confirmedVia: json['confirmed_via'] as String?,
+  version: (json['version'] as num?)?.toInt(),
 );
 
 Map<String, dynamic> _$OrderToJson(Order instance) => <String, dynamic>{
@@ -51,5 +52,6 @@ Map<String, dynamic> _$OrderToJson(Order instance) => <String, dynamic>{
   'revisions': instance.revisions,
   'suggestions': instance.suggestions,
   'vat_total': instance.vatTotal,
+  'version': ?instance.version,
   'warnings': instance.warnings,
 };

@@ -3180,5 +3180,8 @@
   "vatRateClosePrevious": "Clôturer automatiquement la règle ouverte précédente",
   "vatRateOverlapError": "Les dates chevauchent une règle existante pour ce pays et cette catégorie",
   "vatRateDeleteConfirm": "Supprimer la règle TVA pour {country} ({category}) ?",
-  "vatRateOngoing": "En cours"
+  "vatRateOngoing": "En cours",
+  "reloadRecord": "Recharger",
+  "recordUpdatedBy": "Mis à jour par {name}. Rechargez pour voir les dernières modifications.",
+  "recordConflictMessage": "Quelqu'un d'autre a enregistré des modifications sur cet enregistrement. Rechargez pour voir ses modifications avant d'enregistrer à nouveau."
 }

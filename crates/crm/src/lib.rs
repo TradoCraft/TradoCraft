@@ -39,6 +39,10 @@ pub use tradocraft_core::vat::VAT_REGIMES;
 #[derive(Debug, Clone, Serialize, FromRow, ToSchema)]
 pub struct Customer {
     pub id: Uuid,
+    /// Raised on every change. Send it back as `expected_version` when saving: a customer someone
+    /// else changed meanwhile is refused (409 `record_changed`).
+    #[schema(required = false)]
+    pub version: i64,
     pub code: String,
     pub name: String,
     pub vat_number: Option<String>,
@@ -90,6 +94,10 @@ pub struct CustomerInput {
     pub discount_percent: Decimal,
     #[serde(default = "default_payment_terms")]
     pub payment_terms_days: i32,
+    /// The `version` the form was loaded with. On an update, a customer that has changed since is
+    /// refused (409 `record_changed`); left out, the save always goes through. Ignored on create.
+    #[serde(default)]
+    pub expected_version: Option<i64>,
 }
 
 fn default_country() -> String {
@@ -177,7 +185,7 @@ pub struct ListParams {
 }
 
 pub(crate) const SELECT_CUSTOMER: &str = r#"
-    SELECT c.id, c.code, c.name, c.vat_number, COALESCE(t.vat_regime, c.vat_regime) AS vat_regime,
+    SELECT c.id, c.version, c.code, c.name, c.vat_number, COALESCE(t.vat_regime, c.vat_regime) AS vat_regime,
            c.email, c.phone, c.street, c.postal_code, c.city,
            c.country_code::text AS country_code, c.language::text AS language, c.active,
            t.price_zone_id, z.code AS price_zone_code, t.discount_percent, t.payment_terms_days
@@ -479,7 +487,8 @@ async fn create_customer(
 }
 
 #[utoipa::path(put, path = "/customers/{id}", tag = "crm", params(("id" = Uuid, Path)),
-    request_body = CustomerInput, responses((status = 200, body = Customer)))]
+    request_body = CustomerInput,
+    responses((status = 200, body = Customer), (status = 409, body = tradocraft_core::error::ErrorBody)))]
 async fn update_customer(
     State(state): State<AppState>,
     user: CurrentUser,
@@ -490,6 +499,11 @@ async fn update_customer(
     input.validate()?;
     let mut tx = state.db.begin().await?;
     let before = get_customer_for_update(&mut tx, user.company_id, id).await?;
+    tradocraft_core::concurrency::check_version(
+        input.expected_version,
+        before.version,
+        &format!("customer {}", before.code),
+    )?;
     if let Some(m) = input.vat_problem(before.vat_number.as_deref()) {
         return Err(AppError::Validation(m));
     }
@@ -551,7 +565,16 @@ async fn update_customer(
     )
     .await?;
     tx.commit().await?;
-    Ok(Json(get_customer(&state.db, user.company_id, id).await?))
+    let customer = get_customer(&state.db, user.company_id, id).await?;
+    state.live_events.publish_record_change(
+        &user,
+        "customer",
+        id,
+        customer.version,
+        "updated",
+        None,
+    );
+    Ok(Json(customer))
 }
 
 /// Customers that carry the same VAT number (ADR 0058). Customers are shared master data

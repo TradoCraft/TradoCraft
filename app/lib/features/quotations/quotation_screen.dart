@@ -14,6 +14,7 @@ import '../../app/workspace.dart' show TabScope;
 import '../../shared/grid_key_nav.dart';
 import '../../shared/actions.dart';
 import '../../shared/format.dart';
+import '../../shared/live_record_watcher.dart';
 import '../../shared/sales_hints.dart';
 import '../../shared/options_chooser.dart';
 import '../../shared/sub_item_chooser.dart';
@@ -232,6 +233,9 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
   String? _error;
   bool _missing = false;
   bool _changed = false;
+  RecordLiveWatcher? _watcher;
+  String? _conflictMessage;
+  bool _isConflict = false;
 
   TradocraftApi get _api => ref.read(apiProvider);
 
@@ -239,11 +243,32 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
   String? get _opportunityShown => _opportunitiesLoaded ? _opportunityId : null;
   bool get _editable => _id == null || _q?.status == QuotationStatus.draft;
 
+  void _startWatcher() {
+    _watcher?.dispose();
+    _watcher = null;
+    final id = _id;
+    if (id == null) return;
+    _watcher = watchRecordChanges(
+      ref,
+      entityType: 'quotation',
+      recordId: id,
+      currentVersion: () => _q?.version,
+      onExternalChange: (ev) {
+        if (!mounted) return;
+        setState(() {
+          _conflictMessage = context.l10n.recordUpdatedBy(ev.changedByName);
+          _isConflict = false;
+        });
+      },
+    );
+  }
+
   @override
   void initState() {
     super.initState();
     if (_id != null) {
       _load();
+      _startWatcher();
     } else if (widget.customerId != null) {
       _api.crm
           .getCustomer(id: widget.customerId!)
@@ -345,9 +370,12 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
       _notices.clear();
       _error = null;
       _changed = false;
+      _conflictMessage = null;
+      _isConflict = false;
     });
     _setDirty(false);
     if (_id != null) _load();
+    _startWatcher();
   }
 
   bool _wasActive = true;
@@ -368,6 +396,7 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
 
   @override
   void dispose() {
+    _watcher?.dispose();
     _debounce?.cancel();
     _scroll.dispose();
     _notes.dispose();
@@ -450,6 +479,8 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
       _vatRegimeOverride = q.vatRegimeOverride;
       _buildingYear.text = q.buildingConstructionYear?.toString() ?? '';
       _error = null;
+      _conflictMessage = null;
+      _isConflict = false;
     });
     // Loaded or saved: what is on screen is what the server has.
     _setDirty(false);
@@ -579,7 +610,15 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
       await action();
       _changed = true;
     } catch (e) {
-      setState(() => _error = errorMessage(e));
+      if (isRecordChangedError(e)) {
+        setState(() {
+          _conflictMessage = context.l10n.recordConflictMessage;
+          _isConflict = true;
+          _error = null;
+        });
+      } else {
+        setState(() => _error = errorMessage(e));
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -623,12 +662,14 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
           ? true
           : null,
       notes: _notes.text,
+      expectedVersion: _q?.version,
       lines: inputs,
     );
     final q = _id == null
         ? await _api.sales.createQuotation(body: body)
         : await _api.sales.updateQuotation(id: _id!, body: body);
     _apply(q);
+    _startWatcher();
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(context.l10n.savedNumber(q.number))),
@@ -819,6 +860,16 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
                     ..._actions(canWrite),
                   ],
                 ),
+                if (_conflictMessage != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: RecordConflictBanner(
+                      message: _conflictMessage!,
+                      isConflict: _isConflict,
+                      onReload: _load,
+                      onDismiss: () => setState(() => _conflictMessage = null),
+                    ),
+                  ),
                 if (_error != null)
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8),

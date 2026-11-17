@@ -12,6 +12,7 @@ import '../../l10n/l10n.dart';
 import '../../shared/actions.dart';
 import '../../shared/attachments.dart';
 import '../../shared/format.dart';
+import '../../shared/live_record_watcher.dart';
 import '../../shared/search_picker.dart';
 import '../customers/customer_form.dart';
 import '../kb/kb_entry_screen.dart' show KbArticlePicker;
@@ -105,12 +106,28 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
   List<PresenceEntry> _others = [];
   String _beatMode = 'viewing';
   bool _readMarked = false;
+  RecordLiveWatcher? _watcher;
+  String? _conflictMessage;
+  bool _isConflict = false;
 
   @override
   void initState() {
     super.initState();
     _load();
     _body.addListener(_bodyChanged);
+    _watcher = watchRecordChanges(
+      ref,
+      entityType: 'ticket',
+      recordId: widget.id,
+      currentVersion: () => _d?.ticket.version,
+      onExternalChange: (ev) {
+        if (!mounted) return;
+        setState(() {
+          _conflictMessage = context.l10n.recordUpdatedBy(ev.changedByName);
+          _isConflict = false;
+        });
+      },
+    );
   }
 
   /// Whether the beat is running; null until the first [didChangeDependencies].
@@ -134,6 +151,7 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
 
   @override
   void dispose() {
+    _watcher?.dispose();
     _beatTimer?.cancel();
     _body.removeListener(_bodyChanged);
     super.dispose();
@@ -187,6 +205,8 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
     setState(() {
       _d = d;
       _error = null;
+      _conflictMessage = null;
+      _isConflict = false;
       _subject.text = t.subject;
       _contactName.text = t.contactName;
       _contactEmail.text = t.contactEmail;
@@ -254,26 +274,48 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
     if (ok && d != null) _apply(d!);
   }
 
-  Future<void> _saveProperties() => _run(
-    () => _api.helpdesk.updateTicket(
-      id: widget.id,
-      body: TicketInput(
-        subject: _subject.text.trim(),
-        status: _status,
-        priority: _priority,
-        category: _category,
-        language: _language,
-        ownerUserId: _ownerId,
-        customerId: _customerId,
-        contactId: _contactId,
-        contactName: _contactName.text.trim(),
-        contactEmail: _contactEmail.text.trim(),
-        quotationId: _quotationId,
-        opportunityId: _opportunityId,
-      ),
-    ),
-    success: context.l10n.saved,
-  );
+  Future<void> _saveProperties() async {
+    setState(() => _busy = true);
+    try {
+      final d = await _api.helpdesk.updateTicket(
+        id: widget.id,
+        body: TicketInput(
+          subject: _subject.text.trim(),
+          status: _status,
+          priority: _priority,
+          category: _category,
+          language: _language,
+          ownerUserId: _ownerId,
+          customerId: _customerId,
+          contactId: _contactId,
+          contactName: _contactName.text.trim(),
+          contactEmail: _contactEmail.text.trim(),
+          quotationId: _quotationId,
+          opportunityId: _opportunityId,
+          expectedVersion: _d?.ticket.version,
+        ),
+      );
+      if (!mounted) return;
+      _apply(d);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.saved)));
+    } catch (e) {
+      if (!mounted) return;
+      if (isRecordChangedError(e)) {
+        setState(() {
+          _conflictMessage = context.l10n.recordConflictMessage;
+          _isConflict = true;
+        });
+      } else {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(errorMessage(e))));
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
 
   Future<void> _send() async {
     final l = context.l10n;
@@ -581,6 +623,16 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (_conflictMessage != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: RecordConflictBanner(
+              message: _conflictMessage!,
+              isConflict: _isConflict,
+              onReload: _load,
+              onDismiss: () => setState(() => _conflictMessage = null),
+            ),
+          ),
         Padding(
           padding: const EdgeInsets.fromLTRB(8, 16, 16, 0),
           child: Row(

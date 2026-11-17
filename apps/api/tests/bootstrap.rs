@@ -36,6 +36,7 @@ fn app(db: PgPool, oidc: bool, token: Option<&str>) -> axum::Router {
                 typst_bin: "typst".into(),
                 template_dir: "templates".into(),
             }),
+            live_events: tradocraft_core::live_events::LiveEvents::new(),
         },
         EnvironmentConfig::default(),
         BootstrapConfig::new(token.map(str::to_string)),
@@ -240,6 +241,7 @@ async fn outside_dev_mode_the_endpoint_needs_a_token(db: PgPool) {
             typst_bin: "typst".into(),
             template_dir: "templates".into(),
         }),
+        live_events: tradocraft_core::live_events::LiveEvents::new(),
     };
     let provider = ProviderConfig::from_env("https://issuer.invalid", "tradocraft");
     let claims =

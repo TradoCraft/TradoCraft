@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../app/api.dart';
 import '../../app/workspace.dart' show TabScope;
 import '../../shared/format.dart';
+import '../../shared/live_record_watcher.dart';
 import '../../shared/record_history.dart';
 import '../../shared/vat_field.dart';
 import '../contacts/contacts_dialog.dart';
@@ -72,7 +73,11 @@ class CustomerForm extends ConsumerStatefulWidget {
 
 class _CustomerFormState extends ConsumerState<CustomerForm> {
   final _form = GlobalKey<FormState>();
-  late final c = widget.customer;
+  late Customer? _current = widget.customer;
+  Customer? get c => _current;
+  RecordLiveWatcher? _watcher;
+  String? _conflictMessage;
+  bool _isConflict = false;
   late final _code = TextEditingController(text: c?.code);
   late final _name = TextEditingController(text: c?.name ?? widget.initialName);
   late final _vat = TextEditingController(text: c?.vatNumber);
@@ -112,6 +117,20 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
           vatNumber: _vat.text,
         );
       }
+    } else {
+      _watcher = watchRecordChanges(
+        ref,
+        entityType: 'customer',
+        recordId: c!.id,
+        currentVersion: () => _current?.version,
+        onExternalChange: (ev) {
+          if (!mounted) return;
+          setState(() {
+            _conflictMessage = context.l10n.recordUpdatedBy(ev.changedByName);
+            _isConflict = false;
+          });
+        },
+      );
     }
     // In the customer screen an edit marks the tab as holding unsaved changes (ADR 0041). A
     // controller also notifies for a cursor or selection move: only a changed text counts.
@@ -136,6 +155,27 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
         if (t == _country || t == _vat) _syncAutoVatRegime();
       });
     }
+  }
+
+  @override
+  void dispose() {
+    _watcher?.dispose();
+    for (final t in [
+      _code,
+      _name,
+      _vat,
+      _email,
+      _phone,
+      _street,
+      _postal,
+      _city,
+      _country,
+      _discount,
+      _terms,
+    ]) {
+      t.dispose();
+    }
+    super.dispose();
   }
 
   void _syncAutoVatRegime() {
@@ -183,15 +223,64 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
       priceZoneId: _zoneId!,
       discountPercent: parseDecimalInput(_discount.text) ?? '0',
       paymentTermsDays: int.parse(_terms.text.trim()),
+      expectedVersion: _current?.version,
     );
     try {
       final crm = ref.read(apiProvider).crm;
       final saved = c == null
           ? await crm.createCustomer(body: input)
           : await crm.updateCustomer(id: c!.id, body: input);
-      if (mounted) _finish(saved);
+      if (mounted) {
+        _current = saved;
+        _conflictMessage = null;
+        _finish(saved);
+      }
     } catch (e) {
-      setState(() => _error = errorMessage(e));
+      if (!mounted) return;
+      if (isRecordChangedError(e)) {
+        setState(() {
+          _conflictMessage = context.l10n.recordConflictMessage;
+          _isConflict = true;
+          _error = null;
+        });
+      } else {
+        setState(() => _error = errorMessage(e));
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _reloadCustomer() async {
+    final id = c?.id;
+    if (id == null) return;
+    setState(() => _saving = true);
+    try {
+      final fresh = await ref.read(apiProvider).crm.getCustomer(id: id);
+      if (!mounted) return;
+      setState(() {
+        _current = fresh;
+        _code.text = fresh.code;
+        _name.text = fresh.name;
+        _vat.text = fresh.vatNumber ?? '';
+        _email.text = fresh.email ?? '';
+        _phone.text = fresh.phone ?? '';
+        _street.text = fresh.street;
+        _postal.text = fresh.postalCode;
+        _city.text = fresh.city;
+        _country.text = fresh.countryCode;
+        _discount.text = number(fresh.discountPercent ?? '0');
+        _terms.text = '${fresh.paymentTermsDays ?? 30}';
+        _language = fresh.language;
+        _vatRegime = fresh.vatRegime;
+        _zoneId = fresh.priceZoneId;
+        _conflictMessage = null;
+        _isConflict = false;
+        _error = null;
+      });
+      if (widget.screen) TabScope.reportDirty(context, false);
+    } catch (e) {
+      if (mounted) setState(() => _error = errorMessage(e));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -278,6 +367,15 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (_conflictMessage != null) ...[
+              RecordConflictBanner(
+                message: _conflictMessage!,
+                isConflict: _isConflict,
+                onReload: _reloadCustomer,
+                onDismiss: () => setState(() => _conflictMessage = null),
+              ),
+              gap,
+            ],
             Row(
               children: [
                 SizedBox(

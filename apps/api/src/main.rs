@@ -189,6 +189,7 @@ async fn main() -> anyhow::Result<()> {
         db,
         auth,
         documents: Arc::new(documents),
+        live_events: tradocraft_core::live_events::LiveEvents::new(),
     };
     let listener = tokio::net::TcpListener::bind(addr).await?;
     tracing::info!(

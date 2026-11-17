@@ -3180,5 +3180,8 @@
   "vatRateClosePrevious": "Vorherige offene Regel automatisch schließen",
   "vatRateOverlapError": "Zeitraum überschneidet sich mit einer bestehenden Regel",
   "vatRateDeleteConfirm": "MwSt.-Regel für {country} ({category}) löschen?",
-  "vatRateOngoing": "Unbefristet"
+  "vatRateOngoing": "Unbefristet",
+  "reloadRecord": "Neu laden",
+  "recordUpdatedBy": "Aktualisiert von {name}. Laden Sie neu, um die neuesten Änderungen zu sehen.",
+  "recordConflictMessage": "Jemand anderes hat Änderungen an diesem Datensatz gespeichert. Laden Sie neu, um diese Änderungen vor dem erneuten Speichern zu sehen."
 }

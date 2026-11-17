@@ -42,6 +42,7 @@ fn state_with(db: PgPool, auth: AuthConfig) -> AppState {
             typst_bin: "typst".into(),
             template_dir: "templates".into(),
         }),
+        live_events: tradocraft_core::live_events::LiveEvents::new(),
     }
 }
 

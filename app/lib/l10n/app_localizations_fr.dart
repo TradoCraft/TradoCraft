@@ -10199,4 +10199,16 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get vatRateOngoing => 'En cours';
+
+  @override
+  String get reloadRecord => 'Recharger';
+
+  @override
+  String recordUpdatedBy(String name) {
+    return 'Mis à jour par $name. Rechargez pour voir les dernières modifications.';
+  }
+
+  @override
+  String get recordConflictMessage =>
+      'Quelqu\'un d\'autre a enregistré des modifications sur cet enregistrement. Rechargez pour voir ses modifications avant d\'enregistrer à nouveau.';
 }

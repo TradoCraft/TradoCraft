@@ -980,7 +980,7 @@ pub async fn insert_lines(
     Ok(())
 }
 
-const SELECT_HEADER: &str = "SELECT id, company_id, number, revision, status, customer_id, opportunity_id, customer_name,
+const SELECT_HEADER: &str = "SELECT id, company_id, number, revision, version, status, customer_id, opportunity_id, customer_name,
     customer_vat_number, vat_regime, vat_regime_override, building_construction_year,
     customer_street, customer_postal_code, customer_city,
     customer_country_code::text AS customer_country_code, customer_language::text AS customer_language,
