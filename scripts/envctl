@@ -48,7 +48,7 @@ EOF
 
 # --- configuration -----------------------------------------------------------------------------
 
-CONFIG_KEYS=" DATABASE_URL AUTH_MODE DEV_DEFAULT_USER OIDC_ISSUER OIDC_AUDIENCE CORS_ALLOWED_ORIGINS TYPST_BIN TEMPLATE_DIR ENVCTL_DIR ENVCTL_PORT_MIN ENVCTL_PORT_MAX ENVCTL_BIND_HOST ENVCTL_API_BIN ENVCTL_WORKER_BIN ENVCTL_START_TIMEOUT ENVCTL_MAINTENANCE_DB ENVCTL_SOURCE_DB "
+CONFIG_KEYS=" DATABASE_URL AUTH_MODE DEV_DEFAULT_USER OIDC_ISSUER OIDC_AUDIENCE CORS_ALLOWED_ORIGINS TYPST_BIN TEMPLATE_DIR FILE_STORAGE_DIR ENVCTL_DIR ENVCTL_PORT_MIN ENVCTL_PORT_MAX ENVCTL_BIND_HOST ENVCTL_API_BIN ENVCTL_WORKER_BIN ENVCTL_START_TIMEOUT ENVCTL_MAINTENANCE_DB ENVCTL_SOURCE_DB "
 
 # Reads KEY=VALUE lines of a .env-style file for the known keys; values already set in the
 # environment win. The file is parsed, never executed.
@@ -262,6 +262,7 @@ start_process() {
     command -v cargo >/dev/null || die "no built $crate binary and no cargo: build it or set ENVCTL_API_BIN/ENVCTL_WORKER_BIN"
     cmd=(nice cargo run --quiet --manifest-path "$REPO_ROOT/Cargo.toml" -p "$crate")
   fi
+  mkdir -p "$dir/files"
   local -a envs=(
     "DATABASE_URL=$(url_for_db "$db")"
     "BIND_ADDR=$BIND_HOST:$port"
@@ -269,6 +270,7 @@ start_process() {
     "APP_ENV_KIND=$kind"
     "MAIL_TRANSPORT=files"
     "MAIL_FILES_DIR=$dir/outbox"
+    "FILE_STORAGE_DIR=$dir/files"
     "SEED_DEV_DATA=$seed"
     "AUTH_MODE=${AUTH_MODE:-dev}"
   )
@@ -444,6 +446,16 @@ cmd_create_empty() {
   parse_create_flags "$@"
   check_new_name "$name"
   createdb -- "$name"
+  local src_files=""
+  if reg_exists "$source" && [[ -d "$ENVS_DIR/$source/files" ]]; then
+    src_files="$ENVS_DIR/$source/files"
+  elif [[ -n "${FILE_STORAGE_DIR:-}" && -d "$FILE_STORAGE_DIR" ]]; then
+    src_files="$FILE_STORAGE_DIR"
+  fi
+  if [[ -n "$src_files" ]]; then
+    mkdir -p "$ENVS_DIR/$name/files"
+    cp -a --reflink=auto "$src_files/." "$ENVS_DIR/$name/files/"
+  fi
   register_new "$name" "$KIND" "$name" "$SEED"
   info "created empty database '$name' (kind $KIND)"
   if [[ "$NOSTART" == no ]]; then cmd_start_instance "$name" "$WORKER"; fi
@@ -517,6 +529,16 @@ cmd_clone() {
   if [[ "$ANON" == yes ]]; then
     info "anonymizing personal data (admin users keep their e-mail address)"
     sql "$name" -f "$SQL_DIR/anonymize.sql"
+  fi
+  local src_files=""
+  if reg_exists "$source" && [[ -d "$ENVS_DIR/$source/files" ]]; then
+    src_files="$ENVS_DIR/$source/files"
+  elif [[ -n "${FILE_STORAGE_DIR:-}" && -d "$FILE_STORAGE_DIR" ]]; then
+    src_files="$FILE_STORAGE_DIR"
+  fi
+  if [[ -n "$src_files" ]]; then
+    mkdir -p "$ENVS_DIR/$name/files"
+    cp -a --reflink=auto "$src_files/." "$ENVS_DIR/$name/files/"
   fi
   register_new "$name" "$KIND" "$name"
   reg_set "$name" cloned_from "$src_db"

@@ -440,7 +440,7 @@ async fn upload_ticket_attachment(
     body: Bytes,
 ) -> AppResult<(StatusCode, Json<FileInfo>)> {
     let mut tx = state.db.begin().await?;
-    let f = portal::upload_attachment(&mut tx, &user.viewer(), id, &p, &body).await?;
+    let f = portal::upload_attachment(&mut tx, &state.blobs, &user.viewer(), id, &p, &body).await?;
     tx.commit().await?;
     Ok((StatusCode::CREATED, Json(f)))
 }
@@ -456,7 +456,7 @@ async fn get_ticket_attachment(
 ) -> AppResult<Response> {
     let mut conn = state.db.acquire().await?;
     let (filename, content_type, data) =
-        portal::attachment_data(&mut conn, &user.viewer(), id, file_id).await?;
+        portal::attachment_data(&mut conn, &state.blobs, &user.viewer(), id, file_id).await?;
     Ok(tradocraft_core::files::attachment_response(
         &content_type,
         &filename,
@@ -550,6 +550,7 @@ async fn upload_repair_photo(
     let mut tx = state.db.begin().await?;
     let d = repair_portal::add_photo(
         &mut tx,
+        &state.blobs,
         &user.viewer(),
         id,
         p.filename.as_deref().unwrap_or(""),
@@ -572,7 +573,7 @@ async fn get_repair_photo(
 ) -> AppResult<Response> {
     let mut conn = state.db.acquire().await?;
     let (content_type, data) =
-        repair_portal::photo_data(&mut conn, &user.viewer(), id, photo_id).await?;
+        repair_portal::photo_data(&mut conn, &state.blobs, &user.viewer(), id, photo_id).await?;
     Ok(tradocraft_core::files::image_response(&content_type, data))
 }
 
@@ -804,8 +805,15 @@ async fn kb_image(
     Path((id, file_id)): Path<(Uuid, Uuid)>,
 ) -> AppResult<Response> {
     let mut conn = state.db.acquire().await?;
-    let (ct, data) =
-        kb_reader::image(&mut conn, Audience::Portal, user.company_id, id, file_id).await?;
+    let (ct, data) = kb_reader::image(
+        &mut conn,
+        &state.blobs,
+        Audience::Portal,
+        user.company_id,
+        id,
+        file_id,
+    )
+    .await?;
     Ok(tradocraft_kb::public::reader_image_response(
         false, &ct, data,
     ))

@@ -420,6 +420,7 @@ async fn build_file(
 /// forbidden error and queues nothing; other errors are database trouble.
 pub async fn deliver(
     conn: &mut PgConnection,
+    blobs: &tradocraft_core::BlobStore,
     docs: &DocumentConfig,
     s: &ScheduleRow,
     now: DateTime<Utc>,
@@ -467,6 +468,7 @@ pub async fn deliver(
         let (subject, body) = mail_text(lang, &s.name, today, &s.frequency);
         mail::enqueue_with_attachment(
             conn,
+            blobs,
             s.company_id,
             address,
             &subject,
@@ -527,7 +529,11 @@ pub async fn record_outcome(
 /// in its own transaction, so several workers never run the same schedule, and the next run is set
 /// in the same transaction as the queued mails. A refused run is recorded (`last_status = failed`,
 /// with the reason) and the schedule moves on to its next time. Returns the number of runs.
-pub async fn run_due(db: &PgPool, docs: &DocumentConfig) -> anyhow::Result<usize> {
+pub async fn run_due(
+    db: &PgPool,
+    blobs: &tradocraft_core::BlobStore,
+    docs: &DocumentConfig,
+) -> anyhow::Result<usize> {
     let mut done = 0;
     for _ in 0..BATCH {
         let mut tx = db.begin().await?;
@@ -539,7 +545,7 @@ pub async fn run_due(db: &PgPool, docs: &DocumentConfig) -> anyhow::Result<usize
         .await?;
         let Some(s) = row else { break };
         let now = Utc::now();
-        let outcome = match deliver(&mut tx, docs, &s, now).await {
+        let outcome = match deliver(&mut tx, blobs, docs, &s, now).await {
             Ok(n) => Ok(n),
             Err(e @ (AppError::Validation(_) | AppError::NotFound(_) | AppError::Forbidden(_))) => {
                 Err(e.to_string())

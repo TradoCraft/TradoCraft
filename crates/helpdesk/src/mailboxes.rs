@@ -631,6 +631,7 @@ impl ActiveMailbox {
     async fn poll(
         &self,
         db: &PgPool,
+        blobs: &tradocraft_core::BlobStore,
         graph: &GraphClient,
         secrets: SecretLookup<'_>,
     ) -> anyhow::Result<Polled> {
@@ -639,7 +640,13 @@ impl ActiveMailbox {
         match self.kind.as_str() {
             "graph" => {
                 graph
-                    .poll(db, &self.graph(secret)?, self.company_id, self.source())
+                    .poll(
+                        db,
+                        blobs,
+                        &self.graph(secret)?,
+                        self.company_id,
+                        self.source(),
+                    )
                     .await
             }
             _ => {
@@ -657,7 +664,7 @@ impl ActiveMailbox {
                     source: Some(self.source()),
                 };
                 Ok(Polled {
-                    ingested: crate::imap::poll(db, &cfg).await?,
+                    ingested: crate::imap::poll(db, blobs, &cfg).await?,
                     problems: Vec::new(),
                     complete: true,
                 })
@@ -729,19 +736,21 @@ pub const POLL_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(120
 /// as its error. Returns the number of e-mails ingested.
 pub async fn poll_all(
     db: &PgPool,
+    blobs: &tradocraft_core::BlobStore,
     mailboxes: &[ActiveMailbox],
     graph: &GraphClient,
     secrets: SecretLookup<'_>,
 ) -> usize {
     let mut total = 0;
     for m in mailboxes.iter().filter(|m| m.inbound_enabled) {
-        let polled = match tokio::time::timeout(POLL_TIMEOUT, m.poll(db, graph, secrets)).await {
-            Ok(r) => r,
-            Err(_) => Err(anyhow::anyhow!(
-                "fetching mail took longer than {} seconds",
-                POLL_TIMEOUT.as_secs()
-            )),
-        };
+        let polled =
+            match tokio::time::timeout(POLL_TIMEOUT, m.poll(db, blobs, graph, secrets)).await {
+                Ok(r) => r,
+                Err(_) => Err(anyhow::anyhow!(
+                    "fetching mail took longer than {} seconds",
+                    POLL_TIMEOUT.as_secs()
+                )),
+            };
         let (error, complete) = match polled {
             Ok(polled) => {
                 total += polled.ingested;

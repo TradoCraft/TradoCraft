@@ -1,0 +1,228 @@
+//! Filesystem blob storage for uploaded files, import spreadsheets, mail attachments and raw
+//! incoming e-mails.
+//!
+//! Blobs are stored under `FILE_STORAGE_DIR` (default `data/files`) in a two-level sharded
+//! directory layout (`<aa>/<bb>/<uuid>`), written atomically via `.tmp/<uuid>.part` and `rename`.
+//! Storage keys are always UUIDv7 strings validated on every read/delete, so user-supplied paths
+//! can never escape the root directory.
+
+use std::collections::HashSet;
+use std::io::ErrorKind;
+use std::path::{Path, PathBuf};
+use std::time::{Duration, SystemTime};
+
+use anyhow::Context;
+use sqlx::PgPool;
+use uuid::Uuid;
+
+use crate::{new_id, AppError, AppResult};
+
+#[derive(Debug, Clone)]
+pub struct BlobStore {
+    root: PathBuf,
+}
+
+impl BlobStore {
+    pub fn new(root: impl Into<PathBuf>) -> Self {
+        Self { root: root.into() }
+    }
+
+    /// Reads `FILE_STORAGE_DIR` from the environment, falling back to `data/files`.
+    pub fn from_env() -> Self {
+        let root = std::env::var("FILE_STORAGE_DIR")
+            .ok()
+            .filter(|v| !v.trim().is_empty())
+            .map(PathBuf::from)
+            .unwrap_or_else(|| PathBuf::from("data/files"));
+        Self::new(root)
+    }
+
+    /// Isolated temporary directory for unit and integration tests.
+    pub fn temp_for_tests() -> Self {
+        Self::new(std::env::temp_dir().join(format!("tradocraft-blobs-{}", new_id())))
+    }
+
+    pub fn root(&self) -> &Path {
+        &self.root
+    }
+
+    fn path_for(&self, key: &str) -> AppResult<PathBuf> {
+        let id = Uuid::parse_str(key)
+            .map_err(|_| AppError::Internal(anyhow::anyhow!("invalid blob storage key")))?;
+        let hex = id.simple().to_string();
+        Ok(self
+            .root
+            .join(&hex[0..2])
+            .join(&hex[2..4])
+            .join(id.to_string()))
+    }
+
+    /// Writes `bytes` atomically and returns the generated `storage_key`.
+    pub async fn put(&self, bytes: &[u8]) -> AppResult<String> {
+        let id = new_id();
+        let key = id.to_string();
+        let dest = self.path_for(&key)?;
+        let tmp_dir = self.root.join(".tmp");
+        let tmp_path = tmp_dir.join(format!("{key}.part"));
+
+        if let Some(parent) = dest.parent() {
+            tokio::fs::create_dir_all(parent)
+                .await
+                .with_context(|| format!("create blob dir {}", parent.display()))?;
+        }
+        tokio::fs::create_dir_all(&tmp_dir)
+            .await
+            .with_context(|| format!("create blob tmp dir {}", tmp_dir.display()))?;
+
+        if let Err(e) = tokio::fs::write(&tmp_path, bytes).await {
+            let _ = tokio::fs::remove_file(&tmp_path).await;
+            return Err(anyhow::Error::from(e)
+                .context(format!("write blob temp file {}", tmp_path.display()))
+                .into());
+        }
+        if let Err(e) = tokio::fs::rename(&tmp_path, &dest).await {
+            let _ = tokio::fs::remove_file(&tmp_path).await;
+            return Err(anyhow::Error::from(e)
+                .context(format!("rename blob into {}", dest.display()))
+                .into());
+        }
+        Ok(key)
+    }
+
+    /// Reads the blob for `key`, returning `AppError::NotFound("file")` if missing.
+    pub async fn get(&self, key: &str) -> AppResult<Vec<u8>> {
+        let path = self.path_for(key)?;
+        match tokio::fs::read(&path).await {
+            Ok(bytes) => Ok(bytes),
+            Err(e) if e.kind() == ErrorKind::NotFound => Err(AppError::NotFound("file")),
+            Err(e) => Err(anyhow::Error::from(e)
+                .context(format!("read blob {}", path.display()))
+                .into()),
+        }
+    }
+
+    /// Deletes the blob for `key` if it exists (idempotent).
+    pub async fn delete(&self, key: &str) -> AppResult<()> {
+        let path = self.path_for(key)?;
+        match tokio::fs::remove_file(&path).await {
+            Ok(()) => Ok(()),
+            Err(e) if e.kind() == ErrorKind::NotFound => Ok(()),
+            Err(e) => Err(anyhow::Error::from(e)
+                .context(format!("delete blob {}", path.display()))
+                .into()),
+        }
+    }
+
+    /// Removes unreferenced files (and stale `.tmp` files) older than `min_age`.
+    pub async fn sweep_orphans(&self, db: &PgPool, min_age: Duration) -> anyhow::Result<usize> {
+        let exists = tokio::fs::try_exists(&self.root).await?;
+        if !exists {
+            return Ok(0);
+        }
+
+        let cutoff = SystemTime::now()
+            .checked_sub(min_age)
+            .unwrap_or(SystemTime::UNIX_EPOCH);
+
+        // Clean stale .tmp/*.part files first.
+        let tmp_dir = self.root.join(".tmp");
+        if tokio::fs::try_exists(&tmp_dir).await? {
+            let mut rd = tokio::fs::read_dir(&tmp_dir).await?;
+            while let Some(entry) = rd.next_entry().await? {
+                if let Ok(meta) = entry.metadata().await {
+                    if meta.is_file() && meta.modified().map(|m| m < cutoff).unwrap_or(false) {
+                        let _ = tokio::fs::remove_file(entry.path()).await;
+                    }
+                }
+            }
+        }
+
+        // Collect candidate keys older than `cutoff`.
+        let mut candidates: Vec<(String, PathBuf)> = Vec::new();
+        let mut l1 = tokio::fs::read_dir(&self.root).await?;
+        while let Some(e1) = l1.next_entry().await? {
+            if e1.file_name() == ".tmp" {
+                continue;
+            }
+            if !e1.file_type().await?.is_dir() {
+                continue;
+            }
+            let mut l2 = tokio::fs::read_dir(e1.path()).await?;
+            while let Some(e2) = l2.next_entry().await? {
+                if !e2.file_type().await?.is_dir() {
+                    continue;
+                }
+                let mut l3 = tokio::fs::read_dir(e2.path()).await?;
+                while let Some(e3) = l3.next_entry().await? {
+                    let meta = match e3.metadata().await {
+                        Ok(m) if m.is_file() => m,
+                        _ => continue,
+                    };
+                    if !meta.modified().map(|m| m < cutoff).unwrap_or(false) {
+                        continue;
+                    }
+                    let name = e3.file_name().to_string_lossy().into_owned();
+                    if Uuid::parse_str(&name).is_ok() {
+                        candidates.push((name, e3.path()));
+                    }
+                }
+            }
+        }
+
+        if candidates.is_empty() {
+            return Ok(0);
+        }
+
+        let keys: Vec<String> = candidates.iter().map(|(k, _)| k.clone()).collect();
+        let live: HashSet<String> = sqlx::query_scalar(
+            "SELECT storage_key FROM core.files WHERE storage_key = ANY($1)
+             UNION
+             SELECT storage_key FROM core.import_files WHERE storage_key = ANY($1)
+             UNION
+             SELECT attachment_storage_key FROM core.mail_outbox WHERE attachment_storage_key = ANY($1)
+             UNION
+             SELECT raw_message_storage_key FROM helpdesk.articles WHERE raw_message_storage_key = ANY($1)",
+        )
+        .bind(&keys)
+        .fetch_all(db)
+        .await?
+        .into_iter()
+        .collect();
+
+        let mut removed = 0usize;
+        for (key, path) in candidates {
+            if !live.contains(&key) && tokio::fs::remove_file(&path).await.is_ok() {
+                removed += 1;
+            }
+        }
+        Ok(removed)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn put_get_delete_roundtrip() {
+        let store = BlobStore::temp_for_tests();
+        let key = store.put(b"hello world").await.unwrap();
+        assert_eq!(store.get(&key).await.unwrap(), b"hello world");
+        store.delete(&key).await.unwrap();
+        assert!(matches!(
+            store.get(&key).await,
+            Err(AppError::NotFound("file"))
+        ));
+        // Idempotent delete
+        store.delete(&key).await.unwrap();
+        let _ = std::fs::remove_dir_all(store.root());
+    }
+
+    #[tokio::test]
+    async fn rejects_traversal_key() {
+        let store = BlobStore::temp_for_tests();
+        let err = store.get("../etc/passwd").await.unwrap_err();
+        assert!(matches!(err, AppError::Internal(_)));
+        let _ = std::fs::remove_dir_all(store.root());
+    }
+}

@@ -735,7 +735,7 @@ async fn teams_assignment_and_list_filters(db: PgPool) {
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
 async fn attachments_are_checked_linked_downloaded_and_hidden_on_internal_notes(db: PgPool) {
-    let app = setup(db.clone()).await;
+    let (app, blobs) = common::setup_with_blobs(db.clone()).await;
     let id = new_ticket(&app, "With files").await;
     let up = |name: &str| format!("/api/v1/tickets/{id}/attachments?filename={name}");
 
@@ -886,7 +886,7 @@ async fn attachments_are_checked_linked_downloaded_and_hidden_on_internal_notes(
     // The e-mail to the customer carries the PDF.
     let dir = tempfile::tempdir().unwrap();
     assert_eq!(
-        process_outbox(&db, &Mailer::Files(dir.path().to_path_buf()), 10)
+        process_outbox(&db, &blobs, &Mailer::Files(dir.path().to_path_buf()), 10)
             .await
             .unwrap(),
         1

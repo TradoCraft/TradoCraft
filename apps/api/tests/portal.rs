@@ -105,9 +105,14 @@ async fn a_contact_logs_in_with_a_link_that_works_once(db: PgPool) {
 
     // The worker sends it from the company address.
     let dir = tempfile::tempdir().unwrap();
-    let sent = process_system_mail(&db, &Mailer::Files(dir.path().to_path_buf()), 10)
-        .await
-        .unwrap();
+    let sent = process_system_mail(
+        &db,
+        &tradocraft_core::BlobStore::temp_for_tests(),
+        &Mailer::Files(dir.path().to_path_buf()),
+        10,
+    )
+    .await
+    .unwrap();
     assert_eq!(sent, 1);
     let eml = std::fs::read_to_string(
         std::fs::read_dir(dir.path())

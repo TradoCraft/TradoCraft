@@ -23,6 +23,12 @@ pub async fn setup(db: PgPool) -> axum::Router {
     tradocraft_api::app(state)
 }
 
+pub async fn setup_with_blobs(db: PgPool) -> (axum::Router, tradocraft_core::BlobStore) {
+    let state = seeded_state(db).await;
+    let blobs = (*state.blobs).clone();
+    (tradocraft_api::app(state), blobs)
+}
+
 /// Like [`setup`], with the VIES lookup (ADR 0058) pointed at `vies`, e.g. a local stand-in.
 pub async fn setup_with_vies(db: PgPool, vies: tradocraft_core::vies::ViesConfig) -> axum::Router {
     let state = seeded_state(db).await;
@@ -58,6 +64,7 @@ async fn seeded_state(db: PgPool) -> AppState {
             template_dir: root.join("templates"),
         }),
         live_events: tradocraft_core::live_events::LiveEvents::new(),
+        blobs: Arc::new(tradocraft_core::BlobStore::temp_for_tests()),
     }
 }
 

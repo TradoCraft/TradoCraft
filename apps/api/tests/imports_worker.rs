@@ -3,7 +3,7 @@
 
 mod common;
 
-use common::setup;
+use common::setup_with_blobs;
 use sqlx::PgPool;
 use tradocraft_imports::{run_pending, MAX_ATTEMPTS};
 use uuid::Uuid;
@@ -24,17 +24,23 @@ fn csv(prefix: &str, rows: usize) -> Vec<u8> {
     s.into_bytes()
 }
 
-async fn file(db: &PgPool, data: Vec<u8>, age_days: i32) -> Uuid {
+async fn file(
+    db: &PgPool,
+    blobs: &tradocraft_core::BlobStore,
+    data: Vec<u8>,
+    age_days: i32,
+) -> Uuid {
     let id = Uuid::now_v7();
+    let storage_key = blobs.put(&data).await.unwrap();
     sqlx::query(
-        "INSERT INTO core.import_files (id, company_id, filename, format, size_bytes, data,
+        "INSERT INTO core.import_files (id, company_id, filename, format, size_bytes, storage_key,
                                         uploaded_by, created_at)
          VALUES ($1, $2, 'f.csv', 'csv', $3, $4, $5, now() - make_interval(days => $6))",
     )
     .bind(id)
     .bind(uuid(COMPANY))
     .bind(data.len() as i64)
-    .bind(data)
+    .bind(&storage_key)
     .bind(uuid(ADMIN_ID))
     .bind(age_days)
     .execute(db)
@@ -95,7 +101,7 @@ async fn customers(db: &PgPool) -> i64 {
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
 async fn a_stale_running_job_is_queued_again_and_a_fresh_one_is_left_alone(db: PgPool) {
-    let _ = setup(db.clone()).await;
+    let (_, _blobs) = setup_with_blobs(db.clone()).await;
     let stale = job(&db, None, ADMIN_ID, false).await;
     let fresh = job(&db, None, ADMIN_ID, false).await;
     make_running(&db, stale, 1, 6).await;
@@ -120,10 +126,10 @@ async fn a_stale_running_job_is_queued_again_and_a_fresh_one_is_left_alone(db: P
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
 async fn the_third_stale_attempt_fails_the_job(db: PgPool) {
-    let _ = setup(db.clone()).await;
+    let (_, blobs) = common::setup_with_blobs(db.clone()).await;
     let id = job(&db, None, ADMIN_ID, false).await;
     make_running(&db, id, MAX_ATTEMPTS, 10).await;
-    let report = run_pending(&db).await;
+    let report = run_pending(&db, &blobs).await;
     assert_eq!((report.requeued, report.abandoned, report.ran), (0, 1, 0));
     let (status, attempts, message) = state(&db, id).await;
     assert_eq!(status, "failed");
@@ -140,12 +146,12 @@ async fn the_third_stale_attempt_fails_the_job(db: PgPool) {
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
 async fn a_pass_runs_a_queued_job_to_done_with_its_counts_and_progress(db: PgPool) {
-    let _ = setup(db.clone()).await;
-    let f = file(&db, csv("W", 20_001), 0).await;
+    let (_, blobs) = common::setup_with_blobs(db.clone()).await;
+    let f = file(&db, &blobs, csv("W", 20_001), 0).await;
     let id = job(&db, Some(f), ADMIN_ID, false).await;
     let before = customers(&db).await;
 
-    let report = run_pending(&db).await;
+    let report = run_pending(&db, &blobs).await;
     assert_eq!(report.ran, 1);
     let (status, attempts, _) = state(&db, id).await;
     assert_eq!((status.as_str(), attempts), ("done", 1));
@@ -163,11 +169,11 @@ async fn a_pass_runs_a_queued_job_to_done_with_its_counts_and_progress(db: PgPoo
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
 async fn a_queued_dry_run_writes_nothing(db: PgPool) {
-    let _ = setup(db.clone()).await;
-    let f = file(&db, csv("D", 50), 0).await;
+    let (_, blobs) = common::setup_with_blobs(db.clone()).await;
+    let f = file(&db, &blobs, csv("D", 50), 0).await;
     let id = job(&db, Some(f), ADMIN_ID, true).await;
     let before = customers(&db).await;
-    run_pending(&db).await;
+    run_pending(&db, &blobs).await;
     assert_eq!(state(&db, id).await.0, "done");
     let created: i32 =
         sqlx::query_scalar("SELECT created_count FROM core.import_jobs WHERE id = $1")
@@ -181,11 +187,11 @@ async fn a_queued_dry_run_writes_nothing(db: PgPool) {
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
 async fn a_job_of_a_requester_without_imports_admin_fails(db: PgPool) {
-    let _ = setup(db.clone()).await;
-    let f = file(&db, csv("L", 3), 0).await;
+    let (_, blobs) = common::setup_with_blobs(db.clone()).await;
+    let f = file(&db, &blobs, csv("L", 3), 0).await;
     let id = job(&db, Some(f), SALES_ID, false).await;
     let before = customers(&db).await;
-    run_pending(&db).await;
+    run_pending(&db, &blobs).await;
     let (status, _, message) = state(&db, id).await;
     assert_eq!(status, "failed");
     assert!(message.unwrap().contains("imports.admin"));
@@ -194,8 +200,8 @@ async fn a_job_of_a_requester_without_imports_admin_fails(db: PgPool) {
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
 async fn a_job_cancelled_while_queued_is_never_claimed(db: PgPool) {
-    let _ = setup(db.clone()).await;
-    let f = file(&db, csv("C", 3), 0).await;
+    let (_, blobs) = common::setup_with_blobs(db.clone()).await;
+    let f = file(&db, &blobs, csv("C", 3), 0).await;
     let id = job(&db, Some(f), ADMIN_ID, false).await;
     sqlx::query("UPDATE core.import_jobs SET status = 'cancelled' WHERE id = $1")
         .bind(id)
@@ -204,7 +210,7 @@ async fn a_job_cancelled_while_queued_is_never_claimed(db: PgPool) {
         .unwrap();
     let before = customers(&db).await;
     assert!(tradocraft_imports::claim_next(&db).await.unwrap().is_none());
-    let report = run_pending(&db).await;
+    let report = run_pending(&db, &blobs).await;
     assert_eq!(report.ran, 0);
     assert_eq!(state(&db, id).await, ("cancelled".into(), 0, None));
     assert_eq!(customers(&db).await, before);
@@ -212,12 +218,12 @@ async fn a_job_cancelled_while_queued_is_never_claimed(db: PgPool) {
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
 async fn old_files_are_removed_unless_a_queued_or_running_job_needs_them(db: PgPool) {
-    let _ = setup(db.clone()).await;
-    let old_done = file(&db, csv("O", 1), 8).await;
-    let old_free = file(&db, csv("P", 1), 8).await;
-    let old_queued = file(&db, csv("Q", 1), 30).await;
-    let old_running = file(&db, csv("R", 1), 30).await;
-    let young = file(&db, csv("Y", 1), 6).await;
+    let (_, blobs) = common::setup_with_blobs(db.clone()).await;
+    let old_done = file(&db, &blobs, csv("O", 1), 8).await;
+    let old_free = file(&db, &blobs, csv("P", 1), 8).await;
+    let old_queued = file(&db, &blobs, csv("Q", 1), 30).await;
+    let old_running = file(&db, &blobs, csv("R", 1), 30).await;
+    let young = file(&db, &blobs, csv("Y", 1), 6).await;
     let done_job = job(&db, Some(old_done), ADMIN_ID, true).await;
     sqlx::query("UPDATE core.import_jobs SET status = 'done' WHERE id = $1")
         .bind(done_job)
@@ -228,7 +234,9 @@ async fn old_files_are_removed_unless_a_queued_or_running_job_needs_them(db: PgP
     make_running(&db, running_job, 1, 1).await;
     let queued_job = job(&db, Some(old_queued), ADMIN_ID, true).await;
 
-    let removed = tradocraft_imports::remove_old_files(&db).await.unwrap();
+    let removed = tradocraft_imports::remove_old_files(&db, &blobs)
+        .await
+        .unwrap();
     assert_eq!(removed, 2);
     let left: Vec<Uuid> = sqlx::query_scalar("SELECT id FROM core.import_files")
         .fetch_all(&db)
@@ -246,7 +254,7 @@ async fn old_files_are_removed_unless_a_queued_or_running_job_needs_them(db: PgP
     assert_eq!(kept, None);
 
     // A pass runs the old queued job before it cleans up; afterwards its file may go.
-    let report = run_pending(&db).await;
+    let report = run_pending(&db, &blobs).await;
     assert_eq!(report.ran, 1);
     assert_eq!(state(&db, queued_job).await.0, "done");
     assert_eq!(report.files_removed, 1, "the finished job's old file goes");
@@ -254,13 +262,13 @@ async fn old_files_are_removed_unless_a_queued_or_running_job_needs_them(db: PgP
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
 async fn two_workers_run_each_queued_job_exactly_once(db: PgPool) {
-    let _ = setup(db.clone()).await;
+    let (_, blobs) = common::setup_with_blobs(db.clone()).await;
     let mut ids = Vec::new();
     for i in 0..6 {
-        let f = file(&db, csv(&format!("T{i}_"), 200), 0).await;
+        let f = file(&db, &blobs, csv(&format!("T{i}_"), 200), 0).await;
         ids.push(job(&db, Some(f), ADMIN_ID, false).await);
     }
-    let (a, b) = tokio::join!(run_pending(&db), run_pending(&db));
+    let (a, b) = tokio::join!(run_pending(&db, &blobs), run_pending(&db, &blobs));
     assert_eq!(a.ran + b.ran, 6);
     for id in ids {
         assert_eq!(state(&db, id).await.0, "done");
@@ -289,27 +297,27 @@ async fn set_inline(db: &PgPool, id: Uuid) {
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
 async fn a_stale_inline_job_is_failed_and_never_run_unattended(db: PgPool) {
-    let _ = setup(db.clone()).await;
-    let f = file(&db, csv("I", 5), 0).await;
+    let (_, blobs) = common::setup_with_blobs(db.clone()).await;
+    let f = file(&db, &blobs, csv("I", 5), 0).await;
     let id = job(&db, Some(f), ADMIN_ID, false).await;
     make_running(&db, id, 1, 6).await;
     set_inline(&db, id).await;
     let before = customers(&db).await;
 
-    let report = run_pending(&db).await;
+    let report = run_pending(&db, &blobs).await;
     assert_eq!((report.requeued, report.abandoned, report.ran), (0, 1, 0));
     let (status, attempts, message) = state(&db, id).await;
     assert_eq!((status.as_str(), attempts), ("failed", 1));
     assert!(message.unwrap().contains("interrupted"));
     assert_eq!(customers(&db).await, before);
     // A second pass does not pick it up either.
-    assert_eq!(run_pending(&db).await.ran, 0);
+    assert_eq!(run_pending(&db, &blobs).await.ran, 0);
 }
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
 async fn a_run_that_lost_its_claim_cannot_write_the_job(db: PgPool) {
-    let _ = setup(db.clone()).await;
-    let f = file(&db, csv("K", 5), 0).await;
+    let (_, blobs) = common::setup_with_blobs(db.clone()).await;
+    let f = file(&db, &blobs, csv("K", 5), 0).await;
     let id = job(&db, Some(f), ADMIN_ID, false).await;
     let first = tradocraft_imports::claim_next(&db).await.unwrap().unwrap();
     assert_eq!(first.id, id);
@@ -333,8 +341,13 @@ async fn a_run_that_lost_its_claim_cannot_write_the_job(db: PgPool) {
         .await
         .unwrap();
     let before = customers(&db).await;
-    let late =
-        tradocraft_imports::run_claimed(&db, &first, &tradocraft_core::import::Limits::job()).await;
+    let late = tradocraft_imports::run_claimed(
+        &db,
+        &blobs,
+        &first,
+        &tradocraft_core::import::Limits::job(),
+    )
+    .await;
     assert!(
         late.is_err(),
         "a run under an old claim finds no running job"
@@ -343,9 +356,14 @@ async fn a_run_that_lost_its_claim_cannot_write_the_job(db: PgPool) {
     assert_eq!(state(&db, id).await.0, "running");
 
     // The second one finishes normally.
-    tradocraft_imports::run_claimed(&db, &second, &tradocraft_core::import::Limits::job())
-        .await
-        .unwrap();
+    tradocraft_imports::run_claimed(
+        &db,
+        &blobs,
+        &second,
+        &tradocraft_core::import::Limits::job(),
+    )
+    .await
+    .unwrap();
     assert_eq!(state(&db, id).await.0, "done");
     assert_eq!(customers(&db).await, before + 5);
 }

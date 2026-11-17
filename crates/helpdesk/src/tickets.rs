@@ -1627,7 +1627,7 @@ async fn inbound(
     body: Bytes,
 ) -> AppResult<Json<InboundResult>> {
     user.require(Permission::HelpdeskWrite)?;
-    let r = crate::ingest::ingest(&state.db, user.company_id, &body)
+    let r = crate::ingest::ingest(&state.db, &state.blobs, user.company_id, &body)
         .await
         .map_err(|e| AppError::Validation(e.to_string()))?;
     Ok(Json(InboundResult {

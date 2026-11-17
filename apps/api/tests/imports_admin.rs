@@ -154,7 +154,7 @@ async fn every_endpoint_needs_imports_admin(db: PgPool) {
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
 async fn running_a_job_also_needs_the_write_permission_of_the_entity(db: PgPool) {
-    let app = setup(db.clone()).await;
+    let (app, _blobs) = common::setup_with_blobs(db.clone()).await;
     let file = upload_ok(
         &app,
         "c.csv",
@@ -203,7 +203,7 @@ async fn running_a_job_also_needs_the_write_permission_of_the_entity(db: PgPool)
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
 async fn uploads_report_the_format_and_the_sheets_and_refused_files_are_not_stored(db: PgPool) {
-    let app = setup(db.clone()).await;
+    let (app, _blobs) = common::setup_with_blobs(db.clone()).await;
     let (status, f) = upload(
         &app,
         ADMIN,
@@ -329,7 +329,7 @@ async fn the_preview_shows_the_header_the_count_and_the_first_rows(db: PgPool) {
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
 async fn mappings_are_saved_replaced_validated_deleted_and_audited(db: PgPool) {
-    let app = setup(db.clone()).await;
+    let (app, _blobs) = common::setup_with_blobs(db.clone()).await;
     let put = |body: Value| {
         let app = app.clone();
         async move {
@@ -462,7 +462,7 @@ async fn mappings_are_saved_replaced_validated_deleted_and_audited(db: PgPool) {
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
 async fn a_spreadsheet_with_foreign_headers_is_imported_through_a_mapping(db: PgPool) {
-    let app = setup(db.clone()).await;
+    let (app, _blobs) = common::setup_with_blobs(db.clone()).await;
     let file = upload_ok(
         &app,
         "klanten.xlsx",
@@ -528,7 +528,7 @@ async fn a_spreadsheet_with_foreign_headers_is_imported_through_a_mapping(db: Pg
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
 async fn a_run_with_row_errors_is_done_with_zero_counts_and_a_csv_of_the_errors(db: PgPool) {
-    let app = setup(db.clone()).await;
+    let (app, _blobs) = common::setup_with_blobs(db.clone()).await;
     let csv = "code,name,price_zone_code\nA1,Fine,Z1\nA2,,Z1\nA3,Zone,NOPE\n=cmd,Formula,Z1\n";
     let file = upload_ok(&app, "bad.csv", csv.as_bytes().to_vec()).await;
     let before = customers(&db).await;
@@ -573,7 +573,7 @@ async fn a_run_with_row_errors_is_done_with_zero_counts_and_a_csv_of_the_errors(
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
 async fn a_missing_file_fails_the_job_cleanly(db: PgPool) {
-    let app = setup(db.clone()).await;
+    let (app, _blobs) = common::setup_with_blobs(db.clone()).await;
     let file = upload_ok(
         &app,
         "c.csv",
@@ -595,9 +595,14 @@ async fn a_missing_file_fails_the_job_cleanly(db: PgPool) {
     let id = queued_job(&db, None, ADMIN_ID, "customers").await;
     let claimed = tradocraft_imports::claim_next(&db).await.unwrap().unwrap();
     assert_eq!(claimed.id, id);
-    tradocraft_imports::run_claimed(&db, &claimed, &Limits::job())
-        .await
-        .unwrap();
+    tradocraft_imports::run_claimed(
+        &db,
+        &tradocraft_core::BlobStore::temp_for_tests(),
+        &claimed,
+        &Limits::job(),
+    )
+    .await
+    .unwrap();
     let (status, message, _) = status_of(&db, id).await;
     assert_eq!(status, "failed");
     assert!(message.unwrap().contains("no longer available"));
@@ -623,7 +628,7 @@ fn big_csv(rows: usize) -> Vec<u8> {
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
 async fn a_file_beyond_the_request_limits_is_queued_and_only_a_queued_job_is_cancelled(db: PgPool) {
-    let app = setup(db.clone()).await;
+    let (app, _blobs) = common::setup_with_blobs(db.clone()).await;
     let file = upload_ok(&app, "big.csv", big_csv(20_001)).await;
     let before = customers(&db).await;
     let (status, job) = start(
@@ -697,7 +702,7 @@ async fn a_file_beyond_the_request_limits_is_queued_and_only_a_queued_job_is_can
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
 async fn the_worker_path_claims_runs_and_finishes_a_queued_job_with_the_job_limits(db: PgPool) {
-    let app = setup(db.clone()).await;
+    let (app, blobs) = common::setup_with_blobs(db.clone()).await;
     let file = upload_ok(&app, "big.csv", big_csv(20_001)).await;
     let (status, job) = start(
         &app,
@@ -713,7 +718,7 @@ async fn the_worker_path_claims_runs_and_finishes_a_queued_job_with_the_job_limi
     assert!(tradocraft_imports::claim_next(&db).await.unwrap().is_none());
     let (running, _, _) = status_of(&db, id).await;
     assert_eq!(running, "running");
-    tradocraft_imports::run_claimed(&db, &claimed, &Limits::job())
+    tradocraft_imports::run_claimed(&db, &blobs, &claimed, &Limits::job())
         .await
         .unwrap();
     let (_, job) = call(
@@ -749,7 +754,7 @@ async fn the_worker_path_claims_runs_and_finishes_a_queued_job_with_the_job_limi
 async fn a_job_whose_requester_lost_a_permission_or_the_account_fails_and_writes_nothing(
     db: PgPool,
 ) {
-    let app = setup(db.clone()).await;
+    let (app, blobs) = common::setup_with_blobs(db.clone()).await;
     let file = upload_ok(
         &app,
         "c.csv",
@@ -761,7 +766,7 @@ async fn a_job_whose_requester_lost_a_permission_or_the_account_fails_and_writes
     // Sales may write customers but has no imports.admin.
     let id = queued_job(&db, Some(&file), SALES_ID, "customers").await;
     let claimed = tradocraft_imports::claim_next(&db).await.unwrap().unwrap();
-    tradocraft_imports::run_claimed(&db, &claimed, &Limits::job())
+    tradocraft_imports::run_claimed(&db, &blobs, &claimed, &Limits::job())
         .await
         .unwrap();
     let (status, message, _) = status_of(&db, id).await;
@@ -778,7 +783,7 @@ async fn a_job_whose_requester_lost_a_permission_or_the_account_fails_and_writes
     .unwrap();
     let id = queued_job(&db, Some(&file), ADMIN_ID, "customers").await;
     let claimed = tradocraft_imports::claim_next(&db).await.unwrap().unwrap();
-    tradocraft_imports::run_claimed(&db, &claimed, &Limits::job())
+    tradocraft_imports::run_claimed(&db, &blobs, &claimed, &Limits::job())
         .await
         .unwrap();
     let (status, message, _) = status_of(&db, id).await;
@@ -798,7 +803,7 @@ async fn a_job_whose_requester_lost_a_permission_or_the_account_fails_and_writes
         .unwrap();
     let id = queued_job(&db, Some(&file), ADMIN_ID, "customers").await;
     let claimed = tradocraft_imports::claim_next(&db).await.unwrap().unwrap();
-    tradocraft_imports::run_claimed(&db, &claimed, &Limits::job())
+    tradocraft_imports::run_claimed(&db, &blobs, &claimed, &Limits::job())
         .await
         .unwrap();
     let (status, message, _) = status_of(&db, id).await;
@@ -861,7 +866,7 @@ async fn a_current_user_is_built_for_a_stored_user_and_company(db: PgPool) {
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
 async fn the_job_list_is_newest_first_filtered_and_paged(db: PgPool) {
-    let app = setup(db.clone()).await;
+    let (app, _blobs) = common::setup_with_blobs(db.clone()).await;
     let file = upload_ok(
         &app,
         "c.csv",
@@ -932,7 +937,7 @@ async fn the_job_list_is_newest_first_filtered_and_paged(db: PgPool) {
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
 async fn another_companys_files_mappings_and_jobs_are_not_found(db: PgPool) {
-    let app = setup(db.clone()).await;
+    let (app, _blobs) = common::setup_with_blobs(db.clone()).await;
     let other = Uuid::now_v7();
     sqlx::query("INSERT INTO core.companies (id, name) VALUES ($1, 'Other BV')")
         .bind(other)
@@ -941,11 +946,12 @@ async fn another_companys_files_mappings_and_jobs_are_not_found(db: PgPool) {
         .unwrap();
     let file = Uuid::now_v7();
     sqlx::query(
-        "INSERT INTO core.import_files (id, company_id, filename, format, size_bytes, data)
-         VALUES ($1, $2, 'o.csv', 'csv', 5, 'a\nb\n')",
+        "INSERT INTO core.import_files (id, company_id, filename, format, size_bytes, storage_key)
+         VALUES ($1, $2, 'o.csv', 'csv', 5, $3)",
     )
     .bind(file)
     .bind(other)
+    .bind(Uuid::now_v7().to_string())
     .execute(&db)
     .await
     .unwrap();
@@ -1016,7 +1022,7 @@ async fn another_companys_files_mappings_and_jobs_are_not_found(db: PgPool) {
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
 async fn an_inline_run_finishes_when_the_client_goes_away(db: PgPool) {
-    let app = setup(db.clone()).await;
+    let (app, _blobs) = common::setup_with_blobs(db.clone()).await;
     let mut csv = String::from("code,name,price_zone_code\n");
     for i in 0..5_000 {
         csv.push_str(&format!("G{i},Name {i},Z1\n"));

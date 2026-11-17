@@ -233,7 +233,15 @@ async fn public_image(
     Path((company_id, id, file_id)): Path<(Uuid, Uuid, Uuid)>,
 ) -> AppResult<Response> {
     let mut conn = state.db.acquire().await?;
-    let (ct, data) = reader::image(&mut conn, Audience::Public, company_id, id, file_id).await?;
+    let (ct, data) = reader::image(
+        &mut conn,
+        &state.blobs,
+        Audience::Public,
+        company_id,
+        id,
+        file_id,
+    )
+    .await?;
     Ok(reader_image_response(true, &ct, data))
 }
 

@@ -203,8 +203,10 @@ pub async fn announce(
 }
 
 /// A customer adds a photo to a repair that is not finished. The bytes are validated as an image.
+#[allow(clippy::too_many_arguments)]
 pub async fn add_photo(
     conn: &mut PgConnection,
+    blobs: &tradocraft_core::BlobStore,
     v: &Viewer,
     id: Uuid,
     filename: &str,
@@ -221,6 +223,7 @@ pub async fn add_photo(
     let contact = tradocraft_crm::contacts::get_contact(conn, v.contact_id).await?;
     let file = files::store_image(
         conn,
+        blobs,
         v.company_id,
         client_id,
         filename,
@@ -251,6 +254,7 @@ pub async fn add_photo(
 /// The bytes of a photo of a repair the viewer may see.
 pub async fn photo_data(
     conn: &mut PgConnection,
+    blobs: &tradocraft_core::BlobStore,
     v: &Viewer,
     id: Uuid,
     photo_id: Uuid,
@@ -266,5 +270,5 @@ pub async fn photo_data(
     if !linked {
         return Err(AppError::NotFound("photo"));
     }
-    files::load(conn, v.company_id, photo_id).await
+    files::load(conn, blobs, v.company_id, photo_id).await
 }

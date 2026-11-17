@@ -628,7 +628,7 @@ async fn send_schedule(
     .fetch_one(&mut *tx)
     .await?;
     let now = Utc::now();
-    let mails = schedule::deliver(&mut tx, &state.documents, &row, now).await?;
+    let mails = schedule::deliver(&mut tx, &state.blobs, &state.documents, &row, now).await?;
     schedule::record_outcome(&mut tx, &row, now, false, &Ok(mails)).await?;
     tx.commit().await?;
     Ok(Json(SendNowResult {

@@ -67,8 +67,10 @@ pub struct Uploader<'a> {
 }
 
 /// Stores an upload on the ticket, not yet linked to an article. Idempotent on `client_id`.
+#[allow(clippy::too_many_arguments)]
 pub async fn upload(
     conn: &mut PgConnection,
+    blobs: &tradocraft_core::BlobStore,
     company_id: Uuid,
     ticket_id: Uuid,
     p: &UploadParams,
@@ -77,6 +79,7 @@ pub async fn upload(
 ) -> AppResult<FileInfo> {
     let file = files::store_document(
         conn,
+        blobs,
         company_id,
         p.client_id,
         p.filename.as_deref().unwrap_or(""),
@@ -154,6 +157,7 @@ pub async fn link(
 /// one of those kinds (what a customer may see); `None` also allows files not sent yet (staff).
 pub async fn data(
     conn: &mut PgConnection,
+    blobs: &tradocraft_core::BlobStore,
     company_id: Uuid,
     ticket_id: Uuid,
     file_id: Uuid,
@@ -182,7 +186,7 @@ pub async fn data(
     let info = files::get_info(conn, company_id, file_id)
         .await?
         .ok_or(AppError::NotFound("attachment"))?;
-    let (content_type, bytes) = files::load(conn, company_id, file_id).await?;
+    let (content_type, bytes) = files::load(conn, blobs, company_id, file_id).await?;
     Ok((info.filename, content_type, bytes))
 }
 
@@ -204,6 +208,7 @@ async fn upload_attachment(
     crate::tickets::load_ticket(&mut tx, user.company_id, id).await?;
     let file = upload(
         &mut tx,
+        &state.blobs,
         user.company_id,
         id,
         &p,
@@ -231,8 +236,16 @@ async fn get_attachment(
     user.require(Permission::HelpdeskRead)?;
     let mut conn = state.db.acquire().await?;
     crate::tickets::load_ticket(&mut conn, user.company_id, id).await?;
-    let (filename, content_type, bytes) =
-        data(&mut conn, user.company_id, id, file_id, None, None).await?;
+    let (filename, content_type, bytes) = data(
+        &mut conn,
+        &state.blobs,
+        user.company_id,
+        id,
+        file_id,
+        None,
+        None,
+    )
+    .await?;
     Ok(files::attachment_response(&content_type, &filename, bytes))
 }
 

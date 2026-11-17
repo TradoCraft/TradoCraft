@@ -42,6 +42,7 @@ async fn reports_the_configured_name_and_kind(db: PgPool) {
                 template_dir: "templates".into(),
             }),
             live_events: tradocraft_core::live_events::LiveEvents::new(),
+            blobs: Arc::new(tradocraft_core::BlobStore::temp_for_tests()),
         },
         EnvironmentConfig::from_values(Some("Tutorial A"), Some("tutorial")).unwrap(),
     );

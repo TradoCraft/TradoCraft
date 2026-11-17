@@ -568,6 +568,7 @@ async fn upload_photo(
     load_package(&mut tx, user.company_id, id, true).await?;
     let file = files::store_image(
         &mut tx,
+        &state.blobs,
         user.company_id,
         p.client_id,
         p.filename.as_deref().unwrap_or(""),
@@ -659,7 +660,8 @@ async fn get_photo(
     if !linked {
         return Err(AppError::NotFound("photo"));
     }
-    let (content_type, data) = files::load(&mut conn, user.company_id, photo_id).await?;
+    let (content_type, data) =
+        files::load(&mut conn, &state.blobs, user.company_id, photo_id).await?;
     Ok(files::image_response(&content_type, data))
 }
 

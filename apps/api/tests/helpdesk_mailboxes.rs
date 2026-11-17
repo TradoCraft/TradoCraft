@@ -7,8 +7,8 @@ mod common;
 use std::collections::HashMap;
 
 use axum::http::{Method, StatusCode};
+use common::call;
 use common::graph::mail;
-use common::{call, setup};
 use serde_json::{json, Value};
 use sqlx::PgPool;
 use tradocraft_helpdesk::ingest::{ingest_from, Source};
@@ -74,7 +74,7 @@ fn eml_files(dir: &std::path::Path) -> Vec<String> {
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
 async fn settings_api_validates_and_keeps_one_default(db: PgPool) {
-    let app = setup(db.clone()).await;
+    let (app, _blobs) = common::setup_with_blobs(db.clone()).await;
 
     // Only helpdesk administrators see or change mailboxes.
     for (method, uri, body) in [
@@ -284,7 +284,7 @@ async fn settings_api_validates_and_keeps_one_default(db: PgPool) {
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
 async fn mail_goes_to_the_mailbox_team_and_replies_leave_through_the_mailbox(db: PgPool) {
-    let app = setup(db.clone()).await;
+    let (app, blobs) = common::setup_with_blobs(db.clone()).await;
     let company = Uuid::parse_str(COMPANY).unwrap();
     let (status, team) = call(
         &app,
@@ -325,6 +325,7 @@ async fn mail_goes_to_the_mailbox_team_and_replies_leave_through_the_mailbox(db:
     };
     let r = ingest_from(
         &db,
+        &blobs,
         company,
         &mail(
             "anna@alpha.example",
@@ -411,7 +412,9 @@ async fn mail_goes_to_the_mailbox_team_and_replies_leave_through_the_mailbox(db:
     // The parts reply is sent; the general one fails with the reason and stays queued.
     let mut sent = 0;
     for _ in 0..3 {
-        sent += process_outbox_with(&db, &with_mailboxes, 10).await.unwrap();
+        sent += process_outbox_with(&db, &blobs, &with_mailboxes, 10)
+            .await
+            .unwrap();
     }
     assert_eq!(sent, 1);
     let parts_mail = eml_files(parts_dir.path());
@@ -442,13 +445,15 @@ async fn mail_goes_to_the_mailbox_team_and_replies_leave_through_the_mailbox(db:
         mailboxes: Some(&map),
     };
     assert_eq!(
-        process_outbox_with(&db, &with_mailboxes, 10).await.unwrap(),
+        process_outbox_with(&db, &blobs, &with_mailboxes, 10)
+            .await
+            .unwrap(),
         0
     );
     assert!(eml_files(fallback_dir.path()).is_empty());
 
     // Outside a live environment mailboxes are not used at all: files, whatever the mailbox.
-    assert_eq!(process_outbox(&db, &fallback, 10).await.unwrap(), 1);
+    assert_eq!(process_outbox(&db, &blobs, &fallback, 10).await.unwrap(), 1);
     let files = eml_files(fallback_dir.path());
     assert_eq!(files.len(), 1);
     assert!(files[0].contains("<info@example.com>"), "{}", files[0]);
@@ -467,7 +472,7 @@ async fn mail_goes_to_the_mailbox_team_and_replies_leave_through_the_mailbox(db:
         mailboxes: Some(&map),
     };
     assert_eq!(
-        process_system_mail_with(&db, &with_mailboxes, 10)
+        process_system_mail_with(&db, &blobs, &with_mailboxes, 10)
             .await
             .unwrap(),
         1
@@ -503,7 +508,7 @@ async fn mail_goes_to_the_mailbox_team_and_replies_leave_through_the_mailbox(db:
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
 async fn a_clone_switches_every_mailbox_off(db: PgPool) {
-    let app = setup(db.clone()).await;
+    let (app, _blobs) = common::setup_with_blobs(db.clone()).await;
     create(
         &app,
         with(

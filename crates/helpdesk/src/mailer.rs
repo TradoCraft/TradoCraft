@@ -135,7 +135,6 @@ impl Queued {
 const MAX_ATTEMPTS: i32 = 5;
 
 /// A file stored on the ticket and sent along with a reply.
-#[derive(FromRow)]
 struct FileToSend {
     filename: String,
     content_type: String,
@@ -192,17 +191,23 @@ fn build(q: &Queued, files: &[FileToSend]) -> anyhow::Result<Message> {
 
 /// Sends up to `batch` queued e-mails. Each article is locked while it is being sent, so several
 /// workers can run side by side. Returns the number sent.
-pub async fn process_outbox(db: &PgPool, mailer: &Mailer, batch: i64) -> anyhow::Result<usize> {
+pub async fn process_outbox(
+    db: &PgPool,
+    blobs: &tradocraft_core::BlobStore,
+    mailer: &Mailer,
+    batch: i64,
+) -> anyhow::Result<usize> {
     let transports = Transports {
         fallback: mailer,
         mailboxes: None,
     };
-    process_outbox_with(db, &transports, batch).await
+    process_outbox_with(db, blobs, &transports, batch).await
 }
 
 /// [`process_outbox`] with one transport per helpdesk mailbox.
 pub async fn process_outbox_with(
     db: &PgPool,
+    blobs: &tradocraft_core::BlobStore,
     transports: &Transports<'_>,
     batch: i64,
 ) -> anyhow::Result<usize> {
@@ -229,15 +234,23 @@ pub async fn process_outbox_with(
         .fetch_optional(&mut *tx)
         .await?;
         let Some(q) = next else { break };
-        let files: Vec<FileToSend> = sqlx::query_as(
-            "SELECT f.filename, f.content_type, b.data
+        let file_rows: Vec<(String, String, String)> = sqlx::query_as(
+            "SELECT f.filename, f.content_type, f.storage_key
              FROM helpdesk.ticket_attachments ta JOIN core.files f ON f.id = ta.file_id
-             JOIN core.file_blobs b ON b.file_id = f.id
              WHERE ta.article_id = $1 ORDER BY ta.created_at, f.id",
         )
         .bind(q.id)
         .fetch_all(&mut *tx)
         .await?;
+        let mut files = Vec::with_capacity(file_rows.len());
+        for (filename, content_type, key) in file_rows {
+            let data = blobs.get(&key).await?;
+            files.push(FileToSend {
+                filename,
+                content_type,
+                data,
+            });
+        }
         let result = match (build(&q, &files), transports.pick(q.mailbox_id)) {
             // Outside live the fallback writes files whatever the address.
             (Ok(m), Ok(mailer)) => match (transports.mailboxes, q.check_sender()) {
@@ -295,7 +308,7 @@ struct QueuedSystem {
     attempts: i32,
     attachment_name: Option<String>,
     attachment_type: Option<String>,
-    attachment_data: Option<Vec<u8>>,
+    attachment_storage_key: Option<String>,
     company_name: String,
     company_email: Option<String>,
     /// The company's default mailbox: its address is the sender and it is the transport.
@@ -303,7 +316,7 @@ struct QueuedSystem {
     mailbox_address: Option<String>,
 }
 
-fn build_system(q: &QueuedSystem) -> anyhow::Result<Message> {
+fn build_system(q: &QueuedSystem, attachment_data: Option<&[u8]>) -> anyhow::Result<Message> {
     let from_address = q
         .mailbox_address
         .as_deref()
@@ -322,7 +335,7 @@ fn build_system(q: &QueuedSystem) -> anyhow::Result<Message> {
         .from(from)
         .to(q.to_address.parse().context("invalid recipient address")?)
         .subject(&q.subject);
-    let mut m = match (&q.attachment_name, &q.attachment_data) {
+    let mut m = match (&q.attachment_name, attachment_data) {
         (Some(name), Some(data)) => {
             let content_type = q
                 .attachment_type
@@ -333,7 +346,7 @@ fn build_system(q: &QueuedSystem) -> anyhow::Result<Message> {
             builder.multipart(
                 MultiPart::mixed()
                     .singlepart(SinglePart::plain(q.body.clone()))
-                    .singlepart(Attachment::new(name.clone()).body(data.clone(), content_type)),
+                    .singlepart(Attachment::new(name.clone()).body(data.to_vec(), content_type)),
             )?
         }
         _ => builder.body(q.body.clone())?,
@@ -349,6 +362,7 @@ fn build_system(q: &QueuedSystem) -> anyhow::Result<Message> {
 /// outbox: rows are locked while sent and given up after [`MAX_ATTEMPTS`].
 pub async fn process_system_mail(
     db: &PgPool,
+    blobs: &tradocraft_core::BlobStore,
     mailer: &Mailer,
     batch: i64,
 ) -> anyhow::Result<usize> {
@@ -356,12 +370,13 @@ pub async fn process_system_mail(
         fallback: mailer,
         mailboxes: None,
     };
-    process_system_mail_with(db, &transports, batch).await
+    process_system_mail_with(db, blobs, &transports, batch).await
 }
 
 /// [`process_system_mail`] through the company's default helpdesk mailbox when it has one.
 pub async fn process_system_mail_with(
     db: &PgPool,
+    blobs: &tradocraft_core::BlobStore,
     transports: &Transports<'_>,
     batch: i64,
 ) -> anyhow::Result<usize> {
@@ -370,7 +385,7 @@ pub async fn process_system_mail_with(
         let mut tx = db.begin().await?;
         let next: Option<QueuedSystem> = sqlx::query_as(
             "SELECT m.id, m.to_address, m.subject, m.body, m.attempts,
-                    m.attachment_name, m.attachment_type, m.attachment_data, co.name AS company_name, co.email AS company_email,
+                    m.attachment_name, m.attachment_type, m.attachment_storage_key, co.name AS company_name, co.email AS company_email,
                     d.id AS mailbox_id, d.address AS mailbox_address
              FROM core.mail_outbox m JOIN core.companies co ON co.id = m.company_id
              LEFT JOIN helpdesk.mailboxes d ON d.company_id = m.company_id AND d.is_default AND d.active
@@ -381,8 +396,15 @@ pub async fn process_system_mail_with(
         .fetch_optional(&mut *tx)
         .await?;
         let Some(q) = next else { break };
+        let attachment_data = match &q.attachment_storage_key {
+            Some(key) => Some(blobs.get(key).await?),
+            None => None,
+        };
         // Outside live the fallback (files) is used; the sender address stays the mailbox's.
-        let result = match (build_system(&q), transports.pick(q.mailbox_id)) {
+        let result = match (
+            build_system(&q, attachment_data.as_deref()),
+            transports.pick(q.mailbox_id),
+        ) {
             (Ok(m), Ok(mailer)) => mailer.send(m, q.id).await,
             (Err(e), _) | (_, Err(e)) => Err(e),
         };

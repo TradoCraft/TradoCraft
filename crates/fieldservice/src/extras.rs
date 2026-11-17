@@ -473,6 +473,7 @@ async fn sign_job(
             .await?;
     let file = files::store_document(
         &mut tx,
+        &state.blobs,
         user.company_id,
         p.client_id,
         "signature.png",
@@ -632,7 +633,7 @@ async fn get_signature(
             .await?
             .flatten();
     let file = file.ok_or(AppError::NotFound("signature"))?;
-    let (content_type, data) = files::load(&mut conn, user.company_id, file).await?;
+    let (content_type, data) = files::load(&mut conn, &state.blobs, user.company_id, file).await?;
     Ok(files::image_response(&content_type, data))
 }
 

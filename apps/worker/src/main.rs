@@ -185,6 +185,9 @@ async fn main() -> anyhow::Result<()> {
     // policy forces files. Fetching follows the same opt-in as IMAP_HOST.
     let live = environment.kind == tradocraft_core::environment::EnvKind::Live;
     let graph = GraphClient::new();
+    let blobs = tradocraft_core::BlobStore::from_env();
+    let mut last_gc: Option<std::time::Instant> = None;
+    let gc_every = Duration::from_secs(3600);
     // Imports run in a task of their own (ADR 0067): a 200 000-row import takes minutes and would
     // hold up the mail and the SLA escalation below. The task awaits each pass before it sleeps,
     // so this process never runs two import passes at once. It does not beat: the heartbeat
@@ -193,9 +196,10 @@ async fn main() -> anyhow::Result<()> {
     // minutes.
     tokio::spawn({
         let db = db.clone();
+        let blobs = blobs.clone();
         async move {
             loop {
-                let r = tradocraft_imports::run_pending(&db).await;
+                let r = tradocraft_imports::run_pending(&db, &blobs).await;
                 if r.ran > 0 || r.requeued > 0 || r.abandoned > 0 || r.files_removed > 0 {
                     tracing::info!(
                         ran = r.ran,
@@ -245,7 +249,7 @@ async fn main() -> anyhow::Result<()> {
         // with active mailboxes it would fetch the same mail a second time.
         if let (Some(cfg), Some(active)) = (&imap, &active) {
             if active.is_empty() {
-                match poll(&db, cfg).await {
+                match poll(&db, &blobs, cfg).await {
                     Ok(0) => {}
                     Ok(n) => tracing::info!(n, "e-mails fetched"),
                     Err(e) => tracing::error!(error = ?e, "IMAP poll failed"),
@@ -254,7 +258,9 @@ async fn main() -> anyhow::Result<()> {
         }
         let active_list = active.as_deref().unwrap_or_default();
         if policy.inbound_allowed && !active_list.is_empty() {
-            match mailboxes::poll_all(&db, active_list, &graph, &mailboxes::env_secret).await {
+            match mailboxes::poll_all(&db, &blobs, active_list, &graph, &mailboxes::env_secret)
+                .await
+            {
                 0 => {}
                 n => tracing::info!(n, "e-mails fetched from helpdesk mailboxes"),
             }
@@ -298,7 +304,7 @@ async fn main() -> anyhow::Result<()> {
         }
         // Scheduled report mails (ADR 0065): builds the files and queues the mail; the outbox below
         // sends it, or writes it to a file outside a live environment.
-        match tradocraft_reports::schedule::run_due(&db, &documents).await {
+        match tradocraft_reports::schedule::run_due(&db, &blobs, &documents).await {
             Ok(0) => {}
             Ok(n) => tracing::info!(n, "scheduled reports run"),
             Err(e) => tracing::error!(error = ?e, "running scheduled reports failed"),
@@ -306,18 +312,29 @@ async fn main() -> anyhow::Result<()> {
         // Without the mailbox list every queued mail would look as if its mailbox is gone and be
         // charged an attempt: wait for the next pass.
         if active.is_some() {
-            match process_outbox_with(&db, &transports, 50).await {
+            match process_outbox_with(&db, &blobs, &transports, 50).await {
                 Ok(0) => {}
                 Ok(n) => tracing::info!(n, "e-mails sent"),
                 Err(e) => tracing::error!(error = ?e, "sending the outbox failed"),
             }
-            match process_system_mail_with(&db, &transports, 50).await {
+            match process_system_mail_with(&db, &blobs, &transports, 50).await {
                 Ok(0) => {}
                 Ok(n) => tracing::info!(n, "system e-mails sent"),
                 Err(e) => tracing::error!(error = ?e, "sending system e-mail failed"),
             }
         } else {
             tracing::warn!("outgoing e-mail skipped this pass: the mailboxes are unknown");
+        }
+        if last_gc.is_none_or(|t| t.elapsed() >= gc_every) {
+            last_gc = Some(std::time::Instant::now());
+            match blobs
+                .sweep_orphans(&db, Duration::from_secs(24 * 3600))
+                .await
+            {
+                Ok(0) => {}
+                Ok(n) => tracing::info!(removed = n, "orphan blob files swept"),
+                Err(e) => tracing::error!(error = ?e, "sweeping orphan blob files failed"),
+            }
         }
         tokio::select! {
             _ = tokio::time::sleep(interval) => {}

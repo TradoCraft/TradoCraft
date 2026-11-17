@@ -57,7 +57,7 @@ EOF
 
 # --- configuration -----------------------------------------------------------------------------
 
-CONFIG_KEYS=" DATABASE_URL BACKUP_DIR BACKUP_KEEP_DAILY BACKUP_KEEP_WEEKLY BACKUP_KEEP_MONTHLY BACKUP_EXEC BACKUP_PG_BIN "
+CONFIG_KEYS=" DATABASE_URL BACKUP_DIR FILE_STORAGE_DIR BACKUP_KEEP_DAILY BACKUP_KEEP_WEEKLY BACKUP_KEEP_MONTHLY BACKUP_EXEC BACKUP_PG_BIN "
 
 # Reads KEY=VALUE lines of a .env-style file for the known keys; values already set in the
 # environment win. The file is parsed, never executed.
@@ -243,9 +243,17 @@ cmd_backup() {
   tar -tzf "$PARTIAL/base.tar.gz" backup_manifest >/dev/null 2>&1 \
     || die "the backup has no backup_manifest (PostgreSQL 13 or newer is needed); nothing was kept"
 
-  local sha size
+  local sha size files_sha="" files_size=""
   sha="$(sha256sum "$PARTIAL/base.tar.gz" | cut -d' ' -f1)"
   size="$(stat -c %s "$PARTIAL/base.tar.gz")"
+  if [[ -n "${FILE_STORAGE_DIR:-}" && -d "$FILE_STORAGE_DIR" ]]; then
+    info "archiving file storage from $FILE_STORAGE_DIR"
+    tar -czf "$PARTIAL/files.tar.gz" -C "$FILE_STORAGE_DIR" . \
+      || die "archiving $FILE_STORAGE_DIR failed; nothing was kept"
+    chmod 600 "$PARTIAL/files.tar.gz"
+    files_sha="$(sha256sum "$PARTIAL/files.tar.gz" | cut -d' ' -f1)"
+    files_size="$(stat -c %s "$PARTIAL/files.tar.gz")"
+  fi
   {
     echo "id=$id"
     echo "started_at=$started"
@@ -259,6 +267,10 @@ cmd_backup() {
     echo "migration=$migration"
     echo "size=$size"
     echo "sha256=$sha"
+    if [[ -n "$files_sha" ]]; then
+      echo "files_size=$files_size"
+      echo "files_sha256=$files_sha"
+    fi
   } >"$PARTIAL/backup.info"
   chmod 600 "$PARTIAL/base.tar.gz" "$PARTIAL/backup.info"
   mv "$PARTIAL" "$BACKUP_DIR/$id"
@@ -386,6 +398,12 @@ unpack() {
   tar -xzf "$BACKUP_DIR/$id/base.tar.gz" -C "$target" || { info "unpacking failed"; return 1; }
   info "checking the files against the backup manifest"
   "$PG_BIN/pg_verifybackup" -q "$target" || { info "pg_verifybackup reports a damaged backup"; return 1; }
+  if [[ -f "$BACKUP_DIR/$id/files.tar.gz" ]]; then
+    local fsha
+    fsha="$(sha256sum "$BACKUP_DIR/$id/files.tar.gz" | cut -d' ' -f1)"
+    [[ "$fsha" == "$(info_get "$id" files_sha256)" ]] || { info "checksum mismatch: files.tar.gz is damaged"; return 1; }
+    tar -tzf "$BACKUP_DIR/$id/files.tar.gz" >/dev/null || { info "files.tar.gz is unreadable"; return 1; }
+  fi
 }
 
 # Configuration files that a packaged server (Debian, RHEL) keeps outside the data directory.

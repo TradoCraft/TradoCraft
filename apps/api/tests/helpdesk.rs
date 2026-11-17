@@ -76,7 +76,7 @@ async fn sent_quote(app: &axum::Router) -> Value {
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
 async fn email_becomes_ticket_and_replies_thread_back(db: PgPool) {
-    let app = setup(db.clone()).await;
+    let (app, blobs) = common::setup_with_blobs(db.clone()).await;
     let r = import(
         &app,
         mail(
@@ -134,7 +134,7 @@ async fn email_becomes_ticket_and_replies_thread_back(db: PgPool) {
     assert_eq!(t["ticket"]["owner_name"], "Support Agent");
 
     let dir = tempfile::tempdir().unwrap();
-    let sent = process_outbox(&db, &Mailer::Files(dir.path().to_path_buf()), 10)
+    let sent = process_outbox(&db, &blobs, &Mailer::Files(dir.path().to_path_buf()), 10)
         .await
         .unwrap();
     assert_eq!(sent, 1);

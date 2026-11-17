@@ -942,6 +942,7 @@ async fn upload_image(
     }
     let f = files::store_image(
         &mut tx,
+        &state.blobs,
         user.company_id,
         p.client_id,
         p.filename.as_deref().unwrap_or(""),
@@ -987,8 +988,15 @@ async fn get_image(
 ) -> AppResult<Response> {
     user.require(Permission::KbRead)?;
     let mut conn = state.db.acquire().await?;
-    let (ct, data) =
-        reader::image(&mut conn, Audience::Staff, user.company_id, id, file_id).await?;
+    let (ct, data) = reader::image(
+        &mut conn,
+        &state.blobs,
+        Audience::Staff,
+        user.company_id,
+        id,
+        file_id,
+    )
+    .await?;
     Ok(files::image_response(&ct, data))
 }
 
@@ -1011,16 +1019,17 @@ async fn delete_image(
     if r.rows_affected() == 0 {
         return Err(AppError::NotFound("image"));
     }
-    sqlx::query("DELETE FROM core.file_blobs WHERE file_id = $1")
-        .bind(file_id)
-        .execute(&mut *tx)
-        .await?;
-    sqlx::query("DELETE FROM core.files WHERE id = $1 AND company_id = $2")
-        .bind(file_id)
-        .bind(user.company_id)
-        .execute(&mut *tx)
-        .await?;
+    let storage_key: Option<String> = sqlx::query_scalar(
+        "DELETE FROM core.files WHERE id = $1 AND company_id = $2 RETURNING storage_key",
+    )
+    .bind(file_id)
+    .bind(user.company_id)
+    .fetch_optional(&mut *tx)
+    .await?;
     tx.commit().await?;
+    if let Some(key) = storage_key {
+        let _ = state.blobs.delete(&key).await;
+    }
     Ok(StatusCode::NO_CONTENT)
 }
 

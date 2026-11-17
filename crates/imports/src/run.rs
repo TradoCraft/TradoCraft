@@ -97,7 +97,12 @@ pub async fn claim_next(pool: &PgPool) -> AppResult<Option<ClaimedJob>> {
 
 /// Runs a claimed job as its requester with the limits of a background job. A requester who is
 /// gone, deactivated or no longer a member of the company fails the job.
-pub async fn run_claimed(pool: &PgPool, job: &ClaimedJob, limits: &Limits) -> AppResult<()> {
+pub async fn run_claimed(
+    pool: &PgPool,
+    blobs: &tradocraft_core::BlobStore,
+    job: &ClaimedJob,
+    limits: &Limits,
+) -> AppResult<()> {
     let Some(requested_by) = job.requested_by else {
         return fail_job(
             pool,
@@ -108,7 +113,7 @@ pub async fn run_claimed(pool: &PgPool, job: &ClaimedJob, limits: &Limits) -> Ap
         .await;
     };
     match CurrentUser::for_member(pool, requested_by, job.company_id).await {
-        Ok(user) => run_job(pool, job.id, job.claim, &user, limits).await,
+        Ok(user) => run_job(pool, blobs, job.id, job.claim, &user, limits).await,
         Err(AppError::Forbidden(message)) => fail_job(pool, job.id, job.claim, &message).await,
         // The database is unreachable: leave the job running; its heartbeat goes stale and it is
         // queued again.
@@ -165,6 +170,7 @@ struct Finished {
 /// are checked for `user` here, so a role changed since the job was queued counts.
 pub async fn run_job(
     pool: &PgPool,
+    blobs: &tradocraft_core::BlobStore,
     job_id: Uuid,
     claim: Uuid,
     user: &CurrentUser,
@@ -186,7 +192,7 @@ pub async fn run_job(
             "an import job runs as the user who requested it".into(),
         ));
     }
-    match execute(pool, job_id, claim, &job, user, limits).await {
+    match execute(pool, blobs, job_id, claim, &job, user, limits).await {
         Ok(finished) => finish_done(pool, job_id, claim, finished).await,
         Err(Failure(message)) => fail_job(pool, job_id, claim, &message).await,
     }
@@ -194,6 +200,7 @@ pub async fn run_job(
 
 async fn execute(
     pool: &PgPool,
+    blobs: &tradocraft_core::BlobStore,
     job_id: Uuid,
     claim: Uuid,
     job: &JobToRun,
@@ -218,13 +225,18 @@ async fn execute(
     let (sink, writer) = progress_writer(pool.clone(), job_id, claim);
     let writer = StopOnDrop(writer);
     let file_id = job.file_id.ok_or_else(|| Failure(FILE_GONE.into()))?;
-    let bytes: Vec<u8> =
-        sqlx::query_scalar("SELECT data FROM core.import_files WHERE id = $1 AND company_id = $2")
-            .bind(file_id)
-            .bind(user.company_id)
-            .fetch_optional(pool)
-            .await?
-            .ok_or_else(|| Failure(FILE_GONE.into()))?;
+    let storage_key: String = sqlx::query_scalar(
+        "SELECT storage_key FROM core.import_files WHERE id = $1 AND company_id = $2",
+    )
+    .bind(file_id)
+    .bind(user.company_id)
+    .fetch_optional(pool)
+    .await?
+    .ok_or_else(|| Failure(FILE_GONE.into()))?;
+    let bytes = blobs
+        .get(&storage_key)
+        .await
+        .map_err(|_| Failure(FILE_GONE.into()))?;
 
     // Reading is CPU work on up to 50 MiB: keep it off the async threads.
     let pairs = job.columns.as_deref().map(mapping::to_pairs);
