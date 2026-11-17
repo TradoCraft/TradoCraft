@@ -442,6 +442,7 @@ pub(crate) async fn add_note(
     ticket_id: Uuid,
     body: &str,
 ) -> AppResult<Uuid> {
+    crate::checklists::lock_ticket(conn, user.company_id, ticket_id).await?;
     let id = new_id();
     sqlx::query(
         "INSERT INTO helpdesk.articles (id, ticket_id, kind, from_name, body, author_user_id) VALUES ($1, $2, 'note', $3, $4, $5)",
@@ -1426,6 +1427,7 @@ async fn log_call(
     let ticket_id = match input.ticket_id {
         Some(t) => {
             let ticket = load_ticket(&mut tx, user.company_id, t).await?;
+            crate::checklists::lock_ticket(&mut tx, user.company_id, t).await?;
             if let Some(c) = &contact {
                 if ticket.customer_id.is_some_and(|tc| tc != c.customer_id) {
                     return Err(AppError::Validation(

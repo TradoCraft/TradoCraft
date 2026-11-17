@@ -60,6 +60,8 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
   bool _missing = false;
   bool _busy = false;
 
+  int _checklistRefresh = 0;
+
   // Properties.
   final _subject = TextEditingController();
   final _contactName = TextEditingController();
@@ -272,7 +274,12 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
         ),
       );
     }
-    if (mounted) setState(() => _busy = false);
+    if (mounted) {
+      setState(() {
+        _busy = false;
+        if (ok) _checklistRefresh++;
+      });
+    }
     if (ok && d != null) _apply(d);
   }
 
@@ -1015,6 +1022,7 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
         const Divider(height: 32),
         TicketChecklistCard(
           ticketId: t.id,
+          refreshVersion: _checklistRefresh,
           teamId: t.teamId,
           category: t.category,
           canWrite: canWrite,
@@ -1580,12 +1588,14 @@ class TicketChecklistCard extends ConsumerStatefulWidget {
     required this.category,
     this.teamId,
     this.canWrite = true,
+    this.refreshVersion = 0,
   });
 
   final String ticketId;
   final String? teamId;
   final String category;
   final bool canWrite;
+  final int refreshVersion;
 
   @override
   ConsumerState<TicketChecklistCard> createState() =>
@@ -1615,8 +1625,11 @@ class _TicketChecklistCardState extends ConsumerState<TicketChecklistCard> {
     if (oldWidget.ticketId != widget.ticketId) {
       _items = const [];
       _templates = const [];
-      _busy = false;
       _addController.clear();
+    }
+    if (oldWidget.ticketId != widget.ticketId ||
+        oldWidget.refreshVersion != widget.refreshVersion) {
+      _busy = false;
       _load();
     }
   }

@@ -141,6 +141,107 @@ void main() {
     },
   );
 
+  testWidgets('template fields stay disabled until a failed save finishes', (
+    tester,
+  ) async {
+    final pending = Completer<Object?>();
+    final template = _template(id: 'tpl', name: 'Existing');
+    final http = FakeHttp({
+      'GET /api/v1/me': (_) => meJson([..._perms, 'helpdesk.admin']),
+      'GET /api/v1/helpdesk/teams': (_) => [],
+      'GET /api/v1/helpdesk/checklist-templates': (_) => [template],
+      'PUT /api/v1/helpdesk/checklist-templates/tpl': (_) => pending.future,
+    });
+    await _pump(tester, http, const HelpdeskSettingsPage());
+    final tile = find.byKey(const ValueKey('checklist-template-tpl'));
+    await tester.ensureVisible(tile);
+    await tester.tap(tile);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('save-checklist-template')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    void expectEnabled(bool enabled) {
+      for (final key in [
+        'checklist-template-name',
+        'checklist-template-item-0',
+      ]) {
+        expect(
+          tester.widget<TextField>(find.byKey(ValueKey(key))).enabled,
+          enabled,
+        );
+      }
+      for (final key in [
+        'checklist-template-team',
+        'checklist-template-category',
+      ]) {
+        expect(
+          tester
+              .widget<DropdownButtonFormField<String?>>(
+                find.byKey(ValueKey(key)),
+              )
+              .onChanged,
+          enabled ? isNotNull : isNull,
+        );
+      }
+      expect(
+        tester
+            .widget<SwitchListTile>(
+              find.byKey(const ValueKey('checklist-template-active')),
+            )
+            .onChanged,
+        enabled ? isNotNull : isNull,
+      );
+    }
+
+    expectEnabled(false);
+    pending.complete(const FakeStatus(500, {'message': 'Save failed'}));
+    await tester.pumpAndSettle();
+    expectEnabled(true);
+  });
+
+  testWidgets(
+    'save refresh reloads checklist and templates for the same ticket',
+    (tester) async {
+      var loads = 0;
+      var templateLoads = 0;
+      final http = FakeHttp({
+        'GET /api/v1/helpdesk/tickets/t1/checklist': (_) => [
+          _item(id: 'item', description: 'Load ${++loads}', position: 1),
+        ],
+        'GET /api/v1/helpdesk/checklist-templates': (_) {
+          templateLoads++;
+          return [];
+        },
+      });
+      var version = 0;
+      late StateSetter rebuild;
+      await _pump(
+        tester,
+        http,
+        StatefulBuilder(
+          builder: (context, setState) {
+            rebuild = setState;
+            return Scaffold(
+              body: TicketChecklistCard(
+                ticketId: 't1',
+                category: 'service',
+                refreshVersion: version,
+              ),
+            );
+          },
+        ),
+      );
+      expect(find.text('Load 1'), findsOneWidget);
+      rebuild(() {});
+      await tester.pumpAndSettle();
+      expect(loads, 1);
+      rebuild(() => version++);
+      await tester.pumpAndSettle();
+      expect(find.text('Load 2'), findsOneWidget);
+      expect(templateLoads, 2);
+    },
+  );
+
   testWidgets('failed checklist load retries instead of showing empty', (
     tester,
   ) async {

@@ -701,6 +701,7 @@ class _ChecklistTemplateEditorState
               TextField(
                 key: const ValueKey('checklist-template-name'),
                 controller: _name,
+                enabled: !_busy,
                 decoration: InputDecoration(labelText: l.checklistTemplateName),
               ),
               const SizedBox(height: 12),
@@ -716,7 +717,7 @@ class _ChecklistTemplateEditorState
                   for (final t in teams)
                     DropdownMenuItem<String?>(value: t.id, child: Text(t.name)),
                 ],
-                onChanged: (v) => setState(() => _teamId = v),
+                onChanged: _busy ? null : (v) => setState(() => _teamId = v),
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String?>(
@@ -734,14 +735,14 @@ class _ChecklistTemplateEditorState
                       child: Text(l.ticketCategory(c)),
                     ),
                 ],
-                onChanged: (v) => setState(() => _category = v),
+                onChanged: _busy ? null : (v) => setState(() => _category = v),
               ),
               SwitchListTile(
                 key: const ValueKey('checklist-template-active'),
                 contentPadding: EdgeInsets.zero,
                 title: Text(l.active),
                 value: _active,
-                onChanged: (v) => setState(() => _active = v),
+                onChanged: _busy ? null : (v) => setState(() => _active = v),
               ),
               for (var i = 0; i < _items.length; i++)
                 Row(
@@ -750,6 +751,7 @@ class _ChecklistTemplateEditorState
                       child: TextField(
                         key: ValueKey('checklist-template-item-$i'),
                         controller: _items[i],
+                        enabled: !_busy,
                         minLines: 1,
                         maxLines: null,
                         decoration: InputDecoration(

@@ -229,6 +229,7 @@ pub async fn ingest_from(
     let new_ticket = existing.is_none();
     let (ticket_id, ticket_number) = match existing {
         Some(t) => {
+            crate::checklists::lock_ticket(&mut tx, company_id, t.id).await?;
             // A customer reply reopens the ticket; links found now are added if still empty.
             sqlx::query(
                 "UPDATE helpdesk.tickets SET
