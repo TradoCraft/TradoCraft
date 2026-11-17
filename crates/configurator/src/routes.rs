@@ -1178,6 +1178,14 @@ async fn quote_configuration(
         lines: to_quote_lines(&result.lines),
     };
     let imported = import(&state.db, &user, import_input).await?;
+    state.live_events.publish_record_change(
+        &user,
+        "quotation",
+        imported.quotation.id,
+        imported.quotation.version,
+        "updated",
+        None,
+    );
     let mut tx = state.db.begin().await?;
     sqlx::query("UPDATE configurator.configurations SET quotation_id = $2, result = $3, updated_at = now() WHERE id = $1")
         .bind(id)

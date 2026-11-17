@@ -11,7 +11,7 @@ part 'ticket.g.dart';
 @JsonSerializable()
 class Ticket {
   const Ticket({
-    required this.updatedAt,
+    required this.priority,
     required this.category,
     required this.checklistDone,
     required this.checklistTotal,
@@ -22,42 +22,43 @@ class Ticket {
     required this.id,
     required this.internal,
     required this.language,
-    required this.languageSource,
-    required this.number,
-    required this.watching,
-    required this.priority,
-    required this.sla,
-    required this.status,
     required this.subject,
-    required this.tags,
-    required this.timeMinutes,
+    required this.status,
+    required this.sla,
+    required this.watching,
+    required this.updatedAt,
+    required this.number,
+    required this.languageSource,
     required this.unread,
-    this.escalatedByName,
+    required this.timeMinutes,
+    required this.tags,
+    this.firstResponseAt,
     this.mergedIntoId,
-    this.mergedIntoNumber,
-    this.customerId,
+    this.escalatedBy,
+    this.escalatedByName,
     this.opportunityId,
     this.opportunityNumber,
     this.orderId,
     this.orderNumber,
     this.ownerName,
-    this.customerName,
+    this.ownerUserId,
     this.escalatedAt,
     this.quotationId,
     this.quotationNumber,
     this.quotationRevision,
     this.quotationStatus,
-    this.escalatedBy,
-    this.closedAt,
-    this.firstResponseAt,
+    this.customerName,
+    this.customerId,
+    this.csatRating,
     this.suggestedCategory,
-    this.contactId,
+    this.csatRatedAt,
     this.teamId,
     this.teamName,
     this.csatComment,
-    this.csatRatedAt,
-    this.csatRating,
-    this.ownerUserId,
+    this.contactId,
+    this.closedAt,
+    this.version,
+    this.mergedIntoNumber,
   });
   
   factory Ticket.fromJson(Map<String, Object?> json) => _$TicketFromJson(json);
@@ -172,6 +173,11 @@ class Ticket {
   final bool unread;
   @JsonKey(name: 'updated_at')
   final DateTime updatedAt;
+
+  /// Raised on every change. Send it back as `expected_version` when saving: a ticket someone.
+  /// else changed meanwhile is refused (409 `record_changed`).
+  @JsonKey(includeIfNull: false)
+  final int? version;
 
   /// For the caller: they follow the ticket. Filled like `unread`.
   final bool watching;

@@ -17,6 +17,7 @@ class CustomerInput {
     this.countryCode,
     this.discountPercent,
     this.email,
+    this.expectedVersion,
     this.language,
     this.paymentTermsDays,
     this.phone,
@@ -39,6 +40,11 @@ class CustomerInput {
   final String? discountPercent;
   @JsonKey(includeIfNull: false)
   final String? email;
+
+  /// The `version` the form was loaded with. On an update, a customer that has changed since is.
+  /// refused (409 `record_changed`); left out, the save always goes through. Ignored on create.
+  @JsonKey(includeIfNull: false,name: 'expected_version')
+  final int? expectedVersion;
   @JsonKey(includeIfNull: false)
   final String? language;
   final String name;

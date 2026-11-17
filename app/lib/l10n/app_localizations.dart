@@ -18138,6 +18138,24 @@ abstract class AppLocalizations {
   /// **'Ongoing'**
   String get vatRateOngoing;
 
+  /// No description provided for @reloadRecord.
+  ///
+  /// In en, this message translates to:
+  /// **'Reload'**
+  String get reloadRecord;
+
+  /// No description provided for @recordUpdatedBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Updated by {name}. Reload to see the latest changes.'**
+  String recordUpdatedBy(String name);
+
+  /// No description provided for @recordConflictMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Someone else saved changes to this record. Reload to see their changes before saving again.'**
+  String get recordConflictMessage;
+
   /// No description provided for @checklistTitle.
   ///
   /// In en, this message translates to:

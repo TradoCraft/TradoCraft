@@ -7,7 +7,7 @@ part of 'ticket.dart';
 // **************************************************************************
 
 Ticket _$TicketFromJson(Map<String, dynamic> json) => Ticket(
-  updatedAt: DateTime.parse(json['updated_at'] as String),
+  priority: json['priority'] as String,
   category: json['category'] as String,
   checklistDone: (json['checklist_done'] as num).toInt(),
   checklistTotal: (json['checklist_total'] as num).toInt(),
@@ -18,26 +18,28 @@ Ticket _$TicketFromJson(Map<String, dynamic> json) => Ticket(
   id: json['id'] as String,
   internal: json['internal'] as bool,
   language: json['language'] as String,
-  languageSource: json['language_source'] as String,
-  number: json['number'] as String,
-  watching: json['watching'] as bool,
-  priority: json['priority'] as String,
-  sla: TicketSla.fromJson(json['sla'] as Map<String, dynamic>),
-  status: json['status'] as String,
   subject: json['subject'] as String,
-  tags: (json['tags'] as List<dynamic>).map((e) => e as String).toList(),
-  timeMinutes: (json['time_minutes'] as num).toInt(),
+  status: json['status'] as String,
+  sla: TicketSla.fromJson(json['sla'] as Map<String, dynamic>),
+  watching: json['watching'] as bool,
+  updatedAt: DateTime.parse(json['updated_at'] as String),
+  number: json['number'] as String,
+  languageSource: json['language_source'] as String,
   unread: json['unread'] as bool,
-  escalatedByName: json['escalated_by_name'] as String?,
+  timeMinutes: (json['time_minutes'] as num).toInt(),
+  tags: (json['tags'] as List<dynamic>).map((e) => e as String).toList(),
+  firstResponseAt: json['first_response_at'] == null
+      ? null
+      : DateTime.parse(json['first_response_at'] as String),
   mergedIntoId: json['merged_into_id'] as String?,
-  mergedIntoNumber: json['merged_into_number'] as String?,
-  customerId: json['customer_id'] as String?,
+  escalatedBy: json['escalated_by'] as String?,
+  escalatedByName: json['escalated_by_name'] as String?,
   opportunityId: json['opportunity_id'] as String?,
   opportunityNumber: json['opportunity_number'] as String?,
   orderId: json['order_id'] as String?,
   orderNumber: json['order_number'] as String?,
   ownerName: json['owner_name'] as String?,
-  customerName: json['customer_name'] as String?,
+  ownerUserId: json['owner_user_id'] as String?,
   escalatedAt: json['escalated_at'] == null
       ? null
       : DateTime.parse(json['escalated_at'] as String),
@@ -45,23 +47,22 @@ Ticket _$TicketFromJson(Map<String, dynamic> json) => Ticket(
   quotationNumber: json['quotation_number'] as String?,
   quotationRevision: (json['quotation_revision'] as num?)?.toInt(),
   quotationStatus: json['quotation_status'] as String?,
-  escalatedBy: json['escalated_by'] as String?,
-  closedAt: json['closed_at'] == null
-      ? null
-      : DateTime.parse(json['closed_at'] as String),
-  firstResponseAt: json['first_response_at'] == null
-      ? null
-      : DateTime.parse(json['first_response_at'] as String),
+  customerName: json['customer_name'] as String?,
+  customerId: json['customer_id'] as String?,
+  csatRating: json['csat_rating'] as String?,
   suggestedCategory: json['suggested_category'] as String?,
-  contactId: json['contact_id'] as String?,
-  teamId: json['team_id'] as String?,
-  teamName: json['team_name'] as String?,
-  csatComment: json['csat_comment'] as String?,
   csatRatedAt: json['csat_rated_at'] == null
       ? null
       : DateTime.parse(json['csat_rated_at'] as String),
-  csatRating: json['csat_rating'] as String?,
-  ownerUserId: json['owner_user_id'] as String?,
+  teamId: json['team_id'] as String?,
+  teamName: json['team_name'] as String?,
+  csatComment: json['csat_comment'] as String?,
+  contactId: json['contact_id'] as String?,
+  closedAt: json['closed_at'] == null
+      ? null
+      : DateTime.parse(json['closed_at'] as String),
+  version: (json['version'] as num?)?.toInt(),
+  mergedIntoNumber: json['merged_into_number'] as String?,
 );
 
 Map<String, dynamic> _$TicketToJson(Ticket instance) => <String, dynamic>{
@@ -111,5 +112,6 @@ Map<String, dynamic> _$TicketToJson(Ticket instance) => <String, dynamic>{
   'time_minutes': instance.timeMinutes,
   'unread': instance.unread,
   'updated_at': instance.updatedAt.toIso8601String(),
+  'version': ?instance.version,
   'watching': instance.watching,
 };

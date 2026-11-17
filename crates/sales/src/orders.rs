@@ -12,7 +12,7 @@ use axum::Json;
 use chrono::{DateTime, Datelike, NaiveDate, Utc};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
-use sqlx::{FromRow, PgConnection};
+use sqlx::{Connection, FromRow, PgConnection};
 use tradocraft_core::company::get_company;
 use tradocraft_core::mail::Attachment;
 use tradocraft_core::{
@@ -125,6 +125,10 @@ pub struct OrderRevisionInfo {
 #[derive(Debug, Clone, Serialize, ToSchema)]
 pub struct Order {
     pub order: OrderSummary,
+    /// Raised on every change to the order. Send it back as `expected_version` when saving: an
+    /// order someone else changed meanwhile is refused (409 `record_changed`).
+    #[schema(required = false)]
+    pub version: i64,
     /// The revision these lines and totals belong to.
     pub revision: i32,
     pub revision_status: String,
@@ -188,6 +192,10 @@ pub struct OrderEditInput {
     pub clear_power_grid: Option<bool>,
     #[serde(default)]
     pub notes: String,
+    /// The `version` the form was loaded with. An order that has changed since is refused (409
+    /// `record_changed`); left out, the save always goes through.
+    #[serde(default)]
+    pub expected_version: Option<i64>,
     pub lines: Vec<OrderLineEdit>,
 }
 
@@ -239,11 +247,12 @@ pub(crate) struct Head {
     pub current_revision: i32,
     pub customer_id: Uuid,
     pub quotation_id: Uuid,
+    pub version: i64,
 }
 
 pub(crate) async fn lock(conn: &mut PgConnection, company_id: Uuid, id: Uuid) -> AppResult<Head> {
     sqlx::query_as(
-        "SELECT id, number, status, current_revision, customer_id, quotation_id
+        "SELECT id, number, status, current_revision, customer_id, quotation_id, version
          FROM sales.orders WHERE id = $1 AND company_id = $2 FOR UPDATE",
     )
     .bind(id)
@@ -466,8 +475,25 @@ async fn insert_lines(
     Ok(())
 }
 
-/// Loads an order with one of its revisions (the latest by default).
+/// Reads the complete order from one committed snapshot for callers without a parent lock.
 pub async fn load_order(
+    conn: &mut PgConnection,
+    company_id: Uuid,
+    id: Uuid,
+    revision: Option<i32>,
+) -> AppResult<Order> {
+    let mut tx = conn.begin().await?;
+    sqlx::query("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY")
+        .execute(&mut *tx)
+        .await?;
+    let order = load_order_locked(&mut tx, company_id, id, revision).await?;
+    tx.commit().await?;
+    Ok(order)
+}
+
+/// Caller holds the parent row lock, or a repeatable-read snapshot for an unlocked read.
+/// Loads an order with one of its revisions (the latest by default).
+pub(crate) async fn load_order_locked(
     conn: &mut PgConnection,
     company_id: Uuid,
     id: Uuid,
@@ -482,6 +508,7 @@ pub async fn load_order(
             .ok_or(AppError::NotFound("order"))?;
     #[derive(FromRow)]
     struct Extra {
+        version: i64,
         created_at: DateTime<Utc>,
         confirmed_at: Option<DateTime<Utc>>,
         confirmed_by: Option<Uuid>,
@@ -491,7 +518,7 @@ pub async fn load_order(
         cancel_reason: String,
     }
     let extra: Extra = sqlx::query_as(
-        "SELECT created_at, confirmed_at, confirmed_by, confirmed_via, confirmed_revision, confirmation_note,
+        "SELECT version, created_at, confirmed_at, confirmed_by, confirmed_via, confirmed_revision, confirmation_note,
                 cancel_reason
          FROM sales.orders WHERE id = $1",
     )
@@ -523,6 +550,7 @@ pub async fn load_order(
     let lines = revision_lines(conn, id, wanted).await?;
     Ok(Order {
         order,
+        version: extra.version,
         revision: wanted,
         revision_status: info.status,
         vat_total,
@@ -714,7 +742,7 @@ async fn convert(
 ) -> AppResult<(StatusCode, Json<Order>)> {
     let mut tx = state.db.begin().await?;
     let order_id = convert_quotation(&mut tx, &user, id, &input).await?;
-    let order = load_order(&mut tx, user.company_id, order_id, None).await?;
+    let order = load_order_locked(&mut tx, user.company_id, order_id, None).await?;
     tx.commit().await?;
     Ok((StatusCode::CREATED, Json(order)))
 }
@@ -819,6 +847,11 @@ async fn edit_order(
         .flatten();
     let mut tx = state.db.begin().await?;
     let head = lock(&mut tx, user.company_id, id).await?;
+    tradocraft_core::concurrency::check_version(
+        input.expected_version,
+        head.version,
+        &format!("order {}", head.number),
+    )?;
     if head.status != "draft" {
         let current: String = sqlx::query_scalar("SELECT purpose FROM sales.orders WHERE id = $1")
             .bind(id)
@@ -940,8 +973,11 @@ async fn edit_order(
         serde_json::json!({ "revision": head.current_revision }),
     )
     .await?;
-    let order = load_order(&mut tx, user.company_id, id, None).await?;
+    let order = load_order_locked(&mut tx, user.company_id, id, None).await?;
     tx.commit().await?;
+    state
+        .live_events
+        .publish_record_change(&user, "order", id, order.version, "updated", None);
     Ok(Json(order))
 }
 
@@ -1012,7 +1048,7 @@ async fn new_revision(
         serde_json::json!({ "revision": new, "supersedes": old }),
     )
     .await?;
-    let order = load_order(&mut tx, user.company_id, id, None).await?;
+    let order = load_order_locked(&mut tx, user.company_id, id, None).await?;
     tx.commit().await?;
     Ok((StatusCode::CREATED, Json(order)))
 }
@@ -1173,7 +1209,7 @@ async fn send_order(
         .bind(id)
         .execute(&mut *tx)
         .await?;
-    let order = load_order(&mut tx, user.company_id, id, None).await?;
+    let order = load_order_locked(&mut tx, user.company_id, id, None).await?;
     let pdf = render_confirmation(&state, user.company_id, &order, &snapshot, &to.language).await?;
     let company = get_company(&state.db, user.company_id).await?;
     let (subject, body) = order_doc::confirmation_mail(
@@ -1352,7 +1388,7 @@ async fn confirm(
         &input.note,
     )
     .await?;
-    let mut order = load_order(&mut tx, user.company_id, id, None).await?;
+    let mut order = load_order_locked(&mut tx, user.company_id, id, None).await?;
     let customer_country: String = sqlx::query_scalar(
         "SELECT customer_country_code::text FROM sales.quotations WHERE id = $1",
     )
@@ -1448,8 +1484,11 @@ async fn cancel(
         serde_json::json!({ "from": head.status, "reason": input.reason.trim() }),
     )
     .await?;
-    let order = load_order(&mut tx, user.company_id, id, None).await?;
+    let order = load_order_locked(&mut tx, user.company_id, id, None).await?;
     tx.commit().await?;
+    state
+        .live_events
+        .publish_record_change(&user, "order", id, order.version, "updated", None);
     Ok(Json(order))
 }
 

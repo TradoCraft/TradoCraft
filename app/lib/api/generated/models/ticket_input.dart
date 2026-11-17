@@ -19,6 +19,7 @@ class TicketInput {
     this.contactId,
     this.contactName,
     this.customerId,
+    this.expectedVersion,
     this.opportunityId,
     this.ownerUserId,
     this.quotationId,
@@ -35,6 +36,11 @@ class TicketInput {
   final String? contactName;
   @JsonKey(includeIfNull: false,name: 'customer_id')
   final String? customerId;
+
+  /// The `version` the form was loaded with. A ticket that has changed since is refused (409.
+  /// `record_changed`); left out, the save always goes through.
+  @JsonKey(includeIfNull: false,name: 'expected_version')
+  final int? expectedVersion;
   final String language;
   @JsonKey(includeIfNull: false,name: 'opportunity_id')
   final String? opportunityId;

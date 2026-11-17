@@ -24,6 +24,7 @@ Customer _$CustomerFromJson(Map<String, dynamic> json) => Customer(
   priceZoneCode: json['price_zone_code'] as String?,
   priceZoneId: json['price_zone_id'] as String?,
   vatNumber: json['vat_number'] as String?,
+  version: (json['version'] as num?)?.toInt(),
 );
 
 Map<String, dynamic> _$CustomerToJson(Customer instance) => <String, dynamic>{
@@ -44,4 +45,5 @@ Map<String, dynamic> _$CustomerToJson(Customer instance) => <String, dynamic>{
   'street': instance.street,
   'vat_number': ?instance.vatNumber,
   'vat_regime': instance.vatRegime,
+  'version': ?instance.version,
 };

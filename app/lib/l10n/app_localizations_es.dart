@@ -10244,6 +10244,18 @@ class AppLocalizationsEs extends AppLocalizations {
   String get vatRateOngoing => 'Vigente';
 
   @override
+  String get reloadRecord => 'Recargar';
+
+  @override
+  String recordUpdatedBy(String name) {
+    return 'Actualizado por $name. Recargue para ver los últimos cambios.';
+  }
+
+  @override
+  String get recordConflictMessage =>
+      'Otra persona guardó cambios en este registro. Recargue para ver sus cambios antes de volver a guardar.';
+
+  @override
   String get checklistTitle => 'Lista de comprobación';
 
   @override

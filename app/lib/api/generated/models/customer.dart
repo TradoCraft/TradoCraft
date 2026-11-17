@@ -26,6 +26,7 @@ class Customer {
     this.priceZoneCode,
     this.priceZoneId,
     this.vatNumber,
+    this.version,
   });
   
   factory Customer.fromJson(Map<String, Object?> json) => _$CustomerFromJson(json);
@@ -59,6 +60,11 @@ class Customer {
   /// `domestic` (VAT charged), `domestic_reverse_charge`, `intra_eu` (reverse charge) or `outside_eu`.
   @JsonKey(name: 'vat_regime')
   final String vatRegime;
+
+  /// Raised on every change. Send it back as `expected_version` when saving: a customer someone.
+  /// else changed meanwhile is refused (409 `record_changed`).
+  @JsonKey(includeIfNull: false)
+  final int? version;
 
   Map<String, Object?> toJson() => _$CustomerToJson(this);
 }

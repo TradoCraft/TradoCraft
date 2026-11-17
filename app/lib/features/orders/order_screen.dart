@@ -8,6 +8,7 @@ import '../../app/workspace.dart' show TabScope;
 import '../../l10n/l10n.dart';
 import '../../shared/actions.dart';
 import '../../shared/format.dart';
+import '../../shared/live_record_watcher.dart';
 import '../../shared/order_widgets.dart';
 import '../../shared/power_grid_field.dart';
 import '../../shared/sales_hints.dart';
@@ -43,11 +44,15 @@ class OrderScreen extends ConsumerStatefulWidget {
 
 class _OrderScreenState extends ConsumerState<OrderScreen> {
   Order? _order;
-  bool _loading = true;
+  bool _loading = false;
+  bool get _locked => _busy || _loading;
   bool _busy = false;
   bool _changed = false;
   String? _error;
   bool _missing = false;
+  RecordLiveWatcher? _watcher;
+  String? _conflictMessage;
+  bool _isConflict = false;
 
   bool _editing = false;
   final _qty = <int, TextEditingController>{};
@@ -68,10 +73,26 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
   void initState() {
     super.initState();
     _load(() => _api.getOrder(id: widget.id));
+    _watcher = watchRecordChanges(
+      ref,
+      entityType: 'order',
+      recordId: widget.id,
+      currentVersion: () => _order?.version,
+      onExternalChange: (ev) {
+        if (!mounted) return;
+        setState(() {
+          _conflictMessage = ev.kind == 'resync'
+              ? context.l10n.recordConflictMessage
+              : context.l10n.recordUpdatedBy(ev.changedByName);
+          _isConflict = false;
+        });
+      },
+    );
   }
 
   @override
   void dispose() {
+    _watcher?.dispose();
     _disposeEditors();
     _notes.dispose();
     _reference.dispose();
@@ -90,6 +111,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
   }
 
   Future<void> _load(Future<Order> Function() call) async {
+    if (_locked) return;
     setState(() {
       _loading = true;
       _error = null;
@@ -120,6 +142,8 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
       _stockReload++;
       _order = o;
       _editing = false;
+      _conflictMessage = null;
+      _isConflict = false;
       _disposeEditors();
     });
     ref.invalidate(_historyProvider(widget.id));
@@ -127,6 +151,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
   }
 
   Future<void> _run(Future<void> Function() action) async {
+    if (_locked) return;
     setState(() {
       _busy = true;
       _error = null;
@@ -135,7 +160,17 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
       await action();
       _changed = true;
     } catch (e) {
-      if (mounted) setState(() => _error = errorMessage(e));
+      if (mounted) {
+        if (isRecordChangedError(e)) {
+          setState(() {
+            _conflictMessage = context.l10n.recordConflictMessage;
+            _isConflict = true;
+            _error = null;
+          });
+        } else {
+          setState(() => _error = errorMessage(e));
+        }
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -228,6 +263,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
                 o.order.powerGridId != null
             ? true
             : null,
+        expectedVersion: o.version,
       ),
     );
     if (!mounted) return;
@@ -497,7 +533,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
       'partially_shipped',
       'shipped',
     ].contains(o.status);
-    final busy = _busy;
+    final busy = _locked;
     return Wrap(
       spacing: 8,
       runSpacing: 8,
@@ -524,11 +560,14 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
               icon: const Icon(AppIcons.edit),
               label: Text(l.edit),
             ),
-            TutorialTarget(id: 'order-send', child: FilledButton.icon(
-              onPressed: busy ? null : _send,
-              icon: const Icon(AppIcons.forwardToInbox),
-              label: Text(l.sendOrderConfirmation),
-            )),
+            TutorialTarget(
+              id: 'order-send',
+              child: FilledButton.icon(
+                onPressed: busy ? null : _send,
+                icon: const Icon(AppIcons.forwardToInbox),
+                label: Text(l.sendOrderConfirmation),
+              ),
+            ),
           ],
         ],
         if (canWrite && isCurrent && o.status == 'sent') ...[
@@ -537,11 +576,14 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
             icon: const Icon(AppIcons.copy),
             label: Text(l.newRevision),
           ),
-          TutorialTarget(id: 'order-confirm', child: FilledButton.icon(
-            onPressed: busy ? null : _confirmOnBehalf,
-            icon: const Icon(AppIcons.check),
-            label: Text(l.confirmOnBehalf),
-          )),
+          TutorialTarget(
+            id: 'order-confirm',
+            child: FilledButton.icon(
+              onPressed: busy ? null : _confirmOnBehalf,
+              icon: const Icon(AppIcons.check),
+              label: Text(l.confirmOnBehalf),
+            ),
+          ),
         ],
         if (canWrite && isCurrent && open && !_editing)
           OutlinedButton.icon(
@@ -871,6 +913,18 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
                 ),
             ],
           ),
+          if (_conflictMessage != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: RecordConflictBanner(
+                message: _conflictMessage!,
+                isConflict: _isConflict,
+                onReload: _locked
+                    ? null
+                    : () => _load(() => _api.getOrder(id: widget.id)),
+                onDismiss: () => setState(() => _conflictMessage = null),
+              ),
+            ),
           if (_error != null)
             Padding(
               padding: const EdgeInsets.only(top: 8),
@@ -1016,7 +1070,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
           const Divider(),
           _priority(d, canWrite),
         ],
-      ),
+      ).lockRecordEditing(_locked),
     );
   }
 }

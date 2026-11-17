@@ -14,6 +14,7 @@ import '../../app/workspace.dart' show TabScope;
 import '../../shared/grid_key_nav.dart';
 import '../../shared/actions.dart';
 import '../../shared/format.dart';
+import '../../shared/live_record_watcher.dart';
 import '../../shared/sales_hints.dart';
 import '../../shared/options_chooser.dart';
 import '../../shared/sub_item_chooser.dart';
@@ -232,6 +233,10 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
   String? _error;
   bool _missing = false;
   bool _changed = false;
+  RecordLiveWatcher? _watcher;
+  String? _conflictMessage;
+  int? _notifiedVersion;
+  bool _isConflict = false;
 
   TradocraftApi get _api => ref.read(apiProvider);
 
@@ -239,11 +244,37 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
   String? get _opportunityShown => _opportunitiesLoaded ? _opportunityId : null;
   bool get _editable => _id == null || _q?.status == QuotationStatus.draft;
 
+  void _startWatcher() {
+    _watcher?.dispose();
+    _watcher = null;
+    final id = _id;
+    if (id == null) return;
+    _watcher = watchRecordChanges(
+      ref,
+      entityType: 'quotation',
+      recordId: id,
+      currentVersion: () => _q?.version,
+      onExternalChange: (ev) {
+        if (!mounted) return;
+        setState(() {
+          if (_notifiedVersion == null || ev.version > _notifiedVersion!) {
+            _notifiedVersion = ev.version;
+          }
+          _conflictMessage = ev.kind == 'resync'
+              ? context.l10n.recordConflictMessage
+              : context.l10n.recordUpdatedBy(ev.changedByName);
+          _isConflict = false;
+        });
+      },
+    );
+  }
+
   @override
   void initState() {
     super.initState();
     if (_id != null) {
       _load();
+      _startWatcher();
     } else if (widget.customerId != null) {
       _api.crm
           .getCustomer(id: widget.customerId!)
@@ -345,9 +376,14 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
       _notices.clear();
       _error = null;
       _changed = false;
+      _loading = false;
+      _notifiedVersion = null;
+      _conflictMessage = null;
+      _isConflict = false;
     });
     _setDirty(false);
     if (_id != null) _load();
+    _startWatcher();
   }
 
   bool _wasActive = true;
@@ -368,6 +404,7 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
 
   @override
   void dispose() {
+    _watcher?.dispose();
     _debounce?.cancel();
     _scroll.dispose();
     _notes.dispose();
@@ -380,13 +417,13 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
   }
 
   Future<void> _load() async {
+    if (_busy || _loading) return;
     final seq = ++_loadSeq;
     bool stale() => !mounted || seq != _loadSeq;
     setState(() => _loading = true);
     try {
       final q = await _api.sales.getQuotation(id: _id!);
       if (stale()) return;
-      _apply(q);
       if (q.status == QuotationStatus.draft) {
         final customer = await _api.crm.getCustomer(id: q.customerId);
         if (stale()) return;
@@ -397,16 +434,16 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
           if (stale()) return;
           products[id] = product;
         }
-        _opportunityId = q.opportunityId;
-        await _selectCustomer(customer);
-        if (stale()) return;
+        final lines = _linesFromQuotation(q.lines, products);
         setState(() {
+          _customer = customer;
+          _opportunityId = q.opportunityId;
           for (final l in _lines) {
             l.dispose();
           }
           _lines
             ..clear()
-            ..addAll(_linesFromQuotation(q.lines, products));
+            ..addAll(lines);
           _notes.text = q.notes;
           _priceDate = q.priceDate;
           _purpose = q.purpose;
@@ -415,8 +452,13 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
           _vatRegimeOverride = q.vatRegimeOverride;
           _buildingYear.text = q.buildingConstructionYear?.toString() ?? '';
         });
-        _refreshPreview();
+        _apply(q);
+        // Also refreshes the preview (the lines are already set), so it is not called again here:
+        // a second request would supersede the first and only repeat it.
+        unawaited(_selectCustomer(customer));
         _loadCatalogues();
+      } else {
+        _apply(q);
       }
     } catch (e) {
       if (!stale()) {
@@ -450,6 +492,11 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
       _vatRegimeOverride = q.vatRegimeOverride;
       _buildingYear.text = q.buildingConstructionYear?.toString() ?? '';
       _error = null;
+      if (_notifiedVersion == null || (q.version ?? 0) >= _notifiedVersion!) {
+        _conflictMessage = null;
+        _isConflict = false;
+        _notifiedVersion = null;
+      }
     });
     // Loaded or saved: what is on screen is what the server has.
     _setDirty(false);
@@ -571,6 +618,7 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
   }
 
   Future<void> _run(Future<void> Function() action) async {
+    if (_busy || _loading) return;
     setState(() {
       _busy = true;
       _error = null;
@@ -579,7 +627,16 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
       await action();
       _changed = true;
     } catch (e) {
-      setState(() => _error = errorMessage(e));
+      if (!mounted) return;
+      if (isRecordChangedError(e)) {
+        setState(() {
+          _conflictMessage = context.l10n.recordConflictMessage;
+          _isConflict = true;
+          _error = null;
+        });
+      } else {
+        setState(() => _error = errorMessage(e));
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -623,12 +680,15 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
           ? true
           : null,
       notes: _notes.text,
+      expectedVersion: _q?.version,
       lines: inputs,
     );
     final q = _id == null
         ? await _api.sales.createQuotation(body: body)
         : await _api.sales.updateQuotation(id: _id!, body: body);
+    if (!mounted) return;
     _apply(q);
+    _startWatcher();
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(context.l10n.savedNumber(q.number))),
@@ -819,6 +879,16 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
                     ..._actions(canWrite),
                   ],
                 ),
+                if (_conflictMessage != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: RecordConflictBanner(
+                      message: _conflictMessage!,
+                      isConflict: _isConflict,
+                      onReload: _busy || _loading ? null : _load,
+                      onDismiss: () => setState(() => _conflictMessage = null),
+                    ),
+                  ),
                 if (_error != null)
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8),

@@ -45,6 +45,10 @@ pub const CATEGORIES: [&str; 8] = [
 #[derive(Debug, Clone, Serialize, FromRow, ToSchema)]
 pub struct Ticket {
     pub id: Uuid,
+    /// Raised on every change. Send it back as `expected_version` when saving: a ticket someone
+    /// else changed meanwhile is refused (409 `record_changed`).
+    #[schema(required = false)]
+    pub version: i64,
     pub number: String,
     pub subject: String,
     /// new | open | pending_customer | pending_internal | closed
@@ -260,6 +264,10 @@ pub struct TicketInput {
     pub contact_email: String,
     pub quotation_id: Option<Uuid>,
     pub opportunity_id: Option<Uuid>,
+    /// The `version` the form was loaded with. A ticket that has changed since is refused (409
+    /// `record_changed`); left out, the save always goes through.
+    #[serde(default)]
+    pub expected_version: Option<i64>,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -347,7 +355,7 @@ pub struct InboundResult {
     pub duplicate: bool,
 }
 
-const SELECT: &str = "SELECT t.id, t.number, t.subject, t.status, t.priority, t.category, t.suggested_category,
+const SELECT: &str = "SELECT t.id, t.version, t.number, t.subject, t.status, t.priority, t.category, t.suggested_category,
         t.language::text AS language, t.language_source, t.customer_id, c.name AS customer_name, t.contact_id, t.contact_name, t.contact_email,
         t.owner_user_id, u.display_name AS owner_name, t.internal,
         t.quotation_id, q.number AS quotation_number, q.revision AS quotation_revision, q.status AS quotation_status,
@@ -843,7 +851,7 @@ async fn create_ticket(
 }
 
 #[utoipa::path(put, path = "/tickets/{id}", tag = "helpdesk", params(("id" = Uuid, Path)), request_body = TicketInput,
-    responses((status = 200, body = TicketDetail), (status = 422, body = ErrorBody)))]
+    responses((status = 200, body = TicketDetail), (status = 409, body = tradocraft_core::error::ErrorBody), (status = 422, body = ErrorBody)))]
 async fn update_ticket(
     State(state): State<AppState>,
     user: CurrentUser,
@@ -860,7 +868,13 @@ async fn update_ticket(
     }
     let mut tx = state.db.begin().await?;
     crate::checklists::lock_ticket(&mut tx, user.company_id, id).await?;
+    // Read after the row lock, so this is the latest committed version (ADR 0073).
     let old = load_ticket(&mut tx, user.company_id, id).await?;
+    tradocraft_core::concurrency::check_version(
+        input.expected_version,
+        old.version,
+        &format!("ticket {}", old.number),
+    )?;
     let mut input = input;
     if let Some(c) = input.contact_id {
         let contact = tradocraft_crm::contacts::get_contact(&mut tx, c).await?;
@@ -973,6 +987,9 @@ async fn update_ticket(
     .await?;
     let d = load_detail(&mut tx, user.company_id, id).await?;
     tx.commit().await?;
+    state
+        .live_events
+        .publish_record_change(&user, "ticket", id, d.ticket.version, "updated", None);
     Ok(Json(d))
 }
 
@@ -1010,6 +1027,9 @@ async fn add_note_handler(
     }
     let d = load_detail(&mut tx, user.company_id, id).await?;
     tx.commit().await?;
+    state
+        .live_events
+        .publish_record_change(&user, "ticket", id, d.ticket.version, "note", None);
     Ok((StatusCode::CREATED, Json(d)))
 }
 
@@ -1185,6 +1205,9 @@ async fn reply(
     .await?;
     let d = load_detail(&mut tx, user.company_id, id).await?;
     tx.commit().await?;
+    state
+        .live_events
+        .publish_record_change(&user, "ticket", id, d.ticket.version, "note", None);
     Ok((StatusCode::CREATED, Json(d)))
 }
 
@@ -1243,6 +1266,9 @@ async fn create_lead(
     .await?;
     let d = load_detail(&mut tx, user.company_id, id).await?;
     tx.commit().await?;
+    state
+        .live_events
+        .publish_record_change(&user, "ticket", id, d.ticket.version, "note", None);
     Ok((StatusCode::CREATED, Json(d)))
 }
 
@@ -1302,6 +1328,9 @@ async fn convert(
     .await?;
     let d = load_detail(&mut tx, user.company_id, id).await?;
     tx.commit().await?;
+    state
+        .live_events
+        .publish_record_change(&user, "ticket", id, d.ticket.version, "note", None);
     Ok((StatusCode::CREATED, Json(d)))
 }
 
@@ -1385,6 +1414,9 @@ async fn production_question(
     .await?;
     let d = load_detail(&mut tx, user.company_id, id).await?;
     tx.commit().await?;
+    state
+        .live_events
+        .publish_record_change(&user, "ticket", id, d.ticket.version, "note", None);
     Ok((StatusCode::CREATED, Json(d)))
 }
 

@@ -33,6 +33,7 @@ async fn setup(db: PgPool, config: PortalConfig) -> axum::Router {
                 typst_bin: PathBuf::from("typst"),
                 template_dir: PathBuf::from("templates"),
             }),
+            live_events: tradocraft_core::live_events::LiveEvents::new(),
         },
         config,
     )

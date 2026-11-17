@@ -173,6 +173,10 @@ pub struct QuotationInput {
     #[serde(default)]
     #[schema(required = false)]
     pub clear_building_construction_year: Option<bool>,
+    /// The `version` the form was loaded with. On an update, a quotation that has changed since is
+    /// refused (409 `record_changed`); left out, the save always goes through. Ignored on create.
+    #[serde(default)]
+    pub expected_version: Option<i64>,
     pub lines: Vec<QuotationLineInput>,
 }
 
@@ -377,6 +381,10 @@ pub struct QuotationHeader {
     pub company_id: Uuid,
     pub number: String,
     pub revision: i32,
+    /// Raised on every change. Send it back as `expected_version` when saving: a quotation someone
+    /// else changed meanwhile is refused (409 `record_changed`).
+    #[schema(required = false)]
+    pub version: i64,
     #[schema(value_type = QuotationStatus)]
     pub status: String,
     pub customer_id: Uuid,
@@ -433,6 +441,10 @@ pub struct Quotation {
     pub company_id: Uuid,
     pub number: String,
     pub revision: i32,
+    /// Raised on every change. Send it back as `expected_version` when saving: a quotation someone
+    /// else changed meanwhile is refused (409 `record_changed`).
+    #[schema(required = false)]
+    pub version: i64,
     #[schema(value_type = QuotationStatus)]
     pub status: String,
     pub customer_id: Uuid,
@@ -496,6 +508,7 @@ impl Quotation {
             company_id: h.company_id,
             number: h.number,
             revision: h.revision,
+            version: h.version,
             status: h.status,
             customer_id: h.customer_id,
             opportunity_id: h.opportunity_id,

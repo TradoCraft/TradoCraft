@@ -78,6 +78,7 @@ fn api() -> (Router<AppState>, OpenApiDoc) {
         .merge(tradocraft_core::companies::router())
         .merge(tradocraft_core::identity_admin::router())
         .merge(tradocraft_core::audit_log::router())
+        .merge(tradocraft_core::live_events::router())
         .merge(tradocraft_crm::router())
         .merge(tradocraft_products::router())
         .merge(tradocraft_sales::router())

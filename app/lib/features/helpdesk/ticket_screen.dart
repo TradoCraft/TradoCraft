@@ -12,6 +12,7 @@ import '../../l10n/l10n.dart';
 import '../../shared/actions.dart';
 import '../../shared/attachments.dart';
 import '../../shared/format.dart';
+import '../../shared/live_record_watcher.dart';
 import '../../shared/search_picker.dart';
 import '../customers/customer_form.dart';
 import '../kb/kb_entry_screen.dart' show KbArticlePicker;
@@ -107,12 +108,30 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
   List<PresenceEntry> _others = [];
   String _beatMode = 'viewing';
   bool _readMarked = false;
+  RecordLiveWatcher? _watcher;
+  String? _conflictMessage;
+  bool _isConflict = false;
 
   @override
   void initState() {
     super.initState();
     _load();
     _body.addListener(_bodyChanged);
+    _watcher = watchRecordChanges(
+      ref,
+      entityType: 'ticket',
+      recordId: widget.id,
+      currentVersion: () => _d?.ticket.version,
+      onExternalChange: (ev) {
+        if (!mounted) return;
+        setState(() {
+          _conflictMessage = ev.kind == 'resync'
+              ? context.l10n.recordConflictMessage
+              : context.l10n.recordUpdatedBy(ev.changedByName);
+          _isConflict = false;
+        });
+      },
+    );
   }
 
   /// Whether the beat is running; null until the first [didChangeDependencies].
@@ -136,6 +155,7 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
 
   @override
   void dispose() {
+    _watcher?.dispose();
     _beatTimer?.cancel();
     _body.removeListener(_bodyChanged);
     super.dispose();
@@ -164,6 +184,8 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
   }
 
   Future<void> _load() async {
+    if (_busy) return;
+    setState(() => _busy = true);
     try {
       final d = await _api.helpdesk.getTicket(id: widget.id);
       _apply(d);
@@ -174,10 +196,14 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
         );
       }
     } catch (e) {
-      setState(() {
-        _error = errorMessage(e);
-        _missing = errorStatus(e) == 404;
-      });
+      if (mounted) {
+        setState(() {
+          _error = errorMessage(e);
+          _missing = errorStatus(e) == 404;
+        });
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
     }
   }
 
@@ -189,6 +215,8 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
     setState(() {
       _d = d;
       _error = null;
+      _conflictMessage = null;
+      _isConflict = false;
       _subject.text = t.subject;
       _contactName.text = t.contactName;
       _contactEmail.text = t.contactEmail;
@@ -245,6 +273,7 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
     Future<TicketDetail> Function() action, {
     String? success,
   }) async {
+    if (_busy) return false;
     setState(() => _busy = true);
     TicketDetail? d;
     final messenger = ScaffoldMessenger.of(context);
@@ -284,26 +313,47 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
     return ok;
   }
 
-  Future<void> _saveProperties() => _run(
-    () => _api.helpdesk.updateTicket(
-      id: widget.id,
-      body: TicketInput(
-        subject: _subject.text.trim(),
-        status: _status,
-        priority: _priority,
-        category: _category,
-        language: _language,
-        ownerUserId: _ownerId,
-        customerId: _customerId,
-        contactId: _contactId,
-        contactName: _contactName.text.trim(),
-        contactEmail: _contactEmail.text.trim(),
-        quotationId: _quotationId,
-        opportunityId: _opportunityId,
-      ),
-    ),
-    success: context.l10n.saved,
-  );
+  Future<void> _saveProperties() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      final d = await _api.helpdesk.updateTicket(
+        id: widget.id,
+        body: TicketInput(
+          subject: _subject.text.trim(),
+          status: _status,
+          priority: _priority,
+          category: _category,
+          language: _language,
+          ownerUserId: _ownerId,
+          customerId: _customerId,
+          contactId: _contactId,
+          contactName: _contactName.text.trim(),
+          contactEmail: _contactEmail.text.trim(),
+          quotationId: _quotationId,
+          opportunityId: _opportunityId,
+          expectedVersion: _d?.ticket.version,
+        ),
+      );
+      if (!mounted) return;
+      _apply(d);
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(context.l10n.saved)));
+    } catch (e) {
+      if (!mounted) return;
+      if (isRecordChangedError(e)) {
+        setState(() {
+          _conflictMessage = context.l10n.recordConflictMessage;
+          _isConflict = true;
+        });
+      } else {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(errorMessage(e))));
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
 
   Future<void> _send() async {
     final l = context.l10n;
@@ -416,37 +466,55 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
   );
 
   Future<void> _escalate() async {
-    final t = _d!.ticket;
-    final r = await showEscalateDialog(context, ticketId: t.id);
-    if (r == null || !mounted) return;
-    _apply(r);
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(context.l10n.collabEscalated)));
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      final t = _d!.ticket;
+      final r = await showEscalateDialog(context, ticketId: t.id);
+      if (r == null || !mounted) return;
+      _apply(r);
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(context.l10n.collabEscalated)));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   Future<void> _delegate() async {
-    final t = _d!.ticket;
-    final r = await showDelegateDialog(
-      context,
-      ticketId: t.id,
-      currentOwnerId: t.ownerUserId,
-    );
-    if (r == null || !mounted) return;
-    _apply(r);
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(context.l10n.collabHandedOver)));
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      final t = _d!.ticket;
+      final r = await showDelegateDialog(
+        context,
+        ticketId: t.id,
+        currentOwnerId: t.ownerUserId,
+      );
+      if (r == null || !mounted) return;
+      _apply(r);
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(context.l10n.collabHandedOver)));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   Future<void> _merge() async {
-    final l = context.l10n;
-    final target = await showMergeDialog(context, ticket: _d!.ticket);
-    if (target == null || !mounted) return;
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(l.ticketMerged)));
-    // The ticket is closed and its content now lives in the target.
-    _apply(target);
-    if (GoRouter.maybeOf(context) != null) {
-      context.pushReplacement('/helpdesk/${target.ticket.id}');
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      final l = context.l10n;
+      final target = await showMergeDialog(context, ticket: _d!.ticket);
+      if (target == null || !mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l.ticketMerged)));
+      // The ticket is closed and its content now lives in the target.
+      _apply(target);
+      if (GoRouter.maybeOf(context) != null) {
+        context.pushReplacement('/helpdesk/${target.ticket.id}');
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
     }
   }
 
@@ -513,16 +581,22 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
   }
 
   Future<void> _logCall() async {
-    final t = _d!.ticket;
-    Contact? who;
-    for (final c in _contacts) {
-      if (c.id == _contactId) who = c;
-    }
-    final d = await showCallDialog(context, ticketId: t.id, contact: who);
-    if (d != null && mounted) {
-      _apply(d);
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(context.l10n.callLogged)));
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      final t = _d!.ticket;
+      Contact? who;
+      for (final c in _contacts) {
+        if (c.id == _contactId) who = c;
+      }
+      final d = await showCallDialog(context, ticketId: t.id, contact: who);
+      if (d != null && mounted) {
+        _apply(d);
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(context.l10n.callLogged)));
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
     }
   }
 
@@ -562,8 +636,12 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
     }
     final perms = ref.watch(meProvider).value?.permissions ?? const [];
     final wide = MediaQuery.sizeOf(context).width >= 1100;
-    final conversation = _conversation(context, d, perms);
-    final panel = _panel(context, d, perms);
+    final conversation = _conversation(
+      context,
+      d,
+      perms,
+    ).lockRecordEditing(_busy);
+    final panel = _panel(context, d, perms).lockRecordEditing(_busy);
     return Scaffold(
       body: wide
           ? Row(
@@ -603,6 +681,16 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (_conflictMessage != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: RecordConflictBanner(
+              message: _conflictMessage!,
+              isConflict: _isConflict,
+              onReload: _busy ? null : _load,
+              onDismiss: () => setState(() => _conflictMessage = null),
+            ),
+          ),
         Padding(
           padding: const EdgeInsets.fromLTRB(8, 16, 16, 0),
           child: Row(
@@ -1020,6 +1108,7 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
           tags: t.tags,
           canWrite: canWrite,
           onChanged: _apply,
+          onAction: (action) => _run(action),
         ),
         const Divider(height: 32),
         TimeSection(ticketId: t.id, canWrite: canWrite),

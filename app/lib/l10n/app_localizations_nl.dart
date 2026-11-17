@@ -10238,6 +10238,18 @@ class AppLocalizationsNl extends AppLocalizations {
   String get vatRateOngoing => 'Lopend';
 
   @override
+  String get reloadRecord => 'Herladen';
+
+  @override
+  String recordUpdatedBy(String name) {
+    return 'Bijgewerkt door $name. Herlaad om de laatste wijzigingen te zien.';
+  }
+
+  @override
+  String get recordConflictMessage =>
+      'Iemand anders heeft wijzigingen aan dit record opgeslagen. Herlaad om die wijzigingen te zien voordat u opnieuw opslaat.';
+
+  @override
   String get checklistTitle => 'Checklist';
 
   @override

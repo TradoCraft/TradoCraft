@@ -4655,6 +4655,14 @@
     }
   },
   "vatRateOngoing": "Ongoing",
+  "reloadRecord": "Reload",
+  "recordUpdatedBy": "Updated by {name}. Reload to see the latest changes.",
+  "@recordUpdatedBy": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "recordConflictMessage": "Someone else saved changes to this record. Reload to see their changes before saving again.",
   "checklistTitle": "Checklist",
   "checklistProgress": "{done}/{total}",
   "@checklistProgress": {

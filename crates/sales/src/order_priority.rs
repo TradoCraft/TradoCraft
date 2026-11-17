@@ -224,7 +224,7 @@ async fn change_priority(
         serde_json::json!({ "from": old, "to": input.priority, "reason": reason, "request": input.request_id }),
     )
     .await?;
-    let order = orders::load_order(&mut tx, user.company_id, id, None).await?;
+    let order = orders::load_order_locked(&mut tx, user.company_id, id, None).await?;
     tx.commit().await?;
     Ok(Json(order))
 }

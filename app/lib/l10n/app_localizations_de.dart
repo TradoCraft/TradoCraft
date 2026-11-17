@@ -10267,6 +10267,18 @@ class AppLocalizationsDe extends AppLocalizations {
   String get vatRateOngoing => 'Unbefristet';
 
   @override
+  String get reloadRecord => 'Neu laden';
+
+  @override
+  String recordUpdatedBy(String name) {
+    return 'Aktualisiert von $name. Laden Sie neu, um die neuesten Änderungen zu sehen.';
+  }
+
+  @override
+  String get recordConflictMessage =>
+      'Jemand anderes hat Änderungen an diesem Datensatz gespeichert. Laden Sie neu, um diese Änderungen vor dem erneuten Speichern zu sehen.';
+
+  @override
   String get checklistTitle => 'Checkliste';
 
   @override
