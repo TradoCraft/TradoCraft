@@ -37,6 +37,17 @@ class _SilentStore implements KvStore {
   Future<void> remove(String key) async {}
 }
 
+/// A store whose read answers when the test says so (a slow platform store).
+class _LateStore implements KvStore {
+  final answer = Completer<String?>();
+  @override
+  Future<String?> get(String key) => answer.future;
+  @override
+  Future<void> set(String key, String value) async {}
+  @override
+  Future<void> remove(String key) async {}
+}
+
 /// A loader that records every query it gets.
 class _Loader {
   _Loader([int n = 60]) : all = _data(n);
@@ -94,6 +105,36 @@ void main() {
       await t.tap(find.text('Name'));
       await t.pumpAndSettle();
       expect(l.queries.last.sort, isNull);
+    });
+
+    testWidgets('load more after a search edit starts the new query', (
+      t,
+    ) async {
+      _size(t);
+      final l = _Loader();
+      await t.pumpWidget(
+        _app(
+          EntityList<String>(
+            title: 'Things',
+            loadQuery: l.call,
+            columns: _cols(),
+          ),
+        ),
+      );
+      await t.pumpAndSettle();
+      await t.scrollUntilVisible(
+        find.text('Load more'),
+        500,
+        scrollable: find.byType(Scrollable).last,
+      );
+      // The search box changed but its debounce has not fired yet.
+      await t.enterText(find.byType(TextField), 'Item 1');
+      await t.pump();
+      await t.tap(find.text('Load more'));
+      await t.pump();
+      expect(l.queries.last.search, 'Item 1');
+      expect(l.queries.last.offset, 0);
+      await t.pumpAndSettle();
     });
 
     testWidgets('shift adds a secondary key, at most three', (t) async {
@@ -426,6 +467,31 @@ void main() {
       expect(find.text('Item 00'), findsOneWidget);
       expect(l.queries.first.sort, isNull);
     });
+
+    testWidgets('a saved layout that arrives late does not undo a sort', (
+      t,
+    ) async {
+      _size(t);
+      final l = _Loader();
+      final store = _LateStore();
+      await t.pumpWidget(
+        _app(
+          EntityList<String>(
+            title: 'Things',
+            loadQuery: l.call,
+            columns: _cols(),
+            prefsKey: 'things',
+            prefsStore: store,
+          ),
+        ),
+      );
+      await t.pump();
+      await t.tap(find.text('Name'));
+      await t.pump();
+      store.answer.complete('{"sort":"-len"}');
+      await t.pumpAndSettle();
+      expect(l.queries.last.sort, 'name');
+    });
   });
 
   group('selection', () {
@@ -532,6 +598,36 @@ void main() {
       await t.tap(find.text('Item 02'));
       await t.pump();
       expect(opened, ['Item 02']);
+    });
+
+    testWidgets('a reload of the same query keeps rows from later pages', (
+      t,
+    ) async {
+      _size(t);
+      final l = _Loader();
+      await t.pumpWidget(list(l, onOpen: (s) async => true));
+      await t.pumpAndSettle();
+      await t.drag(find.text('Item 02'), const Offset(0, -5000));
+      await t.pumpAndSettle();
+      // The footer button sits in the clipped padding at this size: press it directly.
+      t
+          .widget<TextButton>(find.widgetWithText(TextButton, 'Load more'))
+          .onPressed!();
+      await t.pumpAndSettle();
+      await t.drag(find.text('Item 45'), const Offset(0, -5000));
+      await t.pumpAndSettle();
+      expect(find.text('Item 59'), findsOneWidget);
+      // A row from the second page (the last one on screen).
+      await t.tap(find.byType(Checkbox).last);
+      await t.pump();
+      expect(find.text('1 selected'), findsOneWidget);
+
+      // Opening a row that reports a change reloads the list (the list is still at its end).
+      await t.tap(find.text('Item 59'));
+      await t.pumpAndSettle();
+      expect(l.queries.last.offset, 0);
+      expect(l.queries.last.limit, 60);
+      expect(find.text('1 selected'), findsOneWidget);
     });
 
     testWidgets('bulk action asks, runs on the items, reloads, clears', (

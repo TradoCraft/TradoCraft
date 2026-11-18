@@ -100,8 +100,40 @@ async fn products_sort_and_reject_unknown_keys(db: PgPool) {
     d.reverse();
     assert_eq!(a, d);
     assert_eq!(a, strings(&default, "code"));
-    let (_, multi) = get(&app, "/products?sort=-product_type,name&limit=500").await;
-    assert_eq!(multi["total"], default["total"]);
+
+    // Two keys: the type decides first (descending), the name breaks the tie inside a type. The
+    // names are chosen so that neither key alone, nor the default code order, gives this sequence.
+    let mut ids = Vec::new();
+    for (code, name, product_type) in [
+        ("SRT-1", "Zulu", "service"),
+        ("SRT-2", "Mike", "purchased"),
+        ("SRT-3", "Alpha", "purchased"),
+        ("SRT-4", "Bravo", "service"),
+    ] {
+        let (status, p) = call(
+            &app,
+            "admin@example.com",
+            Method::POST,
+            "/api/v1/products",
+            Some(json!({
+                "code": code, "name": name, "product_type": product_type, "vat_rate": "21"
+            })),
+        )
+        .await;
+        assert_eq!(status, StatusCode::CREATED, "{p}");
+        ids.push(p["id"].clone());
+    }
+    let multi = get_ok(&app, "/products?q=SRT-&sort=-product_type,name&limit=500").await;
+    // service (Bravo, Zulu) before purchased (Alpha, Mike).
+    assert_eq!(
+        field(&multi, "id"),
+        vec![
+            ids[3].clone(),
+            ids[0].clone(),
+            ids[2].clone(),
+            ids[1].clone()
+        ]
+    );
 
     for bad in [
         "nope",

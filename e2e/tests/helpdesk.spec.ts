@@ -124,6 +124,10 @@ test('a customer writes in and the helpdesk handles the ticket', async ({ page, 
       expect(t.ticket.priority).toBe('high');
       expect(t.ticket.status).toBe('pending_internal');
     }).toPass();
+    // The server has the change, but the screen is still reloading the ticket: a click on a field in
+    // that moment can land where a field was a frame ago (and open the wrong drop-down). The save
+    // button is enabled again once the screen is done.
+    await expect(page.getByRole('button', { name: 'Save changes' })).toBeEnabled();
   });
 
   await test.step('tags, checklist and watching', async () => {

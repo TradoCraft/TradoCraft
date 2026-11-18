@@ -47,7 +47,7 @@ test('the whole tutorial, chapter by chapter', async ({ page }) => {
     await expectStep(page, 'welcome', 'menu');
     await next(page);
     await expectStep(page, 'welcome', 'products');
-    await page.getByRole('tab', { name: 'Products' }).click();
+    await railTo(page, 'Products');
     await expect(page.getByRole('button', { name: 'Start next chapter' })).toBeVisible();
     await page.getByRole('button', { name: 'Start next chapter' }).click();
   });

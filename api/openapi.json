@@ -25167,7 +25167,7 @@
           {
             "name": "sort",
             "in": "query",
-            "description": "Sort order: `field` ascending or `-field` descending, comma-separated for several keys (at\nmost 3). Fields: number, customer_name, status, quote_date, valid_until, total.\nDefault: newest first (quote date, number and revision, descending).",
+            "description": "Sort order: `field` ascending or `-field` descending, comma-separated for several keys (at\nmost 3). Fields: number, customer_name, status, quote_date, valid_until, subtotal, total.\nDefault: newest first (quote date, number and revision, descending).",
             "required": false,
             "schema": {
               "type": [

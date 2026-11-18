@@ -175,6 +175,9 @@ class EntityList<T> extends StatefulWidget {
 
 class EntityListState<T> extends State<EntityList<T>> {
   static const _pageSize = 50;
+
+  /// The most rows a reload re-reads to keep the selection of rows loaded by "load more".
+  static const _maxRefresh = 500;
   static const _minColumnWidth = 64.0;
   static const _maxSorts = 3;
   static const _selectWidth = 48.0;
@@ -201,6 +204,12 @@ class EntityListState<T> extends State<EntityList<T>> {
   int? _anchor;
   bool _bulkBusy = false;
   String? _lastQueryKey;
+
+  /// The search and sort that produced [_items]; "load more" only appends while it still matches.
+  String? _loadedKey;
+
+  /// Set once the user changed the layout, so a saved layout that arrives late is not applied.
+  bool _layoutEdited = false;
   KvStore? _store;
 
   String _cid(EntityColumn<T> c) => c.id ?? c.sortKey ?? c.label;
@@ -258,7 +267,9 @@ class EntityListState<T> extends State<EntityList<T>> {
     try {
       // A store that is slow or never answers must not hold the list back: default layout then.
       final raw = await _store!.get(_prefsName).timeout(_prefsTimeout);
-      if (raw != null && mounted) _applyPrefs(jsonDecode(raw));
+      if (raw != null && mounted && !_layoutEdited) {
+        _applyPrefs(jsonDecode(raw));
+      }
     } catch (_) {
       // A damaged or unreadable entry just means the default layout.
     }
@@ -306,6 +317,8 @@ class EntityListState<T> extends State<EntityList<T>> {
   }
 
   void _savePrefs() {
+    // A layout read that is still pending must not overwrite what the user just chose.
+    _layoutEdited = true;
     final store = _store;
     if (widget.prefsKey == null || store == null) return;
     store
@@ -347,6 +360,9 @@ class EntityListState<T> extends State<EntityList<T>> {
     final q = _search.text.trim();
     final sort = _sortString;
     final queryKey = '$q\u0000${sort ?? ''}';
+    // The search or sort changed since these rows were loaded (a debounce still pending): the
+    // next page of the new query must not be appended to the old rows.
+    if (!reset && queryKey != _loadedKey) reset = true;
     var cleared = false;
     setState(() {
       _loading = true;
@@ -365,22 +381,33 @@ class EntityListState<T> extends State<EntityList<T>> {
     if (cleared) _emitSelection();
     try {
       final offset = reset ? 0 : _items.length;
+      // With rows selected, a reload of the same query refreshes everything loaded so far, so a
+      // selected row on a later page is still found (and kept) afterwards.
+      final keepSelection =
+          reset && queryKey == _loadedKey && _selected.isNotEmpty;
+      final limit = keepSelection
+          ? math.min(math.max(_pageSize, _items.length), _maxRefresh)
+          : _pageSize;
       final (items, total) = widget.loadQuery != null
           ? await widget.loadQuery!(
               ListQuery(
                 search: q.isEmpty ? null : q,
                 offset: offset,
-                limit: _pageSize,
+                limit: limit,
                 sort: sort,
               ),
             )
-          : await widget.load!(q.isEmpty ? null : q, offset, _pageSize);
+          : await widget.load!(q.isEmpty ? null : q, offset, limit);
       if (!mounted || generation != _generation) return;
       var pruned = false;
       setState(() {
         _items = reset ? items : [..._items, ...items];
         _total = total;
-        if (reset && widget.idOf != null && _selected.isNotEmpty) {
+        if (reset) _loadedKey = queryKey;
+        // Only prune when the reload covered the whole range that was loaded; a server that cut
+        // the page short leaves the selection alone instead of dropping rows it did not return.
+        final covered = items.length >= total || items.length >= limit;
+        if (reset && covered && widget.idOf != null && _selected.isNotEmpty) {
           final present = {for (final i in items) widget.idOf!(i)};
           final before = _selected.length;
           _selected.removeWhere((id) => !present.contains(id));

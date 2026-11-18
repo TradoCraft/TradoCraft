@@ -160,7 +160,7 @@ abstract class SalesClient {
   /// [q] - Searches number and customer name.
   ///
   /// [sort] - Sort order: `field` ascending or `-field` descending, comma-separated for several keys (at.
-  /// most 3). Fields: number, customer_name, status, quote_date, valid_until, total.
+  /// most 3). Fields: number, customer_name, status, quote_date, valid_until, subtotal, total.
   /// Default: newest first (quote date, number and revision, descending).
   @GET('/api/v1/quotations')
   Future<QuotationPage> listQuotations({
