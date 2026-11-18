@@ -87,9 +87,7 @@ test('Esc inside a text field asks before leaving an edited form', async ({ page
   await boot(page);
   await page.getByRole('button', { name: 'New quotation' }).click();
   const notes = field(page, 'Notes');
-  await notes.click();
-  await expect(notes).toBeFocused();
-  await page.keyboard.type('x', { delay: 25 });
+  await typeInto(notes, 'x');
 
   // A text field answers the framework's dismiss intent itself; the Esc must still reach the form.
   await page.keyboard.press('Escape');
