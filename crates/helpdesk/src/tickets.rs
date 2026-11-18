@@ -396,6 +396,31 @@ pub async fn load_ticket(conn: &mut PgConnection, company_id: Uuid, id: Uuid) ->
     Ok(ticket.with_sla(cal.as_ref()))
 }
 
+/// Tells open ticket screens that a ticket changed (A8). Best effort and after the commit: it
+/// reads the version the commit left behind, and a failure never fails the request.
+pub async fn notify_change(
+    state: &AppState,
+    user: &CurrentUser,
+    id: Uuid,
+    kind: &str,
+    summary: Option<String>,
+) {
+    let version: Option<i64> = sqlx::query_scalar(
+        "SELECT version FROM helpdesk.tickets WHERE id = $1 AND company_id = $2",
+    )
+    .bind(id)
+    .bind(user.company_id)
+    .fetch_optional(&state.db)
+    .await
+    .ok()
+    .flatten();
+    if let Some(version) = version {
+        state
+            .live_events
+            .publish_record_change(user, "ticket", id, version, kind, summary);
+    }
+}
+
 pub async fn load_detail(
     conn: &mut PgConnection,
     company_id: Uuid,
@@ -987,9 +1012,14 @@ async fn update_ticket(
     .await?;
     let d = load_detail(&mut tx, user.company_id, id).await?;
     tx.commit().await?;
-    state
-        .live_events
-        .publish_record_change(&user, "ticket", id, d.ticket.version, "updated", None);
+    state.live_events.publish_record_change(
+        &user,
+        "ticket",
+        id,
+        d.ticket.version,
+        "updated",
+        Some(d.ticket.status.clone()),
+    );
     Ok(Json(d))
 }
 

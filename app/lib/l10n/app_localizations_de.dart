@@ -10279,6 +10279,66 @@ class AppLocalizationsDe extends AppLocalizations {
       'Jemand anderes hat Änderungen an diesem Datensatz gespeichert. Laden Sie neu, um diese Änderungen vor dem erneuten Speichern zu sehen.';
 
   @override
+  String ticketLiveChange(String kind, String name) {
+    String _temp0 = intl.Intl.selectLogic(kind, {
+      'note': '$name hat eine Nachricht hinzugefügt.',
+      'escalated': '$name hat dieses Ticket eskaliert.',
+      'delegated': '$name hat dieses Ticket übergeben.',
+      'tag': '$name hat die Tags geändert.',
+      'timeEntry': '$name hat Zeit erfasst.',
+      'merge': '$name hat Tickets zusammengeführt.',
+      'split': '$name hat dieses Ticket aufgeteilt.',
+      'attachment': '$name hat einen Anhang hinzugefügt.',
+      'checklist': '$name hat die Checkliste geändert.',
+      'other': '$name hat dieses Ticket geändert.',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String ticketLiveUnsaved(String name) {
+    return '$name hat dieses Ticket geändert, während Sie ungespeicherte Änderungen haben. Vergleichen Sie vor dem Speichern.';
+  }
+
+  @override
+  String ticketLiveMerged(String name) {
+    return '$name hat dieses Ticket geändert. Die Änderungen wurden in Ihr Formular übernommen.';
+  }
+
+  @override
+  String get ticketMergeSomeone => 'Jemand';
+
+  @override
+  String get ticketMergeCompare => 'Vergleichen';
+
+  @override
+  String get ticketMergeTitle => 'Ihre Änderungen und die der anderen Person';
+
+  @override
+  String ticketMergeIntro(String name) {
+    return '$name hat Änderungen in Feldern gespeichert, die Sie ebenfalls bearbeitet haben. Wählen Sie für jedes Feld den Wert, den Sie behalten.';
+  }
+
+  @override
+  String get ticketMergeMine => 'Mein Wert';
+
+  @override
+  String ticketMergeTheirs(String name) {
+    return 'Wert von $name';
+  }
+
+  @override
+  String get ticketMergeApply => 'Übernehmen';
+
+  @override
+  String get ticketMergeEmpty => '(leer)';
+
+  @override
+  String ticketMergeTakenOver(String fields) {
+    return 'Außerdem aus deren Änderung übernommen: $fields';
+  }
+
+  @override
   String get checklistTitle => 'Checkliste';
 
   @override

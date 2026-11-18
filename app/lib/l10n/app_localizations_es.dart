@@ -10256,6 +10256,66 @@ class AppLocalizationsEs extends AppLocalizations {
       'Otra persona guardó cambios en este registro. Recargue para ver sus cambios antes de volver a guardar.';
 
   @override
+  String ticketLiveChange(String kind, String name) {
+    String _temp0 = intl.Intl.selectLogic(kind, {
+      'note': '$name añadió un mensaje.',
+      'escalated': '$name escaló este ticket.',
+      'delegated': '$name traspasó este ticket.',
+      'tag': '$name cambió las etiquetas.',
+      'timeEntry': '$name registró tiempo.',
+      'merge': '$name fusionó tickets.',
+      'split': '$name dividió este ticket.',
+      'attachment': '$name añadió un adjunto.',
+      'checklist': '$name cambió la lista de comprobación.',
+      'other': '$name cambió este ticket.',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String ticketLiveUnsaved(String name) {
+    return '$name cambió este ticket mientras usted tiene cambios sin guardar. Compare antes de guardar.';
+  }
+
+  @override
+  String ticketLiveMerged(String name) {
+    return '$name cambió este ticket. Sus cambios se han combinado con su formulario.';
+  }
+
+  @override
+  String get ticketMergeSomeone => 'Alguien';
+
+  @override
+  String get ticketMergeCompare => 'Comparar';
+
+  @override
+  String get ticketMergeTitle => 'Sus cambios y los de la otra persona';
+
+  @override
+  String ticketMergeIntro(String name) {
+    return '$name guardó cambios en campos que usted también editó. Elija qué valor conservar en cada uno.';
+  }
+
+  @override
+  String get ticketMergeMine => 'El mío';
+
+  @override
+  String ticketMergeTheirs(String name) {
+    return 'El de $name';
+  }
+
+  @override
+  String get ticketMergeApply => 'Aplicar';
+
+  @override
+  String get ticketMergeEmpty => '(vacío)';
+
+  @override
+  String ticketMergeTakenOver(String fields) {
+    return 'También tomado de su cambio: $fields';
+  }
+
+  @override
   String get checklistTitle => 'Lista de comprobación';
 
   @override

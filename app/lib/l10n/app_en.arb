@@ -4663,6 +4663,49 @@
     }
   },
   "recordConflictMessage": "Someone else saved changes to this record. Reload to see their changes before saving again.",
+  "ticketLiveChange": "{kind, select, note{{name} added a message.} escalated{{name} escalated this ticket.} delegated{{name} handed this ticket over.} tag{{name} changed the tags.} timeEntry{{name} logged time.} merge{{name} merged tickets.} split{{name} split this ticket.} attachment{{name} added an attachment.} checklist{{name} changed the checklist.} other{{name} changed this ticket.}}",
+  "@ticketLiveChange": {
+    "placeholders": {
+      "kind": {"type": "String"},
+      "name": {"type": "String"}
+    }
+  },
+  "ticketLiveUnsaved": "{name} changed this ticket while you have unsaved edits. Compare before you save.",
+  "@ticketLiveUnsaved": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "ticketLiveMerged": "{name} changed this ticket. Their changes were merged into your form.",
+  "@ticketLiveMerged": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "ticketMergeSomeone": "Someone",
+  "ticketMergeCompare": "Compare",
+  "ticketMergeTitle": "Your changes and theirs",
+  "ticketMergeIntro": "{name} saved changes to fields you also edited. Choose which value to keep for each.",
+  "@ticketMergeIntro": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "ticketMergeMine": "Mine",
+  "ticketMergeTheirs": "{name}'s",
+  "@ticketMergeTheirs": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "ticketMergeApply": "Apply",
+  "ticketMergeEmpty": "(empty)",
+  "ticketMergeTakenOver": "Also taken over from their change: {fields}",
+  "@ticketMergeTakenOver": {
+    "placeholders": {
+      "fields": {"type": "String"}
+    }
+  },
   "checklistTitle": "Checklist",
   "checklistProgress": "{done}/{total}",
   "@checklistProgress": {

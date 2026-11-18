@@ -263,9 +263,13 @@ class TimeSection extends ConsumerStatefulWidget {
     super.key,
     required this.ticketId,
     required this.canWrite,
+    this.refreshVersion = 0,
   });
   final String ticketId;
   final bool canWrite;
+
+  /// Changes when the entries should be loaded again (a colleague logged time).
+  final int refreshVersion;
 
   @override
   ConsumerState<TimeSection> createState() => _TimeSectionState();
@@ -279,6 +283,12 @@ class _TimeSectionState extends ConsumerState<TimeSection> {
   void initState() {
     super.initState();
     _load();
+  }
+
+  @override
+  void didUpdateWidget(TimeSection old) {
+    super.didUpdateWidget(old);
+    if (old.refreshVersion != widget.refreshVersion) _load();
   }
 
   Future<void> _load() async {

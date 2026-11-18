@@ -18156,6 +18156,78 @@ abstract class AppLocalizations {
   /// **'Someone else saved changes to this record. Reload to see their changes before saving again.'**
   String get recordConflictMessage;
 
+  /// No description provided for @ticketLiveChange.
+  ///
+  /// In en, this message translates to:
+  /// **'{kind, select, note{{name} added a message.} escalated{{name} escalated this ticket.} delegated{{name} handed this ticket over.} tag{{name} changed the tags.} timeEntry{{name} logged time.} merge{{name} merged tickets.} split{{name} split this ticket.} attachment{{name} added an attachment.} checklist{{name} changed the checklist.} other{{name} changed this ticket.}}'**
+  String ticketLiveChange(String kind, String name);
+
+  /// No description provided for @ticketLiveUnsaved.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} changed this ticket while you have unsaved edits. Compare before you save.'**
+  String ticketLiveUnsaved(String name);
+
+  /// No description provided for @ticketLiveMerged.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} changed this ticket. Their changes were merged into your form.'**
+  String ticketLiveMerged(String name);
+
+  /// No description provided for @ticketMergeSomeone.
+  ///
+  /// In en, this message translates to:
+  /// **'Someone'**
+  String get ticketMergeSomeone;
+
+  /// No description provided for @ticketMergeCompare.
+  ///
+  /// In en, this message translates to:
+  /// **'Compare'**
+  String get ticketMergeCompare;
+
+  /// No description provided for @ticketMergeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your changes and theirs'**
+  String get ticketMergeTitle;
+
+  /// No description provided for @ticketMergeIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} saved changes to fields you also edited. Choose which value to keep for each.'**
+  String ticketMergeIntro(String name);
+
+  /// No description provided for @ticketMergeMine.
+  ///
+  /// In en, this message translates to:
+  /// **'Mine'**
+  String get ticketMergeMine;
+
+  /// No description provided for @ticketMergeTheirs.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}\'s'**
+  String ticketMergeTheirs(String name);
+
+  /// No description provided for @ticketMergeApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get ticketMergeApply;
+
+  /// No description provided for @ticketMergeEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'(empty)'**
+  String get ticketMergeEmpty;
+
+  /// No description provided for @ticketMergeTakenOver.
+  ///
+  /// In en, this message translates to:
+  /// **'Also taken over from their change: {fields}'**
+  String ticketMergeTakenOver(String fields);
+
   /// No description provided for @checklistTitle.
   ///
   /// In en, this message translates to:

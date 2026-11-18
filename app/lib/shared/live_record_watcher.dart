@@ -186,6 +186,11 @@ class RecordLiveWatcher {
   }
 }
 
+/// Whether an event of [kind] always carries a new record version, so one that is not newer than
+/// the loaded version is something the screen already has.
+bool isVersionedChange(String kind) =>
+    kind == 'updated' || kind == 'note' || kind == 'resync';
+
 /// Convenience helper for screens using Riverpod [WidgetRef] to watch a record's SSE channel.
 RecordLiveWatcher watchRecordChanges(
   WidgetRef ref, {
@@ -203,7 +208,11 @@ RecordLiveWatcher watchRecordChanges(
       if (meId != null && ev.changedById == meId) return;
       final cur = currentVersion();
       if (ev.kind == 'resync' && (cur == null || ev.version <= 0)) return;
-      if (cur != null && ev.version <= cur) return;
+      // Only saves move the record version. Timeline-only changes (a tag, a time entry, an
+      // attachment) and presence (A8) leave it as it was, so they must not be filtered by it.
+      if (isVersionedChange(ev.kind) && cur != null && ev.version <= cur) {
+        return;
+      }
       onExternalChange(ev);
     },
   );
@@ -220,12 +229,18 @@ class RecordConflictBanner extends StatelessWidget {
     required this.isConflict,
     required this.onReload,
     this.onDismiss,
+    this.actionLabel,
+    this.actionIcon,
   });
 
   final String message;
   final bool isConflict;
   final VoidCallback? onReload;
   final VoidCallback? onDismiss;
+
+  /// Replaces the "Reload" label, for example "Compare" when the user has unsaved edits.
+  final String? actionLabel;
+  final IconData? actionIcon;
 
   @override
   Widget build(BuildContext context) {
@@ -258,8 +273,8 @@ class RecordConflictBanner extends StatelessWidget {
           const SizedBox(width: 8),
           FilledButton.tonalIcon(
             onPressed: onReload,
-            icon: const Icon(AppIcons.refresh, size: 18),
-            label: Text(l.reloadRecord),
+            icon: Icon(actionIcon ?? AppIcons.refresh, size: 18),
+            label: Text(actionLabel ?? l.reloadRecord),
           ),
           if (onDismiss != null) ...[
             const SizedBox(width: 4),

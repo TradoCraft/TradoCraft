@@ -35,7 +35,9 @@ pub struct RecordEvent {
     pub version: i64,
     pub changed_by_id: Uuid,
     pub changed_by_name: String,
-    /// `updated` for D3; A8 can emit finer kinds such as `note`, `reply`, `status`.
+    /// `updated` (a save), or for tickets (A8) `note`, `escalated`, `delegated`, `tag`, `time`,
+    /// `merge`, `split`, `attachment`, `checklist` and `presence` (someone arrived or started
+    /// or stopped replying; the version did not move). `resync` is only produced by the client.
     pub kind: String,
     pub summary: Option<String>,
     pub at: DateTime<Utc>,

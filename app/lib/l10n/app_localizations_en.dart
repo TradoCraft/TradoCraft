@@ -10205,6 +10205,66 @@ class AppLocalizationsEn extends AppLocalizations {
       'Someone else saved changes to this record. Reload to see their changes before saving again.';
 
   @override
+  String ticketLiveChange(String kind, String name) {
+    String _temp0 = intl.Intl.selectLogic(kind, {
+      'note': '$name added a message.',
+      'escalated': '$name escalated this ticket.',
+      'delegated': '$name handed this ticket over.',
+      'tag': '$name changed the tags.',
+      'timeEntry': '$name logged time.',
+      'merge': '$name merged tickets.',
+      'split': '$name split this ticket.',
+      'attachment': '$name added an attachment.',
+      'checklist': '$name changed the checklist.',
+      'other': '$name changed this ticket.',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String ticketLiveUnsaved(String name) {
+    return '$name changed this ticket while you have unsaved edits. Compare before you save.';
+  }
+
+  @override
+  String ticketLiveMerged(String name) {
+    return '$name changed this ticket. Their changes were merged into your form.';
+  }
+
+  @override
+  String get ticketMergeSomeone => 'Someone';
+
+  @override
+  String get ticketMergeCompare => 'Compare';
+
+  @override
+  String get ticketMergeTitle => 'Your changes and theirs';
+
+  @override
+  String ticketMergeIntro(String name) {
+    return '$name saved changes to fields you also edited. Choose which value to keep for each.';
+  }
+
+  @override
+  String get ticketMergeMine => 'Mine';
+
+  @override
+  String ticketMergeTheirs(String name) {
+    return '$name\'s';
+  }
+
+  @override
+  String get ticketMergeApply => 'Apply';
+
+  @override
+  String get ticketMergeEmpty => '(empty)';
+
+  @override
+  String ticketMergeTakenOver(String fields) {
+    return 'Also taken over from their change: $fields';
+  }
+
+  @override
   String get checklistTitle => 'Checklist';
 
   @override

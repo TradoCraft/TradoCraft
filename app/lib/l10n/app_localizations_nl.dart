@@ -10250,6 +10250,66 @@ class AppLocalizationsNl extends AppLocalizations {
       'Iemand anders heeft wijzigingen aan dit record opgeslagen. Herlaad om die wijzigingen te zien voordat u opnieuw opslaat.';
 
   @override
+  String ticketLiveChange(String kind, String name) {
+    String _temp0 = intl.Intl.selectLogic(kind, {
+      'note': '$name heeft een bericht toegevoegd.',
+      'escalated': '$name heeft dit ticket geëscaleerd.',
+      'delegated': '$name heeft dit ticket overgedragen.',
+      'tag': '$name heeft de labels gewijzigd.',
+      'timeEntry': '$name heeft tijd geboekt.',
+      'merge': '$name heeft tickets samengevoegd.',
+      'split': '$name heeft dit ticket gesplitst.',
+      'attachment': '$name heeft een bijlage toegevoegd.',
+      'checklist': '$name heeft de checklist gewijzigd.',
+      'other': '$name heeft dit ticket gewijzigd.',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String ticketLiveUnsaved(String name) {
+    return '$name heeft dit ticket gewijzigd terwijl u niet-opgeslagen wijzigingen hebt. Vergelijk voordat u opslaat.';
+  }
+
+  @override
+  String ticketLiveMerged(String name) {
+    return '$name heeft dit ticket gewijzigd. Die wijzigingen zijn in uw formulier samengevoegd.';
+  }
+
+  @override
+  String get ticketMergeSomeone => 'Iemand';
+
+  @override
+  String get ticketMergeCompare => 'Vergelijken';
+
+  @override
+  String get ticketMergeTitle => 'Uw wijzigingen en die van de ander';
+
+  @override
+  String ticketMergeIntro(String name) {
+    return '$name heeft wijzigingen opgeslagen in velden die u ook hebt bewerkt. Kies per veld welke waarde u behoudt.';
+  }
+
+  @override
+  String get ticketMergeMine => 'Mijn waarde';
+
+  @override
+  String ticketMergeTheirs(String name) {
+    return 'Waarde van $name';
+  }
+
+  @override
+  String get ticketMergeApply => 'Toepassen';
+
+  @override
+  String get ticketMergeEmpty => '(leeg)';
+
+  @override
+  String ticketMergeTakenOver(String fields) {
+    return 'Ook overgenomen uit hun wijziging: $fields';
+  }
+
+  @override
   String get checklistTitle => 'Checklist';
 
   @override

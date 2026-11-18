@@ -10267,6 +10267,66 @@ class AppLocalizationsFr extends AppLocalizations {
       'Quelqu\'un d\'autre a enregistré des modifications sur cet enregistrement. Rechargez pour voir ses modifications avant d\'enregistrer à nouveau.';
 
   @override
+  String ticketLiveChange(String kind, String name) {
+    String _temp0 = intl.Intl.selectLogic(kind, {
+      'note': '$name a ajouté un message.',
+      'escalated': '$name a escaladé ce ticket.',
+      'delegated': '$name a transmis ce ticket.',
+      'tag': '$name a modifié les étiquettes.',
+      'timeEntry': '$name a enregistré du temps.',
+      'merge': '$name a fusionné des tickets.',
+      'split': '$name a scindé ce ticket.',
+      'attachment': '$name a ajouté une pièce jointe.',
+      'checklist': '$name a modifié la liste de contrôle.',
+      'other': '$name a modifié ce ticket.',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String ticketLiveUnsaved(String name) {
+    return '$name a modifié ce ticket alors que vous avez des modifications non enregistrées. Comparez avant d\'enregistrer.';
+  }
+
+  @override
+  String ticketLiveMerged(String name) {
+    return '$name a modifié ce ticket. Ses modifications ont été fusionnées dans votre formulaire.';
+  }
+
+  @override
+  String get ticketMergeSomeone => 'Quelqu\'un';
+
+  @override
+  String get ticketMergeCompare => 'Comparer';
+
+  @override
+  String get ticketMergeTitle => 'Vos modifications et les siennes';
+
+  @override
+  String ticketMergeIntro(String name) {
+    return '$name a enregistré des modifications dans des champs que vous avez aussi modifiés. Choisissez la valeur à conserver pour chacun.';
+  }
+
+  @override
+  String get ticketMergeMine => 'La mienne';
+
+  @override
+  String ticketMergeTheirs(String name) {
+    return 'Celle de $name';
+  }
+
+  @override
+  String get ticketMergeApply => 'Appliquer';
+
+  @override
+  String get ticketMergeEmpty => '(vide)';
+
+  @override
+  String ticketMergeTakenOver(String fields) {
+    return 'Également repris de sa modification : $fields';
+  }
+
+  @override
   String get checklistTitle => 'Liste de contrôle';
 
   @override

@@ -23,7 +23,7 @@ Module overview: [ARCHITECTURE.md](ARCHITECTURE.md).
 | A6 Helpdesk reply templates and language | Done, [ADR 0072](adr/0072-helpdesk-reply-templates.md) (builds on the prepared answers of ADR 0013); SLA notices to the customer still use built-in texts, see A6b |
 | A6b Helpdesk SLA notices from templates | Open (needs deadline placeholders and rendering without a user) |
 | A7 Helpdesk ticket checklists (templates per team, `apply_checklist` automation action, progress badge, optional close gate) | Done (PR #100; no ADR yet) |
-| A8 Helpdesk immediate change notification (concurrent updates seen by both people) | Open; the shared SSE channel shipped with D3 ([ADR 0073](adr/0073-concurrent-edit-protection.md)), live article and timeline updates and the draft-merge UI remain |
+| A8 Helpdesk immediate change notification (concurrent updates seen by both people) | Done, [ADR 0075](adr/0075-helpdesk-live-ticket-updates.md) (builds on the SSE channel of [ADR 0073](adr/0073-concurrent-edit-protection.md)); mail ingested by the worker follows |
 | A9 Helpdesk ticket bundles (linked tickets) | Open (merge and split are done, ADR 0017 and ADR 0021) |
 | B1 Inventory foundation | Done, [ADR 0019](adr/0019-inventory-stock-ledger.md) |
 | B2 Purchasing | In progress, [ADR 0031](adr/0031-purchasing.md) |
@@ -80,7 +80,7 @@ The scope below is a proposal until the first version is agreed. Findings refer 
 - Merge or close the pending Dependabot branches (tower-http, webpki-roots, setup-node, @types/node) and
   note the deferred `swagger-parser-2` migration (PR #94).
 
-**After the first release**: A8, A9, A6b, C2, the work-centre half of C3, D8, D9, and security findings
+**After the first release**: A9, A6b, C2, the work-centre half of C3, D8, D9, and security findings
 #8 to #17.
 
 ## Sequencing
@@ -126,7 +126,7 @@ Remaining knowledge base gaps (ADR 0018): non-image attachments, analytics, sema
   while items are open. Reuse the field-service checklist model ([ADR 0020](adr/0020-field-service-reports-contracts.md))
   where it fits.
 
-**A8 Immediate change notification** (medium)
+**A8 Immediate change notification** (medium, done, [ADR 0075](adr/0075-helpdesk-live-ticket-updates.md))
 - When a ticket is updated while someone else has it open, both notice right away: the viewer sees
   the change appear (or a banner naming who changed what) without a reload, and the person who made
   the change sees who else is working on the ticket (builds on soft presence, ADR 0023).

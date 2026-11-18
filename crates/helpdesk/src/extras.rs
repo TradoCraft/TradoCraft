@@ -118,6 +118,7 @@ async fn add_tag(
     }
     let d = load_detail(&mut tx, user.company_id, id).await?;
     tx.commit().await?;
+    crate::tickets::notify_change(&state, &user, id, "tag", Some(tag.clone())).await;
     Ok(Json(d))
 }
 
@@ -162,6 +163,7 @@ async fn remove_tag(
     }
     let d = load_detail(&mut tx, user.company_id, id).await?;
     tx.commit().await?;
+    crate::tickets::notify_change(&state, &user, id, "tag", Some(tag.clone())).await;
     Ok(Json(d))
 }
 
@@ -272,6 +274,7 @@ async fn add_time(
     .await?;
     let t = load_time(&mut tx, id).await?;
     tx.commit().await?;
+    crate::tickets::notify_change(&state, &user, id, "time", None).await;
     Ok((StatusCode::CREATED, Json(t)))
 }
 
@@ -313,6 +316,7 @@ async fn delete_time(
     .await?;
     let t = load_time(&mut tx, id).await?;
     tx.commit().await?;
+    crate::tickets::notify_change(&state, &user, id, "time", None).await;
     Ok(Json(t))
 }
 
@@ -455,6 +459,8 @@ async fn merge(
     }
     let d = load_detail(&mut tx, user.company_id, target_id).await?;
     tx.commit().await?;
+    crate::tickets::notify_change(&state, &user, id, "merge", None).await;
+    crate::tickets::notify_change(&state, &user, target_id, "merge", None).await;
     Ok(Json(d))
 }
 
