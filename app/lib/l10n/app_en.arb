@@ -4783,5 +4783,9 @@
   "ticketCloseBlockedChecklist": "Complete all checklist items before closing this ticket",
   "automationActionApplyChecklist": "Apply checklist",
   "automationTemplateLabel": "Checklist template",
-  "answerUnavailable": "Unavailable"
+  "answerUnavailable": "Unavailable",
+  "themeMenu": "Theme",
+  "themeSystem": "System",
+  "themeLight": "Light",
+  "themeDark": "Dark"
 }

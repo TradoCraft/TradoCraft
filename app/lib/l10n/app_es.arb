@@ -3258,5 +3258,9 @@
   "ticketCloseBlockedChecklist": "Complete todos los elementos de la lista antes de cerrar este ticket",
   "automationActionApplyChecklist": "Aplicar lista",
   "automationTemplateLabel": "Plantilla de lista",
-  "answerUnavailable": "No disponible"
+  "answerUnavailable": "No disponible",
+  "themeMenu": "Tema",
+  "themeSystem": "Sistema",
+  "themeLight": "Claro",
+  "themeDark": "Oscuro"
 }

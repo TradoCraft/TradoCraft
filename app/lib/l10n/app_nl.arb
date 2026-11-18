@@ -3258,5 +3258,9 @@
   "ticketCloseBlockedChecklist": "Voltooi alle checklistpunten voordat u dit ticket sluit",
   "automationActionApplyChecklist": "Checklist toepassen",
   "automationTemplateLabel": "Checklistsjabloon",
-  "answerUnavailable": "Niet beschikbaar"
+  "answerUnavailable": "Niet beschikbaar",
+  "themeMenu": "Thema",
+  "themeSystem": "Systeem",
+  "themeLight": "Licht",
+  "themeDark": "Donker"
 }

@@ -3258,5 +3258,9 @@
   "ticketCloseBlockedChecklist": "Schließen Sie alle Checklistenpunkte ab, bevor Sie dieses Ticket schließen",
   "automationActionApplyChecklist": "Checkliste anwenden",
   "automationTemplateLabel": "Checklistenvorlage",
-  "answerUnavailable": "Nicht verfügbar"
+  "answerUnavailable": "Nicht verfügbar",
+  "themeMenu": "Darstellung",
+  "themeSystem": "System",
+  "themeLight": "Hell",
+  "themeDark": "Dunkel"
 }

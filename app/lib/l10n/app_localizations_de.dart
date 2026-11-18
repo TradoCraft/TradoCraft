@@ -10519,4 +10519,16 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get answerUnavailable => 'Nicht verfügbar';
+
+  @override
+  String get themeMenu => 'Darstellung';
+
+  @override
+  String get themeSystem => 'System';
+
+  @override
+  String get themeLight => 'Hell';
+
+  @override
+  String get themeDark => 'Dunkel';
 }

@@ -10494,4 +10494,16 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get answerUnavailable => 'No disponible';
+
+  @override
+  String get themeMenu => 'Tema';
+
+  @override
+  String get themeSystem => 'Sistema';
+
+  @override
+  String get themeLight => 'Claro';
+
+  @override
+  String get themeDark => 'Oscuro';
 }

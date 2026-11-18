@@ -10505,4 +10505,16 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get answerUnavailable => 'Indisponible';
+
+  @override
+  String get themeMenu => 'Thème';
+
+  @override
+  String get themeSystem => 'Système';
+
+  @override
+  String get themeLight => 'Clair';
+
+  @override
+  String get themeDark => 'Sombre';
 }

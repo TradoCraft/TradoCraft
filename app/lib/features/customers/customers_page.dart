@@ -2,8 +2,10 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/api.dart';
+import '../../framework/data/repository.dart';
 import '../../shared/csv_transfer.dart';
 import '../../shared/entity_list.dart';
+import 'customer_repository.dart';
 import 'customer_form.dart';
 import '../../l10n/l10n.dart';
 
@@ -19,20 +21,15 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
 
   @override
   Widget build(BuildContext context) {
-    final api = ref.watch(apiProvider);
+    final repo = ref.watch(customerRepositoryProvider);
     final permissions = ref.watch(meProvider).value?.permissions ?? const [];
     final canWrite = permissions.contains('customers.write');
     return EntityList<Customer>(
       key: _list,
       title: context.l10n.customers,
-      load: (q, offset, limit) async {
-        final page = await api.crm.listCustomers(
-          q: q,
-          offset: offset,
-          limit: limit,
-        );
-        return (page.items, page.total);
-      },
+      load: (q, offset, limit) async =>
+          (await repo.list(ListQuery(search: q, offset: offset, limit: limit)))
+              .asLoaderResult,
       columns: [
         EntityColumn(context.l10n.code, (c) => c.code),
         EntityColumn(context.l10n.name, (c) => c.name, flex: 3),

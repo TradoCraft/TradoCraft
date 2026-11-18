@@ -20,6 +20,7 @@ import '../features/todo/todo_badge.dart';
 import '../features/todo/todo_quick_add.dart';
 import '../features/todo/todo_repository.dart';
 import '../features/tutorial/targets.dart';
+import '../core/theme/theme_mode.dart';
 import '../l10n/l10n.dart';
 import '../shared/app_icons.dart';
 import '../shared/module_icon.dart';
@@ -319,6 +320,18 @@ class AppShell extends ConsumerWidget {
             child: Text(languageName(code)),
           ),
         const PopupMenuDivider(),
+        PopupMenuItem(enabled: false, child: Text(context.l10n.themeMenu)),
+        for (final (mode, label) in [
+          (ThemeMode.system, context.l10n.themeSystem),
+          (ThemeMode.light, context.l10n.themeLight),
+          (ThemeMode.dark, context.l10n.themeDark),
+        ])
+          CheckedPopupMenuItem(
+            value: 'theme:${mode.name}',
+            checked: ref.watch(themeModeProvider) == mode,
+            child: Text(label),
+          ),
+        const PopupMenuDivider(),
         PopupMenuItem(value: 'signout', child: Text(context.l10n.signOut)),
       ],
       onSelected: (v) {
@@ -326,6 +339,11 @@ class AppShell extends ConsumerWidget {
         if (v == 'env') showEnvironmentSwitcher(context);
         if (v == 'tutorial') context.push('/tutorial');
         if (v == 'todo') showTodoQuickAdd(context, ref);
+        if (v.startsWith('theme:')) {
+          ref
+              .read(themeModeProvider.notifier)
+              .set(ThemeMode.values.byName(v.substring(6)));
+        }
         if (v.startsWith('lang:')) {
           final code = v.substring(5);
           ref

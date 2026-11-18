@@ -10,6 +10,7 @@ import '../../shared/record_history.dart';
 import '../../shared/vat_field.dart';
 import '../contacts/contacts_dialog.dart';
 import 'closures_dialog.dart';
+import 'customer_repository.dart';
 import 'rebates_dialog.dart';
 import '../../l10n/l10n.dart';
 import '../../shared/app_icons.dart';
@@ -229,10 +230,10 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
       expectedVersion: _current?.version,
     );
     try {
-      final crm = ref.read(apiProvider).crm;
+      final repo = ref.read(customerRepositoryProvider);
       final saved = c == null
-          ? await crm.createCustomer(body: input)
-          : await crm.updateCustomer(id: c!.id, body: input);
+          ? await repo.create(input)
+          : await repo.update(c!.id, input);
       if (mounted) {
         _current = saved;
         _conflictMessage = null;
@@ -260,7 +261,7 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
     if (id == null) return;
     setState(() => _saving = true);
     try {
-      final fresh = await ref.read(apiProvider).crm.getCustomer(id: id);
+      final fresh = await ref.read(customerRepositoryProvider).get(id);
       if (!mounted) return;
       setState(() {
         _current = fresh;
