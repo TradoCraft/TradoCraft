@@ -446,16 +446,7 @@ cmd_create_empty() {
   parse_create_flags "$@"
   check_new_name "$name"
   createdb -- "$name"
-  local src_files=""
-  if reg_exists "$source" && [[ -d "$ENVS_DIR/$source/files" ]]; then
-    src_files="$ENVS_DIR/$source/files"
-  elif [[ -n "${FILE_STORAGE_DIR:-}" && -d "$FILE_STORAGE_DIR" ]]; then
-    src_files="$FILE_STORAGE_DIR"
-  fi
-  if [[ -n "$src_files" ]]; then
-    mkdir -p "$ENVS_DIR/$name/files"
-    cp -a --reflink=auto "$src_files/." "$ENVS_DIR/$name/files/"
-  fi
+  # An empty database has no payload references and needs no source copy.
   register_new "$name" "$KIND" "$name" "$SEED"
   info "created empty database '$name' (kind $KIND)"
   if [[ "$NOSTART" == no ]]; then cmd_start_instance "$name" "$WORKER"; fi
@@ -493,6 +484,7 @@ clone_cleanup() {
     # The name was unregistered when the clone began, so any registry file now belongs to this
     # failed clone: remove it too, or a retry would say "already registered".
     rm -f -- "$(reg_file "$CLONE_TARGET")"
+    rm -rf -- "${ENVS_DIR:?}/$CLONE_TARGET"
     if err="$(dropdb --if-exists --force -- "$CLONE_TARGET" 2>&1)"; then
       echo "envctl: clone failed, target database '$CLONE_TARGET' removed" >&2
     else
@@ -530,15 +522,22 @@ cmd_clone() {
     info "anonymizing personal data (admin users keep their e-mail address)"
     sql "$name" -f "$SQL_DIR/anonymize.sql"
   fi
-  local src_files=""
-  if reg_exists "$source" && [[ -d "$ENVS_DIR/$source/files" ]]; then
+  local src_files="${FILE_STORAGE_DIR:-data/files}"
+  [[ -n "${src_files//[[:space:]]/}" ]] || src_files="data/files"
+  if reg_exists "$source" && [[ "$(reg_get "$source" kind)" != live ]]; then
     src_files="$ENVS_DIR/$source/files"
-  elif [[ -n "${FILE_STORAGE_DIR:-}" && -d "$FILE_STORAGE_DIR" ]]; then
-    src_files="$FILE_STORAGE_DIR"
   fi
-  if [[ -n "$src_files" ]]; then
+  if [[ -d "$src_files" ]]; then
     mkdir -p "$ENVS_DIR/$name/files"
     cp -a --reflink=auto "$src_files/." "$ENVS_DIR/$name/files/"
+  else
+    local has_payloads
+    has_payloads="$(sql_value "$name" "SELECT EXISTS (
+      SELECT storage_key FROM core.files WHERE storage_key IS NOT NULL
+      UNION ALL SELECT storage_key FROM core.import_files WHERE storage_key IS NOT NULL
+      UNION ALL SELECT attachment_storage_key FROM core.mail_outbox WHERE attachment_storage_key IS NOT NULL
+      UNION ALL SELECT raw_message_storage_key FROM helpdesk.articles WHERE raw_message_storage_key IS NOT NULL)")"
+    [[ "$has_payloads" == f ]] || die "source file storage $src_files is unavailable; clone has payload references"
   fi
   register_new "$name" "$KIND" "$name"
   reg_set "$name" cloned_from "$src_db"

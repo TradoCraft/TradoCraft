@@ -331,7 +331,10 @@ async fn upload_file(
     .execute(&state.db)
     .await;
     if let Err(e) = res {
-        let _ = state.blobs.delete(&storage_key).await;
+        // Transport errors may arrive after the autocommitted INSERT succeeded.
+        if matches!(e, sqlx::Error::Database(_)) {
+            let _ = state.blobs.delete(&storage_key).await;
+        }
         return Err(e.into());
     }
     Ok((

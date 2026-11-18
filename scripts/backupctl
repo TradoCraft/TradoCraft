@@ -31,7 +31,7 @@ Commands:
                                Restore into a throwaway directory, start it without network
                                access, check checksums, manifest, migrations and that every row
                                can be read; records the result in the backup
-  restore ID|latest TARGET_DIR [--start [--port PORT]]
+  restore ID|latest TARGET_DIR [--files-target DIR] [--start [--port PORT]]
                                Unpack into a new, empty data directory and check the manifest.
                                --start runs it on 127.0.0.1:PORT (default 55432) for a drill,
                                with WAL archiving off
@@ -43,6 +43,8 @@ attribute (a superuser has it) and pg_hba.conf must allow it a replication conne
 Config file: --config FILE, $BACKUPCTL_CONFIG, ./.env or the repository .env (only known keys are
 read; the file is never sourced).
 Settings:
+  FILE_STORAGE_DIR      Payload directory (default data/files); must exist. Create an empty
+                        directory explicitly for a store with no payloads.
   BACKUP_DIR            Where backups are kept (required; or --dir)
   BACKUP_KEEP_DAILY     Newest backup of each of the last N days with a backup (default 7)
   BACKUP_KEEP_WEEKLY    Newest backup of each of the last N ISO weeks with a backup (default 4)
@@ -216,6 +218,9 @@ cmd_backup() {
   done
   require_dir
   parse_pg_url
+  local files_dir="${FILE_STORAGE_DIR:-data/files}"
+  [[ -n "${files_dir//[[:space:]]/}" ]] || files_dir="data/files"
+  [[ -d "$files_dir" ]] || die "file storage $files_dir is unavailable; for an intentionally empty store, create an empty directory there"
   take_lock
   local id version_num version migration databases started
   id="$(date -u +%Y%m%dT%H%M%SZ)"
@@ -246,14 +251,13 @@ cmd_backup() {
   local sha size files_sha="" files_size=""
   sha="$(sha256sum "$PARTIAL/base.tar.gz" | cut -d' ' -f1)"
   size="$(stat -c %s "$PARTIAL/base.tar.gz")"
-  if [[ -n "${FILE_STORAGE_DIR:-}" && -d "$FILE_STORAGE_DIR" ]]; then
-    info "archiving file storage from $FILE_STORAGE_DIR"
-    tar -czf "$PARTIAL/files.tar.gz" -C "$FILE_STORAGE_DIR" . \
-      || die "archiving $FILE_STORAGE_DIR failed; nothing was kept"
-    chmod 600 "$PARTIAL/files.tar.gz"
-    files_sha="$(sha256sum "$PARTIAL/files.tar.gz" | cut -d' ' -f1)"
-    files_size="$(stat -c %s "$PARTIAL/files.tar.gz")"
-  fi
+  info "archiving file storage from $files_dir"
+  tar -czf "$PARTIAL/files.tar.gz" -C "$files_dir" . \
+    || die "archiving $files_dir failed; nothing was kept"
+  chmod 600 "$PARTIAL/files.tar.gz"
+  files_sha="$(sha256sum "$PARTIAL/files.tar.gz" | cut -d' ' -f1)"
+  files_size="$(stat -c %s "$PARTIAL/files.tar.gz")"
+
   {
     echo "id=$id"
     echo "started_at=$started"
@@ -398,6 +402,9 @@ unpack() {
   tar -xzf "$BACKUP_DIR/$id/base.tar.gz" -C "$target" || { info "unpacking failed"; return 1; }
   info "checking the files against the backup manifest"
   "$PG_BIN/pg_verifybackup" -q "$target" || { info "pg_verifybackup reports a damaged backup"; return 1; }
+  if [[ -n "$(info_get "$id" files_sha256)$(info_get "$id" files_size)" && ! -f "$BACKUP_DIR/$id/files.tar.gz" ]]; then
+    info "required files.tar.gz is missing"; return 1
+  fi
   if [[ -f "$BACKUP_DIR/$id/files.tar.gz" ]]; then
     local fsha
     fsha="$(sha256sum "$BACKUP_DIR/$id/files.tar.gz" | cut -d' ' -f1)"
@@ -504,9 +511,10 @@ cmd_verify() {
 }
 
 cmd_restore() {
-  local id="" target="" start=0 port=55432
+  local id="" target="" files_target="" start=0 port=55432
   while [[ $# -gt 0 ]]; do
     case "$1" in
+      --files-target) files_target="${2:-}"; shift 2 ;;
       --start) start=1; shift ;;
       --port) port="${2:-}"; shift 2 ;;
       -*) die "restore: unknown argument '$1'" ;;
@@ -515,17 +523,28 @@ cmd_restore() {
         shift ;;
     esac
   done
-  [[ -n "$id" && -n "$target" ]] || die "usage: backupctl restore ID|latest TARGET_DIR [--start [--port PORT]]"
+  [[ -n "$id" && -n "$target" ]] || die "usage: backupctl restore ID|latest TARGET_DIR [--files-target DIR] [--start [--port PORT]]"
   [[ "$port" =~ ^[0-9]+$ ]] || die "--port must be a number"
   require_dir
   id="$(resolve_id "$id")"
   if [[ -e "$target" ]]; then
     [[ -d "$target" && -z "$(ls -A "$target")" ]] || die "$target exists and is not empty: restore only into a new or empty directory"
   fi
+  if [[ -f "$BACKUP_DIR/$id/files.tar.gz" ]]; then
+    [[ -n "$files_target" ]] || die "restore requires --files-target DIR for filesystem payloads"
+    [[ ! -e "$files_target" || ( -d "$files_target" && -z "$(ls -A "$files_target")" ) ]] || die "filesystem destination must be new or empty"
+  fi
   ((start)) && not_root
   find_pg_bin "$(( $(info_get "$id" server_version_num) / 10000 ))"
   if ! unpack "$id" "$target"; then
     die "restore of $id failed; $target holds a partial copy, remove it before trying again"
+  fi
+  if [[ -f "$BACKUP_DIR/$id/files.tar.gz" ]]; then
+    mkdir -p "$files_target"
+    chmod 700 "$files_target"
+    tar -xzf "$BACKUP_DIR/$id/files.tar.gz" -C "$files_target" || die "payload extraction failed"
+    files_target="$(cd "$files_target" && pwd)"
+    info "payloads restored: set FILE_STORAGE_DIR=$files_target for both API and worker (and envctl clones)"
   fi
   rm -f "$target/backup_manifest"
   info "restored $id into $target (PostgreSQL $(info_get "$id" server_version), migration $(info_get "$id" migration))"

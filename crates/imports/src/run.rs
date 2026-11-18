@@ -134,17 +134,20 @@ struct JobToRun {
 }
 
 /// Why a job could not be carried out: the text stored as its `message`.
-struct Failure(String);
+enum Failure {
+    Terminal(String),
+    Retry(AppError),
+}
 
 impl From<AppError> for Failure {
     fn from(e: AppError) -> Self {
         match e {
-            AppError::Forbidden(m) => Failure(format!("not allowed: {m}")),
+            AppError::Forbidden(m) => Failure::Terminal(format!("not allowed: {m}")),
             AppError::Internal(e) => {
                 tracing::error!(error = ?e, "import job failed");
-                Failure("internal error while importing".into())
+                Failure::Terminal("internal error while importing".into())
             }
-            other => Failure(other.to_string()),
+            other => Failure::Terminal(other.to_string()),
         }
     }
 }
@@ -164,7 +167,7 @@ struct Finished {
 /// and writes its outcome:
 /// `done` with the counts or the errors, or `failed` with a message. `Err` only when the job row
 /// could not be read or written at all (database trouble, no such running job, a user who is not
-/// the requester); the job then stays as it is and is picked up again by the heartbeat rule.
+/// the requester), or storage could not be read for an operational reason; the job then stays as it is and is picked up again by the heartbeat rule.
 ///
 /// The file is read and bound with `limits`; the permission to write the entity and `imports.admin`
 /// are checked for `user` here, so a role changed since the job was queued counts.
@@ -194,7 +197,9 @@ pub async fn run_job(
     }
     match execute(pool, blobs, job_id, claim, &job, user, limits).await {
         Ok(finished) => finish_done(pool, job_id, claim, finished).await,
-        Err(Failure(message)) => fail_job(pool, job_id, claim, &message).await,
+        // StopOnDrop ends the heartbeat; the worker's stale-claim recovery retries this job.
+        Err(Failure::Retry(error)) => Err(error),
+        Err(Failure::Terminal(message)) => fail_job(pool, job_id, claim, &message).await,
     }
 }
 
@@ -207,8 +212,9 @@ async fn execute(
     user: &CurrentUser,
     limits: &Limits,
 ) -> Result<Finished, Failure> {
-    let entity = registry::entity(&job.entity)
-        .ok_or_else(|| Failure(format!("'{}' is not an importable entity", job.entity)))?;
+    let entity = registry::entity(&job.entity).ok_or_else(|| {
+        Failure::Terminal(format!("'{}' is not an importable entity", job.entity))
+    })?;
     user.require(Permission::ImportsAdmin)?;
     user.require(entity.write_permission())?;
 
@@ -224,7 +230,9 @@ async fn execute(
     // long enough for the job to look dead to another worker.
     let (sink, writer) = progress_writer(pool.clone(), job_id, claim);
     let writer = StopOnDrop(writer);
-    let file_id = job.file_id.ok_or_else(|| Failure(FILE_GONE.into()))?;
+    let file_id = job
+        .file_id
+        .ok_or_else(|| Failure::Terminal(FILE_GONE.into()))?;
     let storage_key: String = sqlx::query_scalar(
         "SELECT storage_key FROM core.import_files WHERE id = $1 AND company_id = $2",
     )
@@ -232,11 +240,11 @@ async fn execute(
     .bind(user.company_id)
     .fetch_optional(pool)
     .await?
-    .ok_or_else(|| Failure(FILE_GONE.into()))?;
-    let bytes = blobs
-        .get(&storage_key)
-        .await
-        .map_err(|_| Failure(FILE_GONE.into()))?;
+    .ok_or_else(|| Failure::Terminal(FILE_GONE.into()))?;
+    let bytes = blobs.get(&storage_key).await.map_err(|error| match error {
+        AppError::NotFound(_) => Failure::Terminal(FILE_GONE.into()),
+        other => Failure::Retry(other),
+    })?;
 
     // Reading is CPU work on up to 50 MiB: keep it off the async threads.
     let pairs = job.columns.as_deref().map(mapping::to_pairs);
@@ -257,7 +265,7 @@ async fn execute(
     .await
     .map_err(|e| {
         tracing::error!(error = ?e, "reading an import file panicked");
-        Failure("internal error while reading the file".into())
+        Failure::Terminal("internal error while reading the file".into())
     })?;
     // Problems of the header or the file as a whole are the result of the run, not a failure.
     let (format, table) = match read {

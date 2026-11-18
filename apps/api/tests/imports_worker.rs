@@ -367,3 +367,31 @@ async fn a_run_that_lost_its_claim_cannot_write_the_job(db: PgPool) {
     assert_eq!(state(&db, id).await.0, "done");
     assert_eq!(customers(&db).await, before + 5);
 }
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn storage_io_failure_is_retried_but_missing_blob_is_terminal(db: PgPool) {
+    let (_, blobs) = setup_with_blobs(db.clone()).await;
+    let f = file(&db, &blobs, csv("IO", 1), 0).await;
+    let id = job(&db, Some(f), ADMIN_ID, true).await;
+    let saved = blobs.root().with_extension("saved");
+    std::fs::rename(blobs.root(), &saved).unwrap();
+    // A regular file in place of the root produces ENOTDIR, even when tests run as root.
+    std::fs::write(blobs.root(), b"unavailable mount").unwrap();
+    run_pending(&db, &blobs).await;
+    assert_eq!(state(&db, id).await.0, "running");
+    std::fs::remove_file(blobs.root()).unwrap();
+    std::fs::rename(&saved, blobs.root()).unwrap();
+    make_running(&db, id, 1, 6).await;
+    run_pending(&db, &blobs).await;
+    assert_eq!(state(&db, id).await.0, "done");
+
+    let missing = job(&db, Some(f), ADMIN_ID, true).await;
+    std::fs::remove_dir_all(blobs.root()).unwrap();
+    run_pending(&db, &blobs).await;
+    let (status, _, message) = state(&db, missing).await;
+    assert_eq!(status, "failed");
+    assert_eq!(
+        message.as_deref(),
+        Some("the uploaded file is no longer available")
+    );
+}

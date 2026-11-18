@@ -87,9 +87,9 @@ test('Esc inside a text field asks before leaving an edited form', async ({ page
   await boot(page);
   await page.getByRole('button', { name: 'New quotation' }).click();
   const notes = field(page, 'Notes');
-  await notes.click();
+  // Wait for Flutter's replacement editing element and verify the edit before Escape.
+  await typeInto(notes, 'x');
   await expect(notes).toBeFocused();
-  await page.keyboard.type('x', { delay: 25 });
 
   // A text field answers the framework's dismiss intent itself; the Esc must still reach the form.
   await page.keyboard.press('Escape');

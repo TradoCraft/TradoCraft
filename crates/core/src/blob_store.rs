@@ -5,6 +5,8 @@
 //! directory layout (`<aa>/<bb>/<uuid>`), written atomically via `.tmp/<uuid>.part` and `rename`.
 //! Storage keys are always UUIDv7 strings validated on every read/delete, so user-supplied paths
 //! can never escape the root directory.
+//! Durable writes require a Unix filesystem supporting file and directory fsync. Unsupported
+//! directory synchronization fails the write; it is never silently treated as durable.
 
 use std::collections::HashSet;
 use std::io::ErrorKind;
@@ -80,12 +82,43 @@ impl BlobStore {
                 .context(format!("write blob temp file {}", tmp_path.display()))
                 .into());
         }
+        if let Err(e) = async {
+            tokio::fs::OpenOptions::new()
+                .write(true)
+                .open(&tmp_path)
+                .await?
+                .sync_all()
+                .await
+        }
+        .await
+        {
+            let _ = tokio::fs::remove_file(&tmp_path).await;
+            return Err(anyhow::Error::from(e).context("sync blob payload").into());
+        }
         if let Err(e) = tokio::fs::rename(&tmp_path, &dest).await {
             let _ = tokio::fs::remove_file(&tmp_path).await;
             return Err(anyhow::Error::from(e)
                 .context(format!("rename blob into {}", dest.display()))
                 .into());
         }
+        // Persist the payload before publishing its key, including every ancestor entry
+        // create_dir_all may have created. Directory fsync is required by this Unix backend;
+        // unsupported filesystems return an error rather than promise durability.
+        let absolute = std::path::absolute(&dest).context("resolve blob path")?;
+        for dir in absolute.parent().unwrap().ancestors() {
+            tokio::fs::File::open(dir)
+                .await
+                .context("open blob directory")?
+                .sync_all()
+                .await
+                .context("sync blob directory")?;
+        }
+        tokio::fs::File::open(&tmp_dir)
+            .await
+            .context("open temporary directory")?
+            .sync_all()
+            .await
+            .context("sync temporary directory")?;
         Ok(key)
     }
 
@@ -115,6 +148,14 @@ impl BlobStore {
 
     /// Removes unreferenced files (and stale `.tmp` files) older than `min_age`.
     pub async fn sweep_orphans(&self, db: &PgPool, min_age: Duration) -> anyhow::Result<usize> {
+        // Ingest holds the shared transaction lock until its references commit or roll back.
+        let mut tx = db.begin().await?;
+        let locked: bool = sqlx::query_scalar("SELECT pg_try_advisory_xact_lock(743902104)")
+            .fetch_one(&mut *tx)
+            .await?;
+        if !locked {
+            return Ok(0);
+        }
         let exists = tokio::fs::try_exists(&self.root).await?;
         if !exists {
             return Ok(0);
@@ -184,7 +225,7 @@ impl BlobStore {
              SELECT raw_message_storage_key FROM helpdesk.articles WHERE raw_message_storage_key = ANY($1)",
         )
         .bind(&keys)
-        .fetch_all(db)
+        .fetch_all(&mut *tx)
         .await?
         .into_iter()
         .collect();

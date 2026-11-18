@@ -63,6 +63,9 @@ unset PGPASSWORD
 
 export BACKUPCTL_CONFIG=/dev/null BACKUP_DIR="$WORK/backups"
 export DATABASE_URL="postgresql://tradocraft:s3cret-Pw9@127.0.0.1:$PORT/tradocraft"
+export FILE_STORAGE_DIR="$WORK/files"
+mkdir -p "$FILE_STORAGE_DIR/aa/bb"
+printf 'payload' >"$FILE_STORAGE_DIR/aa/bb/blob"
 unset BACKUP_EXEC BACKUP_KEEP_DAILY BACKUP_KEEP_WEEKLY BACKUP_KEEP_MONTHLY
 
 # --- backup ---
@@ -104,7 +107,7 @@ check "manifest check catches altered files" bash -c "! '$BACKUPCTL' verify $BAD
 rm -rf "${BACKUP_DIR:?}/$BAD" "${BACKUP_DIR:?}/$BAD2" "$WORK/repack"
 
 # --- restore and drill ---
-OUT="$("$BACKUPCTL" restore latest "$DRILL" --start --port "$DRILL_PORT" 2>&1)" && pass "restore --start succeeds" || { fail "restore --start succeeds"; echo "$OUT" >&2; }
+OUT="$("$BACKUPCTL" restore latest "$DRILL" --files-target "$WORK/restored-files" --start --port "$DRILL_PORT" 2>&1)" && pass "restore --start succeeds" || { fail "restore --start succeeds"; echo "$OUT" >&2; }
 check "drill copy answers with the source password and the backup's data" \
   test "$(PGPASSWORD=s3cret-Pw9 psql -X -t -A -h 127.0.0.1 -p "$DRILL_PORT" -U tradocraft -d tradocraft -c 'SELECT count(*) FROM files' 2>/dev/null)" = 3
 check "drill copy does not archive WAL" \
@@ -112,6 +115,12 @@ check "drill copy does not archive WAL" \
 pg_ctl -D "$DRILL" -m fast stop >/dev/null
 check "restore refuses a non-empty target" bash -c "! '$BACKUPCTL' restore latest '$DRILL'"
 check "restore refuses an unknown id" bash -c "! '$BACKUPCTL' restore 20000101T000000Z '$WORK/none'"
+
+check "payload restored byte for byte" cmp "$FILE_STORAGE_DIR/aa/bb/blob" "$WORK/restored-files/aa/bb/blob"
+mv "$BACKUP_DIR/$ID/files.tar.gz" "$WORK/files.tar.gz"
+check "missing payload archive rejected" bash -c "! '$BACKUPCTL' restore '$ID' '$WORK/missing-payload'"
+mv "$WORK/files.tar.gz" "$BACKUP_DIR/$ID/files.tar.gz"
+check "unavailable storage refuses backup" bash -c "! FILE_STORAGE_DIR='$WORK/absent' '$BACKUPCTL' backup"
 
 # --- retention ---
 # Fake backups over 400 days (description and archive only; prune does not open them).

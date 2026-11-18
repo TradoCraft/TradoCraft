@@ -48,3 +48,20 @@ async fn sweep_orphans_removes_only_unreferenced_files(db: PgPool) {
 
     let _ = std::fs::remove_dir_all(blobs.root());
 }
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn pending_reference_blocks_sweep_until_rollback(db: PgPool) {
+    let (_, blobs) = common::setup_with_blobs(db.clone()).await;
+    let mut tx = db.begin().await.unwrap();
+    sqlx::query("SELECT pg_advisory_xact_lock_shared(743902104)")
+        .execute(&mut *tx)
+        .await
+        .unwrap();
+    let key = blobs.put(b"pending message").await.unwrap();
+    assert_eq!(blobs.sweep_orphans(&db, Duration::ZERO).await.unwrap(), 0);
+    assert_eq!(blobs.get(&key).await.unwrap(), b"pending message");
+    tx.rollback().await.unwrap();
+    assert_eq!(blobs.sweep_orphans(&db, Duration::ZERO).await.unwrap(), 1);
+    assert!(blobs.get(&key).await.is_err());
+    std::fs::remove_dir_all(blobs.root()).unwrap();
+}

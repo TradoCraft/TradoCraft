@@ -336,6 +336,10 @@ pub async fn ingest_from(
         }
     };
 
+    // Coordinate pending raw-message and attachment references with the orphan sweep.
+    sqlx::query("SELECT pg_advisory_xact_lock_shared(743902104)")
+        .execute(&mut *tx)
+        .await?;
     let raw_key = blobs.put(raw).await?;
     let article_id = tradocraft_core::new_id();
     let insert_article = sqlx::query(
