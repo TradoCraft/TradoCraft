@@ -60,9 +60,9 @@ pub enum Permission {
     ClosuresWrite,
     /// Price a quotation on an earlier price list than its quote date.
     PricesBackdate,
-    /// See the printable price lists (ADR 0069) and render them as PDF or Excel.
+    /// See the printable price lists (ADR 0074) and render them as PDF or Excel.
     PriceListsRead,
-    /// Design price lists: groups, item order and flags (ADR 0069).
+    /// Design price lists: groups, item order and flags (ADR 0074).
     PriceListsWrite,
     HelpdeskRead,
     /// Create tickets, write internal notes, change status and links.
