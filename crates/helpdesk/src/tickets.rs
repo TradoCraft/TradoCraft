@@ -396,6 +396,31 @@ pub async fn load_ticket(conn: &mut PgConnection, company_id: Uuid, id: Uuid) ->
     Ok(ticket.with_sla(cal.as_ref()))
 }
 
+/// Tells open ticket screens that a ticket changed (A8). Best effort and after the commit: it
+/// reads the version the commit left behind, and a failure never fails the request.
+pub async fn notify_change(
+    state: &AppState,
+    user: &CurrentUser,
+    id: Uuid,
+    kind: &str,
+    summary: Option<String>,
+) {
+    let version: Option<i64> = sqlx::query_scalar(
+        "SELECT version FROM helpdesk.tickets WHERE id = $1 AND company_id = $2",
+    )
+    .bind(id)
+    .bind(user.company_id)
+    .fetch_optional(&state.db)
+    .await
+    .ok()
+    .flatten();
+    if let Some(version) = version {
+        state
+            .live_events
+            .publish_record_change(user, "ticket", id, version, kind, summary);
+    }
+}
+
 pub async fn load_detail(
     conn: &mut PgConnection,
     company_id: Uuid,
@@ -987,10 +1012,62 @@ async fn update_ticket(
     .await?;
     let d = load_detail(&mut tx, user.company_id, id).await?;
     tx.commit().await?;
-    state
-        .live_events
-        .publish_record_change(&user, "ticket", id, d.ticket.version, "updated", None);
+    state.live_events.publish_record_change(
+        &user,
+        "ticket",
+        id,
+        d.ticket.version,
+        "updated",
+        Some(d.ticket.status.clone()),
+    );
     Ok(Json(d))
+}
+
+/// Adds an internal note, optionally with attachments and a new status, in the caller's
+/// transaction.
+pub(crate) async fn post_note(
+    tx: &mut PgConnection,
+    user: &CurrentUser,
+    id: Uuid,
+    input: &NoteInput,
+) -> AppResult<()> {
+    if input.body.trim().is_empty() {
+        return Err(AppError::Validation("the note is empty".into()));
+    }
+    crate::checklists::lock_ticket(&mut *tx, user.company_id, id).await?;
+    let original = load_ticket(&mut *tx, user.company_id, id).await?;
+    let note_id = add_note(&mut *tx, user, id, &input.body).await?;
+    crate::collab::add_watcher(&mut *tx, user.company_id, id, user.user_id).await?;
+    crate::attachments::link(&mut *tx, id, note_id, &input.attachment_ids, None).await?;
+    match &input.status {
+        Some(s) => {
+            set_status(&mut *tx, user, id, s).await?;
+            crate::automation::run(&mut *tx, user.company_id, id, "updated").await?;
+            check_close_gate(&mut *tx, id, s, original.status == "closed").await?;
+        }
+        None => {
+            sqlx::query("UPDATE helpdesk.tickets SET updated_at = now() WHERE id = $1")
+                .bind(id)
+                .execute(&mut *tx)
+                .await?;
+        }
+    }
+    Ok(())
+}
+
+/// Changes the status in the caller's transaction, with the automation rules and the close gate.
+pub(crate) async fn change_status(
+    tx: &mut PgConnection,
+    user: &CurrentUser,
+    id: Uuid,
+    status: &str,
+) -> AppResult<()> {
+    crate::checklists::lock_ticket(tx, user.company_id, id).await?;
+    let original = load_ticket(tx, user.company_id, id).await?;
+    set_status(tx, user, id, status).await?;
+    crate::automation::run(tx, user.company_id, id, "updated").await?;
+    check_close_gate(tx, id, status, original.status == "closed").await?;
+    Ok(())
 }
 
 /// Adds an internal note: never sent to the customer.
@@ -1003,28 +1080,8 @@ async fn add_note_handler(
     Json(input): Json<NoteInput>,
 ) -> AppResult<(StatusCode, Json<TicketDetail>)> {
     user.require(Permission::HelpdeskWrite)?;
-    if input.body.trim().is_empty() {
-        return Err(AppError::Validation("the note is empty".into()));
-    }
     let mut tx = state.db.begin().await?;
-    crate::checklists::lock_ticket(&mut tx, user.company_id, id).await?;
-    let original = load_ticket(&mut tx, user.company_id, id).await?;
-    let note_id = add_note(&mut tx, &user, id, &input.body).await?;
-    crate::collab::add_watcher(&mut tx, user.company_id, id, user.user_id).await?;
-    crate::attachments::link(&mut tx, id, note_id, &input.attachment_ids, None).await?;
-    match &input.status {
-        Some(s) => {
-            set_status(&mut tx, &user, id, s).await?;
-            crate::automation::run(&mut tx, user.company_id, id, "updated").await?;
-            check_close_gate(&mut tx, id, s, original.status == "closed").await?;
-        }
-        None => {
-            sqlx::query("UPDATE helpdesk.tickets SET updated_at = now() WHERE id = $1")
-                .bind(id)
-                .execute(&mut *tx)
-                .await?;
-        }
-    }
+    post_note(&mut tx, &user, id, &input).await?;
     let d = load_detail(&mut tx, user.company_id, id).await?;
     tx.commit().await?;
     state
@@ -1054,22 +1111,19 @@ fn reply_subject(ticket: &Ticket, subject: Option<&str>) -> String {
     }
 }
 
-/// Queues an e-mail to the customer. The worker sends it; delivery status shows on the article.
-#[utoipa::path(post, path = "/tickets/{id}/replies", tag = "helpdesk", params(("id" = Uuid, Path)), request_body = ReplyInput,
-    responses((status = 201, body = TicketDetail), (status = 403, body = ErrorBody), (status = 422, body = ErrorBody)))]
-async fn reply(
-    State(state): State<AppState>,
-    user: CurrentUser,
-    Path(id): Path<Uuid>,
-    Json(input): Json<ReplyInput>,
-) -> AppResult<(StatusCode, Json<TicketDetail>)> {
-    user.require(Permission::HelpdeskReply)?;
+/// Queues a customer e-mail for the ticket and moves the ticket on (status, owner, first
+/// response, automation, close gate). Runs inside the caller's transaction; returns the article.
+pub(crate) async fn queue_reply(
+    tx: &mut PgConnection,
+    user: &CurrentUser,
+    id: Uuid,
+    input: &ReplyInput,
+) -> AppResult<Uuid> {
     if input.body.trim().is_empty() {
         return Err(AppError::Validation("the message is empty".into()));
     }
-    let mut tx = state.db.begin().await?;
-    crate::checklists::lock_ticket(&mut tx, user.company_id, id).await?;
-    let ticket = load_ticket(&mut tx, user.company_id, id).await?;
+    crate::checklists::lock_ticket(&mut *tx, user.company_id, id).await?;
+    let ticket = load_ticket(&mut *tx, user.company_id, id).await?;
     let to: Vec<String> = if input.to.is_empty() {
         let fallback: Option<String> = match ticket.customer_id {
             Some(c) => {
@@ -1114,7 +1168,7 @@ async fn reply(
             .bind(id)
             .fetch_one(&mut *tx)
             .await?;
-    let sender = crate::mailboxes::sender(&mut tx, user.company_id, ticket_mailbox).await?;
+    let sender = crate::mailboxes::sender(&mut *tx, user.company_id, ticket_mailbox).await?;
     let from = sender
         .as_ref()
         .map(|s| s.address.clone())
@@ -1154,11 +1208,11 @@ async fn reply(
     .bind(sender.as_ref().map(|s| s.mailbox_id))
     .execute(&mut *tx)
     .await?;
-    crate::attachments::link(&mut tx, id, article_id, &input.attachment_ids, None).await?;
-    crate::collab::add_watcher(&mut tx, user.company_id, id, user.user_id).await?;
+    crate::attachments::link(&mut *tx, id, article_id, &input.attachment_ids, None).await?;
+    crate::collab::add_watcher(&mut *tx, user.company_id, id, user.user_id).await?;
     if ticket.owner_user_id.is_none() {
         crate::collab::record_event(
-            &mut tx,
+            &mut *tx,
             user.company_id,
             id,
             "assigned",
@@ -1180,29 +1234,44 @@ async fn reply(
     .execute(&mut *tx)
     .await?;
     set_status(
-        &mut tx,
-        &user,
+        &mut *tx,
+        user,
         id,
         input.status.as_deref().unwrap_or("pending_customer"),
     )
     .await?;
-    crate::automation::run(&mut tx, user.company_id, id, "updated").await?;
+    crate::automation::run(&mut *tx, user.company_id, id, "updated").await?;
     check_close_gate(
-        &mut tx,
+        &mut *tx,
         id,
         input.status.as_deref().unwrap_or("pending_customer"),
         ticket.status == "closed",
     )
     .await?;
     audit::record(
-        &mut tx,
-        &user,
+        &mut *tx,
+        user,
         "ticket",
         id,
         "reply_queued",
         serde_json::json!({ "article_id": article_id, "to": to }),
     )
     .await?;
+    Ok(article_id)
+}
+
+/// Queues an e-mail to the customer. The worker sends it; delivery status shows on the article.
+#[utoipa::path(post, path = "/tickets/{id}/replies", tag = "helpdesk", params(("id" = Uuid, Path)), request_body = ReplyInput,
+    responses((status = 201, body = TicketDetail), (status = 403, body = ErrorBody), (status = 422, body = ErrorBody)))]
+async fn reply(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Path(id): Path<Uuid>,
+    Json(input): Json<ReplyInput>,
+) -> AppResult<(StatusCode, Json<TicketDetail>)> {
+    user.require(Permission::HelpdeskReply)?;
+    let mut tx = state.db.begin().await?;
+    queue_reply(&mut tx, &user, id, &input).await?;
     let d = load_detail(&mut tx, user.company_id, id).await?;
     tx.commit().await?;
     state

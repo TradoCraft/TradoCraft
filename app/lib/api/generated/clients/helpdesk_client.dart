@@ -27,8 +27,11 @@ import '../models/holiday.dart';
 import '../models/holiday_input.dart';
 import '../models/inbound_result.dart';
 import '../models/lead_input.dart';
+import '../models/link_input.dart';
 import '../models/mailbox.dart';
 import '../models/mailbox_input.dart';
+import '../models/mass_update_input.dart';
+import '../models/mass_update_result.dart';
 import '../models/merge_input.dart';
 import '../models/new_ticket_input.dart';
 import '../models/note_input.dart';
@@ -55,6 +58,7 @@ import '../models/team.dart';
 import '../models/team_input.dart';
 import '../models/ticket_detail.dart';
 import '../models/ticket_input.dart';
+import '../models/ticket_links.dart';
 import '../models/ticket_page.dart';
 import '../models/time_entries.dart';
 import '../models/time_entry_input.dart';
@@ -437,6 +441,15 @@ abstract class HelpdeskClient {
     @Path('file_id') required String fileId,
   });
 
+  /// Applies one action to every child of the bundle (or the chosen ones), each in a transaction of.
+  /// its own, so a child that refuses (a closed gate, no recipient) does not stop the others. With.
+  /// `dry_run` every transaction is rolled back: the result is a faithful preview.
+  @POST('/api/v1/tickets/{id}/bundle/update')
+  Future<MassUpdateResult> bundleUpdate({
+    @Path('id') required String id,
+    @Body() required MassUpdateInput body,
+  });
+
   /// The customer confirmed the linked quotation: convert it into a sales order.
   /// If the customer asked for changes, revise the quotation first and link the new revision.
   @POST('/api/v1/tickets/{id}/convert')
@@ -474,6 +487,26 @@ abstract class HelpdeskClient {
   Future<TicketDetail> createLead({
     @Path('id') required String id,
     @Body() required LeadInput body,
+  });
+
+  /// The links of a ticket, each with the state of the other ticket.
+  @GET('/api/v1/tickets/{id}/links')
+  Future<TicketLinks> listLinks({
+    @Path('id') required String id,
+  });
+
+  /// Links this ticket to another one. Both tickets get a note and an audit event.
+  @POST('/api/v1/tickets/{id}/links')
+  Future<TicketLinks> addLink({
+    @Path('id') required String id,
+    @Body() required LinkInput body,
+  });
+
+  /// Removes a link. Both tickets get a note and an audit event.
+  @DELETE('/api/v1/tickets/{id}/links/{link_id}')
+  Future<TicketLinks> removeLink({
+    @Path('id') required String id,
+    @Path('link_id') required String linkId,
   });
 
   /// Merges this ticket into another ticket of the same customer. Articles (with their.

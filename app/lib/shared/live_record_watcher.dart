@@ -23,6 +23,7 @@ class RecordChangeEvent {
     required this.kind,
     this.summary,
     required this.at,
+    this.isReconnect = false,
   });
 
   final String entityType;
@@ -33,18 +34,22 @@ class RecordChangeEvent {
   final String kind;
   final String? summary;
   final DateTime at;
+  final bool isReconnect;
 
-  factory RecordChangeEvent.fromJson(Map<String, dynamic> json) =>
-      RecordChangeEvent(
-        entityType: json['entity_type'] as String? ?? '',
-        recordId: json['record_id'] as String? ?? '',
-        version: (json['version'] as num?)?.toInt() ?? 0,
-        changedById: json['changed_by_id'] as String? ?? '',
-        changedByName: json['changed_by_name'] as String? ?? '',
-        kind: json['kind'] as String? ?? 'updated',
-        summary: json['summary'] as String?,
-        at: DateTime.tryParse(json['at'] as String? ?? '') ?? DateTime.now(),
-      );
+  factory RecordChangeEvent.fromJson(
+    Map<String, dynamic> json, {
+    bool isReconnect = false,
+  }) => RecordChangeEvent(
+    entityType: json['entity_type'] as String? ?? '',
+    recordId: json['record_id'] as String? ?? '',
+    version: (json['version'] as num?)?.toInt() ?? 0,
+    changedById: json['changed_by_id'] as String? ?? '',
+    changedByName: json['changed_by_name'] as String? ?? '',
+    kind: json['kind'] as String? ?? 'updated',
+    summary: json['summary'] as String?,
+    at: DateTime.tryParse(json['at'] as String? ?? '') ?? DateTime.now(),
+    isReconnect: isReconnect,
+  );
 }
 
 /// Subscribes to the shared SSE channel (`GET /api/v1/events/records`) for one record and calls
@@ -75,6 +80,7 @@ class RecordLiveWatcher {
 
   Future<void> _runLoop() async {
     var backoffSeconds = 2;
+    var isReconnect = false;
     while (!_disposed) {
       final cancel = CancelToken();
       _cancel = cancel;
@@ -92,7 +98,8 @@ class RecordLiveWatcher {
         final body = response.data;
         if (body == null) break;
         backoffSeconds = 2;
-        await _checkVersion();
+        await _checkVersion(isReconnect: isReconnect);
+        isReconnect = true;
         await _consumeStream(body.stream);
       } on DioException catch (e) {
         final code = e.response?.statusCode;
@@ -100,6 +107,7 @@ class RecordLiveWatcher {
       } catch (_) {
         // Connection refused or cancelled: back off and retry.
       } finally {
+        isReconnect = true;
         cancel.cancel();
       }
       if (_disposed) break;
@@ -115,7 +123,7 @@ class RecordLiveWatcher {
 
   // Use the existing read models and the same onChange version filter as push events.
   // Check on every connection too: a disconnected client can have missed updates.
-  Future<void> _checkVersion() async {
+  Future<void> _checkVersion({bool isReconnect = false}) async {
     final resource = switch (entityType) {
       'customer' => 'customers',
       'quotation' => 'quotations',
@@ -139,7 +147,7 @@ class RecordLiveWatcher {
         'entity_type': entityType,
         'record_id': recordId,
         'kind': 'resync',
-      }),
+      }, isReconnect: isReconnect),
     );
   }
 
@@ -154,7 +162,7 @@ class RecordLiveWatcher {
     await for (final line in lines) {
       if (_disposed) break;
       if (line.isEmpty) {
-        if (currentEvent == 'resync') await _checkVersion();
+        if (currentEvent == 'resync') await _checkVersion(isReconnect: true);
         if (currentEvent == 'record_changed' && dataLines.isNotEmpty) {
           try {
             final map =
@@ -186,6 +194,10 @@ class RecordLiveWatcher {
   }
 }
 
+/// Whether an event of [kind] always carries a new record version, so one that is not newer than
+/// the loaded version is something the screen already has.
+bool isVersionedChange(String kind) => kind == 'updated' || kind == 'note';
+
 /// Convenience helper for screens using Riverpod [WidgetRef] to watch a record's SSE channel.
 RecordLiveWatcher watchRecordChanges(
   WidgetRef ref, {
@@ -202,8 +214,19 @@ RecordLiveWatcher watchRecordChanges(
       final meId = ref.read(meProvider).value?.userId;
       if (meId != null && ev.changedById == meId) return;
       final cur = currentVersion();
-      if (ev.kind == 'resync' && (cur == null || ev.version <= 0)) return;
-      if (cur != null && ev.version <= cur) return;
+      if (ev.kind == 'resync') {
+        if (cur == null || ev.version <= 0 || ev.version < cur) return;
+        // On a ticket, reconnect resync with the same version can still reflect missed
+        // unversioned changes (tags, time entries, attachments, checklist).
+        final allowSameVersion = entityType == 'ticket' && ev.isReconnect;
+        if (ev.version == cur && !allowSameVersion) return;
+      } else if (isVersionedChange(ev.kind) &&
+          cur != null &&
+          ev.version <= cur) {
+        // Only saves move the record version. Timeline-only changes (a tag, a time entry, an
+        // attachment) and presence (A8) leave it as it was, so they must not be filtered by it.
+        return;
+      }
       onExternalChange(ev);
     },
   );
@@ -220,12 +243,18 @@ class RecordConflictBanner extends StatelessWidget {
     required this.isConflict,
     required this.onReload,
     this.onDismiss,
+    this.actionLabel,
+    this.actionIcon,
   });
 
   final String message;
   final bool isConflict;
   final VoidCallback? onReload;
   final VoidCallback? onDismiss;
+
+  /// Replaces the "Reload" label, for example "Compare" when the user has unsaved edits.
+  final String? actionLabel;
+  final IconData? actionIcon;
 
   @override
   Widget build(BuildContext context) {
@@ -258,8 +287,8 @@ class RecordConflictBanner extends StatelessWidget {
           const SizedBox(width: 8),
           FilledButton.tonalIcon(
             onPressed: onReload,
-            icon: const Icon(AppIcons.refresh, size: 18),
-            label: Text(l.reloadRecord),
+            icon: Icon(actionIcon ?? AppIcons.refresh, size: 18),
+            label: Text(actionLabel ?? l.reloadRecord),
           ),
           if (onDismiss != null) ...[
             const SizedBox(width: 4),

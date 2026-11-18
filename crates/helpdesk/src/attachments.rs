@@ -221,6 +221,7 @@ async fn upload_attachment(
     )
     .await?;
     tx.commit().await?;
+    crate::tickets::notify_change(&state, &user, id, "attachment", None).await;
     Ok((StatusCode::CREATED, Json(file)))
 }
 

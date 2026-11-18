@@ -10250,6 +10250,200 @@ class AppLocalizationsNl extends AppLocalizations {
       'Iemand anders heeft wijzigingen aan dit record opgeslagen. Herlaad om die wijzigingen te zien voordat u opnieuw opslaat.';
 
   @override
+  String ticketLiveChange(String kind, String name) {
+    String _temp0 = intl.Intl.selectLogic(kind, {
+      'note': '$name heeft een bericht toegevoegd.',
+      'escalated': '$name heeft dit ticket geëscaleerd.',
+      'delegated': '$name heeft dit ticket overgedragen.',
+      'tag': '$name heeft de labels gewijzigd.',
+      'timeEntry': '$name heeft tijd geboekt.',
+      'merge': '$name heeft tickets samengevoegd.',
+      'split': '$name heeft dit ticket gesplitst.',
+      'attachment': '$name heeft een bijlage toegevoegd.',
+      'checklist': '$name heeft de checklist gewijzigd.',
+      'links': '$name heeft de gekoppelde tickets gewijzigd.',
+      'other': '$name heeft dit ticket gewijzigd.',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String ticketLiveUnsaved(String name) {
+    return '$name heeft dit ticket gewijzigd terwijl u niet-opgeslagen wijzigingen hebt. Vergelijk voordat u opslaat.';
+  }
+
+  @override
+  String ticketLiveMerged(String name) {
+    return '$name heeft dit ticket gewijzigd. Die wijzigingen zijn in uw formulier samengevoegd.';
+  }
+
+  @override
+  String get ticketMergeSomeone => 'Iemand';
+
+  @override
+  String get linksTitle => 'Gekoppelde tickets';
+
+  @override
+  String get linksNone => 'Geen gekoppelde tickets.';
+
+  @override
+  String get linksAdd => 'Koppeling toevoegen…';
+
+  @override
+  String get linksAddAction => 'Koppelen';
+
+  @override
+  String get linksParent => 'Onderdeel van de bundel van';
+
+  @override
+  String get linksChildren => 'Bundel';
+
+  @override
+  String linksBundleProgress(int open, int total) {
+    return '$open van $total nog open';
+  }
+
+  @override
+  String get linksRelated => 'Gerelateerd';
+
+  @override
+  String get linksDuplicateOf => 'Duplicaat van';
+
+  @override
+  String get linksDuplicates => 'Duplicaten';
+
+  @override
+  String get linksMerged => 'Samengevoegd';
+
+  @override
+  String get linksRemove => 'Koppeling verwijderen';
+
+  @override
+  String get linksSearch => 'Tickets zoeken';
+
+  @override
+  String get linksNoMatches => 'Geen tickets gevonden.';
+
+  @override
+  String get linksRelationChild =>
+      'Het andere ticket aan deze bundel toevoegen';
+
+  @override
+  String get linksRelationParent =>
+      'Aansluiten bij de bundel van het andere ticket';
+
+  @override
+  String get linksRelationRelated => 'Gerelateerd aan het andere ticket';
+
+  @override
+  String get linksRelationDuplicateOf =>
+      'Dit ticket is een duplicaat van het andere';
+
+  @override
+  String get linksRelationDuplicatedBy =>
+      'Het andere ticket is een duplicaat van dit ticket';
+
+  @override
+  String get bundleUpdate => 'Bundel bijwerken…';
+
+  @override
+  String get bundleUpdateTitle => 'De bundel bijwerken';
+
+  @override
+  String get bundleUpdateHelp =>
+      'Stuur hetzelfde antwoord, dezelfde notitie of status naar elk ticket in de bundel. U ziet eerst wat er zou gebeuren; er verandert niets tot u toepast.';
+
+  @override
+  String get bundleActionReply => 'Klanten antwoorden';
+
+  @override
+  String get bundleActionNote => 'Interne notitie';
+
+  @override
+  String get bundleActionStatus => 'Status wijzigen';
+
+  @override
+  String get bundleStatusAfter => 'Status daarna';
+
+  @override
+  String get bundleStatusUnchanged => 'Ongewijzigd';
+
+  @override
+  String get bundlePreview => 'Voorbeeld';
+
+  @override
+  String get bundleEdit => 'Bewerken';
+
+  @override
+  String bundleApply(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Op $count tickets toepassen',
+      one: 'Op 1 ticket toepassen',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String bundleDone(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tickets bijgewerkt.',
+      one: '1 ticket bijgewerkt.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get bundleOutcomeWouldApply => 'Wordt bijgewerkt';
+
+  @override
+  String get bundleOutcomeApplied => 'Bijgewerkt';
+
+  @override
+  String get bundleOutcomeSkipped => 'Overgeslagen';
+
+  @override
+  String get bundleOutcomeFailed => 'Geweigerd';
+
+  @override
+  String bundleRecipient(String email) {
+    return 'naar $email';
+  }
+
+  @override
+  String get ticketMergeCompare => 'Vergelijken';
+
+  @override
+  String get ticketMergeTitle => 'Uw wijzigingen en die van de ander';
+
+  @override
+  String ticketMergeIntro(String name) {
+    return '$name heeft wijzigingen opgeslagen in velden die u ook hebt bewerkt. Kies per veld welke waarde u behoudt.';
+  }
+
+  @override
+  String get ticketMergeMine => 'Mijn waarde';
+
+  @override
+  String ticketMergeTheirs(String name) {
+    return 'Waarde van $name';
+  }
+
+  @override
+  String get ticketMergeApply => 'Toepassen';
+
+  @override
+  String get ticketMergeEmpty => '(leeg)';
+
+  @override
+  String ticketMergeTakenOver(String fields) {
+    return 'Ook overgenomen uit hun wijziging: $fields';
+  }
+
+  @override
   String get checklistTitle => 'Checklist';
 
   @override

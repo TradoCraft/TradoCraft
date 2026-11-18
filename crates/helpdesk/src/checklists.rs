@@ -717,6 +717,7 @@ async fn add_ticket_checklist_item(
 
     let item = load_ticket_checklist_item(&mut tx, ticket_id, item_id).await?;
     tx.commit().await?;
+    crate::tickets::notify_change(&state, &user, ticket_id, "checklist", None).await;
     Ok((StatusCode::CREATED, Json(item)))
 }
 
@@ -833,6 +834,7 @@ async fn update_ticket_checklist_item(
 
     let item = load_ticket_checklist_item(&mut tx, ticket_id, item_id).await?;
     tx.commit().await?;
+    crate::tickets::notify_change(&state, &user, ticket_id, "checklist", None).await;
     Ok(Json(item))
 }
 
@@ -867,6 +869,7 @@ async fn delete_ticket_checklist_item(
     }
 
     tx.commit().await?;
+    crate::tickets::notify_change(&state, &user, ticket_id, "checklist", None).await;
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -895,6 +898,7 @@ async fn apply_template(
         apply_template_to_ticket(&mut tx, user.company_id, ticket_id, input.template_id, true)
             .await?;
     tx.commit().await?;
+    crate::tickets::notify_change(&state, &user, ticket_id, "checklist", None).await;
     Ok(Json(items))
 }
 

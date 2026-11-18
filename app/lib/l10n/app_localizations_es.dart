@@ -10256,6 +10256,197 @@ class AppLocalizationsEs extends AppLocalizations {
       'Otra persona guardó cambios en este registro. Recargue para ver sus cambios antes de volver a guardar.';
 
   @override
+  String ticketLiveChange(String kind, String name) {
+    String _temp0 = intl.Intl.selectLogic(kind, {
+      'note': '$name añadió un mensaje.',
+      'escalated': '$name escaló este ticket.',
+      'delegated': '$name traspasó este ticket.',
+      'tag': '$name cambió las etiquetas.',
+      'timeEntry': '$name registró tiempo.',
+      'merge': '$name fusionó tickets.',
+      'split': '$name dividió este ticket.',
+      'attachment': '$name añadió un adjunto.',
+      'checklist': '$name cambió la lista de comprobación.',
+      'links': '$name cambió los tickets vinculados.',
+      'other': '$name cambió este ticket.',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String ticketLiveUnsaved(String name) {
+    return '$name cambió este ticket mientras usted tiene cambios sin guardar. Compare antes de guardar.';
+  }
+
+  @override
+  String ticketLiveMerged(String name) {
+    return '$name cambió este ticket. Sus cambios se han combinado con su formulario.';
+  }
+
+  @override
+  String get ticketMergeSomeone => 'Alguien';
+
+  @override
+  String get linksTitle => 'Tickets vinculados';
+
+  @override
+  String get linksNone => 'No hay tickets vinculados.';
+
+  @override
+  String get linksAdd => 'Añadir vínculo…';
+
+  @override
+  String get linksAddAction => 'Vincular';
+
+  @override
+  String get linksParent => 'Parte del lote de';
+
+  @override
+  String get linksChildren => 'Lote';
+
+  @override
+  String linksBundleProgress(int open, int total) {
+    return '$open de $total siguen abiertos';
+  }
+
+  @override
+  String get linksRelated => 'Relacionados';
+
+  @override
+  String get linksDuplicateOf => 'Duplicado de';
+
+  @override
+  String get linksDuplicates => 'Duplicados';
+
+  @override
+  String get linksMerged => 'Fusionado';
+
+  @override
+  String get linksRemove => 'Quitar vínculo';
+
+  @override
+  String get linksSearch => 'Buscar tickets';
+
+  @override
+  String get linksNoMatches => 'No se encontraron tickets.';
+
+  @override
+  String get linksRelationChild => 'Añadir el otro ticket a este lote';
+
+  @override
+  String get linksRelationParent => 'Unirse al lote del otro ticket';
+
+  @override
+  String get linksRelationRelated => 'Relacionado con el otro ticket';
+
+  @override
+  String get linksRelationDuplicateOf => 'Este ticket es un duplicado del otro';
+
+  @override
+  String get linksRelationDuplicatedBy =>
+      'El otro ticket es un duplicado de este';
+
+  @override
+  String get bundleUpdate => 'Actualizar el lote…';
+
+  @override
+  String get bundleUpdateTitle => 'Actualizar el lote';
+
+  @override
+  String get bundleUpdateHelp =>
+      'Envíe la misma respuesta, nota o estado a cada ticket del lote. Primero ve lo que pasaría; no cambia nada hasta que aplique.';
+
+  @override
+  String get bundleActionReply => 'Responder a los clientes';
+
+  @override
+  String get bundleActionNote => 'Nota interna';
+
+  @override
+  String get bundleActionStatus => 'Cambiar estado';
+
+  @override
+  String get bundleStatusAfter => 'Estado después';
+
+  @override
+  String get bundleStatusUnchanged => 'Sin cambios';
+
+  @override
+  String get bundlePreview => 'Vista previa';
+
+  @override
+  String get bundleEdit => 'Editar';
+
+  @override
+  String bundleApply(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Aplicar a $count tickets',
+      one: 'Aplicar a 1 ticket',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String bundleDone(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tickets actualizados.',
+      one: '1 ticket actualizado.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get bundleOutcomeWouldApply => 'Se actualizará';
+
+  @override
+  String get bundleOutcomeApplied => 'Actualizado';
+
+  @override
+  String get bundleOutcomeSkipped => 'Omitido';
+
+  @override
+  String get bundleOutcomeFailed => 'Rechazado';
+
+  @override
+  String bundleRecipient(String email) {
+    return 'a $email';
+  }
+
+  @override
+  String get ticketMergeCompare => 'Comparar';
+
+  @override
+  String get ticketMergeTitle => 'Sus cambios y los de la otra persona';
+
+  @override
+  String ticketMergeIntro(String name) {
+    return '$name guardó cambios en campos que usted también editó. Elija qué valor conservar en cada uno.';
+  }
+
+  @override
+  String get ticketMergeMine => 'El mío';
+
+  @override
+  String ticketMergeTheirs(String name) {
+    return 'El de $name';
+  }
+
+  @override
+  String get ticketMergeApply => 'Aplicar';
+
+  @override
+  String get ticketMergeEmpty => '(vacío)';
+
+  @override
+  String ticketMergeTakenOver(String fields) {
+    return 'También tomado de su cambio: $fields';
+  }
+
+  @override
   String get checklistTitle => 'Lista de comprobación';
 
   @override

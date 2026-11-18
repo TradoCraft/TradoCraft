@@ -18,6 +18,7 @@ pub mod graph;
 pub mod imap;
 pub mod ingest;
 pub mod language;
+pub mod links;
 pub mod mailboxes;
 pub mod mailer;
 pub mod portal;
@@ -40,5 +41,6 @@ pub fn router() -> OpenApiRouter<AppState> {
         .merge(sla_notice::router())
         .merge(automation::router())
         .merge(split::router())
+        .merge(links::router())
         .merge(reports::router())
 }

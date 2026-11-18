@@ -169,6 +169,7 @@ async fn split(
     }
     let d = load_detail(&mut tx, user.company_id, new_id_).await?;
     tx.commit().await?;
+    crate::tickets::notify_change(&state, &user, id, "split", None).await;
     Ok((StatusCode::CREATED, Json(d)))
 }
 

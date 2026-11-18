@@ -29818,6 +29818,78 @@
         }
       }
     },
+    "/api/v1/tickets/{id}/bundle/update": {
+      "post": {
+        "tags": [
+          "helpdesk"
+        ],
+        "summary": "Applies one action to every child of the bundle (or the chosen ones), each in a transaction of\nits own, so a child that refuses (a closed gate, no recipient) does not stop the others. With\n`dry_run` every transaction is rolled back: the result is a faithful preview.",
+        "operationId": "bundle_update",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MassUpdateInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MassUpdateResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/tickets/{id}/convert": {
       "post": {
         "tags": [
@@ -30218,6 +30290,189 @@
             }
           },
           "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tickets/{id}/links": {
+      "get": {
+        "tags": [
+          "helpdesk"
+        ],
+        "summary": "The links of a ticket, each with the state of the other ticket.",
+        "operationId": "list_links",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TicketLinks"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "helpdesk"
+        ],
+        "summary": "Links this ticket to another one. Both tickets get a note and an audit event.",
+        "operationId": "add_link",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TicketLinks"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tickets/{id}/links/{link_id}": {
+      "delete": {
+        "tags": [
+          "helpdesk"
+        ],
+        "summary": "Removes a link. Both tickets get a note and an audit event.",
+        "operationId": "remove_link",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "link_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TicketLinks"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
             "description": "",
             "content": {
               "application/json": {
@@ -40725,6 +40980,89 @@
           "no_po_line"
         ]
       },
+      "LinkInput": {
+        "type": "object",
+        "required": [
+          "target_id",
+          "relation"
+        ],
+        "properties": {
+          "relation": {
+            "$ref": "#/components/schemas/LinkRelation"
+          },
+          "target_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "LinkRelation": {
+        "type": "string",
+        "description": "How the other ticket relates to the one the request is made on.",
+        "enum": [
+          "child",
+          "parent",
+          "related",
+          "duplicate_of",
+          "duplicated_by"
+        ]
+      },
+      "LinkedTicket": {
+        "type": "object",
+        "description": "The other end of a link, with what is needed to judge the bundle at a glance.",
+        "required": [
+          "link_id",
+          "ticket_id",
+          "number",
+          "subject",
+          "status",
+          "priority",
+          "merged",
+          "updated_at"
+        ],
+        "properties": {
+          "customer_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "link_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "merged": {
+            "type": "boolean",
+            "description": "The ticket was merged into another one and is closed."
+          },
+          "number": {
+            "type": "string"
+          },
+          "owner_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "priority": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "ticket_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "Location": {
         "type": "object",
         "required": [
@@ -41194,6 +41532,131 @@
           },
           "notes": {
             "type": "string"
+          }
+        }
+      },
+      "MassAction": {
+        "type": "string",
+        "enum": [
+          "reply",
+          "note",
+          "status"
+        ]
+      },
+      "MassOutcome": {
+        "type": "string",
+        "enum": [
+          "applied",
+          "would_apply",
+          "skipped",
+          "failed"
+        ]
+      },
+      "MassUpdateInput": {
+        "type": "object",
+        "required": [
+          "action"
+        ],
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/MassAction"
+          },
+          "body": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The message (reply or note)."
+          },
+          "child_ids": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Only these children; default all children of the bundle."
+          },
+          "dry_run": {
+            "type": "boolean",
+            "description": "Run everything and roll it back, so that the result shows what would happen."
+          },
+          "status": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The new status (`status`); for a reply, the status after sending (default pending_customer)."
+          },
+          "subject": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Subject of the e-mail (`reply`); default \"Re: <subject of the child>\"."
+          }
+        }
+      },
+      "MassUpdateItem": {
+        "type": "object",
+        "required": [
+          "ticket_id",
+          "number",
+          "subject",
+          "outcome"
+        ],
+        "properties": {
+          "number": {
+            "type": "string"
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/MassOutcome"
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "recipient": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Where a reply goes."
+          },
+          "subject": {
+            "type": "string"
+          },
+          "ticket_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "MassUpdateResult": {
+        "type": "object",
+        "required": [
+          "dry_run",
+          "items",
+          "updated"
+        ],
+        "properties": {
+          "dry_run": {
+            "type": "boolean"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MassUpdateItem"
+            }
+          },
+          "updated": {
+            "type": "integer",
+            "format": "int64",
+            "description": "How many tickets were (or would be) updated."
           }
         }
       },
@@ -53692,6 +54155,59 @@
           },
           "subject": {
             "type": "string"
+          }
+        }
+      },
+      "TicketLinks": {
+        "type": "object",
+        "description": "All links of one ticket, grouped by how the ticket stands to the other one.",
+        "required": [
+          "children",
+          "related",
+          "duplicates"
+        ],
+        "properties": {
+          "children": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LinkedTicket"
+            },
+            "description": "Tickets in the bundle of this ticket (it is their parent)."
+          },
+          "duplicate_of": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/LinkedTicket",
+                "description": "This ticket is a duplicate of this one."
+              }
+            ]
+          },
+          "duplicates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LinkedTicket"
+            },
+            "description": "Tickets that are duplicates of this one."
+          },
+          "parent": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/LinkedTicket",
+                "description": "This ticket is a child of the bundle of this parent."
+              }
+            ]
+          },
+          "related": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LinkedTicket"
+            }
           }
         }
       },

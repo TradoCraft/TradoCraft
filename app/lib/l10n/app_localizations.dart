@@ -18156,6 +18156,294 @@ abstract class AppLocalizations {
   /// **'Someone else saved changes to this record. Reload to see their changes before saving again.'**
   String get recordConflictMessage;
 
+  /// No description provided for @ticketLiveChange.
+  ///
+  /// In en, this message translates to:
+  /// **'{kind, select, note{{name} added a message.} escalated{{name} escalated this ticket.} delegated{{name} handed this ticket over.} tag{{name} changed the tags.} timeEntry{{name} logged time.} merge{{name} merged tickets.} split{{name} split this ticket.} attachment{{name} added an attachment.} checklist{{name} changed the checklist.} links{{name} changed the linked tickets.} other{{name} changed this ticket.}}'**
+  String ticketLiveChange(String kind, String name);
+
+  /// No description provided for @ticketLiveUnsaved.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} changed this ticket while you have unsaved edits. Compare before you save.'**
+  String ticketLiveUnsaved(String name);
+
+  /// No description provided for @ticketLiveMerged.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} changed this ticket. Their changes were merged into your form.'**
+  String ticketLiveMerged(String name);
+
+  /// No description provided for @ticketMergeSomeone.
+  ///
+  /// In en, this message translates to:
+  /// **'Someone'**
+  String get ticketMergeSomeone;
+
+  /// No description provided for @linksTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Linked tickets'**
+  String get linksTitle;
+
+  /// No description provided for @linksNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No linked tickets.'**
+  String get linksNone;
+
+  /// No description provided for @linksAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add link…'**
+  String get linksAdd;
+
+  /// No description provided for @linksAddAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Link'**
+  String get linksAddAction;
+
+  /// No description provided for @linksParent.
+  ///
+  /// In en, this message translates to:
+  /// **'Part of the bundle of'**
+  String get linksParent;
+
+  /// No description provided for @linksChildren.
+  ///
+  /// In en, this message translates to:
+  /// **'Bundle'**
+  String get linksChildren;
+
+  /// No description provided for @linksBundleProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'{open} of {total} still open'**
+  String linksBundleProgress(int open, int total);
+
+  /// No description provided for @linksRelated.
+  ///
+  /// In en, this message translates to:
+  /// **'Related'**
+  String get linksRelated;
+
+  /// No description provided for @linksDuplicateOf.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate of'**
+  String get linksDuplicateOf;
+
+  /// No description provided for @linksDuplicates.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicates'**
+  String get linksDuplicates;
+
+  /// No description provided for @linksMerged.
+  ///
+  /// In en, this message translates to:
+  /// **'Merged'**
+  String get linksMerged;
+
+  /// No description provided for @linksRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove link'**
+  String get linksRemove;
+
+  /// No description provided for @linksSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search tickets'**
+  String get linksSearch;
+
+  /// No description provided for @linksNoMatches.
+  ///
+  /// In en, this message translates to:
+  /// **'No tickets found.'**
+  String get linksNoMatches;
+
+  /// No description provided for @linksRelationChild.
+  ///
+  /// In en, this message translates to:
+  /// **'Add the other ticket to this bundle'**
+  String get linksRelationChild;
+
+  /// No description provided for @linksRelationParent.
+  ///
+  /// In en, this message translates to:
+  /// **'Join the bundle of the other ticket'**
+  String get linksRelationParent;
+
+  /// No description provided for @linksRelationRelated.
+  ///
+  /// In en, this message translates to:
+  /// **'Related to the other ticket'**
+  String get linksRelationRelated;
+
+  /// No description provided for @linksRelationDuplicateOf.
+  ///
+  /// In en, this message translates to:
+  /// **'This ticket is a duplicate of the other'**
+  String get linksRelationDuplicateOf;
+
+  /// No description provided for @linksRelationDuplicatedBy.
+  ///
+  /// In en, this message translates to:
+  /// **'The other ticket is a duplicate of this one'**
+  String get linksRelationDuplicatedBy;
+
+  /// No description provided for @bundleUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'Update bundle…'**
+  String get bundleUpdate;
+
+  /// No description provided for @bundleUpdateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Update the bundle'**
+  String get bundleUpdateTitle;
+
+  /// No description provided for @bundleUpdateHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Send the same reply, note or status to every ticket in the bundle. You see what would happen first; nothing changes until you apply.'**
+  String get bundleUpdateHelp;
+
+  /// No description provided for @bundleActionReply.
+  ///
+  /// In en, this message translates to:
+  /// **'Reply to the customers'**
+  String get bundleActionReply;
+
+  /// No description provided for @bundleActionNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Internal note'**
+  String get bundleActionNote;
+
+  /// No description provided for @bundleActionStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Change status'**
+  String get bundleActionStatus;
+
+  /// No description provided for @bundleStatusAfter.
+  ///
+  /// In en, this message translates to:
+  /// **'Status afterwards'**
+  String get bundleStatusAfter;
+
+  /// No description provided for @bundleStatusUnchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Unchanged'**
+  String get bundleStatusUnchanged;
+
+  /// No description provided for @bundlePreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview'**
+  String get bundlePreview;
+
+  /// No description provided for @bundleEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get bundleEdit;
+
+  /// No description provided for @bundleApply.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{Apply to 1 ticket} other{Apply to {count} tickets}}'**
+  String bundleApply(int count);
+
+  /// No description provided for @bundleDone.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 ticket updated.} other{{count} tickets updated.}}'**
+  String bundleDone(int count);
+
+  /// No description provided for @bundleOutcomeWouldApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Will be updated'**
+  String get bundleOutcomeWouldApply;
+
+  /// No description provided for @bundleOutcomeApplied.
+  ///
+  /// In en, this message translates to:
+  /// **'Updated'**
+  String get bundleOutcomeApplied;
+
+  /// No description provided for @bundleOutcomeSkipped.
+  ///
+  /// In en, this message translates to:
+  /// **'Left out'**
+  String get bundleOutcomeSkipped;
+
+  /// No description provided for @bundleOutcomeFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Refused'**
+  String get bundleOutcomeFailed;
+
+  /// No description provided for @bundleRecipient.
+  ///
+  /// In en, this message translates to:
+  /// **'to {email}'**
+  String bundleRecipient(String email);
+
+  /// No description provided for @ticketMergeCompare.
+  ///
+  /// In en, this message translates to:
+  /// **'Compare'**
+  String get ticketMergeCompare;
+
+  /// No description provided for @ticketMergeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your changes and theirs'**
+  String get ticketMergeTitle;
+
+  /// No description provided for @ticketMergeIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} saved changes to fields you also edited. Choose which value to keep for each.'**
+  String ticketMergeIntro(String name);
+
+  /// No description provided for @ticketMergeMine.
+  ///
+  /// In en, this message translates to:
+  /// **'Mine'**
+  String get ticketMergeMine;
+
+  /// No description provided for @ticketMergeTheirs.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}\'s'**
+  String ticketMergeTheirs(String name);
+
+  /// No description provided for @ticketMergeApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get ticketMergeApply;
+
+  /// No description provided for @ticketMergeEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'(empty)'**
+  String get ticketMergeEmpty;
+
+  /// No description provided for @ticketMergeTakenOver.
+  ///
+  /// In en, this message translates to:
+  /// **'Also taken over from their change: {fields}'**
+  String ticketMergeTakenOver(String fields);
+
   /// No description provided for @checklistTitle.
   ///
   /// In en, this message translates to:

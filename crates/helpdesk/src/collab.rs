@@ -705,6 +705,7 @@ async fn escalate(
     .await?;
     let d = load_detail(&mut tx, user.company_id, id).await?;
     tx.commit().await?;
+    crate::tickets::notify_change(&state, &user, id, "escalated", None).await;
     Ok(Json(d))
 }
 
@@ -797,6 +798,7 @@ async fn delegate(
     .await?;
     let d = load_detail(&mut tx, user.company_id, id).await?;
     tx.commit().await?;
+    crate::tickets::notify_change(&state, &user, id, "delegated", None).await;
     Ok(Json(d))
 }
 
@@ -993,6 +995,17 @@ async fn presence_beat(
     }
     let mut conn = state.db.acquire().await?;
     load_ticket(&mut conn, user.company_id, id).await?;
+    // Colleagues learn at once (A8) when this person arrives or starts or stops replying; a
+    // plain repeat beat changes nothing for them and publishes nothing.
+    let previous: Option<String> = sqlx::query_scalar(
+        "SELECT mode FROM helpdesk.ticket_presence
+         WHERE ticket_id = $1 AND user_id = $2 AND seen_at > now() - make_interval(secs => $3)",
+    )
+    .bind(id)
+    .bind(user.user_id)
+    .bind(PRESENCE_SECONDS as f64)
+    .fetch_optional(&mut *conn)
+    .await?;
     sqlx::query(
         "INSERT INTO helpdesk.ticket_presence (ticket_id, user_id, company_id, mode, seen_at) VALUES ($1, $2, $3, $4, now())
          ON CONFLICT (ticket_id, user_id) DO UPDATE SET mode = $4, seen_at = now()",
@@ -1003,9 +1016,14 @@ async fn presence_beat(
     .bind(&input.mode)
     .execute(&mut *conn)
     .await?;
-    Ok(Json(
-        others_present(&mut conn, user.company_id, id, user.user_id).await?,
-    ))
+    let others = others_present(&mut conn, user.company_id, id, user.user_id).await?;
+    // Release conn before notify_change acquires from the pool so one beat never holds two connections.
+    drop(conn);
+    if previous.as_deref() != Some(input.mode.as_str()) {
+        crate::tickets::notify_change(&state, &user, id, "presence", Some(input.mode.clone()))
+            .await;
+    }
+    Ok(Json(others))
 }
 
 /// Colleagues (not the caller) active on the ticket during the last 60 seconds.

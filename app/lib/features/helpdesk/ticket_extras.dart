@@ -263,9 +263,13 @@ class TimeSection extends ConsumerStatefulWidget {
     super.key,
     required this.ticketId,
     required this.canWrite,
+    this.refreshVersion = 0,
   });
   final String ticketId;
   final bool canWrite;
+
+  /// Changes when the entries should be loaded again (a colleague logged time).
+  final int refreshVersion;
 
   @override
   ConsumerState<TimeSection> createState() => _TimeSectionState();
@@ -274,6 +278,12 @@ class TimeSection extends ConsumerStatefulWidget {
 class _TimeSectionState extends ConsumerState<TimeSection> {
   TimeEntries? _entries;
   String? _error;
+  int _generation = 0;
+  int _activeMutations = 0;
+  bool _refreshPending = false;
+  Future<void> _mutationQueue = Future.value();
+
+  bool _owns(int generation) => mounted && generation == _generation;
 
   @override
   void initState() {
@@ -281,40 +291,90 @@ class _TimeSectionState extends ConsumerState<TimeSection> {
     _load();
   }
 
-  Future<void> _load() async {
-    try {
-      final e = await ref
-          .read(apiProvider)
-          .helpdesk
-          .listTime(id: widget.ticketId);
-      if (mounted) setState(() => _entries = e);
-    } catch (e) {
-      if (mounted) setState(() => _error = errorMessage(e));
+  @override
+  void didUpdateWidget(TimeSection old) {
+    super.didUpdateWidget(old);
+    if (old.ticketId != widget.ticketId) {
+      ++_generation;
+      _entries = null;
+      _error = null;
+      _refreshPending = false;
+      _load();
+    } else if (old.refreshVersion != widget.refreshVersion) {
+      if (_activeMutations > 0) {
+        _refreshPending = true;
+      } else {
+        _load();
+      }
     }
   }
 
+  Future<void> _load() async {
+    final generation = ++_generation;
+    final ticketId = widget.ticketId;
+    try {
+      final e = await ref.read(apiProvider).helpdesk.listTime(id: ticketId);
+      if (!_owns(generation)) return;
+      setState(() {
+        _entries = e;
+        _error = null;
+      });
+    } catch (e) {
+      if (!_owns(generation)) return;
+      setState(() => _error = errorMessage(e));
+    }
+  }
+
+  Future<void> _mutate(
+    String ticketId,
+    Future<TimeEntries> Function(String id) action,
+  ) {
+    _activeMutations++;
+    final next = _mutationQueue.then((_) async {
+      if (!mounted || widget.ticketId != ticketId) return;
+      final generation = ++_generation;
+      await runAction(context, () async {
+        try {
+          final e = await action(ticketId);
+          if (_owns(generation)) {
+            setState(() {
+              _entries = e;
+              _error = null;
+            });
+          }
+        } catch (_) {
+          if (_owns(generation)) rethrow;
+        }
+      });
+    });
+    _mutationQueue = next.catchError((_) {});
+    return next.whenComplete(() {
+      _activeMutations--;
+      if (_activeMutations == 0 && _refreshPending && mounted) {
+        _refreshPending = false;
+        _load();
+      }
+    });
+  }
+
   Future<void> _log() async {
+    final ticketId = widget.ticketId;
     final input = await showDialog<TimeEntryInput>(
       context: context,
       builder: (_) => const _TimeDialog(),
     );
-    if (input == null || !mounted) return;
-    await runAction(context, () async {
-      final e = await ref
-          .read(apiProvider)
-          .helpdesk
-          .addTime(id: widget.ticketId, body: input);
-      if (mounted) setState(() => _entries = e);
-    });
+    if (input == null || !mounted || widget.ticketId != ticketId) return;
+    await _mutate(
+      ticketId,
+      (id) => ref.read(apiProvider).helpdesk.addTime(id: id, body: input),
+    );
   }
 
-  Future<void> _delete(TimeEntry entry) => runAction(context, () async {
-    final e = await ref
-        .read(apiProvider)
-        .helpdesk
-        .deleteTime(id: widget.ticketId, entryId: entry.id);
-    if (mounted) setState(() => _entries = e);
-  });
+  Future<void> _delete(TimeEntry entry) => _mutate(
+    widget.ticketId,
+    (id) =>
+        ref.read(apiProvider).helpdesk.deleteTime(id: id, entryId: entry.id),
+  );
 
   @override
   Widget build(BuildContext context) {

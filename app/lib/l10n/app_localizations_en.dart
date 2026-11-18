@@ -10205,6 +10205,198 @@ class AppLocalizationsEn extends AppLocalizations {
       'Someone else saved changes to this record. Reload to see their changes before saving again.';
 
   @override
+  String ticketLiveChange(String kind, String name) {
+    String _temp0 = intl.Intl.selectLogic(kind, {
+      'note': '$name added a message.',
+      'escalated': '$name escalated this ticket.',
+      'delegated': '$name handed this ticket over.',
+      'tag': '$name changed the tags.',
+      'timeEntry': '$name logged time.',
+      'merge': '$name merged tickets.',
+      'split': '$name split this ticket.',
+      'attachment': '$name added an attachment.',
+      'checklist': '$name changed the checklist.',
+      'links': '$name changed the linked tickets.',
+      'other': '$name changed this ticket.',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String ticketLiveUnsaved(String name) {
+    return '$name changed this ticket while you have unsaved edits. Compare before you save.';
+  }
+
+  @override
+  String ticketLiveMerged(String name) {
+    return '$name changed this ticket. Their changes were merged into your form.';
+  }
+
+  @override
+  String get ticketMergeSomeone => 'Someone';
+
+  @override
+  String get linksTitle => 'Linked tickets';
+
+  @override
+  String get linksNone => 'No linked tickets.';
+
+  @override
+  String get linksAdd => 'Add link…';
+
+  @override
+  String get linksAddAction => 'Link';
+
+  @override
+  String get linksParent => 'Part of the bundle of';
+
+  @override
+  String get linksChildren => 'Bundle';
+
+  @override
+  String linksBundleProgress(int open, int total) {
+    return '$open of $total still open';
+  }
+
+  @override
+  String get linksRelated => 'Related';
+
+  @override
+  String get linksDuplicateOf => 'Duplicate of';
+
+  @override
+  String get linksDuplicates => 'Duplicates';
+
+  @override
+  String get linksMerged => 'Merged';
+
+  @override
+  String get linksRemove => 'Remove link';
+
+  @override
+  String get linksSearch => 'Search tickets';
+
+  @override
+  String get linksNoMatches => 'No tickets found.';
+
+  @override
+  String get linksRelationChild => 'Add the other ticket to this bundle';
+
+  @override
+  String get linksRelationParent => 'Join the bundle of the other ticket';
+
+  @override
+  String get linksRelationRelated => 'Related to the other ticket';
+
+  @override
+  String get linksRelationDuplicateOf =>
+      'This ticket is a duplicate of the other';
+
+  @override
+  String get linksRelationDuplicatedBy =>
+      'The other ticket is a duplicate of this one';
+
+  @override
+  String get bundleUpdate => 'Update bundle…';
+
+  @override
+  String get bundleUpdateTitle => 'Update the bundle';
+
+  @override
+  String get bundleUpdateHelp =>
+      'Send the same reply, note or status to every ticket in the bundle. You see what would happen first; nothing changes until you apply.';
+
+  @override
+  String get bundleActionReply => 'Reply to the customers';
+
+  @override
+  String get bundleActionNote => 'Internal note';
+
+  @override
+  String get bundleActionStatus => 'Change status';
+
+  @override
+  String get bundleStatusAfter => 'Status afterwards';
+
+  @override
+  String get bundleStatusUnchanged => 'Unchanged';
+
+  @override
+  String get bundlePreview => 'Preview';
+
+  @override
+  String get bundleEdit => 'Edit';
+
+  @override
+  String bundleApply(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Apply to $count tickets',
+      one: 'Apply to 1 ticket',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String bundleDone(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tickets updated.',
+      one: '1 ticket updated.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get bundleOutcomeWouldApply => 'Will be updated';
+
+  @override
+  String get bundleOutcomeApplied => 'Updated';
+
+  @override
+  String get bundleOutcomeSkipped => 'Left out';
+
+  @override
+  String get bundleOutcomeFailed => 'Refused';
+
+  @override
+  String bundleRecipient(String email) {
+    return 'to $email';
+  }
+
+  @override
+  String get ticketMergeCompare => 'Compare';
+
+  @override
+  String get ticketMergeTitle => 'Your changes and theirs';
+
+  @override
+  String ticketMergeIntro(String name) {
+    return '$name saved changes to fields you also edited. Choose which value to keep for each.';
+  }
+
+  @override
+  String get ticketMergeMine => 'Mine';
+
+  @override
+  String ticketMergeTheirs(String name) {
+    return '$name\'s';
+  }
+
+  @override
+  String get ticketMergeApply => 'Apply';
+
+  @override
+  String get ticketMergeEmpty => '(empty)';
+
+  @override
+  String ticketMergeTakenOver(String fields) {
+    return 'Also taken over from their change: $fields';
+  }
+
+  @override
   String get checklistTitle => 'Checklist';
 
   @override

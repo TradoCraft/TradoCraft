@@ -373,6 +373,104 @@ async fn sse_record_events_streams_updates_and_validates_entity_type(db: PgPool)
     assert!(text.contains(ALPHA), "{text}");
 }
 
+/// Reads SSE frames until one containing `needle` arrives (keep-alives and other events are skipped).
+async fn frame_containing(body: &mut Body, needle: &str) -> String {
+    loop {
+        let frame = tokio::time::timeout(std::time::Duration::from_secs(3), body.frame())
+            .await
+            .unwrap_or_else(|_| panic!("no SSE frame containing {needle:?} arrived in time"))
+            .expect("stream open")
+            .expect("valid frame");
+        if let Ok(data) = frame.into_data() {
+            let text = String::from_utf8(data.to_vec()).unwrap();
+            if text.contains(needle) {
+                return text;
+            }
+        }
+    }
+}
+
+/// A8: other ticket changes than a save reach an open ticket at once, and a colleague arriving
+/// or starting to reply is announced as `presence` without the version moving.
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn ticket_tags_time_and_presence_are_pushed_live(db: PgPool) {
+    let app = setup(db).await;
+    let (status, created) = api_as(
+        &app,
+        SUPPORT,
+        Method::POST,
+        "/tickets",
+        Some(json!({
+            "subject": "Live ticket", "priority": "normal", "category": "question",
+            "language": "en", "body": "Customer needs help",
+        })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{created}");
+    let id = created["ticket"]["id"].as_str().unwrap().to_string();
+
+    let req = Request::builder()
+        .method(Method::GET)
+        .uri(format!(
+            "/api/v1/events/records?entity_type=ticket&record_id={id}"
+        ))
+        .header("x-dev-user", SUPPORT)
+        .body(Body::empty())
+        .unwrap();
+    let res = app.clone().oneshot(req).await.unwrap();
+    assert_eq!(res.status(), StatusCode::OK);
+    let mut body = res.into_body();
+
+    let (status, _) = api_as(
+        &app,
+        "admin@example.com",
+        Method::POST,
+        &format!("/tickets/{id}/tags"),
+        Some(json!({ "tag": "urgent" })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    let text = frame_containing(&mut body, "\"kind\":\"tag\"").await;
+    assert!(
+        text.contains("urgent") && text.contains("Admin User"),
+        "{text}"
+    );
+
+    let (status, _) = api_as(
+        &app,
+        "admin@example.com",
+        Method::POST,
+        &format!("/tickets/{id}/time-entries"),
+        Some(json!({ "minutes": 15, "note": "call", "billable": false })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED);
+    frame_containing(&mut body, "\"kind\":\"time\"").await;
+
+    // First beat announces the colleague; the same beat again says nothing; replying does.
+    let beat = |mode: &'static str| {
+        let app = app.clone();
+        let id = id.clone();
+        async move {
+            api_as(
+                &app,
+                "admin@example.com",
+                Method::POST,
+                &format!("/tickets/{id}/presence"),
+                Some(json!({ "mode": mode })),
+            )
+            .await
+        }
+    };
+    assert_eq!(beat("viewing").await.0, StatusCode::OK);
+    let text = frame_containing(&mut body, "\"kind\":\"presence\"").await;
+    assert!(text.contains("viewing"), "{text}");
+    assert_eq!(beat("viewing").await.0, StatusCode::OK);
+    assert_eq!(beat("replying").await.0, StatusCode::OK);
+    let text = frame_containing(&mut body, "\"kind\":\"presence\"").await;
+    assert!(text.contains("replying"), "{text}");
+}
+
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
 async fn sse_stops_after_membership_deactivation(db: PgPool) {
     let app = setup(db.clone()).await;

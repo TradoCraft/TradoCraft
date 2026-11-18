@@ -4663,6 +4663,106 @@
     }
   },
   "recordConflictMessage": "Someone else saved changes to this record. Reload to see their changes before saving again.",
+  "ticketLiveChange": "{kind, select, note{{name} added a message.} escalated{{name} escalated this ticket.} delegated{{name} handed this ticket over.} tag{{name} changed the tags.} timeEntry{{name} logged time.} merge{{name} merged tickets.} split{{name} split this ticket.} attachment{{name} added an attachment.} checklist{{name} changed the checklist.} links{{name} changed the linked tickets.} other{{name} changed this ticket.}}",
+  "@ticketLiveChange": {
+    "placeholders": {
+      "kind": {"type": "String"},
+      "name": {"type": "String"}
+    }
+  },
+  "ticketLiveUnsaved": "{name} changed this ticket while you have unsaved edits. Compare before you save.",
+  "@ticketLiveUnsaved": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "ticketLiveMerged": "{name} changed this ticket. Their changes were merged into your form.",
+  "@ticketLiveMerged": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "ticketMergeSomeone": "Someone",
+  "linksTitle": "Linked tickets",
+  "linksNone": "No linked tickets.",
+  "linksAdd": "Add link…",
+  "linksAddAction": "Link",
+  "linksParent": "Part of the bundle of",
+  "linksChildren": "Bundle",
+  "linksBundleProgress": "{open} of {total} still open",
+  "@linksBundleProgress": {
+    "placeholders": {
+      "open": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "linksRelated": "Related",
+  "linksDuplicateOf": "Duplicate of",
+  "linksDuplicates": "Duplicates",
+  "linksMerged": "Merged",
+  "linksRemove": "Remove link",
+  "linksSearch": "Search tickets",
+  "linksNoMatches": "No tickets found.",
+  "linksRelationChild": "Add the other ticket to this bundle",
+  "linksRelationParent": "Join the bundle of the other ticket",
+  "linksRelationRelated": "Related to the other ticket",
+  "linksRelationDuplicateOf": "This ticket is a duplicate of the other",
+  "linksRelationDuplicatedBy": "The other ticket is a duplicate of this one",
+  "bundleUpdate": "Update bundle…",
+  "bundleUpdateTitle": "Update the bundle",
+  "bundleUpdateHelp": "Send the same reply, note or status to every ticket in the bundle. You see what would happen first; nothing changes until you apply.",
+  "bundleActionReply": "Reply to the customers",
+  "bundleActionNote": "Internal note",
+  "bundleActionStatus": "Change status",
+  "bundleStatusAfter": "Status afterwards",
+  "bundleStatusUnchanged": "Unchanged",
+  "bundlePreview": "Preview",
+  "bundleEdit": "Edit",
+  "bundleApply": "{count, plural, one{Apply to 1 ticket} other{Apply to {count} tickets}}",
+  "@bundleApply": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "bundleDone": "{count, plural, one{1 ticket updated.} other{{count} tickets updated.}}",
+  "@bundleDone": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "bundleOutcomeWouldApply": "Will be updated",
+  "bundleOutcomeApplied": "Updated",
+  "bundleOutcomeSkipped": "Left out",
+  "bundleOutcomeFailed": "Refused",
+  "bundleRecipient": "to {email}",
+  "@bundleRecipient": {
+    "placeholders": {
+      "email": {"type": "String"}
+    }
+  },
+  "ticketMergeCompare": "Compare",
+  "ticketMergeTitle": "Your changes and theirs",
+  "ticketMergeIntro": "{name} saved changes to fields you also edited. Choose which value to keep for each.",
+  "@ticketMergeIntro": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "ticketMergeMine": "Mine",
+  "ticketMergeTheirs": "{name}'s",
+  "@ticketMergeTheirs": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "ticketMergeApply": "Apply",
+  "ticketMergeEmpty": "(empty)",
+  "ticketMergeTakenOver": "Also taken over from their change: {fields}",
+  "@ticketMergeTakenOver": {
+    "placeholders": {
+      "fields": {"type": "String"}
+    }
+  },
   "checklistTitle": "Checklist",
   "checklistProgress": "{done}/{total}",
   "@checklistProgress": {
