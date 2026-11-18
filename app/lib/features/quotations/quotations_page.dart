@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/api.dart';
+import '../../framework/data/repository.dart';
 import '../../shared/app_icons.dart';
 import '../../shared/entity_list.dart';
 import '../../shared/format.dart';
+import 'quotation_repository.dart';
 import '../../l10n/l10n.dart';
 
 class QuotationsPage extends ConsumerStatefulWidget {
@@ -21,22 +23,17 @@ class _QuotationsPageState extends ConsumerState<QuotationsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final api = ref.watch(apiProvider);
+    final repo = ref.watch(quotationRepositoryProvider);
     final canWrite =
         ref.watch(meProvider).value?.permissions.contains('quotations.write') ??
         false;
     return EntityList<QuotationSummary>(
       key: _list,
       title: context.l10n.quotations,
-      load: (q, offset, limit) async {
-        final page = await api.sales.listQuotations(
-          q: q,
-          status: _status?.json,
-          offset: offset,
-          limit: limit,
-        );
-        return (page.items, page.total);
-      },
+      load: (q, offset, limit) async => (await repo.list(
+        ListQuery(search: q, offset: offset, limit: limit),
+        status: _status?.json,
+      )).asLoaderResult,
       filters: DropdownButton<QuotationStatus?>(
         value: _status,
         hint: Text(context.l10n.allStatuses),

@@ -8,6 +8,7 @@ import '../../shared/app_icons.dart';
 import '../../shared/load_failed.dart';
 import '../todo/object_todos_button.dart';
 import 'customer_form.dart';
+import 'customer_repository.dart';
 
 /// One customer as a page of its own (a workspace tab, `/customers/:id`), so other places (a
 /// to-do, a link) can open it. It loads the customer and shows the same form as the list's dialog;
@@ -35,7 +36,7 @@ class _CustomerScreenState extends ConsumerState<CustomerScreen> {
 
   Future<void> _load() async {
     try {
-      final c = await ref.read(apiProvider).crm.getCustomer(id: widget.id);
+      final c = await ref.read(customerRepositoryProvider).get(widget.id);
       if (!mounted) return;
       setState(() {
         _customer = c;

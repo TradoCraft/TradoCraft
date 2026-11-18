@@ -10491,4 +10491,16 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get answerUnavailable => 'Niet beschikbaar';
+
+  @override
+  String get themeMenu => 'Thema';
+
+  @override
+  String get themeSystem => 'Systeem';
+
+  @override
+  String get themeLight => 'Licht';
+
+  @override
+  String get themeDark => 'Donker';
 }

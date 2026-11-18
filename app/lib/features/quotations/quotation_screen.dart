@@ -25,6 +25,7 @@ import '../../l10n/l10n.dart';
 import '../../shared/app_icons.dart';
 import '../../shared/load_failed.dart';
 import '../todo/object_todos_button.dart';
+import 'quotation_repository.dart';
 import '../tutorial/targets.dart';
 import '../../shared/file_export.dart';
 
@@ -239,6 +240,7 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
   bool _isConflict = false;
 
   TradocraftApi get _api => ref.read(apiProvider);
+  QuotationRepository get _quotations => ref.read(quotationRepositoryProvider);
 
   /// The dropdown value: the linked opportunity once the list is known, null while loading.
   String? get _opportunityShown => _opportunitiesLoaded ? _opportunityId : null;
@@ -422,7 +424,7 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
     bool stale() => !mounted || seq != _loadSeq;
     setState(() => _loading = true);
     try {
-      final q = await _api.sales.getQuotation(id: _id!);
+      final q = await _quotations.get(_id!);
       if (stale()) return;
       if (q.status == QuotationStatus.draft) {
         final customer = await _api.crm.getCustomer(id: q.customerId);
@@ -684,8 +686,8 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
       lines: inputs,
     );
     final q = _id == null
-        ? await _api.sales.createQuotation(body: body)
-        : await _api.sales.updateQuotation(id: _id!, body: body);
+        ? await _quotations.create(body)
+        : await _quotations.update(_id!, body);
     if (!mounted) return;
     _apply(q);
     _startWatcher();

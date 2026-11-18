@@ -9,6 +9,8 @@ import 'app/profile.dart';
 import 'app/session.dart';
 import 'app/shortcuts/host.dart';
 import 'app/zoom.dart';
+import 'core/theme/app_theme.dart';
+import 'core/theme/theme_mode.dart';
 import 'features/field/offline/kv_store.dart';
 import 'features/tutorial/overlay.dart';
 
@@ -58,14 +60,9 @@ class TradocraftApp extends ConsumerWidget {
     return MaterialApp.router(
       title: brandName,
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorSchemeSeed: const Color(0xFF2F5D62),
-        visualDensity: VisualDensity.compact,
-        inputDecorationTheme: const InputDecorationTheme(
-          border: OutlineInputBorder(),
-          isDense: true,
-        ),
-      ),
+      theme: AppTheme.light(),
+      darkTheme: AppTheme.dark(),
+      themeMode: ref.watch(themeModeProvider),
       // The tutorial's spotlight and narrator sit inside the zoom, above every page and dialog.
       builder: (context, child) => ZoomShell(
         child: ShortcutsHost(
