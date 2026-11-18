@@ -206,7 +206,42 @@ human() { numfmt --to=iec --suffix=B "$1" 2>/dev/null || echo "${1}B"; }
 # --- backup ------------------------------------------------------------------------------------
 
 PARTIAL=""
-cleanup_partial() { [[ -n "$PARTIAL" && -d "$PARTIAL" ]] && rm -rf "$PARTIAL"; return 0; }
+BLOB_LOCK_INPUTS=() BLOB_LOCK_OUTPUTS=() BLOB_LOCK_PIDS=()
+release_blob_locks() {
+  local fd pid
+  for fd in "${BLOB_LOCK_INPUTS[@]}"; do exec {fd}>&-; done
+  for fd in "${BLOB_LOCK_OUTPUTS[@]}"; do exec {fd}<&-; done
+  for pid in "${BLOB_LOCK_PIDS[@]}"; do wait "$pid" || true; done
+  BLOB_LOCK_INPUTS=() BLOB_LOCK_OUTPUTS=() BLOB_LOCK_PIDS=()
+}
+protect_blobs() {
+  local db input output pid reply=""
+  local dbs
+  dbs="$(src_value "$DB_NAME" "SELECT datname FROM pg_database WHERE datallowconn AND NOT datistemplate")"
+  while IFS= read -r db; do
+    # Advisory locks are database scoped: protect every captured database.
+    coproc BLOB_SESSION { pgx psql -X -q -t -A -v ON_ERROR_STOP=1 -U "$DB_USER" -d "$db"; }
+    reply=""
+    pid=$BLOB_SESSION_PID
+    exec {input}>&"${BLOB_SESSION[1]}"
+    exec {output}<&"${BLOB_SESSION[0]}"
+    exec {BLOB_SESSION[1]}>&- {BLOB_SESSION[0]}<&-
+    BLOB_LOCK_INPUTS+=("$input") BLOB_LOCK_OUTPUTS+=("$output") BLOB_LOCK_PIDS+=("$pid")
+    printf '%s\n' 'SELECT pg_advisory_lock_shared(743902104);' '\echo protected' >&"$input"
+    while IFS= read -r -t 60 reply <&"$output"; do [[ "$reply" == protected ]] && break; done
+    [[ "$reply" == protected ]] || die "cannot protect blobs in $db"
+    unset BLOB_SESSION BLOB_SESSION_PID
+  done <<<"$dbs"
+}
+check_blob_locks() {
+  local i reply
+  for i in "${!BLOB_LOCK_INPUTS[@]}"; do
+    printf '\\echo protected\n' >&"${BLOB_LOCK_INPUTS[i]}"
+    IFS= read -r -t 60 reply <&"${BLOB_LOCK_OUTPUTS[i]}" || die "blob protection connection lost"
+    [[ "$reply" == protected ]] || die "blob protection connection lost"
+  done
+}
+cleanup_partial() { release_blob_locks; [[ -n "$PARTIAL" && -d "$PARTIAL" ]] && rm -rf "$PARTIAL"; return 0; }
 
 cmd_backup() {
   local prune=1
@@ -234,6 +269,7 @@ cmd_backup() {
   PARTIAL="$BACKUP_DIR/.$id.partial"
   trap cleanup_partial EXIT
   mkdir -m 700 "$PARTIAL"
+  protect_blobs
   started="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   info "backup $id of $(server_label) (PostgreSQL $version) to $BACKUP_DIR"
   # Tar to stdout: one stream that holds the data directory, the WAL needed to make it consistent
@@ -254,6 +290,8 @@ cmd_backup() {
   info "archiving file storage from $files_dir"
   tar -czf "$PARTIAL/files.tar.gz" -C "$files_dir" . \
     || die "archiving $files_dir failed; nothing was kept"
+  check_blob_locks
+  release_blob_locks
   chmod 600 "$PARTIAL/files.tar.gz"
   files_sha="$(sha256sum "$PARTIAL/files.tar.gz" | cut -d' ' -f1)"
   files_size="$(stat -c %s "$PARTIAL/files.tar.gz")"

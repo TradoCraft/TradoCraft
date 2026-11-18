@@ -67,14 +67,27 @@ impl BlobStore {
         let tmp_dir = self.root.join(".tmp");
         let tmp_path = tmp_dir.join(format!("{key}.part"));
 
-        if let Some(parent) = dest.parent() {
-            tokio::fs::create_dir_all(parent)
-                .await
-                .with_context(|| format!("create blob dir {}", parent.display()))?;
+        let parent =
+            std::path::absolute(dest.parent().unwrap()).context("resolve blob directory")?;
+        // Include parents of all missing entries, but stop at the first existing directory.
+        // Record before creation so concurrent creators cannot hide entries needing fsync.
+        let mut sync_dirs = vec![parent.clone()];
+        let mut cursor = parent.as_path();
+        while !tokio::fs::try_exists(cursor)
+            .await
+            .context("inspect blob directory")?
+        {
+            cursor = cursor.parent().context("blob directory has no parent")?;
+            sync_dirs.push(cursor.to_path_buf());
         }
+        tokio::fs::create_dir_all(&parent)
+            .await
+            .context("create blob directory")?;
         tokio::fs::create_dir_all(&tmp_dir)
             .await
-            .with_context(|| format!("create blob tmp dir {}", tmp_dir.display()))?;
+            .context("create blob temporary directory")?;
+        // .tmp may be new even when the shard already exists.
+        sync_dirs.push(std::path::absolute(&self.root).context("resolve blob root")?);
 
         if let Err(e) = tokio::fs::write(&tmp_path, bytes).await {
             let _ = tokio::fs::remove_file(&tmp_path).await;
@@ -104,8 +117,7 @@ impl BlobStore {
         // Persist the payload before publishing its key, including every ancestor entry
         // create_dir_all may have created. Directory fsync is required by this Unix backend;
         // unsupported filesystems return an error rather than promise durability.
-        let absolute = std::path::absolute(&dest).context("resolve blob path")?;
-        for dir in absolute.parent().unwrap().ancestors() {
+        for dir in &sync_dirs {
             tokio::fs::File::open(dir)
                 .await
                 .context("open blob directory")?

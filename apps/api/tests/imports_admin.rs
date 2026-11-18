@@ -1024,11 +1024,17 @@ async fn another_companys_files_mappings_and_jobs_are_not_found(db: PgPool) {
 async fn an_inline_run_finishes_when_the_client_goes_away(db: PgPool) {
     let (app, _blobs) = common::setup_with_blobs(db.clone()).await;
     let mut csv = String::from("code,name,price_zone_code\n");
-    for i in 0..5_000 {
+    for i in 0..100 {
         csv.push_str(&format!("G{i},Name {i},Z1\n"));
     }
     let file_id = upload_ok(&app, "drop.csv", csv.into_bytes()).await;
     let before = customers(&db).await;
+    // Block writes so cancellation is guaranteed to happen while the import is pending.
+    let mut blocker = db.begin().await.unwrap();
+    sqlx::query("LOCK TABLE crm.customers IN SHARE MODE")
+        .execute(&mut *blocker)
+        .await
+        .unwrap();
     let request = {
         let app = app.clone();
         tokio::spawn(async move {
@@ -1051,6 +1057,7 @@ async fn an_inline_run_finishes_when_the_client_goes_away(db: PgPool) {
         tokio::time::sleep(std::time::Duration::from_millis(2)).await;
     }
     request.abort();
+    blocker.rollback().await.unwrap();
     for _ in 0..1_000 {
         let status: String = sqlx::query_scalar("SELECT status FROM core.import_jobs LIMIT 1")
             .fetch_one(&db)
@@ -1058,7 +1065,7 @@ async fn an_inline_run_finishes_when_the_client_goes_away(db: PgPool) {
             .unwrap();
         if status != "running" {
             assert_eq!(status, "done");
-            assert_eq!(customers(&db).await, before + 5_000);
+            assert_eq!(customers(&db).await, before + 100);
             return;
         }
         tokio::time::sleep(std::time::Duration::from_millis(20)).await;

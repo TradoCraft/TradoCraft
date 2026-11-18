@@ -527,18 +527,22 @@ cmd_clone() {
   if reg_exists "$source" && [[ "$(reg_get "$source" kind)" != live ]]; then
     src_files="$ENVS_DIR/$source/files"
   fi
-  if [[ -d "$src_files" ]]; then
-    mkdir -p "$ENVS_DIR/$name/files"
-    cp -a --reflink=auto "$src_files/." "$ENVS_DIR/$name/files/"
-  else
-    local has_payloads
-    has_payloads="$(sql_value "$name" "SELECT EXISTS (
-      SELECT storage_key FROM core.files WHERE storage_key IS NOT NULL
-      UNION ALL SELECT storage_key FROM core.import_files WHERE storage_key IS NOT NULL
-      UNION ALL SELECT attachment_storage_key FROM core.mail_outbox WHERE attachment_storage_key IS NOT NULL
-      UNION ALL SELECT raw_message_storage_key FROM helpdesk.articles WHERE raw_message_storage_key IS NOT NULL)")"
-    [[ "$has_payloads" == f ]] || die "source file storage $src_files is unavailable; clone has payload references"
-  fi
+  local keys key hex rel
+  keys="$(sql_value "$name" "SELECT storage_key FROM core.files
+    UNION SELECT storage_key FROM core.import_files
+    UNION SELECT attachment_storage_key FROM core.mail_outbox WHERE attachment_storage_key IS NOT NULL
+    UNION SELECT raw_message_storage_key FROM helpdesk.articles WHERE raw_message_storage_key IS NOT NULL")"
+  mkdir -p "$ENVS_DIR/$name/files"
+  while IFS= read -r key; do
+    [[ -n "$key" ]] || continue
+    [[ "$key" =~ ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$ ]] || die "invalid blob key in clone"
+    key="${key,,}"
+    hex="${key//-/}"
+    rel="${hex:0:2}/${hex:2:2}/$key"
+    mkdir -p "$ENVS_DIR/$name/files/${hex:0:2}/${hex:2:2}"
+    cp --reflink=auto -- "$src_files/$rel" "$ENVS_DIR/$name/files/$rel" \
+      || die "referenced source payload unavailable: $src_files/$rel"
+  done <<<"$keys"
   register_new "$name" "$KIND" "$name"
   reg_set "$name" cloned_from "$src_db"
   reg_set "$name" anonymized "$ANON"

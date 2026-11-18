@@ -68,8 +68,27 @@ mkdir -p "$FILE_STORAGE_DIR/aa/bb"
 printf 'payload' >"$FILE_STORAGE_DIR/aa/bb/blob"
 unset BACKUP_EXEC BACKUP_KEEP_DAILY BACKUP_KEEP_WEEKLY BACKUP_KEEP_MONTHLY
 
+# Assert the sweep lock is held during both database capture and payload capture.
+mkdir -p "$WORK/bin"
+export REAL_BASEBACKUP="$PG_BIN/pg_basebackup" REAL_TAR="$(command -v tar)"
+cat >"$WORK/bin/pg_basebackup" <<'WRAPPER'
+#!/usr/bin/env bash
+[[ "$(psql -X -q -t -A -d tradocraft -c 'SELECT pg_try_advisory_xact_lock(743902104)')" == f ]] || exit 90
+exec "$REAL_BASEBACKUP" "$@"
+WRAPPER
+cat >"$WORK/bin/tar" <<'WRAPPER'
+#!/usr/bin/env bash
+if [[ "$*" == *files.tar.gz* && "$1" == -czf ]]; then
+  [[ "$(psql -X -q -t -A -d tradocraft -c 'SELECT pg_try_advisory_xact_lock(743902104)')" == f ]] || exit 91
+fi
+exec "$REAL_TAR" "$@"
+WRAPPER
+chmod +x "$WORK/bin/pg_basebackup" "$WORK/bin/tar"
+export PATH="$WORK/bin:$PATH"
+
 # --- backup ---
 OUT="$("$BACKUPCTL" backup 2>&1)" && pass "backup succeeds" || { fail "backup succeeds"; echo "$OUT" >&2; }
+check "blob protection released after backup" test "$(PGPASSWORD=s3cret-Pw9 q tradocraft 'SELECT pg_try_advisory_xact_lock(743902104)')" = t
 ID="$(ls "$BACKUP_DIR" | grep -E '^[0-9]{8}T[0-9]{6}Z$' | head -n1 || true)"
 check "backup directory with archive and description" test -s "$BACKUP_DIR/$ID/base.tar.gz" -a -s "$BACKUP_DIR/$ID/backup.info"
 check "migration recorded" grep -qx "migration=20270126000001" "$BACKUP_DIR/$ID/backup.info"
