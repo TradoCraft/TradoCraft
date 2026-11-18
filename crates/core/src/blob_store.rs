@@ -10,7 +10,7 @@
 
 use std::collections::HashSet;
 use std::io::ErrorKind;
-use std::os::unix::fs::PermissionsExt;
+use std::os::unix::fs::{DirBuilderExt, OpenOptionsExt};
 use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime};
 
@@ -74,21 +74,9 @@ impl BlobStore {
         let temp = std::path::absolute(&tmp_dir).context("resolve temporary directory")?;
         let sync_parent = parent.clone();
         tokio::task::spawn_blocking(move || -> anyhow::Result<()> {
-            // All local backend processes use this persistent lock, including independent
-            // BlobStore instances. Never unlink it: that would split the lock domain.
-            // A blocking task keeps both the lock and initialization alive across cancellation.
-            let lock_path = Path::new("/tmp/tradocraft-blob-directories.lock");
-            match std::fs::OpenOptions::new()
-                .write(true)
-                .create_new(true)
-                .open(lock_path)
-            {
-                Ok(file) => file.set_permissions(std::fs::Permissions::from_mode(0o644))?,
-                Err(e) if e.kind() == ErrorKind::AlreadyExists => (),
-                Err(e) => return Err(e.into()),
-            }
-            let lock = std::fs::File::open(lock_path)?;
-            lock.lock()?;
+            // A new root is published with its private lock already held. Other
+            // writers find that same inode and wait until root ancestors are durable.
+            let _lock = lock_storage_root(&root)?;
             let mut dirs = vec![
                 sync_parent.clone(),
                 sync_parent.parent().unwrap().to_path_buf(),
@@ -213,7 +201,7 @@ impl BlobStore {
         let mut candidates: Vec<(String, PathBuf)> = Vec::new();
         let mut l1 = tokio::fs::read_dir(&self.root).await?;
         while let Some(e1) = l1.next_entry().await? {
-            if e1.file_name() == ".tmp" {
+            if e1.file_name() == ".tmp" || e1.file_name() == ".locks" {
                 continue;
             }
             if !e1.file_type().await?.is_dir() {
@@ -271,6 +259,79 @@ impl BlobStore {
     }
 }
 
+/// Locks initialization in a private directory within the configured storage root.
+fn lock_storage_root(root: &Path) -> anyhow::Result<std::fs::File> {
+    fn lock_existing(root: &Path) -> anyhow::Result<std::fs::File> {
+        let dir = root.join(".locks");
+        match std::fs::DirBuilder::new().mode(0o700).create(&dir) {
+            Ok(()) => (),
+            Err(e) if e.kind() == ErrorKind::AlreadyExists => (),
+            Err(e) => return Err(e.into()),
+        }
+        let lock = std::fs::OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create(true)
+            .truncate(false)
+            .mode(0o600)
+            .open(dir.join("directories.lock"))?;
+        lock.lock()?;
+        std::fs::File::open(root)?.sync_all()?;
+        Ok(lock)
+    }
+    if root.try_exists()? {
+        return lock_existing(root);
+    }
+    let mut missing = vec![root.to_path_buf()];
+    let mut ancestor = root.parent().context("storage root has no parent")?;
+    while !ancestor.try_exists()? {
+        missing.push(ancestor.to_path_buf());
+        ancestor = ancestor.parent().context("storage root has no ancestor")?;
+    }
+    let top = missing.last().unwrap();
+    let staged = ancestor.join(format!(".blob-init-{}", new_id()));
+    std::fs::DirBuilder::new().mode(0o700).create(&staged)?;
+    let result = (|| -> anyhow::Result<std::fs::File> {
+        let staged_root = staged.join(root.strip_prefix(top)?);
+        std::fs::DirBuilder::new()
+            .recursive(true)
+            .mode(0o700)
+            .create(&staged_root)?;
+        // The lock stays held across publication and fsync of the existing ancestor.
+        let lock = lock_existing(&staged_root)?;
+        let mut cursor = staged_root.as_path();
+        loop {
+            std::fs::File::open(cursor)?.sync_all()?;
+            if cursor == staged {
+                break;
+            }
+            cursor = cursor.parent().unwrap();
+        }
+        match std::fs::rename(&staged, top) {
+            Ok(()) => {
+                std::fs::File::open(ancestor)?.sync_all()?;
+                Ok(lock)
+            }
+            Err(e)
+                if matches!(
+                    e.kind(),
+                    ErrorKind::AlreadyExists | ErrorKind::DirectoryNotEmpty
+                ) =>
+            {
+                // Another writer published a complete initialized tree first.
+                drop(lock);
+                std::fs::remove_dir_all(&staged)?;
+                lock_storage_root(root)
+            }
+            Err(e) => Err(e.into()),
+        }
+    })();
+    if result.is_err() {
+        let _ = std::fs::remove_dir_all(&staged);
+    }
+    result
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -309,6 +370,40 @@ mod tests {
             );
         }
         std::fs::remove_dir_all(base.root()).unwrap();
+    }
+
+    #[tokio::test]
+    async fn lock_is_private_and_scoped_to_storage_root() {
+        use std::os::unix::fs::PermissionsExt;
+        let store = BlobStore::temp_for_tests();
+        store.put(b"initialize").await.unwrap();
+        let lock_dir = store.root().join(".locks");
+        assert_eq!(
+            std::fs::metadata(&lock_dir).unwrap().permissions().mode() & 0o077,
+            0
+        );
+        let lock_path = lock_dir.join("directories.lock");
+        let held = std::fs::File::open(&lock_path).unwrap();
+        held.lock().unwrap();
+        let writing = {
+            let same_root = BlobStore::new(store.root());
+            tokio::spawn(async move { same_root.put(b"wait for lock").await })
+        };
+        // A different root must progress while this root is locked.
+        let other = BlobStore::temp_for_tests();
+        tokio::time::timeout(Duration::from_secs(5), other.put(b"independent"))
+            .await
+            .unwrap()
+            .unwrap();
+        assert!(!writing.is_finished());
+        drop(held);
+        tokio::time::timeout(Duration::from_secs(5), writing)
+            .await
+            .unwrap()
+            .unwrap()
+            .unwrap();
+        std::fs::remove_dir_all(store.root()).unwrap();
+        std::fs::remove_dir_all(other.root()).unwrap();
     }
 
     #[tokio::test]
