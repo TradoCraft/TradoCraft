@@ -288,12 +288,14 @@ class _CrmClient implements CrmClient {
   @override
   Future<CustomerPage> listCustomers({
     String? q,
+    String? sort,
     int? limit,
     int? offset,
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
       r'q': q,
+      r'sort': sort,
       r'limit': limit,
       r'offset': offset,
     };

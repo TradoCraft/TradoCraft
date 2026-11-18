@@ -34,21 +34,35 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
     return EntityList<Product>(
       key: _list,
       title: context.l10n.products,
-      load: (q, offset, limit) async {
+      loadQuery: (query) async {
         final page = await api.products.listProducts(
-          q: q,
-          offset: offset,
-          limit: limit,
+          q: query.q,
+          sort: query.sort,
+          offset: query.offset,
+          limit: query.limit,
         );
         return (page.items, page.total);
       },
+      prefsKey: 'products',
+      resizableColumns: true,
+      columnMenu: true,
       columns: [
-        EntityColumn(context.l10n.code, (p) => p.code),
-        EntityColumn(context.l10n.name, (p) => p.name, flex: 3),
-        EntityColumn(context.l10n.family, (p) => p.familyCode ?? ''),
+        EntityColumn(context.l10n.code, (p) => p.code, sortKey: 'code'),
+        EntityColumn(
+          context.l10n.name,
+          (p) => p.name,
+          flex: 3,
+          sortKey: 'name',
+        ),
+        EntityColumn(
+          context.l10n.family,
+          (p) => p.familyCode ?? '',
+          sortKey: 'family_code',
+        ),
         EntityColumn(
           context.l10n.type,
           (p) => context.l10n.productType(p.productType),
+          sortKey: 'product_type',
         ),
         EntityColumn(
           context.l10n.pricing,
@@ -60,7 +74,7 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
           context.l10n.tracking,
           (p) => context.l10n.trackingLabel(p.tracking),
         ),
-        EntityColumn(context.l10n.unit, (p) => p.unit),
+        EntityColumn(context.l10n.unit, (p) => p.unit, sortKey: 'unit'),
         EntityColumn(
           context.l10n.vat,
           (p) => '${number(p.vatRate)} %',

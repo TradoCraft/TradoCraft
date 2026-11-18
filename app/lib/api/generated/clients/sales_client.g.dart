@@ -497,6 +497,7 @@ class _SalesClient implements SalesClient {
     String? status,
     String? customerId,
     String? opportunityId,
+    String? sort,
     int? limit,
     int? offset,
   }) async {
@@ -506,6 +507,7 @@ class _SalesClient implements SalesClient {
       r'status': status,
       r'customer_id': customerId,
       r'opportunity_id': opportunityId,
+      r'sort': sort,
       r'limit': limit,
       r'offset': offset,
     };

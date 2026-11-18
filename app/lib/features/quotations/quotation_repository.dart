@@ -20,6 +20,7 @@ class QuotationRepository
     final page = await _sales.listQuotations(
       q: query.q,
       status: status,
+      sort: query.sort,
       offset: query.offset,
       limit: query.limit,
     );

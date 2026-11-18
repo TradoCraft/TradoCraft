@@ -1,5 +1,5 @@
 import { expect, Page, test } from '@playwright/test';
-import { boot, field, tree, typeInto } from './flutter';
+import { boot, field, railTo, tree, typeInto } from './flutter';
 
 // Keyboard behaviour that only a real browser shows (ADR 0060). The widget tests cannot see whether the
 // browser's own action for a key is cancelled, or how the browser's text input reports Enter and Esc.
@@ -58,7 +58,7 @@ test('the app takes the keys it handles away from the browser and leaves the oth
 
 test('Enter goes to the next field, and a dialog opens with the cursor in its first field', async ({ page }) => {
   await boot(page);
-  await page.getByRole('tab', { name: 'Customers', exact: true }).click();
+  await railTo(page, 'Customers');
   await page.getByRole('button', { name: 'New customer' }).click();
 
   const code = field(page, 'Code');

@@ -126,6 +126,17 @@ async fn preview(
     }))
 }
 
+/// API sort keys of `GET /quotations` and the SQL they stand for.
+const QUOTATION_SORT: &[(&str, &str)] = &[
+    ("number", "number"),
+    ("customer_name", "customer_name"),
+    ("status", "status"),
+    ("quote_date", "quote_date"),
+    ("valid_until", "valid_until"),
+    ("subtotal", "subtotal"),
+    ("total", "total"),
+];
+
 #[utoipa::path(get, path = "/quotations", tag = "sales", params(ListParams),
     responses((status = 200, body = QuotationPage)))]
 async fn list_quotations(
@@ -146,11 +157,17 @@ async fn list_quotations(
           AND ($3::text IS NULL OR status = $3)
           AND ($4::uuid IS NULL OR customer_id = $4)
           AND ($5::uuid IS NULL OR opportunity_id = $5)";
+    let order = tradocraft_core::sort::order_by(
+        p.sort.as_deref(),
+        QUOTATION_SORT,
+        "id",
+        "quote_date DESC, number DESC, revision DESC",
+    )?;
     let items = sqlx::query_as(&format!(
         "SELECT id, number, revision, status, customer_id, opportunity_id, customer_name, purpose, shipping_status, quote_date, valid_until,
                 currency::text AS currency, subtotal, total
          FROM sales.quotations {filter}
-         ORDER BY quote_date DESC, number DESC, revision DESC LIMIT $6 OFFSET $7"
+         ORDER BY {order} LIMIT $6 OFFSET $7"
     ))
     .bind(user.company_id)
     .bind(&pattern)

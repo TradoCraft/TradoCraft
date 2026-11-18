@@ -10563,4 +10563,48 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get notificationsWorkerSubtitle => 'Mail is neither sent nor fetched';
+
+  @override
+  String get listColumns => 'Columns';
+
+  @override
+  String get listResetLayout => 'Reset layout';
+
+  @override
+  String listSortBy(String column) {
+    return 'Sort by $column';
+  }
+
+  @override
+  String get listSortedAscending => 'sorted ascending';
+
+  @override
+  String get listSortedDescending => 'sorted descending';
+
+  @override
+  String get listNotSorted => 'not sorted';
+
+  @override
+  String listResizeColumn(String column) {
+    return 'Resize column $column';
+  }
+
+  @override
+  String get listSelectAll => 'Select all loaded rows';
+
+  @override
+  String listSelectRow(String name) {
+    return 'Select $name';
+  }
+
+  @override
+  String listSelectedCount(int count) {
+    return '$count selected';
+  }
+
+  @override
+  String get listClearSelection => 'Clear selection';
+
+  @override
+  String get listConfirm => 'Confirm';
 }

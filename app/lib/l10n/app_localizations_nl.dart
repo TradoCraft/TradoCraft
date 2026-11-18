@@ -10611,4 +10611,48 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get notificationsWorkerSubtitle =>
       'E-mail wordt noch verzonden noch opgehaald';
+
+  @override
+  String get listColumns => 'Kolommen';
+
+  @override
+  String get listResetLayout => 'Indeling herstellen';
+
+  @override
+  String listSortBy(String column) {
+    return 'Sorteren op $column';
+  }
+
+  @override
+  String get listSortedAscending => 'oplopend gesorteerd';
+
+  @override
+  String get listSortedDescending => 'aflopend gesorteerd';
+
+  @override
+  String get listNotSorted => 'niet gesorteerd';
+
+  @override
+  String listResizeColumn(String column) {
+    return 'Breedte van kolom $column aanpassen';
+  }
+
+  @override
+  String get listSelectAll => 'Alle geladen rijen selecteren';
+
+  @override
+  String listSelectRow(String name) {
+    return '$name selecteren';
+  }
+
+  @override
+  String listSelectedCount(int count) {
+    return '$count geselecteerd';
+  }
+
+  @override
+  String get listClearSelection => 'Selectie wissen';
+
+  @override
+  String get listConfirm => 'Bevestigen';
 }

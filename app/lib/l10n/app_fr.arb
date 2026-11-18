@@ -3287,5 +3287,17 @@
   "notificationsTodosDueToday": "{count, plural, =1{1 échéance aujourd'hui} other{{count} échéances aujourd'hui}}",
   "notificationsWorkerDown": "Le service en arrière-plan est arrêté",
   "notificationsWorkerNeverSeen": "Le service en arrière-plan ne s'est jamais manifesté",
-  "notificationsWorkerSubtitle": "Les e-mails ne sont ni envoyés ni récupérés"
+  "notificationsWorkerSubtitle": "Les e-mails ne sont ni envoyés ni récupérés",
+  "listColumns": "Colonnes",
+  "listResetLayout": "Réinitialiser la disposition",
+  "listSortBy": "Trier par {column}",
+  "listSortedAscending": "tri croissant",
+  "listSortedDescending": "tri décroissant",
+  "listNotSorted": "non trié",
+  "listResizeColumn": "Redimensionner la colonne {column}",
+  "listSelectAll": "Sélectionner toutes les lignes chargées",
+  "listSelectRow": "Sélectionner {name}",
+  "listSelectedCount": "{count} sélectionnés",
+  "listClearSelection": "Effacer la sélection",
+  "listConfirm": "Confirmer"
 }

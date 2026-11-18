@@ -10615,4 +10615,48 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get notificationsWorkerSubtitle =>
       'El correo no se envía ni se recibe';
+
+  @override
+  String get listColumns => 'Columnas';
+
+  @override
+  String get listResetLayout => 'Restablecer diseño';
+
+  @override
+  String listSortBy(String column) {
+    return 'Ordenar por $column';
+  }
+
+  @override
+  String get listSortedAscending => 'orden ascendente';
+
+  @override
+  String get listSortedDescending => 'orden descendente';
+
+  @override
+  String get listNotSorted => 'sin ordenar';
+
+  @override
+  String listResizeColumn(String column) {
+    return 'Cambiar el ancho de la columna $column';
+  }
+
+  @override
+  String get listSelectAll => 'Seleccionar todas las filas cargadas';
+
+  @override
+  String listSelectRow(String name) {
+    return 'Seleccionar $name';
+  }
+
+  @override
+  String listSelectedCount(int count) {
+    return '$count seleccionados';
+  }
+
+  @override
+  String get listClearSelection => 'Borrar selección';
+
+  @override
+  String get listConfirm => 'Confirmar';
 }

@@ -2,7 +2,6 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/api.dart';
-import '../../framework/data/repository.dart';
 import '../../shared/csv_transfer.dart';
 import '../../shared/entity_list.dart';
 import 'customer_repository.dart';
@@ -27,14 +26,30 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
     return EntityList<Customer>(
       key: _list,
       title: context.l10n.customers,
-      load: (q, offset, limit) async =>
-          (await repo.list(ListQuery(search: q, offset: offset, limit: limit)))
-              .asLoaderResult,
+      loadQuery: (query) async => (await repo.list(query)).asLoaderResult,
+      prefsKey: 'customers',
+      resizableColumns: true,
+      columnMenu: true,
       columns: [
-        EntityColumn(context.l10n.code, (c) => c.code),
-        EntityColumn(context.l10n.name, (c) => c.name, flex: 3),
-        EntityColumn(context.l10n.city, (c) => c.city, flex: 2),
-        EntityColumn(context.l10n.vat, (c) => c.vatNumber ?? '', flex: 2),
+        EntityColumn(context.l10n.code, (c) => c.code, sortKey: 'code'),
+        EntityColumn(
+          context.l10n.name,
+          (c) => c.name,
+          flex: 3,
+          sortKey: 'name',
+        ),
+        EntityColumn(
+          context.l10n.city,
+          (c) => c.city,
+          flex: 2,
+          sortKey: 'city',
+        ),
+        EntityColumn(
+          context.l10n.vat,
+          (c) => c.vatNumber ?? '',
+          flex: 2,
+          sortKey: 'vat_number',
+        ),
         EntityColumn(context.l10n.zone, (c) => c.priceZoneCode ?? '—'),
       ],
       actions: [

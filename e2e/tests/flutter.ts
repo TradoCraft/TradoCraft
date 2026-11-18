@@ -2,6 +2,27 @@ import { expect, Locator, Page } from '@playwright/test';
 import { API_PORT } from '../playwright.config';
 
 /**
+ * Waits until the element has stayed in the same place for a few reads. Right after a save or a reload the
+ * screen is rebuilt and the semantics tree can still show the old layout, so a click on coordinates taken
+ * from it lands on whatever sits there now (another field, or a drop-down that then opens over the page).
+ */
+export async function settled(el: Locator, reads = 4, every = 100) {
+  const page = el.page();
+  let last = '';
+  let same = 0;
+  await expect(async () => {
+    const box = await el.boundingBox({ timeout: 2_000 });
+    const now = box ? [box.x, box.y, box.width, box.height].map(Math.round).join(',') : '';
+    same = now !== '' && now === last ? same + 1 : 0;
+    last = now;
+    if (same < reads) {
+      await page.waitForTimeout(every);
+      throw new Error(`${el} is still moving (${now})`);
+    }
+  }).toPass({ timeout: 20_000 });
+}
+
+/**
  * Replaces the content of a Flutter text field. Playwright's fill() sets the DOM value without the
  * key events Flutter's text editing listens to, so real key presses are used. Flutter attaches its
  * editing connection a moment after the click and keys typed before that are lost, hence the pauses;
@@ -14,6 +35,7 @@ export async function typeInto(field: Locator, text: string, opts: { refocus?: b
   const page = field.page();
   let attempt = 0;
   await expect(async () => {
+    await settled(field);
     if (opts.refocus || attempt > 0) {
       await field.evaluate((e) => (e as HTMLElement).blur());
       await page.waitForTimeout(300);
@@ -126,9 +148,31 @@ export async function expectStep(page: Page, chapter: string, stepId: string) {
   await expect(page.getByText(tutorialText(chapter, stepId), { exact: true }).first()).toBeVisible({ timeout: 20_000 });
 }
 
-/** Opens a module from the navigation rail. */
+/** The application group (string key) whose rail holds each module; see `appGroups` in the app. */
+const GROUP_OF: Record<string, string> = {
+  Quotations: 'appGroupSales',
+  Helpdesk: 'appGroupService',
+  Production: 'appGroupOperations',
+  Stock: 'appGroupOperations',
+  Customers: 'appGroupMasterData',
+  Products: 'appGroupMasterData',
+  Purchasing: 'appGroupBackOffice',
+  Finance: 'appGroupBackOffice',
+  Administration: 'appGroupInsight',
+};
+
+/**
+ * Opens a module from the navigation rail. The rail only lists the modules of the active application
+ * group, so when the module is not in it, switch to its group first (the application switcher).
+ */
 export async function railTo(page: Page, module: string) {
-  await page.getByRole('tab', { name: module, exact: true }).click();
+  const tab = page.getByRole('tab', { name: module, exact: true });
+  const groupKey = GROUP_OF[module];
+  if (groupKey && !(await tab.isVisible())) {
+    await page.getByRole('button', { name: arb.appSwitcherTooltip, exact: true }).click();
+    await page.getByRole('button', { name: arb[groupKey], exact: true }).click();
+  }
+  await tab.click();
 }
 
 /** The workspace's "Overview" tab: the module's list under the open records. */

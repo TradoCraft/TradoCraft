@@ -10639,4 +10639,48 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get notificationsWorkerSubtitle =>
       'E-Mails werden weder gesendet noch abgerufen';
+
+  @override
+  String get listColumns => 'Spalten';
+
+  @override
+  String get listResetLayout => 'Layout zurücksetzen';
+
+  @override
+  String listSortBy(String column) {
+    return 'Sortieren nach $column';
+  }
+
+  @override
+  String get listSortedAscending => 'aufsteigend sortiert';
+
+  @override
+  String get listSortedDescending => 'absteigend sortiert';
+
+  @override
+  String get listNotSorted => 'nicht sortiert';
+
+  @override
+  String listResizeColumn(String column) {
+    return 'Spalte $column in der Breite ändern';
+  }
+
+  @override
+  String get listSelectAll => 'Alle geladenen Zeilen auswählen';
+
+  @override
+  String listSelectRow(String name) {
+    return '$name auswählen';
+  }
+
+  @override
+  String listSelectedCount(int count) {
+    return '$count ausgewählt';
+  }
+
+  @override
+  String get listClearSelection => 'Auswahl aufheben';
+
+  @override
+  String get listConfirm => 'Bestätigen';
 }
