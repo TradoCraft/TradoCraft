@@ -20,6 +20,7 @@ abstract final class AppIcons {
   static const IconData noteAlt = Icons.note_alt_outlined;
   static const IconData removeCircle = Icons.remove_circle_outline;
   static const IconData subdirectoryArrowRight = Icons.subdirectory_arrow_right;
+  static const IconData apps = Icons.apps_outlined;
   static const IconData article = Icons.article_outlined;
   static const IconData attachFile = Icons.attach_file;
   static const IconData autoFixHigh = Icons.auto_fix_high;

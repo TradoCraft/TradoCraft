@@ -61,6 +61,8 @@ class _Probe extends StatelessWidget {
 Widget? _probes(Uri uri) =>
     isDetailLocation(uri.toString()) ? _Probe(uri.pathSegments.last) : null;
 
+// The rail shows the active group only (Sales: orders, quotations), so two badges are visible;
+// the menu digits still pick from the flat list (3 = Helpdesk).
 const _ids = ['orders.read', 'helpdesk.read', 'quotations.read'];
 
 void main() {
@@ -272,9 +274,9 @@ void main() {
       expect(find.byKey(const ValueKey('key-hint-badge')), findsNothing);
       await t.sendKeyDownEvent(LogicalKeyboardKey.altLeft);
       await t.pump();
-      expect(find.byKey(const ValueKey('key-hint-badge')), findsNWidgets(3));
+      expect(find.byKey(const ValueKey('key-hint-badge')), findsNWidgets(2));
       expect(find.text('1'), findsOneWidget);
-      expect(find.text('3'), findsOneWidget);
+      expect(find.text('2'), findsOneWidget);
       await t.sendKeyUpEvent(LogicalKeyboardKey.altLeft);
       await t.pump();
       expect(find.byKey(const ValueKey('key-hint-badge')), findsNothing);
@@ -287,7 +289,7 @@ void main() {
       final before = t.getRect(find.text('Orders').first);
       await t.sendKeyDownEvent(LogicalKeyboardKey.altLeft);
       await t.pump();
-      expect(find.byKey(const ValueKey('key-hint-badge')), findsNWidgets(3));
+      expect(find.byKey(const ValueKey('key-hint-badge')), findsNWidgets(2));
       expect(t.getRect(find.text('Orders').first), before);
       await t.sendKeyUpEvent(LogicalKeyboardKey.altLeft);
       await t.pump();
@@ -297,7 +299,7 @@ void main() {
       await pump(t);
       await t.sendKeyDownEvent(LogicalKeyboardKey.altLeft);
       await t.pump();
-      expect(find.byKey(const ValueKey('key-hint-badge')), findsNWidgets(3));
+      expect(find.byKey(const ValueKey('key-hint-badge')), findsNWidgets(2));
       t.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
       await t.pump();
       expect(find.byKey(const ValueKey('key-hint-badge')), findsNothing);
@@ -314,7 +316,7 @@ void main() {
         await t.sendKeyUpEvent(LogicalKeyboardKey.altLeft);
         await t.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
         await t.pump();
-        expect(find.byKey(const ValueKey('key-hint-badge')), findsNWidgets(3));
+        expect(find.byKey(const ValueKey('key-hint-badge')), findsNWidgets(2));
         await t.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
         await t.pump();
       } finally {
@@ -465,7 +467,10 @@ void main() {
     ) async {
       await pump(t);
       expect(await chord(t, LogicalKeyboardKey.slash, ctrl: true), isTrue);
-      expect(find.text('Keyboard shortcuts'), findsNWidgets(2)); // title and its own row
+      expect(
+        find.text('Keyboard shortcuts'),
+        findsNWidgets(2),
+      ); // title and its own row
       for (final keys in [
         'Ctrl+S',
         'Ctrl+Enter',

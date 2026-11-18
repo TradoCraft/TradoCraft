@@ -459,27 +459,28 @@ void main() {
           'users.admin',
         ],
         '/repairs',
-        height: 600,
+        height: 400,
       );
       expect(
         tester
             .widget<NavigationRail>(find.byType(NavigationRail))
             .destinations
             .length,
-        15,
+        // The rail lists the active group only (Service); the other groups sit behind the switcher.
+        6,
       );
       expect(tester.takeException(), isNull);
       expect(find.byType(SingleChildScrollView), findsWidgets);
 
-      // A lower destination is reachable by scrolling the rail, and opens its page.
+      // A lower destination of the group is reachable by scrolling the rail, and opens its page.
       final rail = find.byType(NavigationRail);
       await tester.drag(rail, const Offset(0, -2000));
       await tester.pumpAndSettle();
       await tester.tap(
-        find.descendant(of: rail, matching: find.text('Customers')),
+        find.descendant(of: rail, matching: find.text('Jobs')),
       );
       await tester.pumpAndSettle();
-      expect(find.text('page /customers'), findsOneWidget);
+      expect(find.text('page /jobs'), findsOneWidget);
 
       // The account menu sits below the destinations: scroll to it and open it.
       await tester.drag(rail, const Offset(0, -2000));
@@ -526,7 +527,8 @@ void main() {
           .widget<NavigationRail>(find.byType(NavigationRail))
           .destinations
           .length,
-      3,
+      // Helpdesk and Repairs share the Service group; Customers sits in another group.
+      2,
     );
     expect(find.text('Repairs'), findsOneWidget);
     expect(find.text('Jobs'), findsNothing);

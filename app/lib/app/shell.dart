@@ -20,6 +20,11 @@ import '../features/todo/todo_badge.dart';
 import '../features/todo/todo_quick_add.dart';
 import '../features/todo/todo_repository.dart';
 import '../features/tutorial/targets.dart';
+import '../core/navigation/app_groups.dart';
+import '../core/navigation/app_switcher.dart';
+import '../core/navigation/breadcrumbs.dart';
+import '../core/navigation/global_search.dart';
+import '../core/navigation/notifications.dart';
 import '../core/theme/theme_mode.dart';
 import '../l10n/l10n.dart';
 import '../shared/app_icons.dart';
@@ -242,13 +247,53 @@ class AppShell extends ConsumerWidget {
       context.go(destinations[i].path);
     }
 
+    // The rail and the bar show the destinations of the active group (all of them when the
+    // current section is in no group). Menu 1-9 and Home keep using the flat list above.
+    final activeGroup = found < 0 ? null : groupOfPath(destinations[found].path);
+    final groups = visibleGroups([for (final d in destinations) d.path]);
+    final inGroup = [
+      for (var i = 0; i < destinations.length; i++)
+        if (activeGroup == null || activeGroup.contains(destinations[i].path)) i,
+    ];
+    // A rail or bar needs two entries: a group with one permitted entry shows the flat list.
+    final shownIdx = inGroup.length >= 2
+        ? inGroup
+        : [for (var i = 0; i < destinations.length; i++) i];
+    final shownSel = shownIdx.contains(index) ? shownIdx.indexOf(index) : 0;
+    void goShown(int k) => go(shownIdx[k]);
+    final switcher = groups.length < 2
+        ? null
+        : AppSwitcherButton(
+            groups: groups,
+            active: activeGroup,
+            onSelected: (g) {
+              final i = destinations.indexWhere((d) => g.contains(d.path));
+              if (i >= 0) go(i);
+            },
+          );
+
     // Menu 1-9 pick the n-th entry of the permission-filtered list; Home is the first one (the
     // main area of the first permitted section). Back lives in each tab (see workspace.dart).
     // New to-do needs `todo.use` (the server also takes it away when the module is off).
     final canTodo = perms?.contains('todo.use') ?? false;
+    // Global search: "Go to" lists the sections of this user; opening one is like a menu click.
+    final searchDestinations = [
+      for (final d in destinations) (path: d.path, label: d.label(context.l10n)),
+    ];
+    void searchGoTo(String path) {
+      workspaceNotifier.focusHome();
+      context.go(path);
+    }
+
+    void openSearch() => showGlobalSearch(
+      context,
+      destinations: searchDestinations,
+      onGoTo: searchGoTo,
+    );
     final shellActions = <ShortcutAction, VoidCallback?>{
       ShortcutAction.home: () => go(0),
       ShortcutAction.help: () => showShortcutHelp(context),
+      ShortcutAction.palette: openSearch,
       if (canTodo) ShortcutAction.newTodo: () => showTodoQuickAdd(context, ref),
       for (
         var i = 0;
@@ -354,6 +399,10 @@ class AppShell extends ConsumerWidget {
     );
 
     final userMenu = TutorialTarget(id: 'user-menu', child: userMenuButton);
+    final searchButton = GlobalSearchButton(
+      destinations: searchDestinations,
+      onGoTo: searchGoTo,
+    );
 
     if (wide) {
       return Scaffold(
@@ -377,8 +426,8 @@ class AppShell extends ConsumerWidget {
                           ),
                           child: IntrinsicHeight(
                             child: NavigationRail(
-                              selectedIndex: index,
-                              onDestinationSelected: go,
+                              selectedIndex: shownSel,
+                              onDestinationSelected: goShown,
                               labelType: NavigationRailLabelType.all,
                               leading: Padding(
                                 padding: const EdgeInsets.symmetric(
@@ -396,17 +445,28 @@ class AppShell extends ConsumerWidget {
                                       const SizedBox(height: 6),
                                       badge,
                                     ],
+                                    searchButton,
+                                    if (switcher != null) ...[
+                                      const SizedBox(height: 6),
+                                      switcher,
+                                    ],
                                   ],
                                 ),
                               ),
                               trailing: Expanded(
                                 child: Align(
                                   alignment: Alignment.bottomCenter,
-                                  child: userMenu,
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const NotificationsButton(),
+                                      userMenu,
+                                    ],
+                                  ),
                                 ),
                               ),
                               destinations: [
-                                for (var i = 0; i < destinations.length; i++)
+                                for (final i in shownIdx)
                                   NavigationRailDestination(
                                     icon: hinted(i, _destIcon(destinations[i])),
                                     label: Text(
@@ -420,7 +480,19 @@ class AppShell extends ConsumerWidget {
                       ),
                     ),
                     const VerticalDivider(width: 1),
-                    Expanded(child: WorkspaceBody(home: child, wide: true)),
+                    Expanded(
+                      child: Column(
+                        children: [
+                          SectionBreadcrumbs(
+                            section: destinations[index].label(context.l10n),
+                            onSection: () => go(index),
+                          ),
+                          Expanded(
+                            child: WorkspaceBody(home: child, wide: true),
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -432,7 +504,14 @@ class AppShell extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(me.value?.company.name ?? brandName),
-        actions: [?badge, const WorkspaceMenuButton(), userMenu],
+        actions: [
+          ?switcher,
+          ?badge,
+          searchButton,
+          const WorkspaceMenuButton(),
+          const NotificationsButton(),
+          userMenu,
+        ],
       ),
       body: ShortcutScope(
         layer: ShortcutLayer.shell,
@@ -446,10 +525,10 @@ class AppShell extends ConsumerWidget {
         ),
       ),
       bottomNavigationBar: NavigationBar(
-        selectedIndex: index,
-        onDestinationSelected: go,
+        selectedIndex: shownSel,
+        onDestinationSelected: goShown,
         destinations: [
-          for (var i = 0; i < destinations.length; i++)
+          for (final i in shownIdx)
             NavigationDestination(
               icon: hinted(i, _destIcon(destinations[i])),
               label: destinations[i].label(context.l10n),

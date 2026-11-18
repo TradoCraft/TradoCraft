@@ -540,7 +540,8 @@ void main() {
 
   group('a sheet dismissed while a request is pending', () {
     Future<void> dismissSheet(WidgetTester t) async {
-      await t.tapAt(const Offset(700, 80));
+      // Inside the work area but above the sheet: the breadcrumb bar over the tab sits outside the barrier.
+      await t.tapAt(const Offset(700, 200));
       await t.pumpAndSettle();
       expect(key('object-todos-add'), findsNothing);
     }
