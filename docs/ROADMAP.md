@@ -22,8 +22,8 @@ Module overview: [ARCHITECTURE.md](ARCHITECTURE.md).
 | A5 Helpdesk customer mail (`send_email` automation action, SLA notices to the customer, scheduled report mails) | Done, [ADR 0064](adr/0064-helpdesk-sla-customer-notices.md), [ADR 0065](adr/0065-scheduled-report-mails.md), [ADR 0066](adr/0066-helpdesk-send-email-action.md); mail templates are A6 |
 | A6 Helpdesk reply templates and language | Done, [ADR 0072](adr/0072-helpdesk-reply-templates.md) (builds on the prepared answers of ADR 0013); SLA notices to the customer still use built-in texts, see A6b |
 | A6b Helpdesk SLA notices from templates | Open (needs deadline placeholders and rendering without a user) |
-| A7 Helpdesk ticket checklists | Open |
-| A8 Helpdesk immediate change notification (concurrent updates seen by both people) | Open (shares its push channel with D3) |
+| A7 Helpdesk ticket checklists (templates per team, `apply_checklist` automation action, progress badge, optional close gate) | Done (PR #100; no ADR yet) |
+| A8 Helpdesk immediate change notification (concurrent updates seen by both people) | Open; the shared SSE channel shipped with D3 ([ADR 0073](adr/0073-concurrent-edit-protection.md)), live article and timeline updates and the draft-merge UI remain |
 | A9 Helpdesk ticket bundles (linked tickets) | Open (merge and split are done, ADR 0017 and ADR 0021) |
 | B1 Inventory foundation | Done, [ADR 0019](adr/0019-inventory-stock-ledger.md) |
 | B2 Purchasing | In progress, [ADR 0031](adr/0031-purchasing.md) |
@@ -44,7 +44,44 @@ Module overview: [ARCHITECTURE.md](ARCHITECTURE.md).
 | D7 Restrict CORS to configured origins | Done, [ADR 0050](adr/0050-portal-surface.md) |
 | D8 Draft autosave | Open |
 | D9 Two-factor authentication | Open |
-| D10 Data import framework (CSV, XLSX, ODS, Parquet) | Open (extends ADR 0029) |
+| D10 Data import framework (CSV, XLSX, ODS, Parquet) | Done for the shared importer, CSV/XLSX/ODS readers, XLSX/ODS export, admin screen and background jobs, [ADR 0067](adr/0067-data-import-framework.md); Parquet and further entities (contacts, suppliers, stock opening balances, quotations, orders, tickets) follow |
+| P1 Price lists (zones, chapters, export profiles, PDF and Excel) | Done (PRs #95, #97), [ADR 0069](adr/0069-price-lists.md); never run in a real app (see the release checklist) |
+| P2 Site baseline and product suitability | In progress, [ADR 0068](adr/0068-site-baseline-and-product-suitability.md), branch `feat/site-baseline` (PR #69); panel, quotation picker flags and end-to-end test open |
+
+## First release checklist
+
+No release has been cut: there are no tags, the version is the placeholder `0.1.0` and there is no CHANGELOG.
+The scope below is a proposal until the first version is agreed. Findings refer to
+`docs/security-review-2026-11-14.md` (no Critical or High findings).
+
+**Blockers**
+- Security: re-verify, then fix the open Medium findings. #1 portal photo upload IDOR and file-ID oracle;
+  #2 OIDC first login trusts an unverified email; #3 and #4 wildcard CORS and dev-auth defaults (partly
+  addressed by ADR 0070 and D7); #5 JWKS refresh throttle and timeout; #6 Android release signed with the
+  debug key; #7 tokens in SharedPreferences and `allowBackup`. #6 and #7 must land before any distribution.
+  The roughly 310 `WHERE id = $1` sites were not read; add the `company_id` query-scan test from the
+  per-item checklist.
+- Release mechanics: a release workflow (Docker image, signed Android build, Flutter artifacts, checksums;
+  the SBOM job in `security.yml` already attaches to a release), a versioning policy and tag convention,
+  a CHANGELOG, release signing keys, Docker hygiene (pinned image tags, HEALTHCHECK, no default database
+  credentials, `.env*` in `.dockerignore`), and a README status line that no longer says "vertical slice".
+- Decide P2 (site baseline): finish phases 5 to 7, or defer it out of the first release. Apply its
+  migrations to a database that already has companies first.
+- Run in a real app what has only been tested in isolation: price-list save, open and share, PDF layout with
+  real data, Windows paths, Typst 0.15.1 (CI) against 0.11.1 (local); one request to the live VIES service
+  (D4); a full `cargo test --workspace` on the final code.
+- Review the machine-written nl, de, fr and es strings of price lists and site baseline.
+
+**Housekeeping**
+- Renumber the ADR collisions: two files each carry 0069 and 0071 (and ADR 0070 safer defaults is listed as
+  0071 in the ADR index); A7 has no ADR.
+- Remove the unused `printing` package from `app/pubspec.yaml`; never commit the hook-created `.compliance/`.
+- Delete the merged and stale local and remote branches (about 70) before the first tag.
+- Merge or close the pending Dependabot branches (tower-http, webpki-roots, setup-node, @types/node) and
+  note the deferred `swagger-parser-2` migration (PR #94).
+
+**After the first release**: A8, A9, A6b, C2, the work-centre half of C3, D8, D9, and security findings
+#8 to #17.
 
 ## Sequencing
 
@@ -82,7 +119,7 @@ Remaining knowledge base gaps (ADR 0018): non-image attachments, analytics, sema
 
 **A6 Reply templates and language detection** (medium, done, [ADR 0072](adr/0072-helpdesk-reply-templates.md)): Prepared answers remain the single template model and gained `kind` (`reply`, `internal_note`, `handover`, `notice`), optional `team_id` scope, and `keywords`. `GET /tickets/{id}/prepared-answers/suggest` returns ranked, filled-in suggestions (excluding other teams' templates), `send_email` automation actions can reference a prepared answer via `answer_id` (validated for subjects and known placeholders on save), tickets record `language_source` (`record`, `detected`, `agent`) with creator-language fallback on internal tickets, and automation rules can match `ticket_languages`. SLA notices to the customer still use built-in texts (deferred to A6b).
 
-**A7 Ticket checklists** (small-medium)
+**A7 Ticket checklists** (small-medium, done, PR #100)
 - A checklist per ticket (ordered items, done flag, who and when), applied from checklist templates
   per team or ticket category, and added by an automation rule on a trigger.
 - Shown in the ticket and on the list (progress, for example 2/5); an optional rule blocks closing
@@ -179,7 +216,7 @@ production.
   server and reads every row) and the [runbook](runbooks/backup-and-restore.md), with a restore
   drill through `envctl clone`.
 
-**D3 Concurrent-edit protection on records** (medium)
+**D3 Concurrent-edit protection on records** (medium, done for customers, quotations, orders and tickets, [ADR 0073](adr/0073-concurrent-edit-protection.md))
 - Updates carry no version check today, so two people who edit the same customer, quotation or
   order overwrite each other without a warning.
 - Decide in the ADR between optimistic concurrency (a row version checked on update, a 409 and a
@@ -246,7 +283,7 @@ production.
   reset by an administrator that is audited (D6).
 - Passkeys (WebAuthn) as a later second factor; the customer portal can opt in separately.
 
-**D10 Data import framework** (large)
+**D10 Data import framework** (large, shared importer, XLSX/ODS and background jobs done, [ADR 0067](adr/0067-data-import-framework.md); Parquet and further entities open)
 - Today only customers and products import, from CSV ([ADR 0029](adr/0029-csv-export-import.md)), with
   the code duplicated per entity in `crates/crm/src/csv.rs` and `crates/products/src/csv.rs`.
   Build one importer in `core` that other crates plug into with a small trait (columns, validation,
@@ -295,7 +332,7 @@ Rules:
 - Tenant isolation: add row-level security, or a test that scans queries for `company_id`, before stock and
   purchasing data lands.
 - Strings in all five languages (nl, fr, en, de, es); an ADR; DB-backed tests (`sqlx::test`); widget tests.
-- Move file storage off PostgreSQL `bytea` before attachments multiply.
+- File storage: moved off PostgreSQL `bytea` to the filesystem (PR #104).
 
 Verification for every item:
 
