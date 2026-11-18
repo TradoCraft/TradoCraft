@@ -3287,5 +3287,17 @@
   "notificationsTodosDueToday": "{count, plural, =1{1 heute fällig} other{{count} heute fällig}}",
   "notificationsWorkerDown": "Der Hintergrunddienst ist ausgefallen",
   "notificationsWorkerNeverSeen": "Der Hintergrunddienst hat sich noch nie gemeldet",
-  "notificationsWorkerSubtitle": "E-Mails werden weder gesendet noch abgerufen"
+  "notificationsWorkerSubtitle": "E-Mails werden weder gesendet noch abgerufen",
+  "listColumns": "Spalten",
+  "listResetLayout": "Layout zurücksetzen",
+  "listSortBy": "Sortieren nach {column}",
+  "listSortedAscending": "aufsteigend sortiert",
+  "listSortedDescending": "absteigend sortiert",
+  "listNotSorted": "nicht sortiert",
+  "listResizeColumn": "Spalte {column} in der Breite ändern",
+  "listSelectAll": "Alle geladenen Zeilen auswählen",
+  "listSelectRow": "{name} auswählen",
+  "listSelectedCount": "{count} ausgewählt",
+  "listClearSelection": "Auswahl aufheben",
+  "listConfirm": "Bestätigen"
 }

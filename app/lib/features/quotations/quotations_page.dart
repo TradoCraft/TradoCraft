@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/api.dart';
-import '../../framework/data/repository.dart';
 import '../../shared/app_icons.dart';
 import '../../shared/entity_list.dart';
 import '../../shared/format.dart';
@@ -30,10 +29,11 @@ class _QuotationsPageState extends ConsumerState<QuotationsPage> {
     return EntityList<QuotationSummary>(
       key: _list,
       title: context.l10n.quotations,
-      load: (q, offset, limit) async => (await repo.list(
-        ListQuery(search: q, offset: offset, limit: limit),
-        status: _status?.json,
-      )).asLoaderResult,
+      loadQuery: (query) async =>
+          (await repo.list(query, status: _status?.json)).asLoaderResult,
+      prefsKey: 'quotations',
+      resizableColumns: true,
+      columnMenu: true,
       filters: DropdownButton<QuotationStatus?>(
         value: _status,
         hint: Text(context.l10n.allStatuses),
@@ -57,17 +57,29 @@ class _QuotationsPageState extends ConsumerState<QuotationsPage> {
           context.l10n.numberRequired,
           (q) => '${q.number}  r${q.revision}',
           flex: 2,
+          sortKey: 'number',
         ),
-        EntityColumn(context.l10n.customer, (q) => q.customerName, flex: 3),
-        EntityColumn(context.l10n.date, (q) => date(q.quoteDate)),
+        EntityColumn(
+          context.l10n.customer,
+          (q) => q.customerName,
+          flex: 3,
+          sortKey: 'customer_name',
+        ),
+        EntityColumn(
+          context.l10n.date,
+          (q) => date(q.quoteDate),
+          sortKey: 'quote_date',
+        ),
         EntityColumn(
           context.l10n.status,
           (q) => context.l10n.quotationStatus(q.status.json ?? ''),
+          sortKey: 'status',
         ),
         EntityColumn(
           context.l10n.totalExclVat,
           (q) => money(q.subtotal, currency: q.currency),
           numeric: true,
+          sortKey: 'subtotal',
           flex: 2,
         ),
       ],

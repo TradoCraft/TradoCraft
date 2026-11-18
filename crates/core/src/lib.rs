@@ -23,6 +23,7 @@ pub mod modules;
 pub mod numbering;
 pub mod search;
 pub mod serde_util;
+pub mod sort;
 pub mod state;
 pub mod vat;
 pub mod vat_check;

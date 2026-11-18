@@ -106,9 +106,14 @@ abstract class CrmClient {
   });
 
   /// [q] - Searches code, name, VAT number and city, ignoring case and accents ("Liege" finds "Liège").
+  ///
+  /// [sort] - Sort order: `field` ascending or `-field` descending, comma-separated for several keys (at.
+  /// most 3). Fields: code, name, vat_number, email, phone, city, country_code, active.
+  /// Default: name.
   @GET('/api/v1/customers')
   Future<CustomerPage> listCustomers({
     @Query('q') String? q,
+    @Query('sort') String? sort,
     @Query('limit') int? limit,
     @Query('offset') int? offset,
   });

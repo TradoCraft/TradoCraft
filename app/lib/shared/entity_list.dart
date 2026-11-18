@@ -1,11 +1,18 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:math' as math;
 
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' show ProviderScope;
 import 'package:material_ui/material_ui.dart';
 
 import '../app/api.dart';
 import '../app/workspace.dart' show OpenInTab;
-import '../l10n/l10n.dart';
+import '../features/field/offline/kv_store.dart';
 import '../features/tutorial/targets.dart';
+import '../framework/data/repository.dart';
+import '../l10n/l10n.dart';
+import 'actions.dart';
 import 'app_icons.dart';
 import 'grid_key_nav.dart';
 
@@ -17,8 +24,24 @@ class EntityColumn<T> {
     this.numeric = false,
     this.flex = 1,
     this.cell,
+    this.sortKey,
+    this.id,
+    this.hideable = true,
+    this.defaultVisible = true,
   });
   final String label;
+
+  /// The API sort key of this column; null: the header is not sortable.
+  final String? sortKey;
+
+  /// Stable id for persisted layouts; defaults to [sortKey], then [label].
+  final String? id;
+
+  /// Whether the columns menu may hide this column.
+  final bool hideable;
+
+  /// Whether the column is shown until the user hides it.
+  final bool defaultVisible;
   final String Function(T item) value;
 
   /// Optional widget for the wide table (e.g. a chip); [value] is still used on narrow screens.
@@ -33,6 +56,32 @@ typedef PageLoader<T> = Future<(List<T>, int)> Function(
   int limit,
 );
 
+/// A bulk action on the selected rows of an [EntityList] (`selectable: true`).
+class BulkAction<T> {
+  const BulkAction({
+    required this.label,
+    required this.icon,
+    required this.run,
+    this.confirm,
+    this.enabled,
+  });
+  final String label;
+  final IconData icon;
+
+  /// Runs on the selected items. A thrown error is shown as a snack bar; the selection stays.
+  final Future<void> Function(List<T> items) run;
+
+  /// When set, a dialog with this text asks before [run].
+  final String? confirm;
+
+  /// Whether the action applies to this selection; null: always.
+  final bool Function(List<T> items)? enabled;
+}
+
+/// Encodes a sort as the API wants it: `field` or `-field`, comma separated; null when empty.
+String? encodeListSort(List<(String, bool)> sort) =>
+    sort.isEmpty ? null : sort.map((s) => s.$2 ? '-${s.$1}' : s.$1).join(',');
+
 /// Searchable, paged list used for every master-data and document list.
 ///
 /// One widget, configured per entity, instead of a hand-written screen per table.
@@ -41,7 +90,8 @@ class EntityList<T> extends StatefulWidget {
   const EntityList({
     super.key,
     required this.title,
-    required this.load,
+    this.load,
+    this.loadQuery,
     required this.columns,
     this.onOpen,
     this.locationOf,
@@ -53,10 +103,47 @@ class EntityList<T> extends StatefulWidget {
     this.actions = const [],
     this.emptyText,
     this.emptyAction,
-  });
+    this.resizableColumns = false,
+    this.columnMenu = false,
+    this.prefsKey,
+    this.prefsStore,
+    this.selectable = false,
+    this.idOf,
+    this.bulkActions = const [],
+    this.onSelectionChanged,
+  }) : assert(
+         (load == null) != (loadQuery == null),
+         'Pass exactly one of load and loadQuery',
+       ),
+       assert(!selectable || idOf != null, 'selectable needs idOf');
 
   final String title;
-  final PageLoader<T> load;
+
+  /// The simple loader (search, offset, limit). Exactly one of [load] and [loadQuery].
+  final PageLoader<T>? load;
+
+  /// The richer loader that also gets the sort. Exactly one of [load] and [loadQuery].
+  final Future<(List<T>, int)> Function(ListQuery query)? loadQuery;
+
+  /// Wide layout: columns get explicit widths with drag handles and horizontal scroll.
+  final bool resizableColumns;
+
+  /// Shows the columns menu (show / hide, reset layout) in the wide header.
+  final bool columnMenu;
+
+  /// When set, the column visibility, widths and sort are stored per user under this key.
+  final String? prefsKey;
+
+  /// Store for [prefsKey]; default: the signed-in user's store from the enclosing scope.
+  final KvStore? prefsStore;
+
+  /// Adds a checkbox column (long-press on narrow screens) and row selection.
+  final bool selectable;
+
+  /// The identity of an item, so a selection survives paging; required when [selectable].
+  final Object Function(T item)? idOf;
+  final List<BulkAction<T>> bulkActions;
+  final void Function(List<T> selected)? onSelectionChanged;
   final List<EntityColumn<T>> columns;
   final Future<bool?> Function(T item)? onOpen;
 
@@ -88,6 +175,11 @@ class EntityList<T> extends StatefulWidget {
 
 class EntityListState<T> extends State<EntityList<T>> {
   static const _pageSize = 50;
+  static const _minColumnWidth = 64.0;
+  static const _maxSorts = 3;
+  static const _selectWidth = 48.0;
+  static const _menuWidth = 48.0;
+
   final _search = TextEditingController();
   final _scroll = ScrollController();
 
@@ -99,10 +191,133 @@ class EntityListState<T> extends State<EntityList<T>> {
   bool _loading = false;
   String? _error;
 
+  List<(String, bool)> _sort = [];
+  final _hidden = <String>{};
+  final _widths = <String, double>{};
+
+  /// The widths of the last layout, so a drag starts from what is on the screen.
+  final _live = <String, double>{};
+  final _selected = <Object>{};
+  int? _anchor;
+  bool _bulkBusy = false;
+  String? _lastQueryKey;
+  KvStore? _store;
+
+  String _cid(EntityColumn<T> c) => c.id ?? c.sortKey ?? c.label;
+
+  List<EntityColumn<T>> get _visible => [
+    for (final c in widget.columns)
+      if (!_hidden.contains(_cid(c))) c,
+  ];
+
+  String? get _sortString => encodeListSort(_sort);
+
+  bool get _hasMenu => widget.columnMenu;
+
   @override
   void initState() {
     super.initState();
+    _resetVisibility();
+    if (widget.prefsKey != null) {
+      _store = widget.prefsStore ?? _lookupStore();
+      if (_store != null) {
+        _loading = true;
+        _loadPrefs();
+        return;
+      }
+    }
     reload();
+  }
+
+  KvStore? _lookupStore() {
+    try {
+      return ProviderScope.containerOf(
+        context,
+        listen: false,
+      ).read(userKvStoreProvider);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  void _resetVisibility() {
+    _hidden
+      ..clear()
+      ..addAll([
+        for (final c in widget.columns)
+          if (!c.defaultVisible && c.hideable) _cid(c),
+      ]);
+    if (_visible.isEmpty) _hidden.clear();
+  }
+
+  String get _prefsName => 'entity_list:${widget.prefsKey}';
+
+  static const _prefsTimeout = Duration(seconds: 2);
+
+  Future<void> _loadPrefs() async {
+    try {
+      // A store that is slow or never answers must not hold the list back: default layout then.
+      final raw = await _store!.get(_prefsName).timeout(_prefsTimeout);
+      if (raw != null && mounted) _applyPrefs(jsonDecode(raw));
+    } catch (_) {
+      // A damaged or unreadable entry just means the default layout.
+    }
+    if (mounted) await reload();
+  }
+
+  void _applyPrefs(Object? j) {
+    if (j is! Map) return;
+    final ids = {for (final c in widget.columns) _cid(c): c};
+    final hidden = j['hidden'];
+    if (hidden is List) {
+      _hidden
+        ..clear()
+        ..addAll([
+          for (final h in hidden)
+            if (h is String && (ids[h]?.hideable ?? false)) h,
+        ]);
+      if (_visible.isEmpty) _resetVisibility();
+    }
+    final widths = j['widths'];
+    if (widths is Map) {
+      _widths.clear();
+      widths.forEach((k, v) {
+        if (ids.containsKey(k) && v is num && v.isFinite) {
+          _widths[k as String] = math.max(_minColumnWidth, v.toDouble());
+        }
+      });
+    }
+    final sort = j['sort'];
+    if (sort is String && sort.isNotEmpty) {
+      final keys = {
+        for (final c in widget.columns)
+          if (c.sortKey != null) c.sortKey!,
+      };
+      final parsed = <(String, bool)>[];
+      for (final part in sort.split(',')) {
+        final desc = part.startsWith('-');
+        final key = desc ? part.substring(1) : part;
+        if (keys.contains(key) && !parsed.any((p) => p.$1 == key)) {
+          parsed.add((key, desc));
+        }
+      }
+      _sort = parsed.take(_maxSorts).toList();
+    }
+  }
+
+  void _savePrefs() {
+    final store = _store;
+    if (widget.prefsKey == null || store == null) return;
+    store
+        .set(
+          _prefsName,
+          jsonEncode({
+            'hidden': _hidden.toList()..sort(),
+            'widths': _widths,
+            if (_sortString != null) 'sort': _sortString,
+          }),
+        )
+        .catchError((Object _) {});
   }
 
   @override
@@ -120,24 +335,60 @@ class EntityListState<T> extends State<EntityList<T>> {
 
   Future<void> reload() => _fetch(reset: true);
 
+  List<T> get _selectedList => widget.idOf == null
+      ? const []
+      : [
+          for (final i in _items)
+            if (_selected.contains(widget.idOf!(i))) i,
+        ];
+
   Future<void> _fetch({required bool reset}) async {
     final generation = ++_generation;
+    final q = _search.text.trim();
+    final sort = _sortString;
+    final queryKey = '$q\u0000${sort ?? ''}';
+    var cleared = false;
     setState(() {
       _loading = true;
       _error = null;
+      if (reset) {
+        if (_lastQueryKey != null &&
+            queryKey != _lastQueryKey &&
+            _selected.isNotEmpty) {
+          _selected.clear();
+          _anchor = null;
+          cleared = true;
+        }
+        _lastQueryKey = queryKey;
+      }
     });
+    if (cleared) _emitSelection();
     try {
-      final q = _search.text.trim();
-      final (items, total) = await widget.load(
-        q.isEmpty ? null : q,
-        reset ? 0 : _items.length,
-        _pageSize,
-      );
+      final offset = reset ? 0 : _items.length;
+      final (items, total) = widget.loadQuery != null
+          ? await widget.loadQuery!(
+              ListQuery(
+                search: q.isEmpty ? null : q,
+                offset: offset,
+                limit: _pageSize,
+                sort: sort,
+              ),
+            )
+          : await widget.load!(q.isEmpty ? null : q, offset, _pageSize);
       if (!mounted || generation != _generation) return;
+      var pruned = false;
       setState(() {
         _items = reset ? items : [..._items, ...items];
         _total = total;
+        if (reset && widget.idOf != null && _selected.isNotEmpty) {
+          final present = {for (final i in items) widget.idOf!(i)};
+          final before = _selected.length;
+          _selected.removeWhere((id) => !present.contains(id));
+          pruned = _selected.length != before;
+          if (pruned) _anchor = null;
+        }
       });
+      if (pruned) _emitSelection();
     } catch (e) {
       if (mounted && generation == _generation) {
         setState(() => _error = errorMessage(e));
@@ -153,6 +404,179 @@ class EntityListState<T> extends State<EntityList<T>> {
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 300), reload);
   }
+
+  // ---- sorting ----
+
+  void _tapSort(String key) {
+    final shift = HardwareKeyboard.instance.isShiftPressed;
+    final i = _sort.indexWhere((s) => s.$1 == key);
+    final next = [..._sort];
+    if (shift) {
+      if (i < 0) {
+        if (next.length >= _maxSorts) return;
+        next.add((key, false));
+      } else if (!next[i].$2) {
+        next[i] = (key, true);
+      } else {
+        next.removeAt(i);
+      }
+    } else if (i >= 0 && next.length == 1) {
+      if (!next[0].$2) {
+        next[0] = (key, true);
+      } else {
+        next.clear();
+      }
+    } else {
+      next
+        ..clear()
+        ..add((key, false));
+    }
+    setState(() => _sort = next);
+    _savePrefs();
+    reload();
+  }
+
+  // ---- columns ----
+
+  void _toggleColumn(String id) {
+    setState(() {
+      if (_hidden.contains(id)) {
+        _hidden.remove(id);
+      } else if (_visible.length > 1) {
+        _hidden.add(id);
+      }
+    });
+    _savePrefs();
+  }
+
+  void _resetLayout() {
+    setState(() {
+      _resetVisibility();
+      _widths.clear();
+    });
+    _savePrefs();
+  }
+
+  void _resizeBy(String id, double dx) {
+    setState(() {
+      final cur = _widths[id] ?? _live[id] ?? _minColumnWidth;
+      _widths[id] = math.max(_minColumnWidth, cur + dx);
+      _live[id] = _widths[id]!;
+    });
+  }
+
+  void _resetWidth(String id) {
+    setState(() => _widths.remove(id));
+    _savePrefs();
+  }
+
+  /// Width of each visible column for a row area of [inner] pixels: stored widths are fixed, the
+  /// rest share what is left by their flex (never below the minimum).
+  Map<String, double> _computeWidths(double inner) {
+    final cols = _visible;
+    var fixed = 0.0;
+    var flexSum = 0;
+    for (final c in cols) {
+      final w = _widths[_cid(c)];
+      if (w != null) {
+        fixed += math.max(_minColumnWidth, w);
+      } else {
+        flexSum += c.flex;
+      }
+    }
+    final left = math.max(0.0, inner - fixed);
+    final result = <String, double>{};
+    for (final c in cols) {
+      final id = _cid(c);
+      final w = _widths[id];
+      result[id] = w != null
+          ? math.max(_minColumnWidth, w)
+          : math.max(_minColumnWidth, left * c.flex / math.max(1, flexSum));
+    }
+    _live.addAll(result);
+    return result;
+  }
+
+  // ---- selection ----
+
+  void _emitSelection() => widget.onSelectionChanged?.call(_selectedList);
+
+  void _toggleRow(int i, bool on) {
+    final shift = HardwareKeyboard.instance.isShiftPressed;
+    final id = widget.idOf!;
+    setState(() {
+      final anchor = _anchor;
+      if (shift && anchor != null && anchor < _items.length) {
+        for (var j = math.min(anchor, i); j <= math.max(anchor, i); j++) {
+          on ? _selected.add(id(_items[j])) : _selected.remove(id(_items[j]));
+        }
+      } else {
+        on ? _selected.add(id(_items[i])) : _selected.remove(id(_items[i]));
+      }
+      _anchor = i;
+    });
+    _emitSelection();
+  }
+
+  void _toggleAll() {
+    final id = widget.idOf!;
+    setState(() {
+      final all =
+          _items.isNotEmpty && _items.every((i) => _selected.contains(id(i)));
+      for (final i in _items) {
+        all ? _selected.remove(id(i)) : _selected.add(id(i));
+      }
+      _anchor = null;
+    });
+    _emitSelection();
+  }
+
+  void _clearSelection() {
+    setState(() {
+      _selected.clear();
+      _anchor = null;
+    });
+    _emitSelection();
+  }
+
+  Future<void> _runBulk(BulkAction<T> a) async {
+    final items = _selectedList;
+    if (a.confirm != null) {
+      final l = context.l10n;
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(a.label),
+          content: Text(a.confirm!),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(l.cancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(l.listConfirm),
+            ),
+          ],
+        ),
+      );
+      if (ok != true || !mounted) return;
+    }
+    setState(() => _bulkBusy = true);
+    final ok = await runAction(context, () => a.run(items));
+    if (!mounted) return;
+    setState(() {
+      _bulkBusy = false;
+      if (ok) {
+        _selected.clear();
+        _anchor = null;
+      }
+    });
+    if (ok) _emitSelection();
+    await reload();
+  }
+
+  // ---- build ----
 
   Widget _createButton(BuildContext context) {
     final button = FilledButton.icon(
@@ -179,6 +603,8 @@ class EntityListState<T> extends State<EntityList<T>> {
   Widget _body(BuildContext context) {
     final theme = Theme.of(context);
     final wide = MediaQuery.sizeOf(context).width >= 700;
+    final resizable = wide && widget.resizableColumns;
+    final selecting = widget.selectable && _selected.isNotEmpty;
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -211,14 +637,21 @@ class EntityListState<T> extends State<EntityList<T>> {
                 widget.filters!,
               ],
               const SizedBox(width: 12),
-              Text(
-                context.l10n.countOf(_items.length, _total),
-                style: const TextStyle(
-                  fontFeatures: [FontFeature.tabularFigures()],
+              if (selecting && wide)
+                Flexible(flex: 2, child: _bulkBar(theme))
+              else if (!selecting)
+                Text(
+                  context.l10n.countOf(_items.length, _total),
+                  style: const TextStyle(
+                    fontFeatures: [FontFeature.tabularFigures()],
+                  ),
                 ),
-              ),
             ],
           ),
+          if (selecting && !wide) ...[
+            const SizedBox(height: 8),
+            _bulkBar(theme),
+          ],
           if (widget.moreFilters != null) ...[
             const SizedBox(height: 8),
             widget.moreFilters!,
@@ -232,43 +665,254 @@ class EntityListState<T> extends State<EntityList<T>> {
               ],
             ),
           if (_loading) const LinearProgressIndicator(),
-          if (wide) _header(theme),
-          if (widget.emptyText != null &&
-              !_loading &&
-              _error == null &&
-              _items.isEmpty)
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(widget.emptyText!, textAlign: TextAlign.center),
-                    if (widget.emptyAction != null) widget.emptyAction!,
+          if (resizable)
+            Expanded(child: _resizableArea(theme))
+          else ...[
+            if (wide) _header(theme, null),
+            ?_empty(),
+            Expanded(child: _list(wide, null)),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget? _empty() {
+    if (widget.emptyText == null ||
+        _loading ||
+        _error != null ||
+        _items.isNotEmpty) {
+      return null;
+    }
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(widget.emptyText!, textAlign: TextAlign.center),
+            if (widget.emptyAction != null) widget.emptyAction!,
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _resizableArea(ThemeData theme) => LayoutBuilder(
+    builder: (context, cons) {
+      final extras =
+          (widget.selectable ? _selectWidth : 0) + (_hasMenu ? _menuWidth : 0);
+      final widths = _computeWidths(cons.maxWidth - 24 - extras);
+      final total =
+          widths.values.fold<double>(0, (a, b) => a + b) + 24 + extras;
+      final body = Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _header(theme, widths),
+          ?_empty(),
+          Expanded(child: _list(true, widths)),
+        ],
+      );
+      if (total <= cons.maxWidth + 0.5) return body;
+      return SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: SizedBox(width: total, height: cons.maxHeight, child: body),
+      );
+    },
+  );
+
+  Widget _list(bool wide, Map<String, double>? widths) => ListView.separated(
+    controller: _scroll,
+    itemCount: _items.length + 1,
+    separatorBuilder: (_, _) => const Divider(height: 1),
+    itemBuilder: (context, i) {
+      if (i == _items.length) return _footer();
+      final item = _items[i];
+      final selecting = widget.selectable && _selected.isNotEmpty;
+      final onTap = widget.selectable && selecting && !wide
+          ? () => _toggleRow(i, !_isSelected(item))
+          : (widget.onOpen == null ? null : () => _after(widget.onOpen!(item)));
+      final node = _rowNodes.putIfAbsent(i, FocusNode.new);
+      final row = wide
+          ? _row(i, item, onTap, node, widths)
+          : _tile(i, item, onTap, node);
+      return OpenInTab(location: widget.locationOf?.call(item), child: row);
+    },
+  );
+
+  bool _isSelected(T item) =>
+      widget.idOf != null && _selected.contains(widget.idOf!(item));
+
+  Widget _cell(EntityColumn<T> c, Widget child, [double? width]) {
+    final aligned = Align(
+      alignment: c.numeric ? Alignment.centerRight : Alignment.centerLeft,
+      child: child,
+    );
+    return width == null
+        ? Expanded(flex: c.flex, child: aligned)
+        : SizedBox(width: width, child: aligned);
+  }
+
+  Widget _headerCell(ThemeData theme, EntityColumn<T> c) {
+    final label = Text(
+      c.label,
+      style: theme.textTheme.labelLarge,
+      overflow: TextOverflow.ellipsis,
+    );
+    final key = c.sortKey;
+    if (key == null) {
+      return widget.resizableColumns
+          ? label
+          : Text(c.label, style: theme.textTheme.labelLarge);
+    }
+    final l = context.l10n;
+    final idx = _sort.indexWhere((s) => s.$1 == key);
+    final desc = idx < 0 ? null : _sort[idx].$2;
+    final state = desc == null
+        ? l.listNotSorted
+        : (desc ? l.listSortedDescending : l.listSortedAscending);
+    return Semantics(
+      button: true,
+      label: '${c.label}, $state',
+      excludeSemantics: true,
+      onTap: () => _tapSort(key),
+      child: Tooltip(
+        message: l.listSortBy(c.label),
+        child: InkWell(
+          onTap: () => _tapSort(key),
+          borderRadius: BorderRadius.circular(4),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 32),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(child: label),
+                  if (desc != null) ...[
+                    const SizedBox(width: 2),
+                    Icon(
+                      desc ? AppIcons.arrowDownward : AppIcons.arrowUpward,
+                      size: 16,
+                      color: theme.colorScheme.primary,
+                    ),
+                    if (_sort.length > 1)
+                      Text(
+                        '${idx + 1}',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
                   ],
-                ),
+                ],
               ),
             ),
-          Expanded(
-            child: ListView.separated(
-              controller: _scroll,
-              itemCount: _items.length + 1,
-              separatorBuilder: (_, _) => const Divider(height: 1),
-              itemBuilder: (context, i) {
-                if (i == _items.length) return _footer();
-                final item = _items[i];
-                final onTap = widget.onOpen == null
-                    ? null
-                    : () => _after(widget.onOpen!(item));
-                final node = _rowNodes.putIfAbsent(i, FocusNode.new);
-                final row = wide
-                    ? _row(item, onTap, node)
-                    : _tile(item, onTap, node);
-                return OpenInTab(
-                  location: widget.locationOf?.call(item),
-                  child: row,
-                );
-              },
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _selectAllBox() {
+    final id = widget.idOf!;
+    final n = _items.where((i) => _selected.contains(id(i))).length;
+    final all = _items.isNotEmpty && n == _items.length;
+    final l = context.l10n;
+    return SizedBox(
+      width: _selectWidth,
+      child: Center(
+        child: Semantics(
+          label: l.listSelectAll,
+          child: Tooltip(
+            message: l.listSelectAll,
+            child: Checkbox(
+              tristate: true,
+              value: all ? true : (n == 0 ? false : null),
+              onChanged: _items.isEmpty ? null : (_) => _toggleAll(),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _columnsMenu() {
+    final l = context.l10n;
+    final visible = _visible;
+    return SizedBox(
+      width: _menuWidth,
+      child: PopupMenuButton<String>(
+        tooltip: l.listColumns,
+        icon: const Icon(AppIcons.tune),
+        onSelected: (v) {
+          if (v == '\u0000reset') {
+            _resetLayout();
+          } else {
+            _toggleColumn(v);
+          }
+        },
+        itemBuilder: (_) => [
+          for (final c in widget.columns)
+            CheckedPopupMenuItem<String>(
+              value: _cid(c),
+              checked: !_hidden.contains(_cid(c)),
+              enabled:
+                  c.hideable && !(visible.length == 1 && visible.first == c),
+              child: Text(c.label),
+            ),
+          const PopupMenuDivider(),
+          PopupMenuItem<String>(
+            value: '\u0000reset',
+            child: Text(l.listResetLayout),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _header(ThemeData theme, Map<String, double>? widths) => Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+    child: Row(
+      children: [
+        if (widget.selectable) _selectAllBox(),
+        for (final c in _visible)
+          _cell(
+            c,
+            widths == null
+                ? _headerCell(theme, c)
+                : _resizableHeaderCell(theme, c, widths[_cid(c)]!),
+            widths?[_cid(c)],
+          ),
+        if (_hasMenu) _columnsMenu(),
+      ],
+    ),
+  );
+
+  Widget _resizableHeaderCell(ThemeData theme, EntityColumn<T> c, double w) {
+    final id = _cid(c);
+    return SizedBox(
+      width: w,
+      child: Stack(
+        alignment: Alignment.centerLeft,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: Align(
+              alignment: c.numeric
+                  ? Alignment.centerRight
+                  : Alignment.centerLeft,
+              child: _headerCell(theme, c),
+            ),
+          ),
+          Positioned(
+            right: 0,
+            top: 0,
+            bottom: 0,
+            child: _ResizeHandle(
+              label: context.l10n.listResizeColumn(c.label),
+              onDelta: (dx) => _resizeBy(id, dx),
+              onEnd: _savePrefs,
+              onReset: () => _resetWidth(id),
             ),
           ),
         ],
@@ -276,63 +920,135 @@ class EntityListState<T> extends State<EntityList<T>> {
     );
   }
 
-  Widget _cell(EntityColumn<T> c, Widget child) => Expanded(
-    flex: c.flex,
-    child: Align(
-      alignment: c.numeric ? Alignment.centerRight : Alignment.centerLeft,
-      child: child,
-    ),
-  );
-
-  Widget _header(ThemeData theme) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-    child: Row(
-      children: [
-        for (final c in widget.columns)
-          _cell(c, Text(c.label, style: theme.textTheme.labelLarge)),
-      ],
-    ),
-  );
-
-  Widget _row(T item, VoidCallback? onTap, FocusNode node) => InkWell(
-    focusNode: node,
-    onTap: onTap,
-    child: Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      child: Row(
-        children: [
-          for (final c in widget.columns)
-            _cell(
-              c,
-              c.cell?.call(context, item) ??
-                  Text(
-                    c.value(item),
-                    overflow: TextOverflow.ellipsis,
-                    style: c.numeric
-                        ? const TextStyle(
-                            fontFeatures: [FontFeature.tabularFigures()],
-                          )
-                        : null,
-                  ),
-            ),
-        ],
+  Widget _checkbox(int i, T item) => SizedBox(
+    width: _selectWidth,
+    child: Center(
+      child: Semantics(
+        label: context.l10n.listSelectRow(widget.columns.first.value(item)),
+        child: Checkbox(
+          value: _isSelected(item),
+          onChanged: (v) => _toggleRow(i, v ?? false),
+        ),
       ),
     ),
   );
 
-  Widget _tile(T item, VoidCallback? onTap, FocusNode node) {
-    final cols = widget.columns;
-    return ListTile(
+  Widget _row(
+    int i,
+    T item,
+    VoidCallback? onTap,
+    FocusNode node,
+    Map<String, double>? widths,
+  ) {
+    final ink = InkWell(
       focusNode: node,
       onTap: onTap,
-      title: Text(cols.length > 1 ? cols[1].value(item) : cols[0].value(item)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: Row(
+          children: [
+            if (widget.selectable) _checkbox(i, item),
+            for (final c in _visible)
+              _cell(
+                c,
+                c.cell?.call(context, item) ??
+                    Text(
+                      c.value(item),
+                      overflow: TextOverflow.ellipsis,
+                      style: c.numeric
+                          ? const TextStyle(
+                              fontFeatures: [FontFeature.tabularFigures()],
+                            )
+                          : null,
+                    ),
+                widths?[_cid(c)],
+              ),
+            if (_hasMenu) const SizedBox(width: _menuWidth),
+          ],
+        ),
+      ),
+    );
+    if (!widget.selectable) return ink;
+    return Material(
+      color: _isSelected(item)
+          ? Theme.of(context).colorScheme.secondaryContainer
+          : Colors.transparent,
+      child: Focus(
+        canRequestFocus: false,
+        skipTraversal: true,
+        onKeyEvent: (_, e) {
+          if (e is KeyDownEvent &&
+              e.logicalKey == LogicalKeyboardKey.space &&
+              identical(FocusManager.instance.primaryFocus, node)) {
+            _toggleRow(i, !_isSelected(item));
+            return KeyEventResult.handled;
+          }
+          return KeyEventResult.ignored;
+        },
+        child: ink,
+      ),
+    );
+  }
+
+  Widget _tile(int i, T item, VoidCallback? onTap, FocusNode node) {
+    final cols = _visible.isEmpty ? widget.columns : _visible;
+    final titleCol = cols.length > 1 ? cols[1] : cols[0];
+    final selecting = widget.selectable && _selected.isNotEmpty;
+    final selected = _isSelected(item);
+    final tile = ListTile(
+      focusNode: node,
+      onTap: onTap,
+      onLongPress: widget.selectable && !selecting
+          ? () => _toggleRow(i, true)
+          : null,
+      minTileHeight: widget.selectable ? 56 : null,
+      selected: selected,
+      leading: selecting
+          ? Semantics(
+              label: context.l10n.listSelectRow(titleCol.value(item)),
+              child: Checkbox(
+                value: selected,
+                onChanged: (v) => _toggleRow(i, v ?? false),
+              ),
+            )
+          : null,
+      title: Text(titleCol.value(item)),
       subtitle: Text(
         cols
-            .where((c) => c != cols[1])
+            .where((c) => c != titleCol)
             .map((c) => c.value(item))
             .where((s) => s.isNotEmpty)
             .join(' · '),
       ),
+    );
+    return tile;
+  }
+
+  Widget _bulkBar(ThemeData theme) {
+    final l = context.l10n;
+    final sel = _selectedList;
+    return Wrap(
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: 8,
+      children: [
+        Text(
+          l.listSelectedCount(sel.length),
+          style: theme.textTheme.labelLarge,
+        ),
+        IconButton(
+          tooltip: l.listClearSelection,
+          icon: const Icon(AppIcons.close),
+          onPressed: _clearSelection,
+        ),
+        for (final a in widget.bulkActions)
+          TextButton.icon(
+            onPressed: _bulkBusy || !(a.enabled?.call(sel) ?? true)
+                ? null
+                : () => _runBulk(a),
+            icon: Icon(a.icon),
+            label: Text(a.label),
+          ),
+      ],
     );
   }
 
@@ -347,4 +1063,73 @@ class EntityListState<T> extends State<EntityList<T>> {
           : const SizedBox.shrink(),
     ),
   );
+}
+
+/// The drag handle on a column border: drag or Left/Right to resize, double-click to reset.
+class _ResizeHandle extends StatefulWidget {
+  const _ResizeHandle({
+    required this.label,
+    required this.onDelta,
+    required this.onEnd,
+    required this.onReset,
+  });
+  final String label;
+  final void Function(double dx) onDelta;
+  final VoidCallback onEnd;
+  final VoidCallback onReset;
+
+  @override
+  State<_ResizeHandle> createState() => _ResizeHandleState();
+}
+
+class _ResizeHandleState extends State<_ResizeHandle> {
+  bool _focused = false;
+  bool _hover = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final active = _focused || _hover;
+    return Semantics(
+      label: widget.label,
+      child: Focus(
+        onFocusChange: (f) => setState(() => _focused = f),
+        onKeyEvent: (_, e) {
+          if (e is KeyUpEvent) return KeyEventResult.ignored;
+          final k = e.logicalKey;
+          if (k == LogicalKeyboardKey.arrowLeft ||
+              k == LogicalKeyboardKey.arrowRight) {
+            widget.onDelta(k == LogicalKeyboardKey.arrowLeft ? -16 : 16);
+            widget.onEnd();
+            return KeyEventResult.handled;
+          }
+          if (k == LogicalKeyboardKey.enter) {
+            widget.onReset();
+            return KeyEventResult.handled;
+          }
+          return KeyEventResult.ignored;
+        },
+        child: MouseRegion(
+          cursor: SystemMouseCursors.resizeColumn,
+          onEnter: (_) => setState(() => _hover = true),
+          onExit: (_) => setState(() => _hover = false),
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onHorizontalDragUpdate: (d) => widget.onDelta(d.delta.dx),
+            onHorizontalDragEnd: (_) => widget.onEnd(),
+            onDoubleTap: widget.onReset,
+            child: SizedBox(
+              width: 12,
+              child: Center(
+                child: Container(
+                  width: active ? 3 : 1,
+                  color: active ? cs.primary : cs.outlineVariant,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

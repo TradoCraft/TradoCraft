@@ -16,6 +16,7 @@ class CustomerRepository
   Future<Page<Customer>> list(ListQuery query) async {
     final page = await _crm.listCustomers(
       q: query.q,
+      sort: query.sort,
       offset: query.offset,
       limit: query.limit,
     );

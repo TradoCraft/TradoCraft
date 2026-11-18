@@ -556,6 +556,10 @@ pub struct ListParams {
     pub status: Option<String>,
     pub customer_id: Option<Uuid>,
     pub opportunity_id: Option<Uuid>,
+    /// Sort order: `field` ascending or `-field` descending, comma-separated for several keys (at
+    /// most 3). Fields: number, customer_name, status, quote_date, valid_until, total.
+    /// Default: newest first (quote date, number and revision, descending).
+    pub sort: Option<String>,
     pub limit: Option<i64>,
     pub offset: Option<i64>,
 }

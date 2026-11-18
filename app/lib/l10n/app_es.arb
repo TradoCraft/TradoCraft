@@ -3287,5 +3287,17 @@
   "notificationsTodosDueToday": "{count, plural, =1{1 vence hoy} other{{count} vencen hoy}}",
   "notificationsWorkerDown": "El servicio en segundo plano está caído",
   "notificationsWorkerNeverSeen": "El servicio en segundo plano nunca ha informado",
-  "notificationsWorkerSubtitle": "El correo no se envía ni se recibe"
+  "notificationsWorkerSubtitle": "El correo no se envía ni se recibe",
+  "listColumns": "Columnas",
+  "listResetLayout": "Restablecer diseño",
+  "listSortBy": "Ordenar por {column}",
+  "listSortedAscending": "orden ascendente",
+  "listSortedDescending": "orden descendente",
+  "listNotSorted": "sin ordenar",
+  "listResizeColumn": "Cambiar el ancho de la columna {column}",
+  "listSelectAll": "Seleccionar todas las filas cargadas",
+  "listSelectRow": "Seleccionar {name}",
+  "listSelectedCount": "{count} seleccionados",
+  "listClearSelection": "Borrar selección",
+  "listConfirm": "Confirmar"
 }

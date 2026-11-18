@@ -337,11 +337,16 @@ abstract class ProductsClient {
   });
 
   /// [q] - Searches code and name, ignoring case and accents.
+  ///
+  /// [sort] - Sort order: `field` ascending or `-field` descending, comma-separated for several keys (at.
+  /// most 3). Fields: code, name, unit, product_type, family_code, pricing_type, active.
+  /// Default: code.
   @GET('/api/v1/products')
   Future<ProductPage> listProducts({
     @Query('q') String? q,
     @Query('active') bool? active,
     @Query('family_id') String? familyId,
+    @Query('sort') String? sort,
     @Query('limit') int? limit,
     @Query('offset') int? offset,
   });

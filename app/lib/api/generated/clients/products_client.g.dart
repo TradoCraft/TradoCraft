@@ -1311,6 +1311,7 @@ class _ProductsClient implements ProductsClient {
     String? q,
     bool? active,
     String? familyId,
+    String? sort,
     int? limit,
     int? offset,
   }) async {
@@ -1319,6 +1320,7 @@ class _ProductsClient implements ProductsClient {
       r'q': q,
       r'active': active,
       r'family_id': familyId,
+      r'sort': sort,
       r'limit': limit,
       r'offset': offset,
     };

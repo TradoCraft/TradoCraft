@@ -18707,6 +18707,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Mail is neither sent nor fetched'**
   String get notificationsWorkerSubtitle;
+
+  /// No description provided for @listColumns.
+  ///
+  /// In en, this message translates to:
+  /// **'Columns'**
+  String get listColumns;
+
+  /// No description provided for @listResetLayout.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset layout'**
+  String get listResetLayout;
+
+  /// No description provided for @listSortBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort by {column}'**
+  String listSortBy(String column);
+
+  /// No description provided for @listSortedAscending.
+  ///
+  /// In en, this message translates to:
+  /// **'sorted ascending'**
+  String get listSortedAscending;
+
+  /// No description provided for @listSortedDescending.
+  ///
+  /// In en, this message translates to:
+  /// **'sorted descending'**
+  String get listSortedDescending;
+
+  /// No description provided for @listNotSorted.
+  ///
+  /// In en, this message translates to:
+  /// **'not sorted'**
+  String get listNotSorted;
+
+  /// No description provided for @listResizeColumn.
+  ///
+  /// In en, this message translates to:
+  /// **'Resize column {column}'**
+  String listResizeColumn(String column);
+
+  /// No description provided for @listSelectAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Select all loaded rows'**
+  String get listSelectAll;
+
+  /// No description provided for @listSelectRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Select {name}'**
+  String listSelectRow(String name);
+
+  /// No description provided for @listSelectedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} selected'**
+  String listSelectedCount(int count);
+
+  /// No description provided for @listClearSelection.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear selection'**
+  String get listClearSelection;
+
+  /// No description provided for @listConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get listConfirm;
 }
 
 class _AppLocalizationsDelegate

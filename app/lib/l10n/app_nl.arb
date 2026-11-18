@@ -3287,5 +3287,17 @@
   "notificationsTodosDueToday": "{count, plural, =1{1 vandaag te doen} other{{count} vandaag te doen}}",
   "notificationsWorkerDown": "De achtergronddienst ligt stil",
   "notificationsWorkerNeverSeen": "De achtergronddienst heeft zich nog nooit gemeld",
-  "notificationsWorkerSubtitle": "E-mail wordt noch verzonden noch opgehaald"
+  "notificationsWorkerSubtitle": "E-mail wordt noch verzonden noch opgehaald",
+  "listColumns": "Kolommen",
+  "listResetLayout": "Indeling herstellen",
+  "listSortBy": "Sorteren op {column}",
+  "listSortedAscending": "oplopend gesorteerd",
+  "listSortedDescending": "aflopend gesorteerd",
+  "listNotSorted": "niet gesorteerd",
+  "listResizeColumn": "Breedte van kolom {column} aanpassen",
+  "listSelectAll": "Alle geladen rijen selecteren",
+  "listSelectRow": "{name} selecteren",
+  "listSelectedCount": "{count} geselecteerd",
+  "listClearSelection": "Selectie wissen",
+  "listConfirm": "Bevestigen"
 }

@@ -180,9 +180,25 @@ pub struct CustomerPage {
 pub struct ListParams {
     /// Searches code, name, VAT number and city, ignoring case and accents ("Liege" finds "Liège").
     pub q: Option<String>,
+    /// Sort order: `field` ascending or `-field` descending, comma-separated for several keys (at
+    /// most 3). Fields: code, name, vat_number, email, phone, city, country_code, active.
+    /// Default: name.
+    pub sort: Option<String>,
     pub limit: Option<i64>,
     pub offset: Option<i64>,
 }
+
+/// API sort keys of `GET /customers` and the SQL they stand for.
+const CUSTOMER_SORT: &[(&str, &str)] = &[
+    ("code", "c.code"),
+    ("name", "c.name"),
+    ("vat_number", "c.vat_number"),
+    ("email", "c.email"),
+    ("phone", "c.phone"),
+    ("city", "c.city"),
+    ("country_code", "c.country_code"),
+    ("active", "c.active"),
+];
 
 pub(crate) const SELECT_CUSTOMER: &str = r#"
     SELECT c.id, c.version, c.code, c.name, c.vat_number, COALESCE(t.vat_regime, c.vat_regime) AS vat_regime,
@@ -283,8 +299,10 @@ async fn list_customers(
         search::matches("c.vat_number", "$2"),
         search::matches("c.city", "$2"),
     );
+    let order =
+        tradocraft_core::sort::order_by(p.sort.as_deref(), CUSTOMER_SORT, "c.id", "c.name")?;
     let items = sqlx::query_as(&format!(
-        "{SELECT_CUSTOMER} {filter} ORDER BY c.name LIMIT $3 OFFSET $4"
+        "{SELECT_CUSTOMER} {filter} ORDER BY {order} LIMIT $3 OFFSET $4"
     ))
     .bind(user.company_id)
     .bind(&pattern)

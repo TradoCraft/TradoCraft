@@ -312,9 +312,24 @@ pub struct ListParams {
     pub q: Option<String>,
     pub active: Option<bool>,
     pub family_id: Option<Uuid>,
+    /// Sort order: `field` ascending or `-field` descending, comma-separated for several keys (at
+    /// most 3). Fields: code, name, unit, product_type, family_code, pricing_type, active.
+    /// Default: code.
+    pub sort: Option<String>,
     pub limit: Option<i64>,
     pub offset: Option<i64>,
 }
+
+/// API sort keys of `GET /products` and the SQL they stand for (columns of `SELECT_PRODUCT`).
+const PRODUCT_SORT: &[(&str, &str)] = &[
+    ("code", "p.code"),
+    ("name", "p.name"),
+    ("unit", "p.unit"),
+    ("product_type", "p.product_type"),
+    ("family_code", "p.family_code"),
+    ("pricing_type", "p.pricing_type"),
+    ("active", "p.active"),
+];
 
 #[derive(Debug, Clone, Serialize, FromRow, ToSchema)]
 pub struct PriceZone {
@@ -550,8 +565,9 @@ async fn list_products(
         tradocraft_core::search::matches("code", "$1"),
         tradocraft_core::search::matches("name", "$1"),
     );
+    let order = tradocraft_core::sort::order_by(p.sort.as_deref(), PRODUCT_SORT, "p.id", "code")?;
     let mut items: Vec<Product> = sqlx::query_as(&format!(
-        "{SELECT_PRODUCT} {filter} ORDER BY code LIMIT $3 OFFSET $4"
+        "{SELECT_PRODUCT} {filter} ORDER BY {order} LIMIT $3 OFFSET $4"
     ))
     .bind(&pattern)
     .bind(p.active)

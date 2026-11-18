@@ -3960,6 +3960,18 @@
             }
           },
           {
+            "name": "sort",
+            "in": "query",
+            "description": "Sort order: `field` ascending or `-field` descending, comma-separated for several keys (at\nmost 3). Fields: code, name, vat_number, email, phone, city, country_code, active.\nDefault: name.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
             "name": "limit",
             "in": "query",
             "required": false,
@@ -22784,6 +22796,18 @@
             }
           },
           {
+            "name": "sort",
+            "in": "query",
+            "description": "Sort order: `field` ascending or `-field` descending, comma-separated for several keys (at\nmost 3). Fields: code, name, unit, product_type, family_code, pricing_type, active.\nDefault: code.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
             "name": "limit",
             "in": "query",
             "required": false,
@@ -25138,6 +25162,18 @@
                 "null"
               ],
               "format": "uuid"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Sort order: `field` ascending or `-field` descending, comma-separated for several keys (at\nmost 3). Fields: number, customer_name, status, quote_date, valid_until, total.\nDefault: newest first (quote date, number and revision, descending).",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
             }
           },
           {

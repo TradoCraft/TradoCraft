@@ -4818,5 +4818,21 @@
   "@notificationsTodosDueToday": {"placeholders": {"count": {"type": "int"}}},
   "notificationsWorkerDown": "The background worker is down",
   "notificationsWorkerNeverSeen": "The background worker has never reported",
-  "notificationsWorkerSubtitle": "Mail is neither sent nor fetched"
+  "notificationsWorkerSubtitle": "Mail is neither sent nor fetched",
+  "listColumns": "Columns",
+  "listResetLayout": "Reset layout",
+  "listSortBy": "Sort by {column}",
+  "@listSortBy": {"placeholders": {"column": {"type": "String"}}},
+  "listSortedAscending": "sorted ascending",
+  "listSortedDescending": "sorted descending",
+  "listNotSorted": "not sorted",
+  "listResizeColumn": "Resize column {column}",
+  "@listResizeColumn": {"placeholders": {"column": {"type": "String"}}},
+  "listSelectAll": "Select all loaded rows",
+  "listSelectRow": "Select {name}",
+  "@listSelectRow": {"placeholders": {"name": {"type": "String"}}},
+  "listSelectedCount": "{count} selected",
+  "@listSelectedCount": {"placeholders": {"count": {"type": "int"}}},
+  "listClearSelection": "Clear selection",
+  "listConfirm": "Confirm"
 }
