@@ -27,7 +27,7 @@ Module overview: [ARCHITECTURE.md](ARCHITECTURE.md).
 | A9 Helpdesk ticket bundles (linked tickets) | Open (merge and split are done, ADR 0017 and ADR 0021) |
 | B1 Inventory foundation | Done, [ADR 0019](adr/0019-inventory-stock-ledger.md) |
 | B2 Purchasing | In progress, [ADR 0031](adr/0031-purchasing.md) |
-| B2b Supplier invoices and three-way match (AP register, no ledger) | Backend done, [ADR 0046](adr/0046-supplier-invoices-and-three-way-match.md); Flutter screens follow |
+| B2b Supplier invoices and three-way match (AP register, no ledger) | Done, [ADR 0046](adr/0046-supplier-invoices-and-three-way-match.md) |
 | B3 Delivery | Done, [ADR 0035](adr/0035-delivery.md) |
 | C1a Production orders | Done, [ADR 0036](adr/0036-production.md) |
 | C1b Work centres, routings, operations | Done, [ADR 0063](adr/0063-work-centres-routings-and-operations.md) |
