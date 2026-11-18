@@ -10517,4 +10517,113 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get themeDark => 'Sombre';
+
+  @override
+  String get appSwitcherTitle => 'Applications';
+
+  @override
+  String get appSwitcherTooltip => 'Changer d\'application';
+
+  @override
+  String get breadcrumbLabel => 'Fil d\'Ariane';
+
+  @override
+  String get appGroupSales => 'Ventes';
+
+  @override
+  String get appGroupService => 'Service';
+
+  @override
+  String get appGroupOperations => 'Opérations';
+
+  @override
+  String get appGroupMasterData => 'Données de base';
+
+  @override
+  String get appGroupBackOffice => 'Back-office';
+
+  @override
+  String get appGroupInsight => 'Analyse';
+
+  @override
+  String globalSearchTooltip(String shortcut) {
+    return 'Rechercher ($shortcut)';
+  }
+
+  @override
+  String get globalSearchHint =>
+      'Rechercher des enregistrements et des sections';
+
+  @override
+  String get globalSearchGoTo => 'Aller à';
+
+  @override
+  String get globalSearchStart =>
+      'Saisissez pour chercher clients, commandes, tickets et plus.';
+
+  @override
+  String globalSearchEmpty(String query) {
+    return 'Aucun résultat pour \"$query\"';
+  }
+
+  @override
+  String globalSearchFailed(String entity) {
+    return 'La recherche dans $entity a échoué';
+  }
+
+  @override
+  String get globalSearchSuppliers => 'Fournisseurs';
+
+  @override
+  String get globalSearchSupplierInvoices => 'Factures fournisseurs';
+
+  @override
+  String get notificationsTooltip => 'Notifications';
+
+  @override
+  String get notificationsEmpty => 'Rien ne requiert votre attention';
+
+  @override
+  String notificationsOverdueTodos(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tâches en retard',
+      one: '1 tâche en retard',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String notificationsOpenTodos(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tâches ouvertes',
+      one: '1 tâche ouverte',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String notificationsTodosDueToday(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count échéances aujourd\'hui',
+      one: '1 échéance aujourd\'hui',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get notificationsWorkerDown => 'Le service en arrière-plan est arrêté';
+
+  @override
+  String get notificationsWorkerNeverSeen =>
+      'Le service en arrière-plan ne s\'est jamais manifesté';
+
+  @override
+  String get notificationsWorkerSubtitle =>
+      'Les e-mails ne sont ni envoyés ni récupérés';
 }

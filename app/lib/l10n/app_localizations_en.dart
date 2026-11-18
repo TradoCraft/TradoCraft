@@ -10456,4 +10456,111 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get themeDark => 'Dark';
+
+  @override
+  String get appSwitcherTitle => 'Applications';
+
+  @override
+  String get appSwitcherTooltip => 'Switch application';
+
+  @override
+  String get breadcrumbLabel => 'Breadcrumbs';
+
+  @override
+  String get appGroupSales => 'Sales';
+
+  @override
+  String get appGroupService => 'Service';
+
+  @override
+  String get appGroupOperations => 'Operations';
+
+  @override
+  String get appGroupMasterData => 'Master data';
+
+  @override
+  String get appGroupBackOffice => 'Back office';
+
+  @override
+  String get appGroupInsight => 'Insight';
+
+  @override
+  String globalSearchTooltip(String shortcut) {
+    return 'Search ($shortcut)';
+  }
+
+  @override
+  String get globalSearchHint => 'Search records and sections';
+
+  @override
+  String get globalSearchGoTo => 'Go to';
+
+  @override
+  String get globalSearchStart =>
+      'Type to search customers, orders, tickets and more.';
+
+  @override
+  String globalSearchEmpty(String query) {
+    return 'No results for \"$query\"';
+  }
+
+  @override
+  String globalSearchFailed(String entity) {
+    return '$entity could not be searched';
+  }
+
+  @override
+  String get globalSearchSuppliers => 'Suppliers';
+
+  @override
+  String get globalSearchSupplierInvoices => 'Supplier invoices';
+
+  @override
+  String get notificationsTooltip => 'Notifications';
+
+  @override
+  String get notificationsEmpty => 'Nothing needs your attention';
+
+  @override
+  String notificationsOverdueTodos(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count overdue to-dos',
+      one: '1 overdue to-do',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String notificationsOpenTodos(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count open to-dos',
+      one: '1 open to-do',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String notificationsTodosDueToday(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count due today',
+      one: '1 due today',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get notificationsWorkerDown => 'The background worker is down';
+
+  @override
+  String get notificationsWorkerNeverSeen =>
+      'The background worker has never reported';
+
+  @override
+  String get notificationsWorkerSubtitle => 'Mail is neither sent nor fetched';
 }

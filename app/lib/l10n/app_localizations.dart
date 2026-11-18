@@ -18557,6 +18557,156 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Dark'**
   String get themeDark;
+
+  /// No description provided for @appSwitcherTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Applications'**
+  String get appSwitcherTitle;
+
+  /// No description provided for @appSwitcherTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch application'**
+  String get appSwitcherTooltip;
+
+  /// No description provided for @breadcrumbLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Breadcrumbs'**
+  String get breadcrumbLabel;
+
+  /// No description provided for @appGroupSales.
+  ///
+  /// In en, this message translates to:
+  /// **'Sales'**
+  String get appGroupSales;
+
+  /// No description provided for @appGroupService.
+  ///
+  /// In en, this message translates to:
+  /// **'Service'**
+  String get appGroupService;
+
+  /// No description provided for @appGroupOperations.
+  ///
+  /// In en, this message translates to:
+  /// **'Operations'**
+  String get appGroupOperations;
+
+  /// No description provided for @appGroupMasterData.
+  ///
+  /// In en, this message translates to:
+  /// **'Master data'**
+  String get appGroupMasterData;
+
+  /// No description provided for @appGroupBackOffice.
+  ///
+  /// In en, this message translates to:
+  /// **'Back office'**
+  String get appGroupBackOffice;
+
+  /// No description provided for @appGroupInsight.
+  ///
+  /// In en, this message translates to:
+  /// **'Insight'**
+  String get appGroupInsight;
+
+  /// No description provided for @globalSearchTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Search ({shortcut})'**
+  String globalSearchTooltip(String shortcut);
+
+  /// No description provided for @globalSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search records and sections'**
+  String get globalSearchHint;
+
+  /// No description provided for @globalSearchGoTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to'**
+  String get globalSearchGoTo;
+
+  /// No description provided for @globalSearchStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Type to search customers, orders, tickets and more.'**
+  String get globalSearchStart;
+
+  /// No description provided for @globalSearchEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No results for \"{query}\"'**
+  String globalSearchEmpty(String query);
+
+  /// No description provided for @globalSearchFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'{entity} could not be searched'**
+  String globalSearchFailed(String entity);
+
+  /// No description provided for @globalSearchSuppliers.
+  ///
+  /// In en, this message translates to:
+  /// **'Suppliers'**
+  String get globalSearchSuppliers;
+
+  /// No description provided for @globalSearchSupplierInvoices.
+  ///
+  /// In en, this message translates to:
+  /// **'Supplier invoices'**
+  String get globalSearchSupplierInvoices;
+
+  /// No description provided for @notificationsTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get notificationsTooltip;
+
+  /// No description provided for @notificationsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing needs your attention'**
+  String get notificationsEmpty;
+
+  /// No description provided for @notificationsOverdueTodos.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 overdue to-do} other{{count} overdue to-dos}}'**
+  String notificationsOverdueTodos(int count);
+
+  /// No description provided for @notificationsOpenTodos.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 open to-do} other{{count} open to-dos}}'**
+  String notificationsOpenTodos(int count);
+
+  /// No description provided for @notificationsTodosDueToday.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 due today} other{{count} due today}}'**
+  String notificationsTodosDueToday(int count);
+
+  /// No description provided for @notificationsWorkerDown.
+  ///
+  /// In en, this message translates to:
+  /// **'The background worker is down'**
+  String get notificationsWorkerDown;
+
+  /// No description provided for @notificationsWorkerNeverSeen.
+  ///
+  /// In en, this message translates to:
+  /// **'The background worker has never reported'**
+  String get notificationsWorkerNeverSeen;
+
+  /// No description provided for @notificationsWorkerSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Mail is neither sent nor fetched'**
+  String get notificationsWorkerSubtitle;
 }
 
 class _AppLocalizationsDelegate

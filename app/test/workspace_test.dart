@@ -345,7 +345,7 @@ void main() {
       // The modal barrier of the tab's page route blocks the semantics of whatever was painted before it;
       // without a semantic boundary around the tab's navigator that reached the shell around it.
       expect(find.bySemanticsLabel('Overview'), findsOneWidget);
-      expect(find.bySemanticsLabel(RegExp('^Helpdesk')), findsWidgets);
+      expect(find.bySemanticsLabel(RegExp('^Orders')), findsWidgets);
       handle.dispose();
     });
 
