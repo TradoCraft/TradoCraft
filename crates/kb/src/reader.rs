@@ -540,6 +540,7 @@ pub async fn vote(
 /// An image of an entry the audience may read: content type and bytes.
 pub async fn image(
     conn: &mut PgConnection,
+    blobs: &tradocraft_core::BlobStore,
     audience: Audience,
     company_id: Uuid,
     entry_id: Uuid,
@@ -558,7 +559,7 @@ pub async fn image(
     .fetch_optional(&mut *conn)
     .await?;
     ok.ok_or(AppError::NotFound("image"))?;
-    tradocraft_core::files::load(conn, company_id, file_id).await
+    tradocraft_core::files::load(conn, blobs, company_id, file_id).await
 }
 
 /// Public summary of a hit: nothing about counters or status.

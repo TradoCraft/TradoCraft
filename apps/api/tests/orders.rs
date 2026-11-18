@@ -140,7 +140,7 @@ async fn converting_creates_a_draft_revision_one_that_can_be_edited(db: PgPool) 
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
 async fn sending_queues_a_mail_with_the_pdf_and_freezes_the_draft(db: PgPool) {
-    let app = setup(db.clone()).await;
+    let (app, blobs) = common::setup_with_blobs(db.clone()).await;
     let o = draft_order(&app, ALPHA, "1").await;
     let oid = id(&o);
     let s = send(&app, &oid).await;
@@ -148,8 +148,15 @@ async fn sending_queues_a_mail_with_the_pdf_and_freezes_the_draft(db: PgPool) {
     assert_eq!(s["revision_status"], "sent");
     assert_eq!(s["revisions"][0]["sent_to"], "info@alpha.example");
 
-    let (to, subject, body, name, kind, size): (String, String, String, String, String, i32) = sqlx::query_as(
-        "SELECT to_address, subject, body, attachment_name, attachment_type, length(attachment_data)
+    let (to, subject, body, name, kind, storage_key): (
+        String,
+        String,
+        String,
+        String,
+        String,
+        String,
+    ) = sqlx::query_as(
+        "SELECT to_address, subject, body, attachment_name, attachment_type, attachment_storage_key
          FROM core.mail_outbox WHERE attachment_name IS NOT NULL",
     )
     .fetch_one(&db)
@@ -164,16 +171,13 @@ async fn sending_queues_a_mail_with_the_pdf_and_freezes_the_draft(db: PgPool) {
     assert!(body.contains(number));
     assert_eq!(name, format!("{number}-r1.pdf"));
     assert_eq!(kind, "application/pdf");
-    assert!(size > 1000);
-    let magic: Vec<u8> = sqlx::query_scalar("SELECT substring(attachment_data from 1 for 4) FROM core.mail_outbox WHERE attachment_name IS NOT NULL")
-        .fetch_one(&db)
-        .await
-        .unwrap();
-    assert_eq!(magic, b"%PDF");
+    let pdf_bytes = blobs.get(&storage_key).await.unwrap();
+    assert!(pdf_bytes.len() > 1000);
+    assert_eq!(&pdf_bytes[..4], b"%PDF");
 
     // The worker sends it as a multipart message with the attachment.
     let dir = tempfile::tempdir().unwrap();
-    let sent = process_system_mail(&db, &Mailer::Files(dir.path().to_path_buf()), 10)
+    let sent = process_system_mail(&db, &blobs, &Mailer::Files(dir.path().to_path_buf()), 10)
         .await
         .unwrap();
     assert_eq!(sent, 1);

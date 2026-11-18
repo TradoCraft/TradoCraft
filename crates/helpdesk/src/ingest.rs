@@ -162,14 +162,20 @@ pub struct Source {
 
 /// Ingests an e-mail that did not come from a helpdesk mailbox (an imported file, or the
 /// worker's single mailbox from the `IMAP_*` variables).
-pub async fn ingest(db: &PgPool, company_id: Uuid, raw: &[u8]) -> anyhow::Result<IngestResult> {
-    ingest_from(db, company_id, raw, None).await
+pub async fn ingest(
+    db: &PgPool,
+    blobs: &tradocraft_core::BlobStore,
+    company_id: Uuid,
+    raw: &[u8],
+) -> anyhow::Result<IngestResult> {
+    ingest_from(db, blobs, company_id, raw, None).await
 }
 
 /// Turns a raw e-mail into a new ticket or an article on an existing one. With a `source`, a new
 /// ticket remembers the mailbox (replies leave through it) and starts in the mailbox's team.
 pub async fn ingest_from(
     db: &PgPool,
+    blobs: &tradocraft_core::BlobStore,
     company_id: Uuid,
     raw: &[u8],
     source: Option<Source>,
@@ -330,10 +336,15 @@ pub async fn ingest_from(
         }
     };
 
+    // Coordinate pending raw-message and attachment references with the orphan sweep.
+    sqlx::query("SELECT pg_advisory_xact_lock_shared(743902104)")
+        .execute(&mut *tx)
+        .await?;
+    let raw_key = blobs.put(raw).await?;
     let article_id = tradocraft_core::new_id();
-    sqlx::query(
+    let insert_article = sqlx::query(
         "INSERT INTO helpdesk.articles (id, ticket_id, kind, from_address, from_name, to_addresses, cc_addresses,
-                                        subject, body, raw_message, language, message_id, in_reply_to, contact_id, mailbox_id)
+                                        subject, body, raw_message_storage_key, language, message_id, in_reply_to, contact_id, mailbox_id)
          VALUES ($1, $2, 'email_in', $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)",
     )
     .bind(article_id)
@@ -344,15 +355,19 @@ pub async fn ingest_from(
     .bind(&mail.cc)
     .bind(&mail.subject)
     .bind(&body)
-    .bind(raw)
+    .bind(&raw_key)
     .bind(detected)
     .bind(&mail.message_id)
     .bind(mail.references.last())
     .bind(contact.as_ref().map(|c| c.id))
     .bind(source.map(|s| s.mailbox_id))
     .execute(&mut *tx)
-    .await?;
-    store_attachments(&mut tx, company_id, ticket_id, article_id, &mail).await?;
+    .await;
+    if let Err(e) = insert_article {
+        let _ = blobs.delete(&raw_key).await;
+        return Err(e.into());
+    }
+    store_attachments(&mut tx, blobs, company_id, ticket_id, article_id, &mail).await?;
     crate::automation::run(
         &mut tx,
         company_id,
@@ -379,6 +394,7 @@ pub async fn ingest_from(
 /// `raw_message`); the same rules as for uploads apply.
 async fn store_attachments(
     conn: &mut PgConnection,
+    blobs: &tradocraft_core::BlobStore,
     company_id: Uuid,
     ticket_id: Uuid,
     article_id: Uuid,
@@ -396,6 +412,7 @@ async fn store_attachments(
     {
         match tradocraft_core::files::store_document(
             conn,
+            blobs,
             company_id,
             None,
             &a.filename,

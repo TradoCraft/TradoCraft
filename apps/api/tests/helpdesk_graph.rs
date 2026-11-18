@@ -8,11 +8,11 @@ mod common;
 use std::time::Duration;
 
 use axum::http::{Method, StatusCode};
+use common::call;
 use common::graph::{
     mail, Evil, Fault, Folder, Hostile, MessageIds, SendOutcome, Standin, CLIENT_SECRET, MAILBOX,
     TENANT,
 };
-use common::{call, setup};
 use serde_json::{json, Value};
 use sqlx::PgPool;
 use tradocraft_helpdesk::graph::{CheckOptions, GraphClient, MessageIdVerdict};
@@ -43,6 +43,7 @@ fn no_secrets(_: &SecretRequest<'_>) -> Option<String> {
 struct World {
     app: axum::Router,
     db: PgPool,
+    blobs: tradocraft_core::BlobStore,
     standin: Standin,
     graph: GraphClient,
     mailbox_id: Uuid,
@@ -51,7 +52,7 @@ struct World {
 
 /// A company with one Microsoft 365 mailbox (the default one) that talks to the stand-in.
 async fn world(db: PgPool, timeout: Option<Duration>) -> World {
-    let app = setup(db.clone()).await;
+    let (app, blobs) = common::setup_with_blobs(db.clone()).await;
     let standin = Standin::start().await;
     let (status, m) = call(
         &app,
@@ -73,6 +74,7 @@ async fn world(db: PgPool, timeout: Option<Duration>) -> World {
     World {
         app,
         db,
+        blobs,
         standin,
         graph,
         mailbox_id: Uuid::parse_str(m["id"].as_str().unwrap()).unwrap(),
@@ -97,7 +99,7 @@ impl World {
     /// One pass of the worker over the mailboxes; the number of e-mails ingested.
     async fn pass(&self) -> usize {
         let active = load_active(&self.db).await.unwrap();
-        poll_all(&self.db, &active, &self.graph, &secrets).await
+        poll_all(&self.db, &self.blobs, &active, &self.graph, &secrets).await
     }
 
     /// One pass of the worker over the outbox; the number of e-mails sent.
@@ -113,7 +115,9 @@ impl World {
             fallback: &fallback,
             mailboxes: Some(&map),
         };
-        process_outbox_with(&self.db, &t, 10).await.unwrap()
+        process_outbox_with(&self.db, &self.blobs, &t, 10)
+            .await
+            .unwrap()
     }
 
     async fn status(&self) -> Value {
@@ -140,6 +144,7 @@ impl World {
     async fn queue_reply(&self, subject: &str, message_id: &str) -> Uuid {
         let r = ingest_from(
             &self.db,
+            &self.blobs,
             Uuid::parse_str(COMPANY).unwrap(),
             &mail(
                 ANNA,
@@ -193,7 +198,10 @@ async fn graph_mailbox_fetches_and_sends(db: PgPool) {
 
     // Without the secret nothing is fetched, and the mailbox says why.
     let active = load_active(&w.db).await.unwrap();
-    assert_eq!(poll_all(&w.db, &active, &w.graph, &no_secrets).await, 0);
+    assert_eq!(
+        poll_all(&w.db, &w.blobs, &active, &w.graph, &no_secrets).await,
+        0
+    );
     let status = w.status().await;
     assert!(status["last_error"]
         .as_str()
@@ -318,7 +326,10 @@ async fn graph_mailbox_fetches_and_sends(db: PgPool) {
     // A refused sign-in says so, without the secret or Microsoft's trace id.
     let active = load_active(&w.db).await.unwrap();
     let fresh = w.standin.client();
-    assert_eq!(poll_all(&w.db, &active, &fresh, &wrong_secret).await, 0);
+    assert_eq!(
+        poll_all(&w.db, &w.blobs, &active, &fresh, &wrong_secret).await,
+        0
+    );
     let e = w.error().await;
     assert!(
         e.contains("signing in to Microsoft 365") && e.contains("Invalid client secret"),

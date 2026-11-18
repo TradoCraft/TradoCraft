@@ -4,6 +4,7 @@ pub mod admin;
 pub mod audit;
 pub mod audit_log;
 pub mod auth;
+pub mod blob_store;
 pub mod companies;
 pub mod company;
 pub mod concurrency;
@@ -30,6 +31,7 @@ pub mod vies;
 pub mod worker;
 
 pub use auth::{CurrentUser, Permission};
+pub use blob_store::BlobStore;
 pub use error::{AppError, AppResult};
 pub use state::{AppState, DocumentConfig};
 

@@ -13,7 +13,7 @@ mod common;
 
 use axum::http::{Method, StatusCode};
 use common::e2e::*;
-use common::{call, dec, raw, setup, Who};
+use common::{call, dec, raw, Who};
 use rust_decimal::Decimal;
 use serde_json::{json, Value};
 use sqlx::PgPool;
@@ -197,9 +197,9 @@ async fn step_check_power_grid_compatibility(app: &axum::Router, flow: &mut E2eF
 }
 
 /// Our reply mail, sent by the outbox worker; returns the Message-ID it went out with.
-async fn deliver_outbox(db: &PgPool) -> String {
+async fn deliver_outbox(db: &PgPool, blobs: &tradocraft_core::BlobStore) -> String {
     let dir = tempfile::tempdir().unwrap();
-    let sent = process_outbox(db, &Mailer::Files(dir.path().to_path_buf()), 10)
+    let sent = process_outbox(db, blobs, &Mailer::Files(dir.path().to_path_buf()), 10)
         .await
         .unwrap();
     assert_eq!(sent, 1);
@@ -237,9 +237,14 @@ async fn step_ask_clarifying_question(app: &axum::Router, flow: &mut E2eFlow) {
     assert_eq!(t["ticket"]["status"], "pending_customer");
 }
 
-async fn step_customer_replies(app: &axum::Router, db: &PgPool, flow: &mut E2eFlow) {
+async fn step_customer_replies(
+    app: &axum::Router,
+    db: &PgPool,
+    blobs: &tradocraft_core::BlobStore,
+    flow: &mut E2eFlow,
+) {
     let id = flow.ticket_id.clone().unwrap();
-    let our_id = deliver_outbox(db).await;
+    let our_id = deliver_outbox(db, blobs).await;
     let before = get_ticket(app, SUPPORT, &id).await;
     assert_eq!(
         before["articles"].as_array().unwrap().last().unwrap()["delivery"],
@@ -575,12 +580,17 @@ async fn step_send_and_confirm_order(app: &axum::Router, flow: &mut E2eFlow) {
     assert_eq!(dec(&c["order"]["total"]), flow.order_total.unwrap());
 }
 
-async fn step_assert_confirmation_email(app: &axum::Router, db: &PgPool, flow: &mut E2eFlow) {
+async fn step_assert_confirmation_email(
+    app: &axum::Router,
+    db: &PgPool,
+    blobs: &tradocraft_core::BlobStore,
+    flow: &mut E2eFlow,
+) {
     // Queued when the order was sent, in the customer's language, with the PDF attached.
-    let (to, subject, name, kind, magic): (String, String, String, String, Vec<u8>) =
+    let (to, subject, name, kind, storage_key): (String, String, String, String, String) =
         sqlx::query_as(
             "SELECT to_address, subject, attachment_name, attachment_type,
-                    substring(attachment_data from 1 for 4)
+                    attachment_storage_key
              FROM core.mail_outbox WHERE attachment_name IS NOT NULL",
         )
         .fetch_one(db)
@@ -591,7 +601,8 @@ async fn step_assert_confirmation_email(app: &axum::Router, db: &PgPool, flow: &
     assert_eq!(subject, format!("Order confirmation {number}"), "English");
     assert_eq!(name, format!("{number}-r1.pdf"));
     assert_eq!(kind, "application/pdf");
-    assert_eq!(magic, b"%PDF");
+    let pdf_bytes = blobs.get(&storage_key).await.unwrap();
+    assert_eq!(&pdf_bytes[..4], b"%PDF");
 
     // The prepared answer for the ticket is filled in in English as well.
     let tid = flow.ticket_id.clone().unwrap();
@@ -632,7 +643,7 @@ async fn step_stub_production_planning(app: &axum::Router, flow: &E2eFlow) {
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
 async fn primary_e2e_lifecycle(db: PgPool) {
-    let app = setup(db.clone()).await;
+    let (app, blobs) = common::setup_with_blobs(db.clone()).await;
     let mut flow = E2eFlow::new();
 
     step_register_customer(&app, &mut flow).await;
@@ -641,12 +652,12 @@ async fn primary_e2e_lifecycle(db: PgPool) {
     step_split_ticket(&app, &mut flow).await;
     step_check_power_grid_compatibility(&app, &mut flow).await;
     step_ask_clarifying_question(&app, &mut flow).await;
-    step_customer_replies(&app, &db, &mut flow).await;
+    step_customer_replies(&app, &db, &blobs, &mut flow).await;
     step_create_and_send_quotation(&app, &db, &mut flow).await;
     step_stub_second_person_review(&app, &mut flow).await;
     step_revise_quotation_remove_products(&app, &mut flow).await;
     step_convert_to_order(&app, &mut flow).await;
     step_send_and_confirm_order(&app, &mut flow).await;
-    step_assert_confirmation_email(&app, &db, &mut flow).await;
+    step_assert_confirmation_email(&app, &db, &blobs, &mut flow).await;
     step_stub_production_planning(&app, &flow).await;
 }

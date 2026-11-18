@@ -48,7 +48,7 @@ EOF
 
 # --- configuration -----------------------------------------------------------------------------
 
-CONFIG_KEYS=" DATABASE_URL AUTH_MODE DEV_DEFAULT_USER OIDC_ISSUER OIDC_AUDIENCE CORS_ALLOWED_ORIGINS TYPST_BIN TEMPLATE_DIR ENVCTL_DIR ENVCTL_PORT_MIN ENVCTL_PORT_MAX ENVCTL_BIND_HOST ENVCTL_API_BIN ENVCTL_WORKER_BIN ENVCTL_START_TIMEOUT ENVCTL_MAINTENANCE_DB ENVCTL_SOURCE_DB "
+CONFIG_KEYS=" DATABASE_URL AUTH_MODE DEV_DEFAULT_USER OIDC_ISSUER OIDC_AUDIENCE CORS_ALLOWED_ORIGINS TYPST_BIN TEMPLATE_DIR FILE_STORAGE_DIR ENVCTL_DIR ENVCTL_PORT_MIN ENVCTL_PORT_MAX ENVCTL_BIND_HOST ENVCTL_API_BIN ENVCTL_WORKER_BIN ENVCTL_START_TIMEOUT ENVCTL_MAINTENANCE_DB ENVCTL_SOURCE_DB "
 
 # Reads KEY=VALUE lines of a .env-style file for the known keys; values already set in the
 # environment win. The file is parsed, never executed.
@@ -262,6 +262,7 @@ start_process() {
     command -v cargo >/dev/null || die "no built $crate binary and no cargo: build it or set ENVCTL_API_BIN/ENVCTL_WORKER_BIN"
     cmd=(nice cargo run --quiet --manifest-path "$REPO_ROOT/Cargo.toml" -p "$crate")
   fi
+  mkdir -p "$dir/files"
   local -a envs=(
     "DATABASE_URL=$(url_for_db "$db")"
     "BIND_ADDR=$BIND_HOST:$port"
@@ -269,6 +270,7 @@ start_process() {
     "APP_ENV_KIND=$kind"
     "MAIL_TRANSPORT=files"
     "MAIL_FILES_DIR=$dir/outbox"
+    "FILE_STORAGE_DIR=$dir/files"
     "SEED_DEV_DATA=$seed"
     "AUTH_MODE=${AUTH_MODE:-dev}"
   )
@@ -444,6 +446,7 @@ cmd_create_empty() {
   parse_create_flags "$@"
   check_new_name "$name"
   createdb -- "$name"
+  # An empty database has no payload references and needs no source copy.
   register_new "$name" "$KIND" "$name" "$SEED"
   info "created empty database '$name' (kind $KIND)"
   if [[ "$NOSTART" == no ]]; then cmd_start_instance "$name" "$WORKER"; fi
@@ -481,6 +484,7 @@ clone_cleanup() {
     # The name was unregistered when the clone began, so any registry file now belongs to this
     # failed clone: remove it too, or a retry would say "already registered".
     rm -f -- "$(reg_file "$CLONE_TARGET")"
+    rm -rf -- "${ENVS_DIR:?}/$CLONE_TARGET"
     if err="$(dropdb --if-exists --force -- "$CLONE_TARGET" 2>&1)"; then
       echo "envctl: clone failed, target database '$CLONE_TARGET' removed" >&2
     else
@@ -518,6 +522,27 @@ cmd_clone() {
     info "anonymizing personal data (admin users keep their e-mail address)"
     sql "$name" -f "$SQL_DIR/anonymize.sql"
   fi
+  local src_files="${FILE_STORAGE_DIR:-data/files}"
+  [[ -n "${src_files//[[:space:]]/}" ]] || src_files="data/files"
+  if reg_exists "$source" && [[ "$(reg_get "$source" kind)" != live ]]; then
+    src_files="$ENVS_DIR/$source/files"
+  fi
+  local keys key hex rel
+  keys="$(sql_value "$name" "SELECT storage_key FROM core.files
+    UNION SELECT storage_key FROM core.import_files
+    UNION SELECT attachment_storage_key FROM core.mail_outbox WHERE attachment_storage_key IS NOT NULL
+    UNION SELECT raw_message_storage_key FROM helpdesk.articles WHERE raw_message_storage_key IS NOT NULL")"
+  mkdir -p "$ENVS_DIR/$name/files"
+  while IFS= read -r key; do
+    [[ -n "$key" ]] || continue
+    [[ "$key" =~ ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$ ]] || die "invalid blob key in clone"
+    key="${key,,}"
+    hex="${key//-/}"
+    rel="${hex:0:2}/${hex:2:2}/$key"
+    mkdir -p "$ENVS_DIR/$name/files/${hex:0:2}/${hex:2:2}"
+    cp --reflink=auto -- "$src_files/$rel" "$ENVS_DIR/$name/files/$rel" \
+      || die "referenced source payload unavailable: $src_files/$rel"
+  done <<<"$keys"
   register_new "$name" "$KIND" "$name"
   reg_set "$name" cloned_from "$src_db"
   reg_set "$name" anonymized "$ANON"

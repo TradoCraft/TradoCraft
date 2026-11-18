@@ -227,13 +227,21 @@ async fn file_meta(db: &PgPool, company_id: Uuid, id: Uuid) -> AppResult<StoredF
     })
 }
 
-async fn file_bytes(db: &PgPool, company_id: Uuid, id: Uuid) -> AppResult<Vec<u8>> {
-    sqlx::query_scalar("SELECT data FROM core.import_files WHERE id = $1 AND company_id = $2")
-        .bind(id)
-        .bind(company_id)
-        .fetch_optional(db)
-        .await?
-        .ok_or(AppError::NotFound("import file"))
+async fn file_bytes(
+    db: &PgPool,
+    blobs: &tradocraft_core::BlobStore,
+    company_id: Uuid,
+    id: Uuid,
+) -> AppResult<Vec<u8>> {
+    let key: String = sqlx::query_scalar(
+        "SELECT storage_key FROM core.import_files WHERE id = $1 AND company_id = $2",
+    )
+    .bind(id)
+    .bind(company_id)
+    .fetch_optional(db)
+    .await?
+    .ok_or(AppError::NotFound("import file"))?;
+    blobs.get(&key).await
 }
 
 const SELECT_JOB: &str =
@@ -308,8 +316,9 @@ async fn upload_file(
         .map_err(refused)?;
     let id = new_id();
     let filename = file_name(p.filename.as_deref(), format);
-    sqlx::query(
-        "INSERT INTO core.import_files (id, company_id, filename, format, size_bytes, data, uploaded_by)
+    let storage_key = state.blobs.put(&body).await?;
+    let res = sqlx::query(
+        "INSERT INTO core.import_files (id, company_id, filename, format, size_bytes, storage_key, uploaded_by)
          VALUES ($1, $2, $3, $4, $5, $6, $7)",
     )
     .bind(id)
@@ -317,10 +326,17 @@ async fn upload_file(
     .bind(&filename)
     .bind(format.extension())
     .bind(body.len() as i64)
-    .bind(body.as_ref())
+    .bind(&storage_key)
     .bind(user.user_id)
     .execute(&state.db)
-    .await?;
+    .await;
+    if let Err(e) = res {
+        // Transport errors may arrive after the autocommitted INSERT succeeded.
+        if matches!(e, sqlx::Error::Database(_)) {
+            let _ = state.blobs.delete(&storage_key).await;
+        }
+        return Err(e.into());
+    }
     Ok((
         StatusCode::CREATED,
         Json(ImportFile {
@@ -345,7 +361,7 @@ async fn preview_file(
     Query(q): Query<PreviewParams>,
 ) -> AppResult<Json<ImportPreview>> {
     admin(&user)?;
-    let bytes = file_bytes(&state.db, user.company_id, id).await?;
+    let bytes = file_bytes(&state.db, &state.blobs, user.company_id, id).await?;
     let wanted = trim_sheet(q.sheet);
     let asked = wanted.clone();
     let (format, raw) = tokio::task::spawn_blocking(move || {
@@ -528,7 +544,7 @@ async fn create_job(
     let inline = if file.size_bytes as usize > Limits::request().file_bytes {
         false
     } else {
-        let bytes = file_bytes(&state.db, user.company_id, input.file_id).await?;
+        let bytes = file_bytes(&state.db, &state.blobs, user.company_id, input.file_id).await?;
         run::fits_one_request(bytes, sheet.clone()).await?
     };
     let id = new_id();
@@ -564,10 +580,12 @@ async fn create_job(
     // The run is a task of its own: a client that gives up (a closed tab, a timeout in front of
     // the API) drops this request, and a run that stopped half way would leave the job `running`
     // until the worker finds it. The task finishes and writes the outcome either way.
-    let (pool, runner) = (state.db.clone(), user.clone());
-    tokio::spawn(async move { run::run_job(&pool, id, claim, &runner, &Limits::request()).await })
-        .await
-        .map_err(blocking_failed)??;
+    let (pool, blobs, runner) = (state.db.clone(), state.blobs.clone(), user.clone());
+    tokio::spawn(async move {
+        run::run_job(&pool, &blobs, id, claim, &runner, &Limits::request()).await
+    })
+    .await
+    .map_err(blocking_failed)??;
     Ok((
         StatusCode::OK,
         Json(fetch_job(&state.db, user.company_id, id).await?),

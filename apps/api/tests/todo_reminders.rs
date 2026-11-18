@@ -514,9 +514,14 @@ async fn the_pass_only_queues_and_the_outbox_applies_the_transport_policy(db: Pg
     // Outside a live environment the worker's transport is files (ADR 0048): the mail lands on
     // disk and nothing leaves over SMTP.
     let dir = tempfile::tempdir().unwrap();
-    let sent = process_system_mail(&db, &Mailer::Files(dir.path().to_path_buf()), 10)
-        .await
-        .unwrap();
+    let sent = process_system_mail(
+        &db,
+        &tradocraft_core::BlobStore::temp_for_tests(),
+        &Mailer::Files(dir.path().to_path_buf()),
+        10,
+    )
+    .await
+    .unwrap();
     assert_eq!(sent, 1);
     let eml = std::fs::read_to_string(
         std::fs::read_dir(dir.path())

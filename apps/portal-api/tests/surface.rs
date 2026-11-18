@@ -34,6 +34,7 @@ async fn setup(db: PgPool, config: PortalConfig) -> axum::Router {
                 template_dir: PathBuf::from("templates"),
             }),
             live_events: tradocraft_core::live_events::LiveEvents::new(),
+            blobs: Arc::new(tradocraft_core::BlobStore::temp_for_tests()),
         },
         config,
     )

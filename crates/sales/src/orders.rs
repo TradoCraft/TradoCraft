@@ -1221,6 +1221,7 @@ async fn send_order(
     );
     tradocraft_core::mail::enqueue_with_attachment(
         &mut tx,
+        &state.blobs,
         user.company_id,
         &to.address,
         &subject,

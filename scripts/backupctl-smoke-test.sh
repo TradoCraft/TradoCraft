@@ -63,10 +63,37 @@ unset PGPASSWORD
 
 export BACKUPCTL_CONFIG=/dev/null BACKUP_DIR="$WORK/backups"
 export DATABASE_URL="postgresql://tradocraft:s3cret-Pw9@127.0.0.1:$PORT/tradocraft"
+export FILE_STORAGE_DIR="$WORK/files"
+mkdir -p "$FILE_STORAGE_DIR/aa/bb"
+printf 'payload' >"$FILE_STORAGE_DIR/aa/bb/blob"
 unset BACKUP_EXEC BACKUP_KEEP_DAILY BACKUP_KEEP_WEEKLY BACKUP_KEEP_MONTHLY
+
+# Assert the sweep lock is held during both database capture and payload capture.
+mkdir -p "$WORK/bin"
+export REAL_BASEBACKUP="$PG_BIN/pg_basebackup" REAL_TAR="$(command -v tar)"
+cat >"$WORK/bin/pg_basebackup" <<'WRAPPER'
+#!/usr/bin/env bash
+[[ "$(psql -X -q -t -A -d tradocraft -c 'SELECT pg_try_advisory_xact_lock(743902104)')" == f ]] || exit 90
+exec "$REAL_BASEBACKUP" "$@"
+WRAPPER
+cat >"$WORK/bin/tar" <<'WRAPPER'
+#!/usr/bin/env bash
+if [[ "$*" == *files.tar.gz* && "$1" == -czf ]]; then
+  [[ "$(psql -X -q -t -A -d tradocraft -c 'SELECT pg_try_advisory_xact_lock(743902104)')" == f ]] || exit 91
+fi
+if [[ "${BREAK_BLOB_PROTECTION:-}" == 1 && "$*" == *files.tar.gz* && "$1" == -czf ]]; then
+  "$REAL_TAR" "$@" || exit $?
+  psql -X -q -t -A -d tradocraft -c "SELECT pg_terminate_backend(pid) FROM pg_locks WHERE locktype = 'advisory' AND objid = 743902104 AND mode = 'ShareLock'" >/dev/null
+  exit 0
+fi
+exec "$REAL_TAR" "$@"
+WRAPPER
+chmod +x "$WORK/bin/pg_basebackup" "$WORK/bin/tar"
+export PATH="$WORK/bin:$PATH"
 
 # --- backup ---
 OUT="$("$BACKUPCTL" backup 2>&1)" && pass "backup succeeds" || { fail "backup succeeds"; echo "$OUT" >&2; }
+check "blob protection released after backup" test "$(PGPASSWORD=s3cret-Pw9 q tradocraft 'SELECT pg_try_advisory_xact_lock(743902104)')" = t
 ID="$(ls "$BACKUP_DIR" | grep -E '^[0-9]{8}T[0-9]{6}Z$' | head -n1 || true)"
 check "backup directory with archive and description" test -s "$BACKUP_DIR/$ID/base.tar.gz" -a -s "$BACKUP_DIR/$ID/backup.info"
 check "migration recorded" grep -qx "migration=20270126000001" "$BACKUP_DIR/$ID/backup.info"
@@ -104,7 +131,7 @@ check "manifest check catches altered files" bash -c "! '$BACKUPCTL' verify $BAD
 rm -rf "${BACKUP_DIR:?}/$BAD" "${BACKUP_DIR:?}/$BAD2" "$WORK/repack"
 
 # --- restore and drill ---
-OUT="$("$BACKUPCTL" restore latest "$DRILL" --start --port "$DRILL_PORT" 2>&1)" && pass "restore --start succeeds" || { fail "restore --start succeeds"; echo "$OUT" >&2; }
+OUT="$("$BACKUPCTL" restore latest "$DRILL" --files-target "$WORK/restored-files" --start --port "$DRILL_PORT" 2>&1)" && pass "restore --start succeeds" || { fail "restore --start succeeds"; echo "$OUT" >&2; }
 check "drill copy answers with the source password and the backup's data" \
   test "$(PGPASSWORD=s3cret-Pw9 psql -X -t -A -h 127.0.0.1 -p "$DRILL_PORT" -U tradocraft -d tradocraft -c 'SELECT count(*) FROM files' 2>/dev/null)" = 3
 check "drill copy does not archive WAL" \
@@ -112,6 +139,12 @@ check "drill copy does not archive WAL" \
 pg_ctl -D "$DRILL" -m fast stop >/dev/null
 check "restore refuses a non-empty target" bash -c "! '$BACKUPCTL' restore latest '$DRILL'"
 check "restore refuses an unknown id" bash -c "! '$BACKUPCTL' restore 20000101T000000Z '$WORK/none'"
+
+check "payload restored byte for byte" cmp "$FILE_STORAGE_DIR/aa/bb/blob" "$WORK/restored-files/aa/bb/blob"
+mv "$BACKUP_DIR/$ID/files.tar.gz" "$WORK/files.tar.gz"
+check "missing payload archive rejected" bash -c "! '$BACKUPCTL' restore '$ID' '$WORK/missing-payload'"
+mv "$WORK/files.tar.gz" "$BACKUP_DIR/$ID/files.tar.gz"
+check "unavailable storage refuses backup" bash -c "! FILE_STORAGE_DIR='$WORK/absent' '$BACKUPCTL' backup"
 
 # --- retention ---
 # Fake backups over 400 days (description and archive only; prune does not open them).
@@ -138,6 +171,10 @@ check "nothing older than six months" bash -c "! grep -q ' 202507\|^202507' <<<'
 # Days Jan 25-31 (7), weeks W02-W04 ending Jan 18/11 (+ Jan 25 week already counted) and months.
 check "kept set is small" test "$(ls "$WORK/fake" | wc -l)" -le 17
 check "crashed partial removed" test ! -e "$WORK/fake/.20260131T150000Z.partial"
+
+# A dead server session can leave psql waiting on stdin: a local echo is insufficient.
+check "lost protection rejects backup" bash -c "! BREAK_BLOB_PROTECTION=1 '$BACKUPCTL' --dir '$WORK/lost-lock' backup --no-prune"
+check "lost protection publishes no backup" bash -c "! find '$WORK/lost-lock' -name backup.info | grep -q ."
 
 # --- configuration errors ---
 check "missing BACKUP_DIR fails" bash -c "! env -u BACKUP_DIR '$BACKUPCTL' list"

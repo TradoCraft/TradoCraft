@@ -529,7 +529,7 @@ async fn equipment_must_belong_to_the_customer_and_shows_its_warranty(db: PgPool
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
 async fn the_service_report_is_a_pdf_in_five_languages_and_can_be_mailed(db: PgPool) {
-    let app = setup(db.clone()).await;
+    let (app, blobs) = common::setup_with_blobs(db.clone()).await;
     let id = started(&app).await;
     let base = format!("/api/v1/field/jobs/{id}");
     let su = unit(&db, "P-7001", Some(ALPHA), "installed").await;
@@ -612,8 +612,8 @@ async fn the_service_report_is_a_pdf_in_five_languages_and_can_be_mailed(db: PgP
     assert_eq!(s, StatusCode::OK, "{d}");
     assert_eq!(d["job"]["report_sent_to"], "sofie.maes@alpha.example");
     assert!(d["job"]["report_sent_at"].is_string());
-    let (to, subject, name, kind, size): (String, String, Option<String>, Option<String>, Option<i32>) = sqlx::query_as(
-        "SELECT to_address, subject, attachment_name, attachment_type, length(attachment_data) FROM core.mail_outbox ORDER BY created_at DESC LIMIT 1",
+    let (to, subject, name, kind, storage_key): (String, String, Option<String>, Option<String>, Option<String>) = sqlx::query_as(
+        "SELECT to_address, subject, attachment_name, attachment_type, attachment_storage_key FROM core.mail_outbox ORDER BY created_at DESC LIMIT 1",
     )
     .fetch_one(&db)
     .await
@@ -622,7 +622,8 @@ async fn the_service_report_is_a_pdf_in_five_languages_and_can_be_mailed(db: PgP
     assert!(subject.contains("Werkbon"), "{subject}");
     assert_eq!(kind.as_deref(), Some("application/pdf"));
     assert!(name.unwrap().ends_with("-service-report.pdf"));
-    assert!(size.unwrap() > 1000);
+    let pdf_bytes = blobs.get(&storage_key.unwrap()).await.unwrap();
+    assert!(pdf_bytes.len() > 1000);
 
     // No address: no contact, and the customer has none.
     sqlx::query("UPDATE crm.customers SET email = NULL WHERE id = $1::uuid")

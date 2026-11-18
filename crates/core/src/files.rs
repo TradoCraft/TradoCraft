@@ -1,11 +1,11 @@
 //! Photo and document storage. Files are checked by their signature (not their name or declared type), size
-//! limited, and kept in PostgreSQL next to a metadata row. Modules link files to their own records
-//! and decide who may see them; this module only stores and loads.
+//! limited, and kept on disk in [`BlobStore`] next to a PostgreSQL metadata row. Modules link files to
+//! their own records and decide who may see them; this module only stores and loads.
 
 use sqlx::{FromRow, PgConnection};
 use uuid::Uuid;
 
-use crate::{new_id, AppError, AppResult};
+use crate::{new_id, AppError, AppResult, BlobStore};
 
 /// Largest accepted upload (a phone photo is typically 2–6 MB).
 pub const MAX_FILE_BYTES: usize = 12 * 1024 * 1024;
@@ -64,8 +64,10 @@ pub fn clean_filename(name: &str, content_type: &str) -> String {
 /// Stores an image. `id` lets a client choose the id (a retried upload from a phone that was
 /// offline must not create a second copy); the existing file is returned if it is already there
 /// for this company.
+#[allow(clippy::too_many_arguments)]
 pub async fn store_image(
     conn: &mut PgConnection,
+    blobs: &BlobStore,
     company_id: Uuid,
     id: Option<Uuid>,
     filename: &str,
@@ -75,6 +77,7 @@ pub async fn store_image(
 ) -> AppResult<FileInfo> {
     store(
         conn,
+        blobs,
         company_id,
         id,
         filename,
@@ -89,8 +92,10 @@ pub async fn store_image(
 
 /// Stores a ticket attachment: a JPEG, PNG or WebP image or a PDF document. Same rules as
 /// [`store_image`].
+#[allow(clippy::too_many_arguments)]
 pub async fn store_document(
     conn: &mut PgConnection,
+    blobs: &BlobStore,
     company_id: Uuid,
     id: Option<Uuid>,
     filename: &str,
@@ -100,6 +105,7 @@ pub async fn store_document(
 ) -> AppResult<FileInfo> {
     store(
         conn,
+        blobs,
         company_id,
         id,
         filename,
@@ -115,6 +121,7 @@ pub async fn store_document(
 #[allow(clippy::too_many_arguments)]
 async fn store(
     conn: &mut PgConnection,
+    blobs: &BlobStore,
     company_id: Uuid,
     id: Option<Uuid>,
     filename: &str,
@@ -138,9 +145,10 @@ async fn store(
     if let Some(existing) = get_info(conn, company_id, id).await? {
         return Ok(existing);
     }
-    let info: FileInfo = sqlx::query_as(
-        "INSERT INTO core.files (id, company_id, filename, content_type, size_bytes, uploaded_by, uploader_name)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
+    let storage_key = blobs.put(bytes).await?;
+    let res = sqlx::query_as::<_, FileInfo>(
+        "INSERT INTO core.files (id, company_id, filename, content_type, size_bytes, uploaded_by, uploader_name, storage_key)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
          RETURNING id, filename, content_type, size_bytes, uploader_name, created_at",
     )
     .bind(id)
@@ -150,14 +158,16 @@ async fn store(
     .bind(bytes.len() as i32)
     .bind(uploaded_by)
     .bind(uploader_name)
-    .fetch_one(&mut *conn)
-    .await?;
-    sqlx::query("INSERT INTO core.file_blobs (file_id, data) VALUES ($1, $2)")
-        .bind(id)
-        .bind(bytes)
-        .execute(conn)
-        .await?;
-    Ok(info)
+    .bind(&storage_key)
+    .fetch_one(conn)
+    .await;
+    match res {
+        Ok(info) => Ok(info),
+        Err(e) => {
+            let _ = blobs.delete(&storage_key).await;
+            Err(e.into())
+        }
+    }
 }
 
 pub async fn get_info(
@@ -178,18 +188,20 @@ pub async fn get_info(
 /// The bytes and content type of a file of this company.
 pub async fn load(
     conn: &mut PgConnection,
+    blobs: &BlobStore,
     company_id: Uuid,
     id: Uuid,
 ) -> AppResult<(String, Vec<u8>)> {
-    sqlx::query_as(
-        "SELECT f.content_type, b.data FROM core.files f JOIN core.file_blobs b ON b.file_id = f.id
-         WHERE f.id = $1 AND f.company_id = $2",
+    let (content_type, storage_key): (String, String) = sqlx::query_as(
+        "SELECT content_type, storage_key FROM core.files WHERE id = $1 AND company_id = $2",
     )
     .bind(id)
     .bind(company_id)
     .fetch_optional(conn)
     .await?
-    .ok_or(AppError::NotFound("file"))
+    .ok_or(AppError::NotFound("file"))?;
+    let bytes = blobs.get(&storage_key).await?;
+    Ok((content_type, bytes))
 }
 
 /// A response for a stored image. Photos never change, so browsers may cache them; they are

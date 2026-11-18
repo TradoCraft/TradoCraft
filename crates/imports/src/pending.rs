@@ -39,7 +39,7 @@ pub struct PassReport {
 /// Reclaims stale jobs, runs the queued ones and removes old files, in that order. A step that
 /// fails is logged and does not stop the next. Safe with several workers: every step is one atomic
 /// statement or a claim with `SKIP LOCKED`.
-pub async fn run_pending(pool: &PgPool) -> PassReport {
+pub async fn run_pending(pool: &PgPool, blobs: &tradocraft_core::BlobStore) -> PassReport {
     let mut report = PassReport::default();
     match reclaim_stale(pool).await {
         Ok((requeued, abandoned)) => {
@@ -48,8 +48,8 @@ pub async fn run_pending(pool: &PgPool) -> PassReport {
         }
         Err(e) => tracing::error!(error = ?e, "reclaiming stale import jobs failed"),
     }
-    report.ran = run_queued(pool, MAX_JOBS_PER_PASS).await;
-    match remove_old_files(pool).await {
+    report.ran = run_queued(pool, blobs, MAX_JOBS_PER_PASS).await;
+    match remove_old_files(pool, blobs).await {
         Ok(n) => report.files_removed = n,
         Err(e) => tracing::error!(error = ?e, "removing old import files failed"),
     }
@@ -99,7 +99,7 @@ pub async fn reclaim_stale(pool: &PgPool) -> AppResult<(u64, u64)> {
 /// Runs queued jobs one after the other, at most `max`. Each job runs in a task of its own, so a
 /// panic ends that job's run (it stays `running`, its heartbeat stops, and [`reclaim_stale`] takes
 /// it) and not the worker. Returns how many jobs were run.
-async fn run_queued(pool: &PgPool, max: usize) -> usize {
+async fn run_queued(pool: &PgPool, blobs: &tradocraft_core::BlobStore, max: usize) -> usize {
     let mut ran = 0;
     while ran < max {
         let job = match claim_next(pool).await {
@@ -113,8 +113,11 @@ async fn run_queued(pool: &PgPool, max: usize) -> usize {
         ran += 1;
         let id = job.id;
         let task_pool = pool.clone();
-        let outcome =
-            tokio::spawn(async move { run_claimed(&task_pool, &job, &Limits::job()).await }).await;
+        let task_blobs = blobs.clone();
+        let outcome = tokio::spawn(async move {
+            run_claimed(&task_pool, &task_blobs, &job, &Limits::job()).await
+        })
+        .await;
         match outcome {
             Ok(Ok(())) => tracing::info!(job = %id, "import job finished"),
             Ok(Err(e)) => {
@@ -131,17 +134,23 @@ async fn run_queued(pool: &PgPool, max: usize) -> usize {
 /// Deletes uploads older than [`FILE_KEEP_DAYS`] days, except those a queued or running job still
 /// reads: a job that waited for a worker never loses its file. A job of an old file that was
 /// removed keeps its row (`file_id` becomes null).
-pub async fn remove_old_files(pool: &PgPool) -> AppResult<u64> {
-    let n = sqlx::query(
+pub async fn remove_old_files(
+    pool: &PgPool,
+    _blobs: &tradocraft_core::BlobStore,
+) -> AppResult<u64> {
+    let keys: Vec<String> = sqlx::query_scalar(
         "DELETE FROM core.import_files f
          WHERE f.created_at < now() - make_interval(days => $1)
            AND NOT EXISTS (SELECT 1 FROM core.import_jobs j
-                           WHERE j.file_id = f.id AND j.status IN ('queued', 'running'))",
+                           WHERE j.file_id = f.id AND j.status IN ('queued', 'running'))
+         RETURNING f.storage_key",
     )
     .bind(FILE_KEEP_DAYS)
-    .execute(pool)
-    .await?
-    .rows_affected();
+    .fetch_all(pool)
+    .await?;
+    let n = keys.len() as u64;
+    // Physical deletion belongs to the orphan sweep, which honors backup protection.
+    // Retention may remove the live reference while a captured database still needs the bytes.
     if n > 0 {
         tracing::info!(files = n, "old import files removed");
     }

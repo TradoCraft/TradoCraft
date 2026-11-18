@@ -58,7 +58,10 @@ services:
       # OIDC_AUDIENCE: tradocraft
       # OIDC_CLIENT_ID: tradocraft-app            # optional, public client of the sign-in page
       # OIDC_SCOPES: openid profile email         # optional, this is the default
+      FILE_STORAGE_DIR: /var/lib/tradocraft/files
       RUST_LOG: info
+    volumes:
+      - filestorage:/var/lib/tradocraft/files
     ports:
       - "127.0.0.1:8080:8080"   # loopback only: dev auth trusts X-Dev-User
 
@@ -79,7 +82,10 @@ services:
       # PORTAL_ALLOWED_ORIGINS: https://portal.example.com
       # The reverse proxy in front, so limits count per customer instead of per proxy:
       # PORTAL_TRUSTED_PROXIES: 172.16.0.0/12
+      FILE_STORAGE_DIR: /var/lib/tradocraft/files
       RUST_LOG: info
+    volumes:
+      - filestorage:/var/lib/tradocraft/files
     ports:
       - "127.0.0.1:8090:8090"
 
@@ -106,7 +112,11 @@ services:
       # SMTP_HOST: smtp.example.com
       # SMTP_USER / SMTP_PASSWORD
       POLL_SECONDS: "15"
+      FILE_STORAGE_DIR: /var/lib/tradocraft/files
       RUST_LOG: info
+    volumes:
+      - filestorage:/var/lib/tradocraft/files
 
 volumes:
   pgdata:
+  filestorage:

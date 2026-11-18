@@ -313,7 +313,7 @@ async fn render(
                 .fetch_one(&mut *conn)
                 .await?;
         if let Some(f) = file {
-            let (_, data) = files::load(conn, user.company_id, f).await?;
+            let (_, data) = files::load(conn, &state.blobs, user.company_id, f).await?;
             images.push(("signature.png".into(), data));
             signature_file = Some("signature.png".to_string());
         }
@@ -324,7 +324,7 @@ async fn render(
         if photos.len() >= MAX_PHOTOS {
             break;
         }
-        let (ct, data) = files::load(conn, user.company_id, p.id).await?;
+        let (ct, data) = files::load(conn, &state.blobs, user.company_id, p.id).await?;
         let ext = match ct.as_str() {
             "image/jpeg" => "jpg",
             "image/png" => "png",
@@ -442,6 +442,7 @@ async fn send_report(
     let (subject, body) = report_mail(&r.language, &company.name, &r.customer.name, &number);
     tradocraft_core::mail::enqueue_with_attachment(
         &mut tx,
+        &state.blobs,
         user.company_id,
         &to,
         &subject,

@@ -69,15 +69,24 @@ fn helpdesk(table: &str) -> Value {
 }
 
 /// (to, subject, attachment name, attachment type, attachment bytes) of the queued mails.
-async fn outbox(db: &PgPool) -> Vec<(String, String, String, String, Vec<u8>)> {
-    sqlx::query_as(
-        "SELECT to_address, subject, attachment_name, attachment_type, attachment_data
+async fn outbox(
+    db: &PgPool,
+    blobs: &tradocraft_core::BlobStore,
+) -> Vec<(String, String, String, String, Vec<u8>)> {
+    let rows: Vec<(String, String, String, String, String)> = sqlx::query_as(
+        "SELECT to_address, subject, attachment_name, attachment_type, attachment_storage_key
          FROM core.mail_outbox WHERE delivery = 'queued' AND attachment_name IS NOT NULL
          ORDER BY to_address",
     )
     .fetch_all(db)
     .await
-    .unwrap()
+    .unwrap();
+    let mut out = Vec::with_capacity(rows.len());
+    for (to, subject, name, kind, key) in rows {
+        let bytes = blobs.get(&key).await.unwrap();
+        out.push((to, subject, name, kind, bytes));
+    }
+    out
 }
 
 async fn schedule(app: &axum::Router, body: Value) -> Value {
@@ -88,7 +97,7 @@ async fn schedule(app: &axum::Router, body: Value) -> Value {
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
 async fn a_saved_report_is_mailed_as_csv_to_users_and_addresses(db: PgPool) {
-    let app = setup(db.clone()).await;
+    let (app, blobs) = common::setup_with_blobs(db.clone()).await;
     let report = saved_report(&app, ADMIN, true).await;
     let s = schedule(&app, custom(&report, "csv")).await;
     assert_eq!(s["send_time"], "07:30");
@@ -105,7 +114,7 @@ async fn a_saved_report_is_mailed_as_csv_to_users_and_addresses(db: PgPool) {
     .await;
     assert_eq!(status, StatusCode::OK, "{r}");
     assert_eq!(r["mails"], 2);
-    let mails = outbox(&db).await;
+    let mails = outbox(&db, &blobs).await;
     assert_eq!(mails.len(), 2);
     assert_eq!(mails[0].0, "boss@example.com");
     assert_eq!(mails[1].0, SUPPORT);
@@ -127,7 +136,7 @@ async fn a_saved_report_is_mailed_as_csv_to_users_and_addresses(db: PgPool) {
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
 async fn a_saved_report_can_be_mailed_as_pdf(db: PgPool) {
-    let app = setup(db.clone()).await;
+    let (app, blobs) = common::setup_with_blobs(db.clone()).await;
     let report = saved_report(&app, ADMIN, false).await;
     let s = schedule(&app, custom(&report, "pdf")).await;
     let id = s["id"].as_str().unwrap();
@@ -139,14 +148,14 @@ async fn a_saved_report_can_be_mailed_as_pdf(db: PgPool) {
     )
     .await;
     assert_eq!(status, StatusCode::OK, "{r}");
-    let mails = outbox(&db).await;
+    let mails = outbox(&db, &blobs).await;
     assert_eq!(mails[0].3, "application/pdf");
     assert!(mails[0].4.starts_with(b"%PDF-"));
 }
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
 async fn a_helpdesk_report_is_mailed_as_csv_and_as_pdf(db: PgPool) {
-    let app = setup(db.clone()).await;
+    let (app, blobs) = common::setup_with_blobs(db.clone()).await;
     let s = schedule(&app, helpdesk("volume")).await;
     let id = s["id"].as_str().unwrap();
     assert_eq!(s["helpdesk"]["period"], "last_7_days");
@@ -158,7 +167,7 @@ async fn a_helpdesk_report_is_mailed_as_csv_and_as_pdf(db: PgPool) {
     )
     .await;
     assert_eq!(status, StatusCode::OK, "{r}");
-    let mails = outbox(&db).await;
+    let mails = outbox(&db, &blobs).await;
     assert_eq!(mails.len(), 1);
     let csv = String::from_utf8(mails[0].4.clone()).unwrap();
     assert!(csv.starts_with("period,created,closed\r\n"), "{csv}");
@@ -176,7 +185,7 @@ async fn a_helpdesk_report_is_mailed_as_csv_and_as_pdf(db: PgPool) {
     )
     .await;
     assert_eq!(status, StatusCode::OK, "{r}");
-    let pdfs: Vec<_> = outbox(&db)
+    let pdfs: Vec<_> = outbox(&db, &blobs)
         .await
         .into_iter()
         .filter(|m| m.3 == "application/pdf")
@@ -187,12 +196,12 @@ async fn a_helpdesk_report_is_mailed_as_csv_and_as_pdf(db: PgPool) {
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
 async fn the_worker_pass_runs_due_schedules_once_and_sets_the_next_run(db: PgPool) {
-    let app = setup(db.clone()).await;
+    let (app, blobs) = common::setup_with_blobs(db.clone()).await;
     let s = schedule(&app, helpdesk("volume")).await;
     let id = s["id"].as_str().unwrap().to_string();
     // Not due yet.
     assert_eq!(
-        tradocraft_reports::schedule::run_due(&db, &docs())
+        tradocraft_reports::schedule::run_due(&db, &blobs, &docs())
             .await
             .unwrap(),
         0
@@ -202,15 +211,15 @@ async fn the_worker_pass_runs_due_schedules_once_and_sets_the_next_run(db: PgPoo
         .await
         .unwrap();
     assert_eq!(
-        tradocraft_reports::schedule::run_due(&db, &docs())
+        tradocraft_reports::schedule::run_due(&db, &blobs, &docs())
             .await
             .unwrap(),
         1
     );
-    assert_eq!(outbox(&db).await.len(), 1);
+    assert_eq!(outbox(&db, &blobs).await.len(), 1);
     // One run for the missed days, and the next one is in the future.
     assert_eq!(
-        tradocraft_reports::schedule::run_due(&db, &docs())
+        tradocraft_reports::schedule::run_due(&db, &blobs, &docs())
             .await
             .unwrap(),
         0
@@ -232,17 +241,17 @@ async fn the_worker_pass_runs_due_schedules_once_and_sets_the_next_run(db: PgPoo
     .await
     .unwrap();
     assert_eq!(
-        tradocraft_reports::schedule::run_due(&db, &docs())
+        tradocraft_reports::schedule::run_due(&db, &blobs, &docs())
             .await
             .unwrap(),
         0
     );
-    assert_eq!(outbox(&db).await.len(), 1);
+    assert_eq!(outbox(&db, &blobs).await.len(), 1);
 }
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
 async fn a_run_is_refused_when_the_owner_lost_access_and_the_reason_is_kept(db: PgPool) {
-    let app = setup(db.clone()).await;
+    let (app, blobs) = common::setup_with_blobs(db.clone()).await;
     let s = schedule(&app, helpdesk("volume")).await;
     let id = s["id"].as_str().unwrap().to_string();
     sqlx::query("UPDATE core.user_companies SET roles = '{viewer}' WHERE user_id = $1::uuid")
@@ -255,12 +264,12 @@ async fn a_run_is_refused_when_the_owner_lost_access_and_the_reason_is_kept(db: 
         .await
         .unwrap();
     assert_eq!(
-        tradocraft_reports::schedule::run_due(&db, &docs())
+        tradocraft_reports::schedule::run_due(&db, &blobs, &docs())
             .await
             .unwrap(),
         1
     );
-    assert!(outbox(&db).await.is_empty());
+    assert!(outbox(&db, &blobs).await.is_empty());
     let (status, error, moved): (String, String, bool) = sqlx::query_as(
         "SELECT last_status, last_error, next_run_at > now() FROM reports.schedules WHERE id = $1::uuid",
     )

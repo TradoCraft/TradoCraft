@@ -496,6 +496,7 @@ impl GraphClient {
     pub async fn poll(
         &self,
         db: &PgPool,
+        blobs: &tradocraft_core::BlobStore,
         m: &GraphMailbox,
         company_id: Uuid,
         source: Source,
@@ -528,7 +529,7 @@ impl GraphClient {
         };
         for id in ids.iter().take(MAX_PER_POLL) {
             match self
-                .one(db, m, &token, company_id, source, id, &mut out)
+                .one(db, blobs, m, &token, company_id, source, id, &mut out)
                 .await
             {
                 Ok(true) => {
@@ -554,6 +555,7 @@ impl GraphClient {
     async fn one(
         &self,
         db: &PgPool,
+        blobs: &tradocraft_core::BlobStore,
         m: &GraphMailbox,
         token: &str,
         company_id: Uuid,
@@ -591,7 +593,7 @@ impl GraphClient {
             }
             Err(e) => return Err(e),
         };
-        match ingest::ingest_from(db, company_id, &raw, Some(source)).await {
+        match ingest::ingest_from(db, blobs, company_id, &raw, Some(source)).await {
             Ok(r) => {
                 tracing::info!(ticket = %r.ticket_number, new = r.new_ticket, "e-mail ingested")
             }

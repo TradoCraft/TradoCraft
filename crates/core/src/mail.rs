@@ -4,6 +4,8 @@
 use sqlx::PgConnection;
 use uuid::Uuid;
 
+use crate::{AppResult, BlobStore};
+
 /// Queues a plain-text e-mail from the company's address.
 pub async fn enqueue(
     conn: &mut PgConnection,
@@ -28,15 +30,17 @@ pub async fn enqueue(
 /// Queues a plain-text e-mail with one attachment (e.g. a PDF document).
 pub async fn enqueue_with_attachment(
     conn: &mut PgConnection,
+    blobs: &BlobStore,
     company_id: Uuid,
     to_address: &str,
     subject: &str,
     body: &str,
     attachment: Attachment<'_>,
-) -> Result<(), sqlx::Error> {
-    sqlx::query(
+) -> AppResult<()> {
+    let storage_key = blobs.put(attachment.data).await?;
+    let res = sqlx::query(
         "INSERT INTO core.mail_outbox (id, company_id, to_address, subject, body,
-                                       attachment_name, attachment_type, attachment_data)
+                                       attachment_name, attachment_type, attachment_storage_key)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
     )
     .bind(crate::new_id())
@@ -46,9 +50,13 @@ pub async fn enqueue_with_attachment(
     .bind(body)
     .bind(attachment.filename)
     .bind(attachment.content_type)
-    .bind(attachment.data)
+    .bind(&storage_key)
     .execute(conn)
-    .await?;
+    .await;
+    if let Err(e) = res {
+        let _ = blobs.delete(&storage_key).await;
+        return Err(e.into());
+    }
     Ok(())
 }
 

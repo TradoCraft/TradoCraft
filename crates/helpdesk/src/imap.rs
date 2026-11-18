@@ -30,12 +30,16 @@ pub struct ImapConfig {
 
 /// Fetches unread messages, ingests each one and marks it as read. Returns the number processed.
 /// A message is only marked read after it has been stored, so nothing is lost if this fails.
-pub async fn poll(db: &PgPool, cfg: &ImapConfig) -> anyhow::Result<usize> {
+pub async fn poll(
+    db: &PgPool,
+    blobs: &tradocraft_core::BlobStore,
+    cfg: &ImapConfig,
+) -> anyhow::Result<usize> {
     let tcp = TcpStream::connect((cfg.host.as_str(), cfg.port))
         .await
         .context("connecting to IMAP server")?;
     if !cfg.tls {
-        return fetch_unseen(db, cfg, async_imap::Client::new(tcp)).await;
+        return fetch_unseen(db, blobs, cfg, async_imap::Client::new(tcp)).await;
     }
     let mut roots = RootCertStore::empty();
     roots.extend(webpki_roots::TLS_SERVER_ROOTS.iter().cloned());
@@ -48,11 +52,12 @@ pub async fn poll(db: &PgPool, cfg: &ImapConfig) -> anyhow::Result<usize> {
         .connect(ServerName::try_from(cfg.host.clone())?, tcp)
         .await
         .context("TLS handshake with IMAP server")?;
-    fetch_unseen(db, cfg, async_imap::Client::new(stream)).await
+    fetch_unseen(db, blobs, cfg, async_imap::Client::new(stream)).await
 }
 
 async fn fetch_unseen<T>(
     db: &PgPool,
+    blobs: &tradocraft_core::BlobStore,
     cfg: &ImapConfig,
     mut client: async_imap::Client<T>,
 ) -> anyhow::Result<usize>
@@ -81,7 +86,7 @@ where
             .await?;
         for f in &fetched {
             let Some(raw) = f.body() else { continue };
-            match ingest::ingest_from(db, cfg.company_id, raw, cfg.source).await {
+            match ingest::ingest_from(db, blobs, cfg.company_id, raw, cfg.source).await {
                 Ok(r) => {
                     tracing::info!(ticket = %r.ticket_number, new = r.new_ticket, "e-mail ingested")
                 }

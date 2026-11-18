@@ -283,6 +283,7 @@ pub async fn add_message(
 /// of the conversation when it is passed in `attachment_ids` of the next message.
 pub async fn upload_attachment(
     conn: &mut PgConnection,
+    blobs: &tradocraft_core::BlobStore,
     v: &Viewer,
     ticket_id: Uuid,
     params: &crate::attachments::UploadParams,
@@ -292,6 +293,7 @@ pub async fn upload_attachment(
     let contact = tradocraft_crm::contacts::get_contact(conn, v.contact_id).await?;
     crate::attachments::upload(
         conn,
+        blobs,
         v.company_id,
         ticket_id,
         params,
@@ -308,6 +310,7 @@ pub async fn upload_attachment(
 /// A file of a message the customer can see. Files of internal notes are "not found".
 pub async fn attachment_data(
     conn: &mut PgConnection,
+    blobs: &tradocraft_core::BlobStore,
     v: &Viewer,
     ticket_id: Uuid,
     file_id: Uuid,
@@ -315,6 +318,7 @@ pub async fn attachment_data(
     get(conn, v, ticket_id).await?;
     crate::attachments::data(
         conn,
+        blobs,
         v.company_id,
         ticket_id,
         file_id,

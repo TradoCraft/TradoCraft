@@ -55,7 +55,7 @@ UPDATE helpdesk.articles
                               FROM generate_series(1, COALESCE(array_length(to_addresses, 1), 0)) n),
        cc_addresses = ARRAY(SELECT 'cc-' || left(md5(id::text), 10) || '-' || n || '@example.test'
                               FROM generate_series(1, COALESCE(array_length(cc_addresses, 1), 0)) n),
-       raw_message = NULL,
+       raw_message_storage_key = NULL,
        phone_number = NULL;
 
 -- Ticket attachments (links, metadata and blobs). A file is only deleted when nothing else
@@ -71,7 +71,6 @@ BEGIN
           FROM pg_constraint k
           JOIN pg_attribute a ON a.attrelid = k.conrelid AND a.attnum = k.conkey[1]
          WHERE k.contype = 'f' AND k.confrelid = 'core.files'::regclass
-           AND k.conrelid <> 'core.file_blobs'::regclass
     LOOP
         EXECUTE format('DELETE FROM gone_files WHERE file_id IN (SELECT %I FROM %s)', r.col, r.tbl);
     END LOOP;
@@ -81,6 +80,6 @@ END $$;
 -- System mail still in the table: addresses and the attached document.
 UPDATE core.mail_outbox
    SET to_address = 'recipient-' || left(md5(id::text), 10) || '@example.test',
-       attachment_name = NULL, attachment_type = NULL, attachment_data = NULL;
+       attachment_name = NULL, attachment_type = NULL, attachment_storage_key = NULL;
 
 COMMIT;

@@ -98,6 +98,11 @@ q smoke_src "
   INSERT INTO core.mail_outbox (id, company_id, to_address, subject, body, delivery, sent_at)
   SELECT gen_random_uuid(), id, 'real.person@customer.com', 'login', 'open https://x.test/login#token=SECRETTOKEN123 now', 'sent', now()
     FROM core.companies LIMIT 1"
+mkdir -p "$ENVCTL_DIR/envs/smoke_src/files/01/23"
+printf 'clone payload' >"$ENVCTL_DIR/envs/smoke_src/files/01/23/01234567-89ab-7000-8000-000000000001"
+q smoke_src "INSERT INTO core.files (id, company_id, filename, content_type, size_bytes, storage_key)
+  SELECT gen_random_uuid(), id, 'fixture.jpg', 'image/jpeg', 13, '01234567-89ab-7000-8000-000000000001'
+  FROM core.companies LIMIT 1"
 SRC_CUSTOMERS="$(q smoke_src "SELECT count(*) FROM crm.customers")"
 
 echo "== clone (the source API keeps running and stays connected) =="
@@ -107,6 +112,13 @@ DOC="$(curl -fsS "$URL/api/v1/meta/environment")"
 [[ "$(jq -r .kind <<<"$DOC")" == test ]] && pass "meta/environment kind is test" || fail "kind: $DOC"
 [[ "$(jq -r .name <<<"$DOC")" == smoke_clone ]] && pass "meta/environment name is the clone" || fail "name: $DOC"
 [[ "$(jq -r .db_name <<<"$DOC")" == smoke_clone ]] && pass "clone runs on its own database" || fail "db: $DOC"
+
+check "clone copies filesystem payload" cmp "$ENVCTL_DIR/envs/smoke_src/files/01/23/01234567-89ab-7000-8000-000000000001" "$ENVCTL_DIR/envs/smoke_clone/files/01/23/01234567-89ab-7000-8000-000000000001"
+mv "$ENVCTL_DIR/envs/smoke_src/files" "$WORK/saved-files"
+check "missing source payload directory rejects clone" bash -c "! '$ENVCTL' clone smoke_src smoke_missing --no-start"
+check "failed payload clone removes database" test "$(q postgres "SELECT count(*) FROM pg_database WHERE datname = 'smoke_missing'")" = 0
+check "failed payload clone is not registered" test ! -e "$ENVCTL_DIR/registry/smoke_missing.env"
+mv "$WORK/saved-files" "$ENVCTL_DIR/envs/smoke_src/files"
 
 echo "== credentials scrubbed =="
 [[ "$(q smoke_clone "SELECT count(*) FROM portal.login_links")" == 0 ]] && pass "portal login links removed" || fail "login links"
@@ -153,8 +165,20 @@ check "refuses to drop a live-registered environment" bash -c "! '$ENVCTL' drop 
 rm -f "$ENVCTL_DIR/registry/smoke_livereg.env"
 check "refuses to drop without confirmation" bash -c "! '$ENVCTL' drop smoke_clone </dev/null"
 
+# Mail-only payloads must disappear; a surviving core.files reference must remain.
+for suffix in 2 3; do
+  printf 'private mail' >"$ENVCTL_DIR/envs/smoke_src/files/01/23/01234567-89ab-7000-8000-00000000000$suffix"
+done
+q smoke_src "INSERT INTO core.mail_outbox (id, company_id, to_address, subject, body, delivery,
+  attachment_name, attachment_type, attachment_storage_key)
+  SELECT gen_random_uuid(), id, 'private@example.test', 'private', 'body', 'sent',
+    'mail.pdf', 'application/pdf', '01234567-89ab-7000-8000-000000000002' FROM core.companies LIMIT 1"
+# An orphan models a removed raw-message reference as well as stale .tmp data.
 echo "== anonymize =="
 "$ENVCTL" clone smoke_src smoke_anon --kind tutorial --anonymize --no-start
+check "anonymized clone retains surviving payload" cmp "$ENVCTL_DIR/envs/smoke_src/files/01/23/01234567-89ab-7000-8000-000000000001" "$ENVCTL_DIR/envs/smoke_anon/files/01/23/01234567-89ab-7000-8000-000000000001"
+check "anonymized clone excludes removed mail payload" test ! -e "$ENVCTL_DIR/envs/smoke_anon/files/01/23/01234567-89ab-7000-8000-000000000002"
+check "anonymized clone excludes unreferenced payload" test ! -e "$ENVCTL_DIR/envs/smoke_anon/files/01/23/01234567-89ab-7000-8000-000000000003"
 [[ "$(q smoke_anon "SELECT count(*) FROM crm.customers WHERE email LIKE '%@customer.com'")" == 0 ]] && pass "customer e-mail anonymized" || fail "anon customers"
 [[ "$(q smoke_anon "SELECT count(*) FROM crm.contact_emails WHERE email NOT LIKE '%@example.test'")" == 0 ]] && pass "contact e-mail anonymized" || fail "anon contacts"
 [[ "$(q smoke_anon "SELECT count(*) FROM crm.contact_phones WHERE normalized = '32475112233' OR number NOT LIKE '+32 470 %' OR normalized <> regexp_replace(number, '[^0-9]', '', 'g')")" == 0 ]] && pass "contact phones anonymized" || fail "anon phones"
