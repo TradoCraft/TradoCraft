@@ -110,10 +110,17 @@ abstract class CrmClient {
   /// [sort] - Sort order: `field` ascending or `-field` descending, comma-separated for several keys (at.
   /// most 3). Fields: code, name, vat_number, email, phone, city, country_code, active.
   /// Default: name.
+  ///
+  /// [active] - Only active (`true`) or inactive (`false`) customers.
+  ///
+  /// [countryCode] - Only customers in these countries: one two-letter code or a comma-separated list.
+  /// (`BE,NL`, at most 20), case-insensitive. Values combine with OR.
   @GET('/api/v1/customers')
   Future<CustomerPage> listCustomers({
     @Query('q') String? q,
     @Query('sort') String? sort,
+    @Query('active') bool? active,
+    @Query('country_code') String? countryCode,
     @Query('limit') int? limit,
     @Query('offset') int? offset,
   });

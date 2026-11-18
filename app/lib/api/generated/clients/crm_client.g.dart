@@ -289,6 +289,8 @@ class _CrmClient implements CrmClient {
   Future<CustomerPage> listCustomers({
     String? q,
     String? sort,
+    bool? active,
+    String? countryCode,
     int? limit,
     int? offset,
   }) async {
@@ -296,6 +298,8 @@ class _CrmClient implements CrmClient {
     final queryParameters = <String, dynamic>{
       r'q': q,
       r'sort': sort,
+      r'active': active,
+      r'country_code': countryCode,
       r'limit': limit,
       r'offset': offset,
     };

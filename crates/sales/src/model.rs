@@ -553,6 +553,8 @@ impl Quotation {
 pub struct ListParams {
     /// Searches number and customer name.
     pub q: Option<String>,
+    /// Only these statuses: one value or a comma-separated list (`draft,sent`). Values: draft,
+    /// sent, accepted, rejected, superseded. They combine with OR.
     pub status: Option<String>,
     pub customer_id: Option<Uuid>,
     pub opportunity_id: Option<Uuid>,

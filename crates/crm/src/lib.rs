@@ -184,6 +184,11 @@ pub struct ListParams {
     /// most 3). Fields: code, name, vat_number, email, phone, city, country_code, active.
     /// Default: name.
     pub sort: Option<String>,
+    /// Only active (`true`) or inactive (`false`) customers.
+    pub active: Option<bool>,
+    /// Only customers in these countries: one two-letter code or a comma-separated list
+    /// (`BE,NL`, at most 20), case-insensitive. Values combine with OR.
+    pub country_code: Option<String>,
     pub limit: Option<i64>,
     pub offset: Option<i64>,
 }
@@ -292,8 +297,16 @@ async fn list_customers(
 ) -> AppResult<Json<CustomerPage>> {
     user.require(Permission::CustomersRead)?;
     let pattern = search::pattern(p.q.as_deref());
+    let countries = tradocraft_core::filter::values_with(
+        p.country_code.as_deref(),
+        "country_code",
+        "two-letter country codes",
+        tradocraft_core::filter::country_code,
+    )?;
     let filter = format!(
-        "WHERE ($2::text IS NULL OR {} OR {} OR {} OR {})",
+        "WHERE ($2::text IS NULL OR {} OR {} OR {} OR {})
+                  AND ($5::boolean IS NULL OR c.active = $5)
+                  AND ($6::text[] IS NULL OR c.country_code::text = ANY($6))",
         search::matches("c.code", "$2"),
         search::matches("c.name", "$2"),
         search::matches("c.vat_number", "$2"),
@@ -308,13 +321,21 @@ async fn list_customers(
     .bind(&pattern)
     .bind(p.limit.unwrap_or(50).clamp(1, 500))
     .bind(p.offset.unwrap_or(0).max(0))
+    .bind(p.active)
+    .bind(&countries)
     .fetch_all(&state.db)
     .await?;
+    // The count query has no company or paging binds: $2 becomes $1, $5 and $6 become $2 and $3.
     let total = sqlx::query_scalar(&format!(
         "SELECT count(*) FROM crm.customers c {}",
-        filter.replace("$2", "$1")
+        filter
+            .replace("$2", "$1")
+            .replace("$5", "$2")
+            .replace("$6", "$3")
     ))
     .bind(&pattern)
+    .bind(p.active)
+    .bind(&countries)
     .fetch_one(&state.db)
     .await?;
     Ok(Json(CustomerPage { items, total }))

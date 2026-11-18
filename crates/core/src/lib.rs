@@ -13,6 +13,7 @@ pub mod csv_io;
 pub mod environment;
 pub mod error;
 pub mod files;
+pub mod filter;
 pub mod identity;
 pub mod identity_admin;
 pub mod import;

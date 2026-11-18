@@ -28,8 +28,32 @@ class ListQuery {
   /// Reserved: sort key.
   final String? sort;
 
-  /// Reserved: extra filters by field name.
+  /// Selected filter values by filter key (`FilterDef.key`); see [csv] and [flag].
   final Map<String, Object?> filters;
+
+  Set<String> _values(String key) {
+    final v = filters[key];
+    if (v is Iterable) return {for (final e in v) '$e'};
+    return v == null ? const {} : {'$v'};
+  }
+
+  /// The selected values of filter [key] as the API's comma-separated list; null when none.
+  String? csv(String key) {
+    final v = _values(key).toList()..sort();
+    return v.isEmpty ? null : v.join(',');
+  }
+
+  /// A yes/no filter whose options are `true` and `false`: null (no restriction) unless exactly
+  /// one of them is selected.
+  bool? flag(String key) {
+    final v = _values(key);
+    if (v.length != 1) return null;
+    return switch (v.first) {
+      'true' => true,
+      'false' => false,
+      _ => null,
+    };
+  }
 
   /// Search text as the API wants it: null when blank.
   String? get q => (search == null || search!.isEmpty) ? null : search;

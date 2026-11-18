@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/api.dart';
 import '../../shared/csv_transfer.dart';
+import '../../framework/search/filter_model.dart';
 import '../../shared/entity_list.dart';
 import 'customer_repository.dart';
 import 'customer_form.dart';
@@ -28,6 +29,16 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
       title: context.l10n.customers,
       loadQuery: (query) async => (await repo.list(query)).asLoaderResult,
       prefsKey: 'customers',
+      filterDefs: [
+        FilterDef(
+          key: 'active',
+          label: context.l10n.status,
+          options: [
+            ('true', context.l10n.active),
+            ('false', context.l10n.inactive),
+          ],
+        ),
+      ],
       resizableColumns: true,
       columnMenu: true,
       columns: [

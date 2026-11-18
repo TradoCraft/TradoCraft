@@ -18779,6 +18779,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Confirm'**
   String get listConfirm;
+
+  /// No description provided for @listFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Filters'**
+  String get listFilters;
+
+  /// No description provided for @listClearFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear filters'**
+  String get listClearFilters;
+
+  /// No description provided for @listOr.
+  ///
+  /// In en, this message translates to:
+  /// **'or'**
+  String get listOr;
+
+  /// No description provided for @listRemoveFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove filter {filter}'**
+  String listRemoveFilter(String filter);
+
+  /// No description provided for @listFiltersActive.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} active'**
+  String listFiltersActive(int count);
+
+  /// No description provided for @listFavourites.
+  ///
+  /// In en, this message translates to:
+  /// **'Favourites'**
+  String get listFavourites;
+
+  /// No description provided for @listSaveFavourite.
+  ///
+  /// In en, this message translates to:
+  /// **'Save current view as favourite'**
+  String get listSaveFavourite;
+
+  /// No description provided for @listFavouriteName.
+  ///
+  /// In en, this message translates to:
+  /// **'Favourite name'**
+  String get listFavouriteName;
+
+  /// No description provided for @listNoFavourites.
+  ///
+  /// In en, this message translates to:
+  /// **'No favourites yet'**
+  String get listNoFavourites;
+
+  /// No description provided for @listDeleteFavourite.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete favourite {name}'**
+  String listDeleteFavourite(String name);
+
+  /// No description provided for @listApplyFavourite.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply favourite {name}'**
+  String listApplyFavourite(String name);
 }
 
 class _AppLocalizationsDelegate

@@ -75,6 +75,7 @@ abstract final class AppIcons {
   static const IconData factCheck = Icons.fact_check_outlined;
   static const IconData fileDownload = Icons.file_download_outlined;
   static const IconData fileUpload = Icons.file_upload_outlined;
+  static const IconData filterList = Icons.filter_list;
   static const IconData flag = Icons.flag_outlined;
   static const IconData folder = Icons.folder_outlined;
   static const IconData forwardToInbox = Icons.forward_to_inbox;
