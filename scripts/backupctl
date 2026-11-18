@@ -236,7 +236,8 @@ protect_blobs() {
 check_blob_locks() {
   local i reply
   for i in "${!BLOB_LOCK_INPUTS[@]}"; do
-    printf '\\echo protected\n' >&"${BLOB_LOCK_INPUTS[i]}"
+    printf "%s\n" "SELECT 'protected';" >&"${BLOB_LOCK_INPUTS[i]}" \
+      || die "blob protection connection lost"
     IFS= read -r -t 60 reply <&"${BLOB_LOCK_OUTPUTS[i]}" || die "blob protection connection lost"
     [[ "$reply" == protected ]] || die "blob protection connection lost"
   done

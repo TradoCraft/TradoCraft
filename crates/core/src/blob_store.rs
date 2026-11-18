@@ -10,6 +10,7 @@
 
 use std::collections::HashSet;
 use std::io::ErrorKind;
+use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime};
 
@@ -69,25 +70,47 @@ impl BlobStore {
 
         let parent =
             std::path::absolute(dest.parent().unwrap()).context("resolve blob directory")?;
-        // Include parents of all missing entries, but stop at the first existing directory.
-        // Record before creation so concurrent creators cannot hide entries needing fsync.
-        let mut sync_dirs = vec![parent.clone()];
-        let mut cursor = parent.as_path();
-        while !tokio::fs::try_exists(cursor)
-            .await
-            .context("inspect blob directory")?
-        {
-            cursor = cursor.parent().context("blob directory has no parent")?;
-            sync_dirs.push(cursor.to_path_buf());
-        }
-        tokio::fs::create_dir_all(&parent)
-            .await
-            .context("create blob directory")?;
-        tokio::fs::create_dir_all(&tmp_dir)
-            .await
-            .context("create blob temporary directory")?;
-        // .tmp may be new even when the shard already exists.
-        sync_dirs.push(std::path::absolute(&self.root).context("resolve blob root")?);
+        let root = std::path::absolute(&self.root).context("resolve blob root")?;
+        let temp = std::path::absolute(&tmp_dir).context("resolve temporary directory")?;
+        let sync_parent = parent.clone();
+        tokio::task::spawn_blocking(move || -> anyhow::Result<()> {
+            // All local backend processes use this persistent lock, including independent
+            // BlobStore instances. Never unlink it: that would split the lock domain.
+            // A blocking task keeps both the lock and initialization alive across cancellation.
+            let lock_path = Path::new("/tmp/tradocraft-blob-directories.lock");
+            match std::fs::OpenOptions::new()
+                .write(true)
+                .create_new(true)
+                .open(lock_path)
+            {
+                Ok(file) => file.set_permissions(std::fs::Permissions::from_mode(0o644))?,
+                Err(e) if e.kind() == ErrorKind::AlreadyExists => (),
+                Err(e) => return Err(e.into()),
+            }
+            let lock = std::fs::File::open(lock_path)?;
+            lock.lock()?;
+            let mut dirs = vec![
+                sync_parent.clone(),
+                sync_parent.parent().unwrap().to_path_buf(),
+                root,
+            ];
+            let mut cursor = sync_parent.as_path();
+            while !cursor.try_exists()? {
+                cursor = cursor.parent().context("blob directory has no parent")?;
+                dirs.push(cursor.to_path_buf());
+            }
+            std::fs::create_dir_all(&sync_parent)?;
+            std::fs::create_dir_all(&temp)?;
+            // Both shard levels are always synchronized. Root ancestors created under
+            // the lock are durable before another writer can observe them as existing.
+            for dir in dirs {
+                std::fs::File::open(dir)?.sync_all()?;
+            }
+            std::fs::File::open(temp)?.sync_all()?;
+            Ok(())
+        })
+        .await
+        .context("initialize blob directories task")??;
 
         if let Err(e) = tokio::fs::write(&tmp_path, bytes).await {
             let _ = tokio::fs::remove_file(&tmp_path).await;
@@ -114,17 +137,13 @@ impl BlobStore {
                 .context(format!("rename blob into {}", dest.display()))
                 .into());
         }
-        // Persist the payload before publishing its key, including every ancestor entry
-        // create_dir_all may have created. Directory fsync is required by this Unix backend;
-        // unsupported filesystems return an error rather than promise durability.
-        for dir in &sync_dirs {
-            tokio::fs::File::open(dir)
-                .await
-                .context("open blob directory")?
-                .sync_all()
-                .await
-                .context("sync blob directory")?;
-        }
+        // Persist the rename; directory creation was synchronized under the lock above.
+        tokio::fs::File::open(&parent)
+            .await
+            .context("open blob directory")?
+            .sync_all()
+            .await
+            .context("sync blob directory")?;
         tokio::fs::File::open(&tmp_dir)
             .await
             .context("open temporary directory")?
@@ -269,6 +288,27 @@ mod tests {
         // Idempotent delete
         store.delete(&key).await.unwrap();
         let _ = std::fs::remove_dir_all(store.root());
+    }
+
+    #[tokio::test]
+    async fn independent_writers_initialize_nested_root() {
+        let base = BlobStore::temp_for_tests();
+        let root = base.root().join("new/ancestors/files");
+        let mut tasks = Vec::new();
+        for _ in 0..16 {
+            let store = BlobStore::new(root.clone());
+            tasks.push(tokio::spawn(async move {
+                store.put(b"concurrent").await.unwrap()
+            }));
+        }
+        let store = BlobStore::new(root);
+        for task in tasks {
+            assert_eq!(
+                store.get(&task.await.unwrap()).await.unwrap(),
+                b"concurrent"
+            );
+        }
+        std::fs::remove_dir_all(base.root()).unwrap();
     }
 
     #[tokio::test]

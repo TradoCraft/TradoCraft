@@ -134,7 +134,10 @@ async fn run_queued(pool: &PgPool, blobs: &tradocraft_core::BlobStore, max: usiz
 /// Deletes uploads older than [`FILE_KEEP_DAYS`] days, except those a queued or running job still
 /// reads: a job that waited for a worker never loses its file. A job of an old file that was
 /// removed keeps its row (`file_id` becomes null).
-pub async fn remove_old_files(pool: &PgPool, blobs: &tradocraft_core::BlobStore) -> AppResult<u64> {
+pub async fn remove_old_files(
+    pool: &PgPool,
+    _blobs: &tradocraft_core::BlobStore,
+) -> AppResult<u64> {
     let keys: Vec<String> = sqlx::query_scalar(
         "DELETE FROM core.import_files f
          WHERE f.created_at < now() - make_interval(days => $1)
@@ -146,9 +149,8 @@ pub async fn remove_old_files(pool: &PgPool, blobs: &tradocraft_core::BlobStore)
     .fetch_all(pool)
     .await?;
     let n = keys.len() as u64;
-    for key in &keys {
-        let _ = blobs.delete(key).await;
-    }
+    // Physical deletion belongs to the orphan sweep, which honors backup protection.
+    // Retention may remove the live reference while a captured database still needs the bytes.
     if n > 0 {
         tracing::info!(files = n, "old import files removed");
     }

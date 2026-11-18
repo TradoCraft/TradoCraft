@@ -81,6 +81,11 @@ cat >"$WORK/bin/tar" <<'WRAPPER'
 if [[ "$*" == *files.tar.gz* && "$1" == -czf ]]; then
   [[ "$(psql -X -q -t -A -d tradocraft -c 'SELECT pg_try_advisory_xact_lock(743902104)')" == f ]] || exit 91
 fi
+if [[ "${BREAK_BLOB_PROTECTION:-}" == 1 && "$*" == *files.tar.gz* && "$1" == -czf ]]; then
+  "$REAL_TAR" "$@" || exit $?
+  psql -X -q -t -A -d tradocraft -c "SELECT pg_terminate_backend(pid) FROM pg_locks WHERE locktype = 'advisory' AND objid = 743902104 AND mode = 'ShareLock'" >/dev/null
+  exit 0
+fi
 exec "$REAL_TAR" "$@"
 WRAPPER
 chmod +x "$WORK/bin/pg_basebackup" "$WORK/bin/tar"
@@ -166,6 +171,10 @@ check "nothing older than six months" bash -c "! grep -q ' 202507\|^202507' <<<'
 # Days Jan 25-31 (7), weeks W02-W04 ending Jan 18/11 (+ Jan 25 week already counted) and months.
 check "kept set is small" test "$(ls "$WORK/fake" | wc -l)" -le 17
 check "crashed partial removed" test ! -e "$WORK/fake/.20260131T150000Z.partial"
+
+# A dead server session can leave psql waiting on stdin: a local echo is insufficient.
+check "lost protection rejects backup" bash -c "! BREAK_BLOB_PROTECTION=1 '$BACKUPCTL' --dir '$WORK/lost-lock' backup --no-prune"
+check "lost protection publishes no backup" bash -c "! find '$WORK/lost-lock' -name backup.info | grep -q ."
 
 # --- configuration errors ---
 check "missing BACKUP_DIR fails" bash -c "! env -u BACKUP_DIR '$BACKUPCTL' list"

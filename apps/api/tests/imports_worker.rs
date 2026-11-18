@@ -234,10 +234,38 @@ async fn old_files_are_removed_unless_a_queued_or_running_job_needs_them(db: PgP
     make_running(&db, running_job, 1, 1).await;
     let queued_job = job(&db, Some(old_queued), ADMIN_ID, true).await;
 
+    let old_key: String =
+        sqlx::query_scalar("SELECT storage_key FROM core.import_files WHERE id = $1")
+            .bind(old_free)
+            .fetch_one(&db)
+            .await
+            .unwrap();
+    let mut backup = db.begin().await.unwrap();
+    sqlx::query("SELECT pg_advisory_xact_lock_shared(743902104)")
+        .execute(&mut *backup)
+        .await
+        .unwrap();
     let removed = tradocraft_imports::remove_old_files(&db, &blobs)
         .await
         .unwrap();
     assert_eq!(removed, 2);
+    assert!(blobs.get(&old_key).await.is_ok());
+    assert_eq!(
+        blobs
+            .sweep_orphans(&db, std::time::Duration::ZERO)
+            .await
+            .unwrap(),
+        0
+    );
+    backup.rollback().await.unwrap();
+    assert_eq!(
+        blobs
+            .sweep_orphans(&db, std::time::Duration::ZERO)
+            .await
+            .unwrap(),
+        2
+    );
+    assert!(blobs.get(&old_key).await.is_err());
     let left: Vec<Uuid> = sqlx::query_scalar("SELECT id FROM core.import_files")
         .fetch_all(&db)
         .await
