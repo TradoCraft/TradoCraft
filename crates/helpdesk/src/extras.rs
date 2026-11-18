@@ -412,6 +412,15 @@ async fn merge(
     .bind(target_id)
     .execute(&mut *tx)
     .await?;
+    // The merged ticket is closed and points at the target; its links (A9) would dangle, so they
+    // go. The notes written when they were made stay in the other tickets' history.
+    sqlx::query(
+        "DELETE FROM helpdesk.ticket_links WHERE (source_id = $1 OR target_id = $1) AND company_id = $2",
+    )
+    .bind(id)
+    .bind(user.company_id)
+    .execute(&mut *tx)
+    .await?;
     add_note(
         &mut tx,
         &user,

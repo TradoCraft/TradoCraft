@@ -22,6 +22,7 @@ import 'call_dialogs.dart';
 import 'ticket_collab.dart';
 import 'ticket_merge.dart';
 import 'ticket_extras.dart';
+import 'ticket_links.dart';
 import 'ticket_split.dart';
 import 'tickets_page.dart';
 import '../../shared/app_icons.dart';
@@ -1350,6 +1351,14 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
         TimeSection(
           ticketId: t.id,
           canWrite: canWrite,
+          refreshVersion: _liveTick,
+        ),
+        const Divider(height: 32),
+        TicketLinksCard(
+          ticketId: t.id,
+          number: t.number,
+          canWrite: canWrite,
+          canReply: perms.contains('helpdesk.reply'),
           refreshVersion: _liveTick,
         ),
         const Divider(height: 32),

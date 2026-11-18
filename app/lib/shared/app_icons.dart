@@ -4,7 +4,7 @@ import 'package:material_ui/material_ui.dart';
 /// Swap the icon set here and nowhere else.
 abstract final class AppIcons {
   static const IconData accountBalance = Icons.account_balance_outlined;
-  static const IconData accountCircle= Icons.account_circle_outlined;
+  static const IconData accountCircle = Icons.account_circle_outlined;
   static const IconData accountTree = Icons.account_tree_outlined;
   static const IconData add = Icons.add;
   static const IconData addAPhoto = Icons.add_a_photo_outlined;
@@ -17,6 +17,8 @@ abstract final class AppIcons {
   static const IconData arrowDownward = Icons.arrow_downward;
   static const IconData arrowDropDown = Icons.arrow_drop_down;
   static const IconData arrowUpward = Icons.arrow_upward;
+  static const IconData noteAlt = Icons.note_alt_outlined;
+  static const IconData removeCircle = Icons.remove_circle_outline;
   static const IconData subdirectoryArrowRight = Icons.subdirectory_arrow_right;
   static const IconData article = Icons.article_outlined;
   static const IconData attachFile = Icons.attach_file;

@@ -10290,6 +10290,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'split': '$name hat dieses Ticket aufgeteilt.',
       'attachment': '$name hat einen Anhang hinzugefügt.',
       'checklist': '$name hat die Checkliste geändert.',
+      'links': '$name hat die verknüpften Tickets geändert.',
       'other': '$name hat dieses Ticket geändert.',
     });
     return '$_temp0';
@@ -10307,6 +10308,138 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get ticketMergeSomeone => 'Jemand';
+
+  @override
+  String get linksTitle => 'Verknüpfte Tickets';
+
+  @override
+  String get linksNone => 'Keine verknüpften Tickets.';
+
+  @override
+  String get linksAdd => 'Verknüpfung hinzufügen…';
+
+  @override
+  String get linksAddAction => 'Verknüpfen';
+
+  @override
+  String get linksParent => 'Teil des Bündels von';
+
+  @override
+  String get linksChildren => 'Bündel';
+
+  @override
+  String linksBundleProgress(int open, int total) {
+    return '$open von $total noch offen';
+  }
+
+  @override
+  String get linksRelated => 'Verwandt';
+
+  @override
+  String get linksDuplicateOf => 'Duplikat von';
+
+  @override
+  String get linksDuplicates => 'Duplikate';
+
+  @override
+  String get linksMerged => 'Zusammengeführt';
+
+  @override
+  String get linksRemove => 'Verknüpfung entfernen';
+
+  @override
+  String get linksSearch => 'Tickets suchen';
+
+  @override
+  String get linksNoMatches => 'Keine Tickets gefunden.';
+
+  @override
+  String get linksRelationChild =>
+      'Das andere Ticket zu diesem Bündel hinzufügen';
+
+  @override
+  String get linksRelationParent => 'Dem Bündel des anderen Tickets beitreten';
+
+  @override
+  String get linksRelationRelated => 'Verwandt mit dem anderen Ticket';
+
+  @override
+  String get linksRelationDuplicateOf =>
+      'Dieses Ticket ist ein Duplikat des anderen';
+
+  @override
+  String get linksRelationDuplicatedBy =>
+      'Das andere Ticket ist ein Duplikat dieses Tickets';
+
+  @override
+  String get bundleUpdate => 'Bündel aktualisieren…';
+
+  @override
+  String get bundleUpdateTitle => 'Das Bündel aktualisieren';
+
+  @override
+  String get bundleUpdateHelp =>
+      'Senden Sie dieselbe Antwort, Notiz oder denselben Status an jedes Ticket im Bündel. Sie sehen zuerst, was passieren würde; erst mit „Anwenden“ ändert sich etwas.';
+
+  @override
+  String get bundleActionReply => 'Kunden antworten';
+
+  @override
+  String get bundleActionNote => 'Interne Notiz';
+
+  @override
+  String get bundleActionStatus => 'Status ändern';
+
+  @override
+  String get bundleStatusAfter => 'Status danach';
+
+  @override
+  String get bundleStatusUnchanged => 'Unverändert';
+
+  @override
+  String get bundlePreview => 'Vorschau';
+
+  @override
+  String get bundleEdit => 'Bearbeiten';
+
+  @override
+  String bundleApply(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Auf $count Tickets anwenden',
+      one: 'Auf 1 Ticket anwenden',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String bundleDone(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Tickets aktualisiert.',
+      one: '1 Ticket aktualisiert.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get bundleOutcomeWouldApply => 'Wird aktualisiert';
+
+  @override
+  String get bundleOutcomeApplied => 'Aktualisiert';
+
+  @override
+  String get bundleOutcomeSkipped => 'Ausgelassen';
+
+  @override
+  String get bundleOutcomeFailed => 'Abgelehnt';
+
+  @override
+  String bundleRecipient(String email) {
+    return 'an $email';
+  }
 
   @override
   String get ticketMergeCompare => 'Vergleichen';

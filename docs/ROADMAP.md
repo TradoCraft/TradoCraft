@@ -24,7 +24,7 @@ Module overview: [ARCHITECTURE.md](ARCHITECTURE.md).
 | A6b Helpdesk SLA notices from templates | Open (needs deadline placeholders and rendering without a user) |
 | A7 Helpdesk ticket checklists (templates per team, `apply_checklist` automation action, progress badge, optional close gate) | Done (PR #100; no ADR yet) |
 | A8 Helpdesk immediate change notification (concurrent updates seen by both people) | Done, [ADR 0075](adr/0075-helpdesk-live-ticket-updates.md) (builds on the SSE channel of [ADR 0073](adr/0073-concurrent-edit-protection.md)); mail ingested by the worker follows |
-| A9 Helpdesk ticket bundles (linked tickets) | Open (merge and split are done, ADR 0017 and ADR 0021) |
+| A9 Helpdesk ticket bundles (linked tickets: bundle, related, duplicate; bundle mass update with preview) | Done, [ADR 0076](adr/0076-helpdesk-ticket-links-and-bundles.md); list badge, per-customer greeting in a bundle reply and automation on links follow |
 | B1 Inventory foundation | Done, [ADR 0019](adr/0019-inventory-stock-ledger.md) |
 | B2 Purchasing | In progress, [ADR 0031](adr/0031-purchasing.md) |
 | B2b Supplier invoices and three-way match (AP register, no ledger) | Done, [ADR 0046](adr/0046-supplier-invoices-and-three-way-match.md) |
@@ -80,7 +80,7 @@ The scope below is a proposal until the first version is agreed. Findings refer 
 - Merge or close the pending Dependabot branches (tower-http, webpki-roots, setup-node, @types/node) and
   note the deferred `swagger-parser-2` migration (PR #94).
 
-**After the first release**: A9, A6b, C2, the work-centre half of C3, D8, D9, and security findings
+**After the first release**: A6b, C2, the work-centre half of C3, D8, D9, and security findings
 #8 to #17.
 
 ## Sequencing
@@ -135,7 +135,7 @@ Remaining knowledge base gaps (ADR 0018): non-image attachments, analytics, sema
 - Delivered through a server-sent events channel per ticket. D3 uses the same channel for the
   conflict warning on other records.
 
-**A9 Ticket bundles** (small-medium)
+**A9 Ticket bundles** (small-medium, done, [ADR 0076](adr/0076-helpdesk-ticket-links-and-bundles.md))
 - Merge (ADR 0017) and split (ADR 0021) exist. Add links between tickets that stay separate: a
   parent with child tickets ("bundle"), related, or duplicate-of; shown in both tickets.
 - A bundle shows its members' states; a reply or state change on the parent can be offered to all
