@@ -45,7 +45,7 @@ Module overview: [ARCHITECTURE.md](ARCHITECTURE.md).
 | D8 Draft autosave | Open |
 | D9 Two-factor authentication | Open |
 | D10 Data import framework (CSV, XLSX, ODS, Parquet) | Done for the shared importer, CSV/XLSX/ODS readers, XLSX/ODS export, admin screen and background jobs, [ADR 0067](adr/0067-data-import-framework.md); Parquet and further entities (contacts, suppliers, stock opening balances, quotations, orders, tickets) follow |
-| P1 Price lists (zones, chapters, export profiles, PDF and Excel) | Done (PRs #95, #97), [ADR 0069](adr/0069-price-lists.md); never run in a real app (see the release checklist) |
+| P1 Price lists (zones, chapters, export profiles, PDF and Excel) | Done (PRs #95, #97), [ADR 0074](adr/0074-price-lists.md); never run in a real app (see the release checklist) |
 | P2 Site baseline and product suitability | In progress, [ADR 0068](adr/0068-site-baseline-and-product-suitability.md), branch `feat/site-baseline` (PR #69); panel, quotation picker flags and end-to-end test open |
 
 ## First release checklist
