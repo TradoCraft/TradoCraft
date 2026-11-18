@@ -4,8 +4,7 @@ import '../../api/generated/models/ticket.dart';
 import '../../l10n/l10n.dart';
 
 /// The ticket properties that can be edited in the side panel and that a colleague's save can
-/// change underneath an open form (A8). The contact link (`contactId`) is not a field of its
-/// own: it follows the contact name.
+/// change underneath an open form (A8).
 enum TicketField {
   subject,
   status,
@@ -14,6 +13,7 @@ enum TicketField {
   language,
   owner,
   customer,
+  contactId,
   contactName,
   contactEmail,
   quotation,
@@ -31,6 +31,7 @@ TicketValues ticketValues(Ticket t) => {
   TicketField.language: t.language,
   TicketField.owner: t.ownerUserId,
   TicketField.customer: t.customerId,
+  TicketField.contactId: t.contactId,
   TicketField.contactName: t.contactName,
   TicketField.contactEmail: t.contactEmail,
   TicketField.quotation: t.quotationId,
@@ -107,6 +108,7 @@ String ticketFieldLabel(BuildContext context, TicketField f) {
     TicketField.language => l.language,
     TicketField.owner => l.owner,
     TicketField.customer => l.customer,
+    TicketField.contactId => l.contactPerson,
     TicketField.contactName => l.contactName,
     TicketField.contactEmail => l.email,
     TicketField.quotation => l.quotation,

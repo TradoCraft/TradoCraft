@@ -70,5 +70,7 @@ who else has a ticket open is already handled by soft presence (ADR 0023).
   the input, one `check_version` call after the row lock, and `live_events.publish_record_change`
   after commit.
 * **A8 (helpdesk immediate change notification).** Done in [ADR 0075](0075-helpdesk-live-ticket-updates.md):
-  every ticket mutation and presence publish to this channel, and `TicketScreen` refreshes live and
-  merges the unsaved form with the colleague's change.
+  API ticket mutations and presence publish to this channel, and `TicketScreen` refreshes live and
+  merges the unsaved form with the colleague's change. Worker-ingested customer replies run in a
+  separate process from the in-process hub, so they do not publish an event and may not appear live
+  in `TicketScreen`.

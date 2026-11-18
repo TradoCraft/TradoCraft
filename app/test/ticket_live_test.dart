@@ -21,12 +21,16 @@ TicketValues _v({
   String subject = 'Pump',
   String priority = 'normal',
   String? owner = 'u1',
+  String? contactId,
+  String contactName = 'Anna',
 }) => {
   for (final f in TicketField.values) f: null,
   TicketField.subject: subject,
   TicketField.status: 'open',
   TicketField.priority: priority,
   TicketField.owner: owner,
+  TicketField.contactId: contactId,
+  TicketField.contactName: contactName,
 };
 
 void _mergeTests() {
@@ -74,6 +78,25 @@ void _mergeTests() {
       );
       expect(m.takenFromTheirs, [TicketField.owner]);
       expect(m.resolved[TicketField.owner], 'u2');
+    });
+
+    test('distinct contacts with the same name are tracked by contactId', () {
+      final m = mergeTicketFields(
+        base: _v(contactId: 'c1', contactName: 'Anna'),
+        mine: _v(contactId: 'c2', contactName: 'Anna'),
+        theirs: _v(contactId: 'c3', contactName: 'Anna'),
+      );
+      expect(m.conflicts, [TicketField.contactId]);
+      expect(m.resolved[TicketField.contactId], 'c2');
+
+      final taken = mergeTicketFields(
+        base: _v(contactId: 'c1', contactName: 'Anna'),
+        mine: _v(contactId: 'c1', contactName: 'Anna'),
+        theirs: _v(contactId: 'c2', contactName: 'Anna'),
+      );
+      expect(taken.conflicts, isEmpty);
+      expect(taken.takenFromTheirs, [TicketField.contactId]);
+      expect(taken.resolved[TicketField.contactId], 'c2');
     });
   });
 }
@@ -290,6 +313,26 @@ void main() {
       expect(s.calls('GET /api/v1/tickets/t1/events'), activityCalls + 1);
       expect(find.text('Time logged.'), findsOneWidget);
       expect(find.text('Jo logged time.'), findsOneWidget);
+      await _leave(tester);
+    },
+  );
+
+  testWidgets(
+    'a reconnect resync with the same version refreshes unversioned panel data',
+    (tester) async {
+      final s = await _open(tester);
+      final timeCalls = s.calls('GET /api/v1/tickets/t1/time-entries');
+      final activityCalls = s.calls('GET /api/v1/tickets/t1/events');
+
+      s.detail = _detail(messages: ['It is loud.', 'Time logged offline.']);
+      s.live.events.add(
+        Uint8List.fromList(utf8.encode('event: resync\ndata: {}\n\n')),
+      );
+      await _settle(tester);
+
+      expect(s.calls('GET /api/v1/tickets/t1/time-entries'), timeCalls + 1);
+      expect(s.calls('GET /api/v1/tickets/t1/events'), activityCalls + 1);
+      expect(find.text('Time logged offline.'), findsOneWidget);
       await _leave(tester);
     },
   );

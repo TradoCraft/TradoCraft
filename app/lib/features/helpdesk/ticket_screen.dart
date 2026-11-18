@@ -117,14 +117,22 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
   RecordLiveWatcher? _watcher;
   String? _conflictMessage;
   bool _isConflict = false;
+  bool _conflictRetry = false;
+  bool _retryingConflict = false;
 
   // Live changes by colleagues (A8). A refresh that is running swallows the events that arrive
   // meanwhile into one more refresh. [_pendingTheirs] is the server's ticket when it differs
   // from the user's unsaved edits in a way that needs a decision.
-  bool _liveRefreshing = false;
+  Future<void>? _liveRefreshTask;
   bool _liveRefreshQueued = false;
+  bool _liveRefreshNotifyFailure = false;
+  String _queuedKind = 'updated';
+  String _queuedWho = '';
+  int _mutationGen = 0;
+  int _linksSeq = 0;
   TicketDetail? _pendingTheirs;
   String _pendingActor = '';
+  String _pendingKind = 'updated';
 
   @override
   void initState() {
@@ -201,6 +209,7 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
     TicketField.language: _language,
     TicketField.owner: _ownerId,
     TicketField.customer: _customerId,
+    TicketField.contactId: _contactId,
     TicketField.contactName: _contactName.text.trim(),
     TicketField.contactEmail: _contactEmail.text.trim(),
     TicketField.quotation: _quotationId,
@@ -223,6 +232,8 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
         _ownerId = v;
       case TicketField.customer:
         _customerId = v;
+      case TicketField.contactId:
+        _contactId = v;
       case TicketField.contactName:
         _contactName.text = v ?? '';
       case TicketField.contactEmail:
@@ -238,30 +249,93 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
   /// is always brought up to date; the properties are replaced when the user has not edited
   /// them, merged when the user and the colleague changed different fields, and put to the user
   /// (Compare) when both changed the same field. A save that was refused with a 409 comes here
-  /// too. Failures are ignored: the next event or the Reload button catches up.
-  Future<void> _refreshFromServer(String kind, String who) async {
-    if (_liveRefreshing) {
+  /// too. Background SSE failures are ignored (next event or Reload catches up); failures after
+  /// a 409 show a retryable conflict notice while keeping unsaved edits.
+  Future<void> _refreshFromServer(
+    String kind,
+    String who, {
+    bool notifyOnFailure = false,
+  }) async {
+    if (notifyOnFailure) _liveRefreshNotifyFailure = true;
+    if (_liveRefreshTask != null) {
       _liveRefreshQueued = true;
+      _queuedKind = kind;
+      _queuedWho = who;
+      if (notifyOnFailure) await _liveRefreshTask;
       return;
     }
-    _liveRefreshing = true;
+    Future<void> run() async {
+      var curKind = kind;
+      var curWho = who;
+      var reportFailure = false;
+      try {
+        do {
+          _liveRefreshQueued = false;
+          reportFailure = reportFailure || _liveRefreshNotifyFailure;
+          _liveRefreshNotifyFailure = false;
+          final gen = _mutationGen;
+          final fresh = await _api.helpdesk.getTicket(id: widget.id);
+          if (!mounted) return;
+          if (gen != _mutationGen && _d != null) {
+            final freshV = fresh.ticket.version;
+            final currentV = _d!.ticket.version;
+            if (freshV == null || currentV == null || freshV <= currentV) {
+              reportFailure = false;
+              if (_liveRefreshQueued) {
+                curKind = _queuedKind;
+                curWho = _queuedWho;
+              }
+              continue;
+            }
+          }
+          _absorb(fresh, curKind, curWho);
+          reportFailure = false;
+          if (_liveRefreshQueued) {
+            curKind = _queuedKind;
+            curWho = _queuedWho;
+          }
+        } while (_liveRefreshQueued && mounted);
+      } catch (_) {
+        if (mounted && (reportFailure || _liveRefreshNotifyFailure)) {
+          _liveRefreshNotifyFailure = false;
+          setState(() {
+            _conflictRetry = true;
+            _conflictMessage = context.l10n.recordConflictMessage;
+            _isConflict = true;
+          });
+        }
+      } finally {
+        _liveRefreshNotifyFailure = false;
+        _liveRefreshTask = null;
+      }
+    }
+
+    _liveRefreshTask = run();
+    await _liveRefreshTask;
+  }
+
+  Future<void> _retryConflict() async {
+    if (_retryingConflict) return;
+    setState(() => _retryingConflict = true);
     try {
-      do {
-        _liveRefreshQueued = false;
-        final fresh = await _api.helpdesk.getTicket(id: widget.id);
-        if (!mounted) return;
-        _absorb(fresh, kind, who);
-      } while (_liveRefreshQueued && mounted);
-    } catch (_) {
-      // Offline or gone; see above.
+      await _refreshFromServer('updated', '', notifyOnFailure: true);
     } finally {
-      _liveRefreshing = false;
+      if (mounted) setState(() => _retryingConflict = false);
     }
   }
 
   void _absorb(TicketDetail fresh, String kind, String who) {
     final l = context.l10n;
     final shown = _d;
+    if (shown != null) {
+      final shownV = shown.ticket.version;
+      final pendingV = _pendingTheirs?.ticket.version;
+      final minVersion = shownV == null
+          ? pendingV
+          : (pendingV != null && pendingV > shownV ? pendingV : shownV);
+      final freshV = fresh.ticket.version;
+      if (freshV != null && minVersion != null && freshV < minVersion) return;
+    }
     _liveTick++;
     final name = who.isEmpty ? l.ticketMergeSomeone : who;
     if (shown == null) {
@@ -303,6 +377,8 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
         );
         _pendingTheirs = fresh;
         _pendingActor = name;
+        _pendingKind = kind;
+        _conflictRetry = false;
         _conflictMessage = l.ticketLiveUnsaved(name);
         _isConflict = true;
       });
@@ -312,22 +388,32 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
   /// Message selector for [AppLocalizations.ticketLiveChange]; `time` is a reserved ICU word.
   String _liveKey(String kind) => kind == 'time' ? 'timeEntry' : kind;
 
+  String? _customerNameFor(
+    String? id,
+    List<Ticket?> candidates,
+    String? prevId,
+    String? prevName,
+  ) {
+    if (id == null) return null;
+    if (id == prevId && prevName != null) return prevName;
+    for (final t in candidates) {
+      if (t != null && t.customerId == id && t.customerName != null) {
+        return t.customerName;
+      }
+    }
+    return _customerName;
+  }
+
   /// Shows [fresh] in the form with [resolved] on top of it, so the user's edits that survive
   /// the merge stay unsaved edits, now on top of the current version.
   void _applyMerged(TicketDetail fresh, TicketValues resolved) {
     final myCustomerId = _customerId, myCustomerName = _customerName;
-    final myContactName = _contactName.text.trim();
-    final myContactId = _contactId;
-    _apply(fresh);
+    _apply(fresh, loadLinks: false);
     setState(() {
       resolved.forEach(_setField);
       if (_customerId == myCustomerId) _customerName = myCustomerName;
-      if (!sameValue(fresh.ticket.contactName, myContactName) &&
-          sameValue(_contactName.text.trim(), myContactName)) {
-        _contactId = myContactId;
-      }
     });
-    if (_customerId != fresh.ticket.customerId) _loadLinks();
+    _loadLinks();
   }
 
   /// Opens the side-by-side comparison for the fields both people changed.
@@ -341,8 +427,9 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
       mine: mine,
       theirs: theirs,
     );
+    TicketValues? choice;
     if (merge.conflicts.isNotEmpty) {
-      final choice = await showTicketMergeDialog(
+      choice = await showTicketMergeDialog(
         context,
         theirName: _pendingActor,
         merge: merge,
@@ -353,8 +440,101 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
       if (choice == null || !mounted) return;
       merge.resolved.addAll(choice);
     }
-    _pendingTheirs = null;
-    _applyMerged(fresh, merge.resolved);
+    final current = _d;
+    final latestPending = _pendingTheirs;
+    final unchanged =
+        identical(current, shown) &&
+        identical(latestPending, fresh) &&
+        changedFields(mine, _formValues).isEmpty;
+    if (unchanged) {
+      _pendingTheirs = null;
+      _applyMerged(fresh, merge.resolved);
+      return;
+    }
+    if (latestPending != null) {
+      _reconcileDialogChoices(
+        shown: shown,
+        fresh: fresh,
+        resolved: merge.resolved,
+        choice: choice,
+        latest: latestPending,
+      );
+      return;
+    }
+    if (choice != null &&
+        current != null &&
+        _conflictMessage != null &&
+        changedFields(ticketValues(current.ticket), _formValues).isNotEmpty) {
+      final prevCustomerId = _customerId;
+      setState(() => choice!.forEach(_setField));
+      if (_customerId != prevCustomerId) _loadLinks();
+    }
+  }
+
+  void _reconcileDialogChoices({
+    required TicketDetail shown,
+    required TicketDetail fresh,
+    required TicketValues resolved,
+    required TicketValues? choice,
+    required TicketDetail latest,
+  }) {
+    final current = _d;
+    final currentV = current?.ticket.version;
+    final freshV = fresh.ticket.version;
+    final currentIsNewer =
+        currentV != null && freshV != null && currentV > freshV;
+    final baseTicket = currentIsNewer ? current!.ticket : fresh.ticket;
+    final mine = currentIsNewer ? {..._formValues, ...?choice} : resolved;
+    final reconciled = mergeTicketFields(
+      base: ticketValues(baseTicket),
+      mine: mine,
+      theirs: ticketValues(latest.ticket),
+    );
+    final l = context.l10n;
+    final actor = _pendingActor.isEmpty ? l.ticketMergeSomeone : _pendingActor;
+    final kind = _pendingKind;
+    final msg = _conflictMessage;
+    final prevCustomerId = _customerId;
+    final prevCustomerName = _customerName;
+    final resolvedCustomerName = _customerNameFor(
+      reconciled.resolved[TicketField.customer],
+      [baseTicket, fresh.ticket, latest.ticket],
+      prevCustomerId,
+      prevCustomerName,
+    );
+    if (reconciled.conflicts.isEmpty) {
+      _pendingTheirs = null;
+      _applyMerged(latest, reconciled.resolved);
+      setState(() {
+        if (_customerId == reconciled.resolved[TicketField.customer]) {
+          _customerName = resolvedCustomerName;
+        }
+        if (!identical(latest, fresh)) {
+          _conflictMessage = reconciled.takenFromTheirs.isEmpty
+              ? l.ticketLiveChange(_liveKey(kind), actor)
+              : l.ticketLiveMerged(actor);
+          _isConflict = false;
+        }
+      });
+      return;
+    }
+    setState(() {
+      _d = TicketDetail(
+        ticket: baseTicket,
+        articles: latest.articles,
+        watchers: latest.watchers,
+        readers: latest.readers,
+      );
+      reconciled.resolved.forEach(_setField);
+      _customerName = resolvedCustomerName;
+      _pendingTheirs = latest;
+      _pendingActor = actor;
+      _pendingKind = kind;
+      _conflictRetry = false;
+      _conflictMessage = msg ?? l.ticketLiveUnsaved(actor);
+      _isConflict = true;
+    });
+    if (_customerId != prevCustomerId) _loadLinks();
   }
 
   /// A readable form of a field value for the comparison (ids become names).
@@ -385,6 +565,15 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
                 .firstOrNull ??
             named((t) => t.ownerUserId, (t) => t.ownerName),
       TicketField.customer => named((t) => t.customerId, (t) => t.customerName),
+      TicketField.contactId =>
+        _contacts
+                .where((c) => c.id == v)
+                .map((c) => c.fullName)
+                .firstOrNull ??
+            named(
+              (t) => t.contactId,
+              (t) => t.contactName.isEmpty ? null : t.contactName,
+            ),
       TicketField.quotation =>
         _quotations.where((q) => q.id == v).map((q) => q.number).firstOrNull ??
             named((t) => t.quotationId, (t) => t.quotationNumber),
@@ -415,8 +604,20 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
   Future<void> _load() async {
     if (_busy) return;
     setState(() => _busy = true);
+    final loadGen = _mutationGen;
     try {
       final d = await _api.helpdesk.getTicket(id: widget.id);
+      if (!mounted) return;
+      final currentV = _d?.ticket.version;
+      final loadedV = d.ticket.version;
+      if (_d != null &&
+          loadGen == _mutationGen &&
+          loadedV != null &&
+          currentV != null &&
+          loadedV < currentV) {
+        return;
+      }
+      _mutationGen++;
       _apply(d);
       if (!_readMarked) {
         _readMarked = true;
@@ -437,7 +638,7 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
   }
 
   /// Shows a loaded ticket in the form; ignored once the screen is gone.
-  void _apply(TicketDetail d) {
+  void _apply(TicketDetail d, {bool loadLinks = true}) {
     if (!mounted) return;
     final t = d.ticket;
     TabScope.reportTitle(context, t.number);
@@ -446,6 +647,7 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
       _error = null;
       _conflictMessage = null;
       _isConflict = false;
+      _conflictRetry = false;
       _pendingTheirs = null;
       _subject.text = t.subject;
       _contactName.text = t.contactName;
@@ -463,18 +665,21 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
       _opportunityId = t.opportunityId;
       if (_to.text.isEmpty) _to.text = t.contactEmail;
     });
-    _loadLinks();
+    if (loadLinks) _loadLinks();
   }
 
   Future<void> _loadLinks() async {
     final c = _customerId;
+    final seq = ++_linksSeq;
     if (c == null) {
-      setState(() {
-        _quotations = [];
-        _opportunities = [];
-        _contacts = [];
-        _repairs = [];
-      });
+      if (mounted) {
+        setState(() {
+          _quotations = [];
+          _opportunities = [];
+          _contacts = [];
+          _repairs = [];
+        });
+      }
       return;
     }
     final quotes = await _api.sales
@@ -489,14 +694,13 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
     final repairs = await _api.repairs
         .listTicketRepairs(id: widget.id)
         .then((p) => p, onError: (Object _) => <Repair>[]);
-    if (mounted) {
-      setState(() {
-        _repairs = repairs;
-        _quotations = quotes;
-        _opportunities = opps;
-        _contacts = people;
-      });
-    }
+    if (!mounted || _customerId != c || seq != _linksSeq) return;
+    setState(() {
+      _repairs = repairs;
+      _quotations = quotes;
+      _opportunities = opps;
+      _contacts = people;
+    });
   }
 
   Future<bool> _run(
@@ -539,7 +743,10 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
         if (ok) _checklistRefresh++;
       });
     }
-    if (ok && d != null) _apply(d);
+    if (ok && d != null) {
+      _mutationGen++;
+      _apply(d);
+    }
     return ok;
   }
 
@@ -566,6 +773,7 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
         ),
       );
       if (!mounted) return;
+      _mutationGen++;
       _apply(d);
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(context.l10n.saved)));
@@ -573,7 +781,7 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
       if (!mounted) return;
       if (isRecordChangedError(e)) {
         // Someone saved first: bring in their version and merge it with this form.
-        await _refreshFromServer('updated', '');
+        await _refreshFromServer('updated', '', notifyOnFailure: true);
       } else {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(errorMessage(e))));
@@ -700,6 +908,7 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
       final t = _d!.ticket;
       final r = await showEscalateDialog(context, ticketId: t.id);
       if (r == null || !mounted) return;
+      _mutationGen++;
       _apply(r);
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(context.l10n.collabEscalated)));
@@ -719,6 +928,7 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
         currentOwnerId: t.ownerUserId,
       );
       if (r == null || !mounted) return;
+      _mutationGen++;
       _apply(r);
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(context.l10n.collabHandedOver)));
@@ -737,6 +947,7 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(l.ticketMerged)));
       // The ticket is closed and its content now lives in the target.
+      _mutationGen++;
       _apply(target);
       if (GoRouter.maybeOf(context) != null) {
         context.pushReplacement('/helpdesk/${target.ticket.id}');
@@ -819,6 +1030,7 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
       }
       final d = await showCallDialog(context, ticketId: t.id, contact: who);
       if (d != null && mounted) {
+        _mutationGen++;
         _apply(d);
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(context.l10n.callLogged)));
@@ -917,10 +1129,16 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
               isConflict: _isConflict,
               onReload: _pendingTheirs != null
                   ? _compare
+                  : _conflictRetry
+                  ? (_retryingConflict ? null : _retryConflict)
                   : (_busy ? null : _load),
-              actionLabel: _pendingTheirs != null ? l.ticketMergeCompare : null,
+              actionLabel: _pendingTheirs != null
+                  ? l.ticketMergeCompare
+                  : _conflictRetry
+                  ? l.retry
+                  : null,
               actionIcon: _pendingTheirs != null ? AppIcons.mergeType : null,
-              onDismiss: _pendingTheirs != null
+              onDismiss: _pendingTheirs != null || _conflictRetry
                   ? null
                   : () => setState(() => _conflictMessage = null),
             ),

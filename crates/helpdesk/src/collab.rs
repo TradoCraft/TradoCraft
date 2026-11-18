@@ -1016,13 +1016,14 @@ async fn presence_beat(
     .bind(&input.mode)
     .execute(&mut *conn)
     .await?;
+    let others = others_present(&mut conn, user.company_id, id, user.user_id).await?;
+    // Release conn before notify_change acquires from the pool so one beat never holds two connections.
+    drop(conn);
     if previous.as_deref() != Some(input.mode.as_str()) {
         crate::tickets::notify_change(&state, &user, id, "presence", Some(input.mode.clone()))
             .await;
     }
-    Ok(Json(
-        others_present(&mut conn, user.company_id, id, user.user_id).await?,
-    ))
+    Ok(Json(others))
 }
 
 /// Colleagues (not the caller) active on the ticket during the last 60 seconds.
