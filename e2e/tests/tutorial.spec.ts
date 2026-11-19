@@ -408,5 +408,37 @@ test('the whole tutorial, chapter by chapter', async ({ page }) => {
     await typeInto(field(page, 'Quantity'), '4');
     await page.getByRole('button', { name: 'Release to production' }).click();
     await expectStep(page, 'change', 'done');
+    await next(page);
+    await startNextChapter(page);
+  });
+
+  await test.step('chapter 10: working a helpdesk ticket', async () => {
+    // The ticket of chapter 7 exists, so the "needs" step is skipped.
+    await expectStep(page, 'helpdesk', 'note');
+    await railTo(page, 'Helpdesk');
+    await overviewTab(page);
+    await page.getByRole('button', { name: 'All', exact: true }).click();
+    await page.waitForTimeout(1000);
+    await page.getByRole('button', { name: /Maya Okafor|quotation/i }).first().click();
+    await page.getByRole('button', { name: 'Internal note' }).click();
+    await typeInto(field(page, 'Internal note'), 'Maya wants a quotation for 8 carts.');
+    await page.getByRole('button', { name: 'Add note', exact: true }).click();
+    await expectStep(page, 'helpdesk', 'tag');
+    await typeInto(field(page, 'Add tag'), 'quotation');
+    await page.getByRole('button', { name: 'Add', exact: true }).click();
+    await expectStep(page, 'helpdesk', 'time');
+    await page.getByRole('button', { name: 'Log time' }).click();
+    await typeInto(field(page, 'Minutes'), '15');
+    await typeInto(field(page, 'Note'), 'Read the request and replied');
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await expectStep(page, 'helpdesk', 'escalate');
+    await page.getByRole('button', { name: 'Escalate', exact: true }).click();
+    await choose(page, /^Escalate to/, /Support Agent/);
+    await typeInto(field(page, 'Reason (required)'), 'Needs a second pair of eyes on the delivery time.');
+    await page.getByRole('button', { name: 'Escalate', exact: true }).last().click();
+    await expectStep(page, 'helpdesk', 'tour');
+    await takeMeThere(page);
+    await next(page);
+    await expectStep(page, 'helpdesk', 'done');
   });
 });
