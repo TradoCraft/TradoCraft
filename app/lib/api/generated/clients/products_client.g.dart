@@ -1407,6 +1407,46 @@ class _ProductsClient implements ProductsClient {
   }
 
   @override
+  Future<GroupPage> productGroups({
+    required String groupBy,
+    String? q,
+    bool? active,
+    String? familyId,
+    String? productType,
+  }) async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{
+      r'group_by': groupBy,
+      r'q': q,
+      r'active': active,
+      r'family_id': familyId,
+      r'product_type': productType,
+    };
+    queryParameters.removeWhere((k, v) => v == null);
+    final _headers = <String, dynamic>{};
+    const Map<String, dynamic>? _data = null;
+    final _options = _setStreamType<GroupPage>(
+      Options(method: 'GET', headers: _headers, extra: _extra)
+          .compose(
+            _dio.options,
+            '/api/v1/products/groups',
+            queryParameters: queryParameters,
+            data: _data,
+          )
+          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
+    );
+    final _result = await _dio.fetch<Map<String, Object?>>(_options);
+    late GroupPage _value;
+    try {
+      _value = GroupPage.fromJson(_result.data!);
+    } on Object catch (e, s) {
+      errorLogger?.logError(e, s, _options, response: _result);
+      rethrow;
+    }
+    return _value;
+  }
+
+  @override
   Future<ImportReport> importProducts({
     required File body,
     bool? dryRun,

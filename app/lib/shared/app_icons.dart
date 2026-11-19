@@ -46,6 +46,7 @@ abstract final class AppIcons {
   static const IconData checklist = Icons.checklist;
   static const IconData chevronLeft = Icons.chevron_left;
   static const IconData chevronRight = Icons.chevron_right;
+  static const IconData expandMore = Icons.expand_more;
   static const IconData circle = Icons.circle;
   static const IconData circleOutlined = Icons.circle_outlined;
   static const IconData close = Icons.close;

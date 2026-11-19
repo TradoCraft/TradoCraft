@@ -3310,5 +3310,11 @@
   "listFavouriteName": "Nom du favori",
   "listNoFavourites": "Aucun favori pour l'instant",
   "listDeleteFavourite": "Supprimer le favori {name}",
-  "listApplyFavourite": "Appliquer le favori {name}"
+  "listApplyFavourite": "Appliquer le favori {name}",
+  "listGroupBy": "Grouper par",
+  "listGroupNone": "Aucun",
+  "listGroupChip": "Groupe : {group}",
+  "listRemoveGrouping": "Supprimer le regroupement {group}",
+  "listGroupExpanded": "{label}, {count} lignes, développé",
+  "listGroupCollapsed": "{label}, {count} lignes, réduit"
 }

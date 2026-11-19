@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'package:characters/characters.dart';
 
 import 'filter_model.dart';
+import 'group_model.dart';
 
 /// A named set of search text and filter selections.
 class Favourite {
@@ -13,6 +14,7 @@ class Favourite {
     required this.name,
     this.search = '',
     this.filters = FilterSelection.empty,
+    this.groupBy,
   });
 
   static const maxNameLength = 60;
@@ -22,14 +24,26 @@ class Favourite {
   final String search;
   final FilterSelection filters;
 
-  /// The favourite without filters or options that [defs] do not know.
-  Favourite sanitized(List<FilterDef> defs) =>
-      Favourite(name: name, search: search, filters: filters.sanitized(defs));
+  /// The key of the grouping (ADR 0084); null: not grouped.
+  final String? groupBy;
+
+  /// The favourite without filters or options that [defs] do not know, and without a grouping
+  /// that is not one of [groups].
+  Favourite sanitized(
+    List<FilterDef> defs, {
+    List<GroupDef> groups = const [],
+  }) => Favourite(
+    name: name,
+    search: search,
+    filters: filters.sanitized(defs),
+    groupBy: groups.any((g) => g.key == groupBy) ? groupBy : null,
+  );
 
   Map<String, Object?> toJson() => {
     'name': name,
     'search': search,
     'filters': filters.toJson(),
+    if (groupBy != null) 'groupBy': groupBy,
   };
 
   /// Reads one favourite; null when [j] is damaged. Unknown keys are ignored.
@@ -41,6 +55,7 @@ class Favourite {
     if (trimmed.isEmpty) return null;
     final search = j['search'];
     final raw = j['filters'];
+    final group = j['groupBy'];
     final filters = <String, Set<String>>{};
     if (raw is Map) {
       raw.forEach((k, v) {
@@ -57,6 +72,7 @@ class Favourite {
       name: trimmed.characters.take(maxNameLength).toString(),
       search: search is String ? search : '',
       filters: FilterSelection(filters),
+      groupBy: group is String && group.isNotEmpty ? group : null,
     );
   }
 
@@ -96,8 +112,9 @@ class Favourite {
       other is Favourite &&
       other.name == name &&
       other.search == search &&
-      other.filters == filters;
+      other.filters == filters &&
+      other.groupBy == groupBy;
 
   @override
-  int get hashCode => Object.hash(name, search, filters);
+  int get hashCode => Object.hash(name, search, filters, groupBy);
 }
