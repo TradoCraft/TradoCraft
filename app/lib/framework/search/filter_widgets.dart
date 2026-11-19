@@ -68,6 +68,7 @@ class FilterMenuButton extends StatelessWidget {
     required this.onClear,
     this.favourites,
     this.onSaveFavourite,
+    this.onRetryFavourites,
     this.onApplyFavourite,
     this.onDeleteFavourite,
   });
@@ -79,7 +80,12 @@ class FilterMenuButton extends StatelessWidget {
 
   /// The saved favourites; null hides the favourites section.
   final List<Favourite>? favourites;
+
+  /// Null disables saving (the stored favourites are not known yet).
   final VoidCallback? onSaveFavourite;
+
+  /// Not null shows a retry entry: the stored favourites could not be read.
+  final VoidCallback? onRetryFavourites;
   final ValueChanged<Favourite>? onApplyFavourite;
   final ValueChanged<Favourite>? onDeleteFavourite;
 
@@ -136,7 +142,14 @@ class FilterMenuButton extends StatelessWidget {
               ),
             ),
           ),
-          if (favourites!.isEmpty)
+          if (onRetryFavourites != null)
+            MenuItemButton(
+              style: _itemStyle,
+              leadingIcon: const Icon(AppIcons.refresh),
+              onPressed: onRetryFavourites,
+              child: Text(l.retry),
+            )
+          else if (favourites!.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Text(
@@ -152,14 +165,20 @@ class FilterMenuButton extends StatelessWidget {
               child: Row(
                 children: [
                   Expanded(
-                    child: Semantics(
-                      label: l.listApplyFavourite(f.name),
-                      excludeSemantics: true,
-                      button: true,
-                      child: MenuItemButton(
-                        style: _itemStyle,
-                        onPressed: () => onApplyFavourite?.call(f),
-                        child: Text(f.name),
+                    child: Builder(
+                      builder: (context) => Semantics(
+                        label: l.listApplyFavourite(f.name),
+                        excludeSemantics: true,
+                        button: true,
+                        onTap: () {
+                          onApplyFavourite?.call(f);
+                          MenuController.maybeOf(context)?.close();
+                        },
+                        child: MenuItemButton(
+                          style: _itemStyle,
+                          onPressed: () => onApplyFavourite?.call(f),
+                          child: Text(f.name),
+                        ),
                       ),
                     ),
                   ),

@@ -47,6 +47,33 @@ class _SilentStore implements KvStore {
   Future<void> remove(String key) async {}
 }
 
+/// A store whose reads fail or wait for a gate and whose writes can fail.
+class _ScriptedStore implements KvStore {
+  final data = <String, String>{};
+  final sets = <String>[];
+  bool failGets = false;
+  bool failSets = false;
+  Completer<String?>? gate;
+  @override
+  Future<String?> get(String key) {
+    if (failGets) return Future.error(StateError('read failed'));
+    return gate?.future ?? Future.value(data[key]);
+  }
+
+  @override
+  Future<void> set(String key, String value) async {
+    sets.add(key);
+    if (failSets) throw StateError('write failed');
+    data[key] = value;
+  }
+
+  @override
+  Future<void> remove(String key) async => data.remove(key);
+}
+
+const _oldFav =
+    '{"favourites":[{"name":"Old","search":"x","filters":{"status":["draft"]}}]}';
+
 class _Loader {
   _Loader([int n = 60]) : all = List.generate(n, (i) => 'Item $i');
   final List<String> all;
@@ -356,6 +383,93 @@ void main() {
       expect(l.queries, isNotEmpty);
       await _openMenu(t);
       expect(find.text('No favourites yet'), findsOneWidget);
+    });
+
+    bool saveEnabled(WidgetTester t) =>
+        t
+            .widget<MenuItemButton>(
+              find.widgetWithText(
+                MenuItemButton,
+                'Save current view as favourite',
+              ),
+            )
+            .onPressed !=
+        null;
+
+    testWidgets('the accessibility tap action applies a favourite', (t) async {
+      final handle = t.ensureSemantics();
+      final store = MemoryKvStore()..data['entity_list_fav:things'] = _oldFav;
+      final l = await _pump(t, prefsKey: 'things', store: store);
+      await _openMenu(t);
+      await t.pumpAndSettle();
+      t.semantics.tap(find.semantics.byLabel('Apply favourite Old'));
+      await t.pumpAndSettle();
+      expect(l.queries.last.search, 'x');
+      expect(_f(l, 'status'), {'draft'});
+      handle.dispose();
+    });
+
+    testWidgets('a failed write restores the list and tells the user', (
+      t,
+    ) async {
+      final store = _ScriptedStore()..data['entity_list_fav:things'] = _oldFav;
+      await _pump(t, prefsKey: 'things', store: store);
+      store.failSets = true;
+      await save(t, 'New one');
+      expect(find.byType(SnackBar), findsOneWidget);
+      await _openMenu(t);
+      expect(find.text('Old'), findsOneWidget);
+      expect(find.text('New one'), findsNothing);
+    });
+
+    testWidgets('a failed read blocks writes until retry succeeds', (t) async {
+      final store = _ScriptedStore()
+        ..data['entity_list_fav:things'] = _oldFav
+        ..failGets = true;
+      await _pump(t, prefsKey: 'things', store: store);
+      await _openMenu(t);
+      expect(find.text('Retry'), findsOneWidget);
+      expect(saveEnabled(t), isFalse);
+      expect(find.text('Old'), findsNothing);
+
+      store
+        ..failGets = false
+        ..gate = Completer<String?>();
+      await t.tap(find.text('Retry')); // closes the menu
+      await t.pump(const Duration(milliseconds: 300));
+      await t.tap(find.byTooltip('Filters'));
+      await t.pump(const Duration(milliseconds: 300));
+      expect(saveEnabled(t), isFalse); // still pending
+      expect(find.text('Retry'), findsNothing);
+      store.gate!.complete(_oldFav);
+      await t.pumpAndSettle();
+      expect(saveEnabled(t), isTrue);
+      expect(find.text('Retry'), findsNothing);
+      expect(find.text('Old'), findsOneWidget);
+
+      await save(t, 'New one');
+      expect(store.data['entity_list_fav:things'], contains('Old'));
+      expect(store.data['entity_list_fav:things'], contains('New one'));
+      expect(store.sets.where((k) => k.contains('fav')), hasLength(1));
+    });
+
+    testWidgets('a read that times out offers retry and saves nothing', (
+      t,
+    ) async {
+      final store = _ScriptedStore()..gate = Completer<String?>();
+      await _pump(t, prefsKey: 'things', store: store);
+      await _openMenu(t);
+      expect(find.text('Retry'), findsOneWidget);
+      expect(saveEnabled(t), isFalse);
+      expect(store.sets, isEmpty);
+    });
+
+    testWidgets('an empty store is ready', (t) async {
+      final store = _ScriptedStore();
+      await _pump(t, prefsKey: 'things', store: store);
+      await _openMenu(t);
+      expect(find.text('Retry'), findsNothing);
+      expect(saveEnabled(t), isTrue);
     });
 
     testWidgets('a store that never answers does not block the list', (

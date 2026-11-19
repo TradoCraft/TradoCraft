@@ -164,6 +164,19 @@ void main() {
       expect(f.search, 's');
     });
 
+    test('long names are cut by grapheme clusters, not UTF-16 units', () {
+      final accents = 'e\u0301' * 40; // 80 units, 40 graphemes
+      final family = '\u{1F468}\u200D\u{1F469}\u200D\u{1F467}' * 12;
+      final names = ['${accents}x', '${accents}y', '${family}a', '${family}b'];
+      expect(names.every((n) => n.length > 60), isTrue);
+      final back = Favourite.decodeList(
+        Favourite.encodeList([for (final n in names) Favourite(name: n)]),
+      );
+      expect(back.map((f) => f.name), names);
+      final tooLong = Favourite.fromJson({'name': '${'e\u0301' * 61}z'})!;
+      expect(tooLong.name, 'e\u0301' * 60);
+    });
+
     test('upsert replaces by name', () {
       final a = const Favourite(name: 'a', search: '1');
       final b = const Favourite(name: 'b');

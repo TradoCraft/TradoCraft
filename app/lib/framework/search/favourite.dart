@@ -3,6 +3,8 @@ library;
 
 import 'dart:convert';
 
+import 'package:characters/characters.dart';
+
 import 'filter_model.dart';
 
 /// A named set of search text and filter selections.
@@ -52,9 +54,7 @@ class Favourite {
       });
     }
     return Favourite(
-      name: trimmed.length > maxNameLength
-          ? trimmed.substring(0, maxNameLength)
-          : trimmed,
+      name: trimmed.characters.take(maxNameLength).toString(),
       search: search is String ? search : '',
       filters: FilterSelection(filters),
     );

@@ -182,6 +182,9 @@ class EntityList<T> extends StatefulWidget {
   State<EntityList<T>> createState() => EntityListState<T>();
 }
 
+/// Whether the stored favourites were read (see [EntityListState._favRead]).
+enum _FavRead { pending, ready, failed }
+
 class EntityListState<T> extends State<EntityList<T>> {
   static const _pageSize = 50;
 
@@ -224,8 +227,12 @@ class EntityListState<T> extends State<EntityList<T>> {
   FilterSelection _filterSel = FilterSelection.empty;
   List<Favourite> _favs = const [];
 
-  /// Set once the user saved or deleted a favourite, so a saved list that arrives late is ignored.
-  bool _favsEdited = false;
+  /// Favourites may only be written after the stored list was read successfully, else a
+  /// list built from the empty [_favs] would overwrite it.
+  _FavRead _favRead = _FavRead.pending;
+
+  /// Counts favourite changes, so a failed write only restores when nothing newer happened.
+  int _favSeq = 0;
   final _searchFocus = FocusNode();
 
   String _cid(EntityColumn<T> c) => c.id ?? c.sortKey ?? c.label;
@@ -295,13 +302,29 @@ class EntityListState<T> extends State<EntityList<T>> {
     }
   }
 
+  /// Reads the favourites into [_favs]; a null value from a working store is an empty list.
+  Future<void> _readFavourites() async {
+    try {
+      final raw = await _store!.get(_favName).timeout(_prefsTimeout);
+      if (!mounted) return;
+      _favs = Favourite.decodeList(raw);
+      _favRead = _FavRead.ready;
+    } catch (_) {
+      if (!mounted) return;
+      _favRead = _FavRead.failed;
+    }
+  }
+
+  Future<void> _retryFavourites() async {
+    setState(() => _favRead = _FavRead.pending);
+    await _readFavourites();
+    if (mounted) setState(() {});
+  }
+
   Future<void> _loadPrefs() async {
     // A store that is slow or never answers must not hold the list back: default layout then.
     // Both entries are read at the same time, so the wait is at most one timeout.
-    final (raw, favRaw) = await (
-      _readPref(_prefsName),
-      _readPref(_favName),
-    ).wait;
+    final (raw, _) = await (_readPref(_prefsName), _readFavourites()).wait;
     if (!mounted) return;
     if (raw != null && !_layoutEdited) {
       try {
@@ -309,9 +332,6 @@ class EntityListState<T> extends State<EntityList<T>> {
       } catch (_) {
         // A damaged entry just means the default layout.
       }
-    }
-    if (favRaw != null && !_favsEdited) {
-      _favs = Favourite.decodeList(favRaw);
     }
     await reload();
   }
@@ -500,12 +520,29 @@ class EntityListState<T> extends State<EntityList<T>> {
     return KeyEventResult.ignored;
   }
 
-  void _storeFavourites(List<Favourite> next) {
-    _favsEdited = true;
-    setState(() => _favs = next);
+  Future<void> _storeFavourites(List<Favourite> next) async {
     final store = _store;
-    if (widget.prefsKey == null || store == null) return;
-    store.set(_favName, Favourite.encodeList(next)).catchError((Object _) {});
+    if (widget.prefsKey == null ||
+        store == null ||
+        _favRead != _FavRead.ready) {
+      return;
+    }
+    final previous = _favs;
+    final seq = ++_favSeq;
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    setState(() => _favs = next);
+    try {
+      await store.set(_favName, Favourite.encodeList(next));
+    } catch (e) {
+      if (!mounted) return;
+      if (seq == _favSeq) setState(() => _favs = previous);
+      messenger?.showSnackBar(
+        SnackBar(
+          content: Text(errorMessage(e)),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
+    }
   }
 
   Future<void> _saveFavourite() async {
@@ -539,7 +576,8 @@ class EntityListState<T> extends State<EntityList<T>> {
     onToggle: (k, v) => _setFilters(_filterSel.toggle(k, v)),
     onClear: () => _setFilters(FilterSelection.empty),
     favourites: widget.prefsKey == null ? null : _favs,
-    onSaveFavourite: _saveFavourite,
+    onSaveFavourite: _favRead == _FavRead.ready ? _saveFavourite : null,
+    onRetryFavourites: _favRead == _FavRead.failed ? _retryFavourites : null,
     onApplyFavourite: _applyFavourite,
     onDeleteFavourite: (f) => _storeFavourites([
       for (final o in _favs)
