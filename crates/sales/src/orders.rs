@@ -793,11 +793,14 @@ async fn get_order(
     user: CurrentUser,
     Path(id): Path<Uuid>,
 ) -> AppResult<Json<Order>> {
+    Ok(Json(read_order(&state.db, &user, id).await?))
+}
+
+/// Read the latest order revision with the caller's current company permissions.
+pub async fn read_order(db: &sqlx::PgPool, user: &CurrentUser, id: Uuid) -> AppResult<Order> {
     user.require(Permission::OrdersRead)?;
-    let mut conn = state.db.acquire().await?;
-    Ok(Json(
-        load_order(&mut conn, user.company_id, id, None).await?,
-    ))
+    let mut conn = db.acquire().await?;
+    load_order(&mut conn, user.company_id, id, None).await
 }
 
 /// A specific revision of an order, e.g. an older one that was sent.
