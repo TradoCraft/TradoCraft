@@ -46,7 +46,9 @@ Module overview: [ARCHITECTURE.md](ARCHITECTURE.md).
 | D9 Two-factor authentication | Open |
 | D10 Data import framework (CSV, XLSX, ODS, Parquet) | Done for the shared importer, CSV/XLSX/ODS readers, XLSX/ODS export, admin screen and background jobs, [ADR 0067](adr/0067-data-import-framework.md); Parquet and further entities (contacts, suppliers, stock opening balances, quotations, orders, tickets) follow |
 | P1 Price lists (zones, chapters, export profiles, PDF and Excel) | Done (PRs #95, #97), [ADR 0074](adr/0074-price-lists.md); never run in a real app (see the release checklist) |
-| P2 Site baseline and product suitability | In progress, [ADR 0068](adr/0068-site-baseline-and-product-suitability.md), branch `feat/site-baseline` (PR #69); panel, quotation picker flags and end-to-end test open |
+| P2 Site baseline and product suitability | In progress, [ADR 0068](adr/0068-site-baseline-and-product-suitability.md) (still Proposed). Merged: baseline and matching (PRs #69, #71) and the tower configurator import (PR #73). Open per the earlier plan, to re-verify against the code: quotation picker flags and an end-to-end test |
+| U1 Shared UI framework (theme tokens and dark mode, repository layer, app switcher and breadcrumbs, global search and notifications, generic list view, server-side sort, filters, facets and saved favourites) | In progress, [ADR 0077](adr/0077-ui-theme-tokens-and-dark-mode.md) to [ADR 0083](adr/0083-list-filters-and-favourites.md) (PRs #109, #110, #112, #113). Open: move the remaining list screens onto the generic list view and a roadmap entry for what follows |
+| M1 MCP pilot (`apps/mcp`: delegated, read-only `get_order` over Streamable HTTP with OAuth, same company boundary and permission as the staff API) | Done as a pilot (PR #115, [README](../apps/mcp/README.md)); no ADR yet, no further tools planned |
 
 ## First release checklist
 
@@ -65,16 +67,15 @@ The scope below is a proposal until the first version is agreed. Findings refer 
   the SBOM job in `security.yml` already attaches to a release), a versioning policy and tag convention,
   a CHANGELOG, release signing keys, Docker hygiene (pinned image tags, HEALTHCHECK, no default database
   credentials, `.env*` in `.dockerignore`), and a README status line that no longer says "vertical slice".
-- Decide P2 (site baseline): finish phases 5 to 7, or defer it out of the first release. Apply its
+- Decide P2 (site baseline): finish the open work (quotation picker flags, end-to-end test; ADR 0068 is still Proposed), or defer it out of the first release. Apply its
   migrations to a database that already has companies first.
 - Run in a real app what has only been tested in isolation: price-list save, open and share, PDF layout with
   real data, Windows paths, Typst 0.15.1 (CI) against 0.11.1 (local); one request to the live VIES service
-  (D4); a full `cargo test --workspace` on the final code.
+  (D4); a full `cargo test --workspace` on the final code. The helpdesk end-to-end test (PR #111) now covers one workflow.
 - Review the machine-written nl, de, fr and es strings of price lists and site baseline.
 
 **Housekeeping**
-- Renumber the ADR collisions: two files each carry 0069 and 0071 (and ADR 0070 safer defaults is listed as
-  0071 in the ADR index); A7 has no ADR.
+- ADR numbering was fixed in `3eb5d9b`; check the ADR index once more. A7 and M1 (MCP) have no ADR; write them.
 - Remove the unused `printing` package from `app/pubspec.yaml`; never commit the hook-created `.compliance/`.
 - Delete the merged and stale local and remote branches (about 70) before the first tag.
 - Merge or close the pending Dependabot branches (tower-http, webpki-roots, setup-node, @types/node) and
