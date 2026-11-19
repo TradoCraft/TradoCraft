@@ -25,8 +25,12 @@ status" or "customers per country" means filtering one value at a time and readi
    grouping is active the list shows collapsible group headers (label and count) instead of
    rows. Groups start collapsed. Expanding a group loads its first page with the group value added
    to the filter selection (sort and search apply as usual); a group with more rows than the page
-   offers "Load more". Changing search, filters, sort or the grouping reloads the groups and
-   collapses them. The row selection works across groups (by identity). Headers are focusable;
+   offers "Load more". Changing search, filters, sort or the grouping reloads the groups, collapses them and clears
+   the selection. While the groups reload, the old headers are removed (loading state) and no
+   group can load rows until the new groups arrived. A reload of the same query and grouping
+   (e.g. after a failed bulk action) keeps the selection like the flat list: expanded groups stay
+   expanded, each one's loaded range is re-read, and selected rows that are no longer returned
+   (or whose group vanished) are dropped. The row selection works across groups (by identity). Headers are focusable;
    Enter and Space toggle; Semantics say "<label>, <count> rows, expanded / collapsed". On the
    narrow layout the headers are list tiles (48 px).
 5. **Favourites** also store the grouping (optional field; older stored favourites still decode).

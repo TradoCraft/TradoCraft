@@ -148,7 +148,7 @@ abstract class CrmClient {
   /// [countryCode] - Same as the list.
   @GET('/api/v1/customers/groups')
   Future<GroupPage> customerGroups({
-    @Query('group_by') String? groupBy,
+    @Query('group_by') required String groupBy,
     @Query('q') String? q,
     @Query('active') bool? active,
     @Query('country_code') String? countryCode,

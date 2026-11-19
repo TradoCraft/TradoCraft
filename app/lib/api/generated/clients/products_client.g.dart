@@ -1408,7 +1408,7 @@ class _ProductsClient implements ProductsClient {
 
   @override
   Future<GroupPage> productGroups({
-    String? groupBy,
+    required String groupBy,
     String? q,
     bool? active,
     String? familyId,

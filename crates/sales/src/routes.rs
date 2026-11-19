@@ -172,6 +172,7 @@ const QUOTATION_GROUPS: &[(&str, &str)] = &[("status", "status")];
 #[derive(Debug, Deserialize, IntoParams)]
 pub struct GroupParams {
     /// What to count by: `status`.
+    #[param(required = true, nullable = false)]
     pub group_by: Option<String>,
     /// Same as the list.
     pub q: Option<String>,

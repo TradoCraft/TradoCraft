@@ -380,7 +380,7 @@ abstract class ProductsClient {
   /// [productType] - Same as the list.
   @GET('/api/v1/products/groups')
   Future<GroupPage> productGroups({
-    @Query('group_by') String? groupBy,
+    @Query('group_by') required String groupBy,
     @Query('q') String? q,
     @Query('active') bool? active,
     @Query('family_id') String? familyId,

@@ -237,3 +237,32 @@ async fn quotations_filter_by_status_list(db: PgPool) {
         assert_422(&app, &format!("/quotations?status={bad}")).await;
     }
 }
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn customer_country_code_must_be_two_letters_like_the_filter(db: PgPool) {
+    let app = setup(db).await;
+    let create = |code: &'static str, country: &'static str| {
+        let app = app.clone();
+        async move {
+            call(
+                &app,
+                SALES,
+                Method::POST,
+                "/api/v1/customers",
+                Some(json!({"code": code, "name": "Cc", "country_code": country,
+                            "price_zone_id": ZONE})),
+            )
+            .await
+        }
+    };
+    for (i, bad) in ["1A", " ", "", "B-", "BEL", "é1"].into_iter().enumerate() {
+        let (status, body) = create(["X1", "X2", "X3", "X4", "X5", "X6"][i], bad).await;
+        assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{bad:?}: {body}");
+        assert_eq!(body["error"], "validation");
+    }
+    let (status, body) = create("X9", "be").await;
+    assert_eq!(status, StatusCode::CREATED, "{body}");
+    assert_eq!(body["country_code"], "BE");
+    let filtered = get_ok(&app, "/customers?q=X9&country_code=BE").await;
+    assert_eq!(strings(&filtered, "code"), ["X9"]);
+}
