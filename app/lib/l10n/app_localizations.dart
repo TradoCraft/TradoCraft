@@ -18959,6 +18959,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Apply favourite {name}'**
   String listApplyFavourite(String name);
+
+  /// No description provided for @formChooseFromList.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose an entry from the list'**
+  String get formChooseFromList;
+
+  /// No description provided for @formClearValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get formClearValue;
+
+  /// No description provided for @formOpenRecord.
+  ///
+  /// In en, this message translates to:
+  /// **'Open {name}'**
+  String formOpenRecord(String name);
+
+  /// No description provided for @formStatusCurrent.
+  ///
+  /// In en, this message translates to:
+  /// **'Status: {status}'**
+  String formStatusCurrent(String status);
+
+  /// No description provided for @formUnsavedChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsaved changes'**
+  String get formUnsavedChanges;
 }
 
 class _AppLocalizationsDelegate

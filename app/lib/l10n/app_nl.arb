@@ -3329,5 +3329,10 @@
   "listFavouriteName": "Naam van de favoriet",
   "listNoFavourites": "Nog geen favorieten",
   "listDeleteFavourite": "Favoriet {name} verwijderen",
-  "listApplyFavourite": "Favoriet {name} toepassen"
+  "listApplyFavourite": "Favoriet {name} toepassen",
+  "formChooseFromList": "Kies een item uit de lijst",
+  "formClearValue": "Wissen",
+  "formOpenRecord": "{name} openen",
+  "formStatusCurrent": "Status: {status}",
+  "formUnsavedChanges": "Niet-opgeslagen wijzigingen"
 }

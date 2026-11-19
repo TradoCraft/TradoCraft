@@ -13,6 +13,9 @@ class SearchPicker<T extends Object> extends StatelessWidget {
     this.initial,
     this.clearOnSelect = false,
     this.onTextChanged,
+    this.validator,
+    this.enabled = true,
+    this.suffix,
   });
 
   final Future<List<T>> Function(String query) search;
@@ -24,6 +27,13 @@ class SearchPicker<T extends Object> extends StatelessWidget {
 
   /// Called whenever the typed text changes (also when a selection is written into the field).
   final void Function(String text)? onTextChanged;
+
+  /// Checks the typed text when the enclosing `Form` validates (ADR 0085's `Many2OneField`).
+  final String? Function(String text)? validator;
+  final bool enabled;
+
+  /// Shown at the end of the field (a clear or open button).
+  final Widget? suffix;
 
   @override
   Widget build(BuildContext context) {
@@ -51,14 +61,17 @@ class SearchPicker<T extends Object> extends StatelessWidget {
       },
       fieldViewBuilder: (context, controller, focusNode, onSubmitted) {
         field = controller;
-        return TextField(
+        return TextFormField(
           controller: controller,
           focusNode: focusNode,
+          enabled: enabled,
           onChanged: onTextChanged,
-          onSubmitted: (_) => onSubmitted(),
+          onFieldSubmitted: (_) => onSubmitted(),
+          validator: validator == null ? null : (v) => validator!(v ?? ''),
           decoration: InputDecoration(
             labelText: label,
             prefixIcon: const Icon(AppIcons.search),
+            suffixIcon: suffix,
           ),
         );
       },

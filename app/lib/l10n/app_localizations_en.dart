@@ -10717,4 +10717,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String listApplyFavourite(String name) {
     return 'Apply favourite $name';
   }
+
+  @override
+  String get formChooseFromList => 'Choose an entry from the list';
+
+  @override
+  String get formClearValue => 'Clear';
+
+  @override
+  String formOpenRecord(String name) {
+    return 'Open $name';
+  }
+
+  @override
+  String formStatusCurrent(String status) {
+    return 'Status: $status';
+  }
+
+  @override
+  String get formUnsavedChanges => 'Unsaved changes';
 }

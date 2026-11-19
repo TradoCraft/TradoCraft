@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/api.dart';
 import '../../app/workspace.dart';
-import '../../shared/app_icons.dart';
 import '../../shared/load_failed.dart';
 import '../todo/object_todos_button.dart';
 import 'customer_form.dart';
@@ -71,52 +70,32 @@ class _CustomerScreenState extends ConsumerState<CustomerScreen> {
       );
     }
     final canWrite = can(ref, 'customers.write');
+    // The form is a RecordFormView (ADR 0085): it draws the header with the back button.
     return Scaffold(
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-            child: Wrap(
-              crossAxisAlignment: WrapCrossAlignment.center,
-              spacing: 12,
-              runSpacing: 8,
-              children: [
-                IconButton(
-                  tooltip: MaterialLocalizations.of(context).backButtonTooltip,
-                  onPressed: _close,
-                  icon: const Icon(AppIcons.arrowBack),
-                ),
-                Text(c.name, style: Theme.of(context).textTheme.headlineSmall),
-                ObjectTodosButton(
-                  kind: TodoLinkKind.customer,
-                  id: c.id,
-                  label: c.name,
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: CustomerForm(
-              // A saved customer rebuilds the form with the new values.
-              key: ValueKey(_version),
-              customer: c,
-              readOnly: !canWrite,
-              screen: true,
-              onDone: (saved) {
-                if (saved == null) {
-                  _close();
-                } else {
-                  setState(() {
-                    _customer = saved;
-                    _version++;
-                  });
-                  TabScope.reportTitle(context, saved.name);
-                }
-              },
-            ),
+      body: CustomerForm(
+        // A saved customer rebuilds the form with the new values.
+        key: ValueKey(_version),
+        customer: c,
+        readOnly: !canWrite,
+        screen: true,
+        titleExtras: [
+          ObjectTodosButton(
+            kind: TodoLinkKind.customer,
+            id: c.id,
+            label: c.name,
           ),
         ],
+        onDone: (saved) {
+          if (saved == null) {
+            _close();
+          } else {
+            setState(() {
+              _customer = saved;
+              _version++;
+            });
+            TabScope.reportTitle(context, saved.name);
+          }
+        },
       ),
     );
   }

@@ -4868,5 +4868,12 @@
   "listDeleteFavourite": "Delete favourite {name}",
   "@listDeleteFavourite": {"placeholders": {"name": {"type": "String"}}},
   "listApplyFavourite": "Apply favourite {name}",
-  "@listApplyFavourite": {"placeholders": {"name": {"type": "String"}}}
+  "@listApplyFavourite": {"placeholders": {"name": {"type": "String"}}},
+  "formChooseFromList": "Choose an entry from the list",
+  "formClearValue": "Clear",
+  "formOpenRecord": "Open {name}",
+  "@formOpenRecord": {"placeholders": {"name": {"type": "String"}}},
+  "formStatusCurrent": "Status: {status}",
+  "@formStatusCurrent": {"placeholders": {"status": {"type": "String"}}},
+  "formUnsavedChanges": "Unsaved changes"
 }

@@ -10766,4 +10766,23 @@ class AppLocalizationsNl extends AppLocalizations {
   String listApplyFavourite(String name) {
     return 'Favoriet $name toepassen';
   }
+
+  @override
+  String get formChooseFromList => 'Kies een item uit de lijst';
+
+  @override
+  String get formClearValue => 'Wissen';
+
+  @override
+  String formOpenRecord(String name) {
+    return '$name openen';
+  }
+
+  @override
+  String formStatusCurrent(String status) {
+    return 'Status: $status';
+  }
+
+  @override
+  String get formUnsavedChanges => 'Niet-opgeslagen wijzigingen';
 }

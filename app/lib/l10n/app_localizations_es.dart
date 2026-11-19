@@ -10769,4 +10769,23 @@ class AppLocalizationsEs extends AppLocalizations {
   String listApplyFavourite(String name) {
     return 'Aplicar el favorito $name';
   }
+
+  @override
+  String get formChooseFromList => 'Elija una entrada de la lista';
+
+  @override
+  String get formClearValue => 'Borrar';
+
+  @override
+  String formOpenRecord(String name) {
+    return 'Abrir $name';
+  }
+
+  @override
+  String formStatusCurrent(String status) {
+    return 'Estado: $status';
+  }
+
+  @override
+  String get formUnsavedChanges => 'Cambios sin guardar';
 }
