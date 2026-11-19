@@ -8016,55 +8016,65 @@ class AppLocalizationsDe extends AppLocalizations {
   String get tutHelpdeskTitle => 'Ein Ticket bearbeiten';
 
   @override
-  String get tutHelpdeskSummary => 'Hut: Helpdesk-Mitarbeiter. Am Ticket aus Kapitel 7: eine interne Notiz, ein Tag, die aufgewendete Zeit und eine Eskalation.';
+  String get tutHelpdeskSummary =>
+      'Hut: Helpdesk-Mitarbeiter. Am Ticket aus Kapitel 7: eine interne Notiz, ein Tag, die aufgewendete Zeit und eine Eskalation.';
 
   @override
   String get tutHelpdeskNeedsTitle => 'Zuerst Kapitel 7';
 
   @override
-  String get tutHelpdeskNeedsBody => 'Dieses Kapitel arbeitet am Ticket, das die E-Mail von Maya in Kapitel 7 erzeugt hat, und fand es nicht. Schließen Sie zuerst Kapitel 7 ab.';
+  String get tutHelpdeskNeedsBody =>
+      'Dieses Kapitel arbeitet am Ticket, das die E-Mail von Maya in Kapitel 7 erzeugt hat, und fand es nicht. Schließen Sie zuerst Kapitel 7 ab.';
 
   @override
   String get tutHelpdeskNoteTitle => 'Eine interne Notiz hinterlassen';
 
   @override
-  String get tutHelpdeskNoteBody => 'Öffnen Sie das Ticket, wechseln Sie zu Interne Notiz und schreiben Sie, was ein Kollege wissen muss, zum Beispiel dass der Kunde ein Angebot für 8 Karren möchte. Drücken Sie Notiz hinzufügen. Der Kunde sieht eine Notiz nie.';
+  String get tutHelpdeskNoteBody =>
+      'Öffnen Sie das Ticket, wechseln Sie zu Interne Notiz und schreiben Sie, was ein Kollege wissen muss, zum Beispiel dass der Kunde ein Angebot für 8 Karren möchte. Drücken Sie Notiz hinzufügen. Der Kunde sieht eine Notiz nie.';
 
   @override
-  String get tutHelpdeskNoteHint => 'Wählen Sie Interne Notiz über dem Nachrichtenfeld; bei Antwort ginge der Text an den Kunden.';
+  String get tutHelpdeskNoteHint =>
+      'Wählen Sie Interne Notiz über dem Nachrichtenfeld; bei Antwort ginge der Text an den Kunden.';
 
   @override
   String get tutHelpdeskTagTitle => 'Einen Tag hinzufügen';
 
   @override
-  String get tutHelpdeskTagBody => 'Tags gruppieren Tickets für Listen und Berichte. Fügen Sie dem Ticket im Detailbereich den Tag „Angebot“ hinzu.';
+  String get tutHelpdeskTagBody =>
+      'Tags gruppieren Tickets für Listen und Berichte. Fügen Sie dem Ticket im Detailbereich den Tag „Angebot“ hinzu.';
 
   @override
   String get tutHelpdeskTimeTitle => 'Die aufgewendete Zeit erfassen';
 
   @override
-  String get tutHelpdeskTimeBody => 'Fügen Sie einen Zeiteintrag von 15 Minuten mit einer kurzen Notiz hinzu. Markieren Sie ihn als abrechenbar, wenn er dem Kunden berechnet würde.';
+  String get tutHelpdeskTimeBody =>
+      'Fügen Sie einen Zeiteintrag von 15 Minuten mit einer kurzen Notiz hinzu. Markieren Sie ihn als abrechenbar, wenn er dem Kunden berechnet würde.';
 
   @override
   String get tutHelpdeskEscalateTitle => 'Das Ticket eskalieren';
 
   @override
-  String get tutHelpdeskEscalateBody => 'Manche Tickets brauchen mehr Aufmerksamkeit, als Sie geben können. Eskalieren Sie dieses: nennen Sie einen Grund, wählen Sie eine Person oder ein Team und erhöhen Sie auf Wunsch die Priorität um eine Stufe. Sie werden sofort benachrichtigt.';
+  String get tutHelpdeskEscalateBody =>
+      'Manche Tickets brauchen mehr Aufmerksamkeit, als Sie geben können. Eskalieren Sie dieses: nennen Sie einen Grund, wählen Sie eine Person oder ein Team und erhöhen Sie auf Wunsch die Priorität um eine Stufe. Sie werden sofort benachrichtigt.';
 
   @override
-  String get tutHelpdeskEscalateHint => 'Drücken Sie die Schaltfläche Eskalieren am Ticket; der Grund ist Pflicht.';
+  String get tutHelpdeskEscalateHint =>
+      'Drücken Sie die Schaltfläche Eskalieren am Ticket; der Grund ist Pflicht.';
 
   @override
   String get tutHelpdeskTourTitle => 'Vorbereitete Antworten';
 
   @override
-  String get tutHelpdeskTourBody => 'Hier bewahrt das Team vorbereitete Antworten auf: wiederverwendbare Antworten pro Team und Sprache, die das Ticket beim Schreiben vorschlägt. Berichte, Automatisierungsregeln und Einstellungen (Geschäftszeiten, SLA, Postfächer) liegen daneben. Schauen Sie sich um und drücken Sie Weiter.';
+  String get tutHelpdeskTourBody =>
+      'Hier bewahrt das Team vorbereitete Antworten auf: wiederverwendbare Antworten pro Team und Sprache, die das Ticket beim Schreiben vorschlägt. Berichte, Automatisierungsregeln und Einstellungen (Geschäftszeiten, SLA, Postfächer) liegen daneben. Schauen Sie sich um und drücken Sie Weiter.';
 
   @override
   String get tutHelpdeskDoneTitle => 'Was Sie gelernt haben';
 
   @override
-  String get tutHelpdeskDoneBody => 'Interne Notizen bleiben intern, Tags und Zeiteinträge machen die Arbeit in Listen und Berichten sichtbar, und eine Eskalation bringt das Ticket zur richtigen Person.';
+  String get tutHelpdeskDoneBody =>
+      'Interne Notizen bleiben intern, Tags und Zeiteinträge machen die Arbeit in Listen und Berichten sichtbar, und eine Eskalation bringt das Ticket zur richtigen Person.';
 
   @override
   String get tutInvoicesOpenSecondTitle =>
@@ -10778,4 +10788,23 @@ class AppLocalizationsDe extends AppLocalizations {
   String listApplyFavourite(String name) {
     return 'Favorit $name anwenden';
   }
+
+  @override
+  String get formChooseFromList => 'Wählen Sie einen Eintrag aus der Liste';
+
+  @override
+  String get formClearValue => 'Leeren';
+
+  @override
+  String formOpenRecord(String name) {
+    return '$name öffnen';
+  }
+
+  @override
+  String formStatusCurrent(String status) {
+    return 'Status: $status';
+  }
+
+  @override
+  String get formUnsavedChanges => 'Ungespeicherte Änderungen';
 }

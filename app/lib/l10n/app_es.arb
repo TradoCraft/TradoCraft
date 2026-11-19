@@ -3328,5 +3328,10 @@
   "listFavouriteName": "Nombre del favorito",
   "listNoFavourites": "Aún no hay favoritos",
   "listDeleteFavourite": "Eliminar el favorito {name}",
-  "listApplyFavourite": "Aplicar el favorito {name}"
+  "listApplyFavourite": "Aplicar el favorito {name}",
+  "formChooseFromList": "Elija una entrada de la lista",
+  "formClearValue": "Borrar",
+  "formOpenRecord": "Abrir {name}",
+  "formStatusCurrent": "Estado: {status}",
+  "formUnsavedChanges": "Cambios sin guardar"
 }

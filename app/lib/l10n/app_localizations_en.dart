@@ -7969,55 +7969,65 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tutHelpdeskTitle => 'Working a ticket';
 
   @override
-  String get tutHelpdeskSummary => 'Hat: helpdesk agent. On the ticket from chapter 7: an internal note, a tag, time spent and an escalation.';
+  String get tutHelpdeskSummary =>
+      'Hat: helpdesk agent. On the ticket from chapter 7: an internal note, a tag, time spent and an escalation.';
 
   @override
   String get tutHelpdeskNeedsTitle => 'Chapter 7 first';
 
   @override
-  String get tutHelpdeskNeedsBody => 'This chapter works on the ticket Maya\'s e-mail created in chapter 7 and could not find it. Finish chapter 7 first.';
+  String get tutHelpdeskNeedsBody =>
+      'This chapter works on the ticket Maya\'s e-mail created in chapter 7 and could not find it. Finish chapter 7 first.';
 
   @override
   String get tutHelpdeskNoteTitle => 'Leave an internal note';
 
   @override
-  String get tutHelpdeskNoteBody => 'Open the ticket, switch to Internal note and write what a colleague needs to know, for example that the customer wants a quotation for 8 carts. Press Add note. The customer never sees a note.';
+  String get tutHelpdeskNoteBody =>
+      'Open the ticket, switch to Internal note and write what a colleague needs to know, for example that the customer wants a quotation for 8 carts. Press Add note. The customer never sees a note.';
 
   @override
-  String get tutHelpdeskNoteHint => 'Choose Internal note above the message box; with Reply selected the text would go to the customer.';
+  String get tutHelpdeskNoteHint =>
+      'Choose Internal note above the message box; with Reply selected the text would go to the customer.';
 
   @override
   String get tutHelpdeskTagTitle => 'Add a tag';
 
   @override
-  String get tutHelpdeskTagBody => 'Tags group tickets for lists and reports. Add the tag "quotation" to this ticket in the details panel.';
+  String get tutHelpdeskTagBody =>
+      'Tags group tickets for lists and reports. Add the tag \"quotation\" to this ticket in the details panel.';
 
   @override
   String get tutHelpdeskTimeTitle => 'Log the time you spent';
 
   @override
-  String get tutHelpdeskTimeBody => 'Add a time entry of 15 minutes with a short note. Mark it billable if the customer would be charged for it.';
+  String get tutHelpdeskTimeBody =>
+      'Add a time entry of 15 minutes with a short note. Mark it billable if the customer would be charged for it.';
 
   @override
   String get tutHelpdeskEscalateTitle => 'Escalate the ticket';
 
   @override
-  String get tutHelpdeskEscalateBody => 'Some tickets need more attention than you can give. Escalate this one: give a reason, choose a person or a team and, if you like, raise the priority one step. They are told at once.';
+  String get tutHelpdeskEscalateBody =>
+      'Some tickets need more attention than you can give. Escalate this one: give a reason, choose a person or a team and, if you like, raise the priority one step. They are told at once.';
 
   @override
-  String get tutHelpdeskEscalateHint => 'Press the Escalate button on the ticket; the reason is required.';
+  String get tutHelpdeskEscalateHint =>
+      'Press the Escalate button on the ticket; the reason is required.';
 
   @override
   String get tutHelpdeskTourTitle => 'Prepared answers';
 
   @override
-  String get tutHelpdeskTourBody => 'This is where the team keeps prepared answers: reusable replies per team and language that the ticket suggests while you write. Reports, automation rules and settings (business hours, SLA, mailboxes) sit next to it. Look around, then press Next.';
+  String get tutHelpdeskTourBody =>
+      'This is where the team keeps prepared answers: reusable replies per team and language that the ticket suggests while you write. Reports, automation rules and settings (business hours, SLA, mailboxes) sit next to it. Look around, then press Next.';
 
   @override
   String get tutHelpdeskDoneTitle => 'What you learned';
 
   @override
-  String get tutHelpdeskDoneBody => 'Internal notes stay inside, tags and time entries make the work visible in lists and reports, and an escalation puts the ticket in front of the right person.';
+  String get tutHelpdeskDoneBody =>
+      'Internal notes stay inside, tags and time entries make the work visible in lists and reports, and an escalation puts the ticket in front of the right person.';
 
   @override
   String get tutInvoicesOpenSecondTitle => 'Open the suspicious invoice';
@@ -10702,4 +10712,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String listApplyFavourite(String name) {
     return 'Apply favourite $name';
   }
+
+  @override
+  String get formChooseFromList => 'Choose an entry from the list';
+
+  @override
+  String get formClearValue => 'Clear';
+
+  @override
+  String formOpenRecord(String name) {
+    return 'Open $name';
+  }
+
+  @override
+  String formStatusCurrent(String status) {
+    return 'Status: $status';
+  }
+
+  @override
+  String get formUnsavedChanges => 'Unsaved changes';
 }

@@ -7997,55 +7997,65 @@ class AppLocalizationsEs extends AppLocalizations {
   String get tutHelpdeskTitle => 'Trabajar un ticket';
 
   @override
-  String get tutHelpdeskSummary => 'Sombrero: agente del helpdesk. En el ticket del capítulo 7: una nota interna, una etiqueta, el tiempo dedicado y una escalada.';
+  String get tutHelpdeskSummary =>
+      'Sombrero: agente del helpdesk. En el ticket del capítulo 7: una nota interna, una etiqueta, el tiempo dedicado y una escalada.';
 
   @override
   String get tutHelpdeskNeedsTitle => 'Primero el capítulo 7';
 
   @override
-  String get tutHelpdeskNeedsBody => 'Este capítulo trabaja con el ticket que creó el correo de Maya en el capítulo 7 y no lo encontró. Termine primero el capítulo 7.';
+  String get tutHelpdeskNeedsBody =>
+      'Este capítulo trabaja con el ticket que creó el correo de Maya en el capítulo 7 y no lo encontró. Termine primero el capítulo 7.';
 
   @override
   String get tutHelpdeskNoteTitle => 'Dejar una nota interna';
 
   @override
-  String get tutHelpdeskNoteBody => 'Abra el ticket, cambie a Nota interna y escriba lo que un compañero necesita saber, por ejemplo que el cliente quiere un presupuesto para 8 carritos. Pulse Añadir nota. El cliente nunca ve una nota.';
+  String get tutHelpdeskNoteBody =>
+      'Abra el ticket, cambie a Nota interna y escriba lo que un compañero necesita saber, por ejemplo que el cliente quiere un presupuesto para 8 carritos. Pulse Añadir nota. El cliente nunca ve una nota.';
 
   @override
-  String get tutHelpdeskNoteHint => 'Elija Nota interna sobre el cuadro de mensaje; con Respuesta el texto iría al cliente.';
+  String get tutHelpdeskNoteHint =>
+      'Elija Nota interna sobre el cuadro de mensaje; con Respuesta el texto iría al cliente.';
 
   @override
   String get tutHelpdeskTagTitle => 'Añadir una etiqueta';
 
   @override
-  String get tutHelpdeskTagBody => 'Las etiquetas agrupan tickets para listas e informes. Añada la etiqueta «presupuesto» a este ticket en el panel de detalles.';
+  String get tutHelpdeskTagBody =>
+      'Las etiquetas agrupan tickets para listas e informes. Añada la etiqueta «presupuesto» a este ticket en el panel de detalles.';
 
   @override
   String get tutHelpdeskTimeTitle => 'Registrar el tiempo dedicado';
 
   @override
-  String get tutHelpdeskTimeBody => 'Añada una entrada de tiempo de 15 minutos con una nota breve. Márquela como facturable si se cobrara al cliente.';
+  String get tutHelpdeskTimeBody =>
+      'Añada una entrada de tiempo de 15 minutos con una nota breve. Márquela como facturable si se cobrara al cliente.';
 
   @override
   String get tutHelpdeskEscalateTitle => 'Escalar el ticket';
 
   @override
-  String get tutHelpdeskEscalateBody => 'Algunos tickets necesitan más atención de la que puede dar. Escale este: indique un motivo, elija una persona o un equipo y, si quiere, suba la prioridad un nivel. Se les avisa de inmediato.';
+  String get tutHelpdeskEscalateBody =>
+      'Algunos tickets necesitan más atención de la que puede dar. Escale este: indique un motivo, elija una persona o un equipo y, si quiere, suba la prioridad un nivel. Se les avisa de inmediato.';
 
   @override
-  String get tutHelpdeskEscalateHint => 'Pulse el botón Escalar del ticket; el motivo es obligatorio.';
+  String get tutHelpdeskEscalateHint =>
+      'Pulse el botón Escalar del ticket; el motivo es obligatorio.';
 
   @override
   String get tutHelpdeskTourTitle => 'Respuestas preparadas';
 
   @override
-  String get tutHelpdeskTourBody => 'Aquí guarda el equipo las respuestas preparadas: respuestas reutilizables por equipo e idioma que el ticket sugiere mientras escribe. Los informes, las reglas de automatización y los ajustes (horario laboral, SLA, buzones) están al lado. Mire a su alrededor y pulse Siguiente.';
+  String get tutHelpdeskTourBody =>
+      'Aquí guarda el equipo las respuestas preparadas: respuestas reutilizables por equipo e idioma que el ticket sugiere mientras escribe. Los informes, las reglas de automatización y los ajustes (horario laboral, SLA, buzones) están al lado. Mire a su alrededor y pulse Siguiente.';
 
   @override
   String get tutHelpdeskDoneTitle => 'Lo que ha aprendido';
 
   @override
-  String get tutHelpdeskDoneBody => 'Las notas internas se quedan dentro, las etiquetas y los tiempos hacen visible el trabajo en listas e informes, y una escalada pone el ticket ante la persona adecuada.';
+  String get tutHelpdeskDoneBody =>
+      'Las notas internas se quedan dentro, las etiquetas y los tiempos hacen visible el trabajo en listas e informes, y una escalada pone el ticket ante la persona adecuada.';
 
   @override
   String get tutInvoicesOpenSecondTitle => 'Abra la factura sospechosa';
@@ -10754,4 +10764,23 @@ class AppLocalizationsEs extends AppLocalizations {
   String listApplyFavourite(String name) {
     return 'Aplicar el favorito $name';
   }
+
+  @override
+  String get formChooseFromList => 'Elija una entrada de la lista';
+
+  @override
+  String get formClearValue => 'Borrar';
+
+  @override
+  String formOpenRecord(String name) {
+    return 'Abrir $name';
+  }
+
+  @override
+  String formStatusCurrent(String status) {
+    return 'Estado: $status';
+  }
+
+  @override
+  String get formUnsavedChanges => 'Cambios sin guardar';
 }

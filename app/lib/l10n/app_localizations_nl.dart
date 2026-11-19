@@ -7996,55 +7996,65 @@ class AppLocalizationsNl extends AppLocalizations {
   String get tutHelpdeskTitle => 'Een ticket afhandelen';
 
   @override
-  String get tutHelpdeskSummary => 'Pet: helpdeskmedewerker. Op het ticket uit hoofdstuk 7: een interne notitie, een label, bestede tijd en een escalatie.';
+  String get tutHelpdeskSummary =>
+      'Pet: helpdeskmedewerker. Op het ticket uit hoofdstuk 7: een interne notitie, een label, bestede tijd en een escalatie.';
 
   @override
   String get tutHelpdeskNeedsTitle => 'Eerst hoofdstuk 7';
 
   @override
-  String get tutHelpdeskNeedsBody => 'Dit hoofdstuk werkt op het ticket dat de e-mail van Maya in hoofdstuk 7 aanmaakte en vond het niet. Rond eerst hoofdstuk 7 af.';
+  String get tutHelpdeskNeedsBody =>
+      'Dit hoofdstuk werkt op het ticket dat de e-mail van Maya in hoofdstuk 7 aanmaakte en vond het niet. Rond eerst hoofdstuk 7 af.';
 
   @override
   String get tutHelpdeskNoteTitle => 'Laat een interne notitie achter';
 
   @override
-  String get tutHelpdeskNoteBody => 'Open het ticket, kies Interne notitie en schrijf wat een collega moet weten, bijvoorbeeld dat de klant een offerte voor 8 karretjes wil. Druk op Notitie toevoegen. De klant ziet een notitie nooit.';
+  String get tutHelpdeskNoteBody =>
+      'Open het ticket, kies Interne notitie en schrijf wat een collega moet weten, bijvoorbeeld dat de klant een offerte voor 8 karretjes wil. Druk op Notitie toevoegen. De klant ziet een notitie nooit.';
 
   @override
-  String get tutHelpdeskNoteHint => 'Kies Interne notitie boven het berichtvak; bij Antwoord zou de tekst naar de klant gaan.';
+  String get tutHelpdeskNoteHint =>
+      'Kies Interne notitie boven het berichtvak; bij Antwoord zou de tekst naar de klant gaan.';
 
   @override
   String get tutHelpdeskTagTitle => 'Voeg een label toe';
 
   @override
-  String get tutHelpdeskTagBody => 'Labels groeperen tickets voor lijsten en rapporten. Voeg het label "offerte" toe aan dit ticket in het detailpaneel.';
+  String get tutHelpdeskTagBody =>
+      'Labels groeperen tickets voor lijsten en rapporten. Voeg het label \"offerte\" toe aan dit ticket in het detailpaneel.';
 
   @override
   String get tutHelpdeskTimeTitle => 'Registreer je bestede tijd';
 
   @override
-  String get tutHelpdeskTimeBody => 'Voeg een tijdsregistratie van 15 minuten toe met een korte opmerking. Markeer ze als factureerbaar als ze aan de klant doorgerekend zou worden.';
+  String get tutHelpdeskTimeBody =>
+      'Voeg een tijdsregistratie van 15 minuten toe met een korte opmerking. Markeer ze als factureerbaar als ze aan de klant doorgerekend zou worden.';
 
   @override
   String get tutHelpdeskEscalateTitle => 'Escaleer het ticket';
 
   @override
-  String get tutHelpdeskEscalateBody => 'Sommige tickets vragen meer aandacht dan jij kunt geven. Escaleer dit ticket: geef een reden, kies een persoon of team en verhoog desgewenst de prioriteit met één stap. Zij worden meteen gewaarschuwd.';
+  String get tutHelpdeskEscalateBody =>
+      'Sommige tickets vragen meer aandacht dan jij kunt geven. Escaleer dit ticket: geef een reden, kies een persoon of team en verhoog desgewenst de prioriteit met één stap. Zij worden meteen gewaarschuwd.';
 
   @override
-  String get tutHelpdeskEscalateHint => 'Druk op de knop Escaleren op het ticket; de reden is verplicht.';
+  String get tutHelpdeskEscalateHint =>
+      'Druk op de knop Escaleren op het ticket; de reden is verplicht.';
 
   @override
   String get tutHelpdeskTourTitle => 'Kant-en-klare antwoorden';
 
   @override
-  String get tutHelpdeskTourBody => 'Hier bewaart het team kant-en-klare antwoorden: herbruikbare antwoorden per team en taal die het ticket voorstelt terwijl je schrijft. Rapporten, automatiseringsregels en instellingen (kantooruren, SLA, mailboxen) staan ernaast. Kijk rond en druk op Volgende.';
+  String get tutHelpdeskTourBody =>
+      'Hier bewaart het team kant-en-klare antwoorden: herbruikbare antwoorden per team en taal die het ticket voorstelt terwijl je schrijft. Rapporten, automatiseringsregels en instellingen (kantooruren, SLA, mailboxen) staan ernaast. Kijk rond en druk op Volgende.';
 
   @override
   String get tutHelpdeskDoneTitle => 'Wat je geleerd hebt';
 
   @override
-  String get tutHelpdeskDoneBody => 'Interne notities blijven intern, labels en tijdsregistraties maken het werk zichtbaar in lijsten en rapporten, en een escalatie brengt het ticket bij de juiste persoon.';
+  String get tutHelpdeskDoneBody =>
+      'Interne notities blijven intern, labels en tijdsregistraties maken het werk zichtbaar in lijsten en rapporten, en een escalatie brengt het ticket bij de juiste persoon.';
 
   @override
   String get tutInvoicesOpenSecondTitle => 'Open de verdachte factuur';
@@ -10750,4 +10760,23 @@ class AppLocalizationsNl extends AppLocalizations {
   String listApplyFavourite(String name) {
     return 'Favoriet $name toepassen';
   }
+
+  @override
+  String get formChooseFromList => 'Kies een item uit de lijst';
+
+  @override
+  String get formClearValue => 'Wissen';
+
+  @override
+  String formOpenRecord(String name) {
+    return '$name openen';
+  }
+
+  @override
+  String formStatusCurrent(String status) {
+    return 'Status: $status';
+  }
+
+  @override
+  String get formUnsavedChanges => 'Niet-opgeslagen wijzigingen';
 }

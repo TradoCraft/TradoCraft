@@ -3328,5 +3328,10 @@
   "listFavouriteName": "Name des Favoriten",
   "listNoFavourites": "Noch keine Favoriten",
   "listDeleteFavourite": "Favorit {name} löschen",
-  "listApplyFavourite": "Favorit {name} anwenden"
+  "listApplyFavourite": "Favorit {name} anwenden",
+  "formChooseFromList": "Wählen Sie einen Eintrag aus der Liste",
+  "formClearValue": "Leeren",
+  "formOpenRecord": "{name} öffnen",
+  "formStatusCurrent": "Status: {status}",
+  "formUnsavedChanges": "Ungespeicherte Änderungen"
 }
