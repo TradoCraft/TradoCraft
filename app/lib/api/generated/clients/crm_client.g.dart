@@ -1313,6 +1313,7 @@ class _CrmClient implements CrmClient {
     String? status,
     String? familyId,
     String? itemId,
+    String? productIds,
     int? limit,
     int? offset,
   }) async {
@@ -1321,6 +1322,7 @@ class _CrmClient implements CrmClient {
       r'status': status,
       r'family_id': familyId,
       r'item_id': itemId,
+      r'product_ids': productIds,
       r'limit': limit,
       r'offset': offset,
     };

@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tradocraft_app/app/api.dart';
 import 'package:tradocraft_app/features/opportunities/baseline_section.dart';
+import 'package:tradocraft_app/features/opportunities/matches_panel.dart';
 import 'package:tradocraft_app/l10n/app_localizations.dart';
 import 'package:tradocraft_app/shared/csv_transfer.dart';
 
@@ -139,6 +140,7 @@ Future<void> _pump(
   FakeHttp h, {
   CsvPicker? jsonPicker,
   Size size = const Size(1400, 2400),
+  bool inDialog = false,
 
   /// When given, the section is shown only while this is true (to unmount it under an open dialog).
   ValueNotifier<bool>? shown,
@@ -163,6 +165,12 @@ Future<void> _pump(
           body: Consumer(
             builder: (context, ref, _) {
               ref.watch(meProvider);
+              if (inDialog) {
+                return TextButton(
+                  onPressed: () => showSiteBaseline(context, opportunityId: 'o1'),
+                  child: const Text('Open baseline'),
+                );
+              }
               const section = SingleChildScrollView(
                 child: BaselineSection(opportunityId: 'o1'),
               );
@@ -178,6 +186,10 @@ Future<void> _pump(
     ),
   );
   await tester.pumpAndSettle();
+  if (inDialog) {
+    await tester.tap(find.text('Open baseline'));
+    await tester.pumpAndSettle();
+  }
 }
 
 Future<void> _choose(WidgetTester tester, String key, String text) async {
@@ -541,6 +553,48 @@ void main() {
     expect(find.textContaining('item has children'), findsOneWidget);
   });
 
+  testWidgets('deleting refreshes product matches after the dialog closes', (
+    tester,
+  ) async {
+    final gate = Completer<void>();
+    const matchRequest = 'GET /api/v1/opportunities/o1/product-matches';
+    const deleteRequest = 'DELETE /api/v1/opportunities/o1/baseline/items/b1';
+    final h = FakeHttp({
+      ..._http().routes,
+      matchRequest: (_) => {
+        'items': [],
+        'total': 0,
+        'counts': {'suitable': 0, 'unsuitable': 0, 'unknown': 0},
+      },
+      deleteRequest: (_) => gate.future,
+    });
+    await _pump(tester, h, inDialog: true);
+    final container = ProviderScope.containerOf(
+      tester.element(find.byKey(const ValueKey('baseline-delete-b1'))),
+      listen: false,
+    );
+    final subscription = container.listen(
+      productMatchesProvider(('o1', null)),
+      (_, _) {},
+    );
+    addTearDown(subscription.close);
+    await tester.pumpAndSettle();
+    expect(h.requests.where((request) => request == matchRequest), hasLength(1));
+
+    await tester.tap(find.byKey(const ValueKey('baseline-delete-b1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('baseline-delete-confirm')));
+    await tester.pumpAndSettle();
+    expect(h.requests, contains(deleteRequest));
+    await tester.tap(find.text('Close'));
+    await tester.pumpAndSettle();
+    expect(find.text('Site baseline'), findsNothing);
+
+    gate.complete();
+    await tester.pumpAndSettle();
+    expect(h.requests.where((request) => request == matchRequest), hasLength(2));
+  });
+
   testWidgets('works with opportunities.read only and asks per type scope', (
     tester,
   ) async {
@@ -606,12 +660,12 @@ void main() {
       expect(find.byKey(importKey), findsNothing);
     });
 
-    testWidgets('previews with a dry run, then imports and refreshes', (
+    testWidgets('the baseline dialog previews, imports and refreshes', (
       tester,
     ) async {
       var calls = 0;
       final h = _http(onImport: (_) => report(dry: ++calls == 1, replaced: 2));
-      await _pump(tester, h, jsonPicker: picks('{"bells":[]}'));
+      await _pump(tester, h, jsonPicker: picks('{"bells":[]}'), inDialog: true);
       final before = baselineLoads(h);
       await tester.tap(find.byKey(importKey));
       await tester.pumpAndSettle();
@@ -715,13 +769,35 @@ void main() {
     testWidgets('keeps both actions reachable on a narrow screen', (
       tester,
     ) async {
-      await _pump(tester, _http(), size: const Size(320, 900));
+      var item = _item('deep-bell', 'bell', quantity: 2);
+      for (var depth = 0; depth < 7; depth++) {
+        item = _item('group-$depth', 'bell_group', children: [item]);
+      }
+      await _pump(
+        tester,
+        _http(
+          perms: const [
+            'opportunities.read',
+            'opportunities.write',
+            'products.read',
+          ],
+          tree: [item],
+        ),
+        size: const Size(320, 900),
+        inDialog: true,
+      );
       expect(tester.takeException(), isNull, reason: 'no layout overflow');
       for (final key in [importKey, const ValueKey('baseline-add')]) {
         final r = tester.getRect(find.byKey(key));
         expect(r.left, greaterThanOrEqualTo(0), reason: '$key');
         expect(r.right, lessThanOrEqualTo(320), reason: '$key');
       }
+      final edit = find.byKey(const ValueKey('baseline-edit-deep-bell'));
+      await tester.ensureVisible(edit);
+      await tester.pumpAndSettle();
+      await tester.tap(edit);
+      await tester.pumpAndSettle();
+      expect(find.text('Edit baseline item'), findsOneWidget);
     });
 
     testWidgets('says so when the file cannot be read', (tester) async {

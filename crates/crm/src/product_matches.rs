@@ -52,6 +52,7 @@ pub type BellMotors = Arc<dyn BellMotorProvider>;
 
 const DEFAULT_LIMIT: i64 = 100;
 const MAX_LIMIT: i64 = 500;
+const MAX_PRODUCT_IDS: usize = 20;
 
 #[derive(Debug, Deserialize, IntoParams)]
 pub struct MatchParams {
@@ -62,6 +63,8 @@ pub struct MatchParams {
     /// Judge against this baseline item (and the items inside it) only, e.g. to suggest products
     /// for one dial or bell group. 404 when it is not an item of the opportunity.
     pub item_id: Option<Uuid>,
+    /// Only score these products, as a comma-separated list of up to 20 UUIDs.
+    pub product_ids: Option<String>,
     /// Default 100, at most 500.
     pub limit: Option<i64>,
     pub offset: Option<i64>,
@@ -92,7 +95,7 @@ pub struct ProductMatchPage {
     pub items: Vec<ProductMatch>,
     /// Number of products with the asked status (all statuses without a filter).
     pub total: i64,
-    /// Products per status within the family filter, ignoring the status filter.
+    /// Products per status within the family and product ID filters, ignoring the status filter.
     pub counts: StatusCounts,
 }
 
@@ -105,6 +108,21 @@ fn parse_status(s: &str) -> Result<MatchStatus, AppError> {
             "status must be suitable, unsuitable or unknown, not {other}"
         ))),
     }
+}
+
+fn parse_product_ids(ids: &str) -> AppResult<Vec<Uuid>> {
+    let mut parsed = Vec::new();
+    for id in ids.split(',') {
+        if parsed.len() == MAX_PRODUCT_IDS {
+            return Err(AppError::Validation(format!(
+                "product_ids accepts at most {MAX_PRODUCT_IDS} UUIDs"
+            )));
+        }
+        parsed.push(id.parse().map_err(|_| {
+            AppError::Validation("product_ids must be a comma-separated list of UUIDs".into())
+        })?);
+    }
+    Ok(parsed)
 }
 
 fn status_rank(s: MatchStatus) -> u8 {
@@ -172,6 +190,11 @@ async fn product_matches(
     user.require(Permission::OpportunitiesRead)?;
     user.require(Permission::ProductsRead)?;
     let wanted = p.status.as_deref().map(parse_status).transpose()?;
+    let product_ids = p
+        .product_ids
+        .as_deref()
+        .map(parse_product_ids)
+        .transpose()?;
     let mut conn = state.db.acquire().await?;
     let (grid_id, phases, tree) = load_site(&mut conn, user.company_id, id).await?;
     let baseline = match p.item_id {
@@ -219,7 +242,8 @@ async fn product_matches(
         .collect();
     keys.sort();
     keys.dedup();
-    let products = active_products_with(&mut conn, &keys, p.family_id).await?;
+    let products =
+        active_products_with(&mut conn, &keys, p.family_id, product_ids.as_deref()).await?;
     let ids: Vec<Uuid> = products.iter().map(|x| x.id).collect();
     let mut power = compatibility_with_grid(&mut conn, &ids, grid_id).await?;
     let site = Site {

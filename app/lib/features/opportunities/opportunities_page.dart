@@ -29,6 +29,12 @@ class _OpportunitiesPageState extends ConsumerState<OpportunitiesPage> {
     _list.currentState?.reload();
   }
 
+  Future<bool> _openOpportunity(Opportunity opportunity) async {
+    await context.push<bool>('/opportunities/${opportunity.id}');
+    if (mounted) _reload();
+    return false;
+  }
+
   @override
   Widget build(BuildContext context) {
     final api = ref.watch(apiProvider);
@@ -102,16 +108,12 @@ class _OpportunitiesPageState extends ConsumerState<OpportunitiesPage> {
             onCreate: canWrite
                 ? () async {
                     final created = await showOpportunityForm(context);
-                    if (created != null) _reload();
-                    return false;
+                    if (created == null || !mounted) return false;
+                    return _openOpportunity(created);
                   }
                 : null,
             locationOf: (o) => '/opportunities/${o.id}',
-            onOpen: (o) async {
-              await context.push<bool>('/opportunities/${o.id}');
-              _reload();
-              return false;
-            },
+            onOpen: _openOpportunity,
           ),
         ),
       ],

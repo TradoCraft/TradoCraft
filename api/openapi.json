@@ -14342,6 +14342,18 @@
             }
           },
           {
+            "name": "product_ids",
+            "in": "query",
+            "description": "Only score these products, as a comma-separated list of up to 20 UUIDs.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
             "name": "limit",
             "in": "query",
             "description": "Default 100, at most 500.",
@@ -46454,7 +46466,7 @@
         "properties": {
           "counts": {
             "$ref": "#/components/schemas/StatusCounts",
-            "description": "Products per status within the family filter, ignoring the status filter."
+            "description": "Products per status within the family and product ID filters, ignoring the status filter."
           },
           "items": {
             "type": "array",

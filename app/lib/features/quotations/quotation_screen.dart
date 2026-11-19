@@ -25,7 +25,9 @@ import '../../shared/search_picker.dart';
 import '../../l10n/l10n.dart';
 import '../../shared/app_icons.dart';
 import '../../shared/load_failed.dart';
+import '../opportunities/baseline_section.dart';
 import '../todo/object_todos_button.dart';
+import 'quotation_product_picker.dart';
 import 'quotation_repository.dart';
 import '../tutorial/targets.dart';
 import '../../shared/file_export.dart';
@@ -201,6 +203,9 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
   /// Generation of the opportunity lookup: a late answer for an earlier customer is ignored.
   int _oppSeq = 0;
 
+  /// Rebuild the autocomplete after returning from the baseline editor so results are fresh.
+  int _baselineRevision = 0;
+
   /// Price list date; null = the quote date (today for a new quotation).
   DateTime? _priceDate;
   final List<_Line> _lines = [];
@@ -250,6 +255,23 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
   /// The dropdown value: the linked opportunity once the list is known, null while loading.
   String? get _opportunityShown => _opportunitiesLoaded ? _opportunityId : null;
   bool get _editable => _id == null || _q?.status == QuotationStatus.draft;
+
+  String? get _siteOpportunityId {
+    final id = _opportunityShown;
+    return _opportunities.any((opportunity) => opportunity.id == id)
+        ? id
+        : null;
+  }
+
+  Widget _siteBaselineButton(String opportunityId) => TextButton.icon(
+    key: const ValueKey('quotation-site-baseline'),
+    icon: const Icon(AppIcons.checklist),
+    label: Text(context.l10n.baselineTitle),
+    onPressed: () async {
+      await showSiteBaseline(context, opportunityId: opportunityId);
+      if (mounted && _editable) setState(() => _baselineRevision++);
+    },
+  );
 
   void _startWatcher() {
     _watcher?.dispose();
@@ -884,6 +906,7 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
                     ..._actions(canWrite),
                   ],
                 ),
+                // Keep editor rows at stable indices when save notices appear.
                 if (_conflictMessage != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 8),
@@ -893,7 +916,9 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
                       onReload: _busy || _loading ? null : _load,
                       onDismiss: () => setState(() => _conflictMessage = null),
                     ),
-                  ),
+                  )
+                else
+                  const SizedBox.shrink(),
                 if (_error != null)
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8),
@@ -901,7 +926,9 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
                       _error!,
                       style: TextStyle(color: theme.colorScheme.error),
                     ),
-                  ),
+                  )
+                else
+                  const SizedBox.shrink(),
                 const SizedBox(height: 16),
                 if (q != null) ..._shippingBanner(q),
                 if (_editable && canWrite)
@@ -1078,6 +1105,7 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
             key: ValueKey('opp-${_customer!.id}-${_opportunities.length}'),
             // The value must be among the items: null while the list is loading.
             initialValue: _opportunityShown,
+            isExpanded: true,
             decoration: InputDecoration(
               labelText: context.l10n.opportunityOptional,
             ),
@@ -1091,6 +1119,8 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
                   value: o.id,
                   child: Text(
                     '${o.number} · ${o.title} (${context.l10n.opportunityStage(o.stage.json ?? '')})',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               // Linked but unreadable (e.g. no access): still shown, and kept on save.
@@ -1098,7 +1128,11 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
                   !_opportunities.any((o) => o.id == _opportunityShown))
                 DropdownMenuItem<String?>(
                   value: _opportunityShown,
-                  child: Text(_opportunityShown!),
+                  child: Text(
+                    _opportunityShown!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
             ],
             onChanged: (v) {
@@ -1117,6 +1151,11 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
             },
           ),
         ),
+        if (can(ref, 'opportunities.read') && _siteOpportunityId != null)
+          Align(
+            alignment: Alignment.centerLeft,
+            child: _siteBaselineButton(_siteOpportunityId!),
+          ),
       ],
       const SizedBox(height: 12),
       Wrap(
@@ -1322,12 +1361,14 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
         child: SizedBox(
           key: _addProductKey,
           width: 420,
-          child: SearchPicker<Product>(
-            label: context.l10n.addProduct,
-            clearOnSelect: true,
-            display: (p) => '${p.code} · ${p.name}',
-            search: _searchProducts,
-            onSelected: _addProduct,
+          child: KeyedSubtree(
+            key: ValueKey((_siteOpportunityId, _baselineRevision)),
+            child: _productPicker(
+              key: const ValueKey('quotation-add-product-picker'),
+              label: context.l10n.addProduct,
+              clearOnSelect: true,
+              onSelected: _addProduct,
+            ),
           ),
         ),
       ),
@@ -1568,7 +1609,7 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
   Future<void> _changeProduct(_Line line) async {
     final p = await showDialog<Product>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         key: const ValueKey('change-product-dialog'),
         title: Text(
           context.l10n.changeProductOf(
@@ -1577,16 +1618,14 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
         ),
         content: SizedBox(
           width: 420,
-          child: SearchPicker<Product>(
+          child: _productPicker(
             label: context.l10n.changeProductNew,
-            display: (p) => '${p.code} · ${p.name}',
-            search: _searchProducts,
-            onSelected: (p) => Navigator.pop(context, p),
+            onSelected: (product) => Navigator.pop(dialogContext, product),
           ),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: Text(context.l10n.cancel),
           ),
         ],
@@ -1646,8 +1685,23 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
     await _addOptionLines(line, picked);
   }
 
-  Future<List<Product>> _searchProducts(String q) async =>
-      (await _api.products.listProducts(q: q, active: true, limit: 20)).items;
+  Widget _productPicker({
+    Key? key,
+    required String label,
+    required ValueChanged<Product> onSelected,
+    bool clearOnSelect = false,
+  }) => QuotationProductPicker(
+    key: key,
+    api: _api,
+    label: label,
+    clearOnSelect: clearOnSelect,
+    opportunityId:
+        ref.read(meProvider).value?.permissions.contains('opportunities.read') ==
+            true
+        ? _siteOpportunityId
+        : null,
+    onSelected: onSelected,
+  );
 
   /// The note under the table after a product change: what was cleared, and the options that do
   /// not apply to the new product, each with a Remove button (removal is always the user's act).
@@ -1955,10 +2009,19 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
     if (q.opportunityId != null)
       Align(
         alignment: Alignment.centerLeft,
-        child: TextButton.icon(
-          icon: const Icon(AppIcons.trendingUp),
-          label: Text(context.l10n.openOpportunity),
-          onPressed: () => context.push('/opportunities/${q.opportunityId}'),
+        child: Wrap(
+          spacing: 8,
+          runSpacing: 4,
+          children: [
+            TextButton.icon(
+              icon: const Icon(AppIcons.trendingUp),
+              label: Text(context.l10n.openOpportunity),
+              onPressed: () =>
+                  context.push('/opportunities/${q.opportunityId}'),
+            ),
+            if (can(ref, 'opportunities.read'))
+              _siteBaselineButton(q.opportunityId!),
+          ],
         ),
       ),
     // Only filled on the create and update responses; a plain GET has none.
