@@ -595,7 +595,7 @@ class _SalesClient implements SalesClient {
 
   @override
   Future<GroupPage> quotationGroups({
-    String? groupBy,
+    required String groupBy,
     String? q,
     String? status,
     String? customerId,

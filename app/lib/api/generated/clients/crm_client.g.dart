@@ -385,7 +385,7 @@ class _CrmClient implements CrmClient {
 
   @override
   Future<GroupPage> customerGroups({
-    String? groupBy,
+    required String groupBy,
     String? q,
     bool? active,
     String? countryCode,

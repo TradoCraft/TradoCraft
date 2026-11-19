@@ -6282,12 +6282,9 @@
             "name": "group_by",
             "in": "query",
             "description": "What to count by: `active` or `country_code`.",
-            "required": false,
+            "required": true,
             "schema": {
-              "type": [
-                "string",
-                "null"
-              ]
+              "type": "string"
             }
           },
           {
@@ -25611,12 +25608,9 @@
             "name": "group_by",
             "in": "query",
             "description": "What to count by: `active` or `product_type`.",
-            "required": false,
+            "required": true,
             "schema": {
-              "type": [
-                "string",
-                "null"
-              ]
+              "type": "string"
             }
           },
           {
@@ -28648,12 +28642,9 @@
             "name": "group_by",
             "in": "query",
             "description": "What to count by: `status`.",
-            "required": false,
+            "required": true,
             "schema": {
-              "type": [
-                "string",
-                "null"
-              ]
+              "type": "string"
             }
           },
           {

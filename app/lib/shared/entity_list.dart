@@ -478,16 +478,29 @@ class EntityListState<T> extends State<EntityList<T>> {
       filters: filters.toQuery(),
     );
     final key = '$q\u0000${sort ?? ''}\u0000${filters.stableKey}\u0000$by';
+    // A reload of the same query and grouping (e.g. after a failed bulk action) keeps the
+    // selection, like the flat list. Then the expanded groups stay expanded and each one's
+    // loaded range is re-read once the new buckets are in, so the retained selection still
+    // refers to rows on screen; selected rows that are gone are pruned. Any other change
+    // collapses the groups and clears the selection.
+    final same = key == _lastQueryKey;
     var cleared = false;
     setState(() {
       _loading = true;
       _error = null;
-      _open.clear();
-      _gstate.clear();
-      if (_selected.isNotEmpty) {
-        _selected.clear();
-        _anchor = null;
-        cleared = true;
+      // The old buckets and their query are stale from here on: nothing may expand or load
+      // with them until the new snapshot arrives.
+      _groups = const [];
+      _groupBase = const ListQuery();
+      _groupsFor = null;
+      if (!same) {
+        _open.clear();
+        _gstate.clear();
+        if (_selected.isNotEmpty) {
+          _selected.clear();
+          _anchor = null;
+          cleared = true;
+        }
       }
       _lastQueryKey = key;
     });
@@ -495,12 +508,22 @@ class EntityListState<T> extends State<EntityList<T>> {
     try {
       final buckets = await widget.loadGroups!(base, by);
       if (!mounted || generation != _generation) return;
+      final known = {for (final g in buckets) g.value};
       setState(() {
         _groups = buckets;
         _groupBase = base;
         _groupsFor = by;
         _loadedKey = key;
+        _open.removeWhere((v) => !known.contains(v));
+        _gstate.removeWhere((v, _) => !known.contains(v));
       });
+      if (same) {
+        await Future.wait([
+          for (final v in _open.toList()) _loadGroup(v, refresh: true),
+        ]);
+        if (!mounted || generation != _generation) return;
+        _pruneGroupSelection();
+      }
     } catch (e) {
       if (mounted && generation == _generation) {
         setState(() => _error = errorMessage(e));
@@ -512,12 +535,40 @@ class EntityListState<T> extends State<EntityList<T>> {
     }
   }
 
-  /// The first page (or, with [more], the next one) of the rows of group [value].
-  Future<void> _loadGroup(String value, {bool more = false}) async {
+  /// Drops selected rows that the refresh of the expanded groups no longer returned. Rows of
+  /// collapsed groups are not loaded, so they are not selectable and not kept.
+  void _pruneGroupSelection() {
+    if (widget.idOf == null || _selected.isEmpty) return;
+    // A group whose refresh failed keeps its old rows, so nothing is pruned wrongly.
+    final present = {for (final i in _loadedItems) widget.idOf!(i)};
+    final before = _selected.length;
+    setState(() {
+      _selected.removeWhere((id) => !present.contains(id));
+      if (_selected.length != before) _anchor = null;
+    });
+    if (_selected.length != before) _emitSelection();
+  }
+
+  /// The first page (or, with [more], the next one) of the rows of group [value]. With
+  /// [refresh] the already loaded range is read again from the start.
+  Future<void> _loadGroup(
+    String value, {
+    bool more = false,
+    bool refresh = false,
+  }) async {
     final by = _groupsFor;
+    // Only the current, successfully loaded bucket snapshot may load rows.
+    if (by == null) return;
     final st = _gstate.putIfAbsent(value, _GroupState<T>.new);
-    if (by == null || st.loading) return;
+    if (refresh) {
+      st.loading = false;
+    } else if (st.loading) {
+      return;
+    }
     final generation = _generation;
+    final limit = refresh
+        ? math.min(math.max(_pageSize, st.items.length), _maxRefresh)
+        : _pageSize;
     setState(() {
       st.loading = true;
       st.error = null;
@@ -527,7 +578,7 @@ class EntityListState<T> extends State<EntityList<T>> {
         ListQuery(
           search: _groupBase.search,
           offset: more ? st.items.length : 0,
-          limit: _pageSize,
+          limit: limit,
           sort: _groupBase.sort,
           filters: {
             ..._groupBase.filters,

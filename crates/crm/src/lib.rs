@@ -120,7 +120,7 @@ impl CustomerInput {
         if self.code.trim().is_empty() || self.name.trim().is_empty() {
             out.push("code and name are required".to_string());
         }
-        if self.country_code.len() != 2 {
+        if tradocraft_core::filter::country_code(&self.country_code).is_none() {
             out.push("country_code must be a 2-letter code".to_string());
         }
         if !tradocraft_core::is_language(&self.language.to_lowercase()) {
@@ -326,6 +326,7 @@ const CUSTOMER_GROUPS: &[(&str, &str)] =
 #[derive(Debug, Deserialize, IntoParams)]
 pub struct GroupParams {
     /// What to count by: `active` or `country_code`.
+    #[param(required = true, nullable = false)]
     pub group_by: Option<String>,
     /// Same as the list.
     pub q: Option<String>,

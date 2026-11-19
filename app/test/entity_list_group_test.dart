@@ -55,6 +55,7 @@ class _Fake {
   final queries = <ListQuery>[];
   final groupCalls = <(ListQuery, String)>[];
   Completer<void>? gate;
+  Completer<void>? groupGate;
   Object? failNext;
 
   Iterable<_Row> _hits(ListQuery q) => _data.where((r) {
@@ -79,6 +80,7 @@ class _Fake {
 
   Future<List<GroupBucket>> loadGroups(ListQuery q, String by) async {
     groupCalls.add((q, by));
+    if (groupGate != null) await groupGate!.future;
     final counts = <String, int>{};
     for (final r in _hits(q)) {
       final v = by == 'status' ? r.status : r.country;
@@ -97,6 +99,7 @@ Future<_Fake> _pump(
   String? prefsKey,
   KvStore? store,
   _Fake? fake,
+  GlobalKey<EntityListState<_Row>>? key,
 }) async {
   t.view.physicalSize = size;
   t.view.devicePixelRatio = 1;
@@ -105,6 +108,7 @@ Future<_Fake> _pump(
   await t.pumpWidget(
     _app(
       EntityList<_Row>(
+        key: key,
         title: 'Things',
         loadQuery: f.load,
         columns: [EntityColumn<_Row>('Name', (r) => r.name)],
@@ -384,6 +388,114 @@ void main() {
     await t.pumpAndSettle();
     expect(find.text('99'), findsNothing);
     expect(find.text('7'), findsOneWidget);
+  });
+
+  testWidgets('old headers are gone while the groups refresh', (t) async {
+    final f = await _pump(t);
+    await _groupBy(t, 'Status');
+    await _closeMenu(t);
+    f.groupGate = Completer<void>();
+    f.queries.clear();
+    f.groupGate = Completer<void>();
+    await _menu(t);
+    await t.tap(find.text('Germany'));
+    await t.pump();
+    await t.tapAt(const Offset(5, 5));
+    await t.pump(const Duration(milliseconds: 400));
+    // The new groups have not answered: no stale header may be expanded.
+    expect(find.text('Sent'), findsNothing);
+    expect(find.byType(LinearProgressIndicator), findsWidgets);
+    expect(f.queries, isEmpty);
+    f.groupGate!.complete();
+    await t.pumpAndSettle();
+    await t.tap(find.text('Sent'));
+    await t.pumpAndSettle();
+    expect(f.queries.single.filters['country'], {'de'});
+  });
+
+  group('reload keeps or clears the selection', () {
+    testWidgets('same query: selection, expansion and rows are kept', (
+      t,
+    ) async {
+      final key = GlobalKey<EntityListState<_Row>>();
+      var sel = <_Row>[];
+      var calls = 0;
+      final f = await _pump(
+        t,
+        key: key,
+        selectable: true,
+        onSelection: (s) {
+          calls++;
+          sel = s;
+        },
+      );
+      await _groupBy(t, 'Status');
+      await _closeMenu(t);
+      await t.tap(find.text('Sent'));
+      await t.pumpAndSettle();
+      await t.tap(find.byType(Checkbox).at(1));
+      await t.pumpAndSettle();
+      expect(sel.map((r) => r.name), ['Sent 0']);
+      final before = calls;
+      f.queries.clear();
+
+      await key.currentState!.reload();
+      await t.pumpAndSettle();
+      expect(calls, before);
+      expect(sel.map((r) => r.name), ['Sent 0']);
+      expect(find.text('Sent 0'), findsOneWidget);
+      expect(find.text('Sent 1'), findsOneWidget);
+      // The expanded group was re-read.
+      expect(f.queries, isNotEmpty);
+      expect(t.widget<Checkbox>(find.byType(Checkbox).at(1)).value, true);
+    });
+
+    testWidgets('same query: a selected row that vanished is dropped', (
+      t,
+    ) async {
+      final key = GlobalKey<EntityListState<_Row>>();
+      var sel = <_Row>[];
+      await _pump(t, key: key, selectable: true, onSelection: (s) => sel = s);
+      await _groupBy(t, 'Status');
+      await _closeMenu(t);
+      await t.tap(find.text('odd'));
+      await t.pumpAndSettle();
+      await t.tap(find.byType(Checkbox).at(1));
+      await t.pumpAndSettle();
+      expect(sel.length, 1);
+      _data.removeLast();
+      addTearDown(() => _data.add(const _Row('Odd 0', 'odd', 'de')));
+      await key.currentState!.reload();
+      await t.pumpAndSettle();
+      expect(sel, isEmpty);
+    });
+
+    testWidgets('changed filter clears the selection and collapses', (t) async {
+      var sel = <_Row>[];
+      var calls = 0;
+      await _pump(
+        t,
+        selectable: true,
+        onSelection: (s) {
+          calls++;
+          sel = s;
+        },
+      );
+      await _groupBy(t, 'Status');
+      await _closeMenu(t);
+      await t.tap(find.text('Sent'));
+      await t.pumpAndSettle();
+      await t.tap(find.byType(Checkbox).at(1));
+      await t.pumpAndSettle();
+      final before = calls;
+      await _menu(t);
+      await t.tap(find.text('Germany'));
+      await t.pumpAndSettle();
+      await _closeMenu(t);
+      expect(sel, isEmpty);
+      expect(calls, before + 1);
+      expect(find.text('Sent 0'), findsNothing);
+    });
   });
 
   testWidgets('selection works across groups by identity', (t) async {

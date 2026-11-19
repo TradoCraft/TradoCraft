@@ -208,7 +208,7 @@ abstract class SalesClient {
   /// [opportunityId] - Same as the list.
   @GET('/api/v1/quotations/groups')
   Future<GroupPage> quotationGroups({
-    @Query('group_by') String? groupBy,
+    @Query('group_by') required String groupBy,
     @Query('q') String? q,
     @Query('status') String? status,
     @Query('customer_id') String? customerId,

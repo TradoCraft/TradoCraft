@@ -634,6 +634,7 @@ const PRODUCT_GROUPS: &[(&str, &str)] = &[("active", "active"), ("product_type",
 #[derive(Debug, Deserialize, IntoParams)]
 pub struct GroupParams {
     /// What to count by: `active` or `product_type`.
+    #[param(required = true, nullable = false)]
     pub group_by: Option<String>,
     /// Same as the list.
     pub q: Option<String>,
