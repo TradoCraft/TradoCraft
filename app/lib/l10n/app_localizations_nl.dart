@@ -10655,4 +10655,45 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get listConfirm => 'Bevestigen';
+
+  @override
+  String get listFilters => 'Filters';
+
+  @override
+  String get listClearFilters => 'Filters wissen';
+
+  @override
+  String get listOr => 'of';
+
+  @override
+  String listRemoveFilter(String filter) {
+    return 'Filter $filter verwijderen';
+  }
+
+  @override
+  String listFiltersActive(int count) {
+    return '$count actief';
+  }
+
+  @override
+  String get listFavourites => 'Favorieten';
+
+  @override
+  String get listSaveFavourite => 'Huidige weergave als favoriet opslaan';
+
+  @override
+  String get listFavouriteName => 'Naam van de favoriet';
+
+  @override
+  String get listNoFavourites => 'Nog geen favorieten';
+
+  @override
+  String listDeleteFavourite(String name) {
+    return 'Favoriet $name verwijderen';
+  }
+
+  @override
+  String listApplyFavourite(String name) {
+    return 'Favoriet $name toepassen';
+  }
 }

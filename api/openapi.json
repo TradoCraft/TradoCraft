@@ -3972,6 +3972,30 @@
             }
           },
           {
+            "name": "active",
+            "in": "query",
+            "description": "Only active (`true`) or inactive (`false`) customers.",
+            "required": false,
+            "schema": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "country_code",
+            "in": "query",
+            "description": "Only customers in these countries: one two-letter code or a comma-separated list\n(`BE,NL`, at most 20), case-insensitive. Values combine with OR.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
             "name": "limit",
             "in": "query",
             "required": false,
@@ -22796,6 +22820,18 @@
             }
           },
           {
+            "name": "product_type",
+            "in": "query",
+            "description": "Only these product types: one value or a comma-separated list (at most 20). Values:\npurchased, manufactured, configurable, service. They combine with OR.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
             "name": "sort",
             "in": "query",
             "description": "Sort order: `field` ascending or `-field` descending, comma-separated for several keys (at\nmost 3). Fields: code, name, unit, product_type, family_code, pricing_type, active.\nDefault: code.",
@@ -25132,6 +25168,7 @@
           {
             "name": "status",
             "in": "query",
+            "description": "Only these statuses: one value or a comma-separated list (`draft,sent`). Values: draft,\nsent, accepted, rejected, superseded. They combine with OR.",
             "required": false,
             "schema": {
               "type": [

@@ -145,16 +145,24 @@ async fn list_quotations(
     Query(p): Query<ListParams>,
 ) -> AppResult<Json<QuotationPage>> {
     user.require(Permission::QuotationsRead)?;
-    if let Some(s) = &p.status {
-        QuotationStatus::parse(s)
-            .ok_or_else(|| AppError::Validation(format!("unknown status {s}")))?;
-    }
+    let statuses = tradocraft_core::filter::values(
+        p.status.as_deref(),
+        "status",
+        &[
+            QuotationStatus::Draft,
+            QuotationStatus::Sent,
+            QuotationStatus::Accepted,
+            QuotationStatus::Rejected,
+            QuotationStatus::Superseded,
+        ]
+        .map(QuotationStatus::as_str),
+    )?;
     let pattern =
         p.q.as_deref()
             .map(|q| format!("%{}%", q.trim().to_lowercase()));
     let filter = "WHERE company_id = $1
           AND ($2::text IS NULL OR lower(number) LIKE $2 OR lower(customer_name) LIKE $2)
-          AND ($3::text IS NULL OR status = $3)
+          AND ($3::text[] IS NULL OR status = ANY($3))
           AND ($4::uuid IS NULL OR customer_id = $4)
           AND ($5::uuid IS NULL OR opportunity_id = $5)";
     let order = tradocraft_core::sort::order_by(
@@ -171,7 +179,7 @@ async fn list_quotations(
     ))
     .bind(user.company_id)
     .bind(&pattern)
-    .bind(&p.status)
+    .bind(&statuses)
     .bind(p.customer_id)
     .bind(p.opportunity_id)
     .bind(p.limit.unwrap_or(50).clamp(1, 500))
@@ -181,7 +189,7 @@ async fn list_quotations(
     let total = sqlx::query_scalar(&format!("SELECT count(*) FROM sales.quotations {filter}"))
         .bind(user.company_id)
         .bind(&pattern)
-        .bind(&p.status)
+        .bind(&statuses)
         .bind(p.customer_id)
         .bind(p.opportunity_id)
         .fetch_one(&state.db)

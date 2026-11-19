@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/api.dart';
+import '../../framework/search/filter_model.dart';
 import '../../shared/app_icons.dart';
 import '../../shared/entity_list.dart';
 import '../../shared/format.dart';
@@ -18,7 +19,6 @@ class QuotationsPage extends ConsumerStatefulWidget {
 
 class _QuotationsPageState extends ConsumerState<QuotationsPage> {
   final _list = GlobalKey<EntityListState<QuotationSummary>>();
-  QuotationStatus? _status;
 
   @override
   Widget build(BuildContext context) {
@@ -29,29 +29,22 @@ class _QuotationsPageState extends ConsumerState<QuotationsPage> {
     return EntityList<QuotationSummary>(
       key: _list,
       title: context.l10n.quotations,
-      loadQuery: (query) async =>
-          (await repo.list(query, status: _status?.json)).asLoaderResult,
+      loadQuery: (query) async => (await repo.list(query)).asLoaderResult,
       prefsKey: 'quotations',
       resizableColumns: true,
       columnMenu: true,
-      filters: DropdownButton<QuotationStatus?>(
-        value: _status,
-        hint: Text(context.l10n.allStatuses),
-        items: [
-          DropdownMenuItem(value: null, child: Text(context.l10n.allStatuses)),
-          for (final s in QuotationStatus.values.where(
-            (s) => s != QuotationStatus.$unknown,
-          ))
-            DropdownMenuItem(
-              value: s,
-              child: Text(context.l10n.quotationStatus(s.json!)),
-            ),
-        ],
-        onChanged: (s) {
-          setState(() => _status = s);
-          _list.currentState?.reload();
-        },
-      ),
+      filterDefs: [
+        FilterDef(
+          key: 'status',
+          label: context.l10n.status,
+          options: [
+            for (final s in QuotationStatus.values.where(
+              (s) => s != QuotationStatus.$unknown,
+            ))
+              (s.json!, context.l10n.quotationStatus(s.json!)),
+          ],
+        ),
+      ],
       columns: [
         EntityColumn(
           context.l10n.numberRequired,

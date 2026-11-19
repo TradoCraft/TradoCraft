@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/api.dart';
 import '../../shared/csv_transfer.dart';
+import '../../framework/search/filter_model.dart';
 import '../../shared/entity_list.dart';
 import '../../shared/format.dart';
 import 'bulk_price_dialog.dart';
@@ -34,10 +35,29 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
     return EntityList<Product>(
       key: _list,
       title: context.l10n.products,
+      filterDefs: [
+        FilterDef(
+          key: 'active',
+          label: context.l10n.status,
+          options: [
+            ('true', context.l10n.active),
+            ('false', context.l10n.inactive),
+          ],
+        ),
+        FilterDef(
+          key: 'product_type',
+          label: context.l10n.type,
+          options: [
+            for (final t in productTypes) (t, context.l10n.productType(t)),
+          ],
+        ),
+      ],
       loadQuery: (query) async {
         final page = await api.products.listProducts(
           q: query.q,
           sort: query.sort,
+          active: query.flag('active'),
+          productType: query.csv('product_type'),
           offset: query.offset,
           limit: query.limit,
         );

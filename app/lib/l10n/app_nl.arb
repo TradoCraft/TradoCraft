@@ -3299,5 +3299,16 @@
   "listSelectRow": "{name} selecteren",
   "listSelectedCount": "{count} geselecteerd",
   "listClearSelection": "Selectie wissen",
-  "listConfirm": "Bevestigen"
+  "listConfirm": "Bevestigen",
+  "listFilters": "Filters",
+  "listClearFilters": "Filters wissen",
+  "listOr": "of",
+  "listRemoveFilter": "Filter {filter} verwijderen",
+  "listFiltersActive": "{count} actief",
+  "listFavourites": "Favorieten",
+  "listSaveFavourite": "Huidige weergave als favoriet opslaan",
+  "listFavouriteName": "Naam van de favoriet",
+  "listNoFavourites": "Nog geen favorieten",
+  "listDeleteFavourite": "Favoriet {name} verwijderen",
+  "listApplyFavourite": "Favoriet {name} toepassen"
 }

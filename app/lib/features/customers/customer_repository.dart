@@ -17,6 +17,8 @@ class CustomerRepository
     final page = await _crm.listCustomers(
       q: query.q,
       sort: query.sort,
+      active: query.flag('active'),
+      countryCode: query.csv('country_code'),
       offset: query.offset,
       limit: query.limit,
     );

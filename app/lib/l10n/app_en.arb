@@ -4834,5 +4834,20 @@
   "listSelectedCount": "{count} selected",
   "@listSelectedCount": {"placeholders": {"count": {"type": "int"}}},
   "listClearSelection": "Clear selection",
-  "listConfirm": "Confirm"
+  "listConfirm": "Confirm",
+  "listFilters": "Filters",
+  "listClearFilters": "Clear filters",
+  "listOr": "or",
+  "listRemoveFilter": "Remove filter {filter}",
+  "@listRemoveFilter": {"placeholders": {"filter": {"type": "String"}}},
+  "listFiltersActive": "{count} active",
+  "@listFiltersActive": {"placeholders": {"count": {"type": "int"}}},
+  "listFavourites": "Favourites",
+  "listSaveFavourite": "Save current view as favourite",
+  "listFavouriteName": "Favourite name",
+  "listNoFavourites": "No favourites yet",
+  "listDeleteFavourite": "Delete favourite {name}",
+  "@listDeleteFavourite": {"placeholders": {"name": {"type": "String"}}},
+  "listApplyFavourite": "Apply favourite {name}",
+  "@listApplyFavourite": {"placeholders": {"name": {"type": "String"}}}
 }

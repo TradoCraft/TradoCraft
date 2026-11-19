@@ -312,6 +312,9 @@ pub struct ListParams {
     pub q: Option<String>,
     pub active: Option<bool>,
     pub family_id: Option<Uuid>,
+    /// Only these product types: one value or a comma-separated list (at most 20). Values:
+    /// purchased, manufactured, configurable, service. They combine with OR.
+    pub product_type: Option<String>,
     /// Sort order: `field` ascending or `-field` descending, comma-separated for several keys (at
     /// most 3). Fields: code, name, unit, product_type, family_code, pricing_type, active.
     /// Default: code.
@@ -558,10 +561,13 @@ async fn list_products(
 ) -> AppResult<Json<ProductPage>> {
     user.require(Permission::ProductsRead)?;
     let pattern = tradocraft_core::search::pattern(p.q.as_deref());
+    let types =
+        tradocraft_core::filter::values(p.product_type.as_deref(), "product_type", &PRODUCT_TYPES)?;
     let filter = format!(
         "WHERE ($1::text IS NULL OR {} OR {})
                   AND ($2::boolean IS NULL OR active = $2)
-                  AND ($5::uuid IS NULL OR family_id = $5)",
+                  AND ($5::uuid IS NULL OR family_id = $5)
+                  AND ($6::text[] IS NULL OR product_type = ANY($6))",
         tradocraft_core::search::matches("code", "$1"),
         tradocraft_core::search::matches("name", "$1"),
     );
@@ -574,6 +580,7 @@ async fn list_products(
     .bind(p.limit.unwrap_or(50).clamp(1, 500))
     .bind(p.offset.unwrap_or(0).max(0))
     .bind(p.family_id)
+    .bind(&types)
     .fetch_all(&state.db)
     .await?;
     resolve_products_for_company(
@@ -585,11 +592,12 @@ async fn list_products(
     .await?;
     let total = sqlx::query_scalar(&format!(
         "SELECT count(*) FROM products.products {}",
-        filter.replace("$5", "$3")
+        filter.replace("$5", "$3").replace("$6", "$4")
     ))
     .bind(&pattern)
     .bind(p.active)
     .bind(p.family_id)
+    .bind(&types)
     .fetch_one(&state.db)
     .await?;
     let items = items

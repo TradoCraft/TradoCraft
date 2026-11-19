@@ -3299,5 +3299,16 @@
   "listSelectRow": "Seleccionar {name}",
   "listSelectedCount": "{count} seleccionados",
   "listClearSelection": "Borrar selección",
-  "listConfirm": "Confirmar"
+  "listConfirm": "Confirmar",
+  "listFilters": "Filtros",
+  "listClearFilters": "Quitar filtros",
+  "listOr": "o",
+  "listRemoveFilter": "Quitar el filtro {filter}",
+  "listFiltersActive": "{count} activos",
+  "listFavourites": "Favoritos",
+  "listSaveFavourite": "Guardar la vista actual como favorito",
+  "listFavouriteName": "Nombre del favorito",
+  "listNoFavourites": "Aún no hay favoritos",
+  "listDeleteFavourite": "Eliminar el favorito {name}",
+  "listApplyFavourite": "Aplicar el favorito {name}"
 }

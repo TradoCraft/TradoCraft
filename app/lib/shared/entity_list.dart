@@ -11,6 +11,9 @@ import '../app/workspace.dart' show OpenInTab;
 import '../features/field/offline/kv_store.dart';
 import '../features/tutorial/targets.dart';
 import '../framework/data/repository.dart';
+import '../framework/search/favourite.dart';
+import '../framework/search/filter_model.dart';
+import '../framework/search/filter_widgets.dart';
 import '../l10n/l10n.dart';
 import 'actions.dart';
 import 'app_icons.dart';
@@ -99,6 +102,7 @@ class EntityList<T> extends StatefulWidget {
     this.createLabel,
     this.createTargetId,
     this.filters,
+    this.filterDefs = const [],
     this.moreFilters,
     this.actions = const [],
     this.emptyText,
@@ -157,6 +161,11 @@ class EntityList<T> extends StatefulWidget {
   final String? createTargetId;
   final Widget? filters;
 
+  /// Declared filters (ADR 0083): a menu button, removable chips and, with [prefsKey], favourites.
+  /// The selection goes to [loadQuery] as `ListQuery.filters` (key to the set of selected values).
+  /// Needs [loadQuery]. Empty (default): the list looks and behaves as before.
+  final List<FilterDef> filterDefs;
+
   /// More filters, on a line of their own under the search box (for lists with many).
   final Widget? moreFilters;
 
@@ -172,6 +181,9 @@ class EntityList<T> extends StatefulWidget {
   @override
   State<EntityList<T>> createState() => EntityListState<T>();
 }
+
+/// Whether the stored favourites were read (see [EntityListState._favRead]).
+enum _FavRead { pending, ready, failed }
 
 class EntityListState<T> extends State<EntityList<T>> {
   static const _pageSize = 50;
@@ -212,6 +224,17 @@ class EntityListState<T> extends State<EntityList<T>> {
   bool _layoutEdited = false;
   KvStore? _store;
 
+  FilterSelection _filterSel = FilterSelection.empty;
+  List<Favourite> _favs = const [];
+
+  /// Favourites may only be written after the stored list was read successfully, else a
+  /// list built from the empty [_favs] would overwrite it.
+  _FavRead _favRead = _FavRead.pending;
+
+  /// Counts favourite changes, so a failed write only restores when nothing newer happened.
+  int _favSeq = 0;
+  final _searchFocus = FocusNode();
+
   String _cid(EntityColumn<T> c) => c.id ?? c.sortKey ?? c.label;
 
   List<EntityColumn<T>> get _visible => [
@@ -226,6 +249,11 @@ class EntityListState<T> extends State<EntityList<T>> {
   @override
   void initState() {
     super.initState();
+    assert(
+      widget.filterDefs.isEmpty || widget.loadQuery != null,
+      'filterDefs needs loadQuery',
+    );
+    _searchFocus.onKeyEvent = _searchKey;
     _resetVisibility();
     if (widget.prefsKey != null) {
       _store = widget.prefsStore ?? _lookupStore();
@@ -263,17 +291,49 @@ class EntityListState<T> extends State<EntityList<T>> {
 
   static const _prefsTimeout = Duration(seconds: 2);
 
-  Future<void> _loadPrefs() async {
+  String get _favName => 'entity_list_fav:${widget.prefsKey}';
+
+  /// Reads one entry; a store that is slow, never answers or fails gives null.
+  Future<String?> _readPref(String name) async {
     try {
-      // A store that is slow or never answers must not hold the list back: default layout then.
-      final raw = await _store!.get(_prefsName).timeout(_prefsTimeout);
-      if (raw != null && mounted && !_layoutEdited) {
-        _applyPrefs(jsonDecode(raw));
-      }
+      return await _store!.get(name).timeout(_prefsTimeout);
     } catch (_) {
-      // A damaged or unreadable entry just means the default layout.
+      return null;
     }
-    if (mounted) await reload();
+  }
+
+  /// Reads the favourites into [_favs]; a null value from a working store is an empty list.
+  Future<void> _readFavourites() async {
+    try {
+      final raw = await _store!.get(_favName).timeout(_prefsTimeout);
+      if (!mounted) return;
+      _favs = Favourite.decodeList(raw);
+      _favRead = _FavRead.ready;
+    } catch (_) {
+      if (!mounted) return;
+      _favRead = _FavRead.failed;
+    }
+  }
+
+  Future<void> _retryFavourites() async {
+    setState(() => _favRead = _FavRead.pending);
+    await _readFavourites();
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _loadPrefs() async {
+    // A store that is slow or never answers must not hold the list back: default layout then.
+    // Both entries are read at the same time, so the wait is at most one timeout.
+    final (raw, _) = await (_readPref(_prefsName), _readFavourites()).wait;
+    if (!mounted) return;
+    if (raw != null && !_layoutEdited) {
+      try {
+        _applyPrefs(jsonDecode(raw));
+      } catch (_) {
+        // A damaged entry just means the default layout.
+      }
+    }
+    await reload();
   }
 
   void _applyPrefs(Object? j) {
@@ -337,6 +397,7 @@ class EntityListState<T> extends State<EntityList<T>> {
   void dispose() {
     _debounce?.cancel();
     _search.dispose();
+    _searchFocus.dispose();
     _scroll.dispose();
     for (final n in _rowNodes.values) {
       n.dispose();
@@ -359,7 +420,8 @@ class EntityListState<T> extends State<EntityList<T>> {
     final generation = ++_generation;
     final q = _search.text.trim();
     final sort = _sortString;
-    final queryKey = '$q\u0000${sort ?? ''}';
+    final filters = _filterSel;
+    final queryKey = '$q\u0000${sort ?? ''}\u0000${filters.stableKey}';
     // The search or sort changed since these rows were loaded (a debounce still pending): the
     // next page of the new query must not be appended to the old rows.
     if (!reset && queryKey != _loadedKey) reset = true;
@@ -395,6 +457,7 @@ class EntityListState<T> extends State<EntityList<T>> {
                 offset: offset,
                 limit: limit,
                 sort: sort,
+                filters: filters.toQuery(),
               ),
             )
           : await widget.load!(q.isEmpty ? null : q, offset, limit);
@@ -431,6 +494,96 @@ class EntityListState<T> extends State<EntityList<T>> {
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 300), reload);
   }
+
+  // ---- filters and favourites ----
+
+  void _setFilters(FilterSelection next) {
+    if (next == _filterSel) return;
+    _debounce?.cancel();
+    setState(() => _filterSel = next);
+    reload();
+  }
+
+  void _removeLastChip() {
+    final k = _filterSel.lastKey(widget.filterDefs);
+    if (k != null) _setFilters(_filterSel.without(k));
+  }
+
+  KeyEventResult _searchKey(FocusNode _, KeyEvent e) {
+    if (e is KeyDownEvent &&
+        e.logicalKey == LogicalKeyboardKey.backspace &&
+        _search.text.isEmpty &&
+        _filterSel.lastKey(widget.filterDefs) != null) {
+      _removeLastChip();
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
+  }
+
+  Future<void> _storeFavourites(List<Favourite> next) async {
+    final store = _store;
+    if (widget.prefsKey == null ||
+        store == null ||
+        _favRead != _FavRead.ready) {
+      return;
+    }
+    final previous = _favs;
+    final seq = ++_favSeq;
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    setState(() => _favs = next);
+    try {
+      await store.set(_favName, Favourite.encodeList(next));
+    } catch (e) {
+      if (!mounted) return;
+      if (seq == _favSeq) setState(() => _favs = previous);
+      messenger?.showSnackBar(
+        SnackBar(
+          content: Text(errorMessage(e)),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
+    }
+  }
+
+  Future<void> _saveFavourite() async {
+    final name = await askFavouriteName(context);
+    if (name == null || !mounted) return;
+    _storeFavourites(
+      Favourite.upsert(
+        _favs,
+        Favourite(
+          name: name,
+          search: _search.text.trim(),
+          filters: _filterSel.sanitized(widget.filterDefs),
+        ),
+      ),
+    );
+  }
+
+  void _applyFavourite(Favourite f) {
+    final fav = f.sanitized(widget.filterDefs);
+    _debounce?.cancel();
+    setState(() {
+      _search.text = fav.search;
+      _filterSel = fav.filters;
+    });
+    reload();
+  }
+
+  Widget _filterMenu() => FilterMenuButton(
+    defs: widget.filterDefs,
+    selection: _filterSel,
+    onToggle: (k, v) => _setFilters(_filterSel.toggle(k, v)),
+    onClear: () => _setFilters(FilterSelection.empty),
+    favourites: widget.prefsKey == null ? null : _favs,
+    onSaveFavourite: _favRead == _FavRead.ready ? _saveFavourite : null,
+    onRetryFavourites: _favRead == _FavRead.failed ? _retryFavourites : null,
+    onApplyFavourite: _applyFavourite,
+    onDeleteFavourite: (f) => _storeFavourites([
+      for (final o in _favs)
+        if (o.name != f.name) o,
+    ]),
+  );
 
   // ---- sorting ----
 
@@ -652,6 +805,7 @@ class EntityListState<T> extends State<EntityList<T>> {
               Expanded(
                 child: TextField(
                   controller: _search,
+                  focusNode: _searchFocus,
                   onChanged: _onSearchChanged,
                   decoration: InputDecoration(
                     prefixIcon: Icon(AppIcons.search),
@@ -659,6 +813,10 @@ class EntityListState<T> extends State<EntityList<T>> {
                   ),
                 ),
               ),
+              if (widget.filterDefs.isNotEmpty) ...[
+                const SizedBox(width: 4),
+                _filterMenu(),
+              ],
               if (widget.filters != null) ...[
                 const SizedBox(width: 12),
                 widget.filters!,
@@ -675,6 +833,18 @@ class EntityListState<T> extends State<EntityList<T>> {
                 ),
             ],
           ),
+          if (widget.filterDefs.isNotEmpty && _filterSel.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: FilterChips(
+                  defs: widget.filterDefs,
+                  selection: _filterSel,
+                  onRemove: (k) => _setFilters(_filterSel.without(k)),
+                ),
+              ),
+            ),
           if (selecting && !wide) ...[
             const SizedBox(height: 8),
             _bulkBar(theme),

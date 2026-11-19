@@ -159,6 +159,9 @@ abstract class SalesClient {
 
   /// [q] - Searches number and customer name.
   ///
+  /// [status] - Only these statuses: one value or a comma-separated list (`draft,sent`). Values: draft,.
+  /// sent, accepted, rejected, superseded. They combine with OR.
+  ///
   /// [sort] - Sort order: `field` ascending or `-field` descending, comma-separated for several keys (at.
   /// most 3). Fields: number, customer_name, status, quote_date, valid_until, subtotal, total.
   /// Default: newest first (quote date, number and revision, descending).

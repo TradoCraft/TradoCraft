@@ -338,6 +338,9 @@ abstract class ProductsClient {
 
   /// [q] - Searches code and name, ignoring case and accents.
   ///
+  /// [productType] - Only these product types: one value or a comma-separated list (at most 20). Values:.
+  /// purchased, manufactured, configurable, service. They combine with OR.
+  ///
   /// [sort] - Sort order: `field` ascending or `-field` descending, comma-separated for several keys (at.
   /// most 3). Fields: code, name, unit, product_type, family_code, pricing_type, active.
   /// Default: code.
@@ -346,6 +349,7 @@ abstract class ProductsClient {
     @Query('q') String? q,
     @Query('active') bool? active,
     @Query('family_id') String? familyId,
+    @Query('product_type') String? productType,
     @Query('sort') String? sort,
     @Query('limit') int? limit,
     @Query('offset') int? offset,

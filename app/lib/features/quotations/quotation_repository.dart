@@ -14,12 +14,12 @@ class QuotationRepository
   const QuotationRepository(this._sales);
   final SalesClient _sales;
 
-  /// [status] is the API value of a `QuotationStatus` (null: all).
+  /// The `status` filter holds API values of `QuotationStatus` (none selected: all).
   @override
-  Future<Page<QuotationSummary>> list(ListQuery query, {String? status}) async {
+  Future<Page<QuotationSummary>> list(ListQuery query) async {
     final page = await _sales.listQuotations(
       q: query.q,
-      status: status,
+      status: query.csv('status'),
       sort: query.sort,
       offset: query.offset,
       limit: query.limit,

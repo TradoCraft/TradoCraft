@@ -61,6 +61,32 @@ void main() {
       expect(http.queries.single, {'q': 'be', 'offset': 20, 'limit': 10});
     });
 
+    test(
+      'list sends the active filter only when one option is selected',
+      () async {
+        final http = FakeHttp({
+          'GET /api/v1/customers': (_) => {'items': [], 'total': 0},
+        });
+        final repo = CustomerRepository(_api(http).crm);
+        await repo.list(
+          const ListQuery(
+            filters: {
+              'active': {'false'},
+            },
+          ),
+        );
+        await repo.list(
+          const ListQuery(
+            filters: {
+              'active': {'true', 'false'},
+            },
+          ),
+        );
+        expect(http.queries[0]['active'], false);
+        expect(http.queries[1].containsKey('active'), isFalse);
+      },
+    );
+
     test('get reads by id', () async {
       final http = FakeHttp({
         'GET /api/v1/customers/c2': (_) => customerJson(),
@@ -106,13 +132,20 @@ void main() {
           'total': 1,
         },
       });
-      final page = await QuotationRepository(_api(http).sales)
-          .list(const ListQuery(search: 'x', limit: 5), status: 'draft');
+      final page = await QuotationRepository(_api(http).sales).list(
+        const ListQuery(
+          search: 'x',
+          limit: 5,
+          filters: {
+            'status': {'sent', 'draft'},
+          },
+        ),
+      );
       expect(page.items.single.number, 'Q2026-0001');
       expect(page.total, 1);
       expect(http.queries.single, {
         'q': 'x',
-        'status': 'draft',
+        'status': 'draft,sent',
         'offset': 0,
         'limit': 5,
       });
