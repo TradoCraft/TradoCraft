@@ -209,53 +209,13 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
         countryCode: _country.text.trim().toUpperCase(),
         language: _language,
         priceZoneId: _zoneId!,
-        discountPercent: parseDecimalInput(_discount.text) ?? '0',
+        discountPercent: _discount.decimal ?? '0',
         paymentTermsDays: int.parse(_terms.text.trim()),
         expectedVersion: version,
       );
       return id == null ? repo.create(input) : repo.update(id, input);
     });
-    final input = CustomerInput(
-      code: _code.text.trim(),
-      name: _name.text.trim(),
-      vatNumber: _nn(_vat),
-      vatRegime: _vatRegime,
-      email: _nn(_email),
-      phone: _nn(_phone),
-      street: _street.text.trim(),
-      postalCode: _postal.text.trim(),
-      city: _city.text.trim(),
-      countryCode: _country.text.trim().toUpperCase(),
-      language: _language,
-      priceZoneId: _zoneId!,
-      discountPercent: _discount.decimal ?? '0',
-      paymentTermsDays: int.parse(_terms.text.trim()),
-      expectedVersion: _current?.version,
-    );
-    try {
-      final repo = ref.read(customerRepositoryProvider);
-      final saved = c == null
-          ? await repo.create(input)
-          : await repo.update(c!.id, input);
-      if (mounted) {
-        _current = saved;
-        _conflictMessage = null;
-        _finish(saved);
-      }
-    } catch (e) {
-      if (!mounted) return;
-      if (isRecordChangedError(e)) {
-        setState(() {
-          _conflictMessage = context.l10n.recordConflictMessage;
-          _isConflict = true;
-          _error = null;
-        });
-      } else {
-        setState(() => _error = errorMessage(e));
-      }
-    } finally {
-      if (mounted) setState(() => _saving = false);
-    }
+    if (saved != null && mounted) _finish(saved);
   }
 
   Future<void> _reloadCustomer() async {
@@ -263,33 +223,30 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
     if (id == null) return;
     await _form.reload(() async {
       final fresh = await ref.read(customerRepositoryProvider).get(id);
-      if (!mounted) return;
-      setState(() {
-        _current = fresh;
-        _code.text = fresh.code;
-        _name.text = fresh.name;
-        _vat.text = fresh.vatNumber ?? '';
-        _email.text = fresh.email ?? '';
-        _phone.text = fresh.phone ?? '';
-        _street.text = fresh.street;
-        _postal.text = fresh.postalCode;
-        _city.text = fresh.city;
-        _country.text = fresh.countryCode;
-        _discount.text = editableDecimal(fresh.discountPercent ?? '0');
-        _terms.text = '${fresh.paymentTermsDays ?? 30}';
-        _language = fresh.language;
-        _vatRegime = fresh.vatRegime;
-        _zoneId = fresh.priceZoneId;
-        _conflictMessage = null;
-        _isConflict = false;
-        _error = null;
-      });
-      if (widget.screen) TabScope.reportDirty(context, false);
-    } catch (e) {
-      if (mounted) setState(() => _error = errorMessage(e));
-    } finally {
-      if (mounted) setState(() => _saving = false);
-    }
+      // Filled while the controller is busy: these are not edits.
+      if (mounted) _fill(fresh);
+      return fresh;
+    });
+  }
+
+  void _fill(Customer fresh) {
+    setState(() {
+      _code.text = fresh.code;
+      _name.text = fresh.name;
+      _vat.text = fresh.vatNumber ?? '';
+      _email.text = fresh.email ?? '';
+      _phone.text = fresh.phone ?? '';
+      _street.text = fresh.street;
+      _postal.text = fresh.postalCode;
+      _city.text = fresh.city;
+      _country.text = fresh.countryCode;
+      _discount.text = editableDecimal(fresh.discountPercent ?? '0');
+      _terms.text = '${fresh.paymentTermsDays ?? 30}';
+      _language = fresh.language;
+      _vatRegime = fresh.vatRegime;
+      _zoneId = fresh.priceZoneId;
+      _reloads++;
+    });
   }
 
   /// Builds a row that wraps when the page is narrow. [build] gets the available width, or null
@@ -520,88 +477,159 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
                     value: c?.priceZoneId,
                     child: Text(c?.priceZoneCode ?? c!.priceZoneId!),
                   ),
-                  country,
-                  language,
-                ],
-              );
-            }),
-            const Divider(height: 32),
-            _responsive((context, width) {
-              final zone = zones.when(
-                data: (list) => DropdownButtonFormField<String>(
-                  initialValue: _zoneId,
-                  decoration: InputDecoration(
-                    labelText: context.l10n.priceZone,
-                  ),
-                  items: [
-                    for (final z in list)
-                      DropdownMenuItem(
-                        value: z.id,
-                        child: Text('${z.code} – ${z.name}'),
-                      ),
-                    // The stored zone is no longer offered (inactive or missing): keep it
-                    // selectable so editing does not change the customer's zone.
-                    if (c?.priceZoneId != null &&
-                        !list.any((z) => z.id == c?.priceZoneId))
-                      DropdownMenuItem(
-                        value: c?.priceZoneId,
-                        child: Text(c?.priceZoneCode ?? c!.priceZoneId!),
-                      ),
-                  ],
-                  onChanged: _locked
-                      ? null
-                      : (v) {
-                          setState(() => _zoneId = v);
-                          _markDirty();
-                        },
-                  validator: (v) => v == null ? context.l10n.required : null,
-                ),
-                loading: () => const LinearProgressIndicator(),
-                error: (e, _) => Text(errorMessage(e)),
-              );
-              final discount = SizedBox(
-                width: 110,
-                child: _field(
-                  _discount,
-                  context.l10n.generalRebatePercent,
-                  check: (s) => s.isNotEmpty && _discount.decimal == null
-                      ? context.l10n.cfgInvalidNumber
-                      : null,
-                ),
-              );
-              final terms = SizedBox(
-                width: 120,
-                child: _field(
-                  _terms,
-                  context.l10n.paymentDays,
-                  check: (s) => int.tryParse(s) == null
-                      ? context.l10n.numberRequired
-                      : null,
-                ),
-              );
-              // The zone dropdown needs about 300 px next to the two fixed fields.
-              if (width == null || width >= 110 + 120 + 24 + 300) {
-                return Row(
-                  children: [
-                    Expanded(child: zone),
-                    gap,
-                    discount,
-                    gap,
-                    terms,
-                  ],
-                );
-              }
-              return Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: [
-                  SizedBox(width: width, child: zone),
-                  discount,
-                  terms,
-                ],
-              );
-            }),
-            if (_error != null) ...[
+              ],
+              onChanged: _locked ? null : (v) => _edited(() => _zoneId = v),
+              validator: (v) => v == null ? context.l10n.required : null,
+            ),
+            loading: () => const LinearProgressIndicator(),
+            error: (e, _) => Text(errorMessage(e)),
+          );
+          final discount = SizedBox(
+            width: 110,
+            child: _field(
+              _discount,
+              context.l10n.generalRebatePercent,
+              check: (s) => s.isNotEmpty && _discount.decimal == null
+                  ? context.l10n.cfgInvalidNumber
+                  : null,
+            ),
+          );
+          final terms = SizedBox(
+            width: 120,
+            child: _field(
+              _terms,
+              context.l10n.paymentDays,
+              check: (s) =>
+                  int.tryParse(s) == null ? context.l10n.numberRequired : null,
+            ),
+          );
+          // The zone dropdown needs about 300 px next to the two fixed fields.
+          if (width == null || width >= 110 + 120 + 24 + 300) {
+            return Row(
+              children: [
+                Expanded(child: zone),
+                gap,
+                discount,
+                gap,
+                terms,
+              ],
+            );
+          }
+          return Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              SizedBox(width: width, child: zone),
+              discount,
+              terms,
+            ],
+          );
+        }),
+      ],
+    );
+  }
+
+  bool get _canSeeEquipment =>
+      ref.read(meProvider).value?.permissions.contains('field.read') ?? false;
+
+  void _openEquipment() {
+    final router = GoRouter.of(context);
+    if (!widget.screen) Navigator.pop(context);
+    router.push('/jobs/equipment/${c!.id}');
+  }
+
+  void _openClosures() => showDialog<void>(
+    context: context,
+    builder: (_) => ClosuresDialog(customer: c!),
+  );
+
+  void _openRebates() => showDialog<void>(
+    context: context,
+    builder: (_) => RebatesDialog(customer: c!),
+  );
+
+  Widget _saveButton() => TutorialTarget(
+    id: 'customer-form-save',
+    child: FilledButton(
+      onPressed: _form.busy ? null : _save,
+      child: Text(context.l10n.save),
+    ),
+  );
+
+  Widget _closeButton() => TextButton(
+    onPressed: () => _finish(null),
+    child: Text(widget.readOnly ? context.l10n.close : context.l10n.cancel),
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    ref.listen(meProvider, (_, _) => _syncAutoVatRegime());
+    final c = this.c;
+    if (widget.screen) return _page(context, c);
+    return _dialog(context, c);
+  }
+
+  Widget _page(BuildContext context, Customer? c) => RecordFormView<Customer>(
+    controller: _form,
+    title: c?.name ?? context.l10n.newCustomer,
+    onBack: () => _finish(null),
+    titleExtras: widget.titleExtras,
+    reportDirty: !widget.readOnly,
+    maxSheetWidth: 720,
+    onReload: _reloadCustomer,
+    actions: [
+      if (!widget.readOnly) _saveButton(),
+      _closeButton(),
+      if (c != null)
+        RecordHistoryButton(entity: 'customer', id: c.id, title: c.name),
+    ],
+    smartButtons: [
+      if (c != null) ...[
+        SmartButton(
+          icon: AppIcons.people,
+          label: context.l10n.contacts,
+          onPressed: () => showContactsDialog(context, c),
+        ),
+        if (_canSeeEquipment)
+          SmartButton(
+            icon: AppIcons.precisionManufacturing,
+            label: context.l10n.customerEquipment,
+            onPressed: _openEquipment,
+          ),
+        SmartButton(
+          icon: AppIcons.eventBusy,
+          label: context.l10n.closures,
+          onPressed: _openClosures,
+        ),
+        SmartButton(
+          icon: AppIcons.percent,
+          label: context.l10n.productRebates,
+          onPressed: _openRebates,
+        ),
+      ],
+    ],
+    body: _fields(context),
+  );
+
+  Widget _dialog(BuildContext context, Customer? c) {
+    const gap = SizedBox(width: 12, height: 12);
+    final notice = _form.notice;
+    final content = Form(
+      key: _form.formKey,
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (notice != null) ...[
+              RecordConflictNotice(
+                notice: notice,
+                onReload: _form.busy ? null : _reloadCustomer,
+                onDismiss: _form.dismissNotice,
+              ),
+              gap,
+            ],
+            _fields(context),
+            if (_form.error != null) ...[
               gap,
               Text(
                 _form.error!,
