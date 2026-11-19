@@ -123,8 +123,10 @@ class _PriceDialog extends ConsumerStatefulWidget {
 }
 
 class _PriceDialogState extends ConsumerState<_PriceDialog> {
-  late final _price = TextEditingController(
-    text: widget.existing == null ? '' : number(widget.existing!.unitPrice),
+  late final _price = DecimalInputController(
+    text: widget.existing == null
+        ? ''
+        : editableDecimal(widget.existing!.unitPrice),
   );
   late String? _zoneId = widget.existing?.zoneId;
   late DateTime _from = widget.existing?.validFrom ?? DateTime.now();
