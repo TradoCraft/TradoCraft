@@ -54,7 +54,7 @@ class PricingPreview {
   final List<SalesSuggestion> suggestions;
   final String total;
 
-  /// Indicative prices still to confirm; the quotation cannot be sent while this is not 0.
+  /// Price-on-request lines without a price; the quotation cannot be sent while this is not 0.
   @JsonKey(name: 'unconfirmed_lines')
   final int unconfirmedLines;
   @JsonKey(name: 'vat_groups')

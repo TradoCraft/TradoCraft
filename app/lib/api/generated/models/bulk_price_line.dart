@@ -18,6 +18,7 @@ class BulkPriceLine {
     required this.productName,
     required this.zoneCode,
     required this.zoneId,
+    this.replacedPrice,
   });
   
   factory BulkPriceLine.fromJson(Map<String, Object?> json) => _$BulkPriceLineFromJson(json);
@@ -38,6 +39,10 @@ class BulkPriceLine {
   final String productId;
   @JsonKey(name: 'product_name')
   final String productName;
+
+  /// That price, when it is replaced (`replace_planned`).
+  @JsonKey(includeIfNull: false,name: 'replaced_price')
+  final String? replacedPrice;
   @JsonKey(name: 'zone_code')
   final String zoneCode;
   @JsonKey(name: 'zone_id')

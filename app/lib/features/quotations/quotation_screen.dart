@@ -89,15 +89,15 @@ class _Line {
   /// Depth below a top-level line: 0 for a normal line, 1 for an option of it, and so on.
   int get level => parent == null ? 0 : parent!.level + 1;
 
-  bool get isNet => product.pricingType == 'net';
-  bool get isIndicative => product.pricingType == 'indicative';
+  bool get isNet => product.nonDiscountable;
+  bool get isPriceOnRequest => product.priceOnRequest;
 
   /// Priced as a percentage of its parent: the server derives the price, so it is not editable
-  /// and never sent as a unit price (even for an indicative product).
+  /// and never sent as a unit price (even for a price-on-request product).
   bool get isPercent => percentOfParent != null;
 
-  /// Whether the user confirms this line's price: indicative and not derived from the parent.
-  bool get hasConfirmablePrice => isIndicative && !isPercent;
+  /// Whether the user enters this line's price: price on request and not derived from the parent.
+  bool get hasConfirmablePrice => isPriceOnRequest && !isPercent;
 
   /// Section heading (a child line inherits its parent's) and comment, so that the same product
   /// in several sections can be told apart; null when there is neither.
@@ -142,7 +142,7 @@ List<_Line> _linesFromQuotation(
       quantity: number(l.quantity),
       discount: number(l.lineDiscountPercent),
       price:
-          l.pricingType == 'indicative' &&
+          l.priceOnRequest &&
               l.priceConfirmed &&
               (parent == null || l.percentOfParent == null)
           ? number(l.listUnitPrice)
@@ -1245,7 +1245,7 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
         MaterialBanner(
           leading: const Icon(AppIcons.info),
           content: Text(
-            context.l10n.indicativeToConfirm(preview!.unconfirmedLines),
+            context.l10n.priceOnRequestToEnter(preview!.unconfirmedLines),
           ),
           actions: const [SizedBox.shrink()],
         ),
@@ -1608,7 +1608,7 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
       // The server names the line from the new product, in the customer's language.
       line.description = null;
       line.price.text = '';
-      if (p.pricingType == 'net') {
+      if (p.nonDiscountable) {
         final d = Decimal.tryParse(
           parseDecimalInput(line.discount.text) ?? '0',
         );
@@ -1618,7 +1618,7 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
         line.discount.text = '0';
       }
       if (line.hasConfirmablePrice) {
-        notes.add(l10n.changeProductIndicativeNote(p.code));
+        notes.add(l10n.changeProductOnRequestNote(p.code));
       }
       _notices.removeWhere((n) => n.line == line);
       _notices.add(_SwapNotice(line, notes));
@@ -1900,7 +1900,7 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
         listPrice: Text(money(l.listUnitPrice, currency: currency)),
         rebate: _rebateText(l),
         discount: Text(
-          l.pricingType == 'net'
+          l.nonDiscountable
               ? context.l10n.pricingNet
               : '${number(l.lineDiscountPercent)} %',
         ),
@@ -2382,7 +2382,7 @@ class RevisionDialog extends ConsumerWidget {
                               padding: const EdgeInsets.all(6),
                               child: Text(
                                 l.needsConfirmation
-                                    ? context.l10n.indicativeLine(l.description)
+                                    ? context.l10n.priceOnRequestLine(l.description)
                                     : l.description,
                               ),
                             ),

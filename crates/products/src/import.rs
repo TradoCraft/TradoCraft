@@ -31,7 +31,7 @@ use crate::{
 
 /// The columns, in export order. `code` is the key; the others are optional in an import file.
 /// `required` means a new product needs a value.
-const COLUMNS: [Column; 22] = [
+const COLUMNS: [Column; 24] = [
     Column::new("code", ColumnKind::Code, true),
     Column::new("name", ColumnKind::Text, true),
     Column::new("description", ColumnKind::Text, false),
@@ -40,7 +40,9 @@ const COLUMNS: [Column; 22] = [
     Column::new("vat_rate", ColumnKind::Decimal, false),
     Column::new("tracking", ColumnKind::Code, false),
     Column::new("family_code", ColumnKind::Code, false),
-    Column::new("pricing_type", ColumnKind::Code, false),
+    Column::new("non_discountable", ColumnKind::Boolean, false),
+    Column::new("price_on_request", ColumnKind::Boolean, false),
+    Column::new("price_is_indicative", ColumnKind::Boolean, false),
     Column::new("active", ColumnKind::Boolean, false),
     Column::new("reorder_min", ColumnKind::Decimal, false),
     Column::new("reorder_max", ColumnKind::Decimal, false),
@@ -70,7 +72,9 @@ fn export_row(p: &Product) -> Vec<CellValue> {
         CellValue::Number(p.vat_rate.normalize()),
         CellValue::text(&p.tracking),
         opt(&p.family_code),
-        CellValue::text(&p.pricing_type),
+        CellValue::Bool(p.non_discountable),
+        CellValue::Bool(p.price_on_request),
+        CellValue::Bool(p.price_is_indicative),
         CellValue::Bool(p.active),
         dec(p.reorder_min),
         dec(p.reorder_max),
@@ -99,7 +103,9 @@ fn same(p: &Product, i: &ProductInput) -> bool {
         && p.vat_rate_override == i.vat_rate_override
         && p.tracking == i.tracking
         && p.family_id == i.family_id
-        && p.pricing_type == i.pricing_type
+        && p.non_discountable == i.non_discountable
+        && p.price_on_request == i.price_on_request
+        && p.price_is_indicative == i.price_is_indicative
         && p.active == i.active
         && p.reorder_min == i.reorder_min
         && p.reorder_max == i.reorder_max
@@ -281,7 +287,9 @@ impl Importable for Products {
                 vat_rate_override: p.vat_rate_override,
                 tracking: p.tracking.clone(),
                 family_id: p.family_id,
-                pricing_type: p.pricing_type.clone(),
+                non_discountable: p.non_discountable,
+                price_on_request: p.price_on_request,
+                price_is_indicative: p.price_is_indicative,
                 active: p.active,
                 standard_cost: None,
                 reorder_min: p.reorder_min,
@@ -306,7 +314,9 @@ impl Importable for Products {
                 vat_rate_override: None,
                 tracking: "none".into(),
                 family_id: None,
-                pricing_type: "list".into(),
+                non_discountable: false,
+                price_on_request: false,
+                price_is_indicative: false,
                 active: true,
                 standard_cost: None,
                 reorder_min: None,
@@ -326,7 +336,15 @@ impl Importable for Products {
         cells.text("unit").apply(&mut input.unit);
         cells.trimmed("product_type").apply(&mut input.product_type);
         cells.trimmed("tracking").apply(&mut input.tracking);
-        cells.trimmed("pricing_type").apply(&mut input.pricing_type);
+        cells
+            .boolean("non_discountable")
+            .apply(&mut input.non_discountable);
+        cells
+            .boolean("price_on_request")
+            .apply(&mut input.price_on_request);
+        cells
+            .boolean("price_is_indicative")
+            .apply(&mut input.price_is_indicative);
         cells.boolean("active").apply(&mut input.active);
 
         let cat_cell = cells.trimmed("vat_category");

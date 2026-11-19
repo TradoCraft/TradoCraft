@@ -96,7 +96,7 @@ async fn export_round_trip_is_unchanged(db: PgPool) {
     let app = setup(db.clone()).await;
     for (entity, header) in [
         ("customers", "code,name,vat_number,email,phone,street,postal_code,city,country_code,language,active,price_zone_code,discount_percent,payment_terms_days,vat_regime"),
-        ("products", "code,name,description,unit,product_type,vat_rate,tracking,family_code,pricing_type,active,reorder_min,reorder_max,lead_time_days,barcode,packaging_category_code,length_mm,width_mm,height_mm,weight_g,default_production_remark,vat_category,vat_rate_override"),
+        ("products", "code,name,description,unit,product_type,vat_rate,tracking,family_code,non_discountable,price_on_request,price_is_indicative,active,reorder_min,reorder_max,lead_time_days,barcode,packaging_category_code,length_mm,width_mm,height_mm,weight_g,default_production_remark,vat_category,vat_rate_override"),
     ] {
         let (status, csv) = export(&app, VIEWER, entity).await;
         assert_eq!(status, StatusCode::OK);
@@ -313,18 +313,18 @@ async fn product_row_errors_are_reported_together_and_nothing_is_written(db: PgP
         .execute(&db)
         .await
         .unwrap();
-    let csv = "code,name,product_type,vat_rate,tracking,pricing_type,family_code,packaging_category_code,length_mm,barcode,reorder_min,reorder_max\n\
-               OK-1,Fine,purchased,21,none,list,,,,,,\n\
-               E-1,A,gadget,21,none,list,,,,,,\n\
-               E-2,B,service,21,serial,list,,,,,,\n\
+    let csv = "code,name,product_type,vat_rate,tracking,price_on_request,family_code,packaging_category_code,length_mm,barcode,reorder_min,reorder_max\n\
+               OK-1,Fine,purchased,21,none,false,,,,,,\n\
+               E-1,A,gadget,21,none,false,,,,,,\n\
+               E-2,B,service,21,serial,false,,,,,,\n\
                E-3,C,purchased,21,none,wrong,NOPE,NOPE,,,,\n\
-               E-3a,C,purchased,-1,none,list,,,,,,\n\
-               E-3b,C,purchased,21,none,list,,,0,,,\n\
-               E-3c,C,purchased,21,none,list,,,,,5,1\n\
-               E-4,D,purchased,,none,list,,,,,,\n\
-               E-5,E,purchased,21.123,none,list,,,,123,,\n\
-               E-6,F,purchased,21,none,list,,,,,,\n\
-               E-6,G,purchased,21,none,list,,,,,,\n";
+               E-3a,C,purchased,-1,none,false,,,,,,\n\
+               E-3b,C,purchased,21,none,false,,,0,,,\n\
+               E-3c,C,purchased,21,none,false,,,,,5,1\n\
+               E-4,D,purchased,,none,false,,,,,,\n\
+               E-5,E,purchased,21.123,none,false,,,,123,,\n\
+               E-6,F,purchased,21,none,false,,,,,,\n\
+               E-6,G,purchased,21,none,false,,,,,,\n";
     let before = snapshot(&db, "products").await;
     let (status, r) = import(&app, ADMIN, "products", false, csv).await;
     assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{r}");
@@ -336,7 +336,7 @@ async fn product_row_errors_are_reported_together_and_nothing_is_written(db: PgP
             .any(|(r, _, m)| *r == 4 && m.contains("services cannot be tracked")),
         "{e:?}"
     );
-    for col in ["pricing_type", "family_code", "packaging_category_code"] {
+    for col in ["price_on_request", "family_code", "packaging_category_code"] {
         assert!(has(5, col), "{col}: {e:?}");
     }
     assert!(has(6, "vat_rate"), "{e:?}");
@@ -725,9 +725,9 @@ async fn independent_row_errors_are_all_reported(db: PgPool) {
         ADMIN,
         "products",
         true,
-        "code,name,product_type,tracking,pricing_type,vat_rate,packaging_category_code,length_mm\n\
+        "code,name,product_type,tracking,price_on_request,vat_rate,packaging_category_code,length_mm\n\
          N1,,gadget,wrong,wrong,-1,PALLET,0\n\
-         PUMP-05,Pump,service,serial,list,21,PALLET,\n",
+         PUMP-05,Pump,service,serial,false,21,PALLET,\n",
     )
     .await;
     assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{r}");
@@ -736,7 +736,7 @@ async fn independent_row_errors_are_all_reported(db: PgPool) {
         "name",
         "product_type",
         "tracking",
-        "pricing_type",
+        "price_on_request",
         "vat_rate",
         "packaging_category_code",
         "length_mm",

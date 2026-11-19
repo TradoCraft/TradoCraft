@@ -20349,7 +20349,7 @@
         "tags": [
           "products"
         ],
-        "summary": "Applies a bulk price change: one new dated price per product and zone.\nRefused if any product already has a price starting on the same date.",
+        "summary": "Applies a bulk price change: one new dated price per product and zone.\nRefused if any product already has a price starting on the same date, unless\n`replace_planned` is set and that date is after today.",
         "operationId": "apply_bulk",
         "requestBody": {
           "content": {
@@ -22834,7 +22834,7 @@
           {
             "name": "sort",
             "in": "query",
-            "description": "Sort order: `field` ascending or `-field` descending, comma-separated for several keys (at\nmost 3). Fields: code, name, unit, product_type, family_code, pricing_type, active.\nDefault: code.",
+            "description": "Sort order: `field` ascending or `-field` descending, comma-separated for several keys (at\nmost 3). Fields: code, name, unit, product_type, family_code, non_discountable, price_on_request,\nprice_is_indicative, active.\nDefault: code.",
             "required": false,
             "schema": {
               "type": [
@@ -23757,7 +23757,7 @@
         "tags": [
           "products"
         ],
-        "summary": "Adds a price for a zone from a date. Prices are never edited: a new entry supersedes older ones.",
+        "summary": "Adds a price for a zone from a date. Prices in effect are never edited: a new entry supersedes\nolder ones. A price that has not started yet can be corrected or deleted.",
         "operationId": "add_product_price",
         "parameters": [
           {
@@ -23790,6 +23790,119 @@
                 }
               }
             }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/products/{id}/prices/{price_id}": {
+      "put": {
+        "tags": [
+          "products"
+        ],
+        "summary": "Corrects the price or start date of a price that has not started yet (409 for one in effect).",
+        "operationId": "correct_product_price",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "price_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ZonePriceCorrection"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ZonePriceEntry"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "products"
+        ],
+        "summary": "Deletes a price that has not started yet (409 for one in effect).",
+        "operationId": "delete_product_price",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "price_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
           },
           "409": {
             "description": "",
@@ -33827,6 +33940,10 @@
             },
             "description": "Limit to these products (combined with the family filter, if any)."
           },
+          "replace_planned": {
+            "type": "boolean",
+            "description": "Replace prices that are already planned to start on `valid_from` (only when that is after\ntoday) instead of refusing them. The change is then computed from the price before them."
+          },
           "rounding": {
             "type": [
               "string",
@@ -33892,6 +34009,13 @@
           },
           "product_name": {
             "type": "string"
+          },
+          "replaced_price": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "That price, when it is replaced (`replace_planned`)."
           },
           "zone_code": {
             "type": "string"
@@ -43174,7 +43298,9 @@
           "unit",
           "quantity",
           "list_unit_price",
-          "pricing_type",
+          "non_discountable",
+          "price_on_request",
+          "price_is_indicative",
           "rebate_percent",
           "line_discount_percent",
           "net_unit_price",
@@ -43206,13 +43332,21 @@
           "net_unit_price": {
             "type": "string"
           },
+          "non_discountable": {
+            "type": "boolean",
+            "description": "Never discounted: no rebate and no line discount."
+          },
           "position": {
             "type": "integer",
             "format": "int32"
           },
-          "pricing_type": {
-            "type": "string",
-            "description": "list | net | indicative"
+          "price_is_indicative": {
+            "type": "boolean",
+            "description": "The list price is printed as indicative."
+          },
+          "price_on_request": {
+            "type": "boolean",
+            "description": "The price was entered on the quotation (no list price)."
           },
           "product_code": {
             "type": "string"
@@ -45607,7 +45741,7 @@
           "unconfirmed_lines": {
             "type": "integer",
             "format": "int32",
-            "description": "Indicative prices still to confirm; the quotation cannot be sent while this is not 0."
+            "description": "Price-on-request lines without a price; the quotation cannot be sent while this is not 0."
           },
           "vat_groups": {
             "type": "array",
@@ -45854,7 +45988,9 @@
           "product_type",
           "vat_rate",
           "tracking",
-          "pricing_type",
+          "non_discountable",
+          "price_on_request",
+          "price_is_indicative",
           "active"
         ],
         "properties": {
@@ -45919,6 +46055,10 @@
           "name": {
             "type": "string"
           },
+          "non_discountable": {
+            "type": "boolean",
+            "description": "Never discounted: no customer rebate and no manual line discount."
+          },
           "packaging_category_code": {
             "type": [
               "string",
@@ -45932,9 +46072,13 @@
             ],
             "format": "uuid"
           },
-          "pricing_type": {
-            "type": "string",
-            "description": "list (rebates apply) | net (fixed net price, never discounted) |\nindicative (price must be confirmed on each quotation)"
+          "price_is_indicative": {
+            "type": "boolean",
+            "description": "The list price applies but is printed as indicative."
+          },
+          "price_on_request": {
+            "type": "boolean",
+            "description": "No list price: the price is entered on each quotation line, which cannot be sent before."
           },
           "product_type": {
             "type": "string",
@@ -46165,6 +46309,10 @@
           "name": {
             "type": "string"
           },
+          "non_discountable": {
+            "type": "boolean",
+            "description": "Never discounted: no customer rebate and no manual line discount."
+          },
           "packaging_category_id": {
             "type": [
               "string",
@@ -46173,9 +46321,13 @@
             "format": "uuid",
             "description": "Must be an active packaging category."
           },
-          "pricing_type": {
-            "type": "string",
-            "description": "list | net | indicative"
+          "price_is_indicative": {
+            "type": "boolean",
+            "description": "The list price applies but is printed as indicative."
+          },
+          "price_on_request": {
+            "type": "boolean",
+            "description": "No list price: the price is entered on each quotation line, which cannot be sent before."
           },
           "product_type": {
             "type": "string"
@@ -48464,7 +48616,9 @@
           "unit",
           "quantity",
           "list_unit_price",
-          "pricing_type",
+          "non_discountable",
+          "price_on_request",
+          "price_is_indicative",
           "rebate_percent",
           "rebate_source",
           "line_discount_percent",
@@ -48510,10 +48664,14 @@
           },
           "list_unit_price": {
             "type": "string",
-            "description": "Zone list price, or the confirmed price of an indicative product."
+            "description": "Zone list price, or the entered price of a price-on-request product (zero until entered)."
           },
           "net_unit_price": {
             "type": "string"
+          },
+          "non_discountable": {
+            "type": "boolean",
+            "description": "Never discounted: no rebate and no line discount."
           },
           "parent_position": {
             "type": [
@@ -48543,11 +48701,15 @@
           },
           "price_confirmed": {
             "type": "boolean",
-            "description": "False for an indicative price that still has to be confirmed."
+            "description": "False for a price-on-request line whose price has not been entered yet."
           },
-          "pricing_type": {
-            "type": "string",
-            "description": "list | net | indicative"
+          "price_is_indicative": {
+            "type": "boolean",
+            "description": "The list price is printed as indicative."
+          },
+          "price_on_request": {
+            "type": "boolean",
+            "description": "The product has no list price; the price is entered on the line."
           },
           "product_code": {
             "type": "string"
@@ -48687,7 +48849,7 @@
               "string",
               "null"
             ],
-            "description": "Confirmed unit price (before rebates) for an indicative product. Indicative lines must be\nconfirmed before the quotation can be sent. Not allowed for other products.",
+            "description": "The agreed unit price (before rebates) of a price-on-request product. Such a line has no\nprice until it is given, and the quotation cannot be sent before. Not allowed for other\nproducts.",
             "example": "6500"
           },
           "vat_rate": {
@@ -50900,7 +51062,9 @@
           "product_code",
           "description",
           "quantity",
-          "pricing_type",
+          "non_discountable",
+          "price_on_request",
+          "price_is_indicative",
           "old_list_unit_price",
           "new_list_unit_price",
           "old_rebate_percent",
@@ -50919,7 +51083,7 @@
           },
           "needs_confirmation": {
             "type": "boolean",
-            "description": "The new price is an indicative suggestion that must be confirmed."
+            "description": "A price-on-request line: its price must be entered again."
           },
           "new_line_total": {
             "type": "string"
@@ -50929,6 +51093,9 @@
           },
           "new_rebate_percent": {
             "type": "string"
+          },
+          "non_discountable": {
+            "type": "boolean"
           },
           "old_line_total": {
             "type": "string"
@@ -50943,8 +51110,11 @@
             "type": "integer",
             "format": "int32"
           },
-          "pricing_type": {
-            "type": "string"
+          "price_is_indicative": {
+            "type": "boolean"
+          },
+          "price_on_request": {
+            "type": "boolean"
           },
           "product_code": {
             "type": "string"
@@ -56543,6 +56713,25 @@
             ],
             "format": "uuid",
             "description": "The user the hours are for; empty sets the company default."
+          }
+        }
+      },
+      "ZonePriceCorrection": {
+        "type": "object",
+        "description": "A correction of a zone price that has not started yet.",
+        "required": [
+          "unit_price",
+          "valid_from"
+        ],
+        "properties": {
+          "unit_price": {
+            "type": "string",
+            "example": "125.00"
+          },
+          "valid_from": {
+            "type": "string",
+            "format": "date",
+            "description": "The (possibly corrected) first day of the price; after today."
           }
         }
       },

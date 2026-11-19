@@ -113,7 +113,11 @@ class ProductScreen extends ConsumerWidget {
                       InfoItem(context.l10n.family, p.familyCode ?? ''),
                       InfoItem(
                         context.l10n.pricing,
-                        context.l10n.pricingType(p.pricingType),
+                        context.l10n.pricingFlags(
+                          nonDiscountable: p.nonDiscountable,
+                          priceOnRequest: p.priceOnRequest,
+                          priceIsIndicative: p.priceIsIndicative,
+                        ),
                       ),
                       InfoItem(
                         context.l10n.status,

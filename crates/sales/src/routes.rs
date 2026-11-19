@@ -626,7 +626,7 @@ async fn transition(
             .collect();
         if !unconfirmed.is_empty() {
             return Err(AppError::Validation(format!(
-                "confirm the indicative prices first: {}",
+                "enter the price of the price-on-request lines first: {}",
                 unconfirmed.join(", ")
             )));
         }
@@ -768,7 +768,9 @@ async fn repricing(
             product_code: old.product_code.clone(),
             description: old.description.clone(),
             quantity: old.quantity,
-            pricing_type: new.pricing_type.clone(),
+            non_discountable: new.non_discountable,
+            price_on_request: new.price_on_request,
+            price_is_indicative: new.price_is_indicative,
             old_list_unit_price: old.list_unit_price,
             new_list_unit_price: new.list_unit_price,
             old_rebate_percent: old.rebate_percent,

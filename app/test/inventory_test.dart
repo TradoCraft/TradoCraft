@@ -98,7 +98,7 @@ Map<String, Object?> _product({String? cost}) => {
   'tracking': 'none',
   'family_id': null,
   'family_code': null,
-  'pricing_type': 'list',
+  ...pricingFlags('list'),
   'active': true,
   'standard_cost': cost,
   'reorder_min': '5',

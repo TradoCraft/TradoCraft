@@ -1085,13 +1085,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get inactiveContact => 'Nicht mehr aktiv (ausgeschieden)';
 
   @override
-  String indicativeLine(String description) {
-    return '$description (unverbindlich, zu bestätigen)';
+  String priceOnRequestLine(String description) {
+    return '$description (Preis auf Anfrage, einzugeben)';
   }
 
   @override
-  String indicativeToConfirm(int count) {
-    return '$count unverbindliche(r) Preis(e) vor dem Versand zu bestätigen: den vereinbarten Preis im Feld Listenpreis eingeben.';
+  String priceOnRequestToEnter(int count) {
+    return '$count Position(en) mit Preis auf Anfrage ohne Preis: den vereinbarten Preis im Feld Listenpreis eingeben, bevor das Angebot versendet werden kann.';
   }
 
   @override
@@ -1348,6 +1348,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get newOpportunity => 'Neue Verkaufschance';
+
+  @override
+  String get correctPrice => 'Geplanten Preis korrigieren';
 
   @override
   String get newPrice => 'Neuer Preis';
@@ -1837,19 +1840,22 @@ class AppLocalizationsDe extends AppLocalizations {
   String get pricingIndicative => 'unverbindlich';
 
   @override
-  String get pricingIndicativeHelp => 'Unverbindlich (je Angebot bestätigen)';
-
-  @override
-  String get pricingList => 'Listenpreis';
-
-  @override
-  String get pricingListHelp => 'Listenpreis (Rabatte gelten)';
+  String get pricingIndicativeHelp =>
+      'Richtpreis (als unverbindlich gedruckt; Rabatte gelten)';
 
   @override
   String get pricingNet => 'netto';
 
   @override
-  String get pricingNetHelp => 'Nettopreis (nie rabattiert)';
+  String get pricingNetHelp =>
+      'Nicht rabattierbar (kein Kundenrabatt, kein Positionsrabatt)';
+
+  @override
+  String get pricingOnRequestHelp =>
+      'Preis auf Anfrage (Preis in jedem Angebot eingeben)';
+
+  @override
+  String get pricingOnRequest => 'Preis auf Anfrage';
 
   @override
   String get priority => 'Priorität';
@@ -8016,55 +8022,65 @@ class AppLocalizationsDe extends AppLocalizations {
   String get tutHelpdeskTitle => 'Ein Ticket bearbeiten';
 
   @override
-  String get tutHelpdeskSummary => 'Hut: Helpdesk-Mitarbeiter. Am Ticket aus Kapitel 7: eine interne Notiz, ein Tag, die aufgewendete Zeit und eine Eskalation.';
+  String get tutHelpdeskSummary =>
+      'Hut: Helpdesk-Mitarbeiter. Am Ticket aus Kapitel 7: eine interne Notiz, ein Tag, die aufgewendete Zeit und eine Eskalation.';
 
   @override
   String get tutHelpdeskNeedsTitle => 'Zuerst Kapitel 7';
 
   @override
-  String get tutHelpdeskNeedsBody => 'Dieses Kapitel arbeitet am Ticket, das die E-Mail von Maya in Kapitel 7 erzeugt hat, und fand es nicht. Schließen Sie zuerst Kapitel 7 ab.';
+  String get tutHelpdeskNeedsBody =>
+      'Dieses Kapitel arbeitet am Ticket, das die E-Mail von Maya in Kapitel 7 erzeugt hat, und fand es nicht. Schließen Sie zuerst Kapitel 7 ab.';
 
   @override
   String get tutHelpdeskNoteTitle => 'Eine interne Notiz hinterlassen';
 
   @override
-  String get tutHelpdeskNoteBody => 'Öffnen Sie das Ticket, wechseln Sie zu Interne Notiz und schreiben Sie, was ein Kollege wissen muss, zum Beispiel dass der Kunde ein Angebot für 8 Karren möchte. Drücken Sie Notiz hinzufügen. Der Kunde sieht eine Notiz nie.';
+  String get tutHelpdeskNoteBody =>
+      'Öffnen Sie das Ticket, wechseln Sie zu Interne Notiz und schreiben Sie, was ein Kollege wissen muss, zum Beispiel dass der Kunde ein Angebot für 8 Karren möchte. Drücken Sie Notiz hinzufügen. Der Kunde sieht eine Notiz nie.';
 
   @override
-  String get tutHelpdeskNoteHint => 'Wählen Sie Interne Notiz über dem Nachrichtenfeld; bei Antwort ginge der Text an den Kunden.';
+  String get tutHelpdeskNoteHint =>
+      'Wählen Sie Interne Notiz über dem Nachrichtenfeld; bei Antwort ginge der Text an den Kunden.';
 
   @override
   String get tutHelpdeskTagTitle => 'Einen Tag hinzufügen';
 
   @override
-  String get tutHelpdeskTagBody => 'Tags gruppieren Tickets für Listen und Berichte. Fügen Sie dem Ticket im Detailbereich den Tag „Angebot“ hinzu.';
+  String get tutHelpdeskTagBody =>
+      'Tags gruppieren Tickets für Listen und Berichte. Fügen Sie dem Ticket im Detailbereich den Tag „Angebot“ hinzu.';
 
   @override
   String get tutHelpdeskTimeTitle => 'Die aufgewendete Zeit erfassen';
 
   @override
-  String get tutHelpdeskTimeBody => 'Fügen Sie einen Zeiteintrag von 15 Minuten mit einer kurzen Notiz hinzu. Markieren Sie ihn als abrechenbar, wenn er dem Kunden berechnet würde.';
+  String get tutHelpdeskTimeBody =>
+      'Fügen Sie einen Zeiteintrag von 15 Minuten mit einer kurzen Notiz hinzu. Markieren Sie ihn als abrechenbar, wenn er dem Kunden berechnet würde.';
 
   @override
   String get tutHelpdeskEscalateTitle => 'Das Ticket eskalieren';
 
   @override
-  String get tutHelpdeskEscalateBody => 'Manche Tickets brauchen mehr Aufmerksamkeit, als Sie geben können. Eskalieren Sie dieses: nennen Sie einen Grund, wählen Sie eine Person oder ein Team und erhöhen Sie auf Wunsch die Priorität um eine Stufe. Sie werden sofort benachrichtigt.';
+  String get tutHelpdeskEscalateBody =>
+      'Manche Tickets brauchen mehr Aufmerksamkeit, als Sie geben können. Eskalieren Sie dieses: nennen Sie einen Grund, wählen Sie eine Person oder ein Team und erhöhen Sie auf Wunsch die Priorität um eine Stufe. Sie werden sofort benachrichtigt.';
 
   @override
-  String get tutHelpdeskEscalateHint => 'Drücken Sie die Schaltfläche Eskalieren am Ticket; der Grund ist Pflicht.';
+  String get tutHelpdeskEscalateHint =>
+      'Drücken Sie die Schaltfläche Eskalieren am Ticket; der Grund ist Pflicht.';
 
   @override
   String get tutHelpdeskTourTitle => 'Vorbereitete Antworten';
 
   @override
-  String get tutHelpdeskTourBody => 'Hier bewahrt das Team vorbereitete Antworten auf: wiederverwendbare Antworten pro Team und Sprache, die das Ticket beim Schreiben vorschlägt. Berichte, Automatisierungsregeln und Einstellungen (Geschäftszeiten, SLA, Postfächer) liegen daneben. Schauen Sie sich um und drücken Sie Weiter.';
+  String get tutHelpdeskTourBody =>
+      'Hier bewahrt das Team vorbereitete Antworten auf: wiederverwendbare Antworten pro Team und Sprache, die das Ticket beim Schreiben vorschlägt. Berichte, Automatisierungsregeln und Einstellungen (Geschäftszeiten, SLA, Postfächer) liegen daneben. Schauen Sie sich um und drücken Sie Weiter.';
 
   @override
   String get tutHelpdeskDoneTitle => 'Was Sie gelernt haben';
 
   @override
-  String get tutHelpdeskDoneBody => 'Interne Notizen bleiben intern, Tags und Zeiteinträge machen die Arbeit in Listen und Berichten sichtbar, und eine Eskalation bringt das Ticket zur richtigen Person.';
+  String get tutHelpdeskDoneBody =>
+      'Interne Notizen bleiben intern, Tags und Zeiteinträge machen die Arbeit in Listen und Berichten sichtbar, und eine Eskalation bringt das Ticket zur richtigen Person.';
 
   @override
   String get tutInvoicesOpenSecondTitle =>
@@ -9038,8 +9054,8 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String changeProductIndicativeNote(String product) {
-    return '$product hat einen Richtpreis: Preis vor dem Versand bestätigen.';
+  String changeProductOnRequestNote(String product) {
+    return '$product hat Preis auf Anfrage: Preis vor dem Versand eingeben.';
   }
 
   @override

@@ -41,7 +41,7 @@ Map<String, Object?> _product({
   'unit': 'pcs',
   'product_type': 'purchased',
   'tracking': 'none',
-  'pricing_type': 'list',
+  ...pricingFlags('list'),
   'vat_rate': '21',
   'active': true,
   'packaging_category_id': category,

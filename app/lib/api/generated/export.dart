@@ -631,6 +631,7 @@ export 'models/worker_state.dart';
 export 'models/worker_status.dart';
 export 'models/working_hours.dart';
 export 'models/working_hours_input.dart';
+export 'models/zone_price_correction.dart';
 export 'models/zone_price_entry.dart';
 export 'models/zone_price_input.dart';
 export 'models/format.dart';

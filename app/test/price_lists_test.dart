@@ -330,7 +330,7 @@ void main() {
               'description': '',
               'active': true,
               'product_type': 'purchased',
-              'pricing_type': 'list',
+              ...pricingFlags('list'),
               'tracking': 'none',
               'unit': 'pc',
               'vat_rate': '21',

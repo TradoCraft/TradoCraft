@@ -521,16 +521,16 @@
   "basisMixed": "business hours or elapsed time, per team",
   "inactive": "inactive",
   "inactiveContact": "No longer active (left the company)",
-  "indicativeLine": "{description} (indicative, to confirm)",
-  "@indicativeLine": {
+  "priceOnRequestLine": "{description} (price on request, to enter)",
+  "@priceOnRequestLine": {
     "placeholders": {
       "description": {
         "type": "String"
       }
     }
   },
-  "indicativeToConfirm": "{count} indicative price(s) to confirm before the quotation can be sent: enter the agreed price in the list price field.",
-  "@indicativeToConfirm": {
+  "priceOnRequestToEnter": "{count} price-on-request line(s) without a price: enter the agreed price in the list price field before the quotation can be sent.",
+  "@priceOnRequestToEnter": {
     "placeholders": {
       "count": {
         "type": "int"
@@ -665,6 +665,7 @@
   "newJob": "New job",
   "newLabel": "New",
   "newOpportunity": "New opportunity",
+  "correctPrice": "Correct planned price",
   "newPrice": "New price",
   "newPricesValidFrom": "New prices valid from {date}",
   "@newPricesValidFrom": {
@@ -903,11 +904,11 @@
   },
   "pricing": "Pricing",
   "pricingIndicative": "indicative",
-  "pricingIndicativeHelp": "Indicative (confirm per quote)",
-  "pricingList": "list price",
-  "pricingListHelp": "List price (rebates apply)",
+  "pricingIndicativeHelp": "Indicative price (printed as indicative; rebates apply)",
   "pricingNet": "net",
-  "pricingNetHelp": "Net price (never discounted)",
+  "pricingNetHelp": "Not discountable (no rebate, no line discount)",
+  "pricingOnRequestHelp": "Price on request (enter the price on each quotation)",
+  "pricingOnRequest": "price on request",
   "priority": "Priority",
   "priorityChangeLine": "{date}: {from} → {to} by {name}",
   "@priorityChangeLine": {
@@ -4195,8 +4196,8 @@
   "changeProductNew": "New product",
   "changeProductNetNote": "{product} has a net price: the line discount was cleared.",
   "@changeProductNetNote": {"placeholders": {"product": {"type": "String"}}},
-  "changeProductIndicativeNote": "{product} has an indicative price: confirm the price before sending.",
-  "@changeProductIndicativeNote": {"placeholders": {"product": {"type": "String"}}},
+  "changeProductOnRequestNote": "{product} is priced on request: enter the price before sending.",
+  "@changeProductOnRequestNote": {"placeholders": {"product": {"type": "String"}}},
   "optionsNotApplicable": "{count} option(s) do not apply to {product}: remove them.",
   "@optionsNotApplicable": {"placeholders": {"count": {"type": "int"}, "product": {"type": "String"}}},
   "removeNamedLine": "Remove {code}",

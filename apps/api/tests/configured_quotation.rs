@@ -79,7 +79,7 @@ async fn import_prices_the_tree_and_warns_about_unknown_codes(db: PgPool) {
     );
 
     // Zone 2 prices for Alpha (5 % general rebate, 15 % on the controller), the unit's agreed
-    // indicative price, and the coating at 20 % of the unit's list price.
+    // price (it is priced on request), and the coating at 20 % of the unit's price.
     let unit = line(q, "UNIT-200");
     assert_eq!(unit["section"], "Process unit");
     assert_eq!(unit["parent_position"], Value::Null);
@@ -437,7 +437,7 @@ async fn product_translations_can_be_managed(db: PgPool) {
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
 async fn configured_quotation_pdf_renders(db: PgPool) {
     let app = setup(db).await;
-    // The unit without an agreed price: an indicative (price on request) draft.
+    // The unit without an agreed price: a price-on-request draft.
     let mut p = payload();
     p["lines"][0].as_object_mut().unwrap().remove("unit_price");
     let (status, r) = import(&app, INTEGRATION, p).await;
@@ -447,7 +447,7 @@ async fn configured_quotation_pdf_renders(db: PgPool) {
     // The coating follows its parent: unconfirmed as well.
     assert_eq!(line(q, "COAT-PROT")["price_confirmed"], false);
     let id = q["id"].as_str().unwrap();
-    // Sending is refused while the indicative price is unconfirmed.
+    // Sending is refused while the price-on-request line has no price.
     let (status, _) = call(
         &app,
         SALES,

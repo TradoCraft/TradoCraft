@@ -14,7 +14,9 @@ class Product {
     required this.description,
     required this.id,
     required this.name,
-    required this.pricingType,
+    required this.nonDiscountable,
+    required this.priceIsIndicative,
+    required this.priceOnRequest,
     required this.productType,
     required this.tracking,
     required this.unit,
@@ -62,15 +64,22 @@ class Product {
   @JsonKey(includeIfNull: false,name: 'length_mm')
   final int? lengthMm;
   final String name;
+
+  /// Never discounted: no customer rebate and no manual line discount.
+  @JsonKey(name: 'non_discountable')
+  final bool nonDiscountable;
   @JsonKey(includeIfNull: false,name: 'packaging_category_code')
   final String? packagingCategoryCode;
   @JsonKey(includeIfNull: false,name: 'packaging_category_id')
   final String? packagingCategoryId;
 
-  /// list (rebates apply) | net (fixed net price, never discounted) |.
-  /// indicative (price must be confirmed on each quotation).
-  @JsonKey(name: 'pricing_type')
-  final String pricingType;
+  /// The list price applies but is printed as indicative.
+  @JsonKey(name: 'price_is_indicative')
+  final bool priceIsIndicative;
+
+  /// No list price: the price is entered on each quotation line, which cannot be sent before.
+  @JsonKey(name: 'price_on_request')
+  final bool priceOnRequest;
 
   /// purchased | manufactured | configurable | service
   @JsonKey(name: 'product_type')

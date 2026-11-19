@@ -6,7 +6,7 @@ use tradocraft_crm::rebates::rebate_rules;
 use tradocraft_crm::{get_customer_for_quoting, QuotingCustomer};
 use tradocraft_pricing::{
     percent_of_parent_price, price_line, resolve_rebate, totals, LineInput, PricedLine,
-    PricingType, RebateSource, Totals,
+    RebateSource, Totals,
 };
 use tradocraft_products::get_products_for_quoting_with;
 use uuid::Uuid;
@@ -303,8 +303,7 @@ pub async fn price_lines(
     for (i, input) in inputs.iter().enumerate() {
         let n = i + 1;
         let qp = &products[&input.product_id];
-        let pricing_type =
-            PricingType::parse(&qp.product.pricing_type).unwrap_or(PricingType::List);
+        let product = &qp.product;
         let parent = input.parent_position.map(|p| (p as usize) - 1);
         let percent = input.percent_of_parent.map(|p| p.round_dp(3));
         let base = input
@@ -327,41 +326,49 @@ pub async fn price_lines(
                     resolve_rebate(
                         &rules,
                         customer.discount_percent,
-                        qp.product.id,
-                        qp.product.family_id,
-                        pricing_type,
+                        product.id,
+                        product.family_id,
+                        product.non_discountable,
                         price_date,
                     )
                 };
                 (unit, lines[pi].price_confirmed, rebate, source)
             }
             _ => {
-                let (list_price, confirmed) = match (pricing_type, input.unit_price) {
-                    (PricingType::Indicative, Some(p)) => (p, true),
-                    (PricingType::Indicative, None) => (qp.list_unit_price, false),
-                    (_, Some(_)) => {
+                // Price on request: the zone price is never used; the line has no price until one
+                // is entered, and the quotation cannot be sent before (ADR 0084).
+                let (list_price, confirmed) = match (product.price_on_request, input.unit_price) {
+                    (true, Some(p)) if p < Decimal::ZERO => {
                         return Err(AppError::Validation(format!(
-                        "line {n}: {} has a fixed list price; only indicative prices can be set",
-                        qp.product.code
-                    )))
+                            "line {n}: the price cannot be negative"
+                        )))
                     }
-                    (_, None) => (qp.list_unit_price, true),
+                    (true, Some(p)) => (p, true),
+                    (true, None) => (Decimal::ZERO, false),
+                    (false, Some(_)) => {
+                        return Err(AppError::Validation(format!(
+                            "line {n}: {} has a list price; a price can only be entered for a \
+                             price-on-request product",
+                            product.code
+                        )))
+                    }
+                    (false, None) => (qp.list_unit_price, true),
                 };
                 let (rebate, source) = resolve_rebate(
                     &rules,
                     customer.discount_percent,
-                    qp.product.id,
-                    qp.product.family_id,
-                    pricing_type,
+                    product.id,
+                    product.family_id,
+                    product.non_discountable,
                     price_date,
                 );
                 (list_price, confirmed, rebate, source)
             }
         };
-        if pricing_type == PricingType::Net && !input.line_discount_percent.is_zero() {
+        if product.non_discountable && !input.line_discount_percent.is_zero() {
             return Err(AppError::Validation(format!(
-                "line {n}: {} has a net price and cannot be discounted",
-                qp.product.code
+                "line {n}: {} is not discountable",
+                product.code
             )));
         }
         let line_vat_rate = tradocraft_core::vat_rates::resolve_rate_from_rules(
@@ -397,7 +404,9 @@ pub async fn price_lines(
             unit: qp.product.unit.clone(),
             quantity: p.quantity,
             list_unit_price: p.list_unit_price,
-            pricing_type: pricing_type.as_str().to_string(),
+            non_discountable: product.non_discountable,
+            price_on_request: product.price_on_request,
+            price_is_indicative: product.price_is_indicative,
             rebate_percent: rebate,
             rebate_source: source.as_str().to_string(),
             line_discount_percent: p.line_discount_percent,
@@ -492,7 +501,7 @@ pub fn line_inputs(
                 vat_rate: None,
                 description: Some(l.description.clone()),
                 unit_price: (keep_confirmed_prices
-                    && l.pricing_type == "indicative"
+                    && l.price_on_request
                     && l.price_confirmed
                     && l.percent_of_parent.is_none())
                 .then_some(l.list_unit_price),
@@ -942,11 +951,11 @@ pub async fn insert_lines(
         sqlx::query(
             "INSERT INTO sales.quotation_lines (id, quotation_id, position, product_id, product_code, description,
                 unit, quantity, list_unit_price, line_discount_percent, net_unit_price, line_total, vat_rate,
-                pricing_type, rebate_percent, rebate_source, price_confirmed, parent_line_id, section, comment,
+                non_discountable, rebate_percent, rebate_source, price_confirmed, parent_line_id, section, comment,
                 percent_of_parent, percent_base, production_remark, customer_remark,
-                customer_remark_language, favorite_item_id)
+                customer_remark_language, favorite_item_id, price_on_request, price_is_indicative)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
-                $21, $22, $23, $24, $25, $26)",
+                $21, $22, $23, $24, $25, $26, $27, $28)",
         )
         .bind(id)
         .bind(quotation_id)
@@ -961,7 +970,7 @@ pub async fn insert_lines(
         .bind(l.net_unit_price)
         .bind(l.line_total)
         .bind(l.vat_rate)
-        .bind(&l.pricing_type)
+        .bind(l.non_discountable)
         .bind(l.rebate_percent)
         .bind(&l.rebate_source)
         .bind(l.price_confirmed)
@@ -974,6 +983,8 @@ pub async fn insert_lines(
         .bind(&l.customer_remark)
         .bind(&l.customer_remark_language)
         .bind(l.favorite_item_id)
+        .bind(l.price_on_request)
+        .bind(l.price_is_indicative)
         .execute(&mut *conn)
         .await?;
     }
@@ -1007,7 +1018,7 @@ pub async fn load_quotation(
         .ok_or(AppError::NotFound("quotation"))?;
     let lines: Vec<QuotationLine> = sqlx::query_as(
         "SELECT l.position, l.product_id, l.product_code, l.description, l.unit, l.quantity, l.list_unit_price,
-                l.pricing_type, l.rebate_percent, l.rebate_source, l.line_discount_percent, l.net_unit_price,
+                l.non_discountable, l.price_on_request, l.price_is_indicative, l.rebate_percent, l.rebate_source, l.line_discount_percent, l.net_unit_price,
                 l.line_total, l.vat_rate, l.price_confirmed, p.position AS parent_position, l.section, l.comment,
                 l.percent_of_parent, l.percent_base, l.production_remark, l.customer_remark,
                 l.customer_remark_language::text AS customer_remark_language, l.favorite_item_id

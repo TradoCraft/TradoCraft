@@ -1083,13 +1083,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get inactiveContact => 'N\'est plus actif (parti)';
 
   @override
-  String indicativeLine(String description) {
-    return '$description (indicatif, à confirmer)';
+  String priceOnRequestLine(String description) {
+    return '$description (prix sur demande, à saisir)';
   }
 
   @override
-  String indicativeToConfirm(int count) {
-    return '$count prix indicatif(s) à confirmer avant l\'envoi de l\'offre : saisissez le prix convenu dans le champ prix catalogue.';
+  String priceOnRequestToEnter(int count) {
+    return '$count ligne(s) à prix sur demande sans prix : saisissez le prix convenu dans le champ prix catalogue avant l\'envoi de l\'offre.';
   }
 
   @override
@@ -1346,6 +1346,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get newOpportunity => 'Nouvelle opportunité';
+
+  @override
+  String get correctPrice => 'Corriger le prix prévu';
 
   @override
   String get newPrice => 'Nouveau prix';
@@ -1834,19 +1837,22 @@ class AppLocalizationsFr extends AppLocalizations {
   String get pricingIndicative => 'indicatif';
 
   @override
-  String get pricingIndicativeHelp => 'Indicatif (à confirmer par offre)';
-
-  @override
-  String get pricingList => 'prix catalogue';
-
-  @override
-  String get pricingListHelp => 'Prix catalogue (remises applicables)';
+  String get pricingIndicativeHelp =>
+      'Prix indicatif (imprimé comme indicatif ; remises applicables)';
 
   @override
   String get pricingNet => 'net';
 
   @override
-  String get pricingNetHelp => 'Prix net (jamais de remise)';
+  String get pricingNetHelp =>
+      'Non remisable (ni remise client, ni remise de ligne)';
+
+  @override
+  String get pricingOnRequestHelp =>
+      'Prix sur demande (saisir le prix dans chaque offre)';
+
+  @override
+  String get pricingOnRequest => 'prix sur demande';
 
   @override
   String get priority => 'Priorité';
@@ -8007,55 +8013,65 @@ class AppLocalizationsFr extends AppLocalizations {
   String get tutHelpdeskTitle => 'Traiter un ticket';
 
   @override
-  String get tutHelpdeskSummary => 'Casquette : agent du helpdesk. Sur le ticket du chapitre 7 : une note interne, une étiquette, le temps passé et une escalade.';
+  String get tutHelpdeskSummary =>
+      'Casquette : agent du helpdesk. Sur le ticket du chapitre 7 : une note interne, une étiquette, le temps passé et une escalade.';
 
   @override
   String get tutHelpdeskNeedsTitle => 'D\'abord le chapitre 7';
 
   @override
-  String get tutHelpdeskNeedsBody => 'Ce chapitre travaille sur le ticket créé par l\'e-mail de Maya au chapitre 7 et ne l\'a pas trouvé. Terminez d\'abord le chapitre 7.';
+  String get tutHelpdeskNeedsBody =>
+      'Ce chapitre travaille sur le ticket créé par l\'e-mail de Maya au chapitre 7 et ne l\'a pas trouvé. Terminez d\'abord le chapitre 7.';
 
   @override
   String get tutHelpdeskNoteTitle => 'Laisser une note interne';
 
   @override
-  String get tutHelpdeskNoteBody => 'Ouvrez le ticket, passez à Note interne et écrivez ce qu\'un collègue doit savoir, par exemple que le client veut un devis pour 8 chariots. Appuyez sur Ajouter une note. Le client ne voit jamais une note.';
+  String get tutHelpdeskNoteBody =>
+      'Ouvrez le ticket, passez à Note interne et écrivez ce qu\'un collègue doit savoir, par exemple que le client veut un devis pour 8 chariots. Appuyez sur Ajouter une note. Le client ne voit jamais une note.';
 
   @override
-  String get tutHelpdeskNoteHint => 'Choisissez Note interne au-dessus de la zone de message ; avec Réponse, le texte partirait chez le client.';
+  String get tutHelpdeskNoteHint =>
+      'Choisissez Note interne au-dessus de la zone de message ; avec Réponse, le texte partirait chez le client.';
 
   @override
   String get tutHelpdeskTagTitle => 'Ajouter une étiquette';
 
   @override
-  String get tutHelpdeskTagBody => 'Les étiquettes regroupent les tickets pour les listes et les rapports. Ajoutez l\'étiquette « devis » à ce ticket dans le panneau de détails.';
+  String get tutHelpdeskTagBody =>
+      'Les étiquettes regroupent les tickets pour les listes et les rapports. Ajoutez l\'étiquette « devis » à ce ticket dans le panneau de détails.';
 
   @override
   String get tutHelpdeskTimeTitle => 'Enregistrer le temps passé';
 
   @override
-  String get tutHelpdeskTimeBody => 'Ajoutez une entrée de temps de 15 minutes avec une courte remarque. Marquez-la facturable si elle serait facturée au client.';
+  String get tutHelpdeskTimeBody =>
+      'Ajoutez une entrée de temps de 15 minutes avec une courte remarque. Marquez-la facturable si elle serait facturée au client.';
 
   @override
   String get tutHelpdeskEscalateTitle => 'Escalader le ticket';
 
   @override
-  String get tutHelpdeskEscalateBody => 'Certains tickets demandent plus d\'attention que vous ne pouvez en donner. Escaladez celui-ci : indiquez un motif, choisissez une personne ou une équipe et, si vous voulez, relevez la priorité d\'un cran. Ils sont prévenus aussitôt.';
+  String get tutHelpdeskEscalateBody =>
+      'Certains tickets demandent plus d\'attention que vous ne pouvez en donner. Escaladez celui-ci : indiquez un motif, choisissez une personne ou une équipe et, si vous voulez, relevez la priorité d\'un cran. Ils sont prévenus aussitôt.';
 
   @override
-  String get tutHelpdeskEscalateHint => 'Appuyez sur le bouton Escalader du ticket ; le motif est obligatoire.';
+  String get tutHelpdeskEscalateHint =>
+      'Appuyez sur le bouton Escalader du ticket ; le motif est obligatoire.';
 
   @override
   String get tutHelpdeskTourTitle => 'Réponses préparées';
 
   @override
-  String get tutHelpdeskTourBody => 'C\'est ici que l\'équipe garde ses réponses préparées : des réponses réutilisables par équipe et par langue que le ticket suggère pendant que vous écrivez. Les rapports, les règles d\'automatisation et les réglages (heures ouvrables, SLA, boîtes mail) sont à côté. Regardez autour de vous, puis appuyez sur Suivant.';
+  String get tutHelpdeskTourBody =>
+      'C\'est ici que l\'équipe garde ses réponses préparées : des réponses réutilisables par équipe et par langue que le ticket suggère pendant que vous écrivez. Les rapports, les règles d\'automatisation et les réglages (heures ouvrables, SLA, boîtes mail) sont à côté. Regardez autour de vous, puis appuyez sur Suivant.';
 
   @override
   String get tutHelpdeskDoneTitle => 'Ce que vous avez appris';
 
   @override
-  String get tutHelpdeskDoneBody => 'Les notes internes restent en interne, les étiquettes et les temps rendent le travail visible dans les listes et les rapports, et une escalade amène le ticket devant la bonne personne.';
+  String get tutHelpdeskDoneBody =>
+      'Les notes internes restent en interne, les étiquettes et les temps rendent le travail visible dans les listes et les rapports, et une escalade amène le ticket devant la bonne personne.';
 
   @override
   String get tutInvoicesOpenSecondTitle => 'Ouvrez la facture suspecte';
@@ -9028,8 +9044,8 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String changeProductIndicativeNote(String product) {
-    return '$product a un prix indicatif : confirmez le prix avant l\'envoi.';
+  String changeProductOnRequestNote(String product) {
+    return '$product est à prix sur demande : saisissez le prix avant l\'envoi.';
   }
 
   @override

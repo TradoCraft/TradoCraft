@@ -46,6 +46,7 @@ import '../models/product_relation_input.dart';
 import '../models/product_translation.dart';
 import '../models/related_products.dart';
 import '../models/render_format.dart';
+import '../models/zone_price_correction.dart';
 import '../models/zone_price_entry.dart';
 import '../models/zone_price_input.dart';
 
@@ -287,7 +288,8 @@ abstract class ProductsClient {
   });
 
   /// Applies a bulk price change: one new dated price per product and zone.
-  /// Refused if any product already has a price starting on the same date.
+  /// Refused if any product already has a price starting on the same date, unless.
+  /// `replace_planned` is set and that date is after today.
   @POST('/api/v1/prices/bulk/apply')
   Future<BulkPricePreview> applyBulk({
     @Body() required BulkPriceChangeInput body,
@@ -342,7 +344,8 @@ abstract class ProductsClient {
   /// purchased, manufactured, configurable, service. They combine with OR.
   ///
   /// [sort] - Sort order: `field` ascending or `-field` descending, comma-separated for several keys (at.
-  /// most 3). Fields: code, name, unit, product_type, family_code, pricing_type, active.
+  /// most 3). Fields: code, name, unit, product_type, family_code, non_discountable, price_on_request,.
+  /// price_is_indicative, active.
   /// Default: code.
   @GET('/api/v1/products')
   Future<ProductPage> listProducts({
@@ -449,11 +452,27 @@ abstract class ProductsClient {
     @Path('id') required String id,
   });
 
-  /// Adds a price for a zone from a date. Prices are never edited: a new entry supersedes older ones.
+  /// Adds a price for a zone from a date. Prices in effect are never edited: a new entry supersedes.
+  /// older ones. A price that has not started yet can be corrected or deleted.
   @POST('/api/v1/products/{id}/prices')
   Future<ZonePriceEntry> addProductPrice({
     @Path('id') required String id,
     @Body() required ZonePriceInput body,
+  });
+
+  /// Corrects the price or start date of a price that has not started yet (409 for one in effect).
+  @PUT('/api/v1/products/{id}/prices/{price_id}')
+  Future<ZonePriceEntry> correctProductPrice({
+    @Path('id') required String id,
+    @Path('price_id') required String priceId,
+    @Body() required ZonePriceCorrection body,
+  });
+
+  /// Deletes a price that has not started yet (409 for one in effect).
+  @DELETE('/api/v1/products/{id}/prices/{price_id}')
+  Future<void> deleteProductPrice({
+    @Path('id') required String id,
+    @Path('price_id') required String priceId,
   });
 
   @GET('/api/v1/products/{id}/related')
