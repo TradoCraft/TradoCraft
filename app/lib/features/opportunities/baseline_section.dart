@@ -179,6 +179,7 @@ class BaselineSection extends ConsumerWidget {
       ),
     );
     if (sure != true || !context.mounted) return;
+    final container = ProviderScope.containerOf(context, listen: false);
     // A 409 (the item has children) is shown as the server's message.
     final ok = await runAction(
       context,
@@ -188,7 +189,12 @@ class BaselineSection extends ConsumerWidget {
           .deleteItem(id: opportunityId, itemId: item.id),
       success: l.baselineDeleted,
     );
-    if (ok && context.mounted) _refresh(ref);
+    if (!ok) return;
+    if (context.mounted) {
+      _refresh(ref);
+    } else {
+      container.invalidate(productMatchesProvider);
+    }
   }
 
   /// Edits one attribute of an item in place; pops true when saved.

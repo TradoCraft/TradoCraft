@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tradocraft_app/app/api.dart';
 import 'package:tradocraft_app/features/opportunities/baseline_section.dart';
+import 'package:tradocraft_app/features/opportunities/matches_panel.dart';
 import 'package:tradocraft_app/l10n/app_localizations.dart';
 import 'package:tradocraft_app/shared/csv_transfer.dart';
 
@@ -550,6 +551,48 @@ void main() {
       isTrue,
     );
     expect(find.textContaining('item has children'), findsOneWidget);
+  });
+
+  testWidgets('deleting refreshes product matches after the dialog closes', (
+    tester,
+  ) async {
+    final gate = Completer<void>();
+    const matchRequest = 'GET /api/v1/opportunities/o1/product-matches';
+    const deleteRequest = 'DELETE /api/v1/opportunities/o1/baseline/items/b1';
+    final h = FakeHttp({
+      ..._http().routes,
+      matchRequest: (_) => {
+        'items': [],
+        'total': 0,
+        'counts': {'suitable': 0, 'unsuitable': 0, 'unknown': 0},
+      },
+      deleteRequest: (_) => gate.future,
+    });
+    await _pump(tester, h, inDialog: true);
+    final container = ProviderScope.containerOf(
+      tester.element(find.byKey(const ValueKey('baseline-delete-b1'))),
+      listen: false,
+    );
+    final subscription = container.listen(
+      productMatchesProvider(('o1', null)),
+      (_, _) {},
+    );
+    addTearDown(subscription.close);
+    await tester.pumpAndSettle();
+    expect(h.requests.where((request) => request == matchRequest), hasLength(1));
+
+    await tester.tap(find.byKey(const ValueKey('baseline-delete-b1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('baseline-delete-confirm')));
+    await tester.pumpAndSettle();
+    expect(h.requests, contains(deleteRequest));
+    await tester.tap(find.text('Close'));
+    await tester.pumpAndSettle();
+    expect(find.text('Site baseline'), findsNothing);
+
+    gate.complete();
+    await tester.pumpAndSettle();
+    expect(h.requests.where((request) => request == matchRequest), hasLength(2));
   });
 
   testWidgets('works with opportunities.read only and asks per type scope', (

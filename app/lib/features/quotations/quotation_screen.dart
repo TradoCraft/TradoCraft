@@ -27,11 +27,10 @@ import '../../shared/app_icons.dart';
 import '../../shared/load_failed.dart';
 import '../opportunities/baseline_section.dart';
 import '../todo/object_todos_button.dart';
+import 'quotation_product_picker.dart';
 import 'quotation_repository.dart';
 import '../tutorial/targets.dart';
 import '../../shared/file_export.dart';
-
-typedef _QuotationProduct = (Product product, MatchStatus? status);
 
 /// An editable line of a draft. Prices are never computed here: they come from
 /// the server's pricing preview, matched by position.
@@ -1691,54 +1690,18 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
     required String label,
     required ValueChanged<Product> onSelected,
     bool clearOnSelect = false,
-  }) => SearchPicker<_QuotationProduct>(
+  }) => QuotationProductPicker(
     key: key,
+    api: _api,
     label: label,
     clearOnSelect: clearOnSelect,
-    display: (choice) {
-      final (product, status) = choice;
-      final l = context.l10n;
-      final suitability = switch (status) {
-        MatchStatus.suitable => l.matchesSuitable,
-        MatchStatus.unsuitable => l.matchesUnsuitable,
-        MatchStatus.unknown => l.matchesUnknown,
-        _ => null,
-      };
-      return [product.code, product.name, ?suitability].join(' · ');
-    },
-    search: _searchProducts,
-    onSelected: (choice) => onSelected(choice.$1),
+    opportunityId:
+        ref.read(meProvider).value?.permissions.contains('opportunities.read') ==
+            true
+        ? _siteOpportunityId
+        : null,
+    onSelected: onSelected,
   );
-
-  Future<List<_QuotationProduct>> _searchProducts(String query) async {
-    final api = _api;
-    final opportunityId = _siteOpportunityId;
-    final canReadBaseline =
-        ref
-            .read(meProvider)
-            .value
-            ?.permissions
-            .contains('opportunities.read') ??
-        false;
-    final products = (await api.products.listProducts(
-      q: query,
-      active: true,
-      limit: 20,
-    )).items;
-    var statuses = const <String, MatchStatus>{};
-    if (opportunityId != null && canReadBaseline && products.isNotEmpty) {
-      try {
-        final matches = await api.crm.productMatches(
-          id: opportunityId,
-          productIds: products.map((product) => product.id).join(','),
-        );
-        statuses = {for (final match in matches.items) match.id: match.status};
-      } catch (_) {
-        // Suitability is advisory. Catalogue results stay available if the lookup fails.
-      }
-    }
-    return [for (final product in products) (product, statuses[product.id])];
-  }
 
   /// The note under the table after a product change: what was cleared, and the options that do
   /// not apply to the new product, each with a Remove button (removal is always the user's act).

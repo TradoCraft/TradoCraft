@@ -167,6 +167,7 @@ class FakeApi implements HttpClientAdapter {
   final requests = <String>[];
   final bodies = <String, Object?>{};
   String? matchedProductIds;
+  Completer<void>? productMatchesGate;
   bool failProductMatches = false;
   final _bell = <String, Object?>{
     'id': 'b1',
@@ -270,6 +271,7 @@ class FakeApi implements HttpClientAdapter {
         );
       case 'GET /api/v1/opportunities/opp-closed/product-matches':
         matchedProductIds = o.queryParameters['product_ids'] as String?;
+        await productMatchesGate?.future;
         json = {
           'items': [
             {
@@ -915,16 +917,20 @@ void main() {
     expect(find.byKey(const ValueKey('baseline-edit-b1')), findsNothing);
   });
 
-  testWidgets('a linked draft shows advisory suitability for product search', (
+  testWidgets('catalogue results appear before their site suitability arrives', (
     tester,
   ) async {
     final fake = await _pumpLinkedQuotation(tester, []);
+    final gate = fake.productMatchesGate = Completer<void>();
     final picker = find.widgetWithText(TextField, 'Add product');
     await tester.ensureVisible(picker);
     await tester.enterText(picker, 'COAT');
     await tester.pumpAndSettle();
 
     expect(fake.matchedProductIds, 'p2');
+    expect(find.text('COAT-PROT · Corrosion protection'), findsOneWidget);
+    gate.complete();
+    await tester.pumpAndSettle();
     final result = find.text('COAT-PROT · Corrosion protection · Not suitable');
     expect(result, findsOneWidget);
     await tester.tap(result);
