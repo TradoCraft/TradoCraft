@@ -173,14 +173,12 @@ class _NewPoDialogState extends ConsumerState<_NewPoDialog> {
       if (!_selection.isChosen(e.productId)) continue;
       count++;
       currencies.add(e.currency);
-      final q = double.parse(
-        parseDecimalInput(_selection.qty(e.productId).text)!,
-      );
+      final q = double.parse(_selection.qty(e.productId).decimal!);
       total += q * (double.tryParse(e.unitPrice) ?? 0);
     }
     for (final d in _extra) {
-      final q = double.tryParse(parseDecimalInput(d.qty.text) ?? '');
-      final p = double.tryParse(parseDecimalInput(d.price.text) ?? '');
+      final q = double.tryParse(d.qty.decimal ?? '');
+      final p = double.tryParse(d.price.decimal ?? '');
       if (d.productId == null || q == null) continue;
       count++;
       currencies.add(_supplier?.currency ?? 'EUR');

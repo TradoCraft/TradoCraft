@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../app/api.dart';
 import '../../l10n/l10n.dart';
+import '../../shared/decimal_field.dart';
 import '../../shared/format.dart';
 import 'po_lines.dart';
 
@@ -9,17 +10,17 @@ import 'po_lines.dart';
 ///
 /// A row counts as chosen when its quantity parses to a number above zero.
 class GoodsSelection {
-  final Map<String, TextEditingController> _qty = {};
+  final Map<String, DecimalInputController> _qty = {};
 
   /// The quantity field of [productId], created on first use.
-  TextEditingController qty(String productId) =>
-      _qty.putIfAbsent(productId, TextEditingController.new);
+  DecimalInputController qty(String productId) =>
+      _qty.putIfAbsent(productId, DecimalInputController.new);
 
   /// Whether [productId] has a quantity above zero.
-  bool isChosen(String productId) => _positive(_qty[productId]?.text ?? '');
+  bool isChosen(String productId) => _positive(_qty[productId]?.decimal);
 
   /// Whether anything at all is chosen.
-  bool get hasAny => _qty.values.any((c) => _positive(c.text));
+  bool get hasAny => _qty.values.any((c) => _positive(c.decimal));
 
   /// Empties every quantity.
   void clear() {
@@ -37,8 +38,8 @@ class GoodsSelection {
   }
 }
 
-bool _positive(String text) {
-  final q = double.tryParse(parseDecimalInput(text) ?? '');
+bool _positive(String? value) {
+  final q = double.tryParse(value ?? '');
   return q != null && q > 0;
 }
 
@@ -64,7 +65,7 @@ List<PoLineDraft> selectedGoodsLines(
         productId: e.productId,
         label: '${e.productCode} · ${e.productName}',
         supplierCode: e.supplierProductCode,
-        quantity: selection.qty(e.productId).text,
+        quantity: selection.qty(e.productId).decimal!,
         unitPrice: trimDecimal(e.unitPrice),
       ),
 ];
@@ -168,7 +169,7 @@ class _SupplierGoodsPickerState extends State<SupplierGoodsPicker> {
     final l = context.l10n;
     final ctrl = widget.selection.qty(e.productId);
     final chosen = widget.selection.isChosen(e.productId);
-    final q = double.tryParse(parseDecimalInput(ctrl.text) ?? '');
+    final q = double.tryParse(ctrl.decimal ?? '');
     final moq = double.tryParse(e.moq);
     final below = chosen && moq != null && q! < moq;
     final parts = [
@@ -214,8 +215,8 @@ class _SupplierGoodsPickerState extends State<SupplierGoodsPicker> {
           const SizedBox(width: 8),
           SizedBox(
             width: 90,
-            child: TextField(
-              key: ValueKey('po-goods-qty-${e.productId}'),
+            child: DecimalField(
+              fieldKey: ValueKey('po-goods-qty-${e.productId}'),
               controller: ctrl,
               decoration: InputDecoration(labelText: l.quantity, isDense: true),
               onChanged: (_) => _changed(),

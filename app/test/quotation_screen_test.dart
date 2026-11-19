@@ -809,6 +809,31 @@ void main() {
     handle.dispose();
   });
 
+  testWidgets('line calculations preview, commit on blur and save once', (
+    tester,
+  ) async {
+    final fake = await _pump(tester, 'draft');
+    final quantity = find.widgetWithText(TextField, '1');
+    final discount = find.widgetWithText(TextField, '0');
+    const preview = 'POST /api/v1/pricing/preview';
+
+    await tester.enterText(quantity, '+= (2 * 3)');
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+    expect((fake.bodies[preview] as Map)['lines'][0]['quantity'], '7');
+
+    await tester.enterText(discount, '10%');
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(TextField, '7'), findsOneWidget);
+    await tester.enterText(find.widgetWithText(TextField, '7'), '*=2');
+    await tester.tap(find.text('Save draft'));
+    await tester.pumpAndSettle();
+
+    final saved = fake.bodies['PUT /api/v1/quotations/$_quotationId'] as Map;
+    expect(saved['lines'][0]['quantity'], '14');
+    expect(saved['lines'][0]['line_discount_percent'], '10');
+  });
+
   testWidgets('remarks are loaded, edited and saved with the draft', (
     tester,
   ) async {

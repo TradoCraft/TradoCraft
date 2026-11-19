@@ -6,6 +6,7 @@ import '../../app/api.dart';
 import '../../l10n/l10n.dart';
 import '../../shared/app_icons.dart';
 import '../../shared/entity_list.dart';
+import '../../shared/decimal_field.dart';
 import '../../shared/format.dart';
 import '../../shared/search_picker.dart';
 import '../field/offline/kv_store.dart';
@@ -323,7 +324,7 @@ class _StockOrderDialog extends ConsumerStatefulWidget {
 
 class _StockOrderDialogState extends ConsumerState<_StockOrderDialog> {
   Product? _product;
-  final _quantity = TextEditingController(text: '1');
+  final _quantity = DecimalInputController(text: '1');
   bool _auto = false;
   String? _error;
   bool _saving = false;
@@ -335,7 +336,7 @@ class _StockOrderDialogState extends ConsumerState<_StockOrderDialog> {
   }
 
   Future<void> _save() async {
-    final quantity = parseDecimalInput(_quantity.text);
+    final quantity = _quantity.decimal;
     if (_product == null || quantity == null) {
       setState(() => _error = context.l10n.productionBuildForStock);
       return;
@@ -396,12 +397,9 @@ class _StockOrderDialogState extends ConsumerState<_StockOrderDialog> {
               onSelected: (p) => setState(() => _product = p),
             ),
             const SizedBox(height: 12),
-            TextField(
-              key: const ValueKey('stock-quantity'),
+            DecimalField(
+              fieldKey: const ValueKey('stock-quantity'),
               controller: _quantity,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
               decoration: InputDecoration(labelText: l.quantity),
             ),
             SwitchListTile(

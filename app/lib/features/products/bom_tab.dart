@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/api.dart';
 import '../../shared/actions.dart';
+import '../../shared/decimal_field.dart';
 import '../../shared/format.dart';
 import '../../shared/search_picker.dart';
 import '../../l10n/l10n.dart';
@@ -39,15 +40,19 @@ class _EditLine {
     required this.unit,
     String quantity = '1',
     String scrap = '0',
-  }) : quantity = TextEditingController(text: quantity),
-       scrap = TextEditingController(text: scrap);
+  }) : quantity = DecimalInputController(text: quantity),
+       scrap = DecimalInputController(
+         text: scrap,
+         scale: 2,
+         percentagePoints: true,
+       );
 
   final String productId;
   final String code;
   final String name;
   final String unit;
-  final TextEditingController quantity;
-  final TextEditingController scrap;
+  final DecimalInputController quantity;
+  final DecimalInputController scrap;
 }
 
 /// Bill of materials of a product: revisions, editing the draft, activation and explosion.
@@ -78,7 +83,7 @@ class _BomTabState extends ConsumerState<BomTab> {
   String? _routingLoadedFor;
   bool _routingFailed = false;
   final _notes = TextEditingController();
-  final _explodeQty = TextEditingController(text: '1');
+  final _explodeQty = DecimalInputController(text: '1');
   Explosion? _explosion;
   bool _loading = true;
   String? _error;
@@ -176,8 +181,8 @@ class _BomTabState extends ConsumerState<BomTab> {
             code: l.componentCode,
             name: l.componentName,
             unit: l.componentUnit,
-            quantity: number(l.quantity),
-            scrap: number(l.scrapPercent),
+            quantity: editableDecimal(l.quantity),
+            scrap: editableDecimal(l.scrapPercent),
           ),
         ),
       );
@@ -207,8 +212,8 @@ class _BomTabState extends ConsumerState<BomTab> {
     final notes = _notes.text;
     final lines = <BomLineInput>[];
     for (final (i, l) in _lines.indexed) {
-      final q = parseDecimalInput(l.quantity.text);
-      final s = parseDecimalInput(l.scrap.text.isEmpty ? '0' : l.scrap.text);
+      final q = l.quantity.decimal;
+      final s = l.scrap.text.trim().isEmpty ? '0' : l.scrap.decimal;
       if (q == null || s == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(context.l10n.enterValidNumbersLine(i + 1))),
@@ -308,7 +313,7 @@ class _BomTabState extends ConsumerState<BomTab> {
   }
 
   Future<void> _explode() async {
-    final q = parseDecimalInput(_explodeQty.text);
+    final q = _explodeQty.decimal;
     if (q == null) return;
     try {
       final e = await _api.engineering.explodeBom(
@@ -471,7 +476,7 @@ class _BomTabState extends ConsumerState<BomTab> {
           children: [
             SizedBox(
               width: 140,
-              child: TextField(
+              child: DecimalField(
                 controller: _explodeQty,
                 decoration: InputDecoration(
                   labelText: context.l10n.quantity,
@@ -773,7 +778,7 @@ class _BomTabState extends ConsumerState<BomTab> {
               Padding(
                 padding: const EdgeInsets.all(4),
                 child: editable
-                    ? TextField(
+                    ? DecimalField(
                         controller: l.quantity,
                         textAlign: TextAlign.right,
                         decoration: InputDecoration(suffixText: l.unit),
@@ -786,7 +791,10 @@ class _BomTabState extends ConsumerState<BomTab> {
               Padding(
                 padding: const EdgeInsets.all(4),
                 child: editable
-                    ? TextField(controller: l.scrap, textAlign: TextAlign.right)
+                    ? DecimalField(
+                        controller: l.scrap,
+                        textAlign: TextAlign.right,
+                      )
                     : Text(
                         l.scrap.text == '0' ? '' : '${l.scrap.text} %',
                         textAlign: TextAlign.right,

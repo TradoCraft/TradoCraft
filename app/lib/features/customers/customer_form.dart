@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/api.dart';
 import '../../app/workspace.dart' show TabScope;
+import '../../shared/decimal_field.dart';
 import '../../shared/format.dart';
 import '../../shared/live_record_watcher.dart';
 import '../../shared/record_history.dart';
@@ -90,8 +91,10 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
   late final _postal = TextEditingController(text: c?.postalCode);
   late final _city = TextEditingController(text: c?.city);
   late final _country = TextEditingController(text: c?.countryCode ?? 'BE');
-  late final _discount = TextEditingController(
-    text: number(c?.discountPercent ?? '0'),
+  late final _discount = DecimalInputController(
+    text: editableDecimal(c?.discountPercent ?? '0'),
+    scale: 2,
+    percentagePoints: true,
   );
   late final _terms = TextEditingController(
     text: '${c?.paymentTermsDays ?? 30}',
@@ -225,7 +228,7 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
       countryCode: _country.text.trim().toUpperCase(),
       language: _language,
       priceZoneId: _zoneId!,
-      discountPercent: parseDecimalInput(_discount.text) ?? '0',
+      discountPercent: _discount.decimal ?? '0',
       paymentTermsDays: int.parse(_terms.text.trim()),
       expectedVersion: _current?.version,
     );
@@ -274,7 +277,7 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
         _postal.text = fresh.postalCode;
         _city.text = fresh.city;
         _country.text = fresh.countryCode;
-        _discount.text = number(fresh.discountPercent ?? '0');
+        _discount.text = editableDecimal(fresh.discountPercent ?? '0');
         _terms.text = '${fresh.paymentTermsDays ?? 30}';
         _language = fresh.language;
         _vatRegime = fresh.vatRegime;
@@ -352,6 +355,7 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
     String? Function(String)? check,
   }) => TextFormField(
     controller: t,
+    focusNode: t is DecimalInputController ? t.focusNode : null,
     readOnly: _locked,
     decoration: InputDecoration(labelText: label),
     validator: (v) {
@@ -555,8 +559,8 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
                 child: _field(
                   _discount,
                   context.l10n.generalRebatePercent,
-                  check: (s) => parseDecimalInput(s.isEmpty ? '0' : s) == null
-                      ? context.l10n.numberRequired
+                  check: (s) => s.isNotEmpty && _discount.decimal == null
+                      ? context.l10n.cfgInvalidNumber
                       : null,
                 ),
               );
