@@ -14,9 +14,11 @@ class QuotationLine {
     required this.lineTotal,
     required this.listUnitPrice,
     required this.netUnitPrice,
+    required this.nonDiscountable,
     required this.position,
     required this.priceConfirmed,
-    required this.pricingType,
+    required this.priceIsIndicative,
+    required this.priceOnRequest,
     required this.productCode,
     required this.quantity,
     required this.rebatePercent,
@@ -57,11 +59,15 @@ class QuotationLine {
   @JsonKey(name: 'line_total')
   final String lineTotal;
 
-  /// Zone list price, or the confirmed price of an indicative product.
+  /// Zone list price, or the entered price of a price-on-request product (zero until entered).
   @JsonKey(name: 'list_unit_price')
   final String listUnitPrice;
   @JsonKey(name: 'net_unit_price')
   final String netUnitPrice;
+
+  /// Never discounted: no rebate and no line discount.
+  @JsonKey(name: 'non_discountable')
+  final bool nonDiscountable;
 
   /// Position of the parent line (this is an option or sub-line of it).
   @JsonKey(includeIfNull: false,name: 'parent_position')
@@ -76,13 +82,17 @@ class QuotationLine {
   final String? percentOfParent;
   final int position;
 
-  /// False for an indicative price that still has to be confirmed.
+  /// False for a price-on-request line whose price has not been entered yet.
   @JsonKey(name: 'price_confirmed')
   final bool priceConfirmed;
 
-  /// list | net | indicative
-  @JsonKey(name: 'pricing_type')
-  final String pricingType;
+  /// The list price is printed as indicative.
+  @JsonKey(name: 'price_is_indicative')
+  final bool priceIsIndicative;
+
+  /// The product has no list price; the price is entered on the line.
+  @JsonKey(name: 'price_on_request')
+  final bool priceOnRequest;
   @JsonKey(name: 'product_code')
   final String productCode;
   @JsonKey(includeIfNull: false,name: 'product_id')

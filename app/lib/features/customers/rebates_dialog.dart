@@ -237,7 +237,7 @@ class _NewRebateState extends ConsumerState<_NewRebate> {
                             .products
                             .listProducts(q: q, limit: 20))
                         .items
-                        .where((p) => p.pricingType != 'net')
+                        .where((p) => !p.nonDiscountable)
                         .toList(),
                 onSelected: (p) => setState(() => _product = p),
               ),

@@ -20,7 +20,6 @@ use uuid::Uuid;
 
 const PRODUCT_TYPES: [&str; 4] = ["purchased", "manufactured", "configurable", "service"];
 const TRACKING: [&str; 3] = ["none", "serial", "lot"];
-const PRICING_TYPES: [&str; 3] = ["list", "net", "indicative"];
 
 pub mod attribute_definitions;
 pub mod attributes;
@@ -58,9 +57,12 @@ pub struct Product {
     pub tracking: String,
     pub family_id: Option<Uuid>,
     pub family_code: Option<String>,
-    /// list (rebates apply) | net (fixed net price, never discounted) |
-    /// indicative (price must be confirmed on each quotation)
-    pub pricing_type: String,
+    /// Never discounted: no customer rebate and no manual line discount.
+    pub non_discountable: bool,
+    /// No list price: the price is entered on each quotation line, which cannot be sent before.
+    pub price_on_request: bool,
+    /// The list price applies but is printed as indicative.
+    pub price_is_indicative: bool,
     pub active: bool,
     /// Standard cost per stock unit. Only returned with the permission `inventory.cost`, else null.
     #[schema(value_type = Option<String>, example = "42.5000")]
@@ -123,9 +125,15 @@ pub struct ProductInput {
     #[serde(default = "default_tracking")]
     pub tracking: String,
     pub family_id: Option<Uuid>,
-    /// list | net | indicative
-    #[serde(default = "default_pricing_type")]
-    pub pricing_type: String,
+    /// Never discounted: no customer rebate and no manual line discount.
+    #[serde(default)]
+    pub non_discountable: bool,
+    /// No list price: the price is entered on each quotation line, which cannot be sent before.
+    #[serde(default)]
+    pub price_on_request: bool,
+    /// The list price applies but is printed as indicative.
+    #[serde(default)]
+    pub price_is_indicative: bool,
     #[serde(default = "default_true")]
     pub active: bool,
     /// Ignored (the stored cost is kept) without the permission `inventory.cost`.
@@ -158,10 +166,6 @@ pub(crate) fn barcode(input: &ProductInput) -> Option<&str> {
         .filter(|b| !b.is_empty())
 }
 
-fn default_pricing_type() -> String {
-    "list".into()
-}
-
 fn default_tracking() -> String {
     "none".into()
 }
@@ -191,12 +195,6 @@ impl ProductInput {
         }
         if !TRACKING.contains(&self.tracking.as_str()) {
             out.push(format!("tracking must be one of {}", TRACKING.join(", ")));
-        }
-        if !PRICING_TYPES.contains(&self.pricing_type.as_str()) {
-            out.push(format!(
-                "pricing_type must be one of {}",
-                PRICING_TYPES.join(", ")
-            ));
         }
         if self.vat_rate.is_some_and(|r| r < Decimal::ZERO)
             || self.vat_rate_override.is_some_and(|r| r < Decimal::ZERO)
@@ -316,7 +314,8 @@ pub struct ListParams {
     /// purchased, manufactured, configurable, service. They combine with OR.
     pub product_type: Option<String>,
     /// Sort order: `field` ascending or `-field` descending, comma-separated for several keys (at
-    /// most 3). Fields: code, name, unit, product_type, family_code, pricing_type, active.
+    /// most 3). Fields: code, name, unit, product_type, family_code, non_discountable, price_on_request,
+    /// price_is_indicative, active.
     /// Default: code.
     pub sort: Option<String>,
     pub limit: Option<i64>,
@@ -330,7 +329,9 @@ const PRODUCT_SORT: &[(&str, &str)] = &[
     ("unit", "p.unit"),
     ("product_type", "p.product_type"),
     ("family_code", "p.family_code"),
-    ("pricing_type", "p.pricing_type"),
+    ("non_discountable", "p.non_discountable"),
+    ("price_on_request", "p.price_on_request"),
+    ("price_is_indicative", "p.price_is_indicative"),
     ("active", "p.active"),
 ];
 
@@ -352,6 +353,16 @@ pub struct ZonePriceEntry {
     pub valid_from: NaiveDate,
 }
 
+/// A correction of a zone price that has not started yet.
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct ZonePriceCorrection {
+    #[schema(value_type = String, example = "125.00")]
+    pub unit_price: Decimal,
+    /// The (possibly corrected) first day of the price; after today.
+    #[serde(deserialize_with = "tradocraft_core::serde_util::date")]
+    pub valid_from: NaiveDate,
+}
+
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct ZonePriceInput {
     pub zone_id: Uuid,
@@ -367,7 +378,8 @@ macro_rules! product_columns {
     () => {
         "SELECT p.id, p.code, p.name, p.description, p.unit, p.product_type, p.vat_rate,
                 p.vat_category, p.vat_rate_override, p.tracking,
-               p.family_id, f.code AS family_code, p.pricing_type, p.active, p.standard_cost, p.reorder_min,
+               p.family_id, f.code AS family_code, p.non_discountable, p.price_on_request,
+               p.price_is_indicative, p.active, p.standard_cost, p.reorder_min,
                p.reorder_max, p.lead_time_days, p.barcode, p.packaging_category_id,
                pc.code AS packaging_category_code, p.length_mm, p.width_mm, p.height_mm, p.weight_g,
                p.default_production_remark
@@ -533,7 +545,8 @@ pub async fn get_products_for_quoting_with(
             .collect();
         let price = match resolve_zone_price(&prices, zone_id, date) {
             Some(p) => p,
-            None if price_optional.contains(id) => Decimal::ZERO,
+            // A price-on-request product needs no zone price: its price is entered per line.
+            None if price_optional.contains(id) || product.price_on_request => Decimal::ZERO,
             None => {
                 return Err(AppError::Validation(format!(
                     "product {} has no price in price zone {zone_code} on {date}",
@@ -707,10 +720,12 @@ pub(crate) async fn insert_product(
         resolve_product_fields(conn, company_id, input).await?;
     sqlx::query(
         "INSERT INTO products.products (id, code, name, description, unit, product_type, vat_rate, vat_category,
-                                        vat_rate_override, active, tracking, family_id, pricing_type, standard_cost,
+                                        vat_rate_override, active, tracking, family_id, non_discountable, standard_cost,
                                         reorder_min, reorder_max, lead_time_days, barcode, packaging_category_id,
-                                        length_mm, width_mm, height_mm, weight_g, default_production_remark)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)",
+                                        length_mm, width_mm, height_mm, weight_g, default_production_remark,
+                                        price_on_request, price_is_indicative)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24,
+                 $25, $26)",
     )
     .bind(id)
     .bind(input.code.trim())
@@ -724,7 +739,7 @@ pub(crate) async fn insert_product(
     .bind(input.active)
     .bind(&input.tracking)
     .bind(input.family_id)
-    .bind(&input.pricing_type)
+    .bind(input.non_discountable)
     .bind(input.standard_cost.filter(|_| write_cost))
     .bind(input.reorder_min)
     .bind(input.reorder_max)
@@ -736,6 +751,8 @@ pub(crate) async fn insert_product(
     .bind(input.height_mm)
     .bind(input.weight_g)
     .bind(input.default_production_remark.trim())
+    .bind(input.price_on_request)
+    .bind(input.price_is_indicative)
     .execute(&mut *conn)
     .await?;
     Ok(())
@@ -795,7 +812,7 @@ pub(crate) async fn update_product_row(
     let updated = sqlx::query(
         "UPDATE products.products SET code = $2, name = $3, description = $4, unit = $5, product_type = $6,
                 vat_rate = $7, vat_category = $24, vat_rate_override = $25, active = $8, tracking = $9,
-                family_id = $10, pricing_type = $11,
+                family_id = $10, non_discountable = $11, price_on_request = $26, price_is_indicative = $27,
                 standard_cost = CASE WHEN $12 THEN $13 ELSE standard_cost END,
                 reorder_min = $14, reorder_max = $15, lead_time_days = $16, barcode = $17,
                 packaging_category_id = $18, length_mm = $19, width_mm = $20, height_mm = $21, weight_g = $22,
@@ -812,7 +829,7 @@ pub(crate) async fn update_product_row(
     .bind(input.active)
     .bind(&input.tracking)
     .bind(input.family_id)
-    .bind(&input.pricing_type)
+    .bind(input.non_discountable)
     .bind(write_cost)
     .bind(input.standard_cost)
     .bind(input.reorder_min)
@@ -827,6 +844,8 @@ pub(crate) async fn update_product_row(
     .bind(input.default_production_remark.trim())
     .bind(&vat_category)
     .bind(vat_rate_override)
+    .bind(input.price_on_request)
+    .bind(input.price_is_indicative)
     .execute(&mut *conn)
     .await?;
     if updated.rows_affected() == 0 {
@@ -1134,7 +1153,8 @@ async fn list_product_prices(
     ))
 }
 
-/// Adds a price for a zone from a date. Prices are never edited: a new entry supersedes older ones.
+/// Adds a price for a zone from a date. Prices in effect are never edited: a new entry supersedes
+/// older ones. A price that has not started yet can be corrected or deleted.
 #[utoipa::path(post, path = "/products/{id}/prices", tag = "products", params(("id" = Uuid, Path)),
     request_body = ZonePriceInput,
     responses((status = 201, body = ZonePriceEntry), (status = 409, body = tradocraft_core::error::ErrorBody)))]
@@ -1195,11 +1215,144 @@ async fn add_product_price(
     Ok((StatusCode::CREATED, Json(entry)))
 }
 
+/// Locks a zone price of a product in the active company and checks that it has not started yet:
+/// prices that are or were in effect are history (ADR 0012) and stay as they are.
+async fn lock_planned_price(
+    conn: &mut sqlx::PgConnection,
+    user: &CurrentUser,
+    product_id: Uuid,
+    price_id: Uuid,
+) -> AppResult<ZonePriceEntry> {
+    let entry: ZonePriceEntry = sqlx::query_as(&format!(
+        "{SELECT_ZONE_PRICES} AND p.id = $3 FOR UPDATE OF p"
+    ))
+    .bind(user.company_id)
+    .bind(product_id)
+    .bind(price_id)
+    .fetch_optional(&mut *conn)
+    .await?
+    .ok_or(AppError::NotFound("price"))?;
+    if entry.valid_from <= tradocraft_core::today() {
+        return Err(AppError::Conflict(format!(
+            "the price of {} in zone {} is in effect since {}; add a new dated price instead",
+            entry.unit_price.normalize(),
+            entry.zone_code,
+            entry.valid_from
+        )));
+    }
+    Ok(entry)
+}
+
+/// Corrects the price or start date of a price that has not started yet (409 for one in effect).
+#[utoipa::path(put, path = "/products/{id}/prices/{price_id}", tag = "products",
+    params(("id" = Uuid, Path), ("price_id" = Uuid, Path)),
+    request_body = ZonePriceCorrection,
+    responses((status = 200, body = ZonePriceEntry), (status = 409, body = tradocraft_core::error::ErrorBody),
+        (status = 422, body = tradocraft_core::error::ErrorBody)))]
+async fn correct_product_price(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Path((product_id, price_id)): Path<(Uuid, Uuid)>,
+    Json(input): Json<ZonePriceCorrection>,
+) -> AppResult<Json<ZonePriceEntry>> {
+    user.require(Permission::PricesWrite)?;
+    if input.unit_price < Decimal::ZERO {
+        return Err(AppError::Validation("unit_price cannot be negative".into()));
+    }
+    if input.valid_from <= tradocraft_core::today() {
+        return Err(AppError::Validation(
+            "a corrected price must start after today; add a new price to change today's".into(),
+        ));
+    }
+    let mut tx = state.db.begin().await?;
+    let old = lock_planned_price(&mut tx, &user, product_id, price_id).await?;
+    if input.valid_from != old.valid_from {
+        let taken: bool = sqlx::query_scalar(
+            "SELECT EXISTS (SELECT 1 FROM pricing.zone_prices
+                            WHERE zone_id = $1 AND product_id = $2 AND valid_from = $3)",
+        )
+        .bind(old.zone_id)
+        .bind(product_id)
+        .bind(input.valid_from)
+        .fetch_one(&mut *tx)
+        .await?;
+        if taken {
+            return Err(AppError::Conflict(format!(
+                "zone {} already has a price starting on {}",
+                old.zone_code, input.valid_from
+            )));
+        }
+    }
+    sqlx::query("UPDATE pricing.zone_prices SET unit_price = $2, valid_from = $3 WHERE id = $1")
+        .bind(price_id)
+        .bind(input.unit_price)
+        .bind(input.valid_from)
+        .execute(&mut *tx)
+        .await?;
+    audit::record(
+        &mut tx,
+        &user,
+        "product",
+        product_id,
+        "price_corrected",
+        serde_json::json!({
+            "price_id": price_id,
+            "zone_id": old.zone_id,
+            "old": { "unit_price": old.unit_price, "valid_from": old.valid_from },
+            "new": { "unit_price": input.unit_price, "valid_from": input.valid_from },
+        }),
+    )
+    .await?;
+    let entry = sqlx::query_as(&format!("{SELECT_ZONE_PRICES} AND p.id = $3"))
+        .bind(user.company_id)
+        .bind(product_id)
+        .bind(price_id)
+        .fetch_one(&mut *tx)
+        .await?;
+    tx.commit().await?;
+    Ok(Json(entry))
+}
+
+/// Deletes a price that has not started yet (409 for one in effect).
+#[utoipa::path(delete, path = "/products/{id}/prices/{price_id}", tag = "products",
+    params(("id" = Uuid, Path), ("price_id" = Uuid, Path)),
+    responses((status = 204), (status = 409, body = tradocraft_core::error::ErrorBody)))]
+async fn delete_product_price(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Path((product_id, price_id)): Path<(Uuid, Uuid)>,
+) -> AppResult<StatusCode> {
+    user.require(Permission::PricesWrite)?;
+    let mut tx = state.db.begin().await?;
+    let old = lock_planned_price(&mut tx, &user, product_id, price_id).await?;
+    sqlx::query("DELETE FROM pricing.zone_prices WHERE id = $1")
+        .bind(price_id)
+        .execute(&mut *tx)
+        .await?;
+    audit::record(
+        &mut tx,
+        &user,
+        "product",
+        product_id,
+        "price_deleted",
+        serde_json::json!({
+            "price_id": price_id,
+            "zone_id": old.zone_id,
+            "unit_price": old.unit_price,
+            "valid_from": old.valid_from,
+        }),
+    )
+    .await?;
+    tx.commit().await?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
 pub fn router() -> OpenApiRouter<AppState> {
     OpenApiRouter::new()
         .routes(routes!(list_products, create_product))
         .routes(routes!(get_product_handler, update_product))
         .routes(routes!(list_product_prices, add_product_price))
+        .routes(routes!(correct_product_price, delete_product_price))
         .routes(routes!(list_price_zones, create_price_zone))
         .routes(routes!(update_price_zone, delete_price_zone))
         .merge(families::router())

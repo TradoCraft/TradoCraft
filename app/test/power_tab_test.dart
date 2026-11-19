@@ -15,7 +15,7 @@ Map<String, Object?> productJson() => {
   'unit': 'pcs',
   'product_type': 'purchased',
   'tracking': 'none',
-  'pricing_type': 'list',
+  ...pricingFlags('list'),
   'vat_rate': '21',
   'active': true,
 };

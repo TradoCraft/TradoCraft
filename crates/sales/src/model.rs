@@ -52,8 +52,9 @@ pub struct QuotationLineInput {
     pub vat_rate: Option<Decimal>,
     /// Overrides the product name on the document.
     pub description: Option<String>,
-    /// Confirmed unit price (before rebates) for an indicative product. Indicative lines must be
-    /// confirmed before the quotation can be sent. Not allowed for other products.
+    /// The agreed unit price (before rebates) of a price-on-request product. Such a line has no
+    /// price until it is given, and the quotation cannot be sent before. Not allowed for other
+    /// products.
     #[schema(value_type = Option<String>, example = "6500")]
     pub unit_price: Option<Decimal>,
     /// Makes this an option or sub-line of an earlier line: the 1-based position of that line in
@@ -257,11 +258,15 @@ pub struct QuotationLine {
     pub unit: String,
     #[schema(value_type = String)]
     pub quantity: Decimal,
-    /// Zone list price, or the confirmed price of an indicative product.
+    /// Zone list price, or the entered price of a price-on-request product (zero until entered).
     #[schema(value_type = String)]
     pub list_unit_price: Decimal,
-    /// list | net | indicative
-    pub pricing_type: String,
+    /// Never discounted: no rebate and no line discount.
+    pub non_discountable: bool,
+    /// The product has no list price; the price is entered on the line.
+    pub price_on_request: bool,
+    /// The list price is printed as indicative.
+    pub price_is_indicative: bool,
     /// Customer rebate applied to this line.
     #[schema(value_type = String)]
     pub rebate_percent: Decimal,
@@ -275,7 +280,7 @@ pub struct QuotationLine {
     pub line_total: Decimal,
     #[schema(value_type = String)]
     pub vat_rate: Decimal,
-    /// False for an indicative price that still has to be confirmed.
+    /// False for a price-on-request line whose price has not been entered yet.
     pub price_confirmed: bool,
     /// Position of the parent line (this is an option or sub-line of it).
     #[schema(required = false)]
@@ -328,7 +333,7 @@ pub struct PricingPreview {
     /// Building construction year used during preview calculation.
     #[schema(required = false)]
     pub building_construction_year: Option<i32>,
-    /// Indicative prices still to confirm; the quotation cannot be sent while this is not 0.
+    /// Price-on-request lines without a price; the quotation cannot be sent while this is not 0.
     pub unconfirmed_lines: i32,
     /// The priced product lines in input order, then (only when the input had a `quotation_id`
     /// with a quoted shipping cost) the `SHIPPING` line, which has no `product_id`.
@@ -571,7 +576,8 @@ pub struct ListParams {
 pub enum RevisionPricing {
     /// Keep the agreed prices, rebates and price list date of the revised quotation.
     Keep,
-    /// Reprice at today's price list and rebates. Indicative prices must be confirmed again.
+    /// Reprice at today's price list and rebates. Prices of price-on-request lines must be
+    /// entered again.
     Current,
 }
 
@@ -588,7 +594,9 @@ pub struct RepricingLine {
     pub description: String,
     #[schema(value_type = String)]
     pub quantity: Decimal,
-    pub pricing_type: String,
+    pub non_discountable: bool,
+    pub price_on_request: bool,
+    pub price_is_indicative: bool,
     #[schema(value_type = String)]
     pub old_list_unit_price: Decimal,
     #[schema(value_type = String)]
@@ -603,7 +611,7 @@ pub struct RepricingLine {
     pub new_line_total: Decimal,
     #[schema(value_type = String)]
     pub difference: Decimal,
-    /// The new price is an indicative suggestion that must be confirmed.
+    /// A price-on-request line: its price must be entered again.
     pub needs_confirmation: bool,
 }
 

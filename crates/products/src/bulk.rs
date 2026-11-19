@@ -44,6 +44,10 @@ pub struct BulkPriceChangeInput {
     /// First day of the new prices; today or later.
     #[serde(deserialize_with = "tradocraft_core::serde_util::date")]
     pub valid_from: NaiveDate,
+    /// Replace prices that are already planned to start on `valid_from` (only when that is after
+    /// today) instead of refusing them. The change is then computed from the price before them.
+    #[serde(default)]
+    pub replace_planned: bool,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -61,6 +65,9 @@ pub struct BulkPriceLine {
     pub new_price: Decimal,
     /// A price starting on exactly `valid_from` already exists.
     pub conflict: bool,
+    /// That price, when it is replaced (`replace_planned`).
+    #[schema(value_type = Option<String>, required = false)]
+    pub replaced_price: Option<Decimal>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -83,6 +90,7 @@ struct Row {
     zone_code: String,
     current_price: Option<Decimal>,
     current_valid_from: Option<NaiveDate>,
+    planned_price: Option<Decimal>,
 }
 
 async fn compute(
@@ -99,6 +107,12 @@ async fn compute(
     if input.value.is_zero() {
         return Err(AppError::Validation("the change is zero".into()));
     }
+    if input.replace_planned && input.valid_from <= tradocraft_core::today() {
+        return Err(AppError::Validation(
+            "only prices starting after today can be replaced; prices in effect stay unchanged"
+                .into(),
+        ));
+    }
     if input.valid_from < tradocraft_core::today() {
         return Err(AppError::Validation(
             "valid_from cannot be in the past: earlier prices are history and stay unchanged"
@@ -107,14 +121,18 @@ async fn compute(
     }
     let rows: Vec<Row> = sqlx::query_as(
         "SELECT p.id AS product_id, p.code AS product_code, p.name AS product_name, z.id AS zone_id,
-                z.code AS zone_code, cur.unit_price AS current_price, cur.valid_from AS current_valid_from
+                z.code AS zone_code, cur.unit_price AS current_price, cur.valid_from AS current_valid_from,
+                planned.unit_price AS planned_price
          FROM products.products p
          CROSS JOIN pricing.price_zones z
          LEFT JOIN LATERAL (
              SELECT unit_price, valid_from FROM pricing.zone_prices zp
-             WHERE zp.zone_id = z.id AND zp.product_id = p.id AND zp.valid_from <= $4
+             WHERE zp.zone_id = z.id AND zp.product_id = p.id
+               AND (zp.valid_from < $4 OR (NOT $6 AND zp.valid_from = $4))
              ORDER BY zp.valid_from DESC LIMIT 1
          ) cur ON true
+         LEFT JOIN pricing.zone_prices planned
+             ON planned.zone_id = z.id AND planned.product_id = p.id AND planned.valid_from = $4
          WHERE z.company_id = $1 AND p.active
            AND (cardinality($2::uuid[]) = 0 OR z.id = ANY($2))
            AND ($3::uuid IS NULL OR p.family_id = $3)
@@ -126,6 +144,7 @@ async fn compute(
     .bind(input.family_id)
     .bind(input.valid_from)
     .bind(&input.product_ids)
+    .bind(input.replace_planned)
     .fetch_all(&mut *conn)
     .await?;
 
@@ -155,10 +174,15 @@ async fn compute(
             current_price: current,
             current_valid_from: from,
             new_price,
-            conflict: from == input.valid_from,
+            conflict: r.planned_price.is_some(),
+            replaced_price: r.planned_price.filter(|_| input.replace_planned),
         });
     }
-    let conflicts = lines.iter().filter(|l| l.conflict).count() as i64;
+    // Replaced prices are not conflicts: they are what the change is meant to correct.
+    let conflicts = lines
+        .iter()
+        .filter(|l| l.conflict && l.replaced_price.is_none())
+        .count() as i64;
     Ok(BulkPricePreview {
         valid_from: input.valid_from,
         lines,
@@ -182,7 +206,8 @@ async fn preview_bulk(
 }
 
 /// Applies a bulk price change: one new dated price per product and zone.
-/// Refused if any product already has a price starting on the same date.
+/// Refused if any product already has a price starting on the same date, unless
+/// `replace_planned` is set and that date is after today.
 #[utoipa::path(post, path = "/prices/bulk/apply", tag = "products", request_body = BulkPriceChangeInput,
     responses((status = 200, body = BulkPricePreview), (status = 409, body = ErrorBody), (status = 422, body = ErrorBody)))]
 async fn apply_bulk(
@@ -199,7 +224,7 @@ async fn apply_bulk(
     let mut preview = compute(&mut tx, &user, &input).await?;
     if preview.conflicts > 0 {
         return Err(AppError::Conflict(format!(
-            "{} prices already start on {}; change those individually or pick another date",
+            "{} prices already start on {}; replace them, change those individually or pick another date",
             preview.conflicts, input.valid_from
         )));
     }
@@ -209,6 +234,16 @@ async fn apply_bulk(
         ));
     }
     for l in &preview.lines {
+        if l.replaced_price.is_some() {
+            sqlx::query(
+                "DELETE FROM pricing.zone_prices WHERE zone_id = $1 AND product_id = $2 AND valid_from = $3",
+            )
+            .bind(l.zone_id)
+            .bind(l.product_id)
+            .bind(input.valid_from)
+            .execute(&mut *tx)
+            .await?;
+        }
         sqlx::query(
             "INSERT INTO pricing.zone_prices (id, company_id, zone_id, product_id, unit_price, valid_from, created_by)
              VALUES ($1, $2, $3, $4, $5, $6, $7)",
@@ -238,6 +273,7 @@ async fn apply_bulk(
             "zones": input.zone_ids,
             "products": input.product_ids,
             "prices": preview.applied,
+            "replaced": preview.lines.iter().filter(|l| l.replaced_price.is_some()).count(),
         }),
     )
     .await?;

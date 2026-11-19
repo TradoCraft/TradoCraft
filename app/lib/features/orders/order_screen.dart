@@ -234,9 +234,9 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
       final qty = _qty[line.position]!.decimal;
       if (qty == null) throw StateError(context.l10n.quantity);
       String? discount;
-      if (line.pricingType != 'net') {
-        final field = _discount[line.position]!;
-        discount = field.text.trim().isEmpty ? '0' : field.decimal;
+      if (!line.nonDiscountable) {
+        final text = _discount[line.position]!.text;
+        discount = text.trim().isEmpty ? '0' : parseDecimalInput(text);
         if (discount == null) throw StateError(context.l10n.lineDiscount);
       }
       lines.add(
@@ -713,7 +713,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
                   ),
                   if (editing)
                     DataCell(
-                      line.pricingType == 'net'
+                      line.nonDiscountable
                           ? Text(l.pricingNet)
                           : numericField(_discount[line.position]!, 70),
                     ),

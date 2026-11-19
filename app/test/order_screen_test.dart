@@ -20,7 +20,7 @@ Map<String, Object?> _line(String pos, {String pricing = 'list'}) => {
   'quantity': '1',
   'list_unit_price': '3880.0000',
   'line_discount_percent': '0',
-  'pricing_type': pricing,
+  ...pricingFlags(pricing),
   'rebate_percent': '5',
   'net_unit_price': '3686.0000',
   'line_total': '3686.00',

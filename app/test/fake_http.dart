@@ -249,3 +249,11 @@ Map<String, Object?> detailExtras() => {
   'watchers': <Object?>[],
   'readers': <Object?>[],
 };
+
+/// The pricing flags of a product or line in the API's JSON (`list`, `net` = not discountable,
+/// `on_request` = price on request, `indicative` = indicative price marker).
+Map<String, Object?> pricingFlags(String type) => {
+  'non_discountable': type == 'net',
+  'price_on_request': type == 'on_request',
+  'price_is_indicative': type == 'indicative',
+};

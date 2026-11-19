@@ -1076,13 +1076,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get inactiveContact => 'No longer active (left the company)';
 
   @override
-  String indicativeLine(String description) {
-    return '$description (indicative, to confirm)';
+  String priceOnRequestLine(String description) {
+    return '$description (price on request, to enter)';
   }
 
   @override
-  String indicativeToConfirm(int count) {
-    return '$count indicative price(s) to confirm before the quotation can be sent: enter the agreed price in the list price field.';
+  String priceOnRequestToEnter(int count) {
+    return '$count price-on-request line(s) without a price: enter the agreed price in the list price field before the quotation can be sent.';
   }
 
   @override
@@ -1339,6 +1339,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get newOpportunity => 'New opportunity';
+
+  @override
+  String get correctPrice => 'Correct planned price';
 
   @override
   String get newPrice => 'New price';
@@ -1826,19 +1829,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pricingIndicative => 'indicative';
 
   @override
-  String get pricingIndicativeHelp => 'Indicative (confirm per quote)';
-
-  @override
-  String get pricingList => 'list price';
-
-  @override
-  String get pricingListHelp => 'List price (rebates apply)';
+  String get pricingIndicativeHelp =>
+      'Indicative price (printed as indicative; rebates apply)';
 
   @override
   String get pricingNet => 'net';
 
   @override
-  String get pricingNetHelp => 'Net price (never discounted)';
+  String get pricingNetHelp => 'Not discountable (no rebate, no line discount)';
+
+  @override
+  String get pricingOnRequestHelp =>
+      'Price on request (enter the price on each quotation)';
+
+  @override
+  String get pricingOnRequest => 'price on request';
 
   @override
   String get priority => 'Priority';
@@ -7966,6 +7971,70 @@ class AppLocalizationsEn extends AppLocalizations {
       'You went from suppliers to purchasing, invoices, production, prices, a ticket, a new customer, a revised quotation, an order and production for the order and for stock. Where next: deliveries and shipping, repairs, field service and the reports each have their own menu entry. Any chapter can be replayed from the chapter map; steps that are already done are skipped.';
 
   @override
+  String get tutHelpdeskTitle => 'Working a ticket';
+
+  @override
+  String get tutHelpdeskSummary =>
+      'Hat: helpdesk agent. On the ticket from chapter 7: an internal note, a tag, time spent and an escalation.';
+
+  @override
+  String get tutHelpdeskNeedsTitle => 'Chapter 7 first';
+
+  @override
+  String get tutHelpdeskNeedsBody =>
+      'This chapter works on the ticket Maya\'s e-mail created in chapter 7 and could not find it. Finish chapter 7 first.';
+
+  @override
+  String get tutHelpdeskNoteTitle => 'Leave an internal note';
+
+  @override
+  String get tutHelpdeskNoteBody =>
+      'Open the ticket, switch to Internal note and write what a colleague needs to know, for example that the customer wants a quotation for 8 carts. Press Add note. The customer never sees a note.';
+
+  @override
+  String get tutHelpdeskNoteHint =>
+      'Choose Internal note above the message box; with Reply selected the text would go to the customer.';
+
+  @override
+  String get tutHelpdeskTagTitle => 'Add a tag';
+
+  @override
+  String get tutHelpdeskTagBody =>
+      'Tags group tickets for lists and reports. Add the tag \"quotation\" to this ticket in the details panel.';
+
+  @override
+  String get tutHelpdeskTimeTitle => 'Log the time you spent';
+
+  @override
+  String get tutHelpdeskTimeBody =>
+      'Add a time entry of 15 minutes with a short note. Mark it billable if the customer would be charged for it.';
+
+  @override
+  String get tutHelpdeskEscalateTitle => 'Escalate the ticket';
+
+  @override
+  String get tutHelpdeskEscalateBody =>
+      'Some tickets need more attention than you can give. Escalate this one: give a reason, choose a person or a team and, if you like, raise the priority one step. They are told at once.';
+
+  @override
+  String get tutHelpdeskEscalateHint =>
+      'Press the Escalate button on the ticket; the reason is required.';
+
+  @override
+  String get tutHelpdeskTourTitle => 'Prepared answers';
+
+  @override
+  String get tutHelpdeskTourBody =>
+      'This is where the team keeps prepared answers: reusable replies per team and language that the ticket suggests while you write. Reports, automation rules and settings (business hours, SLA, mailboxes) sit next to it. Look around, then press Next.';
+
+  @override
+  String get tutHelpdeskDoneTitle => 'What you learned';
+
+  @override
+  String get tutHelpdeskDoneBody =>
+      'Internal notes stay inside, tags and time entries make the work visible in lists and reports, and an escalation puts the ticket in front of the right person.';
+
+  @override
   String get tutInvoicesOpenSecondTitle => 'Open the suspicious invoice';
 
   @override
@@ -8927,8 +8996,8 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String changeProductIndicativeNote(String product) {
-    return '$product has an indicative price: confirm the price before sending.';
+  String changeProductOnRequestNote(String product) {
+    return '$product is priced on request: enter the price before sending.';
   }
 
   @override

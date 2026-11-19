@@ -16,11 +16,13 @@ class RepricingLine {
     required this.newLineTotal,
     required this.newListUnitPrice,
     required this.newRebatePercent,
+    required this.nonDiscountable,
     required this.oldLineTotal,
     required this.oldListUnitPrice,
     required this.oldRebatePercent,
     required this.position,
-    required this.pricingType,
+    required this.priceIsIndicative,
+    required this.priceOnRequest,
     required this.productCode,
     required this.quantity,
   });
@@ -30,7 +32,7 @@ class RepricingLine {
   final String description;
   final String difference;
 
-  /// The new price is an indicative suggestion that must be confirmed.
+  /// A price-on-request line: its price must be entered again.
   @JsonKey(name: 'needs_confirmation')
   final bool needsConfirmation;
   @JsonKey(name: 'new_line_total')
@@ -39,6 +41,8 @@ class RepricingLine {
   final String newListUnitPrice;
   @JsonKey(name: 'new_rebate_percent')
   final String newRebatePercent;
+  @JsonKey(name: 'non_discountable')
+  final bool nonDiscountable;
   @JsonKey(name: 'old_line_total')
   final String oldLineTotal;
   @JsonKey(name: 'old_list_unit_price')
@@ -46,8 +50,10 @@ class RepricingLine {
   @JsonKey(name: 'old_rebate_percent')
   final String oldRebatePercent;
   final int position;
-  @JsonKey(name: 'pricing_type')
-  final String pricingType;
+  @JsonKey(name: 'price_is_indicative')
+  final bool priceIsIndicative;
+  @JsonKey(name: 'price_on_request')
+  final bool priceOnRequest;
   @JsonKey(name: 'product_code')
   final String productCode;
   final String quantity;

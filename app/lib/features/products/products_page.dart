@@ -86,9 +86,11 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
         ),
         EntityColumn(
           context.l10n.pricing,
-          (p) => p.pricingType == 'list'
-              ? ''
-              : context.l10n.pricingType(p.pricingType),
+          (p) => context.l10n.pricingFlags(
+            nonDiscountable: p.nonDiscountable,
+            priceOnRequest: p.priceOnRequest,
+            priceIsIndicative: p.priceIsIndicative,
+          ),
         ),
         EntityColumn(
           context.l10n.tracking,

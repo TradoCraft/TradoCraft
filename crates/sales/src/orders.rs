@@ -86,8 +86,12 @@ pub struct OrderLine {
     pub quantity: Decimal,
     #[schema(value_type = String)]
     pub list_unit_price: Decimal,
-    /// list | net | indicative
-    pub pricing_type: String,
+    /// Never discounted: no rebate and no line discount.
+    pub non_discountable: bool,
+    /// The price was entered on the quotation (no list price).
+    pub price_on_request: bool,
+    /// The list price is printed as indicative.
+    pub price_is_indicative: bool,
     #[schema(value_type = String)]
     pub rebate_percent: Decimal,
     #[schema(value_type = String)]
@@ -421,8 +425,8 @@ pub async fn mark_shipped(
 
 const LINE_COLUMNS: &str =
     "id, position, product_id, product_code, description, unit, quantity, list_unit_price,
-    pricing_type, rebate_percent, line_discount_percent, net_unit_price, line_total, vat_rate,
-    production_remark, customer_remark";
+    non_discountable, price_on_request, price_is_indicative, rebate_percent, line_discount_percent,
+    net_unit_price, line_total, vat_rate, production_remark, customer_remark";
 
 pub(crate) async fn revision_lines(
     conn: &mut PgConnection,
@@ -447,9 +451,10 @@ async fn insert_lines(
     for l in lines {
         sqlx::query(
             "INSERT INTO sales.order_lines (id, order_id, revision, position, product_id, product_code, description,
-                unit, quantity, list_unit_price, pricing_type, rebate_percent, line_discount_percent,
-                net_unit_price, line_total, vat_rate, production_remark, customer_remark)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)",
+                unit, quantity, list_unit_price, non_discountable, rebate_percent, line_discount_percent,
+                net_unit_price, line_total, vat_rate, production_remark, customer_remark, price_on_request,
+                price_is_indicative)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)",
         )
         .bind(new_id())
         .bind(order_id)
@@ -461,7 +466,7 @@ async fn insert_lines(
         .bind(&l.unit)
         .bind(l.quantity)
         .bind(l.list_unit_price)
-        .bind(&l.pricing_type)
+        .bind(l.non_discountable)
         .bind(l.rebate_percent)
         .bind(l.line_discount_percent)
         .bind(l.net_unit_price)
@@ -469,6 +474,8 @@ async fn insert_lines(
         .bind(l.vat_rate)
         .bind(&l.production_remark)
         .bind(&l.customer_remark)
+        .bind(l.price_on_request)
+        .bind(l.price_is_indicative)
         .execute(&mut *conn)
         .await?;
     }
@@ -707,10 +714,12 @@ pub async fn convert_quotation(
     .await?;
     sqlx::query(
         "INSERT INTO sales.order_lines (id, order_id, revision, position, product_id, product_code, description, unit,
-                quantity, list_unit_price, pricing_type, rebate_percent, line_discount_percent, net_unit_price,
+                quantity, list_unit_price, non_discountable, price_on_request, price_is_indicative, rebate_percent,
+                line_discount_percent, net_unit_price,
                 line_total, vat_rate, production_remark, customer_remark)
          SELECT gen_random_uuid(), $2, 1, position, product_id, product_code, description, unit, quantity,
-                list_unit_price, pricing_type, rebate_percent, line_discount_percent, net_unit_price, line_total,
+                list_unit_price, non_discountable, price_on_request, price_is_indicative, rebate_percent,
+                line_discount_percent, net_unit_price, line_total,
                 vat_rate, production_remark, customer_remark
          FROM sales.quotation_lines WHERE quotation_id = $1",
     )
@@ -886,9 +895,9 @@ async fn edit_order(
             )));
         }
         seen.push(e.position);
-        if old.pricing_type == "net" && !e.line_discount_percent.is_zero() {
+        if old.non_discountable && !e.line_discount_percent.is_zero() {
             return Err(AppError::Validation(format!(
-                "line {}: {} has a net price and cannot be discounted",
+                "line {}: {} is not discountable",
                 e.position, old.product_code
             )));
         }

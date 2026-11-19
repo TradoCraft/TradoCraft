@@ -15,8 +15,10 @@ class OrderLine {
     required this.lineTotal,
     required this.listUnitPrice,
     required this.netUnitPrice,
+    required this.nonDiscountable,
     required this.position,
-    required this.pricingType,
+    required this.priceIsIndicative,
+    required this.priceOnRequest,
     required this.productCode,
     required this.quantity,
     required this.rebatePercent,
@@ -44,11 +46,19 @@ class OrderLine {
   final String listUnitPrice;
   @JsonKey(name: 'net_unit_price')
   final String netUnitPrice;
+
+  /// Never discounted: no rebate and no line discount.
+  @JsonKey(name: 'non_discountable')
+  final bool nonDiscountable;
   final int position;
 
-  /// list | net | indicative
-  @JsonKey(name: 'pricing_type')
-  final String pricingType;
+  /// The list price is printed as indicative.
+  @JsonKey(name: 'price_is_indicative')
+  final bool priceIsIndicative;
+
+  /// The price was entered on the quotation (no list price).
+  @JsonKey(name: 'price_on_request')
+  final bool priceOnRequest;
   @JsonKey(name: 'product_code')
   final String productCode;
   @JsonKey(includeIfNull: false,name: 'product_id')

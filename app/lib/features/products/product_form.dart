@@ -59,7 +59,9 @@ class _ProductFormState extends ConsumerState<ProductForm> {
   );
   late final _barcode = TextEditingController(text: p?.barcode);
   late String? _familyId = p?.familyId;
-  late String _pricing = p?.pricingType ?? 'list';
+  late bool _nonDiscountable = p?.nonDiscountable ?? false;
+  late bool _priceOnRequest = p?.priceOnRequest ?? false;
+  late bool _priceIsIndicative = p?.priceIsIndicative ?? false;
   late bool _active = p?.active ?? true;
   late String? _packagingId = p?.packagingCategoryId;
   late final _length = TextEditingController(text: p?.lengthMm?.toString());
@@ -129,7 +131,9 @@ class _ProductFormState extends ConsumerState<ProductForm> {
       vatRate: overrideRate,
       tracking: _type == 'service' ? 'none' : _tracking,
       familyId: _familyId,
-      pricingType: _pricing,
+      nonDiscountable: _nonDiscountable,
+      priceOnRequest: _priceOnRequest,
+      priceIsIndicative: _priceIsIndicative,
       active: _active,
       standardCost: cost,
       reorderMin: min,
@@ -337,32 +341,42 @@ class _ProductFormState extends ConsumerState<ProductForm> {
                     onChanged: (v) => setState(() => _familyId = v),
                   ),
                 ),
-                gap,
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    initialValue: _pricing,
-                    isExpanded: true,
-                    decoration: InputDecoration(
-                      labelText: context.l10n.pricing,
-                    ),
-                    items: [
-                      DropdownMenuItem(
-                        value: 'list',
-                        child: Text(context.l10n.pricingListHelp),
-                      ),
-                      DropdownMenuItem(
-                        value: 'net',
-                        child: Text(context.l10n.pricingNetHelp),
-                      ),
-                      DropdownMenuItem(
-                        value: 'indicative',
-                        child: Text(context.l10n.pricingIndicativeHelp),
-                      ),
-                    ],
-                    onChanged: (v) => setState(() => _pricing = v!),
-                  ),
-                ),
               ],
+            ),
+            gap,
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: Text(
+                context.l10n.pricing,
+                style: Theme.of(context).textTheme.labelLarge,
+              ),
+            ),
+            CheckboxListTile(
+              key: const ValueKey('pricing-non-discountable'),
+              contentPadding: EdgeInsets.zero,
+              dense: true,
+              controlAffinity: ListTileControlAffinity.leading,
+              title: Text(context.l10n.pricingNetHelp),
+              value: _nonDiscountable,
+              onChanged: (v) => setState(() => _nonDiscountable = v ?? false),
+            ),
+            CheckboxListTile(
+              key: const ValueKey('pricing-on-request'),
+              contentPadding: EdgeInsets.zero,
+              dense: true,
+              controlAffinity: ListTileControlAffinity.leading,
+              title: Text(context.l10n.pricingOnRequestHelp),
+              value: _priceOnRequest,
+              onChanged: (v) => setState(() => _priceOnRequest = v ?? false),
+            ),
+            CheckboxListTile(
+              key: const ValueKey('pricing-indicative'),
+              contentPadding: EdgeInsets.zero,
+              dense: true,
+              controlAffinity: ListTileControlAffinity.leading,
+              title: Text(context.l10n.pricingIndicativeHelp),
+              value: _priceIsIndicative,
+              onChanged: (v) => setState(() => _priceIsIndicative = v ?? false),
             ),
             DropdownButtonFormField<String>(
               initialValue: _tracking,

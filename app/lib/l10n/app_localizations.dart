@@ -2078,17 +2078,17 @@ abstract class AppLocalizations {
   /// **'No longer active (left the company)'**
   String get inactiveContact;
 
-  /// No description provided for @indicativeLine.
+  /// No description provided for @priceOnRequestLine.
   ///
   /// In en, this message translates to:
-  /// **'{description} (indicative, to confirm)'**
-  String indicativeLine(String description);
+  /// **'{description} (price on request, to enter)'**
+  String priceOnRequestLine(String description);
 
-  /// No description provided for @indicativeToConfirm.
+  /// No description provided for @priceOnRequestToEnter.
   ///
   /// In en, this message translates to:
-  /// **'{count} indicative price(s) to confirm before the quotation can be sent: enter the agreed price in the list price field.'**
-  String indicativeToConfirm(int count);
+  /// **'{count} price-on-request line(s) without a price: enter the agreed price in the list price field before the quotation can be sent.'**
+  String priceOnRequestToEnter(int count);
 
   /// No description provided for @insertPreparedAnswer.
   ///
@@ -2563,6 +2563,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'New opportunity'**
   String get newOpportunity;
+
+  /// No description provided for @correctPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Correct planned price'**
+  String get correctPrice;
 
   /// No description provided for @newPrice.
   ///
@@ -3431,20 +3437,8 @@ abstract class AppLocalizations {
   /// No description provided for @pricingIndicativeHelp.
   ///
   /// In en, this message translates to:
-  /// **'Indicative (confirm per quote)'**
+  /// **'Indicative price (printed as indicative; rebates apply)'**
   String get pricingIndicativeHelp;
-
-  /// No description provided for @pricingList.
-  ///
-  /// In en, this message translates to:
-  /// **'list price'**
-  String get pricingList;
-
-  /// No description provided for @pricingListHelp.
-  ///
-  /// In en, this message translates to:
-  /// **'List price (rebates apply)'**
-  String get pricingListHelp;
 
   /// No description provided for @pricingNet.
   ///
@@ -3455,8 +3449,20 @@ abstract class AppLocalizations {
   /// No description provided for @pricingNetHelp.
   ///
   /// In en, this message translates to:
-  /// **'Net price (never discounted)'**
+  /// **'Not discountable (no rebate, no line discount)'**
   String get pricingNetHelp;
+
+  /// No description provided for @pricingOnRequestHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Price on request (enter the price on each quotation)'**
+  String get pricingOnRequestHelp;
+
+  /// No description provided for @pricingOnRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'price on request'**
+  String get pricingOnRequest;
 
   /// No description provided for @priority.
   ///
@@ -14274,6 +14280,114 @@ abstract class AppLocalizations {
   /// **'You went from suppliers to purchasing, invoices, production, prices, a ticket, a new customer, a revised quotation, an order and production for the order and for stock. Where next: deliveries and shipping, repairs, field service and the reports each have their own menu entry. Any chapter can be replayed from the chapter map; steps that are already done are skipped.'**
   String get tutChangeDoneBody;
 
+  /// No description provided for @tutHelpdeskTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Working a ticket'**
+  String get tutHelpdeskTitle;
+
+  /// No description provided for @tutHelpdeskSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Hat: helpdesk agent. On the ticket from chapter 7: an internal note, a tag, time spent and an escalation.'**
+  String get tutHelpdeskSummary;
+
+  /// No description provided for @tutHelpdeskNeedsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chapter 7 first'**
+  String get tutHelpdeskNeedsTitle;
+
+  /// No description provided for @tutHelpdeskNeedsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This chapter works on the ticket Maya\'s e-mail created in chapter 7 and could not find it. Finish chapter 7 first.'**
+  String get tutHelpdeskNeedsBody;
+
+  /// No description provided for @tutHelpdeskNoteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave an internal note'**
+  String get tutHelpdeskNoteTitle;
+
+  /// No description provided for @tutHelpdeskNoteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the ticket, switch to Internal note and write what a colleague needs to know, for example that the customer wants a quotation for 8 carts. Press Add note. The customer never sees a note.'**
+  String get tutHelpdeskNoteBody;
+
+  /// No description provided for @tutHelpdeskNoteHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose Internal note above the message box; with Reply selected the text would go to the customer.'**
+  String get tutHelpdeskNoteHint;
+
+  /// No description provided for @tutHelpdeskTagTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a tag'**
+  String get tutHelpdeskTagTitle;
+
+  /// No description provided for @tutHelpdeskTagBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Tags group tickets for lists and reports. Add the tag \"quotation\" to this ticket in the details panel.'**
+  String get tutHelpdeskTagBody;
+
+  /// No description provided for @tutHelpdeskTimeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Log the time you spent'**
+  String get tutHelpdeskTimeTitle;
+
+  /// No description provided for @tutHelpdeskTimeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a time entry of 15 minutes with a short note. Mark it billable if the customer would be charged for it.'**
+  String get tutHelpdeskTimeBody;
+
+  /// No description provided for @tutHelpdeskEscalateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Escalate the ticket'**
+  String get tutHelpdeskEscalateTitle;
+
+  /// No description provided for @tutHelpdeskEscalateBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Some tickets need more attention than you can give. Escalate this one: give a reason, choose a person or a team and, if you like, raise the priority one step. They are told at once.'**
+  String get tutHelpdeskEscalateBody;
+
+  /// No description provided for @tutHelpdeskEscalateHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Press the Escalate button on the ticket; the reason is required.'**
+  String get tutHelpdeskEscalateHint;
+
+  /// No description provided for @tutHelpdeskTourTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Prepared answers'**
+  String get tutHelpdeskTourTitle;
+
+  /// No description provided for @tutHelpdeskTourBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This is where the team keeps prepared answers: reusable replies per team and language that the ticket suggests while you write. Reports, automation rules and settings (business hours, SLA, mailboxes) sit next to it. Look around, then press Next.'**
+  String get tutHelpdeskTourBody;
+
+  /// No description provided for @tutHelpdeskDoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What you learned'**
+  String get tutHelpdeskDoneTitle;
+
+  /// No description provided for @tutHelpdeskDoneBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Internal notes stay inside, tags and time entries make the work visible in lists and reports, and an escalation puts the ticket in front of the right person.'**
+  String get tutHelpdeskDoneBody;
+
   /// No description provided for @tutInvoicesOpenSecondTitle.
   ///
   /// In en, this message translates to:
@@ -15942,11 +16056,11 @@ abstract class AppLocalizations {
   /// **'{product} has a net price: the line discount was cleared.'**
   String changeProductNetNote(String product);
 
-  /// No description provided for @changeProductIndicativeNote.
+  /// No description provided for @changeProductOnRequestNote.
   ///
   /// In en, this message translates to:
-  /// **'{product} has an indicative price: confirm the price before sending.'**
-  String changeProductIndicativeNote(String product);
+  /// **'{product} is priced on request: enter the price before sending.'**
+  String changeProductOnRequestNote(String product);
 
   /// No description provided for @optionsNotApplicable.
   ///
