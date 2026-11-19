@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/api.dart';
+import '../../shared/decimal_field.dart';
 import '../../shared/format.dart';
 import '../../shared/power_grid_field.dart';
 import 'baseline_logic.dart';
@@ -35,8 +36,9 @@ class OpportunityForm extends ConsumerStatefulWidget {
 class _OpportunityFormState extends ConsumerState<OpportunityForm> {
   late final o = widget.opportunity;
   late final _title = TextEditingController(text: o?.title);
-  late final _value = TextEditingController(
-    text: o == null ? '' : number(o!.expectedValue),
+  late final _value = DecimalInputController(
+    text: editableDecimal(o?.expectedValue),
+    scale: 2,
   );
   late final _probability = TextEditingController(
     text: o == null ? '' : '${o!.probability}',
@@ -55,7 +57,7 @@ class _OpportunityFormState extends ConsumerState<OpportunityForm> {
   String? _error;
 
   Future<void> _save() async {
-    final value = parseDecimalInput(_value.text.isEmpty ? '0' : _value.text);
+    final value = _value.text.trim().isEmpty ? '0' : _value.decimal;
     final probability = _probability.text.trim().isEmpty
         ? null
         : int.tryParse(_probability.text.trim());
@@ -147,7 +149,7 @@ class _OpportunityFormState extends ConsumerState<OpportunityForm> {
             Row(
               children: [
                 Expanded(
-                  child: TextField(
+                  child: DecimalField(
                     controller: _value,
                     decoration: InputDecoration(
                       labelText: context.l10n.expectedValueEur,

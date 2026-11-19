@@ -8,6 +8,7 @@ import '../../app/api.dart';
 import '../../l10n/l10n.dart';
 import '../../shared/actions.dart';
 import '../../shared/app_icons.dart';
+import '../../shared/decimal_field.dart';
 import '../../shared/format.dart';
 import '../planning/board_model.dart';
 import '../../shared/file_export.dart';
@@ -315,8 +316,7 @@ class _DeliveryScreenState extends ConsumerState<DeliveryScreen> {
       context: context,
       builder: (_) => _QuantityDialog(initial: p.quantity),
     );
-    final parsed = value == null ? null : parseDecimalInput(value);
-    if (parsed != null) setState(() => p.quantity = parsed);
+    if (value != null && mounted) setState(() => p.quantity = value);
   }
 
   Widget _closureBanner(DeliveryNote n) {
@@ -639,7 +639,17 @@ class _QuantityDialog extends StatefulWidget {
 }
 
 class _QuantityDialogState extends State<_QuantityDialog> {
-  late final _controller = TextEditingController(text: widget.initial);
+  late final _controller = DecimalInputController(text: widget.initial);
+  bool _invalid = false;
+
+  void _save() {
+    final quantity = _controller.decimal;
+    if (quantity == null) {
+      setState(() => _invalid = true);
+      return;
+    }
+    Navigator.pop(context, quantity);
+  }
 
   @override
   void dispose() {
@@ -652,11 +662,16 @@ class _QuantityDialogState extends State<_QuantityDialog> {
     final l = context.l10n;
     return AlertDialog(
       title: Text(l.quantity),
-      content: TextField(
-        key: const ValueKey('line-quantity'),
+      content: DecimalField(
+        fieldKey: const ValueKey('line-quantity'),
         controller: _controller,
         autofocus: true,
-        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        decoration: InputDecoration(
+          errorText: _invalid ? l.cfgInvalidNumber : null,
+        ),
+        onChanged: (_) {
+          if (_invalid) setState(() => _invalid = false);
+        },
       ),
       actions: [
         TextButton(
@@ -664,7 +679,7 @@ class _QuantityDialogState extends State<_QuantityDialog> {
           child: Text(l.cancel),
         ),
         FilledButton(
-          onPressed: () => Navigator.pop(context, _controller.text),
+          onPressed: _save,
           child: Text(l.save),
         ),
       ],

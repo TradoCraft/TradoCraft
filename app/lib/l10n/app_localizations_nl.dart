@@ -1078,13 +1078,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String get inactiveContact => 'Niet meer actief (vertrokken)';
 
   @override
-  String indicativeLine(String description) {
-    return '$description (indicatief, te bevestigen)';
+  String priceOnRequestLine(String description) {
+    return '$description (prijs op aanvraag, in te geven)';
   }
 
   @override
-  String indicativeToConfirm(int count) {
-    return '$count indicatieve prijs/prijzen te bevestigen voor de offerte verzonden kan worden: geef de afgesproken prijs in het veld lijstprijs in.';
+  String priceOnRequestToEnter(int count) {
+    return '$count regel(s) met prijs op aanvraag zonder prijs: geef de afgesproken prijs in het veld lijstprijs in voor de offerte verzonden kan worden.';
   }
 
   @override
@@ -1341,6 +1341,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get newOpportunity => 'Nieuwe opportuniteit';
+
+  @override
+  String get correctPrice => 'Geplande prijs corrigeren';
 
   @override
   String get newPrice => 'Nieuwe prijs';
@@ -1829,19 +1832,22 @@ class AppLocalizationsNl extends AppLocalizations {
   String get pricingIndicative => 'indicatief';
 
   @override
-  String get pricingIndicativeHelp => 'Indicatief (per offerte bevestigen)';
-
-  @override
-  String get pricingList => 'lijstprijs';
-
-  @override
-  String get pricingListHelp => 'Lijstprijs (kortingen van toepassing)';
+  String get pricingIndicativeHelp =>
+      'Indicatieve prijs (afgedrukt als indicatief; kortingen van toepassing)';
 
   @override
   String get pricingNet => 'netto';
 
   @override
-  String get pricingNetHelp => 'Nettoprijs (nooit korting)';
+  String get pricingNetHelp =>
+      'Geen korting (geen klantkorting, geen regelkorting)';
+
+  @override
+  String get pricingOnRequestHelp =>
+      'Prijs op aanvraag (prijs per offerte ingeven)';
+
+  @override
+  String get pricingOnRequest => 'prijs op aanvraag';
 
   @override
   String get priority => 'Prioriteit';
@@ -9025,8 +9031,8 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String changeProductIndicativeNote(String product) {
-    return '$product heeft een indicatieve prijs: bevestig de prijs voor het verzenden.';
+  String changeProductOnRequestNote(String product) {
+    return '$product heeft een prijs op aanvraag: geef de prijs in voor het verzenden.';
   }
 
   @override

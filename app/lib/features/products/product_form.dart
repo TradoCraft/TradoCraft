@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/api.dart';
+import '../../shared/decimal_field.dart';
 import '../../shared/format.dart';
 import 'families_dialog.dart';
 import 'packaging_dialog.dart';
@@ -44,15 +45,23 @@ class _ProductFormState extends ConsumerState<ProductForm> {
   );
   late String _type = p?.productType ?? 'purchased';
   late String _tracking = p?.tracking ?? 'none';
-  late final _cost = TextEditingController(text: number(p?.standardCost));
-  late final _reorderMin = TextEditingController(text: number(p?.reorderMin));
-  late final _reorderMax = TextEditingController(text: number(p?.reorderMax));
+  late final _cost = DecimalInputController(
+    text: editableDecimal(p?.standardCost),
+  );
+  late final _reorderMin = DecimalInputController(
+    text: editableDecimal(p?.reorderMin),
+  );
+  late final _reorderMax = DecimalInputController(
+    text: editableDecimal(p?.reorderMax),
+  );
   late final _leadTime = TextEditingController(
     text: p?.leadTimeDays?.toString() ?? '',
   );
   late final _barcode = TextEditingController(text: p?.barcode);
   late String? _familyId = p?.familyId;
-  late String _pricing = p?.pricingType ?? 'list';
+  late bool _nonDiscountable = p?.nonDiscountable ?? false;
+  late bool _priceOnRequest = p?.priceOnRequest ?? false;
+  late bool _priceIsIndicative = p?.priceIsIndicative ?? false;
   late bool _active = p?.active ?? true;
   late String? _packagingId = p?.packagingCategoryId;
   late final _length = TextEditingController(text: p?.lengthMm?.toString());
@@ -90,15 +99,9 @@ class _ProductFormState extends ConsumerState<ProductForm> {
       setState(() => _error = context.l10n.codeNameVatRequired);
       return;
     }
-    final cost = _cost.text.trim().isEmpty
-        ? null
-        : parseDecimalInput(_cost.text);
-    final min = _reorderMin.text.trim().isEmpty
-        ? null
-        : parseDecimalInput(_reorderMin.text);
-    final max = _reorderMax.text.trim().isEmpty
-        ? null
-        : parseDecimalInput(_reorderMax.text);
+    final cost = _cost.decimal;
+    final min = _reorderMin.decimal;
+    final max = _reorderMax.decimal;
     final lead = _leadTime.text.trim().isEmpty
         ? null
         : int.tryParse(_leadTime.text.trim());
@@ -128,7 +131,9 @@ class _ProductFormState extends ConsumerState<ProductForm> {
       vatRate: overrideRate,
       tracking: _type == 'service' ? 'none' : _tracking,
       familyId: _familyId,
-      pricingType: _pricing,
+      nonDiscountable: _nonDiscountable,
+      priceOnRequest: _priceOnRequest,
+      priceIsIndicative: _priceIsIndicative,
       active: _active,
       standardCost: cost,
       reorderMin: min,
@@ -336,32 +341,42 @@ class _ProductFormState extends ConsumerState<ProductForm> {
                     onChanged: (v) => setState(() => _familyId = v),
                   ),
                 ),
-                gap,
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    initialValue: _pricing,
-                    isExpanded: true,
-                    decoration: InputDecoration(
-                      labelText: context.l10n.pricing,
-                    ),
-                    items: [
-                      DropdownMenuItem(
-                        value: 'list',
-                        child: Text(context.l10n.pricingListHelp),
-                      ),
-                      DropdownMenuItem(
-                        value: 'net',
-                        child: Text(context.l10n.pricingNetHelp),
-                      ),
-                      DropdownMenuItem(
-                        value: 'indicative',
-                        child: Text(context.l10n.pricingIndicativeHelp),
-                      ),
-                    ],
-                    onChanged: (v) => setState(() => _pricing = v!),
-                  ),
-                ),
               ],
+            ),
+            gap,
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: Text(
+                context.l10n.pricing,
+                style: Theme.of(context).textTheme.labelLarge,
+              ),
+            ),
+            CheckboxListTile(
+              key: const ValueKey('pricing-non-discountable'),
+              contentPadding: EdgeInsets.zero,
+              dense: true,
+              controlAffinity: ListTileControlAffinity.leading,
+              title: Text(context.l10n.pricingNetHelp),
+              value: _nonDiscountable,
+              onChanged: (v) => setState(() => _nonDiscountable = v ?? false),
+            ),
+            CheckboxListTile(
+              key: const ValueKey('pricing-on-request'),
+              contentPadding: EdgeInsets.zero,
+              dense: true,
+              controlAffinity: ListTileControlAffinity.leading,
+              title: Text(context.l10n.pricingOnRequestHelp),
+              value: _priceOnRequest,
+              onChanged: (v) => setState(() => _priceOnRequest = v ?? false),
+            ),
+            CheckboxListTile(
+              key: const ValueKey('pricing-indicative'),
+              contentPadding: EdgeInsets.zero,
+              dense: true,
+              controlAffinity: ListTileControlAffinity.leading,
+              title: Text(context.l10n.pricingIndicativeHelp),
+              value: _priceIsIndicative,
+              onChanged: (v) => setState(() => _priceIsIndicative = v ?? false),
             ),
             DropdownButtonFormField<String>(
               initialValue: _tracking,
@@ -386,7 +401,7 @@ class _ProductFormState extends ConsumerState<ProductForm> {
             Row(
               children: [
                 Expanded(
-                  child: TextField(
+                  child: DecimalField(
                     controller: _reorderMin,
                     decoration: InputDecoration(
                       labelText: context.l10n.stockReorderMin,
@@ -395,7 +410,7 @@ class _ProductFormState extends ConsumerState<ProductForm> {
                 ),
                 gap,
                 Expanded(
-                  child: TextField(
+                  child: DecimalField(
                     controller: _reorderMax,
                     decoration: InputDecoration(
                       labelText: context.l10n.stockReorderMax,
@@ -433,7 +448,7 @@ class _ProductFormState extends ConsumerState<ProductForm> {
                     false) ...[
                   gap,
                   Expanded(
-                    child: TextField(
+                    child: DecimalField(
                       controller: _cost,
                       decoration: InputDecoration(
                         labelText: context.l10n.stockStandardCost,

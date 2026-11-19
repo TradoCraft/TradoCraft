@@ -9,10 +9,10 @@ use sqlx::PgPool;
 
 const ALPHA: &str = "00000000-0000-7000-8000-000000000401"; // zone Z2, general rebate 5 %
 const UNIT_100: &str = "00000000-0000-7000-8000-000000000301"; // Z2 3880.00
-const UNIT_200: &str = "00000000-0000-7000-8000-000000000302"; // indicative, Z2 5760.00
+const UNIT_200: &str = "00000000-0000-7000-8000-000000000302"; // price on request (its Z2 price 5760.00 is never used)
 const PUMP: &str = "00000000-0000-7000-8000-000000000303"; // family PUMPS, Z2 512.00
 const HOSE: &str = "00000000-0000-7000-8000-000000000304"; // Z2 9.92
-const INSTALL: &str = "00000000-0000-7000-8000-000000000305"; // net, Z2 62.40
+const INSTALL: &str = "00000000-0000-7000-8000-000000000305"; // non-discountable, Z2 62.40
 const CTRL: &str = "00000000-0000-7000-8000-000000000310"; // Z2 712.00
 const PUMPS: &str = "00000000-0000-7000-8000-000000000802";
 const ZONE_Z2: &str = "00000000-0000-7000-8000-000000000202";
@@ -66,7 +66,7 @@ async fn most_specific_rebate_applies_and_net_prices_are_never_discounted(db: Pg
         expected.map(|(a, b, c)| (a.to_string(), b.to_string(), c.to_string()))
     );
 
-    // Net prices accept no manual discount either.
+    // Non-discountable products accept no manual discount either.
     let body = json!({ "customer_id": ALPHA, "lines": [
         { "product_id": INSTALL, "quantity": "1", "line_discount_percent": "10" }
     ]});
@@ -79,9 +79,12 @@ async fn most_specific_rebate_applies_and_net_prices_are_never_discounted(db: Pg
     )
     .await;
     assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
-    assert!(e["message"].as_str().unwrap().contains("net price"), "{e}");
+    assert!(
+        e["message"].as_str().unwrap().contains("not discountable"),
+        "{e}"
+    );
 
-    // Only indicative prices can be set by hand.
+    // Only price-on-request prices can be entered by hand.
     let body = json!({ "customer_id": ALPHA, "lines": [
         { "product_id": UNIT_100, "quantity": "1", "unit_price": "1" }
     ]});
@@ -97,7 +100,7 @@ async fn most_specific_rebate_applies_and_net_prices_are_never_discounted(db: Pg
 }
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
-async fn indicative_prices_must_be_confirmed_before_sending(db: PgPool) {
+async fn price_on_request_lines_need_a_price_before_sending(db: PgPool) {
     let app = setup(db).await;
     let (status, q) = call(
         &app,
@@ -109,10 +112,11 @@ async fn indicative_prices_must_be_confirmed_before_sending(db: PgPool) {
     .await;
     assert_eq!(status, StatusCode::CREATED, "{q}");
     assert_eq!(q["lines"][0]["price_confirmed"], false);
+    assert_eq!(q["lines"][0]["price_on_request"], true);
     assert_eq!(
         d(&q["lines"][0]["list_unit_price"]),
-        "5760",
-        "suggested price from the price list"
+        "0",
+        "the zone price of a price-on-request product is never used"
     );
     let id = q["id"].as_str().unwrap();
 
@@ -143,7 +147,7 @@ async fn indicative_prices_must_be_confirmed_before_sending(db: PgPool) {
     assert_eq!(
         d(&q["lines"][0]["line_total"]),
         "5700",
-        "rebates still apply to a confirmed price"
+        "rebates still apply to an entered price"
     );
 
     let (status, _) = call(
@@ -155,6 +159,96 @@ async fn indicative_prices_must_be_confirmed_before_sending(db: PgPool) {
     )
     .await;
     assert_eq!(status, StatusCode::OK);
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn the_three_price_flags_combine(db: PgPool) {
+    let app = setup(db.clone()).await;
+    // The hose: price on request and never discounted, and without any zone price at all. The
+    // pump: an indicative list price, which is only a marker.
+    sqlx::query(
+        "UPDATE products.products SET price_on_request = true, non_discountable = true WHERE id = $1",
+    )
+    .bind(uuid::Uuid::parse_str(HOSE).unwrap())
+    .execute(&db)
+    .await
+    .unwrap();
+    sqlx::query("DELETE FROM pricing.zone_prices WHERE product_id = $1")
+        .bind(uuid::Uuid::parse_str(HOSE).unwrap())
+        .execute(&db)
+        .await
+        .unwrap();
+    sqlx::query("UPDATE products.products SET price_is_indicative = true WHERE id = $1")
+        .bind(uuid::Uuid::parse_str(PUMP).unwrap())
+        .execute(&db)
+        .await
+        .unwrap();
+    let preview = |lines: Value| {
+        let app = app.clone();
+        async move {
+            call(
+                &app,
+                SALES,
+                Method::POST,
+                "/api/v1/pricing/preview",
+                Some(json!({ "customer_id": ALPHA, "lines": lines })),
+            )
+            .await
+        }
+    };
+
+    let (status, p) = preview(json!([line(HOSE, "10"), line(PUMP, "1")])).await;
+    assert_eq!(status, StatusCode::OK, "{p}");
+    let hose = &p["lines"][0];
+    assert_eq!(hose["price_on_request"], true);
+    assert_eq!(hose["non_discountable"], true);
+    assert_eq!(hose["price_confirmed"], false);
+    assert_eq!(d(&hose["list_unit_price"]), "0");
+    assert_eq!(hose["rebate_source"], "net");
+    let pump = &p["lines"][1];
+    assert_eq!(pump["price_is_indicative"], true);
+    assert_eq!(
+        pump["price_confirmed"], true,
+        "an indicative price needs no input"
+    );
+    assert_eq!(d(&pump["list_unit_price"]), "512");
+    assert_eq!(
+        d(&pump["rebate_percent"]),
+        "12",
+        "rebates apply to indicative prices"
+    );
+    assert_eq!(p["unconfirmed_lines"], 1);
+
+    // The entered price is not discounted: no rebate, and no line discount either.
+    let (status, p) = preview(json!([
+        { "product_id": HOSE, "quantity": "10", "unit_price": "11.5" }
+    ]))
+    .await;
+    assert_eq!(status, StatusCode::OK, "{p}");
+    assert_eq!(p["lines"][0]["price_confirmed"], true);
+    assert_eq!(d(&p["lines"][0]["line_total"]), "115");
+    assert_eq!(p["unconfirmed_lines"], 0);
+    let (status, e) = preview(json!([
+        { "product_id": HOSE, "quantity": "1", "unit_price": "11.5", "line_discount_percent": "5" }
+    ]))
+    .await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert!(
+        e["message"].as_str().unwrap().contains("not discountable"),
+        "{e}"
+    );
+    let (status, _) = preview(json!([
+        { "product_id": HOSE, "quantity": "1", "unit_price": "-1" }
+    ]))
+    .await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+
+    // An indicative price is the list price: it cannot be overridden on the line.
+    let (status, _) = preview(json!([
+        { "product_id": PUMP, "quantity": "1", "unit_price": "400" }
+    ]))
+    .await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
 }
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
@@ -454,12 +548,14 @@ async fn products_belong_to_families(db: PgPool) {
         ADMIN,
         Method::POST,
         "/api/v1/products",
-        Some(json!({ "code": "VALVE-1", "name": "Valve", "vat_rate": "21", "family_id": f["id"], "pricing_type": "net" })),
+        Some(json!({ "code": "VALVE-1", "name": "Valve", "vat_rate": "21", "family_id": f["id"], "non_discountable": true, "price_is_indicative": true })),
     )
     .await;
     assert_eq!(status, StatusCode::CREATED, "{p}");
     assert_eq!(p["family_code"], "VALVES");
-    assert_eq!(p["pricing_type"], "net");
+    assert_eq!(p["non_discountable"], true);
+    assert_eq!(p["price_on_request"], false);
+    assert_eq!(p["price_is_indicative"], true);
     let (_, page) = call(
         &app,
         SALES,
@@ -469,4 +565,148 @@ async fn products_belong_to_families(db: PgPool) {
     )
     .await;
     assert_eq!(page["total"], 1);
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn planned_prices_can_be_corrected_or_replaced_but_prices_in_effect_cannot(db: PgPool) {
+    let app = setup(db).await;
+    let today = tradocraft_core::today();
+    let from = (today + chrono::Duration::days(30)).to_string();
+    let later = (today + chrono::Duration::days(40)).to_string();
+
+    // A planned price with a typo.
+    let (status, wrong) = call(
+        &app,
+        ADMIN,
+        Method::POST,
+        &format!("/api/v1/products/{PUMP}/prices"),
+        Some(json!({ "zone_id": ZONE_Z2, "unit_price": "5320", "valid_from": from })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{wrong}");
+    let wrong_id = wrong["id"].as_str().unwrap();
+
+    // Sales cannot correct it; a price manager can, also its date.
+    let fix = json!({ "unit_price": "532", "valid_from": later });
+    let url = format!("/api/v1/products/{PUMP}/prices/{wrong_id}");
+    let (status, _) = call(&app, SALES, Method::PUT, &url, Some(fix.clone())).await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
+    let (status, fixed) = call(&app, ADMIN, Method::PUT, &url, Some(fix)).await;
+    assert_eq!(status, StatusCode::OK, "{fixed}");
+    assert_eq!(d(&fixed["unit_price"]), "532");
+    assert_eq!(fixed["valid_from"], later.as_str());
+    // ...but not to today or into the past.
+    let (status, _) = call(
+        &app,
+        ADMIN,
+        Method::PUT,
+        &url,
+        Some(json!({ "unit_price": "532", "valid_from": today.to_string() })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+
+    // The price in effect (512 since the seed) is history: no correction, no delete.
+    let (_, prices) = call(
+        &app,
+        ADMIN,
+        Method::GET,
+        &format!("/api/v1/products/{PUMP}/prices"),
+        None,
+    )
+    .await;
+    let current = prices
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|p| p["zone_code"] == "Z2" && p["id"] != wrong_id)
+        .unwrap();
+    let current_url = format!(
+        "/api/v1/products/{PUMP}/prices/{}",
+        current["id"].as_str().unwrap()
+    );
+    let (status, _) = call(
+        &app,
+        ADMIN,
+        Method::PUT,
+        &current_url,
+        Some(json!({ "unit_price": "1", "valid_from": later })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CONFLICT);
+    let (status, _) = call(&app, ADMIN, Method::DELETE, &current_url, None).await;
+    assert_eq!(status, StatusCode::CONFLICT);
+
+    // A bulk change onto the planned date is refused, unless the planned prices are replaced;
+    // the change is then computed from the price before them.
+    let body = |replace: bool| {
+        json!({ "product_ids": [PUMP], "zone_ids": [ZONE_Z2], "kind": "percent", "value": "10",
+                "valid_from": later, "replace_planned": replace })
+    };
+    let (status, _) = call(
+        &app,
+        ADMIN,
+        Method::POST,
+        "/api/v1/prices/bulk/apply",
+        Some(body(false)),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CONFLICT);
+    let (status, a) = call(
+        &app,
+        ADMIN,
+        Method::POST,
+        "/api/v1/prices/bulk/apply",
+        Some(body(true)),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{a}");
+    assert_eq!(a["applied"], 1);
+    assert_eq!(a["conflicts"], 0);
+    let l = &a["lines"][0];
+    assert_eq!(d(&l["current_price"]), "512");
+    assert_eq!(d(&l["replaced_price"]), "532");
+    assert_eq!(d(&l["new_price"]), "563.2");
+    let (_, prices) = call(
+        &app,
+        ADMIN,
+        Method::GET,
+        &format!("/api/v1/products/{PUMP}/prices"),
+        None,
+    )
+    .await;
+    let planned: Vec<&Value> = prices
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|p| p["valid_from"] == later.as_str())
+        .collect();
+    assert_eq!(planned.len(), 1);
+    assert_eq!(d(&planned[0]["unit_price"]), "563.2");
+
+    // Replacing is only for planned dates: not for today.
+    let (status, _) = call(
+        &app,
+        ADMIN,
+        Method::POST,
+        "/api/v1/prices/bulk/preview",
+        Some(
+            json!({ "product_ids": [PUMP], "kind": "percent", "value": "1",
+                     "valid_from": today.to_string(), "replace_planned": true }),
+        ),
+    )
+    .await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+
+    // A planned price can be deleted.
+    let id = planned[0]["id"].as_str().unwrap();
+    let (status, _) = call(
+        &app,
+        ADMIN,
+        Method::DELETE,
+        &format!("/api/v1/products/{PUMP}/prices/{id}"),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
 }

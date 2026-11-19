@@ -33,7 +33,9 @@ const _product = {
   'unit': 'pcs',
   'product_type': 'purchased',
   'tracking': 'none',
-  'pricing_type': 'list',
+  'non_discountable': false,
+  'price_on_request': false,
+  'price_is_indicative': false,
   'vat_rate': '21',
   'active': true,
 };

@@ -167,12 +167,17 @@ extension CodeLabels on AppLocalizations {
     _ => s,
   };
 
-  String pricingType(String s) => switch (s) {
-    'list' => pricingList,
-    'net' => pricingNet,
-    'indicative' => pricingIndicative,
-    _ => s,
-  };
+  /// The pricing flags of a product as a short text, e.g. "net, price on request"; empty for a
+  /// plain list price.
+  String pricingFlags({
+    required bool nonDiscountable,
+    required bool priceOnRequest,
+    required bool priceIsIndicative,
+  }) => [
+    if (nonDiscountable) pricingNet,
+    if (priceOnRequest) pricingOnRequest,
+    if (priceIsIndicative) pricingIndicative,
+  ].join(', ');
 
   String rebateSource(String s) => switch (s) {
     'product' => rebateSourceProduct,

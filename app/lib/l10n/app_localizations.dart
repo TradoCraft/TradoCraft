@@ -2078,17 +2078,17 @@ abstract class AppLocalizations {
   /// **'No longer active (left the company)'**
   String get inactiveContact;
 
-  /// No description provided for @indicativeLine.
+  /// No description provided for @priceOnRequestLine.
   ///
   /// In en, this message translates to:
-  /// **'{description} (indicative, to confirm)'**
-  String indicativeLine(String description);
+  /// **'{description} (price on request, to enter)'**
+  String priceOnRequestLine(String description);
 
-  /// No description provided for @indicativeToConfirm.
+  /// No description provided for @priceOnRequestToEnter.
   ///
   /// In en, this message translates to:
-  /// **'{count} indicative price(s) to confirm before the quotation can be sent: enter the agreed price in the list price field.'**
-  String indicativeToConfirm(int count);
+  /// **'{count} price-on-request line(s) without a price: enter the agreed price in the list price field before the quotation can be sent.'**
+  String priceOnRequestToEnter(int count);
 
   /// No description provided for @insertPreparedAnswer.
   ///
@@ -2563,6 +2563,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'New opportunity'**
   String get newOpportunity;
+
+  /// No description provided for @correctPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Correct planned price'**
+  String get correctPrice;
 
   /// No description provided for @newPrice.
   ///
@@ -3431,20 +3437,8 @@ abstract class AppLocalizations {
   /// No description provided for @pricingIndicativeHelp.
   ///
   /// In en, this message translates to:
-  /// **'Indicative (confirm per quote)'**
+  /// **'Indicative price (printed as indicative; rebates apply)'**
   String get pricingIndicativeHelp;
-
-  /// No description provided for @pricingList.
-  ///
-  /// In en, this message translates to:
-  /// **'list price'**
-  String get pricingList;
-
-  /// No description provided for @pricingListHelp.
-  ///
-  /// In en, this message translates to:
-  /// **'List price (rebates apply)'**
-  String get pricingListHelp;
 
   /// No description provided for @pricingNet.
   ///
@@ -3455,8 +3449,20 @@ abstract class AppLocalizations {
   /// No description provided for @pricingNetHelp.
   ///
   /// In en, this message translates to:
-  /// **'Net price (never discounted)'**
+  /// **'Not discountable (no rebate, no line discount)'**
   String get pricingNetHelp;
+
+  /// No description provided for @pricingOnRequestHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Price on request (enter the price on each quotation)'**
+  String get pricingOnRequestHelp;
+
+  /// No description provided for @pricingOnRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'price on request'**
+  String get pricingOnRequest;
 
   /// No description provided for @priority.
   ///
@@ -16050,11 +16056,11 @@ abstract class AppLocalizations {
   /// **'{product} has a net price: the line discount was cleared.'**
   String changeProductNetNote(String product);
 
-  /// No description provided for @changeProductIndicativeNote.
+  /// No description provided for @changeProductOnRequestNote.
   ///
   /// In en, this message translates to:
-  /// **'{product} has an indicative price: confirm the price before sending.'**
-  String changeProductIndicativeNote(String product);
+  /// **'{product} is priced on request: enter the price before sending.'**
+  String changeProductOnRequestNote(String product);
 
   /// No description provided for @optionsNotApplicable.
   ///

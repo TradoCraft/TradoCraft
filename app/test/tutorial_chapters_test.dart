@@ -28,7 +28,7 @@ Map<String, Object?> _product(String id, String code, String type) => {
   'product_type': type,
   'vat_rate': '21',
   'tracking': 'none',
-  'pricing_type': 'list',
+  ...pricingFlags('list'),
   'active': true,
 };
 

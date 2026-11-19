@@ -3,7 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import '../../app/api.dart';
 import '../../l10n/l10n.dart';
 import '../../shared/app_icons.dart';
-import '../../shared/format.dart';
+import '../../shared/decimal_field.dart';
 
 /// Supplier invoice statuses in lifecycle order, used by the filter chips.
 const invoiceStatuses = ['draft', 'matched', 'disputed', 'approved', 'paid'];
@@ -110,9 +110,13 @@ class InvLineDraft {
     String unitPrice = '',
     String vatRate = '',
   }) : desc = TextEditingController(text: description),
-       qty = TextEditingController(text: quantity),
-       price = TextEditingController(text: unitPrice),
-       vat = TextEditingController(text: vatRate);
+       qty = DecimalInputController(text: quantity),
+       price = DecimalInputController(text: unitPrice),
+       vat = DecimalInputController(
+         text: vatRate,
+         scale: 2,
+         percentagePoints: true,
+       );
 
   /// Starts from a stored [line].
   factory InvLineDraft.fromLine(InvoiceLine line) => InvLineDraft(
@@ -134,13 +138,13 @@ class InvLineDraft {
   final TextEditingController desc;
 
   /// Quantity field.
-  final TextEditingController qty;
+  final DecimalInputController qty;
 
   /// Unit price field.
-  final TextEditingController price;
+  final DecimalInputController price;
 
   /// VAT rate field (percent).
-  final TextEditingController vat;
+  final DecimalInputController vat;
 
   /// Releases the controllers.
   void dispose() {
@@ -168,17 +172,17 @@ int _scale(String v) => v.contains('.') ? v.split('.').last.length : 0;
     if (d.poLineId == null && description.isEmpty) {
       return (null, l.finLineDescriptionRequired);
     }
-    final q = parseDecimalInput(d.qty.text);
+    final q = d.qty.decimal;
     if (q == null || double.parse(q) <= 0 || _scale(q) > 4) {
       return (null, l.purchLineQtyInvalid);
     }
-    final p = parseDecimalInput(d.price.text);
+    final p = d.price.decimal;
     if (p == null || double.parse(p) < 0 || _scale(p) > 4) {
       return (null, l.purchLinePriceInvalid);
     }
     String? v;
     if (d.vat.text.trim().isNotEmpty) {
-      v = parseDecimalInput(d.vat.text);
+      v = d.vat.decimal;
       if (v == null ||
           double.parse(v) < 0 ||
           double.parse(v) > 100 ||
@@ -240,8 +244,8 @@ class InvoiceLinesEditor extends StatelessWidget {
                 ),
                 SizedBox(
                   width: 100,
-                  child: TextField(
-                    key: ValueKey('inv-line-qty-$i'),
+                  child: DecimalField(
+                    fieldKey: ValueKey('inv-line-qty-$i'),
                     controller: lines[i].qty,
                     decoration: InputDecoration(labelText: l.quantity),
                     onChanged: (_) => onChanged(),
@@ -249,8 +253,8 @@ class InvoiceLinesEditor extends StatelessWidget {
                 ),
                 SizedBox(
                   width: 110,
-                  child: TextField(
-                    key: ValueKey('inv-line-price-$i'),
+                  child: DecimalField(
+                    fieldKey: ValueKey('inv-line-price-$i'),
                     controller: lines[i].price,
                     decoration: InputDecoration(labelText: l.unitPrice),
                     onChanged: (_) => onChanged(),
@@ -258,8 +262,8 @@ class InvoiceLinesEditor extends StatelessWidget {
                 ),
                 SizedBox(
                   width: 90,
-                  child: TextField(
-                    key: ValueKey('inv-line-vat-$i'),
+                  child: DecimalField(
+                    fieldKey: ValueKey('inv-line-vat-$i'),
                     controller: lines[i].vat,
                     decoration: InputDecoration(labelText: l.vatPercent),
                     onChanged: (_) => onChanged(),

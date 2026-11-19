@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/api.dart';
 import '../../l10n/l10n.dart';
+import '../../shared/decimal_field.dart';
 import '../../shared/format.dart';
 import '../../shared/search_picker.dart';
 import '../tutorial/targets.dart';
@@ -34,14 +35,14 @@ class _PriceDialogState extends ConsumerState<_PriceDialog> {
   late final _name = TextEditingController(
     text: widget.existing?.supplierProductName ?? '',
   );
-  late final _price = TextEditingController(
-    text: widget.existing == null ? '' : number(widget.existing!.unitPrice),
+  late final _price = DecimalInputController(
+    text: editableDecimal(widget.existing?.unitPrice),
   );
   late final _currency = TextEditingController(
     text: widget.existing?.currency ?? widget.supplier.currency,
   );
-  late final _moq = TextEditingController(
-    text: widget.existing == null ? '1' : number(widget.existing!.moq),
+  late final _moq = DecimalInputController(
+    text: editableDecimal(widget.existing?.moq ?? '1'),
   );
   late final _lead = TextEditingController(
     text: '${widget.existing?.leadTimeDays ?? 0}',
@@ -63,8 +64,8 @@ class _PriceDialogState extends ConsumerState<_PriceDialog> {
   Future<void> _save() async {
     final l = context.l10n;
     final productId = widget.existing?.productId ?? _productId;
-    final price = parseDecimalInput(_price.text);
-    final moq = parseDecimalInput(_moq.text);
+    final price = _price.decimal;
+    final moq = _moq.decimal;
     final lead = int.tryParse(_lead.text.trim());
     final cur = _currency.text.trim();
     String? problem;
@@ -122,11 +123,17 @@ class _PriceDialogState extends ConsumerState<_PriceDialog> {
     double width = 200,
   }) => SizedBox(
     width: width,
-    child: TextField(
-      key: ValueKey('price-$key'),
-      controller: c,
-      decoration: InputDecoration(labelText: label),
-    ),
+    child: c is DecimalInputController
+        ? DecimalField(
+            fieldKey: ValueKey('price-$key'),
+            controller: c,
+            decoration: InputDecoration(labelText: label),
+          )
+        : TextField(
+            key: ValueKey('price-$key'),
+            controller: c,
+            decoration: InputDecoration(labelText: label),
+          ),
   );
 
   @override

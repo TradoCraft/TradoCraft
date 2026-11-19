@@ -230,37 +230,6 @@ pub fn percent_of_parent_price(
 // Rebates
 // ---------------------------------------------------------------------------------------------
 
-/// How a product is priced.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum PricingType {
-    /// List price; customer rebates apply.
-    List,
-    /// Fixed net price; never discounted.
-    Net,
-    /// The list price is a suggestion; the price must be confirmed per quotation.
-    Indicative,
-}
-
-impl PricingType {
-    pub fn parse(s: &str) -> Option<Self> {
-        match s {
-            "list" => Some(PricingType::List),
-            "net" => Some(PricingType::Net),
-            "indicative" => Some(PricingType::Indicative),
-            _ => None,
-        }
-    }
-
-    pub fn as_str(self) -> &'static str {
-        match self {
-            PricingType::List => "list",
-            PricingType::Net => "net",
-            PricingType::Indicative => "indicative",
-        }
-    }
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RebateScope {
     Product(Uuid),
@@ -305,17 +274,17 @@ impl RebateSource {
 }
 
 /// The rebate for a product: the most specific rule valid on `date` wins
-/// (product, then family, then the customer's general rebate). Net products get none.
+/// (product, then family, then the customer's general rebate). Non-discountable products get none.
 /// If several rules of the same scope are valid, the one that started last applies.
 pub fn resolve_rebate(
     rules: &[RebateRule],
     general_percent: Decimal,
     product_id: Uuid,
     family_id: Option<Uuid>,
-    pricing_type: PricingType,
+    non_discountable: bool,
     date: NaiveDate,
 ) -> (Decimal, RebateSource) {
-    if pricing_type == PricingType::Net {
+    if non_discountable {
         return (Decimal::ZERO, RebateSource::Net);
     }
     let best = |scope: RebateScope| {
@@ -622,26 +591,19 @@ mod tests {
         ];
         let date = d("2026-11-05");
         assert_eq!(
-            resolve_rebate(&rules, dec!(10), PUMP, Some(PUMPS), PricingType::List, date),
+            resolve_rebate(&rules, dec!(10), PUMP, Some(PUMPS), false, date),
             (dec!(20), RebateSource::Product)
         );
         // Another pump: the family rule applies.
         let other = Uuid::from_u128(11);
         assert_eq!(
-            resolve_rebate(
-                &rules,
-                dec!(10),
-                other,
-                Some(PUMPS),
-                PricingType::List,
-                date
-            ),
+            resolve_rebate(&rules, dec!(10), other, Some(PUMPS), false, date),
             (dec!(15), RebateSource::Family)
         );
         // A more specific rule wins even when it is lower.
         let low = vec![rule(RebateScope::Product(PUMP), dec!(2), None, None)];
         assert_eq!(
-            resolve_rebate(&low, dec!(10), PUMP, Some(PUMPS), PricingType::List, date),
+            resolve_rebate(&low, dec!(10), PUMP, Some(PUMPS), false, date),
             (dec!(2), RebateSource::Product)
         );
         // Other family: general rebate.
@@ -651,7 +613,7 @@ mod tests {
                 dec!(10),
                 Uuid::from_u128(12),
                 Some(UNITS),
-                PricingType::List,
+                false,
                 date
             ),
             (dec!(10), RebateSource::General)
@@ -662,29 +624,15 @@ mod tests {
     fn net_products_never_get_a_rebate() {
         let rules = vec![rule(RebateScope::Product(PUMP), dec!(20), None, None)];
         assert_eq!(
-            resolve_rebate(
-                &rules,
-                dec!(10),
-                PUMP,
-                Some(PUMPS),
-                PricingType::Net,
-                d("2026-11-05")
-            ),
+            resolve_rebate(&rules, dec!(10), PUMP, Some(PUMPS), true, d("2026-11-05")),
             (dec!(0), RebateSource::Net)
         );
     }
 
     #[test]
-    fn indicative_products_get_rebates_like_list_products() {
+    fn price_on_request_and_indicative_products_get_rebates_like_list_products() {
         assert_eq!(
-            resolve_rebate(
-                &[],
-                dec!(7.5),
-                PUMP,
-                None,
-                PricingType::Indicative,
-                d("2026-11-05")
-            ),
+            resolve_rebate(&[], dec!(7.5), PUMP, None, false, d("2026-11-05")),
             (dec!(7.5), RebateSource::General)
         );
     }
@@ -705,16 +653,7 @@ mod tests {
                 None,
             ),
         ];
-        let at = |date| {
-            resolve_rebate(
-                &rules,
-                dec!(5),
-                PUMP,
-                Some(PUMPS),
-                PricingType::List,
-                d(date),
-            )
-        };
+        let at = |date| resolve_rebate(&rules, dec!(5), PUMP, Some(PUMPS), false, d(date));
         assert_eq!(at("2025-12-31"), (dec!(5), RebateSource::General));
         assert_eq!(at("2026-03-01"), (dec!(12), RebateSource::Family));
         assert_eq!(at("2026-06-30"), (dec!(12), RebateSource::Family));

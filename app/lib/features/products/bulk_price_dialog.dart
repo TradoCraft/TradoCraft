@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/api.dart';
+import '../../shared/decimal_field.dart';
 import '../../shared/format.dart';
 import 'families_dialog.dart';
 import '../../l10n/l10n.dart';
@@ -20,7 +21,10 @@ class _BulkPriceDialogState extends ConsumerState<BulkPriceDialog> {
   final Set<String> _zones = {};
   String? _familyId;
   ChangeKind _kind = ChangeKind.percent;
-  final _value = TextEditingController();
+  final _amount = DecimalInputController();
+  final _percent = DecimalInputController(percentagePoints: true);
+  DecimalInputController get _value =>
+      _kind == ChangeKind.percent ? _percent : _amount;
   String _rounding = '0.01';
   DateTime _from = DateTime.now().add(const Duration(days: 1));
   BulkPricePreview? _preview;
@@ -28,7 +32,7 @@ class _BulkPriceDialogState extends ConsumerState<BulkPriceDialog> {
   bool _busy = false;
 
   BulkPriceChangeInput? _input() {
-    final value = parseDecimalInput(_value.text);
+    final value = _value.decimal;
     if (value == null) {
       setState(() => _error = context.l10n.enterChange);
       return null;
@@ -79,6 +83,13 @@ class _BulkPriceDialogState extends ConsumerState<BulkPriceDialog> {
   }
 
   void _changed() => setState(() => _preview = null);
+
+  @override
+  void dispose() {
+    _amount.dispose();
+    _percent.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -152,14 +163,16 @@ class _BulkPriceDialogState extends ConsumerState<BulkPriceDialog> {
                     ],
                     selected: {_kind},
                     onSelectionChanged: (s) {
+                      final value = _value.decimal ?? _value.text;
                       _kind = s.first;
+                      _value.text = value;
                       _changed();
                     },
                   ),
                   const SizedBox(width: 12),
                   SizedBox(
                     width: 110,
-                    child: TextField(
+                    child: DecimalField(
                       controller: _value,
                       decoration: InputDecoration(
                         labelText: context.l10n.change,

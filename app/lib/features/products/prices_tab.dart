@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/api.dart';
+import '../../shared/decimal_field.dart';
 import '../../shared/format.dart';
 import '../../l10n/l10n.dart';
 import '../../shared/app_icons.dart';
@@ -13,7 +14,17 @@ final _pricesProvider = FutureProvider.autoDispose
           ref.watch(apiProvider).products.listProductPrices(id: productId),
     );
 
-/// Price history per zone. Prices are never edited: a new price starts on a date.
+/// Whether a price has not started yet: only such a price can be corrected or deleted. Prices
+/// that are or were in effect are history; a change is a new price from a date.
+bool isPlanned(ZonePriceEntry p, {DateTime? now}) {
+  final t = now ?? DateTime.now();
+  final today = DateTime(t.year, t.month, t.day);
+  final from = DateTime(p.validFrom.year, p.validFrom.month, p.validFrom.day);
+  return from.isAfter(today);
+}
+
+/// Price history per zone. Prices in effect are never edited: a new price starts on a date. A
+/// planned price (starting after today) can be corrected or deleted.
 class PricesTab extends ConsumerWidget {
   const PricesTab({super.key, required this.product});
   final Product product;
@@ -36,7 +47,7 @@ class PricesTab extends ConsumerWidget {
               onPressed: () async {
                 final added = await showDialog<bool>(
                   context: context,
-                  builder: (_) => _NewPrice(product: product),
+                  builder: (_) => _PriceDialog(product: product),
                 );
                 if (added == true) ref.invalidate(_pricesProvider(product.id));
               },
@@ -58,6 +69,7 @@ class PricesTab extends ConsumerWidget {
                       label: Text(context.l10n.unitPrice),
                       numeric: true,
                     ),
+                    if (canWrite) const DataColumn(label: SizedBox.shrink()),
                   ],
                   rows: [
                     for (final p in list)
@@ -66,6 +78,30 @@ class PricesTab extends ConsumerWidget {
                           DataCell(Text(p.zoneCode)),
                           DataCell(Text(date(p.validFrom))),
                           DataCell(Text(money(p.unitPrice))),
+                          if (canWrite)
+                            DataCell(
+                              isPlanned(p)
+                                  ? IconButton(
+                                      key: ValueKey('price-correct-${p.id}'),
+                                      tooltip: context.l10n.correctPrice,
+                                      icon: Icon(AppIcons.edit),
+                                      onPressed: () async {
+                                        final changed = await showDialog<bool>(
+                                          context: context,
+                                          builder: (_) => _PriceDialog(
+                                            product: product,
+                                            existing: p,
+                                          ),
+                                        );
+                                        if (changed == true) {
+                                          ref.invalidate(
+                                            _pricesProvider(product.id),
+                                          );
+                                        }
+                                      },
+                                    )
+                                  : const SizedBox.shrink(),
+                            ),
                         ],
                       ),
                   ],
@@ -76,38 +112,62 @@ class PricesTab extends ConsumerWidget {
   }
 }
 
-class _NewPrice extends ConsumerStatefulWidget {
-  const _NewPrice({required this.product});
+/// Adds a price, or corrects or deletes a planned one (`existing`).
+class _PriceDialog extends ConsumerStatefulWidget {
+  const _PriceDialog({required this.product, this.existing});
   final Product product;
+  final ZonePriceEntry? existing;
 
   @override
-  ConsumerState<_NewPrice> createState() => _NewPriceState();
+  ConsumerState<_PriceDialog> createState() => _PriceDialogState();
 }
 
-class _NewPriceState extends ConsumerState<_NewPrice> {
-  final _price = TextEditingController();
-  String? _zoneId;
-  DateTime _from = DateTime.now();
+class _PriceDialogState extends ConsumerState<_PriceDialog> {
+  late final _price = TextEditingController(
+    text: widget.existing == null ? '' : number(widget.existing!.unitPrice),
+  );
+  late String? _zoneId = widget.existing?.zoneId;
+  late DateTime _from = widget.existing?.validFrom ?? DateTime.now();
   String? _error;
 
-  Future<void> _save() async {
-    final price = parseDecimalInput(_price.text);
-    if (_zoneId == null || price == null) {
-      setState(() => _error = context.l10n.chooseZonePrice);
-      return;
-    }
+  Future<void> _delete() async {
+    final e = widget.existing!;
     try {
       await ref
           .read(apiProvider)
           .products
-          .addProductPrice(
-            id: widget.product.id,
-            body: ZonePriceInput(
-              zoneId: _zoneId!,
-              unitPrice: price,
-              validFrom: _from,
-            ),
-          );
+          .deleteProductPrice(id: widget.product.id, priceId: e.id);
+      if (mounted) Navigator.pop(context, true);
+    } catch (err) {
+      setState(() => _error = errorMessage(err));
+    }
+  }
+
+  Future<void> _save() async {
+    final price = _price.decimal;
+    if (_zoneId == null || price == null) {
+      setState(() => _error = context.l10n.chooseZonePrice);
+      return;
+    }
+    final existing = widget.existing;
+    try {
+      final products = ref.read(apiProvider).products;
+      if (existing == null) {
+        await products.addProductPrice(
+          id: widget.product.id,
+          body: ZonePriceInput(
+            zoneId: _zoneId!,
+            unitPrice: price,
+            validFrom: _from,
+          ),
+        );
+      } else {
+        await products.correctProductPrice(
+          id: widget.product.id,
+          priceId: existing.id,
+          body: ZonePriceCorrection(unitPrice: price, validFrom: _from),
+        );
+      }
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
       setState(() => _error = errorMessage(e));
@@ -118,7 +178,11 @@ class _NewPriceState extends ConsumerState<_NewPrice> {
   Widget build(BuildContext context) {
     final zones = ref.watch(priceZonesProvider).value ?? const [];
     return AlertDialog(
-      title: Text(context.l10n.newPrice),
+      title: Text(
+        widget.existing == null
+            ? context.l10n.newPrice
+            : context.l10n.correctPrice,
+      ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -132,10 +196,13 @@ class _NewPriceState extends ConsumerState<_NewPrice> {
                   child: Text('${z.code} – ${z.name}'),
                 ),
             ],
-            onChanged: (v) => setState(() => _zoneId = v),
+            // The zone of a planned price stays; only its price and date can be corrected.
+            onChanged: widget.existing != null
+                ? null
+                : (v) => setState(() => _zoneId = v),
           ),
           const SizedBox(height: 12),
-          TextField(
+          DecimalField(
             controller: _price,
             decoration: InputDecoration(
               labelText: context.l10n.unitPriceExclVat,
@@ -164,6 +231,12 @@ class _NewPriceState extends ConsumerState<_NewPrice> {
         ],
       ),
       actions: [
+        if (widget.existing != null)
+          TextButton(
+            key: const ValueKey('price-delete'),
+            onPressed: _delete,
+            child: Text(context.l10n.delete),
+          ),
         TextButton(
           onPressed: () => Navigator.pop(context),
           child: Text(context.l10n.cancel),

@@ -13,6 +13,8 @@ import 'package:tradocraft_app/features/quotations/quotation_screen.dart';
 import 'package:tradocraft_app/l10n/app_localizations.dart';
 import 'package:tradocraft_app/shared/search_picker.dart';
 
+import 'fake_http.dart';
+
 const _quotationId = 'q1';
 const _customerId = 'c1';
 const _productId = 'p1';
@@ -26,7 +28,7 @@ Map<String, Object?> _line(String qty, String total) => {
   'quantity': qty,
   'list_unit_price': '3880.0000',
   'line_discount_percent': '0',
-  'pricing_type': 'list',
+  ...pricingFlags('list'),
   'rebate_percent': '5',
   'rebate_source': 'general',
   'price_confirmed': true,
@@ -38,10 +40,10 @@ Map<String, Object?> _line(String qty, String total) => {
 };
 
 /// A configured quotation's option line: priced at 20 % of line 1, in its own section. Its
-/// product is indicative, but the price comes from the parent (confirmed with it).
+/// product is priced on request, but the price comes from the parent (confirmed with it).
 Map<String, Object?> _optionLine() => {
   ..._line('1', '737.20'),
-  'pricing_type': 'indicative',
+  ...pricingFlags('on_request'),
   'position': 2,
   'product_id': 'p2',
   'product_code': 'COAT-PROT',
@@ -261,7 +263,7 @@ class FakeApi implements HttpClientAdapter {
           'unit': 'pcs',
           'product_type': 'manufactured',
           'tracking': 'serial',
-          'pricing_type': 'list',
+          ...pricingFlags('list'),
           'vat_rate': '21',
           'active': true,
           'default_production_remark': 'Weld first',
@@ -286,7 +288,7 @@ class FakeApi implements HttpClientAdapter {
           'unit': 'pcs',
           'product_type': 'service',
           'tracking': 'none',
-          'pricing_type': 'indicative',
+          ...pricingFlags('on_request'),
           'vat_rate': '21',
           'active': true,
         };
@@ -807,6 +809,31 @@ void main() {
       contains('Extra disc.'),
     );
     handle.dispose();
+  });
+
+  testWidgets('line calculations preview, commit on blur and save once', (
+    tester,
+  ) async {
+    final fake = await _pump(tester, 'draft');
+    final quantity = find.widgetWithText(TextField, '1');
+    final discount = find.widgetWithText(TextField, '0');
+    const preview = 'POST /api/v1/pricing/preview';
+
+    await tester.enterText(quantity, '+= (2 * 3)');
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+    expect((fake.bodies[preview] as Map)['lines'][0]['quantity'], '7');
+
+    await tester.enterText(discount, '10%');
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(TextField, '7'), findsOneWidget);
+    await tester.enterText(find.widgetWithText(TextField, '7'), '*=2');
+    await tester.tap(find.text('Save draft'));
+    await tester.pumpAndSettle();
+
+    final saved = fake.bodies['PUT /api/v1/quotations/$_quotationId'] as Map;
+    expect(saved['lines'][0]['quantity'], '14');
+    expect(saved['lines'][0]['line_discount_percent'], '10');
   });
 
   testWidgets('remarks are loaded, edited and saved with the draft', (

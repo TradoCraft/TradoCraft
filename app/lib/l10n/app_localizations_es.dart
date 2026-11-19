@@ -1082,13 +1082,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get inactiveContact => 'Ya no está activo (se ha ido)';
 
   @override
-  String indicativeLine(String description) {
-    return '$description (orientativo, por confirmar)';
+  String priceOnRequestLine(String description) {
+    return '$description (precio bajo petición, por indicar)';
   }
 
   @override
-  String indicativeToConfirm(int count) {
-    return '$count precio(s) orientativo(s) por confirmar antes de enviar el presupuesto: indique el precio acordado en el campo precio de tarifa.';
+  String priceOnRequestToEnter(int count) {
+    return '$count línea(s) con precio bajo petición sin precio: indique el precio acordado en el campo precio de tarifa antes de enviar el presupuesto.';
   }
 
   @override
@@ -1346,6 +1346,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get newOpportunity => 'Nueva oportunidad';
+
+  @override
+  String get correctPrice => 'Corregir el precio previsto';
 
   @override
   String get newPrice => 'Nuevo precio';
@@ -1833,19 +1836,21 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get pricingIndicativeHelp =>
-      'Orientativo (confirmar en cada presupuesto)';
-
-  @override
-  String get pricingList => 'precio de tarifa';
-
-  @override
-  String get pricingListHelp => 'Precio de tarifa (se aplican descuentos)';
+      'Precio orientativo (se imprime como orientativo; se aplican descuentos)';
 
   @override
   String get pricingNet => 'neto';
 
   @override
-  String get pricingNetHelp => 'Precio neto (nunca con descuento)';
+  String get pricingNetHelp =>
+      'Sin descuento (ni descuento de cliente ni de línea)';
+
+  @override
+  String get pricingOnRequestHelp =>
+      'Precio bajo petición (indicar el precio en cada presupuesto)';
+
+  @override
+  String get pricingOnRequest => 'precio bajo petición';
 
   @override
   String get priority => 'Prioridad';
@@ -9032,8 +9037,8 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String changeProductIndicativeNote(String product) {
-    return '$product tiene precio indicativo: confirme el precio antes de enviar.';
+  String changeProductOnRequestNote(String product) {
+    return '$product tiene precio bajo petición: indique el precio antes de enviar.';
   }
 
   @override

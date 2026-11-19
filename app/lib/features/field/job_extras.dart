@@ -7,6 +7,7 @@ import '../../app/api.dart';
 import '../../l10n/l10n.dart';
 import '../../shared/actions.dart';
 import '../../shared/auth_image.dart';
+import '../../shared/decimal_field.dart';
 import '../../shared/format.dart';
 import '../../shared/photos.dart' show newClientId;
 import '../../shared/search_picker.dart';
@@ -295,7 +296,7 @@ class PartDialog extends ConsumerStatefulWidget {
 class _PartDialogState extends ConsumerState<PartDialog> {
   final _id = newClientId();
   final _description = TextEditingController();
-  final _quantity = TextEditingController(text: '1');
+  final _quantity = DecimalInputController(text: '1', scale: 3);
   final _unit = TextEditingController(text: 'pcs');
   Product? _product;
   bool _billable = true;
@@ -311,7 +312,7 @@ class _PartDialogState extends ConsumerState<PartDialog> {
   }
 
   Future<void> _save() async {
-    final quantity = parseDecimalInput(_quantity.text);
+    final quantity = _quantity.decimal;
     if (quantity == null || _description.text.trim().isEmpty) {
       setState(() => _error = context.l10n.partFreeTextHint);
       return;
@@ -396,11 +397,8 @@ class _PartDialogState extends ConsumerState<PartDialog> {
               Row(
                 children: [
                   Expanded(
-                    child: TextField(
+                    child: DecimalField(
                       controller: _quantity,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
                       decoration: InputDecoration(labelText: l.quantity),
                     ),
                   ),

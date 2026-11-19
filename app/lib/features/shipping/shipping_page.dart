@@ -6,6 +6,7 @@ import '../../app/api.dart';
 import '../../l10n/l10n.dart';
 import '../../shared/actions.dart';
 import '../../shared/entity_list.dart';
+import '../../shared/decimal_field.dart';
 import '../../shared/format.dart';
 
 /// The statuses the list can be filtered on (the default is the work queue: open and requested).
@@ -248,7 +249,7 @@ class _QuoteDialog extends StatefulWidget {
 }
 
 class _QuoteDialogState extends State<_QuoteDialog> {
-  final _amount = TextEditingController();
+  final _amount = DecimalInputController(scale: 2);
   late final _currency = TextEditingController(text: widget.request.currency);
   late final _carrier = TextEditingController(text: widget.request.carrier);
   late final _notes = TextEditingController(text: widget.request.notes);
@@ -276,12 +277,9 @@ class _QuoteDialogState extends State<_QuoteDialog> {
             Row(
               children: [
                 Expanded(
-                  child: TextField(
+                  child: DecimalField(
                     controller: _amount,
                     autofocus: true,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
                     decoration: InputDecoration(
                       labelText: l.amount,
                       errorText: _invalid ? l.amountRequired : null,
@@ -321,7 +319,7 @@ class _QuoteDialogState extends State<_QuoteDialog> {
         ),
         FilledButton(
           onPressed: () {
-            final amount = parseDecimalInput(_amount.text);
+            final amount = _amount.decimal;
             if (amount == null) {
               setState(() => _invalid = true);
               return;

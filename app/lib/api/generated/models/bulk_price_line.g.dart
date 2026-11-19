@@ -17,6 +17,7 @@ BulkPriceLine _$BulkPriceLineFromJson(Map<String, dynamic> json) =>
       productName: json['product_name'] as String,
       zoneCode: json['zone_code'] as String,
       zoneId: json['zone_id'] as String,
+      replacedPrice: json['replaced_price'] as String?,
     );
 
 Map<String, dynamic> _$BulkPriceLineToJson(BulkPriceLine instance) =>
@@ -28,6 +29,7 @@ Map<String, dynamic> _$BulkPriceLineToJson(BulkPriceLine instance) =>
       'product_code': instance.productCode,
       'product_id': instance.productId,
       'product_name': instance.productName,
+      'replaced_price': ?instance.replacedPrice,
       'zone_code': instance.zoneCode,
       'zone_id': instance.zoneId,
     };

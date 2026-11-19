@@ -19,8 +19,10 @@ class ProductInput {
     this.heightMm,
     this.leadTimeDays,
     this.lengthMm,
+    this.nonDiscountable,
     this.packagingCategoryId,
-    this.pricingType,
+    this.priceIsIndicative,
+    this.priceOnRequest,
     this.productType,
     this.reorderMax,
     this.reorderMin,
@@ -60,13 +62,21 @@ class ProductInput {
   final int? lengthMm;
   final String name;
 
+  /// Never discounted: no customer rebate and no manual line discount.
+  @JsonKey(includeIfNull: false,name: 'non_discountable')
+  final bool? nonDiscountable;
+
   /// Must be an active packaging category.
   @JsonKey(includeIfNull: false,name: 'packaging_category_id')
   final String? packagingCategoryId;
 
-  /// list | net | indicative
-  @JsonKey(includeIfNull: false,name: 'pricing_type')
-  final String? pricingType;
+  /// The list price applies but is printed as indicative.
+  @JsonKey(includeIfNull: false,name: 'price_is_indicative')
+  final bool? priceIsIndicative;
+
+  /// No list price: the price is entered on each quotation line, which cannot be sent before.
+  @JsonKey(includeIfNull: false,name: 'price_on_request')
+  final bool? priceOnRequest;
   @JsonKey(includeIfNull: false,name: 'product_type')
   final String? productType;
   @JsonKey(includeIfNull: false,name: 'reorder_max')

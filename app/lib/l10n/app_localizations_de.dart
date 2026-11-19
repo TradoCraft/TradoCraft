@@ -1085,13 +1085,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get inactiveContact => 'Nicht mehr aktiv (ausgeschieden)';
 
   @override
-  String indicativeLine(String description) {
-    return '$description (unverbindlich, zu bestätigen)';
+  String priceOnRequestLine(String description) {
+    return '$description (Preis auf Anfrage, einzugeben)';
   }
 
   @override
-  String indicativeToConfirm(int count) {
-    return '$count unverbindliche(r) Preis(e) vor dem Versand zu bestätigen: den vereinbarten Preis im Feld Listenpreis eingeben.';
+  String priceOnRequestToEnter(int count) {
+    return '$count Position(en) mit Preis auf Anfrage ohne Preis: den vereinbarten Preis im Feld Listenpreis eingeben, bevor das Angebot versendet werden kann.';
   }
 
   @override
@@ -1348,6 +1348,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get newOpportunity => 'Neue Verkaufschance';
+
+  @override
+  String get correctPrice => 'Geplanten Preis korrigieren';
 
   @override
   String get newPrice => 'Neuer Preis';
@@ -1837,19 +1840,22 @@ class AppLocalizationsDe extends AppLocalizations {
   String get pricingIndicative => 'unverbindlich';
 
   @override
-  String get pricingIndicativeHelp => 'Unverbindlich (je Angebot bestätigen)';
-
-  @override
-  String get pricingList => 'Listenpreis';
-
-  @override
-  String get pricingListHelp => 'Listenpreis (Rabatte gelten)';
+  String get pricingIndicativeHelp =>
+      'Richtpreis (als unverbindlich gedruckt; Rabatte gelten)';
 
   @override
   String get pricingNet => 'netto';
 
   @override
-  String get pricingNetHelp => 'Nettopreis (nie rabattiert)';
+  String get pricingNetHelp =>
+      'Nicht rabattierbar (kein Kundenrabatt, kein Positionsrabatt)';
+
+  @override
+  String get pricingOnRequestHelp =>
+      'Preis auf Anfrage (Preis in jedem Angebot eingeben)';
+
+  @override
+  String get pricingOnRequest => 'Preis auf Anfrage';
 
   @override
   String get priority => 'Priorität';
@@ -9048,8 +9054,8 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String changeProductIndicativeNote(String product) {
-    return '$product hat einen Richtpreis: Preis vor dem Versand bestätigen.';
+  String changeProductOnRequestNote(String product) {
+    return '$product hat Preis auf Anfrage: Preis vor dem Versand eingeben.';
   }
 
   @override

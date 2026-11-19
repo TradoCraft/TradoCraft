@@ -7,7 +7,7 @@ import 'package:tradocraft_app/l10n/app_localizations.dart';
 
 import 'fake_http.dart';
 
-/// id -> [code, pricing_type]
+/// id -> [code, pricing (see pricingFlags)]
 const _products = {
   'p1': ['BASE', 'list'],
   'p2': ['UNIT-2', 'list'],
@@ -18,7 +18,7 @@ const _products = {
   'pB': ['NEW-B', 'list'],
   'pC': ['NEW-C', 'list'],
   'pN': ['NET-1', 'net'],
-  'pI': ['IND-1', 'indicative'],
+  'pI': ['IND-1', 'on_request'],
 };
 
 /// Default production remark per product id (none unless a test sets one).
@@ -33,7 +33,7 @@ Map<String, Object?> _product(String id) => {
   'unit': 'pcs',
   'product_type': 'manufactured',
   'tracking': 'none',
-  'pricing_type': _products[id]![1],
+  ...pricingFlags(_products[id]![1]),
   'vat_rate': '21',
   'active': true,
 };
@@ -66,7 +66,7 @@ Map<String, Object?> _line(
   'quantity': qty,
   'list_unit_price': '100.0000',
   'line_discount_percent': discount,
-  'pricing_type': _products[id]![1],
+  ...pricingFlags(_products[id]![1]),
   'rebate_percent': '0',
   'rebate_source': 'general',
   'price_confirmed': true,
@@ -184,7 +184,7 @@ FakeHttp _http({
       final unconfirmed = sent
           .where(
             (l) =>
-                _products[l['product_id']]![1] == 'indicative' &&
+                _products[l['product_id']]![1] == 'on_request' &&
                 l['unit_price'] == null &&
                 l['percent_of_parent'] == null,
           )
@@ -330,7 +330,7 @@ void main() {
     );
   });
 
-  testWidgets('an indicative product needs its price confirmed', (
+  testWidgets('a price-on-request product needs its price entered', (
     tester,
   ) async {
     final http = _http();
@@ -339,12 +339,12 @@ void main() {
     expect(_preview(http)[0]['unit_price'], isNull);
     expect(
       find.text(
-        'IND-1 has an indicative price: confirm the price before sending.',
+        'IND-1 is priced on request: enter the price before sending.',
       ),
       findsOneWidget,
     );
     expect(
-      find.textContaining('indicative price(s) to confirm'),
+      find.textContaining('price-on-request line(s) without a price'),
       findsOneWidget,
     );
   });

@@ -1,7 +1,7 @@
 import 'package:decimal/decimal.dart';
 import 'package:intl/intl.dart';
 
-/// Display formatting only. All calculations happen on the server; amounts arrive as decimal strings.
+/// Groups the digits of a decimal string for display.
 
 String _grouped(String fixed) {
   final negative = fixed.startsWith('-');
@@ -36,6 +36,10 @@ String number(String? value) {
 }
 
 String date(DateTime? d) => d == null ? '' : DateFormat('dd/MM/yyyy').format(d);
+
+/// A stored decimal for editing, with a decimal comma and no grouping.
+String editableDecimal(String? value) =>
+    parseDecimalInput(value ?? '')?.replaceAll('.', ',') ?? '';
 
 /// Accepts `2,5` as well as `2.5`. Returns null if invalid.
 String? parseDecimalInput(String text) {
