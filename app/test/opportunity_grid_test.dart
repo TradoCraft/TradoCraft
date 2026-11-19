@@ -1,7 +1,9 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:tradocraft_app/app/api.dart';
+import 'package:tradocraft_app/features/opportunities/opportunities_page.dart';
 import 'package:tradocraft_app/features/opportunities/opportunity_form.dart';
 import 'package:tradocraft_app/features/opportunities/opportunity_screen.dart';
 import 'package:tradocraft_app/l10n/app_localizations.dart';
@@ -92,6 +94,50 @@ Widget _form(String? grid) => Scaffold(
 );
 
 void main() {
+  testWidgets('creating an opportunity opens its site baseline section', (
+    tester,
+  ) async {
+    final h = _http();
+    h.routes.addAll({
+      'GET /api/v1/opportunities/pipeline': (_) => [],
+      'GET /api/v1/opportunities': (_) => {'items': [], 'total': 0},
+      'GET /api/v1/customers': (_) => {
+        'items': [customerJson()],
+        'total': 1,
+      },
+      'POST /api/v1/opportunities': (_) => _opp(),
+    });
+    final router = GoRouter(
+      initialLocation: '/opportunities',
+      routes: [
+        GoRoute(
+          path: '/opportunities',
+          builder: (_, _) => const Scaffold(body: OpportunitiesPage()),
+        ),
+        GoRoute(
+          path: '/opportunities/:id',
+          builder: (_, state) =>
+              OpportunityScreen(id: state.pathParameters['id']!),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+    await _pump(tester, h, Router.withConfig(config: router));
+
+    await tester.tap(find.text('New opportunity'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.widgetWithText(TextField, 'Title'), 'Tower');
+    await tester.enterText(find.widgetWithText(TextField, 'Customer'), 'beta');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('C0002 · Bêta Industrie SA').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Site baseline'), findsOneWidget);
+    expect(find.text('Add item'), findsOneWidget);
+  });
+
   testWidgets('the screen shows the grid and the site baseline section', (
     tester,
   ) async {

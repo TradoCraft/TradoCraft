@@ -19,7 +19,7 @@ class ProductMatchPage {
   
   factory ProductMatchPage.fromJson(Map<String, Object?> json) => _$ProductMatchPageFromJson(json);
   
-  /// Products per status within the family filter, ignoring the status filter.
+  /// Products per status within the family and product ID filters, ignoring the status filter.
   final StatusCounts counts;
 
   /// The requested page of the products with the asked status: suitable first, then unknown,.

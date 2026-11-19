@@ -835,6 +835,52 @@ async fn a_2000mm_dial_excludes_a_product_limited_to_1250_and_everything_is_list
 }
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn matching_can_be_limited_to_quotation_search_candidates(db: PgPool) {
+    let app = seeded(&db).await;
+    let be3 = grid_id(&app, "BE", 400, 3).await;
+    set_grid(&app, OPP, &be3).await;
+    add_item(
+        &app,
+        OPP,
+        json!({ "type_code": "clock_dial", "values": { "dial_diameter_mm": 2000 } }),
+    )
+    .await;
+    dial_size(&app, BOLT, "600", "1250").await;
+    dial_size(&app, UNIT_100, "1500", "2500").await;
+
+    let query = format!("product_ids={BOLT},{UNIT_100},{BOLT},{OTHER_OPP}");
+    let m = matches(&app, OPP, &query).await;
+    assert_eq!(m["total"], 2, "{m}");
+    assert_eq!(m["items"].as_array().unwrap().len(), 2);
+    assert_eq!(
+        m["counts"],
+        json!({ "suitable": 1, "unsuitable": 1, "unknown": 0 })
+    );
+    assert_eq!(of(&m, UNIT_100)["status"], "suitable");
+    assert_eq!(of(&m, BOLT)["status"], "unsuitable");
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn invalid_candidate_lists_are_refused(db: PgPool) {
+    let app = seeded(&db).await;
+    for ids in [
+        String::new(),
+        "not-a-uuid".to_string(),
+        [BOLT; 21].join(","),
+    ] {
+        let (status, body) = api(
+            &app,
+            SALES,
+            Method::GET,
+            &format!("/opportunities/{OPP}/product-matches?product_ids={ids}"),
+            None,
+        )
+        .await;
+        assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{body}");
+    }
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
 async fn matching_can_be_limited_to_one_baseline_item_and_its_children(db: PgPool) {
     let app = seeded(&db).await;
     let be3 = grid_id(&app, "BE", 400, 3).await;

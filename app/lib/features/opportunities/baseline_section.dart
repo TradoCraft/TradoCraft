@@ -35,6 +35,38 @@ final _scopeDefsProvider = FutureProvider.autoDispose
       ];
     });
 
+/// Opens the saved site's baseline without leaving the current screen.
+Future<void> showSiteBaseline(
+  BuildContext context, {
+  required String opportunityId,
+}) {
+  // The opportunity may still be open underneath this screen.
+  ProviderScope.containerOf(
+    context,
+    listen: false,
+  ).invalidate(_baselineProvider(opportunityId));
+  return showDialog<void>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      semanticLabel: dialogContext.l10n.baselineTitle,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 24),
+      contentPadding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+      content: SizedBox(
+        width: 720,
+        child: SingleChildScrollView(
+          child: BaselineSection(opportunityId: opportunityId),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(dialogContext),
+          child: Text(dialogContext.l10n.close),
+        ),
+      ],
+    ),
+  );
+}
+
 /// The site baseline of an opportunity (ADR 0068): what the customer already has at the site as a
 /// tree (a group holds its bells). Items are added and edited with a form generated from the
 /// admin-defined attributes of their type. Read-only without `opportunities.write`.
@@ -118,7 +150,7 @@ class BaselineSection extends ConsumerWidget {
         item: item,
       ),
     );
-    if (saved == true) _refresh(ref);
+    if (saved == true && context.mounted) _refresh(ref);
   }
 
   Future<void> _delete(
@@ -156,7 +188,7 @@ class BaselineSection extends ConsumerWidget {
           .deleteItem(id: opportunityId, itemId: item.id),
       success: l.baselineDeleted,
     );
-    if (ok) _refresh(ref);
+    if (ok && context.mounted) _refresh(ref);
   }
 
   /// Edits one attribute of an item in place; pops true when saved.
@@ -174,7 +206,7 @@ class BaselineSection extends ConsumerWidget {
         def: def,
       ),
     );
-    if (saved == true) _refresh(ref);
+    if (saved == true && context.mounted) _refresh(ref);
   }
 
   /// One chip per active attribute of the item: the value, tap to change it; an attribute without
@@ -255,7 +287,7 @@ class BaselineSection extends ConsumerWidget {
         code: ref.watch(_scopeDefsProvider(code)).value ?? const [],
     };
 
-    Widget node(BaselineItem item, int depth) {
+    Widget node(BaselineItem item, int depth, double width) {
       final typeName = typeNames[item.typeCode] ?? item.typeCode;
       final label = (item.name ?? '').isEmpty
           ? typeName
@@ -267,10 +299,50 @@ class BaselineSection extends ConsumerWidget {
         yes: l.yes,
         no: l.no,
       );
+      final values = canWrite
+          ? _valueChips(context, ref, item, itemDefs)
+          : (summary.isEmpty ? null : Text(summary));
+      final actions = <Widget>[
+        if (item.quantity != 1) Text(l.baselineQty(item.quantity)),
+        if (canSuggest)
+          IconButton(
+            key: ValueKey('baseline-suggest-${item.id}'),
+            tooltip: l.matchesSuggest,
+            icon: const Icon(AppIcons.search),
+            onPressed: () => showSuggestedProducts(
+              context,
+              opportunityId: opportunityId,
+              itemId: item.id,
+              itemLabel: label,
+            ),
+          ),
+        if (canWrite) ...[
+          IconButton(
+            key: ValueKey('baseline-edit-${item.id}'),
+            tooltip: l.edit,
+            icon: const Icon(AppIcons.edit),
+            onPressed: () => _edit(
+              context,
+              ref,
+              types: typeList,
+              tree: items,
+              item: item,
+            ),
+          ),
+          IconButton(
+            key: ValueKey('baseline-delete-${item.id}'),
+            tooltip: l.delete,
+            icon: const Icon(AppIcons.delete),
+            onPressed: () => _delete(context, ref, item, label),
+          ),
+        ],
+      ];
+      final indentation = depth * (width < 400 ? 12.0 : 24.0);
+      final compact = width - indentation < 320;
       return Column(
         children: [
           Padding(
-            padding: EdgeInsets.only(left: 24.0 * depth),
+            padding: EdgeInsetsDirectional.only(start: indentation),
             child: ListTile(
               key: ValueKey('baseline-item-${item.id}'),
               dense: true,
@@ -279,50 +351,24 @@ class BaselineSection extends ConsumerWidget {
                     ? label
                     : '$label · ${l.baselineImported}',
               ),
-              subtitle: canWrite
-                  ? _valueChips(context, ref, item, itemDefs)
-                  : (summary.isEmpty ? null : Text(summary)),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (item.quantity != 1) Text(l.baselineQty(item.quantity)),
-                  if (canSuggest)
-                    IconButton(
-                      key: ValueKey('baseline-suggest-${item.id}'),
-                      tooltip: l.matchesSuggest,
-                      icon: const Icon(AppIcons.search),
-                      onPressed: () => showSuggestedProducts(
-                        context,
-                        opportunityId: opportunityId,
-                        itemId: item.id,
-                        itemLabel: label,
-                      ),
-                    ),
-                  if (canWrite) ...[
-                    IconButton(
-                      key: ValueKey('baseline-edit-${item.id}'),
-                      tooltip: l.edit,
-                      icon: const Icon(AppIcons.edit),
-                      onPressed: () => _edit(
-                        context,
-                        ref,
-                        types: typeList,
-                        tree: items,
-                        item: item,
-                      ),
-                    ),
-                    IconButton(
-                      key: ValueKey('baseline-delete-${item.id}'),
-                      tooltip: l.delete,
-                      icon: const Icon(AppIcons.delete),
-                      onPressed: () => _delete(context, ref, item, label),
-                    ),
-                  ],
-                ],
-              ),
+              subtitle: compact && actions.isNotEmpty
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ?values,
+                        Wrap(
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: actions,
+                        ),
+                      ],
+                    )
+                  : values,
+              trailing: compact || actions.isEmpty
+                  ? null
+                  : Row(mainAxisSize: MainAxisSize.min, children: actions),
             ),
           ),
-          for (final c in item.children) node(c, depth + 1),
+          for (final c in item.children) node(c, depth + 1, width),
         ],
       );
     }
@@ -399,7 +445,11 @@ class BaselineSection extends ConsumerWidget {
             child: Text(l.baselineEmpty),
           )
         else
-          for (final i in items) node(i, 0),
+          LayoutBuilder(
+            builder: (_, box) => Column(
+              children: [for (final i in items) node(i, 0, box.maxWidth)],
+            ),
+          ),
       ],
     );
   }
@@ -885,9 +935,7 @@ class _BaselineItemDialogState extends ConsumerState<BaselineItemDialog> {
                   padding: const EdgeInsets.only(top: 8),
                   child: Text(
                     _error!,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
-                    ),
+                    style: TextStyle(color: Theme.of(context).colorScheme.error),
                   ),
                 ),
             ],

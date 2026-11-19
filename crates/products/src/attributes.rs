@@ -185,29 +185,35 @@ pub struct AttributedProduct {
     pub attributes: HashMap<String, AttributeValue>,
 }
 
-/// The active products (optionally of one family) with the attributes among `keys`, in code
-/// order. Two queries however many products there are.
+/// The active products with the attributes among `keys`, in code order. A family or candidate
+/// ID filter can limit the selection. Two queries however many products there are.
 pub async fn active_products_with(
     conn: &mut sqlx::PgConnection,
     keys: &[String],
     family_id: Option<Uuid>,
+    product_ids: Option<&[Uuid]>,
 ) -> AppResult<Vec<AttributedProduct>> {
     let products: Vec<AttributedProduct> = sqlx::query_as(
         "SELECT p.id, p.code, p.name, p.family_id, f.code AS family_code
          FROM products.products p LEFT JOIN products.product_families f ON f.id = p.family_id
          WHERE p.active AND ($1::uuid IS NULL OR p.family_id = $1)
+           AND ($2::uuid[] IS NULL OR p.id = ANY($2))
          ORDER BY p.code, p.id",
     )
     .bind(family_id)
+    .bind(product_ids)
     .fetch_all(&mut *conn)
     .await?;
     let rows: Vec<Row> = if keys.is_empty() {
         Vec::new()
     } else {
-        sqlx::query_as(&format!("{SELECT} WHERE key = ANY($1)"))
-            .bind(keys)
-            .fetch_all(&mut *conn)
-            .await?
+        sqlx::query_as(&format!(
+            "{SELECT} WHERE key = ANY($1) AND ($2::uuid[] IS NULL OR product_id = ANY($2))"
+        ))
+        .bind(keys)
+        .bind(product_ids)
+        .fetch_all(&mut *conn)
+        .await?
     };
     let mut attrs: HashMap<Uuid, HashMap<String, AttributeValue>> = HashMap::new();
     for r in &rows {

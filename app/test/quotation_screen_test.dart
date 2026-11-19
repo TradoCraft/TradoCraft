@@ -133,6 +133,19 @@ Map<String, Object?> _quotation(
   ],
 };
 
+final _corrosionProtection = {
+  'id': 'p2',
+  'code': 'COAT-PROT',
+  'name': 'Corrosion protection',
+  'description': '',
+  'unit': 'pcs',
+  'product_type': 'service',
+  'tracking': 'none',
+  ...pricingFlags('on_request'),
+  'vat_rate': '21',
+  'active': true,
+};
+
 /// Fake backend: records requests and answers like the Rust API would.
 class FakeApi implements HttpClientAdapter {
   FakeApi(
@@ -140,17 +153,32 @@ class FakeApi implements HttpClientAdapter {
     this.configured = false,
     this.linkedOpportunity,
     this.openOpportunities = const [],
+    this.canEditBaseline = true,
   });
   final String status;
   final bool configured;
 
   /// Opportunity the stored quotation is linked to (may be closed, so not in the open list).
   final String? linkedOpportunity;
+  final bool canEditBaseline;
 
   /// Ids returned by the open-opportunities list (answered after a delay, like a slow network).
   final List<String> openOpportunities;
   final requests = <String>[];
   final bodies = <String, Object?>{};
+  String? matchedProductIds;
+  bool failProductMatches = false;
+  final _bell = <String, Object?>{
+    'id': 'b1',
+    'type_code': 'bell',
+    'name': 'Tower bell',
+    'quantity': 1,
+    'values': <String, Object?>{},
+    'sort_order': 0,
+    'created_at': '2026-11-05T00:00:00Z',
+    'updated_at': '2026-11-05T00:00:00Z',
+    'children': <Object?>[],
+  };
 
   /// Per customer id: holds the open-opportunities answer until completed (that customer then
   /// has the single opportunity `opp-<id>`).
@@ -211,6 +239,50 @@ class FakeApi implements HttpClientAdapter {
         };
       case 'GET /api/v1/opportunities/opp-closed':
         json = _opportunity('opp-closed', 'won');
+      case 'GET /api/v1/opportunities/opp-closed/baseline':
+        json = [_bell];
+      case 'PUT /api/v1/opportunities/opp-closed/baseline/items/b1':
+        _bell['name'] = (bodies[key] as Map)['name'];
+        json = _bell;
+      case 'GET /api/v1/baseline-item-types':
+        json = [
+          {
+            'id': 'type-bell',
+            'code': 'bell',
+            'name': 'Bell',
+            'allowed_parent_codes': <String>[],
+            'allow_top_level': true,
+            'sort_order': 0,
+            'active': true,
+          },
+        ];
+      case 'GET /api/v1/attribute-definitions':
+      case 'GET /api/v1/products/p2/options':
+        json = <Object?>[];
+      case 'GET /api/v1/opportunities/opp-closed/product-matches'
+          when failProductMatches:
+        return ResponseBody.fromString(
+          '{"error":"internal","message":"Matching unavailable"}',
+          500,
+          headers: {
+            Headers.contentTypeHeader: [Headers.jsonContentType],
+          },
+        );
+      case 'GET /api/v1/opportunities/opp-closed/product-matches':
+        matchedProductIds = o.queryParameters['product_ids'] as String?;
+        json = {
+          'items': [
+            {
+              'id': 'p2',
+              'code': 'COAT-PROT',
+              'name': 'Corrosion protection',
+              'status': 'unsuitable',
+              'reasons': <Object?>[],
+            },
+          ],
+          'total': 1,
+          'counts': {'suitable': 0, 'unsuitable': 1, 'unknown': 0},
+        };
       case 'GET /api/v1/opportunities/opp1':
         json = _opportunity('opp1', 'proposal');
       case 'GET /api/v1/quotations/q2':
@@ -279,19 +351,13 @@ class FakeApi implements HttpClientAdapter {
             'last_quotation_number': 'Q2026-00009',
           },
         ];
-      case 'GET /api/v1/products/p2':
+      case 'GET /api/v1/products':
         json = {
-          'id': 'p2',
-          'code': 'COAT-PROT',
-          'name': 'Corrosion protection',
-          'description': '',
-          'unit': 'pcs',
-          'product_type': 'service',
-          'tracking': 'none',
-          ...pricingFlags('on_request'),
-          'vat_rate': '21',
-          'active': true,
+          'items': [_corrosionProtection],
+          'total': 1,
         };
+      case 'GET /api/v1/products/p2':
+        json = _corrosionProtection;
       case 'POST /api/v1/pricing/preview':
         // The server is the only place that calculates: 2 units -> 7372.00.
         json = {
@@ -362,7 +428,15 @@ class FakeApi implements HttpClientAdapter {
           'email': 'sales@example.com',
           'display_name': 'Sales',
           'roles': ['sales'],
-          'permissions': ['quotations.read', 'quotations.write'],
+          'permissions': [
+            'quotations.read',
+            'quotations.write',
+            if (linkedOpportunity != null) ...[
+              'opportunities.read',
+              if (canEditBaseline) 'opportunities.write',
+              'products.read',
+            ],
+          ],
           'modules': [],
           'memberships': [],
           'company': {
@@ -505,14 +579,20 @@ Future<FakeApi> _pumpRouted(WidgetTester tester, String status) async {
   return fake;
 }
 
-Future<FakeApi> _pumpLinkedDraft(
+Future<FakeApi> _pumpLinkedQuotation(
   WidgetTester tester,
-  List<String> gated,
-) async {
+  List<String> gated, {
+  String status = 'draft',
+  bool canEditBaseline = true,
+}) async {
   tester.view.physicalSize = const Size(1400, 1000);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
-  final fake = FakeApi('draft', linkedOpportunity: 'opp-closed');
+  final fake = FakeApi(
+    status,
+    linkedOpportunity: 'opp-closed',
+    canEditBaseline: canEditBaseline,
+  );
   for (final id in gated) {
     fake.gates[id] = Completer<void>();
   }
@@ -584,7 +664,7 @@ void main() {
   testWidgets('failed reload preserves the save baseline and permits retry', (
     tester,
   ) async {
-    final fake = await _pumpLinkedDraft(tester, []);
+    final fake = await _pumpLinkedQuotation(tester, []);
     fake.conflictOnSave = true;
     await tester.tap(find.text('Save draft'));
     await tester.pumpAndSettle();
@@ -608,7 +688,7 @@ void main() {
   testWidgets('a save finishing after disposal does not restart the watcher', (
     tester,
   ) async {
-    final fake = await _pumpLinkedDraft(tester, []);
+    final fake = await _pumpLinkedQuotation(tester, []);
     fake.saveGate = Completer<void>();
     await tester.tap(find.text('Save draft'));
     await tester.pump();
@@ -628,7 +708,7 @@ void main() {
   testWidgets(
     'dropping a linked opportunity refreshes a saved blank-year draft',
     (tester) async {
-      final fake = await _pumpLinkedDraft(tester, ['c2']);
+      final fake = await _pumpLinkedQuotation(tester, ['c2']);
       await _changeCustomer(tester, 'c2');
       fake.gates['c2']!.complete();
       await tester.pumpAndSettle();
@@ -641,7 +721,7 @@ void main() {
   testWidgets('VAT and building year controls are disabled during save', (
     tester,
   ) async {
-    final fake = await _pumpLinkedDraft(tester, []);
+    final fake = await _pumpLinkedQuotation(tester, []);
     fake.saveGate = Completer<void>();
     await tester.tap(find.text('Save draft'));
     await tester.pump();
@@ -698,7 +778,7 @@ void main() {
   testWidgets(
     'changing the customer hides the old customer opportunities while loading',
     (tester) async {
-      await _pumpLinkedDraft(tester, ['c2']);
+      await _pumpLinkedQuotation(tester, ['c2']);
       expect(find.textContaining('OPP-opp-closed'), findsOneWidget);
       await _changeCustomer(tester, 'c2');
       await tester.pump(const Duration(milliseconds: 10));
@@ -710,7 +790,7 @@ void main() {
   testWidgets('a late answer for a previous customer is ignored', (
     tester,
   ) async {
-    final fake = await _pumpLinkedDraft(tester, ['c2', 'c3']);
+    final fake = await _pumpLinkedQuotation(tester, ['c2', 'c3']);
     await _changeCustomer(tester, 'c2');
     await _changeCustomer(tester, 'c3');
     fake.gates['c3']!.complete();
@@ -777,6 +857,98 @@ void main() {
     await tester.pumpAndSettle();
     final body = fake.bodies['PUT /api/v1/quotations/$_quotationId'] as Map;
     expect(body['opportunity_id'], 'opp-closed');
+  });
+
+  testWidgets(
+    'editing the site baseline from a linked draft keeps unsaved quote edits',
+    (tester) async {
+      final fake = await _pumpLinkedQuotation(tester, []);
+      await tester.enterText(find.widgetWithText(TextField, '1'), '3');
+      await tester.pumpAndSettle();
+
+      const action = ValueKey('quotation-site-baseline');
+      await tester.tap(find.byKey(action));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Tower bell'), findsOneWidget);
+      expect(
+        fake.requests,
+        contains('GET /api/v1/opportunities/opp-closed/baseline'),
+      );
+      await tester.tap(find.byKey(const ValueKey('baseline-edit-b1')));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('baseline-name')),
+        'Restored bell',
+      );
+      await tester.tap(find.byKey(const ValueKey('baseline-save')));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Restored bell'), findsOneWidget);
+
+      await tester.tap(find.widgetWithText(TextButton, 'Close'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Restored bell'), findsNothing);
+      expect(find.widgetWithText(TextField, '3'), findsOneWidget);
+      expect(
+        fake.requests,
+        isNot(contains('PUT /api/v1/quotations/$_quotationId')),
+      );
+    },
+  );
+
+  testWidgets('a sent quotation can show a linked baseline with read access', (
+    tester,
+  ) async {
+    await _pumpLinkedQuotation(
+      tester,
+      [],
+      status: 'sent',
+      canEditBaseline: false,
+    );
+    expect(find.text('Save draft'), findsNothing);
+
+    await tester.tap(find.byKey(const ValueKey('quotation-site-baseline')));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Tower bell'), findsOneWidget);
+    expect(find.byKey(const ValueKey('baseline-edit-b1')), findsNothing);
+  });
+
+  testWidgets('a linked draft shows advisory suitability for product search', (
+    tester,
+  ) async {
+    final fake = await _pumpLinkedQuotation(tester, []);
+    final picker = find.widgetWithText(TextField, 'Add product');
+    await tester.ensureVisible(picker);
+    await tester.enterText(picker, 'COAT');
+    await tester.pumpAndSettle();
+
+    expect(fake.matchedProductIds, 'p2');
+    final result = find.text('COAT-PROT · Corrosion protection · Not suitable');
+    expect(result, findsOneWidget);
+    await tester.tap(result);
+    await tester.pumpAndSettle();
+    expect(fake.requests, contains('GET /api/v1/products/p2/options'));
+  });
+
+  testWidgets('product search stays selectable if site matching fails', (
+    tester,
+  ) async {
+    final fake = await _pumpLinkedQuotation(tester, []);
+    fake.failProductMatches = true;
+    final picker = find.widgetWithText(TextField, 'Add product');
+    await tester.ensureVisible(picker);
+    await tester.enterText(picker, 'COAT');
+    await tester.pumpAndSettle();
+
+    expect(
+      fake.requests,
+      contains('GET /api/v1/opportunities/opp-closed/product-matches'),
+    );
+    await tester.tap(find.text('COAT-PROT · Corrosion protection'));
+    await tester.pumpAndSettle();
+    expect(fake.requests, contains('GET /api/v1/products/p2/options'));
   });
 
   testWidgets('draft totals come from the server pricing preview', (
@@ -1011,6 +1183,10 @@ void main() {
   });
 
   group('keyboard', () {
+    final addProductPicker = find.byKey(
+      const ValueKey('quotation-add-product-picker'),
+    );
+
     String? focusedText() {
       final f = FocusManager.instance.primaryFocus;
       return f?.context?.findAncestorWidgetOfExactType<EditableText>() == null
@@ -1030,7 +1206,7 @@ void main() {
       await tester.sendKeyUpEvent(LogicalKeyboardKey.altLeft);
       await tester.pumpAndSettle();
       final picker = find.descendant(
-        of: find.byType(SearchPicker<Product>),
+        of: addProductPicker,
         matching: find.byType(EditableText),
       );
       expect(tester.widget<EditableText>(picker).focusNode.hasFocus, isTrue);
@@ -1041,14 +1217,14 @@ void main() {
       (tester) async {
         // A short window: the page is a lazy list, the picker is far below what is built.
         await _pump(tester, 'draft', keys: true, size: const Size(1400, 240));
-        expect(find.byType(SearchPicker<Product>), findsNothing);
+        expect(addProductPicker, findsNothing);
         await tester.sendKeyDownEvent(LogicalKeyboardKey.altLeft);
         await tester.sendKeyDownEvent(LogicalKeyboardKey.keyL);
         await tester.sendKeyUpEvent(LogicalKeyboardKey.keyL);
         await tester.sendKeyUpEvent(LogicalKeyboardKey.altLeft);
         await tester.pumpAndSettle();
         final picker = find.descendant(
-          of: find.byType(SearchPicker<Product>),
+          of: addProductPicker,
           matching: find.byType(EditableText),
         );
         expect(picker, findsOneWidget);

@@ -386,6 +386,8 @@ abstract class CrmClient {
   /// [itemId] - Judge against this baseline item (and the items inside it) only, e.g. to suggest products.
   /// for one dial or bell group. 404 when it is not an item of the opportunity.
   ///
+  /// [productIds] - Only score these products, as a comma-separated list of up to 20 UUIDs.
+  ///
   /// [limit] - Default 100, at most 500.
   @GET('/api/v1/opportunities/{id}/product-matches')
   Future<ProductMatchPage> productMatches({
@@ -393,6 +395,7 @@ abstract class CrmClient {
     @Query('status') String? status,
     @Query('family_id') String? familyId,
     @Query('item_id') String? itemId,
+    @Query('product_ids') String? productIds,
     @Query('limit') int? limit,
     @Query('offset') int? offset,
   });

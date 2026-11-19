@@ -299,3 +299,12 @@ panel.
 
 *Open.* A linear-motor bell still gets motor matching as if rotating (it has no `motor_brand`, so
 the weakest brand wins); a per-bell "motor type" attribute would be needed to exclude it.
+
+**Quotation integration.** A linked quotation can open the opportunity's Site baseline in a
+dialog. Users with `opportunities.read` can review it. Users with `opportunities.write` can also
+edit it, and returning to the quotation preserves unsaved quotation edits.
+
+Add product and Change product show advisory suitability for the linked site's equipment and
+electrical supply. The picker keeps catalogue search order and product selection available if
+suitability cannot be loaded. It passes the search results' IDs as `product_ids` to the existing
+product matches endpoint, which accepts a comma-separated list of up to 20 UUIDs.
