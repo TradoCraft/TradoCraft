@@ -124,6 +124,36 @@ void main() {
     expect(find.byKey(const ValueKey('price-correct-pr-planned')), findsNothing);
   });
 
+  testWidgets('saving a correction without editing the price sends the existing price', (
+    tester,
+  ) async {
+    final today = DateTime.now();
+    final planned = DateTime(today.year, today.month, today.day + 30);
+    final http = FakeHttp({
+      'GET /api/v1/me': (_) => meJson(['prices.write']),
+      'GET /api/v1/price-zones': (_) => [
+        {'id': 'z2', 'code': 'Z2', 'name': 'Dealer', 'sort_order': 2},
+      ],
+      'GET /api/v1/products/p1/prices': (_) => [
+        _price('pr-planned', '5320.5000', planned),
+      ],
+      'PUT /api/v1/products/p1/prices/pr-planned': (_) =>
+          _price('pr-planned', '5320.5', planned),
+    });
+    await _pump(tester, http);
+
+    await tester.tap(find.byKey(const ValueKey('price-correct-pr-planned')));
+    await tester.pumpAndSettle();
+    // The field is prefilled from the existing price: decimal comma, no trailing zeros.
+    expect(find.widgetWithText(TextField, '5320,5'), findsOneWidget);
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    expect(
+      (http.bodies['PUT /api/v1/products/p1/prices/pr-planned']! as Map)['unit_price'],
+      '5320.5',
+    );
+  });
+
   testWidgets('without prices.write nothing can be corrected', (tester) async {
     final today = DateTime.now();
     final http = FakeHttp({
