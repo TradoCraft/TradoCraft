@@ -11789,4 +11789,30 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get autosaveAdminHelp =>
       'Intervalo predeterminado para autoguardar borradores abiertos (los usuarios pueden anularlo en sus preferencias).';
+
+  @override
+  String get listGroupBy => 'Agrupar por';
+
+  @override
+  String get listGroupNone => 'Ninguno';
+
+  @override
+  String listGroupChip(String group) {
+    return 'Grupo: $group';
+  }
+
+  @override
+  String listRemoveGrouping(String group) {
+    return 'Quitar agrupación $group';
+  }
+
+  @override
+  String listGroupExpanded(String label, int count) {
+    return '$label, $count filas, expandido';
+  }
+
+  @override
+  String listGroupCollapsed(String label, int count) {
+    return '$label, $count filas, contraído';
+  }
 }

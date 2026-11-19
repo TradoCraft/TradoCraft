@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/api.dart';
 import '../../framework/data/repository.dart';
+import '../../framework/search/group_model.dart';
 
 /// Quotations over the generated sales client. The list holds summaries, a single read the full
 /// quotation. Workflow calls (send, accept, revise, convert) stay on the sales client for now.
@@ -25,6 +26,16 @@ class QuotationRepository
       limit: query.limit,
     );
     return Page(page.items, total: page.total);
+  }
+
+  /// Row counts per value of [groupBy] for the rows [query] would list (ADR 0084).
+  Future<List<GroupBucket>> groups(ListQuery query, String groupBy) async {
+    final page = await _sales.quotationGroups(
+      groupBy: groupBy,
+      q: query.q,
+      status: query.csv('status'),
+    );
+    return [for (final g in page.groups) GroupBucket(g.value, g.count)];
   }
 
   @override

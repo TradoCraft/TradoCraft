@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../app/api.dart';
 import '../../shared/csv_transfer.dart';
 import '../../framework/search/filter_model.dart';
+import '../../framework/search/group_model.dart';
 import '../../shared/entity_list.dart';
 import 'customer_repository.dart';
 import 'customer_form.dart';
@@ -40,6 +41,8 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
           ],
         ),
       ],
+      groupDefs: [GroupDef('active', context.l10n.status)],
+      loadGroups: repo.groups,
       resizableColumns: true,
       columnMenu: true,
       columns: [

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/api.dart';
 import '../../framework/search/filter_model.dart';
+import '../../framework/search/group_model.dart';
 import '../../shared/app_icons.dart';
 import '../../shared/entity_list.dart';
 import '../../shared/format.dart';
@@ -37,6 +38,8 @@ class _QuotationsPageState extends ConsumerState<QuotationsPage> {
       title: context.l10n.quotations,
       loadQuery: (query) async => (await repo.list(query)).asLoaderResult,
       prefsKey: 'quotations',
+      groupDefs: [GroupDef('status', context.l10n.status)],
+      loadGroups: repo.groups,
       resizableColumns: true,
       columnMenu: true,
       filterDefs: [

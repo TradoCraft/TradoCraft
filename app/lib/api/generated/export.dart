@@ -219,6 +219,8 @@ export 'models/followers.dart';
 export 'models/goods_receipt_detail.dart';
 export 'models/goods_receipt_line.dart';
 export 'models/goods_receipt_summary.dart';
+export 'models/group_count.dart';
+export 'models/group_page.dart';
 export 'models/group_result.dart';
 export 'models/helpdesk_report_spec.dart';
 export 'models/helpdesk_settings.dart';

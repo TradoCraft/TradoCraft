@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../app/api.dart';
 import '../../shared/csv_transfer.dart';
 import '../../framework/search/filter_model.dart';
+import '../../framework/search/group_model.dart';
 import '../../shared/entity_list.dart';
 import '../../shared/format.dart';
 import '../tutorial/controller.dart';
@@ -89,6 +90,19 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
           ],
         ),
       ],
+      groupDefs: [
+        GroupDef('active', context.l10n.status),
+        GroupDef('product_type', context.l10n.type),
+      ],
+      loadGroups: (query, groupBy) async {
+        final page = await api.products.productGroups(
+          groupBy: groupBy,
+          q: query.q,
+          active: query.flag('active'),
+          productType: query.csv('product_type'),
+        );
+        return [for (final g in page.groups) GroupBucket(g.value, g.count)];
+      },
       loadQuery: (query) async {
         final page = await api.products.listProducts(
           q: query.q,

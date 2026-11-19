@@ -3907,5 +3907,11 @@
   "autosaveDefault": "Por defecto ({minutes} min)",
   "autosaveDefaultOff": "Por defecto (Desactivado)",
   "autosaveUserHelp": "Anular la frecuencia de autoguardado de los borradores abiertos.",
-  "autosaveAdminHelp": "Intervalo predeterminado para autoguardar borradores abiertos (los usuarios pueden anularlo en sus preferencias)."
+  "autosaveAdminHelp": "Intervalo predeterminado para autoguardar borradores abiertos (los usuarios pueden anularlo en sus preferencias).",
+  "listGroupBy": "Agrupar por",
+  "listGroupNone": "Ninguno",
+  "listGroupChip": "Grupo: {group}",
+  "listRemoveGrouping": "Quitar agrupación {group}",
+  "listGroupExpanded": "{label}, {count} filas, expandido",
+  "listGroupCollapsed": "{label}, {count} filas, contraído"
 }

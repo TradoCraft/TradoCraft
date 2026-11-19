@@ -11730,4 +11730,30 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get autosaveAdminHelp =>
       'Default interval for autosaving open drafts (users can override this in their preferences).';
+
+  @override
+  String get listGroupBy => 'Group by';
+
+  @override
+  String get listGroupNone => 'None';
+
+  @override
+  String listGroupChip(String group) {
+    return 'Group: $group';
+  }
+
+  @override
+  String listRemoveGrouping(String group) {
+    return 'Remove grouping $group';
+  }
+
+  @override
+  String listGroupExpanded(String label, int count) {
+    return '$label, $count rows, expanded';
+  }
+
+  @override
+  String listGroupCollapsed(String label, int count) {
+    return '$label, $count rows, collapsed';
+  }
 }

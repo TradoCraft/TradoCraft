@@ -13,6 +13,7 @@ import '../models/bulk_price_change_input.dart';
 import '../models/bulk_price_preview.dart';
 import '../models/export_plan_entry.dart';
 import '../models/format.dart';
+import '../models/group_page.dart';
 import '../models/import_report.dart';
 import '../models/media_update.dart';
 import '../models/packaging_category.dart';
@@ -374,6 +375,24 @@ abstract class ProductsClient {
   @GET('/api/v1/products/export')
   Future<String> exportProducts({
     @Query('format') Format? format,
+  });
+
+  /// [groupBy] - What to count by: `active` or `product_type`.
+  ///
+  /// [q] - Same as the list.
+  ///
+  /// [active] - Same as the list.
+  ///
+  /// [familyId] - Same as the list.
+  ///
+  /// [productType] - Same as the list.
+  @GET('/api/v1/products/groups')
+  Future<GroupPage> productGroups({
+    @Query('group_by') String? groupBy,
+    @Query('q') String? q,
+    @Query('active') bool? active,
+    @Query('family_id') String? familyId,
+    @Query('product_type') String? productType,
   });
 
   /// Creates or updates products from a CSV, XLSX or ODS file (detected from the content), keyed by.
