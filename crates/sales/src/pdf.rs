@@ -126,7 +126,7 @@ fn structure(lines: &[QuotationLine]) -> Vec<(String, usize)> {
 fn line(l: &QuotationLine, section: String, level: usize) -> Line {
     // The document shows one combined discount (rebate and line discount), consistent
     // with the net line total. Net-priced lines are marked as such.
-    let net = l.pricing_type == "net" || l.rebate_source == "net";
+    let net = l.non_discountable || l.rebate_source == "net";
     // A negative rebate is a surcharge: the document shows only the resulting price, not the
     // (lower) list price it was derived from.
     let hundred = Decimal::ONE_HUNDRED;
@@ -161,7 +161,7 @@ fn line(l: &QuotationLine, section: String, level: usize) -> Line {
             .percent_of_parent
             .map(|p| format!("{} %", format_number(p.normalize())))
             .unwrap_or_default(),
-        indicative: !l.price_confirmed,
+        indicative: l.price_is_indicative || !l.price_confirmed,
     }
 }
 
@@ -231,7 +231,10 @@ pub fn document(company: &Company, q: &Quotation) -> Doc {
             .map(|(l, (section, level))| line(l, section, level))
             .collect(),
         groups: groups(&q.lines),
-        has_indicative: q.lines.iter().any(|l| !l.price_confirmed),
+        has_indicative: q
+            .lines
+            .iter()
+            .any(|l| l.price_is_indicative || !l.price_confirmed),
         show_vat: !tradocraft_core::vat::vat_exempt_for_regime(&h.vat_regime),
         vat_regime: h.vat_regime.clone(),
         vat_groups: q
@@ -264,7 +267,9 @@ mod tests {
             unit: "pcs".into(),
             quantity: dec!(1),
             list_unit_price: total,
-            pricing_type: "list".into(),
+            non_discountable: false,
+            price_on_request: false,
+            price_is_indicative: false,
             rebate_percent: dec!(0),
             rebate_source: "general".into(),
             line_discount_percent: dec!(0),

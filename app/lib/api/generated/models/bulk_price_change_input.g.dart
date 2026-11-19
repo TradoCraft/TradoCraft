@@ -16,6 +16,7 @@ BulkPriceChangeInput _$BulkPriceChangeInputFromJson(
   productIds: (json['product_ids'] as List<dynamic>?)
       ?.map((e) => e as String)
       .toList(),
+  replacePlanned: json['replace_planned'] as bool?,
   rounding: json['rounding'] as String?,
   zoneIds: (json['zone_ids'] as List<dynamic>?)
       ?.map((e) => e as String)
@@ -28,6 +29,7 @@ Map<String, dynamic> _$BulkPriceChangeInputToJson(
   'family_id': ?instance.familyId,
   'kind': instance.kind,
   'product_ids': ?instance.productIds,
+  'replace_planned': ?instance.replacePlanned,
   'rounding': ?instance.rounding,
   'valid_from': instance.validFrom.toIso8601String(),
   'value': instance.value,

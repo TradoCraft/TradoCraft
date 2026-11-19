@@ -1,6 +1,7 @@
 # 0012 — Rebates, pricing types, price dates and price changes
 
-**Status:** Accepted (extends [ADR 0002](0002-money-and-pricing.md))
+**Status:** Accepted (extends [ADR 0002](0002-money-and-pricing.md); the pricing type and the
+"never edited" rule for planned prices are amended by [ADR 0084](0084-price-flags-and-planned-price-corrections.md))
 
 **Context.** Customers get rebates on all products, on a product family or on single products.
 Some products have a fixed net price, others only an indicative list price. Customers ask to

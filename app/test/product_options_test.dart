@@ -16,7 +16,7 @@ Map<String, Object?> _product(String id, String code, String name) => {
   'unit': 'pcs',
   'product_type': 'manufactured',
   'tracking': 'none',
-  'pricing_type': 'list',
+  ...pricingFlags('list'),
   'vat_rate': '21',
   'active': true,
 };
@@ -52,7 +52,7 @@ Map<String, Object?> _line(
   'quantity': '1',
   'list_unit_price': '100.0000',
   'line_discount_percent': '0',
-  'pricing_type': 'list',
+  ...pricingFlags('list'),
   'rebate_percent': '0',
   'rebate_source': 'general',
   'price_confirmed': true,

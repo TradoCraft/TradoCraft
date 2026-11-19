@@ -145,9 +145,9 @@ UPDATE products.products SET family_id = '00000000-0000-7000-8000-000000000803' 
 UPDATE products.products SET family_id = '00000000-0000-7000-8000-000000000804' WHERE code = 'CTRL-01';
 UPDATE products.products SET family_id = '00000000-0000-7000-8000-000000000805' WHERE code = 'FRAME-A';
 UPDATE products.products SET family_id = '00000000-0000-7000-8000-000000000806' WHERE code IN ('INSTALL', 'TRAVEL');
--- Services have a fixed net price; the configurable unit only has an indicative list price.
-UPDATE products.products SET pricing_type = 'net' WHERE code IN ('INSTALL', 'TRAVEL');
-UPDATE products.products SET pricing_type = 'indicative' WHERE code = 'UNIT-200';
+-- Services are never discounted; the configurable unit is priced on request.
+UPDATE products.products SET non_discountable = true WHERE code IN ('INSTALL', 'TRAVEL');
+UPDATE products.products SET price_on_request = true WHERE code = 'UNIT-200';
 
 -- Alpha: 5 % general rebate (in its terms), 12 % on pumps, 15 % on the controller.
 INSERT INTO crm.customer_rebates (id, company_id, customer_id, scope, product_id, family_id, percent, created_by) VALUES

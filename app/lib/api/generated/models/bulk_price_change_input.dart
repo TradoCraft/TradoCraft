@@ -16,6 +16,7 @@ class BulkPriceChangeInput {
     required this.value,
     this.familyId,
     this.productIds,
+    this.replacePlanned,
     this.rounding,
     this.zoneIds,
   });
@@ -30,6 +31,11 @@ class BulkPriceChangeInput {
   /// Limit to these products (combined with the family filter, if any).
   @JsonKey(includeIfNull: false,name: 'product_ids')
   final List<String>? productIds;
+
+  /// Replace prices that are already planned to start on `valid_from` (only when that is after.
+  /// today) instead of refusing them. The change is then computed from the price before them.
+  @JsonKey(includeIfNull: false,name: 'replace_planned')
+  final bool? replacePlanned;
 
   /// Round new prices to a multiple of this step, e.g. 0.01, 0.05 or 1. Default 0.01.
   @JsonKey(includeIfNull: false)

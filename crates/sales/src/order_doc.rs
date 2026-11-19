@@ -112,7 +112,7 @@ pub fn document(company: &Company, o: &Order, c: &CustomerSnapshot, language: &s
             .lines
             .iter()
             .map(|l| {
-                let net = l.pricing_type == "net";
+                let net = l.non_discountable;
                 let discount = if net {
                     String::new()
                 } else if !l.rebate_percent.is_zero() || !l.line_discount_percent.is_zero() {

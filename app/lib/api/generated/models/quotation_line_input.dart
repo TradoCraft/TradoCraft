@@ -88,8 +88,9 @@ class QuotationLineInput {
   @JsonKey(includeIfNull: false)
   final String? section;
 
-  /// Confirmed unit price (before rebates) for an indicative product. Indicative lines must be.
-  /// confirmed before the quotation can be sent. Not allowed for other products.
+  /// The agreed unit price (before rebates) of a price-on-request product. Such a line has no.
+  /// price until it is given, and the quotation cannot be sent before. Not allowed for other.
+  /// products.
   @JsonKey(includeIfNull: false,name: 'unit_price')
   final String? unitPrice;
 
