@@ -8,6 +8,7 @@ import '../../l10n/l10n.dart';
 import '../../shared/app_icons.dart';
 import 'favourite.dart';
 import 'filter_model.dart';
+import 'group_model.dart';
 
 const _target = 48.0;
 
@@ -21,6 +22,8 @@ class FilterChips extends StatelessWidget {
     required this.defs,
     required this.selection,
     required this.onRemove,
+    this.group,
+    this.onRemoveGroup,
   });
 
   final List<FilterDef> defs;
@@ -29,11 +32,15 @@ class FilterChips extends StatelessWidget {
   /// Called with the filter key whose chip was removed.
   final ValueChanged<String> onRemove;
 
+  /// The active grouping (ADR 0084), shown as a chip after the filter chips; null: none.
+  final GroupDef? group;
+  final VoidCallback? onRemoveGroup;
+
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
     final chips = selection.chips(defs, l.listOr);
-    if (chips.isEmpty) return const SizedBox.shrink();
+    if (chips.isEmpty && group == null) return const SizedBox.shrink();
     return Wrap(
       spacing: 8,
       runSpacing: 0,
@@ -49,6 +56,20 @@ class FilterChips extends StatelessWidget {
                 onPressed: () => onRemove(c.key),
                 onDeleted: () => onRemove(c.key),
                 deleteButtonTooltipMessage: l.listRemoveFilter(c.filterLabel),
+              ),
+            ),
+          ),
+        if (group != null)
+          ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: _target),
+            child: Center(
+              widthFactor: 1,
+              child: InputChip(
+                label: Text(l.listGroupChip(group!.label)),
+                materialTapTargetSize: MaterialTapTargetSize.padded,
+                onPressed: onRemoveGroup,
+                onDeleted: onRemoveGroup,
+                deleteButtonTooltipMessage: l.listRemoveGrouping(group!.label),
               ),
             ),
           ),
@@ -71,6 +92,9 @@ class FilterMenuButton extends StatelessWidget {
     this.onRetryFavourites,
     this.onApplyFavourite,
     this.onDeleteFavourite,
+    this.groupDefs = const [],
+    this.groupBy,
+    this.onGroupBy,
   });
 
   final List<FilterDef> defs;
@@ -89,6 +113,13 @@ class FilterMenuButton extends StatelessWidget {
   final ValueChanged<Favourite>? onApplyFavourite;
   final ValueChanged<Favourite>? onDeleteFavourite;
 
+  /// The groupings on offer (ADR 0084); empty hides the "Group by" section.
+  final List<GroupDef> groupDefs;
+
+  /// The key of the active grouping; null: "None".
+  final String? groupBy;
+  final ValueChanged<String?>? onGroupBy;
+
   static final _itemStyle = ButtonStyle(
     minimumSize: const WidgetStatePropertyAll(Size(_target, _target)),
   );
@@ -97,7 +128,7 @@ class FilterMenuButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = context.l10n;
     final theme = Theme.of(context);
-    final n = selection.count;
+    final n = selection.count + (groupBy == null ? 0 : 1);
     return MenuAnchor(
       menuChildren: [
         for (final d in defs) ...[
@@ -120,6 +151,38 @@ class FilterMenuButton extends StatelessWidget {
               value: selection.contains(d.key, o.$1),
               onChanged: (_) => onToggle(d.key, o.$1),
               child: Text(o.$2),
+            ),
+        ],
+        if (groupDefs.isNotEmpty) ...[
+          const Divider(height: 1),
+          Semantics(
+            header: true,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+              child: Text(
+                l.listGroupBy,
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ),
+          RadioMenuButton<String?>(
+            closeOnActivate: false,
+            style: _itemStyle,
+            value: null,
+            groupValue: groupBy,
+            onChanged: (v) => onGroupBy?.call(v),
+            child: Text(l.listGroupNone),
+          ),
+          for (final g in groupDefs)
+            RadioMenuButton<String?>(
+              closeOnActivate: false,
+              style: _itemStyle,
+              value: g.key,
+              groupValue: groupBy,
+              onChanged: (v) => onGroupBy?.call(v),
+              child: Text(g.label),
             ),
         ],
         const Divider(height: 1),

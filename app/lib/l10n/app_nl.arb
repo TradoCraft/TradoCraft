@@ -3310,5 +3310,11 @@
   "listFavouriteName": "Naam van de favoriet",
   "listNoFavourites": "Nog geen favorieten",
   "listDeleteFavourite": "Favoriet {name} verwijderen",
-  "listApplyFavourite": "Favoriet {name} toepassen"
+  "listApplyFavourite": "Favoriet {name} toepassen",
+  "listGroupBy": "Groeperen op",
+  "listGroupNone": "Geen",
+  "listGroupChip": "Groep: {group}",
+  "listRemoveGrouping": "Groepering {group} verwijderen",
+  "listGroupExpanded": "{label}, {count} rijen, uitgevouwen",
+  "listGroupCollapsed": "{label}, {count} rijen, ingeklapt"
 }

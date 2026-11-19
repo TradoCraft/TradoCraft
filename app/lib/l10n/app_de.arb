@@ -3310,5 +3310,11 @@
   "listFavouriteName": "Name des Favoriten",
   "listNoFavourites": "Noch keine Favoriten",
   "listDeleteFavourite": "Favorit {name} löschen",
-  "listApplyFavourite": "Favorit {name} anwenden"
+  "listApplyFavourite": "Favorit {name} anwenden",
+  "listGroupBy": "Gruppieren nach",
+  "listGroupNone": "Keine",
+  "listGroupChip": "Gruppe: {group}",
+  "listRemoveGrouping": "Gruppierung {group} entfernen",
+  "listGroupExpanded": "{label}, {count} Zeilen, aufgeklappt",
+  "listGroupCollapsed": "{label}, {count} Zeilen, zugeklappt"
 }

@@ -10700,4 +10700,30 @@ class AppLocalizationsEs extends AppLocalizations {
   String listApplyFavourite(String name) {
     return 'Aplicar el favorito $name';
   }
+
+  @override
+  String get listGroupBy => 'Agrupar por';
+
+  @override
+  String get listGroupNone => 'Ninguno';
+
+  @override
+  String listGroupChip(String group) {
+    return 'Grupo: $group';
+  }
+
+  @override
+  String listRemoveGrouping(String group) {
+    return 'Quitar agrupación $group';
+  }
+
+  @override
+  String listGroupExpanded(String label, int count) {
+    return '$label, $count filas, expandido';
+  }
+
+  @override
+  String listGroupCollapsed(String label, int count) {
+    return '$label, $count filas, contraído';
+  }
 }

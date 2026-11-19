@@ -594,6 +594,46 @@ class _SalesClient implements SalesClient {
   }
 
   @override
+  Future<GroupPage> quotationGroups({
+    String? groupBy,
+    String? q,
+    String? status,
+    String? customerId,
+    String? opportunityId,
+  }) async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{
+      r'group_by': groupBy,
+      r'q': q,
+      r'status': status,
+      r'customer_id': customerId,
+      r'opportunity_id': opportunityId,
+    };
+    queryParameters.removeWhere((k, v) => v == null);
+    final _headers = <String, dynamic>{};
+    const Map<String, dynamic>? _data = null;
+    final _options = _setStreamType<GroupPage>(
+      Options(method: 'GET', headers: _headers, extra: _extra)
+          .compose(
+            _dio.options,
+            '/api/v1/quotations/groups',
+            queryParameters: queryParameters,
+            data: _data,
+          )
+          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
+    );
+    final _result = await _dio.fetch<Map<String, Object?>>(_options);
+    late GroupPage _value;
+    try {
+      _value = GroupPage.fromJson(_result.data!);
+    } on Object catch (e, s) {
+      errorLogger?.logError(e, s, _options, response: _result);
+      rethrow;
+    }
+    return _value;
+  }
+
+  @override
   Future<Quotation> getQuotation({required String id}) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};

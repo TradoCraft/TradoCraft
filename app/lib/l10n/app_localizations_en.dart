@@ -10648,4 +10648,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String listApplyFavourite(String name) {
     return 'Apply favourite $name';
   }
+
+  @override
+  String get listGroupBy => 'Group by';
+
+  @override
+  String get listGroupNone => 'None';
+
+  @override
+  String listGroupChip(String group) {
+    return 'Group: $group';
+  }
+
+  @override
+  String listRemoveGrouping(String group) {
+    return 'Remove grouping $group';
+  }
+
+  @override
+  String listGroupExpanded(String label, int count) {
+    return '$label, $count rows, expanded';
+  }
+
+  @override
+  String listGroupCollapsed(String label, int count) {
+    return '$label, $count rows, collapsed';
+  }
 }

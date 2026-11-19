@@ -3310,5 +3310,11 @@
   "listFavouriteName": "Nombre del favorito",
   "listNoFavourites": "Aún no hay favoritos",
   "listDeleteFavourite": "Eliminar el favorito {name}",
-  "listApplyFavourite": "Aplicar el favorito {name}"
+  "listApplyFavourite": "Aplicar el favorito {name}",
+  "listGroupBy": "Agrupar por",
+  "listGroupNone": "Ninguno",
+  "listGroupChip": "Grupo: {group}",
+  "listRemoveGrouping": "Quitar agrupación {group}",
+  "listGroupExpanded": "{label}, {count} filas, expandido",
+  "listGroupCollapsed": "{label}, {count} filas, contraído"
 }

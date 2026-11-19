@@ -137,16 +137,21 @@ const QUOTATION_SORT: &[(&str, &str)] = &[
     ("total", "total"),
 ];
 
-#[utoipa::path(get, path = "/quotations", tag = "sales", params(ListParams),
-    responses((status = 200, body = QuotationPage)))]
-async fn list_quotations(
-    State(state): State<AppState>,
-    user: CurrentUser,
-    Query(p): Query<ListParams>,
-) -> AppResult<Json<QuotationPage>> {
-    user.require(Permission::QuotationsRead)?;
+/// The `WHERE` clause of the quotation list: $1 company, $2 search pattern, $3 statuses,
+/// $4 customer, $5 opportunity.
+const QUOTATION_WHERE: &str = "WHERE company_id = $1
+          AND ($2::text IS NULL OR lower(number) LIKE $2 OR lower(customer_name) LIKE $2)
+          AND ($3::text[] IS NULL OR status = ANY($3))
+          AND ($4::uuid IS NULL OR customer_id = $4)
+          AND ($5::uuid IS NULL OR opportunity_id = $5)";
+
+/// The parsed status filter and search pattern shared by the quotation list and its groups.
+fn quotation_filter_values(
+    q: Option<&str>,
+    status: Option<&str>,
+) -> AppResult<(Option<Vec<String>>, Option<String>)> {
     let statuses = tradocraft_core::filter::values(
-        p.status.as_deref(),
+        status,
         "status",
         &[
             QuotationStatus::Draft,
@@ -157,14 +162,63 @@ async fn list_quotations(
         ]
         .map(QuotationStatus::as_str),
     )?;
-    let pattern =
-        p.q.as_deref()
-            .map(|q| format!("%{}%", q.trim().to_lowercase()));
-    let filter = "WHERE company_id = $1
-          AND ($2::text IS NULL OR lower(number) LIKE $2 OR lower(customer_name) LIKE $2)
-          AND ($3::text[] IS NULL OR status = ANY($3))
-          AND ($4::uuid IS NULL OR customer_id = $4)
-          AND ($5::uuid IS NULL OR opportunity_id = $5)";
+    let pattern = q.map(|q| format!("%{}%", q.trim().to_lowercase()));
+    Ok((statuses, pattern))
+}
+
+/// API group keys of `GET /quotations/groups` and the SQL (text) they stand for. Never NULL.
+const QUOTATION_GROUPS: &[(&str, &str)] = &[("status", "status")];
+
+#[derive(Debug, Deserialize, IntoParams)]
+pub struct GroupParams {
+    /// What to count by: `status`.
+    pub group_by: Option<String>,
+    /// Same as the list.
+    pub q: Option<String>,
+    /// Same as the list.
+    pub status: Option<String>,
+    /// Same as the list.
+    pub customer_id: Option<Uuid>,
+    /// Same as the list.
+    pub opportunity_id: Option<Uuid>,
+}
+
+#[utoipa::path(get, path = "/quotations/groups", tag = "sales", params(GroupParams),
+    responses((status = 200, body = tradocraft_core::group::GroupPage)))]
+async fn quotation_groups(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Query(p): Query<GroupParams>,
+) -> AppResult<Json<tradocraft_core::group::GroupPage>> {
+    user.require(Permission::QuotationsRead)?;
+    let expr = tradocraft_core::group::expr(p.group_by.as_deref(), QUOTATION_GROUPS)?;
+    let (statuses, pattern) = quotation_filter_values(p.q.as_deref(), p.status.as_deref())?;
+    let sql =
+        tradocraft_core::group::count_sql(expr, &format!("sales.quotations {QUOTATION_WHERE}"));
+    let rows: Vec<(String, i64)> = sqlx::query_as(&sql)
+        .bind(user.company_id)
+        .bind(&pattern)
+        .bind(&statuses)
+        .bind(p.customer_id)
+        .bind(p.opportunity_id)
+        .fetch_all(&state.db)
+        .await?;
+    Ok(Json(tradocraft_core::group::page(
+        p.group_by.as_deref().unwrap_or_default(),
+        rows,
+    )?))
+}
+
+#[utoipa::path(get, path = "/quotations", tag = "sales", params(ListParams),
+    responses((status = 200, body = QuotationPage)))]
+async fn list_quotations(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Query(p): Query<ListParams>,
+) -> AppResult<Json<QuotationPage>> {
+    user.require(Permission::QuotationsRead)?;
+    let (statuses, pattern) = quotation_filter_values(p.q.as_deref(), p.status.as_deref())?;
+    let filter = QUOTATION_WHERE;
     let order = tradocraft_core::sort::order_by(
         p.sort.as_deref(),
         QUOTATION_SORT,
@@ -1000,6 +1054,7 @@ pub fn router() -> OpenApiRouter<AppState> {
     OpenApiRouter::new()
         .routes(routes!(preview))
         .routes(routes!(list_quotations, create_quotation))
+        .routes(routes!(quotation_groups))
         .routes(routes!(get_quotation, update_quotation))
         .routes(routes!(send_quotation))
         .routes(routes!(accept_quotation))

@@ -11,6 +11,7 @@ import '../models/configured_quotation_input.dart';
 import '../models/confirm_order_input.dart';
 import '../models/convert_input.dart';
 import '../models/dismiss_request_input.dart';
+import '../models/group_page.dart';
 import '../models/mark_shipping_requested_input.dart';
 import '../models/order.dart';
 import '../models/order_edit_input.dart';
@@ -194,6 +195,24 @@ abstract class SalesClient {
   @POST('/api/v1/quotations/configured')
   Future<ConfiguredImportResult> importConfigured({
     @Body() required ConfiguredQuotationInput body,
+  });
+
+  /// [groupBy] - What to count by: `status`.
+  ///
+  /// [q] - Same as the list.
+  ///
+  /// [status] - Same as the list.
+  ///
+  /// [customerId] - Same as the list.
+  ///
+  /// [opportunityId] - Same as the list.
+  @GET('/api/v1/quotations/groups')
+  Future<GroupPage> quotationGroups({
+    @Query('group_by') String? groupBy,
+    @Query('q') String? q,
+    @Query('status') String? status,
+    @Query('customer_id') String? customerId,
+    @Query('opportunity_id') String? opportunityId,
   });
 
   @GET('/api/v1/quotations/{id}')

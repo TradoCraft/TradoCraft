@@ -18845,6 +18845,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Apply favourite {name}'**
   String listApplyFavourite(String name);
+
+  /// No description provided for @listGroupBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Group by'**
+  String get listGroupBy;
+
+  /// No description provided for @listGroupNone.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get listGroupNone;
+
+  /// No description provided for @listGroupChip.
+  ///
+  /// In en, this message translates to:
+  /// **'Group: {group}'**
+  String listGroupChip(String group);
+
+  /// No description provided for @listRemoveGrouping.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove grouping {group}'**
+  String listRemoveGrouping(String group);
+
+  /// No description provided for @listGroupExpanded.
+  ///
+  /// In en, this message translates to:
+  /// **'{label}, {count} rows, expanded'**
+  String listGroupExpanded(String label, int count);
+
+  /// No description provided for @listGroupCollapsed.
+  ///
+  /// In en, this message translates to:
+  /// **'{label}, {count} rows, collapsed'**
+  String listGroupCollapsed(String label, int count);
 }
 
 class _AppLocalizationsDelegate

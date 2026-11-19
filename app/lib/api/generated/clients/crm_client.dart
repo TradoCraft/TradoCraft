@@ -24,6 +24,7 @@ import '../models/customer_page.dart';
 import '../models/customer_rebate.dart';
 import '../models/delivery_check.dart';
 import '../models/format.dart';
+import '../models/group_page.dart';
 import '../models/import_report.dart';
 import '../models/lookup_result.dart';
 import '../models/match_rule.dart';
@@ -136,6 +137,21 @@ abstract class CrmClient {
   @GET('/api/v1/customers/export')
   Future<String> exportCustomers({
     @Query('format') Format? format,
+  });
+
+  /// [groupBy] - What to count by: `active` or `country_code`.
+  ///
+  /// [q] - Same as the list.
+  ///
+  /// [active] - Same as the list.
+  ///
+  /// [countryCode] - Same as the list.
+  @GET('/api/v1/customers/groups')
+  Future<GroupPage> customerGroups({
+    @Query('group_by') String? groupBy,
+    @Query('q') String? q,
+    @Query('active') bool? active,
+    @Query('country_code') String? countryCode,
   });
 
   /// Creates or updates customers from a CSV, XLSX or ODS file (detected from the content), keyed by.

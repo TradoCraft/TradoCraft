@@ -4141,6 +4141,76 @@
         }
       }
     },
+    "/api/v1/customers/groups": {
+      "get": {
+        "tags": [
+          "crm"
+        ],
+        "operationId": "customer_groups",
+        "parameters": [
+          {
+            "name": "group_by",
+            "in": "query",
+            "description": "What to count by: `active` or `country_code`.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Same as the list.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "active",
+            "in": "query",
+            "description": "Same as the list.",
+            "required": false,
+            "schema": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "country_code",
+            "in": "query",
+            "description": "Same as the list.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupPage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/customers/import": {
       "post": {
         "tags": [
@@ -22989,6 +23059,89 @@
         }
       }
     },
+    "/api/v1/products/groups": {
+      "get": {
+        "tags": [
+          "products"
+        ],
+        "operationId": "product_groups",
+        "parameters": [
+          {
+            "name": "group_by",
+            "in": "query",
+            "description": "What to count by: `active` or `product_type`.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Same as the list.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "active",
+            "in": "query",
+            "description": "Same as the list.",
+            "required": false,
+            "schema": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "family_id",
+            "in": "query",
+            "description": "Same as the list.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "product_type",
+            "in": "query",
+            "description": "Same as the list.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupPage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/products/import": {
       "post": {
         "tags": [
@@ -25375,6 +25528,90 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/quotations/groups": {
+      "get": {
+        "tags": [
+          "sales"
+        ],
+        "operationId": "quotation_groups",
+        "parameters": [
+          {
+            "name": "group_by",
+            "in": "query",
+            "description": "What to count by: `status`.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Same as the list.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Same as the list.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "customer_id",
+            "in": "query",
+            "description": "Same as the list.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "opportunity_id",
+            "in": "query",
+            "description": "Same as the list.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupPage"
                 }
               }
             }
@@ -38716,6 +38953,43 @@
           "warehouse_id": {
             "type": "string",
             "format": "uuid"
+          }
+        }
+      },
+      "GroupCount": {
+        "type": "object",
+        "description": "The rows of one group.",
+        "required": [
+          "value",
+          "count"
+        ],
+        "properties": {
+          "count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "value": {
+            "type": "string",
+            "description": "The group value as text (booleans as `true` / `false`)."
+          }
+        }
+      },
+      "GroupPage": {
+        "type": "object",
+        "description": "The response of a groups endpoint, ordered by value.",
+        "required": [
+          "group_by",
+          "groups"
+        ],
+        "properties": {
+          "group_by": {
+            "type": "string"
+          },
+          "groups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GroupCount"
+            }
           }
         }
       },

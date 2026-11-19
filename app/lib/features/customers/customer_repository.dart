@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/api.dart';
 import '../../framework/data/repository.dart';
+import '../../framework/search/group_model.dart';
 
 /// Customers over the generated CRM client. The API has no delete (customers are deactivated).
 class CustomerRepository
@@ -23,6 +24,17 @@ class CustomerRepository
       limit: query.limit,
     );
     return Page(page.items, total: page.total);
+  }
+
+  /// Row counts per value of [groupBy] for the rows [query] would list (ADR 0084).
+  Future<List<GroupBucket>> groups(ListQuery query, String groupBy) async {
+    final page = await _crm.customerGroups(
+      groupBy: groupBy,
+      q: query.q,
+      active: query.flag('active'),
+      countryCode: query.csv('country_code'),
+    );
+    return [for (final g in page.groups) GroupBucket(g.value, g.count)];
   }
 
   @override

@@ -14,6 +14,7 @@ pub mod environment;
 pub mod error;
 pub mod files;
 pub mod filter;
+pub mod group;
 pub mod identity;
 pub mod identity_admin;
 pub mod import;
