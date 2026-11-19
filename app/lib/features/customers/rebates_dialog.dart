@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/api.dart';
 import '../../shared/actions.dart';
+import '../../shared/decimal_field.dart';
 import '../../shared/format.dart';
 import '../../shared/search_picker.dart';
 import '../products/families_dialog.dart';
@@ -134,14 +135,21 @@ class _NewRebateState extends ConsumerState<_NewRebate> {
   String _scope = 'family';
   String? _familyId;
   Product? _product;
-  final _percent = TextEditingController();
+  final _percent = DecimalInputController(scale: 2, percentagePoints: true);
   final _notes = TextEditingController();
   DateTime? _from;
   DateTime? _to;
   String? _error;
 
+  @override
+  void dispose() {
+    _percent.dispose();
+    _notes.dispose();
+    super.dispose();
+  }
+
   Future<void> _save() async {
-    final percent = parseDecimalInput(_percent.text);
+    final percent = _percent.decimal;
     if (percent == null ||
         (_scope == 'family' ? _familyId == null : _product == null)) {
       setState(
@@ -234,7 +242,7 @@ class _NewRebateState extends ConsumerState<_NewRebate> {
                 onSelected: (p) => setState(() => _product = p),
               ),
             gap,
-            TextField(
+            DecimalField(
               controller: _percent,
               decoration: InputDecoration(
                 labelText: context.l10n.rebatePercent,

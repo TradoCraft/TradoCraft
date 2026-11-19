@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/api.dart';
+import '../../shared/decimal_field.dart';
 import '../../shared/format.dart';
 import '../../l10n/l10n.dart';
 import '../../shared/app_icons.dart';
@@ -143,7 +144,7 @@ class _PriceDialogState extends ConsumerState<_PriceDialog> {
   }
 
   Future<void> _save() async {
-    final price = parseDecimalInput(_price.text);
+    final price = _price.decimal;
     if (_zoneId == null || price == null) {
       setState(() => _error = context.l10n.chooseZonePrice);
       return;
@@ -201,7 +202,7 @@ class _PriceDialogState extends ConsumerState<_PriceDialog> {
                 : (v) => setState(() => _zoneId = v),
           ),
           const SizedBox(height: 12),
-          TextField(
+          DecimalField(
             controller: _price,
             decoration: InputDecoration(
               labelText: context.l10n.unitPriceExclVat,

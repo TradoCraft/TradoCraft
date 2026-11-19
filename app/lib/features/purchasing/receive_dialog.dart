@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/api.dart';
 import '../../l10n/l10n.dart';
+import '../../shared/decimal_field.dart';
 import '../inventory/inventory_common.dart';
 import '../tutorial/targets.dart';
 
@@ -21,10 +22,10 @@ String _fmt(double v) =>
 
 class _ReceiveLine {
   _ReceiveLine(this.line, this.remaining)
-    : qty = TextEditingController(text: _fmt(remaining));
+    : qty = DecimalInputController(text: _fmt(remaining));
   final PurchaseOrderLine line;
   final double remaining;
-  final TextEditingController qty;
+  final DecimalInputController qty;
   final lot = TextEditingController();
   final serials = TextEditingController();
   String tracking = 'none';
@@ -103,7 +104,8 @@ class _ReceiveGoodsDialogState extends ConsumerState<ReceiveGoodsDialog> {
     final l = context.l10n;
     final lines = <ReceiveGoodsLineInput>[];
     for (final r in _rows) {
-      final q = parseQuantity(r.qty.text);
+      final quantity = r.qty.decimal;
+      final q = double.tryParse(quantity ?? '');
       final name = r.line.productCode;
       if (q == null || q < 0 || q > r.remaining + 1e-9) {
         _error = l.purchReceiveQtyInvalid(name, _fmt(r.remaining));
@@ -133,7 +135,7 @@ class _ReceiveGoodsDialogState extends ConsumerState<ReceiveGoodsDialog> {
       lines.add(
         ReceiveGoodsLineInput(
           poLineId: r.line.id,
-          quantity: r.qty.text.trim().replaceAll(',', '.'),
+          quantity: quantity!,
           lotNumber: lot,
           serialNumbers: serials,
         ),
@@ -226,12 +228,9 @@ class _ReceiveGoodsDialogState extends ConsumerState<ReceiveGoodsDialog> {
                   '${r.line.productCode} · ${r.line.productName}',
                   style: Theme.of(context).textTheme.titleSmall,
                 ),
-                TextField(
-                  key: ValueKey('receive-qty-${r.line.lineNumber}'),
+                DecimalField(
+                  fieldKey: ValueKey('receive-qty-${r.line.lineNumber}'),
                   controller: r.qty,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
                   decoration: InputDecoration(
                     labelText: l.purchReceiveQty,
                     helperText: l.purchReceiveRemaining(_fmt(r.remaining)),

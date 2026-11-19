@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/api.dart';
 import '../../l10n/l10n.dart';
 import '../../shared/app_icons.dart';
+import '../../shared/decimal_field.dart';
 import '../../shared/format.dart';
 import '../../shared/search_picker.dart';
 
@@ -62,9 +63,13 @@ class PoLineDraft {
     String quantity = '',
     String unitPrice = '',
     String vatRate = '',
-  }) : qty = TextEditingController(text: quantity),
-       price = TextEditingController(text: unitPrice),
-       vat = TextEditingController(text: vatRate);
+  }) : qty = DecimalInputController(text: quantity),
+       price = DecimalInputController(text: unitPrice),
+       vat = DecimalInputController(
+         text: vatRate,
+         scale: 2,
+         percentagePoints: true,
+       );
 
   /// Starts from a stored [line].
   factory PoLineDraft.fromLine(PurchaseOrderLine line) => PoLineDraft(
@@ -90,13 +95,13 @@ class PoLineDraft {
   String description;
 
   /// Quantity field.
-  final TextEditingController qty;
+  final DecimalInputController qty;
 
   /// Unit price field.
-  final TextEditingController price;
+  final DecimalInputController price;
 
   /// Optional VAT rate override field (empty = server auto-resolves).
-  final TextEditingController vat;
+  final DecimalInputController vat;
 
   /// Releases the controllers.
   void dispose() {
@@ -119,17 +124,17 @@ String trimDecimal(String v) =>
   final out = <NewPoLineInput>[];
   for (final d in lines) {
     if (d.productId == null) return (null, l.purchPickProduct);
-    final q = parseDecimalInput(d.qty.text);
+    final q = d.qty.decimal;
     if (q == null || double.parse(q) <= 0 || _scale(q) > 4) {
       return (null, l.purchLineQtyInvalid);
     }
-    final p = parseDecimalInput(d.price.text);
+    final p = d.price.decimal;
     if (p == null || double.parse(p) < 0 || _scale(p) > 4) {
       return (null, l.purchLinePriceInvalid);
     }
     String? v;
     if (d.vat.text.trim().isNotEmpty) {
-      v = parseDecimalInput(d.vat.text);
+      v = d.vat.decimal;
       if (v == null || double.parse(v) < 0 || double.parse(v) > 100) {
         return (null, l.poLineVatInvalid);
       }
@@ -234,8 +239,8 @@ class _PoLinesEditorState extends ConsumerState<PoLinesEditor> {
                 const SizedBox(width: 8),
                 SizedBox(
                   width: 90,
-                  child: TextField(
-                    key: ValueKey('po-line-qty-$i'),
+                  child: DecimalField(
+                    fieldKey: ValueKey('po-line-qty-$i'),
                     controller: widget.lines[i].qty,
                     decoration: InputDecoration(labelText: l.quantity),
                     onChanged: (_) => _changed(),
@@ -244,8 +249,8 @@ class _PoLinesEditorState extends ConsumerState<PoLinesEditor> {
                 const SizedBox(width: 8),
                 SizedBox(
                   width: 110,
-                  child: TextField(
-                    key: ValueKey('po-line-price-$i'),
+                  child: DecimalField(
+                    fieldKey: ValueKey('po-line-price-$i'),
                     controller: widget.lines[i].price,
                     decoration: InputDecoration(labelText: l.unitPrice),
                     onChanged: (_) => _changed(),
@@ -254,8 +259,8 @@ class _PoLinesEditorState extends ConsumerState<PoLinesEditor> {
                 const SizedBox(width: 8),
                 SizedBox(
                   width: 72,
-                  child: TextField(
-                    key: ValueKey('po-line-vat-$i'),
+                  child: DecimalField(
+                    fieldKey: ValueKey('po-line-vat-$i'),
                     controller: widget.lines[i].vat,
                     decoration: InputDecoration(labelText: l.vatPercent),
                     onChanged: (_) => _changed(),
@@ -297,8 +302,8 @@ class _PoLinesEditorState extends ConsumerState<PoLinesEditor> {
   }
 
   String _lineTotal(PoLineDraft d) {
-    final q = double.tryParse(parseDecimalInput(d.qty.text) ?? '');
-    final p = double.tryParse(parseDecimalInput(d.price.text) ?? '');
+    final q = double.tryParse(d.qty.decimal ?? '');
+    final p = double.tryParse(d.price.decimal ?? '');
     return q == null || p == null ? '' : money((q * p).toStringAsFixed(2));
   }
 }

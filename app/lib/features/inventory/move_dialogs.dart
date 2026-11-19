@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/api.dart';
 import '../../l10n/l10n.dart';
+import '../../shared/decimal_field.dart';
 import '../../shared/format.dart';
 import '../../shared/photos.dart' show newClientId;
 import '../../shared/search_picker.dart';
@@ -48,7 +49,7 @@ class MoveDialog extends ConsumerStatefulWidget {
 
 class _MoveDialogState extends ConsumerState<MoveDialog> {
   final _id = newClientId();
-  final _qty = TextEditingController();
+  final _qty = DecimalInputController();
   final _lotNumber = TextEditingController();
   final _serial = TextEditingController();
   final _note = TextEditingController();
@@ -145,7 +146,7 @@ class _MoveDialogState extends ConsumerState<MoveDialog> {
   Future<void> _submit() async {
     final l = context.l10n;
     final p = _product;
-    final quantity = _serialTracked ? '1' : parseDecimalInput(_qty.text);
+    final quantity = _serialTracked ? '1' : _qty.decimal;
     if (p == null || quantity == null) {
       setState(() => _error = l.stockProductQuantityRequired);
       return;
@@ -353,11 +354,8 @@ class _MoveDialogState extends ConsumerState<MoveDialog> {
                     Row(
                       children: [
                         Expanded(
-                          child: TextField(
+                          child: DecimalField(
                             controller: _qty,
-                            keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true,
-                            ),
                             decoration: InputDecoration(labelText: l.quantity),
                           ),
                         ),
@@ -454,7 +452,7 @@ class AdjustDialog extends ConsumerStatefulWidget {
 
 class _AdjustDialogState extends ConsumerState<AdjustDialog> {
   final _id = newClientId();
-  final _value = TextEditingController();
+  final _value = DecimalInputController();
   final _lotNumber = TextEditingController();
   final _note = TextEditingController();
   late String? _location = widget.locationId;
@@ -480,7 +478,7 @@ class _AdjustDialogState extends ConsumerState<AdjustDialog> {
   }
 
   Future<void> _submit() async {
-    final value = parseDecimalInput(_value.text);
+    final value = _value.decimal;
     if (value == null || _location == null || _note.text.trim().isEmpty) {
       setState(() => _error = context.l10n.stockAdjustRequired);
       return;
@@ -571,12 +569,8 @@ class _AdjustDialogState extends ConsumerState<AdjustDialog> {
                 onSelectionChanged: (s) => setState(() => _setTo = s.first),
               ),
               gap,
-              TextField(
+              DecimalField(
                 controller: _value,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                  signed: true,
-                ),
                 decoration: InputDecoration(
                   labelText: _setTo ? l.stockNewQuantity : l.stockChangeBy,
                   suffixText: widget.product.unit,

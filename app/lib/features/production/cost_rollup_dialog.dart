@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/api.dart';
 import '../../l10n/l10n.dart';
+import '../../shared/decimal_field.dart';
 import '../../shared/format.dart';
 
 /// The cost of building a quantity of a product from its active BOM and routing, through every
@@ -16,7 +17,7 @@ class CostRollupDialog extends ConsumerStatefulWidget {
 }
 
 class _CostRollupDialogState extends ConsumerState<CostRollupDialog> {
-  final _quantity = TextEditingController(text: '1');
+  final _quantity = DecimalInputController(text: '1');
   ProductionCostRollup? _result;
   String? _error;
 
@@ -36,7 +37,7 @@ class _CostRollupDialogState extends ConsumerState<CostRollupDialog> {
   }
 
   Future<void> _calculate() async {
-    final q = parseDecimalInput(_quantity.text);
+    final q = _quantity.decimal;
     if (q == null) return;
     final mine = ++_request;
     try {
@@ -84,12 +85,9 @@ class _CostRollupDialogState extends ConsumerState<CostRollupDialog> {
                 children: [
                   SizedBox(
                     width: 140,
-                    child: TextField(
-                      key: const ValueKey('rollup-quantity'),
+                    child: DecimalField(
+                      fieldKey: const ValueKey('rollup-quantity'),
                       controller: _quantity,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
                       decoration: InputDecoration(
                         labelText: l.quantity,
                         suffixText: widget.product.unit,

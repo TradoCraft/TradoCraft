@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/api.dart';
 import '../../l10n/l10n.dart';
+import '../../shared/decimal_field.dart';
 import '../../shared/format.dart';
 import '../inventory/inventory_common.dart';
 import '../planning/board_model.dart';
@@ -22,10 +23,10 @@ class CompleteDialog extends ConsumerStatefulWidget {
 
 class _Actual {
   _Actual(ProductionComponent c)
-    : consumed = TextEditingController(text: c.requiredQuantity),
-      scrap = TextEditingController(text: '0');
-  final TextEditingController consumed;
-  final TextEditingController scrap;
+    : consumed = DecimalInputController(text: c.requiredQuantity),
+      scrap = DecimalInputController(text: '0');
+  final DecimalInputController consumed;
+  final DecimalInputController scrap;
   String? extraLocation;
   List<ProductionSerialCandidate> units = [];
 
@@ -36,7 +37,7 @@ class _Actual {
 }
 
 class _CompleteDialogState extends ConsumerState<CompleteDialog> {
-  late final _quantity = TextEditingController(text: widget.order.quantity);
+  late final _quantity = DecimalInputController(text: widget.order.quantity);
   final _lot = TextEditingController();
   final _serials = TextEditingController();
   final _note = TextEditingController();
@@ -71,15 +72,15 @@ class _CompleteDialogState extends ConsumerState<CompleteDialog> {
     super.dispose();
   }
 
-  Decimal _n(String text) =>
-      Decimal.tryParse(parseDecimalInput(text) ?? '') ?? Decimal.zero;
+  Decimal _n(DecimalInputController field) =>
+      Decimal.tryParse(field.decimal ?? '') ?? Decimal.zero;
 
   /// More is taken than the reservation holds: the rest needs a place to be taken from. Exact
   /// decimal arithmetic, so an exact fit never asks for an extra place.
   bool _needsExtra(ProductionComponent c) {
     final a = _actuals[c.id]!;
     return c.tracking != 'serial' &&
-        _n(a.consumed.text) + _n(a.scrap.text) >
+        _n(a.consumed) + _n(a.scrap) >
             (Decimal.tryParse(c.reservedQuantity) ?? Decimal.zero);
   }
 
@@ -91,7 +92,7 @@ class _CompleteDialogState extends ConsumerState<CompleteDialog> {
         orderId: widget.order.id,
         component: c,
         initial: a.units,
-        count: _n(a.consumed.text).toBigInt().toInt(),
+        count: _n(a.consumed).toBigInt().toInt(),
       ),
     );
     if (chosen != null) setState(() => a.units = chosen);
@@ -100,12 +101,26 @@ class _CompleteDialogState extends ConsumerState<CompleteDialog> {
   Future<void> _save() async {
     final l = context.l10n;
     final o = widget.order;
-    final quantity = parseDecimalInput(_quantity.text);
+    final quantity = _quantity.decimal;
     if (quantity == null || _location == null) {
       setState(
         () => _error = '${l.productionQuantityBuilt}, ${l.productionLocation}',
       );
       return;
+    }
+    for (final c in o.components) {
+      final actual = _actuals[c.id]!;
+      final invalidConsumed =
+          actual.consumed.text.trim().isNotEmpty &&
+          actual.consumed.decimal == null;
+      final invalidScrap =
+          c.tracking != 'serial' &&
+          actual.scrap.text.trim().isNotEmpty &&
+          actual.scrap.decimal == null;
+      if (invalidConsumed || invalidScrap) {
+        setState(() => _error = '${c.componentCode}: ${l.cfgInvalidNumber}');
+        return;
+      }
     }
     // A minutes field that is left empty skips its operation; one that is filled in must be a
     // whole number, or the operation would be silently left out.
@@ -152,12 +167,10 @@ class _CompleteDialogState extends ConsumerState<CompleteDialog> {
                 for (final c in o.components)
                   ProductionComponentActual(
                     componentId: c.id,
-                    consumedQuantity: parseDecimalInput(
-                      _actuals[c.id]!.consumed.text,
-                    ),
+                    consumedQuantity: _actuals[c.id]!.consumed.decimal,
                     scrapQuantity: c.tracking == 'serial'
                         ? null
-                        : parseDecimalInput(_actuals[c.id]!.scrap.text),
+                        : _actuals[c.id]!.scrap.decimal,
                     extraLocationId: _needsExtra(c)
                         ? _actuals[c.id]!.extraLocation
                         : null,
@@ -199,12 +212,9 @@ class _CompleteDialogState extends ConsumerState<CompleteDialog> {
                 l.productionOutput,
                 style: Theme.of(context).textTheme.titleSmall,
               ),
-              TextField(
-                key: const ValueKey('output-quantity'),
+              DecimalField(
+                fieldKey: const ValueKey('output-quantity'),
                 controller: _quantity,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
                 decoration: InputDecoration(
                   labelText: '${l.productionQuantityBuilt} (${o.unit})',
                 ),
@@ -263,14 +273,10 @@ class _CompleteDialogState extends ConsumerState<CompleteDialog> {
                       Row(
                         children: [
                           Expanded(
-                            child: TextField(
-                              key: ValueKey('consumed-${c.id}'),
+                            child: DecimalField(
+                              fieldKey: ValueKey('consumed-${c.id}'),
                               controller: _actuals[c.id]!.consumed,
                               onChanged: (_) => setState(() {}),
-                              keyboardType:
-                                  const TextInputType.numberWithOptions(
-                                    decimal: true,
-                                  ),
                               decoration: InputDecoration(
                                 labelText:
                                     '${l.productionConsumed} (${c.unit})',
@@ -280,14 +286,10 @@ class _CompleteDialogState extends ConsumerState<CompleteDialog> {
                           const SizedBox(width: 12),
                           if (c.tracking != 'serial')
                             Expanded(
-                              child: TextField(
-                                key: ValueKey('scrap-${c.id}'),
+                              child: DecimalField(
+                                fieldKey: ValueKey('scrap-${c.id}'),
                                 controller: _actuals[c.id]!.scrap,
                                 onChanged: (_) => setState(() {}),
-                                keyboardType:
-                                    const TextInputType.numberWithOptions(
-                                      decimal: true,
-                                    ),
                                 decoration: InputDecoration(
                                   labelText: l.productionScrap,
                                 ),

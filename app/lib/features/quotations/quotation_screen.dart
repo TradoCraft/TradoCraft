@@ -13,6 +13,7 @@ import '../../app/shortcuts/registry.dart';
 import '../../app/workspace.dart' show TabScope;
 import '../../shared/grid_key_nav.dart';
 import '../../shared/actions.dart';
+import '../../shared/decimal_field.dart';
 import '../../shared/format.dart';
 import '../../shared/live_record_watcher.dart';
 import '../../shared/sales_hints.dart';
@@ -45,9 +46,13 @@ class _Line {
     this.parent,
     this.percentOfParent,
     this.percentBase,
-  }) : quantity = TextEditingController(text: quantity),
-       discount = TextEditingController(text: discount),
-       price = TextEditingController(text: price),
+  }) : quantity = DecimalInputController(text: quantity),
+       discount = DecimalInputController(
+         text: discount,
+         scale: 2,
+         percentagePoints: true,
+       ),
+       price = DecimalInputController(text: price),
        // A new line starts with the product's default production remark.
        productionRemark = TextEditingController(
          text: productionRemark ?? product.defaultProductionRemark ?? '',
@@ -56,11 +61,11 @@ class _Line {
 
   /// Mutable: changing the main product of a line keeps the line and swaps the product.
   Product product;
-  final TextEditingController quantity;
-  final TextEditingController discount;
+  final DecimalInputController quantity;
+  final DecimalInputController discount;
 
   /// Confirmed price of an indicative product; empty while unconfirmed.
-  final TextEditingController price;
+  final DecimalInputController price;
 
   /// The stored name snapshot, re-sent as an override. Null lets the server name the line from
   /// its product in the customer's language (a new line, or a line whose product was changed).
@@ -139,13 +144,13 @@ List<_Line> _linesFromQuotation(
         : byPosition[l.parentPosition];
     final line = _Line(
       products[l.productId]!,
-      quantity: number(l.quantity),
-      discount: number(l.lineDiscountPercent),
+      quantity: editableDecimal(l.quantity),
+      discount: editableDecimal(l.lineDiscountPercent),
       price:
           l.priceOnRequest &&
               l.priceConfirmed &&
               (parent == null || l.percentOfParent == null)
-          ? number(l.listUnitPrice)
+          ? editableDecimal(l.listUnitPrice)
           : '',
       description: l.description,
       productionRemark: l.productionRemark,
@@ -513,12 +518,10 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
   List<QuotationLineInput>? _lineInputs() {
     final inputs = <QuotationLineInput>[];
     for (final (i, l) in _lines.indexed) {
-      final qty = parseDecimalInput(l.quantity.text);
-      final disc = parseDecimalInput(
-        l.discount.text.isEmpty ? '0' : l.discount.text,
-      );
+      final qty = l.quantity.decimal;
+      final disc = l.discount.text.trim().isEmpty ? '0' : l.discount.decimal;
       final price = l.hasConfirmablePrice && l.price.text.trim().isNotEmpty
-          ? parseDecimalInput(l.price.text)
+          ? l.price.decimal
           : null;
       if (qty == null ||
           disc == null ||
@@ -577,6 +580,7 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
   }
 
   Future<void> _refreshPreview() async {
+    final seq = ++_previewSeq;
     final customer = _customer;
     _previewError = null;
     final inputs = _lineInputs();
@@ -584,7 +588,6 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
       setState(() => _preview = null);
       return;
     }
-    final seq = ++_previewSeq;
     try {
       final p = await _api.sales.preview(
         body: PricingPreviewInput(
@@ -1286,7 +1289,6 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
                   : _numField(
                       l.discount,
                       '%',
-                      signed: true,
                       semanticLabel: context.l10n.lineDiscount,
                     ),
               netPrice: money(preview?.lines.elementAtOrNull(i)?.netUnitPrice),
@@ -1439,7 +1441,7 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
           await _api.products.getProduct(id: o.optionProductId),
       ];
       if (!mounted || !_lines.contains(line)) return;
-      final parentQty = parseDecimalInput(line.quantity.text);
+      final parentQty = line.quantity.decimal;
       setState(() {
         // After the parent and the options it already has.
         var at = _lines.indexOf(line) + 1;
@@ -1494,9 +1496,7 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
           await _api.products.getProduct(id: o.optionProductId),
       ];
       if (!mounted || !_lines.contains(parent)) return;
-      final parentQty = Decimal.parse(
-        parseDecimalInput(parent.quantity.text) ?? '1',
-      );
+      final parentQty = Decimal.parse(parent.quantity.decimal ?? '1');
       setState(() {
         var at = _lines.indexOf(parent) + 1;
         while (at < _lines.length && _lines[at].isDescendantOf(parent)) {
@@ -1727,24 +1727,19 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
   /// A number input of a line. The column header is the only visible label, so [semanticLabel]
   /// gives the input the name screen readers (and browser tests) find it by.
   Widget _numField(
-    TextEditingController c,
+    DecimalInputController c,
     String suffix, {
     String? hint,
     String? label,
     String? semanticLabel,
-    bool signed = false,
   }) => SizedBox(
     width: 104,
     child: Semantics(
       label: semanticLabel,
-      child: TextField(
+      child: DecimalField(
         controller: c,
         textAlign: TextAlign.right,
         style: const TextStyle(fontFeatures: [FontFeature.tabularFigures()]),
-        keyboardType: TextInputType.numberWithOptions(
-          decimal: true,
-          signed: signed,
-        ),
         decoration: InputDecoration(
           suffixText: suffix,
           hintText: hint,

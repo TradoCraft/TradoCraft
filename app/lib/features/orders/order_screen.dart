@@ -7,6 +7,7 @@ import '../../app/api.dart';
 import '../../app/workspace.dart' show TabScope;
 import '../../l10n/l10n.dart';
 import '../../shared/actions.dart';
+import '../../shared/decimal_field.dart';
 import '../../shared/format.dart';
 import '../../shared/live_record_watcher.dart';
 import '../../shared/order_widgets.dart';
@@ -55,8 +56,8 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
   bool _isConflict = false;
 
   bool _editing = false;
-  final _qty = <int, TextEditingController>{};
-  final _discount = <int, TextEditingController>{};
+  final _qty = <int, DecimalInputController>{};
+  final _discount = <int, DecimalInputController>{};
   final _desc = <int, TextEditingController>{};
   final _removed = <int>{};
   final _notes = TextEditingController();
@@ -200,9 +201,13 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
     final o = _order!;
     _disposeEditors();
     for (final line in o.lines) {
-      _qty[line.position] = TextEditingController(text: number(line.quantity));
-      _discount[line.position] = TextEditingController(
-        text: number(line.lineDiscountPercent),
+      _qty[line.position] = DecimalInputController(
+        text: editableDecimal(line.quantity),
+      );
+      _discount[line.position] = DecimalInputController(
+        text: editableDecimal(line.lineDiscountPercent),
+        scale: 2,
+        percentagePoints: true,
       );
       _desc[line.position] = TextEditingController(text: line.description);
     }
@@ -226,7 +231,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
     final lines = <OrderLineEdit>[];
     for (final line in o.lines) {
       if (_removed.contains(line.position)) continue;
-      final qty = parseDecimalInput(_qty[line.position]!.text);
+      final qty = _qty[line.position]!.decimal;
       if (qty == null) throw StateError(context.l10n.quantity);
       String? discount;
       if (!line.nonDiscountable) {
@@ -671,14 +676,10 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
     final l = context.l10n;
     final o = d.order;
     final editing = _editing;
-    Widget field(TextEditingController c, double width, {bool right = false}) =>
-        SizedBox(
-          width: width,
-          child: TextField(
-            controller: c,
-            textAlign: right ? TextAlign.right : TextAlign.start,
-          ),
-        );
+    Widget numericField(DecimalInputController c, double width) => SizedBox(
+      width: width,
+      child: DecimalField(controller: c, textAlign: TextAlign.right),
+    );
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: DataTable(
@@ -699,19 +700,22 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
                   DataCell(Text(line.productCode)),
                   DataCell(
                     editing
-                        ? field(_desc[line.position]!, 280)
+                        ? SizedBox(
+                            width: 280,
+                            child: TextField(controller: _desc[line.position]),
+                          )
                         : Text(line.description),
                   ),
                   DataCell(
                     editing
-                        ? field(_qty[line.position]!, 90, right: true)
+                        ? numericField(_qty[line.position]!, 90)
                         : Text('${number(line.quantity)} ${line.unit}'),
                   ),
                   if (editing)
                     DataCell(
                       line.nonDiscountable
                           ? Text(l.pricingNet)
-                          : field(_discount[line.position]!, 70, right: true),
+                          : numericField(_discount[line.position]!, 70),
                     ),
                   DataCell(
                     Text(money(line.netUnitPrice, currency: o.currency)),

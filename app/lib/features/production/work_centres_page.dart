@@ -6,6 +6,7 @@ import '../../app/api.dart';
 import '../../l10n/l10n.dart';
 import '../../shared/actions.dart';
 import '../../shared/app_icons.dart';
+import '../../shared/decimal_field.dart';
 import '../../shared/format.dart';
 import '../planning/board_model.dart' show dateOnly;
 import '../planning/planning_adapter.dart' show clockText, minutesOfText;
@@ -179,7 +180,7 @@ class _WorkCentreDialogState extends ConsumerState<_WorkCentreDialog> {
   late final _capacity = TextEditingController(
     text: (widget.existing?.capacity ?? 1).toString(),
   );
-  late final _cost = TextEditingController(text: widget.existing?.costPerHour);
+  late final _cost = DecimalInputController(text: widget.existing?.costPerHour);
   late final _notes = TextEditingController(text: widget.existing?.notes);
   late bool _active = widget.existing?.active ?? true;
   late String? _division = widget.existing?.divisionId;
@@ -197,12 +198,17 @@ class _WorkCentreDialogState extends ConsumerState<_WorkCentreDialog> {
 
   Future<void> _save() async {
     final e = widget.existing;
+    final cost = widget.canCost ? _cost.decimal : null;
+    if (widget.canCost && _cost.text.trim().isNotEmpty && cost == null) {
+      setState(() => _error = context.l10n.cfgInvalidNumber);
+      return;
+    }
     final body = WorkCentreInput(
       code: _code.text.trim(),
       name: _name.text.trim(),
       divisionId: _division,
       capacity: int.tryParse(_capacity.text.trim()) ?? 1,
-      costPerHour: widget.canCost ? parseDecimalInput(_cost.text) : null,
+      costPerHour: cost,
       active: _active,
       sortOrder: e?.sortOrder ?? 0,
       notes: _notes.text.trim(),
@@ -275,12 +281,9 @@ class _WorkCentreDialogState extends ConsumerState<_WorkCentreDialog> {
                 ),
               ),
               if (widget.canCost)
-                TextField(
-                  key: const ValueKey('wc-cost'),
+                DecimalField(
+                  fieldKey: const ValueKey('wc-cost'),
                   controller: _cost,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
                   decoration: InputDecoration(
                     labelText: l.productionWorkCentreCost,
                   ),

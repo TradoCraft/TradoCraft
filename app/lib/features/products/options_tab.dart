@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/api.dart';
 import '../../l10n/l10n.dart';
 import '../../shared/app_icons.dart';
+import '../../shared/decimal_field.dart';
 import '../../shared/format.dart';
 import '../../shared/search_picker.dart';
 
@@ -26,11 +27,11 @@ class _Row {
     String quantity,
     this.required, {
     this.active = true,
-  }) : quantity = TextEditingController(text: quantity);
+  }) : quantity = DecimalInputController(text: quantity);
   final String productId;
   final String code;
   final String name;
-  final TextEditingController quantity;
+  final DecimalInputController quantity;
   bool required;
 
   /// Whether the option is switched on; kept from the stored option so saving does not change it.
@@ -72,7 +73,7 @@ class _OptionsTabState extends ConsumerState<OptionsTab> {
             o.optionProductId,
             o.optionCode,
             o.optionName,
-            number(o.defaultQuantity),
+            editableDecimal(o.defaultQuantity),
             o.requiredValue,
             active: o.active,
           ),
@@ -101,7 +102,7 @@ class _OptionsTabState extends ConsumerState<OptionsTab> {
   Future<void> _save() async {
     final body = <ProductOptionInput>[];
     for (final (i, r) in _rows.indexed) {
-      final q = parseDecimalInput(r.quantity.text);
+      final q = r.quantity.decimal;
       if (q == null || double.tryParse(q) == null || double.parse(q) <= 0) {
         setState(() => _error = context.l10n.optionsInvalidQuantity);
         return;
@@ -161,14 +162,11 @@ class _OptionsTabState extends ConsumerState<OptionsTab> {
                 children: [
                   SizedBox(
                     width: 120,
-                    child: TextField(
-                      key: ValueKey('option-qty-${r.productId}'),
+                    child: DecimalField(
+                      fieldKey: ValueKey('option-qty-${r.productId}'),
                       controller: r.quantity,
                       enabled: canWrite,
                       textAlign: TextAlign.right,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
                       decoration: InputDecoration(
                         isDense: true,
                         labelText: l.optionQuantity,

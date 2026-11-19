@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../app/api.dart';
 import '../../l10n/l10n.dart';
 import '../../shared/actions.dart';
+import '../../shared/decimal_field.dart';
 import '../../shared/entity_list.dart';
 import '../../shared/format.dart';
 import '../../shared/search_picker.dart';
@@ -244,7 +245,7 @@ class CountScreen extends ConsumerStatefulWidget {
 
 class _CountScreenState extends ConsumerState<CountScreen> {
   CountDetail? _d;
-  final _controllers = <String, TextEditingController>{};
+  final _controllers = <String, DecimalInputController>{};
   String? _error;
   bool _busy = false;
   bool _changed = false;
@@ -268,13 +269,8 @@ class _CountScreenState extends ConsumerState<CountScreen> {
   void _show(CountDetail d) {
     _d = d;
     for (final line in d.lines) {
-      final text = line.countedQuantity == null
-          ? ''
-          : number(line.countedQuantity);
-      final c = _controllers.putIfAbsent(
-        line.id,
-        () => TextEditingController(),
-      );
+      final text = editableDecimal(line.countedQuantity);
+      final c = _controllers.putIfAbsent(line.id, DecimalInputController.new);
       if (c.text.isEmpty || d.count.status != 'counting') c.text = text;
     }
   }
@@ -309,7 +305,7 @@ class _CountScreenState extends ConsumerState<CountScreen> {
     final entries = <CountEntry>[];
     for (final line in _d!.lines) {
       final text = _controllers[line.id]?.text.trim() ?? '';
-      final value = text.isEmpty ? null : parseDecimalInput(text);
+      final value = _controllers[line.id]?.decimal;
       if (text.isNotEmpty && value == null) {
         setState(() => _error = context.l10n.countInvalidQuantity);
         return;
@@ -540,13 +536,10 @@ class _CountScreenState extends ConsumerState<CountScreen> {
                   SizedBox(
                     width: 120,
                     child: open && canWrite
-                        ? TextField(
-                            controller: _controllers[line.id],
+                        ? DecimalField(
+                            controller: _controllers[line.id]!,
                             onChanged: (_) => setState(() {}),
                             textAlign: TextAlign.end,
-                            keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true,
-                            ),
                             decoration: const InputDecoration(isDense: true),
                           )
                         : Text(
@@ -577,7 +570,7 @@ class _CountScreenState extends ConsumerState<CountScreen> {
 
   /// Counted minus expected, as the count screen shows it while typing.
   String _difference(CountLine line) {
-    final counted = parseDecimalInput(_controllers[line.id]?.text ?? '');
+    final counted = _controllers[line.id]?.decimal;
     final c = counted == null ? null : Decimal.tryParse(counted);
     final expected = Decimal.tryParse(line.expectedQuantity);
     if (c == null || expected == null) return '';
@@ -606,7 +599,7 @@ class _AddLineDialog extends ConsumerStatefulWidget {
 class _AddLineDialogState extends ConsumerState<_AddLineDialog> {
   Product? _product;
   String? _location;
-  final _qty = TextEditingController();
+  final _qty = DecimalInputController();
   final _lot = TextEditingController();
 
   @override
@@ -669,11 +662,8 @@ class _AddLineDialogState extends ConsumerState<_AddLineDialog> {
               ),
             ],
             const SizedBox(height: 12),
-            TextField(
+            DecimalField(
               controller: _qty,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
               decoration: InputDecoration(labelText: l.countCounted),
             ),
           ],
@@ -686,7 +676,7 @@ class _AddLineDialogState extends ConsumerState<_AddLineDialog> {
         ),
         FilledButton(
           onPressed: () {
-            final q = parseDecimalInput(_qty.text);
+            final q = _qty.decimal;
             if (_product == null || _location == null || q == null) return;
             Navigator.pop(
               context,
