@@ -26,7 +26,7 @@ Module overview: [ARCHITECTURE.md](ARCHITECTURE.md).
 | A8 Helpdesk immediate change notification (concurrent updates seen by both people) | Done, [ADR 0075](adr/0075-helpdesk-live-ticket-updates.md) (builds on the SSE channel of [ADR 0073](adr/0073-concurrent-edit-protection.md)); mail ingested by the worker follows |
 | A9 Helpdesk ticket bundles (linked tickets: bundle, related, duplicate; bundle mass update with preview) | Done, [ADR 0076](adr/0076-helpdesk-ticket-links-and-bundles.md); list badge, per-customer greeting in a bundle reply and automation on links follow |
 | B1 Inventory foundation | Done, [ADR 0019](adr/0019-inventory-stock-ledger.md) |
-| B2 Purchasing | In progress, [ADR 0031](adr/0031-purchasing.md) |
+| B2 Purchasing | Done, [ADR 0031](adr/0031-purchasing.md) |
 | B2b Supplier invoices and three-way match (AP register, no ledger) | Done, [ADR 0046](adr/0046-supplier-invoices-and-three-way-match.md) |
 | B3 Delivery | Done, [ADR 0035](adr/0035-delivery.md) |
 | C1a Production orders | Done, [ADR 0036](adr/0036-production.md) |
@@ -152,7 +152,7 @@ Remaining knowledge base gaps (ADR 0018): non-image attachments, analytics, sema
 - Reservations against confirmed orders; availability (ATP) on the order screen.
 - Deferred to later items: two-step transfers, valuation beyond the standard-cost snapshot, a UI for product-specific units, van stock for technicians (A3), open POs/MOs in ATP (B2, C1).
 
-**B2 Purchasing** (large)
+**B2 Purchasing** (large, done), [ADR 0031](adr/0031-purchasing.md)
 - Crate `purchasing`: suppliers, supplier price lists, product codes, MOQ and lead times;
   RFQ -> PO -> goods receipt; a receipt creates stock moves and serial units ([ADR 0011](adr/0011-bom-revisions-and-serial-genealogy.md)).
 - PO PDF and mail to the supplier through the outbox; approval limits; vendor bill matching: see B2b for the three-way match.
