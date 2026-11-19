@@ -1,3 +1,4 @@
+import 'missions_helpdesk.dart';
 import 'missions_production.dart';
 import 'missions_purchasing.dart';
 import 'missions_sales.dart';
@@ -17,6 +18,7 @@ final List<Mission> allMissions = [
   customerMission,
   quotationMission,
   changeMission,
+  helpdeskMission,
 ];
 
 /// Chapter 0: what the banner means, how tabs and the tutorial controls work.

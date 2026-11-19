@@ -8004,6 +8004,60 @@ class AppLocalizationsFr extends AppLocalizations {
       'Vous êtes passé des fournisseurs aux achats, factures, production, prix, un ticket, un nouveau client, un devis révisé, une commande et la production pour la commande et pour le stock. Et ensuite : livraisons et expéditions, réparations, service terrain et rapports ont chacun leur entrée de menu. Tout chapitre peut être rejoué depuis la carte des chapitres ; les étapes déjà faites sont sautées.';
 
   @override
+  String get tutHelpdeskTitle => 'Traiter un ticket';
+
+  @override
+  String get tutHelpdeskSummary => 'Casquette : agent du helpdesk. Sur le ticket du chapitre 7 : une note interne, une étiquette, le temps passé et une escalade.';
+
+  @override
+  String get tutHelpdeskNeedsTitle => 'D\'abord le chapitre 7';
+
+  @override
+  String get tutHelpdeskNeedsBody => 'Ce chapitre travaille sur le ticket créé par l\'e-mail de Maya au chapitre 7 et ne l\'a pas trouvé. Terminez d\'abord le chapitre 7.';
+
+  @override
+  String get tutHelpdeskNoteTitle => 'Laisser une note interne';
+
+  @override
+  String get tutHelpdeskNoteBody => 'Ouvrez le ticket, passez à Note interne et écrivez ce qu\'un collègue doit savoir, par exemple que le client veut un devis pour 8 chariots. Appuyez sur Ajouter une note. Le client ne voit jamais une note.';
+
+  @override
+  String get tutHelpdeskNoteHint => 'Choisissez Note interne au-dessus de la zone de message ; avec Réponse, le texte partirait chez le client.';
+
+  @override
+  String get tutHelpdeskTagTitle => 'Ajouter une étiquette';
+
+  @override
+  String get tutHelpdeskTagBody => 'Les étiquettes regroupent les tickets pour les listes et les rapports. Ajoutez l\'étiquette « devis » à ce ticket dans le panneau de détails.';
+
+  @override
+  String get tutHelpdeskTimeTitle => 'Enregistrer le temps passé';
+
+  @override
+  String get tutHelpdeskTimeBody => 'Ajoutez une entrée de temps de 15 minutes avec une courte remarque. Marquez-la facturable si elle serait facturée au client.';
+
+  @override
+  String get tutHelpdeskEscalateTitle => 'Escalader le ticket';
+
+  @override
+  String get tutHelpdeskEscalateBody => 'Certains tickets demandent plus d\'attention que vous ne pouvez en donner. Escaladez celui-ci : indiquez un motif, choisissez une personne ou une équipe et, si vous voulez, relevez la priorité d\'un cran. Ils sont prévenus aussitôt.';
+
+  @override
+  String get tutHelpdeskEscalateHint => 'Appuyez sur le bouton Escalader du ticket ; le motif est obligatoire.';
+
+  @override
+  String get tutHelpdeskTourTitle => 'Réponses préparées';
+
+  @override
+  String get tutHelpdeskTourBody => 'C\'est ici que l\'équipe garde ses réponses préparées : des réponses réutilisables par équipe et par langue que le ticket suggère pendant que vous écrivez. Les rapports, les règles d\'automatisation et les réglages (heures ouvrables, SLA, boîtes mail) sont à côté. Regardez autour de vous, puis appuyez sur Suivant.';
+
+  @override
+  String get tutHelpdeskDoneTitle => 'Ce que vous avez appris';
+
+  @override
+  String get tutHelpdeskDoneBody => 'Les notes internes restent en interne, les étiquettes et les temps rendent le travail visible dans les listes et les rapports, et une escalade amène le ticket devant la bonne personne.';
+
+  @override
   String get tutInvoicesOpenSecondTitle => 'Ouvrez la facture suspecte';
 
   @override
