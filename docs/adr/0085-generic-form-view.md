@@ -57,9 +57,15 @@ validated, cleared or opened.
   `CustomerScreen` passes its to-do button as a title extra. The dialog keeps its layout and uses
   `RecordConflictNotice`. The public API (`customer`, `readOnly`, `screen`, `onDone`, the
   `show…Form` helpers) is unchanged.
-- **Quotations (next).** Header, actions, status bar (draft, sent, accepted; rejected off the path),
-  banner and busy/error state move to the view; the customer picker becomes a `Many2OneField`. The
-  line editor stays as it is.
+- **Quotations (done).** `QuotationScreen` is a `RecordFormView<Quotation>`. Header, back button,
+  busy spinner, error line, conflict notice (with Reload), live watcher and dirty reporting come
+  from the view and controller; `_run` is `controller.run` and a save passes the controller's
+  version as `expected_version`. The status bar shows draft, sent and accepted, with rejected and
+  superseded shown off the path. The actions keep their tutorial targets and the "send anyway"
+  flow. The customer picker is a `Many2OneField`, so a half-typed name is refused on save. The site
+  baseline is a smart button (editable and read-only), opening the same dialog as before. The line
+  editor, pricing preview and load-failed view stay outside the view; the page is no longer a lazy
+  list, so Alt+L focuses the add-product picker directly.
 
 **Consequences.**
 
