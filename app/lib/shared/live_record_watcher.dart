@@ -128,6 +128,7 @@ class RecordLiveWatcher {
       'customer' => 'customers',
       'quotation' => 'quotations',
       'order' => 'orders',
+      'opportunity' => 'opportunities',
       'ticket' => 'tickets',
       _ => null,
     };

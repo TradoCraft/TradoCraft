@@ -547,15 +547,48 @@ pub(crate) async fn update_draft(
         .await?;
     service::insert_lines(&mut *tx, id, &priced.lines).await?;
     shipping::sync(&mut *tx, user, id).await?;
-    audit::record(
+    // What changed, for the audit viewer and, for the tracked fields, the chatter (ADR 0086).
+    let changes = audit::Changes::new()
+        .field(
+            "customer_name",
+            current.customer_name.as_str(),
+            c.customer.name.as_str(),
+        )
+        .field("quote_date", &current.quote_date, &quote_date)
+        .field(
+            "valid_until",
+            &current.valid_until,
+            &service::valid_until(quote_date, input.valid_days),
+        )
+        .field(
+            "total",
+            &current.total.normalize(),
+            &priced.totals.total.normalize(),
+        )
+        .field("purpose", current.purpose.as_str(), purpose)
+        .field(
+            "delivery_country_code",
+            &current.delivery_country_code,
+            &delivery_country,
+        );
+    let audit_data = changes.into_data();
+    tradocraft_chatter::track(
         &mut *tx,
         user,
-        "quotation",
+        tradocraft_chatter::RecordKind::Quotation,
         id,
-        "updated",
-        serde_json::json!({}),
+        &audit_data,
+        &[
+            "customer_name",
+            "quote_date",
+            "valid_until",
+            "total",
+            "purpose",
+            "delivery_country_code",
+        ],
     )
     .await?;
+    audit::record(&mut *tx, user, "quotation", id, "updated", audit_data).await?;
     if backdated {
         audit::record(
             &mut *tx,

@@ -11,6 +11,7 @@ class ChatterNoteInput {
   const ChatterNoteInput({
     required this.body,
     this.clientId,
+    this.fileIds,
   });
   
   factory ChatterNoteInput.fromJson(Map<String, Object?> json) => _$ChatterNoteInputFromJson(json);
@@ -20,6 +21,10 @@ class ChatterNoteInput {
   /// Chosen by the client so that a retried post does not post twice.
   @JsonKey(includeIfNull: false,name: 'client_id')
   final String? clientId;
+
+  /// Files uploaded to this record by the caller that are not on a note yet (at most 10).
+  @JsonKey(includeIfNull: false,name: 'file_ids')
+  final List<String>? fileIds;
 
   Map<String, Object?> toJson() => _$ChatterNoteInputToJson(this);
 }

@@ -27,6 +27,9 @@ enum ChatterKind {
 
   String location(String id) => '/$path/$id';
 
+  /// API path of the files of record [id]; append `/<file id>` to download one.
+  String filesPath(String id) => '/api/v1/chatter/$api/$id/files';
+
   static ChatterKind? parse(String api) {
     for (final k in values) {
       if (k.api == api) return k;
@@ -58,10 +61,11 @@ class ChatterRepository {
     String id,
     String body, {
     String? clientId,
+    List<String> fileIds = const [],
   }) => _c.chatterPostNote(
     kind: kind.api,
     id: id,
-    body: ChatterNoteInput(body: body, clientId: clientId),
+    body: ChatterNoteInput(body: body, clientId: clientId, fileIds: fileIds),
   );
 
   Future<ThreadItem> edit(String noteId, String body) => _c.chatterEditNote(
@@ -76,6 +80,9 @@ class ChatterRepository {
 
   Future<Activity> schedule(ChatterKind kind, String id, ActivityInput input) =>
       _c.chatterCreateActivity(kind: kind.api, id: id, body: input);
+
+  Future<Activity> updateActivity(String activityId, ActivityPatch patch) =>
+      _c.chatterUpdateActivity(id: activityId, body: patch);
 
   Future<void> complete(String activityId, String note) =>
       _c.chatterCompleteActivity(

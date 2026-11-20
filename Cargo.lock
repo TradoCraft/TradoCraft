@@ -3985,6 +3985,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
+ "tradocraft-chatter",
  "tradocraft-core",
  "tradocraft-fieldservice",
  "tradocraft-helpdesk",

@@ -11,6 +11,7 @@ import '../../../app/api.dart';
 import '../../../core/theme/tokens.dart';
 import '../../../l10n/l10n.dart';
 import '../../../shared/app_icons.dart';
+import '../../../shared/attachments.dart';
 import '../../../features/helpdesk/ticket_screen.dart' show usersProvider;
 import 'chatter_repository.dart';
 
@@ -23,6 +24,7 @@ class ChatterPanel extends ConsumerStatefulWidget {
     required this.kind,
     required this.recordId,
     this.refresh,
+    this.pickFiles,
   });
 
   final ChatterKind kind;
@@ -31,6 +33,9 @@ class ChatterPanel extends ConsumerStatefulWidget {
   /// Reloads everything when it notifies (a colleague posted, see
   /// `RecordFormController.chatterTick`).
   final Listenable? refresh;
+
+  /// Chooses the files to attach; the platform dialog by default, replaced in tests.
+  final AttachmentPicker? pickFiles;
 
   @override
   ConsumerState<ChatterPanel> createState() => _ChatterPanelState();
@@ -45,6 +50,7 @@ class _ChatterPanelState extends ConsumerState<ChatterPanel> {
   bool _loading = true;
   bool _failed = false;
   bool _posting = false;
+  List<FileInfo> _pending = const [];
   String? _error;
   int _generation = 0;
 
@@ -136,8 +142,14 @@ class _ChatterPanelState extends ConsumerState<ChatterPanel> {
       _error = null;
     });
     try {
-      await _repo.post(widget.kind, widget.recordId, text);
+      await _repo.post(
+        widget.kind,
+        widget.recordId,
+        text,
+        fileIds: [for (final f in _pending) f.id],
+      );
       _composer.clear();
+      _pending = const [];
       await _reload();
     } catch (e) {
       if (mounted) setState(() => _error = errorMessage(e));
@@ -187,6 +199,28 @@ class _ChatterPanelState extends ConsumerState<ChatterPanel> {
     );
     if (note == null) return;
     await _run(() => _repo.complete(a.id, note.trim()));
+  }
+
+  Future<void> _editActivity(Activity a) async {
+    final input = await showDialog<ActivityInput>(
+      context: context,
+      builder: (_) => _ScheduleDialog(initial: a),
+    );
+    if (input == null) return;
+    await _run(
+      () => _repo
+          .updateActivity(
+            a.id,
+            ActivityPatch(
+              kind: input.kind,
+              summary: input.summary,
+              note: input.note ?? '',
+              assigneeId: input.assigneeId,
+              dueDate: input.dueDate,
+            ),
+          )
+          .then((_) {}),
+    );
   }
 
   Future<void> _schedule() async {
@@ -320,6 +354,14 @@ class _ChatterPanelState extends ConsumerState<ChatterPanel> {
               ),
             ),
             const SizedBox(height: Space.sm),
+            AttachmentComposer(
+              dio: ref.read(dioProvider),
+              uploadPath: widget.kind.filesPath(widget.recordId),
+              files: _pending,
+              pick: widget.pickFiles ?? pickAttachmentFiles,
+              onChanged: (files) => setState(() => _pending = files),
+            ),
+            const SizedBox(height: Space.sm),
             Align(
               alignment: Alignment.centerRight,
               child: FilledButton(
@@ -375,6 +417,13 @@ class _ChatterPanelState extends ConsumerState<ChatterPanel> {
                   ? Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        if (a.assigneeId == me || a.createdBy == me)
+                          IconButton(
+                            key: ValueKey('activity-edit-${a.id}'),
+                            tooltip: l.chatterEditNote,
+                            icon: const Icon(AppIcons.edit),
+                            onPressed: () => _editActivity(a),
+                          ),
                         IconButton(
                           key: ValueKey('activity-done-${a.id}'),
                           tooltip: l.chatterMarkDone,
@@ -462,6 +511,16 @@ class _ChatterPanelState extends ConsumerState<ChatterPanel> {
             Padding(
               padding: const EdgeInsets.only(left: 24, top: 2),
               child: SelectableText(item.body),
+            ),
+          if (item.files.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(left: 24),
+              child: AttachmentChips(
+                files: item.files,
+                dio: ref.read(dioProvider),
+                pathFor: (id) =>
+                    '${widget.kind.filesPath(widget.recordId)}/$id',
+              ),
             ),
         ],
       ),
@@ -586,20 +645,25 @@ Future<String?> _askText(
 
 /// Schedules an activity: kind, summary, due date and assignee (default: the caller).
 class _ScheduleDialog extends ConsumerStatefulWidget {
-  const _ScheduleDialog();
+  const _ScheduleDialog({this.initial});
+
+  /// The activity being edited; null to schedule a new one.
+  final Activity? initial;
 
   @override
   ConsumerState<_ScheduleDialog> createState() => _ScheduleDialogState();
 }
 
 class _ScheduleDialogState extends ConsumerState<_ScheduleDialog> {
-  final _summary = TextEditingController();
-  final _note = TextEditingController();
-  ActivityKind _kind = ActivityKind.todo;
-  DateTime _due = DateUtils.dateOnly(
-    DateTime.now().add(const Duration(days: 1)),
+  late final _summary = TextEditingController(text: widget.initial?.summary);
+  late final _note = TextEditingController(text: widget.initial?.note);
+  late ActivityKind _kind = ActivityKind.fromJson(
+    widget.initial?.kind ?? 'todo',
   );
-  String? _assignee;
+  late DateTime _due = widget.initial != null
+      ? DateUtils.dateOnly(widget.initial!.dueDate)
+      : DateUtils.dateOnly(DateTime.now().add(const Duration(days: 1)));
+  late String? _assignee = widget.initial?.assigneeId;
 
   @override
   void dispose() {
@@ -615,7 +679,9 @@ class _ScheduleDialogState extends ConsumerState<_ScheduleDialog> {
     final me = ref.watch(meProvider).value?.userId;
     final assignee = _assignee ?? me;
     return AlertDialog(
-      title: Text(l.chatterSchedule),
+      title: Text(
+        widget.initial == null ? l.chatterSchedule : l.chatterEditNote,
+      ),
       content: SizedBox(
         width: 420,
         child: Column(
@@ -707,7 +773,9 @@ class _ScheduleDialogState extends ConsumerState<_ScheduleDialog> {
                     dueDate: _due,
                   ),
                 ),
-          child: Text(l.chatterSchedule),
+          child: Text(
+            widget.initial == null ? l.chatterSchedule : l.chatterSaveNote,
+          ),
         ),
       ],
     );

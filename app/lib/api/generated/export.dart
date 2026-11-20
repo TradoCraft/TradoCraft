@@ -34,6 +34,7 @@ export 'models/activity.dart';
 export 'models/activity_done_input.dart';
 export 'models/activity_input.dart';
 export 'models/activity_kind.dart';
+export 'models/activity_patch.dart';
 export 'models/add_checklist_item_input.dart';
 export 'models/adjustment_input.dart';
 export 'models/admin_summary.dart';

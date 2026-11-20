@@ -4,12 +4,16 @@
 //! that the caller holds the kind's read permission; writing needs the kind's write permission,
 //! except following oneself. Anything else answers 404 so ids reveal nothing.
 
-use axum::extract::{Path, Query, State};
+use axum::body::Bytes;
+use axum::extract::{DefaultBodyLimit, Path, Query, State};
 use axum::http::StatusCode;
+use axum::response::Response;
 use axum::Json;
 use chrono::{DateTime, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, PgConnection};
+use std::collections::HashMap;
+use tradocraft_core::files::{self, FileInfo, MAX_FILE_BYTES};
 use tradocraft_core::{new_id, AppError, AppResult, AppState, CurrentUser};
 use utoipa::{IntoParams, ToSchema};
 use utoipa_axum::router::OpenApiRouter;
@@ -24,6 +28,8 @@ type ErrorBody = tradocraft_core::error::ErrorBody;
 pub const MAX_NOTE: usize = 10_000;
 pub const MAX_SUMMARY: usize = 200;
 pub const MAX_ACTIVITY_NOTE: usize = 4_000;
+/// Most files on one note.
+pub const MAX_FILES_PER_NOTE: usize = 10;
 /// How long the author may still edit or delete a note.
 const EDIT_WINDOW_MINUTES: i64 = 15;
 const DEFAULT_LIMIT: i64 = 30;
@@ -36,12 +42,18 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(edit_note, delete_note))
         .routes(routes!(list_activities, create_activity))
         .routes(routes!(complete_activity))
-        .routes(routes!(delete_activity))
+        .routes(routes!(update_activity, delete_activity))
         .routes(routes!(list_followers, add_follower))
         .routes(routes!(follow, unfollow))
         .routes(routes!(remove_follower))
         .routes(routes!(mark_read))
         .routes(routes!(inbox))
+        .routes(routes!(download_file))
+        .merge(
+            OpenApiRouter::new()
+                .routes(routes!(upload_file))
+                .layer(DefaultBodyLimit::max(MAX_FILE_BYTES + 64 * 1024)),
+        )
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -66,6 +78,9 @@ pub struct ThreadItem {
     /// Whether the caller may still edit or delete it (own note, within 15 minutes).
     #[sqlx(default)]
     pub editable: bool,
+    /// The files of a note, oldest first.
+    #[sqlx(skip)]
+    pub files: Vec<FileInfo>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -84,6 +99,9 @@ pub struct ThreadQuery {
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct ChatterNoteInput {
     pub body: String,
+    /// Files uploaded to this record by the caller that are not on a note yet (at most 10).
+    #[serde(default)]
+    pub file_ids: Vec<Uuid>,
     /// Chosen by the client so that a retried post does not post twice.
     pub client_id: Option<Uuid>,
 }
@@ -134,6 +152,18 @@ pub struct ActivityInput {
     #[serde(deserialize_with = "tradocraft_core::serde_util::date")]
     pub due_date: NaiveDate,
     pub client_id: Option<Uuid>,
+}
+
+/// Fields to change on an open activity; absent fields stay as they are.
+#[derive(Debug, Default, Deserialize, ToSchema)]
+pub struct ActivityPatch {
+    pub kind: Option<ActivityKind>,
+    pub summary: Option<String>,
+    pub note: Option<String>,
+    pub assignee_id: Option<Uuid>,
+    /// `YYYY-MM-DD`; a full datetime is accepted and cut to its date.
+    #[serde(default, deserialize_with = "tradocraft_core::serde_util::opt_date")]
+    pub due_date: Option<NaiveDate>,
 }
 
 #[derive(Debug, Default, Deserialize, ToSchema)]
@@ -305,6 +335,7 @@ async fn thread(
     } else {
         None
     };
+    attach_files(&mut conn, &mut items).await?;
     Ok(Json(ThreadPage {
         items,
         next_before_id,
@@ -312,7 +343,7 @@ async fn thread(
 }
 
 async fn load_item(conn: &mut PgConnection, user: &CurrentUser, id: Uuid) -> AppResult<ThreadItem> {
-    sqlx::query_as(&format!(
+    let item: ThreadItem = sqlx::query_as(&format!(
         "{THREAD_SELECT} WHERE m.id = $3 AND m.company_id = $4"
     ))
     .bind(user.user_id)
@@ -321,7 +352,42 @@ async fn load_item(conn: &mut PgConnection, user: &CurrentUser, id: Uuid) -> App
     .bind(user.company_id)
     .fetch_optional(&mut *conn)
     .await?
-    .ok_or(AppError::NotFound("note"))
+    .ok_or(AppError::NotFound("note"))?;
+    let mut items = vec![item];
+    attach_files(conn, &mut items).await?;
+    Ok(items.remove(0))
+}
+
+#[derive(FromRow)]
+struct LinkedFile {
+    message_id: Uuid,
+    #[sqlx(flatten)]
+    file: FileInfo,
+}
+
+/// Fills `files` of the given thread items, oldest file first.
+async fn attach_files(conn: &mut PgConnection, items: &mut [ThreadItem]) -> AppResult<()> {
+    let ids: Vec<Uuid> = items.iter().map(|i| i.id).collect();
+    if ids.is_empty() {
+        return Ok(());
+    }
+    let rows: Vec<LinkedFile> = sqlx::query_as(
+        "SELECT mf.message_id, f.id, f.filename, f.content_type, f.size_bytes, f.uploader_name,
+                f.created_at
+         FROM chatter.message_files mf JOIN core.files f ON f.id = mf.file_id
+         WHERE mf.message_id = ANY($1) ORDER BY mf.created_at, f.id",
+    )
+    .bind(&ids)
+    .fetch_all(&mut *conn)
+    .await?;
+    let mut by_message: HashMap<Uuid, Vec<FileInfo>> = HashMap::new();
+    for r in rows {
+        by_message.entry(r.message_id).or_default().push(r.file);
+    }
+    for item in items {
+        item.files = by_message.remove(&item.id).unwrap_or_default();
+    }
+    Ok(())
 }
 
 fn clean_body(body: &str) -> AppResult<String> {
@@ -381,6 +447,7 @@ async fn post_note(
     .bind(input.client_id)
     .execute(&mut *tx)
     .await?;
+    link_files(&mut tx, &user, kind, id, mid, &input.file_ids).await?;
     follow_record(&mut tx, user.company_id, kind, id, user.user_id, "author").await?;
     // Writing a note means the author has seen the thread up to now.
     sqlx::query(
@@ -472,6 +539,158 @@ async fn delete_note(
     tx.commit().await?;
     publish(&state, &user, kind, record_id, "chatter_note");
     Ok(StatusCode::NO_CONTENT)
+}
+
+// ---------------------------------------------------------------------------------------------
+// Files
+// ---------------------------------------------------------------------------------------------
+
+#[derive(Debug, Deserialize, IntoParams)]
+pub struct UploadParams {
+    /// The original file name.
+    pub filename: Option<String>,
+    /// A client-chosen id: uploading the same id again returns the first upload (safe retries).
+    pub client_id: Option<Uuid>,
+}
+
+/// Links the caller's pending uploads to the note that was just written. The files must have
+/// been uploaded to this record by the caller and not be on a note yet.
+async fn link_files(
+    conn: &mut PgConnection,
+    user: &CurrentUser,
+    kind: RecordKind,
+    record_id: Uuid,
+    message_id: Uuid,
+    file_ids: &[Uuid],
+) -> AppResult<()> {
+    let mut ids = file_ids.to_vec();
+    ids.sort();
+    ids.dedup();
+    if ids.is_empty() {
+        return Ok(());
+    }
+    if ids.len() > MAX_FILES_PER_NOTE {
+        return Err(AppError::Validation(format!(
+            "at most {MAX_FILES_PER_NOTE} files per note"
+        )));
+    }
+    let updated = sqlx::query(
+        "UPDATE chatter.message_files SET message_id = $1
+         WHERE file_id = ANY($2) AND message_id IS NULL AND company_id = $3
+           AND record_kind = $4 AND record_id = $5 AND uploaded_by = $6",
+    )
+    .bind(message_id)
+    .bind(&ids)
+    .bind(user.company_id)
+    .bind(kind.as_str())
+    .bind(record_id)
+    .bind(user.user_id)
+    .execute(&mut *conn)
+    .await?;
+    if updated.rows_affected() as usize != ids.len() {
+        return Err(AppError::Validation(
+            "a file was not found on this record or is already used".into(),
+        ));
+    }
+    Ok(())
+}
+
+/// Uploads a file to the record: the request body is the file itself (JPEG, PNG, WebP or PDF,
+/// at most 12 MB). Put its id in `file_ids` when posting the note.
+#[utoipa::path(post, path = "/chatter/{kind}/{id}/files", tag = "chatter", operation_id = "chatter_upload_file",
+    params(("kind" = String, Path), ("id" = Uuid, Path), UploadParams),
+    request_body(content = String, content_type = "application/octet-stream"),
+    responses((status = 201, body = FileInfo), (status = 403, body = ErrorBody),
+              (status = 404, body = ErrorBody), (status = 409, body = ErrorBody),
+              (status = 422, body = ErrorBody)))]
+async fn upload_file(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Path((kind, id)): Path<(String, Uuid)>,
+    Query(p): Query<UploadParams>,
+    body: Bytes,
+) -> AppResult<(StatusCode, Json<FileInfo>)> {
+    let mut tx = state.db.begin().await?;
+    let kind = open(&mut tx, &user, &kind, id, true).await?;
+    let file = files::store_document(
+        &mut tx,
+        &state.blobs,
+        user.company_id,
+        p.client_id,
+        p.filename.as_deref().unwrap_or(""),
+        &body,
+        Some(user.user_id),
+        &user.display_name,
+    )
+    .await?;
+    sqlx::query(
+        "INSERT INTO chatter.message_files (file_id, company_id, record_kind, record_id, uploaded_by)
+         VALUES ($1, $2, $3, $4, $5) ON CONFLICT (file_id) DO NOTHING",
+    )
+    .bind(file.id)
+    .bind(user.company_id)
+    .bind(kind.as_str())
+    .bind(id)
+    .bind(user.user_id)
+    .execute(&mut *tx)
+    .await?;
+    // A retried upload with the same id must be the same upload; any other file id is taken.
+    let same: bool = sqlx::query_scalar(
+        "SELECT record_kind = $2 AND record_id = $3 AND uploaded_by = $4
+         FROM chatter.message_files WHERE file_id = $1",
+    )
+    .bind(file.id)
+    .bind(kind.as_str())
+    .bind(id)
+    .bind(user.user_id)
+    .fetch_one(&mut *tx)
+    .await?;
+    if !same {
+        return Err(AppError::Conflict(
+            "this file id belongs to another record".into(),
+        ));
+    }
+    tx.commit().await?;
+    Ok((StatusCode::CREATED, Json(file)))
+}
+
+/// The file itself, as a download. A file not yet on a note is only visible to its uploader.
+#[utoipa::path(get, path = "/chatter/{kind}/{id}/files/{file_id}", tag = "chatter", operation_id = "chatter_download_file",
+    params(("kind" = String, Path), ("id" = Uuid, Path), ("file_id" = Uuid, Path)),
+    responses((status = 200, content_type = "application/octet-stream", body = String),
+              (status = 403, body = ErrorBody), (status = 404, body = ErrorBody)))]
+async fn download_file(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Path((kind, id, file_id)): Path<(String, Uuid, Uuid)>,
+) -> AppResult<Response> {
+    let mut conn = state.db.acquire().await?;
+    let kind = open(&mut conn, &user, &kind, id, false).await?;
+    let visible: bool = sqlx::query_scalar(
+        "SELECT EXISTS (SELECT 1 FROM chatter.message_files
+            WHERE file_id = $1 AND company_id = $2 AND record_kind = $3 AND record_id = $4
+              AND (message_id IS NOT NULL OR uploaded_by = $5))",
+    )
+    .bind(file_id)
+    .bind(user.company_id)
+    .bind(kind.as_str())
+    .bind(id)
+    .bind(user.user_id)
+    .fetch_one(&mut *conn)
+    .await?;
+    if !visible {
+        return Err(AppError::NotFound("file"));
+    }
+    let info = files::get_info(&mut conn, user.company_id, file_id)
+        .await?
+        .ok_or(AppError::NotFound("file"))?;
+    let (content_type, bytes) =
+        files::load(&mut conn, &state.blobs, user.company_id, file_id).await?;
+    Ok(files::attachment_response(
+        &content_type,
+        &info.filename,
+        bytes,
+    ))
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -578,6 +797,17 @@ async fn create_activity(
         "assigned",
     )
     .await?;
+    crate::notify::assigned(
+        &mut tx,
+        &user,
+        kind,
+        id,
+        input.assignee_id,
+        input.kind.as_str(),
+        &summary,
+        input.due_date,
+    )
+    .await?;
     let a = load_activity(&mut tx, &user, aid).await?;
     tx.commit().await?;
     publish(&state, &user, kind, id, "chatter_activity");
@@ -663,6 +893,79 @@ async fn complete_activity(
     tx.commit().await?;
     publish(&state, &user, kind, record_id, "chatter_activity");
     Ok(StatusCode::NO_CONTENT)
+}
+
+#[utoipa::path(patch, path = "/chatter/activities/{id}", tag = "chatter", operation_id = "chatter_update_activity",
+    params(("id" = Uuid, Path)), request_body = ActivityPatch,
+    responses((status = 200, body = Activity), (status = 403, body = ErrorBody),
+              (status = 404, body = ErrorBody), (status = 422, body = ErrorBody)))]
+async fn update_activity(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Path(id): Path<Uuid>,
+    Json(patch): Json<ActivityPatch>,
+) -> AppResult<Json<Activity>> {
+    let summary = match patch.summary.as_deref().map(str::trim) {
+        Some(t) if t.is_empty() || t.chars().count() > MAX_SUMMARY => {
+            return Err(AppError::Validation(format!(
+                "the summary must be 1 to {MAX_SUMMARY} characters"
+            )))
+        }
+        other => other.map(str::to_string),
+    };
+    if patch
+        .note
+        .as_deref()
+        .is_some_and(|n| n.chars().count() > MAX_ACTIVITY_NOTE)
+    {
+        return Err(AppError::Validation(format!(
+            "the note is limited to {MAX_ACTIVITY_NOTE} characters"
+        )));
+    }
+    let mut tx = state.db.begin().await?;
+    let (kind, record_id, _, _, assignee, creator) = lock_activity(&mut tx, &user, id).await?;
+    if user.user_id != assignee && user.user_id != creator {
+        return Err(AppError::Forbidden(
+            "only the creator or the assignee can change an activity".into(),
+        ));
+    }
+    if let Some(a) = patch.assignee_id {
+        check_member(&mut tx, &user, a).await?;
+        follow_record(&mut tx, user.company_id, kind, record_id, a, "assigned").await?;
+    }
+    sqlx::query(
+        "UPDATE chatter.activities SET
+             kind = coalesce($2, kind), summary = coalesce($3, summary),
+             note = coalesce($4, note), assignee_id = coalesce($5, assignee_id),
+             due_date = coalesce($6, due_date)
+         WHERE id = $1",
+    )
+    .bind(id)
+    .bind(patch.kind.map(|k| k.as_str()))
+    .bind(summary)
+    .bind(patch.note.as_deref().map(str::trim))
+    .bind(patch.assignee_id)
+    .bind(patch.due_date)
+    .execute(&mut *tx)
+    .await?;
+    let a = load_activity(&mut tx, &user, id).await?;
+    // Handing it to somebody else tells them, like scheduling it for them would.
+    if patch.assignee_id.is_some_and(|n| n != assignee) {
+        crate::notify::assigned(
+            &mut tx,
+            &user,
+            kind,
+            record_id,
+            a.assignee_id,
+            &a.kind,
+            &a.summary,
+            a.due_date,
+        )
+        .await?;
+    }
+    tx.commit().await?;
+    publish(&state, &user, kind, record_id, "chatter_activity");
+    Ok(Json(a))
 }
 
 #[utoipa::path(delete, path = "/chatter/activities/{id}", tag = "chatter", operation_id = "chatter_delete_activity",

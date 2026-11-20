@@ -924,6 +924,7 @@ async fn edit_order(
             ..old.clone()
         });
     }
+    let before = chatter_fields(&mut tx, id).await?;
     sqlx::query("DELETE FROM sales.order_lines WHERE order_id = $1 AND revision = $2")
         .bind(id)
         .bind(head.current_revision)
@@ -976,21 +977,72 @@ async fn edit_order(
         .execute(&mut *tx)
         .await?;
     }
-    audit::record(
+    let after = chatter_fields(&mut tx, id).await?;
+    let changes = audit::Changes::new()
+        .field("total", &before.total.normalize(), &after.total.normalize())
+        .field(
+            "customer_reference",
+            &before.customer_reference,
+            &after.customer_reference,
+        )
+        .field(
+            "delivery_country_code",
+            &before.delivery_country_code,
+            &after.delivery_country_code,
+        )
+        .field("purpose", &before.purpose, &after.purpose);
+    let audit_data =
+        changes.into_data_with(serde_json::json!({ "revision": head.current_revision }));
+    tradocraft_chatter::track(
         &mut tx,
         &user,
-        "order",
+        tradocraft_chatter::RecordKind::Order,
         id,
-        "updated",
-        serde_json::json!({ "revision": head.current_revision }),
+        &audit_data,
+        &[
+            "total",
+            "customer_reference",
+            "delivery_country_code",
+            "purpose",
+        ],
     )
     .await?;
+    audit::record(&mut tx, &user, "order", id, "updated", audit_data).await?;
     let order = load_order_locked(&mut tx, user.company_id, id, None).await?;
     tx.commit().await?;
     state
         .live_events
         .publish_record_change(&user, "order", id, order.version, "updated", None);
     Ok(Json(order))
+}
+
+/// The order fields the chatter shows when an order is saved.
+struct ChatterFields {
+    total: rust_decimal::Decimal,
+    customer_reference: String,
+    delivery_country_code: Option<String>,
+    purpose: Option<String>,
+}
+
+async fn chatter_fields(conn: &mut sqlx::PgConnection, id: Uuid) -> AppResult<ChatterFields> {
+    let (total, customer_reference, delivery_country_code, purpose): (
+        rust_decimal::Decimal,
+        String,
+        Option<String>,
+        Option<String>,
+    ) = sqlx::query_as(
+        "SELECT total, customer_reference, delivery_country_code::text, purpose
+         FROM sales.orders WHERE id = $1",
+    )
+    .bind(id)
+    .fetch_one(&mut *conn)
+    .await?;
+    Ok(ChatterFields {
+        total,
+        customer_reference,
+        delivery_country_code,
+        purpose,
+    })
 }
 
 /// Starts the next revision as a draft, copying the latest one. The sent revision is kept and

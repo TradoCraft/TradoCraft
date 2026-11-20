@@ -138,21 +138,40 @@ through the same read endpoints (a `kind = 'ticket'` adapter) and then decide ab
 - Following is per user and company; leaving a company drops nothing, the rows are filtered by
   the active company.
 
-**Delivered in this step.** The backend (notes, followers, activities, inbox, live events); change
-messages for customers (tracked fields: name, VAT number and regime, e-mail, phone, language,
-active, discount), and lifecycle messages for quotations (status), orders (confirmed, sent,
-revised, cancelled with its reason) and opportunities (stage, with the lost reason), written with
-`chatter::log`; the app panel (`ChatterPanel`) on the customer and quotation forms, the order and
-the opportunity screens; and the notifications centre entries. The panel sits beside the sheet on
-wide forms that opt in (customers) and below it where the sheet needs the width (quotations,
-whose line editor is wide). A chatter event never shows the "someone else saved" banner: the form
-controller hands it to the panel (`RecordFormController.chatterTick`).
+**Delivered.** The backend (notes with file attachments, followers, activities that can be
+edited and handed over, inbox, live events); change messages for customers (tracked fields:
+name, VAT number and regime, e-mail, phone, language, active, discount), quotations (customer
+name, quote date, valid until, total, purpose, delivery country) and orders (total, customer
+reference, delivery country, purpose), written with `chatter::track` next to the audit event;
+lifecycle messages written with `chatter::log` (quotation status, order confirmed, sent, revised
+and cancelled with its reason, opportunity stage with the lost reason); the mail to a new
+assignee of an activity; a worker pass that removes rows of deleted records; and the app panel
+(`ChatterPanel`) on the customer and quotation forms and on the order and opportunity screens,
+plus the notifications centre entries. The panel sits beside the sheet on wide forms that opt in
+(customers) and below it where the sheet needs the width (quotations, whose line editor is
+wide). A chatter event never shows the "someone else saved" banner: the form controller (or the
+screen, for orders and opportunities) hands it to the panel (`ChatterTick`).
 
-Still to follow in this ADR's scope: field-level change messages for quotations and orders,
-file attachments on notes (`chatter.message_files` and the upload endpoint, reusing
-`core::files`), the activity mail to a new assignee, `PATCH` of an activity, live updates on the
-opportunity screen (it has no record watcher yet), and the worker pass that removes rows of
-deleted records.
+*Files.* `POST /chatter/{kind}/{id}/files` stores a JPEG, PNG, WebP or PDF (at most 12 MB, by
+signature, through `core::files`) as a pending upload of the caller; `file_ids` on the note links
+up to ten pending uploads of the caller on that record; a file is on one note only. Until linked,
+only its uploader can download it; afterwards everyone who can read the record can, through
+`GET /chatter/{kind}/{id}/files/{file_id}`, and only through the record it belongs to. Deleting a
+note removes the link. Pending uploads older than a day are dropped by the worker pass; the file
+rows and blobs stay in `core.files` for the blob sweep, like ticket attachments.
+
+*Assignment mail.* Scheduling an activity for somebody else, or handing one over, queues one
+plain mail in the assignee's language (record, kind, summary, due date). At most one per
+assignee and record per ten minutes (`chatter.followers.last_notified_at`, claimed in the same
+transaction as the mail); never to oneself. Notes do not send mail.
+
+*Clean-up.* `chatter::remove_orphans` runs in the worker's hourly sweep and deletes messages,
+activities, followers and file links whose record no longer exists, and pending uploads older
+than a day.
+
+Still to follow: field-level messages for the fields of quotation and order lines, attachments
+on activities, and live updates of the opportunity record itself (it has no row version, so the
+screen only reacts to the chatter).
 
 **Not yet.** Mentions and mail on notes; activity types defined per company; recurring
 activities; editing history of notes; reactions and threads; rich text and inline images;

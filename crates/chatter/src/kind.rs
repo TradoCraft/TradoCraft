@@ -55,6 +55,16 @@ impl RecordKind {
         }
     }
 
+    /// The table that holds the records of this kind.
+    pub(crate) fn table(self) -> &'static str {
+        match self {
+            RecordKind::Customer => "crm.customers",
+            RecordKind::Quotation => "sales.quotations",
+            RecordKind::Order => "sales.orders",
+            RecordKind::Opportunity => "crm.opportunities",
+        }
+    }
+
     /// `SELECT 1` that finds the record. Customers are shared master data (ADR 0003) and have no
     /// company; the chatter rows about them still belong to one company.
     fn exists_sql(self) -> &'static str {

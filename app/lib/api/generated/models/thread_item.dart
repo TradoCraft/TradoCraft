@@ -4,6 +4,8 @@
 
 import 'package:json_annotation/json_annotation.dart';
 
+import 'file_info.dart';
+
 part 'thread_item.g.dart';
 
 /// One entry of the thread: a note or a change message.
@@ -14,6 +16,7 @@ class ThreadItem {
     required this.changes,
     required this.createdAt,
     required this.editable,
+    required this.files,
     required this.id,
     required this.kind,
     this.authorId,
@@ -38,6 +41,9 @@ class ThreadItem {
   final bool editable;
   @JsonKey(includeIfNull: false,name: 'edited_at')
   final DateTime? editedAt;
+
+  /// The files of a note, oldest first.
+  final List<FileInfo> files;
 
   /// Increases with time; the cursor for the next (older) page.
   final String id;

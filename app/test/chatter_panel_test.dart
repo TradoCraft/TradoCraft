@@ -1,10 +1,16 @@
+import 'dart:typed_data';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:tradocraft_app/app/api.dart';
 import 'package:tradocraft_app/framework/components/chatter/chatter_panel.dart';
+import 'package:tradocraft_app/shared/attachments.dart' show AttachmentPicker;
 import 'package:tradocraft_app/framework/components/chatter/chatter_repository.dart';
+import 'package:tradocraft_app/framework/form/record_form_controller.dart'
+    show ChatterTick;
 import 'package:tradocraft_app/l10n/app_localizations.dart';
+import 'package:tradocraft_app/shared/photos.dart';
 
 import 'fake_http.dart';
 
@@ -15,6 +21,7 @@ Map<String, Object?> _note(String id, String body, {bool editable = false}) => {
   'author_name': 'Jo',
   'body': body,
   'changes': <Object?>[],
+  'files': <Object?>[],
   'created_at': '2027-02-20T10:00:00Z',
   'editable': editable,
 };
@@ -28,6 +35,7 @@ Map<String, Object?> _change() => {
   'changes': [
     {'field': 'name', 'from': 'Old', 'to': 'New'},
   ],
+  'files': <Object?>[],
   'created_at': '2027-02-20T09:00:00Z',
   'editable': false,
 };
@@ -53,6 +61,8 @@ Future<FakeHttp> _pump(
   List<Object?> notes = const [],
   bool following = false,
   Map<String, Object? Function(Object?)> extra = const {},
+  AttachmentPicker? pick,
+  Listenable? refresh,
 }) async {
   t.view.physicalSize = const Size(500, 1400);
   t.view.devicePixelRatio = 1;
@@ -87,9 +97,14 @@ Future<FakeHttp> _pump(
           ...GlobalMaterialLocalizations.delegates,
         ],
         supportedLocales: AppLocalizations.supportedLocales,
-        home: const Scaffold(
+        home: Scaffold(
           body: SingleChildScrollView(
-            child: ChatterPanel(kind: ChatterKind.customer, recordId: 'c1'),
+            child: ChatterPanel(
+              kind: ChatterKind.customer,
+              recordId: 'c1',
+              pickFiles: pick,
+              refresh: refresh,
+            ),
           ),
         ),
       ),
@@ -198,5 +213,118 @@ void main() {
     await t.tap(find.text('Retry'));
     await t.pumpAndSettle();
     expect(find.text('Back'), findsOneWidget);
+  });
+
+  testWidgets('files are uploaded, sent with the note and shown on it', (
+    t,
+  ) async {
+    final http = await _pump(
+      t,
+      pick: (_) async => [
+        PickedPhoto(Uint8List.fromList([1, 2, 3]), 'plan.png'),
+      ],
+      extra: {
+        'POST $_base/files': (_) => {
+          'id': 'f1',
+          'filename': 'plan.png',
+          'content_type': 'image/png',
+          'size_bytes': 3,
+          'uploader_name': 'Me',
+          'created_at': '2027-02-20T10:00:00Z',
+        },
+        'POST $_base/notes': (b) => {
+          ..._note('n9', (b as Map)['body'] as String),
+          'files': [
+            {
+              'id': 'f1',
+              'filename': 'plan.png',
+              'content_type': 'image/png',
+              'size_bytes': 3,
+              'uploader_name': 'Me',
+              'created_at': '2027-02-20T10:00:00Z',
+            },
+          ],
+        },
+        'GET $_base/thread': (_) => {
+          'items': [
+            {
+              ..._note('n9', 'See plan'),
+              'files': [
+                {
+                  'id': 'f1',
+                  'filename': 'plan.png',
+                  'content_type': 'image/png',
+                  'size_bytes': 3,
+                  'uploader_name': 'Me',
+                  'created_at': '2027-02-20T10:00:00Z',
+                },
+              ],
+            },
+          ],
+        },
+      },
+    );
+    await t.tap(find.byKey(const ValueKey('attach-file')));
+    await t.pumpAndSettle();
+    expect(http.requests, contains('POST $_base/files'));
+    expect(find.byKey(const ValueKey('pending-f1')), findsOneWidget);
+    await t.enterText(
+      find.byKey(const ValueKey('chatter-composer')),
+      'See plan',
+    );
+    await t.tap(find.byKey(const ValueKey('chatter-post')));
+    await t.pumpAndSettle();
+    expect(http.bodies['POST $_base/notes'], containsPair('file_ids', ['f1']));
+    // the pending chip is gone, the note shows the file
+    expect(find.byKey(const ValueKey('pending-f1')), findsNothing);
+    expect(find.byKey(const ValueKey('attachment-f1')), findsOneWidget);
+  });
+
+  testWidgets('an activity can be edited', (t) async {
+    final http = await _pump(
+      t,
+      extra: {
+        'GET /api/v1/me': (_) => {
+          ...meJson(['customers.read', 'customers.write']),
+          'user_id': 'u1',
+        },
+        'PATCH /api/v1/chatter/activities/a1': (_) => _activity(),
+      },
+    );
+    await t.tap(find.byKey(const ValueKey('activity-edit-a1')));
+    await t.pumpAndSettle();
+    // the dialog is filled with the activity
+    expect(find.widgetWithText(TextField, 'Call back'), findsOneWidget);
+    await t.enterText(
+      find.byKey(const ValueKey('activity-summary')),
+      'Call Monday',
+    );
+    await t.pump();
+    await t.tap(find.byKey(const ValueKey('activity-ok')));
+    await t.pumpAndSettle();
+    final body = http.bodies['PATCH /api/v1/chatter/activities/a1'] as Map;
+    expect(body['summary'], 'Call Monday');
+    expect(body['kind'], 'call');
+    expect(body['assignee_id'], 'u1');
+    expect(body['due_date'], startsWith('2020-01-01'));
+  });
+
+  testWidgets('a live tick reloads the thread', (t) async {
+    final tick = ChatterTick();
+    addTearDown(tick.dispose);
+    final feed = <Object?>[];
+    final http = await _pump(
+      t,
+      refresh: tick,
+      extra: {
+        'GET $_base/thread': (_) => {'items': feed},
+      },
+    );
+    expect(find.text('From a colleague'), findsNothing);
+    feed.add(_note('n5', 'From a colleague'));
+    tick.fire();
+    await t.pumpAndSettle();
+    expect(find.text('From a colleague'), findsOneWidget);
+    expect(http.requests.where((r) => r == 'GET $_base/thread').length, 2);
   });
 }
