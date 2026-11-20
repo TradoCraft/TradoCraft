@@ -33,7 +33,7 @@ class ThreadItem {
   final String body;
 
   /// The tracked fields of a change message: `[{"field", "from", "to"}]`.
-  final dynamic changes;
+  final List<dynamic> changes;
   @JsonKey(name: 'created_at')
   final DateTime createdAt;
 

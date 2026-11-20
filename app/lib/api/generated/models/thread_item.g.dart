@@ -8,7 +8,7 @@ part of 'thread_item.dart';
 
 ThreadItem _$ThreadItemFromJson(Map<String, dynamic> json) => ThreadItem(
   body: json['body'] as String,
-  changes: json['changes'],
+  changes: json['changes'] as List<dynamic>,
   createdAt: DateTime.parse(json['created_at'] as String),
   editable: json['editable'] as bool,
   files: (json['files'] as List<dynamic>)

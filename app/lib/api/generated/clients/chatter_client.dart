@@ -9,6 +9,7 @@ import '../models/activity.dart';
 import '../models/activity_done_input.dart';
 import '../models/activity_input.dart';
 import '../models/activity_patch.dart';
+import '../models/chatter_note_edit.dart';
 import '../models/chatter_note_input.dart';
 import '../models/file_info.dart';
 import '../models/follower_input.dart';
@@ -51,7 +52,7 @@ abstract class ChatterClient {
   @PATCH('/api/v1/chatter/notes/{id}')
   Future<ThreadItem> chatterEditNote({
     @Path('id') required String id,
-    @Body() required ChatterNoteInput body,
+    @Body() required ChatterNoteEdit body,
   });
 
   @GET('/api/v1/chatter/{kind}/{id}/activities')

@@ -2404,7 +2404,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ChatterNoteInput"
+                "$ref": "#/components/schemas/ChatterNoteEdit"
               }
             }
           },
@@ -35701,6 +35701,18 @@
           "amount"
         ]
       },
+      "ChatterNoteEdit": {
+        "type": "object",
+        "description": "A new text for an own, recent note. Files cannot be added to a note afterwards.",
+        "required": [
+          "body"
+        ],
+        "properties": {
+          "body": {
+            "type": "string"
+          }
+        }
+      },
       "ChatterNoteInput": {
         "type": "object",
         "required": [
@@ -55591,7 +55603,10 @@
             "type": "string"
           },
           "changes": {
-            "type": "object",
+            "type": "array",
+            "items": {
+              "type": "object"
+            },
             "description": "The tracked fields of a change message: `[{\"field\", \"from\", \"to\"}]`."
           },
           "created_at": {

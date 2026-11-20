@@ -91,6 +91,10 @@ class _RecordFormViewState<T extends Object> extends State<RecordFormView<T>>
   TabController? _tabs;
   bool? _reportedDirty;
 
+  /// Keeps the chatter panel (its draft, its attachments) when the page crosses the width where
+  /// it moves from beside the sheet to below it.
+  final _chatterKey = GlobalKey();
+
   @override
   void initState() {
     super.initState();
@@ -269,8 +273,9 @@ class _RecordFormViewState<T extends Object> extends State<RecordFormView<T>>
   /// The sheet, with the chatter beside it when there is room (the sheet keeps the width it
   /// needs for its fields) and below it otherwise.
   Widget _sheetWithChatter(ThemeData theme) {
-    final chatter = widget.chatter;
-    if (chatter == null) return _sheet(theme);
+    final panel = widget.chatter;
+    if (panel == null) return _sheet(theme);
+    final chatter = KeyedSubtree(key: _chatterKey, child: panel);
     return LayoutBuilder(
       builder: (context, box) {
         if (!widget.chatterBeside || box.maxWidth < 1100) {

@@ -47,7 +47,9 @@ filters on the caller's company):
   `body` (plain text, at most 10 000 characters, may be empty for `system`), `changes jsonb`
   (the tracked fields of a `system` message: `[{"field","label_key","from","to"}]`, labels are
   translation keys, never text), `client_id` (idempotent create, same rule as ADR 0061),
-  `created_at`, `edited_at`. Index `(company_id, record_kind, record_id, created_at DESC, id)`.
+  `created_at`, `edited_at`. Indexes `(company_id, record_kind, record_id, id DESC)` for the thread
+  (message ids are time ordered, so they are also the paging cursor) and `(…, created_at)` for the
+  unread query.
   A note can be edited and deleted by its author for 15 minutes; `system` messages never. Deleting
   leaves nothing behind (no tombstone); the audit trail still has the change.
 - `chatter.message_files`: `(file_id → core.files, message_id → chatter.messages ON DELETE CASCADE)`.
@@ -67,11 +69,11 @@ filters on the caller's company):
 visible to everyone who can read the record, belongs to the record, and is *done* with an
 optional closing note that becomes a `system` message ("Call · done by Jo: spoke to …"). They
 stay two tables because merging them would make either the privacy rule or the "visible on the
-record" rule conditional. To avoid two places to look, **the to-do page and the badge include the
-user's open assigned activities** as a read-only group (counted by `todoCountsProvider`, shown
-under *Activities*, opening the record), and an activity can be turned into a private to-do
-with one action later. Reminder mail (ADR 0061 PR 3) covers activities the same way: the same
-worker pass, one more `SELECT`.
+record" rule conditional. To avoid two places to look, the to-do page and its badge **are planned**
+to include the user's open assigned activities as a read-only group, and an activity could be
+turned into a private to-do with one action. Reminder mail for activities (ADR 0061 PR 3) is
+planned the same way. None of this exists yet: today an assigned activity reaches its assignee
+through the notifications centre (`GET /chatter/inbox`) and the assignment mail.
 
 *Change log (`system` messages).* The audit trail stays the complete, administrator-only record
 (ADR 0059) and is **not** replaced. Chatter shows a *curated* subset that anyone with read
@@ -83,18 +85,24 @@ Values are stored as display-neutral strings or ids; the app resolves ids to nam
 to read, and shows a plain "changed" for a field it cannot resolve. Untracked fields, money
 details and anything a read-only user should not learn are simply not in the list.
 
-*API* (all under `/api/v1/chatter/{kind}/{id}`; OpenAPI and the Dart client are generated as
-usual, ADR 0005):
+*API* (OpenAPI and the Dart client are generated as usual, ADR 0005). Everything about one
+record is under `/api/v1/chatter/{kind}/{id}`; a single note or activity is addressed by its own
+id under `/api/v1/chatter/notes/{id}` and `/api/v1/chatter/activities/{id}`:
 
-- `GET …/thread?before=<cursor>&limit=` the merged feed (notes, `system` messages, completed
-  activities) **newest first**, cursor paged like the audit trail (no totals). `POST …/notes
-  {body, file_ids?, client_id?}`; `PATCH`/`DELETE …/notes/{id}`.
-- `GET …/activities` open and recently done ones; `POST …/activities`; `POST
-  …/activities/{id}/done {note?}`; `PATCH`/`DELETE …/activities/{id}` (creator or assignee).
-- `GET …/followers`; `PUT`/`DELETE …/follow` (yourself); `POST …/followers {user_id}`;
-  `DELETE …/followers/{user_id}` (write permission).
-- `POST …/read` sets `last_read_at`; `GET /chatter/inbox` returns the records with something new for the
-  caller (followed records only) and the activities due, for the notifications centre.
+- `GET …/thread?before_id=&limit=` the feed of notes and change messages **newest first** (a
+  completed activity appears in it as a message), paged by message id: pass the returned
+  `next_before_id` as `before_id` for the next, older page (no totals). `POST …/notes
+  {body, file_ids?, client_id?}`; `PATCH`/`DELETE /chatter/notes/{id}` (own note, 15 minutes;
+  `PATCH` takes `{body}` only, files cannot be added afterwards).
+- `GET …/activities` lists the **open** activities of the record (a completed one leaves the list
+  and is in the thread); `POST …/activities`; `POST /chatter/activities/{id}/done {note?}`;
+  `PATCH`/`DELETE /chatter/activities/{id}` (creator or assignee). An assignee must be an active
+  colleague who may read the record.
+- `POST …/files` and `GET …/files/{file_id}` (see *Files*).
+- `GET …/followers`; `PUT`/`DELETE …/follow` (yourself); `POST …/followers {user_id}` and
+  `DELETE …/followers/{user_id}` (write permission; the user must be able to read the record).
+- `POST …/read` sets `last_read_at`; `GET /chatter/inbox` returns the records with something new
+  for the caller (followed records only) and the activities due, for the notifications centre.
 
 *Live updates.* Each mutation publishes a `RecordEvent` after the commit on the existing channel
 (ADR 0073, 0075) with `entity_type` = the record kind, new kinds `chatter_note`,
@@ -127,8 +135,8 @@ through the same read endpoints (a `kind = 'ticket'` adapter) and then decide ab
 - Any record screen gets a readable history, notes, followers and activities by passing a kind
   and an id; a new kind is one enum variant, one `CHECK` value and a tracked-field list.
 - The polymorphic address cannot be enforced by the database: a deleted record leaves orphaned
-  rows. A nightly pass in the worker removes rows whose `visible` check fails for kinds that can
-  be deleted; kinds that are only archived keep their rows.
+  rows. An hourly pass in the worker removes the rows of records that no longer exist (see
+  *Clean-up*); records that are only archived keep theirs.
 - Change messages duplicate a small part of `audit.events` on purpose: the audit trail is the
   evidence, the chatter is the story. The cost is one extra insert per tracked save.
 - `RecordEvent` consumers that assumed every event moves the version already filter by kind
@@ -157,8 +165,11 @@ signature, through `core::files`) as a pending upload of the caller; `file_ids` 
 up to ten pending uploads of the caller on that record; a file is on one note only. Until linked,
 only its uploader can download it; afterwards everyone who can read the record can, through
 `GET /chatter/{kind}/{id}/files/{file_id}`, and only through the record it belongs to. Deleting a
-note removes the link. Pending uploads older than a day are dropped by the worker pass; the file
-rows and blobs stay in `core.files` for the blob sweep, like ticket attachments.
+note removes the link. A retried upload (same `client_id`) may only meet its own earlier upload:
+a file id that exists for any other reason is refused with 409 and never adopted. Downloads are
+sent with `Cache-Control: private, no-store`. Pending uploads older than a day are dropped by the
+worker pass, which also deletes the `core.files` row of a file no other table references (the
+referencing tables are read from the catalog); the blob goes with the blob sweep.
 
 *Assignment mail.* Scheduling an activity for somebody else, or handing one over, queues one
 plain mail in the assignee's language (record, kind, summary, due date). At most one per

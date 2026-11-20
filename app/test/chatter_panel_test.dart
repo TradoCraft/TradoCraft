@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -326,5 +327,144 @@ void main() {
     await t.pumpAndSettle();
     expect(find.text('From a colleague'), findsOneWidget);
     expect(http.requests.where((r) => r == 'GET $_base/thread').length, 2);
+  });
+
+  testWidgets(
+    'a retried post carries the same client id until the draft changes',
+    (t) async {
+      var fail = true;
+      final ids = <String?>[];
+      final http = await _pump(
+        t,
+        extra: {
+          'POST $_base/notes': (b) {
+            ids.add((b as Map)['client_id'] as String?);
+            if (fail) {
+              return const FakeStatus(500, {
+                'error': 'internal',
+                'message': 'x',
+              });
+            }
+            return _note('n9', b['body'] as String);
+          },
+        },
+      );
+      final composer = find.byKey(const ValueKey('chatter-composer'));
+      Future<void> post() async {
+        await t.tap(find.byKey(const ValueKey('chatter-post')));
+        await t.pumpAndSettle();
+      }
+
+      await t.enterText(composer, 'Hello');
+      await post(); // lost
+      await post(); // retried unchanged
+      expect(ids.length, 2);
+      expect(ids[0], isNotNull);
+      expect(ids[1], ids[0], reason: 'the retry is the same post');
+      await t.enterText(composer, 'Hello again');
+      await post(); // another text is another post
+      expect(ids[2], isNot(ids[0]));
+      fail = false;
+      await post(); // succeeds with that id
+      await t.enterText(composer, 'Next');
+      await post();
+      expect(
+        ids.last,
+        isNot(ids[3]),
+        reason: 'a finished post does not reuse its id',
+      );
+      expect(http.requests.where((r) => r == 'POST $_base/notes').length, 5);
+    },
+  );
+
+  testWidgets('what is typed while a post runs is kept', (t) async {
+    final gate = Completer<Object?>();
+    await _pump(t, extra: {'POST $_base/notes': (_) => gate.future});
+    final composer = find.byKey(const ValueKey('chatter-composer'));
+    await t.enterText(composer, 'First');
+    await t.tap(find.byKey(const ValueKey('chatter-post')));
+    await t.pump();
+    // more is typed while the request is on its way
+    await t.enterText(composer, 'First and more');
+    gate.complete(_note('n9', 'First'));
+    await t.pumpAndSettle();
+    expect(
+      t.widget<TextField>(composer).controller!.text,
+      'First and more',
+      reason: 'the new text is not thrown away with the sent one',
+    );
+  });
+
+  testWidgets('older notes load once, and the button waits for the page', (
+    t,
+  ) async {
+    final gate = Completer<Object?>();
+    var calls = 0;
+    final http = await _pump(
+      t,
+      extra: {
+        // 1st call: the panel's own load; 2nd: the older page, held back by the test
+        'GET $_base/thread': (_) {
+          calls++;
+          if (calls == 1) {
+            return {
+              'items': [_note('n2', 'Newer')],
+              'next_before_id': 'n2',
+            };
+          }
+          return gate.future;
+        },
+      },
+    );
+    final older = find.byKey(const ValueKey('chatter-older'));
+    await t.tap(older);
+    await t.pumpAndSettle();
+    // while it is on its way the button is off and a second tap starts nothing
+    expect(t.widget<TextButton>(older).onPressed, isNull);
+    await t.tap(older, warnIfMissed: false);
+    await t.pumpAndSettle();
+    expect(http.requests.where((r) => r == 'GET $_base/thread').length, 2);
+    gate.complete({
+      'items': [_note('n1', 'Older')],
+    });
+    await t.pumpAndSettle();
+    expect(find.text('Older'), findsOneWidget);
+    expect(find.text('Newer'), findsOneWidget);
+    expect(older, findsNothing, reason: 'that was the last page');
+  });
+
+  testWidgets('an older page that arrives after a reload is dropped', (
+    t,
+  ) async {
+    final tick = ChatterTick();
+    addTearDown(tick.dispose);
+    final gate = Completer<Object?>();
+    var calls = 0;
+    await _pump(
+      t,
+      refresh: tick,
+      extra: {
+        'GET $_base/thread': (_) {
+          calls++;
+          if (calls == 2) return gate.future; // the older page
+          return {
+            'items': [
+              _note('n2', calls == 1 ? 'Before reload' : 'After reload'),
+            ],
+            if (calls == 1) 'next_before_id': 'n2',
+          };
+        },
+      },
+    );
+    await t.tap(find.byKey(const ValueKey('chatter-older')));
+    await t.pumpAndSettle();
+    tick.fire(); // a colleague posted: the whole thread is loaded again
+    await t.pumpAndSettle();
+    gate.complete({
+      'items': [_note('n0', 'Stale older page')],
+    });
+    await t.pumpAndSettle();
+    expect(find.text('After reload'), findsOneWidget);
+    expect(find.text('Stale older page'), findsNothing);
   });
 }

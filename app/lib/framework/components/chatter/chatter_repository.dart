@@ -70,7 +70,7 @@ class ChatterRepository {
 
   Future<ThreadItem> edit(String noteId, String body) => _c.chatterEditNote(
     id: noteId,
-    body: ChatterNoteInput(body: body),
+    body: ChatterNoteEdit(body: body),
   );
 
   Future<void> delete(String noteId) => _c.chatterDeleteNote(id: noteId);

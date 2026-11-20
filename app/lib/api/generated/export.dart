@@ -89,6 +89,7 @@ export 'models/category.dart';
 export 'models/category_input.dart';
 export 'models/category_name.dart';
 export 'models/change_kind.dart';
+export 'models/chatter_note_edit.dart';
 export 'models/chatter_note_input.dart';
 export 'models/check_status.dart';
 export 'models/checklist_item.dart';

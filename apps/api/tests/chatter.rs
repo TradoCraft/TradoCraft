@@ -519,7 +519,7 @@ async fn saving_a_customer_logs_tracked_fields_only(db: PgPool) {
     let body = json!({"code": "CH-8", "name": "Renamed", "country_code": "BE", "city": "Gent",
         "price_zone_id": ZONE, "discount_percent": "0", "expected_version": cur["version"],
         "language": cur["language"]});
-    send(
+    let (s, r) = send(
         &app,
         ADMIN,
         Method::PUT,
@@ -527,6 +527,7 @@ async fn saving_a_customer_logs_tracked_fields_only(db: PgPool) {
         Some(body),
     )
     .await;
+    assert_eq!(s, StatusCode::OK, "{r}");
     let (_, page) = send(
         &app,
         VIEWER,
@@ -693,6 +694,7 @@ async fn files_are_uploaded_linked_listed_and_downloaded(db: PgPool) {
     let (s, headers, bytes) = get(VIEWER, fid.clone()).await;
     assert_eq!(s, StatusCode::OK);
     assert_eq!(bytes, png());
+    assert_eq!(headers["cache-control"], "private, no-store");
     assert!(headers["content-disposition"]
         .to_str()
         .unwrap()
@@ -879,7 +881,7 @@ async fn the_assignee_of_an_activity_gets_one_mail(db: PgPool) {
     );
     assert!(m[0].1.contains("06/05/2030"), "{m:?}");
     // a second one within ten minutes is not mailed again
-    send(
+    let (s, a) = send(
         &app,
         SALES,
         Method::POST,
@@ -887,6 +889,7 @@ async fn the_assignee_of_an_activity_gets_one_mail(db: PgPool) {
         Some(body("And again", VIEWER_ID)),
     )
     .await;
+    assert_eq!(s, StatusCode::CREATED, "{a}");
     assert_eq!(mails(&db, VIEWER).await.len(), 1);
     // after the window it is
     sqlx::query("UPDATE chatter.followers SET last_notified_at = now() - interval '11 minutes'")
@@ -922,11 +925,24 @@ async fn rows_of_deleted_records_and_stale_uploads_are_removed(db: PgPool) {
         send(&app, SALES, Method::POST, &format!("{base}/activities"),
             Some(json!({"kind": "todo", "summary": "a", "assignee_id": SALES_ID, "due_date": "2030-01-01"}))).await;
     }
-    let (s, _) = upload(&app, SALES, &format!("/chatter/customer/{keep}"), "old.png").await;
+    let keep_base = format!("/chatter/customer/{keep}");
+    let (s, unshared) = upload(&app, SALES, &keep_base, "old.png").await;
     assert_eq!(s, StatusCode::CREATED);
+    let (s, shared) = upload(&app, SALES, &keep_base, "shared.png").await;
+    assert_eq!(s, StatusCode::CREATED);
+    // Another table keeps using one of the files; the pass must find that out from the catalog.
+    sqlx::query("CREATE TABLE public.file_refs_test (file_id uuid REFERENCES core.files(id))")
+        .execute(&db)
+        .await
+        .unwrap();
+    sqlx::query("INSERT INTO public.file_refs_test VALUES ($1::uuid)")
+        .bind(shared["id"].as_str().unwrap())
+        .execute(&db)
+        .await
+        .unwrap();
     assert_eq!(tradocraft_chatter::remove_orphans(&db).await.unwrap(), 0);
 
-    // age the upload and delete one customer; the pass must remove its rows and the upload
+    // age the uploads and delete one customer; the pass must remove its rows and the uploads
     sqlx::query("UPDATE chatter.message_files SET created_at = now() - interval '2 days'")
         .execute(&db)
         .await
@@ -942,8 +958,8 @@ async fn rows_of_deleted_records_and_stale_uploads_are_removed(db: PgPool) {
         .await
         .unwrap();
     let removed = tradocraft_chatter::remove_orphans(&db).await.unwrap();
-    // the note, the activity and the follower of the deleted customer, and the stale upload
-    assert_eq!(removed, 4);
+    // the note, the activity and the follower of the deleted customer, and the two stale uploads
+    assert_eq!(removed, 5);
     for table in ["messages", "activities", "followers"] {
         let n: i64 = sqlx::query_scalar(&format!(
             "SELECT count(*) FROM chatter.{table} WHERE record_id = $1::uuid"
@@ -958,7 +974,27 @@ async fn rows_of_deleted_records_and_stale_uploads_are_removed(db: PgPool) {
         .fetch_one(&db)
         .await
         .unwrap();
-    assert_eq!(left, 0, "the stale pending upload is gone");
+    assert_eq!(left, 0, "the stale pending uploads are gone");
+    let stored = |id: String| {
+        let db = db.clone();
+        async move {
+            sqlx::query_scalar::<_, i64>("SELECT count(*) FROM core.files WHERE id = $1::uuid")
+                .bind(id)
+                .fetch_one(&db)
+                .await
+                .unwrap()
+        }
+    };
+    assert_eq!(
+        stored(unshared["id"].as_str().unwrap().to_string()).await,
+        0,
+        "an upload nothing else uses loses its stored file"
+    );
+    assert_eq!(
+        stored(shared["id"].as_str().unwrap().to_string()).await,
+        1,
+        "a file another table references is kept"
+    );
     assert_eq!(tradocraft_chatter::remove_orphans(&db).await.unwrap(), 0);
     let (_, page) = send(
         &app,
@@ -1059,4 +1095,190 @@ async fn saving_quotations_and_orders_logs_their_tracked_fields(db: PgPool) {
         fields.contains(&"customer_reference".to_string()),
         "{fields:?}"
     );
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn an_upload_never_adopts_a_file_that_is_not_its_own(db: PgPool) {
+    let app = setup(db.clone()).await;
+    let c = customer(&app, "CH-19").await;
+    let base = format!("/chatter/customer/{c}");
+    // a stored file that belongs to something else (here: nothing in the chatter)
+    let foreign = Uuid::now_v7();
+    sqlx::query(
+        "INSERT INTO core.files (id, company_id, filename, content_type, size_bytes, uploader_name, storage_key)
+         VALUES ($1, '00000000-0000-7000-8000-000000000001', 'secret.pdf', 'application/pdf', 5, 'x', 'k')",
+    )
+    .bind(foreign)
+    .execute(&db)
+    .await
+    .unwrap();
+    let (s, _) = common::call_raw(
+        &app,
+        SALES,
+        &format!("/api/v1{base}/files?client_id={foreign}"),
+        "application/octet-stream",
+        png(),
+    )
+    .await;
+    assert_eq!(s, StatusCode::CONFLICT);
+    let linked: i64 = sqlx::query_scalar("SELECT count(*) FROM chatter.message_files")
+        .fetch_one(&db)
+        .await
+        .unwrap();
+    assert_eq!(linked, 0, "nothing was linked to the record");
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn an_assignee_or_follower_must_be_able_to_read_the_record(db: PgPool) {
+    const TECH_ID: &str = "00000000-0000-7000-8000-000000000107"; // no customers.read
+    let app = setup(db.clone()).await;
+    let c = customer(&app, "CH-20").await;
+    let base = format!("/chatter/customer/{c}");
+    let (s, r) = send(
+        &app,
+        ADMIN,
+        Method::POST,
+        &format!("{base}/activities"),
+        Some(
+            json!({"kind": "call", "summary": "Secret", "assignee_id": TECH_ID,
+                    "due_date": "2030-01-01"}),
+        ),
+    )
+    .await;
+    assert_eq!(s, StatusCode::UNPROCESSABLE_ENTITY, "{r}");
+    let (s, _) = send(
+        &app,
+        ADMIN,
+        Method::POST,
+        &format!("{base}/followers"),
+        Some(json!({"user_id": TECH_ID})),
+    )
+    .await;
+    assert_eq!(s, StatusCode::UNPROCESSABLE_ENTITY);
+    let mail: i64 = sqlx::query_scalar("SELECT count(*) FROM core.mail_outbox")
+        .fetch_one(&db)
+        .await
+        .unwrap();
+    assert_eq!(mail, 0, "nothing about the record was mailed");
+    // handing an existing activity to such a user is refused the same way
+    let (_, a) = send(
+        &app,
+        ADMIN,
+        Method::POST,
+        &format!("{base}/activities"),
+        Some(
+            json!({"kind": "call", "summary": "Fine", "assignee_id": SALES_ID,
+                    "due_date": "2030-01-01"}),
+        ),
+    )
+    .await;
+    let (s, _) = send(
+        &app,
+        ADMIN,
+        Method::PATCH,
+        &format!("/chatter/activities/{}", a["id"].as_str().unwrap()),
+        Some(json!({"assignee_id": TECH_ID})),
+    )
+    .await;
+    assert_eq!(s, StatusCode::UNPROCESSABLE_ENTITY);
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn a_note_is_only_editable_while_its_author_may_write(db: PgPool) {
+    let app = setup(db.clone()).await;
+    let c = customer(&app, "CH-21").await;
+    let base = format!("/chatter/customer/{c}");
+    send(
+        &app,
+        SALES,
+        Method::POST,
+        &format!("{base}/notes"),
+        Some(json!({"body": "mine"})),
+    )
+    .await;
+    let (_, page) = send(&app, SALES, Method::GET, &format!("{base}/thread"), None).await;
+    assert_eq!(items(&page)[0]["editable"], true);
+    // the author is demoted to the read-only role
+    sqlx::query("UPDATE core.user_companies SET roles = '{viewer}' WHERE user_id = $1::uuid")
+        .bind(SALES_ID)
+        .execute(&db)
+        .await
+        .unwrap();
+    let (s, page) = send(&app, SALES, Method::GET, &format!("{base}/thread"), None).await;
+    assert_eq!(s, StatusCode::OK);
+    assert_eq!(items(&page)[0]["editable"], false);
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn requests_racing_with_one_client_id_make_one_row(db: PgPool) {
+    let app = setup(db.clone()).await;
+    let c = customer(&app, "CH-22").await;
+    let base = format!("/chatter/customer/{c}");
+    let cid = Uuid::now_v7().to_string();
+    let note = json!({"body": "race", "client_id": cid});
+    let results = futures_join(
+        send(
+            &app,
+            SALES,
+            Method::POST,
+            &format!("{base}/notes"),
+            Some(note.clone()),
+        ),
+        send(
+            &app,
+            SALES,
+            Method::POST,
+            &format!("{base}/notes"),
+            Some(note),
+        ),
+    )
+    .await;
+    let mut codes = [results.0 .0.as_u16(), results.1 .0.as_u16()];
+    codes.sort();
+    assert_eq!(codes, [200, 201], "{results:?}");
+    assert_eq!(results.0 .1["id"], results.1 .1["id"]);
+    let n: i64 = sqlx::query_scalar("SELECT count(*) FROM chatter.messages WHERE kind = 'note'")
+        .fetch_one(&db)
+        .await
+        .unwrap();
+    assert_eq!(n, 1);
+
+    let cid = Uuid::now_v7().to_string();
+    let act = json!({"kind": "call", "summary": "race", "assignee_id": VIEWER_ID,
+                     "due_date": "2030-01-01", "client_id": cid});
+    let results = futures_join(
+        send(
+            &app,
+            SALES,
+            Method::POST,
+            &format!("{base}/activities"),
+            Some(act.clone()),
+        ),
+        send(
+            &app,
+            SALES,
+            Method::POST,
+            &format!("{base}/activities"),
+            Some(act),
+        ),
+    )
+    .await;
+    let mut codes = [results.0 .0.as_u16(), results.1 .0.as_u16()];
+    codes.sort();
+    assert_eq!(codes, [200, 201], "{results:?}");
+    let n: i64 = sqlx::query_scalar("SELECT count(*) FROM chatter.activities")
+        .fetch_one(&db)
+        .await
+        .unwrap();
+    assert_eq!(n, 1);
+    assert_eq!(mails(&db, VIEWER).await.len(), 1, "one mail, not two");
+}
+
+/// Runs two futures at the same time.
+async fn futures_join<A, B>(a: A, b: B) -> (A::Output, B::Output)
+where
+    A: std::future::Future,
+    B: std::future::Future,
+{
+    tokio::join!(a, b)
 }

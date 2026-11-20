@@ -142,7 +142,7 @@ class _ChatterClient implements ChatterClient {
   @override
   Future<ThreadItem> chatterEditNote({
     required String id,
-    required ChatterNoteInput body,
+    required ChatterNoteEdit body,
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};

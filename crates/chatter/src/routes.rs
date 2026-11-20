@@ -71,7 +71,7 @@ pub struct ThreadItem {
     pub author_name: Option<String>,
     pub body: String,
     /// The tracked fields of a change message: `[{"field", "from", "to"}]`.
-    #[schema(value_type = Object)]
+    #[schema(value_type = Vec<Object>)]
     pub changes: serde_json::Value,
     pub created_at: DateTime<Utc>,
     pub edited_at: Option<DateTime<Utc>>,
@@ -104,6 +104,12 @@ pub struct ChatterNoteInput {
     pub file_ids: Vec<Uuid>,
     /// Chosen by the client so that a retried post does not post twice.
     pub client_id: Option<Uuid>,
+}
+
+/// A new text for an own, recent note. Files cannot be added to a note afterwards.
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct ChatterNoteEdit {
+    pub body: String,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
@@ -256,6 +262,25 @@ async fn check_member(conn: &mut PgConnection, user: &CurrentUser, id: Uuid) -> 
     })
 }
 
+/// An assignee or an added follower must be an active colleague who may read the record: the
+/// activity mail carries its label and summary, and the inbox would list it.
+async fn check_assignee(
+    state: &AppState,
+    conn: &mut PgConnection,
+    user: &CurrentUser,
+    kind: RecordKind,
+    assignee: Uuid,
+) -> AppResult<()> {
+    check_member(conn, user, assignee).await?;
+    let member = CurrentUser::for_member(&state.db, assignee, user.company_id).await?;
+    if !member.can(kind.read_permission()) {
+        return Err(AppError::Validation(
+            "that colleague may not read this record".into(),
+        ));
+    }
+    Ok(())
+}
+
 /// Starts (or resumes) following; `reason` is kept when the user already follows.
 async fn follow_record(
     conn: &mut PgConnection,
@@ -336,6 +361,13 @@ async fn thread(
         None
     };
     attach_files(&mut conn, &mut items).await?;
+    // The SQL knows the author and the window; the permission is checked here. Someone who lost
+    // write access can no longer change a note they wrote a minute ago.
+    if !user.can(kind.write_permission()) {
+        for item in &mut items {
+            item.editable = false;
+        }
+    }
     Ok(Json(ThreadPage {
         items,
         next_before_id,
@@ -415,28 +447,19 @@ async fn post_note(
     let mut tx = state.db.begin().await?;
     let kind = open(&mut tx, &user, &kind, id, true).await?;
     if let Some(client_id) = input.client_id {
-        // A retried post returns the note that exists (200); the id belongs to the company.
-        let existing: Option<(Uuid, String, Uuid, Option<Uuid>)> = sqlx::query_as(
-            "SELECT id, record_kind, record_id, author_user_id FROM chatter.messages
-             WHERE company_id = $1 AND client_id = $2",
-        )
-        .bind(user.company_id)
-        .bind(client_id)
-        .fetch_optional(&mut *tx)
-        .await?;
-        if let Some((mid, k, rid, author)) = existing {
-            if k != kind.as_str() || rid != id || author != Some(user.user_id) {
-                return Err(AppError::Conflict("client_id is already used".into()));
-            }
-            let item = load_item(&mut tx, &user, mid).await?;
+        // A retried post returns the note that exists (200).
+        if let Some(item) = existing_note(&mut tx, &user, kind, id, client_id).await? {
             return Ok((StatusCode::OK, Json(item)));
         }
     }
     let mid = new_id();
-    sqlx::query(
+    // Two requests with the same client id can race: the loser inserts nothing and answers with
+    // the winner's note, without any of the side effects below.
+    let inserted = sqlx::query(
         "INSERT INTO chatter.messages
              (id, company_id, record_kind, record_id, kind, author_user_id, body, client_id)
-         VALUES ($1, $2, $3, $4, 'note', $5, $6, $7)",
+         VALUES ($1, $2, $3, $4, 'note', $5, $6, $7)
+         ON CONFLICT (company_id, client_id) WHERE client_id IS NOT NULL DO NOTHING",
     )
     .bind(mid)
     .bind(user.company_id)
@@ -446,12 +469,23 @@ async fn post_note(
     .bind(&body)
     .bind(input.client_id)
     .execute(&mut *tx)
-    .await?;
+    .await?
+    .rows_affected();
+    if inserted == 0 {
+        let item = match input.client_id {
+            Some(client_id) => existing_note(&mut tx, &user, kind, id, client_id).await?,
+            None => None,
+        };
+        return match item {
+            Some(item) => Ok((StatusCode::OK, Json(item))),
+            None => Err(AppError::Conflict("client_id is already used".into())),
+        };
+    }
     link_files(&mut tx, &user, kind, id, mid, &input.file_ids).await?;
     follow_record(&mut tx, user.company_id, kind, id, user.user_id, "author").await?;
     // Writing a note means the author has seen the thread up to now.
     sqlx::query(
-        "UPDATE chatter.followers SET last_read_at = now()
+        "UPDATE chatter.followers SET last_read_at = greatest(last_read_at, now())
          WHERE company_id = $1 AND record_kind = $2 AND record_id = $3 AND user_id = $4",
     )
     .bind(user.company_id)
@@ -464,6 +498,31 @@ async fn post_note(
     tx.commit().await?;
     publish(&state, &user, kind, id, "chatter_note");
     Ok((StatusCode::CREATED, Json(item)))
+}
+
+/// The note a retried post refers to; 409 when the client id belongs to another record or author.
+async fn existing_note(
+    conn: &mut PgConnection,
+    user: &CurrentUser,
+    kind: RecordKind,
+    id: Uuid,
+    client_id: Uuid,
+) -> AppResult<Option<ThreadItem>> {
+    let existing: Option<(Uuid, String, Uuid, Option<Uuid>)> = sqlx::query_as(
+        "SELECT id, record_kind, record_id, author_user_id FROM chatter.messages
+         WHERE company_id = $1 AND client_id = $2",
+    )
+    .bind(user.company_id)
+    .bind(client_id)
+    .fetch_optional(&mut *conn)
+    .await?;
+    let Some((mid, k, rid, author)) = existing else {
+        return Ok(None);
+    };
+    if k != kind.as_str() || rid != id || author != Some(user.user_id) {
+        return Err(AppError::Conflict("client_id is already used".into()));
+    }
+    Ok(Some(load_item(conn, user, mid).await?))
 }
 
 /// Locks an own, still editable note and returns its address.
@@ -499,14 +558,14 @@ async fn lock_own_note(
 }
 
 #[utoipa::path(patch, path = "/chatter/notes/{id}", tag = "chatter", operation_id = "chatter_edit_note",
-    params(("id" = Uuid, Path)), request_body = ChatterNoteInput,
+    params(("id" = Uuid, Path)), request_body = ChatterNoteEdit,
     responses((status = 200, body = ThreadItem), (status = 403, body = ErrorBody),
               (status = 404, body = ErrorBody), (status = 422, body = ErrorBody)))]
 async fn edit_note(
     State(state): State<AppState>,
     user: CurrentUser,
     Path(id): Path<Uuid>,
-    Json(input): Json<ChatterNoteInput>,
+    Json(input): Json<ChatterNoteEdit>,
 ) -> AppResult<Json<ThreadItem>> {
     let body = clean_body(&input.body)?;
     let mut tx = state.db.begin().await?;
@@ -612,6 +671,34 @@ async fn upload_file(
 ) -> AppResult<(StatusCode, Json<FileInfo>)> {
     let mut tx = state.db.begin().await?;
     let kind = open(&mut tx, &user, &kind, id, true).await?;
+    if let Some(client_id) = p.client_id {
+        // A retry may only meet its own earlier upload. A file id that exists for any other
+        // reason (a ticket attachment, a photo, another record's upload) is never adopted.
+        let known: Option<(String, Uuid, Uuid)> = sqlx::query_as(
+            "SELECT record_kind, record_id, uploaded_by FROM chatter.message_files WHERE file_id = $1",
+        )
+        .bind(client_id)
+        .fetch_optional(&mut *tx)
+        .await?;
+        match known {
+            Some((k, r, u)) if k == kind.as_str() && r == id && u == user.user_id => {}
+            Some(_) => {
+                return Err(AppError::Conflict(
+                    "this file id belongs to another record".into(),
+                ))
+            }
+            None => {
+                let used: bool =
+                    sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM core.files WHERE id = $1)")
+                        .bind(client_id)
+                        .fetch_one(&mut *tx)
+                        .await?;
+                if used {
+                    return Err(AppError::Conflict("this file id is already used".into()));
+                }
+            }
+        }
+    }
     let file = files::store_document(
         &mut tx,
         &state.blobs,
@@ -750,30 +837,20 @@ async fn create_activity(
     }
     let mut tx = state.db.begin().await?;
     let kind = open(&mut tx, &user, &kind, id, true).await?;
-    check_member(&mut tx, &user, input.assignee_id).await?;
+    // A retry finds its activity before the assignee is checked again.
     if let Some(client_id) = input.client_id {
-        let existing: Option<(Uuid, String, Uuid)> = sqlx::query_as(
-            "SELECT id, record_kind, record_id FROM chatter.activities
-             WHERE company_id = $1 AND client_id = $2",
-        )
-        .bind(user.company_id)
-        .bind(client_id)
-        .fetch_optional(&mut *tx)
-        .await?;
-        if let Some((aid, k, rid)) = existing {
-            if k != kind.as_str() || rid != id {
-                return Err(AppError::Conflict("client_id is already used".into()));
-            }
-            let a = load_activity(&mut tx, &user, aid).await?;
+        if let Some(a) = existing_activity(&mut tx, &user, kind, id, client_id).await? {
             return Ok((StatusCode::OK, Json(a)));
         }
     }
+    check_assignee(&state, &mut tx, &user, kind, input.assignee_id).await?;
     let aid = new_id();
-    sqlx::query(
+    let inserted = sqlx::query(
         "INSERT INTO chatter.activities
              (id, company_id, record_kind, record_id, kind, summary, note, assignee_id, due_date,
               created_by, client_id)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)",
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+         ON CONFLICT (company_id, client_id) WHERE client_id IS NOT NULL DO NOTHING",
     )
     .bind(aid)
     .bind(user.company_id)
@@ -787,7 +864,18 @@ async fn create_activity(
     .bind(user.user_id)
     .bind(input.client_id)
     .execute(&mut *tx)
-    .await?;
+    .await?
+    .rows_affected();
+    if inserted == 0 {
+        let found = match input.client_id {
+            Some(client_id) => existing_activity(&mut tx, &user, kind, id, client_id).await?,
+            None => None,
+        };
+        return match found {
+            Some(a) => Ok((StatusCode::OK, Json(a))),
+            None => Err(AppError::Conflict("client_id is already used".into())),
+        };
+    }
     follow_record(
         &mut tx,
         user.company_id,
@@ -812,6 +900,31 @@ async fn create_activity(
     tx.commit().await?;
     publish(&state, &user, kind, id, "chatter_activity");
     Ok((StatusCode::CREATED, Json(a)))
+}
+
+/// The activity a retried create refers to; 409 when the client id belongs to another record.
+async fn existing_activity(
+    conn: &mut PgConnection,
+    user: &CurrentUser,
+    kind: RecordKind,
+    id: Uuid,
+    client_id: Uuid,
+) -> AppResult<Option<Activity>> {
+    let existing: Option<(Uuid, String, Uuid)> = sqlx::query_as(
+        "SELECT id, record_kind, record_id FROM chatter.activities
+         WHERE company_id = $1 AND client_id = $2",
+    )
+    .bind(user.company_id)
+    .bind(client_id)
+    .fetch_optional(&mut *conn)
+    .await?;
+    let Some((aid, k, rid)) = existing else {
+        return Ok(None);
+    };
+    if k != kind.as_str() || rid != id {
+        return Err(AppError::Conflict("client_id is already used".into()));
+    }
+    Ok(Some(load_activity(conn, user, aid).await?))
 }
 
 async fn load_activity(
@@ -930,7 +1043,7 @@ async fn update_activity(
         ));
     }
     if let Some(a) = patch.assignee_id {
-        check_member(&mut tx, &user, a).await?;
+        check_assignee(&state, &mut tx, &user, kind, a).await?;
         follow_record(&mut tx, user.company_id, kind, record_id, a, "assigned").await?;
     }
     sqlx::query(
@@ -1100,7 +1213,7 @@ async fn add_follower(
 ) -> AppResult<Json<Followers>> {
     let mut tx = state.db.begin().await?;
     let kind = open(&mut tx, &user, &kind, id, true).await?;
-    check_member(&mut tx, &user, input.user_id).await?;
+    check_assignee(&state, &mut tx, &user, kind, input.user_id).await?;
     follow_record(&mut tx, user.company_id, kind, id, input.user_id, "manual").await?;
     let out = followers_of(&mut tx, &user, kind, id).await?;
     tx.commit().await?;
@@ -1137,7 +1250,7 @@ async fn mark_read(
     let mut conn = state.db.acquire().await?;
     let kind = open(&mut conn, &user, &kind, id, false).await?;
     sqlx::query(
-        "UPDATE chatter.followers SET last_read_at = now()
+        "UPDATE chatter.followers SET last_read_at = greatest(last_read_at, now())
          WHERE company_id = $1 AND record_kind = $2 AND record_id = $3 AND user_id = $4",
     )
     .bind(user.company_id)
@@ -1157,6 +1270,12 @@ async fn mark_read(
     responses((status = 200, body = Inbox)))]
 async fn inbox(State(state): State<AppState>, user: CurrentUser) -> AppResult<Json<Inbox>> {
     let mut conn = state.db.acquire().await?;
+    // Kinds the caller may not read are left out in SQL, so they cannot fill the 50 places.
+    let readable: Vec<String> = RecordKind::ALL
+        .into_iter()
+        .filter(|k| user.can(k.read_permission()))
+        .map(|k| k.as_str().to_string())
+        .collect();
     let unread: Vec<InboxRecord> = sqlx::query_as(
         "SELECT f.record_kind, f.record_id, NULL::text AS label,
                 count(*) AS unread, max(m.created_at) AS last_at
@@ -1166,11 +1285,13 @@ async fn inbox(State(state): State<AppState>, user: CurrentUser) -> AppResult<Js
           AND m.record_id = f.record_id AND m.created_at > f.last_read_at
           AND m.author_user_id IS DISTINCT FROM f.user_id
          WHERE f.company_id = $1 AND f.user_id = $2 AND f.muted_at IS NULL
+           AND f.record_kind = ANY($3)
          GROUP BY f.record_kind, f.record_id
          ORDER BY max(m.created_at) DESC LIMIT 50",
     )
     .bind(user.company_id)
     .bind(user.user_id)
+    .bind(&readable)
     .fetch_all(&mut *conn)
     .await?;
     let mut out_unread = Vec::new();
@@ -1192,11 +1313,12 @@ async fn inbox(State(state): State<AppState>, user: CurrentUser) -> AppResult<Js
         "SELECT id, record_kind, record_id, kind, summary, due_date, due_date < current_date
          FROM chatter.activities
          WHERE company_id = $1 AND assignee_id = $2 AND done_at IS NULL
-           AND due_date <= current_date
+           AND due_date <= current_date AND record_kind = ANY($3)
          ORDER BY due_date, id LIMIT 50",
     )
     .bind(user.company_id)
     .bind(user.user_id)
+    .bind(&readable)
     .fetch_all(&mut *conn)
     .await?;
     let mut activities = Vec::new();

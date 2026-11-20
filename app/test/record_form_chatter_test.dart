@@ -82,4 +82,82 @@ void main() {
     expect(n, 2);
     tick.dispose();
   });
+
+  test(
+    'a completed operation shows the chatter at once, a failed one does not',
+    () async {
+      final controller = RecordFormController<String>(
+        initial: 'x',
+        versionOf: (_) => 1,
+      );
+      addTearDown(controller.dispose);
+      var ticks = 0;
+      controller.chatterTick.addListener(() => ticks++);
+      expect(await controller.run(() async => 'saved'), isTrue);
+      expect(ticks, 1);
+      expect(await controller.run(() async => throw 'refused'), isFalse);
+      expect(ticks, 1, reason: 'nothing was written');
+    },
+  );
+
+  testWidgets('the chatter keeps its state when the page changes width', (
+    t,
+  ) async {
+    await t.binding.setSurfaceSize(const Size(1400, 1200));
+    addTearDown(() => t.binding.setSurfaceSize(null));
+    final controller = RecordFormController<String>(
+      initial: 'x',
+      versionOf: (_) => 1,
+    );
+    addTearDown(controller.dispose);
+    Widget app() => ProviderScope(
+      child: MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: [
+          AppLocalizations.delegate,
+          ...GlobalMaterialLocalizations.delegates,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: RecordFormView<String>(
+            controller: controller,
+            title: 'Record',
+            reportDirty: false,
+            chatter: const _Draft(),
+            body: const SizedBox(key: ValueKey('body'), height: 100),
+          ),
+        ),
+      ),
+    );
+    await t.pumpWidget(app());
+    await t.enterText(find.byType(TextField), 'half written note');
+    final beside = t.getTopLeft(find.byType(_Draft)).dx;
+    // narrower: the panel moves below the sheet
+    await t.binding.setSurfaceSize(const Size(900, 1200));
+    await t.pumpWidget(app());
+    await t.pumpAndSettle();
+    expect(t.getTopLeft(find.byType(_Draft)).dx, lessThan(beside));
+    expect(find.text('half written note'), findsOneWidget);
+  });
+}
+
+/// A stand-in chatter with a draft, to see that its state survives a re-layout.
+class _Draft extends StatefulWidget {
+  const _Draft();
+
+  @override
+  State<_Draft> createState() => _DraftState();
+}
+
+class _DraftState extends State<_Draft> {
+  final _text = TextEditingController();
+
+  @override
+  void dispose() {
+    _text.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => TextField(controller: _text);
 }

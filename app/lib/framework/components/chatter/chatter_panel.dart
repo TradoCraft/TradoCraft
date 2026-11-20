@@ -12,6 +12,7 @@ import '../../../core/theme/tokens.dart';
 import '../../../l10n/l10n.dart';
 import '../../../shared/app_icons.dart';
 import '../../../shared/attachments.dart';
+import '../../../shared/photos.dart' show newClientId;
 import '../../../features/helpdesk/ticket_screen.dart' show usersProvider;
 import 'chatter_repository.dart';
 
@@ -50,7 +51,13 @@ class _ChatterPanelState extends ConsumerState<ChatterPanel> {
   bool _loading = true;
   bool _failed = false;
   bool _posting = false;
+  bool _loadingOlder = false;
   List<FileInfo> _pending = const [];
+
+  /// Sent with a post so that a retry after a lost answer does not post twice. It stays while the
+  /// draft (text and files) is unchanged and is dropped when the draft changes or the post worked.
+  String? _clientId;
+  String? _clientIdDraft;
   String? _error;
   int _generation = 0;
 
@@ -117,26 +124,42 @@ class _ChatterPanelState extends ConsumerState<ChatterPanel> {
 
   Future<void> _older() async {
     final next = _next;
-    if (next == null) return;
+    if (next == null || _loadingOlder) return;
+    // A reload while the page is on its way makes the page stale: it would be appended to a
+    // thread that has been replaced.
+    final gen = _generation;
+    setState(() => _loadingOlder = true);
     try {
       final page = await _repo.thread(
         widget.kind,
         widget.recordId,
         beforeId: next,
       );
-      if (!mounted) return;
+      if (!mounted || gen != _generation) return;
       setState(() {
         _items = [..._items, ...page.items];
         _next = page.nextBeforeId;
       });
     } catch (e) {
-      if (mounted) setState(() => _error = errorMessage(e));
+      if (mounted && gen == _generation) {
+        setState(() => _error = errorMessage(e));
+      }
+    } finally {
+      if (mounted) setState(() => _loadingOlder = false);
     }
   }
 
   Future<void> _post() async {
     final text = _composer.text.trim();
     if (text.isEmpty || _posting) return;
+    // What is being sent. Edits made while the request runs are not part of it and survive.
+    final sentText = _composer.text;
+    final sent = [..._pending];
+    final draft = '$text|${[for (final f in sent) f.id].join(',')}';
+    if (_clientIdDraft != draft) {
+      _clientId = newClientId();
+      _clientIdDraft = draft;
+    }
     setState(() {
       _posting = true;
       _error = null;
@@ -146,10 +169,17 @@ class _ChatterPanelState extends ConsumerState<ChatterPanel> {
         widget.kind,
         widget.recordId,
         text,
-        fileIds: [for (final f in _pending) f.id],
+        clientId: _clientId,
+        fileIds: [for (final f in sent) f.id],
       );
-      _composer.clear();
-      _pending = const [];
+      _clientId = null;
+      _clientIdDraft = null;
+      if (_composer.text == sentText) _composer.clear();
+      final ids = {for (final f in sent) f.id};
+      _pending = [
+        for (final f in _pending)
+          if (!ids.contains(f.id)) f,
+      ];
       await _reload();
     } catch (e) {
       if (mounted) setState(() => _error = errorMessage(e));
@@ -314,7 +344,7 @@ class _ChatterPanelState extends ConsumerState<ChatterPanel> {
                 alignment: Alignment.centerLeft,
                 child: TextButton(
                   key: const ValueKey('chatter-older'),
-                  onPressed: _older,
+                  onPressed: _loadingOlder ? null : _older,
                   child: Text(l.chatterLoadOlder),
                 ),
               ),
@@ -569,7 +599,6 @@ String _value(Object? v) => switch (v) {
 /// One readable line per tracked field of a change message.
 List<String> _changeLines(AppLocalizations l, ThreadItem item, String who) {
   final changes = item.changes;
-  if (changes is! List) return const [];
   final lines = <String>[];
   for (final c in changes) {
     if (c is! Map) continue;

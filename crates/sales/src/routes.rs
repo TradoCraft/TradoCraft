@@ -547,6 +547,12 @@ pub(crate) async fn update_draft(
         .await?;
     service::insert_lines(&mut *tx, id, &priced.lines).await?;
     shipping::sync(&mut *tx, user, id).await?;
+    // The freight line that `sync` adds or drops changes the stored total, so read it back.
+    let saved_total: Decimal =
+        sqlx::query_scalar("SELECT total FROM sales.quotations WHERE id = $1")
+            .bind(id)
+            .fetch_one(&mut *tx)
+            .await?;
     // What changed, for the audit viewer and, for the tracked fields, the chatter (ADR 0086).
     let changes = audit::Changes::new()
         .field(
@@ -563,7 +569,7 @@ pub(crate) async fn update_draft(
         .field(
             "total",
             &current.total.normalize(),
-            &priced.totals.total.normalize(),
+            &saved_total.normalize(),
         )
         .field("purpose", current.purpose.as_str(), purpose)
         .field(

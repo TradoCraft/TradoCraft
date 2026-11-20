@@ -65,6 +65,7 @@ class _OpportunityScreenState extends ConsumerState<OpportunityScreen> {
       entityType: 'opportunity',
       recordId: id,
       currentVersion: () => null,
+      onReconnect: _chatterTick.fire,
       onExternalChange: (ev) {
         if (ev.kind.startsWith('chatter_')) _chatterTick.fire();
       },

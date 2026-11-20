@@ -83,6 +83,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
       entityType: 'order',
       recordId: widget.id,
       currentVersion: () => _order?.version,
+      onReconnect: _chatterTick.fire,
       onExternalChange: (ev) {
         if (!mounted) return;
         // A note or activity is not an edit conflict (ADR 0086): reload the chatter only.
@@ -149,6 +150,8 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
   void _show(Order o) {
     TabScope.reportTitle(context, o.order.number);
     TabScope.reportDirty(context, false);
+    // A save, send or confirmation writes a message to the chatter: show it at once.
+    _chatterTick.fire();
     setState(() {
       _stockReload++;
       _order = o;

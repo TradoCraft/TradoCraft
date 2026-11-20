@@ -144,6 +144,8 @@ class RecordFormController<T extends Object> extends ChangeNotifier {
       final result = await action();
       if (_disposed) return true;
       if (result != null) apply(result);
+      // A save, send or revision writes change messages: the chatter shows them at once.
+      chatterTick.fire();
       return true;
     } catch (e) {
       if (_disposed) return false;
@@ -189,6 +191,9 @@ class RecordFormController<T extends Object> extends ChangeNotifier {
       entityType: entityType,
       recordId: recordId,
       currentVersion: () => version,
+      onReconnect: () {
+        if (!_disposed) chatterTick.fire();
+      },
       onExternalChange: (ev) {
         if (_disposed) return;
         if (ev.kind.startsWith('chatter_')) {
