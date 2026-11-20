@@ -3389,5 +3389,8 @@
   "kanbanAdd": "Toevoegen aan {column}",
   "kanbanViewList": "Lijst",
   "kanbanViewBoard": "Bord",
-  "kanbanLostCancelled": "Teruggezet: voor een verloren kans is een reden nodig."
+  "kanbanLostCancelled": "Teruggezet: voor een verloren kans is een reden nodig.",
+  "ticketsBoardCloseTitle": "Dit ticket sluiten?",
+  "ticketsBoardCloseBody": "Door {number} te sluiten kan de klant een tevredenheidsenquête krijgen; dat kan niet ongedaan gemaakt worden.",
+  "ticketsBoardClose": "Ticket sluiten"
 }

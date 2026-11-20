@@ -223,6 +223,14 @@ class KanbanController<T> extends ChangeNotifier {
       target.total = (target.total - 1).clamp(0, target.total);
       source.items.insert(index.clamp(0, source.items.length), item);
       source.total += 1;
+    } else if (config.reloadAfterMove) {
+      // The server may have changed more than the column; read both columns (and with them
+      // their offsets) afresh, together with the sums.
+      await Future.wait([
+        reloadColumn(from),
+        reloadColumn(toColumn),
+        _loadSummaries(gen),
+      ]);
     } else {
       // The server holds one item fewer in the source: the next page starts one earlier.
       if (source.serverOffset > 0) source.serverOffset -= 1;

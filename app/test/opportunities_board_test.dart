@@ -81,31 +81,56 @@ _Server _server({
     'opportunities.read',
     'opportunities.write',
   ],
-}) => _Server({
-  'GET /api/v1/me': (_) => meJson(permissions),
-  'GET /api/v1/opportunities': (_) => {'items': <Object?>[], 'total': 0},
-  'GET /api/v1/opportunities/pipeline': (_) => [
-    for (final s in [
-      'lead',
-      'qualified',
-      'proposal',
-      'negotiation',
-      'won',
-      'lost',
-    ])
-      {
-        'stage': s,
-        'count': s == 'lead' ? 1 : 0,
-        'total_value': s == 'lead' ? '25000' : '0',
-        'weighted_value': s == 'lead' ? '5000' : '0',
-      },
-  ],
-  'POST /api/v1/opportunities/2/stage': (b) =>
-      _opp('2', (b as Map)['stage'] as String, 'Tower B', '9000'),
-  'POST /api/v1/opportunities/1/stage': (b) =>
-      _opp('1', (b as Map)['stage'] as String, 'Tower A', '25000'),
-  'GET /api/v1/opportunities/1': (_) => _opp('1', 'lead', 'Tower A', '25000'),
-});
+}) {
+  final s = _Server({
+    'GET /api/v1/me': (_) => meJson(permissions),
+    'GET /api/v1/opportunities': (_) => {'items': <Object?>[], 'total': 0},
+    'GET /api/v1/opportunities/pipeline': (_) => [
+      for (final s in [
+        'lead',
+        'qualified',
+        'proposal',
+        'negotiation',
+        'won',
+        'lost',
+      ])
+        {
+          'stage': s,
+          'count': s == 'lead' ? 1 : 0,
+          'total_value': s == 'lead' ? '25000' : '0',
+          'weighted_value': s == 'lead' ? '5000' : '0',
+        },
+    ],
+    'GET /api/v1/opportunities/1': (_) => _opp('1', 'lead', 'Tower A', '25000'),
+  });
+  // Entering a stage resets the probability to the stage's default, as the server does.
+  const defaults = {
+    'lead': 10,
+    'qualified': 25,
+    'proposal': 50,
+    'negotiation': 75,
+    'won': 100,
+    'lost': 0,
+  };
+  for (final id in ['1', '2', '3']) {
+    s.routes['POST /api/v1/opportunities/$id/stage'] = (b) {
+      final stage = (b as Map)['stage'] as String;
+      Map<String, Object?>? found;
+      for (final list in s.data.values) {
+        for (final r in [...list]) {
+          if (r['id'] == id) {
+            found = r;
+            list.remove(r);
+          }
+        }
+      }
+      final moved = {...?found, 'stage': stage, 'probability': defaults[stage]};
+      s.data[stage]!.insert(0, moved);
+      return moved;
+    };
+  }
+  return s;
+}
 
 Future<void> _pump(WidgetTester t, _Server http) async {
   t.view.physicalSize = const Size(1500, 900);
@@ -225,6 +250,29 @@ void main() {
       containsPair('stage', 'proposal'),
     );
     expect(_in('proposal', '1'), findsOneWidget);
+  });
+
+  testWidgets('after a move the card shows the probability the server set', (
+    t,
+  ) async {
+    await _pump(t, _server());
+    await _showBoard(t);
+    expect(
+      find.descendant(of: _card('1'), matching: find.textContaining('20 %')),
+      findsOneWidget,
+    );
+    await t.tap(find.byKey(const ValueKey('kanban-menu-1')));
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const ValueKey('kanban-move-1-proposal')));
+    await t.pumpAndSettle();
+    expect(
+      find.descendant(of: _card('1'), matching: find.textContaining('50 %')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: _card('1'), matching: find.textContaining('20 %')),
+      findsNothing,
+    );
   });
 
   testWidgets('moving to lost asks for a reason first', (t) async {

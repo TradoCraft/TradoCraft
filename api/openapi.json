@@ -32446,6 +32446,88 @@
         }
       }
     },
+    "/api/v1/tickets/{id}/status": {
+      "post": {
+        "tags": [
+          "helpdesk"
+        ],
+        "summary": "Changes only the status of a ticket, the way the ticket screen does when it saves a new one:\nthe automation rules run, the SLA is recalculated, a timeline event is written, and closing is\nrefused (409 `checklist_incomplete`) while the team requires the checklist to be done. Closing\nalso queues the customer's satisfaction survey once, as it does everywhere else. The same\nstatus again changes nothing.",
+        "operationId": "change_ticket_status",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TicketStatusInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TicketDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/tickets/{id}/tags": {
       "post": {
         "tags": [
@@ -56169,6 +56251,27 @@
           "state": {
             "type": "string",
             "description": "none (no service level) | on_time | at_risk | breached"
+          }
+        }
+      },
+      "TicketStatusInput": {
+        "type": "object",
+        "description": "A new status for a ticket, and nothing else.",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "expected_version": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "The `version` the caller last saw. A ticket that has changed since is refused (409\n`record_changed`); left out, the change always goes through (a board move)."
+          },
+          "status": {
+            "type": "string",
+            "description": "new | open | pending_customer | pending_internal | closed"
           }
         }
       },

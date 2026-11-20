@@ -10991,4 +10991,15 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get kanbanLostCancelled =>
       'Devuelta: se necesita un motivo para marcar una oportunidad como perdida.';
+
+  @override
+  String get ticketsBoardCloseTitle => '¿Cerrar este ticket?';
+
+  @override
+  String ticketsBoardCloseBody(String number) {
+    return 'Al cerrar $number se puede enviar al cliente una encuesta de satisfacción, lo que no se puede deshacer.';
+  }
+
+  @override
+  String get ticketsBoardClose => 'Cerrar ticket';
 }

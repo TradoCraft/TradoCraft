@@ -1023,6 +1023,70 @@ async fn update_ticket(
     Ok(Json(d))
 }
 
+/// A new status for a ticket, and nothing else.
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct TicketStatusInput {
+    /// new | open | pending_customer | pending_internal | closed
+    pub status: String,
+    /// The `version` the caller last saw. A ticket that has changed since is refused (409
+    /// `record_changed`); left out, the change always goes through (a board move).
+    #[serde(default)]
+    pub expected_version: Option<i64>,
+}
+
+/// Changes only the status of a ticket, the way the ticket screen does when it saves a new one:
+/// the automation rules run, the SLA is recalculated, a timeline event is written, and closing is
+/// refused (409 `checklist_incomplete`) while the team requires the checklist to be done. Closing
+/// also queues the customer's satisfaction survey once, as it does everywhere else. The same
+/// status again changes nothing.
+#[utoipa::path(post, path = "/tickets/{id}/status", tag = "helpdesk", operation_id = "change_ticket_status",
+    params(("id" = Uuid, Path)), request_body = TicketStatusInput,
+    responses((status = 200, body = TicketDetail), (status = 403, body = ErrorBody),
+              (status = 404, body = ErrorBody), (status = 409, body = ErrorBody),
+              (status = 422, body = ErrorBody)))]
+async fn change_ticket_status(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Path(id): Path<Uuid>,
+    Json(input): Json<TicketStatusInput>,
+) -> AppResult<Json<TicketDetail>> {
+    user.require(Permission::HelpdeskWrite)?;
+    check_one_of("status", &input.status, &STATUSES)?;
+    let mut tx = state.db.begin().await?;
+    crate::checklists::lock_ticket(&mut tx, user.company_id, id).await?;
+    let old = load_ticket(&mut tx, user.company_id, id).await?;
+    tradocraft_core::concurrency::check_version(
+        input.expected_version,
+        old.version,
+        &format!("ticket {}", old.number),
+    )?;
+    if old.status == input.status {
+        let d = load_detail(&mut tx, user.company_id, id).await?;
+        return Ok(Json(d));
+    }
+    change_status(&mut tx, &user, id, &input.status).await?;
+    audit::record(
+        &mut tx,
+        &user,
+        "ticket",
+        id,
+        "status_changed",
+        serde_json::json!({ "from": old.status, "to": input.status }),
+    )
+    .await?;
+    let d = load_detail(&mut tx, user.company_id, id).await?;
+    tx.commit().await?;
+    state.live_events.publish_record_change(
+        &user,
+        "ticket",
+        id,
+        d.ticket.version,
+        "updated",
+        Some(d.ticket.status.clone()),
+    );
+    Ok(Json(d))
+}
+
 /// Adds an internal note, optionally with attachments and a new status, in the caller's
 /// transaction.
 pub(crate) async fn post_note(
@@ -1711,6 +1775,7 @@ pub fn router() -> OpenApiRouter<AppState> {
     OpenApiRouter::new()
         .routes(routes!(list_tickets, create_ticket))
         .routes(routes!(get_ticket, update_ticket))
+        .routes(routes!(change_ticket_status))
         .routes(routes!(add_note_handler))
         .routes(routes!(reply))
         .routes(routes!(create_lead))

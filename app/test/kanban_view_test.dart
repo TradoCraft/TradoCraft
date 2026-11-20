@@ -34,40 +34,44 @@ class Fixture {
   var summaryCalls = 0;
   final loads = <(String, int)>[];
 
-  KanbanConfig<Card1> config({bool create = false}) => KanbanConfig<Card1>(
-    columns: const [
-      KanbanColumnDef('todo', 'To do'),
-      KanbanColumnDef('doing', 'Doing'),
-      KanbanColumnDef('done', 'Done'),
-    ],
-    pageSize: pageSize,
-    idOf: (c) => c.id,
-    cardBuilder: (_, c) => Text(c.title),
-    loadColumn: (col, offset, limit) async {
-      loads.add((col, offset));
-      if (failing.contains(col)) throw 'boom';
-      final all = data[col]!;
-      return KanbanPage(all.skip(offset).take(limit).toList(), all.length);
-    },
-    loadSummaries: () async {
-      summaryCalls++;
-      return {for (final e in data.entries) e.key: '${e.value.length} cards'};
-    },
-    move: (c, to) async {
-      moves.add((c.id, to));
-      await gate?.future;
-      if (refuse != null) throw refuse!;
-      if (result == MoveResult.moved) {
-        for (final l in data.values) {
-          l.removeWhere((x) => x.id == c.id);
-        }
-        data[to]!.insert(0, c);
-      }
-      return result;
-    },
-    onOpen: (_) {},
-    onCreate: create ? (_) async {} : null,
-  );
+  KanbanConfig<Card1> config({bool create = false, bool reload = false}) =>
+      KanbanConfig<Card1>(
+        reloadAfterMove: reload,
+        columns: const [
+          KanbanColumnDef('todo', 'To do'),
+          KanbanColumnDef('doing', 'Doing'),
+          KanbanColumnDef('done', 'Done'),
+        ],
+        pageSize: pageSize,
+        idOf: (c) => c.id,
+        cardBuilder: (_, c) => Text(c.title),
+        loadColumn: (col, offset, limit) async {
+          loads.add((col, offset));
+          if (failing.contains(col)) throw 'boom';
+          final all = data[col]!;
+          return KanbanPage(all.skip(offset).take(limit).toList(), all.length);
+        },
+        loadSummaries: () async {
+          summaryCalls++;
+          return {
+            for (final e in data.entries) e.key: '${e.value.length} cards',
+          };
+        },
+        move: (c, to) async {
+          moves.add((c.id, to));
+          await gate?.future;
+          if (refuse != null) throw refuse!;
+          if (result == MoveResult.moved) {
+            for (final l in data.values) {
+              l.removeWhere((x) => x.id == c.id);
+            }
+            data[to]!.insert(0, c);
+          }
+          return result;
+        },
+        onOpen: (_) {},
+        onCreate: create ? (_) async {} : null,
+      );
 }
 
 Future<KanbanController<Card1>> _pump(
@@ -367,6 +371,68 @@ void main() {
       'todo': [for (var i = 1; i <= 5; i++) Card1('t$i', 'Task $i')],
       'doing': [const Card1('d1', 'Doing 1')],
     };
+
+    test('with reloadAfterMove a worked move reads both columns again, a refused one does not', () async {
+      final f = Fixture();
+      final c = KanbanController<Card1>(f.config(reload: true));
+      addTearDown(c.dispose);
+      await c.load();
+      f.loads.clear();
+      expect(await c.move(const Card1('a', 'Alpha'), 'todo', 'doing'), isTrue);
+      expect({for (final l in f.loads) l.$1}, {'todo', 'doing'});
+      // what the server holds is what is shown: a first in doing, c still there
+      expect(c.columns['doing']!.items.map((i) => i.id), ['a', 'c']);
+      f.loads.clear();
+      f.refuse = 'no';
+      expect(await c.move(const Card1('b', 'Beta'), 'todo', 'done'), isFalse);
+      expect(f.loads, isEmpty, reason: 'nothing changed on the server');
+      f.refuse = null;
+      f.result = MoveResult.cancelled;
+      expect(await c.move(const Card1('b', 'Beta'), 'todo', 'done'), isFalse);
+      expect(f.loads, isEmpty);
+    });
+
+    test('without it a worked move reads no column again', () async {
+      final f = Fixture();
+      final c = KanbanController<Card1>(f.config());
+      addTearDown(c.dispose);
+      await c.load();
+      f.loads.clear();
+      await c.move(const Card1('a', 'Alpha'), 'todo', 'doing');
+      expect(f.loads, isEmpty);
+    });
+
+    test(
+      'after a reload the next page starts from what the server holds',
+      () async {
+        final f = Fixture(
+          pageSize: 2,
+          data: {
+            'todo': [for (var i = 1; i <= 5; i++) Card1('t$i', 'Task $i')],
+            'doing': [],
+            'done': [],
+          },
+        );
+        final c = KanbanController<Card1>(f.config(reload: true));
+        addTearDown(c.dispose);
+        await c.load(); // t1 t2 of 5
+        await c.move(
+          const Card1('t1', 'Task 1'),
+          'todo',
+          'doing',
+        ); // server: t2 t3 t4 t5 left
+        expect(c.columns['todo']!.items.map((i) => i.id), ['t2', 't3']);
+        f.loads.clear();
+        await c.loadMore('todo');
+        expect(f.loads, [('todo', 2)]);
+        expect(c.columns['todo']!.items.map((i) => i.id), [
+          't2',
+          't3',
+          't4',
+          't5',
+        ]);
+      },
+    );
 
     test(
       'a move finishing after a reload reads the two columns again',

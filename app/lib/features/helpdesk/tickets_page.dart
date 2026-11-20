@@ -10,6 +10,7 @@ import '../../shared/search_picker.dart';
 import 'call_dialogs.dart';
 import 'ticket_extras.dart';
 import 'ticket_screen.dart' show teamsProvider;
+import 'tickets_board.dart';
 import '../../shared/app_icons.dart';
 
 const ticketStatuses = [
@@ -53,6 +54,7 @@ class _TicketsPageState extends ConsumerState<TicketsPage> {
   bool _unread = false;
   bool _watching = false;
   bool _escalated = false;
+  bool _board = false;
 
   void _reload() => _list.currentState?.reload();
 
@@ -63,7 +65,7 @@ class _TicketsPageState extends ConsumerState<TicketsPage> {
     final perms = ref.watch(meProvider).value?.permissions ?? const [];
     final teams = ref.watch(teamsProvider).value ?? const <Team>[];
     final tags = ref.watch(_tagsProvider).value ?? const <TagCount>[];
-    return EntityList<Ticket>(
+    final list = EntityList<Ticket>(
       key: _list,
       title: l.helpdesk,
       load: (q, offset, limit) async {
@@ -342,6 +344,35 @@ class _TicketsPageState extends ConsumerState<TicketsPage> {
       locationOf: (t) => '/helpdesk/${t.id}',
       onOpen: (t) async =>
           await context.push<bool>('/helpdesk/${t.id}') ?? true,
+    );
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: SegmentedButton<bool>(
+              key: const ValueKey('tickets-view'),
+              showSelectedIcon: false,
+              segments: [
+                ButtonSegment(
+                  value: false,
+                  icon: const Icon(AppIcons.viewList),
+                  label: Text(l.kanbanViewList),
+                ),
+                ButtonSegment(
+                  value: true,
+                  icon: const Icon(AppIcons.viewKanban),
+                  label: Text(l.kanbanViewBoard),
+                ),
+              ],
+              selected: {_board},
+              onSelectionChanged: (s) => setState(() => _board = s.first),
+            ),
+          ),
+        ),
+        Expanded(child: _board ? const TicketsBoard() : list),
+      ],
     );
   }
 }

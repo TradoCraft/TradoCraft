@@ -586,6 +586,7 @@ export 'models/ticket_input.dart';
 export 'models/ticket_links.dart';
 export 'models/ticket_page.dart';
 export 'models/ticket_sla.dart';
+export 'models/ticket_status_input.dart';
 export 'models/time_entries.dart';
 export 'models/time_entry.dart';
 export 'models/time_entry_input.dart';

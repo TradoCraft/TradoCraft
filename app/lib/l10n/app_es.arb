@@ -3389,5 +3389,8 @@
   "kanbanAdd": "Añadir a {column}",
   "kanbanViewList": "Lista",
   "kanbanViewBoard": "Tablero",
-  "kanbanLostCancelled": "Devuelta: se necesita un motivo para marcar una oportunidad como perdida."
+  "kanbanLostCancelled": "Devuelta: se necesita un motivo para marcar una oportunidad como perdida.",
+  "ticketsBoardCloseTitle": "¿Cerrar este ticket?",
+  "ticketsBoardCloseBody": "Al cerrar {number} se puede enviar al cliente una encuesta de satisfacción, lo que no se puede deshacer.",
+  "ticketsBoardClose": "Cerrar ticket"
 }
