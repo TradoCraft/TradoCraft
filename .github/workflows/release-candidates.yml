@@ -1,0 +1,129 @@
+name: Release candidates
+
+on:
+  push:
+    branches: ['release/v0.1.0-prep']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  FLUTTER_VERSION: '3.50.0'
+
+jobs:
+  android:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+      - run: flutter pub get --enforce-lockfile
+      - name: Build signed Android APK
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          signing_dir=$(mktemp -d)
+          properties_path="$PWD/android/key.properties"
+          test ! -e "$properties_path"
+          trap 'rm -f "$properties_path" "$signing_dir/release.jks"; rmdir "$signing_dir"' EXIT
+          python3 - "$signing_dir/release.jks" "$properties_path" <<'PY'
+          import base64
+          import os
+          import pathlib
+          import sys
+
+          values = {
+              "storePassword": "ANDROID_STORE_PASSWORD",
+              "keyAlias": "ANDROID_KEY_ALIAS",
+              "keyPassword": "ANDROID_KEY_PASSWORD",
+          }
+          for name in (*values.values(), "ANDROID_KEYSTORE_BASE64"):
+              if not os.environ.get(name):
+                  sys.exit(f"Configure the {name} GitHub Actions secret")
+
+          keystore = pathlib.Path(sys.argv[1])
+          keystore.touch(mode=0o600, exist_ok=False)
+          keystore.write_bytes(base64.b64decode("".join(os.environ["ANDROID_KEYSTORE_BASE64"].split()), validate=True))
+
+          def property_value(value):
+              # Java properties interpret backslashes and trim leading whitespace.
+              encoded = value.encode("utf-16-be")
+              return "".join(f"\\u{encoded[i:i + 2].hex()}" for i in range(0, len(encoded), 2))
+
+          properties = {"storeFile": str(keystore)}
+          properties.update({key: os.environ[name] for key, name in values.items()})
+          with pathlib.Path(sys.argv[2]).open("x", encoding="ascii") as output:
+              for key, value in properties.items():
+                  output.write(f"{key}={property_value(value)}\n")
+          PY
+          unset ANDROID_KEYSTORE_BASE64 ANDROID_STORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD
+          flutter build apk --release --no-pub
+          apk=build/app/outputs/flutter-apk/app-release.apk
+          apksigner=$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)
+          test -n "$apksigner"
+          "$apksigner" verify --print-certs "$apk"
+          mkdir -p ../release-android
+          cp "$apk" ../release-android/TradoCraft-android.apk
+          cd ../release-android
+          sha256sum TradoCraft-android.apk > SHA256SUMS-android.txt
+      - uses: actions/upload-artifact@v7
+        with:
+          name: tradocraft-android
+          path: release-android/
+          if-no-files-found: error
+
+  windows:
+    runs-on: windows-2025
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+      - run: flutter pub get --enforce-lockfile
+      - run: flutter build windows --release --no-pub
+      - name: Package Windows application
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $build = 'build/windows/x64/runner/Release'
+          if (-not (Test-Path "$build/tradocraft_app.exe")) {
+            throw 'The Windows release executable is missing'
+          }
+          $output = New-Item -ItemType Directory -Path '../release-windows'
+          $archive = 'TradoCraft-windows-x64.zip'
+          Copy-Item ../LICENSE -Destination "$build/LICENSE.txt"
+          Compress-Archive -Path "$build/*" -DestinationPath (Join-Path $output.FullName $archive)
+          Push-Location $output.FullName
+          $hash = (Get-FileHash -Algorithm SHA256 $archive).Hash.ToLowerInvariant()
+          "${hash}  $archive" | Set-Content -Encoding ascii SHA256SUMS-windows.txt
+          Pop-Location
+      - uses: actions/upload-artifact@v7
+        with:
+          name: tradocraft-windows-x64
+          path: release-windows/
+          if-no-files-found: error
