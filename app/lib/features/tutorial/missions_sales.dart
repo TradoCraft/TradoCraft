@@ -84,10 +84,12 @@ Future<void> _linkTutorialCustomer(ActionHost host) async {
   }
   final detail = (await host.dio.get<Object?>(path)).data;
   final ticket = detail is Map ? detail['ticket'] : null;
-  if (ticket is! Map ||
-      !_isTutorialTicket(ticket) ||
-      ticket['customer_id'] != null ||
-      ticket['version'] is! int) {
+  if (ticket is! Map || !_isTutorialTicket(ticket)) {
+    throw StateError('Check the customer on Maya’s tutorial ticket.');
+  }
+  final linkedCustomer = ticket['customer_id'];
+  if (linkedCustomer == customerId) return;
+  if (linkedCustomer != null || ticket['version'] is! int) {
     throw StateError('Check the customer on Maya’s tutorial ticket.');
   }
   await host.dio.put<void>(

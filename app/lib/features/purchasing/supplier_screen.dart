@@ -28,6 +28,7 @@ class SupplierScreen extends ConsumerStatefulWidget {
 class _SupplierScreenState extends ConsumerState<SupplierScreen> {
   Supplier? _supplier;
   List<SupplierProduct> _prices = const [];
+  int _priceGeneration = 0;
   SupplierDraft? _draft;
   String? _error;
   bool _loading = true;
@@ -48,18 +49,27 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
   }
 
   Future<void> _load() async {
+    final generation = ++_priceGeneration;
     setState(() {
       _loading = true;
       _error = null;
     });
     try {
       final s = await _api.getSupplier(id: widget.id);
-      final prices = await _api.listSupplierProducts(id: widget.id);
+      if (!mounted) return;
+      List<SupplierProduct>? prices;
+      if (generation == _priceGeneration) {
+        try {
+          prices = await _api.listSupplierProducts(id: widget.id);
+        } catch (_) {
+          if (generation == _priceGeneration) rethrow;
+        }
+      }
       if (!mounted) return;
       TabScope.reportTitle(context, s.name);
       setState(() {
         _supplier = s;
-        _prices = prices;
+        if (prices != null && generation == _priceGeneration) _prices = prices;
       });
     } catch (e) {
       if (mounted) setState(() => _error = errorMessage(e));
@@ -69,11 +79,16 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
   }
 
   Future<void> _reloadPrices() async {
+    final generation = ++_priceGeneration;
     try {
       final prices = await _api.listSupplierProducts(id: widget.id);
-      if (mounted) setState(() => _prices = prices);
+      if (mounted && generation == _priceGeneration) {
+        setState(() => _prices = prices);
+      }
     } catch (e) {
-      if (mounted) setState(() => _error = errorMessage(e));
+      if (mounted && generation == _priceGeneration) {
+        setState(() => _error = errorMessage(e));
+      }
     }
   }
 

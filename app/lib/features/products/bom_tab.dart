@@ -89,6 +89,7 @@ class _BomTabState extends ConsumerState<BomTab> {
   final _explodeQty = DecimalInputController(text: '1');
   Explosion? _explosion;
   bool _loading = true;
+  int _loadGeneration = 0;
   String? _error;
 
   TradocraftApi get _api => ref.read(apiProvider);
@@ -109,35 +110,49 @@ class _BomTabState extends ConsumerState<BomTab> {
   }
 
   Future<void> _load({String? select}) async {
+    final generation = ++_loadGeneration;
     setState(() => _loading = true);
     try {
       final revisions = await _api.engineering.listBoms(id: widget.product.id);
+      if (!mounted || generation != _loadGeneration) return;
       final active = revisions.where((b) => b.status == 'active').firstOrNull;
       final id = select ?? active?.id ?? revisions.firstOrNull?.id;
       final bom = id == null ? null : await _api.engineering.getBom(id: id);
-      if (!mounted) return;
+      if (!mounted || generation != _loadGeneration) return;
       setState(() {
         _revisions = revisions;
         _setBom(bom);
         _error = null;
       });
       if (bom != null) await _loadRouting(bom.id);
+      if (!mounted || generation != _loadGeneration) return;
       if (active != null && _explosion == null) await _explode();
     } catch (e) {
-      if (mounted) setState(() => _error = errorMessage(e));
+      if (mounted && generation == _loadGeneration) {
+        setState(() => _error = errorMessage(e));
+      }
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted && generation == _loadGeneration) {
+        setState(() => _loading = false);
+      }
     }
   }
 
   /// Loads the routing of a revision for those who may see production (waits for the permissions
   /// when they have not arrived yet). A routing that cannot be read is shown as empty.
   Future<void> _loadRouting(String bomId) async {
+    final generation = _loadGeneration;
     try {
       final me = await ref.read(meProvider.future);
-      if (!me.permissions.contains('production.read')) return;
+      if (!mounted ||
+          generation != _loadGeneration ||
+          !me.permissions.contains('production.read')) {
+        return;
+      }
       final r = await _api.production.getRouting(id: bomId);
-      if (!mounted || _bom?.id != bomId) return;
+      if (!mounted || generation != _loadGeneration || _bom?.id != bomId) {
+        return;
+      }
       // Edits made to this revision's routing meanwhile win over what the server sent.
       if (_routingLoadedFor == bomId && _routingDirty) return;
       setState(() {
@@ -159,7 +174,10 @@ class _BomTabState extends ConsumerState<BomTab> {
         _routingDirty = false;
       });
     } catch (_) {
-      if (mounted && _bom?.id == bomId && _routingLoadedFor != bomId) {
+      if (mounted &&
+          generation == _loadGeneration &&
+          _bom?.id == bomId &&
+          _routingLoadedFor != bomId) {
         setState(() => _routingFailed = true);
       }
     }
@@ -319,14 +337,19 @@ class _BomTabState extends ConsumerState<BomTab> {
   Future<void> _explode() async {
     final q = _explodeQty.decimal;
     if (q == null) return;
+    final generation = _loadGeneration;
     try {
       final e = await _api.engineering.explodeBom(
         id: widget.product.id,
         quantity: q,
       );
-      setState(() => _explosion = e);
-    } catch (e) {
-      setState(() => _explosion = null);
+      if (mounted && generation == _loadGeneration) {
+        setState(() => _explosion = e);
+      }
+    } catch (_) {
+      if (mounted && generation == _loadGeneration) {
+        setState(() => _explosion = null);
+      }
     }
   }
 

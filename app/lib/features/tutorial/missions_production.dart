@@ -1,3 +1,4 @@
+import '../../shared/format.dart' show businessToday;
 import 'missions_purchasing.dart';
 import 'model.dart';
 
@@ -181,7 +182,7 @@ Map? _zone(Object? list) {
   return null;
 }
 
-String _today() => DateTime.now().toUtc().toIso8601String().split('T').first;
+String _today() => businessToday().toIso8601String().split('T').first;
 
 bool _isEffectivePrice(Map price, String today) {
   final start = price['valid_from'] as String?;

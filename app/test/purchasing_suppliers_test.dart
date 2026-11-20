@@ -10,6 +10,7 @@ import 'package:tradocraft_app/app/shell.dart';
 import 'package:tradocraft_app/app/workspace.dart';
 import 'package:tradocraft_app/features/purchasing/purchasing_page.dart';
 import 'package:tradocraft_app/features/purchasing/supplier_screen.dart';
+import 'package:tradocraft_app/features/tutorial/controller.dart';
 import 'package:tradocraft_app/l10n/app_localizations.dart';
 
 import 'fake_http.dart';
@@ -63,10 +64,16 @@ Map<String, Object?> _price({
 
 const _wide = Size(1400, 1600);
 
+class _SupplierTutorial extends TutorialController {
+  @override
+  TutorialState build() => const TutorialState(values: {'supplierAId': 's1'});
+}
+
 Future<void> _app(
   WidgetTester tester,
   FakeHttp http, {
   required String initial,
+  bool settle = true,
 }) async {
   tester.view.physicalSize = _wide;
   tester.view.devicePixelRatio = 1;
@@ -87,7 +94,10 @@ Future<void> _app(
   );
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [dioProvider.overrideWithValue(fakeDio(http))],
+      overrides: [
+        dioProvider.overrideWithValue(fakeDio(http)),
+        if (!settle) tutorialProvider.overrideWith(_SupplierTutorial.new),
+      ],
       child: MaterialApp.router(
         routerConfig: router,
         locale: const Locale('en'),
@@ -96,10 +106,45 @@ Future<void> _app(
       ),
     ),
   );
-  await tester.pumpAndSettle();
+  if (settle) await tester.pumpAndSettle();
 }
 
 void main() {
+  testWidgets('an older supplier load cannot replace refreshed prices', (
+    tester,
+  ) async {
+    final firstPrices = Completer<Object?>();
+    var priceRequests = 0;
+    final http = FakeHttp({
+      'GET /api/v1/me': (_) => meJson(['purchasing.read']),
+      'GET /api/v1/suppliers/s1': (_) => _supplier(),
+      'GET /api/v1/suppliers/s1/products': (_) => ++priceRequests == 1
+          ? firstPrices.future
+          : [_price(name: 'Current price item')],
+    });
+    await _app(tester, http, initial: '/suppliers/s1', settle: false);
+    for (var i = 0; priceRequests == 0 && i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 20));
+    }
+    expect(priceRequests, 1);
+
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(SupplierScreen)),
+    );
+    container
+        .read(tutorialAssistCompletedProvider.notifier)
+        .completed('suppliers', 'priceMotor');
+    for (var i = 0; priceRequests == 1 && i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 20));
+    }
+    expect(priceRequests, 2);
+
+    firstPrices.complete([_price(name: 'Stale price item')]);
+    await tester.pumpAndSettle();
+    expect(find.text('MOT-1 · Current price item'), findsOneWidget);
+    expect(find.text('MOT-1 · Stale price item'), findsNothing);
+  });
+
   testWidgets('lists suppliers (first segment), filters', (
     tester,
   ) async {

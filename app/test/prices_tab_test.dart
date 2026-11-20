@@ -61,12 +61,13 @@ Future<void> _pump(WidgetTester tester, FakeHttp http) async {
 
 void main() {
   test('only prices starting after today are planned', () {
-    final now = DateTime(2026, 11, 19, 15);
+    final now = DateTime.utc(2026, 11, 19, 0, 30);
     ZonePriceEntry entry(DateTime from) =>
         ZonePriceEntry.fromJson(_price('x', '1', from));
     expect(isPlanned(entry(DateTime(2026, 11, 20)), now: now), isTrue);
     expect(isPlanned(entry(DateTime(2026, 11, 19)), now: now), isFalse);
     expect(isPlanned(entry(DateTime(2026, 1, 1)), now: now), isFalse);
+    expect(isPlanned(entry(DateTime(2026, 11, 19)), now: now.toLocal()), isFalse);
   });
 
   testWidgets('a planned price can be corrected or deleted, a price in effect cannot', (

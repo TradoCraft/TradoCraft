@@ -18,10 +18,9 @@ final _pricesProvider = FutureProvider.autoDispose
 /// Whether a price has not started yet: only such a price can be corrected or deleted. Prices
 /// that are or were in effect are history; a change is a new price from a date.
 bool isPlanned(ZonePriceEntry p, {DateTime? now}) {
-  final t = now ?? DateTime.now();
-  final today = DateTime(t.year, t.month, t.day);
-  final from = DateTime(p.validFrom.year, p.validFrom.month, p.validFrom.day);
-  return from.isAfter(today);
+  final start = p.validFrom;
+  final from = DateTime.utc(start.year, start.month, start.day);
+  return from.isAfter(businessToday(now));
 }
 
 /// Price history per zone. Prices in effect are never edited: a new price starts on a date. A

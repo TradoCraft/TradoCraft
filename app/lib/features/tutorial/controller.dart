@@ -358,7 +358,7 @@ class TutorialController extends Notifier<TutorialState> {
   }
 
   void _set(TutorialState s) {
-    state = s;
+    state = _assistInFlight && !s.actionBusy ? s.copyWith(actionBusy: true) : s;
     final bus = ref.read(apiEventBusProvider);
     bus.active = s.running && step != null;
     final scope = _scope;
@@ -448,7 +448,7 @@ class TutorialController extends Notifier<TutorialState> {
   }
 
   Future<void> _runProbe(MissionStep s, Probe p, int gen) async {
-    if (canAssist && state.actionBusy) return;
+    if (_assistOwnsStep) return;
     // A newer probe (entry or recheck) supersedes this one: the newest state wins.
     final seq = ++_probeSeq;
     bool stale() =>
@@ -520,7 +520,7 @@ class TutorialController extends Notifier<TutorialState> {
       return;
     }
     final s = step;
-    if (s == null || !state.running || (canAssist && state.actionBusy)) return;
+    if (s == null || !state.running || _assistOwnsStep) return;
     final c = s.completion;
     if (c is OnApi && c.matches(e, state.context)) {
       _complete({...?s.capture?.call(e.json)});
@@ -683,7 +683,12 @@ class TutorialController extends Notifier<TutorialState> {
   /// owner (its step was left or restarted meanwhile) must not touch them.
   Object? _actionOwner;
 
+  // Navigating away invalidates step ownership, but a dispatched write can
+  // still commit. Keep the submission lock until the assistance settles.
+  bool _assistInFlight = false;
+
   String get _stepKey => '${state.activeId}/${state.stepIndex}';
+  bool get _assistOwnsStep => canAssist && _actionKey == _stepKey;
   final _random = Random();
 
   String _retainedId(String kind) => _retained.putIfAbsent(
@@ -702,7 +707,7 @@ class TutorialController extends Notifier<TutorialState> {
         !state.running) {
       return;
     }
-    if (state.actionBusy) return;
+    if (state.actionBusy || _assistInFlight) return;
     final gen = _gen;
     final owner = Object();
     final missionId = state.activeId!;
@@ -731,6 +736,7 @@ class TutorialController extends Notifier<TutorialState> {
             _probeCompletion(host.dio, probe, host.context, stale);
         captured = await check();
         if (captured == null && !stale()) {
+          _assistInFlight = true;
           try {
             await assist(host);
           } catch (error) {
@@ -740,6 +746,11 @@ class TutorialController extends Notifier<TutorialState> {
             }
             captured = await check();
             if (captured == null) rethrow;
+          } finally {
+            _assistInFlight = false;
+            if (ref.mounted && stale()) {
+              _set(state.copyWith(actionBusy: false));
+            }
           }
           captured ??= await check();
         }

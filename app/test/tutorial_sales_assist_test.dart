@@ -141,6 +141,36 @@ void main() {
   );
 
   test(
+    'customer link accepts the same customer saved after preflight',
+    () async {
+      const path = '/api/v1/tickets/ticket';
+      final step = customerMission.steps.singleWhere((s) => s.id == 'linked');
+      final context = MissionContext({
+        'ticketId': 'ticket',
+        'customerId': 'brightwheel',
+      });
+      var reads = 0;
+      final http = FakeHttp({
+        'GET $path': (_) => {
+          'ticket': {
+            'id': 'ticket',
+            'contact_email': 'maya.okafor@example.test',
+            'customer_id': reads++ == 0 ? null : 'brightwheel',
+            'version': reads,
+          },
+        },
+      });
+      final dio = fakeDio(http);
+      final probe = step.probe!;
+
+      expect(probe.done((await dio.get<Object?>(path)).data, context), isFalse);
+      await step.assist!(ActionHost(dio: dio, context: context));
+      expect(probe.done((await dio.get<Object?>(path)).data, context), isTrue);
+      expect(http.requests, ['GET $path', 'GET $path', 'GET $path']);
+    },
+  );
+
+  test(
     'quotation assistance needs the customer and cart before writing',
     () async {
       final http = FakeHttp({});

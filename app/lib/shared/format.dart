@@ -37,6 +37,12 @@ String number(String? value) {
 
 String date(DateTime? d) => d == null ? '' : DateFormat('dd/MM/yyyy').format(d);
 
+/// The current UTC calendar day, matching the API's business date.
+DateTime businessToday([DateTime? now]) {
+  final utc = (now ?? DateTime.now()).toUtc();
+  return DateTime.utc(utc.year, utc.month, utc.day);
+}
+
 /// A stored decimal for editing, with a decimal comma and no grouping.
 String editableDecimal(String? value) =>
     parseDecimalInput(value ?? '')?.replaceAll('.', ',') ?? '';

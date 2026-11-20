@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/semantics.dart';
@@ -249,6 +250,64 @@ void main() {
       isTrue,
     );
   });
+
+  test(
+    'going back keeps assisted writes locked until the request settles',
+    () async {
+      final dispatched = Completer<void>();
+      final release = Completer<void>();
+      Map<String, Object>? motor;
+      const write = 'POST /api/v1/products';
+      final http = FakeHttp({
+        'GET /api/v1/products': (_) => {
+          'items': [?motor],
+        },
+        write: (_) async {
+          if (!dispatched.isCompleted) {
+            dispatched.complete();
+            await release.future;
+          }
+          return motor = {
+            'id': 'motor',
+            'code': 'TUT-MOTOR',
+            'product_type': 'purchased',
+          };
+        },
+      });
+      final c = _boot(http, missions: [productMission]);
+      final t = c.read(tutorialProvider.notifier);
+      await t.start('product');
+      t.routeChanged('/products');
+      final pending = t.runAction();
+      await dispatched.future;
+
+      try {
+        t.back();
+        expect(t.step?.id, 'open');
+        t.next();
+        expect(t.step?.id, 'motor');
+        await t.runAction();
+        expect(
+          http.requests.where((request) => request == write),
+          hasLength(1),
+        );
+        expect(c.read(tutorialProvider).actionBusy, isTrue);
+      } finally {
+        release.complete();
+        await pending;
+      }
+
+      expect(
+        t.step?.id,
+        'motor',
+        reason: 'the original action lost step ownership',
+      );
+      expect(c.read(tutorialProvider).actionBusy, isFalse);
+      await t.runAction();
+      expect(t.step?.id, 'frame');
+      expect(http.requests.where((request) => request == write), hasLength(1));
+    },
+  );
 
   group('narrator semantics', () {
     testWidgets(
