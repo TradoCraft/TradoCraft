@@ -176,7 +176,7 @@ void main() {
 
   group('chapter 7: a new customer writes in', () {
     final done = ['welcome', 'product', 'suppliers', 'buying', 'invoices', 'manufacturing', 'prices'];
-    test('scripted mails, reply, customer creation', () async {
+    test('scripted mails, reply, customer creation and verified link', () async {
       final http = FakeHttp({
         'POST /api/v1/helpdesk/inbound': (b) => {
           'ticket_id': 't1',
@@ -185,6 +185,13 @@ void main() {
           'duplicate': false,
         },
         'POST /api/v1/tickets/t1/replies': (_) => {'ticket': {'id': 't1'}},
+        'PUT /api/v1/tickets/t1': (b) {
+          final input = b as Map;
+          if (input['stale'] == true) {
+            return const FakeStatus(409, {'code': 'record_changed'});
+          }
+          return {'ticket': {'id': 't1', 'customer_id': input['customer_id']}};
+        },
         'POST /api/v1/customers': (b) => {
           'id': 'cu1',
           'name': (b as Map)['name'],
@@ -231,10 +238,41 @@ void main() {
       );
       expect(step(), 8);
       expect(c.read(tutorialProvider).values['customerId'], 'cu1');
-      t.next(); // linked
+      await expectLater(
+        dio.put<Object?>('/api/v1/tickets/t1', data: {'stale': true}),
+        throwsA(isA<DioException>()),
+      );
+      expect(step(), 8);
+      await dio.put<Object?>('/api/v1/tickets/t1', data: {'customer_id': 'wrong'});
+      expect(step(), 8);
+      await dio.put<Object?>('/api/v1/tickets/t1', data: {'customer_id': 'cu1'});
+      expect(step(), 9);
       t.next();
       expect(c.read(tutorialProvider).completed, contains('customer'));
     });
+
+    test(
+      'resuming the link step recognizes an already linked ticket',
+      () async {
+        final http = FakeHttp({
+          'GET /api/v1/tickets/t1': (_) => {
+            'ticket': {'id': 't1', 'customer_id': 'cu1'},
+          },
+        });
+        final c = _boot(
+          http,
+          completed: done,
+          active: 'customer',
+          step: 8,
+          values: {'ticketId': 't1', 'customerId': 'cu1'},
+        );
+        final t = c.read(tutorialProvider.notifier);
+        await t.ready;
+        await t.resume();
+        await pumpEventQueue();
+        expect(c.read(tutorialProvider).stepIndex, 9);
+      },
+    );
 
     test('probes find the zone, the ticket and the customer', () async {
       final http = FakeHttp({

@@ -13875,13 +13875,13 @@ abstract class AppLocalizations {
   /// No description provided for @tutCustomerLinkedTitle.
   ///
   /// In en, this message translates to:
-  /// **'The ticket knows its customer'**
+  /// **'Link the customer'**
   String get tutCustomerLinkedTitle;
 
   /// No description provided for @tutCustomerLinkedBody.
   ///
   /// In en, this message translates to:
-  /// **'The ticket now shows the customer, and new buttons appear: create a lead or start a quotation straight from the ticket. The next chapter makes the quotation. Press Next.'**
+  /// **'The ticket should link the new customer automatically. If it does not, select Brightwheel Logistics BV in the Customer field and press Save changes. The tutorial continues when the link is saved.'**
   String get tutCustomerLinkedBody;
 
   /// No description provided for @tutCustomerDoneTitle.

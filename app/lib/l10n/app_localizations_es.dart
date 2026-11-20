@@ -7757,11 +7757,11 @@ class AppLocalizationsEs extends AppLocalizations {
       'Calle Voorbeeldlaan 12, código postal 9000, ciudad Gante, país BE. El idioma y las condiciones de pago pueden quedar como están.';
 
   @override
-  String get tutCustomerLinkedTitle => 'El ticket conoce a su cliente';
+  String get tutCustomerLinkedTitle => 'Vincule al cliente';
 
   @override
   String get tutCustomerLinkedBody =>
-      'El ticket muestra ya al cliente y aparecen botones nuevos: crear un lead o empezar un presupuesto directamente desde el ticket. El siguiente capítulo hace el presupuesto. Pulse Siguiente.';
+      'El ticket debería vincular al cliente nuevo automáticamente. Si no es así, seleccione Brightwheel Logistics BV en el campo Cliente y guarde los cambios. El tutorial continúa cuando se guarda el vínculo.';
 
   @override
   String get tutCustomerDoneTitle => 'Lo que ha aprendido';

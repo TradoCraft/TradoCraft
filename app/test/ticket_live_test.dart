@@ -9,6 +9,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:tradocraft_app/app/api.dart';
 import 'package:tradocraft_app/features/helpdesk/ticket_merge.dart';
 import 'package:tradocraft_app/features/helpdesk/ticket_screen.dart';
+import 'package:tradocraft_app/features/tutorial/api_events.dart';
 import 'package:tradocraft_app/l10n/app_localizations.dart';
 
 import 'fake_http.dart';
@@ -201,7 +202,7 @@ class _Screen {
   int calls(String key) => http.requests.where((r) => r == key).length;
 }
 
-Future<_Screen> _open(WidgetTester tester) async {
+Future<_Screen> _open(WidgetTester tester, {ApiEventBus? tutorialBus}) async {
   late _Screen screen;
   final http = FakeHttp({
     'GET /api/v1/me': (_) =>
@@ -240,6 +241,8 @@ Future<_Screen> _open(WidgetTester tester) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
+        if (tutorialBus != null)
+          apiEventBusProvider.overrideWithValue(tutorialBus),
         dioProvider.overrideWithValue(
           Dio(BaseOptions(baseUrl: 'http://test'))..httpClientAdapter = live,
         ),
@@ -280,6 +283,37 @@ Future<void> _leave(WidgetTester tester) => tester.pumpWidget(const SizedBox());
 
 void main() {
   _mergeTests();
+
+  testWidgets('the open ticket refreshes after a simulated incoming reply', (
+    tester,
+  ) async {
+    final bus = ApiEventBus()..active = true;
+    addTearDown(bus.dispose);
+    final s = await _open(tester, tutorialBus: bus);
+    final reads = s.calls('GET /api/v1/tickets/t1');
+    s.detail = _detail(version: 3, messages: ['It is loud.', 'New details']);
+
+    void inbound(String ticketId, {bool duplicate = false}) {
+      bus.emit(
+        ApiEvent('POST', '/helpdesk/inbound', 200, {
+          'ticket_id': ticketId,
+          'new_ticket': false,
+          'duplicate': duplicate,
+        }),
+      );
+    }
+
+    inbound('other');
+    inbound('t1', duplicate: true);
+    await _settle(tester);
+    expect(s.calls('GET /api/v1/tickets/t1'), reads);
+
+    inbound('t1');
+    await _settle(tester);
+    expect(s.calls('GET /api/v1/tickets/t1'), reads + 1);
+    expect(find.text('New details'), findsOneWidget);
+    await _leave(tester);
+  });
 
   testWidgets('a colleague\'s message appears at once and is announced', (
     tester,
