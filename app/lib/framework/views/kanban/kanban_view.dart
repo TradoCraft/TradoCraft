@@ -222,7 +222,9 @@ class _Column<T> extends StatelessWidget {
         ),
       );
     }
-    if (state.items.isEmpty) {
+    // Empty only when nothing is left on the server either: cards moved out of a long column
+    // leave it looking empty while more are still to be loaded.
+    if (state.items.isEmpty && state.remaining == 0) {
       return Center(
         child: Text(
           l.kanbanEmpty,

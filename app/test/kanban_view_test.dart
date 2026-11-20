@@ -337,5 +337,222 @@ void main() {
       await slow;
       expect(c.columns['todo']!.items.map((i) => i.id), ['new']);
     });
+
+    // A config whose loads can be held back, to put answers in any order.
+    KanbanConfig<Card1> gated(
+      Map<String, List<Card1>> data,
+      List<(String, int)> loads, {
+      Future<void> Function(String col, int offset)? hold,
+      Future<MoveResult> Function(Card1, String)? move,
+      Future<Map<String, String>> Function()? summaries,
+    }) => KanbanConfig<Card1>(
+      columns: const [
+        KanbanColumnDef('todo', 'To do'),
+        KanbanColumnDef('doing', 'Doing'),
+      ],
+      pageSize: 2,
+      idOf: (c) => c.id,
+      cardBuilder: (_, c) => Text(c.title),
+      loadColumn: (col, offset, limit) async {
+        loads.add((col, offset));
+        await hold?.call(col, offset);
+        final all = data[col]!;
+        return KanbanPage(all.skip(offset).take(limit).toList(), all.length);
+      },
+      loadSummaries: summaries,
+      move: move ?? (c, to) async => MoveResult.moved,
+    );
+
+    Map<String, List<Card1>> five() => {
+      'todo': [for (var i = 1; i <= 5; i++) Card1('t$i', 'Task $i')],
+      'doing': [const Card1('d1', 'Doing 1')],
+    };
+
+    test(
+      'a move finishing after a reload reads the two columns again',
+      () async {
+        final data = five();
+        final loads = <(String, int)>[];
+        final gate = Completer<void>();
+        final c = KanbanController<Card1>(
+          gated(
+            data,
+            loads,
+            move: (card, to) async {
+              await gate.future;
+              data['todo']!.removeWhere((x) => x.id == card.id);
+              data['doing']!.insert(0, card);
+              return MoveResult.moved;
+            },
+          ),
+        );
+        addTearDown(c.dispose);
+        await c.load();
+        final moving = c.move(const Card1('t1', 'Task 1'), 'todo', 'doing');
+        await c.load(); // reloaded before the server applied the move: t1 is still in todo
+        expect(c.columns['todo']!.items.map((i) => i.id), contains('t1'));
+        loads.clear();
+        gate.complete();
+        expect(await moving, isTrue);
+        // the new state is read, not the old optimistic one replayed
+        expect(loads.map((l) => l.$1).toSet(), {'todo', 'doing'});
+        expect(
+          c.columns['todo']!.items.map((i) => i.id),
+          isNot(contains('t1')),
+        );
+        expect(c.columns['doing']!.items.map((i) => i.id), contains('t1'));
+      },
+    );
+
+    test('only the latest summary request counts', () async {
+      final slow = Completer<Map<String, String>>();
+      var call = 0;
+      final c = KanbanController<Card1>(
+        gated(
+          five(),
+          [],
+          summaries: () {
+            call++;
+            return call == 1 ? slow.future : Future.value({'todo': 'new'});
+          },
+        ),
+      );
+      addTearDown(c.dispose);
+      final first = c.refreshSummaries();
+      await c.refreshSummaries();
+      expect(c.summaries['todo'], 'new');
+      slow.complete({'todo': 'old'}); // the older answer arrives last
+      await first;
+      expect(c.summaries['todo'], 'new');
+    });
+
+    test(
+      'the next page starts at the server offset, not at the cards on screen',
+      () async {
+        final data = five();
+        final loads = <(String, int)>[];
+        final gate = Completer<void>();
+        final c = KanbanController<Card1>(
+          gated(
+            data,
+            loads,
+            move: (card, to) async {
+              await gate.future;
+              return MoveResult.moved;
+            },
+          ),
+        );
+        addTearDown(c.dispose);
+        await c.load(); // todo: t1 t2 of 5
+        // a card goes into todo (optimistically): three cards on screen, two read from the server
+        final moving = c.move(const Card1('d1', 'Doing 1'), 'doing', 'todo');
+        expect(c.columns['todo']!.items.length, 3);
+        loads.clear();
+        await c.loadMore('todo');
+        expect(loads, [('todo', 2)], reason: 'offset 3 would skip t3');
+        expect(c.columns['todo']!.items.map((i) => i.id), [
+          'd1',
+          't1',
+          't2',
+          't3',
+          't4',
+        ]);
+        gate.complete();
+        await moving;
+      },
+    );
+
+    test('a page arriving during a move keeps the move in the total, and a refusal restores it', () async {
+      final data = five();
+      final gate = Completer<void>();
+      final c = KanbanController<Card1>(
+        gated(
+          data,
+          [],
+          move: (card, to) async {
+            await gate.future;
+            throw 'refused';
+          },
+        ),
+      );
+      addTearDown(c.dispose);
+      await c.load();
+      expect(c.columns['todo']!.total, 5);
+      final moving = c.move(const Card1('d1', 'Doing 1'), 'doing', 'todo');
+      expect(c.columns['todo']!.total, 6);
+      await c.loadMore('todo'); // the server still says 5
+      expect(c.columns['todo']!.total, 6);
+      gate.complete();
+      expect(await moving, isFalse);
+      expect(
+        c.columns['todo']!.total,
+        5,
+        reason: 'back to what the server holds',
+      );
+      expect(c.columns['doing']!.total, 1);
+    });
+
+    test(
+      'a reload frees a column whose next page was still on its way',
+      () async {
+        final data = five();
+        final loads = <(String, int)>[];
+        final gate = Completer<void>();
+        var hold = false;
+        final c = KanbanController<Card1>(
+          gated(
+            data,
+            loads,
+            hold: (col, offset) async {
+              if (hold) await gate.future;
+            },
+          ),
+        );
+        addTearDown(c.dispose);
+        await c.load();
+        hold = true;
+        final stuck = c.loadMore('todo');
+        expect(c.columns['todo']!.loadingMore, isTrue);
+        hold = false;
+        await c.load(); // a new load: the old request no longer owns the flag
+        expect(c.columns['todo']!.loadingMore, isFalse);
+        await c.loadMore('todo'); // the new load can page at once
+        expect(c.columns['todo']!.items.length, 4);
+        gate.complete();
+        await stuck; // the old answer arrives and changes nothing
+        expect(c.columns['todo']!.items.length, 4);
+        expect(c.columns['todo']!.loadingMore, isFalse);
+      },
+    );
+  });
+
+  testWidgets('a column emptied of loaded cards still offers the rest', (
+    t,
+  ) async {
+    final f = Fixture(
+      pageSize: 1,
+      data: {
+        'todo': [
+          const Card1('a', 'Alpha'),
+          const Card1('b', 'Beta'),
+          const Card1('c', 'Gamma'),
+        ],
+        'doing': [],
+        'done': [],
+      },
+    );
+    await _pump(t, f);
+    expect(find.byKey(const ValueKey('kanban-more-todo')), findsOneWidget);
+    await _moveByMenu(t, 'a', 'doing'); // the only loaded card leaves
+    expect(_card('a'), findsOneWidget); // now in doing
+    expect(
+      find.byKey(const ValueKey('kanban-empty-todo')),
+      findsNothing,
+      reason: 'two more are on the server',
+    );
+    expect(find.byKey(const ValueKey('kanban-more-todo')), findsOneWidget);
+    await t.tap(find.byKey(const ValueKey('kanban-more-todo')));
+    await t.pumpAndSettle();
+    expect(_inColumn('todo', 'b'), findsOneWidget);
   });
 }

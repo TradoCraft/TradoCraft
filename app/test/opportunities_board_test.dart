@@ -7,7 +7,9 @@ import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:tradocraft_app/app/api.dart';
 import 'package:tradocraft_app/features/opportunities/opportunities_page.dart';
-import 'package:tradocraft_app/l10n/app_localizations.dart';
+import 'package:tradocraft_app/l10n/app_localizations_en.dart';
+import 'package:tradocraft_app/l10n/app_localizations_nl.dart';
+import 'package:tradocraft_app/l10n/l10n.dart';
 
 import 'fake_http.dart';
 
@@ -340,6 +342,111 @@ void main() {
   testWidgets('without write access there is no "+"', (t) async {
     await _pump(t, _server(permissions: ['opportunities.read']));
     await _showBoard(t);
+    expect(find.byKey(const ValueKey('kanban-add-lead')), findsNothing);
+  });
+
+  testWidgets('another language retitles the columns and keeps the cards', (
+    t,
+  ) async {
+    t.view.physicalSize = const Size(1500, 900);
+    t.view.devicePixelRatio = 1;
+    addTearDown(t.view.reset);
+    final http = _server();
+    final router = GoRouter(
+      routes: [
+        GoRoute(
+          path: '/',
+          builder: (_, _) => const Scaffold(body: OpportunitiesPage()),
+        ),
+      ],
+    );
+    Widget app(Locale locale) => ProviderScope(
+      overrides: [dioProvider.overrideWithValue(fakeDio(http))],
+      child: MaterialApp.router(
+        routerConfig: router,
+        locale: locale,
+        localizationsDelegates: [
+          AppLocalizations.delegate,
+          ...GlobalMaterialLocalizations.delegates,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+      ),
+    );
+    await t.pumpWidget(app(const Locale('en')));
+    await t.pumpAndSettle();
+    await _showBoard(t);
+    final en = AppLocalizationsEn().opportunityStage('qualified');
+    final nl = AppLocalizationsNl().opportunityStage('qualified');
+    expect(en, isNot(nl));
+    expect(find.text(en), findsWidgets);
+    final before = http.requests
+        .where((r) => r == 'GET /api/v1/opportunities')
+        .length;
+    final pipelineBefore = http.requests
+        .where((r) => r == 'GET /api/v1/opportunities/pipeline')
+        .length;
+    await t.pumpWidget(app(const Locale('nl')));
+    await t.pumpAndSettle();
+    expect(find.text(nl), findsWidgets);
+    expect(find.text(en), findsNothing);
+    expect(_in('qualified', '2'), findsOneWidget, reason: 'the cards stay');
+    expect(
+      http.requests.where((r) => r == 'GET /api/v1/opportunities').length,
+      before,
+      reason: 'no reload of the cards',
+    );
+    expect(
+      http.requests
+          .where((r) => r == 'GET /api/v1/opportunities/pipeline')
+          .length,
+      pipelineBefore + 1,
+      reason: 'the sums are read again, their text has a translated word',
+    );
+  });
+
+  testWidgets('the "+" follows the user rights when they change', (t) async {
+    t.view.physicalSize = const Size(1500, 900);
+    t.view.devicePixelRatio = 1;
+    addTearDown(t.view.reset);
+    var permissions = ['opportunities.read'];
+    final http = _server();
+    http.routes['GET /api/v1/me'] = (_) => meJson(permissions);
+    final container = ProviderContainer(
+      overrides: [dioProvider.overrideWithValue(fakeDio(http))],
+    );
+    addTearDown(container.dispose);
+    await t.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp.router(
+          routerConfig: GoRouter(
+            routes: [
+              GoRoute(
+                path: '/',
+                builder: (_, _) => const Scaffold(body: OpportunitiesPage()),
+              ),
+            ],
+          ),
+          locale: const Locale('en'),
+          localizationsDelegates: [
+            AppLocalizations.delegate,
+            ...GlobalMaterialLocalizations.delegates,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+        ),
+      ),
+    );
+    await t.pumpAndSettle();
+    await _showBoard(t);
+    expect(find.byKey(const ValueKey('kanban-add-lead')), findsNothing);
+    permissions = ['opportunities.read', 'opportunities.write'];
+    container.invalidate(meProvider);
+    await t.pumpAndSettle();
+    expect(find.byKey(const ValueKey('kanban-add-lead')), findsOneWidget);
+    expect(_in('lead', '1'), findsOneWidget, reason: 'the cards stay');
+    permissions = ['opportunities.read'];
+    container.invalidate(meProvider);
+    await t.pumpAndSettle();
     expect(find.byKey(const ValueKey('kanban-add-lead')), findsNothing);
   });
 }

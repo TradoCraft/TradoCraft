@@ -15,9 +15,12 @@ entity only needs a way to list the items of one column and a way to move an ite
 
 *Config.* `KanbanConfig<T>`:
 - `columns`: id, label, optional accent colour;
-- `idOf(T)`, `columnOf(T)` (the column an item sits in) and `cardBuilder(context, T)`;
+- `idOf(T)` and `cardBuilder(context, T)`. There is no `columnOf`: the board knows which column
+  a card is shown in, because after a move the item itself still describes where it came from;
 - `loadColumn(columnId, offset, limit) → KanbanPage<T>` (items and the column's total);
-- `columnSummary(columnId)` (optional text under the label, such as a sum), loaded with the board;
+- `loadSummaries()` (optional): the text under each column title, such as a sum, as a map from
+  column id to text. Read with the board and again after a move; the latest request wins;
+- `canCreateIn(columnId)` (optional): which columns offer the "+";
 - `move(T, toColumnId) → Future<MoveResult>`: the entity decides what a move means and may ask the
   user first (a reason). `MoveResult.moved` | `cancelled`; an error is thrown and shown;
 - `onOpen(T)` and an optional `onCreate(columnId)` (the "+" in a column header).
@@ -29,8 +32,17 @@ entity only needs a way to list the items of one column and a way to move an ite
   paging of a full list.
 - **Moving is optimistic.** Dropping a card puts it at the top of the target column at once and
   calls `move`; on `cancelled` or an error the card goes back and the error is shown on the board.
-  After a move the two columns' summaries are reloaded, since the numbers changed. Dropping on the
-  column the card is in does nothing.
+  After a move the summaries are read again, since the numbers changed. Dropping on the column the
+  card is in does nothing. A move that finishes after the board was reloaded does not replay the
+  old optimistic state: the two columns are read again instead.
+- **Counts and paging stay true while moves are under way.** The next page of a column starts at
+  the number of items read from the *server's* order, not at the number of cards on screen, which
+  optimistic moves change; a card is never skipped, and one shown twice is shown once. A page
+  that arrives while a move is pending keeps the move's effect on the column's total, so
+  cancelling or refusing the move brings the total back to the server's. A column whose cards
+  were all moved out but still has more on the server keeps its "Show N more".
+- **The config can change under a loaded board** (the language, the user's rights): the
+  controller keeps cards and moves and takes the new config; the page refreshes the sums.
 - **Mouse and touch.** A card is picked up with a short hold (150 ms, as on the planning board),
   so scrolling by touch still works. The board scrolls horizontally; each column scrolls
   vertically on its own.
@@ -52,9 +64,10 @@ existing form and, when the column is not the first, moves it there.
 
 **Consequences.**
 - A second entity (tickets, ADR to follow) is one `KanbanConfig` and a page switch.
-- The board does not show live changes made by colleagues; it reloads on a pull-down refresh and
-  when it is opened. Live updates would need a channel that tells a column to reload, which the
-  record channel (ADR 0073) does not offer for lists.
+- The board does not show live changes made by colleagues. It reloads when it is opened, after a
+  search, after returning from a card, and after a "+". There is no pull-down gesture. Live
+  updates would need a channel that tells a column to reload, which the record channel
+  (ADR 0073) does not offer for lists.
 - An opportunity has no row version, so two people moving the same card is last writer wins, as
   it already is on the opportunity screen.
 - Ordering inside a column is the server's (expected close date, then number). Dragging to a

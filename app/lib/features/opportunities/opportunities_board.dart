@@ -36,17 +36,38 @@ class _OpportunitiesBoardState extends ConsumerState<OpportunitiesBoard> {
   final _search = TextEditingController();
   String? _q;
   KanbanController<Opportunity>? _controller;
+  Locale? _locale;
 
   CrmClient get _crm => ref.read(apiProvider).crm;
 
   @override
+  void initState() {
+    super.initState();
+    // The user's rights arrive after the board is first built, and can change: the "+" follows
+    // them. The loaded cards stay.
+    ref.listenManual(meProvider, (_, _) {
+      if (_controller == null || !mounted) return;
+      _controller!.updateConfig(_config(context));
+      setState(() {});
+    });
+  }
+
+  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Created once the localisations are available: the column titles are translated.
-    if (_controller == null) {
+    final locale = Localizations.localeOf(context);
+    final controller = _controller;
+    if (controller == null) {
+      // Created once the localisations are available: the column titles are translated.
       final created = KanbanController(_config(context));
       _controller = created;
+      _locale = locale;
       created.load();
+    } else if (locale != _locale) {
+      // Another language: new titles and sums, the same cards.
+      _locale = locale;
+      controller.updateConfig(_config(context));
+      controller.refreshSummaries();
     }
   }
 
