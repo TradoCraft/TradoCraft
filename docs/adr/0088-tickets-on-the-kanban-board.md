@@ -33,6 +33,10 @@ column, the server's order: priority, then last update). The board has its own s
 list's "my tickets / unassigned / all" switch (my tickets by default, as on the list). A card
 shows the number, the priority when it is high or urgent, an escalation mark, an unread dot, the
 subject, the customer or contact, the SLA state, the checklist progress and the owner.
+- **After a move** the two columns are read again (`reloadAfterMove`, ADR 0087): the automation
+  rules and the SLA recalculation can change the owner, the priority or the SLA state of the card,
+  and a rule could even move the ticket on to another status. The opportunity board does the same,
+  because entering a stage resets the probability the card shows.
 - **Moving** posts the status and **leaves out the version**. A board move is a status and
   nothing else, so a colleague's edits to other fields must not make it fail; the server still
   refuses what it must (the close gate, and its message is shown on the board).

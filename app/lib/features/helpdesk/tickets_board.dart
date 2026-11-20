@@ -107,6 +107,9 @@ class _TicketsBoardState extends ConsumerState<TicketsBoard> {
         await context.push<bool>('/helpdesk/${t.id}');
         if (mounted) _controller?.load();
       },
+      // A status change runs the automation rules and recalculates the SLA: the card shows what
+      // the server holds afterwards.
+      reloadAfterMove: true,
       // A ticket is never created straight into the closed column.
       canCreateIn: (id) => id != 'closed',
       onCreate: canWrite ? _create : null,

@@ -21,6 +21,11 @@ entity only needs a way to list the items of one column and a way to move an ite
 - `loadSummaries()` (optional): the text under each column title, such as a sum, as a map from
   column id to text. Read with the board and again after a move; the latest request wins;
 - `canCreateIn(columnId)` (optional): which columns offer the "+";
+- `reloadAfterMove` (optional, off by default): for entities whose server changes more than the
+  column on a move (rules that reassign, a recalculated SLA, a reset probability), the source and
+  the target column are read again after a move that worked, so the card shows what the server
+  holds and sits where the server sorts it. Both columns start again from their first page; a
+  refused or cancelled move reads nothing;
 - `move(T, toColumnId) → Future<MoveResult>`: the entity decides what a move means and may ask the
   user first (a reason). `MoveResult.moved` | `cancelled`; an error is thrown and shown;
 - `onOpen(T)` and an optional `onCreate(columnId)` (the "+" in a column header).

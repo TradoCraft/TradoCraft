@@ -257,8 +257,12 @@ async fn closing_queues_the_satisfaction_survey_once(db: PgPool) {
     // an internal ticket is never surveyed; this one has an outside contact
     let (s, d) = set(&app, id, json!({"status": "closed"})).await;
     assert_eq!(s, StatusCode::OK, "{d}");
-    set(&app, id, json!({"status": "open"})).await;
-    set(&app, id, json!({"status": "closed"})).await;
+    let (s, d) = set(&app, id, json!({"status": "open"})).await;
+    assert_eq!(s, StatusCode::OK, "{d}");
+    assert_eq!(d["ticket"]["status"], "open");
+    let (s, d) = set(&app, id, json!({"status": "closed"})).await;
+    assert_eq!(s, StatusCode::OK, "{d}");
+    assert_eq!(d["ticket"]["status"], "closed");
     let surveys: i64 =
         sqlx::query_scalar("SELECT count(*) FROM helpdesk.csat_surveys WHERE ticket_id = $1::uuid")
             .bind(id)

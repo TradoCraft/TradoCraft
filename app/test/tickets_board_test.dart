@@ -113,8 +113,22 @@ _Server _server({
         _detail(_ticket('1', 'new', 'Water in the unit')),
   });
   for (final id in ['1', '2', '3']) {
-    s.routes['POST /api/v1/tickets/$id/status'] = (b) =>
-        _detail(_ticket(id, (b as Map)['status'] as String, 'Moved'));
+    s.routes['POST /api/v1/tickets/$id/status'] = (b) {
+      // The server applies the move, and its rules reassign the ticket as they would.
+      final status = (b as Map)['status'] as String;
+      Map<String, Object?>? found;
+      for (final list in s.data.values) {
+        for (final r in [...list]) {
+          if (r['id'] == id) {
+            found = r;
+            list.remove(r);
+          }
+        }
+      }
+      final moved = {...?found, 'status': status, 'owner_name': 'Rules bot'};
+      s.data[status]!.insert(0, moved);
+      return _detail(_ticket(id, status, '${moved['subject']}'));
+    };
   }
   return s;
 }
@@ -239,6 +253,43 @@ void main() {
           'no version: a colleague editing other fields must not fail the move',
     );
     expect(_in('pending_customer', '1'), findsOneWidget);
+  });
+
+  testWidgets('after a move the card shows what the server holds now', (
+    t,
+  ) async {
+    final http = _server();
+    await _pump(t, http);
+    await _showBoard(t);
+    expect(find.text('Rules bot'), findsNothing);
+    final before = http.listQueries.where((q) => q['status'] == 'new').length;
+    await _moveByMenu(t, '1', 'pending_customer');
+    // the automation reassigned it: the card is read again, not kept as dragged
+    expect(
+      find.descendant(of: _card('1'), matching: find.text('Rules bot')),
+      findsOneWidget,
+    );
+    // both columns were read again
+    expect(
+      http.listQueries.where((q) => q['status'] == 'new').length,
+      before + 1,
+    );
+    expect(
+      http.listQueries.where((q) => q['status'] == 'pending_customer').length,
+      2,
+    );
+  });
+
+  testWidgets('a refused move reads nothing again', (t) async {
+    final http = _server();
+    http.routes['POST /api/v1/tickets/2/status'] = (_) =>
+        const FakeStatus(409, {'error': 'conflict', 'message': 'No'});
+    await _pump(t, http);
+    await _showBoard(t);
+    final loads = http.listQueries.length;
+    await _moveByMenu(t, '2', 'pending_internal');
+    expect(_in('open', '2'), findsOneWidget);
+    expect(http.listQueries.length, loads, reason: 'the card just goes back');
   });
 
   testWidgets('closing asks first, and backing out puts the card back', (

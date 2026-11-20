@@ -43,6 +43,7 @@ class KanbanConfig<T> {
     this.onOpen,
     this.onCreate,
     this.canCreateIn,
+    this.reloadAfterMove = false,
     this.pageSize = 50,
   });
 
@@ -70,6 +71,12 @@ class KanbanConfig<T> {
   /// Which columns offer the "+" (all when absent): nothing is created straight into a closed
   /// stage.
   final bool Function(String columnId)? canCreateIn;
+
+  /// Read the source and the target column again after a move that worked. For entities whose
+  /// server changes more than the column when it moves (rules that reassign, a recalculated SLA, a
+  /// reset probability): the card then shows what the server holds, and sits where the server
+  /// sorts it. The two columns start again from their first page.
+  final bool reloadAfterMove;
   final int pageSize;
 }
 

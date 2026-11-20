@@ -118,6 +118,8 @@ class _OpportunitiesBoardState extends ConsumerState<OpportunitiesBoard> {
         await context.push<bool>('/opportunities/${o.id}');
         if (mounted) _controller?.load();
       },
+      // Entering a stage resets the probability to the stage's default: the card shows it.
+      reloadAfterMove: true,
       // Nothing is created straight into a closed stage.
       canCreateIn: (id) =>
           id != OpportunityStage.won.json && id != OpportunityStage.lost.json,
