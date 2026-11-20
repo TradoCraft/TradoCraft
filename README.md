@@ -18,6 +18,14 @@ our own processes.
 
 https://github.com/user-attachments/assets/5c0a13d6-0781-4483-b2d3-06a2690ea5f5
 
+### Introduction and tutorial, part one
+
+[![TradoCraft introduction and tutorial part one](docs/media/intro-tutorial-part-1.jpg)](https://github.com/TradoCraft/TradoCraft/releases/download/video-intro-tutorial-part-1/tradocraft-introduction-and-tutorial-part-one.mp4)
+
+A 1 min 42 s introduction to TradoCraft and the first part of the built-in tutorial: the welcome chapter, the
+keyboard shortcut badges (hold Alt) and building a product with its bill of materials. Recorded from the real app in a
+tutorial environment; the voiceover is AI-generated. ([All releases](https://github.com/TradoCraft/TradoCraft/releases))
+
 
 ## Repository layout
 
