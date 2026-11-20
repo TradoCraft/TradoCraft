@@ -305,8 +305,8 @@ void main() {
     expect(find.text('SHIPPING'), findsOneWidget);
     expect(find.text('Shipping (Transco)'), findsOneWidget);
     expect(find.textContaining('has been quoted'), findsOneWidget);
-    // One editable row: the product line only (a single quantity field).
-    expect(find.byIcon(Icons.close), findsOneWidget);
+    // One editable row (the product line only) and the customer field's clear button.
+    expect(find.byIcon(Icons.close), findsNWidgets(2));
 
     await tester.tap(find.text('Save draft'));
     await tester.pumpAndSettle();

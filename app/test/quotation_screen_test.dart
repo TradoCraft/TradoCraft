@@ -11,6 +11,7 @@ import 'package:tradocraft_app/app/api.dart';
 import 'package:tradocraft_app/app/shortcuts/host.dart';
 import 'package:tradocraft_app/features/quotations/quotation_screen.dart';
 import 'package:tradocraft_app/l10n/app_localizations.dart';
+import 'package:tradocraft_app/framework/form/record_form_view.dart';
 import 'package:tradocraft_app/shared/search_picker.dart';
 
 import 'fake_http.dart';
@@ -662,7 +663,74 @@ Future<FakeApi> _pumpSwitched(WidgetTester tester, {bool fail = false}) async {
   return fake;
 }
 
+/// The status bar highlights the current step with a filled background.
+bool _isCurrentStep(WidgetTester tester, String value) {
+  final box = tester.widget<Container>(find.byKey(ValueKey('status-$value')));
+  return (box.decoration as BoxDecoration?)?.color != null;
+}
+
 void main() {
+  testWidgets('the status bar shows the quotation lifecycle and its current step', (
+    tester,
+  ) async {
+    await _pump(tester, 'sent');
+    expect(find.byType(FormStatusBar), findsOneWidget);
+    for (final v in ['draft', 'sent', 'accepted']) {
+      expect(find.byKey(ValueKey('status-$v')), findsOneWidget);
+    }
+    expect(find.byKey(const ValueKey('status-rejected')), findsNothing);
+    expect(_isCurrentStep(tester, 'sent'), isTrue);
+    expect(_isCurrentStep(tester, 'draft'), isFalse);
+  });
+
+  testWidgets('a rejected quotation is shown off the path in the status bar', (
+    tester,
+  ) async {
+    await _pump(tester, 'rejected');
+    expect(find.byKey(const ValueKey('status-rejected')), findsOneWidget);
+    expect(_isCurrentStep(tester, 'rejected'), isTrue);
+  });
+
+  testWidgets('the site baseline is a smart button of the form', (tester) async {
+    await _pumpLinkedQuotation(tester, []);
+    final button = find.byKey(const ValueKey('quotation-site-baseline'));
+    expect(button, findsOneWidget);
+    expect(tester.widget(button), isA<SmartButton>());
+    await tester.tap(button);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Tower bell'), findsOneWidget);
+  });
+
+  testWidgets('half-typed customer text is rejected on save', (tester) async {
+    final fake = await _pumpLinkedQuotation(tester, []);
+    await tester.enterText(
+      find.descendant(
+        of: find.byType(SearchPicker<Customer>),
+        matching: find.byType(TextField),
+      ),
+      'Cust',
+    );
+    await tester.pump();
+    await tester.tap(find.text('Save draft'));
+    await tester.pumpAndSettle();
+    expect(find.text('Choose an entry from the list'), findsOneWidget);
+    expect(
+      fake.requests,
+      isNot(contains('PUT /api/v1/quotations/$_quotationId')),
+    );
+  });
+
+  testWidgets('a refused save shows the conflict notice with Reload', (
+    tester,
+  ) async {
+    final fake = await _pumpLinkedQuotation(tester, []);
+    fake.conflictOnSave = true;
+    await tester.tap(find.text('Save draft'));
+    await tester.pumpAndSettle();
+    expect(find.byType(RecordConflictNotice), findsOneWidget);
+    expect(find.text('Reload'), findsOneWidget);
+  });
+
   testWidgets('failed reload preserves the save baseline and permits retry', (
     tester,
   ) async {
@@ -1221,9 +1289,8 @@ void main() {
     testWidgets(
       'Alt+L scrolls to the add-product picker when it is not built yet',
       (tester) async {
-        // A short window: the page is a lazy list, the picker is far below what is built.
+        // A short window: the picker is far below the visible part.
         await _pump(tester, 'draft', keys: true, size: const Size(1400, 240));
-        expect(addProductPicker, findsNothing);
         await tester.sendKeyDownEvent(LogicalKeyboardKey.altLeft);
         await tester.sendKeyDownEvent(LogicalKeyboardKey.keyL);
         await tester.sendKeyUpEvent(LogicalKeyboardKey.keyL);

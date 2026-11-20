@@ -15,13 +15,14 @@ import '../../shared/grid_key_nav.dart';
 import '../../shared/actions.dart';
 import '../../shared/decimal_field.dart';
 import '../../shared/format.dart';
-import '../../shared/live_record_watcher.dart';
+import '../../framework/form/many2one_field.dart';
+import '../../framework/form/record_form_controller.dart';
+import '../../framework/form/record_form_view.dart';
 import '../../shared/sales_hints.dart';
 import '../../shared/options_chooser.dart';
 import '../../shared/sub_item_chooser.dart';
 import '../../shared/power_grid_field.dart';
 import '../../shared/remark_history.dart';
-import '../../shared/search_picker.dart';
 import '../../l10n/l10n.dart';
 import '../../shared/app_icons.dart';
 import '../../shared/load_failed.dart';
@@ -240,14 +241,21 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
   /// Generation of the running [_load]: a load that is no longer current must not apply anything.
   int _loadSeq = 0;
   bool _loading = false;
-  bool _busy = false;
-  String? _error;
   bool _missing = false;
   bool _changed = false;
-  RecordLiveWatcher? _watcher;
-  String? _conflictMessage;
-  int? _notifiedVersion;
-  bool _isConflict = false;
+
+  /// Busy flag, error line, conflict notice, live watcher and dirty flag (ADR 0085). Replaced when
+  /// the screen is reused for another quotation.
+  RecordFormController<Quotation> _form = _newForm();
+  static RecordFormController<Quotation> _newForm() =>
+      RecordFormController<Quotation>(versionOf: (q) => q.version);
+
+  bool get _busy => _form.busy;
+  String? get _error => _form.error;
+
+  void _rebuild() {
+    if (mounted) setState(() {});
+  }
 
   TradocraftApi get _api => ref.read(apiProvider);
   QuotationRepository get _quotations => ref.read(quotationRepositoryProvider);
@@ -263,10 +271,10 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
         : null;
   }
 
-  Widget _siteBaselineButton(String opportunityId) => TextButton.icon(
+  Widget _siteBaselineButton(String opportunityId) => SmartButton(
     key: const ValueKey('quotation-site-baseline'),
-    icon: const Icon(AppIcons.checklist),
-    label: Text(context.l10n.baselineTitle),
+    icon: AppIcons.checklist,
+    label: context.l10n.baselineTitle,
     onPressed: () async {
       await showSiteBaseline(context, opportunityId: opportunityId);
       if (mounted && _editable) setState(() => _baselineRevision++);
@@ -274,33 +282,15 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
   );
 
   void _startWatcher() {
-    _watcher?.dispose();
-    _watcher = null;
     final id = _id;
     if (id == null) return;
-    _watcher = watchRecordChanges(
-      ref,
-      entityType: 'quotation',
-      recordId: id,
-      currentVersion: () => _q?.version,
-      onExternalChange: (ev) {
-        if (!mounted) return;
-        setState(() {
-          if (_notifiedVersion == null || ev.version > _notifiedVersion!) {
-            _notifiedVersion = ev.version;
-          }
-          _conflictMessage = ev.kind == 'resync'
-              ? context.l10n.recordConflictMessage
-              : context.l10n.recordUpdatedBy(ev.changedByName);
-          _isConflict = false;
-        });
-      },
-    );
+    _form.watch(ref, entityType: 'quotation', recordId: id);
   }
 
   @override
   void initState() {
     super.initState();
+    _form.addListener(_rebuild);
     if (_id != null) {
       _load();
       _startWatcher();
@@ -310,10 +300,22 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
           .then(
             _selectCustomer,
             onError: (Object e) {
-              if (mounted) setState(() => _error = errorMessage(e));
+              if (mounted) _form.error = errorMessage(e);
             },
           );
     }
+  }
+
+  /// The customer was erased: nothing to price or link until another one is chosen.
+  void _clearCustomer() {
+    _oppSeq++;
+    setState(() {
+      _customer = null;
+      _opportunityId = null;
+      _opportunities = [];
+      _opportunitiesLoaded = false;
+    });
+    _refreshPreview();
   }
 
   /// Selects a customer and loads their open opportunities.
@@ -381,6 +383,10 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
     _previewSeq++;
     _oppSeq++;
     _loadSeq++;
+    _form
+      ..removeListener(_rebuild)
+      ..dispose();
+    _form = _newForm()..addListener(_rebuild);
     setState(() {
       for (final l in _lines) {
         l.dispose();
@@ -403,12 +409,8 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
       _previewError = null;
       _catalogues.clear();
       _notices.clear();
-      _error = null;
       _changed = false;
       _loading = false;
-      _notifiedVersion = null;
-      _conflictMessage = null;
-      _isConflict = false;
     });
     _setDirty(false);
     if (_id != null) _load();
@@ -433,7 +435,9 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
 
   @override
   void dispose() {
-    _watcher?.dispose();
+    _form
+      ..removeListener(_rebuild)
+      ..dispose();
     _debounce?.cancel();
     _scroll.dispose();
     _notes.dispose();
@@ -491,10 +495,8 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
       }
     } catch (e) {
       if (!stale()) {
-        setState(() {
-          _error = errorMessage(e);
-          _missing = errorStatus(e) == 404;
-        });
+        _form.error = errorMessage(e);
+        setState(() => _missing = errorStatus(e) == 404);
       }
     } finally {
       if (!stale()) setState(() => _loading = false);
@@ -520,20 +522,22 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
       _id = q.id;
       _vatRegimeOverride = q.vatRegimeOverride;
       _buildingYear.text = q.buildingConstructionYear?.toString() ?? '';
-      _error = null;
-      if (_notifiedVersion == null || (q.version ?? 0) >= _notifiedVersion!) {
-        _conflictMessage = null;
-        _isConflict = false;
-        _notifiedVersion = null;
-      }
     });
+    _form.apply(q);
     // Loaded or saved: what is on screen is what the server has.
     _setDirty(false);
   }
 
   /// Unsaved edits: a tab asks before it closes while this is true.
   void _setDirty(bool dirty) {
-    TabScope.reportDirty(context, dirty);
+    if (dirty) {
+      _form.markDirty();
+    } else if (!mounted) {
+      return;
+    } else {
+      // A new controller starts clean; the view reports the change to the tab.
+      TabScope.reportDirty(context, false);
+    }
   }
 
   /// Builds the line inputs; returns null (and sets an error) if a field is invalid.
@@ -645,83 +649,70 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
   }
 
   Future<void> _run(Future<void> Function() action) async {
-    if (_busy || _loading) return;
-    setState(() {
-      _busy = true;
-      _error = null;
-    });
-    try {
+    if (_loading) return;
+    final ok = await _form.run(() async {
       await action();
-      _changed = true;
-    } catch (e) {
-      if (!mounted) return;
-      if (isRecordChangedError(e)) {
-        setState(() {
-          _conflictMessage = context.l10n.recordConflictMessage;
-          _isConflict = true;
-          _error = null;
-        });
-      } else {
-        setState(() => _error = errorMessage(e));
-      }
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
+      return null;
+    });
+    if (ok) _changed = true;
   }
 
-  Future<void> _save() => _run(() async {
-    final inputs = _lineInputs();
-    if (_customer == null || inputs == null || inputs.isEmpty) {
-      throw context.l10n.chooseCustomerAndLine;
-    }
-    final country = _country.text.trim();
-    if (country.isNotEmpty && country.length != 2) {
-      throw context.l10n.deliveryCountryInvalid;
-    }
-    final yearText = _purpose == 'stock' ? '' : _buildingYear.text.trim();
-    final buildingYear = _purpose == 'stock' ? null : _buildingYearOrNull;
-    if (yearText.isNotEmpty && buildingYear == null) {
-      throw context.l10n.buildingConstructionYearError;
-    }
-    final body = QuotationInput(
-      customerId: _customer!.id,
-      opportunityId: _opportunityId,
-      priceDate: _priceDate,
-      purpose: _purpose,
-      deliveryCountryCode: _countryOrNull,
-      powerGridId: _purpose == 'stock' ? null : _gridId,
-      // "Any grid" replacing a stored grid must be said explicitly: omitting keeps the stored one.
-      clearPowerGrid:
-          _purpose != 'stock' && _gridId == null && _q?.powerGridId != null
-          ? true
-          : null,
-      vatRegimeOverride: _vatRegimeOverride,
-      clearVatRegimeOverride:
-          _vatRegimeOverride == null && _q?.vatRegimeOverride != null
-          ? true
-          : null,
-      buildingConstructionYear: buildingYear,
-      clearBuildingConstructionYear:
-          yearText.isEmpty &&
-              (_purpose != 'stock' || _q?.buildingConstructionYear != null)
-          ? true
-          : null,
-      notes: _notes.text,
-      expectedVersion: _q?.version,
-      lines: inputs,
-    );
-    final q = _id == null
-        ? await _quotations.create(body)
-        : await _quotations.update(_id!, body);
-    if (!mounted) return;
-    _apply(q);
-    _startWatcher();
-    if (mounted) {
+  Future<void> _save() async {
+    if (_loading) return;
+    final saved = await _form.save((expectedVersion) async {
+      final inputs = _lineInputs();
+      if (_customer == null || inputs == null || inputs.isEmpty) {
+        throw context.l10n.chooseCustomerAndLine;
+      }
+      final country = _country.text.trim();
+      if (country.isNotEmpty && country.length != 2) {
+        throw context.l10n.deliveryCountryInvalid;
+      }
+      final yearText = _purpose == 'stock' ? '' : _buildingYear.text.trim();
+      final buildingYear = _purpose == 'stock' ? null : _buildingYearOrNull;
+      if (yearText.isNotEmpty && buildingYear == null) {
+        throw context.l10n.buildingConstructionYearError;
+      }
+      final body = QuotationInput(
+        customerId: _customer!.id,
+        opportunityId: _opportunityId,
+        priceDate: _priceDate,
+        purpose: _purpose,
+        deliveryCountryCode: _countryOrNull,
+        powerGridId: _purpose == 'stock' ? null : _gridId,
+        // "Any grid" replacing a stored grid must be said explicitly: omitting keeps the stored one.
+        clearPowerGrid:
+            _purpose != 'stock' && _gridId == null && _q?.powerGridId != null
+            ? true
+            : null,
+        vatRegimeOverride: _vatRegimeOverride,
+        clearVatRegimeOverride:
+            _vatRegimeOverride == null && _q?.vatRegimeOverride != null
+            ? true
+            : null,
+        buildingConstructionYear: buildingYear,
+        clearBuildingConstructionYear:
+            yearText.isEmpty &&
+                (_purpose != 'stock' || _q?.buildingConstructionYear != null)
+            ? true
+            : null,
+        notes: _notes.text,
+        expectedVersion: expectedVersion,
+        lines: inputs,
+      );
+      final q = _id == null
+          ? await _quotations.create(body)
+          : await _quotations.update(_id!, body);
+      if (!mounted) return q;
+      _apply(q);
+      _startWatcher();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(context.l10n.savedNumber(q.number))),
       );
-    }
-  });
+      return q;
+    });
+    if (saved != null) _changed = true;
+  }
 
   Future<void> _transition(Future<Quotation> Function(String id) call) =>
       _run(() async => _apply(await call(_id!)));
@@ -864,78 +855,37 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
     final page = Scaffold(
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : ListView(
-              controller: _scroll,
-              padding: const EdgeInsets.all(16),
-              children: [
-                Wrap(
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: 12,
-                  runSpacing: 8,
-                  children: [
-                    IconButton(
-                      tooltip: MaterialLocalizations.of(context)
-                          .backButtonTooltip,
-                      onPressed: _close,
-                      icon: const Icon(AppIcons.arrowBack),
-                    ),
-                    Text(
-                      q == null
-                          ? context.l10n.newQuotation
-                          : '${q.number}  rev. ${q.revision}',
-                      style: theme.textTheme.headlineSmall,
-                    ),
-                    if (q != null)
-                      Chip(
-                        label: Text(
-                          context.l10n.quotationStatus(q.status.json ?? ''),
-                        ),
-                      ),
-                    if (_busy)
-                      const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    if (q != null)
-                      ObjectTodosButton(
-                        kind: TodoLinkKind.quotation,
-                        id: q.id,
-                        label: q.number,
-                      ),
-                    ..._actions(canWrite),
-                  ],
-                ),
-                // Keep editor rows at stable indices when save notices appear.
-                if (_conflictMessage != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: RecordConflictBanner(
-                      message: _conflictMessage!,
-                      isConflict: _isConflict,
-                      onReload: _busy || _loading ? null : _load,
-                      onDismiss: () => setState(() => _conflictMessage = null),
-                    ),
-                  )
-                else
-                  const SizedBox.shrink(),
-                if (_error != null)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Text(
-                      _error!,
-                      style: TextStyle(color: theme.colorScheme.error),
-                    ),
-                  )
-                else
-                  const SizedBox.shrink(),
-                const SizedBox(height: 16),
-                if (q != null) ..._shippingBanner(q),
-                if (_editable && canWrite)
-                  ..._editor(theme)
-                else if (q != null)
-                  ..._readOnly(q, theme),
+          : RecordFormView<Quotation>(
+              // A reset replaces the controller; the view starts over with it.
+              key: ObjectKey(_form),
+              controller: _form,
+              title: q == null
+                  ? context.l10n.newQuotation
+                  : '${q.number}  rev. ${q.revision}',
+              onBack: _close,
+              onReload: _load,
+              scrollController: _scroll,
+              titleExtras: [
+                if (q != null)
+                  ObjectTodosButton(
+                    kind: TodoLinkKind.quotation,
+                    id: q.id,
+                    label: q.number,
+                  ),
               ],
+              actions: _actions(canWrite),
+              statusBar: _statusBar(q),
+              smartButtons: _smartButtons(q, canWrite),
+              beforeSheet: q == null ? const [] : _shippingBanner(q),
+              body: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (_editable && canWrite)
+                    ..._editor(theme)
+                  else if (q != null)
+                    ..._readOnly(q, theme),
+                ],
+              ),
             ),
     );
     // Alt+L adds a line without the mouse: the cursor goes to the add-product picker.
@@ -952,23 +902,13 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
   /// The picker under the lines table (a type-ahead field), so a line is added from the keyboard.
   final _addProductKey = GlobalKey();
 
-  /// The scroll position of the page, to bring a picker that is not built yet into the list.
+  /// The scroll position of the page.
   final _scroll = ScrollController();
 
-  /// The page is a lazy list: a picker far below the visible part is not built, so it has no
-  /// context. Scroll toward the end until it is, then focus it.
-  void _focusAddProduct({int attempts = 0}) {
-    if (!mounted) return;
+  /// Moves the cursor to the add-product picker.
+  void _focusAddProduct() {
     final ctx = _addProductKey.currentContext;
-    if (ctx == null) {
-      if (attempts >= 8 || !_scroll.hasClients) return;
-      _scroll.jumpTo(_scroll.position.maxScrollExtent);
-      WidgetsBinding.instance.addPostFrameCallback(
-        (_) => _focusAddProduct(attempts: attempts + 1),
-      );
-      WidgetsBinding.instance.ensureVisualUpdate();
-      return;
-    }
+    if (!mounted || ctx == null) return;
     EditableTextState? field;
     void visit(Element e) {
       if (field != null) return;
@@ -982,6 +922,30 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
     (ctx as Element).visitChildren(visit);
     field?.widget.focusNode.requestFocus();
     Scrollable.ensureVisible(ctx, duration: Duration.zero);
+  }
+
+  Widget _statusBar(Quotation? q) {
+    final l = context.l10n;
+    final status = q?.status.json ?? 'draft';
+    return FormStatusBar(
+      steps: [
+        for (final v in const ['draft', 'sent', 'accepted'])
+          FormStatusStep(v, l.quotationStatus(v)),
+      ],
+      current: status,
+      offPathLabel: l.quotationStatus(status),
+    );
+  }
+
+  /// The site baseline of the linked opportunity, editable or not.
+  List<Widget> _smartButtons(Quotation? q, bool canWrite) {
+    final opportunityId = _editable && canWrite
+        ? _siteOpportunityId
+        : q?.opportunityId;
+    if (opportunityId == null || !can(ref, 'opportunities.read')) {
+      return const [];
+    }
+    return [_siteBaselineButton(opportunityId)];
   }
 
   List<Widget> _actions(bool canWrite) {
@@ -1073,16 +1037,21 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
-            child: SearchPicker<Customer>(
-              key: ValueKey(_customer?.id),
+            child: Many2OneField<Customer>(
+              value: _customer,
+              idOf: (c) => c.id,
               label: context.l10n.customer,
-              initial: _customer,
               display: (c) => '${c.code} · ${c.name}',
               search: (q) async =>
                   (await _api.crm.listCustomers(q: q, limit: 20)).items,
-              onSelected: (c) {
+              enabled: !_busy,
+              onChanged: (c) {
                 _setDirty(true);
-                _selectCustomer(c);
+                if (c == null) {
+                  _clearCustomer();
+                } else {
+                  _selectCustomer(c);
+                }
               },
             ),
           ),
@@ -1151,11 +1120,6 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
             },
           ),
         ),
-        if (can(ref, 'opportunities.read') && _siteOpportunityId != null)
-          Align(
-            alignment: Alignment.centerLeft,
-            child: _siteBaselineButton(_siteOpportunityId!),
-          ),
       ],
       const SizedBox(height: 12),
       Wrap(
@@ -1696,7 +1660,11 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
     label: label,
     clearOnSelect: clearOnSelect,
     opportunityId:
-        ref.read(meProvider).value?.permissions.contains('opportunities.read') ==
+        ref
+                .read(meProvider)
+                .value
+                ?.permissions
+                .contains('opportunities.read') ==
             true
         ? _siteOpportunityId
         : null,
@@ -2019,8 +1987,6 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
               onPressed: () =>
                   context.push('/opportunities/${q.opportunityId}'),
             ),
-            if (can(ref, 'opportunities.read'))
-              _siteBaselineButton(q.opportunityId!),
           ],
         ),
       ),
@@ -2440,7 +2406,9 @@ class RevisionDialog extends ConsumerWidget {
                               padding: const EdgeInsets.all(6),
                               child: Text(
                                 l.needsConfirmation
-                                    ? context.l10n.priceOnRequestLine(l.description)
+                                    ? context.l10n.priceOnRequestLine(
+                                        l.description,
+                                      )
                                     : l.description,
                               ),
                             ),
