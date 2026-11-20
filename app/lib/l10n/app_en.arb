@@ -3342,6 +3342,13 @@
   "tutTitle": "Tutorial",
   "tutBack": "Back",
   "tutNext": "Next",
+  "tutAssist": "Do this step for me",
+  "tutAssistFailed": "Could not finish this step: {reason}. Try again.",
+  "@tutAssistFailed": {
+    "placeholders": {
+      "reason": {"type": "String"}
+    }
+  },
   "tutSkipStep": "Skip step",
   "tutPause": "Pause",
   "tutResume": "Resume",

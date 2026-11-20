@@ -16,8 +16,13 @@ Map? _first(Object? list, bool Function(Map) test) {
 
 bool _isTutorialTicket(Map t) => t['contact_email'] == tutorialCustomerMail;
 
-bool _isTutorialCustomer(Map c) =>
-    '${c['name']}'.toLowerCase().contains('brightwheel');
+bool _isTutorialCustomer(Map c, MissionContext ctx) =>
+    '${c['name']}'.toLowerCase().contains('brightwheel') &&
+    c['id'] is String &&
+    c['active'] != false &&
+    (ctx.values['zoneId'] == null ||
+        !c.containsKey('price_zone_id') ||
+        c['price_zone_id'] == ctx.values['zoneId']);
 
 Map<String, String> _mailCapture(InboundMailResult r, {String? idKey}) => {
   'ticketId': r.ticketId,
@@ -26,12 +31,12 @@ Map<String, String> _mailCapture(InboundMailResult r, {String? idKey}) => {
 };
 
 Map<String, String> _customerCapture(Object? json, MissionContext ctx) {
-  final c = _first(json, _isTutorialCustomer);
+  final c = _first(json, (c) => _isTutorialCustomer(c, ctx));
   return c == null ? const {} : {'customerId': '${c['id']}'};
 }
 
 bool _customerExists(Object? json, MissionContext ctx) =>
-    _first(json, _isTutorialCustomer) != null;
+    _first(json, (c) => _isTutorialCustomer(c, ctx)) != null;
 
 /// A probe that finds the customer of chapter 7 and captures its id.
 const customerProbe = Probe(
@@ -50,6 +55,64 @@ bool _ticketLinkedToCustomer(Object? json, MissionContext ctx) {
       ticket['customer_id'] == customerId;
 }
 
+Future<void> _createTutorialCustomer(ActionHost host) async {
+  final zoneId = host.context.values['zoneId'];
+  if (zoneId == null) {
+    throw StateError(
+      'Create the tutorial export zone before adding Brightwheel.',
+    );
+  }
+  await host.dio.post<void>(
+    '/api/v1/customers',
+    data: {
+      'code': 'TUT-CUST',
+      'name': 'Brightwheel Logistics BV',
+      'vat_number': 'BE0123456749',
+      'street': 'Voorbeeldlaan 12',
+      'postal_code': '9000',
+      'city': 'Gent',
+      'price_zone_id': zoneId,
+    },
+  );
+}
+
+Future<void> _linkTutorialCustomer(ActionHost host) async {
+  final path = host.context.resolve('/api/v1/tickets/{ticketId}');
+  final customerId = host.context.values['customerId'];
+  if (path == null || customerId == null) {
+    throw StateError('Create the tutorial ticket and Brightwheel first.');
+  }
+  final detail = (await host.dio.get<Object?>(path)).data;
+  final ticket = detail is Map ? detail['ticket'] : null;
+  if (ticket is! Map ||
+      !_isTutorialTicket(ticket) ||
+      ticket['customer_id'] != null ||
+      ticket['version'] is! int) {
+    throw StateError('Check the customer on Maya’s tutorial ticket.');
+  }
+  await host.dio.put<void>(
+    path,
+    data: {
+      for (final key in const [
+        'subject',
+        'status',
+        'priority',
+        'category',
+        'language',
+        'owner_user_id',
+        'contact_id',
+        'contact_name',
+        'contact_email',
+        'quotation_id',
+        'opportunity_id',
+      ])
+        key: ticket[key],
+      'customer_id': customerId,
+      'expected_version': ticket['version'],
+    },
+  );
+}
+
 /// Chapter 7: a customer e-mail becomes a ticket; the sender is a new customer.
 final customerMission = Mission(
   id: 'customer',
@@ -58,7 +121,8 @@ final customerMission = Mission(
       id: 'needs',
       probe: Probe(
         '/api/v1/price-zones',
-        done: (json, _) => _first(json, (z) => z['code'] == tutorialZoneCode) != null,
+        done: (json, _) =>
+            _first(json, (z) => z['code'] == tutorialZoneCode) != null,
         capture: (json, _) {
           final z = _first(json, (z) => z['code'] == tutorialZoneCode);
           return z == null ? const {} : {'zoneId': '${z['id']}'};
@@ -123,19 +187,23 @@ final customerMission = Mission(
     MissionStep(id: 'readDetails', route: '/helpdesk/{ticketId}'),
     MissionStep(
       id: 'createCustomer',
+      assist: _createTutorialCustomer,
       hasHint: true,
       route: '/helpdesk/{ticketId}',
       targets: const ['customer-form-save', 'ticket-new-customer'],
       completion: OnApi(
         'POST',
         '/customers',
-        predicate: (json, _) => json is Map && _isTutorialCustomer(json),
+        predicate: (json, ctx) => json is Map && _isTutorialCustomer(json, ctx),
       ),
-      capture: (json) => json is Map ? {'customerId': '${json['id']}'} : const {},
+      capture: (json) =>
+          json is Map ? {'customerId': '${json['id']}'} : const {},
       probe: customerProbe,
+      recheckOn: const [OnApi('PUT', '/customers/[^/]+')],
     ),
     MissionStep(
       id: 'linked',
+      assist: _linkTutorialCustomer,
       route: '/helpdesk/{ticketId}',
       targets: const ['ticket-save-properties'],
       completion: const OnApi(
@@ -206,6 +274,25 @@ Map? _revisionOf(Object? details, MissionContext ctx) {
   return null;
 }
 
+Future<void> _createTutorialQuotation(ActionHost host) async {
+  final customerId = host.context.values['customerId'];
+  final cartId = host.context.values['cartId'];
+  if (customerId == null || cartId == null) {
+    throw StateError(
+      'Create Brightwheel and the tutorial cart before quoting.',
+    );
+  }
+  await host.dio.post<void>(
+    '/api/v1/quotations',
+    data: {
+      'customer_id': customerId,
+      'lines': [
+        {'product_id': cartId, 'quantity': '8'},
+      ],
+    },
+  );
+}
+
 /// Chapter 8: a quotation for the new customer, a note from production, sent.
 final quotationMission = Mission(
   id: 'quotation',
@@ -219,6 +306,7 @@ final quotationMission = Mission(
     ),
     MissionStep(
       id: 'create',
+      assist: _createTutorialQuotation,
       hasHint: true,
       route: '/quotations/new?customer={customerId}',
       targets: const ['quotation-save', 'quotations-create'],
@@ -230,7 +318,8 @@ final quotationMission = Mission(
             json['customer_id'] == ctx.values['customerId'] &&
             _hasCartQuantity(json, ctx, 8),
       ),
-      capture: (json) => json is Map ? {'quotationId': '${json['id']}'} : const {},
+      capture: (json) =>
+          json is Map ? {'quotationId': '${json['id']}'} : const {},
       probe: Probe(
         '/api/v1/quotations',
         query: {'customer_id': '{customerId}', 'limit': 20},
@@ -329,7 +418,8 @@ final changeMission = Mission(
         predicate: (json, ctx) =>
             json is Map && json['supersedes_id'] == ctx.values['quotationId'],
       ),
-      capture: (json) => json is Map ? {'quotation2Id': '${json['id']}'} : const {},
+      capture: (json) =>
+          json is Map ? {'quotation2Id': '${json['id']}'} : const {},
       probe: Probe(
         '/api/v1/quotations',
         query: {'customer_id': '{customerId}', 'limit': 20},
@@ -428,7 +518,8 @@ final changeMission = Mission(
       probe: Probe(
         '/api/v1/production-orders',
         query: {'order_id': '{orderId}'},
-        done: (json, _) => _first(json, (o) => o['status'] != 'cancelled') != null,
+        done: (json, _) =>
+            _first(json, (o) => o['status'] != 'cancelled') != null,
         capture: (json, _) {
           final o = _first(json, (o) => o['status'] != 'cancelled');
           return o == null ? const {} : {'orderProductionId': '${o['id']}'};
@@ -445,7 +536,8 @@ final changeMission = Mission(
       ),
       probe: Probe(
         '/api/v1/production-orders/{orderProductionId}',
-        done: (json, _) => _productionStatus(json, {'in_progress', 'completed'}),
+        done: (json, _) =>
+            _productionStatus(json, {'in_progress', 'completed'}),
       ),
     ),
     warehouseStep,

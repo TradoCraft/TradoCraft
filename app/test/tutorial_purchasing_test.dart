@@ -125,6 +125,95 @@ class _GatedHttp extends FakeHttp {
 
 void main() {
   group('chapter 2: suppliers', () {
+    test('assists supplier creation and supplies the tutorial price', () async {
+      final http = FakeHttp({
+        'GET /api/v1/suppliers': (_) => [],
+        'POST /api/v1/suppliers': (body) {
+          expect(body, {
+            'code': 'TUT-SUP-A',
+            'name': 'Voltaic Drives Ltd',
+            'country': 'BE',
+          });
+          return {'id': 'sa'};
+        },
+        'POST /api/v1/suppliers/sa/products/m1': (body) {
+          expect(body, {'unit_price': '120', 'lead_time_days': 14, 'moq': '5'});
+          return {'id': 'price'};
+        },
+      });
+      final host = ActionHost(
+        dio: fakeDio(http),
+        context: MissionContext({'supplierAId': 'sa', 'motorId': 'm1'}),
+      );
+      await suppliersMission.steps
+          .singleWhere((s) => s.id == 'supplierA')
+          .assist!(host);
+      await suppliersMission.steps
+          .singleWhere((s) => s.id == 'priceMotor')
+          .assist!(host);
+      expect(http.requests, [
+        'GET /api/v1/suppliers',
+        'POST /api/v1/suppliers',
+        'POST /api/v1/suppliers/sa/products/m1',
+      ]);
+    });
+
+    test('an inactive supplier must be reactivated before it counts', () async {
+      final supplier = <String, Object>{
+        'id': 'sa',
+        'code': 'TUT-SUP-A',
+        'active': false,
+      };
+      final http = FakeHttp({
+        'GET /api/v1/suppliers': (_) => [supplier],
+        'PUT /api/v1/suppliers/sa': (_) => supplier..['active'] = true,
+      });
+      final c = _boot(
+        http,
+        completed: ['welcome', 'product'],
+        active: 'suppliers',
+        step: 2,
+      );
+      final t = c.read(tutorialProvider.notifier);
+      await t.ready;
+      await t.resume();
+      await t.runAction();
+      expect(c.read(tutorialProvider).stepIndex, 2);
+      expect(
+        c.read(tutorialProvider).actionError?.reason,
+        contains('Reactivate supplier TUT-SUP-A'),
+      );
+      expect(http.requests, isNot(contains('POST /api/v1/suppliers')));
+
+      await c.read(dioProvider).put<Object?>('/api/v1/suppliers/sa', data: {});
+      await pumpEventQueue(times: 100);
+      expect(c.read(tutorialProvider).stepIndex, 3);
+      expect(c.read(tutorialProvider).values['supplierAId'], 'sa');
+    });
+
+    test('a product prerequisite needs a usable record of the right type', () {
+      final products = [
+        _product('m1', 'TUT-MOTOR', 'purchased'),
+        _product('f1', 'TUT-FRAME', 'purchased'),
+        _product('c1', 'TUT-CTRL', 'purchased'),
+        _product('k1', 'TUT-CART', 'manufactured'),
+      ];
+      final context = MissionContext();
+      expect(productsProbe.done({'items': products}, context), isTrue);
+      for (final invalid in [
+        {'active': false},
+        {'id': ''},
+        {'product_type': 'purchased'},
+      ]) {
+        expect(
+          productsProbe.done({
+            'items': [...products.take(3), {...products.last, ...invalid}],
+          }, context),
+          isFalse,
+        );
+      }
+    });
+
     test('creating suppliers and price entries finishes the steps', () async {
       final http = FakeHttp({
         'POST /api/v1/suppliers': (b) => {
@@ -334,13 +423,142 @@ void main() {
       expect(c.read(tutorialProvider).stepIndex, 2);
     });
 
-    test('probes fast-forward over a received order', () async {
+    test(
+      'the assisted order uses three supplier price entries for thirty each',
+      () async {
+        final http = FakeHttp({
+          'GET /api/v1/suppliers/sa/products': (_) => [
+            for (final (id, price) in [
+              ('m1', '120'),
+              ('f1', '45'),
+              ('c1', '30'),
+            ])
+              {'product_id': id, 'unit_price': price},
+          ],
+          'POST /api/v1/purchase-orders': (body) {
+            expect((body as Map)['supplier_id'], 'sa');
+            expect(
+              (body['lines'] as List).map(
+                (line) =>
+                    (line['product_id'], line['quantity'], line['unit_price']),
+              ),
+              [('m1', '30', '120'), ('f1', '30', '45'), ('c1', '30', '30')],
+            );
+            return {'id': 'po1'};
+          },
+        });
+        final host = ActionHost(
+          dio: fakeDio(http),
+          context: MissionContext({..._ids, 'supplierAId': 'sa'}),
+        );
+        await buyingMission.steps.singleWhere((s) => s.id == 'order').assist!(
+          host,
+        );
+        expect(http.requests, contains('POST /api/v1/purchase-orders'));
+      },
+    );
+
+    test(
+      'assisted final receipt posts exact remaining quantities to MAIN',
+      () async {
+        final http = FakeHttp({
+          'GET /api/v1/purchase-orders/po1': (_) => {
+            'id': 'po1',
+            'supplier_id': 'sa',
+            'status': 'partially_received',
+            'lines': [
+              for (final (id, product, received) in [
+                ('line1', 'm1', '10'),
+                ('line2', 'f1', '10.25'),
+                ('line3', 'c1', '30'),
+              ])
+                {
+                  'id': id,
+                  'product_id': product,
+                  'quantity': '30',
+                  'quantity_received': received,
+                },
+            ],
+          },
+          'GET /api/v1/inventory/warehouses': (_) => [
+            _warehouse(code: 'ELSEWHERE'),
+            _warehouse(),
+          ],
+          'POST /api/v1/purchase-orders/po1/receipts': (body) {
+            expect(body, {
+              'warehouse_id': 'w1',
+              'location_id': 'l1',
+              'lines': [
+                {'po_line_id': 'line1', 'quantity': '20'},
+                {'po_line_id': 'line2', 'quantity': '19.75'},
+              ],
+            });
+            return {'id': 'receipt'};
+          },
+        });
+        final host = ActionHost(
+          dio: fakeDio(http),
+          context: MissionContext({..._ids, 'supplierAId': 'sa', 'poId': 'po1'}),
+        );
+        await buyingMission.steps
+            .singleWhere((s) => s.id == 'receiveRest')
+            .assist!(host);
+        expect(
+          http.requests,
+          contains('POST /api/v1/purchase-orders/po1/receipts'),
+        );
+      },
+    );
+
+    test('order assistance refuses to change a different purchase order', () async {
+      final http = FakeHttp({
+        'GET /api/v1/purchase-orders/po1': (_) => {
+          'id': 'po1',
+          'supplier_id': 'sa',
+          'status': 'draft',
+          'lines': [
+            for (final productId in ['m1', 'f1', 'c1'])
+              {'product_id': productId, 'quantity': '10'},
+          ],
+        },
+      });
+      final host = ActionHost(
+        dio: fakeDio(http),
+        context: MissionContext({..._ids, 'supplierAId': 'sa', 'poId': 'po1'}),
+      );
+      for (final stepId in ['approve', 'send', 'receiveRest']) {
+        final step = buyingMission.steps.singleWhere((s) => s.id == stepId);
+        await expectLater(step.assist!(host), throwsStateError);
+      }
+      expect(http.requests, everyElement('GET /api/v1/purchase-orders/po1'));
+    });
+
+    test('probes fast-forward over a received tutorial order', () async {
       final http = _withProducts({
         'GET /api/v1/purchase-orders': (_) => [
           {'id': 'po1', 'status': 'cancelled'},
+          {'id': 'other', 'status': 'received'},
           {'id': 'po2', 'status': 'received'},
         ],
-        'GET /api/v1/purchase-orders/po2': (_) => {'status': 'received'},
+        'GET /api/v1/purchase-orders/other': (_) => {
+          'id': 'other',
+          'supplier_id': 'sa',
+          'status': 'received',
+          'lines': [
+            {'product_id': 'm1', 'quantity': '30'},
+            {'product_id': 'f1', 'quantity': '30'},
+            {'product_id': 'c1', 'quantity': '5'},
+          ],
+        },
+        'GET /api/v1/purchase-orders/po2': (_) => {
+          'id': 'po2',
+          'supplier_id': 'sa',
+          'status': 'received',
+          'lines': [
+            for (final p in ['m1', 'f1', 'c1'])
+              {'product_id': p, 'quantity': '30'},
+          ],
+        },
         'GET /api/v1/inventory/warehouses': (_) => [_warehouse()],
       });
       final c = _boot(

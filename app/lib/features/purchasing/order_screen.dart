@@ -9,10 +9,11 @@ import '../../shared/actions.dart';
 import '../../shared/app_icons.dart';
 import '../../shared/format.dart';
 import '../finance/invoice_form.dart';
+import '../tutorial/controller.dart';
+import '../tutorial/targets.dart';
 import 'po_form.dart';
 import 'po_lines.dart';
 import 'receive_dialog.dart';
-import '../tutorial/targets.dart';
 
 /// A purchase order in a workspace tab: header, lines with received quantities, and the actions
 /// the status and the user's rights allow. Drafts are editable.
@@ -291,6 +292,13 @@ class _PurchaseOrderScreenState extends ConsumerState<PurchaseOrderScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(tutorialAssistCompletedProvider, (_, completed) {
+      if (completed?.missionId == 'buying' &&
+          const {'approve', 'send', 'receiveRest'}.contains(completed?.stepId) &&
+          ref.read(tutorialProvider).values['poId'] == widget.id) {
+        _load();
+      }
+    });
     final l = context.l10n;
     final po = _po;
     if (po == null) {

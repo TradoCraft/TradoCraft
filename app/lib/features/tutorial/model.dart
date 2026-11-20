@@ -180,7 +180,8 @@ class MissionStep {
     this.probe,
     this.recheckOn = const [],
     this.capture,
-  });
+    this.assist,
+  }) : assert(assist == null || probe != null);
 
   /// Short camelCase name, unique in the mission; part of the ARB keys.
   final String id;
@@ -208,6 +209,11 @@ class MissionStep {
 
   /// Values to capture from the API answer that finished the step.
   final Map<String, String> Function(Object? json)? capture;
+
+  /// Performs this step using the signed-in learner's API client. Available
+  /// only in tutorial environments. The probe verifies success and captures
+  /// the saved records, just as when resuming a step completed by hand.
+  final Future<void> Function(ActionHost host)? assist;
 }
 
 /// A chapter of the tutorial. Its title and summary are the ARB keys `tut<Id>Title` and

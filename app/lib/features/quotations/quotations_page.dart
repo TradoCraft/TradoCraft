@@ -7,6 +7,7 @@ import '../../framework/search/filter_model.dart';
 import '../../shared/app_icons.dart';
 import '../../shared/entity_list.dart';
 import '../../shared/format.dart';
+import '../tutorial/controller.dart';
 import 'quotation_repository.dart';
 import '../../l10n/l10n.dart';
 
@@ -22,6 +23,11 @@ class _QuotationsPageState extends ConsumerState<QuotationsPage> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(tutorialAssistCompletedProvider, (_, completed) {
+      if (completed?.missionId == 'quotation' && completed?.stepId == 'create') {
+        _list.currentState?.reload();
+      }
+    });
     final repo = ref.watch(quotationRepositoryProvider);
     final canWrite =
         ref.watch(meProvider).value?.permissions.contains('quotations.write') ??

@@ -8,9 +8,10 @@ import '../../shared/actions.dart';
 import '../../shared/app_icons.dart';
 import '../../shared/format.dart';
 import '../../shared/record_history.dart';
+import '../tutorial/controller.dart';
+import '../tutorial/targets.dart';
 import 'supplier_form.dart';
 import 'supplier_price_dialog.dart';
-import '../tutorial/targets.dart';
 
 /// A supplier in a workspace tab: its details (editable with the write right) and its price list.
 class SupplierScreen extends ConsumerStatefulWidget {
@@ -155,6 +156,18 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(tutorialAssistCompletedProvider, (_, completed) {
+      if (completed?.missionId != 'suppliers') return;
+      final supplier = switch (completed?.stepId) {
+        'priceMotor' || 'priceFrame' || 'priceController' => 'supplierAId',
+        'priceMotorB' => 'supplierBId',
+        _ => null,
+      };
+      if (supplier != null &&
+          ref.read(tutorialProvider).values[supplier] == widget.id) {
+        _reloadPrices();
+      }
+    });
     final l = context.l10n;
     final s = _supplier;
     if (s == null) {

@@ -6,6 +6,7 @@ import '../../shared/decimal_field.dart';
 import '../../shared/format.dart';
 import '../../l10n/l10n.dart';
 import '../../shared/app_icons.dart';
+import '../tutorial/controller.dart';
 import '../tutorial/targets.dart';
 
 final _pricesProvider = FutureProvider.autoDispose
@@ -31,6 +32,13 @@ class PricesTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen(tutorialAssistCompletedProvider, (_, completed) {
+      if (completed?.missionId == 'prices' &&
+          (completed?.stepId == 'priceExport' ||
+              completed?.stepId == 'priceHome')) {
+        ref.invalidate(_pricesProvider(product.id));
+      }
+    });
     final prices = ref.watch(_pricesProvider(product.id));
     final canWrite =
         ref.watch(meProvider).value?.permissions.contains('prices.write') ??

@@ -10,6 +10,7 @@ import '../../shared/decimal_field.dart';
 import '../../shared/format.dart';
 import '../../shared/search_picker.dart';
 import '../field/offline/kv_store.dart';
+import '../tutorial/controller.dart';
 import '../tutorial/targets.dart';
 
 /// The states a production order can be filtered on.
@@ -22,7 +23,15 @@ const productionStatuses = [
 
 /// The divisions of the company (for the filter and for choosing one).
 final divisionsProvider = FutureProvider.autoDispose<List<Division>>(
-  (ref) => ref.watch(apiProvider).production.listDivisions(),
+  (ref) {
+    ref.listen(tutorialAssistCompletedProvider, (_, completed) {
+      if (completed?.missionId == 'manufacturing' &&
+          completed?.stepId == 'division') {
+        ref.invalidateSelf();
+      }
+    });
+    return ref.watch(apiProvider).production.listDivisions();
+  },
 );
 
 /// Storage key (per user) of the remembered queue scope: `mine` or `all`.

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -10,6 +12,7 @@ import '../../l10n/l10n.dart';
 import '../../shared/app_icons.dart';
 import '../production/cost_rollup_dialog.dart';
 import '../production/work_centres_page.dart' show workCentresProvider;
+import '../tutorial/controller.dart';
 import '../tutorial/targets.dart';
 
 /// An editable operation of the routing of a draft BOM revision.
@@ -112,6 +115,7 @@ class _BomTabState extends ConsumerState<BomTab> {
       final active = revisions.where((b) => b.status == 'active').firstOrNull;
       final id = select ?? active?.id ?? revisions.firstOrNull?.id;
       final bom = id == null ? null : await _api.engineering.getBom(id: id);
+      if (!mounted) return;
       setState(() {
         _revisions = revisions;
         _setBom(bom);
@@ -120,7 +124,7 @@ class _BomTabState extends ConsumerState<BomTab> {
       if (bom != null) await _loadRouting(bom.id);
       if (active != null && _explosion == null) await _explode();
     } catch (e) {
-      setState(() => _error = errorMessage(e));
+      if (mounted) setState(() => _error = errorMessage(e));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -328,6 +332,20 @@ class _BomTabState extends ConsumerState<BomTab> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(tutorialAssistCompletedProvider, (_, completed) {
+      if (completed?.missionId != 'product' ||
+          !const {
+            'revision',
+            'lines',
+            'activate',
+          }.contains(completed?.stepId)) {
+        return;
+      }
+      final values = ref.read(tutorialProvider).values;
+      if (values['cartId'] == widget.product.id) {
+        unawaited(_load(select: values['bomId']));
+      }
+    });
     if (_loading && _bom == null) {
       return const Center(child: CircularProgressIndicator());
     }

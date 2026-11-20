@@ -2035,6 +2035,8 @@
   "tutTitle": "Tutorial",
   "tutBack": "Terug",
   "tutNext": "Volgende",
+  "tutAssist": "Voer deze stap voor mij uit",
+  "tutAssistFailed": "Deze stap kon niet worden voltooid: {reason}. Probeer het opnieuw.",
   "tutSkipStep": "Stap overslaan",
   "tutPause": "Pauzeren",
   "tutResume": "Hervatten",

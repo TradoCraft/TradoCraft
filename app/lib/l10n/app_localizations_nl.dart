@@ -6327,6 +6327,14 @@ class AppLocalizationsNl extends AppLocalizations {
   String get tutNext => 'Volgende';
 
   @override
+  String get tutAssist => 'Voer deze stap voor mij uit';
+
+  @override
+  String tutAssistFailed(String reason) {
+    return 'Deze stap kon niet worden voltooid: $reason. Probeer het opnieuw.';
+  }
+
+  @override
   String get tutSkipStep => 'Stap overslaan';
 
   @override

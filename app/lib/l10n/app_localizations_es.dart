@@ -6325,6 +6325,14 @@ class AppLocalizationsEs extends AppLocalizations {
   String get tutNext => 'Siguiente';
 
   @override
+  String get tutAssist => 'Haz este paso por mí';
+
+  @override
+  String tutAssistFailed(String reason) {
+    return 'No se pudo completar este paso: $reason. Inténtalo de nuevo.';
+  }
+
+  @override
   String get tutSkipStep => 'Omitir paso';
 
   @override

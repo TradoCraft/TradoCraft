@@ -52,12 +52,13 @@ ProviderContainer _boot(
   FakeHttp http, {
   MemoryKvStore? kv,
   List<Mission>? missions,
+  TutorialScope scope = _loc,
 }) {
   final c = ProviderContainer(
     retry: (_, _) => null,
     overrides: [
       kvStoreProvider.overrideWithValue(kv ?? MemoryKvStore()),
-      tutorialScopeProvider.overrideWithValue(_loc),
+      tutorialScopeProvider.overrideWithValue(scope),
       tutorialMissionsProvider.overrideWithValue(missions ?? [_one, _two]),
       dioProvider.overrideWith((ref) {
         final d = fakeDio(http);
@@ -131,6 +132,124 @@ bool _enabled(WidgetTester tester, Finder f) {
 }
 
 void main() {
+  testWidgets('product assistance creates and verifies the expected motor', (
+    tester,
+  ) async {
+    final products = <Map<String, Object>>[
+      {
+        'id': 'typo',
+        'code': 'tut-motor',
+        'product_type': 'purchased',
+        'active': true,
+      },
+    ];
+    final http = FakeHttp({
+      'GET /api/v1/products': (_) => {'items': products},
+      'POST /api/v1/products': (body) {
+        expect((body as Map)['code'], 'TUT-MOTOR');
+        expect(body['product_type'], 'purchased');
+        final motor = {
+          'id': 'motor',
+          'code': 'TUT-MOTOR',
+          'name': 'Motor',
+          'product_type': 'purchased',
+          'active': true,
+        };
+        products.add(motor);
+        return motor;
+      },
+    });
+    final c = _boot(http, missions: [productMission]);
+    await tester.pumpWidget(_app(c, _router()));
+    final t = await _startIn(tester, c, 'product');
+    t.routeChanged('/products');
+    await _settle(tester);
+
+    final assist = find.widgetWithText(FilledButton, 'Do this step for me');
+    expect(assist, findsOneWidget);
+    expect(find.byKey(const ValueKey('tutorial-skip')), findsNothing);
+    await tester.tap(assist);
+    await _settle(tester);
+
+    expect(t.step?.id, 'frame');
+    expect(c.read(tutorialProvider).values['motorId'], 'motor');
+    expect(products.map((p) => p['code']), ['tut-motor', 'TUT-MOTOR']);
+    final write = http.requests.indexOf('POST /api/v1/products');
+    expect(write, greaterThanOrEqualTo(1));
+    expect(http.requests[write + 1], 'GET /api/v1/products');
+  });
+
+  test(
+    'assistance stays on the step until the saved result is verified',
+    () async {
+      Map<String, Object>? motor;
+      final http = FakeHttp({
+        'GET /api/v1/products': (_) => {
+          'items': [?motor],
+        },
+        'POST /api/v1/products': (_) => {
+          'id': 'motor',
+          'code': 'TUT-MOTOR',
+          'product_type': 'purchased',
+          'active': true,
+        },
+      });
+      final c = _boot(http, missions: [productMission]);
+      final t = c.read(tutorialProvider.notifier);
+      await t.start('product');
+      t.routeChanged('/products');
+      t.skipStep();
+      expect(t.step?.id, 'motor');
+
+      // A successful response alone does not establish that later steps can find the product.
+      await t.runAction();
+      expect(t.step?.id, 'motor');
+      expect(c.read(tutorialProvider).actionError, isNotNull);
+      expect(c.read(tutorialProvider).values['motorId'], isNull);
+
+      motor = {
+        'id': 'motor',
+        'code': 'TUT-MOTOR',
+        'product_type': 'purchased',
+        'active': true,
+      };
+      await t.runAction();
+      expect(t.step?.id, 'frame');
+      expect(c.read(tutorialProvider).actionError, isNull);
+      expect(c.read(tutorialProvider).values['motorId'], 'motor');
+      expect(
+        http.requests.where((r) => r == 'POST /api/v1/products'),
+        hasLength(1),
+      );
+    },
+  );
+
+  test('assistance performs no writes in a test environment', () async {
+    final http = FakeHttp({
+      'GET /api/v1/products': (_) => {'items': []},
+    });
+    final c = _boot(
+      http,
+      missions: [productMission],
+      scope: const TutorialScope(
+        envId: 'test-copy',
+        kind: EnvironmentKind.test,
+        who: 'dev:a@x.test',
+      ),
+    );
+    final t = c.read(tutorialProvider.notifier);
+    await t.start('product');
+    t.routeChanged('/products');
+    expect(t.step?.id, 'motor');
+    expect(t.canAssist, isFalse);
+    await t.runAction();
+    expect(t.step?.id, 'motor');
+    expect(
+      http.requests.every((request) => request.startsWith('GET ')),
+      isTrue,
+    );
+  });
+
   group('narrator semantics', () {
     testWidgets(
       'the running narrator comes last in the reading order of the semantics tree',

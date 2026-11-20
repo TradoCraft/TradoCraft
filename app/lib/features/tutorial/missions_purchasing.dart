@@ -1,4 +1,14 @@
+import 'package:decimal/decimal.dart';
+
 import 'model.dart';
+
+Future<void> _post(ActionHost host, String path, {Object? data}) async {
+  await host.dio.post<Object?>('/api/v1$path', data: data);
+}
+
+String _requiredId(ActionHost host, String key) =>
+    host.context.values[key] ??
+    (throw StateError('Finish the tutorial step that supplies $key first.'));
 
 /// Chapters 2 to 4: suppliers, buying and receiving, checking the supplier invoices.
 
@@ -29,14 +39,21 @@ Map? _byField(Object? list, String field, String value) {
 Map<String, String> _captureProducts(Object? page) {
   final items = page is Map ? page['items'] : null;
   final out = <String, String>{};
-  for (final (code, key) in [
-    ('TUT-MOTOR', 'motorId'),
-    ('TUT-FRAME', 'frameId'),
-    ('TUT-CTRL', 'controllerId'),
-    ('TUT-CART', 'cartId'),
+  for (final (code, key, expectedType) in [
+    ('TUT-MOTOR', 'motorId', 'purchased'),
+    ('TUT-FRAME', 'frameId', 'purchased'),
+    ('TUT-CTRL', 'controllerId', 'purchased'),
+    ('TUT-CART', 'cartId', 'manufactured'),
   ]) {
     final p = _byField(items, 'code', code);
-    if (p != null) out[key] = '${p['id']}';
+    final id = p?['id'];
+    final type = p?['product_type'];
+    if (id is String &&
+        id.isNotEmpty &&
+        p?['active'] != false &&
+        (type == null || type == expectedType)) {
+      out[key] = id;
+    }
   }
   return out;
 }
@@ -89,12 +106,9 @@ const warehouseStep = MissionStep(
   route: '/stock/warehouses',
   targets: ['warehouse-form-save', 'warehouse-new'],
   // The texts of the later steps name the location MAIN, so only a warehouse MAIN finishes the step.
-  completion: OnApi(
-    'POST',
-    '/inventory/warehouses',
-    predicate: _isNewMain,
-  ),
+  completion: OnApi('POST', '/inventory/warehouses', predicate: _isNewMain),
   probe: warehouseProbe,
+  assist: _createMainWarehouse,
   // Reactivating or editing the warehouse or its location can satisfy the probe as well.
   recheckOn: [
     OnApi('PUT', '/inventory/warehouses/[^/]+'),
@@ -103,8 +117,21 @@ const warehouseStep = MissionStep(
   ],
 );
 
+Future<void> _createMainWarehouse(ActionHost host) => _post(
+  host,
+  '/inventory/warehouses',
+  data: {'code': 'MAIN', 'name': 'Main warehouse'},
+);
+
 Map<String, String> _idOf(Object? json, String key) =>
     json is Map ? {key: '${json['id']}'} : const {};
+
+bool _isActiveSupplier(Object? supplier, String code) =>
+    supplier is Map &&
+    supplier['code'] == code &&
+    supplier['active'] != false &&
+    supplier['id'] is String &&
+    (supplier['id'] as String).isNotEmpty;
 
 /// A step that creates the supplier [s].
 MissionStep _createSupplier(
@@ -117,17 +144,30 @@ MissionStep _createSupplier(
   completion: OnApi(
     'POST',
     '/suppliers',
-    predicate: (json, _) => json is Map && json['code'] == s.code,
+    predicate: (json, _) => _isActiveSupplier(json, s.code),
   ),
   capture: (json) => _idOf(json, s.idKey),
+  assist: (host) async {
+    final suppliers = (await host.dio.get<Object?>('/api/v1/suppliers')).data;
+    final existing = _byField(suppliers, 'code', s.code);
+    if (existing != null) {
+      if (existing['active'] == false) {
+        throw StateError('Reactivate supplier ${s.code} in Purchasing first.');
+      }
+      return;
+    }
+    await _post(
+      host,
+      '/suppliers',
+      data: {'code': s.code, 'name': s.name, 'country': 'BE'},
+    );
+  },
   probe: Probe(
     '/api/v1/suppliers',
-    done: (json, _) => _byField(json, 'code', s.code) != null,
-    capture: (json, _) {
-      final f = _byField(json, 'code', s.code);
-      return f == null ? const {} : {s.idKey: '${f['id']}'};
-    },
+    done: (json, _) => _isActiveSupplier(_byField(json, 'code', s.code), s.code),
+    capture: (json, _) => _idOf(_byField(json, 'code', s.code), s.idKey),
   ),
+  recheckOn: const [OnApi('PUT', '/suppliers/[^/]+')],
 );
 
 /// A step that gives [supplierKey] a price-list entry for [productKey].
@@ -135,6 +175,9 @@ MissionStep _price(
   String id,
   String supplierKey,
   String productKey, {
+  required String unitPrice,
+  required int leadDays,
+  required String minimum,
   bool hasHint = false,
 }) => MissionStep(
   id: id,
@@ -142,6 +185,19 @@ MissionStep _price(
   route: '/suppliers/{$supplierKey}',
   targets: const ['supplier-price-save', 'supplier-price-add'],
   completion: OnApi('POST', '/suppliers/{$supplierKey}/products/{$productKey}'),
+  assist: (host) {
+    final supplier = _requiredId(host, supplierKey);
+    final product = _requiredId(host, productKey);
+    return _post(
+      host,
+      '/suppliers/$supplier/products/$product',
+      data: {
+        'unit_price': unitPrice,
+        'lead_time_days': leadDays,
+        'moq': minimum,
+      },
+    );
+  },
   probe: Probe(
     '/api/v1/suppliers/{$supplierKey}/products',
     done: (json, ctx) =>
@@ -166,15 +222,44 @@ final suppliersMission = Mission(
       route: '/suppliers/{supplierAId}',
       completion: const OnRoute('/suppliers/{supplierAId}'),
     ),
-    _price('priceMotor', 'supplierAId', 'motorId', hasHint: true),
-    _price('priceFrame', 'supplierAId', 'frameId'),
-    _price('priceController', 'supplierAId', 'controllerId'),
+    _price(
+      'priceMotor',
+      'supplierAId',
+      'motorId',
+      unitPrice: '120',
+      leadDays: 14,
+      minimum: '5',
+      hasHint: true,
+    ),
+    _price(
+      'priceFrame',
+      'supplierAId',
+      'frameId',
+      unitPrice: '45',
+      leadDays: 10,
+      minimum: '5',
+    ),
+    _price(
+      'priceController',
+      'supplierAId',
+      'controllerId',
+      unitPrice: '30',
+      leadDays: 7,
+      minimum: '5',
+    ),
     MissionStep(
       id: 'openB',
       route: '/suppliers/{supplierBId}',
       completion: const OnRoute('/suppliers/{supplierBId}'),
     ),
-    _price('priceMotorB', 'supplierBId', 'motorId'),
+    _price(
+      'priceMotorB',
+      'supplierBId',
+      'motorId',
+      unitPrice: '135',
+      leadDays: 5,
+      minimum: '1',
+    ),
     const MissionStep(id: 'done'),
   ],
 );
@@ -199,12 +284,125 @@ bool _poHasComponents(Object? json, MissionContext ctx) {
   return lines.length >= 3;
 }
 
-Map? _activeOrder(Object? list) {
-  if (list is! List) return null;
-  for (final o in list) {
-    if (o is Map && o['status'] != 'cancelled') return o;
+bool _isTutorialOrder(Object? order, MissionContext ctx) {
+  if (order is! Map ||
+      order['id'] is! String ||
+      ctx.values[tutorialSupplierA.idKey] == null ||
+      order['supplier_id'] != ctx.values[tutorialSupplierA.idKey] ||
+      order['status'] == 'cancelled') {
+    return false;
   }
-  return null;
+  final lines = order['lines'];
+  if (lines is! List || lines.length != _componentKeys.length) return false;
+  final expected = _componentKeys.map((key) => ctx.values[key]).toSet();
+  return !expected.contains(null) &&
+      expected.length == lines.length &&
+      lines.every(
+        (l) =>
+            l is Map &&
+            expected.remove(l['product_id']) &&
+            num.tryParse('${l['quantity']}') == 30,
+      );
+}
+
+Map? _tutorialOrder(Object? list, MissionContext ctx) {
+  if (list is! List) return null;
+  return list.whereType<Map>().where((o) => _isTutorialOrder(o, ctx)).firstOrNull;
+}
+
+List<String> _purchaseOrderDetails(Object? list, MissionContext ctx) => [
+  if (list is List)
+    for (final o in list)
+      if (o is Map && o['status'] != 'cancelled' && o['id'] is String)
+        '/api/v1/purchase-orders/${o['id']}',
+];
+
+Future<void> _createTutorialOrder(ActionHost host) async {
+  final supplier = _requiredId(host, tutorialSupplierA.idKey);
+  final prices = (await host.dio.get<Object?>(
+    '/api/v1/suppliers/$supplier/products',
+  )).data;
+  final lines = <Map<String, Object?>>[];
+  for (final key in _componentKeys) {
+    final product = _requiredId(host, key);
+    final price = _byField(prices, 'product_id', product);
+    if (price == null) {
+      throw StateError(
+        'Add all three tutorial prices for Voltaic Drives Ltd first.',
+      );
+    }
+    lines.add({
+      'product_id': product,
+      'quantity': '30',
+      'unit_price': price['unit_price'],
+      'supplier_product_code': price['supplier_product_code'],
+    });
+  }
+  await _post(
+    host,
+    '/purchase-orders',
+    data: {'supplier_id': supplier, 'lines': lines},
+  );
+}
+
+Future<Map<String, dynamic>> _getTutorialOrder(ActionHost host) async {
+  final orderPath = '/purchase-orders/${_requiredId(host, 'poId')}';
+  final order = (await host.dio.get<Map<String, dynamic>>('/api/v1$orderPath'))
+      .data;
+  if (order == null || !_isTutorialOrder(order, host.context)) {
+    throw StateError(
+      'Use the tutorial purchase order with 30 of each component or complete this step by hand.',
+    );
+  }
+  return order;
+}
+
+Future<void> _approveTutorialOrder(ActionHost host) async {
+  final order = await _getTutorialOrder(host);
+  await _post(host, '/purchase-orders/${order['id']}/approve');
+}
+
+Future<void> _sendTutorialOrder(ActionHost host) async {
+  final order = await _getTutorialOrder(host);
+  await _post(host, '/purchase-orders/${order['id']}/send');
+}
+
+Future<void> _receiveRemainingGoods(ActionHost host) async {
+  final order = await _getTutorialOrder(host);
+  final warehouses = (await host.dio.get<List<dynamic>>(
+    '/api/v1/inventory/warehouses',
+  )).data;
+  final warehouse = warehouses
+      ?.whereType<Map>()
+      .where(_isMainWarehouse)
+      .firstOrNull;
+  if (warehouse == null) {
+    throw StateError(
+      'Create or reactivate the MAIN warehouse and location first.',
+    );
+  }
+  final location = (warehouse['locations'] as List).whereType<Map>().firstWhere(
+    (l) => l['code'] == 'MAIN' && l['active'] != false,
+  );
+  final lines = <Map<String, Object?>>[];
+  for (final line in (order['lines'] as List).cast<Map>()) {
+    final remaining =
+        Decimal.parse('${line['quantity']}') -
+        Decimal.parse('${line['quantity_received']}');
+    if (remaining > Decimal.zero) {
+      lines.add({'po_line_id': line['id'], 'quantity': remaining.toString()});
+    }
+  }
+  if (lines.isEmpty) return;
+  await _post(
+    host,
+    '/purchase-orders/${order['id']}/receipts',
+    data: {
+      'warehouse_id': warehouse['id'],
+      'location_id': location['id'],
+      'lines': lines,
+    },
+  );
 }
 
 /// Chapter 3: a purchase order, approved, sent, received in two steps; then the stock.
@@ -231,12 +429,14 @@ final buyingMission = Mission(
             _poHasComponents(json, ctx),
       ),
       capture: (json) => _idOf(json, 'poId'),
+      assist: _createTutorialOrder,
       probe: Probe(
         '/api/v1/purchase-orders',
         query: {'supplier_id': '{supplierAId}'},
-        done: (json, _) => _activeOrder(json) != null,
-        capture: (json, _) {
-          final o = _activeOrder(json);
+        expand: _purchaseOrderDetails,
+        done: (json, ctx) => _tutorialOrder(json, ctx) != null,
+        capture: (json, ctx) {
+          final o = _tutorialOrder(json, ctx);
           return o == null ? const {} : {'poId': '${o['id']}'};
         },
       ),
@@ -251,6 +451,7 @@ final buyingMission = Mission(
       route: '/purchase-orders/{poId}',
       targets: const ['po-approve'],
       completion: const OnApi('POST', '/purchase-orders/{poId}/approve'),
+      assist: _approveTutorialOrder,
       probe: Probe(
         '/api/v1/purchase-orders/{poId}',
         done: (json, _) => _poHasStatus(json, _approvedOrLater),
@@ -261,6 +462,7 @@ final buyingMission = Mission(
       route: '/purchase-orders/{poId}',
       targets: const ['po-send'],
       completion: const OnApi('POST', '/purchase-orders/{poId}/send'),
+      assist: _sendTutorialOrder,
       probe: Probe(
         '/api/v1/purchase-orders/{poId}',
         done: (json, _) => _poHasStatus(json, _sentOrLater),
@@ -291,6 +493,7 @@ final buyingMission = Mission(
       route: '/purchase-orders/{poId}',
       targets: const ['po-receive-submit', 'po-receive'],
       completion: const OnApi('POST', '/purchase-orders/{poId}/receipts'),
+      assist: _receiveRemainingGoods,
       probe: Probe(
         '/api/v1/purchase-orders/{poId}',
         done: (json, _) => _poHasStatus(json, {'received'}),
