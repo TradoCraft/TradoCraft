@@ -29,7 +29,7 @@ const CHANNEL_CAPACITY: usize = 1024;
 pub struct RecordEvent {
     #[serde(skip_serializing, default)]
     pub company_id: Uuid,
-    /// `customer` | `quotation` | `order` | `ticket`
+    /// `customer` | `quotation` | `order` | `opportunity` | `ticket`
     pub entity_type: String,
     pub record_id: Uuid,
     pub version: i64,
@@ -38,6 +38,8 @@ pub struct RecordEvent {
     /// `updated` (a save), or for tickets (A8) `note`, `escalated`, `delegated`, `tag`, `time`,
     /// `merge`, `split`, `attachment`, `checklist` and `presence` (someone arrived or started
     /// or stopped replying; the version did not move). `resync` is only produced by the client.
+    /// The chatter (ADR 0086) publishes `chatter_note`, `chatter_activity` and `chatter_followers`
+    /// without moving the version.
     pub kind: String,
     pub summary: Option<String>,
     pub at: DateTime<Utc>,
@@ -95,7 +97,7 @@ impl LiveEvents {
 
 #[derive(Debug, Deserialize, IntoParams)]
 pub struct RecordEventsQuery {
-    /// `customer` | `quotation` | `order` | `ticket`
+    /// `customer` | `quotation` | `order` | `opportunity` | `ticket`
     pub entity_type: String,
     pub record_id: Uuid,
 }
@@ -105,6 +107,7 @@ fn permission_for(entity_type: &str) -> AppResult<Permission> {
         "customer" => Ok(Permission::CustomersRead),
         "quotation" => Ok(Permission::QuotationsRead),
         "order" => Ok(Permission::OrdersRead),
+        "opportunity" => Ok(Permission::OpportunitiesRead),
         "ticket" => Ok(Permission::HelpdeskRead),
         _ => Err(AppError::Validation(format!(
             "unsupported entity_type: {entity_type}"

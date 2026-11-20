@@ -1,6 +1,6 @@
 # 0086 — Generic chatter, followers and activities
 
-**Status:** Proposed (UI framework phase 4; builds on [ADR 0023](0023-helpdesk-collaboration.md),
+**Status:** Accepted (in implementation) (UI framework phase 4; builds on [ADR 0023](0023-helpdesk-collaboration.md),
 [ADR 0059](0059-audit-trail-viewer.md), [ADR 0061](0061-todo-items.md),
 [ADR 0073](0073-concurrent-edit-protection.md), [ADR 0075](0075-helpdesk-live-ticket-updates.md)
 and [ADR 0085](0085-generic-form-view.md))
@@ -93,8 +93,8 @@ usual, ADR 0005):
   …/activities/{id}/done {note?}`; `PATCH`/`DELETE …/activities/{id}` (creator or assignee).
 - `GET …/followers`; `PUT`/`DELETE …/follow` (yourself); `POST …/followers {user_id}`;
   `DELETE …/followers/{user_id}` (write permission).
-- `POST …/read` sets `last_read_at`; `GET /chatter/unread` returns record addresses with
-  something new for the caller (followed records only), for the notifications centre.
+- `POST …/read` sets `last_read_at`; `GET /chatter/inbox` returns the records with something new for the
+  caller (followed records only) and the activities due, for the notifications centre.
 
 *Live updates.* Each mutation publishes a `RecordEvent` after the commit on the existing channel
 (ADR 0073, 0075) with `entity_type` = the record kind, new kinds `chatter_note`,
@@ -103,8 +103,8 @@ form is never made stale by a note. The app's chatter panel subscribes through t
 controller that already holds the subscription and reloads only the thread.
 
 *Notifications.* In-app only in this step: the notifications centre (ADR 0080) merges a server
-feed of (a) activities assigned to or due for the user and (b) followed records with new
-messages since `last_read_at`, never the user's own. No mail on a note; assignment of an activity
+feed (`GET /chatter/inbox`) of (a) the user's open activities due today or earlier and (b)
+followed records with messages by others since `last_read_at`. No mail on a note; assignment of an activity
 to someone else sends the same single plain mail as an escalation (ADR 0023: user's language,
 one per assignee and record per 10 minutes). Mentions (`@name`) are **not** part of this step.
 
@@ -138,16 +138,23 @@ through the same read endpoints (a `kind = 'ticket'` adapter) and then decide ab
 - Following is per user and company; leaving a company drops nothing, the rows are filtered by
   the active company.
 
+**Step by step.** The first step (this change) delivers notes, followers, activities, the inbox,
+live events and change messages for customers. Still to follow in this ADR's scope: change
+messages for quotations, orders and opportunities (`chatter::track` next to their
+`audit::record` calls), file attachments on notes (`chatter.message_files` and the upload
+endpoint, reusing `core::files`), the activity mail to a new assignee, `PATCH` of an activity,
+and the worker pass that removes rows of deleted records.
+
 **Not yet.** Mentions and mail on notes; activity types defined per company; recurring
 activities; editing history of notes; reactions and threads; rich text and inline images;
 attachments on activities; calendar view of activities (UI framework phase 5); email-in to a
 record; migrating tickets, orders-from-tickets and field jobs onto the generic panel; a
 server-side unread count on lists.
 
-**Open questions (to decide before accepting).**
+**Decided.**
 
-1. Who may post: write permission (proposed) or read permission, so read-only staff can comment.
-2. One shared `RecordKind` for to-dos and chatter (proposed) or a separate list per feature.
-3. Whether activities should be allowed on kinds with no module permission of their own
-   (`kb_entry`, `stock_count`) in the first cut, or limited to customers, quotations, orders and
-   opportunities.
+1. Posting a note, scheduling or completing an activity and adding another follower need the
+   kind's **write** permission; reading and following oneself need **read**.
+2. To-dos and chatter share one `RecordKind` list.
+3. The first cut supports `customer`, `quotation`, `order` and `opportunity` only. The enum and
+   the `CHECK` list exactly these four; more kinds are one variant and one migration each.

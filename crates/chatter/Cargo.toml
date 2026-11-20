@@ -1,0 +1,18 @@
+[package]
+name = "tradocraft-chatter"
+description = "Chatter on records: notes, curated change messages, followers and scheduled activities."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+tradocraft-core.workspace = true
+axum.workspace = true
+chrono.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sqlx.workspace = true
+utoipa.workspace = true
+utoipa-axum.workspace = true
+uuid.workspace = true

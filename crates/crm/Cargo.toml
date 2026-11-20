@@ -7,6 +7,7 @@ publish.workspace = true
 
 [dependencies]
 tradocraft-core.workspace = true
+tradocraft-chatter.workspace = true
 tradocraft-pricing.workspace = true
 tradocraft-products.workspace = true
 axum.workspace = true
