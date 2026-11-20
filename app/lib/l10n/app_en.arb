@@ -4927,5 +4927,17 @@
   "notificationsChatterUnread": "{count, plural, =1{1 new message on {label}} other{{count} new messages on {label}}}",
   "@notificationsChatterUnread": {"placeholders": {"count": {"type": "int"}, "label": {"type": "String"}}},
   "notificationsActivityDue": "{kind}: {summary}",
-  "@notificationsActivityDue": {"placeholders": {"kind": {"type": "String"}, "summary": {"type": "String"}}}
+  "@notificationsActivityDue": {"placeholders": {"kind": {"type": "String"}, "summary": {"type": "String"}}},
+  "kanbanMoveTo": "Move to…",
+  "kanbanMoveToColumn": "Move to {column}",
+  "@kanbanMoveToColumn": {"placeholders": {"column": {"type": "String"}}},
+  "kanbanEmpty": "Nothing here",
+  "kanbanMore": "{count, plural, =1{Show 1 more} other{Show {count} more}}",
+  "@kanbanMore": {"placeholders": {"count": {"type": "int"}}},
+  "kanbanColumnFailed": "This column could not be loaded.",
+  "kanbanAdd": "Add to {column}",
+  "@kanbanAdd": {"placeholders": {"column": {"type": "String"}}},
+  "kanbanViewList": "List",
+  "kanbanViewBoard": "Board",
+  "kanbanLostCancelled": "Moved back: a reason is needed to mark an opportunity as lost."
 }

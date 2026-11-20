@@ -10951,4 +10951,44 @@ class AppLocalizationsEs extends AppLocalizations {
   String notificationsActivityDue(String kind, String summary) {
     return '$kind: $summary';
   }
+
+  @override
+  String get kanbanMoveTo => 'Mover a…';
+
+  @override
+  String kanbanMoveToColumn(String column) {
+    return 'Mover a $column';
+  }
+
+  @override
+  String get kanbanEmpty => 'Nada aquí';
+
+  @override
+  String kanbanMore(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Mostrar $count más',
+      one: 'Mostrar 1 más',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get kanbanColumnFailed => 'No se pudo cargar esta columna.';
+
+  @override
+  String kanbanAdd(String column) {
+    return 'Añadir a $column';
+  }
+
+  @override
+  String get kanbanViewList => 'Lista';
+
+  @override
+  String get kanbanViewBoard => 'Tablero';
+
+  @override
+  String get kanbanLostCancelled =>
+      'Devuelta: se necesita un motivo para marcar una oportunidad como perdida.';
 }

@@ -3380,5 +3380,14 @@
   "chatterLoadFailed": "No se pudieron cargar los mensajes.",
   "chatterRetry": "Reintentar",
   "notificationsChatterUnread": "{count, plural, =1{1 mensaje nuevo en {label}} other{{count} mensajes nuevos en {label}}}",
-  "notificationsActivityDue": "{kind}: {summary}"
+  "notificationsActivityDue": "{kind}: {summary}",
+  "kanbanMoveTo": "Mover a…",
+  "kanbanMoveToColumn": "Mover a {column}",
+  "kanbanEmpty": "Nada aquí",
+  "kanbanMore": "{count, plural, =1{Mostrar 1 más} other{Mostrar {count} más}}",
+  "kanbanColumnFailed": "No se pudo cargar esta columna.",
+  "kanbanAdd": "Añadir a {column}",
+  "kanbanViewList": "Lista",
+  "kanbanViewBoard": "Tablero",
+  "kanbanLostCancelled": "Devuelta: se necesita un motivo para marcar una oportunidad como perdida."
 }

@@ -3380,5 +3380,14 @@
   "chatterLoadFailed": "Les messages n'ont pas pu être chargés.",
   "chatterRetry": "Réessayer",
   "notificationsChatterUnread": "{count, plural, =1{1 nouveau message sur {label}} other{{count} nouveaux messages sur {label}}}",
-  "notificationsActivityDue": "{kind} : {summary}"
+  "notificationsActivityDue": "{kind} : {summary}",
+  "kanbanMoveTo": "Déplacer vers…",
+  "kanbanMoveToColumn": "Déplacer vers {column}",
+  "kanbanEmpty": "Rien ici",
+  "kanbanMore": "{count, plural, =1{Afficher 1 de plus} other{Afficher {count} de plus}}",
+  "kanbanColumnFailed": "Cette colonne n'a pas pu être chargée.",
+  "kanbanAdd": "Ajouter à {column}",
+  "kanbanViewList": "Liste",
+  "kanbanViewBoard": "Tableau",
+  "kanbanLostCancelled": "Remis en place : un motif est requis pour marquer une opportunité comme perdue."
 }

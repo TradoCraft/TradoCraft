@@ -3380,5 +3380,14 @@
   "chatterLoadFailed": "Die Nachrichten konnten nicht geladen werden.",
   "chatterRetry": "Erneut versuchen",
   "notificationsChatterUnread": "{count, plural, =1{1 neue Nachricht bei {label}} other{{count} neue Nachrichten bei {label}}}",
-  "notificationsActivityDue": "{kind}: {summary}"
+  "notificationsActivityDue": "{kind}: {summary}",
+  "kanbanMoveTo": "Verschieben nach…",
+  "kanbanMoveToColumn": "Nach {column} verschieben",
+  "kanbanEmpty": "Nichts hier",
+  "kanbanMore": "{count, plural, =1{1 weitere anzeigen} other{{count} weitere anzeigen}}",
+  "kanbanColumnFailed": "Diese Spalte konnte nicht geladen werden.",
+  "kanbanAdd": "Zu {column} hinzufügen",
+  "kanbanViewList": "Liste",
+  "kanbanViewBoard": "Board",
+  "kanbanLostCancelled": "Zurückgesetzt: Für eine verlorene Chance ist ein Grund nötig."
 }

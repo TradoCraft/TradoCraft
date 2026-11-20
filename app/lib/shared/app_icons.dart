@@ -161,6 +161,7 @@ abstract final class AppIcons {
   static const IconData upgrade = Icons.upgrade;
   static const IconData verified = Icons.verified_outlined;
   static const IconData viewList = Icons.view_list_outlined;
+  static const IconData viewKanban = Icons.view_kanban_outlined;
   static const IconData visibility = Icons.visibility_outlined;
   static const IconData visibilityOff = Icons.visibility_off_outlined;
   static const IconData warehouse = Icons.warehouse_outlined;

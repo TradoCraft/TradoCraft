@@ -3380,5 +3380,14 @@
   "chatterLoadFailed": "De berichten konden niet geladen worden.",
   "chatterRetry": "Opnieuw proberen",
   "notificationsChatterUnread": "{count, plural, =1{1 nieuw bericht bij {label}} other{{count} nieuwe berichten bij {label}}}",
-  "notificationsActivityDue": "{kind}: {summary}"
+  "notificationsActivityDue": "{kind}: {summary}",
+  "kanbanMoveTo": "Verplaatsen naar…",
+  "kanbanMoveToColumn": "Verplaats naar {column}",
+  "kanbanEmpty": "Niets hier",
+  "kanbanMore": "{count, plural, =1{Toon nog 1} other{Toon nog {count}}}",
+  "kanbanColumnFailed": "Deze kolom kon niet geladen worden.",
+  "kanbanAdd": "Toevoegen aan {column}",
+  "kanbanViewList": "Lijst",
+  "kanbanViewBoard": "Bord",
+  "kanbanLostCancelled": "Teruggezet: voor een verloren kans is een reden nodig."
 }

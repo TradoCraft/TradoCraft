@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/api.dart';
+import '../../shared/app_icons.dart';
 import '../../shared/entity_list.dart';
 import '../../shared/format.dart';
+import 'opportunities_board.dart';
 import 'opportunity_form.dart';
 import '../../l10n/l10n.dart';
 
@@ -23,6 +25,7 @@ class _OpportunitiesPageState extends ConsumerState<OpportunitiesPage> {
   final _list = GlobalKey<EntityListState<Opportunity>>();
   OpportunityStage? _stage;
   bool _openOnly = true;
+  bool _board = false;
 
   void _reload() {
     ref.invalidate(pipelineProvider);
@@ -45,7 +48,7 @@ class _OpportunitiesPageState extends ConsumerState<OpportunitiesPage> {
             ?.permissions
             .contains('opportunities.write') ??
         false;
-    return Column(
+    final list = Column(
       children: [
         _Pipeline(
           selected: _stage,
@@ -116,6 +119,35 @@ class _OpportunitiesPageState extends ConsumerState<OpportunitiesPage> {
             onOpen: _openOpportunity,
           ),
         ),
+      ],
+    );
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: SegmentedButton<bool>(
+              key: const ValueKey('opportunities-view'),
+              showSelectedIcon: false,
+              segments: [
+                ButtonSegment(
+                  value: false,
+                  icon: const Icon(AppIcons.viewList),
+                  label: Text(context.l10n.kanbanViewList),
+                ),
+                ButtonSegment(
+                  value: true,
+                  icon: const Icon(AppIcons.viewKanban),
+                  label: Text(context.l10n.kanbanViewBoard),
+                ),
+              ],
+              selected: {_board},
+              onSelectionChanged: (s) => setState(() => _board = s.first),
+            ),
+          ),
+        ),
+        Expanded(child: _board ? const OpportunitiesBoard() : list),
       ],
     );
   }
