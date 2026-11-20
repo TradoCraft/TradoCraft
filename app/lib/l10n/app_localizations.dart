@@ -19319,6 +19319,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Moved back: a reason is needed to mark an opportunity as lost.'**
   String get kanbanLostCancelled;
+
+  /// No description provided for @ticketsBoardCloseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Close this ticket?'**
+  String get ticketsBoardCloseTitle;
+
+  /// No description provided for @ticketsBoardCloseBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Closing {number} can send the customer a satisfaction survey, which cannot be taken back.'**
+  String ticketsBoardCloseBody(String number);
+
+  /// No description provided for @ticketsBoardClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close ticket'**
+  String get ticketsBoardClose;
 }
 
 class _AppLocalizationsDelegate

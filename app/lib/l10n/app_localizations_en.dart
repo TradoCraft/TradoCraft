@@ -10939,4 +10939,15 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get kanbanLostCancelled =>
       'Moved back: a reason is needed to mark an opportunity as lost.';
+
+  @override
+  String get ticketsBoardCloseTitle => 'Close this ticket?';
+
+  @override
+  String ticketsBoardCloseBody(String number) {
+    return 'Closing $number can send the customer a satisfaction survey, which cannot be taken back.';
+  }
+
+  @override
+  String get ticketsBoardClose => 'Close ticket';
 }

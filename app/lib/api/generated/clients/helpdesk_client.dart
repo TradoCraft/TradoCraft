@@ -60,6 +60,7 @@ import '../models/ticket_detail.dart';
 import '../models/ticket_input.dart';
 import '../models/ticket_links.dart';
 import '../models/ticket_page.dart';
+import '../models/ticket_status_input.dart';
 import '../models/time_entries.dart';
 import '../models/time_entry_input.dart';
 import '../models/timeline_item.dart';
@@ -580,6 +581,17 @@ abstract class HelpdeskClient {
   Future<TicketDetail> splitTicket({
     @Path('id') required String id,
     @Body() required SplitInput body,
+  });
+
+  /// Changes only the status of a ticket, the way the ticket screen does when it saves a new one:.
+  /// the automation rules run, the SLA is recalculated, a timeline event is written, and closing is.
+  /// refused (409 `checklist_incomplete`) while the team requires the checklist to be done. Closing.
+  /// also queues the customer's satisfaction survey once, as it does everywhere else. The same.
+  /// status again changes nothing.
+  @POST('/api/v1/tickets/{id}/status')
+  Future<TicketDetail> changeTicketStatus({
+    @Path('id') required String id,
+    @Body() required TicketStatusInput body,
   });
 
   @POST('/api/v1/tickets/{id}/tags')

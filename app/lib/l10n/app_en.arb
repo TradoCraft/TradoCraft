@@ -4939,5 +4939,9 @@
   "@kanbanAdd": {"placeholders": {"column": {"type": "String"}}},
   "kanbanViewList": "List",
   "kanbanViewBoard": "Board",
-  "kanbanLostCancelled": "Moved back: a reason is needed to mark an opportunity as lost."
+  "kanbanLostCancelled": "Moved back: a reason is needed to mark an opportunity as lost.",
+  "ticketsBoardCloseTitle": "Close this ticket?",
+  "ticketsBoardCloseBody": "Closing {number} can send the customer a satisfaction survey, which cannot be taken back.",
+  "@ticketsBoardCloseBody": {"placeholders": {"number": {"type": "String"}}},
+  "ticketsBoardClose": "Close ticket"
 }

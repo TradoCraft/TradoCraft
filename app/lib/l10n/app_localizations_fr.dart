@@ -11003,4 +11003,15 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get kanbanLostCancelled =>
       'Remis en place : un motif est requis pour marquer une opportunité comme perdue.';
+
+  @override
+  String get ticketsBoardCloseTitle => 'Clôturer ce ticket ?';
+
+  @override
+  String ticketsBoardCloseBody(String number) {
+    return 'La clôture de $number peut envoyer une enquête de satisfaction au client, ce qui est irréversible.';
+  }
+
+  @override
+  String get ticketsBoardClose => 'Clôturer le ticket';
 }

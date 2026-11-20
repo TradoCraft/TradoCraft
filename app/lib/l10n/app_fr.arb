@@ -3389,5 +3389,8 @@
   "kanbanAdd": "Ajouter à {column}",
   "kanbanViewList": "Liste",
   "kanbanViewBoard": "Tableau",
-  "kanbanLostCancelled": "Remis en place : un motif est requis pour marquer une opportunité comme perdue."
+  "kanbanLostCancelled": "Remis en place : un motif est requis pour marquer une opportunité comme perdue.",
+  "ticketsBoardCloseTitle": "Clôturer ce ticket ?",
+  "ticketsBoardCloseBody": "La clôture de {number} peut envoyer une enquête de satisfaction au client, ce qui est irréversible.",
+  "ticketsBoardClose": "Clôturer le ticket"
 }

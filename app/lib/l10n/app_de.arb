@@ -3389,5 +3389,8 @@
   "kanbanAdd": "Zu {column} hinzufügen",
   "kanbanViewList": "Liste",
   "kanbanViewBoard": "Board",
-  "kanbanLostCancelled": "Zurückgesetzt: Für eine verlorene Chance ist ein Grund nötig."
+  "kanbanLostCancelled": "Zurückgesetzt: Für eine verlorene Chance ist ein Grund nötig.",
+  "ticketsBoardCloseTitle": "Dieses Ticket schließen?",
+  "ticketsBoardCloseBody": "Beim Schließen von {number} kann der Kunde eine Zufriedenheitsumfrage erhalten; das lässt sich nicht zurücknehmen.",
+  "ticketsBoardClose": "Ticket schließen"
 }

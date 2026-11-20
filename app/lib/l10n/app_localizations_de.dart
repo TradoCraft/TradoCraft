@@ -11017,4 +11017,15 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get kanbanLostCancelled =>
       'Zurückgesetzt: Für eine verlorene Chance ist ein Grund nötig.';
+
+  @override
+  String get ticketsBoardCloseTitle => 'Dieses Ticket schließen?';
+
+  @override
+  String ticketsBoardCloseBody(String number) {
+    return 'Beim Schließen von $number kann der Kunde eine Zufriedenheitsumfrage erhalten; das lässt sich nicht zurücknehmen.';
+  }
+
+  @override
+  String get ticketsBoardClose => 'Ticket schließen';
 }
