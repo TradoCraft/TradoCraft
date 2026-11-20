@@ -254,9 +254,10 @@ pub fn attachment_response(
                 axum::http::header::CONTENT_DISPOSITION,
                 format!("attachment; filename=\"{ascii}\"; filename*=UTF-8''{encoded}"),
             ),
+            // A document download is not kept by browsers or proxies: access can be withdrawn.
             (
                 axum::http::header::CACHE_CONTROL,
-                "private, max-age=86400".to_string(),
+                "private, no-store".to_string(),
             ),
             (
                 axum::http::header::X_CONTENT_TYPE_OPTIONS,

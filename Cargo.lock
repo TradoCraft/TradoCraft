@@ -3443,6 +3443,7 @@ dependencies = [
  "tower-http 0.7.1",
  "tracing",
  "tracing-subscriber",
+ "tradocraft-chatter",
  "tradocraft-configurator",
  "tradocraft-core",
  "tradocraft-crm",
@@ -3468,6 +3469,21 @@ dependencies = [
  "utoipa-scalar",
  "uuid",
  "zip",
+]
+
+[[package]]
+name = "tradocraft-chatter"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "chrono",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "tradocraft-core",
+ "utoipa",
+ "utoipa-axum",
+ "uuid",
 ]
 
 [[package]]
@@ -3533,6 +3549,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sqlx",
+ "tradocraft-chatter",
  "tradocraft-core",
  "tradocraft-pricing",
  "tradocraft-products",
@@ -3930,6 +3947,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sqlx",
+ "tradocraft-chatter",
  "tradocraft-core",
  "tradocraft-crm",
  "tradocraft-documents",
@@ -3967,6 +3985,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
+ "tradocraft-chatter",
  "tradocraft-core",
  "tradocraft-fieldservice",
  "tradocraft-helpdesk",

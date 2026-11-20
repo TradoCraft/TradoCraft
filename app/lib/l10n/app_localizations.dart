@@ -18990,6 +18990,282 @@ abstract class AppLocalizations {
   /// **'Unsaved changes'**
   String get formUnsavedChanges;
 
+  /// No description provided for @chatterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chatter'**
+  String get chatterTitle;
+
+  /// No description provided for @chatterNoteHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Write a note…'**
+  String get chatterNoteHint;
+
+  /// No description provided for @chatterPost.
+  ///
+  /// In en, this message translates to:
+  /// **'Post'**
+  String get chatterPost;
+
+  /// No description provided for @chatterEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No messages yet.'**
+  String get chatterEmpty;
+
+  /// No description provided for @chatterEdited.
+  ///
+  /// In en, this message translates to:
+  /// **'edited'**
+  String get chatterEdited;
+
+  /// No description provided for @chatterEditNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get chatterEditNote;
+
+  /// No description provided for @chatterDeleteNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get chatterDeleteNote;
+
+  /// No description provided for @chatterSaveNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get chatterSaveNote;
+
+  /// No description provided for @chatterLoadOlder.
+  ///
+  /// In en, this message translates to:
+  /// **'Show older'**
+  String get chatterLoadOlder;
+
+  /// No description provided for @chatterFollow.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow'**
+  String get chatterFollow;
+
+  /// No description provided for @chatterFollowing.
+  ///
+  /// In en, this message translates to:
+  /// **'Following'**
+  String get chatterFollowing;
+
+  /// No description provided for @chatterFollowers.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No followers} =1{1 follower} other{{count} followers}}'**
+  String chatterFollowers(int count);
+
+  /// No description provided for @chatterActivities.
+  ///
+  /// In en, this message translates to:
+  /// **'Activities'**
+  String get chatterActivities;
+
+  /// No description provided for @chatterSchedule.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule activity'**
+  String get chatterSchedule;
+
+  /// No description provided for @chatterKindTodo.
+  ///
+  /// In en, this message translates to:
+  /// **'To do'**
+  String get chatterKindTodo;
+
+  /// No description provided for @chatterKindCall.
+  ///
+  /// In en, this message translates to:
+  /// **'Call'**
+  String get chatterKindCall;
+
+  /// No description provided for @chatterKindEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'E-mail'**
+  String get chatterKindEmail;
+
+  /// No description provided for @chatterKindMeeting.
+  ///
+  /// In en, this message translates to:
+  /// **'Meeting'**
+  String get chatterKindMeeting;
+
+  /// No description provided for @chatterSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary'**
+  String get chatterSummary;
+
+  /// No description provided for @chatterAssignee.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned to'**
+  String get chatterAssignee;
+
+  /// No description provided for @chatterDueDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Due'**
+  String get chatterDueDate;
+
+  /// No description provided for @chatterNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get chatterNote;
+
+  /// No description provided for @chatterMarkDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark done'**
+  String get chatterMarkDone;
+
+  /// No description provided for @chatterDoneNote.
+  ///
+  /// In en, this message translates to:
+  /// **'What came of it? (optional)'**
+  String get chatterDoneNote;
+
+  /// No description provided for @chatterOverdue.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue'**
+  String get chatterOverdue;
+
+  /// No description provided for @chatterDueOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Due {date}'**
+  String chatterDueOn(String date);
+
+  /// No description provided for @chatterSystemActor.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get chatterSystemActor;
+
+  /// No description provided for @chatterChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'{who} changed {field}: {from} → {to}'**
+  String chatterChanged(String who, String field, String from, String to);
+
+  /// No description provided for @chatterActivityDone.
+  ///
+  /// In en, this message translates to:
+  /// **'{who} completed {kind}: {summary}'**
+  String chatterActivityDone(String who, String kind, String summary);
+
+  /// No description provided for @chatterFieldName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get chatterFieldName;
+
+  /// No description provided for @chatterFieldVatNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'VAT number'**
+  String get chatterFieldVatNumber;
+
+  /// No description provided for @chatterFieldVatRegime.
+  ///
+  /// In en, this message translates to:
+  /// **'VAT regime'**
+  String get chatterFieldVatRegime;
+
+  /// No description provided for @chatterFieldEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'E-mail'**
+  String get chatterFieldEmail;
+
+  /// No description provided for @chatterFieldPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone'**
+  String get chatterFieldPhone;
+
+  /// No description provided for @chatterFieldLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get chatterFieldLanguage;
+
+  /// No description provided for @chatterFieldActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get chatterFieldActive;
+
+  /// No description provided for @chatterFieldDiscount.
+  ///
+  /// In en, this message translates to:
+  /// **'Discount %'**
+  String get chatterFieldDiscount;
+
+  /// No description provided for @chatterFieldStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get chatterFieldStatus;
+
+  /// No description provided for @chatterFieldStage.
+  ///
+  /// In en, this message translates to:
+  /// **'Stage'**
+  String get chatterFieldStage;
+
+  /// No description provided for @chatterFieldRevision.
+  ///
+  /// In en, this message translates to:
+  /// **'Revision'**
+  String get chatterFieldRevision;
+
+  /// No description provided for @chatterFieldOrderSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Order sent'**
+  String get chatterFieldOrderSent;
+
+  /// No description provided for @chatterFieldOrderConfirmed.
+  ///
+  /// In en, this message translates to:
+  /// **'Order confirmed'**
+  String get chatterFieldOrderConfirmed;
+
+  /// No description provided for @chatterLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The messages could not be loaded.'**
+  String get chatterLoadFailed;
+
+  /// No description provided for @chatterRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get chatterRetry;
+
+  /// No description provided for @notificationsChatterUnread.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 new message on {label}} other{{count} new messages on {label}}}'**
+  String notificationsChatterUnread(int count, String label);
+
+  /// No description provided for @notificationsActivityDue.
+  ///
+  /// In en, this message translates to:
+  /// **'{kind}: {summary}'**
+  String notificationsActivityDue(String kind, String summary);
+
   /// No description provided for @kanbanMoveTo.
   ///
   /// In en, this message translates to:

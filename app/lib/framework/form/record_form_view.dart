@@ -38,6 +38,8 @@ class RecordFormView<T extends Object> extends StatefulWidget {
     this.maxSheetWidth,
     this.scrollController,
     this.beforeSheet = const [],
+    this.chatter,
+    this.chatterBeside = true,
   });
 
   final RecordFormController<T> controller;
@@ -73,6 +75,13 @@ class RecordFormView<T extends Object> extends StatefulWidget {
   /// Shown between the banner and the sheet (a shipping notice).
   final List<Widget> beforeSheet;
 
+  /// The record's chatter (ADR 0086): beside the sheet on wide pages, below it on narrow ones.
+  final Widget? chatter;
+
+  /// Whether a wide page puts the chatter beside the sheet; a sheet that needs its full width
+  /// (a line editor) keeps it below.
+  final bool chatterBeside;
+
   @override
   State<RecordFormView<T>> createState() => _RecordFormViewState<T>();
 }
@@ -81,6 +90,10 @@ class _RecordFormViewState<T extends Object> extends State<RecordFormView<T>>
     with TickerProviderStateMixin {
   TabController? _tabs;
   bool? _reportedDirty;
+
+  /// Keeps the chatter panel (its draft, its attachments) when the page crosses the width where
+  /// it moves from beside the sheet to below it.
+  final _chatterKey = GlobalKey();
 
   @override
   void initState() {
@@ -257,6 +270,36 @@ class _RecordFormViewState<T extends Object> extends State<RecordFormView<T>>
     return Form(key: c.formKey, child: sheet.lockRecordEditing(c.busy));
   }
 
+  /// The sheet, with the chatter beside it when there is room (the sheet keeps the width it
+  /// needs for its fields) and below it otherwise.
+  Widget _sheetWithChatter(ThemeData theme) {
+    final panel = widget.chatter;
+    if (panel == null) return _sheet(theme);
+    final chatter = KeyedSubtree(key: _chatterKey, child: panel);
+    return LayoutBuilder(
+      builder: (context, box) {
+        if (!widget.chatterBeside || box.maxWidth < 1100) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _sheet(theme),
+              const SizedBox(height: Space.lg),
+              chatter,
+            ],
+          );
+        }
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: _sheet(theme)),
+            const SizedBox(width: Space.lg),
+            SizedBox(width: 380, child: chatter),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -283,9 +326,15 @@ class _RecordFormViewState<T extends Object> extends State<RecordFormView<T>>
       ],
       ...widget.beforeSheet,
       const SizedBox(height: Space.lg),
-      _sheet(theme),
+      _sheetWithChatter(theme),
     ];
-    final max = widget.maxSheetWidth;
+    // With the chatter beside it, the cap covers the sheet and the panel.
+    final max = widget.maxSheetWidth == null
+        ? null
+        : widget.maxSheetWidth! +
+              (widget.chatter == null || !widget.chatterBeside
+                  ? 0
+                  : 380 + Space.lg);
     Widget content = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: children,

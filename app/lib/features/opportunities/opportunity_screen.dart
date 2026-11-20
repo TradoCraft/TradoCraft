@@ -2,6 +2,10 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../framework/components/chatter/chatter_panel.dart';
+import '../../framework/components/chatter/chatter_repository.dart';
+import '../../framework/form/record_form_controller.dart' show ChatterTick;
+import '../../shared/live_record_watcher.dart';
 import '../../app/api.dart';
 import '../../shared/actions.dart';
 import '../../shared/format.dart';
@@ -42,6 +46,8 @@ class OpportunityScreen extends ConsumerStatefulWidget {
 
 class _OpportunityScreenState extends ConsumerState<OpportunityScreen> {
   String get id => widget.id;
+  final _chatterTick = ChatterTick();
+  RecordLiveWatcher? _watcher;
 
   @override
   void initState() {
@@ -52,6 +58,25 @@ class _OpportunityScreenState extends ConsumerState<OpportunityScreen> {
       ref.invalidate(_opportunityProvider(id));
       ref.invalidate(_quotationsProvider(id));
     });
+    // Opportunities have no row version, so the live channel only carries the chatter here
+    // (ADR 0086): a colleague's note or activity reloads the panel.
+    _watcher = watchRecordChanges(
+      ref,
+      entityType: 'opportunity',
+      recordId: id,
+      currentVersion: () => null,
+      onReconnect: _chatterTick.fire,
+      onExternalChange: (ev) {
+        if (ev.kind.startsWith('chatter_')) _chatterTick.fire();
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _watcher?.dispose();
+    _chatterTick.dispose();
+    super.dispose();
   }
 
   /// The profile of the opportunity's grid (all grids are cached, so no country is needed).
@@ -274,6 +299,12 @@ class _OpportunityScreenState extends ConsumerState<OpportunityScreen> {
                             ],
                           ),
                   ),
+              const SizedBox(height: 16),
+              ChatterPanel(
+                kind: ChatterKind.opportunity,
+                recordId: o.id,
+                refresh: _chatterTick,
+              ),
             ],
           );
         },

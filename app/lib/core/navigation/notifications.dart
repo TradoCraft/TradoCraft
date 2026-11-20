@@ -6,6 +6,9 @@ import '../../app/api.dart';
 import '../../app/worker_ui.dart';
 import '../../app/workspace.dart';
 import '../../features/todo/todo_repository.dart';
+import '../../framework/components/chatter/chatter_panel.dart'
+    show chatterKindLabel;
+import '../../framework/components/chatter/chatter_repository.dart';
 import '../../l10n/l10n.dart';
 import '../../shared/app_icons.dart';
 
@@ -55,7 +58,33 @@ final notificationsProvider = Provider.autoDispose<List<AppNotification>>((
 ) {
   final todo = ref.watch(todoCountsProvider).value;
   final worker = ref.watch(workerStatusProvider).value;
+  final inbox = ref.watch(chatterInboxProvider).value;
   return [
+    // Activities due and new messages on followed records (ADR 0086).
+    for (final a in inbox?.activities ?? const <InboxActivity>[])
+      if (ChatterKind.parse(a.recordKind) case final kind?)
+        AppNotification(
+          id: 'activity-${a.id}',
+          title: (l) => l.notificationsActivityDue(
+            chatterKindLabel(l, a.kind),
+            a.summary,
+          ),
+          subtitle: a.label == null ? null : (l) => a.label!,
+          icon: AppIcons.event,
+          severity: a.overdue
+              ? NotificationSeverity.warning
+              : NotificationSeverity.info,
+          location: kind.location(a.recordId),
+        ),
+    for (final u in inbox?.unread ?? const <InboxRecord>[])
+      if (ChatterKind.parse(u.recordKind) case final kind?)
+        AppNotification(
+          id: 'chatter-${u.recordKind}-${u.recordId}',
+          title: (l) =>
+              l.notificationsChatterUnread(u.unread, u.label ?? u.recordKind),
+          icon: AppIcons.chat,
+          location: kind.location(u.recordId),
+        ),
     if (todo != null && todo.overdue > 0)
       AppNotification(
         id: 'todo-overdue',

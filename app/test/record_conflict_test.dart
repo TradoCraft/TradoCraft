@@ -300,7 +300,50 @@ void main() {
     await settle();
     expect(received.map((e) => (e.kind, e.version)), [('resync', 3)]);
   });
+
+  testWidgets('a reconnect tells the chatter even when the record version did not move', (
+    tester,
+  ) async {
+    final adapter = _WatchAdapter();
+    final dio = Dio(BaseOptions(baseUrl: 'http://test'))
+      ..httpClientAdapter = adapter;
+    addTearDown(() async {
+      await adapter.closeStreams();
+      dio.close();
+    });
+    final received = <RecordChangeEvent>[];
+    var reconnects = 0;
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [dioProvider.overrideWithValue(dio)],
+        child: _WatcherHarness(
+          entityType: 'customer',
+          recordId: 'c1',
+          currentVersion: () => 2,
+          onExternalChange: received.add,
+          onReconnect: () => reconnects++,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    Future<void> settle() async {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 50)),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    // The first connection is not a reconnect: the screen has just loaded.
+    await settle();
+    expect(reconnects, 0);
+    // A reconnect: the chatter may have missed events, the record did not change.
+    adapter.pushRaw('event: resync\ndata: {}\n\n');
+    await settle();
+    expect(reconnects, 1);
+    expect(received, isEmpty, reason: 'no false conflict banner for an unchanged record');
+  });
 }
+
 
 class _WatchAdapter implements HttpClientAdapter {
   StreamController<Uint8List> _stream = StreamController<Uint8List>();
@@ -363,8 +406,10 @@ class _WatcherHarness extends ConsumerStatefulWidget {
     required this.recordId,
     required this.currentVersion,
     required this.onExternalChange,
+    this.onReconnect,
   });
 
+  final void Function()? onReconnect;
   final String entityType;
   final String recordId;
   final int? Function() currentVersion;
@@ -387,6 +432,7 @@ class _WatcherHarnessState extends ConsumerState<_WatcherHarness> {
       recordId: widget.recordId,
       currentVersion: widget.currentVersion,
       onExternalChange: widget.onExternalChange,
+      onReconnect: widget.onReconnect,
     );
   }
 

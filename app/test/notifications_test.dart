@@ -15,6 +15,7 @@ Future<(FakeHttp, GoRouter)> _shell(
   List<String> perms, {
   Map<String, dynamic> counts = const {'open': 0, 'overdue': 0, 'due_today': 0},
   String? worker,
+  Map<String, dynamic>? inbox,
 }) async {
   tester.view.physicalSize = const Size(1400, 2000);
   tester.view.devicePixelRatio = 1;
@@ -22,6 +23,7 @@ Future<(FakeHttp, GoRouter)> _shell(
   final http = FakeHttp({
     'GET /api/v1/me': (_) => meJson(perms),
     'GET /api/v1/todo/items/counts': (_) => counts,
+    if (inbox != null) 'GET /api/v1/chatter/inbox': (_) => inbox,
     'GET /api/v1/admin/worker': (_) => {
       'state': worker ?? 'ok',
       if (worker != 'never_seen') ...{
@@ -76,6 +78,61 @@ final _badge = find.byKey(const ValueKey('notifications-badge'));
 final _bell = find.byKey(const ValueKey('notifications-button'));
 
 void main() {
+  testWidgets(
+    'chatter: due activities and unread threads of followed records',
+    (tester) async {
+      final (_, router) = await _shell(
+        tester,
+        ['todo.use', 'customers.read'],
+        inbox: {
+          'activities': [
+            {
+              'id': 'a1',
+              'record_kind': 'customer',
+              'record_id': 'c1',
+              'label': 'Acme',
+              'kind': 'call',
+              'summary': 'Call back',
+              'due_date': '2020-01-01',
+              'overdue': true,
+            },
+          ],
+          'unread': [
+            {
+              'record_kind': 'quotation',
+              'record_id': 'q1',
+              'label': 'Q-1',
+              'unread': 2,
+              'last_at': '2027-02-20T10:00:00Z',
+            },
+          ],
+        },
+      );
+      expect(
+        find.descendant(of: _badge, matching: find.text('2')),
+        findsOneWidget,
+      );
+      await tester.tap(_bell);
+      await tester.pumpAndSettle();
+      expect(find.text('Call: Call back'), findsOneWidget);
+      expect(find.text('Acme'), findsOneWidget);
+      expect(find.text('2 new messages on Q-1'), findsOneWidget);
+      expect(router, isNotNull);
+    },
+  );
+
+  testWidgets('a failing inbox leaves the bell working', (tester) async {
+    await _shell(
+      tester,
+      ['todo.use'],
+      counts: {'open': 1, 'overdue': 0, 'due_today': 0},
+    );
+    expect(
+      find.descendant(of: _badge, matching: find.text('1')),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('no badge at zero, and the list says so', (tester) async {
     await _shell(tester, ['todo.use']);
     expect(_bell, findsOneWidget);

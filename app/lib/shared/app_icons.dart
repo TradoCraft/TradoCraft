@@ -42,6 +42,7 @@ abstract final class AppIcons {
   static const IconData cancel = Icons.cancel_outlined;
   static const IconData category = Icons.category_outlined;
   static const IconData check = Icons.check;
+  static const IconData chat = Icons.chat_bubble_outline;
   static const IconData checkCircle = Icons.check_circle_outlined;
   static const IconData checklist = Icons.checklist;
   static const IconData chevronLeft = Icons.chevron_left;

@@ -335,6 +335,11 @@ async fn main() -> anyhow::Result<()> {
                 Ok(n) => tracing::info!(removed = n, "orphan blob files swept"),
                 Err(e) => tracing::error!(error = ?e, "sweeping orphan blob files failed"),
             }
+            match tradocraft_chatter::remove_orphans(&db).await {
+                Ok(0) => {}
+                Ok(n) => tracing::info!(removed = n, "orphan chatter rows removed"),
+                Err(e) => tracing::error!(error = ?e, "removing orphan chatter rows failed"),
+            }
         }
         tokio::select! {
             _ = tokio::time::sleep(interval) => {}

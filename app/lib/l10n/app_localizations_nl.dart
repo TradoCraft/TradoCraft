@@ -10787,6 +10787,169 @@ class AppLocalizationsNl extends AppLocalizations {
   String get formUnsavedChanges => 'Niet-opgeslagen wijzigingen';
 
   @override
+  String get chatterTitle => 'Chatter';
+
+  @override
+  String get chatterNoteHint => 'Schrijf een notitie…';
+
+  @override
+  String get chatterPost => 'Plaatsen';
+
+  @override
+  String get chatterEmpty => 'Nog geen berichten.';
+
+  @override
+  String get chatterEdited => 'bewerkt';
+
+  @override
+  String get chatterEditNote => 'Bewerken';
+
+  @override
+  String get chatterDeleteNote => 'Verwijderen';
+
+  @override
+  String get chatterSaveNote => 'Opslaan';
+
+  @override
+  String get chatterLoadOlder => 'Oudere tonen';
+
+  @override
+  String get chatterFollow => 'Volgen';
+
+  @override
+  String get chatterFollowing => 'Volgend';
+
+  @override
+  String chatterFollowers(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count volgers',
+      one: '1 volger',
+      zero: 'Geen volgers',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get chatterActivities => 'Activiteiten';
+
+  @override
+  String get chatterSchedule => 'Activiteit plannen';
+
+  @override
+  String get chatterKindTodo => 'Taak';
+
+  @override
+  String get chatterKindCall => 'Bellen';
+
+  @override
+  String get chatterKindEmail => 'E-mail';
+
+  @override
+  String get chatterKindMeeting => 'Vergadering';
+
+  @override
+  String get chatterSummary => 'Samenvatting';
+
+  @override
+  String get chatterAssignee => 'Toegewezen aan';
+
+  @override
+  String get chatterDueDate => 'Vervalt';
+
+  @override
+  String get chatterNote => 'Notitie';
+
+  @override
+  String get chatterMarkDone => 'Afronden';
+
+  @override
+  String get chatterDoneNote => 'Wat is ervan gekomen? (optioneel)';
+
+  @override
+  String get chatterOverdue => 'Te laat';
+
+  @override
+  String chatterDueOn(String date) {
+    return 'Vervalt op $date';
+  }
+
+  @override
+  String get chatterSystemActor => 'Systeem';
+
+  @override
+  String chatterChanged(String who, String field, String from, String to) {
+    return '$who wijzigde $field: $from → $to';
+  }
+
+  @override
+  String chatterActivityDone(String who, String kind, String summary) {
+    return '$who rondde $kind af: $summary';
+  }
+
+  @override
+  String get chatterFieldName => 'Naam';
+
+  @override
+  String get chatterFieldVatNumber => 'BTW-nummer';
+
+  @override
+  String get chatterFieldVatRegime => 'BTW-regime';
+
+  @override
+  String get chatterFieldEmail => 'E-mail';
+
+  @override
+  String get chatterFieldPhone => 'Telefoon';
+
+  @override
+  String get chatterFieldLanguage => 'Taal';
+
+  @override
+  String get chatterFieldActive => 'Actief';
+
+  @override
+  String get chatterFieldDiscount => 'Korting %';
+
+  @override
+  String get chatterFieldStatus => 'Status';
+
+  @override
+  String get chatterFieldStage => 'Fase';
+
+  @override
+  String get chatterFieldRevision => 'Revisie';
+
+  @override
+  String get chatterFieldOrderSent => 'Order verzonden';
+
+  @override
+  String get chatterFieldOrderConfirmed => 'Order bevestigd';
+
+  @override
+  String get chatterLoadFailed => 'De berichten konden niet geladen worden.';
+
+  @override
+  String get chatterRetry => 'Opnieuw proberen';
+
+  @override
+  String notificationsChatterUnread(int count, String label) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count nieuwe berichten bij $label',
+      one: '1 nieuw bericht bij $label',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String notificationsActivityDue(String kind, String summary) {
+    return '$kind: $summary';
+  }
+
+  @override
   String get kanbanMoveTo => 'Verplaatsen naar…';
 
   @override
