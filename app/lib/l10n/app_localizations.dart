@@ -11376,6 +11376,18 @@ abstract class AppLocalizations {
   /// **'Next'**
   String get tutNext;
 
+  /// No description provided for @tutAssist.
+  ///
+  /// In en, this message translates to:
+  /// **'Do this step for me'**
+  String get tutAssist;
+
+  /// No description provided for @tutAssistFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not finish this step: {reason}. Try again.'**
+  String tutAssistFailed(String reason);
+
   /// No description provided for @tutSkipStep.
   ///
   /// In en, this message translates to:

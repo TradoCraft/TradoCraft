@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../app/api.dart';
 import '../../l10n/l10n.dart';
 import '../../shared/entity_list.dart';
+import '../tutorial/controller.dart';
 import 'supplier_form.dart';
 
 /// The suppliers list of the Purchasing section: search, active filter, create, open in a tab.
@@ -36,6 +37,12 @@ class _SuppliersListState extends ConsumerState<SuppliersList> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(tutorialAssistCompletedProvider, (_, completed) {
+      if (completed?.missionId == 'suppliers' &&
+          const {'supplierA', 'supplierB'}.contains(completed?.stepId)) {
+        _list.currentState?.reload();
+      }
+    });
     final l = context.l10n;
     final canWrite = can(ref, 'purchasing.write');
     return EntityList<Supplier>(

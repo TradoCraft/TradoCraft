@@ -7,6 +7,7 @@ import '../../shared/csv_transfer.dart';
 import '../../framework/search/filter_model.dart';
 import '../../shared/entity_list.dart';
 import '../../shared/format.dart';
+import '../tutorial/controller.dart';
 import 'bulk_price_dialog.dart';
 import 'families_dialog.dart';
 import 'packaging_dialog.dart';
@@ -28,6 +29,17 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(tutorialAssistCompletedProvider, (_, completed) {
+      if (completed?.missionId == 'product' &&
+          const {
+            'motor',
+            'frame',
+            'controller',
+            'cart',
+          }.contains(completed?.stepId)) {
+        _list.currentState?.reload();
+      }
+    });
     final api = ref.watch(apiProvider);
     final permissions = ref.watch(meProvider).value?.permissions ?? const [];
     final canChangePrices = permissions.contains('prices.write');

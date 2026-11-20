@@ -2035,6 +2035,8 @@
   "tutTitle": "Tutoriel",
   "tutBack": "Retour",
   "tutNext": "Suivant",
+  "tutAssist": "Faire cette étape à ma place",
+  "tutAssistFailed": "Impossible de terminer cette étape : {reason}. Réessayez.",
   "tutSkipStep": "Passer l'étape",
   "tutPause": "Pause",
   "tutResume": "Reprendre",

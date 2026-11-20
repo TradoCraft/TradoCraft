@@ -6,11 +6,12 @@ import 'dart:ui' show Locale, PlatformDispatcher;
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../app/api.dart' show dioProvider, errorMessage;
+import '../../app/api.dart' show dioProvider, errorMessage, priceZonesProvider;
 import '../../app/environments.dart';
 import '../../app/session.dart';
 import '../../l10n/app_localizations.dart';
 import '../field/offline/kv_store.dart';
+import '../inventory/inventory_common.dart' show warehousesProvider;
 import 'api_events.dart';
 import 'missions.dart';
 import 'model.dart';
@@ -276,6 +277,10 @@ class TutorialController extends Notifier<TutorialState> {
   /// The scope (environment and user) this state belongs to.
   TutorialScope get scope => _scope;
 
+  /// Whether the current step can perform its work in this environment.
+  bool get canAssist =>
+      _scope.kind == EnvironmentKind.tutorial && step?.assist != null;
+
   @override
   TutorialState build() {
     _scope = ref.watch(tutorialScopeProvider);
@@ -353,7 +358,7 @@ class TutorialController extends Notifier<TutorialState> {
   }
 
   void _set(TutorialState s) {
-    state = s;
+    state = _assistInFlight && !s.actionBusy ? s.copyWith(actionBusy: true) : s;
     final bus = ref.read(apiEventBusProvider);
     bus.active = s.running && step != null;
     final scope = _scope;
@@ -443,8 +448,7 @@ class TutorialController extends Notifier<TutorialState> {
   }
 
   Future<void> _runProbe(MissionStep s, Probe p, int gen) async {
-    final path = state.context.resolve(p.path);
-    if (path == null) return;
+    if (_assistOwnsStep) return;
     // A newer probe (entry or recheck) supersedes this one: the newest state wins.
     final seq = ++_probeSeq;
     bool stale() =>
@@ -453,54 +457,60 @@ class TutorialController extends Notifier<TutorialState> {
         step != s ||
         !state.running ||
         seq != _probeSeq;
-    // Query values may hold `{name}` placeholders too.
-    Map<String, dynamic>? query;
-    if (p.query != null) {
-      query = {};
-      for (final e in p.query!.entries) {
-        final v = e.value;
-        final r = v is String ? state.context.resolve(v) : v;
-        if (r == null) return;
-        query[e.key] = r;
-      }
-    }
     try {
-      final res = await ref
-          .read(dioProvider)
-          .get<Object?>(
-            path,
-            queryParameters: query,
-            options: Options(extra: {tutorialProbeExtra: true}),
-          );
-      if (stale()) return;
-      final ctx = state.context;
-      Object? data = res.data;
-      if (p.expand != null) {
-        // At most 20 records, read in batches of 5 until one of the batches settles the probe.
-        final details = <Object?>[];
-        final paths = p.expand!(data, ctx).take(20).toList();
-        for (var i = 0; i < paths.length; i += 5) {
-          for (final path in paths.skip(i).take(5)) {
-            final d = await ref
-                .read(dioProvider)
-                .get<Object?>(
-                  path,
-                  options: Options(extra: {tutorialProbeExtra: true}),
-                );
-            details.add(d.data);
-          }
-          if (stale()) return;
-          if (p.done(details, ctx)) break;
-        }
-        if (stale()) return;
-        data = details;
-      }
-      if (p.done(data, ctx)) {
-        _complete(p.capture?.call(data, ctx) ?? const {});
-      }
+      final captured = await _probeCompletion(
+        ref.read(dioProvider),
+        p,
+        state.context,
+        stale,
+      );
+      if (!stale() && captured != null) _complete(captured);
     } catch (_) {
       // A failed probe only means "not known to be done".
     }
+  }
+
+  Future<Map<String, String>?> _probeCompletion(
+    Dio dio,
+    Probe probe,
+    MissionContext context,
+    bool Function() stale,
+  ) async {
+    final path = context.resolve(probe.path);
+    if (path == null || stale()) return null;
+    // Query values may hold `{name}` placeholders too.
+    Map<String, dynamic>? query;
+    if (probe.query != null) {
+      query = {};
+      for (final e in probe.query!.entries) {
+        final v = e.value;
+        final r = v is String ? context.resolve(v) : v;
+        if (r == null) return null;
+        query[e.key] = r;
+      }
+    }
+    final options = Options(extra: {tutorialProbeExtra: true});
+    final response = await dio.get<Object?>(
+      path,
+      queryParameters: query,
+      options: options,
+    );
+    if (stale()) return null;
+    Object? data = response.data;
+    final expand = probe.expand;
+    if (expand != null) {
+      final details = <Object?>[];
+      for (final path in expand(data, context).take(20)) {
+        final detail = await dio.get<Object?>(path, options: options);
+        if (stale()) return null;
+        details.add(detail.data);
+        if (details.length % 5 == 0 && probe.done(details, context)) break;
+      }
+      data = details;
+    }
+    return probe.done(data, context)
+        ? probe.capture?.call(data, context) ?? const {}
+        : null;
   }
 
   void _onEvent(ApiEvent e) {
@@ -510,7 +520,7 @@ class TutorialController extends Notifier<TutorialState> {
       return;
     }
     final s = step;
-    if (s == null || !state.running) return;
+    if (s == null || !state.running || _assistOwnsStep) return;
     final c = s.completion;
     if (c is OnApi && c.matches(e, state.context)) {
       _complete({...?s.capture?.call(e.json)});
@@ -599,7 +609,9 @@ class TutorialController extends Notifier<TutorialState> {
   }
 
   /// Leaves the current step undone and moves on.
-  void skipStep() => next();
+  void skipStep() {
+    if (!canAssist) next();
+  }
 
   /// Goes back one step (without probing, so it does not jump forward again).
   void back() {
@@ -671,7 +683,12 @@ class TutorialController extends Notifier<TutorialState> {
   /// owner (its step was left or restarted meanwhile) must not touch them.
   Object? _actionOwner;
 
+  // Navigating away invalidates step ownership, but a dispatched write can
+  // still commit. Keep the submission lock until the assistance settles.
+  bool _assistInFlight = false;
+
   String get _stepKey => '${state.activeId}/${state.stepIndex}';
+  bool get _assistOwnsStep => canAssist && _actionKey == _stepKey;
   final _random = Random();
 
   String _retainedId(String kind) => _retained.putIfAbsent(
@@ -684,26 +701,63 @@ class TutorialController extends Notifier<TutorialState> {
   Future<void> runAction() async {
     final s = step;
     final c = s?.completion;
-    if (s == null || c is! ActionCompletion || !state.running) return;
-    if (state.actionBusy) return;
+    final assist = canAssist ? s?.assist : null;
+    if (s == null ||
+        (c is! ActionCompletion && assist == null) ||
+        !state.running) {
+      return;
+    }
+    if (state.actionBusy || _assistInFlight) return;
     final gen = _gen;
     final owner = Object();
+    final missionId = state.activeId!;
     _actionOwner = owner;
     _actionKey = _stepKey;
+    _probeSeq++;
     _set(state.copyWith(actionBusy: true, actionError: null));
+    bool stale() => !ref.mounted || gen != _gen || _actionOwner != owner;
     Map<String, String>? captured;
     try {
-      captured = await c.run(
-        ActionHost(
-          dio: ref.read(dioProvider),
-          context: state.context,
-          languageCode: resolveTutorialLanguage(
-            ref.read(localeProvider),
-            PlatformDispatcher.instance.locales,
-          ),
-          messageId: _retainedId,
+      final dio = ref.read(dioProvider);
+      final host = ActionHost(
+        dio: assist == null ? dio : _assistClient(dio, stale),
+        context: state.context,
+        languageCode: resolveTutorialLanguage(
+          ref.read(localeProvider),
+          PlatformDispatcher.instance.locales,
         ),
+        messageId: _retainedId,
       );
+      if (assist == null) {
+        captured = await (c as ActionCompletion).run(host);
+      } else {
+        final probe = s.probe!;
+        Future<Map<String, String>?> check() =>
+            _probeCompletion(host.dio, probe, host.context, stale);
+        captured = await check();
+        if (captured == null && !stale()) {
+          _assistInFlight = true;
+          try {
+            await assist(host);
+          } catch (error) {
+            // A competing request may already have saved the expected record.
+            if (error is! DioException || error.response?.statusCode != 409) {
+              rethrow;
+            }
+            captured = await check();
+            if (captured == null) rethrow;
+          } finally {
+            _assistInFlight = false;
+            if (ref.mounted && stale()) {
+              _set(state.copyWith(actionBusy: false));
+            }
+          }
+          captured ??= await check();
+        }
+        if (captured == null && !stale()) {
+          throw StateError('The required result could not be verified');
+        }
+      }
     } catch (e) {
       // Another step (or a restarted chapter) owns the flags now: leave them alone.
       if (!ref.mounted || _actionOwner != owner) return;
@@ -734,6 +788,41 @@ class TutorialController extends Notifier<TutorialState> {
     _retained.clear();
     _set(state.copyWith(actionBusy: false, actionError: null));
     _complete({...?captured});
+    if (assist != null) {
+      if (missionId == 'prices' && s.id == 'zone') {
+        ref.invalidate(priceZonesProvider);
+      } else if (s.id == 'warehouse') {
+        ref.invalidate(warehousesProvider);
+      }
+      ref
+          .read(tutorialAssistCompletedProvider.notifier)
+          .completed(missionId, s.id);
+    }
+  }
+
+  Dio _assistClient(Dio dio, bool Function() stale) {
+    final client = dio.clone(
+      options: dio.options.copyWith(
+        extra: {...dio.options.extra, tutorialProbeExtra: true},
+      ),
+    );
+    client.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) {
+          if (stale()) {
+            handler.reject(
+              DioException.requestCancelled(
+                requestOptions: options,
+                reason: 'Tutorial step changed',
+              ),
+            );
+          } else {
+            handler.next(options);
+          }
+        },
+      ),
+    );
+    return client;
   }
 }
 
@@ -741,3 +830,26 @@ class TutorialController extends Notifier<TutorialState> {
 final tutorialProvider = NotifierProvider<TutorialController, TutorialState>(
   TutorialController.new,
 );
+
+/// Lets open screens refresh after a verified assisted change.
+final tutorialAssistCompletedProvider =
+    NotifierProvider<
+      TutorialAssistCompleted,
+      ({String missionId, String stepId})?
+    >(TutorialAssistCompleted.new);
+
+class TutorialAssistCompleted
+    extends Notifier<({String missionId, String stepId})?> {
+  @override
+  ({String missionId, String stepId})? build() => null;
+
+  @override
+  bool updateShouldNotify(
+    ({String missionId, String stepId})? previous,
+    ({String missionId, String stepId})? next,
+  ) => true;
+
+  void completed(String missionId, String stepId) {
+    state = (missionId: missionId, stepId: stepId);
+  }
+}

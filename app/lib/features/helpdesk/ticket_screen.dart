@@ -30,6 +30,7 @@ import '../../shared/app_icons.dart';
 import '../../shared/load_failed.dart';
 import '../todo/object_todos_button.dart';
 import '../tutorial/api_events.dart';
+import '../tutorial/controller.dart';
 import '../tutorial/targets.dart';
 
 final teamsProvider = FutureProvider.autoDispose<List<Team>>(
@@ -142,6 +143,13 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
     super.initState();
     _load();
     _body.addListener(_bodyChanged);
+    ref.listenManual(tutorialAssistCompletedProvider, (_, completed) {
+      if (completed?.missionId == 'customer' &&
+          completed?.stepId == 'linked' &&
+          ref.read(tutorialProvider).values['ticketId'] == widget.id) {
+        unawaited(_refreshFromServer('updated', ''));
+      }
+    });
     // Tutorial mail is imported by this client. It does not arrive through the
     // external record watcher, so refresh the open ticket after the import.
     _tutorialMail = ref.read(apiEventBusProvider).stream.listen((event) {

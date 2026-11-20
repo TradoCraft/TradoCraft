@@ -6,6 +6,7 @@ import '../../app/api.dart';
 import '../../l10n/l10n.dart';
 import '../../shared/entity_list.dart';
 import '../../shared/format.dart';
+import '../tutorial/controller.dart';
 import 'po_form.dart';
 import 'po_lines.dart';
 
@@ -79,6 +80,18 @@ class _PurchaseOrdersListState extends ConsumerState<PurchaseOrdersList> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(tutorialAssistCompletedProvider, (_, completed) {
+      if (completed?.missionId == 'suppliers' &&
+          const {'supplierA', 'supplierB'}.contains(completed?.stepId)) {
+        _loadSuppliers();
+      }
+      if (completed?.missionId == 'buying' &&
+          const {'order', 'approve', 'send', 'receiveRest'}.contains(
+            completed?.stepId,
+          )) {
+        _reload();
+      }
+    });
     final l = context.l10n;
     final canWrite = can(ref, 'purchasing.write');
     return EntityList<PurchaseOrderSummary>(

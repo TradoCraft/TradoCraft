@@ -9,10 +9,11 @@ import '../../shared/actions.dart';
 import '../../shared/app_icons.dart';
 import '../../shared/format.dart';
 import '../finance/invoice_form.dart';
+import '../tutorial/controller.dart';
+import '../tutorial/targets.dart';
 import 'po_form.dart';
 import 'po_lines.dart';
 import 'receive_dialog.dart';
-import '../tutorial/targets.dart';
 
 /// A purchase order in a workspace tab: header, lines with received quantities, and the actions
 /// the status and the user's rights allow. Drafts are editable.
@@ -36,6 +37,7 @@ class _PurchaseOrderScreenState extends ConsumerState<PurchaseOrderScreen> {
   PurchaseOrderDetail? _po;
   String? _error;
   bool _loading = true;
+  int _loadGeneration = 0;
   bool _busy = false;
   List<GoodsReceiptSummary> _receipts = const [];
 
@@ -63,27 +65,34 @@ class _PurchaseOrderScreenState extends ConsumerState<PurchaseOrderScreen> {
   }
 
   Future<void> _load() async {
+    final generation = ++_loadGeneration;
     setState(() {
       _loading = true;
       _error = null;
     });
     try {
       final po = await _api.getOrder(id: widget.id);
-      if (!mounted) return;
+      if (!mounted || generation != _loadGeneration) return;
       _applyLoaded(po);
-      await _loadReceipts();
+      await _loadReceipts(generation);
     } catch (e) {
-      if (mounted) setState(() => _error = errorMessage(e));
+      if (mounted && generation == _loadGeneration) {
+        setState(() => _error = errorMessage(e));
+      }
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted && generation == _loadGeneration) {
+        setState(() => _loading = false);
+      }
     }
   }
 
   /// Loads the receipts booked against this order; a failure just leaves the list empty.
-  Future<void> _loadReceipts() async {
+  Future<void> _loadReceipts(int generation) async {
     try {
       final list = await _api.listOrderReceipts(id: widget.id);
-      if (mounted) setState(() => _receipts = list);
+      if (mounted && generation == _loadGeneration) {
+        setState(() => _receipts = list);
+      }
     } catch (_) {
       // The list is supplementary; the order itself is still usable.
     }
@@ -291,6 +300,13 @@ class _PurchaseOrderScreenState extends ConsumerState<PurchaseOrderScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(tutorialAssistCompletedProvider, (_, completed) {
+      if (completed?.missionId == 'buying' &&
+          const {'approve', 'send', 'receiveRest'}.contains(completed?.stepId) &&
+          ref.read(tutorialProvider).values['poId'] == widget.id) {
+        _load();
+      }
+    });
     final l = context.l10n;
     final po = _po;
     if (po == null) {

@@ -69,10 +69,24 @@ test('the whole tutorial, chapter by chapter', async ({ page, request }) => {
   await test.step('chapter 1: products and bill of materials', async () => {
     await expectStep(page, 'product', 'motor');
     await page.getByRole('button', { name: 'New product' }).click();
-    await typeInto(field(page, 'Code'), 'TUT-MOTOR');
+    await typeInto(field(page, 'Code'), 'tut-motor');
     await typeInto(field(page, 'Name'), 'Motor');
     await page.getByRole('button', { name: 'Save' }).click();
+    await expect(page.getByRole('alertdialog')).toBeHidden();
+    await expectStep(page, 'product', 'motor');
+    await page.getByRole('button', { name: 'Do this step for me' }).click();
     await expectStep(page, 'product', 'frame');
+    const motorSearch = await request.get(`${api}/products`, {
+      headers,
+      params: { q: 'TUT-MOTOR' },
+    });
+    await expect(motorSearch).toBeOK();
+    const motors = (await motorSearch.json()).items;
+    expect(motors.filter((item: { code: string }) => item.code === 'TUT-MOTOR'))
+      .toEqual([expect.objectContaining({ name: 'Motor', product_type: 'purchased' })]);
+    expect(motors).toEqual(expect.arrayContaining([
+      expect.objectContaining({ code: 'tut-motor', name: 'Motor' }),
+    ]));
     for (const [step, code, name, type] of [
       ['frame', 'TUT-FRAME', 'Frame', 'purchased'],
       ['controller', 'TUT-CTRL', 'Controller', 'purchased'],

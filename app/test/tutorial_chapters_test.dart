@@ -115,6 +115,78 @@ void main() {
   });
 
   group('chapter 1: your first product', () {
+    test(
+      'assistance creates canonical products and a usable active BOM',
+      () async {
+        final products = [_product('lower', 'tut-motor', 'purchased')];
+        Map<String, Object?>? bom;
+        final http = FakeHttp({
+          'GET /api/v1/products': (_) => {'items': products},
+          'POST /api/v1/products': (body) {
+            final input = body as Map;
+            final code = input['code'] as String;
+            final saved = _product(
+              'id-$code',
+              code,
+              input['product_type'] as String,
+            );
+            products.add(saved);
+            return saved;
+          },
+          'GET /api/v1/products/id-TUT-CART/boms': (_) => [?bom],
+          'POST /api/v1/products/id-TUT-CART/boms': (_) => bom = {
+            'id': 'bom1',
+            'product_id': 'id-TUT-CART',
+            'status': 'draft',
+            'notes': 'Keep this note',
+            'lines': [
+              {'component_product_id': 'id-TUT-MOTOR', 'quantity': '2'},
+            ],
+          },
+          'GET /api/v1/boms/bom1': (_) => bom,
+          'PUT /api/v1/boms/bom1': (body) =>
+              bom = {...bom!, ...Map<String, Object?>.from(body as Map)},
+          'POST /api/v1/boms/bom1/activate': (_) =>
+              bom = {...bom!, 'status': 'active'},
+        });
+        final c = _boot(http);
+        final t = c.read(tutorialProvider.notifier);
+        await t.ready;
+        await t.skipChapter('welcome');
+        await t.start('product');
+        t.routeChanged('/products');
+
+        for (final id in ['motor', 'frame', 'controller', 'cart']) {
+          expect(t.step?.id, id);
+          await t.runAction();
+        }
+        expect(products.map((p) => p['code']), [
+          'tut-motor',
+          'TUT-MOTOR',
+          'TUT-FRAME',
+          'TUT-CTRL',
+          'TUT-CART',
+        ]);
+        expect(c.read(tutorialProvider).values['motorId'], 'id-TUT-MOTOR');
+        t.routeChanged('/products/id-TUT-CART');
+        t.next();
+        for (final id in ['revision', 'lines', 'activate']) {
+          expect(t.step?.id, id);
+          await t.runAction();
+        }
+        expect(t.step?.id, 'done');
+        expect(bom?['status'], 'active');
+        expect(bom?['notes'], 'Keep this note');
+        expect(
+          {
+            for (final line in bom?['lines'] as List)
+              (line as Map)['component_product_id']: line['quantity'],
+          },
+          {'id-TUT-MOTOR': '2', 'id-TUT-FRAME': '1', 'id-TUT-CTRL': '1'},
+        );
+      },
+    );
+
     FakeHttp server() => FakeHttp({
       'POST /api/v1/products': (b) {
         final body = b as Map;

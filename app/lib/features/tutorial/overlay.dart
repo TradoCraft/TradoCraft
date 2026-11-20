@@ -377,7 +377,9 @@ class NarratorCard extends ConsumerWidget {
                               Semantics(
                                 liveRegion: true,
                                 child: Text(
-                                  s.actionError!.status == 403
+                                  c.canAssist
+                                      ? l.tutAssistFailed(s.actionError!.reason)
+                                      : s.actionError!.status == 403
                                       ? l.tutActionForbidden
                                       : l.tutActionFailed(
                                           s.actionError!.reason,
@@ -422,6 +424,12 @@ class NarratorCard extends ConsumerWidget {
                               tutorialText(l, stepKey(m, step, 'Action')),
                             ),
                           ),
+                        if (c.canAssist)
+                          FilledButton(
+                            key: const ValueKey('tutorial-assist'),
+                            onPressed: s.actionBusy ? null : c.runAction,
+                            child: Text(l.tutAssist),
+                          ),
                         if (route != null &&
                             !here &&
                             (!targetVisible || completion is OnRoute) &&
@@ -437,7 +445,7 @@ class NarratorCard extends ConsumerWidget {
                             onPressed: c.back,
                             child: Text(l.tutBack),
                           ),
-                        if (completion is! ManualNext)
+                        if (completion is! ManualNext && !c.canAssist)
                           TextButton(
                             key: const ValueKey('tutorial-skip'),
                             onPressed: c.skipStep,
