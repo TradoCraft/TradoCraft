@@ -351,6 +351,18 @@ async fn set_stage(
         serde_json::json!({ "from": opp.stage, "to": stage.as_str(), "lost_reason": lost_reason }),
     )
     .await?;
+    tradocraft_chatter::log(
+        conn,
+        user.company_id,
+        Some(user.user_id),
+        tradocraft_chatter::RecordKind::Opportunity,
+        opp.id,
+        "stage",
+        serde_json::json!(opp.stage),
+        serde_json::json!(stage.as_str()),
+        lost_reason.as_deref().unwrap_or(""),
+    )
+    .await?;
     Ok(())
 }
 

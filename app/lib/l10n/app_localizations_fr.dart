@@ -10800,4 +10800,167 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get formUnsavedChanges => 'Modifications non enregistrées';
+
+  @override
+  String get chatterTitle => 'Chatter';
+
+  @override
+  String get chatterNoteHint => 'Écrire une note…';
+
+  @override
+  String get chatterPost => 'Publier';
+
+  @override
+  String get chatterEmpty => 'Aucun message pour l\'instant.';
+
+  @override
+  String get chatterEdited => 'modifié';
+
+  @override
+  String get chatterEditNote => 'Modifier';
+
+  @override
+  String get chatterDeleteNote => 'Supprimer';
+
+  @override
+  String get chatterSaveNote => 'Enregistrer';
+
+  @override
+  String get chatterLoadOlder => 'Afficher les plus anciens';
+
+  @override
+  String get chatterFollow => 'Suivre';
+
+  @override
+  String get chatterFollowing => 'Suivi';
+
+  @override
+  String chatterFollowers(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count abonnés',
+      one: '1 abonné',
+      zero: 'Aucun abonné',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get chatterActivities => 'Activités';
+
+  @override
+  String get chatterSchedule => 'Planifier une activité';
+
+  @override
+  String get chatterKindTodo => 'Tâche';
+
+  @override
+  String get chatterKindCall => 'Appel';
+
+  @override
+  String get chatterKindEmail => 'E-mail';
+
+  @override
+  String get chatterKindMeeting => 'Réunion';
+
+  @override
+  String get chatterSummary => 'Résumé';
+
+  @override
+  String get chatterAssignee => 'Assigné à';
+
+  @override
+  String get chatterDueDate => 'Échéance';
+
+  @override
+  String get chatterNote => 'Note';
+
+  @override
+  String get chatterMarkDone => 'Terminer';
+
+  @override
+  String get chatterDoneNote => 'Qu\'en est-il ressorti ? (facultatif)';
+
+  @override
+  String get chatterOverdue => 'En retard';
+
+  @override
+  String chatterDueOn(String date) {
+    return 'Échéance le $date';
+  }
+
+  @override
+  String get chatterSystemActor => 'Système';
+
+  @override
+  String chatterChanged(String who, String field, String from, String to) {
+    return '$who a modifié $field : $from → $to';
+  }
+
+  @override
+  String chatterActivityDone(String who, String kind, String summary) {
+    return '$who a terminé $kind : $summary';
+  }
+
+  @override
+  String get chatterFieldName => 'Nom';
+
+  @override
+  String get chatterFieldVatNumber => 'Numéro de TVA';
+
+  @override
+  String get chatterFieldVatRegime => 'Régime de TVA';
+
+  @override
+  String get chatterFieldEmail => 'E-mail';
+
+  @override
+  String get chatterFieldPhone => 'Téléphone';
+
+  @override
+  String get chatterFieldLanguage => 'Langue';
+
+  @override
+  String get chatterFieldActive => 'Actif';
+
+  @override
+  String get chatterFieldDiscount => 'Remise %';
+
+  @override
+  String get chatterFieldStatus => 'Statut';
+
+  @override
+  String get chatterFieldStage => 'Étape';
+
+  @override
+  String get chatterFieldRevision => 'Révision';
+
+  @override
+  String get chatterFieldOrderSent => 'Commande envoyée';
+
+  @override
+  String get chatterFieldOrderConfirmed => 'Commande confirmée';
+
+  @override
+  String get chatterLoadFailed => 'Les messages n\'ont pas pu être chargés.';
+
+  @override
+  String get chatterRetry => 'Réessayer';
+
+  @override
+  String notificationsChatterUnread(int count, String label) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count nouveaux messages sur $label',
+      one: '1 nouveau message sur $label',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String notificationsActivityDue(String kind, String summary) {
+    return '$kind : $summary';
+  }
 }

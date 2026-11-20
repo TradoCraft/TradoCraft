@@ -56,6 +56,11 @@ class RecordFormController<T extends Object> extends ChangeNotifier {
   RecordLiveWatcher? _watcher;
   bool _disposed = false;
 
+  /// Notifies when a colleague changed the record's chatter (a note, an activity, a follower,
+  /// ADR 0086). These events never move the record version, so they are not an edit conflict:
+  /// they reload the chatter panel and leave the banner alone.
+  final chatterTick = ChatterTick();
+
   /// The record as the server last returned it; null for a new record.
   T? get record => _record;
   bool get isNew => _record == null;
@@ -139,6 +144,8 @@ class RecordFormController<T extends Object> extends ChangeNotifier {
       final result = await action();
       if (_disposed) return true;
       if (result != null) apply(result);
+      // A save, send or revision writes change messages: the chatter shows them at once.
+      chatterTick.fire();
       return true;
     } catch (e) {
       if (_disposed) return false;
@@ -184,8 +191,15 @@ class RecordFormController<T extends Object> extends ChangeNotifier {
       entityType: entityType,
       recordId: recordId,
       currentVersion: () => version,
+      onReconnect: () {
+        if (!_disposed) chatterTick.fire();
+      },
       onExternalChange: (ev) {
         if (_disposed) return;
+        if (ev.kind.startsWith('chatter_')) {
+          chatterTick.fire();
+          return;
+        }
         if (_notifiedVersion == null || ev.version > _notifiedVersion!) {
           _notifiedVersion = ev.version;
         }
@@ -212,6 +226,12 @@ class RecordFormController<T extends Object> extends ChangeNotifier {
   void dispose() {
     _disposed = true;
     _watcher?.dispose();
+    chatterTick.dispose();
     super.dispose();
   }
+}
+
+/// Tells the chatter panel that a colleague changed the chatter of the record.
+class ChatterTick extends ChangeNotifier {
+  void fire() => notifyListeners();
 }

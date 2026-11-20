@@ -110,7 +110,7 @@ abstract class CoreClient {
   @GET('/api/v1/auth/providers')
   Future<List<PublicProvider>> publicProviders();
 
-  /// [entityType] - `customer` | `quotation` | `order` | `ticket`
+  /// [entityType] - `customer` | `quotation` | `order` | `opportunity` | `ticket`
   @GET('/api/v1/events/records')
   Future<void> streamRecordEvents({
     @Query('entity_type') required String entityType,

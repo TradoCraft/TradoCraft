@@ -525,6 +525,19 @@ async fn create_customer(
     ))
 }
 
+/// The customer fields the chatter shows as a change message (ADR 0086). The rest (street,
+/// postal code, payment terms, ...) stays in the audit trail only.
+const CUSTOMER_TRACKED: &[&str] = &[
+    "name",
+    "vat_number",
+    "vat_regime",
+    "email",
+    "phone",
+    "language",
+    "active",
+    "discount_percent",
+];
+
 #[utoipa::path(put, path = "/customers/{id}", tag = "crm", params(("id" = Uuid, Path)),
     request_body = CustomerInput,
     responses((status = 200, body = Customer), (status = 409, body = tradocraft_core::error::ErrorBody)))]
@@ -594,15 +607,18 @@ async fn update_customer(
             &before.payment_terms_days,
             &Some(input.payment_terms_days),
         );
-    audit::record(
+    let audit_data = changes.into_data();
+    // The readable subset, for everyone who can read the customer (ADR 0086).
+    tradocraft_chatter::track(
         &mut tx,
         &user,
-        "customer",
+        tradocraft_chatter::RecordKind::Customer,
         id,
-        "updated",
-        changes.into_data(),
+        &audit_data,
+        CUSTOMER_TRACKED,
     )
     .await?;
+    audit::record(&mut tx, &user, "customer", id, "updated", audit_data).await?;
     tx.commit().await?;
     let customer = get_customer(&state.db, user.company_id, id).await?;
     state.live_events.publish_record_change(

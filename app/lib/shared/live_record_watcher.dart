@@ -128,6 +128,7 @@ class RecordLiveWatcher {
       'customer' => 'customers',
       'quotation' => 'quotations',
       'order' => 'orders',
+      'opportunity' => 'opportunities',
       'ticket' => 'tickets',
       _ => null,
     };
@@ -205,12 +206,17 @@ RecordLiveWatcher watchRecordChanges(
   required String recordId,
   required int? Function() currentVersion,
   required void Function(RecordChangeEvent event) onExternalChange,
+
+  /// Called after the stream reconnected, whatever the record version says: events of the
+  /// chatter, which never move the version, may have been missed meanwhile.
+  void Function()? onReconnect,
 }) {
   final watcher = RecordLiveWatcher(
     dio: ref.read(dioProvider),
     entityType: entityType,
     recordId: recordId,
     onChange: (ev) {
+      if (ev.kind == 'resync' && ev.isReconnect) onReconnect?.call();
       final meId = ref.read(meProvider).value?.userId;
       if (meId != null && ev.changedById == meId) return;
       final cur = currentVersion();

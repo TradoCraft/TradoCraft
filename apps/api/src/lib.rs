@@ -96,6 +96,7 @@ fn api() -> (Router<AppState>, OpenApiDoc) {
         .merge(tradocraft_configurator::router())
         .merge(tradocraft_reports::router())
         .merge(tradocraft_todo::router())
+        .merge(tradocraft_chatter::router())
         .merge(tradocraft_imports::router())
         .merge(tradocraft_portal::router());
     OpenApiRouter::with_openapi(ApiDoc::openapi())
