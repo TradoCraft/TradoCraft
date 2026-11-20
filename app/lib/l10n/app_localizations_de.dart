@@ -7777,11 +7777,11 @@ class AppLocalizationsDe extends AppLocalizations {
       'Straße Voorbeeldlaan 12, PLZ 9000, Ort Gent, Land BE. Sprache und Zahlungsbedingungen können bleiben, wie sie sind.';
 
   @override
-  String get tutCustomerLinkedTitle => 'Das Ticket kennt seinen Kunden';
+  String get tutCustomerLinkedTitle => 'Verknüpfen Sie den Kunden';
 
   @override
   String get tutCustomerLinkedBody =>
-      'Das Ticket zeigt nun den Kunden, und neue Schaltflächen erscheinen: einen Lead anlegen oder direkt aus dem Ticket ein Angebot beginnen. Das nächste Kapitel erstellt das Angebot. Drücken Sie Weiter.';
+      'Das Ticket sollte den neuen Kunden automatisch übernehmen. Falls nicht, wählen Sie Brightwheel Logistics BV im Feld Kunde aus und speichern Sie die Änderungen. Das Tutorial geht weiter, sobald die Verknüpfung gespeichert ist.';
 
   @override
   String get tutCustomerDoneTitle => 'Was Sie gelernt haben';

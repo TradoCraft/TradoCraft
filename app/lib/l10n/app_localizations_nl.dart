@@ -7757,11 +7757,11 @@ class AppLocalizationsNl extends AppLocalizations {
       'Straat Voorbeeldlaan 12, postcode 9000, plaats Gent, land BE. Taal en betaaltermijn mogen blijven zoals ze zijn.';
 
   @override
-  String get tutCustomerLinkedTitle => 'Het ticket kent zijn klant';
+  String get tutCustomerLinkedTitle => 'Koppel de klant';
 
   @override
   String get tutCustomerLinkedBody =>
-      'Het ticket toont nu de klant en er verschijnen nieuwe knoppen: een lead maken of direct vanuit het ticket een offerte starten. Het volgende hoofdstuk maakt de offerte. Druk op Volgende.';
+      'Het ticket koppelt de nieuwe klant normaal automatisch. Gebeurt dat niet, selecteer dan Brightwheel Logistics BV in het veld Klant en druk op Wijzigingen opslaan. De tutorial gaat verder zodra de koppeling is opgeslagen.';
 
   @override
   String get tutCustomerDoneTitle => 'Wat je geleerd hebt';

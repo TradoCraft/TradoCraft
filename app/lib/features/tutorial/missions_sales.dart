@@ -41,6 +41,15 @@ const customerProbe = Probe(
   capture: _customerCapture,
 );
 
+bool _ticketLinkedToCustomer(Object? json, MissionContext ctx) {
+  final ticket = json is Map ? json['ticket'] : null;
+  final customerId = ctx.values['customerId'];
+  return customerId != null &&
+      ticket is Map &&
+      ticket['id'] == ctx.values['ticketId'] &&
+      ticket['customer_id'] == customerId;
+}
+
 /// Chapter 7: a customer e-mail becomes a ticket; the sender is a new customer.
 final customerMission = Mission(
   id: 'customer',
@@ -128,7 +137,16 @@ final customerMission = Mission(
     MissionStep(
       id: 'linked',
       route: '/helpdesk/{ticketId}',
-      targets: const ['ticket-new-quotation'],
+      targets: const ['ticket-save-properties'],
+      completion: const OnApi(
+        'PUT',
+        '/tickets/{ticketId}',
+        predicate: _ticketLinkedToCustomer,
+      ),
+      probe: const Probe(
+        '/api/v1/tickets/{ticketId}',
+        done: _ticketLinkedToCustomer,
+      ),
     ),
     const MissionStep(id: 'done'),
   ],

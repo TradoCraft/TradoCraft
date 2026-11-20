@@ -7731,11 +7731,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Street Voorbeeldlaan 12, postal code 9000, city Gent, country BE. Language and payment terms can stay as they are.';
 
   @override
-  String get tutCustomerLinkedTitle => 'The ticket knows its customer';
+  String get tutCustomerLinkedTitle => 'Link the customer';
 
   @override
   String get tutCustomerLinkedBody =>
-      'The ticket now shows the customer, and new buttons appear: create a lead or start a quotation straight from the ticket. The next chapter makes the quotation. Press Next.';
+      'The ticket should link the new customer automatically. If it does not, select Brightwheel Logistics BV in the Customer field and press Save changes. The tutorial continues when the link is saved.';
 
   @override
   String get tutCustomerDoneTitle => 'What you learned';

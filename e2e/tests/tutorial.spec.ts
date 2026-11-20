@@ -1,7 +1,21 @@
-import { expect, Page, test } from '@playwright/test';
+import { APIRequestContext, expect, Page, test } from '@playwright/test';
 import fs from 'node:fs';
 import path from 'node:path';
+import { API_PORT } from '../playwright.config';
 import { boot, choose, dump, expectStep, field, next, overviewTab, railTo, searchPick, startNextChapter, takeMeThere, typeInto } from './flutter';
+
+const api = `http://127.0.0.1:${API_PORT}/api/v1`;
+const headers = { 'x-dev-user': 'admin@example.com' };
+
+async function tutorialTicket(request: APIRequestContext) {
+  const response = await request.get(`${api}/tickets`, { headers, params: { q: 'TUT-CART' } });
+  await expect(response).toBeOK();
+  const matches = (await response.json()).items.filter(
+    (item: { contact_email: string }) => item.contact_email === 'maya.okafor@example.test',
+  );
+  expect(matches).toHaveLength(1);
+  return matches[0];
+}
 
 /** Whether a Typst binary can be found (TYPST_BIN or on PATH); the server needs it for PDFs. */
 function typstAvailable(): boolean {
@@ -31,7 +45,7 @@ async function receiveGoods(page: Page, qty: number) {
   await expect(dialog).toBeHidden();
 }
 
-test('the whole tutorial, chapter by chapter', async ({ page }) => {
+test('the whole tutorial, chapter by chapter', async ({ page, request }) => {
   // The tutorial environment starts without a warehouse: chapter 3 teaches creating one (MAIN, with its
   // location MAIN), and the goods are received into it. The database is recreated on every run.
   await boot(page);
@@ -310,6 +324,7 @@ test('the whole tutorial, chapter by chapter', async ({ page }) => {
     await expectStep(page, 'customer', 'mail2');
     await page.getByRole('button', { name: 'Simulate customer e-mail' }).click();
     await expectStep(page, 'customer', 'readDetails');
+    await expect(page.getByText(/Our company details/)).toBeVisible();
     await next(page);
     await expectStep(page, 'customer', 'createCustomer');
     await page.getByRole('button', { name: 'New customer' }).click();
@@ -321,9 +336,12 @@ test('the whole tutorial, chapter by chapter', async ({ page }) => {
     await typeInto(field(page, 'City'), 'Gent');
     await choose(page, /^Price zone/, /TUT-EXPORT/);
     await page.getByRole('button', { name: 'Save' }).click();
-    await expectStep(page, 'customer', 'linked');
-    await next(page);
     await expectStep(page, 'customer', 'done');
+    const customers = await request.get(`${api}/customers`, { headers, params: { q: 'TUT-CUST' } });
+    await expect(customers).toBeOK();
+    const customer = (await customers.json()).items.find((item: { code: string }) => item.code === 'TUT-CUST');
+    expect(customer).toBeDefined();
+    expect((await tutorialTicket(request)).customer_id).toBe(customer.id);
     await next(page);
     await startNextChapter(page);
   });
@@ -413,15 +431,18 @@ test('the whole tutorial, chapter by chapter', async ({ page }) => {
   });
 
   await test.step('chapter 10: working a helpdesk ticket', async () => {
+    const ticket = await tutorialTicket(request);
+    const note = 'Maya wants a quotation for 8 carts.';
+    const timeNote = 'Read the request and replied';
+
     // The ticket of chapter 7 exists, so the "needs" step is skipped.
     await expectStep(page, 'helpdesk', 'note');
     await railTo(page, 'Helpdesk');
     await overviewTab(page);
     await page.getByRole('button', { name: 'All', exact: true }).click();
-    await page.waitForTimeout(1000);
-    await page.getByRole('button', { name: /Maya Okafor|quotation/i }).first().click();
+    await page.getByRole('button', { name: ticket.subject }).click();
     await page.getByRole('button', { name: 'Internal note' }).click();
-    await typeInto(field(page, 'Internal note'), 'Maya wants a quotation for 8 carts.');
+    await typeInto(field(page, 'Internal note'), note);
     await page.getByRole('button', { name: 'Add note', exact: true }).click();
     await expectStep(page, 'helpdesk', 'tag');
     await typeInto(field(page, 'Add tag'), 'quotation');
@@ -429,7 +450,7 @@ test('the whole tutorial, chapter by chapter', async ({ page }) => {
     await expectStep(page, 'helpdesk', 'time');
     await page.getByRole('button', { name: 'Log time' }).click();
     await typeInto(field(page, 'Minutes'), '15');
-    await typeInto(field(page, 'Note'), 'Read the request and replied');
+    await typeInto(field(page, 'Note'), timeNote);
     await page.getByRole('button', { name: 'Save', exact: true }).click();
     await expectStep(page, 'helpdesk', 'escalate');
     await page.getByRole('button', { name: 'Escalate', exact: true }).click();
@@ -440,5 +461,21 @@ test('the whole tutorial, chapter by chapter', async ({ page }) => {
     await takeMeThere(page);
     await next(page);
     await expectStep(page, 'helpdesk', 'done');
+    await next(page);
+    await expect(page.getByText('Chapter Working a ticket complete', { exact: true })).toBeVisible();
+
+    // Verify saved business outcomes independently of the narrator's progress.
+    const savedTicket = await request.get(`${api}/tickets/${ticket.id}`, { headers });
+    await expect(savedTicket).toBeOK();
+    const detail = await savedTicket.json();
+    expect(detail.articles).toEqual(expect.arrayContaining([expect.objectContaining({ kind: 'note', body: note })]));
+    expect(detail.ticket.tags).toContain('quotation');
+    expect(detail.ticket.escalated_at).toEqual(expect.any(String));
+
+    const timeEntries = await request.get(`${api}/tickets/${ticket.id}/time-entries`, { headers });
+    await expect(timeEntries).toBeOK();
+    expect((await timeEntries.json()).items).toEqual(
+      expect.arrayContaining([expect.objectContaining({ minutes: 15, note: timeNote })]),
+    );
   });
 });

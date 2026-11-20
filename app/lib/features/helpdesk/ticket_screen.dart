@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../app/api.dart';
+import '../../app/session.dart';
 import '../../app/workspace.dart' show TabScope;
 import '../../l10n/l10n.dart';
 import '../../shared/actions.dart';
@@ -28,6 +29,7 @@ import 'tickets_page.dart';
 import '../../shared/app_icons.dart';
 import '../../shared/load_failed.dart';
 import '../todo/object_todos_button.dart';
+import '../tutorial/api_events.dart';
 import '../tutorial/targets.dart';
 
 final teamsProvider = FutureProvider.autoDispose<List<Team>>(
@@ -130,6 +132,7 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
   String _queuedWho = '';
   int _mutationGen = 0;
   int _linksSeq = 0;
+  StreamSubscription<ApiEvent>? _tutorialMail;
   TicketDetail? _pendingTheirs;
   String _pendingActor = '';
   String _pendingKind = 'updated';
@@ -139,6 +142,26 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
     super.initState();
     _load();
     _body.addListener(_bodyChanged);
+    // Tutorial mail is imported by this client. It does not arrive through the
+    // external record watcher, so refresh the open ticket after the import.
+    _tutorialMail = ref.read(apiEventBusProvider).stream.listen((event) {
+      if (!mounted ||
+          event.method != 'POST' ||
+          event.path != '/helpdesk/inbound' ||
+          event.status < 200 ||
+          event.status >= 300 ||
+          (event.scope != null &&
+              event.scope != tutorialSessionId(ref.read(sessionProvider)))) {
+        return;
+      }
+      final result = event.json;
+      if (result is Map &&
+          result['ticket_id'] == widget.id &&
+          result['new_ticket'] == false &&
+          result['duplicate'] != true) {
+        unawaited(_refreshFromServer('note', _d?.ticket.contactName ?? ''));
+      }
+    });
     _watcher = watchRecordChanges(
       ref,
       entityType: 'ticket',
@@ -176,6 +199,7 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
 
   @override
   void dispose() {
+    unawaited(_tutorialMail?.cancel());
     _watcher?.dispose();
     _beatTimer?.cancel();
     _body.removeListener(_bodyChanged);
@@ -1048,13 +1072,14 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
       email: t.contactEmail,
       language: t.language,
     );
-    if (c != null) {
-      setState(() {
-        _customerId = c.id;
-        _customerName = c.name;
-      });
-      await _saveProperties();
-    }
+    if (c == null || !mounted) return;
+    await _liveRefreshTask;
+    if (!mounted) return;
+    setState(() {
+      _customerId = c.id;
+      _customerName = c.name;
+    });
+    await _saveProperties();
   }
 
   @override
@@ -1730,9 +1755,12 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
         ),
         gap,
         if (canWrite)
-          FilledButton.tonal(
-            onPressed: _busy ? null : _saveProperties,
-            child: Text(l.saveChanges),
+          TutorialTarget(
+            id: 'ticket-save-properties',
+            child: FilledButton.tonal(
+              onPressed: _busy ? null : _saveProperties,
+              child: Text(l.saveChanges),
+            ),
           ),
         const Divider(height: 32),
         Text(l.actions, style: theme.textTheme.titleSmall),

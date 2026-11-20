@@ -7768,11 +7768,11 @@ class AppLocalizationsFr extends AppLocalizations {
       'Rue Voorbeeldlaan 12, code postal 9000, ville Gand, pays BE. La langue et les conditions de paiement peuvent rester telles quelles.';
 
   @override
-  String get tutCustomerLinkedTitle => 'Le ticket connaît son client';
+  String get tutCustomerLinkedTitle => 'Associez le client';
 
   @override
   String get tutCustomerLinkedBody =>
-      'Le ticket affiche maintenant le client et de nouveaux boutons apparaissent : créer une piste ou démarrer un devis directement depuis le ticket. Le chapitre suivant fait le devis. Appuyez sur Suivant.';
+      'Le ticket devrait être associé automatiquement au nouveau client. Si ce n’est pas le cas, sélectionnez Brightwheel Logistics BV dans le champ Client et enregistrez les modifications. Le tutoriel reprend une fois le lien enregistré.';
 
   @override
   String get tutCustomerDoneTitle => 'Ce que vous avez appris';
