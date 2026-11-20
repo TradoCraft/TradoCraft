@@ -5,7 +5,7 @@ CRM, quotations, products, inventory, production, repairs, field service, helpde
 built to progressively replace a CRM and an external accounting package. Inspired by the breadth of open-source ERPs, built around
 our own processes.
 
-**Stack:** Rust (Axum, SQLx) · PostgreSQL · Flutter (Windows, Android, iOS, web) · Typst for PDFs.
+**Stack:** Rust (Axum, SQLx) · PostgreSQL · Flutter (Windows, Linux, Android, iOS, web) · Typst for PDFs.
 
 > Status: **vertical slice**. Customers and opportunities, products with families and five price
 > zones, customer rebates (product / family / general), net and indicative prices, bulk price
@@ -18,6 +18,15 @@ our own processes.
 
 https://github.com/user-attachments/assets/5c0a13d6-0781-4483-b2d3-06a2690ea5f5
 
+
+## Downloads
+
+Published versions are listed on [GitHub Releases](https://github.com/TradoCraft/TradoCraft/releases).
+For candidate builds, sign in to GitHub and open a successful **Release candidates** run in
+[GitHub Actions](https://github.com/TradoCraft/TradoCraft/actions). Select **Summary** and scroll
+to **Artifacts**. Each artifact contains the platform archive or APK and a SHA-256 checksum file.
+The desktop app needs a compatible TradoCraft server. See the [release runbook](docs/runbooks/release.md)
+for platform requirements and verification.
 
 ## Repository layout
 

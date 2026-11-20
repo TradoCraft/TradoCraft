@@ -127,3 +127,39 @@ jobs:
           name: tradocraft-windows-x64
           path: release-windows/
           if-no-files-found: error
+
+  linux:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Install Flutter Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends clang cmake ninja-build pkg-config libgtk-3-dev libstdc++-12-dev
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+      - run: flutter pub get --enforce-lockfile
+      - run: flutter build linux --release --no-pub
+      - name: Package Linux application
+        shell: bash
+        run: |
+          set -euo pipefail
+          bundle=build/linux/x64/release/bundle
+          test -x "$bundle/tradocraft_app"
+          cp ../LICENSE "$bundle/LICENSE.txt"
+          mkdir -p ../release-linux
+          tar -czf ../release-linux/TradoCraft-linux-x64.tar.gz -C "$bundle" .
+          cd ../release-linux
+          sha256sum TradoCraft-linux-x64.tar.gz > SHA256SUMS-linux.txt
+      - uses: actions/upload-artifact@v7
+        with:
+          name: tradocraft-linux-x64
+          path: release-linux/
+          if-no-files-found: error
