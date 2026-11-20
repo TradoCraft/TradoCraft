@@ -415,7 +415,7 @@ async fn activities_are_scheduled_completed_and_logged(db: PgPool) {
     .await;
     assert_eq!(s, StatusCode::CREATED, "{a}");
     assert_eq!(a["overdue"], true);
-    assert_eq!(a["assignee_name"].is_string(), true);
+    assert!(a["assignee_name"].is_string());
     let aid = a["id"].as_str().unwrap().to_string();
     let (s, _) = send(&app, ADMIN, Method::POST, &format!("{base}/activities"),
         Some(json!({"kind": "call", "summary": " ", "assignee_id": SALES_ID, "due_date": "2030-01-01"}))).await;
@@ -562,4 +562,48 @@ async fn the_inbox_lists_unread_threads_of_followed_records(db: PgPool) {
     assert_eq!(s, StatusCode::NO_CONTENT);
     let (_, inbox) = send(&app, VIEWER, Method::GET, "/chatter/inbox", None).await;
     assert!(inbox["unread"].as_array().unwrap().is_empty());
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn opportunities_log_stage_changes_and_carry_a_chatter(db: PgPool) {
+    let app = setup(db).await;
+    let c = customer(&app, "CH-10").await;
+    let (s, o) = send(
+        &app,
+        SALES,
+        Method::POST,
+        "/opportunities",
+        Some(json!({"title": "Tower", "customer_id": c})),
+    )
+    .await;
+    assert_eq!(s, StatusCode::CREATED, "{o}");
+    let id = o["id"].as_str().unwrap();
+    let (s, r) = send(
+        &app,
+        SALES,
+        Method::POST,
+        &format!("/opportunities/{id}/stage"),
+        Some(json!({"stage": "lost", "lost_reason": "too expensive"})),
+    )
+    .await;
+    assert_eq!(s, StatusCode::OK, "{r}");
+    let base = format!("/chatter/opportunity/{id}");
+    let (s, page) = send(&app, VIEWER, Method::GET, &format!("{base}/thread"), None).await;
+    assert_eq!(s, StatusCode::OK, "{page}");
+    let m = &items(&page)[0];
+    assert_eq!(m["changes"][0]["field"], "stage");
+    assert_eq!(m["changes"][0]["to"], "lost");
+    assert_eq!(m["body"], "too expensive");
+    let (s, _) = send(
+        &app,
+        SALES,
+        Method::POST,
+        &format!("{base}/notes"),
+        Some(json!({"body": "ok"})),
+    )
+    .await;
+    assert_eq!(s, StatusCode::CREATED);
+    // the live channel accepts the kind
+    let (s, _) = send(&app, TECH, Method::GET, &format!("{base}/thread"), None).await;
+    assert_eq!(s, StatusCode::FORBIDDEN);
 }

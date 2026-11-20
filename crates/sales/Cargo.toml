@@ -7,6 +7,7 @@ publish.workspace = true
 
 [dependencies]
 tradocraft-core.workspace = true
+tradocraft-chatter.workspace = true
 tradocraft-crm.workspace = true
 tradocraft-documents.workspace = true
 tradocraft-inventory.workspace = true

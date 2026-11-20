@@ -7,6 +7,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../framework/components/chatter/chatter_panel.dart';
+import '../../framework/components/chatter/chatter_repository.dart';
 import '../../app/api.dart';
 import '../../app/shortcuts/actions.dart';
 import '../../app/shortcuts/registry.dart';
@@ -877,6 +879,14 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
               statusBar: _statusBar(q),
               smartButtons: _smartButtons(q, canWrite),
               beforeSheet: q == null ? const [] : _shippingBanner(q),
+              chatterBeside: false,
+              chatter: q == null
+                  ? null
+                  : ChatterPanel(
+                      kind: ChatterKind.quotation,
+                      recordId: q.id,
+                      refresh: _form.chatterTick,
+                    ),
               body: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [

@@ -25,6 +25,8 @@ class ActivityInput {
   final String assigneeId;
   @JsonKey(includeIfNull: false,name: 'client_id')
   final String? clientId;
+
+  /// `YYYY-MM-DD`; a full datetime (a Dart `DateTime`) is accepted and cut to its date.
   @JsonKey(name: 'due_date')
   final DateTime dueDate;
   final ActivityKind kind;

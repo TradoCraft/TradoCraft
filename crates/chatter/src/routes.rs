@@ -82,7 +82,7 @@ pub struct ThreadQuery {
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
-pub struct NoteInput {
+pub struct ChatterNoteInput {
     pub body: String,
     /// Chosen by the client so that a retried post does not post twice.
     pub client_id: Option<Uuid>,
@@ -130,12 +130,14 @@ pub struct ActivityInput {
     #[serde(default)]
     pub note: String,
     pub assignee_id: Uuid,
+    /// `YYYY-MM-DD`; a full datetime (a Dart `DateTime`) is accepted and cut to its date.
+    #[serde(deserialize_with = "tradocraft_core::serde_util::date")]
     pub due_date: NaiveDate,
     pub client_id: Option<Uuid>,
 }
 
 #[derive(Debug, Default, Deserialize, ToSchema)]
-pub struct DoneInput {
+pub struct ActivityDoneInput {
     #[serde(default)]
     pub note: String,
 }
@@ -333,7 +335,7 @@ fn clean_body(body: &str) -> AppResult<String> {
 }
 
 #[utoipa::path(post, path = "/chatter/{kind}/{id}/notes", tag = "chatter", operation_id = "chatter_post_note",
-    params(("kind" = String, Path), ("id" = Uuid, Path)), request_body = NoteInput,
+    params(("kind" = String, Path), ("id" = Uuid, Path)), request_body = ChatterNoteInput,
     responses((status = 201, body = ThreadItem), (status = 200, body = ThreadItem),
               (status = 403, body = ErrorBody), (status = 404, body = ErrorBody),
               (status = 409, body = ErrorBody), (status = 422, body = ErrorBody)))]
@@ -341,7 +343,7 @@ async fn post_note(
     State(state): State<AppState>,
     user: CurrentUser,
     Path((kind, id)): Path<(String, Uuid)>,
-    Json(input): Json<NoteInput>,
+    Json(input): Json<ChatterNoteInput>,
 ) -> AppResult<(StatusCode, Json<ThreadItem>)> {
     let body = clean_body(&input.body)?;
     let mut tx = state.db.begin().await?;
@@ -430,14 +432,14 @@ async fn lock_own_note(
 }
 
 #[utoipa::path(patch, path = "/chatter/notes/{id}", tag = "chatter", operation_id = "chatter_edit_note",
-    params(("id" = Uuid, Path)), request_body = NoteInput,
+    params(("id" = Uuid, Path)), request_body = ChatterNoteInput,
     responses((status = 200, body = ThreadItem), (status = 403, body = ErrorBody),
               (status = 404, body = ErrorBody), (status = 422, body = ErrorBody)))]
 async fn edit_note(
     State(state): State<AppState>,
     user: CurrentUser,
     Path(id): Path<Uuid>,
-    Json(input): Json<NoteInput>,
+    Json(input): Json<ChatterNoteInput>,
 ) -> AppResult<Json<ThreadItem>> {
     let body = clean_body(&input.body)?;
     let mut tx = state.db.begin().await?;
@@ -619,14 +621,14 @@ async fn lock_activity(
 }
 
 #[utoipa::path(post, path = "/chatter/activities/{id}/done", tag = "chatter", operation_id = "chatter_complete_activity",
-    params(("id" = Uuid, Path)), request_body = DoneInput,
+    params(("id" = Uuid, Path)), request_body = ActivityDoneInput,
     responses((status = 204), (status = 403, body = ErrorBody), (status = 404, body = ErrorBody),
               (status = 422, body = ErrorBody)))]
 async fn complete_activity(
     State(state): State<AppState>,
     user: CurrentUser,
     Path(id): Path<Uuid>,
-    Json(input): Json<DoneInput>,
+    Json(input): Json<ActivityDoneInput>,
 ) -> AppResult<StatusCode> {
     if input.note.chars().count() > MAX_ACTIVITY_NOTE {
         return Err(AppError::Validation(format!(

@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/api.dart';
 import '../../app/workspace.dart' show TabScope;
+import '../../framework/components/chatter/chatter_panel.dart';
+import '../../framework/components/chatter/chatter_repository.dart';
 import '../../framework/form/record_form_controller.dart';
 import '../../framework/form/record_form_view.dart';
 import '../../shared/decimal_field.dart';
@@ -576,6 +578,13 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
     titleExtras: widget.titleExtras,
     reportDirty: !widget.readOnly,
     maxSheetWidth: 720,
+    chatter: c == null
+        ? null
+        : ChatterPanel(
+            kind: ChatterKind.customer,
+            recordId: c.id,
+            refresh: _form.chatterTick,
+          ),
     onReload: _reloadCustomer,
     actions: [
       if (!widget.readOnly) _saveButton(),

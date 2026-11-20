@@ -2209,7 +2209,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/DoneInput"
+                "$ref": "#/components/schemas/ActivityDoneInput"
               }
             }
           },
@@ -2335,7 +2335,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/NoteInput"
+                "$ref": "#/components/schemas/ChatterNoteInput"
               }
             }
           },
@@ -2893,7 +2893,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/NoteInput"
+                "$ref": "#/components/schemas/ChatterNoteInput"
               }
             }
           },
@@ -33428,6 +33428,14 @@
           }
         }
       },
+      "ActivityDoneInput": {
+        "type": "object",
+        "properties": {
+          "note": {
+            "type": "string"
+          }
+        }
+      },
       "ActivityInput": {
         "type": "object",
         "required": [
@@ -33450,7 +33458,8 @@
           },
           "due_date": {
             "type": "string",
-            "format": "date"
+            "format": "date",
+            "description": "`YYYY-MM-DD`; a full datetime (a Dart `DateTime`) is accepted and cut to its date."
           },
           "kind": {
             "$ref": "#/components/schemas/ActivityKind"
@@ -35395,6 +35404,25 @@
           "percent",
           "amount"
         ]
+      },
+      "ChatterNoteInput": {
+        "type": "object",
+        "required": [
+          "body"
+        ],
+        "properties": {
+          "body": {
+            "type": "string"
+          },
+          "client_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "Chosen by the client so that a retried post does not post twice."
+          }
+        }
       },
       "CheckStatus": {
         "type": "string",

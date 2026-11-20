@@ -1060,6 +1060,18 @@ async fn new_revision(
         serde_json::json!({ "revision": new, "supersedes": old }),
     )
     .await?;
+    tradocraft_chatter::log(
+        &mut tx,
+        user.company_id,
+        Some(user.user_id),
+        tradocraft_chatter::RecordKind::Order,
+        id,
+        "revision",
+        serde_json::json!(old),
+        serde_json::json!(new),
+        "",
+    )
+    .await?;
     let order = load_order_locked(&mut tx, user.company_id, id, None).await?;
     tx.commit().await?;
     Ok((StatusCode::CREATED, Json(order)))
@@ -1254,6 +1266,18 @@ async fn send_order(
         serde_json::json!({ "revision": order.revision, "to": to.address }),
     )
     .await?;
+    tradocraft_chatter::log(
+        &mut tx,
+        user.company_id,
+        Some(user.user_id),
+        tradocraft_chatter::RecordKind::Order,
+        id,
+        "order_sent",
+        serde_json::Value::Null,
+        serde_json::json!(to.address),
+        "",
+    )
+    .await?;
     tx.commit().await?;
     Ok(Json(order))
 }
@@ -1371,12 +1395,28 @@ pub async fn confirm_order(
     let data = serde_json::json!({
         "number": head.number, "revision": head.current_revision, "via": via, "by": actor, "note": note.trim(),
     });
+    let author = match by {
+        Confirmer::Staff(u) => Some(u.user_id),
+        Confirmer::Portal { .. } => None,
+    };
     match by {
         Confirmer::Staff(u) => audit::record(conn, u, "order", order_id, "confirmed", data).await?,
         Confirmer::Portal { .. } => {
             audit::record_system(conn, company_id, "order", order_id, "confirmed", data).await?
         }
     }
+    tradocraft_chatter::log(
+        conn,
+        company_id,
+        author,
+        tradocraft_chatter::RecordKind::Order,
+        order_id,
+        "order_confirmed",
+        serde_json::Value::Null,
+        serde_json::json!(via),
+        note.trim(),
+    )
+    .await?;
     Ok(())
 }
 
@@ -1495,6 +1535,18 @@ async fn cancel(
         id,
         "cancelled",
         serde_json::json!({ "from": head.status, "reason": input.reason.trim() }),
+    )
+    .await?;
+    tradocraft_chatter::log(
+        &mut tx,
+        user.company_id,
+        Some(user.user_id),
+        tradocraft_chatter::RecordKind::Order,
+        id,
+        "status",
+        serde_json::json!(head.status),
+        serde_json::json!("cancelled"),
+        input.reason.trim(),
     )
     .await?;
     let order = load_order_locked(&mut tx, user.company_id, id, None).await?;

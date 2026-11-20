@@ -7,4 +7,4 @@ mod track;
 
 pub use kind::RecordKind;
 pub use routes::router;
-pub use track::track;
+pub use track::{log, track};

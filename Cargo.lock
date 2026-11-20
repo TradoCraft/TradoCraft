@@ -3947,6 +3947,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sqlx",
+ "tradocraft-chatter",
  "tradocraft-core",
  "tradocraft-crm",
  "tradocraft-documents",

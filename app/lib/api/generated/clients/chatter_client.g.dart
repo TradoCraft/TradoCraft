@@ -42,7 +42,7 @@ class _ChatterClient implements ChatterClient {
   @override
   Future<void> chatterCompleteActivity({
     required String id,
-    required DoneInput body,
+    required ActivityDoneInput body,
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
@@ -111,7 +111,7 @@ class _ChatterClient implements ChatterClient {
   @override
   Future<ThreadItem> chatterEditNote({
     required String id,
-    required NoteInput body,
+    required ChatterNoteInput body,
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
@@ -360,7 +360,7 @@ class _ChatterClient implements ChatterClient {
   Future<ThreadItem> chatterPostNote({
     required String kind,
     required String id,
-    required NoteInput body,
+    required ChatterNoteInput body,
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};

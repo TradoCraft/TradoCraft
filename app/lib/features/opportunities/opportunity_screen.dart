@@ -2,6 +2,8 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../framework/components/chatter/chatter_panel.dart';
+import '../../framework/components/chatter/chatter_repository.dart';
 import '../../app/api.dart';
 import '../../shared/actions.dart';
 import '../../shared/format.dart';
@@ -274,6 +276,8 @@ class _OpportunityScreenState extends ConsumerState<OpportunityScreen> {
                             ],
                           ),
                   ),
+              const SizedBox(height: 16),
+              ChatterPanel(kind: ChatterKind.opportunity, recordId: o.id),
             ],
           );
         },

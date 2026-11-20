@@ -3,6 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../framework/components/chatter/chatter_panel.dart';
+import '../../framework/components/chatter/chatter_repository.dart';
+import '../../framework/form/record_form_controller.dart' show ChatterTick;
 import '../../app/api.dart';
 import '../../app/workspace.dart' show TabScope;
 import '../../l10n/l10n.dart';
@@ -52,6 +55,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
   String? _error;
   bool _missing = false;
   RecordLiveWatcher? _watcher;
+  final _chatterTick = ChatterTick();
   String? _conflictMessage;
   bool _isConflict = false;
 
@@ -81,6 +85,11 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
       currentVersion: () => _order?.version,
       onExternalChange: (ev) {
         if (!mounted) return;
+        // A note or activity is not an edit conflict (ADR 0086): reload the chatter only.
+        if (ev.kind.startsWith('chatter_')) {
+          _chatterTick.fire();
+          return;
+        }
         setState(() {
           _conflictMessage = ev.kind == 'resync'
               ? context.l10n.recordConflictMessage
@@ -94,6 +103,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
   @override
   void dispose() {
     _watcher?.dispose();
+    _chatterTick.dispose();
     _disposeEditors();
     _notes.dispose();
     _reference.dispose();
@@ -1073,6 +1083,12 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
           gap,
           const Divider(),
           _priority(d, canWrite),
+          gap,
+          ChatterPanel(
+            kind: ChatterKind.order,
+            recordId: o.id,
+            refresh: _chatterTick,
+          ),
         ],
       ).lockRecordEditing(_locked),
     );

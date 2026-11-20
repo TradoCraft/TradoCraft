@@ -6,12 +6,12 @@ import 'package:dio/dio.dart';
 import 'package:retrofit/retrofit.dart';
 
 import '../models/activity.dart';
+import '../models/activity_done_input.dart';
 import '../models/activity_input.dart';
-import '../models/done_input.dart';
+import '../models/chatter_note_input.dart';
 import '../models/follower_input.dart';
 import '../models/followers.dart';
 import '../models/inbox.dart';
-import '../models/note_input.dart';
 import '../models/thread_item.dart';
 import '../models/thread_page.dart';
 
@@ -29,7 +29,7 @@ abstract class ChatterClient {
   @POST('/api/v1/chatter/activities/{id}/done')
   Future<void> chatterCompleteActivity({
     @Path('id') required String id,
-    @Body() required DoneInput body,
+    @Body() required ActivityDoneInput body,
   });
 
   @GET('/api/v1/chatter/inbox')
@@ -43,7 +43,7 @@ abstract class ChatterClient {
   @PATCH('/api/v1/chatter/notes/{id}')
   Future<ThreadItem> chatterEditNote({
     @Path('id') required String id,
-    @Body() required NoteInput body,
+    @Body() required ChatterNoteInput body,
   });
 
   @GET('/api/v1/chatter/{kind}/{id}/activities')
@@ -95,7 +95,7 @@ abstract class ChatterClient {
   Future<ThreadItem> chatterPostNote({
     @Path('kind') required String kind,
     @Path('id') required String id,
-    @Body() required NoteInput body,
+    @Body() required ChatterNoteInput body,
   });
 
   @POST('/api/v1/chatter/{kind}/{id}/read')

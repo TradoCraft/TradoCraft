@@ -50,3 +50,35 @@ pub async fn track(
     .await?;
     Ok(())
 }
+
+/// Writes one `system` message for a single lifecycle step (a status change, an order sent). The
+/// author is empty for a step taken by the system, such as a customer confirming in the portal.
+/// `body` is an optional human text (a cancellation reason); it is shown as written.
+#[allow(clippy::too_many_arguments)]
+pub async fn log(
+    conn: &mut PgConnection,
+    company_id: Uuid,
+    author: Option<Uuid>,
+    kind: RecordKind,
+    record_id: Uuid,
+    field: &str,
+    from: serde_json::Value,
+    to: serde_json::Value,
+    body: &str,
+) -> Result<(), sqlx::Error> {
+    sqlx::query(
+        "INSERT INTO chatter.messages
+             (id, company_id, record_kind, record_id, kind, author_user_id, body, changes)
+         VALUES ($1, $2, $3, $4, 'system', $5, $6, $7)",
+    )
+    .bind(new_id())
+    .bind(company_id)
+    .bind(kind.as_str())
+    .bind(record_id)
+    .bind(author)
+    .bind(body.chars().take(10_000).collect::<String>())
+    .bind(serde_json::json!([{ "field": field, "from": from, "to": to }]))
+    .execute(&mut *conn)
+    .await?;
+    Ok(())
+}

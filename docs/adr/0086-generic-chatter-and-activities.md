@@ -138,12 +138,21 @@ through the same read endpoints (a `kind = 'ticket'` adapter) and then decide ab
 - Following is per user and company; leaving a company drops nothing, the rows are filtered by
   the active company.
 
-**Step by step.** The first step (this change) delivers notes, followers, activities, the inbox,
-live events and change messages for customers. Still to follow in this ADR's scope: change
-messages for quotations, orders and opportunities (`chatter::track` next to their
-`audit::record` calls), file attachments on notes (`chatter.message_files` and the upload
-endpoint, reusing `core::files`), the activity mail to a new assignee, `PATCH` of an activity,
-and the worker pass that removes rows of deleted records.
+**Delivered in this step.** The backend (notes, followers, activities, inbox, live events); change
+messages for customers (tracked fields: name, VAT number and regime, e-mail, phone, language,
+active, discount), and lifecycle messages for quotations (status), orders (confirmed, sent,
+revised, cancelled with its reason) and opportunities (stage, with the lost reason), written with
+`chatter::log`; the app panel (`ChatterPanel`) on the customer and quotation forms, the order and
+the opportunity screens; and the notifications centre entries. The panel sits beside the sheet on
+wide forms that opt in (customers) and below it where the sheet needs the width (quotations,
+whose line editor is wide). A chatter event never shows the "someone else saved" banner: the form
+controller hands it to the panel (`RecordFormController.chatterTick`).
+
+Still to follow in this ADR's scope: field-level change messages for quotations and orders,
+file attachments on notes (`chatter.message_files` and the upload endpoint, reusing
+`core::files`), the activity mail to a new assignee, `PATCH` of an activity, live updates on the
+opportunity screen (it has no record watcher yet), and the worker pass that removes rows of
+deleted records.
 
 **Not yet.** Mentions and mail on notes; activity types defined per company; recurring
 activities; editing history of notes; reactions and threads; rich text and inline images;

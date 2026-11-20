@@ -649,6 +649,18 @@ async fn transition(
         serde_json::json!({ "from": from.as_str() }),
     )
     .await?;
+    tradocraft_chatter::log(
+        &mut tx,
+        user.company_id,
+        Some(user.user_id),
+        tradocraft_chatter::RecordKind::Quotation,
+        id,
+        "status",
+        serde_json::json!(from.as_str()),
+        serde_json::json!(to.as_str()),
+        "",
+    )
+    .await?;
     if let (QuotationStatus::Accepted, Some(opp)) = (to, current.opportunity_id) {
         tradocraft_crm::opportunities::mark_won(&mut tx, user, opp).await?;
     }
