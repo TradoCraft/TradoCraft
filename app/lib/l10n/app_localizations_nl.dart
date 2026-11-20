@@ -10785,4 +10785,44 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get formUnsavedChanges => 'Niet-opgeslagen wijzigingen';
+
+  @override
+  String get kanbanMoveTo => 'Verplaatsen naar…';
+
+  @override
+  String kanbanMoveToColumn(String column) {
+    return 'Verplaats naar $column';
+  }
+
+  @override
+  String get kanbanEmpty => 'Niets hier';
+
+  @override
+  String kanbanMore(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Toon nog $count',
+      one: 'Toon nog 1',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get kanbanColumnFailed => 'Deze kolom kon niet geladen worden.';
+
+  @override
+  String kanbanAdd(String column) {
+    return 'Toevoegen aan $column';
+  }
+
+  @override
+  String get kanbanViewList => 'Lijst';
+
+  @override
+  String get kanbanViewBoard => 'Bord';
+
+  @override
+  String get kanbanLostCancelled =>
+      'Teruggezet: voor een verloren kans is een reden nodig.';
 }

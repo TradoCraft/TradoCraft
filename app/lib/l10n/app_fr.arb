@@ -3334,5 +3334,14 @@
   "formClearValue": "Effacer",
   "formOpenRecord": "Ouvrir {name}",
   "formStatusCurrent": "Statut : {status}",
-  "formUnsavedChanges": "Modifications non enregistrées"
+  "formUnsavedChanges": "Modifications non enregistrées",
+  "kanbanMoveTo": "Déplacer vers…",
+  "kanbanMoveToColumn": "Déplacer vers {column}",
+  "kanbanEmpty": "Rien ici",
+  "kanbanMore": "{count, plural, =1{Afficher 1 de plus} other{Afficher {count} de plus}}",
+  "kanbanColumnFailed": "Cette colonne n'a pas pu être chargée.",
+  "kanbanAdd": "Ajouter à {column}",
+  "kanbanViewList": "Liste",
+  "kanbanViewBoard": "Tableau",
+  "kanbanLostCancelled": "Remis en place : un motif est requis pour marquer une opportunité comme perdue."
 }

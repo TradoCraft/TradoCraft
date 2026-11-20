@@ -4875,5 +4875,17 @@
   "@formOpenRecord": {"placeholders": {"name": {"type": "String"}}},
   "formStatusCurrent": "Status: {status}",
   "@formStatusCurrent": {"placeholders": {"status": {"type": "String"}}},
-  "formUnsavedChanges": "Unsaved changes"
+  "formUnsavedChanges": "Unsaved changes",
+  "kanbanMoveTo": "Move to…",
+  "kanbanMoveToColumn": "Move to {column}",
+  "@kanbanMoveToColumn": {"placeholders": {"column": {"type": "String"}}},
+  "kanbanEmpty": "Nothing here",
+  "kanbanMore": "{count, plural, =1{Show 1 more} other{Show {count} more}}",
+  "@kanbanMore": {"placeholders": {"count": {"type": "int"}}},
+  "kanbanColumnFailed": "This column could not be loaded.",
+  "kanbanAdd": "Add to {column}",
+  "@kanbanAdd": {"placeholders": {"column": {"type": "String"}}},
+  "kanbanViewList": "List",
+  "kanbanViewBoard": "Board",
+  "kanbanLostCancelled": "Moved back: a reason is needed to mark an opportunity as lost."
 }

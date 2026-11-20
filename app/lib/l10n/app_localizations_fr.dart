@@ -10800,4 +10800,44 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get formUnsavedChanges => 'Modifications non enregistrées';
+
+  @override
+  String get kanbanMoveTo => 'Déplacer vers…';
+
+  @override
+  String kanbanMoveToColumn(String column) {
+    return 'Déplacer vers $column';
+  }
+
+  @override
+  String get kanbanEmpty => 'Rien ici';
+
+  @override
+  String kanbanMore(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Afficher $count de plus',
+      one: 'Afficher 1 de plus',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get kanbanColumnFailed => 'Cette colonne n\'a pas pu être chargée.';
+
+  @override
+  String kanbanAdd(String column) {
+    return 'Ajouter à $column';
+  }
+
+  @override
+  String get kanbanViewList => 'Liste';
+
+  @override
+  String get kanbanViewBoard => 'Tableau';
+
+  @override
+  String get kanbanLostCancelled =>
+      'Remis en place : un motif est requis pour marquer une opportunité comme perdue.';
 }

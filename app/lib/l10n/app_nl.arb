@@ -3334,5 +3334,14 @@
   "formClearValue": "Wissen",
   "formOpenRecord": "{name} openen",
   "formStatusCurrent": "Status: {status}",
-  "formUnsavedChanges": "Niet-opgeslagen wijzigingen"
+  "formUnsavedChanges": "Niet-opgeslagen wijzigingen",
+  "kanbanMoveTo": "Verplaatsen naar…",
+  "kanbanMoveToColumn": "Verplaats naar {column}",
+  "kanbanEmpty": "Niets hier",
+  "kanbanMore": "{count, plural, =1{Toon nog 1} other{Toon nog {count}}}",
+  "kanbanColumnFailed": "Deze kolom kon niet geladen worden.",
+  "kanbanAdd": "Toevoegen aan {column}",
+  "kanbanViewList": "Lijst",
+  "kanbanViewBoard": "Bord",
+  "kanbanLostCancelled": "Teruggezet: voor een verloren kans is een reden nodig."
 }

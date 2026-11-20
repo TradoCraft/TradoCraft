@@ -18989,6 +18989,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unsaved changes'**
   String get formUnsavedChanges;
+
+  /// No description provided for @kanbanMoveTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Move to…'**
+  String get kanbanMoveTo;
+
+  /// No description provided for @kanbanMoveToColumn.
+  ///
+  /// In en, this message translates to:
+  /// **'Move to {column}'**
+  String kanbanMoveToColumn(String column);
+
+  /// No description provided for @kanbanEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing here'**
+  String get kanbanEmpty;
+
+  /// No description provided for @kanbanMore.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Show 1 more} other{Show {count} more}}'**
+  String kanbanMore(int count);
+
+  /// No description provided for @kanbanColumnFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'This column could not be loaded.'**
+  String get kanbanColumnFailed;
+
+  /// No description provided for @kanbanAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to {column}'**
+  String kanbanAdd(String column);
+
+  /// No description provided for @kanbanViewList.
+  ///
+  /// In en, this message translates to:
+  /// **'List'**
+  String get kanbanViewList;
+
+  /// No description provided for @kanbanViewBoard.
+  ///
+  /// In en, this message translates to:
+  /// **'Board'**
+  String get kanbanViewBoard;
+
+  /// No description provided for @kanbanLostCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Moved back: a reason is needed to mark an opportunity as lost.'**
+  String get kanbanLostCancelled;
 }
 
 class _AppLocalizationsDelegate

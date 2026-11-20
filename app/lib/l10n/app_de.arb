@@ -3334,5 +3334,14 @@
   "formClearValue": "Leeren",
   "formOpenRecord": "{name} öffnen",
   "formStatusCurrent": "Status: {status}",
-  "formUnsavedChanges": "Ungespeicherte Änderungen"
+  "formUnsavedChanges": "Ungespeicherte Änderungen",
+  "kanbanMoveTo": "Verschieben nach…",
+  "kanbanMoveToColumn": "Nach {column} verschieben",
+  "kanbanEmpty": "Nichts hier",
+  "kanbanMore": "{count, plural, =1{1 weitere anzeigen} other{{count} weitere anzeigen}}",
+  "kanbanColumnFailed": "Diese Spalte konnte nicht geladen werden.",
+  "kanbanAdd": "Zu {column} hinzufügen",
+  "kanbanViewList": "Liste",
+  "kanbanViewBoard": "Board",
+  "kanbanLostCancelled": "Zurückgesetzt: Für eine verlorene Chance ist ein Grund nötig."
 }

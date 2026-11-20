@@ -3334,5 +3334,14 @@
   "formClearValue": "Borrar",
   "formOpenRecord": "Abrir {name}",
   "formStatusCurrent": "Estado: {status}",
-  "formUnsavedChanges": "Cambios sin guardar"
+  "formUnsavedChanges": "Cambios sin guardar",
+  "kanbanMoveTo": "Mover a…",
+  "kanbanMoveToColumn": "Mover a {column}",
+  "kanbanEmpty": "Nada aquí",
+  "kanbanMore": "{count, plural, =1{Mostrar 1 más} other{Mostrar {count} más}}",
+  "kanbanColumnFailed": "No se pudo cargar esta columna.",
+  "kanbanAdd": "Añadir a {column}",
+  "kanbanViewList": "Lista",
+  "kanbanViewBoard": "Tablero",
+  "kanbanLostCancelled": "Devuelta: se necesita un motivo para marcar una oportunidad como perdida."
 }
