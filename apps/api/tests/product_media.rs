@@ -213,7 +213,7 @@ async fn the_first_upload_is_the_default_and_the_default_can_be_changed(db: PgPo
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
 async fn uploads_are_checked_and_scoped_to_their_product(db: PgPool) {
-    let app = setup(db).await;
+    let app = setup(db.clone()).await;
     let (s, _) = upload(
         &app,
         SALES,
@@ -227,6 +227,26 @@ async fn uploads_are_checked_and_scoped_to_their_product(db: PgPool) {
     assert_eq!(s, StatusCode::UNPROCESSABLE_ENTITY);
     let (s, _) = upload(&app, SALES, UNIT_100, vec![], "").await;
     assert_eq!(s, StatusCode::UNPROCESSABLE_ENTITY);
+
+    // a file id created outside product media (e.g. a ticket/chatter/repair file) cannot be adopted
+    let foreign_file_id = "00000000-0000-7000-8000-0000000000e0";
+    sqlx::query(
+        "INSERT INTO core.files (id, company_id, filename, content_type, size_bytes, uploader_name, storage_key)
+         VALUES ($1::uuid, '00000000-0000-7000-8000-000000000001', 'other.png', 'image/png', 67, 'x', '00000000-0000-7000-8000-0000000000e0')",
+    )
+    .bind(foreign_file_id)
+    .execute(&db)
+    .await
+    .unwrap();
+    let (s, _) = upload(
+        &app,
+        SALES,
+        UNIT_100,
+        PNG.to_vec(),
+        &format!("?client_id={foreign_file_id}"),
+    )
+    .await;
+    assert_eq!(s, StatusCode::CONFLICT);
 
     // a retried upload is the same item; the same id on another product is refused
     let id = "00000000-0000-7000-8000-0000000000e1";

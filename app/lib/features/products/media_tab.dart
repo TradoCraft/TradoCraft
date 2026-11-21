@@ -8,6 +8,7 @@ import 'package:material_ui/material_ui.dart';
 import '../../app/api.dart';
 import '../../l10n/l10n.dart';
 import '../../shared/app_icons.dart';
+import '../../shared/file_export.dart';
 import '../../shared/photos.dart';
 
 /// One picture or video of a product, as listed by `GET /products/{id}/media`.
@@ -63,51 +64,84 @@ class _MediaTabState extends ConsumerState<MediaTab> {
 
   String get _base => '/api/v1/products/${widget.productId}/media';
 
-  Future<Uint8List> _bytes(String id) => _cache.putIfAbsent(id, () async {
-    final r = await ref
-        .read(dioProvider)
-        .get<List<int>>(
-          '$_base/$id',
+  Future<Uint8List> _bytes(String id) {
+    final existing = _cache[id];
+    if (existing != null) return existing;
+    final dio = ref.read(dioProvider);
+    final url = '$_base/$id';
+    late final Future<Uint8List> future;
+    future = () async {
+      try {
+        final r = await dio.get<List<int>>(
+          url,
           options: Options(responseType: ResponseType.bytes),
         );
-    return Uint8List.fromList(r.data ?? const []);
-  });
+        return Uint8List.fromList(r.data ?? const []);
+      } catch (_) {
+        _cache.remove(id);
+        rethrow;
+      }
+    }();
+    _cache[id] = future;
+    return future;
+  }
 
   Future<void> _run(Future<void> Function() action) async {
     final messenger = ScaffoldMessenger.of(context);
     setState(() => _busy = true);
     try {
       await action();
-      ref.invalidate(_mediaProvider(widget.productId));
     } catch (e) {
       messenger.showSnackBar(SnackBar(content: Text(errorMessage(e))));
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted) {
+        ref.invalidate(_mediaProvider(widget.productId));
+        setState(() => _busy = false);
+      }
     }
   }
 
   Future<void> _add() => _run(() async {
-    final files = await ImagePicker().pickMultipleMedia();
     final dio = ref.read(dioProvider);
+    final base = _base;
+    final files = await ImagePicker().pickMultipleMedia();
     for (final f in files) {
-      await uploadPhoto(dio, _base, PickedPhoto(await f.readAsBytes(), f.name));
+      await uploadPhoto(dio, base, PickedPhoto(await f.readAsBytes(), f.name));
     }
   });
 
   Future<void> _makeDefault(ProductMediaItem m) => _run(() async {
-    await ref
-        .read(dioProvider)
-        .patch<Object?>('$_base/${m.id}', data: {'is_default': true});
+    final dio = ref.read(dioProvider);
+    final base = _base;
+    await dio.patch<Object?>('$base/${m.id}', data: {'is_default': true});
   });
 
   Future<void> _remove(ProductMediaItem m) => _run(() async {
-    await ref.read(dioProvider).delete<Object?>('$_base/${m.id}');
+    final dio = ref.read(dioProvider);
+    final base = _base;
+    await dio.delete<Object?>('$base/${m.id}');
     _cache.remove(m.id);
   });
 
-  void _open(ProductMediaItem m) {
-    if (m.isVideo) return;
-    showDialog<void>(
+  Future<void> _open(ProductMediaItem m) async {
+    if (m.isVideo) {
+      final messenger = ScaffoldMessenger.of(context);
+      try {
+        final bytes = await _bytes(m.id);
+        if (!mounted) return;
+        final name = m.filename.split(RegExp(r'[\\/]')).last.trim();
+        await saveExport(
+          context,
+          ref,
+          name.isEmpty || name == '.' || name == '..' ? 'video.mp4' : name,
+          bytes,
+        );
+      } catch (e) {
+        messenger.showSnackBar(SnackBar(content: Text(errorMessage(e))));
+      }
+      return;
+    }
+    await showDialog<void>(
       context: context,
       builder: (_) => Dialog(
         child: FutureBuilder<Uint8List>(

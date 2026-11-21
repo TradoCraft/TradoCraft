@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:image_picker/image_picker.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -36,6 +38,17 @@ class ProductForm extends ConsumerStatefulWidget {
 
   @override
   ConsumerState<ProductForm> createState() => _ProductFormState();
+}
+
+class _StagedMedia {
+  _StagedMedia(this.photo) : clientId = newClientId();
+  final PickedPhoto photo;
+  final String clientId;
+  String? uploadedId;
+  bool patchedDefault = false;
+
+  String get filename => photo.filename;
+  Uint8List get bytes => photo.bytes;
 }
 
 class _ProductFormState extends ConsumerState<ProductForm> {
@@ -84,7 +97,7 @@ class _ProductFormState extends ConsumerState<ProductForm> {
   late final _defaultRemark = TextEditingController(
     text: p?.defaultProductionRemark,
   );
-  final List<PickedPhoto> _media = [];
+  final List<_StagedMedia> _media = [];
   int _defaultMediaIndex = 0;
   Product? _created;
   bool _saving = false;
@@ -170,38 +183,41 @@ class _ProductFormState extends ConsumerState<ProductForm> {
     });
     try {
       final api = ref.read(apiProvider).products;
-      var saved =
-          _created ??
-          (p == null
-              ? await api.createProduct(body: body)
-              : await api.updateProduct(id: p!.id, body: body));
+      final dio = ref.read(dioProvider);
+      final targetId = p?.id ?? _created?.id;
+      var saved = targetId == null
+          ? await api.createProduct(body: body)
+          : await api.updateProduct(id: targetId, body: body);
       if (p == null) _created = saved;
       if (_media.isNotEmpty) {
-        final dio = ref.read(dioProvider);
         final base = '/api/v1/products/${saved.id}/media';
-        final needsDefaultPatch = _defaultMediaIndex > 0;
-        String? chosenId;
-        while (_media.isNotEmpty) {
-          final item = _media.first;
-          final res = await uploadPhoto(dio, base, item);
-          final data = res.data;
-          final uploadedId = data is Map<String, dynamic>
-              ? data['id'] as String?
-              : null;
-          if (_defaultMediaIndex == 0 && uploadedId != null) {
-            chosenId = uploadedId;
+        final chosenIndex = _defaultMediaIndex.clamp(0, _media.length - 1);
+        final chosen = _media[chosenIndex];
+        for (final item in _media) {
+          if (item.uploadedId == null) {
+            final res = await uploadPhoto(
+              dio,
+              base,
+              item.photo,
+              clientId: item.clientId,
+            );
+            final data = res.data;
+            item.uploadedId =
+                (data is Map<String, dynamic> ? data['id'] as String? : null) ??
+                item.clientId;
           }
-          _media.removeAt(0);
-          _defaultMediaIndex = (_defaultMediaIndex - 1).clamp(
-            0,
-            _media.isEmpty ? 0 : _media.length - 1,
-          );
         }
-        if (needsDefaultPatch && chosenId != null) {
+        final chosenId = chosen.uploadedId;
+        final needsDefaultPatch =
+            chosenIndex > 0 || _media.any((m) => m.patchedDefault);
+        if (needsDefaultPatch && chosenId != null && !chosen.patchedDefault) {
           await dio.patch<Object?>(
             '$base/$chosenId',
             data: {'is_default': true},
           );
+          for (final m in _media) {
+            m.patchedDefault = identical(m, chosen);
+          }
         }
         saved = await api.getProduct(id: saved.id);
       }
@@ -215,12 +231,16 @@ class _ProductFormState extends ConsumerState<ProductForm> {
 
   Future<void> _addMedia() async {
     final picker = widget.pickMedia ?? _pickProductMedia;
-    final picked = await picker(context);
-    if (picked.isEmpty || !mounted) return;
-    setState(() {
-      _media.addAll(picked);
-      if (_defaultMediaIndex >= _media.length) _defaultMediaIndex = 0;
-    });
+    try {
+      final picked = await picker(context);
+      if (picked.isEmpty || !mounted) return;
+      setState(() {
+        _media.addAll([for (final item in picked) _StagedMedia(item)]);
+        if (_defaultMediaIndex >= _media.length) _defaultMediaIndex = 0;
+      });
+    } catch (e) {
+      if (mounted) setState(() => _error = errorMessage(e));
+    }
   }
 
   void _removeMedia(int index) {

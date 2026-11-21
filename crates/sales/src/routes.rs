@@ -1032,11 +1032,12 @@ async fn quotation_pdf(
         tradocraft_products::media::default_images(&mut conn, &state.blobs, &product_ids).await?;
     drop(conn);
     let company = get_company(&state.db, user.company_id).await?;
-    let files: Vec<(String, Vec<u8>)> = images.values().cloned().collect();
+    let doc = pdf::document_with_images(&company, &q, &images);
+    let files: Vec<(String, Vec<u8>)> = images.into_values().collect();
     let bytes = match tradocraft_documents::render_pdf_with_files(
         &state.documents,
         "quotation",
-        &pdf::document_with_images(&company, &q, &images),
+        &doc,
         &files,
     )
     .await

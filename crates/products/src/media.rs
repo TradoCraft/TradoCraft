@@ -2,7 +2,7 @@
 //! default, the one shown first. The first upload becomes the default; deleting the default
 //! promotes the oldest remaining one, so a product with media always has a default.
 
-use axum::body::Bytes;
+use axum::body::Body;
 use axum::extract::{DefaultBodyLimit, Path, Query, State};
 use axum::http::StatusCode;
 use axum::response::Response;
@@ -136,91 +136,153 @@ async fn list_media(
     Ok(Json(rows))
 }
 
+/// Verifies that a client-chosen file id is either unused or already media of this product.
+/// Rejects file ids created by other modules (repairs, tickets, chatter) or for other products.
+async fn verify_client_id(
+    conn: &mut PgConnection,
+    product_id: Uuid,
+    client_id: Option<Uuid>,
+) -> AppResult<()> {
+    let Some(client_id) = client_id else {
+        return Ok(());
+    };
+    let owner_product: Option<Uuid> =
+        sqlx::query_scalar("SELECT product_id FROM products.media WHERE file_id = $1")
+            .bind(client_id)
+            .fetch_optional(&mut *conn)
+            .await?;
+    match owner_product {
+        Some(p_id) if p_id == product_id => Ok(()),
+        Some(_) => Err(AppError::Conflict(
+            "this file id belongs to another record".into(),
+        )),
+        None => {
+            let used: bool =
+                sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM core.files WHERE id = $1)")
+                    .bind(client_id)
+                    .fetch_one(&mut *conn)
+                    .await?;
+            if used {
+                Err(AppError::Conflict(
+                    "this file id belongs to another record".into(),
+                ))
+            } else {
+                Ok(())
+            }
+        }
+    }
+}
+
 /// Adds a picture or video: the request body is the file itself (JPEG, PNG or WebP up to 12 MB,
 /// MP4 or WebM up to 64 MB). The first item of a product becomes its default.
 #[utoipa::path(post, path = "/products/{id}/media", tag = "products", operation_id = "upload_product_media",
     params(("id" = Uuid, Path), UploadParams),
-    request_body(content = String, content_type = "application/octet-stream"),
+    request_body(content = Vec<u8>, content_type = "application/octet-stream"),
     responses((status = 201, body = ProductMedia), (status = 422, body = tradocraft_core::error::ErrorBody)))]
 async fn upload_media(
     State(state): State<AppState>,
     user: CurrentUser,
     Path(id): Path<Uuid>,
     Query(p): Query<UploadParams>,
-    body: Bytes,
+    body: Body,
 ) -> AppResult<(StatusCode, Json<ProductMedia>)> {
     user.require(Permission::ProductsWrite)?;
-    let mut tx = state.db.begin().await?;
-    ensure_product(&mut tx, id).await?;
-    // serialise uploads to one product so "the first one is the default" holds
-    sqlx::query("SELECT id FROM products.products WHERE id = $1 FOR UPDATE")
-        .bind(id)
-        .execute(&mut *tx)
-        .await?;
-    let file = files::store_media(
-        &mut tx,
-        &state.blobs,
-        user.company_id,
-        p.client_id,
-        p.filename.as_deref().unwrap_or(""),
-        &body,
-        Some(user.user_id),
-        &user.display_name,
-    )
-    .await?;
-    let kind = if file.content_type.starts_with("video/") {
-        "video"
-    } else {
-        "image"
-    };
-    let inserted = sqlx::query(
-        "INSERT INTO products.media (file_id, company_id, product_id, kind, caption, is_default)
-         VALUES ($1, $2, $3, $4, $5,
-                 NOT EXISTS (SELECT 1 FROM products.media WHERE product_id = $3 AND is_default))
-         ON CONFLICT (file_id) DO NOTHING",
-    )
-    .bind(file.id)
-    .bind(user.company_id)
-    .bind(id)
-    .bind(kind)
-    .bind(p.caption.as_deref().unwrap_or("").trim())
-    .execute(&mut *tx)
-    .await?
-    .rows_affected();
-    if inserted == 0 {
-        // a retried upload is fine, an id that belongs to another product is not
-        let same: bool = sqlx::query_scalar(
-            "SELECT EXISTS (SELECT 1 FROM products.media WHERE file_id = $1 AND product_id = $2)",
-        )
-        .bind(file.id)
-        .bind(id)
-        .fetch_one(&mut *tx)
-        .await?;
-        if !same {
-            return Err(AppError::Conflict(
-                "this file id belongs to another record".into(),
-            ));
-        }
-    } else {
-        audit::record(
-            &mut tx,
-            &user,
-            "product",
-            id,
-            "media_added",
-            serde_json::json!({ "file_id": file.id, "kind": kind }),
-        )
-        .await?;
+    {
+        let mut conn = state.db.acquire().await?;
+        ensure_product(&mut conn, id).await?;
+        verify_client_id(&mut conn, id, p.client_id).await?;
     }
-    let media = load_one(&mut tx, id, file.id).await?;
-    tx.commit().await?;
-    Ok((StatusCode::CREATED, Json(media)))
+    // Stream and validate the upload to disk before acquiring the product row lock.
+    let staged = files::stage_media_stream(&state.blobs, body).await?;
+    let staged_key = staged.storage_key.clone();
+    let res: AppResult<ProductMedia> = async {
+        let mut tx = state.db.begin().await?;
+        ensure_product(&mut tx, id).await?;
+        // serialise uploads to one product so "the first one is the default" holds
+        sqlx::query("SELECT id FROM products.products WHERE id = $1 FOR UPDATE")
+            .bind(id)
+            .execute(&mut *tx)
+            .await?;
+        verify_client_id(&mut tx, id, p.client_id).await?;
+        let (file, created) = files::record_staged_media(
+            &mut tx,
+            &state.blobs,
+            user.company_id,
+            p.client_id,
+            p.filename.as_deref().unwrap_or(""),
+            staged,
+            Some(user.user_id),
+            &user.display_name,
+        )
+        .await?;
+        if !created {
+            let same: bool = sqlx::query_scalar(
+                "SELECT EXISTS (SELECT 1 FROM products.media WHERE file_id = $1 AND product_id = $2)",
+            )
+            .bind(file.id)
+            .bind(id)
+            .fetch_one(&mut *tx)
+            .await?;
+            if !same {
+                return Err(AppError::Conflict(
+                    "this file id belongs to another record".into(),
+                ));
+            }
+        } else {
+            let kind = if file.content_type.starts_with("video/") {
+                "video"
+            } else {
+                "image"
+            };
+            sqlx::query(
+                "INSERT INTO products.media (file_id, company_id, product_id, kind, caption, is_default)
+                 VALUES ($1, $2, $3, $4, $5,
+                         NOT EXISTS (SELECT 1 FROM products.media WHERE product_id = $3 AND is_default))",
+            )
+            .bind(file.id)
+            .bind(user.company_id)
+            .bind(id)
+            .bind(kind)
+            .bind(p.caption.as_deref().unwrap_or("").trim())
+            .execute(&mut *tx)
+            .await?;
+            audit::record(
+                &mut tx,
+                &user,
+                "product",
+                id,
+                "media_added",
+                serde_json::json!({ "file_id": file.id, "kind": kind }),
+            )
+            .await?;
+        }
+        let media = load_one(&mut tx, id, file.id).await?;
+        tx.commit().await?;
+        Ok(media)
+    }
+    .await;
+    match res {
+        Ok(media) => Ok((StatusCode::CREATED, Json(media))),
+        Err(e) => {
+            let _ = state.blobs.delete(&staged_key).await;
+            Err(e)
+        }
+    }
 }
 
 /// The file itself.
 #[utoipa::path(get, path = "/products/{id}/media/{media_id}", tag = "products", operation_id = "get_product_media",
     params(("id" = Uuid, Path), ("media_id" = Uuid, Path)),
-    responses((status = 200, content_type = "image/*", body = String), (status = 404, body = tradocraft_core::error::ErrorBody)))]
+    responses(
+        (status = 200, content(
+            (Vec<u8> = "image/jpeg"),
+            (Vec<u8> = "image/png"),
+            (Vec<u8> = "image/webp"),
+            (Vec<u8> = "video/mp4"),
+            (Vec<u8> = "video/webm"),
+        )),
+        (status = 404, body = tradocraft_core::error::ErrorBody)
+    ))]
 async fn get_media(
     State(state): State<AppState>,
     user: CurrentUser,
@@ -243,7 +305,16 @@ async fn get_media(
 /// The default picture or video of the product, or 404 when it has none.
 #[utoipa::path(get, path = "/products/{id}/media/default", tag = "products", operation_id = "get_product_default_media",
     params(("id" = Uuid, Path)),
-    responses((status = 200, content_type = "image/*", body = String), (status = 404, body = tradocraft_core::error::ErrorBody)))]
+    responses(
+        (status = 200, content(
+            (Vec<u8> = "image/jpeg"),
+            (Vec<u8> = "image/png"),
+            (Vec<u8> = "image/webp"),
+            (Vec<u8> = "video/mp4"),
+            (Vec<u8> = "video/webm"),
+        )),
+        (status = 404, body = tradocraft_core::error::ErrorBody)
+    ))]
 async fn get_default_media(
     State(state): State<AppState>,
     user: CurrentUser,

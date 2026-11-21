@@ -185,6 +185,7 @@ void main() {
               pickMedia: (_) async => [
                 PickedPhoto(_mp4, 'demo.mp4'),
                 PickedPhoto(_png, 'front.png'),
+                PickedPhoto(_png, 'side.png'),
               ],
             ),
             child: const Text('New'),
@@ -222,6 +223,7 @@ void main() {
         http.requests,
         containsAllInOrder([
           'POST /api/v1/products',
+          'POST /api/v1/products/p1/media',
           'POST /api/v1/products/p1/media',
           'POST /api/v1/products/p1/media',
           'PATCH /api/v1/products/p1/media/m2',

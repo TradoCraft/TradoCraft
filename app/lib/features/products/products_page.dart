@@ -82,7 +82,7 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
       columns: [
         EntityColumn(
           context.l10n.photos,
-          (p) => '',
+          (p) => p.defaultMediaKind ?? '',
           id: 'picture',
           cell: (context, p) => ProductThumb(
             productId: p.id,

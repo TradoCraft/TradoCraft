@@ -1242,8 +1242,8 @@ async fn render_confirmation(
     let images =
         tradocraft_products::media::default_images(&mut conn, &state.blobs, &product_ids).await?;
     drop(conn);
-    let files: Vec<(String, Vec<u8>)> = images.values().cloned().collect();
     let doc = order_doc::document_with_images(&company, order, snapshot, language, &images);
+    let files: Vec<(String, Vec<u8>)> = images.into_values().collect();
     match tradocraft_documents::render_pdf_with_files(
         &state.documents,
         "order_confirmation",

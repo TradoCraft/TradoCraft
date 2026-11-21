@@ -139,7 +139,8 @@ pub async fn store_document(
 }
 
 /// Stores a product picture or video: JPEG, PNG, WebP, MP4 or WebM. Images are limited to
-/// [`MAX_FILE_BYTES`], videos to [`MAX_VIDEO_BYTES`].
+/// [`MAX_FILE_BYTES`], videos to [`MAX_VIDEO_BYTES`]. Returns `(file, created)` where `created` is
+/// `true` only when this call inserted the `core.files` row.
 #[allow(clippy::too_many_arguments)]
 pub async fn store_media(
     conn: &mut PgConnection,
@@ -150,26 +151,211 @@ pub async fn store_media(
     bytes: &[u8],
     uploaded_by: Option<Uuid>,
     uploader_name: &str,
-) -> AppResult<FileInfo> {
+) -> AppResult<(FileInfo, bool)> {
+    const REFUSAL: &str = "only JPEG, PNG and WebP images and MP4 or WebM videos are accepted";
+    if bytes.is_empty() {
+        return Err(AppError::Validation("the file is empty".into()));
+    }
     let max = if sniff_image(bytes).is_some() {
         MAX_FILE_BYTES
     } else {
         MAX_VIDEO_BYTES
     };
-    store(
+    if bytes.len() > max {
+        return Err(AppError::Validation(format!(
+            "the file is too large (at most {} MB)",
+            max / 1024 / 1024
+        )));
+    }
+    let content_type = sniff_media(bytes).ok_or_else(|| AppError::Validation(REFUSAL.into()))?;
+    let storage_key = blobs.put(bytes).await?;
+    record_staged_media(
         conn,
         blobs,
         company_id,
         id,
         filename,
-        bytes,
+        StagedMedia {
+            storage_key,
+            content_type,
+            size_bytes: bytes.len() as i32,
+        },
         uploaded_by,
         uploader_name,
-        sniff_media,
-        "only JPEG, PNG and WebP images and MP4 or WebM videos are accepted",
-        max,
     )
     .await
+}
+
+/// A validated media payload written to [`BlobStore`], ready to be recorded in `core.files`.
+pub struct StagedMedia {
+    pub storage_key: String,
+    pub content_type: &'static str,
+    pub size_bytes: i32,
+}
+
+/// Streams a product picture or video upload to [`BlobStore`] in bounded 64 KB chunks while
+/// incrementally checking its signature and size limit (`MAX_FILE_BYTES` for images,
+/// `MAX_VIDEO_BYTES` for videos). No database lock is held while receiving the upload.
+pub async fn stage_media_stream(
+    blobs: &BlobStore,
+    body: axum::body::Body,
+) -> AppResult<StagedMedia> {
+    use futures_core::Stream;
+    use std::pin::Pin;
+    use tokio::io::AsyncWriteExt;
+
+    const REFUSAL: &str = "only JPEG, PNG and WebP images and MP4 or WebM videos are accepted";
+    let staged = blobs.begin_write().await?;
+    let file = match tokio::fs::File::create(&staged.tmp_path).await {
+        Ok(f) => f,
+        Err(e) => {
+            staged.abort().await;
+            return Err(anyhow::Error::from(e)
+                .context("create staged media file")
+                .into());
+        }
+    };
+    let mut writer = tokio::io::BufWriter::with_capacity(64 * 1024, file);
+    let mut stream = body.into_data_stream();
+    let mut header = Vec::with_capacity(16);
+    let mut content_type: Option<&'static str> = None;
+    let mut max_bytes = MAX_VIDEO_BYTES;
+    let mut total_bytes: usize = 0;
+
+    while let Some(next) = std::future::poll_fn(|cx| Pin::new(&mut stream).poll_next(cx)).await {
+        let chunk = match next {
+            Ok(c) => c,
+            Err(e) => {
+                drop(writer);
+                staged.abort().await;
+                return Err(AppError::Validation(format!("upload stream failed: {e}")));
+            }
+        };
+        if chunk.is_empty() {
+            continue;
+        }
+        if header.len() < 16 {
+            let take = (16 - header.len()).min(chunk.len());
+            header.extend_from_slice(&chunk[..take]);
+        }
+        if content_type.is_none() && header.len() >= 13 {
+            let Some(ct) = sniff_media(&header) else {
+                drop(writer);
+                staged.abort().await;
+                return Err(AppError::Validation(REFUSAL.into()));
+            };
+            content_type = Some(ct);
+            max_bytes = if ct.starts_with("image/") {
+                MAX_FILE_BYTES
+            } else {
+                MAX_VIDEO_BYTES
+            };
+        }
+        total_bytes = total_bytes.saturating_add(chunk.len());
+        if total_bytes > max_bytes {
+            drop(writer);
+            staged.abort().await;
+            return Err(AppError::Validation(format!(
+                "the file is too large (at most {} MB)",
+                max_bytes / 1024 / 1024
+            )));
+        }
+        if let Err(e) = writer.write_all(&chunk).await {
+            drop(writer);
+            staged.abort().await;
+            return Err(anyhow::Error::from(e)
+                .context("write staged media chunk")
+                .into());
+        }
+    }
+
+    if total_bytes == 0 {
+        drop(writer);
+        staged.abort().await;
+        return Err(AppError::Validation("the file is empty".into()));
+    }
+    let ct = match content_type.or_else(|| sniff_media(&header)) {
+        Some(ct) => ct,
+        None => {
+            drop(writer);
+            staged.abort().await;
+            return Err(AppError::Validation(REFUSAL.into()));
+        }
+    };
+    let final_max = if ct.starts_with("image/") {
+        MAX_FILE_BYTES
+    } else {
+        MAX_VIDEO_BYTES
+    };
+    if total_bytes > final_max {
+        drop(writer);
+        staged.abort().await;
+        return Err(AppError::Validation(format!(
+            "the file is too large (at most {} MB)",
+            final_max / 1024 / 1024
+        )));
+    }
+    if let Err(e) = writer.flush().await {
+        drop(writer);
+        staged.abort().await;
+        return Err(anyhow::Error::from(e)
+            .context("flush staged media file")
+            .into());
+    }
+    drop(writer);
+    let storage_key = staged.commit().await?;
+    Ok(StagedMedia {
+        storage_key,
+        content_type: ct,
+        size_bytes: total_bytes as i32,
+    })
+}
+
+/// Records a [`StagedMedia`] in `core.files`, returning `(file, created)` where `created` is
+/// `true` only when this call inserted the `core.files` row. Always cleans up
+/// `staged.storage_key` if an existing row is reused or if the insert fails.
+#[allow(clippy::too_many_arguments)]
+pub async fn record_staged_media(
+    conn: &mut PgConnection,
+    blobs: &BlobStore,
+    company_id: Uuid,
+    id: Option<Uuid>,
+    filename: &str,
+    staged: StagedMedia,
+    uploaded_by: Option<Uuid>,
+    uploader_name: &str,
+) -> AppResult<(FileInfo, bool)> {
+    let id = id.unwrap_or_else(new_id);
+    let res = sqlx::query_as::<_, FileInfo>(
+        "INSERT INTO core.files (id, company_id, filename, content_type, size_bytes, uploaded_by, uploader_name, storage_key)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         ON CONFLICT (id) DO NOTHING
+         RETURNING id, filename, content_type, size_bytes, uploader_name, created_at",
+    )
+    .bind(id)
+    .bind(company_id)
+    .bind(clean_filename(filename, staged.content_type))
+    .bind(staged.content_type)
+    .bind(staged.size_bytes)
+    .bind(uploaded_by)
+    .bind(uploader_name)
+    .bind(&staged.storage_key)
+    .fetch_optional(&mut *conn)
+    .await;
+    match res {
+        Ok(Some(info)) => Ok((info, true)),
+        Ok(None) => {
+            let _ = blobs.delete(&staged.storage_key).await;
+            let existing = get_info(conn, company_id, id).await?.ok_or_else(|| {
+                AppError::Conflict("this file id belongs to another record".into())
+            })?;
+            Ok((existing, false))
+        }
+        Err(e) => {
+            let _ = blobs.delete(&staged.storage_key).await;
+            Err(e.into())
+        }
+    }
 }
 
 #[allow(clippy::too_many_arguments)]
