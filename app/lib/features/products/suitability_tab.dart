@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/api.dart';
 import '../../l10n/l10n.dart';
 import '../opportunities/matches_panel.dart';
+import '../tutorial/targets.dart';
 import 'suitability_logic.dart';
 
 final _definitionsProvider =
@@ -314,9 +315,12 @@ class _SuitabilityFormState extends ConsumerState<_SuitabilityForm> {
         if (canWrite)
           Align(
             alignment: Alignment.centerLeft,
-            child: FilledButton(
-              onPressed: _saving ? null : _save,
-              child: Text(l.save),
+            child: TutorialTarget(
+              id: 'suitability-save',
+              child: FilledButton(
+                onPressed: _saving ? null : _save,
+                child: Text(l.save),
+              ),
             ),
           ),
       ],

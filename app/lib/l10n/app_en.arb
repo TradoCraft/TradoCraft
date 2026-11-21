@@ -380,9 +380,15 @@
   "deliveryClosedWarning": "The customer is closed from {from} to {to}. Next open day: {next}.",
   "@deliveryClosedWarning": {
     "placeholders": {
-      "from": {"type": "String"},
-      "to": {"type": "String"},
-      "next": {"type": "String"}
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      },
+      "next": {
+        "type": "String"
+      }
     }
   },
   "deliveryFailed": "not sent",
@@ -408,7 +414,9 @@
   "deliveryUseDay": "Use {date}",
   "@deliveryUseDay": {
     "placeholders": {
-      "date": {"type": "String"}
+      "date": {
+        "type": "String"
+      }
     }
   },
   "department": "Department",
@@ -972,7 +980,9 @@
   "productionBomRevision": "BOM revision {revision}",
   "@productionBomRevision": {
     "placeholders": {
-      "revision": {"type": "String"}
+      "revision": {
+        "type": "String"
+      }
     }
   },
   "productionBuildComponent": "Build it",
@@ -1010,7 +1020,9 @@
   "productionSerialsNeeded": "Choose {count} serial numbers",
   "@productionSerialsNeeded": {
     "placeholders": {
-      "count": {"type": "String"}
+      "count": {
+        "type": "String"
+      }
     }
   },
   "productionShort": "short of stock",
@@ -2693,14 +2705,18 @@
   "warrantyComparedWith": "Compared with the arrival date {date}",
   "@warrantyComparedWith": {
     "placeholders": {
-      "date": {"type": "String"}
+      "date": {
+        "type": "String"
+      }
     }
   },
   "warrantyProvisional": "Not received yet: compared with today, so provisional.",
   "serialUnitLabel": "Serial unit: {unit}",
   "@serialUnitLabel": {
     "placeholders": {
-      "unit": {"type": "String"}
+      "unit": {
+        "type": "String"
+      }
     }
   },
   "noSerialUnit": "No serial unit linked",
@@ -2717,9 +2733,15 @@
   "warrantyOverriddenBy": "Overridden to void by {name} on {date}: {reason}",
   "@warrantyOverriddenBy": {
     "placeholders": {
-      "name": {"type": "String"},
-      "date": {"type": "String"},
-      "reason": {"type": "String"}
+      "name": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      },
+      "reason": {
+        "type": "String"
+      }
     }
   },
   "eventFindings": "Findings updated",
@@ -2733,19 +2755,25 @@
   "csvExported": "Saved {name}",
   "@csvExported": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "csvExportFailed": "Export failed: {error}",
   "@csvExportFailed": {
     "placeholders": {
-      "error": {"type": "String"}
+      "error": {
+        "type": "String"
+      }
     }
   },
   "csvImportTitle": "Import: {entity}",
   "@csvImportTitle": {
     "placeholders": {
-      "entity": {"type": "String"}
+      "entity": {
+        "type": "String"
+      }
     }
   },
   "csvImportHelp": "Choose a CSV, Excel (XLSX) or OpenDocument (ODS) file. Rows are matched on the code: an existing code is updated, a new code is created. Columns that are missing from the file are left untouched, and nothing is ever deleted. It is all or nothing: if any row has an error, nothing is imported. CSV: semicolon or comma separated, UTF-8. Spreadsheets: the first sheet is read; to pick another sheet or map differently named columns, use Administration, Import.",
@@ -2766,30 +2794,46 @@
   "csvErrorsFound": "{count, plural, =1{1 problem found} other{{count} problems found}}. Nothing has been imported.",
   "@csvErrorsFound": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "csvErrorRow": "Row {row}",
   "@csvErrorRow": {
     "placeholders": {
-      "row": {"type": "int"}
+      "row": {
+        "type": "int"
+      }
     }
   },
   "csvErrorRowColumn": "Row {row}, column {column}",
   "@csvErrorRowColumn": {
     "placeholders": {
-      "row": {"type": "int"},
-      "column": {"type": "String"}
+      "row": {
+        "type": "int"
+      },
+      "column": {
+        "type": "String"
+      }
     }
   },
   "csvAndMore": "and {count} more",
   "@csvAndMore": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "profileTooltip": "Profile: {name}",
-  "@profileTooltip": {"placeholders": {"name": {"type": "String"}}},
+  "@profileTooltip": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "tabTicket": "Ticket",
   "tabQuotation": "Quotation",
   "tabNewQuotation": "New quotation",
@@ -2819,7 +2863,16 @@
   "remarkHistoryAll": "All",
   "remarkHistoryEmpty": "No earlier remarks for this product.",
   "remarkHistoryUsed": "Used {count} times, last on {quotation}",
-  "@remarkHistoryUsed": {"placeholders": {"count": {"type": "int"}, "quotation": {"type": "String"}}},
+  "@remarkHistoryUsed": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "quotation": {
+        "type": "String"
+      }
+    }
+  },
   "defaultProductionRemark": "Default production remark",
   "optionsTab": "Options",
   "optionsIntro": "Products offered together with this one on a quotation. A required option is added automatically.",
@@ -2831,7 +2884,13 @@
   "optionsSaved": "Options saved.",
   "optionsInvalidQuantity": "Enter a quantity greater than 0 for every option.",
   "optionsChooseTitle": "Options for {product}",
-  "@optionsChooseTitle": {"placeholders": {"product": {"type": "String"}}},
+  "@optionsChooseTitle": {
+    "placeholders": {
+      "product": {
+        "type": "String"
+      }
+    }
+  },
   "optionsChooseHelp": "Required options are added automatically. Tick the optional ones to add.",
   "optionsAddSelected": "Add",
   "optionsSkip": "Without optional options",
@@ -2843,11 +2902,19 @@
   "savedConfigurations": "Saved configurations",
   "cfgAddRow": "Add {item}",
   "@cfgAddRow": {
-    "placeholders": {"item": {"type": "String"}}
+    "placeholders": {
+      "item": {
+        "type": "String"
+      }
+    }
   },
   "cfgAddRowToGroup": "Add a row to {group}",
   "@cfgAddRowToGroup": {
-    "placeholders": {"group": {"type": "String"}}
+    "placeholders": {
+      "group": {
+        "type": "String"
+      }
+    }
   },
   "cfgCalculated": "Calculated",
   "cfgChangeCustomer": "Other customer",
@@ -2860,14 +2927,22 @@
   "cfgDiscardChanges": "Discard the unsaved changes?",
   "cfgEach": "For each: {value}",
   "@cfgEach": {
-    "placeholders": {"value": {"type": "String"}}
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
   },
   "cfgErrors": "Errors",
   "cfgWarnings": "Warnings",
   "cfgInfo": "Information",
   "cfgEvalFailed": "Could not recalculate: {message}",
   "@cfgEvalFailed": {
-    "placeholders": {"message": {"type": "String"}}
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
   },
   "cfgInput": "Input",
   "cfgIssues": "Issues",
@@ -2888,60 +2963,108 @@
   "cfgQuoteNeedsCustomer": "Choose a customer before making a quotation.",
   "cfgQuoteCreated": "Quotation {number} created.",
   "@cfgQuoteCreated": {
-    "placeholders": {"number": {"type": "String"}}
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
   },
   "cfgQuoteUpdated": "Quotation {number} updated.",
   "@cfgQuoteUpdated": {
-    "placeholders": {"number": {"type": "String"}}
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
   },
   "cfgQuoteRevised": "Quotation {number}: a new revision was created.",
   "@cfgQuoteRevised": {
-    "placeholders": {"number": {"type": "String"}}
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
   },
   "cfgResetToCalculated": "Reset to calculated ({value})",
   "@cfgResetToCalculated": {
-    "placeholders": {"value": {"type": "String"}}
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
   },
   "cfgStale": "The calculation now gives {value}",
   "@cfgStale": {
-    "placeholders": {"value": {"type": "String"}}
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
   },
   "cfgRevision": "revision {revision}",
   "@cfgRevision": {
-    "placeholders": {"revision": {"type": "int"}}
+    "placeholders": {
+      "revision": {
+        "type": "int"
+      }
+    }
   },
   "cfgRule": "Rule: {rule}",
   "@cfgRule": {
-    "placeholders": {"rule": {"type": "String"}}
+    "placeholders": {
+      "rule": {
+        "type": "String"
+      }
+    }
   },
   "cfgSaved": "Saved.",
   "cfgSelectLine": "Select a line to see where it comes from.",
   "cfgSetForAll": "Set for all rows…",
   "cfgSetForAllTitle": "{column} for all rows",
   "@cfgSetForAllTitle": {
-    "placeholders": {"column": {"type": "String"}}
+    "placeholders": {
+      "column": {
+        "type": "String"
+      }
+    }
   },
   "cfgStart": "Start",
   "cfgUnsaved": "Unsaved changes",
   "cfgNewerRevisionAvailable": "revision {revision} available",
   "@cfgNewerRevisionAvailable": {
-    "placeholders": {"revision": {"type": "int"}}
+    "placeholders": {
+      "revision": {
+        "type": "int"
+      }
+    }
   },
   "cfgbActivate": "Activate",
   "cfgbActivateConfirm": "Activate this draft? Sales will use it for new configurations; the current active revision becomes obsolete.",
   "cfgbActivated": "Activated.",
   "cfgbActivatedOn": "activated {date}",
   "@cfgbActivatedOn": {
-    "placeholders": {"date": {"type": "String"}}
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
   },
   "cfgbActivateModel": "Make available",
   "cfgbActivateRefused": "Not activated: {count, plural, =1{1 problem} other{{count} problems}} to solve.",
   "@cfgbActivateRefused": {
-    "placeholders": {"count": {"type": "int"}}
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "cfgbActiveRevision": "active: revision {revision}",
   "@cfgbActiveRevision": {
-    "placeholders": {"revision": {"type": "int"}}
+    "placeholders": {
+      "revision": {
+        "type": "int"
+      }
+    }
   },
   "cfgbAddChild": "Add option line",
   "cfgbAddColumn": "Add column",
@@ -2957,7 +3080,11 @@
   "cfgbApply": "Apply",
   "cfgbChildRuleTitle": "Option line {id}",
   "@cfgbChildRuleTitle": {
-    "placeholders": {"id": {"type": "String"}}
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
   },
   "cfgbCode": "Product code (formula)",
   "cfgbCodeExpr": "Formula",
@@ -2969,11 +3096,19 @@
   "cfgbCommentTemplate": "Comment (template)",
   "cfgbComputedOf": "Computed values: {scope}",
   "@cfgbComputedOf": {
-    "placeholders": {"scope": {"type": "String"}}
+    "placeholders": {
+      "scope": {
+        "type": "String"
+      }
+    }
   },
   "cfgbComputedTitle": "Computed value {name}",
   "@cfgbComputedTitle": {
-    "placeholders": {"name": {"type": "String"}}
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "cfgbConditions": "Conditions",
   "cfgbCreate": "Create",
@@ -2981,7 +3116,11 @@
   "cfgbCsvImport": "Import CSV",
   "cfgbCsvImported": "{count, plural, =1{1 row imported.} other{{count} rows imported.}}",
   "@cfgbCsvImported": {
-    "placeholders": {"count": {"type": "int"}}
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "cfgbCsvProblems": "The CSV file was not imported",
   "cfgbDeactivateModel": "Withdraw",
@@ -3001,30 +3140,50 @@
   "cfgbDisplayUnits": "Display units:",
   "cfgbDraftRevision": "draft: revision {revision}",
   "@cfgbDraftRevision": {
-    "placeholders": {"revision": {"type": "int"}}
+    "placeholders": {
+      "revision": {
+        "type": "int"
+      }
+    }
   },
   "cfgbEditDraft": "Edit draft",
   "cfgbEnabledIf": "Enabled when",
   "cfgbExported": "Saved {name}.",
   "@cfgbExported": {
-    "placeholders": {"name": {"type": "String"}}
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "cfgbExportJson": "Export JSON",
   "cfgbExpr": "Formula",
   "cfgbFamily": "Product family (code)",
   "cfgbFieldsOf": "Fields: {scope}",
   "@cfgbFieldsOf": {
-    "placeholders": {"scope": {"type": "String"}}
+    "placeholders": {
+      "scope": {
+        "type": "String"
+      }
+    }
   },
   "cfgbFieldTitle": "Field {name}",
   "@cfgbFieldTitle": {
-    "placeholders": {"name": {"type": "String"}}
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "cfgbForEach": "For each",
   "cfgbForEachHelp": "A list: one line per element, with each and each_index",
   "cfgbFormulaType": "Result: {type}",
   "@cfgbFormulaType": {
-    "placeholders": {"type": {"type": "String"}}
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
   },
   "cfgbGroupField": "Group by field",
   "cfgbGroupHelp": "A group is one section of rows (e.g. a hall): one per distinct value of an item table's group field. Group fields with the name of a project field override it within the group.",
@@ -3034,13 +3193,21 @@
   "cfgbImported": "Imported into the editor; save to keep it.",
   "cfgbImportFailed": "Not imported: {message}",
   "@cfgbImportFailed": {
-    "placeholders": {"message": {"type": "String"}}
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
   },
   "cfgbImportJson": "Import JSON",
   "cfgbImportNotExport": "This file is not a configurator export.",
   "cfgbImportReplace": "Replace the whole definition of this draft by {name}?",
   "@cfgbImportReplace": {
-    "placeholders": {"name": {"type": "String"}}
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "cfgbInactive": "not available to sales",
   "cfgbItemLabel": "Item label (template)",
@@ -3089,7 +3256,11 @@
   "cfgbPercentOfParentHelp": "Prices the line as this percentage of the parent line, e.g. 20",
   "cfgbProblems": "{count, plural, =1{1 problem} other{{count} problems}}",
   "@cfgbProblems": {
-    "placeholders": {"count": {"type": "int"}}
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "cfgbProductFilter": "Product filter (formula on p)",
   "cfgbProductFilterHelp": "e.g. p.attr('kw') >= 1",
@@ -3108,23 +3279,39 @@
   "cfgbRevisions": "Revisions",
   "cfgbRowCount": "{count, plural, =1{1 row} other{{count} rows}}",
   "@cfgbRowCount": {
-    "placeholders": {"count": {"type": "int"}}
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "cfgbRuleTitle": "Output rule {id}",
   "@cfgbRuleTitle": {
-    "placeholders": {"id": {"type": "String"}}
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
   },
   "cfgbSavedValid": "Saved. The draft can be activated.",
   "cfgbSavedWithProblems": "Saved with {count, plural, =1{1 problem} other{{count} problems}}.",
   "@cfgbSavedWithProblems": {
-    "placeholders": {"count": {"type": "int"}}
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "cfgbScope": "Scope",
   "cfgbScopeGroup": "Group",
   "cfgbScopeItem": "Item (row)",
   "cfgbScopeItems": "Items: {table}",
   "@cfgbScopeItems": {
-    "placeholders": {"table": {"type": "String"}}
+    "placeholders": {
+      "table": {
+        "type": "String"
+      }
+    }
   },
   "cfgbScopeProject": "Project",
   "cfgbScopes": "Scopes",
@@ -3154,7 +3341,11 @@
   "cfgbTables": "Lookup tables",
   "cfgbTableTitle": "Table {name}",
   "@cfgbTableTitle": {
-    "placeholders": {"name": {"type": "String"}}
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "cfgbTabOutputs": "Output rules",
   "cfgbTabTables": "Tables",
@@ -3177,7 +3368,11 @@
   "cfgbValidations": "Checks",
   "cfgbValidationTitle": "Check {id}",
   "@cfgbValidationTitle": {
-    "placeholders": {"id": {"type": "String"}}
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
   },
   "cfgbValidationWhenHelp": "When true, the message is shown",
   "cfgbValue": "Value",
@@ -3194,7 +3389,11 @@
   "addSubItem": "Add sub-item",
   "subItemsOptions": "Options of {product}",
   "@subItemsOptions": {
-    "placeholders": { "product": { "type": "String" } }
+    "placeholders": {
+      "product": {
+        "type": "String"
+      }
+    }
   },
   "subItemsNoOptions": "This product has no options defined.",
   "subItemsOtherProducts": "Other products",
@@ -3206,7 +3405,11 @@
   "crShare": "Share with everyone in the company",
   "crOwnedBy": "By {name}",
   "@crOwnedBy": {
-    "placeholders": {"name": {"type": "String"}}
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "crObject": "Report on",
   "crJoin": "Add related data",
@@ -3255,15 +3458,30 @@
   "crChartY": "Values",
   "crRows": "{count} rows",
   "@crRows": {
-    "placeholders": {"count": {"type": "int"}}
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "crRowsShown": "{shown} of {total} rows shown",
   "@crRowsShown": {
-    "placeholders": {"shown": {"type": "int"}, "total": {"type": "int"}}
+    "placeholders": {
+      "shown": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
   },
   "crChartShareShown": "Shares are of the {count} groups shown.",
   "@crChartShareShown": {
-    "placeholders": {"count": {"type": "int"}}
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "crSaved": "Report saved",
   "crDeleted": "Report deleted",
@@ -3298,10 +3516,25 @@
   "envTest": "Test",
   "envTutorial": "Tutorial",
   "envBannerSemantics": "Environment {name}, {kind}",
-  "@envBannerSemantics": {"placeholders": {"name": {"type": "String"}, "kind": {"type": "String"}}},
+  "@envBannerSemantics": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
   "envSwitcherTitle": "Environments",
   "envSwitchMenu": "Environment: {name}",
-  "@envSwitchMenu": {"placeholders": {"name": {"type": "String"}}},
+  "@envSwitchMenu": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "envSwitchTooltip": "Switch environment",
   "envActive": "Active",
   "envAdd": "Add environment",
@@ -3309,18 +3542,45 @@
   "envServerUrl": "Server address",
   "envCheck": "Check server",
   "envDetected": "Server says: {kind} environment, database {db}",
-  "@envDetected": {"placeholders": {"kind": {"type": "String"}, "db": {"type": "String"}}},
+  "@envDetected": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      },
+      "db": {
+        "type": "String"
+      }
+    }
+  },
   "envInvalidUrl": "Enter a full address such as https://erp.example.com",
   "envAlreadyListed": "This server is already in the list.",
   "envUnreachable": "Could not read the environment from this server: {error}",
-  "@envUnreachable": {"placeholders": {"error": {"type": "String"}}},
+  "@envUnreachable": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "envRemove": "Remove",
   "envRemoveTitle": "Remove environment?",
   "envRemoveBody": "{name} is removed from this device, with its saved sign-in. Nothing changes on the server.",
-  "@envRemoveBody": {"placeholders": {"name": {"type": "String"}}},
+  "@envRemoveBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "envCannotRemoveActive": "Switch to another environment first",
   "envUnsavedBody": "{count, plural, =1{1 open tab has unsaved changes} other{{count} open tabs have unsaved changes}}. Switching environment closes all tabs and discards them.",
-  "@envUnsavedBody": {"placeholders": {"count": {"type": "int"}}},
+  "@envUnsavedBody": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "envDiscardAndSwitch": "Discard and switch",
   "adminPriceZones": "Price zones",
   "newPriceZone": "New price zone",
@@ -3346,7 +3606,9 @@
   "tutAssistFailed": "Could not finish this step: {reason}. Try again.",
   "@tutAssistFailed": {
     "placeholders": {
-      "reason": {"type": "String"}
+      "reason": {
+        "type": "String"
+      }
     }
   },
   "tutSkipStep": "Skip step",
@@ -3354,9 +3616,21 @@
   "tutResume": "Resume",
   "tutPaused": "Tutorial paused",
   "tutMenuPath": "Menu path · {path}",
-  "@tutMenuPath": {"placeholders": {"path": {"type": "String"}}},
+  "@tutMenuPath": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
   "tutShortcut": "Tutorial shortcut · {path}",
-  "@tutShortcut": {"placeholders": {"path": {"type": "String"}}},
+  "@tutShortcut": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
   "tutAssistManual": "How to do this step",
   "tutAssistConfirm": "The tutorial will apply these changes for you and verify the result.",
   "tutAssistRun": "Run this step",
@@ -3365,10 +3639,25 @@
   "tutShowInstructions": "Show instructions",
   "tutControlUnavailable": "The control is unavailable on this screen. Open the relevant section and try again.",
   "tutShortcutHelp": "Press {keys} to see the keyboard shortcuts available on the current screen.",
-  "@tutShortcutHelp": {"placeholders": {"keys": {"type": "String"}}},
+  "@tutShortcutHelp": {
+    "placeholders": {
+      "keys": {
+        "type": "String"
+      }
+    }
+  },
   "tutTakeMe": "Take me there",
   "tutStepOf": "Step {current} of {total}",
-  "@tutStepOf": {"placeholders": {"current": {"type": "int"}, "total": {"type": "int"}}},
+  "@tutStepOf": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "tutOfferTitle": "Welcome to TradoCraft",
   "tutOfferBody": "This is a tutorial environment. Want a guided tour that teaches you the app step by step, on practice data?",
   "tutOfferStart": "Start the tutorial",
@@ -3386,9 +3675,21 @@
   "tutStart": "Start",
   "tutReplay": "Replay",
   "tutFinishedTitle": "Chapter {name} complete",
-  "@tutFinishedTitle": {"placeholders": {"name": {"type": "String"}}},
+  "@tutFinishedTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "tutFinishedNext": "Well done. Next up: {name}. Start it now, or pick it later from the chapter map.",
-  "@tutFinishedNext": {"placeholders": {"name": {"type": "String"}}},
+  "@tutFinishedNext": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "tutFinishedLast": "That was the last chapter. Well done. You can replay any chapter from the chapter map.",
   "tutStartNext": "Start next chapter",
   "tutBackToMap": "Back to chapter map",
@@ -3437,7 +3738,13 @@
   "purchNewSupplier": "New supplier",
   "purchPaymentTerms": "Payment terms",
   "purchDays": "{count} days",
-  "@purchDays": {"placeholders": {"count": {"type": "int"}}},
+  "@purchDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "purchActiveOnly": "Active only",
   "purchNameRequired": "The name is required.",
   "purchCountryInvalid": "The country must be a 2-letter code.",
@@ -3458,11 +3765,29 @@
   "purchLeadTimeDays": "Lead time (days)",
   "purchPreferred": "Preferred supplier",
   "purchRemoveProductConfirm": "Remove {code} from this price list?",
-  "@purchRemoveProductConfirm": {"placeholders": {"code": {"type": "String"}}},
+  "@purchRemoveProductConfirm": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
   "purchMoqValue": "MOQ {qty}",
-  "@purchMoqValue": {"placeholders": {"qty": {"type": "String"}}},
+  "@purchMoqValue": {
+    "placeholders": {
+      "qty": {
+        "type": "String"
+      }
+    }
+  },
   "purchLeadValue": "lead time {days} d",
-  "@purchLeadValue": {"placeholders": {"days": {"type": "int"}}},
+  "@purchLeadValue": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
   "purchNoSuppliers": "No suppliers found.",
   "purchOrders": "Purchase orders",
   "purchNewOrder": "New purchase order",
@@ -3491,9 +3816,33 @@
   "purchGoodsSummary": "{count} lines, total {total}",
   "purchGoodsLoadFailed": "The supplier's goods could not be loaded. You can still add products under \"Other products\", or retry.",
   "purchGoodsMixedCurrencies": "{count} lines in mixed currencies ({currencies}): no single total",
-  "@purchGoodsMixedCurrencies": {"placeholders": {"count": {"type": "int"}, "currencies": {"type": "String"}}},
-  "@purchGoodsBelowMoq": {"placeholders": {"qty": {"type": "String"}}},
-  "@purchGoodsSummary": {"placeholders": {"count": {"type": "int"}, "total": {"type": "String"}}},
+  "@purchGoodsMixedCurrencies": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "currencies": {
+        "type": "String"
+      }
+    }
+  },
+  "@purchGoodsBelowMoq": {
+    "placeholders": {
+      "qty": {
+        "type": "String"
+      }
+    }
+  },
+  "@purchGoodsSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
   "purchPickSupplier": "Choose a supplier.",
   "purchLineQtyInvalid": "Quantity must be greater than zero, with at most 4 decimals.",
   "purchLinePriceInvalid": "Unit price must be zero or more, with at most 4 decimals.",
@@ -3501,7 +3850,13 @@
   "purchApprove": "Approve",
   "purchCancelOrder": "Cancel order",
   "purchCancelOrderConfirm": "Cancel purchase order {number}? This cannot be undone.",
-  "@purchCancelOrderConfirm": {"placeholders": {"number": {"type": "String"}}},
+  "@purchCancelOrderConfirm": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
   "purchKeepOrder": "Keep order",
   "purchQtyReceived": "Received",
   "purchLineTotal": "Line total",
@@ -3510,25 +3865,73 @@
   "tabPurchaseOrder": "Purchase order",
   "purchReceiveGoods": "Receive goods",
   "purchReceiveTitle": "Receive goods for {number}",
-  "@purchReceiveTitle": {"placeholders": {"number": {"type": "String"}}},
+  "@purchReceiveTitle": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
   "purchReceiveDestination": "Destination location",
   "purchReceiveQty": "Quantity to receive",
   "purchReceiveRemaining": "Remaining: {qty}",
-  "@purchReceiveRemaining": {"placeholders": {"qty": {"type": "String"}}},
+  "@purchReceiveRemaining": {
+    "placeholders": {
+      "qty": {
+        "type": "String"
+      }
+    }
+  },
   "purchReceiveSerialsHelp": "One serial number per line",
   "purchDeliveryNote": "Supplier delivery note",
   "purchReceiveQtyInvalid": "{product}: enter a quantity between 0 and {max}.",
-  "@purchReceiveQtyInvalid": {"placeholders": {"product": {"type": "String"}, "max": {"type": "String"}}},
+  "@purchReceiveQtyInvalid": {
+    "placeholders": {
+      "product": {
+        "type": "String"
+      },
+      "max": {
+        "type": "String"
+      }
+    }
+  },
   "purchReceiveLotNeeded": "{product}: enter a lot number.",
-  "@purchReceiveLotNeeded": {"placeholders": {"product": {"type": "String"}}},
+  "@purchReceiveLotNeeded": {
+    "placeholders": {
+      "product": {
+        "type": "String"
+      }
+    }
+  },
   "purchReceiveSerialWhole": "{product}: the quantity must be a whole number.",
-  "@purchReceiveSerialWhole": {"placeholders": {"product": {"type": "String"}}},
+  "@purchReceiveSerialWhole": {
+    "placeholders": {
+      "product": {
+        "type": "String"
+      }
+    }
+  },
   "purchReceiveSerialCount": "{product}: enter exactly {count} different serial numbers.",
-  "@purchReceiveSerialCount": {"placeholders": {"product": {"type": "String"}, "count": {"type": "int"}}},
+  "@purchReceiveSerialCount": {
+    "placeholders": {
+      "product": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "purchReceiveNothing": "Enter a quantity for at least one line.",
   "purchReceiveLocationNeeded": "Choose a destination location.",
   "purchReceiptBooked": "Goods receipt {number} booked.",
-  "@purchReceiptBooked": {"placeholders": {"number": {"type": "String"}}},
+  "@purchReceiptBooked": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
   "purchOpenReceipt": "Open receipt",
   "purchReceipts": "Goods receipts",
   "purchReceivedDate": "Received",
@@ -3538,9 +3941,24 @@
   "setupOffer": "Set up a new company",
   "setupOfferHint": "This server has no company yet.",
   "setupServer": "Server: {url}",
-  "@setupServer": {"placeholders": {"url": {"type": "String"}}},
+  "@setupServer": {
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
   "setupStepOf": "Step {n} of {total}",
-  "@setupStepOf": {"placeholders": {"n": {"type": "int"}, "total": {"type": "int"}}},
+  "@setupStepOf": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "setupStepCompany": "Company",
   "setupStepRegion": "Country, currency and language",
   "setupStepAdmin": "Administrator",
@@ -3571,11 +3989,29 @@
   "setupErr404": "Setting up is disabled on this server. Set BOOTSTRAP_TOKEN on the server and restart it.",
   "setupErr409": "This server already has a company.",
   "setupDone": "Company {name} created.",
-  "@setupDone": {"placeholders": {"name": {"type": "String"}}},
+  "@setupDone": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "setupDoneDev": "Signing in as {email}.",
-  "@setupDoneDev": {"placeholders": {"email": {"type": "String"}}},
+  "@setupDoneDev": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
   "setupDoneOidc": "Sign in through your identity provider with {email}: that account is the administrator.",
-  "@setupDoneOidc": {"placeholders": {"email": {"type": "String"}}},
+  "@setupDoneOidc": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
   "setupToLogin": "Go to sign in",
   "setupAddOfferTitle": "Set up this server?",
   "setupAddOfferBody": "This server has no company yet. Set one up now?",
@@ -3615,7 +4051,16 @@
   "finMatches": "The invoice matches the order and the receipts.",
   "finNotMatches": "The invoice does not match the order and the receipts.",
   "finTolerances": "Tolerances: quantity {qty} %, price {price} %",
-  "@finTolerances": {"placeholders": {"qty": {"type": "String"}, "price": {"type": "String"}}},
+  "@finTolerances": {
+    "placeholders": {
+      "qty": {
+        "type": "String"
+      },
+      "price": {
+        "type": "String"
+      }
+    }
+  },
   "finSubmitMatch": "Check match",
   "finApprove": "Approve",
   "finOverrideTitle": "Approve despite mismatch",
@@ -3630,7 +4075,13 @@
   "finPaymentReference": "Payment reference",
   "finDeleteDraft": "Delete draft",
   "finDeleteConfirm": "Delete invoice {number}? This cannot be undone.",
-  "@finDeleteConfirm": {"placeholders": {"number": {"type": "String"}}},
+  "@finDeleteConfirm": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
   "finNetTotal": "Net",
   "finGrossTotal": "Total incl. VAT",
   "finDisputeReasonShown": "Dispute reason",
@@ -3894,7 +4345,13 @@
   "adminIdentityProviders": "Identity providers",
   "idpIntro": "Identity providers decide who can sign in to TradoCraft. People are still created in the ERP; the provider only proves who someone is.",
   "idpPrimaryCompany": "Primary company: {name}",
-  "@idpPrimaryCompany": {"placeholders": {"name": {"type": "String"}}},
+  "@idpPrimaryCompany": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "idpPrimaryNote": "Only administrators of the installation's primary company can change these settings.",
   "idpReadOnlyNotice": "You are not an administrator of the installation's primary company, so these settings are not available to you. Ask an administrator of that company.",
   "idpAdd": "Add provider",
@@ -3905,11 +4362,23 @@
   "idpSourceDatabase": "Saved in the app",
   "idpEnvExplain": "Set by the server's OIDC_ISSUER / OIDC_AUDIENCE. It cannot be changed here; it stays available as an emergency fallback.",
   "idpRuleVerified": "Links people by e-mail when the claim {claim} is true",
-  "@idpRuleVerified": {"placeholders": {"claim": {"type": "String"}}},
+  "@idpRuleVerified": {
+    "placeholders": {
+      "claim": {
+        "type": "String"
+      }
+    }
+  },
   "idpRuleTrust": "Links people by e-mail and trusts the provider's address",
   "idpRuleSubject": "Only existing subjects: no linking by e-mail",
   "idpRuleDomains": "only for {domains}",
-  "@idpRuleDomains": {"placeholders": {"domains": {"type": "String"}}},
+  "@idpRuleDomains": {
+    "placeholders": {
+      "domains": {
+        "type": "String"
+      }
+    }
+  },
   "idpAddTitle": "Add identity provider",
   "idpEditTitle": "Edit identity provider",
   "idpPreset": "Start from",
@@ -3946,14 +4415,32 @@
   "idpErrIssuer": "The issuer must be an https:// URL.",
   "idpErrAudience": "The audience is required.",
   "idpErrDomain": "{domain} does not look like a domain.",
-  "@idpErrDomain": {"placeholders": {"domain": {"type": "String"}}},
+  "@idpErrDomain": {
+    "placeholders": {
+      "domain": {
+        "type": "String"
+      }
+    }
+  },
   "idpErrAlgorithms": "Select at least one algorithm.",
   "idpSaveRefused": "The server refused these settings: {reason}",
-  "@idpSaveRefused": {"placeholders": {"reason": {"type": "String"}}},
+  "@idpSaveRefused": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
   "idpSaved": "Identity provider saved",
   "idpDeleted": "Identity provider deleted",
   "idpDeleteConfirm": "Delete identity provider {name}? People who sign in through it can no longer do so.",
-  "@idpDeleteConfirm": {"placeholders": {"name": {"type": "String"}}},
+  "@idpDeleteConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "idpLockoutTitle": "This can lock people out",
   "idpLockoutLast": "This is the last enabled identity provider and the server has no OIDC_ISSUER fallback. If you continue, nobody can sign in until the server's configuration is fixed.",
   "idpLockoutOwn": "You are signed in through this provider. If you continue, you will be signed out and cannot sign in again unless another provider accepts you.",
@@ -3963,13 +4450,34 @@
   "idpTestSampleHint": "Paste an access token of a person from this provider to see how it would be handled.",
   "idpTestNothing": "Testing reads the provider and checks the token only. Nothing is linked or stored.",
   "idpTestFailed": "Could not read the provider: {error}",
-  "@idpTestFailed": {"placeholders": {"error": {"type": "String"}}},
+  "@idpTestFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "idpTestDiscovery": "Discovery document reachable",
   "idpTestIssuerMatch": "Issuer matches the discovery document",
   "idpTestKeys": "{count} signing keys, algorithms: {algorithms}",
-  "@idpTestKeys": {"placeholders": {"count": {"type": "int"}, "algorithms": {"type": "String"}}},
+  "@idpTestKeys": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "algorithms": {
+        "type": "String"
+      }
+    }
+  },
   "idpTestClaims": "Claims the provider says it supports: {claims}",
-  "@idpTestClaims": {"placeholders": {"claims": {"type": "String"}}},
+  "@idpTestClaims": {
+    "placeholders": {
+      "claims": {
+        "type": "String"
+      }
+    }
+  },
   "idpTestToken": "Sample token",
   "idpTestSignature": "Signature",
   "idpTestAudience": "Audience",
@@ -3977,19 +4485,49 @@
   "idpTestOk": "OK",
   "idpTestNotOk": "Failed",
   "idpTestEmail": "E-mail found: {email}",
-  "@idpTestEmail": {"placeholders": {"email": {"type": "String"}}},
+  "@idpTestEmail": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
   "idpTestNoEmail": "No e-mail address found in the token",
   "idpTestVerified": "The provider marks the address as verified",
   "idpTestNotVerified": "The address is not marked as verified",
   "idpBindWould": "Would sign in as {email}",
-  "@idpBindWould": {"placeholders": {"email": {"type": "String"}}},
+  "@idpBindWould": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
   "idpBindExisting": "Already linked to {email}",
-  "@idpBindExisting": {"placeholders": {"email": {"type": "String"}}},
+  "@idpBindExisting": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
   "idpBindRefused": "Would be refused: {reason}",
-  "@idpBindRefused": {"placeholders": {"reason": {"type": "String"}}},
+  "@idpBindRefused": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
   "idpLinkIdentity": "Link identity",
   "idpLinkTitle": "Link identity of {name}",
-  "@idpLinkTitle": {"placeholders": {"name": {"type": "String"}}},
+  "@idpLinkTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "idpLinkExplain": "Only needed for providers that use the rule 'Only existing subjects'. Choose the provider and enter the subject (the sub claim) this person has there. Leave it empty to remove the link.",
   "idpLinkProvider": "Provider",
   "idpLinkSubject": "Subject (sub)",
@@ -4006,7 +4544,13 @@
   },
   "tutActionForbidden": "You are not allowed to import e-mail into the helpdesk (it needs the helpdesk write permission). Ask an administrator, or sign in as one, and try again.",
   "workerDownBanner": "The background worker has not run since {since}: e-mail is not sent or fetched and SLA breaches are not escalated.",
-  "@workerDownBanner": {"placeholders": {"since": {"type": "String"}}},
+  "@workerDownBanner": {
+    "placeholders": {
+      "since": {
+        "type": "String"
+      }
+    }
+  },
   "workerNeverSeenBanner": "No background worker has run yet: e-mail is not sent or fetched and SLA breaches are not escalated.",
   "workerBannerSemantics": "Background worker",
   "vatLookup": "Look up in VIES",
@@ -4016,13 +4560,31 @@
   "vatBadChecksum": "The check digits do not match: please check for a typo.",
   "vatNotChecked": "Not an EU VAT number, so it is not checked.",
   "vatDuplicates": "Also used by: {records}",
-  "@vatDuplicates": {"placeholders": {"records": {"type": "String"}}},
+  "@vatDuplicates": {
+    "placeholders": {
+      "records": {
+        "type": "String"
+      }
+    }
+  },
   "vatInactive": "{record} (inactive)",
-  "@vatInactive": {"placeholders": {"record": {"type": "String"}}},
+  "@vatInactive": {
+    "placeholders": {
+      "record": {
+        "type": "String"
+      }
+    }
+  },
   "viesValid": "Registered and active in VIES.",
   "viesInvalid": "VIES does not know this number.",
   "viesUnavailable": "VIES could not answer ({reason}). Fill in the details by hand.",
-  "@viesUnavailable": {"placeholders": {"reason": {"type": "String"}}},
+  "@viesUnavailable": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
   "viesDisabled": "The VIES lookup is switched off on this server.",
   "viesFilled": "Empty fields filled in from VIES.",
   "viesNoDetails": "The member state does not disclose a name or address.",
@@ -4038,7 +4600,13 @@
   "auditLoadMore": "Load older events",
   "auditHistory": "History",
   "auditHistoryTitle": "History of {name}",
-  "@auditHistoryTitle": {"placeholders": {"name": {"type": "String"}}},
+  "@auditHistoryTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "auditNoDetails": "No details were recorded.",
   "mailboxes": "Mailboxes",
   "newMailbox": "New mailbox",
@@ -4061,7 +4629,13 @@
   "mailboxSmtpNone": "None",
   "mailboxSecretRef": "Name of the secret",
   "mailboxSecretHelp": "The password or client secret is not stored here. Set it on the server as the worker variable {variable}.",
-  "@mailboxSecretHelp": {"placeholders": {"variable": {"type": "String"}}},
+  "@mailboxSecretHelp": {
+    "placeholders": {
+      "variable": {
+        "type": "String"
+      }
+    }
+  },
   "mailboxTeam": "Team for new tickets",
   "mailboxTeamDefault": "The default team",
   "mailboxInbound": "Fetch incoming e-mail",
@@ -4070,18 +4644,42 @@
   "mailboxSendOnly": "Sends only",
   "mailboxNeverPolled": "No e-mail fetched yet",
   "mailboxLastOk": "E-mail last fetched on {when}",
-  "@mailboxLastOk": {"placeholders": {"when": {"type": "String"}}},
+  "@mailboxLastOk": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
   "mailboxError": "Problem fetching e-mail: {error}",
-  "@mailboxError": {"placeholders": {"error": {"type": "String"}}},
+  "@mailboxError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "mailboxDeleteConfirm": "Remove the mailbox {name}? Its tickets stay. Replies on them then leave through the default mailbox.",
-  "@mailboxDeleteConfirm": {"placeholders": {"name": {"type": "String"}}},
+  "@mailboxDeleteConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "productionWorkCentres": "Work centres",
   "productionWorkCentreAdd": "Add work centre",
   "productionWorkCentreEdit": "Edit work centre",
   "productionWorkCentreCapacity": "Capacity (units working at once)",
   "productionWorkCentreCost": "Cost per hour",
   "productionWorkCentreOpenOps": "{count} open operations",
-  "@productionWorkCentreOpenOps": {"placeholders": {"count": {"type": "String"}}},
+  "@productionWorkCentreOpenOps": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
   "productionWorkCentreEmpty": "No work centres yet. Add the machines and benches your operations run on.",
   "productionWorkingHours": "Working hours",
   "productionHoursDefault": "No hours of its own: Monday to Friday 08:00–12:00 and 13:00–17:00.",
@@ -4102,7 +4700,13 @@
   "productionCapacityLater": "Later",
   "productionCapacityToday": "Today",
   "productionWorkCentreUnits": "{count} units",
-  "@productionWorkCentreUnits": {"placeholders": {"count": {"type": "String"}}},
+  "@productionWorkCentreUnits": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
   "productionOperations": "Operations",
   "productionOperationPending": "Not started",
   "productionOperationDone": "Done",
@@ -4115,18 +4719,42 @@
   "productionOperationPlanned": "Planned",
   "productionOperationWorked": "Worked",
   "productionOperationBy": "by {name}",
-  "@productionOperationBy": {"placeholders": {"name": {"type": "String"}}},
+  "@productionOperationBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "productionScheduleAgain": "Schedule again",
   "productionStartFrom": "Start from",
   "productionBehindSchedule": "Behind schedule: the last operation is planned for {date}, after the planned-ready date.",
-  "@productionBehindSchedule": {"placeholders": {"date": {"type": "String"}}},
+  "@productionBehindSchedule": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "productionBehindScheduleShort": "Behind schedule",
   "productionUseScheduledEnd": "Use {date} as planned-ready date",
-  "@productionUseScheduledEnd": {"placeholders": {"date": {"type": "String"}}},
+  "@productionUseScheduledEnd": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "productionRemark": "Production remark (internal)",
   "productionSubOrders": "Subassembly orders",
   "productionSubassemblyOf": "Subassembly of {number}",
-  "@productionSubassemblyOf": {"placeholders": {"number": {"type": "String"}}},
+  "@productionSubassemblyOf": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
   "productionCost": "Cost",
   "productionCostPlanned": "Planned",
   "productionCostActual": "Actual",
@@ -4134,7 +4762,13 @@
   "productionCostLabour": "Labour",
   "productionCostIncomplete": "Some costs are missing and left out.",
   "productionOperationsOpenWarning": "{count} operations are still open. Fill in the minutes worked to finish them; leave the field empty to skip one.",
-  "@productionOperationsOpenWarning": {"placeholders": {"count": {"type": "String"}}},
+  "@productionOperationsOpenWarning": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
   "productionAutoRelease": "Also release the subassemblies that stock does not cover",
   "productionRouting": "Routing",
   "productionRoutingNone": "No routing: production orders for this product have no operations.",
@@ -4147,9 +4781,21 @@
   "productionCostRollupHint": "Material at standard cost and labour at the work centres' cost per hour, through every level.",
   "productionCostPerUnit": "Cost per unit",
   "productionCostGapProduct": "No standard cost: {code}",
-  "@productionCostGapProduct": {"placeholders": {"code": {"type": "String"}}},
+  "@productionCostGapProduct": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
   "productionCostGapWorkCentre": "No cost per hour: {code}",
-  "@productionCostGapWorkCentre": {"placeholders": {"code": {"type": "String"}}},
+  "@productionCostGapWorkCentre": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
   "productionCostCalculate": "Calculate",
   "productionOperationMinutesInvalid": "Enter the minutes as a whole number.",
   "productionRoutingLoadFailed": "The routing could not be loaded, so it cannot be changed now.",
@@ -4167,9 +4813,21 @@
   "shortcutPalette": "Command palette",
   "shortcutHelp": "Keyboard shortcuts",
   "shortcutMenuItem": "Menu item {n}",
-  "@shortcutMenuItem": {"placeholders": {"n": {"type": "int"}}},
+  "@shortcutMenuItem": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "shortcutHint": "Shortcut: {keys}",
-  "@shortcutHint": {"placeholders": {"keys": {"type": "String"}}},
+  "@shortcutHint": {
+    "placeholders": {
+      "keys": {
+        "type": "String"
+      }
+    }
+  },
   "shortcutConfirm": "Confirm",
   "shortcutCancel": "Cancel or leave",
   "shortcutFind": "Find",
@@ -4178,7 +4836,13 @@
   "shortcutHelpNavigation": "Navigation",
   "shortcutHelpAltKeys": "Hold {modifier} to see a key on every button; press it to use the button.",
   "shortcutHelpEnter": "Enter moves to the next field. Up and Down move between rows, Ctrl with an arrow jumps to the far end.",
-  "@shortcutHelpAltKeys": {"placeholders": {"modifier": {"type": "String"}}},
+  "@shortcutHelpAltKeys": {
+    "placeholders": {
+      "modifier": {
+        "type": "String"
+      }
+    }
+  },
   "moduleTodo": "To-do",
   "todoTitle": "To-dos",
   "todoAdd": "Add to-do",
@@ -4189,7 +4853,13 @@
   "todoSetDue": "Set due date",
   "todoClearDue": "Clear due date",
   "todoDue": "Due {date}",
-  "@todoDue": {"placeholders": {"date": {"type": "String"}}},
+  "@todoDue": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "todoOverdue": "Overdue",
   "todoFilterOpen": "Open",
   "todoFilterDone": "Done",
@@ -4199,46 +4869,123 @@
   "todoComplete": "Mark as done",
   "todoReopen": "Reopen",
   "todoDeleteConfirm": "Delete \"{title}\"? Its sub-items are deleted too.",
-  "@todoDeleteConfirm": {"placeholders": {"title": {"type": "String"}}},
+  "@todoDeleteConfirm": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "todoCompleteAllTitle": "Complete the sub-items too?",
   "todoCompleteAllBody": "\"{title}\" still has open sub-items. Completing it marks them as done too.",
-  "@todoCompleteAllBody": {"placeholders": {"title": {"type": "String"}}},
+  "@todoCompleteAllBody": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "todoCompleteAll": "Complete all",
   "todoLinkedItem": "Linked item",
   "todoFromOwner": "From {name}",
-  "@todoFromOwner": {"placeholders": {"name": {"type": "String"}}},
+  "@todoFromOwner": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "todoSubProgress": "{done} of {total} sub-items done",
-  "@todoSubProgress": {"placeholders": {"done": {"type": "int"}, "total": {"type": "int"}}},
+  "@todoSubProgress": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "todoReorder": "Drag to reorder",
   "changeProduct": "Change product",
   "changeProductOf": "New main product for {product}",
-  "@changeProductOf": {"placeholders": {"product": {"type": "String"}}},
+  "@changeProductOf": {
+    "placeholders": {
+      "product": {
+        "type": "String"
+      }
+    }
+  },
   "changeProductNew": "New product",
   "changeProductNetNote": "{product} has a net price: the line discount was cleared.",
-  "@changeProductNetNote": {"placeholders": {"product": {"type": "String"}}},
+  "@changeProductNetNote": {
+    "placeholders": {
+      "product": {
+        "type": "String"
+      }
+    }
+  },
   "changeProductOnRequestNote": "{product} is priced on request: enter the price before sending.",
-  "@changeProductOnRequestNote": {"placeholders": {"product": {"type": "String"}}},
+  "@changeProductOnRequestNote": {
+    "placeholders": {
+      "product": {
+        "type": "String"
+      }
+    }
+  },
   "optionsNotApplicable": "{count} option(s) do not apply to {product}: remove them.",
-  "@optionsNotApplicable": {"placeholders": {"count": {"type": "int"}, "product": {"type": "String"}}},
+  "@optionsNotApplicable": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "product": {
+        "type": "String"
+      }
+    }
+  },
   "removeNamedLine": "Remove {code}",
-  "@removeNamedLine": {"placeholders": {"code": {"type": "String"}}},
+  "@removeNamedLine": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
   "optionNotOffered": "Not offered with {product}",
-  "@optionNotOffered": {"placeholders": {"product": {"type": "String"}}},
+  "@optionNotOffered": {
+    "placeholders": {
+      "product": {
+        "type": "String"
+      }
+    }
+  },
   "sentWithNotApplicable": "Sent with {count} option(s) that do not apply to their main product.",
-  "@sentWithNotApplicable": {"placeholders": {"count": {"type": "int"}}},
+  "@sentWithNotApplicable": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "tabCustomer": "Customer",
   "todoAdded": "To-do added",
   "todoLinkToScreen": "Link to current screen",
   "todoLinkNotAvailable": "This screen has no record to link to.",
   "todoOpenLink": "Open the linked record",
-  "todoRemoveLink": "Remove link",
+  "todoRemoveLink": "Remove link from my to-dos",
   "recordNotFound": "This record was not found. It may have been deleted, or you may not have access to it.",
   "todoForObject": "To-dos for this record",
   "todoForObjectCount": "To-dos for this record ({count} open)",
-  "@todoForObjectCount": {"placeholders": {"count": {"type": "int"}}},
+  "@todoForObjectCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "todoForObjectEmpty": "No open to-dos for this record.",
   "todoEmailReminders": "E-mail reminders",
-  "todoRemoveLink": "Remove link from my to-dos",
   "csvExportCsv": "Export as CSV",
   "csvExportXlsx": "Export as Excel (XLSX)",
   "csvExportOds": "Export as OpenDocument (ODS)",
@@ -4256,15 +5003,36 @@
   "impUploading": "Uploading...",
   "impFileTooLarge": "The file is larger than the limit of 50 MiB.",
   "impFileFormatSize": "Format: {format}, size: {size}",
-  "@impFileFormatSize": {"placeholders": {"format": {"type": "String"}, "size": {"type": "String"}}},
+  "@impFileFormatSize": {
+    "placeholders": {
+      "format": {
+        "type": "String"
+      },
+      "size": {
+        "type": "String"
+      }
+    }
+  },
   "impEntity": "What do you import?",
   "impNoEntities": "You need the permission to write an entity, for example customers or products, to import it here.",
   "impSheet": "Sheet",
   "impPreview": "Preview",
   "impRowCount": "{count, plural, =1{1 data row} other{{count} data rows}}",
-  "@impRowCount": {"placeholders": {"count": {"type": "int"}}},
+  "@impRowCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "impFirstRows": "The first {count} rows are shown.",
-  "@impFirstRows": {"placeholders": {"count": {"type": "int"}}},
+  "@impFirstRows": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "impNoHeader": "The file has no header row.",
   "impColFile": "File column",
   "impColSample": "Example",
@@ -4273,13 +5041,37 @@
   "impRequiredNew": "Required for new records",
   "impKeyBadge": "Key",
   "impKeyMissing": "Choose a file column for the key field {field}: rows are matched on it.",
-  "@impKeyMissing": {"placeholders": {"field": {"type": "String"}}},
+  "@impKeyMissing": {
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  },
   "impDuplicateField": "The field {field} is chosen for more than one column.",
-  "@impDuplicateField": {"placeholders": {"field": {"type": "String"}}},
+  "@impDuplicateField": {
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  },
   "impUnmapped": "Fields without a column: {fields}",
-  "@impUnmapped": {"placeholders": {"fields": {"type": "String"}}},
+  "@impUnmapped": {
+    "placeholders": {
+      "fields": {
+        "type": "String"
+      }
+    }
+  },
   "impUnmappedRequired": "Needed to create new records: {fields}",
-  "@impUnmappedRequired": {"placeholders": {"fields": {"type": "String"}}},
+  "@impUnmappedRequired": {
+    "placeholders": {
+      "fields": {
+        "type": "String"
+      }
+    }
+  },
   "impAllMapped": "Every field has a column.",
   "impMappingsMenu": "Saved mappings",
   "impNoMappings": "No saved mappings for this entity yet.",
@@ -4287,18 +5079,54 @@
   "impMappingName": "Name of the mapping",
   "impOverwriteTitle": "Replace the mapping?",
   "impOverwriteBody": "A mapping named {name} already exists. Replace it with the current one?",
-  "@impOverwriteBody": {"placeholders": {"name": {"type": "String"}}},
+  "@impOverwriteBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "impOverwriteAction": "Replace",
   "impMappingSaved": "Mapping {name} saved",
-  "@impMappingSaved": {"placeholders": {"name": {"type": "String"}}},
+  "@impMappingSaved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "impDeleteMapping": "Delete mapping {name}",
-  "@impDeleteMapping": {"placeholders": {"name": {"type": "String"}}},
+  "@impDeleteMapping": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "impDeleteMappingConfirm": "Delete the saved mapping {name}?",
-  "@impDeleteMappingConfirm": {"placeholders": {"name": {"type": "String"}}},
+  "@impDeleteMappingConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "impMappingDeleted": "Mapping {name} deleted",
-  "@impMappingDeleted": {"placeholders": {"name": {"type": "String"}}},
+  "@impMappingDeleted": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "impProposalSaved": "Columns taken from the saved mapping {name}.",
-  "@impProposalSaved": {"placeholders": {"name": {"type": "String"}}},
+  "@impProposalSaved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "impProposalByName": "Columns paired with fields of the same name. Check them before you continue.",
   "impRunCheck": "Check the file",
   "impChecking": "Checking the file...",
@@ -4309,38 +5137,113 @@
   "impStatusRunning": "Running",
   "impStatusDone": "Done",
   "impStatusDoneErrors": "{count, plural, =1{Done with 1 error} other{Done with {count} errors}}",
-  "@impStatusDoneErrors": {"placeholders": {"count": {"type": "int"}}},
+  "@impStatusDoneErrors": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "impStatusFailed": "Failed",
   "impStatusCancelled": "Cancelled",
   "impPhaseReading": "Reading the file",
   "impPhaseValidating": "Validating the rows",
   "impPhaseWriting": "Writing the records",
   "impProgress": "{done} of {total} rows",
-  "@impProgress": {"placeholders": {"done": {"type": "int"}, "total": {"type": "int"}}},
+  "@impProgress": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "impCancelJob": "Cancel job",
   "impDownloadErrors": "Download error report",
   "impErrorsTotal": "Showing the first {shown} of {total} problems. The error report lists the same problems. A file with very many problems lists only the first ones: fix these and check again.",
-  "@impErrorsTotal": {"placeholders": {"shown": {"type": "int"}, "total": {"type": "int"}}},
+  "@impErrorsTotal": {
+    "placeholders": {
+      "shown": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "impApplyHint": "Importing is possible after a check without problems.",
   "impApplyAction": "Import now",
   "impApplyConfirmTitle": "Import {entity}?",
-  "@impApplyConfirmTitle": {"placeholders": {"entity": {"type": "String"}}},
+  "@impApplyConfirmTitle": {
+    "placeholders": {
+      "entity": {
+        "type": "String"
+      }
+    }
+  },
   "impApplyConfirmBody": "{created} will be created and {updated} updated. This changes data.",
-  "@impApplyConfirmBody": {"placeholders": {"created": {"type": "int"}, "updated": {"type": "int"}}},
+  "@impApplyConfirmBody": {
+    "placeholders": {
+      "created": {
+        "type": "int"
+      },
+      "updated": {
+        "type": "int"
+      }
+    }
+  },
   "impImportAnother": "Import another file",
   "impHistoryEmpty": "No imports yet.",
   "impDryRun": "Check only",
   "impApplied": "Imported",
   "impCountsPlanned": "{created} to create, {updated} to update, {unchanged} unchanged",
-  "@impCountsPlanned": {"placeholders": {"created": {"type": "int"}, "updated": {"type": "int"}, "unchanged": {"type": "int"}}},
+  "@impCountsPlanned": {
+    "placeholders": {
+      "created": {
+        "type": "int"
+      },
+      "updated": {
+        "type": "int"
+      },
+      "unchanged": {
+        "type": "int"
+      }
+    }
+  },
   "impCountsDone": "{created} created, {updated} updated, {unchanged} unchanged",
-  "@impCountsDone": {"placeholders": {"created": {"type": "int"}, "updated": {"type": "int"}, "unchanged": {"type": "int"}}},
+  "@impCountsDone": {
+    "placeholders": {
+      "created": {
+        "type": "int"
+      },
+      "updated": {
+        "type": "int"
+      },
+      "unchanged": {
+        "type": "int"
+      }
+    }
+  },
   "impJobBy": "By {name}",
-  "@impJobBy": {"placeholders": {"name": {"type": "String"}}},
+  "@impJobBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "impJobDetails": "Import details",
   "impJobMessage": "Message",
   "impJobSheet": "Sheet {sheet}",
-  "@impJobSheet": {"placeholders": {"sheet": {"type": "String"}}},
+  "@impJobSheet": {
+    "placeholders": {
+      "sheet": {
+        "type": "String"
+      }
+    }
+  },
   "impRefresh": "Refresh",
   "actionSendEmail": "Send e-mail",
   "mailRecipient": "Recipient",
@@ -4353,9 +5256,24 @@
   "mailPeriodHours": "At most one mail per ticket in (hours)",
   "mailPeriodInvalid": "The period must be a whole number of hours.",
   "mailPlaceholdersHint": "Placeholders: {placeholders}",
-  "@mailPlaceholdersHint": {"placeholders": {"placeholders": {"type": "String"}}},
+  "@mailPlaceholdersHint": {
+    "placeholders": {
+      "placeholders": {
+        "type": "String"
+      }
+    }
+  },
   "actionSendEmailSummary": "{recipient}: {subject}",
-  "@actionSendEmailSummary": {"placeholders": {"recipient": {"type": "String"}, "subject": {"type": "String"}}},
+  "@actionSendEmailSummary": {
+    "placeholders": {
+      "recipient": {
+        "type": "String"
+      },
+      "subject": {
+        "type": "String"
+      }
+    }
+  },
   "slaNotices": "Customer notices",
   "slaNoticesHelp": "Send the customer an acknowledgement with the ticket number and the target response time when a request arrives by e-mail or the portal, and optionally a notice when the first response time has run out (only during business hours). The most specific rule wins: team and priority, then team, then priority, then all. Nothing is sent without a rule. Mails are in the customer's language.",
   "slaNoticesNone": "No notices are sent to customers.",
@@ -4399,16 +5317,55 @@
   "rsSat": "Saturday",
   "rsSun": "Sunday",
   "rsSummary": "{when} · {format} · {recipients} recipients",
-  "@rsSummary": {"placeholders": {"when": {"type": "String"}, "format": {"type": "String"}, "recipients": {"type": "int"}}},
+  "@rsSummary": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      },
+      "format": {
+        "type": "String"
+      },
+      "recipients": {
+        "type": "int"
+      }
+    }
+  },
   "rsNextRun": "Next mail: {when}",
-  "@rsNextRun": {"placeholders": {"when": {"type": "String"}}},
+  "@rsNextRun": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
   "rsLastSent": "Last run: queued {when}",
-  "@rsLastSent": {"placeholders": {"when": {"type": "String"}}},
+  "@rsLastSent": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
   "rsLastFailed": "Last run failed ({when}): {reason}",
-  "@rsLastFailed": {"placeholders": {"when": {"type": "String"}, "reason": {"type": "String"}}},
+  "@rsLastFailed": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      },
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
   "rsSendNow": "Send now",
   "rsQueued": "{count} mails queued.",
-  "@rsQueued": {"placeholders": {"count": {"type": "int"}}},
+  "@rsQueued": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "rsPaused": "Paused",
   "rsNeedsRecipient": "Choose at least one recipient.",
   "powerVoltageMin": "Min voltage (V)",
@@ -4450,7 +5407,13 @@
   "attrOptionBlank": "Every option needs a value and a label.",
   "attrOptionDuplicate": "Option values must be unique.",
   "attrDefDeleteConfirm": "Delete attribute {key}? If it is in use, deactivate it instead.",
-  "@attrDefDeleteConfirm": {"placeholders": {"key": {"type": "String"}}},
+  "@attrDefDeleteConfirm": {
+    "placeholders": {
+      "key": {
+        "type": "String"
+      }
+    }
+  },
   "attrDefDeleted": "Attribute deleted.",
   "baselineTitle": "Site baseline",
   "baselineEmpty": "Nothing recorded yet. Add the clock dials and bells at the site so suitable products can be found.",
@@ -4465,9 +5428,21 @@
   "baselineParentRequired": "Choose the item to place this under.",
   "baselineQuantityInvalid": "Quantity must be a whole number of at least 1.",
   "baselineQty": "Qty {count}",
-  "@baselineQty": {"placeholders": {"count": {"type": "int"}}},
+  "@baselineQty": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "baselineDeleteConfirm": "Delete {name}?",
-  "@baselineDeleteConfirm": {"placeholders": {"name": {"type": "String"}}},
+  "@baselineDeleteConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "baselineDeleted": "Item deleted.",
   "adminBaselineTypes": "Baseline types",
   "baselineTypesTitle": "Baseline item types",
@@ -4481,35 +5456,101 @@
   "baselineTypeNameRequired": "A name is required.",
   "baselineTypePlacement": "Choose at least one parent type or allow the top level, or items of this type could never be placed.",
   "baselineTypeDeleteConfirm": "Delete type {code}? If it is in use, deactivate it instead.",
-  "@baselineTypeDeleteConfirm": {"placeholders": {"code": {"type": "String"}}},
+  "@baselineTypeDeleteConfirm": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
   "baselineTypeDeleted": "Baseline type deleted.",
   "attrScopeProduct": "Product",
   "matchesTitle": "Product matches",
   "matchesEmpty": "No products to show.",
   "matchesShowing": "Showing {shown} of {total} products",
-  "@matchesShowing": {"placeholders": {"shown": {"type": "int"}, "total": {"type": "int"}}},
+  "@matchesShowing": {
+    "placeholders": {
+      "shown": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "matchesSuggest": "Suggest products",
   "matchesForItem": "Products for {name}",
-  "@matchesForItem": {"placeholders": {"name": {"type": "String"}}},
+  "@matchesForItem": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "matchesSuitable": "Suitable",
   "matchesUnknown": "Unknown",
   "matchesUnsuitable": "Not suitable",
   "matchesNoReason": "Could not be judged.",
   "baselineUnknownSet": "{label}: unknown — set",
-  "@baselineUnknownSet": {"placeholders": {"label": {"type": "String"}}},
+  "@baselineUnknownSet": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
   "baselineImportTower": "Import from tower configurator",
   "baselineImportTitle": "Import preview",
   "baselineImportCreates": "Creates {groups} bell group(s), {bells} bell(s) and {dials} clock dial(s).",
-  "@baselineImportCreates": {"placeholders": {"groups": {"type": "int"}, "bells": {"type": "int"}, "dials": {"type": "int"}}},
+  "@baselineImportCreates": {
+    "placeholders": {
+      "groups": {
+        "type": "int"
+      },
+      "bells": {
+        "type": "int"
+      },
+      "dials": {
+        "type": "int"
+      }
+    }
+  },
   "baselineImportReplaces": "This replaces {count} item(s) from a previous import of the same source; items entered by hand are kept.",
-  "@baselineImportReplaces": {"placeholders": {"count": {"type": "int"}}},
+  "@baselineImportReplaces": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "baselineImportFresh": "There is no previous import to replace.",
   "baselineImportWarnings": "Warnings",
   "baselineImportWarning": "{bell}, {field}: {message}",
-  "@baselineImportWarning": {"placeholders": {"bell": {"type": "String"}, "field": {"type": "String"}, "message": {"type": "String"}}},
+  "@baselineImportWarning": {
+    "placeholders": {
+      "bell": {
+        "type": "String"
+      },
+      "field": {
+        "type": "String"
+      },
+      "message": {
+        "type": "String"
+      }
+    }
+  },
   "baselineImportUnmapped": "Fields not mapped (kept with the imported item)",
   "baselineImportUnmappedRow": "{field} ({count})",
-  "@baselineImportUnmappedRow": {"placeholders": {"field": {"type": "String"}, "count": {"type": "int"}}},
+  "@baselineImportUnmappedRow": {
+    "placeholders": {
+      "field": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "baselineImportConfirm": "Import",
   "baselineImportDone": "Baseline imported.",
   "baselineImportBadFile": "This file is not valid JSON.",
@@ -4592,7 +5633,9 @@
   "fileSavedTo": "Saved to {path}",
   "@fileSavedTo": {
     "placeholders": {
-      "path": {"type": "String"}
+      "path": {
+        "type": "String"
+      }
     }
   },
   "plZones": "Zones and languages",
@@ -4610,14 +5653,18 @@
   "plLevelN": "Level {n}",
   "@plLevelN": {
     "placeholders": {
-      "n": {"type": "int"}
+      "n": {
+        "type": "int"
+      }
     }
   },
   "plWholeList": "Whole list",
   "plExportDeleteConfirm": "Delete export profile \"{name}\"?",
   "@plExportDeleteConfirm": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "plExportCodeLength": "The code can have at most 32 characters.",
@@ -4627,21 +5674,29 @@
   "plFileNameHint": "Placeholders: {placeholders}. Without a template the profile name is used.",
   "@plFileNameHint": {
     "placeholders": {
-      "placeholders": {"type": "String"}
+      "placeholders": {
+        "type": "String"
+      }
     }
   },
   "plGroupInUseTitle": "Group is in use",
   "plGenSummary": "{written} of {total} files saved",
   "@plGenSummary": {
     "placeholders": {
-      "written": {"type": "int"},
-      "total": {"type": "int"}
+      "written": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "plGenTargetFolder": "Folder: {folder}",
   "@plGenTargetFolder": {
     "placeholders": {
-      "folder": {"type": "String"}
+      "folder": {
+        "type": "String"
+      }
     }
   },
   "plGenSentToBrowser": "The files were handed to the browser or the share sheet.",
@@ -4651,9 +5706,15 @@
   "plGenProgress": "File {current} of {total}: {file}",
   "@plGenProgress": {
     "placeholders": {
-      "current": {"type": "int"},
-      "total": {"type": "int"},
-      "file": {"type": "String"}
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "file": {
+        "type": "String"
+      }
     }
   },
   "plGenOpenFolder": "Open folder",
@@ -4689,8 +5750,12 @@
   "vatRateDeleteConfirm": "Delete VAT rate rule for {country} ({category})?",
   "@vatRateDeleteConfirm": {
     "placeholders": {
-      "country": {"type": "String"},
-      "category": {"type": "String"}
+      "country": {
+        "type": "String"
+      },
+      "category": {
+        "type": "String"
+      }
     }
   },
   "vatRateOngoing": "Ongoing",
@@ -4698,27 +5763,37 @@
   "recordUpdatedBy": "Updated by {name}. Reload to see the latest changes.",
   "@recordUpdatedBy": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "recordConflictMessage": "Someone else saved changes to this record. Reload to see their changes before saving again.",
   "ticketLiveChange": "{kind, select, note{{name} added a message.} escalated{{name} escalated this ticket.} delegated{{name} handed this ticket over.} tag{{name} changed the tags.} timeEntry{{name} logged time.} merge{{name} merged tickets.} split{{name} split this ticket.} attachment{{name} added an attachment.} checklist{{name} changed the checklist.} links{{name} changed the linked tickets.} other{{name} changed this ticket.}}",
   "@ticketLiveChange": {
     "placeholders": {
-      "kind": {"type": "String"},
-      "name": {"type": "String"}
+      "kind": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
     }
   },
   "ticketLiveUnsaved": "{name} changed this ticket while you have unsaved edits. Compare before you save.",
   "@ticketLiveUnsaved": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "ticketLiveMerged": "{name} changed this ticket. Their changes were merged into your form.",
   "@ticketLiveMerged": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "ticketMergeSomeone": "Someone",
@@ -4731,8 +5806,12 @@
   "linksBundleProgress": "{open} of {total} still open",
   "@linksBundleProgress": {
     "placeholders": {
-      "open": {"type": "int"},
-      "total": {"type": "int"}
+      "open": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "linksRelated": "Related",
@@ -4760,13 +5839,17 @@
   "bundleApply": "{count, plural, one{Apply to 1 ticket} other{Apply to {count} tickets}}",
   "@bundleApply": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "bundleDone": "{count, plural, one{1 ticket updated.} other{{count} tickets updated.}}",
   "@bundleDone": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "bundleOutcomeWouldApply": "Will be updated",
@@ -4776,7 +5859,9 @@
   "bundleRecipient": "to {email}",
   "@bundleRecipient": {
     "placeholders": {
-      "email": {"type": "String"}
+      "email": {
+        "type": "String"
+      }
     }
   },
   "ticketMergeCompare": "Compare",
@@ -4784,14 +5869,18 @@
   "ticketMergeIntro": "{name} saved changes to fields you also edited. Choose which value to keep for each.",
   "@ticketMergeIntro": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "ticketMergeMine": "Mine",
   "ticketMergeTheirs": "{name}'s",
   "@ticketMergeTheirs": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "ticketMergeApply": "Apply",
@@ -4799,15 +5888,21 @@
   "ticketMergeTakenOver": "Also taken over from their change: {fields}",
   "@ticketMergeTakenOver": {
     "placeholders": {
-      "fields": {"type": "String"}
+      "fields": {
+        "type": "String"
+      }
     }
   },
   "checklistTitle": "Checklist",
   "checklistProgress": "{done}/{total}",
   "@checklistProgress": {
     "placeholders": {
-      "done": {"type": "int"},
-      "total": {"type": "int"}
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "checklistAddItem": "Add checklist item",
@@ -4837,64 +5932,160 @@
   "appGroupBackOffice": "Back office",
   "appGroupInsight": "Insight",
   "globalSearchTooltip": "Search ({shortcut})",
-  "@globalSearchTooltip": {"placeholders": {"shortcut": {"type": "String"}}},
+  "@globalSearchTooltip": {
+    "placeholders": {
+      "shortcut": {
+        "type": "String"
+      }
+    }
+  },
   "globalSearchHint": "Search records and sections",
   "globalSearchGoTo": "Go to",
   "globalSearchStart": "Type to search customers, orders, tickets and more.",
   "globalSearchEmpty": "No results for \"{query}\"",
-  "@globalSearchEmpty": {"placeholders": {"query": {"type": "String"}}},
+  "@globalSearchEmpty": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
   "globalSearchFailed": "{entity} could not be searched",
-  "@globalSearchFailed": {"placeholders": {"entity": {"type": "String"}}},
+  "@globalSearchFailed": {
+    "placeholders": {
+      "entity": {
+        "type": "String"
+      }
+    }
+  },
   "globalSearchSuppliers": "Suppliers",
   "globalSearchSupplierInvoices": "Supplier invoices",
   "notificationsTooltip": "Notifications",
   "notificationsEmpty": "Nothing needs your attention",
   "notificationsOverdueTodos": "{count, plural, =1{1 overdue to-do} other{{count} overdue to-dos}}",
-  "@notificationsOverdueTodos": {"placeholders": {"count": {"type": "int"}}},
+  "@notificationsOverdueTodos": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "notificationsOpenTodos": "{count, plural, =1{1 open to-do} other{{count} open to-dos}}",
-  "@notificationsOpenTodos": {"placeholders": {"count": {"type": "int"}}},
+  "@notificationsOpenTodos": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "notificationsTodosDueToday": "{count, plural, =1{1 due today} other{{count} due today}}",
-  "@notificationsTodosDueToday": {"placeholders": {"count": {"type": "int"}}},
+  "@notificationsTodosDueToday": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "notificationsWorkerDown": "The background worker is down",
   "notificationsWorkerNeverSeen": "The background worker has never reported",
   "notificationsWorkerSubtitle": "Mail is neither sent nor fetched",
   "listColumns": "Columns",
   "listResetLayout": "Reset layout",
   "listSortBy": "Sort by {column}",
-  "@listSortBy": {"placeholders": {"column": {"type": "String"}}},
+  "@listSortBy": {
+    "placeholders": {
+      "column": {
+        "type": "String"
+      }
+    }
+  },
   "listSortedAscending": "sorted ascending",
   "listSortedDescending": "sorted descending",
   "listNotSorted": "not sorted",
   "listResizeColumn": "Resize column {column}",
-  "@listResizeColumn": {"placeholders": {"column": {"type": "String"}}},
+  "@listResizeColumn": {
+    "placeholders": {
+      "column": {
+        "type": "String"
+      }
+    }
+  },
   "listSelectAll": "Select all loaded rows",
   "listSelectRow": "Select {name}",
-  "@listSelectRow": {"placeholders": {"name": {"type": "String"}}},
+  "@listSelectRow": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "listSelectedCount": "{count} selected",
-  "@listSelectedCount": {"placeholders": {"count": {"type": "int"}}},
+  "@listSelectedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "listClearSelection": "Clear selection",
   "listConfirm": "Confirm",
   "listFilters": "Filters",
   "listClearFilters": "Clear filters",
   "listOr": "or",
   "listRemoveFilter": "Remove filter {filter}",
-  "@listRemoveFilter": {"placeholders": {"filter": {"type": "String"}}},
+  "@listRemoveFilter": {
+    "placeholders": {
+      "filter": {
+        "type": "String"
+      }
+    }
+  },
   "listFiltersActive": "{count} active",
-  "@listFiltersActive": {"placeholders": {"count": {"type": "int"}}},
+  "@listFiltersActive": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "listFavourites": "Favourites",
   "listSaveFavourite": "Save current view as favourite",
   "listFavouriteName": "Favourite name",
   "listNoFavourites": "No favourites yet",
   "listDeleteFavourite": "Delete favourite {name}",
-  "@listDeleteFavourite": {"placeholders": {"name": {"type": "String"}}},
+  "@listDeleteFavourite": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "listApplyFavourite": "Apply favourite {name}",
-  "@listApplyFavourite": {"placeholders": {"name": {"type": "String"}}},
+  "@listApplyFavourite": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "formChooseFromList": "Choose an entry from the list",
   "formClearValue": "Clear",
   "formOpenRecord": "Open {name}",
-  "@formOpenRecord": {"placeholders": {"name": {"type": "String"}}},
+  "@formOpenRecord": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "formStatusCurrent": "Status: {status}",
-  "@formStatusCurrent": {"placeholders": {"status": {"type": "String"}}},
+  "@formStatusCurrent": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
   "formUnsavedChanges": "Unsaved changes",
   "chatterTitle": "Chatter",
   "chatterNoteHint": "Write a note…",
@@ -4908,7 +6099,13 @@
   "chatterFollow": "Follow",
   "chatterFollowing": "Following",
   "chatterFollowers": "{count, plural, =0{No followers} =1{1 follower} other{{count} followers}}",
-  "@chatterFollowers": {"placeholders": {"count": {"type": "int"}}},
+  "@chatterFollowers": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "chatterActivities": "Activities",
   "chatterSchedule": "Schedule activity",
   "chatterKindTodo": "To do",
@@ -4923,12 +6120,45 @@
   "chatterDoneNote": "What came of it? (optional)",
   "chatterOverdue": "Overdue",
   "chatterDueOn": "Due {date}",
-  "@chatterDueOn": {"placeholders": {"date": {"type": "String"}}},
+  "@chatterDueOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "chatterSystemActor": "System",
   "chatterChanged": "{who} changed {field}: {from} → {to}",
-  "@chatterChanged": {"placeholders": {"who": {"type": "String"}, "field": {"type": "String"}, "from": {"type": "String"}, "to": {"type": "String"}}},
+  "@chatterChanged": {
+    "placeholders": {
+      "who": {
+        "type": "String"
+      },
+      "field": {
+        "type": "String"
+      },
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
   "chatterActivityDone": "{who} completed {kind}: {summary}",
-  "@chatterActivityDone": {"placeholders": {"who": {"type": "String"}, "kind": {"type": "String"}, "summary": {"type": "String"}}},
+  "@chatterActivityDone": {
+    "placeholders": {
+      "who": {
+        "type": "String"
+      },
+      "kind": {
+        "type": "String"
+      },
+      "summary": {
+        "type": "String"
+      }
+    }
+  },
   "chatterFieldName": "Name",
   "chatterFieldVatNumber": "VAT number",
   "chatterFieldVatRegime": "VAT regime",
@@ -4945,24 +6175,66 @@
   "chatterLoadFailed": "The messages could not be loaded.",
   "chatterRetry": "Retry",
   "notificationsChatterUnread": "{count, plural, =1{1 new message on {label}} other{{count} new messages on {label}}}",
-  "@notificationsChatterUnread": {"placeholders": {"count": {"type": "int"}, "label": {"type": "String"}}},
+  "@notificationsChatterUnread": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "label": {
+        "type": "String"
+      }
+    }
+  },
   "notificationsActivityDue": "{kind}: {summary}",
-  "@notificationsActivityDue": {"placeholders": {"kind": {"type": "String"}, "summary": {"type": "String"}}},
+  "@notificationsActivityDue": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      },
+      "summary": {
+        "type": "String"
+      }
+    }
+  },
   "kanbanMoveTo": "Move to…",
   "kanbanMoveToColumn": "Move to {column}",
-  "@kanbanMoveToColumn": {"placeholders": {"column": {"type": "String"}}},
+  "@kanbanMoveToColumn": {
+    "placeholders": {
+      "column": {
+        "type": "String"
+      }
+    }
+  },
   "kanbanEmpty": "Nothing here",
   "kanbanMore": "{count, plural, =1{Show 1 more} other{Show {count} more}}",
-  "@kanbanMore": {"placeholders": {"count": {"type": "int"}}},
+  "@kanbanMore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "kanbanColumnFailed": "This column could not be loaded.",
   "kanbanAdd": "Add to {column}",
-  "@kanbanAdd": {"placeholders": {"column": {"type": "String"}}},
+  "@kanbanAdd": {
+    "placeholders": {
+      "column": {
+        "type": "String"
+      }
+    }
+  },
   "kanbanViewList": "List",
   "kanbanViewBoard": "Board",
   "kanbanLostCancelled": "Moved back: a reason is needed to mark an opportunity as lost.",
   "ticketsBoardCloseTitle": "Close this ticket?",
   "ticketsBoardCloseBody": "Closing {number} can send the customer a satisfaction survey, which cannot be taken back.",
-  "@ticketsBoardCloseBody": {"placeholders": {"number": {"type": "String"}}},
+  "@ticketsBoardCloseBody": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
   "ticketsBoardClose": "Close ticket",
   "documentLibrary": "Documents",
   "documentNew": "New document",
@@ -5016,5 +6288,31 @@
   "addPictureOrVideo": "Add pictures or videos",
   "noMedia": "No pictures or videos yet.",
   "makeDefault": "Make default",
-  "defaultMedia": "Default"
+  "defaultMedia": "Default",
+  "tutAttributesTitle": "Custom product properties",
+  "tutAttributesSummary": "Define company-specific product attributes in Admin and fill them in on a product.",
+  "tutAttributesNeedsTitle": "Tutorial controller required",
+  "tutAttributesNeedsBody": "This chapter records technical properties on TUT-CTRL (Controller). Create TUT-CTRL in chapter 1 or use Assist to create it now.",
+  "tutAttributesIntroTitle": "Why generic product properties",
+  "tutAttributesIntroBody": "Every company has properties specific to its own product lines—such as relay counts, FET counts, digital inputs, or 24V polarized 2-wire output—that are irrelevant to other companies. Instead of hard-coding columns, an administrator defines them once under Admin → Attributes, and they immediately appear on every product.",
+  "tutAttributesOpenAdminTitle": "Open Admin → Attributes",
+  "tutAttributesOpenAdminBody": "Open Admin from the navigation rail and select the Attributes tab.",
+  "tutAttributesRelaysTitle": "Define the relay count property",
+  "tutAttributesRelaysBody": "Click New attribute and create a Number property with key relay_count, label Relays, type Number, and scope Product.",
+  "tutAttributesRelaysHint": "Keys use snake_case (lowercase letters, digits, and underscores) so configurators and match rules can reference them reliably.",
+  "tutAttributesFetsTitle": "Define the FET count property",
+  "tutAttributesFetsBody": "Click New attribute and create a Number property with key fet_count, label FETs, type Number, and scope Product.",
+  "tutAttributesDigitalInputsTitle": "Define the digital inputs property",
+  "tutAttributesDigitalInputsBody": "Click New attribute and create a Number property with key digital_inputs, label Digital inputs, type Number, and scope Product.",
+  "tutAttributesPolarized24vTitle": "Define 24V polarized 2-wire output",
+  "tutAttributesPolarized24vBody": "Click New attribute and create a Yes/No property with key supports_24v_polarized_2wire, label 24V polarized 2-wire output, type Yes/No, and scope Product.",
+  "tutAttributesOpenControllerTitle": "Open the Controller product",
+  "tutAttributesOpenControllerBody": "Open Products and select TUT-CTRL (Controller).",
+  "tutAttributesSuitabilityTabTitle": "Open the Suitability tab",
+  "tutAttributesSuitabilityTabBody": "Switch to the Suitability tab. Every active Product-scope attribute you defined in Admin now appears here as a typed input.",
+  "tutAttributesFillPropertiesTitle": "Record the controller properties",
+  "tutAttributesFillPropertiesBody": "Set Relays to 4, FETs to 2, Digital inputs to 8, and 24V polarized 2-wire output to Yes, then click Save.",
+  "tutAttributesFillPropertiesHint": "Leave any property blank if it does not apply to a given product; only filled values are saved.",
+  "tutAttributesDoneTitle": "Company-specific properties saved",
+  "tutAttributesDoneBody": "TUT-CTRL now stores typed, validated properties specific to your product line. Configurator formulas can read them with product(code).attr('relay_count') and CRM match rules can check them without changing the database schema."
 }

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/api.dart';
 import '../../l10n/l10n.dart';
 import '../../shared/actions.dart';
+import '../tutorial/targets.dart';
 import 'baseline_types_page.dart';
 
 final attributeDefinitionsProvider =
@@ -93,11 +94,14 @@ class AttributeDefinitionsPage extends ConsumerWidget {
               ),
             ),
             if (canWrite)
-              FilledButton.icon(
-                key: const ValueKey('attrdef-new'),
-                onPressed: () => _edit(context, ref),
-                icon: const Icon(Icons.add),
-                label: Text(l.newAttrDef),
+              TutorialTarget(
+                id: 'attrdef-new',
+                child: FilledButton.icon(
+                  key: const ValueKey('attrdef-new'),
+                  onPressed: () => _edit(context, ref),
+                  icon: const Icon(Icons.add),
+                  label: Text(l.newAttrDef),
+                ),
               ),
           ],
         ),
@@ -442,10 +446,13 @@ class _AttributeDefinitionDialogState
             onPressed: _busy ? null : () => Navigator.pop(context, false),
             child: Text(l.cancel),
           ),
-          FilledButton(
-            key: const ValueKey('attrdef-save'),
-            onPressed: _busy ? null : _save,
-            child: Text(l.save),
+          TutorialTarget(
+            id: 'attrdef-save',
+            child: FilledButton(
+              key: const ValueKey('attrdef-save'),
+              onPressed: _busy ? null : _save,
+              child: Text(l.save),
+            ),
           ),
         ],
       ),

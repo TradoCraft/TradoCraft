@@ -32,6 +32,11 @@ String? tutorialMenuPath(
     ('invoices', 'second') => l.finSupplierInvoices,
     ('prices', 'openAdmin' || 'zone') => l.adminPriceZones,
     ('prices', 'priceExport' || 'priceHome') => l.prices,
+    (
+      'attributes',
+      'openAdmin' || 'relays' || 'fets' || 'digitalInputs' || 'polarized24v',
+    ) => l.adminAttributes,
+    ('attributes', 'suitabilityTab' || 'fillProperties') => l.suitabilityTab,
     _ => null,
   };
   return [...module, ?tab].join(' › ');
@@ -108,5 +113,19 @@ List<String> tutorialManualActions(
     [l.products, l.quantity].join(', '),
     l.save,
   ],
+  ('attributes', 'needs') => [
+    l.newProduct,
+    [l.code, l.name, l.type].join(', '),
+    l.save,
+  ],
+  (
+    'attributes',
+    'relays' || 'fets' || 'digitalInputs' || 'polarized24v',
+  ) => [
+    l.newAttrDef,
+    [l.attrKey, l.attrLabel, l.type, l.attrScope].join(', '),
+    l.save,
+  ],
+  ('attributes', 'fillProperties') => [l.suitabilityTab, l.save],
   _ => const [],
 };

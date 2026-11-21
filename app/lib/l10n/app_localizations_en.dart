@@ -11119,4 +11119,99 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get defaultMedia => 'Default';
+
+  @override
+  String get tutAttributesTitle => 'Custom product properties';
+
+  @override
+  String get tutAttributesSummary =>
+      'Define company-specific product attributes in Admin and fill them in on a product.';
+
+  @override
+  String get tutAttributesNeedsTitle => 'Tutorial controller required';
+
+  @override
+  String get tutAttributesNeedsBody =>
+      'This chapter records technical properties on TUT-CTRL (Controller). Create TUT-CTRL in chapter 1 or use Assist to create it now.';
+
+  @override
+  String get tutAttributesIntroTitle => 'Why generic product properties';
+
+  @override
+  String get tutAttributesIntroBody =>
+      'Every company has properties specific to its own product lines—such as relay counts, FET counts, digital inputs, or 24V polarized 2-wire output—that are irrelevant to other companies. Instead of hard-coding columns, an administrator defines them once under Admin → Attributes, and they immediately appear on every product.';
+
+  @override
+  String get tutAttributesOpenAdminTitle => 'Open Admin → Attributes';
+
+  @override
+  String get tutAttributesOpenAdminBody =>
+      'Open Admin from the navigation rail and select the Attributes tab.';
+
+  @override
+  String get tutAttributesRelaysTitle => 'Define the relay count property';
+
+  @override
+  String get tutAttributesRelaysBody =>
+      'Click New attribute and create a Number property with key relay_count, label Relays, type Number, and scope Product.';
+
+  @override
+  String get tutAttributesRelaysHint =>
+      'Keys use snake_case (lowercase letters, digits, and underscores) so configurators and match rules can reference them reliably.';
+
+  @override
+  String get tutAttributesFetsTitle => 'Define the FET count property';
+
+  @override
+  String get tutAttributesFetsBody =>
+      'Click New attribute and create a Number property with key fet_count, label FETs, type Number, and scope Product.';
+
+  @override
+  String get tutAttributesDigitalInputsTitle =>
+      'Define the digital inputs property';
+
+  @override
+  String get tutAttributesDigitalInputsBody =>
+      'Click New attribute and create a Number property with key digital_inputs, label Digital inputs, type Number, and scope Product.';
+
+  @override
+  String get tutAttributesPolarized24vTitle =>
+      'Define 24V polarized 2-wire output';
+
+  @override
+  String get tutAttributesPolarized24vBody =>
+      'Click New attribute and create a Yes/No property with key supports_24v_polarized_2wire, label 24V polarized 2-wire output, type Yes/No, and scope Product.';
+
+  @override
+  String get tutAttributesOpenControllerTitle => 'Open the Controller product';
+
+  @override
+  String get tutAttributesOpenControllerBody =>
+      'Open Products and select TUT-CTRL (Controller).';
+
+  @override
+  String get tutAttributesSuitabilityTabTitle => 'Open the Suitability tab';
+
+  @override
+  String get tutAttributesSuitabilityTabBody =>
+      'Switch to the Suitability tab. Every active Product-scope attribute you defined in Admin now appears here as a typed input.';
+
+  @override
+  String get tutAttributesFillPropertiesTitle =>
+      'Record the controller properties';
+
+  @override
+  String get tutAttributesFillPropertiesBody =>
+      'Set Relays to 4, FETs to 2, Digital inputs to 8, and 24V polarized 2-wire output to Yes, then click Save.';
+
+  @override
+  String get tutAttributesFillPropertiesHint =>
+      'Leave any property blank if it does not apply to a given product; only filled values are saved.';
+
+  @override
+  String get tutAttributesDoneTitle => 'Company-specific properties saved';
+
+  @override
+  String get tutAttributesDoneBody =>
+      'TUT-CTRL now stores typed, validated properties specific to your product line. Configurator formulas can read them with product(code).attr(\'relay_count\') and CRM match rules can check them without changing the database schema.';
 }
