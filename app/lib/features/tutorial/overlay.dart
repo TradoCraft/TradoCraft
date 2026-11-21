@@ -346,9 +346,12 @@ class NarratorCard extends ConsumerWidget {
       router!.go(route!);
     }
 
-    Future<void> reviewAssist() async {
-      final navigatorContext =
-          router?.routerDelegate.navigatorKey.currentContext ?? context;
+    final reviewNavigator =
+        router?.routerDelegate.navigatorKey.currentState ??
+        Navigator.maybeOf(context, rootNavigator: true);
+
+    Future<void> reviewAssist(NavigatorState navigator) async {
+      final navigatorContext = navigator.context;
       final actions = tutorialManualActions(l, m, step);
       // The tutorial layer is above the router's dialogs in the web
       // accessibility tree. Remove it while the learner reviews the action.
@@ -534,7 +537,9 @@ class NarratorCard extends ConsumerWidget {
                         if (c.canAssist)
                           FilledButton(
                             key: const ValueKey('tutorial-assist'),
-                            onPressed: s.actionBusy ? null : reviewAssist,
+                            onPressed: s.actionBusy || reviewNavigator == null
+                                ? null
+                                : () => reviewAssist(reviewNavigator),
                             child: Text(l.tutAssist),
                           ),
                         if (route != null &&

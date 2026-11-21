@@ -224,6 +224,47 @@ void main() {
     expect(http.requests[write + 1], 'GET /api/v1/products');
   });
 
+  testWidgets('assistance can confirm after a routerless card is removed', (
+    tester,
+  ) async {
+    Map<String, Object>? motor;
+    final http = FakeHttp({
+      'GET /api/v1/products': (_) => {
+        'items': [?motor],
+      },
+      'POST /api/v1/products': (_) => motor = {
+        'id': 'motor',
+        'code': 'TUT-MOTOR',
+        'product_type': 'purchased',
+        'active': true,
+      },
+    });
+    final c = _boot(http, missions: [productMission]);
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: c,
+        child: const MaterialApp(
+          locale: Locale('en'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: TutorialHost(child: Scaffold()),
+        ),
+      ),
+    );
+    final t = await _startIn(tester, c, 'product');
+    t.routeChanged('/products');
+    await _settle(tester);
+
+    await tester.tap(find.byKey(const ValueKey('tutorial-assist')));
+    await _settle(tester);
+    expect(_card, findsNothing);
+    await tester.tap(find.text('Run this step'));
+    await _settle(tester);
+
+    expect(t.step?.id, 'frame');
+    expect(c.read(tutorialProvider).values['motorId'], 'motor');
+  });
+
   test(
     'assistance stays on the step until the saved result is verified',
     () async {
