@@ -19643,6 +19643,162 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Default'**
   String get defaultMedia;
+
+  /// No description provided for @tutAttributesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom product properties'**
+  String get tutAttributesTitle;
+
+  /// No description provided for @tutAttributesSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Define company-specific product attributes in Admin and fill them in on a product.'**
+  String get tutAttributesSummary;
+
+  /// No description provided for @tutAttributesNeedsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tutorial controller required'**
+  String get tutAttributesNeedsTitle;
+
+  /// No description provided for @tutAttributesNeedsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This chapter records technical properties on TUT-CTRL (Controller). Create TUT-CTRL in chapter 1 or use Assist to create it now.'**
+  String get tutAttributesNeedsBody;
+
+  /// No description provided for @tutAttributesIntroTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Why generic product properties'**
+  String get tutAttributesIntroTitle;
+
+  /// No description provided for @tutAttributesIntroBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Every company has properties specific to its own product lines—such as relay counts, FET counts, digital inputs, or 24V polarized 2-wire output—that are irrelevant to other companies. Instead of hard-coding columns, an administrator defines them once under Admin → Attributes, and they immediately appear on every product.'**
+  String get tutAttributesIntroBody;
+
+  /// No description provided for @tutAttributesOpenAdminTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Admin → Attributes'**
+  String get tutAttributesOpenAdminTitle;
+
+  /// No description provided for @tutAttributesOpenAdminBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Admin from the navigation rail and select the Attributes tab.'**
+  String get tutAttributesOpenAdminBody;
+
+  /// No description provided for @tutAttributesRelaysTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Define the relay count property'**
+  String get tutAttributesRelaysTitle;
+
+  /// No description provided for @tutAttributesRelaysBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Click New attribute and create a Number property with key relay_count, label Relays, type Number, and scope Product.'**
+  String get tutAttributesRelaysBody;
+
+  /// No description provided for @tutAttributesRelaysHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Keys use snake_case (lowercase letters, digits, and underscores) so configurators and match rules can reference them reliably.'**
+  String get tutAttributesRelaysHint;
+
+  /// No description provided for @tutAttributesFetsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Define the FET count property'**
+  String get tutAttributesFetsTitle;
+
+  /// No description provided for @tutAttributesFetsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Click New attribute and create a Number property with key fet_count, label FETs, type Number, and scope Product.'**
+  String get tutAttributesFetsBody;
+
+  /// No description provided for @tutAttributesDigitalInputsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Define the digital inputs property'**
+  String get tutAttributesDigitalInputsTitle;
+
+  /// No description provided for @tutAttributesDigitalInputsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Click New attribute and create a Number property with key digital_inputs, label Digital inputs, type Number, and scope Product.'**
+  String get tutAttributesDigitalInputsBody;
+
+  /// No description provided for @tutAttributesPolarized24vTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Define 24V polarized 2-wire output'**
+  String get tutAttributesPolarized24vTitle;
+
+  /// No description provided for @tutAttributesPolarized24vBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Click New attribute and create a Yes/No property with key supports_24v_polarized_2wire, label 24V polarized 2-wire output, type Yes/No, and scope Product.'**
+  String get tutAttributesPolarized24vBody;
+
+  /// No description provided for @tutAttributesOpenControllerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the Controller product'**
+  String get tutAttributesOpenControllerTitle;
+
+  /// No description provided for @tutAttributesOpenControllerBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Products and select TUT-CTRL (Controller).'**
+  String get tutAttributesOpenControllerBody;
+
+  /// No description provided for @tutAttributesSuitabilityTabTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the Suitability tab'**
+  String get tutAttributesSuitabilityTabTitle;
+
+  /// No description provided for @tutAttributesSuitabilityTabBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to the Suitability tab. Every active Product-scope attribute you defined in Admin now appears here as a typed input.'**
+  String get tutAttributesSuitabilityTabBody;
+
+  /// No description provided for @tutAttributesFillPropertiesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Record the controller properties'**
+  String get tutAttributesFillPropertiesTitle;
+
+  /// No description provided for @tutAttributesFillPropertiesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Fill in the fields for keys relay_count = 4, fet_count = 2, digital_inputs = 8, and supports_24v_polarized_2wire = Yes (if a displayed label differs, use the existing field with that key), then click Save.'**
+  String get tutAttributesFillPropertiesBody;
+
+  /// No description provided for @tutAttributesFillPropertiesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave any property blank if it does not apply to a given product; only filled values are saved.'**
+  String get tutAttributesFillPropertiesHint;
+
+  /// No description provided for @tutAttributesDoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Company-specific properties saved'**
+  String get tutAttributesDoneTitle;
+
+  /// No description provided for @tutAttributesDoneBody.
+  ///
+  /// In en, this message translates to:
+  /// **'TUT-CTRL now stores typed, validated properties specific to your product line. Configurator formulas can read them with product(code).attr(\'relay_count\') and CRM match rules can check them without changing the database schema.'**
+  String get tutAttributesDoneBody;
 }
 
 class _AppLocalizationsDelegate

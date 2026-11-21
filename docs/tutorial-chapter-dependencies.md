@@ -17,6 +17,7 @@ saved-progress keys.
 | 8 · `quotation` | Brightwheel, a priced tutorial cart, and the cart ID used by the quantity check | An eight-cart quotation, production timing note, sent status, and PDF |
 | 9 · `change` | The sent quotation and its ID, the customer, cart, ticket thread, and the stock and active BOM needed for order production | A revised quotation, a confirmed order, completed production for the order, and a separate stock build |
 | 10 · `helpdesk` | Maya's tutorial ticket, which this chapter can find by sender and capture by ID | An internal note, tag, time entry, escalation, and a tour of prepared answers |
+| 11 · `attributes` | `TUT-CTRL` (Controller), which this chapter can find by code or create via Assist | Four company-specific `product`-scope attribute definitions (`relay_count`, `fet_count`, `digital_inputs`, `supports_24v_polarized_2wire`) and their typed values on `TUT-CTRL` |
 
 The production chapters also depend on the relevant production setup and permissions.
 The existing full story uses the development admin as the learner. Selecting a path

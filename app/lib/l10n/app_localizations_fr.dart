@@ -11183,4 +11183,100 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get defaultMedia => 'Par défaut';
+
+  @override
+  String get tutAttributesTitle => 'Propriétés produit personnalisées';
+
+  @override
+  String get tutAttributesSummary =>
+      'Définissez des attributs produit propres à votre entreprise dans Administration et renseignez-les sur un produit.';
+
+  @override
+  String get tutAttributesNeedsTitle => 'Contrôleur du tutoriel requis';
+
+  @override
+  String get tutAttributesNeedsBody =>
+      'Ce chapitre enregistre des propriétés techniques sur TUT-CTRL (Controller). Créez TUT-CTRL au chapitre 1 ou utilisez l\'assistant.';
+
+  @override
+  String get tutAttributesIntroTitle => 'Pourquoi des propriétés génériques';
+
+  @override
+  String get tutAttributesIntroBody =>
+      'Chaque entreprise possède des caractéristiques propres à ses gammes—comme le nombre de relais, de FET, d\'entrées numériques ou la sortie 24V polarisée sur 2 fils—qui sont sans intérêt pour d\'autres entreprises. L\'administrateur les définit une fois dans Administration → Attributs, et elles apparaissent aussitôt sur chaque produit.';
+
+  @override
+  String get tutAttributesOpenAdminTitle => 'Ouvrir Administration → Attributs';
+
+  @override
+  String get tutAttributesOpenAdminBody =>
+      'Ouvrez Administration depuis la barre de navigation et sélectionnez l\'onglet Attributs.';
+
+  @override
+  String get tutAttributesRelaysTitle => 'Définir le nombre de relais';
+
+  @override
+  String get tutAttributesRelaysBody =>
+      'Cliquez sur Nouvel attribut et créez un attribut Nombre avec la clé relay_count, le libellé Relays, le type Nombre et la portée Produit.';
+
+  @override
+  String get tutAttributesRelaysHint =>
+      'Les clés utilisent le format snake_case (lettres minuscules, chiffres et underscores) pour être référencées dans les configurateurs et règles.';
+
+  @override
+  String get tutAttributesFetsTitle => 'Définir le nombre de FET';
+
+  @override
+  String get tutAttributesFetsBody =>
+      'Cliquez sur Nouvel attribut et créez un attribut Nombre avec la clé fet_count, le libellé FETs, le type Nombre et la portée Produit.';
+
+  @override
+  String get tutAttributesDigitalInputsTitle =>
+      'Définir les entrées numériques';
+
+  @override
+  String get tutAttributesDigitalInputsBody =>
+      'Cliquez sur Nouvel attribut et créez un attribut Nombre avec la clé digital_inputs, le libellé Digital inputs, le type Nombre et la portée Produit.';
+
+  @override
+  String get tutAttributesPolarized24vTitle =>
+      'Définir la sortie 24V polarisée 2 fils';
+
+  @override
+  String get tutAttributesPolarized24vBody =>
+      'Cliquez sur Nouvel attribut et créez un attribut Oui/Non avec la clé supports_24v_polarized_2wire, le libellé 24V polarized 2-wire output, le type Oui/Non et la portée Produit.';
+
+  @override
+  String get tutAttributesOpenControllerTitle => 'Ouvrir le produit Controller';
+
+  @override
+  String get tutAttributesOpenControllerBody =>
+      'Ouvrez Produits et sélectionnez TUT-CTRL (Controller).';
+
+  @override
+  String get tutAttributesSuitabilityTabTitle =>
+      'Ouvrir l\'onglet Compatibilité';
+
+  @override
+  String get tutAttributesSuitabilityTabBody =>
+      'Passez à l\'onglet Compatibilité. Tous les attributs actifs de portée Produit apparaissent ici comme champs typés.';
+
+  @override
+  String get tutAttributesFillPropertiesTitle =>
+      'Saisir les propriétés du contrôleur';
+
+  @override
+  String get tutAttributesFillPropertiesBody =>
+      'Renseignez les champs pour les clés relay_count = 4, fet_count = 2, digital_inputs = 8 et supports_24v_polarized_2wire = Oui (si un libellé affiché diffère, utilisez le champ existant portant cette clé), puis cliquez sur Enregistrer.';
+
+  @override
+  String get tutAttributesFillPropertiesHint =>
+      'Laissez un champ vide s\'il ne s\'applique pas à un produit ; seules les valeurs saisies sont enregistrées.';
+
+  @override
+  String get tutAttributesDoneTitle => 'Propriétés spécifiques enregistrées';
+
+  @override
+  String get tutAttributesDoneBody =>
+      'TUT-CTRL stocke désormais des propriétés typées et validées propres à votre gamme. Les formules du configurateur et les règles CRM peuvent les exploiter sans modifier le schéma.';
 }

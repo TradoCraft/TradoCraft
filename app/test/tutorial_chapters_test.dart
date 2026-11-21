@@ -444,4 +444,136 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
   });
+
+  group('chapter 11: custom product properties', () {
+    test('assist creates attribute definitions and fills TUT-CTRL properties', () async {
+      final defs = <Map<String, Object?>>[];
+      final ctrlAttrs = <Map<String, Object?>>[];
+      final http = FakeHttp({
+        'GET /api/v1/products': (_) => {
+          'items': [_product('ctrl1', 'TUT-CTRL', 'purchased')],
+          'total': 1,
+        },
+        'GET /api/v1/attribute-definitions': (_) => defs,
+        'POST /api/v1/attribute-definitions': (body) {
+          final input = Map<String, Object?>.from(body as Map);
+          final created = {'id': 'def-${defs.length + 1}', ...input};
+          defs.add(created);
+          return created;
+        },
+        'GET /api/v1/products/ctrl1/attributes': (_) => ctrlAttrs,
+        'PUT /api/v1/products/ctrl1/attributes': (body) {
+          ctrlAttrs
+            ..clear()
+            ..addAll((body as List).cast<Map<String, Object?>>());
+          return ctrlAttrs;
+        },
+      });
+      final c = _boot(http);
+      final t = c.read(tutorialProvider.notifier);
+      await t.ready;
+      for (final m in allMissions) {
+        if (m.id == 'attributes') break;
+        await t.skipChapter(m.id);
+      }
+      expect(await t.start('attributes'), StartResult.started);
+      await pumpEventQueue();
+      // `needs` probe captures controllerId and advances to `intro`.
+      expect(c.read(tutorialProvider).stepIndex, 1);
+      expect(c.read(tutorialProvider).values['controllerId'], 'ctrl1');
+
+      // `intro` -> `openAdmin` -> `relays`
+      t.next();
+      expect(c.read(tutorialProvider).stepIndex, 2);
+      t.routeChanged('/admin');
+      expect(c.read(tutorialProvider).stepIndex, 3);
+
+      // Assist each of the 4 attribute definition steps.
+      for (final expectedKey in [
+        'relay_count',
+        'fet_count',
+        'digital_inputs',
+        'supports_24v_polarized_2wire',
+      ]) {
+        await t.runAction();
+        expect(defs.map((d) => d['key']), contains(expectedKey));
+      }
+
+      // `openController` -> `suitabilityTab` -> `fillProperties` -> `done`
+      t.routeChanged('/products/ctrl1');
+      expect(c.read(tutorialProvider).stepIndex, 8);
+      t.next();
+      expect(c.read(tutorialProvider).stepIndex, 9);
+      await t.runAction();
+      expect(c.read(tutorialProvider).stepIndex, 10);
+      expect(
+        ctrlAttrs.map((a) => '${a['key']}=${a['value']}'),
+        containsAll([
+          'relay_count=4',
+          'fet_count=2',
+          'digital_inputs=8',
+          'supports_24v_polarized_2wire=true',
+        ]),
+      );
+      t.next();
+      expect(c.read(tutorialProvider).completed, contains('attributes'));
+    });
+
+    test('assist reactivates inactive attribute definition and refuses inactive TUT-CTRL', () async {
+      final inactiveCtrl = {..._product('ctrl1', 'TUT-CTRL', 'purchased'), 'active': false};
+      final products = [inactiveCtrl];
+      final defs = <Map<String, Object?>>[
+        {
+          'id': 'def-1',
+          'key': 'relay_count',
+          'label': 'Relays',
+          'kind': 'number',
+          'scope': 'product',
+          'sort_order': 10,
+          'active': false,
+        },
+      ];
+      var postDefCount = 0;
+      var putDefCount = 0;
+      final http = FakeHttp({
+        'GET /api/v1/products': (_) => {'items': products, 'total': 1},
+        'GET /api/v1/attribute-definitions': (_) => defs,
+        'POST /api/v1/attribute-definitions': (_) {
+          postDefCount++;
+          return {};
+        },
+        'PUT /api/v1/attribute-definitions/def-1': (body) {
+          putDefCount++;
+          final input = Map<String, Object?>.from(body as Map);
+          defs[0] = {'id': 'def-1', ...input};
+          return defs[0];
+        },
+      });
+      final c = _boot(http);
+      final t = c.read(tutorialProvider.notifier);
+      await t.ready;
+      for (final m in allMissions) {
+        if (m.id == 'attributes') break;
+        await t.skipChapter(m.id);
+      }
+      await t.start('attributes');
+      await pumpEventQueue();
+      // Inactive TUT-CTRL stays on `needs` and assist reports it instead of duplicating.
+      expect(c.read(tutorialProvider).stepIndex, 0);
+      await t.runAction();
+      expect(c.read(tutorialProvider).actionError?.reason, contains('Active'));
+      expect(products, hasLength(1));
+
+      // Activate TUT-CTRL and advance to `relays`.
+      inactiveCtrl['active'] = true;
+      t.next(); // -> intro
+      t.next(); // -> openAdmin
+      t.routeChanged('/admin'); // -> relays
+      expect(c.read(tutorialProvider).stepIndex, 3);
+      await t.runAction();
+      expect(putDefCount, 1);
+      expect(postDefCount, 0);
+      expect(defs[0]['active'], isTrue);
+    });
+  });
 }

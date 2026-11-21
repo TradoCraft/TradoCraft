@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/api.dart';
 import '../../l10n/l10n.dart';
 import '../opportunities/matches_panel.dart';
+import '../tutorial/controller.dart';
+import '../tutorial/targets.dart';
 import 'suitability_logic.dart';
 
 final _definitionsProvider =
@@ -27,6 +29,20 @@ class SuitabilityTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen(tutorialAssistCompletedProvider, (_, completed) {
+      if (completed?.missionId == 'attributes') {
+        if (completed?.stepId == 'fillProperties') {
+          ref.invalidate(_attributesProvider(product.id));
+        } else if (const {
+          'relays',
+          'fets',
+          'digitalInputs',
+          'polarized24v',
+        }.contains(completed?.stepId)) {
+          ref.invalidate(_definitionsProvider);
+        }
+      }
+    });
     final defs = ref.watch(_definitionsProvider);
     final attrs = ref.watch(_attributesProvider(product.id));
     final failed = defs.error ?? attrs.error;
@@ -314,9 +330,12 @@ class _SuitabilityFormState extends ConsumerState<_SuitabilityForm> {
         if (canWrite)
           Align(
             alignment: Alignment.centerLeft,
-            child: FilledButton(
-              onPressed: _saving ? null : _save,
-              child: Text(l.save),
+            child: TutorialTarget(
+              id: 'suitability-save',
+              child: FilledButton(
+                onPressed: _saving ? null : _save,
+                child: Text(l.save),
+              ),
             ),
           ),
       ],

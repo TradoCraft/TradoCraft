@@ -11168,4 +11168,101 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get defaultMedia => 'Standaard';
+
+  @override
+  String get tutAttributesTitle => 'Aangepaste producteigenschappen';
+
+  @override
+  String get tutAttributesSummary =>
+      'Definieer bedrijfsspecifieke productattributen in Beheer en vul ze in op een product.';
+
+  @override
+  String get tutAttributesNeedsTitle => 'Tutorialcontroller vereist';
+
+  @override
+  String get tutAttributesNeedsBody =>
+      'Dit hoofdstuk legt technische eigenschappen vast op TUT-CTRL (Controller). Maak TUT-CTRL aan in hoofdstuk 1 of gebruik Assisteren.';
+
+  @override
+  String get tutAttributesIntroTitle => 'Waarom generieke producteigenschappen';
+
+  @override
+  String get tutAttributesIntroBody =>
+      'Elk bedrijf heeft eigenschappen die specifiek zijn voor zijn productlijnen—zoals het aantal relais, FETs, digitale ingangen of 24V gepolariseerde 2-draads uitgang—die voor andere bedrijven niet relevant zijn. Een beheerder definieert ze eenmalig onder Beheer → Kenmerken, waarna ze direct op elk product verschijnen.';
+
+  @override
+  String get tutAttributesOpenAdminTitle => 'Open Beheer → Kenmerken';
+
+  @override
+  String get tutAttributesOpenAdminBody =>
+      'Open Beheer in de navigatiebalk en kies het tabblad Kenmerken.';
+
+  @override
+  String get tutAttributesRelaysTitle => 'Definieer het aantal relais';
+
+  @override
+  String get tutAttributesRelaysBody =>
+      'Klik op Nieuw kenmerk en maak een Getal-eigenschap aan met sleutel relay_count, label Relays, type Getal en bereik Product.';
+
+  @override
+  String get tutAttributesRelaysHint =>
+      'Sleutels gebruiken snake_case (kleine letters, cijfers en underscores) zodat configurators en matchregels ernaar kunnen verwijzen.';
+
+  @override
+  String get tutAttributesFetsTitle => 'Definieer het aantal FETs';
+
+  @override
+  String get tutAttributesFetsBody =>
+      'Klik op Nieuw kenmerk en maak een Getal-eigenschap aan met sleutel fet_count, label FETs, type Getal en bereik Product.';
+
+  @override
+  String get tutAttributesDigitalInputsTitle =>
+      'Definieer de digitale ingangen';
+
+  @override
+  String get tutAttributesDigitalInputsBody =>
+      'Klik op Nieuw kenmerk en maak een Getal-eigenschap aan met sleutel digital_inputs, label Digital inputs, type Getal en bereik Product.';
+
+  @override
+  String get tutAttributesPolarized24vTitle =>
+      'Definieer 24V gepolariseerde 2-draads uitgang';
+
+  @override
+  String get tutAttributesPolarized24vBody =>
+      'Klik op Nieuw kenmerk en maak een Ja/Nee-eigenschap aan met sleutel supports_24v_polarized_2wire, label 24V polarized 2-wire output, type Ja/Nee en bereik Product.';
+
+  @override
+  String get tutAttributesOpenControllerTitle => 'Open het product Controller';
+
+  @override
+  String get tutAttributesOpenControllerBody =>
+      'Open Producten en selecteer TUT-CTRL (Controller).';
+
+  @override
+  String get tutAttributesSuitabilityTabTitle =>
+      'Open het tabblad Geschiktheid';
+
+  @override
+  String get tutAttributesSuitabilityTabBody =>
+      'Ga naar het tabblad Geschiktheid. Alle actieve productattributen uit Beheer verschijnen hier als getypeerde invoervelden.';
+
+  @override
+  String get tutAttributesFillPropertiesTitle =>
+      'Vul de eigenschappen van de controller in';
+
+  @override
+  String get tutAttributesFillPropertiesBody =>
+      'Vul de velden in voor de sleutels relay_count = 4, fet_count = 2, digital_inputs = 8 en supports_24v_polarized_2wire = Ja (als een weergegeven label afwijkt, gebruik het bestaande veld met die sleutel), en klik op Opslaan.';
+
+  @override
+  String get tutAttributesFillPropertiesHint =>
+      'Laat velden leeg als een eigenschap niet van toepassing is op een product; alleen ingevulde waarden worden opgeslagen.';
+
+  @override
+  String get tutAttributesDoneTitle =>
+      'Bedrijfsspecifieke eigenschappen opgeslagen';
+
+  @override
+  String get tutAttributesDoneBody =>
+      'TUT-CTRL bevat nu getypeerde, gevalideerde eigenschappen voor uw productlijn. Configurators en CRM-matchregels kunnen ze direct gebruiken zonder het databaseschema te wijzigen.';
 }

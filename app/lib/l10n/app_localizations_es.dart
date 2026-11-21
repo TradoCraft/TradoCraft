@@ -11172,4 +11172,99 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get defaultMedia => 'Predeterminada';
+
+  @override
+  String get tutAttributesTitle => 'Propiedades de producto personalizadas';
+
+  @override
+  String get tutAttributesSummary =>
+      'Defina atributos de producto específicos de su empresa en Administración y complételos en un producto.';
+
+  @override
+  String get tutAttributesNeedsTitle =>
+      'Se requiere el controlador del tutorial';
+
+  @override
+  String get tutAttributesNeedsBody =>
+      'Este capítulo registra propiedades técnicas en TUT-CTRL (Controller). Cree TUT-CTRL en el capítulo 1 o use la asistencia.';
+
+  @override
+  String get tutAttributesIntroTitle => 'Por qué usar propiedades genéricas';
+
+  @override
+  String get tutAttributesIntroBody =>
+      'Cada empresa tiene propiedades propias de sus líneas de producto—como número de relés, FETs, entradas digitales o salida polarizada de 24V por 2 hilos—irrelevantes para otras empresas. El administrador las define una vez en Administración → Atributos y aparecen de inmediato en cada producto.';
+
+  @override
+  String get tutAttributesOpenAdminTitle => 'Abrir Administración → Atributos';
+
+  @override
+  String get tutAttributesOpenAdminBody =>
+      'Abra Administración desde la barra de navegación y seleccione la pestaña Atributos.';
+
+  @override
+  String get tutAttributesRelaysTitle => 'Definir la propiedad de relés';
+
+  @override
+  String get tutAttributesRelaysBody =>
+      'Pulse Nuevo atributo y cree una propiedad Número con clave relay_count, etiqueta Relays, tipo Número y ámbito Producto.';
+
+  @override
+  String get tutAttributesRelaysHint =>
+      'Las claves usan snake_case (minúsculas, dígitos y guiones bajos) para que configuradores y reglas puedan referenciarlas.';
+
+  @override
+  String get tutAttributesFetsTitle => 'Definir la propiedad de FETs';
+
+  @override
+  String get tutAttributesFetsBody =>
+      'Pulse Nuevo atributo y cree una propiedad Número con clave fet_count, etiqueta FETs, tipo Número y ámbito Producto.';
+
+  @override
+  String get tutAttributesDigitalInputsTitle => 'Definir entradas digitales';
+
+  @override
+  String get tutAttributesDigitalInputsBody =>
+      'Pulse Nuevo atributo y cree una propiedad Número con clave digital_inputs, etiqueta Digital inputs, tipo Número y ámbito Producto.';
+
+  @override
+  String get tutAttributesPolarized24vTitle =>
+      'Definir salida polarizada 24V por 2 hilos';
+
+  @override
+  String get tutAttributesPolarized24vBody =>
+      'Pulse Nuevo atributo y cree una propiedad Sí/No con clave supports_24v_polarized_2wire, etiqueta 24V polarized 2-wire output, tipo Sí/No y ámbito Producto.';
+
+  @override
+  String get tutAttributesOpenControllerTitle => 'Abrir el producto Controller';
+
+  @override
+  String get tutAttributesOpenControllerBody =>
+      'Abra Productos y seleccione TUT-CTRL (Controller).';
+
+  @override
+  String get tutAttributesSuitabilityTabTitle => 'Abrir la pestaña Idoneidad';
+
+  @override
+  String get tutAttributesSuitabilityTabBody =>
+      'Cambie a la pestaña Idoneidad. Todos los atributos activos de ámbito Producto aparecen aquí como campos tipados.';
+
+  @override
+  String get tutAttributesFillPropertiesTitle =>
+      'Registrar las propiedades del controlador';
+
+  @override
+  String get tutAttributesFillPropertiesBody =>
+      'Complete los campos para las claves relay_count = 4, fet_count = 2, digital_inputs = 8 y supports_24v_polarized_2wire = Sí (si una etiqueta mostrada difiere, use el campo existente con esa clave), luego pulse Guardar.';
+
+  @override
+  String get tutAttributesFillPropertiesHint =>
+      'Deje vacío cualquier campo que no aplique a un producto; solo se guardan los valores rellenados.';
+
+  @override
+  String get tutAttributesDoneTitle => 'Propiedades específicas guardadas';
+
+  @override
+  String get tutAttributesDoneBody =>
+      'TUT-CTRL ahora guarda propiedades tipadas y validadas propias de su gama. Las fórmulas del configurador y las reglas CRM pueden usarlas sin cambiar el esquema de la base de datos.';
 }

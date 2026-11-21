@@ -1593,7 +1593,13 @@
   "csvErrorRowColumn": "Rij {row}, kolom {column}",
   "csvAndMore": "en nog {count}",
   "profileTooltip": "Profiel: {name}",
-  "@profileTooltip": {"placeholders": {"name": {"type": "String"}}},
+  "@profileTooltip": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "tabTicket": "Ticket",
   "tabQuotation": "Offerte",
   "tabNewQuotation": "Nieuwe offerte",
@@ -1894,7 +1900,11 @@
   "addSubItem": "Subitem toevoegen",
   "subItemsOptions": "Opties van {product}",
   "@subItemsOptions": {
-    "placeholders": { "product": { "type": "String" } }
+    "placeholders": {
+      "product": {
+        "type": "String"
+      }
+    }
   },
   "subItemsNoOptions": "Dit product heeft geen opties.",
   "subItemsOtherProducts": "Andere producten",
@@ -1906,7 +1916,11 @@
   "crShare": "Delen met iedereen in het bedrijf",
   "crOwnedBy": "Door {name}",
   "@crOwnedBy": {
-    "placeholders": {"name": {"type": "String"}}
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "crObject": "Rapport over",
   "crJoin": "Gerelateerde gegevens toevoegen",
@@ -1955,15 +1969,30 @@
   "crChartY": "Waarden",
   "crRows": "{count} rijen",
   "@crRows": {
-    "placeholders": {"count": {"type": "int"}}
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "crRowsShown": "{shown} van {total} rijen getoond",
   "@crRowsShown": {
-    "placeholders": {"shown": {"type": "int"}, "total": {"type": "int"}}
+    "placeholders": {
+      "shown": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
   },
   "crChartShareShown": "De aandelen gelden voor de {count} getoonde groepen.",
   "@crChartShareShown": {
-    "placeholders": {"count": {"type": "int"}}
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "crSaved": "Rapport opgeslagen",
   "crDeleted": "Rapport verwijderd",
@@ -1998,10 +2027,25 @@
   "envTest": "Test",
   "envTutorial": "Tutorial",
   "envBannerSemantics": "Omgeving {name}, {kind}",
-  "@envBannerSemantics": {"placeholders": {"name": {"type": "String"}, "kind": {"type": "String"}}},
+  "@envBannerSemantics": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
   "envSwitcherTitle": "Omgevingen",
   "envSwitchMenu": "Omgeving: {name}",
-  "@envSwitchMenu": {"placeholders": {"name": {"type": "String"}}},
+  "@envSwitchMenu": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "envSwitchTooltip": "Omgeving wisselen",
   "envActive": "Actief",
   "envAdd": "Omgeving toevoegen",
@@ -2009,18 +2053,45 @@
   "envServerUrl": "Serveradres",
   "envCheck": "Server controleren",
   "envDetected": "De server meldt: {kind}-omgeving, database {db}",
-  "@envDetected": {"placeholders": {"kind": {"type": "String"}, "db": {"type": "String"}}},
+  "@envDetected": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      },
+      "db": {
+        "type": "String"
+      }
+    }
+  },
   "envInvalidUrl": "Geef een volledig adres, zoals https://erp.example.com",
   "envAlreadyListed": "Deze server staat al in de lijst.",
   "envUnreachable": "De omgeving van deze server kon niet worden gelezen: {error}",
-  "@envUnreachable": {"placeholders": {"error": {"type": "String"}}},
+  "@envUnreachable": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "envRemove": "Verwijderen",
   "envRemoveTitle": "Omgeving verwijderen?",
   "envRemoveBody": "{name} wordt van dit toestel verwijderd, samen met de bewaarde aanmelding. Op de server verandert niets.",
-  "@envRemoveBody": {"placeholders": {"name": {"type": "String"}}},
+  "@envRemoveBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "envCannotRemoveActive": "Wissel eerst naar een andere omgeving",
   "envUnsavedBody": "{count, plural, =1{1 open tabblad heeft niet-opgeslagen wijzigingen} other{{count} open tabbladen hebben niet-opgeslagen wijzigingen}}. Bij het wisselen van omgeving worden alle tabbladen gesloten en gaan die wijzigingen verloren.",
-  "@envUnsavedBody": {"placeholders": {"count": {"type": "int"}}},
+  "@envUnsavedBody": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "envDiscardAndSwitch": "Verwerpen en wisselen",
   "adminPriceZones": "Prijszones",
   "newPriceZone": "Nieuwe prijszone",
@@ -2053,7 +2124,16 @@
   "tutShortcutHelp": "Druk op {keys} om de sneltoetsen voor dit scherm te zien.",
   "tutTakeMe": "Breng me erheen",
   "tutStepOf": "Stap {current} van {total}",
-  "@tutStepOf": {"placeholders": {"current": {"type": "int"}, "total": {"type": "int"}}},
+  "@tutStepOf": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "tutOfferTitle": "Welkom bij TradoCraft",
   "tutOfferBody": "Dit is een tutorialomgeving. Wil je een rondleiding die je stap voor stap de app leert, met oefendata?",
   "tutOfferStart": "Start het tutorial",
@@ -2071,9 +2151,21 @@
   "tutStart": "Starten",
   "tutReplay": "Opnieuw",
   "tutFinishedTitle": "Hoofdstuk {name} voltooid",
-  "@tutFinishedTitle": {"placeholders": {"name": {"type": "String"}}},
+  "@tutFinishedTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "tutFinishedNext": "Goed gedaan. Hierna: {name}. Start het nu, of kies het later op de hoofdstukkenkaart.",
-  "@tutFinishedNext": {"placeholders": {"name": {"type": "String"}}},
+  "@tutFinishedNext": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "tutFinishedLast": "Dat was het laatste hoofdstuk. Goed gedaan. Je kunt elk hoofdstuk opnieuw doen vanaf de hoofdstukkenkaart.",
   "tutStartNext": "Volgend hoofdstuk starten",
   "tutBackToMap": "Terug naar hoofdstukkenkaart",
@@ -2179,7 +2271,13 @@
   "purchApprove": "Goedkeuren",
   "purchCancelOrder": "Order annuleren",
   "purchCancelOrderConfirm": "Inkooporder {number} annuleren? Dit kan niet ongedaan worden gemaakt.",
-  "@purchCancelOrderConfirm": {"placeholders": {"number": {"type": "String"}}},
+  "@purchCancelOrderConfirm": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
   "purchKeepOrder": "Order behouden",
   "purchQtyReceived": "Ontvangen",
   "purchLineTotal": "Regeltotaal",
@@ -2209,9 +2307,24 @@
   "setupOffer": "Een nieuw bedrijf instellen",
   "setupOfferHint": "Deze server heeft nog geen bedrijf.",
   "setupServer": "Server: {url}",
-  "@setupServer": {"placeholders": {"url": {"type": "String"}}},
+  "@setupServer": {
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
   "setupStepOf": "Stap {n} van {total}",
-  "@setupStepOf": {"placeholders": {"n": {"type": "int"}, "total": {"type": "int"}}},
+  "@setupStepOf": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "setupStepCompany": "Bedrijf",
   "setupStepRegion": "Land, valuta en taal",
   "setupStepAdmin": "Beheerder",
@@ -2242,11 +2355,29 @@
   "setupErr404": "Instellen is uitgeschakeld op deze server. Stel BOOTSTRAP_TOKEN in op de server en herstart die.",
   "setupErr409": "Deze server heeft al een bedrijf.",
   "setupDone": "Bedrijf {name} aangemaakt.",
-  "@setupDone": {"placeholders": {"name": {"type": "String"}}},
+  "@setupDone": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "setupDoneDev": "Aanmelden als {email}.",
-  "@setupDoneDev": {"placeholders": {"email": {"type": "String"}}},
+  "@setupDoneDev": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
   "setupDoneOidc": "Meld u aan via uw identiteitsprovider met {email}: dat account is de beheerder.",
-  "@setupDoneOidc": {"placeholders": {"email": {"type": "String"}}},
+  "@setupDoneOidc": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
   "setupToLogin": "Naar aanmelden",
   "setupAddOfferTitle": "Deze server instellen?",
   "setupAddOfferBody": "Deze server heeft nog geen bedrijf. Nu een bedrijf instellen?",
@@ -2286,7 +2417,16 @@
   "finMatches": "De factuur komt overeen met de order en de ontvangsten.",
   "finNotMatches": "De factuur komt niet overeen met de order en de ontvangsten.",
   "finTolerances": "Toleranties: hoeveelheid {qty} %, prijs {price} %",
-  "@finTolerances": {"placeholders": {"qty": {"type": "String"}, "price": {"type": "String"}}},
+  "@finTolerances": {
+    "placeholders": {
+      "qty": {
+        "type": "String"
+      },
+      "price": {
+        "type": "String"
+      }
+    }
+  },
   "finSubmitMatch": "Match controleren",
   "finApprove": "Goedkeuren",
   "finOverrideTitle": "Goedkeuren ondanks afwijking",
@@ -2301,7 +2441,13 @@
   "finPaymentReference": "Betalingskenmerk",
   "finDeleteDraft": "Concept verwijderen",
   "finDeleteConfirm": "Factuur {number} verwijderen? Dit kan niet ongedaan worden gemaakt.",
-  "@finDeleteConfirm": {"placeholders": {"number": {"type": "String"}}},
+  "@finDeleteConfirm": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
   "finNetTotal": "Netto",
   "finGrossTotal": "Totaal incl. btw",
   "finDisputeReasonShown": "Reden van betwisting",
@@ -2799,9 +2945,21 @@
   "shortcutPalette": "Opdrachtenpalet",
   "shortcutHelp": "Sneltoetsen",
   "shortcutMenuItem": "Menu-item {n}",
-  "@shortcutMenuItem": {"placeholders": {"n": {"type": "int"}}},
+  "@shortcutMenuItem": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "shortcutHint": "Sneltoets: {keys}",
-  "@shortcutHint": {"placeholders": {"keys": {"type": "String"}}},
+  "@shortcutHint": {
+    "placeholders": {
+      "keys": {
+        "type": "String"
+      }
+    }
+  },
   "shortcutConfirm": "Bevestigen",
   "shortcutCancel": "Annuleren of verlaten",
   "shortcutFind": "Zoeken",
@@ -2838,33 +2996,83 @@
   "todoReorder": "Slepen om te ordenen",
   "changeProduct": "Product wijzigen",
   "changeProductOf": "Nieuw hoofdproduct voor {product}",
-  "@changeProductOf": {"placeholders": {"product": {"type": "String"}}},
+  "@changeProductOf": {
+    "placeholders": {
+      "product": {
+        "type": "String"
+      }
+    }
+  },
   "changeProductNew": "Nieuw product",
   "changeProductNetNote": "{product} heeft een nettoprijs: de regelkorting is gewist.",
-  "@changeProductNetNote": {"placeholders": {"product": {"type": "String"}}},
+  "@changeProductNetNote": {
+    "placeholders": {
+      "product": {
+        "type": "String"
+      }
+    }
+  },
   "changeProductOnRequestNote": "{product} heeft een prijs op aanvraag: geef de prijs in voor het verzenden.",
-  "@changeProductOnRequestNote": {"placeholders": {"product": {"type": "String"}}},
+  "@changeProductOnRequestNote": {
+    "placeholders": {
+      "product": {
+        "type": "String"
+      }
+    }
+  },
   "optionsNotApplicable": "{count} optie(s) gelden niet voor {product}: verwijder ze.",
-  "@optionsNotApplicable": {"placeholders": {"count": {"type": "int"}, "product": {"type": "String"}}},
+  "@optionsNotApplicable": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "product": {
+        "type": "String"
+      }
+    }
+  },
   "removeNamedLine": "{code} verwijderen",
-  "@removeNamedLine": {"placeholders": {"code": {"type": "String"}}},
+  "@removeNamedLine": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
   "optionNotOffered": "Niet aangeboden bij {product}",
-  "@optionNotOffered": {"placeholders": {"product": {"type": "String"}}},
+  "@optionNotOffered": {
+    "placeholders": {
+      "product": {
+        "type": "String"
+      }
+    }
+  },
   "sentWithNotApplicable": "Verzonden met {count} optie(s) die niet bij hun hoofdproduct horen.",
-  "@sentWithNotApplicable": {"placeholders": {"count": {"type": "int"}}},
+  "@sentWithNotApplicable": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "tabCustomer": "Klant",
   "todoAdded": "Taak toegevoegd",
   "todoLinkToScreen": "Koppelen aan huidig scherm",
   "todoLinkNotAvailable": "Dit scherm heeft geen record om aan te koppelen.",
   "todoOpenLink": "Gekoppeld record openen",
-  "todoRemoveLink": "Koppeling verwijderen",
+  "todoRemoveLink": "Koppeling uit mijn taken verwijderen",
   "recordNotFound": "Dit record is niet gevonden. Het is misschien verwijderd, of je hebt er geen toegang toe.",
   "todoForObject": "Taken voor dit record",
   "todoForObjectCount": "Taken voor dit record ({count} open)",
-  "@todoForObjectCount": {"placeholders": {"count": {"type": "int"}}},
+  "@todoForObjectCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "todoForObjectEmpty": "Geen openstaande taken voor dit record.",
   "todoEmailReminders": "E-mailherinneringen",
-  "todoRemoveLink": "Koppeling uit mijn taken verwijderen",
   "csvExportCsv": "Exporteren als CSV",
   "csvExportXlsx": "Exporteren als Excel (XLSX)",
   "csvExportOds": "Exporteren als OpenDocument (ODS)",
@@ -3061,9 +3269,21 @@
   "baselineParentRequired": "Kies het item waaronder dit hoort.",
   "baselineQuantityInvalid": "Het aantal moet een geheel getal van minimaal 1 zijn.",
   "baselineQty": "Aantal {count}",
-  "@baselineQty": {"placeholders": {"count": {"type": "int"}}},
+  "@baselineQty": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "baselineDeleteConfirm": "{name} verwijderen?",
-  "@baselineDeleteConfirm": {"placeholders": {"name": {"type": "String"}}},
+  "@baselineDeleteConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "baselineDeleted": "Item verwijderd.",
   "adminBaselineTypes": "Basistypes",
   "baselineTypesTitle": "Itemtypes van de uitgangssituatie",
@@ -3077,16 +3297,37 @@
   "baselineTypeNameRequired": "Een naam is verplicht.",
   "baselineTypePlacement": "Kies minstens één bovenliggend type of sta het hoogste niveau toe, anders kunnen items van dit type nooit geplaatst worden.",
   "baselineTypeDeleteConfirm": "Type {code} verwijderen? Is het in gebruik, deactiveer het dan.",
-  "@baselineTypeDeleteConfirm": {"placeholders": {"code": {"type": "String"}}},
+  "@baselineTypeDeleteConfirm": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
   "baselineTypeDeleted": "Itemtype verwijderd.",
   "attrScopeProduct": "Product",
   "matchesTitle": "Productmatches",
   "matchesEmpty": "Geen producten om te tonen.",
   "matchesShowing": "{shown} van {total} producten getoond",
-  "@matchesShowing": {"placeholders": {"shown": {"type": "int"}, "total": {"type": "int"}}},
+  "@matchesShowing": {
+    "placeholders": {
+      "shown": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "matchesSuggest": "Producten voorstellen",
   "matchesForItem": "Producten voor {name}",
-  "@matchesForItem": {"placeholders": {"name": {"type": "String"}}},
+  "@matchesForItem": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "matchesSuitable": "Geschikt",
   "matchesUnknown": "Onbekend",
   "matchesUnsuitable": "Niet geschikt",
@@ -3095,16 +3336,55 @@
   "baselineImportTower": "Importeren uit torenconfigurator",
   "baselineImportTitle": "Voorbeeld van de import",
   "baselineImportCreates": "Maakt {groups} klokkengroep(en), {bells} klok(ken) en {dials} wijzerplaat/-platen aan.",
-  "@baselineImportCreates": {"placeholders": {"groups": {"type": "int"}, "bells": {"type": "int"}, "dials": {"type": "int"}}},
+  "@baselineImportCreates": {
+    "placeholders": {
+      "groups": {
+        "type": "int"
+      },
+      "bells": {
+        "type": "int"
+      },
+      "dials": {
+        "type": "int"
+      }
+    }
+  },
   "baselineImportReplaces": "Dit vervangt {count} item(s) van een eerdere import van dezelfde bron; met de hand ingevoerde items blijven behouden.",
-  "@baselineImportReplaces": {"placeholders": {"count": {"type": "int"}}},
+  "@baselineImportReplaces": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "baselineImportFresh": "Er is geen eerdere import om te vervangen.",
   "baselineImportWarnings": "Waarschuwingen",
   "baselineImportWarning": "{bell}, {field}: {message}",
-  "@baselineImportWarning": {"placeholders": {"bell": {"type": "String"}, "field": {"type": "String"}, "message": {"type": "String"}}},
+  "@baselineImportWarning": {
+    "placeholders": {
+      "bell": {
+        "type": "String"
+      },
+      "field": {
+        "type": "String"
+      },
+      "message": {
+        "type": "String"
+      }
+    }
+  },
   "baselineImportUnmapped": "Niet gekoppelde velden (bewaard bij het geïmporteerde item)",
   "baselineImportUnmappedRow": "{field} ({count})",
-  "@baselineImportUnmappedRow": {"placeholders": {"field": {"type": "String"}, "count": {"type": "int"}}},
+  "@baselineImportUnmappedRow": {
+    "placeholders": {
+      "field": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "baselineImportConfirm": "Importeren",
   "baselineImportDone": "Basislijn geïmporteerd.",
   "baselineImportBadFile": "Dit bestand is geen geldige JSON.",
@@ -3443,5 +3723,31 @@
   "addPictureOrVideo": "Foto's of video's toevoegen",
   "noMedia": "Nog geen foto's of video's.",
   "makeDefault": "Standaard maken",
-  "defaultMedia": "Standaard"
+  "defaultMedia": "Standaard",
+  "tutAttributesTitle": "Aangepaste producteigenschappen",
+  "tutAttributesSummary": "Definieer bedrijfsspecifieke productattributen in Beheer en vul ze in op een product.",
+  "tutAttributesNeedsTitle": "Tutorialcontroller vereist",
+  "tutAttributesNeedsBody": "Dit hoofdstuk legt technische eigenschappen vast op TUT-CTRL (Controller). Maak TUT-CTRL aan in hoofdstuk 1 of gebruik Assisteren.",
+  "tutAttributesIntroTitle": "Waarom generieke producteigenschappen",
+  "tutAttributesIntroBody": "Elk bedrijf heeft eigenschappen die specifiek zijn voor zijn productlijnen—zoals het aantal relais, FETs, digitale ingangen of 24V gepolariseerde 2-draads uitgang—die voor andere bedrijven niet relevant zijn. Een beheerder definieert ze eenmalig onder Beheer → Kenmerken, waarna ze direct op elk product verschijnen.",
+  "tutAttributesOpenAdminTitle": "Open Beheer → Kenmerken",
+  "tutAttributesOpenAdminBody": "Open Beheer in de navigatiebalk en kies het tabblad Kenmerken.",
+  "tutAttributesRelaysTitle": "Definieer het aantal relais",
+  "tutAttributesRelaysBody": "Klik op Nieuw kenmerk en maak een Getal-eigenschap aan met sleutel relay_count, label Relays, type Getal en bereik Product.",
+  "tutAttributesRelaysHint": "Sleutels gebruiken snake_case (kleine letters, cijfers en underscores) zodat configurators en matchregels ernaar kunnen verwijzen.",
+  "tutAttributesFetsTitle": "Definieer het aantal FETs",
+  "tutAttributesFetsBody": "Klik op Nieuw kenmerk en maak een Getal-eigenschap aan met sleutel fet_count, label FETs, type Getal en bereik Product.",
+  "tutAttributesDigitalInputsTitle": "Definieer de digitale ingangen",
+  "tutAttributesDigitalInputsBody": "Klik op Nieuw kenmerk en maak een Getal-eigenschap aan met sleutel digital_inputs, label Digital inputs, type Getal en bereik Product.",
+  "tutAttributesPolarized24vTitle": "Definieer 24V gepolariseerde 2-draads uitgang",
+  "tutAttributesPolarized24vBody": "Klik op Nieuw kenmerk en maak een Ja/Nee-eigenschap aan met sleutel supports_24v_polarized_2wire, label 24V polarized 2-wire output, type Ja/Nee en bereik Product.",
+  "tutAttributesOpenControllerTitle": "Open het product Controller",
+  "tutAttributesOpenControllerBody": "Open Producten en selecteer TUT-CTRL (Controller).",
+  "tutAttributesSuitabilityTabTitle": "Open het tabblad Geschiktheid",
+  "tutAttributesSuitabilityTabBody": "Ga naar het tabblad Geschiktheid. Alle actieve productattributen uit Beheer verschijnen hier als getypeerde invoervelden.",
+  "tutAttributesFillPropertiesTitle": "Vul de eigenschappen van de controller in",
+  "tutAttributesFillPropertiesBody": "Vul de velden in voor de sleutels relay_count = 4, fet_count = 2, digital_inputs = 8 en supports_24v_polarized_2wire = Ja (als een weergegeven label afwijkt, gebruik het bestaande veld met die sleutel), en klik op Opslaan.",
+  "tutAttributesFillPropertiesHint": "Laat velden leeg als een eigenschap niet van toepassing is op een product; alleen ingevulde waarden worden opgeslagen.",
+  "tutAttributesDoneTitle": "Bedrijfsspecifieke eigenschappen opgeslagen",
+  "tutAttributesDoneBody": "TUT-CTRL bevat nu getypeerde, gevalideerde eigenschappen voor uw productlijn. Configurators en CRM-matchregels kunnen ze direct gebruiken zonder het databaseschema te wijzigen."
 }

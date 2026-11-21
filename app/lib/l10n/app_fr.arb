@@ -1593,7 +1593,13 @@
   "csvErrorRowColumn": "Ligne {row}, colonne {column}",
   "csvAndMore": "et {count} de plus",
   "profileTooltip": "Profil : {name}",
-  "@profileTooltip": {"placeholders": {"name": {"type": "String"}}},
+  "@profileTooltip": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "tabTicket": "Ticket",
   "tabQuotation": "Devis",
   "tabNewQuotation": "Nouveau devis",
@@ -1894,7 +1900,11 @@
   "addSubItem": "Ajouter un sous-article",
   "subItemsOptions": "Options de {product}",
   "@subItemsOptions": {
-    "placeholders": { "product": { "type": "String" } }
+    "placeholders": {
+      "product": {
+        "type": "String"
+      }
+    }
   },
   "subItemsNoOptions": "Ce produit n'a pas d'options.",
   "subItemsOtherProducts": "Autres produits",
@@ -1906,7 +1916,11 @@
   "crShare": "Partager avec toute l'entreprise",
   "crOwnedBy": "Par {name}",
   "@crOwnedBy": {
-    "placeholders": {"name": {"type": "String"}}
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "crObject": "Rapport sur",
   "crJoin": "Ajouter des données liées",
@@ -1955,15 +1969,30 @@
   "crChartY": "Valeurs",
   "crRows": "{count} lignes",
   "@crRows": {
-    "placeholders": {"count": {"type": "int"}}
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "crRowsShown": "{shown} lignes affichées sur {total}",
   "@crRowsShown": {
-    "placeholders": {"shown": {"type": "int"}, "total": {"type": "int"}}
+    "placeholders": {
+      "shown": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
   },
   "crChartShareShown": "Les parts portent sur les {count} groupes affichés.",
   "@crChartShareShown": {
-    "placeholders": {"count": {"type": "int"}}
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "crSaved": "Rapport enregistré",
   "crDeleted": "Rapport supprimé",
@@ -1998,10 +2027,25 @@
   "envTest": "Test",
   "envTutorial": "Tutoriel",
   "envBannerSemantics": "Environnement {name}, {kind}",
-  "@envBannerSemantics": {"placeholders": {"name": {"type": "String"}, "kind": {"type": "String"}}},
+  "@envBannerSemantics": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
   "envSwitcherTitle": "Environnements",
   "envSwitchMenu": "Environnement : {name}",
-  "@envSwitchMenu": {"placeholders": {"name": {"type": "String"}}},
+  "@envSwitchMenu": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "envSwitchTooltip": "Changer d'environnement",
   "envActive": "Actif",
   "envAdd": "Ajouter un environnement",
@@ -2009,18 +2053,45 @@
   "envServerUrl": "Adresse du serveur",
   "envCheck": "Vérifier le serveur",
   "envDetected": "Le serveur indique : environnement {kind}, base de données {db}",
-  "@envDetected": {"placeholders": {"kind": {"type": "String"}, "db": {"type": "String"}}},
+  "@envDetected": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      },
+      "db": {
+        "type": "String"
+      }
+    }
+  },
   "envInvalidUrl": "Saisissez une adresse complète, par exemple https://erp.example.com",
   "envAlreadyListed": "Ce serveur figure déjà dans la liste.",
   "envUnreachable": "Impossible de lire l'environnement de ce serveur : {error}",
-  "@envUnreachable": {"placeholders": {"error": {"type": "String"}}},
+  "@envUnreachable": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "envRemove": "Retirer",
   "envRemoveTitle": "Retirer l'environnement ?",
   "envRemoveBody": "{name} est retiré de cet appareil, avec sa connexion enregistrée. Rien ne change sur le serveur.",
-  "@envRemoveBody": {"placeholders": {"name": {"type": "String"}}},
+  "@envRemoveBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "envCannotRemoveActive": "Passez d'abord à un autre environnement",
   "envUnsavedBody": "{count, plural, =1{1 onglet ouvert contient des modifications non enregistrées} other{{count} onglets ouverts contiennent des modifications non enregistrées}}. Changer d'environnement ferme tous les onglets et abandonne ces modifications.",
-  "@envUnsavedBody": {"placeholders": {"count": {"type": "int"}}},
+  "@envUnsavedBody": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "envDiscardAndSwitch": "Abandonner et changer",
   "adminPriceZones": "Zones de prix",
   "newPriceZone": "Nouvelle zone de prix",
@@ -2053,7 +2124,16 @@
   "tutShortcutHelp": "Appuyez sur {keys} pour voir les raccourcis clavier de cet écran.",
   "tutTakeMe": "M'y emmener",
   "tutStepOf": "Étape {current} sur {total}",
-  "@tutStepOf": {"placeholders": {"current": {"type": "int"}, "total": {"type": "int"}}},
+  "@tutStepOf": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "tutOfferTitle": "Bienvenue dans TradoCraft",
   "tutOfferBody": "Ceci est un environnement de tutoriel. Souhaitez-vous une visite guidée qui vous apprend l'application pas à pas, avec des données d'exercice ?",
   "tutOfferStart": "Démarrer le tutoriel",
@@ -2071,9 +2151,21 @@
   "tutStart": "Démarrer",
   "tutReplay": "Rejouer",
   "tutFinishedTitle": "Chapitre {name} terminé",
-  "@tutFinishedTitle": {"placeholders": {"name": {"type": "String"}}},
+  "@tutFinishedTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "tutFinishedNext": "Bravo. Prochain chapitre : {name}. Lancez-le maintenant, ou choisissez-le plus tard sur la carte des chapitres.",
-  "@tutFinishedNext": {"placeholders": {"name": {"type": "String"}}},
+  "@tutFinishedNext": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "tutFinishedLast": "C'était le dernier chapitre. Bravo. Vous pouvez rejouer n'importe quel chapitre depuis la carte des chapitres.",
   "tutStartNext": "Démarrer le chapitre suivant",
   "tutBackToMap": "Retour à la carte des chapitres",
@@ -2179,7 +2271,13 @@
   "purchApprove": "Approuver",
   "purchCancelOrder": "Annuler la commande",
   "purchCancelOrderConfirm": "Annuler la commande d'achat {number} ? Cette action est irréversible.",
-  "@purchCancelOrderConfirm": {"placeholders": {"number": {"type": "String"}}},
+  "@purchCancelOrderConfirm": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
   "purchKeepOrder": "Conserver la commande",
   "purchQtyReceived": "Reçu",
   "purchLineTotal": "Total de la ligne",
@@ -2209,9 +2307,24 @@
   "setupOffer": "Configurer une nouvelle société",
   "setupOfferHint": "Ce serveur n'a pas encore de société.",
   "setupServer": "Serveur : {url}",
-  "@setupServer": {"placeholders": {"url": {"type": "String"}}},
+  "@setupServer": {
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
   "setupStepOf": "Étape {n} sur {total}",
-  "@setupStepOf": {"placeholders": {"n": {"type": "int"}, "total": {"type": "int"}}},
+  "@setupStepOf": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "setupStepCompany": "Société",
   "setupStepRegion": "Pays, devise et langue",
   "setupStepAdmin": "Administrateur",
@@ -2242,11 +2355,29 @@
   "setupErr404": "La configuration est désactivée sur ce serveur. Définissez BOOTSTRAP_TOKEN sur le serveur et redémarrez-le.",
   "setupErr409": "Ce serveur a déjà une société.",
   "setupDone": "Société {name} créée.",
-  "@setupDone": {"placeholders": {"name": {"type": "String"}}},
+  "@setupDone": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "setupDoneDev": "Connexion en tant que {email}.",
-  "@setupDoneDev": {"placeholders": {"email": {"type": "String"}}},
+  "@setupDoneDev": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
   "setupDoneOidc": "Connectez-vous via votre fournisseur d'identité avec {email} : ce compte est l'administrateur.",
-  "@setupDoneOidc": {"placeholders": {"email": {"type": "String"}}},
+  "@setupDoneOidc": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
   "setupToLogin": "Aller à la connexion",
   "setupAddOfferTitle": "Configurer ce serveur ?",
   "setupAddOfferBody": "Ce serveur n'a pas encore de société. En configurer une maintenant ?",
@@ -2286,7 +2417,16 @@
   "finMatches": "La facture correspond à la commande et aux réceptions.",
   "finNotMatches": "La facture ne correspond pas à la commande et aux réceptions.",
   "finTolerances": "Tolérances : quantité {qty} %, prix {price} %",
-  "@finTolerances": {"placeholders": {"qty": {"type": "String"}, "price": {"type": "String"}}},
+  "@finTolerances": {
+    "placeholders": {
+      "qty": {
+        "type": "String"
+      },
+      "price": {
+        "type": "String"
+      }
+    }
+  },
   "finSubmitMatch": "Vérifier le rapprochement",
   "finApprove": "Approuver",
   "finOverrideTitle": "Approuver malgré l'écart",
@@ -2301,7 +2441,13 @@
   "finPaymentReference": "Référence de paiement",
   "finDeleteDraft": "Supprimer le brouillon",
   "finDeleteConfirm": "Supprimer la facture {number} ? Cette action est irréversible.",
-  "@finDeleteConfirm": {"placeholders": {"number": {"type": "String"}}},
+  "@finDeleteConfirm": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
   "finNetTotal": "Net",
   "finGrossTotal": "Total TTC",
   "finDisputeReasonShown": "Motif de la contestation",
@@ -2799,9 +2945,21 @@
   "shortcutPalette": "Palette de commandes",
   "shortcutHelp": "Raccourcis clavier",
   "shortcutMenuItem": "Entrée de menu {n}",
-  "@shortcutMenuItem": {"placeholders": {"n": {"type": "int"}}},
+  "@shortcutMenuItem": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "shortcutHint": "Raccourci : {keys}",
-  "@shortcutHint": {"placeholders": {"keys": {"type": "String"}}},
+  "@shortcutHint": {
+    "placeholders": {
+      "keys": {
+        "type": "String"
+      }
+    }
+  },
   "shortcutConfirm": "Confirmer",
   "shortcutCancel": "Annuler ou quitter",
   "shortcutFind": "Rechercher",
@@ -2838,33 +2996,83 @@
   "todoReorder": "Glisser pour réordonner",
   "changeProduct": "Changer de produit",
   "changeProductOf": "Nouveau produit principal pour {product}",
-  "@changeProductOf": {"placeholders": {"product": {"type": "String"}}},
+  "@changeProductOf": {
+    "placeholders": {
+      "product": {
+        "type": "String"
+      }
+    }
+  },
   "changeProductNew": "Nouveau produit",
   "changeProductNetNote": "{product} a un prix net : la remise de ligne a été effacée.",
-  "@changeProductNetNote": {"placeholders": {"product": {"type": "String"}}},
+  "@changeProductNetNote": {
+    "placeholders": {
+      "product": {
+        "type": "String"
+      }
+    }
+  },
   "changeProductOnRequestNote": "{product} est à prix sur demande : saisissez le prix avant l'envoi.",
-  "@changeProductOnRequestNote": {"placeholders": {"product": {"type": "String"}}},
+  "@changeProductOnRequestNote": {
+    "placeholders": {
+      "product": {
+        "type": "String"
+      }
+    }
+  },
   "optionsNotApplicable": "{count} option(s) ne s'appliquent pas à {product} : supprimez-les.",
-  "@optionsNotApplicable": {"placeholders": {"count": {"type": "int"}, "product": {"type": "String"}}},
+  "@optionsNotApplicable": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "product": {
+        "type": "String"
+      }
+    }
+  },
   "removeNamedLine": "Supprimer {code}",
-  "@removeNamedLine": {"placeholders": {"code": {"type": "String"}}},
+  "@removeNamedLine": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
   "optionNotOffered": "Non proposé avec {product}",
-  "@optionNotOffered": {"placeholders": {"product": {"type": "String"}}},
+  "@optionNotOffered": {
+    "placeholders": {
+      "product": {
+        "type": "String"
+      }
+    }
+  },
   "sentWithNotApplicable": "Envoyé avec {count} option(s) qui ne s'appliquent pas à leur produit principal.",
-  "@sentWithNotApplicable": {"placeholders": {"count": {"type": "int"}}},
+  "@sentWithNotApplicable": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "tabCustomer": "Client",
   "todoAdded": "Tâche ajoutée",
   "todoLinkToScreen": "Lier à l’écran actuel",
   "todoLinkNotAvailable": "Cet écran n’a pas d’enregistrement à lier.",
   "todoOpenLink": "Ouvrir l’enregistrement lié",
-  "todoRemoveLink": "Supprimer le lien",
+  "todoRemoveLink": "Retirer le lien de mes tâches",
   "recordNotFound": "Cet enregistrement est introuvable. Il a peut-être été supprimé, ou vous n’y avez pas accès.",
   "todoForObject": "Tâches de cet enregistrement",
   "todoForObjectCount": "Tâches de cet enregistrement ({count} ouvertes)",
-  "@todoForObjectCount": {"placeholders": {"count": {"type": "int"}}},
+  "@todoForObjectCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "todoForObjectEmpty": "Aucune tâche ouverte pour cet enregistrement.",
   "todoEmailReminders": "Rappels par e-mail",
-  "todoRemoveLink": "Retirer le lien de mes tâches",
   "csvExportCsv": "Exporter en CSV",
   "csvExportXlsx": "Exporter en Excel (XLSX)",
   "csvExportOds": "Exporter en OpenDocument (ODS)",
@@ -3061,9 +3269,21 @@
   "baselineParentRequired": "Choisissez l'élément parent.",
   "baselineQuantityInvalid": "La quantité doit être un entier d'au moins 1.",
   "baselineQty": "Qté {count}",
-  "@baselineQty": {"placeholders": {"count": {"type": "int"}}},
+  "@baselineQty": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "baselineDeleteConfirm": "Supprimer {name} ?",
-  "@baselineDeleteConfirm": {"placeholders": {"name": {"type": "String"}}},
+  "@baselineDeleteConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "baselineDeleted": "Élément supprimé.",
   "adminBaselineTypes": "Types d'existant",
   "baselineTypesTitle": "Types d'élément de l'existant",
@@ -3077,16 +3297,37 @@
   "baselineTypeNameRequired": "Un nom est requis.",
   "baselineTypePlacement": "Choisissez au moins un type parent ou autorisez le niveau supérieur, sinon les éléments de ce type ne pourraient jamais être placés.",
   "baselineTypeDeleteConfirm": "Supprimer le type {code} ? S'il est utilisé, désactivez-le plutôt.",
-  "@baselineTypeDeleteConfirm": {"placeholders": {"code": {"type": "String"}}},
+  "@baselineTypeDeleteConfirm": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
   "baselineTypeDeleted": "Type d'élément supprimé.",
   "attrScopeProduct": "Produit",
   "matchesTitle": "Produits adaptés",
   "matchesEmpty": "Aucun produit à afficher.",
   "matchesShowing": "{shown} produits affichés sur {total}",
-  "@matchesShowing": {"placeholders": {"shown": {"type": "int"}, "total": {"type": "int"}}},
+  "@matchesShowing": {
+    "placeholders": {
+      "shown": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "matchesSuggest": "Suggérer des produits",
   "matchesForItem": "Produits pour {name}",
-  "@matchesForItem": {"placeholders": {"name": {"type": "String"}}},
+  "@matchesForItem": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "matchesSuitable": "Adapté",
   "matchesUnknown": "Inconnu",
   "matchesUnsuitable": "Non adapté",
@@ -3095,16 +3336,55 @@
   "baselineImportTower": "Importer depuis le configurateur de tour",
   "baselineImportTitle": "Aperçu de l'import",
   "baselineImportCreates": "Crée {groups} groupe(s) de cloches, {bells} cloche(s) et {dials} cadran(s).",
-  "@baselineImportCreates": {"placeholders": {"groups": {"type": "int"}, "bells": {"type": "int"}, "dials": {"type": "int"}}},
+  "@baselineImportCreates": {
+    "placeholders": {
+      "groups": {
+        "type": "int"
+      },
+      "bells": {
+        "type": "int"
+      },
+      "dials": {
+        "type": "int"
+      }
+    }
+  },
   "baselineImportReplaces": "Cela remplace {count} élément(s) d'un import précédent de la même source ; les éléments saisis à la main sont conservés.",
-  "@baselineImportReplaces": {"placeholders": {"count": {"type": "int"}}},
+  "@baselineImportReplaces": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "baselineImportFresh": "Il n'y a pas d'import précédent à remplacer.",
   "baselineImportWarnings": "Avertissements",
   "baselineImportWarning": "{bell}, {field} : {message}",
-  "@baselineImportWarning": {"placeholders": {"bell": {"type": "String"}, "field": {"type": "String"}, "message": {"type": "String"}}},
+  "@baselineImportWarning": {
+    "placeholders": {
+      "bell": {
+        "type": "String"
+      },
+      "field": {
+        "type": "String"
+      },
+      "message": {
+        "type": "String"
+      }
+    }
+  },
   "baselineImportUnmapped": "Champs non reconnus (conservés avec l'élément importé)",
   "baselineImportUnmappedRow": "{field} ({count})",
-  "@baselineImportUnmappedRow": {"placeholders": {"field": {"type": "String"}, "count": {"type": "int"}}},
+  "@baselineImportUnmappedRow": {
+    "placeholders": {
+      "field": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "baselineImportConfirm": "Importer",
   "baselineImportDone": "Existant importé.",
   "baselineImportBadFile": "Ce fichier n'est pas un JSON valide.",
@@ -3443,5 +3723,31 @@
   "addPictureOrVideo": "Ajouter des photos ou vidéos",
   "noMedia": "Aucune photo ou vidéo pour le moment.",
   "makeDefault": "Définir par défaut",
-  "defaultMedia": "Par défaut"
+  "defaultMedia": "Par défaut",
+  "tutAttributesTitle": "Propriétés produit personnalisées",
+  "tutAttributesSummary": "Définissez des attributs produit propres à votre entreprise dans Administration et renseignez-les sur un produit.",
+  "tutAttributesNeedsTitle": "Contrôleur du tutoriel requis",
+  "tutAttributesNeedsBody": "Ce chapitre enregistre des propriétés techniques sur TUT-CTRL (Controller). Créez TUT-CTRL au chapitre 1 ou utilisez l'assistant.",
+  "tutAttributesIntroTitle": "Pourquoi des propriétés génériques",
+  "tutAttributesIntroBody": "Chaque entreprise possède des caractéristiques propres à ses gammes—comme le nombre de relais, de FET, d'entrées numériques ou la sortie 24V polarisée sur 2 fils—qui sont sans intérêt pour d'autres entreprises. L'administrateur les définit une fois dans Administration → Attributs, et elles apparaissent aussitôt sur chaque produit.",
+  "tutAttributesOpenAdminTitle": "Ouvrir Administration → Attributs",
+  "tutAttributesOpenAdminBody": "Ouvrez Administration depuis la barre de navigation et sélectionnez l'onglet Attributs.",
+  "tutAttributesRelaysTitle": "Définir le nombre de relais",
+  "tutAttributesRelaysBody": "Cliquez sur Nouvel attribut et créez un attribut Nombre avec la clé relay_count, le libellé Relays, le type Nombre et la portée Produit.",
+  "tutAttributesRelaysHint": "Les clés utilisent le format snake_case (lettres minuscules, chiffres et underscores) pour être référencées dans les configurateurs et règles.",
+  "tutAttributesFetsTitle": "Définir le nombre de FET",
+  "tutAttributesFetsBody": "Cliquez sur Nouvel attribut et créez un attribut Nombre avec la clé fet_count, le libellé FETs, le type Nombre et la portée Produit.",
+  "tutAttributesDigitalInputsTitle": "Définir les entrées numériques",
+  "tutAttributesDigitalInputsBody": "Cliquez sur Nouvel attribut et créez un attribut Nombre avec la clé digital_inputs, le libellé Digital inputs, le type Nombre et la portée Produit.",
+  "tutAttributesPolarized24vTitle": "Définir la sortie 24V polarisée 2 fils",
+  "tutAttributesPolarized24vBody": "Cliquez sur Nouvel attribut et créez un attribut Oui/Non avec la clé supports_24v_polarized_2wire, le libellé 24V polarized 2-wire output, le type Oui/Non et la portée Produit.",
+  "tutAttributesOpenControllerTitle": "Ouvrir le produit Controller",
+  "tutAttributesOpenControllerBody": "Ouvrez Produits et sélectionnez TUT-CTRL (Controller).",
+  "tutAttributesSuitabilityTabTitle": "Ouvrir l'onglet Compatibilité",
+  "tutAttributesSuitabilityTabBody": "Passez à l'onglet Compatibilité. Tous les attributs actifs de portée Produit apparaissent ici comme champs typés.",
+  "tutAttributesFillPropertiesTitle": "Saisir les propriétés du contrôleur",
+  "tutAttributesFillPropertiesBody": "Renseignez les champs pour les clés relay_count = 4, fet_count = 2, digital_inputs = 8 et supports_24v_polarized_2wire = Oui (si un libellé affiché diffère, utilisez le champ existant portant cette clé), puis cliquez sur Enregistrer.",
+  "tutAttributesFillPropertiesHint": "Laissez un champ vide s'il ne s'applique pas à un produit ; seules les valeurs saisies sont enregistrées.",
+  "tutAttributesDoneTitle": "Propriétés spécifiques enregistrées",
+  "tutAttributesDoneBody": "TUT-CTRL stocke désormais des propriétés typées et validées propres à votre gamme. Les formules du configurateur et les règles CRM peuvent les exploiter sans modifier le schéma."
 }
