@@ -18,14 +18,23 @@ our own processes.
 
 https://github.com/user-attachments/assets/5c0a13d6-0781-4483-b2d3-06a2690ea5f5
 
-### Introduction and tutorial, part one
+### Introduction and tutorial videos
+
+Short walkthroughs recorded from the real app in a tutorial environment. The voiceover is AI-generated.
+Click a picture to play the video. ([All releases](https://github.com/TradoCraft/TradoCraft/releases))
+
+**Introduction and tutorial, part one** (1 min 53 s): what TradoCraft is, the welcome chapter, the keyboard shortcut badges
+(hold Alt) and building a product with its bill of materials.
 
 [![TradoCraft introduction and tutorial part one](docs/media/intro-tutorial-part-1.jpg)](https://github.com/TradoCraft/TradoCraft/releases/download/video-intro-tutorial-part-1/tradocraft-introduction-and-tutorial-part-one.mp4)
 
-A 1 min 42 s introduction to TradoCraft and the first part of the built-in tutorial: the welcome chapter, the
-keyboard shortcut badges (hold Alt) and building a product with its bill of materials. Recorded from the real app in a
-tutorial environment; the voiceover is AI-generated. ([All releases](https://github.com/TradoCraft/TradoCraft/releases))
+**Tutorial, part two: suppliers** (1 min 20 s): two suppliers and their price lists, with unit price, lead time and minimum order quantity.
 
+[![TradoCraft tutorial part two: suppliers](docs/media/tutorial-part-2-suppliers.jpg)](https://github.com/TradoCraft/TradoCraft/releases/download/video-tutorial-part-2-suppliers/tradocraft-tutorial-part-two-suppliers.mp4)
+
+**Tutorial, part three: purchase orders** (1 min 41 s): ordering components, approving and sending the order, receiving the goods in two deliveries and checking the stock.
+
+[![TradoCraft tutorial part three: purchase orders](docs/media/tutorial-part-3-purchase-orders.jpg)](https://github.com/TradoCraft/TradoCraft/releases/download/video-tutorial-part-3-purchase-orders/tradocraft-tutorial-part-three-purchase-orders.mp4)
 
 ## Repository layout
 
