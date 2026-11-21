@@ -165,6 +165,11 @@ enum ShortcutAction {
   /// Share a knowledge-base article (Shift+S).
   kbShare(ShortcutChord(LogicalKeyboardKey.keyS, shift: true)),
 
+  ticketEscalate(ShortcutChord(LogicalKeyboardKey.keyE, shift: true)),
+  ticketDelegate(ShortcutChord(LogicalKeyboardKey.keyD, shift: true)),
+  ticketMerge(ShortcutChord(LogicalKeyboardKey.keyM, shift: true)),
+  ticketSplit(ShortcutChord(LogicalKeyboardKey.keyX, shift: true)),
+
   /// The command palette: Ctrl or Cmd with K.
   palette(ShortcutChord(LogicalKeyboardKey.keyK, mod: ChordMod.standard)),
 
@@ -252,6 +257,10 @@ enum ShortcutAction {
     newTodo => l.shortcutNewTodo,
     kbSearch => l.shortcutKbSearch,
     kbShare => l.shortcutKbShare,
+    ticketEscalate => l.collabEscalate,
+    ticketDelegate => l.collabDelegate,
+    ticketMerge => l.mergeTicket,
+    ticketSplit => l.splitTicket,
     palette => l.shortcutPalette,
     help => l.shortcutHelp,
     _ => l.shortcutMenuItem(menus.indexOf(this) + 1),

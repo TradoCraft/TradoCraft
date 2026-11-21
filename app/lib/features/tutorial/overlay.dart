@@ -13,6 +13,7 @@ import 'strings.dart';
 import 'targets.dart';
 import '../../app/environments.dart';
 import '../../app/workspace.dart';
+import '../../app/shortcuts/actions.dart';
 
 /// Where tutorial pages live (the chapter map); the narrator card stays out of the way there.
 const tutorialRoute = '/tutorial';
@@ -210,6 +211,8 @@ class _RunningLayer extends ConsumerStatefulWidget {
 /// (the page may scroll, resize or open a dialog).
 class _RunningLayerState extends ConsumerState<_RunningLayer> {
   VisibleTarget? _target;
+  MissionStep? _showingControl;
+  MissionStep? _missingControl;
   Timer? _timer;
 
   @override
@@ -258,13 +261,42 @@ class _RunningLayerState extends ConsumerState<_RunningLayer> {
     return null;
   }
 
+  Future<void> _showControl(MissionStep step) async {
+    final registry = ref.read(tutorialTargetsProvider);
+    final targetContext = step.targets
+        .map((id) => registry[id]?.currentContext)
+        .whereType<BuildContext>()
+        .firstOrNull;
+    if (targetContext != null) {
+      await Scrollable.ensureVisible(targetContext, alignment: 0.5);
+      await WidgetsBinding.instance.endOfFrame;
+    }
+    if (!mounted ||
+        !identical(ref.read(tutorialProvider.notifier).step, step)) {
+      return;
+    }
+    final target = _firstVisible(step.targets);
+    setState(() {
+      _target = target;
+      _showingControl = target == null ? null : step;
+      _missingControl = target == null ? step : null;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    ref.watch(tutorialProvider);
+    final step = ref.read(tutorialProvider.notifier).step;
     final target = _target;
+    final showingControl = step != null && identical(_showingControl, step);
     final theme = Theme.of(context);
     final size = MediaQuery.sizeOf(context);
     final narrow = size.width < 800;
-    final atTop = target != null && target.rect.center.dy > size.height * 0.55;
+    final atTop = target != null && target.rect.center.dy > size.height / 2;
+    final atLeft =
+        size.width >= 880 &&
+        target != null &&
+        target.rect.center.dx > size.width / 2;
     return Stack(
       children: [
         if (target != null)
@@ -281,7 +313,7 @@ class _RunningLayerState extends ConsumerState<_RunningLayer> {
             ),
           ),
         Align(
-          alignment: atTop ? Alignment.topRight : Alignment.bottomRight,
+          alignment: Alignment(atLeft ? -1 : 1, atTop ? -1 : 1),
           child: Padding(
             padding: EdgeInsets.fromLTRB(
               16,
@@ -289,11 +321,22 @@ class _RunningLayerState extends ConsumerState<_RunningLayer> {
               16,
               atTop ? 16 : (narrow ? 92 : 16),
             ),
-            child: NarratorCard(
-              targetVisible: target != null,
-              router: widget.router,
-              onReviewChanged: widget.onReviewChanged,
-            ),
+            child: showingControl
+                ? FilledButton.tonal(
+                    key: const ValueKey('tutorial-show-instructions'),
+                    onPressed: () => setState(() => _showingControl = null),
+                    child: Text(context.l10n.tutShowInstructions),
+                  )
+                : NarratorCard(
+                    targetVisible: target != null,
+                    router: widget.router,
+                    onReviewChanged: widget.onReviewChanged,
+                    onShowControl: step == null || step.targets.isEmpty
+                        ? null
+                        : () => _showControl(step),
+                    controlMissing:
+                        step != null && identical(_missingControl, step),
+                  ),
           ),
         ),
       ],
@@ -307,11 +350,15 @@ class NarratorCard extends ConsumerWidget {
     super.key,
     required this.targetVisible,
     required this.onReviewChanged,
+    this.onShowControl,
+    this.controlMissing = false,
     this.router,
   });
 
   final bool targetVisible;
   final ValueChanged<bool> onReviewChanged;
+  final VoidCallback? onShowControl;
+  final bool controlMissing;
   final GoRouter? router;
 
   @override
@@ -475,6 +522,30 @@ class NarratorCard extends ConsumerWidget {
                               const SizedBox(height: 6),
                             ],
                             Text(body, style: theme.textTheme.bodyMedium),
+                            if (m.id == 'welcome' && step.id == 'controls')
+                              Text(
+                                l.tutShortcutHelp(
+                                  ShortcutAction.help.describe(),
+                                ),
+                              ),
+                            if (m.id == 'helpdesk' && step.id == 'escalate')
+                              Text(
+                                l.shortcutHint(
+                                  ShortcutAction.ticketEscalate.describe(),
+                                ),
+                              ),
+                            if (onShowControl != null &&
+                                (here || route == null || targetVisible))
+                              TextButton(
+                                key: const ValueKey('tutorial-show-control'),
+                                onPressed: onShowControl,
+                                child: Text(l.tutShowControl),
+                              ),
+                            if (controlMissing)
+                              Semantics(
+                                liveRegion: true,
+                                child: Text(l.tutControlUnavailable),
+                              ),
                             if (c.canAssist && s.actionBusy) ...[
                               const SizedBox(height: 6),
                               Semantics(

@@ -6379,6 +6379,21 @@ class AppLocalizationsFr extends AppLocalizations {
   String get tutAssistRunning => 'Exécution et vérification en cours…';
 
   @override
+  String get tutShowControl => 'Afficher la commande';
+
+  @override
+  String get tutShowInstructions => 'Afficher les instructions';
+
+  @override
+  String get tutControlUnavailable =>
+      'La commande est indisponible sur cet écran. Ouvrez la section concernée et réessayez.';
+
+  @override
+  String tutShortcutHelp(String keys) {
+    return 'Appuyez sur $keys pour voir les raccourcis clavier de cet écran.';
+  }
+
+  @override
   String get tutTakeMe => 'M\'y emmener';
 
   @override
@@ -8088,7 +8103,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get tutHelpdeskEscalateHint =>
-      'Appuyez sur le bouton Escalader du ticket ; le motif est obligatoire.';
+      'Dans les détails du ticket, faites défiler jusqu’aux actions et choisissez Escalader. Sur un écran étroit, ouvrez d’abord les détails du ticket. Le motif est obligatoire.';
 
   @override
   String get tutHelpdeskTourTitle => 'Réponses préparées';

@@ -39,19 +39,29 @@ final helpdeskMission = Mission(
     ),
     MissionStep(
       id: 'tag',
+      targets: const ['ticket-tag-input', 'ticket-details'],
       route: '/helpdesk/{ticketId}',
       completion: const OnApi('POST', '/tickets/{ticketId}/tags'),
     ),
     MissionStep(
       id: 'time',
+      targets: const ['ticket-log-time', 'ticket-details'],
       route: '/helpdesk/{ticketId}',
       completion: const OnApi('POST', '/tickets/{ticketId}/time-entries'),
     ),
     MissionStep(
       id: 'escalate',
+      targets: const ['escalate-ticket', 'ticket-details'],
       hasHint: true,
       route: '/helpdesk/{ticketId}',
       completion: const OnApi('POST', '/tickets/{ticketId}/escalate'),
+      probe: Probe(
+        '/api/v1/tickets/{ticketId}',
+        done: (json, _) =>
+            json is Map &&
+            json['ticket'] is Map &&
+            json['ticket']['escalated_at'] is String,
+      ),
     ),
     const MissionStep(id: 'tour', route: '/helpdesk/answers'),
     const MissionStep(id: 'done'),

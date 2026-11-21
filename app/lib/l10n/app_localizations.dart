@@ -11448,6 +11448,30 @@ abstract class AppLocalizations {
   /// **'Applying and checking this step…'**
   String get tutAssistRunning;
 
+  /// No description provided for @tutShowControl.
+  ///
+  /// In en, this message translates to:
+  /// **'Show control'**
+  String get tutShowControl;
+
+  /// No description provided for @tutShowInstructions.
+  ///
+  /// In en, this message translates to:
+  /// **'Show instructions'**
+  String get tutShowInstructions;
+
+  /// No description provided for @tutControlUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'The control is unavailable on this screen. Open the relevant section and try again.'**
+  String get tutControlUnavailable;
+
+  /// No description provided for @tutShortcutHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Press {keys} to see the keyboard shortcuts available on the current screen.'**
+  String tutShortcutHelp(String keys);
+
   /// No description provided for @tutTakeMe.
   ///
   /// In en, this message translates to:
@@ -14409,7 +14433,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutHelpdeskEscalateHint.
   ///
   /// In en, this message translates to:
-  /// **'Press the Escalate button on the ticket; the reason is required.'**
+  /// **'In the ticket details, scroll to Actions and choose Escalate. On a narrow screen, open Ticket details first. A reason is required.'**
   String get tutHelpdeskEscalateHint;
 
   /// No description provided for @tutHelpdeskTourTitle.

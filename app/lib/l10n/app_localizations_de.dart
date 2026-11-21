@@ -6387,6 +6387,21 @@ class AppLocalizationsDe extends AppLocalizations {
   String get tutAssistRunning => 'Der Schritt wird ausgeführt und geprüft…';
 
   @override
+  String get tutShowControl => 'Bedienelement zeigen';
+
+  @override
+  String get tutShowInstructions => 'Anleitung zeigen';
+
+  @override
+  String get tutControlUnavailable =>
+      'Das Bedienelement ist auf diesem Bildschirm nicht verfügbar. Öffnen Sie den entsprechenden Bereich und versuchen Sie es erneut.';
+
+  @override
+  String tutShortcutHelp(String keys) {
+    return 'Drücken Sie $keys, um die Tastenkürzel für den aktuellen Bildschirm anzuzeigen.';
+  }
+
+  @override
   String get tutTakeMe => 'Dorthin gehen';
 
   @override
@@ -8097,7 +8112,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get tutHelpdeskEscalateHint =>
-      'Drücken Sie die Schaltfläche Eskalieren am Ticket; der Grund ist Pflicht.';
+      'Scrollen Sie in den Ticketdetails zu Aktionen und wählen Sie Eskalieren. Öffnen Sie auf einem schmalen Bildschirm zuerst die Ticketdetails. Ein Grund ist Pflicht.';
 
   @override
   String get tutHelpdeskTourTitle => 'Vorbereitete Antworten';

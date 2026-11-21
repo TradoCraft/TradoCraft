@@ -1,7 +1,9 @@
+import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tradocraft_app/app/api.dart';
+import 'package:tradocraft_app/app/shortcuts/host.dart';
 import 'package:tradocraft_app/app/workspace.dart';
 import 'package:tradocraft_app/features/helpdesk/ticket_screen.dart';
 import 'package:tradocraft_app/features/helpdesk/tickets_page.dart';
@@ -161,6 +163,7 @@ Future<void> _pump(WidgetTester tester, FakeHttp http, Widget home) async {
         locale: const Locale('en'),
         localizationsDelegates: [AppLocalizations.delegate, ...GlobalMaterialLocalizations.delegates],
         supportedLocales: AppLocalizations.supportedLocales,
+        builder: (_, child) => ShortcutsHost(child: child!),
         home: home,
       ),
     ),
@@ -198,8 +201,11 @@ void main() {
     await _pump(tester, http, const TicketScreen(id: 't1'));
     expect(find.byKey(const ValueKey('escalated-badge')), findsNothing);
 
-    await tester.ensureVisible(find.byKey(const ValueKey('escalate-ticket')));
-    await tester.tap(find.byKey(const ValueKey('escalate-ticket')));
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.altLeft);
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyE);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.altLeft);
     await tester.pumpAndSettle();
     FilledButton submit() =>
         tester.widget(find.byKey(const ValueKey('collab-submit')));

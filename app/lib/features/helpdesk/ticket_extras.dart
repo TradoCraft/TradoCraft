@@ -6,6 +6,7 @@ import '../../l10n/l10n.dart';
 import '../../shared/actions.dart';
 import '../../shared/format.dart';
 import '../../shared/app_icons.dart';
+import '../tutorial/targets.dart';
 
 /// "2d 3h", "1h 30m", "45m": how long, language independent.
 String slaDuration(int minutes) {
@@ -237,11 +238,14 @@ class _TagsSectionState extends ConsumerState<TagsSection> {
             child: Row(
               children: [
                 Expanded(
-                  child: TextField(
-                    key: const ValueKey('new-tag'),
-                    controller: _new,
-                    decoration: InputDecoration(hintText: l.addTag),
-                    onSubmitted: (_) => _add(),
+                  child: TutorialTarget(
+                    id: 'ticket-tag-input',
+                    child: TextField(
+                      key: const ValueKey('new-tag'),
+                      controller: _new,
+                      decoration: InputDecoration(hintText: l.addTag),
+                      onSubmitted: (_) => _add(),
+                    ),
                   ),
                 ),
                 IconButton(
@@ -395,11 +399,14 @@ class _TimeSectionState extends ConsumerState<TimeSection> {
               ),
             ),
             if (widget.canWrite)
-              TextButton.icon(
-                key: const ValueKey('log-time'),
-                onPressed: _log,
-                icon: const Icon(AppIcons.timer),
-                label: Text(l.logTime),
+              TutorialTarget(
+                id: 'ticket-log-time',
+                child: TextButton.icon(
+                  key: const ValueKey('log-time'),
+                  onPressed: _log,
+                  icon: const Icon(AppIcons.timer),
+                  label: Text(l.logTime),
+                ),
               ),
           ],
         ),

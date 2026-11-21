@@ -6351,6 +6351,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tutAssistRunning => 'Applying and checking this step…';
 
   @override
+  String get tutShowControl => 'Show control';
+
+  @override
+  String get tutShowInstructions => 'Show instructions';
+
+  @override
+  String get tutControlUnavailable =>
+      'The control is unavailable on this screen. Open the relevant section and try again.';
+
+  @override
+  String tutShortcutHelp(String keys) {
+    return 'Press $keys to see the keyboard shortcuts available on the current screen.';
+  }
+
+  @override
   String get tutTakeMe => 'Take me there';
 
   @override
@@ -8049,7 +8064,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tutHelpdeskEscalateHint =>
-      'Press the Escalate button on the ticket; the reason is required.';
+      'In the ticket details, scroll to Actions and choose Escalate. On a narrow screen, open Ticket details first. A reason is required.';
 
   @override
   String get tutHelpdeskTourTitle => 'Prepared answers';
