@@ -396,18 +396,16 @@ pub async fn process_system_mail_with(
         .fetch_optional(&mut *tx)
         .await?;
         let Some(q) = next else { break };
-        let attachment_data = match &q.attachment_storage_key {
-            Some(key) => Some(blobs.get(key).await?),
-            None => None,
-        };
         // Outside live the fallback (files) is used; the sender address stays the mailbox's.
-        let result = match (
-            build_system(&q, attachment_data.as_deref()),
-            transports.pick(q.mailbox_id),
-        ) {
-            (Ok(m), Ok(mailer)) => mailer.send(m, q.id).await,
-            (Err(e), _) | (_, Err(e)) => Err(e),
-        };
+        let result = async {
+            let attachment_data = match &q.attachment_storage_key {
+                Some(key) => Some(blobs.get(key).await?),
+                None => None,
+            };
+            let message = build_system(&q, attachment_data.as_deref())?;
+            transports.pick(q.mailbox_id)?.send(message, q.id).await
+        }
+        .await;
         match result {
             Ok(_) => {
                 sqlx::query("UPDATE core.mail_outbox SET delivery = 'sent', sent_at = now(), attempts = attempts + 1, delivery_error = NULL WHERE id = $1")

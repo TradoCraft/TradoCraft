@@ -1189,9 +1189,8 @@ class EntityListState<T> extends State<EntityList<T>> {
 
   Widget _tile(int i, T item, VoidCallback? onTap, FocusNode node) {
     final cols = _visible.isEmpty ? widget.columns : _visible;
-    final leadingCol = cols.isNotEmpty &&
-            cols.first.cell != null &&
-            cols.first.sortKey == null
+    final leadingCol =
+        cols.isNotEmpty && cols.first.cell != null && cols.first.sortKey == null
         ? cols.first
         : null;
     final textCols = [

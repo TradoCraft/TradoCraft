@@ -427,7 +427,7 @@ abstract class ProductsClient {
   @POST('/api/v1/products/{id}/media')
   Future<ProductMedia> uploadProductMedia({
     @Path('id') required String id,
-    @Body() required String body,
+    @Body() required List<int> body,
     @Query('caption') String? caption,
     @Query('filename') String? filename,
     @Query('client_id') String? clientId,
@@ -435,13 +435,13 @@ abstract class ProductsClient {
 
   /// The default picture or video of the product, or 404 when it has none.
   @GET('/api/v1/products/{id}/media/default')
-  Future<String> getProductDefaultMedia({
+  Future<List<int>> getProductDefaultMedia({
     @Path('id') required String id,
   });
 
   /// The file itself.
   @GET('/api/v1/products/{id}/media/{media_id}')
-  Future<String> getProductMedia({
+  Future<List<int>> getProductMedia({
     @Path('id') required String id,
     @Path('media_id') required String mediaId,
   });

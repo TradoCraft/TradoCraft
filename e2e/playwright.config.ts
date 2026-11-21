@@ -17,6 +17,7 @@ export const DB_NAME = process.env.E2E_DB_NAME ?? 'tradocraft_e2e';
 guardDbName(DB_NAME);
 // Login: E2E_PG_URL, else the server part of DATABASE_URL in the repository .env, else the CI default.
 const pgBase = (process.env.E2E_PG_URL ?? envPg().server ?? 'postgresql://tradocraft:tradocraft@localhost').replace(/\/+$/, '');
+export const DATABASE_URL = `${pgBase}/${DB_NAME}`;
 
 const browser = process.env.E2E_BROWSER ?? 'chromium';
 if (browser !== 'chromium' && browser !== 'firefox') {
@@ -77,7 +78,7 @@ export default defineConfig({
       env: {
         E2E_API_BIN: apiBin(),
         E2E_DB_NAME: DB_NAME,
-        DATABASE_URL: `${pgBase}/${DB_NAME}`,
+        DATABASE_URL,
         AUTH_MODE: 'dev',
         SEED_DEV_DATA: 'true',
         APP_ENV_KIND: 'tutorial',

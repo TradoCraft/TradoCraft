@@ -11,7 +11,7 @@ completion detection moves it on, so a broken screen or API path stops the run a
 One-time setup, from the repository root:
 
 ```bash
-cargo build -p tradocraft-api
+cargo build -p tradocraft-api -p tradocraft-worker
 (cd app && flutter build web --release --no-web-resources-cdn)   # no CDN: works without gstatic
 cd e2e && npm ci
 npx playwright install firefox                                   # local viewing; CI installs chromium
@@ -51,6 +51,7 @@ returned. Nothing is ever killed: if a port is taken the message names what list
 | `E2E_API_PORT`, `E2E_WEB_PORT` | `18080`, `18088` | change both (and `E2E_DB_NAME`) to run next to another run |
 | `E2E_DB_NAME` | `tradocraft_e2e` | the database that is dropped and recreated on every run |
 | `E2E_API_BIN` | `target/debug/tradocraft-api` | API binary |
+| `E2E_WORKER_BIN` | `tradocraft-worker` next to the API binary | Worker used by the mail-merge test, with file transport and inbound polling disabled |
 | `E2E_SKIP_PREFLIGHT` | unset | `1` skips the checks of `run.mjs` |
 
 Each variable overrides the defaults of the npm scripts too, for example

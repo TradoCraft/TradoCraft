@@ -293,6 +293,9 @@ pub struct ReplyInput {
     /// Files uploaded to the ticket (`POST /tickets/{id}/attachments`) to send with the e-mail.
     #[serde(default)]
     pub attachment_ids: Vec<Uuid>,
+    /// Published document variants to attach without uploading a second copy.
+    #[serde(default)]
+    pub library_pdfs: Vec<crate::attachments::LibraryPdf>,
     /// New ticket status; defaults to pending_customer.
     pub status: Option<String>,
 }
@@ -1186,6 +1189,7 @@ pub(crate) async fn queue_reply(
     if input.body.trim().is_empty() {
         return Err(AppError::Validation("the message is empty".into()));
     }
+    crate::attachments::check_reply_limit(&input.attachment_ids, &input.library_pdfs)?;
     crate::checklists::lock_ticket(&mut *tx, user.company_id, id).await?;
     let ticket = load_ticket(&mut *tx, user.company_id, id).await?;
     let to: Vec<String> = if input.to.is_empty() {
@@ -1273,6 +1277,7 @@ pub(crate) async fn queue_reply(
     .execute(&mut *tx)
     .await?;
     crate::attachments::link(&mut *tx, id, article_id, &input.attachment_ids, None).await?;
+    crate::attachments::link_library_pdfs(tx, user, id, article_id, &input.library_pdfs).await?;
     crate::collab::add_watcher(&mut *tx, user.company_id, id, user.user_id).await?;
     if ticket.owner_user_id.is_none() {
         crate::collab::record_event(

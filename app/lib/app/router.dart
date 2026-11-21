@@ -8,6 +8,7 @@ import '../features/configurator/builder/revision_editor.dart';
 import '../features/configurator/configurator_page.dart';
 import '../features/configurator/runner_screen.dart';
 import '../features/customers/customers_page.dart';
+import '../features/customers/mail_merge_page.dart';
 import '../features/delivery/deliveries_page.dart';
 import '../features/production/capacity_page.dart';
 import '../features/production/divisions_page.dart';
@@ -27,6 +28,7 @@ import '../features/reports/reports_page.dart';
 import '../features/todo/todo_page.dart';
 import '../features/helpdesk/tickets_page.dart';
 import '../features/kb/kb_categories_page.dart';
+import '../features/kb/document_library_page.dart';
 import '../features/kb/kb_page.dart';
 import '../features/field/contracts_page.dart';
 import '../features/field/customer_equipment_page.dart';
@@ -187,6 +189,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             ),
           ),
           GoRoute(path: '/kb', builder: (_, _) => const KbPage()),
+          GoRoute(path: '/kb/documents', builder: (_, _) => const DocumentLibraryPage()),
           GoRoute(
             path: '/kb/categories',
             builder: (_, _) => const KbCategoriesPage(),
@@ -284,6 +287,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (_, s) => DetailPortal(location: s.uri.toString()),
           ),
           GoRoute(path: '/customers', builder: (_, _) => const CustomersPage()),
+          GoRoute(
+            path: '/customers/mail-merge',
+            builder: (_, _) => const MailMergePage(),
+          ),
           GoRoute(
             path: '/customers/:id',
             builder: (_, s) => DetailPortal(location: s.uri.toString()),

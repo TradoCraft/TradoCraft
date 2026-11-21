@@ -11009,6 +11009,114 @@ class AppLocalizationsNl extends AppLocalizations {
   String get ticketsBoardClose => 'Ticket sluiten';
 
   @override
+  String get documentLibrary => 'Documenten';
+
+  @override
+  String get documentNew => 'Nieuw document';
+
+  @override
+  String get documentTitle => 'Documenttitel';
+
+  @override
+  String get documentMemo => 'Technische nota';
+
+  @override
+  String get documentPresentation => 'Productpresentatie';
+
+  @override
+  String get documentKeywords => 'Trefwoorden (gescheiden door komma’s)';
+
+  @override
+  String get documentProductCodes => 'Productcodes (gescheiden door komma’s)';
+
+  @override
+  String get documentUpload => 'Pdf uploaden';
+
+  @override
+  String get documentPublish => 'Revisie publiceren';
+
+  @override
+  String documentRevision(int revision) {
+    return 'Revisie $revision';
+  }
+
+  @override
+  String get documentDraft => 'Concept';
+
+  @override
+  String get documentDownload => 'Pdf downloaden';
+
+  @override
+  String get documentPreview => 'Pdf bekijken';
+
+  @override
+  String get attachFromDocuments => 'Bijvoegen uit Documenten';
+
+  @override
+  String get noLibraryPdfs => 'Geen gepubliceerde pdf’s gevonden.';
+
+  @override
+  String get libraryLanguageUnavailable =>
+      'Geen pdf in de taal van het ticket. Kies een beschikbare taal.';
+
+  @override
+  String get mailMerge => 'Mailmerge';
+
+  @override
+  String get mergeRevision => 'Gepubliceerde revisie';
+
+  @override
+  String get mergeSavePreview => 'Opslaan en bekijken';
+
+  @override
+  String get mergePreviewStale => 'Sla op om het voorbeeld te vernieuwen.';
+
+  @override
+  String get mergeAudience => 'Ontvangers bekijken';
+
+  @override
+  String get mergeSelectContact => 'Kies een contact';
+
+  @override
+  String get mergeMissingAddress => 'E-mailadres ontbreekt';
+
+  @override
+  String get mergeMissingTranslation =>
+      'Vertaling van onderwerp of bericht ontbreekt';
+
+  @override
+  String get mergeMissingPdf => 'Pdf in deze taal ontbreekt';
+
+  @override
+  String get mergeDuplicateAddress => 'Dubbel e-mailadres';
+
+  @override
+  String get mergeConfirm => 'Mailing bevestigen';
+
+  @override
+  String mergeConfirmBody(int count) {
+    return 'Een e-mail klaarzetten voor elk van de $count geschikte ontvangers in dit overzicht?';
+  }
+
+  @override
+  String get mergeQueue => 'Mailing klaarzetten';
+
+  @override
+  String get mergeHistory => 'Verzendgeschiedenis';
+
+  @override
+  String get mergeRefresh => 'Status vernieuwen';
+
+  @override
+  String get mergeQueued => 'In wachtrij';
+
+  @override
+  String get mergeSent => 'Verzonden';
+
+  @override
+  String get mergeFailed => 'Mislukt';
+
+  @override
   String get productMedia => 'Foto\'s en video\'s';
 
   @override
