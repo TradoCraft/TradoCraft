@@ -3394,5 +3394,10 @@
   "kanbanLostCancelled": "Zurückgesetzt: Für eine verlorene Chance ist ein Grund nötig.",
   "ticketsBoardCloseTitle": "Dieses Ticket schließen?",
   "ticketsBoardCloseBody": "Beim Schließen von {number} kann der Kunde eine Zufriedenheitsumfrage erhalten; das lässt sich nicht zurücknehmen.",
-  "ticketsBoardClose": "Ticket schließen"
+  "ticketsBoardClose": "Ticket schließen",
+  "productMedia": "Bilder & Videos",
+  "addPictureOrVideo": "Bilder oder Videos hinzufügen",
+  "noMedia": "Noch keine Bilder oder Videos.",
+  "makeDefault": "Als Standard festlegen",
+  "defaultMedia": "Standard"
 }

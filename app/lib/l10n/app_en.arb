@@ -4950,5 +4950,10 @@
   "ticketsBoardCloseTitle": "Close this ticket?",
   "ticketsBoardCloseBody": "Closing {number} can send the customer a satisfaction survey, which cannot be taken back.",
   "@ticketsBoardCloseBody": {"placeholders": {"number": {"type": "String"}}},
-  "ticketsBoardClose": "Close ticket"
+  "ticketsBoardClose": "Close ticket",
+  "productMedia": "Pictures & videos",
+  "addPictureOrVideo": "Add pictures or videos",
+  "noMedia": "No pictures or videos yet.",
+  "makeDefault": "Make default",
+  "defaultMedia": "Default"
 }

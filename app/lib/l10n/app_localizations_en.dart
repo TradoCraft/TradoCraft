@@ -10958,4 +10958,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ticketsBoardClose => 'Close ticket';
+
+  @override
+  String get productMedia => 'Pictures & videos';
+
+  @override
+  String get addPictureOrVideo => 'Add pictures or videos';
+
+  @override
+  String get noMedia => 'No pictures or videos yet.';
+
+  @override
+  String get makeDefault => 'Make default';
+
+  @override
+  String get defaultMedia => 'Default';
 }

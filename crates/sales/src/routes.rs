@@ -1027,14 +1027,33 @@ async fn quotation_pdf(
     user.require(Permission::QuotationsRead)?;
     let mut conn = state.db.acquire().await?;
     let q = service::load_quotation(&mut conn, user.company_id, id, false).await?;
+    let product_ids: Vec<Uuid> = q.lines.iter().filter_map(|l| l.product_id).collect();
+    let images =
+        tradocraft_products::media::default_images(&mut conn, &state.blobs, &product_ids).await?;
     drop(conn);
     let company = get_company(&state.db, user.company_id).await?;
-    let bytes = tradocraft_documents::render_pdf(
+    let files: Vec<(String, Vec<u8>)> = images.values().cloned().collect();
+    let bytes = match tradocraft_documents::render_pdf_with_files(
         &state.documents,
         "quotation",
-        &pdf::document(&company, &q),
+        &pdf::document_with_images(&company, &q, &images),
+        &files,
     )
-    .await?;
+    .await
+    {
+        Ok(bytes) => bytes,
+        // a picture typst cannot read must not stop the quotation from printing
+        Err(e) if !files.is_empty() => {
+            tracing::warn!(error = ?e, "quotation with pictures failed; rendering without");
+            tradocraft_documents::render_pdf(
+                &state.documents,
+                "quotation",
+                &pdf::document(&company, &q),
+            )
+            .await?
+        }
+        Err(e) => return Err(e.into()),
+    };
     let filename = format!("{}-r{}.pdf", q.number, q.revision);
     Ok((
         [

@@ -3394,5 +3394,10 @@
   "kanbanLostCancelled": "Remis en place : un motif est requis pour marquer une opportunité comme perdue.",
   "ticketsBoardCloseTitle": "Clôturer ce ticket ?",
   "ticketsBoardCloseBody": "La clôture de {number} peut envoyer une enquête de satisfaction au client, ce qui est irréversible.",
-  "ticketsBoardClose": "Clôturer le ticket"
+  "ticketsBoardClose": "Clôturer le ticket",
+  "productMedia": "Photos et vidéos",
+  "addPictureOrVideo": "Ajouter des photos ou vidéos",
+  "noMedia": "Aucune photo ou vidéo pour le moment.",
+  "makeDefault": "Définir par défaut",
+  "defaultMedia": "Par défaut"
 }

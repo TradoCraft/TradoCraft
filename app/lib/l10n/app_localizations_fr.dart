@@ -11022,4 +11022,19 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get ticketsBoardClose => 'Clôturer le ticket';
+
+  @override
+  String get productMedia => 'Photos et vidéos';
+
+  @override
+  String get addPictureOrVideo => 'Ajouter des photos ou vidéos';
+
+  @override
+  String get noMedia => 'Aucune photo ou vidéo pour le moment.';
+
+  @override
+  String get makeDefault => 'Définir par défaut';
+
+  @override
+  String get defaultMedia => 'Par défaut';
 }

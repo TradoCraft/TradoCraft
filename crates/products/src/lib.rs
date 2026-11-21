@@ -26,6 +26,7 @@ pub mod attributes;
 pub mod bulk;
 pub mod families;
 pub mod import;
+pub mod media;
 pub use import::{products_import, Products};
 pub mod options;
 pub mod packaging;
@@ -64,6 +65,11 @@ pub struct Product {
     /// The list price applies but is printed as indicative.
     pub price_is_indicative: bool,
     pub active: bool,
+    /// The default picture or video of the product (`GET /products/{id}/media/{id}`), if it has
+    /// media.
+    pub default_media_id: Option<Uuid>,
+    /// `image` or `video`: a video has no thumbnail to show in a list.
+    pub default_media_kind: Option<String>,
     /// Standard cost per stock unit. Only returned with the permission `inventory.cost`, else null.
     #[schema(value_type = Option<String>, example = "42.5000")]
     pub standard_cost: Option<Decimal>,
@@ -379,12 +385,14 @@ macro_rules! product_columns {
         "SELECT p.id, p.code, p.name, p.description, p.unit, p.product_type, p.vat_rate,
                 p.vat_category, p.vat_rate_override, p.tracking,
                p.family_id, f.code AS family_code, p.non_discountable, p.price_on_request,
-               p.price_is_indicative, p.active, p.standard_cost, p.reorder_min,
+               p.price_is_indicative, p.active, dm.file_id AS default_media_id,
+               dm.kind AS default_media_kind, p.standard_cost, p.reorder_min,
                p.reorder_max, p.lead_time_days, p.barcode, p.packaging_category_id,
                pc.code AS packaging_category_code, p.length_mm, p.width_mm, p.height_mm, p.weight_g,
                p.default_production_remark
         FROM products.products p LEFT JOIN products.product_families f ON f.id = p.family_id
-        LEFT JOIN products.packaging_categories pc ON pc.id = p.packaging_category_id"
+        LEFT JOIN products.packaging_categories pc ON pc.id = p.packaging_category_id
+        LEFT JOIN products.media dm ON dm.product_id = p.id AND dm.is_default"
     };
 }
 
@@ -1363,6 +1371,7 @@ pub fn router() -> OpenApiRouter<AppState> {
         .merge(bulk::router())
         .merge(import::router())
         .merge(translations::router())
+        .merge(media::router())
         .merge(options::router())
         .merge(attributes::router())
         .merge(attribute_definitions::router())

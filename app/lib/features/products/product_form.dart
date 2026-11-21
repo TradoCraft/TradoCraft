@@ -1,9 +1,12 @@
+import 'package:image_picker/image_picker.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/api.dart';
+import '../../shared/app_icons.dart';
 import '../../shared/decimal_field.dart';
 import '../../shared/format.dart';
+import '../../shared/photos.dart';
 import 'families_dialog.dart';
 import 'packaging_dialog.dart';
 import '../../l10n/l10n.dart';
@@ -11,16 +14,25 @@ import '../tutorial/targets.dart';
 
 const productTypes = ['purchased', 'manufactured', 'configurable', 'service'];
 
+Future<List<PickedPhoto>> _pickProductMedia(BuildContext context) async {
+  final files = await ImagePicker().pickMultipleMedia();
+  return [for (final f in files) PickedPhoto(await f.readAsBytes(), f.name)];
+}
+
 /// Create or edit a product. Returns the saved product, or null when cancelled.
-Future<Product?> showProductForm(BuildContext context, {Product? product}) =>
-    showDialog<Product>(
-      context: context,
-      builder: (_) => ProductForm(product: product),
-    );
+Future<Product?> showProductForm(
+  BuildContext context, {
+  Product? product,
+  PhotoPicker? pickMedia,
+}) => showDialog<Product>(
+  context: context,
+  builder: (_) => ProductForm(product: product, pickMedia: pickMedia),
+);
 
 class ProductForm extends ConsumerStatefulWidget {
-  const ProductForm({super.key, this.product});
+  const ProductForm({super.key, this.product, this.pickMedia});
   final Product? product;
+  final PhotoPicker? pickMedia;
 
   @override
   ConsumerState<ProductForm> createState() => _ProductFormState();
@@ -32,12 +44,13 @@ class _ProductFormState extends ConsumerState<ProductForm> {
   late final _name = TextEditingController(text: p?.name);
   late final _description = TextEditingController(text: p?.description);
   late final _unit = TextEditingController(text: p?.unit ?? 'pcs');
-  late String _vatCategory = const {
-    'standard',
-    'intermediate',
-    'reduced',
-    'zero',
-  }.contains(p?.vatCategory)
+  late String _vatCategory =
+      const {
+        'standard',
+        'intermediate',
+        'reduced',
+        'zero',
+      }.contains(p?.vatCategory)
       ? p!.vatCategory!
       : 'standard';
   late final _vatOverride = TextEditingController(
@@ -71,6 +84,10 @@ class _ProductFormState extends ConsumerState<ProductForm> {
   late final _defaultRemark = TextEditingController(
     text: p?.defaultProductionRemark,
   );
+  final List<PickedPhoto> _media = [];
+  int _defaultMediaIndex = 0;
+  Product? _created;
+  bool _saving = false;
   String? _error;
 
   /// A positive whole number, or null when empty; [ok] is false for anything else.
@@ -147,15 +164,189 @@ class _ProductFormState extends ConsumerState<ProductForm> {
       weightG: weight,
       defaultProductionRemark: _defaultRemark.text.trim(),
     );
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
     try {
       final api = ref.read(apiProvider).products;
-      final saved = p == null
-          ? await api.createProduct(body: body)
-          : await api.updateProduct(id: p!.id, body: body);
+      var saved =
+          _created ??
+          (p == null
+              ? await api.createProduct(body: body)
+              : await api.updateProduct(id: p!.id, body: body));
+      if (p == null) _created = saved;
+      if (_media.isNotEmpty) {
+        final dio = ref.read(dioProvider);
+        final base = '/api/v1/products/${saved.id}/media';
+        final needsDefaultPatch = _defaultMediaIndex > 0;
+        String? chosenId;
+        while (_media.isNotEmpty) {
+          final item = _media.first;
+          final res = await uploadPhoto(dio, base, item);
+          final data = res.data;
+          final uploadedId = data is Map<String, dynamic>
+              ? data['id'] as String?
+              : null;
+          if (_defaultMediaIndex == 0 && uploadedId != null) {
+            chosenId = uploadedId;
+          }
+          _media.removeAt(0);
+          _defaultMediaIndex = (_defaultMediaIndex - 1).clamp(
+            0,
+            _media.isEmpty ? 0 : _media.length - 1,
+          );
+        }
+        if (needsDefaultPatch && chosenId != null) {
+          await dio.patch<Object?>(
+            '$base/$chosenId',
+            data: {'is_default': true},
+          );
+        }
+        saved = await api.getProduct(id: saved.id);
+      }
       if (mounted) Navigator.pop(context, saved);
     } catch (e) {
-      setState(() => _error = errorMessage(e));
+      if (mounted) setState(() => _error = errorMessage(e));
+    } finally {
+      if (mounted) setState(() => _saving = false);
     }
+  }
+
+  Future<void> _addMedia() async {
+    final picker = widget.pickMedia ?? _pickProductMedia;
+    final picked = await picker(context);
+    if (picked.isEmpty || !mounted) return;
+    setState(() {
+      _media.addAll(picked);
+      if (_defaultMediaIndex >= _media.length) _defaultMediaIndex = 0;
+    });
+  }
+
+  void _removeMedia(int index) {
+    setState(() {
+      _media.removeAt(index);
+      if (_media.isEmpty) {
+        _defaultMediaIndex = 0;
+      } else if (index == _defaultMediaIndex) {
+        _defaultMediaIndex = 0;
+      } else if (index < _defaultMediaIndex) {
+        _defaultMediaIndex -= 1;
+      }
+    });
+  }
+
+  static bool _isVideoFilename(String name) {
+    final lower = name.toLowerCase();
+    return lower.endsWith('.mp4') || lower.endsWith('.webm');
+  }
+
+  Widget _mediaSection(BuildContext context) {
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 8,
+          children: [
+            Text(l.productMedia, style: theme.textTheme.labelLarge),
+            TextButton.icon(
+              key: const ValueKey('product-form-add-media'),
+              onPressed: _saving ? null : _addMedia,
+              icon: const Icon(AppIcons.addAPhoto),
+              label: Text(l.addPictureOrVideo),
+            ),
+          ],
+        ),
+        if (_media.isEmpty)
+          Text(l.noMedia, style: theme.textTheme.bodySmall)
+        else
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (var i = 0; i < _media.length; i++)
+                SizedBox(
+                  key: ValueKey('staged-media-$i'),
+                  width: 120,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Stack(
+                        children: [
+                          SizedBox(
+                            width: 120,
+                            height: 90,
+                            child: _isVideoFilename(_media[i].filename)
+                                ? const Center(
+                                    child: Icon(AppIcons.playCircle, size: 36),
+                                  )
+                                : Image.memory(
+                                    _media[i].bytes,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, _, _) => const Center(
+                                      child: Icon(AppIcons.brokenImage),
+                                    ),
+                                  ),
+                          ),
+                          if (i == _defaultMediaIndex)
+                            Positioned(
+                              left: 4,
+                              top: 4,
+                              child: Chip(
+                                key: ValueKey('staged-media-default-$i'),
+                                avatar: const Icon(AppIcons.star, size: 14),
+                                label: Text(l.defaultMedia),
+                                visualDensity: VisualDensity.compact,
+                              ),
+                            ),
+                        ],
+                      ),
+                      Text(
+                        _media[i].filename,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall,
+                      ),
+                      Row(
+                        children: [
+                          if (i != _defaultMediaIndex)
+                            Expanded(
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: TextButton(
+                                  key: ValueKey('staged-media-make-default-$i'),
+                                  onPressed: _saving
+                                      ? null
+                                      : () => setState(
+                                          () => _defaultMediaIndex = i,
+                                        ),
+                                  child: Text(
+                                    l.makeDefault,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ),
+                            )
+                          else
+                            const Spacer(),
+                          IconButton(
+                            key: ValueKey('staged-media-remove-$i'),
+                            tooltip: l.delete,
+                            icon: const Icon(AppIcons.delete, size: 18),
+                            onPressed: _saving ? null : () => _removeMedia(i),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+      ],
+    );
   }
 
   /// Active packaging categories (plus the product's own, even if it has been deactivated since).
@@ -497,6 +688,7 @@ class _ProductFormState extends ConsumerState<ProductForm> {
               value: _active,
               onChanged: (v) => setState(() => _active = v),
             ),
+            if (p == null) ...[gap, _mediaSection(context)],
             if (_error != null)
               Text(
                 _error!,
@@ -507,12 +699,15 @@ class _ProductFormState extends ConsumerState<ProductForm> {
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.pop(context),
+          onPressed: _saving ? null : () => Navigator.pop(context),
           child: Text(context.l10n.cancel),
         ),
         TutorialTarget(
           id: 'product-form-save',
-          child: FilledButton(onPressed: _save, child: Text(context.l10n.save)),
+          child: FilledButton(
+            onPressed: _saving ? null : _save,
+            child: Text(context.l10n.save),
+          ),
         ),
       ],
     );

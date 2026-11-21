@@ -10,6 +10,9 @@ use crate::{new_id, AppError, AppResult, BlobStore};
 /// Largest accepted upload (a phone photo is typically 2–6 MB).
 pub const MAX_FILE_BYTES: usize = 12 * 1024 * 1024;
 
+/// Largest accepted video (product media only).
+pub const MAX_VIDEO_BYTES: usize = 64 * 1024 * 1024;
+
 #[derive(Debug, Clone, serde::Serialize, FromRow, utoipa::ToSchema)]
 pub struct FileInfo {
     pub id: Uuid,
@@ -39,6 +42,19 @@ pub fn sniff_document(bytes: &[u8]) -> Option<&'static str> {
     sniff_image(bytes).or_else(|| bytes.starts_with(b"%PDF-").then_some("application/pdf"))
 }
 
+/// The content type of a product picture or video: an image (see [`sniff_image`]), an MP4 or a WebM.
+pub fn sniff_media(bytes: &[u8]) -> Option<&'static str> {
+    if let Some(t) = sniff_image(bytes) {
+        Some(t)
+    } else if bytes.len() > 12 && &bytes[4..8] == b"ftyp" {
+        Some("video/mp4")
+    } else if bytes.starts_with(&[0x1A, 0x45, 0xDF, 0xA3]) {
+        Some("video/webm")
+    } else {
+        None
+    }
+}
+
 /// A file name that is safe to show and to put in a header: no path, no control characters.
 pub fn clean_filename(name: &str, content_type: &str) -> String {
     let base = name.rsplit(['/', '\\']).next().unwrap_or("");
@@ -53,6 +69,8 @@ pub fn clean_filename(name: &str, content_type: &str) -> String {
             "image/png" => "png",
             "image/webp" => "webp",
             "application/pdf" => return "document.pdf".to_string(),
+            "video/mp4" => return "video.mp4".to_string(),
+            "video/webm" => return "video.webm".to_string(),
             _ => "jpg",
         };
         format!("photo.{ext}")
@@ -86,6 +104,7 @@ pub async fn store_image(
         uploader_name,
         sniff_image,
         "only JPEG, PNG and WebP images are accepted",
+        MAX_FILE_BYTES,
     )
     .await
 }
@@ -114,6 +133,41 @@ pub async fn store_document(
         uploader_name,
         sniff_document,
         "only JPEG, PNG and WebP images and PDF documents are accepted",
+        MAX_FILE_BYTES,
+    )
+    .await
+}
+
+/// Stores a product picture or video: JPEG, PNG, WebP, MP4 or WebM. Images are limited to
+/// [`MAX_FILE_BYTES`], videos to [`MAX_VIDEO_BYTES`].
+#[allow(clippy::too_many_arguments)]
+pub async fn store_media(
+    conn: &mut PgConnection,
+    blobs: &BlobStore,
+    company_id: Uuid,
+    id: Option<Uuid>,
+    filename: &str,
+    bytes: &[u8],
+    uploaded_by: Option<Uuid>,
+    uploader_name: &str,
+) -> AppResult<FileInfo> {
+    let max = if sniff_image(bytes).is_some() {
+        MAX_FILE_BYTES
+    } else {
+        MAX_VIDEO_BYTES
+    };
+    store(
+        conn,
+        blobs,
+        company_id,
+        id,
+        filename,
+        bytes,
+        uploaded_by,
+        uploader_name,
+        sniff_media,
+        "only JPEG, PNG and WebP images and MP4 or WebM videos are accepted",
+        max,
     )
     .await
 }
@@ -130,14 +184,15 @@ async fn store(
     uploader_name: &str,
     sniff: fn(&[u8]) -> Option<&'static str>,
     refusal: &str,
+    max_bytes: usize,
 ) -> AppResult<FileInfo> {
     if bytes.is_empty() {
         return Err(AppError::Validation("the file is empty".into()));
     }
-    if bytes.len() > MAX_FILE_BYTES {
+    if bytes.len() > max_bytes {
         return Err(AppError::Validation(format!(
             "the file is too large (at most {} MB)",
-            MAX_FILE_BYTES / 1024 / 1024
+            max_bytes / 1024 / 1024
         )));
     }
     let content_type = sniff(bytes).ok_or_else(|| AppError::Validation(refusal.into()))?;

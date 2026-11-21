@@ -8,7 +8,7 @@ use tradocraft_documents::{format_amount, format_date, format_number, format_uni
 use tradocraft_pricing::{totals, PricedLine, Totals};
 
 use crate::orders::{Order, OrderLine};
-use crate::pdf::{Party, Vat};
+use crate::pdf::{Images, Party, Vat};
 
 #[derive(Serialize)]
 pub struct Doc {
@@ -46,6 +46,8 @@ pub struct DocLine {
     pub total: String,
     /// Remark for the customer, printed under the description (never the production remark).
     pub customer_remark: String,
+    /// File name of the product's default picture, placed next to the document.
+    pub image: Option<String>,
 }
 
 /// The customer as it was on the quotation the order was made from.
@@ -76,6 +78,16 @@ pub fn order_totals(lines: &[OrderLine]) -> Totals {
 }
 
 pub fn document(company: &Company, o: &Order, c: &CustomerSnapshot, language: &str) -> Doc {
+    document_with_images(company, o, c, language, &Images::new())
+}
+
+pub fn document_with_images(
+    company: &Company,
+    o: &Order,
+    c: &CustomerSnapshot,
+    language: &str,
+    images: &Images,
+) -> Doc {
     let hundred = Decimal::ONE_HUNDRED;
     Doc {
         language: language.to_string(),
@@ -133,6 +145,10 @@ pub fn document(company: &Company, o: &Order, c: &CustomerSnapshot, language: &s
                     vat_rate: format!("{} %", format_number(l.vat_rate)),
                     total: format_amount(l.line_total),
                     customer_remark: l.customer_remark.clone(),
+                    image: l
+                        .product_id
+                        .and_then(|id| images.get(&id))
+                        .map(|(name, _)| name.clone()),
                 }
             })
             .collect(),

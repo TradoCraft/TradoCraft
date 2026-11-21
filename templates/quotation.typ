@@ -89,7 +89,10 @@
 // One row per line; sub-lines (options) are indented below their parent. Lines are grouped by
 // section with a heading and a subtotal; lines without a section come without a heading.
 #let line-row(x) = (
-  text(size: if x.level > 0 { 8.5pt } else { 9.5pt }, x.code),
+  {
+    if x.image != none { box(image(x.image, width: 14mm, height: 14mm, fit: "contain")); linebreak() }
+    text(size: if x.level > 0 { 8.5pt } else { 9.5pt }, x.code)
+  },
   pad(left: x.level * 4mm)[
     #if x.level > 0 [#text(fill: luma(120), sym.arrow.r.curve) ]#x.description
     #if x.percent_of_parent != "" [#text(fill: luma(110), size: 8pt)[ (#x.percent_of_parent #l.of_parent)]]

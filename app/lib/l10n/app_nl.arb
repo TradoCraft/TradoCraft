@@ -3394,5 +3394,10 @@
   "kanbanLostCancelled": "Teruggezet: voor een verloren kans is een reden nodig.",
   "ticketsBoardCloseTitle": "Dit ticket sluiten?",
   "ticketsBoardCloseBody": "Door {number} te sluiten kan de klant een tevredenheidsenquête krijgen; dat kan niet ongedaan gemaakt worden.",
-  "ticketsBoardClose": "Ticket sluiten"
+  "ticketsBoardClose": "Ticket sluiten",
+  "productMedia": "Foto's en video's",
+  "addPictureOrVideo": "Foto's of video's toevoegen",
+  "noMedia": "Nog geen foto's of video's.",
+  "makeDefault": "Standaard maken",
+  "defaultMedia": "Standaard"
 }
