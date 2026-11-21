@@ -195,8 +195,14 @@ async fn upload_media(
     // Stream and validate the upload to disk before acquiring the product row lock.
     let staged = files::stage_media_stream(&state.blobs, body).await?;
     let staged_key = staged.storage_key.clone();
-    let res: AppResult<ProductMedia> = async {
-        let mut tx = state.db.begin().await?;
+    let mut tx = match state.db.begin().await {
+        Ok(tx) => tx,
+        Err(e) => {
+            let _ = state.blobs.delete(&staged_key).await;
+            return Err(e.into());
+        }
+    };
+    let pre_commit: AppResult<ProductMedia> = async {
         ensure_product(&mut tx, id).await?;
         // serialise uploads to one product so "the first one is the default" holds
         sqlx::query("SELECT id FROM products.products WHERE id = $1 FOR UPDATE")
@@ -256,18 +262,19 @@ async fn upload_media(
             )
             .await?;
         }
-        let media = load_one(&mut tx, id, file.id).await?;
-        tx.commit().await?;
-        Ok(media)
+        load_one(&mut tx, id, file.id).await
     }
     .await;
-    match res {
-        Ok(media) => Ok((StatusCode::CREATED, Json(media))),
+    let media = match pre_commit {
+        Ok(media) => media,
         Err(e) => {
+            let _ = tx.rollback().await;
             let _ = state.blobs.delete(&staged_key).await;
-            Err(e)
+            return Err(e);
         }
-    }
+    };
+    tx.commit().await?;
+    Ok((StatusCode::CREATED, Json(media)))
 }
 
 /// The file itself.

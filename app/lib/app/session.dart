@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../features/field/offline/kv_store.dart';
+import '../features/products/product_thumb.dart' show clearProductThumbCache;
 
 /// Connection and identity of the signed-in user.
 ///
@@ -74,11 +75,13 @@ class SessionNotifier extends Notifier<Session> {
   Session build() => ref.read(initialSessionProvider);
 
   Future<void> signIn(Session s) async {
+    clearProductThumbCache();
     state = s;
     await SessionStore.save(s, ref.read(kvStoreProvider));
   }
 
   Future<void> signOut() async {
+    clearProductThumbCache();
     state = Session(serverUrl: state.serverUrl);
     await SessionStore.save(state, ref.read(kvStoreProvider));
   }

@@ -1221,7 +1221,7 @@ class EntityListState<T> extends State<EntityList<T>> {
           : leadingCol?.cell?.call(context, item),
       title: Text(titleCol.value(item)),
       subtitle: Text(
-        textCols
+        (selecting ? cols : textCols)
             .where((c) => c != titleCol)
             .map((c) => c.value(item))
             .where((s) => s.isNotEmpty)

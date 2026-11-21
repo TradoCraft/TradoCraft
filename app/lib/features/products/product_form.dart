@@ -45,7 +45,6 @@ class _StagedMedia {
   final PickedPhoto photo;
   final String clientId;
   String? uploadedId;
-  bool patchedDefault = false;
 
   String get filename => photo.filename;
   Uint8List get bytes => photo.bytes;
@@ -98,6 +97,7 @@ class _ProductFormState extends ConsumerState<ProductForm> {
     text: p?.defaultProductionRemark,
   );
   final List<_StagedMedia> _media = [];
+  final List<String> _pendingDeletions = [];
   int _defaultMediaIndex = 0;
   Product? _created;
   bool _saving = false;
@@ -189,34 +189,38 @@ class _ProductFormState extends ConsumerState<ProductForm> {
           ? await api.createProduct(body: body)
           : await api.updateProduct(id: targetId, body: body);
       if (p == null) _created = saved;
-      if (_media.isNotEmpty) {
+      if (_pendingDeletions.isNotEmpty || _media.isNotEmpty) {
         final base = '/api/v1/products/${saved.id}/media';
-        final chosenIndex = _defaultMediaIndex.clamp(0, _media.length - 1);
-        final chosen = _media[chosenIndex];
-        for (final item in _media) {
-          if (item.uploadedId == null) {
-            final res = await uploadPhoto(
-              dio,
-              base,
-              item.photo,
-              clientId: item.clientId,
-            );
-            final data = res.data;
-            item.uploadedId =
-                (data is Map<String, dynamic> ? data['id'] as String? : null) ??
-                item.clientId;
-          }
+        while (_pendingDeletions.isNotEmpty) {
+          final deadId = _pendingDeletions.first;
+          await dio.delete<Object?>('$base/$deadId');
+          _pendingDeletions.removeAt(0);
         }
-        final chosenId = chosen.uploadedId;
-        final needsDefaultPatch =
-            chosenIndex > 0 || _media.any((m) => m.patchedDefault);
-        if (needsDefaultPatch && chosenId != null && !chosen.patchedDefault) {
-          await dio.patch<Object?>(
-            '$base/$chosenId',
-            data: {'is_default': true},
-          );
-          for (final m in _media) {
-            m.patchedDefault = identical(m, chosen);
+        if (_media.isNotEmpty) {
+          final chosenIndex = _defaultMediaIndex.clamp(0, _media.length - 1);
+          final chosen = _media[chosenIndex];
+          for (final item in _media) {
+            if (item.uploadedId == null) {
+              final res = await uploadPhoto(
+                dio,
+                base,
+                item.photo,
+                clientId: item.clientId,
+              );
+              final data = res.data;
+              item.uploadedId =
+                  (data is Map<String, dynamic>
+                      ? data['id'] as String?
+                      : null) ??
+                  item.clientId;
+            }
+          }
+          final chosenId = chosen.uploadedId;
+          if (chosenId != null) {
+            await dio.patch<Object?>(
+              '$base/$chosenId',
+              data: {'is_default': true},
+            );
           }
         }
         saved = await api.getProduct(id: saved.id);
@@ -245,7 +249,10 @@ class _ProductFormState extends ConsumerState<ProductForm> {
 
   void _removeMedia(int index) {
     setState(() {
-      _media.removeAt(index);
+      final removed = _media.removeAt(index);
+      if (removed.uploadedId != null) {
+        _pendingDeletions.add(removed.uploadedId!);
+      }
       if (_media.isEmpty) {
         _defaultMediaIndex = 0;
       } else if (index == _defaultMediaIndex) {
