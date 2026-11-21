@@ -677,6 +677,7 @@ async fn apply_to_child(
                     subject: input.subject.clone(),
                     body: body.to_string(),
                     attachment_ids: vec![],
+                    library_pdfs: vec![],
                     status: input.status.clone(),
                 },
             )

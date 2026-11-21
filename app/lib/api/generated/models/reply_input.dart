@@ -4,6 +4,8 @@
 
 import 'package:json_annotation/json_annotation.dart';
 
+import 'library_pdf.dart';
+
 part 'reply_input.g.dart';
 
 @JsonSerializable()
@@ -12,6 +14,7 @@ class ReplyInput {
     required this.body,
     this.attachmentIds,
     this.cc,
+    this.libraryPdfs,
     this.status,
     this.subject,
     this.to,
@@ -25,6 +28,10 @@ class ReplyInput {
   final String body;
   @JsonKey(includeIfNull: false)
   final List<String>? cc;
+
+  /// Published document variants to attach without uploading a second copy.
+  @JsonKey(includeIfNull: false,name: 'library_pdfs')
+  final List<LibraryPdf>? libraryPdfs;
 
   /// New ticket status; defaults to pending_customer.
   @JsonKey(includeIfNull: false)

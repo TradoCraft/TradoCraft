@@ -65,6 +65,7 @@ class _KbPageState extends ConsumerState<KbPage> {
           children: [
             Text(l.kbTitle, style: Theme.of(context).textTheme.headlineSmall),
             const Spacer(),
+            TextButton(onPressed: () => context.push('/kb/documents'), child: Text(l.documentLibrary)),
             TextButton.icon(
               onPressed: () => context.go('/kb/categories'),
               icon: const Icon(AppIcons.folder),

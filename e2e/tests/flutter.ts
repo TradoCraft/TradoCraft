@@ -151,6 +151,7 @@ export async function expectStep(page: Page, chapter: string, stepId: string) {
 /** The application group (string key) whose rail holds each module; see `appGroups` in the app. */
 const GROUP_OF: Record<string, string> = {
   Quotations: 'appGroupSales',
+  "Knowledge base": "appGroupService",
   Helpdesk: 'appGroupService',
   Production: 'appGroupOperations',
   Stock: 'appGroupOperations',

@@ -91,6 +91,7 @@ impl Module {
             Module::Customers => &[
                 CustomersRead,
                 CustomersWrite,
+                MailMergeSend,
                 ContactsWrite,
                 OpportunitiesRead,
                 OpportunitiesWrite,

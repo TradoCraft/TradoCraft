@@ -1,5 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../app/api.dart';
 import '../../shared/csv_transfer.dart';
@@ -64,6 +65,11 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
         EntityColumn(context.l10n.zone, (c) => c.priceZoneCode ?? '—'),
       ],
       actions: [
+        if (canWrite && permissions.contains('kb.read'))
+          TextButton(
+            onPressed: () => context.push('/customers/mail-merge'),
+            child: Text(context.l10n.mailMerge),
+          ),
         CsvMenu(
           entity: context.l10n.customers,
           exportPath: '/api/v1/customers/export',

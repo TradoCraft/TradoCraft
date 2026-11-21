@@ -12,6 +12,9 @@ ReplyInput _$ReplyInputFromJson(Map<String, dynamic> json) => ReplyInput(
       ?.map((e) => e as String)
       .toList(),
   cc: (json['cc'] as List<dynamic>?)?.map((e) => e as String).toList(),
+  libraryPdfs: (json['library_pdfs'] as List<dynamic>?)
+      ?.map((e) => LibraryPdf.fromJson(e as Map<String, dynamic>))
+      .toList(),
   status: json['status'] as String?,
   subject: json['subject'] as String?,
   to: (json['to'] as List<dynamic>?)?.map((e) => e as String).toList(),
@@ -22,6 +25,7 @@ Map<String, dynamic> _$ReplyInputToJson(ReplyInput instance) =>
       'attachment_ids': ?instance.attachmentIds,
       'body': instance.body,
       'cc': ?instance.cc,
+      'library_pdfs': ?instance.libraryPdfs,
       'status': ?instance.status,
       'subject': ?instance.subject,
       'to': ?instance.to,

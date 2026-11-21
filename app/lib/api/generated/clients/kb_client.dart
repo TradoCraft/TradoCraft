@@ -7,6 +7,9 @@ import 'package:retrofit/retrofit.dart';
 
 import '../models/category.dart';
 import '../models/category_input.dart';
+import '../models/document.dart';
+import '../models/document_detail.dart';
+import '../models/document_input.dart';
 import '../models/entry.dart';
 import '../models/entry_input.dart';
 import '../models/entry_summary.dart';
@@ -41,6 +44,41 @@ abstract class KbClient {
   @DELETE('/api/v1/kb/categories/{id}')
   Future<void> deleteKbCategory({
     @Path('id') required String id,
+  });
+
+  @GET('/api/v1/kb/documents')
+  Future<List<Document>> listKbDocuments({
+    @Query('q') String? q,
+  });
+
+  @POST('/api/v1/kb/documents')
+  Future<Document> createKbDocument({
+    @Body() required DocumentInput body,
+  });
+
+  @GET('/api/v1/kb/documents/{id}')
+  Future<DocumentDetail> getKbDocument({
+    @Path('id') required String id,
+  });
+
+  @PUT('/api/v1/kb/documents/{id}/draft/{language}')
+  Future<void> uploadKbDocumentPdf({
+    @Path('id') required String id,
+    @Path('language') required String language,
+    @Query('filename') required String filename,
+    @Body() required List<int> body,
+  });
+
+  @POST('/api/v1/kb/documents/{id}/publish')
+  Future<void> publishKbDocument({
+    @Path('id') required String id,
+  });
+
+  @GET('/api/v1/kb/documents/{id}/revisions/{revision}/{language}')
+  Future<void> downloadKbDocumentPdf({
+    @Path('id') required String id,
+    @Path('revision') required int revision,
+    @Path('language') required String language,
   });
 
   /// Lists or searches entries. With `q` the best match comes first and each entry has a snippet.

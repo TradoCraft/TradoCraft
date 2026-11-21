@@ -26,6 +26,9 @@ import '../models/delivery_check.dart';
 import '../models/format.dart';
 import '../models/import_report.dart';
 import '../models/lookup_result.dart';
+import '../models/mail_merge_draft.dart';
+import '../models/mail_merge_preview.dart';
+import '../models/mailing_delivery.dart';
 import '../models/match_rule.dart';
 import '../models/match_rule_input.dart';
 import '../models/opportunity.dart';
@@ -152,6 +155,22 @@ abstract class CrmClient {
     @Body() required File body,
     @Query('dry_run') bool? dryRun,
     @Query('sheet') String? sheet,
+  });
+
+  @GET('/api/v1/customers/mail-merge')
+  Future<MailMergePreview> getMailMergeDraft();
+
+  @PUT('/api/v1/customers/mail-merge')
+  Future<MailMergePreview> saveMailMergeDraft({
+    @Body() required MailMergeDraft body,
+  });
+
+  @GET('/api/v1/customers/mail-merge/history')
+  Future<List<MailingDelivery>> mailMergeHistory();
+
+  @POST('/api/v1/customers/mail-merge/{approval_id}/confirm')
+  Future<void> confirmMailMerge({
+    @Path('approval_id') required String approvalId,
   });
 
   /// Checks a VAT number for the customer form: the format and check digits, other customers with.

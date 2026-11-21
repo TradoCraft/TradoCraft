@@ -78,6 +78,12 @@ BEGIN
 END $$;
 
 -- System mail still in the table: addresses and the attached document.
+-- Rebuild mailing previews from the anonymized contacts before they can be confirmed.
+UPDATE crm.mail_merge_drafts SET approved_preview = NULL;
+UPDATE core.mail_outbox o
+   SET subject = 'Anonymized mailing', body = 'Anonymized mailing', delivery_error = NULL
+  FROM crm.mailing_deliveries d
+ WHERE o.id = d.outbox_id;
 UPDATE core.mail_outbox
    SET to_address = 'recipient-' || left(md5(id::text), 10) || '@example.test',
        attachment_name = NULL, attachment_type = NULL, attachment_storage_key = NULL;

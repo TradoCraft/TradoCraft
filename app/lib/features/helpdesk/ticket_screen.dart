@@ -20,6 +20,7 @@ import '../kb/kb_entry_screen.dart' show KbArticlePicker;
 import '../kb/kb_suggestions.dart';
 import '../repairs/repairs_page.dart' show showNewRepairDialog;
 import 'call_dialogs.dart';
+import 'library_pdf_picker.dart';
 import 'ticket_collab.dart';
 import 'ticket_merge.dart';
 import 'ticket_extras.dart';
@@ -106,6 +107,7 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
   String? _statusAfter;
   String? _answerInfo;
   List<FileInfo> _attached = [];
+  final _libraryPdfs = <LibraryPdfSelection>[];
 
   /// How files are chosen; replaceable in tests.
   AttachmentPicker get _picker => widget.pickFiles ?? pickAttachmentFiles;
@@ -852,6 +854,9 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
                     : _replySubject.text.trim(),
                 body: _body.text,
                 attachmentIds: [for (final f in _attached) f.id],
+                libraryPdfs: _libraryPdfs.isEmpty
+                    ? null
+                    : [for (final item in _libraryPdfs) item.variant],
                 status: _statusAfter,
               ),
             )
@@ -872,8 +877,22 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
         _statusAfter = null;
         _answerInfo = null;
         _attached = [];
+        _libraryPdfs.clear();
       });
     }
+  }
+
+  Future<void> _pickLibraryPdf() async {
+    final selection = await showDialog<LibraryPdfSelection>(
+      context: context,
+      builder: (_) => LibraryPdfPicker(language: _language),
+    );
+    if (!mounted || selection == null) return;
+    final duplicate = _libraryPdfs.any((item) =>
+        item.documentId == selection.documentId &&
+        item.pdf.revision == selection.pdf.revision &&
+        item.pdf.language == selection.pdf.language);
+    if (!duplicate) setState(() => _libraryPdfs.add(selection));
   }
 
   void _appendToReply(String text) => setState(() {
@@ -1392,6 +1411,22 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
               pick: _picker,
               onChanged: (f) => setState(() => _attached = f),
             ),
+            if (_reply && canReply && canKb) ...[
+              TextButton(
+                onPressed: _busy ? null : _pickLibraryPdf,
+                child: Text(l.attachFromDocuments),
+              ),
+              Wrap(
+                spacing: 8,
+                children: [
+                  for (final item in _libraryPdfs)
+                    InputChip(
+                      label: Text('${item.pdf.filename} · ${l.documentRevision(item.pdf.revision)}'),
+                      onDeleted: _busy ? null : () => setState(() => _libraryPdfs.remove(item)),
+                    ),
+                ],
+              ),
+            ],
             const SizedBox(height: 8),
             Row(
               children: [
