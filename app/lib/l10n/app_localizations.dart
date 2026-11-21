@@ -11412,6 +11412,42 @@ abstract class AppLocalizations {
   /// **'Tutorial paused'**
   String get tutPaused;
 
+  /// No description provided for @tutMenuPath.
+  ///
+  /// In en, this message translates to:
+  /// **'Menu path · {path}'**
+  String tutMenuPath(String path);
+
+  /// No description provided for @tutShortcut.
+  ///
+  /// In en, this message translates to:
+  /// **'Tutorial shortcut · {path}'**
+  String tutShortcut(String path);
+
+  /// No description provided for @tutAssistManual.
+  ///
+  /// In en, this message translates to:
+  /// **'How to do this step'**
+  String get tutAssistManual;
+
+  /// No description provided for @tutAssistConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'The tutorial will apply these changes for you and verify the result.'**
+  String get tutAssistConfirm;
+
+  /// No description provided for @tutAssistRun.
+  ///
+  /// In en, this message translates to:
+  /// **'Run this step'**
+  String get tutAssistRun;
+
+  /// No description provided for @tutAssistRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Applying and checking this step…'**
+  String get tutAssistRunning;
+
   /// No description provided for @tutTakeMe.
   ///
   /// In en, this message translates to:
@@ -11601,7 +11637,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutWelcomeTabsBody.
   ///
   /// In en, this message translates to:
-  /// **'The sections are on the left (or in the bottom bar on a phone). Opening a record, such as a product or a quotation, adds a tab to the workspace, so you can keep several records open and come back to them.'**
+  /// **'Use Switch application to pick a category. Its modules appear on the left, or in the bottom bar on a phone. Opening a record, such as a product or quotation, adds a workspace tab so you can keep several records open.'**
   String get tutWelcomeTabsBody;
 
   /// No description provided for @tutWelcomeControlsTitle.

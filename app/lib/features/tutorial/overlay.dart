@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../l10n/l10n.dart';
 import 'controller.dart';
+import 'guidance.dart';
 import 'model.dart';
 import 'strings.dart';
 import 'targets.dart';
@@ -87,6 +88,12 @@ class TutorialHost extends ConsumerStatefulWidget {
 class _TutorialHostState extends ConsumerState<TutorialHost> {
   final _content = GlobalKey();
 
+  bool _reviewing = false;
+
+  void _reviewingChanged(bool reviewing) {
+    if (mounted) setState(() => _reviewing = reviewing);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -141,7 +148,11 @@ class _TutorialHostState extends ConsumerState<TutorialHost> {
     Widget? layer;
     if (s.loaded && signedIn) {
       if (s.activeId != null && !s.paused && !onMap) {
-        layer = _RunningLayer(contentBox: _contentBox, router: widget.router);
+        layer = _RunningLayer(
+          contentBox: _contentBox,
+          router: widget.router,
+          onReviewChanged: _reviewingChanged,
+        );
       } else if (s.activeId == null && s.finishedId != null && !onMap) {
         layer = _FinishedCard(router: widget.router);
       } else if (s.activeId != null && s.paused && !onMap) {
@@ -163,7 +174,7 @@ class _TutorialHostState extends ConsumerState<TutorialHost> {
         // sort key their small node is interleaved by position with the nodes of dialogs and
         // suggestion lists; when the list opens the order changes and the web engine moves the DOM
         // node of the focused text field, which drops its focus and closes the list.
-        if (layer != null)
+        if (layer != null && !_reviewing)
           Positioned.fill(
             child: Semantics(
               container: true,
@@ -181,10 +192,15 @@ typedef VisibleTarget = ({String id, Rect rect});
 
 /// The spotlight and narrator card of a running chapter.
 class _RunningLayer extends ConsumerStatefulWidget {
-  const _RunningLayer({required this.contentBox, required this.router});
+  const _RunningLayer({
+    required this.contentBox,
+    required this.router,
+    required this.onReviewChanged,
+  });
 
   final RenderBox? Function() contentBox;
   final GoRouter? router;
+  final ValueChanged<bool> onReviewChanged;
 
   @override
   ConsumerState<_RunningLayer> createState() => _RunningLayerState();
@@ -276,6 +292,7 @@ class _RunningLayerState extends ConsumerState<_RunningLayer> {
             child: NarratorCard(
               targetVisible: target != null,
               router: widget.router,
+              onReviewChanged: widget.onReviewChanged,
             ),
           ),
         ),
@@ -286,13 +303,15 @@ class _RunningLayerState extends ConsumerState<_RunningLayer> {
 
 /// The docked narrator card: chapter, step, text and the controls.
 class NarratorCard extends ConsumerWidget {
-  /// Creates the card; [targetVisible] tells whether the spotlight found its target.
-  const NarratorCard({super.key, required this.targetVisible, this.router});
+  const NarratorCard({
+    super.key,
+    required this.targetVisible,
+    required this.onReviewChanged,
+    this.router,
+  });
 
-  /// Whether the step's target is on screen (otherwise the card offers to take the user there).
   final bool targetVisible;
-
-  /// For "Take me there".
+  final ValueChanged<bool> onReviewChanged;
   final GoRouter? router;
 
   @override
@@ -311,6 +330,80 @@ class NarratorCard extends ConsumerWidget {
         : null;
     final route = step.route == null ? null : s.context.resolve(step.route!);
     final here = route != null && s.location == route;
+    final menuPath = tutorialMenuPath(l, m, step);
+
+    void takeMe() {
+      final navigatorContext =
+          router!.routerDelegate.navigatorKey.currentContext;
+      if (menuPath != null && navigatorContext != null) {
+        final messenger = ScaffoldMessenger.maybeOf(navigatorContext);
+        messenger?.hideCurrentSnackBar();
+        messenger?.showSnackBar(
+          SnackBar(content: Text(l.tutShortcut(menuPath))),
+        );
+      }
+      ref.read(workspaceProvider.notifier).focusHome();
+      router!.go(route!);
+    }
+
+    Future<void> reviewAssist() async {
+      final navigatorContext =
+          router?.routerDelegate.navigatorKey.currentContext ?? context;
+      final actions = tutorialManualActions(l, m, step);
+      // The tutorial layer is above the router's dialogs in the web
+      // accessibility tree. Remove it while the learner reviews the action.
+      onReviewChanged(true);
+      bool? confirmed;
+      try {
+        confirmed = await showDialog<bool>(
+          context: navigatorContext,
+          builder: (dialog) => AlertDialog(
+            title: Text(l.tutAssistManual),
+            scrollable: true,
+            content: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (menuPath != null)
+                  Text(
+                    l.tutMenuPath(menuPath),
+                    style: theme.textTheme.labelLarge,
+                  ),
+                const SizedBox(height: 8),
+                for (final (index, action) in actions.indexed)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Text('${index + 1}. $action'),
+                  ),
+                const SizedBox(height: 8),
+                Text(body),
+                const SizedBox(height: 8),
+                Text(l.tutAssistConfirm),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialog, false),
+                child: Text(l.cancel),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(dialog, true),
+                child: Text(l.tutAssistRun),
+              ),
+            ],
+          ),
+        );
+      } finally {
+        onReviewChanged(false);
+      }
+      if (confirmed == true &&
+          navigatorContext.mounted &&
+          identical(c.mission, m) &&
+          identical(c.step, step)) {
+        await c.runAction();
+      }
+    }
+
     final completion = step.completion;
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
     final width = (MediaQuery.sizeOf(context).width - 32).clamp(0.0, 420.0);
@@ -371,7 +464,21 @@ class NarratorCard extends ConsumerWidget {
                               ),
                             ),
                             const SizedBox(height: 6),
+                            if (menuPath != null) ...[
+                              Text(
+                                l.tutMenuPath(menuPath),
+                                style: theme.textTheme.labelLarge,
+                              ),
+                              const SizedBox(height: 6),
+                            ],
                             Text(body, style: theme.textTheme.bodyMedium),
+                            if (c.canAssist && s.actionBusy) ...[
+                              const SizedBox(height: 6),
+                              Semantics(
+                                liveRegion: true,
+                                child: Text(l.tutAssistRunning),
+                              ),
+                            ],
                             if (s.actionError != null) ...[
                               const SizedBox(height: 6),
                               Semantics(
@@ -427,7 +534,7 @@ class NarratorCard extends ConsumerWidget {
                         if (c.canAssist)
                           FilledButton(
                             key: const ValueKey('tutorial-assist'),
-                            onPressed: s.actionBusy ? null : c.runAction,
+                            onPressed: s.actionBusy ? null : reviewAssist,
                             child: Text(l.tutAssist),
                           ),
                         if (route != null &&
@@ -436,7 +543,7 @@ class NarratorCard extends ConsumerWidget {
                             router != null)
                           OutlinedButton(
                             key: const ValueKey('tutorial-take-me'),
-                            onPressed: () => router!.go(route),
+                            onPressed: takeMe,
                             child: Text(l.tutTakeMe),
                           ),
                         if (s.stepIndex > 0)

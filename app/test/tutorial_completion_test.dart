@@ -11,10 +11,12 @@ import 'package:tradocraft_app/app/environments.dart';
 import 'package:tradocraft_app/features/field/offline/kv_store.dart';
 import 'package:tradocraft_app/features/tutorial/api_events.dart';
 import 'package:tradocraft_app/features/tutorial/controller.dart';
+import 'package:tradocraft_app/features/tutorial/guidance.dart';
 import 'package:tradocraft_app/features/tutorial/missions.dart';
 import 'package:tradocraft_app/features/tutorial/model.dart';
 import 'package:tradocraft_app/features/tutorial/overlay.dart';
 import 'package:tradocraft_app/l10n/app_localizations.dart';
+import 'package:tradocraft_app/l10n/app_localizations_en.dart';
 
 import 'fake_http.dart';
 
@@ -94,6 +96,10 @@ GoRouter _router() => GoRouter(
       builder: (_, _) => const Scaffold(body: Text('home')),
     ),
     GoRoute(
+      path: '/products',
+      builder: (_, _) => const Scaffold(body: Text('products page')),
+    ),
+    GoRoute(
       path: '/tutorial',
       builder: (_, _) => const Scaffold(body: Text('chapter map')),
     ),
@@ -133,6 +139,29 @@ bool _enabled(WidgetTester tester, Finder f) {
 }
 
 void main() {
+  test('assisted steps have a menu path and a manual checklist', () {
+    final l = AppLocalizationsEn();
+    for (final mission in allMissions) {
+      for (final step in mission.steps.where((step) => step.assist != null)) {
+        final name = '${mission.id}/${step.id}';
+        expect(tutorialMenuPath(l, mission, step), isNotNull, reason: name);
+        expect(
+          tutorialManualActions(l, mission, step),
+          isNotEmpty,
+          reason: name,
+        );
+      }
+    }
+    expect(
+      tutorialMenuPath(
+        l,
+        const Mission(id: 'buying', steps: []),
+        const MissionStep(id: 'openOrder', route: '/purchase-orders/{poId}'),
+      ),
+      'Switch application › Back office › Purchasing › Purchase orders',
+    );
+  });
+
   testWidgets('product assistance creates and verifies the expected motor', (
     tester,
   ) async {
@@ -163,13 +192,28 @@ void main() {
     final c = _boot(http, missions: [productMission]);
     await tester.pumpWidget(_app(c, _router()));
     final t = await _startIn(tester, c, 'product');
-    t.routeChanged('/products');
+    const path = 'Switch application › Master data › Products';
+    expect(find.text('Menu path · $path'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('tutorial-take-me')));
     await _settle(tester);
+    expect(find.text('products page'), findsOneWidget);
+    expect(find.text('Tutorial shortcut · $path'), findsOneWidget);
 
     final assist = find.widgetWithText(FilledButton, 'Do this step for me');
     expect(assist, findsOneWidget);
     expect(find.byKey(const ValueKey('tutorial-skip')), findsNothing);
     await tester.tap(assist);
+    await _settle(tester);
+    expect(find.text('1. New product'), findsOneWidget);
+    expect(find.text('2. Code, Name, Type'), findsOneWidget);
+    expect(find.text('3. Save'), findsOneWidget);
+    expect(http.requests, isNot(contains('POST /api/v1/products')));
+    await tester.tap(find.text('Cancel'));
+    await _settle(tester);
+    expect(t.step?.id, 'motor');
+    await tester.tap(assist);
+    await _settle(tester);
+    await tester.tap(find.text('Run this step'));
     await _settle(tester);
 
     expect(t.step?.id, 'frame');

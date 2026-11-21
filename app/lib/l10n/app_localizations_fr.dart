@@ -6356,6 +6356,29 @@ class AppLocalizationsFr extends AppLocalizations {
   String get tutPaused => 'Tutoriel en pause';
 
   @override
+  String tutMenuPath(String path) {
+    return 'Chemin dans le menu · $path';
+  }
+
+  @override
+  String tutShortcut(String path) {
+    return 'Raccourci du tutoriel · $path';
+  }
+
+  @override
+  String get tutAssistManual => 'Comment réaliser cette étape';
+
+  @override
+  String get tutAssistConfirm =>
+      'Le tutoriel applique ces modifications pour vous et vérifie le résultat.';
+
+  @override
+  String get tutAssistRun => 'Exécuter cette étape';
+
+  @override
+  String get tutAssistRunning => 'Exécution et vérification en cours…';
+
+  @override
   String get tutTakeMe => 'M\'y emmener';
 
   @override
@@ -6464,7 +6487,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get tutWelcomeTabsBody =>
-      'Les sections se trouvent à gauche (ou dans la barre du bas sur un téléphone). Ouvrir un enregistrement, comme un produit ou un devis, ajoute un onglet à l\'espace de travail : vous pouvez garder plusieurs enregistrements ouverts.';
+      'Choisissez une catégorie avec Changer d\'application. Ses modules apparaissent à gauche, ou en bas sur un téléphone. Lorsque vous ouvrez un enregistrement, comme un produit ou un devis, il s’affiche dans un onglet de l’espace de travail.';
 
   @override
   String get tutWelcomeControlsTitle => 'Cette carte';

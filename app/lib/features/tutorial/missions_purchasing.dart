@@ -544,6 +544,7 @@ final invoicesMission = Mission(
     ),
     MissionStep(
       id: 'create',
+      route: '/purchase-orders/{poId}',
       hasHint: true,
       targets: const ['inv-form-save', 'po-create-invoice'],
       completion: OnApi(
