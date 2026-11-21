@@ -1253,6 +1253,26 @@ async fn reserving_stock_for_a_confirmed_order_reduces_what_is_available(db: PgP
         (q("5"), q("3"))
     );
 
+    // Both read endpoints link the saved reservation to the order line.
+    let (status, list) = get(
+        &e.app,
+        SALES,
+        &format!("/inventory/reservations?product_id={FRAME}"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{list}");
+    let rows = list.as_array().unwrap();
+    assert_eq!(rows.len(), 1, "{list}");
+    assert_eq!(rows[0]["reference_id"], line.as_str());
+    let (status, reservation) = get(
+        &e.app,
+        SALES,
+        &format!("/inventory/order-lines/{line}/reservation"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{reservation}");
+    assert_eq!(dec(&reservation["reserved"]), q("5"));
+
     // More than the line asks for, and more than is free, are refused.
     let (status, _) = reserve(&e.app, &line, "6").await;
     assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);

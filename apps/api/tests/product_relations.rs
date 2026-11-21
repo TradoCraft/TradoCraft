@@ -330,7 +330,15 @@ async fn quotation_warns_about_incompatible_pairs(db: PgPool) {
     )
     .await;
     assert_eq!(status, StatusCode::OK, "{p}");
-    assert_eq!(incompatible(&p).len(), 1);
+    let warnings = incompatible(&p);
+    assert_eq!(warnings.len(), 1, "{p}");
+    assert_eq!(
+        warnings[0]["details"]["product_codes"],
+        w[0]["details"]["product_codes"]
+    );
+    assert_eq!(warnings[0]["details"]["note"], w[0]["details"]["note"]);
+    // The warning does not prevent either line from being priced.
+    assert_eq!(p["lines"].as_array().unwrap().len(), 2);
     // Stock purpose: neither on the quotation nor in the preview.
     let q = quote(&app, &[HOSE, PROFILE], json!({ "purpose": "stock" })).await;
     assert!(incompatible(&q).is_empty());
@@ -436,7 +444,7 @@ async fn suggestions_from_manual_rules(db: PgPool) {
     let codes: Vec<String> = suggested(&q).into_iter().map(|(c, _)| c).collect();
     assert_eq!(codes, ["INSTALL", "TRAVEL"], "{q}");
     // The compatible rule suggests nothing and the pricing preview carries suggestions.
-    let (_, p) = api(
+    let (status, p) = api(
         &app,
         SALES,
         Method::POST,
@@ -444,7 +452,12 @@ async fn suggestions_from_manual_rules(db: PgPool) {
         Some(json!({ "customer_id": ALPHA, "lines": [{ "product_id": PUMP, "quantity": "1" }] })),
     )
     .await;
-    assert_eq!(suggested(&p).len(), 1);
+    assert_eq!(status, StatusCode::OK, "{p}");
+    assert_eq!(
+        suggested(&p),
+        [("CTRL-01".to_string(), "rule".to_string())],
+        "{p}"
+    );
     // Stock purpose: none.
     let q = quote(&app, &[PUMP], json!({ "purpose": "stock" })).await;
     assert!(suggested(&q).is_empty());

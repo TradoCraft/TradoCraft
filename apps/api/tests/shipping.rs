@@ -492,9 +492,19 @@ async fn sending_waits_for_the_quoted_cost_which_enters_the_totals(db: PgPool) {
     );
 }
 
+async fn shipping_override_count(db: &PgPool, quote_id: &str) -> i64 {
+    sqlx::query_scalar(
+        "SELECT count(*) FROM audit.events WHERE entity_id = $1::uuid AND action = 'shipping_override'",
+    )
+    .bind(quote_id)
+    .fetch_one(db)
+    .await
+    .unwrap()
+}
+
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
-async fn override_needs_the_shipping_permission(db: PgPool) {
-    let app = setup(db).await;
+async fn override_requires_shipping_permission_and_is_audited_when_used(db: PgPool) {
+    let app = setup(db.clone()).await;
     let q = quote(&app, PANEL, json!({})).await;
     let uri = format!("/quotations/{}/send?override_shipping=true", id(&q));
 
@@ -521,6 +531,16 @@ async fn override_needs_the_shipping_permission(db: PgPool) {
     assert_eq!(status, StatusCode::OK, "{sent}");
     assert_eq!(sent["status"], "sent");
     assert_eq!(sent["shipping_status"], "pending");
+    assert_eq!(shipping_override_count(&db, id(&q)).await, 1);
+
+    // An override still requires permission when there is no pending shipping quote.
+    let plain = quote(&app, UNIT_100, json!({})).await;
+    let uri = format!("/quotations/{}/send?override_shipping=true", id(&plain));
+    let (status, error) = api(&app, SALES, Method::POST, &uri, None).await;
+    assert_eq!(status, StatusCode::FORBIDDEN, "{error}");
+    let (status, sent) = api(&app, ADMIN, Method::POST, &uri, None).await;
+    assert_eq!(status, StatusCode::OK, "{sent}");
+    assert_eq!(shipping_override_count(&db, id(&plain)).await, 0);
 }
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]

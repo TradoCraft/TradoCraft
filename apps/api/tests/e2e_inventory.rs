@@ -1,7 +1,4 @@
-//! Inventory: receive stock, reserve it for a confirmed order line, and explode a multi-level BOM.
-//!
-//! Deviation from the plan: the seed has no warehouse, so the test creates one as the admin and a
-//! `warehouse`-role user; the reservation route takes the order *line* id and a quantity.
+//! Inventory: receive stock and explode a multi-level BOM.
 
 mod common;
 
@@ -16,7 +13,6 @@ const ADMIN: &str = "admin@example.com";
 const SALES: &str = "sales@example.com";
 const STORES: &str = "stores@example.com";
 const COMPANY: &str = "00000000-0000-7000-8000-000000000001";
-const ALPHA: &str = "00000000-0000-7000-8000-000000000401";
 const UNIT_100: &str = "00000000-0000-7000-8000-000000000301";
 const FRAME: &str = "00000000-0000-7000-8000-000000000307";
 
@@ -75,17 +71,6 @@ async fn receive(app: &axum::Router, location: &str, quantity: &str) -> Value {
     m
 }
 
-async fn reserve(app: &axum::Router, line: &str, quantity: &str) -> (StatusCode, Value) {
-    api(
-        app,
-        STORES,
-        Method::PUT,
-        &format!("/inventory/order-lines/{line}/reservation"),
-        Some(json!({ "quantity": quantity })),
-    )
-    .await
-}
-
 async fn totals(app: &axum::Router) -> (Decimal, Decimal, Decimal) {
     let (status, p) = api(
         app,
@@ -142,100 +127,6 @@ async fn receiving_stock_updates_the_balance_and_the_ledger(db: PgPool) {
 
     let (_, i) = api(&app, ADMIN, Method::GET, "/inventory/integrity", None).await;
     assert_eq!(i["ok"], true, "{i}");
-}
-
-#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
-async fn stock_is_reserved_for_a_confirmed_order_line(db: PgPool) {
-    let app = setup(db.clone()).await;
-    let main = warehouse(&app, &db).await;
-    receive(&app, &main, "10").await;
-
-    // A quotation for 4 frames becomes a confirmed order.
-    let (status, quote) = api(
-        &app,
-        SALES,
-        Method::POST,
-        "/quotations",
-        Some(json!({ "customer_id": ALPHA, "lines": [{ "product_id": FRAME, "quantity": "4" }] })),
-    )
-    .await;
-    assert_eq!(status, StatusCode::CREATED, "{quote}");
-    let qid = quote["id"].as_str().unwrap();
-    api(
-        &app,
-        SALES,
-        Method::POST,
-        &format!("/quotations/{qid}/send"),
-        None,
-    )
-    .await;
-    let (status, o) = api(
-        &app,
-        SALES,
-        Method::POST,
-        &format!("/quotations/{qid}/convert"),
-        Some(json!({})),
-    )
-    .await;
-    assert_eq!(status, StatusCode::CREATED, "{o}");
-    let order = o["order"]["id"].as_str().unwrap().to_string();
-    let line = o["lines"][0]["id"].as_str().unwrap().to_string();
-
-    // Not reservable before the order is confirmed.
-    assert_eq!(reserve(&app, &line, "4").await.0, StatusCode::CONFLICT);
-
-    for step in ["send", "confirm"] {
-        let (status, r) = api(
-            &app,
-            SALES,
-            Method::POST,
-            &format!("/orders/{order}/{step}"),
-            if step == "confirm" {
-                Some(json!({}))
-            } else {
-                None
-            },
-        )
-        .await;
-        assert_eq!(status, StatusCode::OK, "{r}");
-    }
-
-    let (status, r) = reserve(&app, &line, "4").await;
-    assert_eq!(status, StatusCode::OK, "{r}");
-    assert_eq!(
-        dec(&r["reserved"]),
-        q("4"),
-        "reserved equals the line quantity"
-    );
-    assert_eq!(totals(&app).await, (q("10"), q("4"), q("6")));
-
-    // The reservation is linked to that order line.
-    let (_, list) = api(
-        &app,
-        SALES,
-        Method::GET,
-        &format!("/inventory/reservations?product_id={FRAME}"),
-        None,
-    )
-    .await;
-    let rows = list.as_array().unwrap();
-    assert_eq!(rows.len(), 1, "{list}");
-    assert_eq!(rows[0]["reference_id"], line.as_str());
-    let (_, got) = api(
-        &app,
-        SALES,
-        Method::GET,
-        &format!("/inventory/order-lines/{line}/reservation"),
-        None,
-    )
-    .await;
-    assert_eq!(dec(&got["reserved"]), q("4"));
-
-    // Reserving more than the line asks for is refused.
-    assert_eq!(
-        reserve(&app, &line, "5").await.0,
-        StatusCode::UNPROCESSABLE_ENTITY
-    );
 }
 
 /// (code, level, required quantity) per node, in the order of the explosion.
