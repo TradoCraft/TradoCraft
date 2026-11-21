@@ -10,6 +10,7 @@ import '../../shared/format.dart';
 import '../tutorial/controller.dart';
 import 'bulk_price_dialog.dart';
 import 'families_dialog.dart';
+import 'product_thumb.dart';
 import 'packaging_dialog.dart';
 import 'power_grids_dialog.dart';
 import 'product_form.dart';
@@ -79,6 +80,16 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
       resizableColumns: true,
       columnMenu: true,
       columns: [
+        EntityColumn(
+          context.l10n.photos,
+          (p) => p.defaultMediaKind ?? '',
+          id: 'picture',
+          cell: (context, p) => ProductThumb(
+            productId: p.id,
+            mediaId: p.defaultMediaId,
+            isVideo: p.defaultMediaKind == 'video',
+          ),
+        ),
         EntityColumn(context.l10n.code, (p) => p.code, sortKey: 'code'),
         EntityColumn(
           context.l10n.name,

@@ -25,6 +25,56 @@ pub struct BlobStore {
     root: PathBuf,
 }
 
+pub(crate) struct StagedBlob {
+    pub(crate) key: String,
+    dest: PathBuf,
+    parent: PathBuf,
+    tmp_dir: PathBuf,
+    pub(crate) tmp_path: PathBuf,
+}
+
+impl StagedBlob {
+    pub(crate) async fn abort(self) {
+        let _ = tokio::fs::remove_file(&self.tmp_path).await;
+    }
+
+    pub(crate) async fn commit(self) -> AppResult<String> {
+        if let Err(e) = async {
+            tokio::fs::OpenOptions::new()
+                .write(true)
+                .open(&self.tmp_path)
+                .await?
+                .sync_all()
+                .await
+        }
+        .await
+        {
+            let _ = tokio::fs::remove_file(&self.tmp_path).await;
+            return Err(anyhow::Error::from(e).context("sync blob payload").into());
+        }
+        if let Err(e) = tokio::fs::rename(&self.tmp_path, &self.dest).await {
+            let _ = tokio::fs::remove_file(&self.tmp_path).await;
+            return Err(anyhow::Error::from(e)
+                .context(format!("rename blob into {}", self.dest.display()))
+                .into());
+        }
+        // Persist the rename; directory creation was synchronized under the lock above.
+        tokio::fs::File::open(&self.parent)
+            .await
+            .context("open blob directory")?
+            .sync_all()
+            .await
+            .context("sync blob directory")?;
+        tokio::fs::File::open(&self.tmp_dir)
+            .await
+            .context("open temporary directory")?
+            .sync_all()
+            .await
+            .context("sync temporary directory")?;
+        Ok(self.key)
+    }
+}
+
 impl BlobStore {
     pub fn new(root: impl Into<PathBuf>) -> Self {
         Self { root: root.into() }
@@ -62,6 +112,21 @@ impl BlobStore {
 
     /// Writes `bytes` atomically and returns the generated `storage_key`.
     pub async fn put(&self, bytes: &[u8]) -> AppResult<String> {
+        let writer = self.begin_write().await?;
+        if let Err(e) = tokio::fs::write(&writer.tmp_path, bytes).await {
+            let _ = tokio::fs::remove_file(&writer.tmp_path).await;
+            return Err(anyhow::Error::from(e)
+                .context(format!(
+                    "write blob temp file {}",
+                    writer.tmp_path.display()
+                ))
+                .into());
+        }
+        writer.commit().await
+    }
+
+    /// Prepares the shard and temporary directories and returns a staged writer for a new blob.
+    pub(crate) async fn begin_write(&self) -> AppResult<StagedBlob> {
         let id = new_id();
         let key = id.to_string();
         let dest = self.path_for(&key)?;
@@ -100,45 +165,13 @@ impl BlobStore {
         .await
         .context("initialize blob directories task")??;
 
-        if let Err(e) = tokio::fs::write(&tmp_path, bytes).await {
-            let _ = tokio::fs::remove_file(&tmp_path).await;
-            return Err(anyhow::Error::from(e)
-                .context(format!("write blob temp file {}", tmp_path.display()))
-                .into());
-        }
-        if let Err(e) = async {
-            tokio::fs::OpenOptions::new()
-                .write(true)
-                .open(&tmp_path)
-                .await?
-                .sync_all()
-                .await
-        }
-        .await
-        {
-            let _ = tokio::fs::remove_file(&tmp_path).await;
-            return Err(anyhow::Error::from(e).context("sync blob payload").into());
-        }
-        if let Err(e) = tokio::fs::rename(&tmp_path, &dest).await {
-            let _ = tokio::fs::remove_file(&tmp_path).await;
-            return Err(anyhow::Error::from(e)
-                .context(format!("rename blob into {}", dest.display()))
-                .into());
-        }
-        // Persist the rename; directory creation was synchronized under the lock above.
-        tokio::fs::File::open(&parent)
-            .await
-            .context("open blob directory")?
-            .sync_all()
-            .await
-            .context("sync blob directory")?;
-        tokio::fs::File::open(&tmp_dir)
-            .await
-            .context("open temporary directory")?
-            .sync_all()
-            .await
-            .context("sync temporary directory")?;
-        Ok(key)
+        Ok(StagedBlob {
+            key,
+            dest,
+            parent,
+            tmp_dir,
+            tmp_path,
+        })
     }
 
     /// Reads the blob for `key`, returning `AppError::NotFound("file")` if missing.

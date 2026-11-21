@@ -3428,5 +3428,10 @@
   "mergeRefresh": "Status vernieuwen",
   "mergeQueued": "In wachtrij",
   "mergeSent": "Verzonden",
-  "mergeFailed": "Mislukt"
+  "mergeFailed": "Mislukt",
+  "productMedia": "Foto's en video's",
+  "addPictureOrVideo": "Foto's of video's toevoegen",
+  "noMedia": "Nog geen foto's of video's.",
+  "makeDefault": "Standaard maken",
+  "defaultMedia": "Standaard"
 }

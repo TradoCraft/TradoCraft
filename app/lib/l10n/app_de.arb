@@ -3428,5 +3428,10 @@
   "mergeRefresh": "Status aktualisieren",
   "mergeQueued": "In Warteschlange",
   "mergeSent": "Gesendet",
-  "mergeFailed": "Fehlgeschlagen"
+  "mergeFailed": "Fehlgeschlagen",
+  "productMedia": "Bilder & Videos",
+  "addPictureOrVideo": "Bilder oder Videos hinzufügen",
+  "noMedia": "Noch keine Bilder oder Videos.",
+  "makeDefault": "Als Standard festlegen",
+  "defaultMedia": "Standard"
 }

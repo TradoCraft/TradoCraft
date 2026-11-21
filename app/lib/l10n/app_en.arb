@@ -4998,5 +4998,10 @@
         "type": "int"
       }
     }
-  }
+  },
+  "productMedia": "Pictures & videos",
+  "addPictureOrVideo": "Add pictures or videos",
+  "noMedia": "No pictures or videos yet.",
+  "makeDefault": "Make default",
+  "defaultMedia": "Default"
 }

@@ -11115,4 +11115,19 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get mergeFailed => 'Mislukt';
+
+  @override
+  String get productMedia => 'Foto\'s en video\'s';
+
+  @override
+  String get addPictureOrVideo => 'Foto\'s of video\'s toevoegen';
+
+  @override
+  String get noMedia => 'Nog geen foto\'s of video\'s.';
+
+  @override
+  String get makeDefault => 'Standaard maken';
+
+  @override
+  String get defaultMedia => 'Standaard';
 }

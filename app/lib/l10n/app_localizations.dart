@@ -19553,6 +19553,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed'**
   String get mergeFailed;
+
+  /// No description provided for @productMedia.
+  ///
+  /// In en, this message translates to:
+  /// **'Pictures & videos'**
+  String get productMedia;
+
+  /// No description provided for @addPictureOrVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Add pictures or videos'**
+  String get addPictureOrVideo;
+
+  /// No description provided for @noMedia.
+  ///
+  /// In en, this message translates to:
+  /// **'No pictures or videos yet.'**
+  String get noMedia;
+
+  /// No description provided for @makeDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Make default'**
+  String get makeDefault;
+
+  /// No description provided for @defaultMedia.
+  ///
+  /// In en, this message translates to:
+  /// **'Default'**
+  String get defaultMedia;
 }
 
 class _AppLocalizationsDelegate

@@ -11119,4 +11119,19 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get mergeFailed => 'Fallido';
+
+  @override
+  String get productMedia => 'Fotos y vídeos';
+
+  @override
+  String get addPictureOrVideo => 'Añadir fotos o vídeos';
+
+  @override
+  String get noMedia => 'Aún no hay fotos ni vídeos.';
+
+  @override
+  String get makeDefault => 'Establecer como predeterminada';
+
+  @override
+  String get defaultMedia => 'Predeterminada';
 }

@@ -10,6 +10,7 @@ use tradocraft_core::company::Company;
 use tradocraft_documents::{format_amount, format_date, format_number, format_unit_price};
 
 use rust_decimal::Decimal;
+use uuid::Uuid;
 
 use crate::model::{Quotation, QuotationLine};
 
@@ -75,6 +76,9 @@ pub struct Line {
     pub percent_of_parent: String,
     /// The price is an indicative suggestion still to be confirmed (only on drafts).
     pub indicative: bool,
+    /// File name of the product's default picture, placed next to the document; none when the
+    /// product has no picture.
+    pub image: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -123,7 +127,7 @@ fn structure(lines: &[QuotationLine]) -> Vec<(String, usize)> {
         .collect()
 }
 
-fn line(l: &QuotationLine, section: String, level: usize) -> Line {
+fn line(l: &QuotationLine, section: String, level: usize, images: &Images) -> Line {
     // The document shows one combined discount (rebate and line discount), consistent
     // with the net line total. Net-priced lines are marked as such.
     let net = l.non_discountable || l.rebate_source == "net";
@@ -162,10 +166,14 @@ fn line(l: &QuotationLine, section: String, level: usize) -> Line {
             .map(|p| format!("{} %", format_number(p.normalize())))
             .unwrap_or_default(),
         indicative: l.price_is_indicative || !l.price_confirmed,
+        image: l
+            .product_id
+            .and_then(|id| images.get(&id))
+            .map(|(name, _)| name.clone()),
     }
 }
 
-fn groups(lines: &[QuotationLine]) -> Vec<Group> {
+fn groups(lines: &[QuotationLine], images: &Images) -> Vec<Group> {
     let shape = structure(lines);
     let mut out: Vec<(String, Vec<Line>, Decimal)> = Vec::new();
     for (l, (section, level)) in lines.iter().zip(shape) {
@@ -177,7 +185,7 @@ fn groups(lines: &[QuotationLine]) -> Vec<Group> {
             }
         };
         out[i].2 += l.line_total;
-        out[i].1.push(line(l, section, level));
+        out[i].1.push(line(l, section, level, images));
     }
     out.into_iter()
         .map(|(title, lines, subtotal)| Group {
@@ -188,7 +196,14 @@ fn groups(lines: &[QuotationLine]) -> Vec<Group> {
         .collect()
 }
 
+/// Default product pictures by product id: `(file name, bytes)`, see `products::media`.
+pub type Images = std::collections::HashMap<Uuid, (String, Vec<u8>)>;
+
 pub fn document(company: &Company, q: &Quotation) -> Doc {
+    document_with_images(company, q, &Images::new())
+}
+
+pub fn document_with_images(company: &Company, q: &Quotation, images: &Images) -> Doc {
     let h = q;
     let shape = structure(&q.lines);
     Doc {
@@ -228,9 +243,9 @@ pub fn document(company: &Company, q: &Quotation) -> Doc {
             .lines
             .iter()
             .zip(shape)
-            .map(|(l, (section, level))| line(l, section, level))
+            .map(|(l, (section, level))| line(l, section, level, images))
             .collect(),
-        groups: groups(&q.lines),
+        groups: groups(&q.lines, images),
         has_indicative: q
             .lines
             .iter()
@@ -304,7 +319,7 @@ mod tests {
         assert_eq!(shape[2], ("Unit".to_string(), 2));
         assert_eq!(shape[3], (String::new(), 0));
         assert_eq!(shape[4], ("Options".to_string(), 1));
-        let g = groups(&lines);
+        let g = groups(&lines, &Images::new());
         let titles: Vec<&str> = g.iter().map(|g| g.title.as_str()).collect();
         assert_eq!(titles, ["Unit", "", "Options"]);
         let codes: Vec<&str> = g[0].lines.iter().map(|l| l.code.as_str()).collect();

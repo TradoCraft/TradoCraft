@@ -1237,8 +1237,33 @@ async fn render_confirmation(
     language: &str,
 ) -> AppResult<Vec<u8>> {
     let company = get_company(&state.db, company_id).await?;
-    let doc = order_doc::document(&company, order, snapshot, language);
-    Ok(tradocraft_documents::render_pdf(&state.documents, "order_confirmation", &doc).await?)
+    let product_ids: Vec<Uuid> = order.lines.iter().filter_map(|l| l.product_id).collect();
+    let mut conn = state.db.acquire().await?;
+    let images =
+        tradocraft_products::media::default_images(&mut conn, &state.blobs, &product_ids).await?;
+    drop(conn);
+    let doc = order_doc::document_with_images(&company, order, snapshot, language, &images);
+    let files: Vec<(String, Vec<u8>)> = images.into_values().collect();
+    match tradocraft_documents::render_pdf_with_files(
+        &state.documents,
+        "order_confirmation",
+        &doc,
+        &files,
+    )
+    .await
+    {
+        Ok(bytes) => Ok(bytes),
+        // a picture typst cannot read must not stop the confirmation from printing
+        Err(e) if !files.is_empty() => {
+            tracing::warn!(error = ?e, "order confirmation with pictures failed; rendering without");
+            let bare = order_doc::document(&company, order, snapshot, language);
+            Ok(
+                tradocraft_documents::render_pdf(&state.documents, "order_confirmation", &bare)
+                    .await?,
+            )
+        }
+        Err(e) => Err(e.into()),
+    }
 }
 
 fn pdf_filename(order: &Order) -> String {

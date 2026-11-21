@@ -22,6 +22,8 @@ class Product {
     required this.unit,
     required this.vatRate,
     this.barcode,
+    this.defaultMediaId,
+    this.defaultMediaKind,
     this.defaultProductionRemark,
     this.familyCode,
     this.familyId,
@@ -45,6 +47,15 @@ class Product {
   @JsonKey(includeIfNull: false)
   final String? barcode;
   final String code;
+
+  /// The default picture or video of the product (`GET /products/{id}/media/{id}`), if it has.
+  /// media.
+  @JsonKey(includeIfNull: false,name: 'default_media_id')
+  final String? defaultMediaId;
+
+  /// `image` or `video`: a video has no thumbnail to show in a list.
+  @JsonKey(includeIfNull: false,name: 'default_media_kind')
+  final String? defaultMediaKind;
 
   /// Internal remark that new quotation lines of this product start with.
   @JsonKey(includeIfNull: false,name: 'default_production_remark')

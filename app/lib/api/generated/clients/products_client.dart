@@ -14,6 +14,7 @@ import '../models/bulk_price_preview.dart';
 import '../models/export_plan_entry.dart';
 import '../models/format.dart';
 import '../models/import_report.dart';
+import '../models/media_update.dart';
 import '../models/packaging_category.dart';
 import '../models/packaging_category_input.dart';
 import '../models/power_compatibility_report.dart';
@@ -38,6 +39,7 @@ import '../models/product_attribute.dart';
 import '../models/product_family.dart';
 import '../models/product_family_input.dart';
 import '../models/product_input.dart';
+import '../models/product_media.dart';
 import '../models/product_option.dart';
 import '../models/product_option_input.dart';
 import '../models/product_page.dart';
@@ -409,6 +411,54 @@ abstract class ProductsClient {
   Future<List<ProductAttribute>> replaceAttributes({
     @Path('id') required String id,
     @Body() required List<ProductAttribute> body,
+  });
+
+  @GET('/api/v1/products/{id}/media')
+  Future<List<ProductMedia>> listMedia({
+    @Path('id') required String id,
+  });
+
+  /// Adds a picture or video: the request body is the file itself (JPEG, PNG or WebP up to 12 MB,.
+  /// MP4 or WebM up to 64 MB). The first item of a product becomes its default.
+  ///
+  /// [filename] - The original file name.
+  ///
+  /// [clientId] - A client-chosen id: uploading the same id again returns the first upload (safe retries).
+  @POST('/api/v1/products/{id}/media')
+  Future<ProductMedia> uploadProductMedia({
+    @Path('id') required String id,
+    @Body() required List<int> body,
+    @Query('caption') String? caption,
+    @Query('filename') String? filename,
+    @Query('client_id') String? clientId,
+  });
+
+  /// The default picture or video of the product, or 404 when it has none.
+  @GET('/api/v1/products/{id}/media/default')
+  Future<List<int>> getProductDefaultMedia({
+    @Path('id') required String id,
+  });
+
+  /// The file itself.
+  @GET('/api/v1/products/{id}/media/{media_id}')
+  Future<List<int>> getProductMedia({
+    @Path('id') required String id,
+    @Path('media_id') required String mediaId,
+  });
+
+  /// Removes the item from the product. If it was the default, the oldest remaining item becomes.
+  /// the default.
+  @DELETE('/api/v1/products/{id}/media/{media_id}')
+  Future<void> deleteProductMedia({
+    @Path('id') required String id,
+    @Path('media_id') required String mediaId,
+  });
+
+  @PATCH('/api/v1/products/{id}/media/{media_id}')
+  Future<ProductMedia> updateProductMedia({
+    @Path('id') required String id,
+    @Path('media_id') required String mediaId,
+    @Body() required MediaUpdate body,
   });
 
   /// The options of a product, in display order.

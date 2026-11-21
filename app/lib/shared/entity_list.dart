@@ -1189,7 +1189,17 @@ class EntityListState<T> extends State<EntityList<T>> {
 
   Widget _tile(int i, T item, VoidCallback? onTap, FocusNode node) {
     final cols = _visible.isEmpty ? widget.columns : _visible;
-    final titleCol = cols.length > 1 ? cols[1] : cols[0];
+    final leadingCol =
+        cols.isNotEmpty && cols.first.cell != null && cols.first.sortKey == null
+        ? cols.first
+        : null;
+    final textCols = [
+      for (final c in cols)
+        if (c != leadingCol) c,
+    ];
+    final titleCol = textCols.length > 1
+        ? textCols[1]
+        : (textCols.isNotEmpty ? textCols[0] : cols[0]);
     final selecting = widget.selectable && _selected.isNotEmpty;
     final selected = _isSelected(item);
     final tile = ListTile(
@@ -1208,10 +1218,10 @@ class EntityListState<T> extends State<EntityList<T>> {
                 onChanged: (v) => _toggleRow(i, v ?? false),
               ),
             )
-          : null,
+          : leadingCol?.cell?.call(context, item),
       title: Text(titleCol.value(item)),
       subtitle: Text(
-        cols
+        (selecting ? cols : textCols)
             .where((c) => c != titleCol)
             .map((c) => c.value(item))
             .where((s) => s.isNotEmpty)

@@ -87,7 +87,10 @@
     [*#l.code*], [*#l.description*], [*#l.qty*], [*#l.price*], [*#l.discount*], ..if d.show_vat { ([*#l.vat*],) } else { () }, [*#l.total*],
   ),
   ..d.lines.map(x => (
-    x.code, [#x.description#if x.customer_remark != "" [\ #text(size: 8.5pt, fill: luma(60), x.customer_remark)]], [#x.quantity #x.unit], [#cur #x.unit_price], if x.net { l.net } else { x.discount }, ..if d.show_vat { (x.vat_rate,) } else { () }, [#cur #x.total],
+    {
+      if x.image != none { box(image(x.image, width: 14mm, height: 14mm, fit: "contain")); linebreak() }
+      x.code
+    }, [#x.description#if x.customer_remark != "" [\ #text(size: 8.5pt, fill: luma(60), x.customer_remark)]], [#x.quantity #x.unit], [#cur #x.unit_price], if x.net { l.net } else { x.discount }, ..if d.show_vat { (x.vat_rate,) } else { () }, [#cur #x.total],
   )).flatten()
 )
 

@@ -6,6 +6,7 @@ import '../../app/api.dart';
 import '../../shared/actions.dart';
 import '../../shared/format.dart';
 import 'bom_tab.dart';
+import 'media_tab.dart';
 import 'options_tab.dart';
 import 'prices_tab.dart';
 import 'power_tab.dart';
@@ -45,6 +46,7 @@ class ProductScreen extends ConsumerWidget {
           final serial = p.tracking == 'serial';
           final tabs = [
             Tab(text: context.l10n.prices),
+            Tab(text: context.l10n.productMedia),
             if (hasBom) Tab(text: context.l10n.billOfMaterials),
             if (serial) Tab(text: context.l10n.serialNumbers),
             Tab(text: context.l10n.powerTab),
@@ -154,6 +156,7 @@ class ProductScreen extends ConsumerWidget {
                   child: TabBarView(
                     children: [
                       PricesTab(product: p),
+                      MediaTab(productId: p.id),
                       if (hasBom) BomTab(product: p),
                       if (serial) SerialsTab(product: p),
                       PowerTab(product: p),
