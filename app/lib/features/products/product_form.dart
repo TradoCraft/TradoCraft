@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:dio/dio.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -193,7 +194,11 @@ class _ProductFormState extends ConsumerState<ProductForm> {
         final base = '/api/v1/products/${saved.id}/media';
         while (_pendingDeletions.isNotEmpty) {
           final deadId = _pendingDeletions.first;
-          await dio.delete<Object?>('$base/$deadId');
+          try {
+            await dio.delete<Object?>('$base/$deadId');
+          } on DioException catch (e) {
+            if (e.response?.statusCode != 404) rethrow;
+          }
           _pendingDeletions.removeAt(0);
         }
         if (_media.isNotEmpty) {
@@ -250,9 +255,7 @@ class _ProductFormState extends ConsumerState<ProductForm> {
   void _removeMedia(int index) {
     setState(() {
       final removed = _media.removeAt(index);
-      if (removed.uploadedId != null) {
-        _pendingDeletions.add(removed.uploadedId!);
-      }
+      _pendingDeletions.add(removed.uploadedId ?? removed.clientId);
       if (_media.isEmpty) {
         _defaultMediaIndex = 0;
       } else if (index == _defaultMediaIndex) {

@@ -160,6 +160,7 @@ class _ProductThumbState extends ConsumerState<ProductThumb> {
             : _bytes == null
             ? placeholder(AppIcons.photo)
             : FutureBuilder<Uint8List>(
+                key: ValueKey(scope),
                 future: _bytes,
                 builder: (context, snap) => snap.hasData
                     ? Image.memory(
