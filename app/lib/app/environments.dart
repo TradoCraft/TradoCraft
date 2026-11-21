@@ -30,6 +30,7 @@ class AppEnvironment {
     required this.name,
     required this.kind,
     required this.serverUrl,
+    this.instanceId,
     this.devUser,
     this.accessToken,
     this.companyId,
@@ -39,6 +40,7 @@ class AppEnvironment {
   final String name;
   final EnvironmentKind kind;
   final String serverUrl;
+  final String? instanceId;
   final String? devUser;
   final String? accessToken;
   final String? companyId;
@@ -57,22 +59,27 @@ class AppEnvironment {
     name: name,
     kind: kind,
     serverUrl: s.serverUrl,
+    instanceId: instanceId,
     devUser: s.devUser,
     accessToken: s.accessToken,
     companyId: s.companyId,
   );
 
-  /// A copy with another name and/or kind.
-  AppEnvironment copyWith({String? name, EnvironmentKind? kind}) =>
-      AppEnvironment(
-        id: id,
-        name: name ?? this.name,
-        kind: kind ?? this.kind,
-        serverUrl: serverUrl,
-        devUser: devUser,
-        accessToken: accessToken,
-        companyId: companyId,
-      );
+  /// A copy with another name, kind, and/or instance id.
+  AppEnvironment copyWith({
+    String? name,
+    EnvironmentKind? kind,
+    String? instanceId,
+  }) => AppEnvironment(
+    id: id,
+    name: name ?? this.name,
+    kind: kind ?? this.kind,
+    serverUrl: serverUrl,
+    instanceId: instanceId ?? this.instanceId,
+    devUser: devUser,
+    accessToken: accessToken,
+    companyId: companyId,
+  );
 
   /// The stored form of this environment.
   Map<String, Object?> toJson() => {
@@ -80,6 +87,7 @@ class AppEnvironment {
     'name': name,
     'kind': kind.name,
     'url': serverUrl,
+    if (instanceId != null) 'instance_id': instanceId,
     'dev': devUser,
     'token': accessToken,
     'company': companyId,
@@ -94,6 +102,7 @@ class AppEnvironment {
       name: s('name') ?? hostOf(j['url'] as String),
       kind: EnvironmentKind.parse(j['kind']) ?? EnvironmentKind.live,
       serverUrl: j['url'] as String,
+      instanceId: s('instance_id'),
       devUser: s('dev'),
       accessToken: s('token'),
       companyId: s('company'),
@@ -204,12 +213,14 @@ class EnvironmentProbe {
     required this.kind,
     required this.dbName,
     required this.version,
+    this.instanceId = '',
   });
 
   final String name;
   final EnvironmentKind kind;
   final String dbName;
   final String version;
+  final String instanceId;
 }
 
 /// Asks the server at an address which environment it is. Needs no sign-in. Overridden in tests.
@@ -235,6 +246,7 @@ final environmentProbeProvider =
             kind: kind,
             dbName: '${d['db_name'] ?? ''}',
             version: '${d['version'] ?? ''}',
+            instanceId: '${d['instance_id'] ?? ''}',
           );
         } finally {
           dio.close();
@@ -343,7 +355,11 @@ class EnvironmentsNotifier extends Notifier<EnvironmentsState> {
         items: [
           for (final e in state.items)
             e.id == a.id
-                ? e.copyWith(name: rename ? info.name : null, kind: info.kind)
+                ? e.copyWith(
+                    name: rename ? info.name : null,
+                    kind: info.kind,
+                    instanceId: info.instanceId.isEmpty ? null : info.instanceId,
+                  )
                 : e,
         ],
       );

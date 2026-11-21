@@ -26,6 +26,7 @@ class TutorialScope {
     required this.envId,
     required this.kind,
     required this.who,
+    this.instanceId,
   });
 
   /// The environment's id.
@@ -37,21 +38,28 @@ class TutorialScope {
   /// The signed-in user (dev e-mail, or the company for a token), empty when signed out.
   final String who;
 
+  /// The database instance id from `/api/v1/meta/environment`, if known.
+  final String? instanceId;
+
   /// Whether a mission may run here (never on live data).
   bool get canRun => kind != EnvironmentKind.live;
 
-  /// The key in the device storage.
-  String get storageKey => 'tutorial.v1.$envId.$who';
+  /// The key in the device storage. Includes [instanceId] when known so resetting
+  /// the backend database automatically starts with fresh tutorial progress.
+  String get storageKey => instanceId != null && instanceId!.isNotEmpty
+      ? 'tutorial.v1.$envId.$instanceId.$who'
+      : 'tutorial.v1.$envId.$who';
 
   @override
   bool operator ==(Object other) =>
       other is TutorialScope &&
       other.envId == envId &&
       other.kind == kind &&
-      other.who == who;
+      other.who == who &&
+      other.instanceId == instanceId;
 
   @override
-  int get hashCode => Object.hash(envId, kind, who);
+  int get hashCode => Object.hash(envId, kind, who, instanceId);
 }
 
 /// The `sub` claim of a JWT access token (the stable user id), or null when [token] is not one.
@@ -80,7 +88,12 @@ final tutorialScopeProvider = Provider<TutorialScope>((ref) {
       : (s.accessToken?.isNotEmpty ?? false)
       ? 'token:${tokenSubject(s.accessToken!) ?? ''}:${s.companyId ?? ''}'
       : '';
-  return TutorialScope(envId: env.id, kind: env.kind, who: who);
+  return TutorialScope(
+    envId: env.id,
+    kind: env.kind,
+    who: who,
+    instanceId: env.instanceId,
+  );
 });
 
 /// The chapters; tests may override this.

@@ -219,6 +219,8 @@ pub struct EnvironmentInfo {
     pub db_name: String,
     /// Version of the API.
     pub version: String,
+    /// Unique ID of this database instance; changes when the database is dropped and recreated.
+    pub instance_id: String,
 }
 
 #[utoipa::path(get, path = "/meta/environment", tag = "core", security(()),
@@ -228,14 +230,17 @@ async fn get_environment(
     State(state): State<AppState>,
     Extension(config): Extension<EnvironmentConfig>,
 ) -> AppResult<Json<EnvironmentInfo>> {
-    let db_name: String = sqlx::query_scalar("SELECT current_database()")
-        .fetch_one(&state.db)
-        .await?;
+    let (db_name, instance_id): (String, String) = sqlx::query_as(
+        "SELECT current_database(), COALESCE((SELECT id::text FROM core.instance_meta LIMIT 1), '')",
+    )
+    .fetch_one(&state.db)
+    .await?;
     Ok(Json(EnvironmentInfo {
         name: config.name.clone().unwrap_or_else(|| db_name.clone()),
         kind: config.kind,
         db_name,
         version: env!("CARGO_PKG_VERSION").to_string(),
+        instance_id,
     }))
 }
 
