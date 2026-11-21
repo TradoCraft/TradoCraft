@@ -6370,6 +6370,21 @@ class AppLocalizationsNl extends AppLocalizations {
   String get tutAssistRunning => 'Stap wordt uitgevoerd en gecontroleerd…';
 
   @override
+  String get tutShowControl => 'Bediening tonen';
+
+  @override
+  String get tutShowInstructions => 'Instructies tonen';
+
+  @override
+  String get tutControlUnavailable =>
+      'De bediening is op dit scherm niet beschikbaar. Open het juiste onderdeel en probeer opnieuw.';
+
+  @override
+  String tutShortcutHelp(String keys) {
+    return 'Druk op $keys om de sneltoetsen voor dit scherm te zien.';
+  }
+
+  @override
   String get tutTakeMe => 'Breng me erheen';
 
   @override
@@ -8077,7 +8092,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get tutHelpdeskEscalateHint =>
-      'Druk op de knop Escaleren op het ticket; de reden is verplicht.';
+      'Scrol in de ticketdetails naar Acties en kies Escaleren. Open op een smal scherm eerst de ticketdetails. Een reden is verplicht.';
 
   @override
   String get tutHelpdeskTourTitle => 'Kant-en-klare antwoorden';

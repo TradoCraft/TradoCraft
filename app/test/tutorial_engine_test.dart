@@ -14,6 +14,8 @@ import 'package:tradocraft_app/features/tutorial/api_events.dart';
 import 'package:tradocraft_app/features/tutorial/chapter_map_page.dart';
 import 'package:tradocraft_app/features/tutorial/controller.dart';
 import 'package:tradocraft_app/features/tutorial/model.dart';
+import 'package:tradocraft_app/features/tutorial/missions_helpdesk.dart';
+import 'package:tradocraft_app/features/tutorial/simulated_mail.dart';
 import 'package:tradocraft_app/features/tutorial/overlay.dart';
 import 'package:tradocraft_app/features/tutorial/targets.dart';
 import 'package:tradocraft_app/l10n/app_localizations.dart';
@@ -483,6 +485,42 @@ void main() {
     });
   });
 
+  test('resuming recognizes a ticket escalated while paused', () async {
+    var escalated = false;
+    final c = boot(
+      missions: [helpdeskMission],
+      http: FakeHttp({
+        'GET /api/v1/tickets': (_) => {
+          'items': [
+            {'id': 't1', 'contact_email': tutorialCustomerMail},
+          ],
+        },
+        'GET /api/v1/tickets/t1': (_) => {
+          'ticket': {'escalated_at': escalated ? '2026-11-21T09:00:00Z' : null},
+        },
+        'POST /api/v1/tickets/t1/escalate': (_) {
+          escalated = true;
+          return {};
+        },
+      }),
+    );
+    final t = await started(c, 'helpdesk');
+    await pumpEventQueue();
+    expect(t.step?.id, 'note');
+    for (var i = 0; i < 3; i++) {
+      t.skipStep();
+    }
+    await pumpEventQueue();
+    expect(t.step?.id, 'escalate');
+    t.pause();
+    await c.read(dioProvider).post<void>('/api/v1/tickets/t1/escalate');
+    expect(t.step?.id, 'escalate');
+
+    await t.resume();
+    await pumpEventQueue();
+    expect(t.step?.id, 'tour');
+  });
+
   group('spotlight', () {
     test('the scrim has a rounded hole where the target is', () {
       const hole = Rect.fromLTWH(100, 80, 120, 40);
@@ -538,6 +576,29 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('the-button')));
       expect(_tapped, 1);
 
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('Show control leaves the target tappable and restores instructions', (
+      tester,
+    ) async {
+      final c = boot(missions: [spot]);
+      await tester.pumpWidget(_host(c, targets: true));
+      final t = c.read(tutorialProvider.notifier);
+      await tester.runAsync(() => t.ready);
+      await tester.runAsync(() => t.start('spot'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester.tap(find.byKey(const ValueKey('tutorial-show-control')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('tutorial-card')), findsNothing);
+      expect(find.byKey(const ValueKey('tutorial-scrim')), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('the-button')));
+      expect(_tapped, 1);
+      await tester.tap(find.byKey(const ValueKey('tutorial-show-instructions')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('tutorial-card')), findsOneWidget);
       await tester.pumpWidget(const SizedBox());
     });
 

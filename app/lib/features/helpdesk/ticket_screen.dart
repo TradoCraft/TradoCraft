@@ -8,6 +8,9 @@ import 'package:intl/intl.dart';
 
 import '../../app/api.dart';
 import '../../app/session.dart';
+import '../../app/shortcuts/actions.dart';
+import '../../app/shortcuts/key_hint.dart';
+import '../../app/shortcuts/registry.dart';
 import '../../app/workspace.dart' show TabScope;
 import '../../l10n/l10n.dart';
 import '../../shared/actions.dart';
@@ -1134,31 +1137,61 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
       d,
       perms,
     ).lockRecordEditing(_busy);
-    final panel = _panel(context, d, perms).lockRecordEditing(_busy);
-    return Scaffold(
-      body: wide
-          ? Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(child: conversation),
-                const VerticalDivider(width: 1),
-                SizedBox(
-                  width: 380,
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(16),
-                    child: panel,
+    final actions = _ticketActions(d, perms);
+    final panel = _panel(context, d, perms, actions).lockRecordEditing(_busy);
+    return ShortcutScope(
+      actions: actions.map(
+        (action, handler) => MapEntry(action, _busy ? null : handler),
+      ),
+      child: Scaffold(
+        body: wide
+            ? Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(child: conversation),
+                  const VerticalDivider(width: 1),
+                  SizedBox(
+                    width: 380,
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(16),
+                      child: panel,
+                    ),
                   ),
-                ),
-              ],
-            )
-          : ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                ExpansionTile(title: Text(l.ticketDetails), children: [panel]),
-                SizedBox(height: 900, child: conversation),
-              ],
-            ),
+                ],
+              )
+            : ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  ExpansionTile(
+                    title: TutorialTarget(
+                      id: 'ticket-details',
+                      child: Text(l.ticketDetails),
+                    ),
+                    children: [panel],
+                  ),
+                  SizedBox(height: 900, child: conversation),
+                ],
+              ),
+      ),
     );
+  }
+
+  Map<ShortcutAction, VoidCallback> _ticketActions(
+    TicketDetail d,
+    List<String> permissions,
+  ) {
+    if (!permissions.contains('helpdesk.write')) return const {};
+    final t = d.ticket;
+    return {
+      if (t.status != 'closed') ...{
+        ShortcutAction.ticketEscalate: _escalate,
+        ShortcutAction.ticketDelegate: _delegate,
+        if (t.customerId != null && t.mergedIntoId == null)
+          ShortcutAction.ticketMerge: _merge,
+      },
+      if (t.mergedIntoId == null && d.articles.length > 1)
+        ShortcutAction.ticketSplit: _split,
+    };
   }
 
   Widget _conversation(
@@ -1473,7 +1506,12 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
     );
   }
 
-  Widget _panel(BuildContext context, TicketDetail d, List<String> perms) {
+  Widget _panel(
+    BuildContext context,
+    TicketDetail d,
+    List<String> perms,
+    Map<ShortcutAction, VoidCallback> ticketActions,
+  ) {
     final l = context.l10n;
     final t = d.ticket;
     final theme = Theme.of(context);
@@ -1848,37 +1886,33 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
                         }
                       },
               ),
-            if (canWrite && t.status != 'closed') ...[
-              OutlinedButton.icon(
-                key: const ValueKey('escalate-ticket'),
-                icon: const Icon(AppIcons.trendingUp),
-                label: Text(l.collabEscalate),
-                onPressed: _busy ? null : _escalate,
+            for (final (action, key, icon) in [
+              (
+                ShortcutAction.ticketEscalate,
+                'escalate-ticket',
+                AppIcons.trendingUp,
               ),
-              OutlinedButton.icon(
-                key: const ValueKey('delegate-ticket'),
-                icon: const Icon(AppIcons.swapHoriz),
-                label: Text(l.collabDelegate),
-                onPressed: _busy ? null : _delegate,
+              (
+                ShortcutAction.ticketDelegate,
+                'delegate-ticket',
+                AppIcons.swapHoriz,
               ),
-            ],
-            if (canWrite &&
-                t.customerId != null &&
-                t.mergedIntoId == null &&
-                t.status != 'closed')
-              OutlinedButton.icon(
-                key: const ValueKey('merge-ticket'),
-                icon: const Icon(AppIcons.mergeType),
-                label: Text(l.mergeTicket),
-                onPressed: _busy ? null : _merge,
-              ),
-            if (canWrite && t.mergedIntoId == null && _d!.articles.length > 1)
-              OutlinedButton.icon(
-                key: const ValueKey('split-ticket'),
-                icon: const Icon(AppIcons.callSplit),
-                label: Text(l.splitTicket),
-                onPressed: _busy ? null : _split,
-              ),
+              (ShortcutAction.ticketMerge, 'merge-ticket', AppIcons.mergeType),
+              (ShortcutAction.ticketSplit, 'split-ticket', AppIcons.callSplit),
+            ])
+              if (ticketActions[action] case final handler?)
+                TutorialTarget(
+                  id: key,
+                  child: KeyHint(
+                    action: action,
+                    child: OutlinedButton.icon(
+                      key: ValueKey(key),
+                      icon: Icon(icon),
+                      label: Text(action.label(l)),
+                      onPressed: _busy ? null : handler,
+                    ),
+                  ),
+                ),
             for (final r in _repairs)
               ActionChip(
                 avatar: const Icon(AppIcons.buildCircle, size: 18),
