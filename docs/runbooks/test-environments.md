@@ -20,6 +20,7 @@ database from `drop`: `scripts/envctl register live_main --database tradocraft -
 scripts/tutorial-env up       # create (first time), start, print the address and the steps
 # in the app: login page > Environments > add the printed address; sign in as
 # admin@example.com; account menu > Tutorial > Start chapter 0
+scripts/tutorial-env update   # pull latest source (git pull --ff-only), rebuild API, restart (or up --update)
 scripts/tutorial-env reset    # replay from chapter 0 (drops and recreates; asks first, --yes skips)
 scripts/tutorial-env down     # stop the instance, keep the data (`up` starts it again)
 ```

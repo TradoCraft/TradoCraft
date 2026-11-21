@@ -6,6 +6,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 ENVCTL="$SCRIPT_DIR/envctl"
 DEFAULT_NAME=tutorial
 
@@ -16,11 +17,13 @@ usage() {
   cat <<'EOF2'
 tutorial-env: a clean environment with the demo data for the story-mission tutorial
 
-Usage: tutorial-env [--name NAME] [--yes] [--config FILE] [--dir DIR] [--database-url URL] <command>
+Usage: tutorial-env [--name NAME] [--yes] [--update] [--config FILE] [--dir DIR] [--database-url URL] <command>
 
 Commands:
   up        Create the environment (kind tutorial, demo data) if needed, start it, print how to
-            connect the app. Does nothing when it already runs.
+            connect the app. Does nothing when it already runs (unless --update is given).
+  update    Pull the latest source code (git pull --ff-only), recompile tradocraft-api, and
+            restart the environment (or create it if needed).
   reset     Stop, drop and recreate it with the demo data, to replay from chapter 0 (asks first;
             --yes skips the question). Only environments of kind tutorial or test.
   down      Stop the instance (the data is kept; `up` starts it again).
@@ -38,12 +41,14 @@ usage_error() { echo "tutorial-env: $*" >&2; usage >&2; exit 2; }
 
 NAME="$DEFAULT_NAME"
 YES=no
+UPDATE=no
 CMD=""
 FLAGS=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --name) [[ $# -ge 2 ]] || usage_error "--name needs a value"; NAME="$2"; shift 2 ;;
     --yes|-y) YES=yes; shift ;;
+    --update) UPDATE=yes; shift ;;
     --config|--dir|--database-url)
       [[ $# -ge 2 ]] || usage_error "$1 needs a value"
       FLAGS+=("$1" "$2"); shift 2 ;;
@@ -53,7 +58,7 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 [[ -n "$CMD" ]] || usage_error "a command is required"
-case "$CMD" in up|reset|down|status|address) ;; *) usage_error "unknown command $CMD" ;; esac
+case "$CMD" in up|update|reset|down|status|address) ;; *) usage_error "unknown command $CMD" ;; esac
 
 # Same rules as envctl (which validates again).
 [[ "$NAME" =~ ^[a-z][a-z0-9_]{0,39}$ ]] || die "unsafe name '$NAME': lower-case letters, digits and underscores, starting with a letter (max 40)"
@@ -62,11 +67,11 @@ case "$NAME" in postgres|template0|template1|live|default|all) die "name '$NAME'
 
 ectl() { "$ENVCTL" "${FLAGS[@]+"${FLAGS[@]}"}" "$@"; }
 
-# State of the named environment, read from envctl status: REG=yes|no, KIND, RUNNING=yes|no, URL.
-REG=no KIND="" RUNNING=no URL=""
+# State of the named environment, read from envctl status: REG=yes|no, KIND, RUNNING=yes|no, WORKER_RUNNING=yes|no, URL.
+REG=no KIND="" RUNNING=no WORKER_RUNNING=no URL=""
 load_state() {
   local out err_file rc=0
-  REG=no KIND="" RUNNING=no URL=""
+  REG=no KIND="" RUNNING=no WORKER_RUNNING=no URL=""
   err_file="$(mktemp)"
   out="$(ectl status "$NAME" 2>"$err_file")" || rc=$?
   if ((rc != 0)); then
@@ -77,6 +82,7 @@ load_state() {
   REG=yes
   KIND="$(sed -n 's/.* kind=\([^ ]*\).*/\1/p' <<<"$out")"
   [[ "$(sed -n 's/.* api=\([^ ]*\).*/\1/p' <<<"$out")" == running ]] && RUNNING=yes
+  [[ "$(sed -n 's/.* worker=\([^ ]*\).*/\1/p' <<<"$out")" == running ]] && WORKER_RUNNING=yes
   URL="$(sed -n 's/.* url=\([^ ]*\).*/\1/p' <<<"$out")"
   return 0
 }
@@ -113,6 +119,10 @@ print_howto() {
 create_env() { ectl create-empty "$NAME" --kind tutorial --seed; }
 
 cmd_up() {
+  if [[ "$UPDATE" == yes ]]; then
+    cmd_update
+    return
+  fi
   load_state
   if [[ "$REG" == no ]]; then
     create_env
@@ -127,6 +137,50 @@ cmd_up() {
   load_state
   if [[ "$RUNNING" != yes ]] || ! answers; then
     echo "Warning: '$NAME' is not running after the start attempt; see api.log under ENVCTL_DIR/envs/$NAME." >&2
+  fi
+  print_howto
+}
+
+cmd_update() {
+  command -v git >/dev/null || die "git is required for update"
+  load_state
+  [[ "$REG" == no ]] || check_kind
+  local had_worker="$WORKER_RUNNING"
+
+  info "pulling latest source code"
+  if git -C "$REPO_ROOT" rev-parse --abbrev-ref --symbolic-full-name '@{u}' >/dev/null 2>&1; then
+    git -C "$REPO_ROOT" pull --ff-only
+  else
+    git -C "$REPO_ROOT" pull --ff-only origin main
+  fi
+
+  # envctl's find_bin prefers target/release/tradocraft-api over target/debug/tradocraft-api;
+  # rebuild whichever profile envctl will execute.
+  if [[ -n "${ENVCTL_API_BIN:-}" ]]; then
+    info "ENVCTL_API_BIN is set ($ENVCTL_API_BIN); skipping cargo build"
+  elif [[ -x "$REPO_ROOT/target/release/tradocraft-api" ]]; then
+    command -v cargo >/dev/null || die "cargo is required to recompile tradocraft-api"
+    info "recompiling tradocraft-api (release)"
+    cargo build --release --manifest-path "$REPO_ROOT/Cargo.toml" -p tradocraft-api
+  else
+    command -v cargo >/dev/null || die "cargo is required to recompile tradocraft-api"
+    info "recompiling tradocraft-api (debug)"
+    cargo build --manifest-path "$REPO_ROOT/Cargo.toml" -p tradocraft-api
+  fi
+
+  if [[ "$REG" == no ]]; then
+    create_env
+  else
+    ectl stop "$NAME"
+    if [[ "$had_worker" == yes ]]; then
+      ectl start "$NAME" --worker
+    else
+      ectl start "$NAME"
+    fi
+  fi
+  load_state
+  if [[ "$RUNNING" != yes ]] || ! answers; then
+    echo "Warning: '$NAME' is not running after the update attempt; see api.log under ENVCTL_DIR/envs/$NAME." >&2
   fi
   print_howto
 }
@@ -181,6 +235,7 @@ cmd_address() {
 
 case "$CMD" in
   up) cmd_up ;;
+  update) cmd_update ;;
   reset) cmd_reset ;;
   down) cmd_down ;;
   status) cmd_status ;;
