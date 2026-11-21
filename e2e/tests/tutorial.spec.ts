@@ -61,7 +61,9 @@ test('the whole tutorial, chapter by chapter', async ({ page, request }) => {
     await expectStep(page, 'welcome', 'menu');
     await next(page);
     await expectStep(page, 'welcome', 'products');
-    await railTo(page, 'Products');
+    await expect(page.getByText('Menu path · Switch application › Master data › Products')).toBeVisible();
+    await takeMeThere(page);
+    await expect(page.getByText('Tutorial shortcut · Switch application › Master data › Products')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Start next chapter' })).toBeVisible();
     await page.getByRole('button', { name: 'Start next chapter' }).click();
   });
@@ -75,6 +77,10 @@ test('the whole tutorial, chapter by chapter', async ({ page, request }) => {
     await expect(page.getByRole('alertdialog')).toBeHidden();
     await expectStep(page, 'product', 'motor');
     await page.getByRole('button', { name: 'Do this step for me' }).click();
+    await expect(page.getByText('1. New product', { exact: true })).toBeVisible();
+    await expect(page.getByText('2. Code, Name, Type', { exact: true })).toBeVisible();
+    await expect(page.getByText('3. Save', { exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Run this step' }).click();
     await expectStep(page, 'product', 'frame');
     const motorSearch = await request.get(`${api}/products`, {
       headers,

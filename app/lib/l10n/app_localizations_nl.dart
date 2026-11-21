@@ -6347,6 +6347,29 @@ class AppLocalizationsNl extends AppLocalizations {
   String get tutPaused => 'Tutorial gepauzeerd';
 
   @override
+  String tutMenuPath(String path) {
+    return 'Menupad · $path';
+  }
+
+  @override
+  String tutShortcut(String path) {
+    return 'Snelkoppeling van de rondleiding · $path';
+  }
+
+  @override
+  String get tutAssistManual => 'Zo voer je deze stap uit';
+
+  @override
+  String get tutAssistConfirm =>
+      'De rondleiding voert deze wijzigingen voor je uit en controleert het resultaat.';
+
+  @override
+  String get tutAssistRun => 'Stap uitvoeren';
+
+  @override
+  String get tutAssistRunning => 'Stap wordt uitgevoerd en gecontroleerd…';
+
+  @override
   String get tutTakeMe => 'Breng me erheen';
 
   @override
@@ -6454,7 +6477,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get tutWelcomeTabsBody =>
-      'De secties staan links (of in de balk onderaan op een telefoon). Een record openen, zoals een product of offerte, voegt een tabblad toe aan de werkruimte, zodat je meerdere records open kunt houden en erop kunt terugkomen.';
+      'Kies een categorie via Van toepassing wisselen. De modules verschijnen links, of onderaan op een telefoon. Als je een record opent, zoals een product of offerte, verschijnt het in een werkruimtetabblad.';
 
   @override
   String get tutWelcomeControlsTitle => 'Deze kaart';

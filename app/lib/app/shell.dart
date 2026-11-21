@@ -196,6 +196,18 @@ final _allDestinations = [
   ),
 ];
 
+/// Returns the category and module labels used by the app switcher and rail.
+List<String> moduleMenuPath(AppLocalizations l, String location) {
+  final path = Uri.parse(location).path;
+  final destination = _allDestinations.where((d) => d.matches(path)).firstOrNull;
+  if (destination == null) return const [];
+  final group = groupOfPath(destination.path);
+  return [
+    if (group != null) ...[l.appSwitcherTooltip, group.label(l)],
+    destination.label(l),
+  ];
+}
+
 /// Navigation frame: a side rail on desktop/tablet, a bottom bar on phones.
 class AppShell extends ConsumerWidget {
   const AppShell({super.key, required this.location, required this.child});

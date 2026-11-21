@@ -6328,6 +6328,29 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tutPaused => 'Tutorial paused';
 
   @override
+  String tutMenuPath(String path) {
+    return 'Menu path · $path';
+  }
+
+  @override
+  String tutShortcut(String path) {
+    return 'Tutorial shortcut · $path';
+  }
+
+  @override
+  String get tutAssistManual => 'How to do this step';
+
+  @override
+  String get tutAssistConfirm =>
+      'The tutorial will apply these changes for you and verify the result.';
+
+  @override
+  String get tutAssistRun => 'Run this step';
+
+  @override
+  String get tutAssistRunning => 'Applying and checking this step…';
+
+  @override
   String get tutTakeMe => 'Take me there';
 
   @override
@@ -6435,7 +6458,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tutWelcomeTabsBody =>
-      'The sections are on the left (or in the bottom bar on a phone). Opening a record, such as a product or a quotation, adds a tab to the workspace, so you can keep several records open and come back to them.';
+      'Use Switch application to pick a category. Its modules appear on the left, or in the bottom bar on a phone. Opening a record, such as a product or quotation, adds a workspace tab so you can keep several records open.';
 
   @override
   String get tutWelcomeControlsTitle => 'This card';

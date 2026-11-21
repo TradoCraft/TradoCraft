@@ -212,9 +212,10 @@ final productMission = Mission(
       route: '/products/{cartId}',
       completion: OnRoute('/products/{cartId}'),
     ),
-    const MissionStep(id: 'bomTab'),
+    const MissionStep(id: 'bomTab', route: '/products/{cartId}'),
     MissionStep(
       id: 'revision',
+      route: '/products/{cartId}',
       targets: const ['bom-new-revision'],
       completion: const OnApi('POST', '/products/{cartId}/boms'),
       capture: (json) => json is Map ? {'bomId': '${json['id']}'} : const {},
@@ -248,6 +249,7 @@ final productMission = Mission(
     ),
     MissionStep(
       id: 'lines',
+      route: '/products/{cartId}',
       hasHint: true,
       targets: const ['bom-add-component'],
       completion: const OnApi('PUT', '/boms/{bomId}', predicate: _bomHasLines),
@@ -256,6 +258,7 @@ final productMission = Mission(
     ),
     MissionStep(
       id: 'activate',
+      route: '/products/{cartId}',
       targets: const ['bom-activate'],
       completion: const OnApi('POST', '/boms/{bomId}/activate'),
       probe: Probe(

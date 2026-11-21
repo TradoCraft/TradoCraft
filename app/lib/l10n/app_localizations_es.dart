@@ -6345,6 +6345,29 @@ class AppLocalizationsEs extends AppLocalizations {
   String get tutPaused => 'Tutorial en pausa';
 
   @override
+  String tutMenuPath(String path) {
+    return 'Ruta del menú · $path';
+  }
+
+  @override
+  String tutShortcut(String path) {
+    return 'Atajo del tutorial · $path';
+  }
+
+  @override
+  String get tutAssistManual => 'Cómo realizar este paso';
+
+  @override
+  String get tutAssistConfirm =>
+      'El tutorial aplicará estos cambios y comprobará el resultado.';
+
+  @override
+  String get tutAssistRun => 'Ejecutar este paso';
+
+  @override
+  String get tutAssistRunning => 'Ejecutando y comprobando el paso…';
+
+  @override
   String get tutTakeMe => 'Llévame allí';
 
   @override
@@ -6452,7 +6475,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get tutWelcomeTabsBody =>
-      'Las secciones están a la izquierda (o en la barra inferior en un teléfono). Al abrir un registro, como un producto o un presupuesto, se añade una pestaña al espacio de trabajo, así puedes mantener varios registros abiertos.';
+      'Usa Cambiar de aplicación para elegir una categoría. Sus módulos aparecen a la izquierda o en la barra inferior del teléfono. Al abrir un registro, como un producto o un presupuesto, se añade una pestaña al espacio de trabajo.';
 
   @override
   String get tutWelcomeControlsTitle => 'Esta tarjeta';

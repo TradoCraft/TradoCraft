@@ -6364,6 +6364,29 @@ class AppLocalizationsDe extends AppLocalizations {
   String get tutPaused => 'Tutorial pausiert';
 
   @override
+  String tutMenuPath(String path) {
+    return 'Menüpfad · $path';
+  }
+
+  @override
+  String tutShortcut(String path) {
+    return 'Tutorial-Verknüpfung · $path';
+  }
+
+  @override
+  String get tutAssistManual => 'So führen Sie diesen Schritt aus';
+
+  @override
+  String get tutAssistConfirm =>
+      'Das Tutorial nimmt diese Änderungen für Sie vor und prüft das Ergebnis.';
+
+  @override
+  String get tutAssistRun => 'Schritt ausführen';
+
+  @override
+  String get tutAssistRunning => 'Der Schritt wird ausgeführt und geprüft…';
+
+  @override
   String get tutTakeMe => 'Dorthin gehen';
 
   @override
@@ -6471,7 +6494,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get tutWelcomeTabsBody =>
-      'Die Bereiche stehen links (auf dem Telefon in der unteren Leiste). Wenn Sie einen Datensatz öffnen, etwa ein Produkt oder ein Angebot, kommt ein Tab im Arbeitsbereich hinzu, so können Sie mehrere Datensätze offen halten.';
+      'Wählen Sie über Anwendung wechseln eine Kategorie. Ihre Module erscheinen links oder auf einem Telefon in der unteren Leiste. Ein geöffneter Datensatz, etwa ein Produkt oder ein Angebot, erscheint als Tab im Arbeitsbereich.';
 
   @override
   String get tutWelcomeControlsTitle => 'Diese Karte';
