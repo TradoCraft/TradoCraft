@@ -649,8 +649,10 @@ class NarratorCard extends ConsumerWidget {
                                   ),
                                   const SizedBox(width: 8),
                                 ],
-                                Text(
-                                  tutorialText(l, stepKey(m, step, 'Action')),
+                                Flexible(
+                                  child: Text(
+                                    tutorialText(l, stepKey(m, step, 'Action')),
+                                  ),
                                 ),
                               ],
                             ),
@@ -674,7 +676,7 @@ class NarratorCard extends ConsumerWidget {
                                   ),
                                   const SizedBox(width: 8),
                                 ],
-                                Text(l.tutAssist),
+                                Flexible(child: Text(l.tutAssist)),
                               ],
                             ),
                           ),
