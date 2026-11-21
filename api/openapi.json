@@ -5442,6 +5442,101 @@
         }
       }
     },
+    "/api/v1/customers/mail-merge": {
+      "get": {
+        "tags": [
+          "crm"
+        ],
+        "operationId": "get_mail_merge_draft",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MailMergePreview"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "crm"
+        ],
+        "operationId": "save_mail_merge_draft",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MailMergeDraft"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MailMergePreview"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/customers/mail-merge/history": {
+      "get": {
+        "tags": [
+          "crm"
+        ],
+        "operationId": "mail_merge_history",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MailingDelivery"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/customers/mail-merge/{approval_id}/confirm": {
+      "post": {
+        "tags": [
+          "crm"
+        ],
+        "operationId": "confirm_mail_merge",
+        "parameters": [
+          {
+            "name": "approval_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/v1/customers/vat-check": {
       "get": {
         "tags": [
@@ -13885,6 +13980,218 @@
                   "$ref": "#/components/schemas/ErrorBody"
                 }
               }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/kb/documents": {
+      "get": {
+        "tags": [
+          "kb"
+        ],
+        "operationId": "list_kb_documents",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Document"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "kb"
+        ],
+        "operationId": "create_kb_document",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DocumentInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Document"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/kb/documents/{id}": {
+      "get": {
+        "tags": [
+          "kb"
+        ],
+        "operationId": "get_kb_document",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/kb/documents/{id}/draft/{language}": {
+      "put": {
+        "tags": [
+          "kb"
+        ],
+        "operationId": "upload_kb_document_pdf",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "language",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filename",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Raw PDF bytes",
+          "content": {
+            "application/pdf": {
+              "schema": {}
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/v1/kb/documents/{id}/publish": {
+      "post": {
+        "tags": [
+          "kb"
+        ],
+        "operationId": "publish_kb_document",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/v1/kb/documents/{id}/revisions/{revision}/{language}": {
+      "get": {
+        "tags": [
+          "kb"
+        ],
+        "operationId": "download_kb_document_pdf",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "language",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/pdf": {}
             }
           }
         }
@@ -38924,6 +39231,85 @@
           }
         }
       },
+      "Document": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "kind",
+          "keywords",
+          "product_codes"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "keywords": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "kind": {
+            "type": "string"
+          },
+          "product_codes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "title": {
+            "type": "string"
+          }
+        }
+      },
+      "DocumentDetail": {
+        "type": "object",
+        "required": [
+          "document",
+          "pdfs"
+        ],
+        "properties": {
+          "document": {
+            "$ref": "#/components/schemas/Document"
+          },
+          "pdfs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Pdf"
+            }
+          }
+        }
+      },
+      "DocumentInput": {
+        "type": "object",
+        "required": [
+          "title",
+          "kind"
+        ],
+        "properties": {
+          "keywords": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "kind": {
+            "type": "string"
+          },
+          "product_codes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "title": {
+            "type": "string"
+          }
+        }
+      },
       "DoneInput": {
         "type": "object",
         "required": [
@@ -42546,6 +42932,28 @@
           }
         }
       },
+      "LibraryPdf": {
+        "type": "object",
+        "description": "The exact published library variant selected by the agent.",
+        "required": [
+          "document_id",
+          "revision",
+          "language"
+        ],
+        "properties": {
+          "document_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "language": {
+            "type": "string"
+          },
+          "revision": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "Line": {
         "type": "object",
         "required": [
@@ -43067,6 +43475,188 @@
           }
         }
       },
+      "MailMergeContact": {
+        "type": "object",
+        "required": [
+          "customer_id",
+          "id",
+          "name"
+        ],
+        "properties": {
+          "customer_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "language": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "MailMergeDraft": {
+        "type": "object",
+        "required": [
+          "document_id",
+          "revision",
+          "messages"
+        ],
+        "properties": {
+          "document_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "messages": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/MailMergeMessage"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "recipients": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "propertyNames": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "revision": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "MailMergeMessage": {
+        "type": "object",
+        "required": [
+          "subject",
+          "body"
+        ],
+        "properties": {
+          "body": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string"
+          }
+        }
+      },
+      "MailMergePreview": {
+        "type": "object",
+        "required": [
+          "audience"
+        ],
+        "properties": {
+          "approval_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "audience": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MailMergeRecipient"
+            }
+          },
+          "draft": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MailMergeDraft"
+              }
+            ]
+          }
+        }
+      },
+      "MailMergeRecipient": {
+        "type": "object",
+        "required": [
+          "customer_id",
+          "customer_name",
+          "contacts",
+          "language",
+          "issues"
+        ],
+        "properties": {
+          "body": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "contact_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "contacts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MailMergeContact"
+            }
+          },
+          "customer_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "customer_name": {
+            "type": "string"
+          },
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "language": {
+            "type": "string"
+          },
+          "pdf": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "subject": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
       "Mailbox": {
         "type": "object",
         "required": [
@@ -43307,6 +43897,67 @@
               "string",
               "null"
             ]
+          }
+        }
+      },
+      "MailingDelivery": {
+        "type": "object",
+        "required": [
+          "mailing_id",
+          "document_id",
+          "document_title",
+          "revision",
+          "confirmed_at",
+          "customer_name",
+          "language",
+          "email",
+          "subject",
+          "pdf",
+          "delivery"
+        ],
+        "properties": {
+          "confirmed_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "customer_name": {
+            "type": "string"
+          },
+          "delivery": {
+            "type": "string"
+          },
+          "delivery_error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "document_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "document_title": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "language": {
+            "type": "string"
+          },
+          "mailing_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "pdf": {
+            "type": "string"
+          },
+          "revision": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "subject": {
+            "type": "string"
           }
         }
       },
@@ -45868,6 +46519,30 @@
               "null"
             ],
             "description": "Defaults to the product's unit, or `pcs`."
+          }
+        }
+      },
+      "Pdf": {
+        "type": "object",
+        "required": [
+          "revision",
+          "published",
+          "language",
+          "filename"
+        ],
+        "properties": {
+          "filename": {
+            "type": "string"
+          },
+          "language": {
+            "type": "string"
+          },
+          "published": {
+            "type": "boolean"
+          },
+          "revision": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
@@ -51848,6 +52523,13 @@
             "items": {
               "type": "string"
             }
+          },
+          "library_pdfs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LibraryPdf"
+            },
+            "description": "Published document variants to attach without uploading a second copy."
           },
           "status": {
             "type": [

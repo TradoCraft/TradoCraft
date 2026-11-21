@@ -257,3 +257,76 @@ pub fn router() -> OpenApiRouter<AppState> {
             .layer(DefaultBodyLimit::max(MAX_FILE_BYTES + 64 * 1024)),
     )
 }
+
+/// The exact published library variant selected by the agent.
+#[derive(Debug, Deserialize, utoipa::ToSchema, PartialEq, Eq, Hash)]
+pub struct LibraryPdf {
+    pub document_id: Uuid,
+    pub revision: i32,
+    pub language: String,
+}
+
+pub(crate) fn check_reply_limit(ids: &[Uuid], library: &[LibraryPdf]) -> AppResult<()> {
+    use std::collections::HashSet;
+    let uploads = ids.iter().collect::<HashSet<_>>();
+    if uploads.len() + library.len() > MAX_PER_ARTICLE {
+        return Err(AppError::Validation(format!(
+            "at most {MAX_PER_ARTICLE} files per message"
+        )));
+    }
+    if library.iter().collect::<HashSet<_>>().len() != library.len() {
+        return Err(AppError::Validation(
+            "duplicate library PDF in the reply".into(),
+        ));
+    }
+    Ok(())
+}
+
+/// Creates a ticket attachment identity with its own filename metadata, sharing the immutable
+/// blob. The normal article and worker paths can read it without needing library permissions.
+pub(crate) async fn link_library_pdfs(
+    conn: &mut PgConnection,
+    user: &CurrentUser,
+    ticket_id: Uuid,
+    article_id: Uuid,
+    variants: &[LibraryPdf],
+) -> AppResult<()> {
+    if variants.is_empty() {
+        return Ok(());
+    }
+    user.require(Permission::KbRead)?;
+    for variant in variants {
+        let result = sqlx::query(
+            "WITH attachment_file AS (
+                INSERT INTO core.files (id, company_id, filename, content_type, size_bytes,
+                                        uploaded_by, uploader_name, storage_key)
+                SELECT $1, f.company_id, f.filename, f.content_type, f.size_bytes, $6, $7, f.storage_key
+                FROM kb.document_pdfs p
+                JOIN kb.document_revisions r USING (document_id, revision)
+                JOIN kb.documents d ON d.id = p.document_id
+                JOIN core.files f ON f.id = p.file_id AND f.company_id = d.company_id
+                WHERE d.company_id = $2 AND p.document_id = $3 AND p.revision = $4
+                  AND p.language = $5 AND r.published_at IS NOT NULL AND f.content_type = 'application/pdf'
+                RETURNING id
+            )
+            INSERT INTO helpdesk.ticket_attachments
+                (file_id, ticket_id, article_id, document_id, document_revision, document_language)
+            SELECT id, $8, $9, $3, $4, $5 FROM attachment_file",
+        )
+        .bind(tradocraft_core::new_id())
+        .bind(user.company_id)
+        .bind(variant.document_id)
+        .bind(variant.revision)
+        .bind(&variant.language)
+        .bind(user.user_id)
+        .bind(&user.display_name)
+        .bind(ticket_id)
+        .bind(article_id)
+        .execute(&mut *conn)
+        .await?;
+        if result.rows_affected() == 0 {
+            return Err(AppError::NotFound("published document PDF"));
+        }
+    }
+    Ok(())
+}

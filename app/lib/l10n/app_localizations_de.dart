@@ -11036,4 +11036,113 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get ticketsBoardClose => 'Ticket schließen';
+
+  @override
+  String get documentLibrary => 'Dokumente';
+
+  @override
+  String get documentNew => 'Neues Dokument';
+
+  @override
+  String get documentTitle => 'Dokumenttitel';
+
+  @override
+  String get documentMemo => 'Technische Mitteilung';
+
+  @override
+  String get documentPresentation => 'Produktpräsentation';
+
+  @override
+  String get documentKeywords => 'Schlagwörter (durch Kommas getrennt)';
+
+  @override
+  String get documentProductCodes => 'Produktcodes (durch Kommas getrennt)';
+
+  @override
+  String get documentUpload => 'PDF hochladen';
+
+  @override
+  String get documentPublish => 'Revision veröffentlichen';
+
+  @override
+  String documentRevision(int revision) {
+    return 'Revision $revision';
+  }
+
+  @override
+  String get documentDraft => 'Entwurf';
+
+  @override
+  String get documentDownload => 'PDF herunterladen';
+
+  @override
+  String get documentPreview => 'PDF-Vorschau';
+
+  @override
+  String get attachFromDocuments => 'Aus Dokumenten anhängen';
+
+  @override
+  String get noLibraryPdfs => 'Keine veröffentlichten PDFs gefunden.';
+
+  @override
+  String get libraryLanguageUnavailable =>
+      'Kein PDF in der Ticketsprache. Wählen Sie eine verfügbare Sprache.';
+
+  @override
+  String get mailMerge => 'Serienmail';
+
+  @override
+  String get mergeRevision => 'Veröffentlichte Revision';
+
+  @override
+  String get mergeSavePreview => 'Speichern und Vorschau';
+
+  @override
+  String get mergePreviewStale =>
+      'Speichern Sie, um die Vorschau zu aktualisieren.';
+
+  @override
+  String get mergeAudience => 'Empfängervorschau';
+
+  @override
+  String get mergeSelectContact => 'Kontakt auswählen';
+
+  @override
+  String get mergeMissingAddress => 'E-Mail-Adresse fehlt';
+
+  @override
+  String get mergeMissingTranslation =>
+      'Übersetzung von Betreff oder Nachricht fehlt';
+
+  @override
+  String get mergeMissingPdf => 'PDF in dieser Sprache fehlt';
+
+  @override
+  String get mergeDuplicateAddress => 'Doppelte E-Mail-Adresse';
+
+  @override
+  String get mergeConfirm => 'Serienmail bestätigen';
+
+  @override
+  String mergeConfirmBody(int count) {
+    return 'Für jeden der $count geeigneten Empfänger in dieser Vorschau eine E-Mail einreihen?';
+  }
+
+  @override
+  String get mergeQueue => 'Serienmail einreihen';
+
+  @override
+  String get mergeHistory => 'Versandverlauf';
+
+  @override
+  String get mergeRefresh => 'Status aktualisieren';
+
+  @override
+  String get mergeQueued => 'In Warteschlange';
+
+  @override
+  String get mergeSent => 'Gesendet';
+
+  @override
+  String get mergeFailed => 'Fehlgeschlagen';
 }

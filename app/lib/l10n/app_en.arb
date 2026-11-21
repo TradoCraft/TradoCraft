@@ -4950,5 +4950,53 @@
   "ticketsBoardCloseTitle": "Close this ticket?",
   "ticketsBoardCloseBody": "Closing {number} can send the customer a satisfaction survey, which cannot be taken back.",
   "@ticketsBoardCloseBody": {"placeholders": {"number": {"type": "String"}}},
-  "ticketsBoardClose": "Close ticket"
+  "ticketsBoardClose": "Close ticket",
+  "documentLibrary": "Documents",
+  "documentNew": "New document",
+  "documentTitle": "Document title",
+  "documentMemo": "Technical memo",
+  "documentPresentation": "Product presentation",
+  "documentKeywords": "Keywords (comma separated)",
+  "documentProductCodes": "Product codes (comma separated)",
+  "documentUpload": "Upload PDF",
+  "documentPublish": "Publish revision",
+  "documentRevision": "Revision {revision}",
+  "documentDraft": "Draft",
+  "documentDownload": "Download PDF",
+  "@documentRevision": {
+    "placeholders": {
+      "revision": {
+        "type": "int"
+      }
+    }
+  },
+  "documentPreview": "Preview PDF",
+  "attachFromDocuments": "Attach from Documents",
+  "noLibraryPdfs": "No published PDFs found.",
+  "libraryLanguageUnavailable": "No PDF in the ticket language. Choose an available language.",
+  "mailMerge": "Mail merge",
+  "mergeRevision": "Published revision",
+  "mergeSavePreview": "Save and preview",
+  "mergePreviewStale": "Save to refresh the preview.",
+  "mergeAudience": "Audience preview",
+  "mergeSelectContact": "Select a contact",
+  "mergeMissingAddress": "Missing email address",
+  "mergeMissingTranslation": "Missing subject or message translation",
+  "mergeMissingPdf": "Missing PDF in this language",
+  "mergeDuplicateAddress": "Duplicate email address",
+  "mergeConfirm": "Confirm mailing",
+  "mergeConfirmBody": "Queue one email for each of the {count} eligible recipients in this preview?",
+  "mergeQueue": "Queue mailing",
+  "mergeHistory": "Delivery history",
+  "mergeRefresh": "Refresh status",
+  "mergeQueued": "Queued",
+  "mergeSent": "Sent",
+  "mergeFailed": "Failed",
+  "@mergeConfirmBody": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

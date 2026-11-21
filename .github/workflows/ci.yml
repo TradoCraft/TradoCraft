@@ -112,7 +112,7 @@ jobs:
         run: |
           curl -sSL "https://github.com/typst/typst/releases/download/v${TYPST_VERSION}/typst-x86_64-unknown-linux-musl.tar.xz" | tar -xJ
           sudo mv typst-x86_64-unknown-linux-musl/typst /usr/local/bin/
-      - run: cargo build -p tradocraft-api
+      - run: cargo build -p tradocraft-api -p tradocraft-worker
       - name: Build the web app
         working-directory: app
         run: |

@@ -40,6 +40,7 @@ pub enum AuthConfig {
 pub enum Permission {
     CustomersRead,
     CustomersWrite,
+    MailMergeSend,
     ProductsRead,
     ProductsWrite,
     PricesWrite,
@@ -188,9 +189,10 @@ pub enum Permission {
 }
 
 impl Permission {
-    pub const ALL: [Permission; 76] = [
+    pub const ALL: [Permission; 77] = [
         Permission::CustomersRead,
         Permission::CustomersWrite,
+        Permission::MailMergeSend,
         Permission::ProductsRead,
         Permission::ProductsWrite,
         Permission::PricesWrite,
@@ -271,6 +273,7 @@ impl Permission {
         match self {
             Permission::CustomersRead => "customers.read",
             Permission::CustomersWrite => "customers.write",
+            Permission::MailMergeSend => "mail_merge.send",
             Permission::ProductsRead => "products.read",
             Permission::ProductsWrite => "products.write",
             Permission::PricesWrite => "prices.write",

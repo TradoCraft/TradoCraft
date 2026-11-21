@@ -19349,6 +19349,210 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Close ticket'**
   String get ticketsBoardClose;
+
+  /// No description provided for @documentLibrary.
+  ///
+  /// In en, this message translates to:
+  /// **'Documents'**
+  String get documentLibrary;
+
+  /// No description provided for @documentNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New document'**
+  String get documentNew;
+
+  /// No description provided for @documentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Document title'**
+  String get documentTitle;
+
+  /// No description provided for @documentMemo.
+  ///
+  /// In en, this message translates to:
+  /// **'Technical memo'**
+  String get documentMemo;
+
+  /// No description provided for @documentPresentation.
+  ///
+  /// In en, this message translates to:
+  /// **'Product presentation'**
+  String get documentPresentation;
+
+  /// No description provided for @documentKeywords.
+  ///
+  /// In en, this message translates to:
+  /// **'Keywords (comma separated)'**
+  String get documentKeywords;
+
+  /// No description provided for @documentProductCodes.
+  ///
+  /// In en, this message translates to:
+  /// **'Product codes (comma separated)'**
+  String get documentProductCodes;
+
+  /// No description provided for @documentUpload.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload PDF'**
+  String get documentUpload;
+
+  /// No description provided for @documentPublish.
+  ///
+  /// In en, this message translates to:
+  /// **'Publish revision'**
+  String get documentPublish;
+
+  /// No description provided for @documentRevision.
+  ///
+  /// In en, this message translates to:
+  /// **'Revision {revision}'**
+  String documentRevision(int revision);
+
+  /// No description provided for @documentDraft.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft'**
+  String get documentDraft;
+
+  /// No description provided for @documentDownload.
+  ///
+  /// In en, this message translates to:
+  /// **'Download PDF'**
+  String get documentDownload;
+
+  /// No description provided for @documentPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview PDF'**
+  String get documentPreview;
+
+  /// No description provided for @attachFromDocuments.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach from Documents'**
+  String get attachFromDocuments;
+
+  /// No description provided for @noLibraryPdfs.
+  ///
+  /// In en, this message translates to:
+  /// **'No published PDFs found.'**
+  String get noLibraryPdfs;
+
+  /// No description provided for @libraryLanguageUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No PDF in the ticket language. Choose an available language.'**
+  String get libraryLanguageUnavailable;
+
+  /// No description provided for @mailMerge.
+  ///
+  /// In en, this message translates to:
+  /// **'Mail merge'**
+  String get mailMerge;
+
+  /// No description provided for @mergeRevision.
+  ///
+  /// In en, this message translates to:
+  /// **'Published revision'**
+  String get mergeRevision;
+
+  /// No description provided for @mergeSavePreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Save and preview'**
+  String get mergeSavePreview;
+
+  /// No description provided for @mergePreviewStale.
+  ///
+  /// In en, this message translates to:
+  /// **'Save to refresh the preview.'**
+  String get mergePreviewStale;
+
+  /// No description provided for @mergeAudience.
+  ///
+  /// In en, this message translates to:
+  /// **'Audience preview'**
+  String get mergeAudience;
+
+  /// No description provided for @mergeSelectContact.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a contact'**
+  String get mergeSelectContact;
+
+  /// No description provided for @mergeMissingAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Missing email address'**
+  String get mergeMissingAddress;
+
+  /// No description provided for @mergeMissingTranslation.
+  ///
+  /// In en, this message translates to:
+  /// **'Missing subject or message translation'**
+  String get mergeMissingTranslation;
+
+  /// No description provided for @mergeMissingPdf.
+  ///
+  /// In en, this message translates to:
+  /// **'Missing PDF in this language'**
+  String get mergeMissingPdf;
+
+  /// No description provided for @mergeDuplicateAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate email address'**
+  String get mergeDuplicateAddress;
+
+  /// No description provided for @mergeConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm mailing'**
+  String get mergeConfirm;
+
+  /// No description provided for @mergeConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Queue one email for each of the {count} eligible recipients in this preview?'**
+  String mergeConfirmBody(int count);
+
+  /// No description provided for @mergeQueue.
+  ///
+  /// In en, this message translates to:
+  /// **'Queue mailing'**
+  String get mergeQueue;
+
+  /// No description provided for @mergeHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery history'**
+  String get mergeHistory;
+
+  /// No description provided for @mergeRefresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh status'**
+  String get mergeRefresh;
+
+  /// No description provided for @mergeQueued.
+  ///
+  /// In en, this message translates to:
+  /// **'Queued'**
+  String get mergeQueued;
+
+  /// No description provided for @mergeSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent'**
+  String get mergeSent;
+
+  /// No description provided for @mergeFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get mergeFailed;
 }
 
 class _AppLocalizationsDelegate

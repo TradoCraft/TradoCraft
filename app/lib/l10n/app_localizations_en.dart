@@ -10958,4 +10958,112 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ticketsBoardClose => 'Close ticket';
+
+  @override
+  String get documentLibrary => 'Documents';
+
+  @override
+  String get documentNew => 'New document';
+
+  @override
+  String get documentTitle => 'Document title';
+
+  @override
+  String get documentMemo => 'Technical memo';
+
+  @override
+  String get documentPresentation => 'Product presentation';
+
+  @override
+  String get documentKeywords => 'Keywords (comma separated)';
+
+  @override
+  String get documentProductCodes => 'Product codes (comma separated)';
+
+  @override
+  String get documentUpload => 'Upload PDF';
+
+  @override
+  String get documentPublish => 'Publish revision';
+
+  @override
+  String documentRevision(int revision) {
+    return 'Revision $revision';
+  }
+
+  @override
+  String get documentDraft => 'Draft';
+
+  @override
+  String get documentDownload => 'Download PDF';
+
+  @override
+  String get documentPreview => 'Preview PDF';
+
+  @override
+  String get attachFromDocuments => 'Attach from Documents';
+
+  @override
+  String get noLibraryPdfs => 'No published PDFs found.';
+
+  @override
+  String get libraryLanguageUnavailable =>
+      'No PDF in the ticket language. Choose an available language.';
+
+  @override
+  String get mailMerge => 'Mail merge';
+
+  @override
+  String get mergeRevision => 'Published revision';
+
+  @override
+  String get mergeSavePreview => 'Save and preview';
+
+  @override
+  String get mergePreviewStale => 'Save to refresh the preview.';
+
+  @override
+  String get mergeAudience => 'Audience preview';
+
+  @override
+  String get mergeSelectContact => 'Select a contact';
+
+  @override
+  String get mergeMissingAddress => 'Missing email address';
+
+  @override
+  String get mergeMissingTranslation =>
+      'Missing subject or message translation';
+
+  @override
+  String get mergeMissingPdf => 'Missing PDF in this language';
+
+  @override
+  String get mergeDuplicateAddress => 'Duplicate email address';
+
+  @override
+  String get mergeConfirm => 'Confirm mailing';
+
+  @override
+  String mergeConfirmBody(int count) {
+    return 'Queue one email for each of the $count eligible recipients in this preview?';
+  }
+
+  @override
+  String get mergeQueue => 'Queue mailing';
+
+  @override
+  String get mergeHistory => 'Delivery history';
+
+  @override
+  String get mergeRefresh => 'Refresh status';
+
+  @override
+  String get mergeQueued => 'Queued';
+
+  @override
+  String get mergeSent => 'Sent';
+
+  @override
+  String get mergeFailed => 'Failed';
 }
