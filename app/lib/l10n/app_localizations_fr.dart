@@ -11267,7 +11267,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get tutAttributesFillPropertiesBody =>
-      'Définissez Relays à 4, FETs à 2, Digital inputs à 8 et 24V polarized 2-wire output sur Oui, puis cliquez sur Enregistrer.';
+      'Renseignez les champs pour les clés relay_count = 4, fet_count = 2, digital_inputs = 8 et supports_24v_polarized_2wire = Oui (si un libellé affiché diffère, utilisez le champ existant portant cette clé), puis cliquez sur Enregistrer.';
 
   @override
   String get tutAttributesFillPropertiesHint =>

@@ -11188,21 +11188,21 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get tutAttributesIntroBody =>
-      'Elk bedrijf heeft eigenschappen die specifiek zijn voor zijn productlijnen—zoals het aantal relais, FETs, digitale ingangen of 24V gepolariseerde 2-draads uitgang—die voor andere bedrijven niet relevant zijn. Een beheerder definieert ze eenmalig onder Beheer → Attributen, waarna ze direct op elk product verschijnen.';
+      'Elk bedrijf heeft eigenschappen die specifiek zijn voor zijn productlijnen—zoals het aantal relais, FETs, digitale ingangen of 24V gepolariseerde 2-draads uitgang—die voor andere bedrijven niet relevant zijn. Een beheerder definieert ze eenmalig onder Beheer → Kenmerken, waarna ze direct op elk product verschijnen.';
 
   @override
-  String get tutAttributesOpenAdminTitle => 'Open Beheer → Attributen';
+  String get tutAttributesOpenAdminTitle => 'Open Beheer → Kenmerken';
 
   @override
   String get tutAttributesOpenAdminBody =>
-      'Open Beheer in de navigatiebalk en kies het tabblad Attributen.';
+      'Open Beheer in de navigatiebalk en kies het tabblad Kenmerken.';
 
   @override
   String get tutAttributesRelaysTitle => 'Definieer het aantal relais';
 
   @override
   String get tutAttributesRelaysBody =>
-      'Klik op Nieuw attribuut en maak een Getal-eigenschap aan met sleutel relay_count, label Relays, type Getal en bereik Product.';
+      'Klik op Nieuw kenmerk en maak een Getal-eigenschap aan met sleutel relay_count, label Relays, type Getal en bereik Product.';
 
   @override
   String get tutAttributesRelaysHint =>
@@ -11213,7 +11213,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get tutAttributesFetsBody =>
-      'Klik op Nieuw attribuut en maak een Getal-eigenschap aan met sleutel fet_count, label FETs, type Getal en bereik Product.';
+      'Klik op Nieuw kenmerk en maak een Getal-eigenschap aan met sleutel fet_count, label FETs, type Getal en bereik Product.';
 
   @override
   String get tutAttributesDigitalInputsTitle =>
@@ -11221,7 +11221,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get tutAttributesDigitalInputsBody =>
-      'Klik op Nieuw attribuut en maak een Getal-eigenschap aan met sleutel digital_inputs, label Digital inputs, type Getal en bereik Product.';
+      'Klik op Nieuw kenmerk en maak een Getal-eigenschap aan met sleutel digital_inputs, label Digital inputs, type Getal en bereik Product.';
 
   @override
   String get tutAttributesPolarized24vTitle =>
@@ -11229,7 +11229,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get tutAttributesPolarized24vBody =>
-      'Klik op Nieuw attribuut en maak een Ja/Nee-eigenschap aan met sleutel supports_24v_polarized_2wire, label 24V polarized 2-wire output, type Ja/Nee en bereik Product.';
+      'Klik op Nieuw kenmerk en maak een Ja/Nee-eigenschap aan met sleutel supports_24v_polarized_2wire, label 24V polarized 2-wire output, type Ja/Nee en bereik Product.';
 
   @override
   String get tutAttributesOpenControllerTitle => 'Open het product Controller';
@@ -11252,7 +11252,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get tutAttributesFillPropertiesBody =>
-      'Zet Relays op 4, FETs op 2, Digital inputs op 8 en 24V polarized 2-wire output op Ja, en klik op Opslaan.';
+      'Vul de velden in voor de sleutels relay_count = 4, fet_count = 2, digital_inputs = 8 en supports_24v_polarized_2wire = Ja (als een weergegeven label afwijkt, gebruik het bestaande veld met die sleutel), en klik op Opslaan.';
 
   @override
   String get tutAttributesFillPropertiesHint =>

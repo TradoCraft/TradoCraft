@@ -3746,7 +3746,7 @@
   "tutAttributesSuitabilityTabTitle": "Tab Eignung öffnen",
   "tutAttributesSuitabilityTabBody": "Wechseln Sie zum Tab Eignung. Alle aktiven Produktattribute aus der Verwaltung erscheinen hier als typisierte Felder.",
   "tutAttributesFillPropertiesTitle": "Controller-Eigenschaften erfassen",
-  "tutAttributesFillPropertiesBody": "Setzen Sie Relays auf 4, FETs auf 2, Digital inputs auf 8 und 24V polarized 2-wire output auf Ja, und klicken Sie auf Speichern.",
+  "tutAttributesFillPropertiesBody": "Füllen Sie die Felder für die Schlüssel relay_count = 4, fet_count = 2, digital_inputs = 8 und supports_24v_polarized_2wire = Ja aus (falls ein angezeigtes Label abweicht, nutzen Sie das vorhandene Feld mit diesem Schlüssel), und klicken Sie auf Speichern.",
   "tutAttributesFillPropertiesHint": "Lassen Sie nicht zutreffende Felder einfach leer; nur ausgefüllte Werte werden gespeichert.",
   "tutAttributesDoneTitle": "Firmenspezifische Eigenschaften gespeichert",
   "tutAttributesDoneBody": "TUT-CTRL speichert nun typisierte, geprüfte Eigenschaften Ihrer Produktlinie. Konfiguratorformeln und CRM-Regeln können sie direkt nutzen, ohne das Datenbankschema zu ändern."

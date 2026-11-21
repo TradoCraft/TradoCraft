@@ -6311,7 +6311,7 @@
   "tutAttributesSuitabilityTabTitle": "Open the Suitability tab",
   "tutAttributesSuitabilityTabBody": "Switch to the Suitability tab. Every active Product-scope attribute you defined in Admin now appears here as a typed input.",
   "tutAttributesFillPropertiesTitle": "Record the controller properties",
-  "tutAttributesFillPropertiesBody": "Set Relays to 4, FETs to 2, Digital inputs to 8, and 24V polarized 2-wire output to Yes, then click Save.",
+  "tutAttributesFillPropertiesBody": "Fill in the fields for keys relay_count = 4, fet_count = 2, digital_inputs = 8, and supports_24v_polarized_2wire = Yes (if a displayed label differs, use the existing field with that key), then click Save.",
   "tutAttributesFillPropertiesHint": "Leave any property blank if it does not apply to a given product; only filled values are saved.",
   "tutAttributesDoneTitle": "Company-specific properties saved",
   "tutAttributesDoneBody": "TUT-CTRL now stores typed, validated properties specific to your product line. Configurator formulas can read them with product(code).attr('relay_count') and CRM match rules can check them without changing the database schema."

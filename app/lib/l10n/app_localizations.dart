@@ -19779,7 +19779,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutAttributesFillPropertiesBody.
   ///
   /// In en, this message translates to:
-  /// **'Set Relays to 4, FETs to 2, Digital inputs to 8, and 24V polarized 2-wire output to Yes, then click Save.'**
+  /// **'Fill in the fields for keys relay_count = 4, fet_count = 2, digital_inputs = 8, and supports_24v_polarized_2wire = Yes (if a displayed label differs, use the existing field with that key), then click Save.'**
   String get tutAttributesFillPropertiesBody;
 
   /// No description provided for @tutAttributesFillPropertiesHint.

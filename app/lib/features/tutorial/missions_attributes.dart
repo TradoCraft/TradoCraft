@@ -16,7 +16,21 @@ bool _hasDefinition(Object? json, String key, String kind) =>
     json is Map &&
     json['key'] == key &&
     json['kind'] == kind &&
-    json['scope'] == 'product';
+    json['scope'] == 'product' &&
+    json['active'] == true;
+
+Map? _findDefinition(Object? json, String key, String kind) {
+  if (json is! List) return null;
+  for (final item in json) {
+    if (item is Map &&
+        item['key'] == key &&
+        item['kind'] == kind &&
+        item['scope'] == 'product') {
+      return item;
+    }
+  }
+  return null;
+}
 
 bool _listHasDefinition(Object? json, String key, String kind) =>
     json is List && json.any((item) => _hasDefinition(item, key, kind));
@@ -44,11 +58,28 @@ MissionStep _defineAttribute({
     done: (json, _) => _listHasDefinition(json, key, kind),
   ),
   assist: (host) async {
-    final existing = await host.dio.get<Object?>(
+    final existingRes = await host.dio.get<Object?>(
       '/api/v1/attribute-definitions',
       queryParameters: const {'scope': 'product'},
     );
-    if (_listHasDefinition(existing.data, key, kind)) return;
+    final existing = _findDefinition(existingRes.data, key, kind);
+    if (existing != null) {
+      if (existing['active'] == true) return;
+      await host.dio.put<Object?>(
+        '/api/v1/attribute-definitions/${existing['id']}',
+        data: {
+          'key': existing['key'],
+          'label': existing['label'],
+          'kind': existing['kind'],
+          if (existing['unit'] != null) 'unit': existing['unit'],
+          if (existing['options'] != null) 'options': existing['options'],
+          'scope': existing['scope'],
+          'sort_order': existing['sort_order'] ?? sortOrder,
+          'active': true,
+        },
+      );
+      return;
+    }
     await host.dio.post<Object?>(
       '/api/v1/attribute-definitions',
       data: {
@@ -137,6 +168,10 @@ final attributesMission = Mission(
     MissionStep(
       id: 'needs',
       route: '/products',
+      recheckOn: const [
+        OnApi('POST', '/products'),
+        OnApi('PUT', '/products/[^/]+'),
+      ],
       probe: Probe(
         '/api/v1/products',
         query: const {'q': 'TUT-CTRL', 'limit': 20},
@@ -154,7 +189,13 @@ final attributesMission = Mission(
           '/api/v1/products',
           queryParameters: const {'q': 'TUT-CTRL', 'limit': 20},
         );
-        if (_productByCode(res.data, 'TUT-CTRL') != null) return;
+        final existing = _productByCode(res.data, 'TUT-CTRL');
+        if (existing != null) {
+          if (existing['active'] == false) {
+            throw StateError('Edit TUT-CTRL so Active is on.');
+          }
+          return;
+        }
         await host.dio.post<Object?>(
           '/api/v1/products',
           data: const {

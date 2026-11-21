@@ -10,6 +10,8 @@ import '../../app/api.dart' show dioProvider, errorMessage, priceZonesProvider;
 import '../../app/environments.dart';
 import '../../app/session.dart';
 import '../../l10n/app_localizations.dart';
+import '../admin/attribute_definitions_page.dart'
+    show attributeDefinitionsProvider;
 import '../field/offline/kv_store.dart';
 import '../inventory/inventory_common.dart' show warehousesProvider;
 import 'api_events.dart';
@@ -793,6 +795,14 @@ class TutorialController extends Notifier<TutorialState> {
         ref.invalidate(priceZonesProvider);
       } else if (s.id == 'warehouse') {
         ref.invalidate(warehousesProvider);
+      } else if (missionId == 'attributes' &&
+          const {
+            'relays',
+            'fets',
+            'digitalInputs',
+            'polarized24v',
+          }.contains(s.id)) {
+        ref.invalidate(attributeDefinitionsProvider);
       }
       ref
           .read(tutorialAssistCompletedProvider.notifier)

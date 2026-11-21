@@ -518,5 +518,62 @@ void main() {
       t.next();
       expect(c.read(tutorialProvider).completed, contains('attributes'));
     });
+
+    test('assist reactivates inactive attribute definition and refuses inactive TUT-CTRL', () async {
+      final inactiveCtrl = {..._product('ctrl1', 'TUT-CTRL', 'purchased'), 'active': false};
+      final products = [inactiveCtrl];
+      final defs = <Map<String, Object?>>[
+        {
+          'id': 'def-1',
+          'key': 'relay_count',
+          'label': 'Relays',
+          'kind': 'number',
+          'scope': 'product',
+          'sort_order': 10,
+          'active': false,
+        },
+      ];
+      var postDefCount = 0;
+      var putDefCount = 0;
+      final http = FakeHttp({
+        'GET /api/v1/products': (_) => {'items': products, 'total': 1},
+        'GET /api/v1/attribute-definitions': (_) => defs,
+        'POST /api/v1/attribute-definitions': (_) {
+          postDefCount++;
+          return {};
+        },
+        'PUT /api/v1/attribute-definitions/def-1': (body) {
+          putDefCount++;
+          final input = Map<String, Object?>.from(body as Map);
+          defs[0] = {'id': 'def-1', ...input};
+          return defs[0];
+        },
+      });
+      final c = _boot(http);
+      final t = c.read(tutorialProvider.notifier);
+      await t.ready;
+      for (final m in allMissions) {
+        if (m.id == 'attributes') break;
+        await t.skipChapter(m.id);
+      }
+      await t.start('attributes');
+      await pumpEventQueue();
+      // Inactive TUT-CTRL stays on `needs` and assist reports it instead of duplicating.
+      expect(c.read(tutorialProvider).stepIndex, 0);
+      await t.runAction();
+      expect(c.read(tutorialProvider).actionError?.reason, contains('Active'));
+      expect(products, hasLength(1));
+
+      // Activate TUT-CTRL and advance to `relays`.
+      inactiveCtrl['active'] = true;
+      t.next(); // -> intro
+      t.next(); // -> openAdmin
+      t.routeChanged('/admin'); // -> relays
+      expect(c.read(tutorialProvider).stepIndex, 3);
+      await t.runAction();
+      expect(putDefCount, 1);
+      expect(postDefCount, 0);
+      expect(defs[0]['active'], isTrue);
+    });
   });
 }

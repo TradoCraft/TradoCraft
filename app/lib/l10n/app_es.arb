@@ -3746,7 +3746,7 @@
   "tutAttributesSuitabilityTabTitle": "Abrir la pestaña Idoneidad",
   "tutAttributesSuitabilityTabBody": "Cambie a la pestaña Idoneidad. Todos los atributos activos de ámbito Producto aparecen aquí como campos tipados.",
   "tutAttributesFillPropertiesTitle": "Registrar las propiedades del controlador",
-  "tutAttributesFillPropertiesBody": "Establezca Relays en 4, FETs en 2, Digital inputs en 8 y 24V polarized 2-wire output en Sí, luego pulse Guardar.",
+  "tutAttributesFillPropertiesBody": "Complete los campos para las claves relay_count = 4, fet_count = 2, digital_inputs = 8 y supports_24v_polarized_2wire = Sí (si una etiqueta mostrada difiere, use el campo existente con esa clave), luego pulse Guardar.",
   "tutAttributesFillPropertiesHint": "Deje vacío cualquier campo que no aplique a un producto; solo se guardan los valores rellenados.",
   "tutAttributesDoneTitle": "Propiedades específicas guardadas",
   "tutAttributesDoneBody": "TUT-CTRL ahora guarda propiedades tipadas y validadas propias de su gama. Las fórmulas del configurador y las reglas CRM pueden usarlas sin cambiar el esquema de la base de datos."

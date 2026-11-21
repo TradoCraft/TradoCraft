@@ -3746,7 +3746,7 @@
   "tutAttributesSuitabilityTabTitle": "Ouvrir l'onglet Compatibilité",
   "tutAttributesSuitabilityTabBody": "Passez à l'onglet Compatibilité. Tous les attributs actifs de portée Produit apparaissent ici comme champs typés.",
   "tutAttributesFillPropertiesTitle": "Saisir les propriétés du contrôleur",
-  "tutAttributesFillPropertiesBody": "Définissez Relays à 4, FETs à 2, Digital inputs à 8 et 24V polarized 2-wire output sur Oui, puis cliquez sur Enregistrer.",
+  "tutAttributesFillPropertiesBody": "Renseignez les champs pour les clés relay_count = 4, fet_count = 2, digital_inputs = 8 et supports_24v_polarized_2wire = Oui (si un libellé affiché diffère, utilisez le champ existant portant cette clé), puis cliquez sur Enregistrer.",
   "tutAttributesFillPropertiesHint": "Laissez un champ vide s'il ne s'applique pas à un produit ; seules les valeurs saisies sont enregistrées.",
   "tutAttributesDoneTitle": "Propriétés spécifiques enregistrées",
   "tutAttributesDoneBody": "TUT-CTRL stocke désormais des propriétés typées et validées propres à votre gamme. Les formules du configurateur et les règles CRM peuvent les exploiter sans modifier le schéma."
