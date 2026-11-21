@@ -209,7 +209,8 @@ class _RunningLayer extends ConsumerStatefulWidget {
 
 /// State of [_RunningLayer]: finds the first visible target of the step, a few times a second
 /// (the page may scroll, resize or open a dialog).
-class _RunningLayerState extends ConsumerState<_RunningLayer> {
+class _RunningLayerState extends ConsumerState<_RunningLayer>
+    with WidgetsBindingObserver {
   VisibleTarget? _target;
   MissionStep? _showingControl;
   MissionStep? _missingControl;
@@ -218,12 +219,20 @@ class _RunningLayerState extends ConsumerState<_RunningLayer> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _timer = Timer.periodic(const Duration(milliseconds: 250), (_) => _find());
     WidgetsBinding.instance.addPostFrameCallback((_) => _find());
   }
 
   @override
+  void didChangeMetrics() {
+    super.didChangeMetrics();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _find());
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _timer?.cancel();
     super.dispose();
   }
@@ -231,7 +240,9 @@ class _RunningLayerState extends ConsumerState<_RunningLayer> {
   void _find() {
     if (!mounted) return;
     final step = ref.read(tutorialProvider.notifier).step;
-    final found = step == null ? null : _firstVisible(step.targets);
+    final found = step == null || step.targets.isEmpty
+        ? null
+        : _firstVisible(step.targets);
     if (found?.id != _target?.id || found?.rect != _target?.rect) {
       setState(() => _target = found);
     }
@@ -297,6 +308,10 @@ class _RunningLayerState extends ConsumerState<_RunningLayer> {
         size.width >= 880 &&
         target != null &&
         target.rect.center.dx > size.width / 2;
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
+    final moveDuration = reduceMotion
+        ? Duration.zero
+        : const Duration(milliseconds: 220);
     return Stack(
       children: [
         if (target != null)
@@ -312,9 +327,13 @@ class _RunningLayerState extends ConsumerState<_RunningLayer> {
               ),
             ),
           ),
-        Align(
+        AnimatedAlign(
           alignment: Alignment(atLeft ? -1 : 1, atTop ? -1 : 1),
-          child: Padding(
+          duration: moveDuration,
+          curve: Curves.easeOutCubic,
+          child: AnimatedPadding(
+            duration: moveDuration,
+            curve: Curves.easeOutCubic,
             padding: EdgeInsets.fromLTRB(
               16,
               atTop ? (narrow ? 96 : 44) : 16,
@@ -462,6 +481,20 @@ class NarratorCard extends ConsumerWidget {
         duration: reduceMotion
             ? Duration.zero
             : const Duration(milliseconds: 180),
+        switchInCurve: Curves.easeOutCubic,
+        switchOutCurve: Curves.easeOutCubic,
+        transitionBuilder: (child, animation) => reduceMotion
+            ? child
+            : FadeTransition(
+                opacity: animation,
+                child: SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0, 0.03),
+                    end: Offset.zero,
+                  ).animate(animation),
+                  child: child,
+                ),
+              ),
         child: Semantics(
           key: ValueKey('${m.id}/${step.id}'),
           container: true,
@@ -482,7 +515,6 @@ class NarratorCard extends ConsumerWidget {
               surfaceTintColor: theme.colorScheme.surfaceTint,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),
-                side: BorderSide(color: theme.colorScheme.outlineVariant),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(14),
@@ -502,6 +534,9 @@ class NarratorCard extends ConsumerWidget {
                               '${l.tutStepOf(s.stepIndex + 1, m.steps.length)}',
                               style: theme.textTheme.labelMedium?.copyWith(
                                 color: theme.colorScheme.primary,
+                                fontFeatures: const [
+                                  FontFeature.tabularFigures(),
+                                ],
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -601,8 +636,23 @@ class NarratorCard extends ConsumerWidget {
                           FilledButton(
                             key: const ValueKey('tutorial-action'),
                             onPressed: s.actionBusy ? null : c.runAction,
-                            child: Text(
-                              tutorialText(l, stepKey(m, step, 'Action')),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (s.actionBusy) ...[
+                                  const SizedBox(
+                                    width: 14,
+                                    height: 14,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                ],
+                                Text(
+                                  tutorialText(l, stepKey(m, step, 'Action')),
+                                ),
+                              ],
                             ),
                           ),
                         if (c.canAssist)
@@ -611,7 +661,22 @@ class NarratorCard extends ConsumerWidget {
                             onPressed: s.actionBusy || reviewNavigator == null
                                 ? null
                                 : () => reviewAssist(reviewNavigator),
-                            child: Text(l.tutAssist),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (s.actionBusy) ...[
+                                  const SizedBox(
+                                    width: 14,
+                                    height: 14,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                ],
+                                Text(l.tutAssist),
+                              ],
+                            ),
                           ),
                         if (route != null &&
                             !here &&
@@ -703,7 +768,6 @@ class _FinishedCard extends ConsumerWidget {
               surfaceTintColor: theme.colorScheme.surfaceTint,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),
-                side: BorderSide(color: theme.colorScheme.outlineVariant),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(14),
@@ -860,7 +924,6 @@ class _OfferCard extends ConsumerWidget {
               surfaceTintColor: theme.colorScheme.surfaceTint,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),
-                side: BorderSide(color: theme.colorScheme.outlineVariant),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(14),

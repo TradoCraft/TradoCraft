@@ -120,6 +120,7 @@ abstract final class AppIcons {
   static const IconData photo = Icons.photo_outlined;
   static const IconData playCircle = Icons.play_circle_outline;
   static const IconData star = Icons.star_outline;
+  static const IconData starFilled = Icons.star;
   static const IconData photoCamera = Icons.photo_camera_outlined;
   static const IconData photoLibrary = Icons.photo_library_outlined;
   static const IconData pictureAsPdf = Icons.picture_as_pdf_outlined;

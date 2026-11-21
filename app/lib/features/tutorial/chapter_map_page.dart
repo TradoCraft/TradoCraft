@@ -194,7 +194,9 @@ class _ChapterTile extends StatelessWidget {
                   Expanded(
                     child: Text(
                       '$index · ${tutorialText(l, missionKey(m, 'Title'))}',
-                      style: theme.textTheme.titleMedium,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
                     ),
                   ),
                   Chip(
@@ -212,7 +214,9 @@ class _ChapterTile extends StatelessWidget {
                     (active ? state.stepIndex : state.progress[m.id] ?? 0) + 1,
                     m.steps.length,
                   ),
-                  style: theme.textTheme.bodySmall,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
                 ),
               ],
               const SizedBox(height: 8),
