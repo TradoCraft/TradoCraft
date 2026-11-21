@@ -339,9 +339,24 @@ async fn reading_needs_read_and_changing_needs_write(db: PgPool) {
     assert_eq!(s, StatusCode::OK);
 }
 
-/// Whether the PDF contains an image object.
+/// Whether the PDF contains an embedded image object.
 fn has_image(pdf: &[u8]) -> bool {
-    pdf.windows(6).any(|w| w == b"/Image")
+    let path = std::env::temp_dir().join(format!("pm-{}.pdf", uuid::Uuid::now_v7()));
+    if std::fs::write(&path, pdf).is_ok() {
+        let out = std::process::Command::new("pdfimages")
+            .arg("-list")
+            .arg(&path)
+            .output();
+        let _ = std::fs::remove_file(&path);
+        if let Ok(out) = out {
+            if out.status.success() {
+                return String::from_utf8_lossy(&out.stdout)
+                    .lines()
+                    .any(|l| l.contains(" image "));
+            }
+        }
+    }
+    pdf.windows(15).any(|w| w == b"/Subtype /Image")
 }
 
 async fn quotation_pdf(app: &axum::Router) -> Vec<u8> {
