@@ -304,35 +304,59 @@ class _ProductFormState extends ConsumerState<ProductForm> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Stack(
-                        children: [
-                          SizedBox(
-                            width: 120,
-                            height: 90,
-                            child: _isVideoFilename(_media[i].filename)
-                                ? const Center(
-                                    child: Icon(AppIcons.playCircle, size: 36),
-                                  )
-                                : Image.memory(
-                                    _media[i].bytes,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (_, _, _) => const Center(
-                                      child: Icon(AppIcons.brokenImage),
-                                    ),
-                                  ),
+                      DecoratedBox(
+                        position: DecorationPosition.foreground,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: theme.brightness == Brightness.dark
+                                ? Colors.white.withValues(alpha: 0.1)
+                                : Colors.black.withValues(alpha: 0.1),
                           ),
-                          if (i == _defaultMediaIndex)
-                            Positioned(
-                              left: 4,
-                              top: 4,
-                              child: Chip(
-                                key: ValueKey('staged-media-default-$i'),
-                                avatar: const Icon(AppIcons.star, size: 14),
-                                label: Text(l.defaultMedia),
-                                visualDensity: VisualDensity.compact,
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Stack(
+                            children: [
+                              SizedBox(
+                                width: 120,
+                                height: 90,
+                                child: _isVideoFilename(_media[i].filename)
+                                    ? const Center(
+                                        child: Icon(
+                                          AppIcons.playCircle,
+                                          size: 36,
+                                        ),
+                                      )
+                                    : Image.memory(
+                                        _media[i].bytes,
+                                        fit: BoxFit.cover,
+                                        cacheWidth: 360,
+                                        errorBuilder: (_, _, _) => const Center(
+                                          child: Icon(AppIcons.brokenImage),
+                                        ),
+                                      ),
                               ),
-                            ),
-                        ],
+                              if (i == _defaultMediaIndex)
+                                Positioned(
+                                  left: 4,
+                                  top: 4,
+                                  child: Chip(
+                                    key: ValueKey('staged-media-default-$i'),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    avatar: const Icon(
+                                      AppIcons.starFilled,
+                                      size: 14,
+                                    ),
+                                    label: Text(l.defaultMedia),
+                                    visualDensity: VisualDensity.compact,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
                       ),
                       Text(
                         _media[i].filename,

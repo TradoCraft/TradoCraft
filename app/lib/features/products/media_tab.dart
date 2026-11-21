@@ -160,6 +160,74 @@ class _MediaTabState extends ConsumerState<MediaTab> {
   Widget _tile(ProductMediaItem m, bool canWrite) {
     final l = context.l10n;
     final theme = Theme.of(context);
+    final imageOutline = theme.brightness == Brightness.dark
+        ? Colors.white.withValues(alpha: 0.1)
+        : Colors.black.withValues(alpha: 0.1);
+    final preview = DecoratedBox(
+      position: DecorationPosition.foreground,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: imageOutline),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Stack(
+          children: [
+            SizedBox(
+              width: 148,
+              height: 148,
+              child: m.isVideo
+                  ? Stack(
+                      children: [
+                        const Center(
+                          child: Icon(AppIcons.playCircle, size: 48),
+                        ),
+                        Positioned(
+                          right: 6,
+                          bottom: 6,
+                          child: Icon(
+                            AppIcons.fileDownload,
+                            size: 18,
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    )
+                  : FutureBuilder<Uint8List>(
+                      future: _bytes(m.id),
+                      builder: (context, s) => s.hasData
+                          ? Image.memory(
+                              s.data!,
+                              fit: BoxFit.cover,
+                              cacheWidth: 300,
+                              errorBuilder: (_, _, _) =>
+                                  const Icon(AppIcons.brokenImage),
+                            )
+                          : s.hasError
+                          ? const Icon(AppIcons.brokenImage)
+                          : const Center(
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                    ),
+            ),
+            if (m.isDefault)
+              Positioned(
+                left: 4,
+                top: 4,
+                child: Chip(
+                  key: const ValueKey('media-default-badge'),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  avatar: const Icon(AppIcons.starFilled, size: 16),
+                  label: Text(l.defaultMedia),
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
     return SizedBox(
       key: ValueKey('media-${m.id}'),
       width: 148,
@@ -167,46 +235,16 @@ class _MediaTabState extends ConsumerState<MediaTab> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           InkWell(
+            borderRadius: BorderRadius.circular(12),
             onTap: () => _open(m),
-            child: Stack(
-              children: [
-                SizedBox(
-                  width: 148,
-                  height: 148,
-                  child: m.isVideo
-                      ? const Center(child: Icon(AppIcons.playCircle, size: 48))
-                      : FutureBuilder<Uint8List>(
-                          future: _bytes(m.id),
-                          builder: (context, s) => s.hasData
-                              ? Image.memory(
-                                  s.data!,
-                                  fit: BoxFit.cover,
-                                  cacheWidth: 300,
-                                  errorBuilder: (_, _, _) =>
-                                      const Icon(AppIcons.brokenImage),
-                                )
-                              : s.hasError
-                              ? const Icon(AppIcons.brokenImage)
-                              : const Center(
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                ),
-                        ),
-                ),
-                if (m.isDefault)
-                  Positioned(
-                    left: 4,
-                    top: 4,
-                    child: Chip(
-                      key: const ValueKey('media-default-badge'),
-                      avatar: const Icon(AppIcons.star, size: 16),
-                      label: Text(l.defaultMedia),
-                      visualDensity: VisualDensity.compact,
-                    ),
-                  ),
-              ],
-            ),
+            child: m.isVideo
+                ? Tooltip(
+                    message: m.filename.isNotEmpty
+                        ? '${l.open}: ${m.filename}'
+                        : l.open,
+                    child: preview,
+                  )
+                : preview,
           ),
           Text(
             m.caption.isNotEmpty ? m.caption : m.filename,
