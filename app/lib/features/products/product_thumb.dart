@@ -145,7 +145,11 @@ class _ProductThumbState extends ConsumerState<ProductThumb> {
       _load(session);
     }
     final s = widget.size;
-    final outline = Theme.of(context).colorScheme.outline;
+    final theme = Theme.of(context);
+    final outline = theme.colorScheme.outline;
+    final imageOutline = theme.brightness == Brightness.dark
+        ? Colors.white.withValues(alpha: 0.1)
+        : Colors.black.withValues(alpha: 0.1);
     Widget placeholder(IconData icon) => Center(
       child: Icon(icon, size: s * 0.5, color: outline),
     );
@@ -153,27 +157,34 @@ class _ProductThumbState extends ConsumerState<ProductThumb> {
       key: ValueKey('thumb-${widget.productId}'),
       width: s,
       height: s,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(4),
-        child: widget.isVideo
-            ? placeholder(AppIcons.playCircle)
-            : _bytes == null
-            ? placeholder(AppIcons.photo)
-            : FutureBuilder<Uint8List>(
-                key: ValueKey(scope),
-                future: _bytes,
-                builder: (context, snap) => snap.hasData
-                    ? Image.memory(
-                        snap.data!,
-                        fit: BoxFit.cover,
-                        cacheWidth: (s * 3).round(),
-                        errorBuilder: (_, _, _) =>
-                            placeholder(AppIcons.brokenImage),
-                      )
-                    : snap.hasError
-                    ? placeholder(AppIcons.brokenImage)
-                    : const SizedBox.shrink(),
-              ),
+      child: DecoratedBox(
+        position: DecorationPosition.foreground,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(color: imageOutline),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: widget.isVideo
+              ? placeholder(AppIcons.playCircle)
+              : _bytes == null
+              ? placeholder(AppIcons.photo)
+              : FutureBuilder<Uint8List>(
+                  key: ValueKey(scope),
+                  future: _bytes,
+                  builder: (context, snap) => snap.hasData
+                      ? Image.memory(
+                          snap.data!,
+                          fit: BoxFit.cover,
+                          cacheWidth: (s * 3).round(),
+                          errorBuilder: (_, _, _) =>
+                              placeholder(AppIcons.brokenImage),
+                        )
+                      : snap.hasError
+                      ? placeholder(AppIcons.brokenImage)
+                      : const SizedBox.shrink(),
+                ),
+        ),
       ),
     );
   }

@@ -124,6 +124,12 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
           context.l10n.vat,
           (p) => '${number(p.vatRate)} %',
           numeric: true,
+          cell: (_, p) => Text(
+            '${number(p.vatRate)} %',
+            style: const TextStyle(
+              fontFeatures: [FontFeature.tabularFigures()],
+            ),
+          ),
         ),
       ],
       actions: [
