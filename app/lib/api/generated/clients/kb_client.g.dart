@@ -217,7 +217,7 @@ class _KbClient implements KbClient {
     required String id,
     required String language,
     required String filename,
-    required List<int> body,
+    required dynamic body,
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{r'filename': filename};

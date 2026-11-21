@@ -361,6 +361,32 @@ async fn mailing_preview_resolves_languages_and_flags_exclusions(db: PgPool) {
         call(&app, SALES, Method::POST, &endpoint, None).await.0,
         StatusCode::FORBIDDEN
     );
+    for (change, restore) in [
+        (
+            "UPDATE crm.customers SET active = false WHERE code = 'MERGE-1'",
+            "UPDATE crm.customers SET active = true WHERE code = 'MERGE-1'",
+        ),
+        (
+            "UPDATE crm.contacts SET active = false WHERE id = '00000000-0000-7000-8000-000000000b01'",
+            "UPDATE crm.contacts SET active = true WHERE id = '00000000-0000-7000-8000-000000000b01'",
+        ),
+        (
+            "UPDATE crm.contact_emails SET email = 'changed@example.test' WHERE email = 'claire-merge@example.test'",
+            "UPDATE crm.contact_emails SET email = 'claire-merge@example.test' WHERE email = 'changed@example.test'",
+        ),
+    ] {
+        sqlx::query(change).execute(&db).await.unwrap();
+        assert_eq!(
+            call(&app, ADMIN, Method::POST, &endpoint, None).await.0,
+            StatusCode::CONFLICT,
+        );
+        let queued: i64 = sqlx::query_scalar("SELECT count(*) FROM core.mail_outbox")
+            .fetch_one(&db)
+            .await
+            .unwrap();
+        assert_eq!(queued, 0);
+        sqlx::query(restore).execute(&db).await.unwrap();
+    }
     let (a, b) = tokio::join!(
         call(&app, ADMIN, Method::POST, &endpoint, None),
         call(&app, ADMIN, Method::POST, &endpoint, None),

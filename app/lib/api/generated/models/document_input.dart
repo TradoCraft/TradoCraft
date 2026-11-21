@@ -14,9 +14,9 @@ class DocumentInput {
     this.keywords,
     this.productCodes,
   });
-
+  
   factory DocumentInput.fromJson(Map<String, Object?> json) => _$DocumentInputFromJson(json);
-
+  
   @JsonKey(includeIfNull: false)
   final List<String>? keywords;
   final String kind;

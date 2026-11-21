@@ -14,9 +14,9 @@ class LibraryPdf {
     required this.language,
     required this.revision,
   });
-
+  
   factory LibraryPdf.fromJson(Map<String, Object?> json) => _$LibraryPdfFromJson(json);
-
+  
   @JsonKey(name: 'document_id')
   final String documentId;
   final String language;

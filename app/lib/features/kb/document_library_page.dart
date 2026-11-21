@@ -161,12 +161,12 @@ class _DocumentLibraryPageState extends ConsumerState<DocumentLibraryPage> {
       queryParameters: {'filename': file.name},
       options: Options(contentType: 'application/pdf'),
     );
-    if (mounted) _open(id);
+    if (mounted && _documentId == id) _open(id);
   });
 
   Future<void> _publish(String id) => _run(() async {
     await _dio.post<void>('$_path/$id/publish');
-    if (mounted) _open(id);
+    if (mounted && _documentId == id) _open(id);
   });
 
   Future<void> _download(String id, Map<String, dynamic> pdf) => _run(() async {

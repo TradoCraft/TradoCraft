@@ -66,7 +66,7 @@ abstract class KbClient {
     @Path('id') required String id,
     @Path('language') required String language,
     @Query('filename') required String filename,
-    @Body() required List<int> body,
+    @Body() required dynamic body,
   });
 
   @POST('/api/v1/kb/documents/{id}/publish')

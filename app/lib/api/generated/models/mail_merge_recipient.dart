@@ -22,9 +22,9 @@ class MailMergeRecipient {
     this.pdf,
     this.subject,
   });
-
+  
   factory MailMergeRecipient.fromJson(Map<String, Object?> json) => _$MailMergeRecipientFromJson(json);
-
+  
   @JsonKey(includeIfNull: false)
   final String? body;
   @JsonKey(includeIfNull: false,name: 'contact_id')

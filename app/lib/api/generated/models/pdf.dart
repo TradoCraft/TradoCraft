@@ -14,9 +14,9 @@ class Pdf {
     required this.published,
     required this.revision,
   });
-
+  
   factory Pdf.fromJson(Map<String, Object?> json) => _$PdfFromJson(json);
-
+  
   final String filename;
   final String language;
   final bool published;

@@ -15,9 +15,9 @@ class Document {
     required this.productCodes,
     required this.title,
   });
-
+  
   factory Document.fromJson(Map<String, Object?> json) => _$DocumentFromJson(json);
-
+  
   final String id;
   final List<String> keywords;
   final String kind;

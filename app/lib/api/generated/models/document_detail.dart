@@ -15,9 +15,9 @@ class DocumentDetail {
     required this.document,
     required this.pdfs,
   });
-
+  
   factory DocumentDetail.fromJson(Map<String, Object?> json) => _$DocumentDetailFromJson(json);
-
+  
   final Document document;
   final List<Pdf> pdfs;
 

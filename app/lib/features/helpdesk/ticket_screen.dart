@@ -842,8 +842,9 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
     if (!mounted) return;
     List<String> split(String s) =>
         s.split(RegExp(r'[,;\s]+')).where((e) => e.isNotEmpty).toList();
+    final isReply = _reply;
     final sent = await _run(
-      () => _reply
+      () => isReply
           ? _api.helpdesk.reply(
               id: widget.id,
               body: ReplyInput(
@@ -868,7 +869,7 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
                 status: _statusAfter,
               ),
             ),
-      success: _reply ? l.replyQueued : l.noteAdded,
+      success: isReply ? l.replyQueued : l.noteAdded,
     );
     if (sent && mounted && _d != null) {
       setState(() {
@@ -877,7 +878,7 @@ class _TicketScreenState extends ConsumerState<TicketScreen> {
         _statusAfter = null;
         _answerInfo = null;
         _attached = [];
-        _libraryPdfs.clear();
+        if (isReply) _libraryPdfs.clear();
       });
     }
   }

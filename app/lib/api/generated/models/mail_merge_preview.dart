@@ -16,9 +16,9 @@ class MailMergePreview {
     this.approvalId,
     this.draft,
   });
-
+  
   factory MailMergePreview.fromJson(Map<String, Object?> json) => _$MailMergePreviewFromJson(json);
-
+  
   @JsonKey(includeIfNull: false,name: 'approval_id')
   final String? approvalId;
   final List<MailMergeRecipient> audience;

@@ -165,7 +165,7 @@ struct Upload {
 
 #[utoipa::path(put, path = "/kb/documents/{id}/draft/{language}", tag = "kb", operation_id = "upload_kb_document_pdf",
     params(("id" = Uuid, Path), ("language" = String, Path), Upload),
-    request_body(content = Vec<u8>, content_type = "application/pdf"), responses((status = 204)))]
+    request_body(content = inline(serde_json::Value), content_type = "application/pdf", description = "Raw PDF bytes"), responses((status = 204)))]
 async fn upload(
     State(state): State<AppState>,
     user: CurrentUser,

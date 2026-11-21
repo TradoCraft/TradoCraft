@@ -93,7 +93,8 @@ async fn get_draft(
         "SELECT jsonb_build_object('document_id',document_id,'revision',revision,'messages',messages,'recipients',recipients)
          FROM crm.mail_merge_drafts WHERE company_id = $1 AND user_id = $2",
     ).bind(user.company_id).bind(user.user_id).fetch_optional(&state.db).await?;
-    build_preview(&state, &user, draft.map(|row| row.0))
+    let mut conn = state.db.acquire().await?;
+    build_preview(&mut conn, &user, draft.map(|row| row.0))
         .await
         .map(Json)
 }
@@ -117,7 +118,8 @@ async fn save_draft(
             ));
         }
     }
-    let mut result = build_preview(&state, &user, Some(draft)).await?;
+    let mut conn = state.db.acquire().await?;
+    let mut result = build_preview(&mut conn, &user, Some(draft)).await?;
     result.approval_id = Some(tradocraft_core::new_id());
     let draft = result.draft.as_ref().expect("saved draft");
     let saved: sqlx::types::Json<MailMergePreview> = sqlx::query_scalar(
@@ -131,7 +133,7 @@ async fn save_draft(
          RETURNING approved_preview",
     ).bind(user.company_id).bind(user.user_id).bind(draft.document_id).bind(draft.revision)
      .bind(sqlx::types::Json(&draft.messages)).bind(sqlx::types::Json(&draft.recipients)).bind(sqlx::types::Json(&result))
-     .fetch_one(&state.db).await?;
+     .fetch_one(&mut *conn).await?;
     Ok(Json(saved.0))
 }
 
@@ -174,7 +176,7 @@ fn render(text: &str, customer: &str, contact: &str) -> String {
 }
 
 async fn build_preview(
-    state: &AppState,
+    conn: &mut PgConnection,
     user: &CurrentUser,
     draft: Option<MailMergeDraft>,
 ) -> AppResult<MailMergePreview> {
@@ -196,7 +198,7 @@ async fn build_preview(
     .bind(user.company_id)
     .bind(d.document_id)
     .bind(d.revision)
-    .fetch_all(&state.db)
+    .fetch_all(&mut *conn)
     .await?
     .into_iter()
     .collect();
@@ -212,7 +214,7 @@ async fn build_preview(
          WHERE c.active ORDER BY lower(c.name),c.id",
     )
     .bind(user.company_id)
-    .fetch_all(&state.db)
+    .fetch_all(&mut *conn)
     .await?;
     let ids = customers.iter().map(|c| c.id).collect::<Vec<_>>();
     let contacts: Vec<MailMergeContact> = sqlx::query_as(
@@ -222,7 +224,7 @@ async fn build_preview(
            SELECT email FROM crm.contact_emails e WHERE contact_id = c.id
            ORDER BY is_primary DESC, email LIMIT 1
          ) e ON true WHERE c.active AND c.customer_id = ANY($1) ORDER BY name,c.id",
-    ).bind(&ids).fetch_all(&state.db).await?;
+    ).bind(&ids).fetch_all(&mut *conn).await?;
     let mut by_customer: HashMap<Uuid, Vec<MailMergeContact>> = HashMap::new();
     for c in contacts {
         by_customer.entry(c.customer_id).or_default().push(c);
@@ -377,6 +379,27 @@ async fn confirm(
             "the preview has no eligible recipients".into(),
         ));
     }
+    let current = build_preview(&mut tx, &user, Some(draft)).await?;
+    let recipient_key = |row: &MailMergeRecipient| {
+        (
+            row.customer_id,
+            (row.contact_id, row.email.clone(), row.language.clone()),
+        )
+    };
+    let approved_recipients: BTreeMap<_, _> = eligible.iter().copied().map(recipient_key).collect();
+    let current_recipients = current
+        .audience
+        .iter()
+        .filter(|row| row.issues.is_empty())
+        .map(recipient_key)
+        .collect();
+    if approved_recipients != current_recipients {
+        return Err(AppError::Conflict(
+            "mailing recipients changed; save and review the current draft before confirming"
+                .into(),
+        ));
+    }
+    let draft = current.draft.expect("revalidated draft");
     sqlx::query("INSERT INTO crm.mailings (id,company_id,sender_id,document_id,revision) VALUES ($1,$2,$3,$4,$5)")
         .bind(approval_id).bind(user.company_id).bind(user.user_id).bind(draft.document_id).bind(draft.revision)
         .execute(&mut *tx).await?;

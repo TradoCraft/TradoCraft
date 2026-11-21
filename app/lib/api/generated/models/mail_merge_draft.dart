@@ -16,9 +16,9 @@ class MailMergeDraft {
     required this.revision,
     this.recipients,
   });
-
+  
   factory MailMergeDraft.fromJson(Map<String, Object?> json) => _$MailMergeDraftFromJson(json);
-
+  
   @JsonKey(name: 'document_id')
   final String documentId;
   final Map<String, MailMergeMessage> messages;

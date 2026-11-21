@@ -15,9 +15,9 @@ class MailMergeContact {
     this.email,
     this.language,
   });
-
+  
   factory MailMergeContact.fromJson(Map<String, Object?> json) => _$MailMergeContactFromJson(json);
-
+  
   @JsonKey(name: 'customer_id')
   final String customerId;
   @JsonKey(includeIfNull: false)

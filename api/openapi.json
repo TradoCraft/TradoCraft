@@ -14114,16 +14114,10 @@
           }
         ],
         "requestBody": {
+          "description": "Raw PDF bytes",
           "content": {
             "application/pdf": {
-              "schema": {
-                "type": "array",
-                "items": {
-                  "type": "integer",
-                  "format": "int32",
-                  "minimum": 0
-                }
-              }
+              "schema": {}
             }
           },
           "required": true

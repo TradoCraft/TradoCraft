@@ -22,9 +22,9 @@ class MailingDelivery {
     required this.subject,
     this.deliveryError,
   });
-
+  
   factory MailingDelivery.fromJson(Map<String, Object?> json) => _$MailingDeliveryFromJson(json);
-
+  
   @JsonKey(name: 'confirmed_at')
   final DateTime confirmedAt;
   @JsonKey(name: 'customer_name')

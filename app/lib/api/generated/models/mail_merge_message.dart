@@ -12,9 +12,9 @@ class MailMergeMessage {
     required this.body,
     required this.subject,
   });
-
+  
   factory MailMergeMessage.fromJson(Map<String, Object?> json) => _$MailMergeMessageFromJson(json);
-
+  
   final String body;
   final String subject;
 
