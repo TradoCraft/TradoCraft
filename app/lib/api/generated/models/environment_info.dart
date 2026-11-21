@@ -13,6 +13,7 @@ part 'environment_info.g.dart';
 class EnvironmentInfo {
   const EnvironmentInfo({
     required this.dbName,
+    required this.instanceId,
     required this.kind,
     required this.name,
     required this.version,
@@ -23,6 +24,10 @@ class EnvironmentInfo {
   /// Name of the database only; never host, user or password.
   @JsonKey(name: 'db_name')
   final String dbName;
+
+  /// Unique ID of this database instance; changes when the database is dropped and recreated.
+  @JsonKey(name: 'instance_id')
+  final String instanceId;
   final EnvKind kind;
 
   /// Display name (`APP_ENV_NAME`, default: the database name).

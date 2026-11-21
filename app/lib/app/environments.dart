@@ -331,6 +331,8 @@ class EnvironmentsNotifier extends Notifier<EnvironmentsState> {
     return 'env-$n';
   }
 
+  int _refreshGen = 0;
+
   /// Stores the list; false when that failed (the in-memory list stays as it is).
   Future<bool> _persist() async {
     try {
@@ -345,9 +347,10 @@ class EnvironmentsNotifier extends Notifier<EnvironmentsState> {
   /// that is still the address). A server that does not answer leaves things as they are.
   Future<void> refreshActive() async {
     final a = state.active;
+    final gen = ++_refreshGen;
     try {
       final info = await ref.read(environmentProbeProvider)(a.serverUrl);
-      if (!ref.mounted) return;
+      if (!ref.mounted || gen != _refreshGen) return;
       final stillActive = state.active.id == a.id;
       if (!stillActive) return;
       final rename = a.name == hostOf(a.serverUrl);

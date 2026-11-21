@@ -43,4 +43,7 @@ UPDATE helpdesk.mailboxes
 DELETE FROM core.worker_heartbeat;
 DELETE FROM core.worker_outages;
 
+-- Each clone is a distinct database instance for client-side state (e.g. tutorial progress).
+UPDATE core.instance_meta SET id = gen_random_uuid();
+
 COMMIT;
