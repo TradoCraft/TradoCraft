@@ -117,7 +117,11 @@ Future<PickedFile?> pickFileWithRememberedDirectory(
   if (!kIsWeb && store != null && f.path.isNotEmpty) {
     final dir = p.dirname(f.path);
     if (dir.isNotEmpty && dir != '.') {
-      await store.set(lastImportDirectoryKey, dir);
+      try {
+        await store.set(lastImportDirectoryKey, dir);
+      } catch (_) {
+        // Remembering the folder is best-effort; still return the chosen file.
+      }
     }
   }
   return (name: f.name, bytes: await f.readAsBytes());

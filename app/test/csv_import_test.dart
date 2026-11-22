@@ -512,5 +512,34 @@ void main() {
       await pick();
       expect(seenInitialDirs.last, isNull);
     });
+
+    test('still returns the selected file when saving the folder fails', () async {
+      final failingStore = _FailingSetKvStore();
+      final picked = await pickFileWithRememberedDirectory(
+        importFileTypes,
+        store: failingStore,
+        opener: ({
+          List<XTypeGroup> acceptedTypeGroups = const [],
+          String? initialDirectory,
+        }) async => XFile.fromData(
+          Uint8List.fromList(utf8.encode('a;b\n1;2\n')),
+          name: 'customers.csv',
+          path: '/imports/2026/customers.csv',
+        ),
+      );
+      expect(picked?.name, 'customers.csv');
+    });
   });
+}
+
+class _FailingSetKvStore implements KvStore {
+  @override
+  Future<String?> get(String key) async => null;
+
+  @override
+  Future<void> set(String key, String value) =>
+      Future.error(StateError('disk full'));
+
+  @override
+  Future<void> remove(String key) async {}
 }

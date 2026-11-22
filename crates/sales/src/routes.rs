@@ -1035,7 +1035,7 @@ async fn quotation_pdf(
     drop(conn);
     let company = get_company(&state.db, user.company_id).await?;
     let doc = pdf::document_with_images(&company, &q, &images);
-    let files: Vec<(String, Vec<u8>)> = images.into_values().collect();
+    let files: Vec<(String, Vec<u8>)> = images.values().cloned().collect();
     let bytes = match tradocraft_documents::render_pdf_with_files(
         &state.documents,
         "quotation",
@@ -1045,7 +1045,36 @@ async fn quotation_pdf(
     .await
     {
         Ok(bytes) => bytes,
-        // a picture typst cannot read must not stop the quotation from printing
+        // a picture typst cannot read must not stop the quotation from printing; drop SVGs first
+        // so valid JPEG and PNG defaults are preserved
+        Err(e) if images.values().any(|(name, _)| name.ends_with(".svg")) => {
+            tracing::warn!(error = ?e, "quotation with SVG pictures failed; retrying without SVGs");
+            let raster_images: std::collections::HashMap<_, _> = images
+                .into_iter()
+                .filter(|(_, (name, _))| !name.ends_with(".svg"))
+                .collect();
+            let raster_doc = pdf::document_with_images(&company, &q, &raster_images);
+            let raster_files: Vec<(String, Vec<u8>)> = raster_images.into_values().collect();
+            match tradocraft_documents::render_pdf_with_files(
+                &state.documents,
+                "quotation",
+                &raster_doc,
+                &raster_files,
+            )
+            .await
+            {
+                Ok(bytes) => bytes,
+                Err(e2) => {
+                    tracing::warn!(error = ?e2, "quotation with raster pictures failed; rendering without");
+                    tradocraft_documents::render_pdf(
+                        &state.documents,
+                        "quotation",
+                        &pdf::document(&company, &q),
+                    )
+                    .await?
+                }
+            }
+        }
         Err(e) if !files.is_empty() => {
             tracing::warn!(error = ?e, "quotation with pictures failed; rendering without");
             tradocraft_documents::render_pdf(

@@ -46,15 +46,23 @@ bool isSvgBytes(Uint8List bytes) {
       bytes[2] == 0xBF) {
     start = 3;
   }
-  final head = String.fromCharCodes(bytes.skip(start).take(512))
-      .trimLeft()
-      .toLowerCase();
-  if (!(head.startsWith('<svg') ||
-      head.startsWith('<?xml') ||
-      head.startsWith('<!--'))) {
+  while (start < bytes.length &&
+      (bytes[start] == 0x20 ||
+          bytes[start] == 0x09 ||
+          bytes[start] == 0x0A ||
+          bytes[start] == 0x0D)) {
+    start++;
+  }
+  if (start >= bytes.length || bytes[start] != 0x3C /* '<' */) {
     return false;
   }
-  return head.contains('<svg');
+  final text = String.fromCharCodes(bytes.skip(start)).toLowerCase();
+  if (!(text.startsWith('<svg') ||
+      text.startsWith('<?xml') ||
+      text.startsWith('<!--'))) {
+    return false;
+  }
+  return text.contains('<svg');
 }
 
 /// A photo as listed by the API: its id (the file id), who added it and its caption.

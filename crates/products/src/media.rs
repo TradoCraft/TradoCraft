@@ -58,6 +58,9 @@ pub async fn default_images(
         let Ok((_, bytes)) = files::load(conn, blobs, owner, file_id).await else {
             continue;
         };
+        if content_type == "image/svg+xml" && tradocraft_core::logo::svg_problem(&bytes).is_some() {
+            continue;
+        }
         let ext = match content_type.as_str() {
             "image/png" => "png",
             "image/svg+xml" => "svg",

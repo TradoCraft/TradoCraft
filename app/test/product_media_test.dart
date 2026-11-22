@@ -381,4 +381,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(SvgPicture), findsNWidgets(3));
   });
+
+  test('isSvgBytes detects SVG after a long leading XML comment', () {
+    final longComment = '<!-- ${'a' * 1024} -->\n<svg xmlns="http://www.w3.org/2000/svg"/>';
+    expect(isSvgBytes(Uint8List.fromList(utf8.encode(longComment))), isTrue);
+    expect(isSvgBytes(_png), isFalse);
+  });
 }
