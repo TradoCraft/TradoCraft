@@ -337,16 +337,25 @@ async fn header(
     id: Uuid,
     lock: bool,
 ) -> AppResult<Header> {
-    let suffix = if lock { " FOR UPDATE" } else { "" };
-    sqlx::query_as(&format!(
-        "SELECT {DOC_FIELDS}, language, vat_regime, seller, customer, rebate_progress
-         {FROM_DOCUMENTS}$1 AND id = $2{suffix}"
-    ))
-    .bind(company_id)
-    .bind(id)
-    .fetch_optional(conn)
-    .await?
-    .ok_or(AppError::NotFound("customer billing document"))
+    let query: &'static str = if lock {
+        "SELECT id, customer_id, customer_name, number, kind, status, currency::text AS currency,
+                document_date, due_date, delivery_note_id, source_invoice_id, source_invoice_number,
+                reason, is_legacy, evidence_reference, net_total, vat_total, gross_total, posted_at,
+                language, vat_regime, seller, customer, rebate_progress
+         FROM finance.customer_documents WHERE company_id = $1 AND id = $2 FOR UPDATE"
+    } else {
+        "SELECT id, customer_id, customer_name, number, kind, status, currency::text AS currency,
+                document_date, due_date, delivery_note_id, source_invoice_id, source_invoice_number,
+                reason, is_legacy, evidence_reference, net_total, vat_total, gross_total, posted_at,
+                language, vat_regime, seller, customer, rebate_progress
+         FROM finance.customer_documents WHERE company_id = $1 AND id = $2"
+    };
+    sqlx::query_as(query)
+        .bind(company_id)
+        .bind(id)
+        .fetch_optional(conn)
+        .await?
+        .ok_or(AppError::NotFound("customer billing document"))
 }
 
 async fn load(conn: &mut PgConnection, company_id: Uuid, id: Uuid) -> AppResult<BillingDocument> {
