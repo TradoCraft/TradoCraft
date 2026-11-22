@@ -1,6 +1,6 @@
 //! Parsing incoming e-mail (RFC 5322) into the fields the helpdesk needs.
 
-use mail_parser::{Address, MessageParser, MimeHeaders};
+use mail_parser::{AddressList, MessageParser};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct InboundEmail {
@@ -25,14 +25,12 @@ pub struct InboundAttachment {
     pub data: Vec<u8>,
 }
 
-fn addresses(a: Option<&Address>) -> Vec<String> {
-    a.map(|a| {
-        a.iter()
-            .filter_map(|x| x.address())
-            .map(|s| s.to_lowercase())
-            .collect()
-    })
-    .unwrap_or_default()
+fn addresses(a: Option<AddressList<'_>>) -> Vec<String> {
+    a.into_iter()
+        .flat_map(|list| list.mailboxes())
+        .filter_map(|x| x.address())
+        .map(|s| s.to_lowercase())
+        .collect()
 }
 
 fn strip_brackets(s: &str) -> String {
@@ -44,15 +42,14 @@ fn strip_brackets(s: &str) -> String {
 
 pub fn parse(raw: &[u8]) -> Option<InboundEmail> {
     let m = MessageParser::default().parse(raw)?;
-    let from = m.from().and_then(|a| a.first());
+    let from = m.from().and_then(|a| a.mailboxes().next());
     let mut references: Vec<String> = m
         .references()
-        .as_text_list()
-        .unwrap_or_default()
         .into_iter()
+        .flat_map(|list| list.iter())
         .map(strip_brackets)
         .collect();
-    for r in m.in_reply_to().as_text_list().unwrap_or_default() {
+    for r in m.in_reply_to().into_iter().flat_map(|list| list.iter()) {
         let r = strip_brackets(r);
         if !references.contains(&r) {
             references.push(r);
@@ -83,7 +80,7 @@ pub fn parse(raw: &[u8]) -> Option<InboundEmail> {
             .attachments()
             .map(|a| InboundAttachment {
                 filename: a.attachment_name().unwrap_or_default().to_string(),
-                data: a.contents().to_vec(),
+                data: a.decoded().into_owned(),
             })
             .collect(),
     })
