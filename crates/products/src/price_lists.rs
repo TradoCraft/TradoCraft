@@ -993,10 +993,12 @@ async fn replace_texts(
     owner: Uuid,
     texts: &Texts,
 ) -> AppResult<()> {
-    sqlx::query(sqlx::AssertSqlSafe(format!("DELETE FROM pricing.{table} WHERE {key} = $1")))
-        .bind(owner)
-        .execute(&mut *db)
-        .await?;
+    sqlx::query(sqlx::AssertSqlSafe(format!(
+        "DELETE FROM pricing.{table} WHERE {key} = $1"
+    )))
+    .bind(owner)
+    .execute(&mut *db)
+    .await?;
     if texts.is_empty() {
         return Ok(());
     }
@@ -1020,11 +1022,13 @@ const ITEM_DESCRIPTIONS: (&str, &str, &str) =
     ("price_list_item_descriptions", "item_id", "description");
 
 async fn load_group(db: &mut PgConnection, group_id: Uuid) -> AppResult<PriceListGroup> {
-    sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT_GROUP} WHERE g.id = $1")))
-        .bind(group_id)
-        .fetch_optional(db)
-        .await?
-        .ok_or(AppError::NotFound("price list group"))
+    sqlx::query_as(sqlx::AssertSqlSafe(format!(
+        "{SELECT_GROUP} WHERE g.id = $1"
+    )))
+    .bind(group_id)
+    .fetch_optional(db)
+    .await?
+    .ok_or(AppError::NotFound("price list group"))
 }
 
 #[utoipa::path(get, path = "/price-lists/{id}/groups", tag = "products", params(("id" = Uuid, Path)),
@@ -1357,10 +1361,12 @@ async fn create_item(
         serde_json::json!({ "item_id": item_id, "product_id": input.product_id }),
     )
     .await?;
-    let item = sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT_ITEM} WHERE i.id = $1")))
-        .bind(item_id)
-        .fetch_one(&mut *tx)
-        .await?;
+    let item = sqlx::query_as(sqlx::AssertSqlSafe(format!(
+        "{SELECT_ITEM} WHERE i.id = $1"
+    )))
+    .bind(item_id)
+    .fetch_one(&mut *tx)
+    .await?;
     tx.commit().await?;
     Ok((StatusCode::CREATED, Json(item)))
 }
@@ -1418,10 +1424,12 @@ async fn update_item(
         serde_json::json!({ "item_id": item_id }),
     )
     .await?;
-    let item = sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT_ITEM} WHERE i.id = $1")))
-        .bind(item_id)
-        .fetch_one(&mut *tx)
-        .await?;
+    let item = sqlx::query_as(sqlx::AssertSqlSafe(format!(
+        "{SELECT_ITEM} WHERE i.id = $1"
+    )))
+    .bind(item_id)
+    .fetch_one(&mut *tx)
+    .await?;
     tx.commit().await?;
     Ok(Json(item))
 }
@@ -1518,11 +1526,13 @@ async fn replace_export_groups(
 }
 
 async fn load_export(db: &mut PgConnection, export_id: Uuid) -> AppResult<PriceListExport> {
-    sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT_EXPORT} WHERE e.id = $1")))
-        .bind(export_id)
-        .fetch_optional(db)
-        .await?
-        .ok_or(AppError::NotFound("price list export"))
+    sqlx::query_as(sqlx::AssertSqlSafe(format!(
+        "{SELECT_EXPORT} WHERE e.id = $1"
+    )))
+    .bind(export_id)
+    .fetch_optional(db)
+    .await?
+    .ok_or(AppError::NotFound("price list export"))
 }
 
 #[derive(Debug, Clone, Deserialize, ToSchema)]
@@ -1996,22 +2006,23 @@ async fn render_price_list(
     sqlx::query("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY")
         .execute(&mut *tx)
         .await?;
-    let all_groups: Vec<AssembleGroup> =
-        sqlx::query_as::<_, PriceListGroup>(sqlx::AssertSqlSafe(format!("{SELECT_GROUP} WHERE g.price_list_id = $1")))
-            .bind(id)
-            .fetch_all(&mut *tx)
-            .await?
-            .into_iter()
-            .map(|g| AssembleGroup {
-                id: g.id,
-                parent_id: g.parent_id,
-                sort_order: g.sort_order,
-                title: g.title.0,
-                page_break: g.page_break,
-                show_title: g.show_title,
-                gap_mm: g.gap_mm,
-            })
-            .collect();
+    let all_groups: Vec<AssembleGroup> = sqlx::query_as::<_, PriceListGroup>(sqlx::AssertSqlSafe(
+        format!("{SELECT_GROUP} WHERE g.price_list_id = $1"),
+    ))
+    .bind(id)
+    .fetch_all(&mut *tx)
+    .await?
+    .into_iter()
+    .map(|g| AssembleGroup {
+        id: g.id,
+        parent_id: g.parent_id,
+        sort_order: g.sort_order,
+        title: g.title.0,
+        page_break: g.page_break,
+        show_title: g.show_title,
+        gap_mm: g.gap_mm,
+    })
+    .collect();
     // A profile prints only its chapters; products of other chapters simply find no group.
     let groups = select_groups(
         &all_groups,

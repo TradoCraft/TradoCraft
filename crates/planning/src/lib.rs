@@ -622,10 +622,12 @@ async fn schedule_job(
     if moved {
         notify::send(&mut tx, cid, &kept, notify::Kind::Rescheduled, &mail).await?;
     }
-    let out: BoardJob = sqlx::query_as(sqlx::AssertSqlSafe(format!("{BOARD_SELECT} WHERE j.id = $1")))
-        .bind(id)
-        .fetch_one(&mut *tx)
-        .await?;
+    let out: BoardJob = sqlx::query_as(sqlx::AssertSqlSafe(format!(
+        "{BOARD_SELECT} WHERE j.id = $1"
+    )))
+    .bind(id)
+    .fetch_one(&mut *tx)
+    .await?;
     tx.commit().await?;
     Ok(Json(ScheduleResult {
         applied: true,

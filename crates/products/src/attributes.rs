@@ -149,9 +149,11 @@ pub async fn catalog_snapshot(conn: &mut sqlx::PgConnection) -> AppResult<Vec<Ca
     )
     .fetch_all(&mut *conn)
     .await?;
-    let rows: Vec<Row> = sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT} ORDER BY product_id, key")))
-        .fetch_all(&mut *conn)
-        .await?;
+    let rows: Vec<Row> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
+        "{SELECT} ORDER BY product_id, key"
+    )))
+    .fetch_all(&mut *conn)
+    .await?;
     let mut attrs: HashMap<Uuid, Vec<(String, AttributeValue)>> = HashMap::new();
     for r in &rows {
         attrs
@@ -245,10 +247,12 @@ async fn ensure_product<'e>(db: impl PgExecutor<'e>, id: Uuid) -> AppResult<()> 
 }
 
 async fn load<'e>(db: impl PgExecutor<'e>, id: Uuid) -> AppResult<Vec<ProductAttribute>> {
-    let rows: Vec<Row> = sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT} WHERE product_id = $1 ORDER BY key")))
-        .bind(id)
-        .fetch_all(db)
-        .await?;
+    let rows: Vec<Row> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
+        "{SELECT} WHERE product_id = $1 ORDER BY key"
+    )))
+    .bind(id)
+    .fetch_all(db)
+    .await?;
     Ok(rows.iter().map(Row::to_api).collect())
 }
 

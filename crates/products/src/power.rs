@@ -514,11 +514,12 @@ async fn grids_for(
 ) -> AppResult<(String, Vec<PowerGrid>)> {
     let cc = country_code.map(country).transpose()?;
     if let Some(gid) = grid_id {
-        let g: PowerGrid = sqlx::query_as(sqlx::AssertSqlSafe(format!("{GRID_SELECT} WHERE id = $1")))
-            .bind(gid)
-            .fetch_optional(&mut *conn)
-            .await?
-            .ok_or(AppError::Validation("unknown power grid".into()))?;
+        let g: PowerGrid =
+            sqlx::query_as(sqlx::AssertSqlSafe(format!("{GRID_SELECT} WHERE id = $1")))
+                .bind(gid)
+                .fetch_optional(&mut *conn)
+                .await?
+                .ok_or(AppError::Validation("unknown power grid".into()))?;
         if cc.as_ref().is_some_and(|c| *c != g.country_code) {
             return Err(AppError::Validation(
                 "the power grid does not belong to the country".into(),

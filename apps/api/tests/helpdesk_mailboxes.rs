@@ -524,7 +524,10 @@ async fn a_clone_switches_every_mailbox_off(db: PgPool) {
             .join("../../scripts/envctl.d/scrub_credentials.sql"),
     )
     .unwrap();
-    sqlx::raw_sql(sqlx::AssertSqlSafe(scrub)).execute(&db).await.unwrap();
+    sqlx::raw_sql(sqlx::AssertSqlSafe(scrub))
+        .execute(&db)
+        .await
+        .unwrap();
     assert!(load_active(&db).await.unwrap().is_empty());
     assert!(list(&app).await.iter().all(|m| m["is_default"] == false));
     // The settings stay, so the mailbox can be pointed at a test mailbox and switched on by hand.

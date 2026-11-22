@@ -506,13 +506,14 @@ pub(crate) async fn load_order_locked(
     id: Uuid,
     revision: Option<i32>,
 ) -> AppResult<Order> {
-    let mut order: OrderSummary =
-        sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT} WHERE o.id = $1 AND o.company_id = $2")))
-            .bind(id)
-            .bind(company_id)
-            .fetch_optional(&mut *conn)
-            .await?
-            .ok_or(AppError::NotFound("order"))?;
+    let mut order: OrderSummary = sqlx::query_as(sqlx::AssertSqlSafe(format!(
+        "{SELECT} WHERE o.id = $1 AND o.company_id = $2"
+    )))
+    .bind(id)
+    .bind(company_id)
+    .fetch_optional(&mut *conn)
+    .await?
+    .ok_or(AppError::NotFound("order"))?;
     #[derive(FromRow)]
     struct Extra {
         version: i64,

@@ -180,7 +180,8 @@ pub async fn list(
     }
     q.push_str(" ORDER BY po.created_at DESC");
 
-    let mut query = sqlx::query_as::<_, PurchaseOrderSummary>(sqlx::AssertSqlSafe(q)).bind(company_id);
+    let mut query =
+        sqlx::query_as::<_, PurchaseOrderSummary>(sqlx::AssertSqlSafe(q)).bind(company_id);
     if let Some(sid) = supplier_id {
         query = query.bind(sid);
     }

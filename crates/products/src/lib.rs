@@ -403,11 +403,13 @@ pub(crate) const SELECT_PRODUCT: &str = concat!("SELECT * FROM (", product_colum
 pub(crate) const SELECT_PRODUCT_LOCKABLE: &str = product_columns!();
 
 pub async fn get_product<'e>(db: impl PgExecutor<'e>, id: Uuid) -> AppResult<Product> {
-    sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT_PRODUCT} WHERE id = $1")))
-        .bind(id)
-        .fetch_optional(db)
-        .await?
-        .ok_or(AppError::NotFound("product"))
+    sqlx::query_as(sqlx::AssertSqlSafe(format!(
+        "{SELECT_PRODUCT} WHERE id = $1"
+    )))
+    .bind(id)
+    .fetch_optional(db)
+    .await?
+    .ok_or(AppError::NotFound("product"))
 }
 
 /// Like [`get_product`], after taking a shared row lock on the product that holds until the
@@ -506,11 +508,12 @@ pub async fn get_products_for_quoting_with(
     product_ids: &[Uuid],
     price_optional: &[Uuid],
 ) -> AppResult<HashMap<Uuid, QuotingProduct>> {
-    let mut products: Vec<Product> =
-        sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT_PRODUCT} WHERE id = ANY($1)")))
-            .bind(product_ids)
-            .fetch_all(db)
-            .await?;
+    let mut products: Vec<Product> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
+        "{SELECT_PRODUCT} WHERE id = ANY($1)"
+    )))
+    .bind(product_ids)
+    .fetch_all(db)
+    .await?;
     resolve_products_for_company(db, company_id, date, &mut products).await?;
     #[derive(FromRow)]
     struct Row {
@@ -1213,12 +1216,14 @@ async fn add_product_price(
         serde_json::json!({ "zone_id": input.zone_id, "unit_price": input.unit_price, "valid_from": input.valid_from }),
     )
     .await?;
-    let entry = sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT_ZONE_PRICES} AND p.id = $3")))
-        .bind(user.company_id)
-        .bind(product_id)
-        .bind(id)
-        .fetch_one(&mut *tx)
-        .await?;
+    let entry = sqlx::query_as(sqlx::AssertSqlSafe(format!(
+        "{SELECT_ZONE_PRICES} AND p.id = $3"
+    )))
+    .bind(user.company_id)
+    .bind(product_id)
+    .bind(id)
+    .fetch_one(&mut *tx)
+    .await?;
     tx.commit().await?;
     Ok((StatusCode::CREATED, Json(entry)))
 }
@@ -1311,12 +1316,14 @@ async fn correct_product_price(
         }),
     )
     .await?;
-    let entry = sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT_ZONE_PRICES} AND p.id = $3")))
-        .bind(user.company_id)
-        .bind(product_id)
-        .bind(price_id)
-        .fetch_one(&mut *tx)
-        .await?;
+    let entry = sqlx::query_as(sqlx::AssertSqlSafe(format!(
+        "{SELECT_ZONE_PRICES} AND p.id = $3"
+    )))
+    .bind(user.company_id)
+    .bind(product_id)
+    .bind(price_id)
+    .fetch_one(&mut *tx)
+    .await?;
     tx.commit().await?;
     Ok(Json(entry))
 }

@@ -186,14 +186,16 @@ async fn list_quotations(
     .bind(p.offset.unwrap_or(0).max(0))
     .fetch_all(&state.db)
     .await?;
-    let total = sqlx::query_scalar(sqlx::AssertSqlSafe(format!("SELECT count(*) FROM sales.quotations {filter}")))
-        .bind(user.company_id)
-        .bind(&pattern)
-        .bind(&statuses)
-        .bind(p.customer_id)
-        .bind(p.opportunity_id)
-        .fetch_one(&state.db)
-        .await?;
+    let total = sqlx::query_scalar(sqlx::AssertSqlSafe(format!(
+        "SELECT count(*) FROM sales.quotations {filter}"
+    )))
+    .bind(user.company_id)
+    .bind(&pattern)
+    .bind(&statuses)
+    .bind(p.customer_id)
+    .bind(p.opportunity_id)
+    .fetch_one(&state.db)
+    .await?;
     Ok(Json(QuotationPage { items, total }))
 }
 

@@ -119,16 +119,18 @@ async fn list_stock(
     .bind(p.offset.unwrap_or(0).max(0))
     .fetch_all(&state.db)
     .await?;
-    let total = sqlx::query_scalar(sqlx::AssertSqlSafe(format!("SELECT count(*) FROM ({STOCK_ROWS}) x")))
-        .bind(user.company_id)
-        .bind(p.product_id)
-        .bind(p.warehouse_id)
-        .bind(p.location_id)
-        .bind(p.lot_id)
-        .bind(&pattern)
-        .bind(p.include_zero.unwrap_or(false))
-        .fetch_one(&state.db)
-        .await?;
+    let total = sqlx::query_scalar(sqlx::AssertSqlSafe(format!(
+        "SELECT count(*) FROM ({STOCK_ROWS}) x"
+    )))
+    .bind(user.company_id)
+    .bind(p.product_id)
+    .bind(p.warehouse_id)
+    .bind(p.location_id)
+    .bind(p.lot_id)
+    .bind(&pattern)
+    .bind(p.include_zero.unwrap_or(false))
+    .fetch_one(&state.db)
+    .await?;
     Ok(Json(StockRowPage { items, total }))
 }
 
@@ -222,26 +224,30 @@ async fn list_product_stock(
 ) -> AppResult<Json<ProductStockPage>> {
     user.require(Permission::InventoryRead)?;
     let pattern = p.q.as_deref().map(like_pattern);
-    let items = sqlx::query_as(sqlx::AssertSqlSafe(format!("{PRODUCT_STOCK} ORDER BY code LIMIT $7 OFFSET $8")))
-        .bind(user.company_id)
-        .bind(p.product_id)
-        .bind(p.warehouse_id)
-        .bind(&pattern)
-        .bind(p.in_stock)
-        .bind(p.below_reorder)
-        .bind(p.limit.unwrap_or(50).clamp(1, 500))
-        .bind(p.offset.unwrap_or(0).max(0))
-        .fetch_all(&state.db)
-        .await?;
-    let total = sqlx::query_scalar(sqlx::AssertSqlSafe(format!("SELECT count(*) FROM ({PRODUCT_STOCK}) c")))
-        .bind(user.company_id)
-        .bind(p.product_id)
-        .bind(p.warehouse_id)
-        .bind(&pattern)
-        .bind(p.in_stock)
-        .bind(p.below_reorder)
-        .fetch_one(&state.db)
-        .await?;
+    let items = sqlx::query_as(sqlx::AssertSqlSafe(format!(
+        "{PRODUCT_STOCK} ORDER BY code LIMIT $7 OFFSET $8"
+    )))
+    .bind(user.company_id)
+    .bind(p.product_id)
+    .bind(p.warehouse_id)
+    .bind(&pattern)
+    .bind(p.in_stock)
+    .bind(p.below_reorder)
+    .bind(p.limit.unwrap_or(50).clamp(1, 500))
+    .bind(p.offset.unwrap_or(0).max(0))
+    .fetch_all(&state.db)
+    .await?;
+    let total = sqlx::query_scalar(sqlx::AssertSqlSafe(format!(
+        "SELECT count(*) FROM ({PRODUCT_STOCK}) c"
+    )))
+    .bind(user.company_id)
+    .bind(p.product_id)
+    .bind(p.warehouse_id)
+    .bind(&pattern)
+    .bind(p.in_stock)
+    .bind(p.below_reorder)
+    .fetch_one(&state.db)
+    .await?;
     Ok(Json(ProductStockPage { items, total }))
 }
 

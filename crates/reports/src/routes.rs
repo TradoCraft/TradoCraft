@@ -163,12 +163,14 @@ async fn load_unchecked(
     user: &CurrentUser,
     id: Uuid,
 ) -> AppResult<SavedReport> {
-    let row: Row = sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT} WHERE r.id = $1 AND r.company_id = $2")))
-        .bind(id)
-        .bind(user.company_id)
-        .fetch_optional(&mut *conn)
-        .await?
-        .ok_or(AppError::NotFound("report"))?;
+    let row: Row = sqlx::query_as(sqlx::AssertSqlSafe(format!(
+        "{SELECT} WHERE r.id = $1 AND r.company_id = $2"
+    )))
+    .bind(id)
+    .bind(user.company_id)
+    .fetch_optional(&mut *conn)
+    .await?
+    .ok_or(AppError::NotFound("report"))?;
     to_report(row, user)
 }
 

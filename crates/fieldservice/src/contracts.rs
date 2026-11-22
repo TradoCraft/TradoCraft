@@ -294,13 +294,14 @@ async fn load_contract(
     company_id: Uuid,
     id: Uuid,
 ) -> AppResult<ContractDetail> {
-    let summary: ContractSummary =
-        sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT} WHERE k.id = $1 AND k.company_id = $2")))
-            .bind(id)
-            .bind(company_id)
-            .fetch_optional(&mut *conn)
-            .await?
-            .ok_or(AppError::NotFound("contract"))?;
+    let summary: ContractSummary = sqlx::query_as(sqlx::AssertSqlSafe(format!(
+        "{SELECT} WHERE k.id = $1 AND k.company_id = $2"
+    )))
+    .bind(id)
+    .bind(company_id)
+    .fetch_optional(&mut *conn)
+    .await?
+    .ok_or(AppError::NotFound("contract"))?;
     let extra: ContractExtra = sqlx::query_as(
         "SELECT k.contact_id, nullif(btrim(ct.first_name || ' ' || ct.last_name), '') AS contact_name,
                 k.site_name, k.street, k.postal_code, k.city, k.country_code::text AS country_code, k.notes, k.created_at

@@ -204,12 +204,14 @@ fn to_item(r: Row, user: &CurrentUser, jobs: &HashSet<Uuid>) -> TodoItem {
 }
 
 async fn load(conn: &mut PgConnection, user: &CurrentUser, id: Uuid) -> AppResult<TodoItem> {
-    let row: Option<Row> = sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT} WHERE i.id = $3 AND {VISIBLE}")))
-        .bind(user.company_id)
-        .bind(user.user_id)
-        .bind(id)
-        .fetch_optional(&mut *conn)
-        .await?;
+    let row: Option<Row> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
+        "{SELECT} WHERE i.id = $3 AND {VISIBLE}"
+    )))
+    .bind(user.company_id)
+    .bind(user.user_id)
+    .bind(id)
+    .fetch_optional(&mut *conn)
+    .await?;
     let row = row.ok_or(AppError::NotFound(NOT_FOUND))?;
     let mut items = to_items(conn, user, vec![row]).await?;
     Ok(items.remove(0))

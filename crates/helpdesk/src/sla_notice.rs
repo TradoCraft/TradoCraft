@@ -541,11 +541,13 @@ pub async fn acknowledge(
     if rules.is_empty() {
         return Ok(false);
     }
-    let t: T = sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT} WHERE t.id = $1 AND t.company_id = $2")))
-        .bind(ticket_id)
-        .bind(company_id)
-        .fetch_one(&mut *conn)
-        .await?;
+    let t: T = sqlx::query_as(sqlx::AssertSqlSafe(format!(
+        "{SELECT} WHERE t.id = $1 AND t.company_id = $2"
+    )))
+    .bind(ticket_id)
+    .bind(company_id)
+    .fetch_one(&mut *conn)
+    .await?;
     if !pick(&rules, t.team_id, &t.priority).is_some_and(|r| r.ack_enabled) {
         return Ok(false);
     }

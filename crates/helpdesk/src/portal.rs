@@ -87,15 +87,17 @@ pub async fn list(conn: &mut PgConnection, v: &Viewer) -> AppResult<Vec<PortalTi
 }
 
 pub async fn get(conn: &mut PgConnection, v: &Viewer, id: Uuid) -> AppResult<PortalTicketDetail> {
-    let ticket: PortalTicket = sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT} WHERE t.id = $5 AND {VISIBLE}")))
-        .bind(v.company_id)
-        .bind(v.customer_id)
-        .bind(&v.scope)
-        .bind(v.contact_id)
-        .bind(id)
-        .fetch_optional(&mut *conn)
-        .await?
-        .ok_or(AppError::NotFound("ticket"))?;
+    let ticket: PortalTicket = sqlx::query_as(sqlx::AssertSqlSafe(format!(
+        "{SELECT} WHERE t.id = $5 AND {VISIBLE}"
+    )))
+    .bind(v.company_id)
+    .bind(v.customer_id)
+    .bind(&v.scope)
+    .bind(v.contact_id)
+    .bind(id)
+    .fetch_optional(&mut *conn)
+    .await?
+    .ok_or(AppError::NotFound("ticket"))?;
     let mut messages: Vec<PortalMessage> = sqlx::query_as(
         "SELECT a.id,
                 CASE WHEN a.kind = 'email_out' THEN 'outgoing' ELSE 'incoming' END AS direction,

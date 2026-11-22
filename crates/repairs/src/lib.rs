@@ -137,12 +137,14 @@ pub(crate) const SELECT: &str = "SELECT r.id, r.number, r.status, r.priority, r.
      LEFT JOIN core.users u ON u.id = r.assigned_user_id";
 
 pub async fn load_repair(conn: &mut PgConnection, company_id: Uuid, id: Uuid) -> AppResult<Repair> {
-    sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT} WHERE r.id = $1 AND r.company_id = $2")))
-        .bind(id)
-        .bind(company_id)
-        .fetch_optional(conn)
-        .await?
-        .ok_or(AppError::NotFound("repair"))
+    sqlx::query_as(sqlx::AssertSqlSafe(format!(
+        "{SELECT} WHERE r.id = $1 AND r.company_id = $2"
+    )))
+    .bind(id)
+    .bind(company_id)
+    .fetch_optional(conn)
+    .await?
+    .ok_or(AppError::NotFound("repair"))
 }
 
 pub(crate) async fn load_events(conn: &mut PgConnection, id: Uuid) -> AppResult<Vec<RepairEvent>> {

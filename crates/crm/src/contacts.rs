@@ -341,10 +341,11 @@ async fn assemble(conn: &mut PgConnection, rows: Vec<ContactRow>) -> AppResult<V
 }
 
 pub async fn get_contact(conn: &mut PgConnection, id: Uuid) -> AppResult<Contact> {
-    let rows: Vec<ContactRow> = sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT} WHERE c.id = $1")))
-        .bind(id)
-        .fetch_all(&mut *conn)
-        .await?;
+    let rows: Vec<ContactRow> =
+        sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT} WHERE c.id = $1")))
+            .bind(id)
+            .fetch_all(&mut *conn)
+            .await?;
     assemble(conn, rows)
         .await?
         .into_iter()

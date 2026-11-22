@@ -347,11 +347,12 @@ impl Importable for Customers {
     }
 
     async fn export(pool: &PgPool, user: &CurrentUser) -> AppResult<Vec<Vec<CellValue>>> {
-        let customers: Vec<Customer> =
-            sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT_CUSTOMER} ORDER BY c.code")))
-                .bind(user.company_id)
-                .fetch_all(pool)
-                .await?;
+        let customers: Vec<Customer> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
+            "{SELECT_CUSTOMER} ORDER BY c.code"
+        )))
+        .bind(user.company_id)
+        .fetch_all(pool)
+        .await?;
         Ok(customers.iter().map(export_row).collect())
     }
 }

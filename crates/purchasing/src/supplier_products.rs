@@ -180,10 +180,12 @@ pub async fn set_supplier_product(
     )
     .await?;
 
-    let sp = sqlx::query_as::<_, SupplierProduct>(sqlx::AssertSqlSafe(format!("{SELECT_QUERY} WHERE sp.id = $1")))
-        .bind(item_id)
-        .fetch_one(conn)
-        .await?;
+    let sp = sqlx::query_as::<_, SupplierProduct>(sqlx::AssertSqlSafe(format!(
+        "{SELECT_QUERY} WHERE sp.id = $1"
+    )))
+    .bind(item_id)
+    .fetch_one(conn)
+    .await?;
 
     Ok(sp)
 }

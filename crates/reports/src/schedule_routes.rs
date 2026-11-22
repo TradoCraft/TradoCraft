@@ -159,12 +159,14 @@ impl From<Row> for ReportSchedule {
 }
 
 async fn load(conn: &mut PgConnection, company_id: Uuid, id: Uuid) -> AppResult<ReportSchedule> {
-    let row: Row = sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT} WHERE s.id = $1 AND s.company_id = $2")))
-        .bind(id)
-        .bind(company_id)
-        .fetch_optional(conn)
-        .await?
-        .ok_or(AppError::NotFound("report schedule"))?;
+    let row: Row = sqlx::query_as(sqlx::AssertSqlSafe(format!(
+        "{SELECT} WHERE s.id = $1 AND s.company_id = $2"
+    )))
+    .bind(id)
+    .bind(company_id)
+    .fetch_optional(conn)
+    .await?
+    .ok_or(AppError::NotFound("report schedule"))?;
     Ok(row.into())
 }
 

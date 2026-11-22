@@ -272,13 +272,15 @@ const SELECT: &str = "SELECT id, key, label, kind, unit, options, scope, sort_or
                       FROM products.attribute_definitions";
 
 async fn load(db: &sqlx::PgPool, company_id: Uuid, id: Uuid) -> AppResult<AttributeDefinition> {
-    sqlx::query_as::<_, Row>(sqlx::AssertSqlSafe(format!("{SELECT} WHERE id = $1 AND company_id = $2")))
-        .bind(id)
-        .bind(company_id)
-        .fetch_optional(db)
-        .await?
-        .map(Row::into_api)
-        .ok_or(AppError::NotFound("attribute definition"))
+    sqlx::query_as::<_, Row>(sqlx::AssertSqlSafe(format!(
+        "{SELECT} WHERE id = $1 AND company_id = $2"
+    )))
+    .bind(id)
+    .bind(company_id)
+    .fetch_optional(db)
+    .await?
+    .map(Row::into_api)
+    .ok_or(AppError::NotFound("attribute definition"))
 }
 
 fn checked(input: &AttributeDefinitionInput) -> AppResult<AttributeDefinitionInput> {

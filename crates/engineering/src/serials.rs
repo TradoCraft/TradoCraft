@@ -145,12 +145,14 @@ const SELECT: &str = "SELECT s.id, s.product_id, p.code AS product_code, p.name 
      LEFT JOIN engineering.serial_units ps ON ps.id = link.parent_id";
 
 async fn load(conn: &mut PgConnection, company_id: Uuid, id: Uuid) -> AppResult<SerialUnit> {
-    sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT} WHERE s.id = $1 AND s.company_id = $2")))
-        .bind(id)
-        .bind(company_id)
-        .fetch_optional(conn)
-        .await?
-        .ok_or(AppError::NotFound("serial unit"))
+    sqlx::query_as(sqlx::AssertSqlSafe(format!(
+        "{SELECT} WHERE s.id = $1 AND s.company_id = $2"
+    )))
+    .bind(id)
+    .bind(company_id)
+    .fetch_optional(conn)
+    .await?
+    .ok_or(AppError::NotFound("serial unit"))
 }
 
 async fn lock(conn: &mut PgConnection, ids: &[Uuid]) -> AppResult<()> {

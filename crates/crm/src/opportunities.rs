@@ -177,12 +177,14 @@ const SELECT: &str =
      JOIN core.users u ON u.id = o.owner_user_id";
 
 async fn load(conn: &mut PgConnection, company_id: Uuid, id: Uuid) -> AppResult<Opportunity> {
-    sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT} WHERE o.id = $1 AND o.company_id = $2")))
-        .bind(id)
-        .bind(company_id)
-        .fetch_optional(conn)
-        .await?
-        .ok_or(AppError::NotFound("opportunity"))
+    sqlx::query_as(sqlx::AssertSqlSafe(format!(
+        "{SELECT} WHERE o.id = $1 AND o.company_id = $2"
+    )))
+    .bind(id)
+    .bind(company_id)
+    .fetch_optional(conn)
+    .await?
+    .ok_or(AppError::NotFound("opportunity"))
 }
 
 fn validate_probability(p: Option<i16>) -> AppResult<()> {

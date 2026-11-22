@@ -510,9 +510,11 @@ impl Importable for Products {
     }
 
     async fn export(pool: &PgPool, user: &CurrentUser) -> AppResult<Vec<Vec<CellValue>>> {
-        let mut products: Vec<Product> = sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT_PRODUCT} ORDER BY code")))
-            .fetch_all(pool)
-            .await?;
+        let mut products: Vec<Product> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
+            "{SELECT_PRODUCT} ORDER BY code"
+        )))
+        .fetch_all(pool)
+        .await?;
         crate::resolve_products_for_company(
             pool,
             user.company_id,

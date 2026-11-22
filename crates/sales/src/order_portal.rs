@@ -86,15 +86,17 @@ const VISIBLE: &str =
     "o.company_id = $1 AND o.customer_id = $2 AND ($3 = 'customer' OR o.contact_id = $4)";
 
 async fn load(conn: &mut PgConnection, v: &PortalViewer, id: Uuid) -> AppResult<PortalOrder> {
-    sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT} WHERE {VISIBLE} AND o.id = $5")))
-        .bind(v.company_id)
-        .bind(v.customer_id)
-        .bind(&v.scope)
-        .bind(v.contact_id)
-        .bind(id)
-        .fetch_optional(conn)
-        .await?
-        .ok_or(AppError::NotFound("order"))
+    sqlx::query_as(sqlx::AssertSqlSafe(format!(
+        "{SELECT} WHERE {VISIBLE} AND o.id = $5"
+    )))
+    .bind(v.company_id)
+    .bind(v.customer_id)
+    .bind(&v.scope)
+    .bind(v.contact_id)
+    .bind(id)
+    .fetch_optional(conn)
+    .await?
+    .ok_or(AppError::NotFound("order"))
 }
 
 pub async fn list(conn: &mut PgConnection, v: &PortalViewer) -> AppResult<Vec<PortalOrder>> {

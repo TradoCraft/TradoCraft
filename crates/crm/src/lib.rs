@@ -220,12 +220,14 @@ pub async fn get_customer<'e>(
     company_id: Uuid,
     id: Uuid,
 ) -> AppResult<Customer> {
-    sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT_CUSTOMER} WHERE c.id = $2")))
-        .bind(company_id)
-        .bind(id)
-        .fetch_optional(db)
-        .await?
-        .ok_or(AppError::NotFound("customer"))
+    sqlx::query_as(sqlx::AssertSqlSafe(format!(
+        "{SELECT_CUSTOMER} WHERE c.id = $2"
+    )))
+    .bind(company_id)
+    .bind(id)
+    .fetch_optional(db)
+    .await?
+    .ok_or(AppError::NotFound("customer"))
 }
 
 /// Like [`get_customer`], for the row an update is about to change: locks it until the transaction

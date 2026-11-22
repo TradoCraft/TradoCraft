@@ -391,12 +391,14 @@ async fn load_rules(conn: &mut PgConnection, company_id: Uuid) -> AppResult<Vec<
 }
 
 async fn load_rule(conn: &mut PgConnection, company_id: Uuid, id: Uuid) -> AppResult<Rule> {
-    let row: RuleRow = sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT_RULE} WHERE id = $1 AND company_id = $2")))
-        .bind(id)
-        .bind(company_id)
-        .fetch_optional(conn)
-        .await?
-        .ok_or(AppError::NotFound("rule"))?;
+    let row: RuleRow = sqlx::query_as(sqlx::AssertSqlSafe(format!(
+        "{SELECT_RULE} WHERE id = $1 AND company_id = $2"
+    )))
+    .bind(id)
+    .bind(company_id)
+    .fetch_optional(conn)
+    .await?
+    .ok_or(AppError::NotFound("rule"))?;
     Ok(row.into())
 }
 

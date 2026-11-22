@@ -105,12 +105,14 @@ pub async fn list_rules(conn: &mut PgConnection, company_id: Uuid) -> AppResult<
 }
 
 async fn load(conn: &mut PgConnection, company_id: Uuid, id: Uuid) -> AppResult<MatchRule> {
-    sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT} WHERE id = $1 AND company_id = $2")))
-        .bind(id)
-        .bind(company_id)
-        .fetch_optional(conn)
-        .await?
-        .ok_or(AppError::NotFound("match rule"))
+    sqlx::query_as(sqlx::AssertSqlSafe(format!(
+        "{SELECT} WHERE id = $1 AND company_id = $2"
+    )))
+    .bind(id)
+    .bind(company_id)
+    .fetch_optional(conn)
+    .await?
+    .ok_or(AppError::NotFound("match rule"))
 }
 
 /// What the operator needs of the product attribute.

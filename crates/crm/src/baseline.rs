@@ -342,12 +342,14 @@ async fn load_item(
     opportunity_id: Uuid,
     id: Uuid,
 ) -> AppResult<BaselineItem> {
-    sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT} WHERE id = $1 AND opportunity_id = $2")))
-        .bind(id)
-        .bind(opportunity_id)
-        .fetch_optional(conn)
-        .await?
-        .ok_or(AppError::NotFound("baseline item"))
+    sqlx::query_as(sqlx::AssertSqlSafe(format!(
+        "{SELECT} WHERE id = $1 AND opportunity_id = $2"
+    )))
+    .bind(id)
+    .bind(opportunity_id)
+    .fetch_optional(conn)
+    .await?
+    .ok_or(AppError::NotFound("baseline item"))
 }
 
 /// Validates the placement and values of an item of type `type_code` and returns the normalised

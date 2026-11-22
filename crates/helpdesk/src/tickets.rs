@@ -388,13 +388,14 @@ const SELECT: &str = "SELECT t.id, t.version, t.number, t.subject, t.status, t.p
      LEFT JOIN sales.orders o ON o.id = t.order_id";
 
 pub async fn load_ticket(conn: &mut PgConnection, company_id: Uuid, id: Uuid) -> AppResult<Ticket> {
-    let ticket =
-        sqlx::query_as::<_, Ticket>(sqlx::AssertSqlSafe(format!("{SELECT} WHERE t.id = $1 AND t.company_id = $2")))
-            .bind(id)
-            .bind(company_id)
-            .fetch_optional(&mut *conn)
-            .await?
-            .ok_or(AppError::NotFound("ticket"))?;
+    let ticket = sqlx::query_as::<_, Ticket>(sqlx::AssertSqlSafe(format!(
+        "{SELECT} WHERE t.id = $1 AND t.company_id = $2"
+    )))
+    .bind(id)
+    .bind(company_id)
+    .fetch_optional(&mut *conn)
+    .await?
+    .ok_or(AppError::NotFound("ticket"))?;
     let cal = crate::calendar::load_calendar(conn, company_id, ticket.team_id).await?;
     Ok(ticket.with_sla(cal.as_ref()))
 }

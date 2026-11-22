@@ -105,15 +105,17 @@ async fn visible(
     v: &Viewer,
     id: Uuid,
 ) -> AppResult<(PortalRepair, String)> {
-    let row: Row = sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT} WHERE r.id = $5 AND {VISIBLE}")))
-        .bind(v.company_id)
-        .bind(v.customer_id)
-        .bind(&v.scope)
-        .bind(v.contact_id)
-        .bind(id)
-        .fetch_optional(&mut *conn)
-        .await?
-        .ok_or(AppError::NotFound("repair"))?;
+    let row: Row = sqlx::query_as(sqlx::AssertSqlSafe(format!(
+        "{SELECT} WHERE r.id = $5 AND {VISIBLE}"
+    )))
+    .bind(v.company_id)
+    .bind(v.customer_id)
+    .bind(&v.scope)
+    .bind(v.contact_id)
+    .bind(id)
+    .fetch_optional(&mut *conn)
+    .await?
+    .ok_or(AppError::NotFound("repair"))?;
     let raw = row.status.clone();
     Ok((row.into(), raw))
 }

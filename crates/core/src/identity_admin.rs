@@ -227,9 +227,10 @@ const PRIMARY_COMPANY: &str = "SELECT id FROM core.companies
 /// new primary row.
 async fn is_primary_admin(conn: &mut sqlx::PgConnection, user: &CurrentUser) -> AppResult<bool> {
     loop {
-        let locked: Option<Uuid> = sqlx::query_scalar(sqlx::AssertSqlSafe(format!("{PRIMARY_COMPANY} FOR SHARE")))
-            .fetch_optional(&mut *conn)
-            .await?;
+        let locked: Option<Uuid> =
+            sqlx::query_scalar(sqlx::AssertSqlSafe(format!("{PRIMARY_COMPANY} FOR SHARE")))
+                .fetch_optional(&mut *conn)
+                .await?;
         let Some(locked) = locked else {
             return Ok(false);
         };

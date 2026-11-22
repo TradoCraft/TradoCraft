@@ -425,10 +425,12 @@ async fn lock_request(
     .await?
     .ok_or(AppError::NotFound("shipping request"))?;
     let q = service::load_quotation(tx, user.company_id, quotation_id, true).await?;
-    let r: ShippingRequest = sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT} WHERE r.id = $1 FOR UPDATE OF r")))
-        .bind(id)
-        .fetch_one(&mut *tx)
-        .await?;
+    let r: ShippingRequest = sqlx::query_as(sqlx::AssertSqlSafe(format!(
+        "{SELECT} WHERE r.id = $1 FOR UPDATE OF r"
+    )))
+    .bind(id)
+    .fetch_one(&mut *tx)
+    .await?;
     if service::status_of(&q) != QuotationStatus::Draft {
         return Err(AppError::Conflict(format!(
             "quotation {} is {}; its shipping request can no longer be changed",
