@@ -146,7 +146,7 @@ fn svg_is_well_formed(text: &str) -> bool {
 
 /// `None` when `bytes` is an acceptable SVG; `Some(None)` when it is not an SVG at all;
 /// `Some(Some(why))` when it is an SVG with active or external content.
-fn svg_problem(bytes: &[u8]) -> Option<Option<&'static str>> {
+pub fn svg_problem(bytes: &[u8]) -> Option<Option<&'static str>> {
     let Ok(text) = std::str::from_utf8(bytes) else {
         return Some(None);
     };

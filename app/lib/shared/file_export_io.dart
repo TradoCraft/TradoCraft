@@ -71,3 +71,6 @@ Future<String> writeUnique(
 Future<void> openPathInSystem(String path) async {
   await launchUrl(Uri.file(path), mode: LaunchMode.externalApplication);
 }
+
+/// Whether [path] exists as a directory on disk.
+Future<bool> directoryExists(String path) => Directory(path).exists();

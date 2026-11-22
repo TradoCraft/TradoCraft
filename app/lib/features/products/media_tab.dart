@@ -2,7 +2,7 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../app/api.dart';
@@ -104,9 +104,9 @@ class _MediaTabState extends ConsumerState<MediaTab> {
   Future<void> _add() => _run(() async {
     final dio = ref.read(dioProvider);
     final base = _base;
-    final files = await ImagePicker().pickMultipleMedia();
+    final files = await pickProductMedia(context);
     for (final f in files) {
-      await uploadPhoto(dio, base, PickedPhoto(await f.readAsBytes(), f.name));
+      await uploadPhoto(dio, base, f);
     }
   });
 
@@ -147,7 +147,11 @@ class _MediaTabState extends ConsumerState<MediaTab> {
         child: FutureBuilder<Uint8List>(
           future: _bytes(m.id),
           builder: (context, s) => s.hasData
-              ? InteractiveViewer(child: Image.memory(s.data!))
+              ? InteractiveViewer(
+                  child: isSvgBytes(s.data!)
+                      ? SvgPicture.memory(s.data!)
+                      : Image.memory(s.data!),
+                )
               : const SizedBox(
                   height: 200,
                   child: Center(child: CircularProgressIndicator()),
@@ -196,13 +200,18 @@ class _MediaTabState extends ConsumerState<MediaTab> {
                   : FutureBuilder<Uint8List>(
                       future: _bytes(m.id),
                       builder: (context, s) => s.hasData
-                          ? Image.memory(
-                              s.data!,
-                              fit: BoxFit.cover,
-                              cacheWidth: 300,
-                              errorBuilder: (_, _, _) =>
-                                  const Icon(AppIcons.brokenImage),
-                            )
+                          ? (isSvgBytes(s.data!)
+                                ? SvgPicture.memory(
+                                    s.data!,
+                                    fit: BoxFit.contain,
+                                  )
+                                : Image.memory(
+                                    s.data!,
+                                    fit: BoxFit.cover,
+                                    cacheWidth: 300,
+                                    errorBuilder: (_, _, _) =>
+                                        const Icon(AppIcons.brokenImage),
+                                  ))
                           : s.hasError
                           ? const Icon(AppIcons.brokenImage)
                           : const Center(

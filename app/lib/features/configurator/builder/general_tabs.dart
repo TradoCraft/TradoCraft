@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:file_selector/file_selector.dart';
 import 'package:flutter/foundation.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,7 +8,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/api.dart';
 import '../../../l10n/l10n.dart';
 import '../../../shared/app_icons.dart';
-import '../../../shared/csv_transfer.dart' show saveCsvFile;
+import '../../../shared/csv_transfer.dart' show pickJsonFile, saveCsvFile;
+import '../../field/offline/kv_store.dart';
 import '../definition.dart';
 import '../runner_screen.dart';
 import '../runner_state.dart';
@@ -27,20 +27,7 @@ typedef PickedFile = ({String name, Uint8List bytes});
 
 /// Lets the person choose a JSON file; null when cancelled. Replaced in tests.
 final jsonPickerProvider = Provider<Future<PickedFile?> Function()>(
-  (_) => () async {
-    final f = await openFile(
-      acceptedTypeGroups: const [
-        XTypeGroup(
-          label: 'JSON',
-          extensions: ['json'],
-          mimeTypes: ['application/json'],
-          uniformTypeIdentifiers: ['public.json'],
-        ),
-      ],
-    );
-    if (f == null) return null;
-    return (name: f.name, bytes: await f.readAsBytes());
-  },
+  (ref) => () => pickJsonFile(store: ref.read(kvStoreProvider)),
 );
 
 /// Saves or shares a JSON file; false when cancelled. Replaced in tests.
