@@ -98,13 +98,13 @@ pub async fn list(
         search::matches("email", "$3"),
         search::matches("contact_person", "$3"),
     );
-    sqlx::query_as::<_, Supplier>(&format!(
+    sqlx::query_as::<_, Supplier>(sqlx::AssertSqlSafe(format!(
         "SELECT id, company_id, name, code, country, currency, email, phone, contact_person,
                 payment_terms_days, tax_id, active, notes, created_at, updated_at
          FROM purchasing.suppliers
          WHERE company_id = $1 AND ($2 = false OR active = true) AND {filter}
          ORDER BY name ASC"
-    ))
+    )))
     .bind(company_id)
     .bind(active_only)
     .bind(search::pattern(q))

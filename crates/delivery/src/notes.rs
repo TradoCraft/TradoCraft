@@ -312,9 +312,9 @@ pub(crate) async fn load_note(
     company_id: Uuid,
     id: Uuid,
 ) -> AppResult<DeliveryNote> {
-    let row: NoteRow = sqlx::query_as(&format!(
+    let row: NoteRow = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT_NOTE} WHERE n.id = $1 AND n.company_id = $2"
-    ))
+    )))
     .bind(id)
     .bind(company_id)
     .fetch_optional(&mut *conn)
@@ -907,9 +907,9 @@ async fn update_note(
 
 /// Locks a note row.
 async fn lock_note(conn: &mut PgConnection, company_id: Uuid, id: Uuid) -> AppResult<NoteRow> {
-    sqlx::query_as(&format!(
+    sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT_NOTE} WHERE n.id = $1 AND n.company_id = $2 FOR UPDATE OF n"
-    ))
+    )))
     .bind(id)
     .bind(company_id)
     .fetch_optional(conn)
@@ -1198,10 +1198,10 @@ async fn list_notes(
             .map(|q| format!("%{q}%"));
     let limit = p.limit.unwrap_or(50).clamp(1, 200);
     let offset = p.offset.unwrap_or(0).max(0);
-    let items: Vec<DeliverySummary> = sqlx::query_as(&format!(
+    let items: Vec<DeliverySummary> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT_SUMMARY} WHERE {filter}
          ORDER BY n.planned_date DESC NULLS FIRST, n.created_at DESC, n.id LIMIT $7 OFFSET $8"
-    ))
+    )))
     .bind(user.company_id)
     .bind(&p.status)
     .bind(p.customer_id)
@@ -1212,12 +1212,12 @@ async fn list_notes(
     .bind(offset)
     .fetch_all(&state.db)
     .await?;
-    let total: i64 = sqlx::query_scalar(&format!(
+    let total: i64 = sqlx::query_scalar(sqlx::AssertSqlSafe(format!(
         "SELECT count(*) FROM delivery.delivery_notes n
          JOIN sales.orders o ON o.id = n.order_id
          JOIN crm.customers c ON c.id = n.customer_id
          WHERE {filter}"
-    ))
+    )))
     .bind(user.company_id)
     .bind(&p.status)
     .bind(p.customer_id)
@@ -1239,9 +1239,9 @@ async fn list_for_order(
 ) -> AppResult<Json<Vec<DeliverySummary>>> {
     user.require(Permission::DeliveryRead)?;
     Ok(Json(
-        sqlx::query_as(&format!(
+        sqlx::query_as(sqlx::AssertSqlSafe(format!(
             "{SELECT_SUMMARY} WHERE n.company_id = $1 AND n.order_id = $2 ORDER BY n.created_at, n.id"
-        ))
+        )))
         .bind(user.company_id)
         .bind(order_id)
         .fetch_all(&state.db)

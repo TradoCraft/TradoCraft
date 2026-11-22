@@ -236,7 +236,7 @@ async fn header(
          WHERE id = $1 AND company_id = $2{}",
         if lock { " FOR UPDATE" } else { "" }
     );
-    sqlx::query_as(&sql)
+    sqlx::query_as(sqlx::AssertSqlSafe(sql))
         .bind(id)
         .bind(company_id)
         .fetch_optional(&mut *conn)
@@ -612,7 +612,7 @@ async fn list_favorites(
         search::matches("p.code", "$2"),
         search::matches("p.name", "$2"),
     );
-    let rows: Vec<SummaryRow> = sqlx::query_as(&sql)
+    let rows: Vec<SummaryRow> = sqlx::query_as(sqlx::AssertSqlSafe(sql))
         .bind(user.company_id)
         .bind(pattern)
         .bind(params.limit.unwrap_or(50).clamp(1, 200))

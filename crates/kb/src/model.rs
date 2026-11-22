@@ -252,10 +252,10 @@ struct EntryRow {
 }
 
 pub async fn texts_of(conn: &mut PgConnection, entry_id: Uuid) -> AppResult<Vec<EntryText>> {
-    Ok(sqlx::query_as(&format!(
+    Ok(sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "SELECT language::text AS language, title, summary, body FROM kb.entry_texts
          WHERE entry_id = $1 ORDER BY {LANGUAGE_ORDER}"
-    ))
+    )))
     .bind(entry_id)
     .fetch_all(conn)
     .await?)

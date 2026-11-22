@@ -137,7 +137,7 @@ pub(crate) const SELECT: &str = "SELECT r.id, r.number, r.status, r.priority, r.
      LEFT JOIN core.users u ON u.id = r.assigned_user_id";
 
 pub async fn load_repair(conn: &mut PgConnection, company_id: Uuid, id: Uuid) -> AppResult<Repair> {
-    sqlx::query_as(&format!("{SELECT} WHERE r.id = $1 AND r.company_id = $2"))
+    sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT} WHERE r.id = $1 AND r.company_id = $2")))
         .bind(id)
         .bind(company_id)
         .fetch_optional(conn)
@@ -332,9 +332,9 @@ async fn list_repairs(
         AND ($5::uuid IS NULL OR r.department_id = $5)
         AND ($6::uuid IS NULL OR r.assigned_user_id = $6)
         AND ($7::uuid IS NULL OR r.customer_id = $7)";
-    let items: Vec<Repair> = sqlx::query_as(&format!(
+    let items: Vec<Repair> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT} {filter} ORDER BY (r.status IN ('shipped', 'cancelled')), r.priority = 'urgent' DESC, r.updated_at DESC LIMIT $8 OFFSET $9"
-    ))
+    )))
     .bind(user.company_id)
     .bind(&pattern)
     .bind(status)
@@ -346,10 +346,10 @@ async fn list_repairs(
     .bind(p.offset.unwrap_or(0).max(0))
     .fetch_all(&state.db)
     .await?;
-    let total: i64 = sqlx::query_scalar(&format!(
+    let total: i64 = sqlx::query_scalar(sqlx::AssertSqlSafe(format!(
         "SELECT count(*) FROM repairs.repairs r JOIN crm.customers c ON c.id = r.customer_id
          LEFT JOIN products.products p ON p.id = r.product_id {filter}"
-    ))
+    )))
     .bind(user.company_id)
     .bind(&pattern)
     .bind(status)
@@ -566,9 +566,9 @@ async fn list_ticket_repairs(
 ) -> AppResult<Json<Vec<Repair>>> {
     user.require(Permission::RepairsRead)?;
     Ok(Json(
-        sqlx::query_as(&format!(
+        sqlx::query_as(sqlx::AssertSqlSafe(format!(
             "{SELECT} WHERE r.ticket_id = $1 AND r.company_id = $2 ORDER BY r.created_at"
-        ))
+        )))
         .bind(id)
         .bind(user.company_id)
         .fetch_all(&state.db)

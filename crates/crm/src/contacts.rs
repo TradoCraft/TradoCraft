@@ -341,7 +341,7 @@ async fn assemble(conn: &mut PgConnection, rows: Vec<ContactRow>) -> AppResult<V
 }
 
 pub async fn get_contact(conn: &mut PgConnection, id: Uuid) -> AppResult<Contact> {
-    let rows: Vec<ContactRow> = sqlx::query_as(&format!("{SELECT} WHERE c.id = $1"))
+    let rows: Vec<ContactRow> = sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT} WHERE c.id = $1")))
         .bind(id)
         .fetch_all(&mut *conn)
         .await?;
@@ -355,9 +355,9 @@ pub async fn get_contact(conn: &mut PgConnection, id: Uuid) -> AppResult<Contact
 /// The contact that owns an e-mail address (exact match, case-insensitive), if any. Inactive
 /// contacts are found too: a former colleague still writes from the same address.
 pub async fn find_by_email(conn: &mut PgConnection, email: &str) -> AppResult<Option<Contact>> {
-    let rows: Vec<ContactRow> = sqlx::query_as(&format!(
+    let rows: Vec<ContactRow> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT} JOIN crm.contact_emails e ON e.contact_id = c.id WHERE e.email = $1"
-    ))
+    )))
     .bind(email.trim().to_lowercase())
     .fetch_all(&mut *conn)
     .await?;
@@ -374,10 +374,10 @@ pub async fn find_by_phone(
     let Some(n) = normalize_phone(number, default_country) else {
         return Ok(vec![]);
     };
-    let rows: Vec<ContactRow> = sqlx::query_as(&format!(
+    let rows: Vec<ContactRow> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT} WHERE c.id IN (SELECT contact_id FROM crm.contact_phones WHERE normalized = $1)
          ORDER BY c.active DESC, c.last_name, c.first_name"
-    ))
+    )))
     .bind(n)
     .fetch_all(&mut *conn)
     .await?;
@@ -608,9 +608,9 @@ async fn list_customer_contacts(
     user.require(Permission::CustomersRead)?;
     let mut conn = state.db.acquire().await?;
     customer_country(&mut conn, id).await?;
-    let rows: Vec<ContactRow> = sqlx::query_as(&format!(
+    let rows: Vec<ContactRow> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT} WHERE c.customer_id = $1 AND ($2 OR c.active) ORDER BY c.active DESC, c.last_name, c.first_name"
-    ))
+    )))
     .bind(id)
     .bind(p.include_inactive)
     .fetch_all(&mut *conn)
@@ -826,13 +826,13 @@ async fn lookup(
         customers.extend(by_email);
     }
     if let Some(pattern) = tradocraft_core::search::pattern(q) {
-        let rows: Vec<ContactRow> = sqlx::query_as(&format!(
+        let rows: Vec<ContactRow> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
             "{SELECT} WHERE {} OR {} OR {}
              ORDER BY c.active DESC, c.last_name, c.first_name LIMIT 20",
             tradocraft_core::search::matches("c.first_name || ' ' || c.last_name", "$1"),
             tradocraft_core::search::matches("c.last_name || ' ' || c.first_name", "$1"),
             tradocraft_core::search::matches("cu.name", "$1"),
-        ))
+        )))
         .bind(pattern)
         .fetch_all(&mut *conn)
         .await?;

@@ -403,7 +403,7 @@ pub(crate) const SELECT_PRODUCT: &str = concat!("SELECT * FROM (", product_colum
 pub(crate) const SELECT_PRODUCT_LOCKABLE: &str = product_columns!();
 
 pub async fn get_product<'e>(db: impl PgExecutor<'e>, id: Uuid) -> AppResult<Product> {
-    sqlx::query_as(&format!("{SELECT_PRODUCT} WHERE id = $1"))
+    sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT_PRODUCT} WHERE id = $1")))
         .bind(id)
         .fetch_optional(db)
         .await?
@@ -507,7 +507,7 @@ pub async fn get_products_for_quoting_with(
     price_optional: &[Uuid],
 ) -> AppResult<HashMap<Uuid, QuotingProduct>> {
     let mut products: Vec<Product> =
-        sqlx::query_as(&format!("{SELECT_PRODUCT} WHERE id = ANY($1)"))
+        sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT_PRODUCT} WHERE id = ANY($1)")))
             .bind(product_ids)
             .fetch_all(db)
             .await?;
@@ -593,9 +593,9 @@ async fn list_products(
         tradocraft_core::search::matches("name", "$1"),
     );
     let order = tradocraft_core::sort::order_by(p.sort.as_deref(), PRODUCT_SORT, "p.id", "code")?;
-    let mut items: Vec<Product> = sqlx::query_as(&format!(
+    let mut items: Vec<Product> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT_PRODUCT} {filter} ORDER BY {order} LIMIT $3 OFFSET $4"
-    ))
+    )))
     .bind(&pattern)
     .bind(p.active)
     .bind(p.limit.unwrap_or(50).clamp(1, 500))
@@ -611,10 +611,10 @@ async fn list_products(
         &mut items,
     )
     .await?;
-    let total = sqlx::query_scalar(&format!(
+    let total = sqlx::query_scalar(sqlx::AssertSqlSafe(format!(
         "SELECT count(*) FROM products.products {}",
         filter.replace("$5", "$3").replace("$6", "$4")
-    ))
+    )))
     .bind(&pattern)
     .bind(p.active)
     .bind(p.family_id)
@@ -1151,9 +1151,9 @@ async fn list_product_prices(
 ) -> AppResult<Json<Vec<ZonePriceEntry>>> {
     user.require(Permission::ProductsRead)?;
     Ok(Json(
-        sqlx::query_as(&format!(
+        sqlx::query_as(sqlx::AssertSqlSafe(format!(
             "{SELECT_ZONE_PRICES} ORDER BY z.sort_order, p.valid_from DESC"
-        ))
+        )))
         .bind(user.company_id)
         .bind(id)
         .fetch_all(&state.db)
@@ -1213,7 +1213,7 @@ async fn add_product_price(
         serde_json::json!({ "zone_id": input.zone_id, "unit_price": input.unit_price, "valid_from": input.valid_from }),
     )
     .await?;
-    let entry = sqlx::query_as(&format!("{SELECT_ZONE_PRICES} AND p.id = $3"))
+    let entry = sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT_ZONE_PRICES} AND p.id = $3")))
         .bind(user.company_id)
         .bind(product_id)
         .bind(id)
@@ -1231,9 +1231,9 @@ async fn lock_planned_price(
     product_id: Uuid,
     price_id: Uuid,
 ) -> AppResult<ZonePriceEntry> {
-    let entry: ZonePriceEntry = sqlx::query_as(&format!(
+    let entry: ZonePriceEntry = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT_ZONE_PRICES} AND p.id = $3 FOR UPDATE OF p"
-    ))
+    )))
     .bind(user.company_id)
     .bind(product_id)
     .bind(price_id)
@@ -1311,7 +1311,7 @@ async fn correct_product_price(
         }),
     )
     .await?;
-    let entry = sqlx::query_as(&format!("{SELECT_ZONE_PRICES} AND p.id = $3"))
+    let entry = sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT_ZONE_PRICES} AND p.id = $3")))
         .bind(user.company_id)
         .bind(product_id)
         .bind(price_id)

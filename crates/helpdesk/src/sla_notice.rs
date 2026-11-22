@@ -541,7 +541,7 @@ pub async fn acknowledge(
     if rules.is_empty() {
         return Ok(false);
     }
-    let t: T = sqlx::query_as(&format!("{SELECT} WHERE t.id = $1 AND t.company_id = $2"))
+    let t: T = sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT} WHERE t.id = $1 AND t.company_id = $2")))
         .bind(ticket_id)
         .bind(company_id)
         .fetch_one(&mut *conn)
@@ -594,12 +594,12 @@ async fn notify_page(
     for (id, company_id) in candidates {
         let mut tx = db.begin().await?;
         // Re-read under the lock: the ticket may have been answered since.
-        let t: Option<T> = sqlx::query_as(&format!(
+        let t: Option<T> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
             "{SELECT} WHERE t.id = $1 AND t.closed_at IS NULL AND t.first_response_at IS NULL
                AND t.first_response_due_at < now() AND NOT t.internal
                AND t.merged_into_id IS NULL AND t.split_from_id IS NULL
                AND t.sla_paused_at IS NULL FOR UPDATE OF t SKIP LOCKED"
-        ))
+        )))
         .bind(id)
         .fetch_optional(&mut *tx)
         .await?;

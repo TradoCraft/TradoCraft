@@ -780,9 +780,9 @@ impl IdentityProviders {
 
     /// Loads the enabled providers from the database. On error the previous set stays.
     pub async fn reload(&self, db: &PgPool) -> Result<(), sqlx::Error> {
-        let rows: Vec<ProviderRow> = sqlx::query_as(&format!(
+        let rows: Vec<ProviderRow> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
             "SELECT {PROVIDER_COLUMNS} FROM core.identity_providers WHERE enabled ORDER BY created_at, id"
-        ))
+        )))
         .fetch_all(db)
         .await?;
         self.set_database_providers(rows.iter().map(ProviderRow::config).collect());

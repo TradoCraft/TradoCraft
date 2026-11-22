@@ -27,7 +27,7 @@ pub enum Mode {
 }
 
 /// Pushes `text` where each `{company}` is replaced by a bound company id and `{on}` by `on`.
-fn push_template(q: &mut QueryBuilder<'static, Postgres>, text: &str, company: Uuid, on: &str) {
+fn push_template(q: &mut QueryBuilder<Postgres>, text: &str, company: Uuid, on: &str) {
     let mut rest = text;
     while let Some(i) = rest.find('{') {
         q.push(&rest[..i]);
@@ -46,7 +46,7 @@ fn push_template(q: &mut QueryBuilder<'static, Postgres>, text: &str, company: U
     q.push(rest);
 }
 
-fn push_filter(q: &mut QueryBuilder<'static, Postgres>, f: &crate::definition::BoundFilter) {
+fn push_filter(q: &mut QueryBuilder<Postgres>, f: &crate::definition::BoundFilter) {
     if let (ReportOp::Eq | ReportOp::Ne, Val::Range(a, b)) = (&f.op, &f.value) {
         // A range of days; a NULL date is outside every range, so never "equal" and always
         // "not equal". Parenthesised because filters are joined with AND or OR.
@@ -107,7 +107,7 @@ fn push_filter(q: &mut QueryBuilder<'static, Postgres>, f: &crate::definition::B
 }
 
 impl Plan {
-    fn push_body(&self, q: &mut QueryBuilder<'static, Postgres>, company: Uuid, grouped: bool) {
+    fn push_body(&self, q: &mut QueryBuilder<Postgres>, company: Uuid, grouped: bool) {
         q.push(" FROM ");
         push_template(q, catalog::base_from(self.base), company, "");
         for (obj, on) in &self.joins {
@@ -144,8 +144,8 @@ impl Plan {
     }
 
     /// Builds the SQL for one mode; all values are bound parameters.
-    pub fn build(&self, company: Uuid, mode: Mode) -> QueryBuilder<'static, Postgres> {
-        let mut q: QueryBuilder<'static, Postgres> = QueryBuilder::new("");
+    pub fn build(&self, company: Uuid, mode: Mode) -> QueryBuilder<Postgres> {
+        let mut q: QueryBuilder<Postgres> = QueryBuilder::new("");
         match mode {
             Mode::Count => {
                 q.push("SELECT count(*) FROM (SELECT 1");
@@ -353,7 +353,7 @@ mod tests {
     fn sql(def: serde_json::Value, mode: Mode) -> String {
         let d: ReportDefinition = serde_json::from_value(def).unwrap();
         let p = plan(&d, chrono::NaiveDate::from_ymd_opt(2026, 11, 11).unwrap()).unwrap();
-        p.build(Uuid::nil(), mode).sql().to_string()
+        p.build(Uuid::nil(), mode).sql().as_str().to_string()
     }
 
     const ROWS: Mode = Mode::Rows {

@@ -98,7 +98,7 @@ async fn remark_history(
          ORDER BY max(q.quote_date) DESC, max(q.created_at) DESC, btrim(l.{column})
          LIMIT 50"
     );
-    let rows: Vec<RemarkHistoryEntry> = sqlx::query_as(&sql)
+    let rows: Vec<RemarkHistoryEntry> = sqlx::query_as(sqlx::AssertSqlSafe(sql))
         .bind(product_id)
         .bind(user.company_id)
         .bind(customer)

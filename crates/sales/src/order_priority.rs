@@ -71,9 +71,9 @@ async fn load_request(
     order_id: Uuid,
     id: Uuid,
 ) -> AppResult<PriorityRequest> {
-    sqlx::query_as(&format!(
+    sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{REQUEST_SELECT} WHERE r.id = $1 AND r.order_id = $2"
-    ))
+    )))
     .bind(id)
     .bind(order_id)
     .fetch_optional(conn)
@@ -270,10 +270,10 @@ async fn list_requests(
 ) -> AppResult<Json<Vec<PriorityRequest>>> {
     user.require(Permission::OrdersRead)?;
     Ok(Json(
-        sqlx::query_as(&format!(
+        sqlx::query_as(sqlx::AssertSqlSafe(format!(
             "{REQUEST_SELECT} JOIN sales.orders o ON o.id = r.order_id
              WHERE r.order_id = $1 AND o.company_id = $2 ORDER BY r.created_at DESC, r.id"
-        ))
+        )))
         .bind(id)
         .bind(user.company_id)
         .fetch_all(&state.db)

@@ -45,7 +45,7 @@ const SELECT: &str = "SELECT c.id, c.code, c.name, c.description, c.requires_shi
      FROM products.packaging_categories c";
 
 async fn load(db: &sqlx::PgPool, id: Uuid) -> AppResult<PackagingCategory> {
-    sqlx::query_as(&format!("{SELECT} WHERE c.id = $1"))
+    sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT} WHERE c.id = $1")))
         .bind(id)
         .fetch_optional(db)
         .await?
@@ -67,7 +67,7 @@ async fn list_packaging(
 ) -> AppResult<Json<Vec<PackagingCategory>>> {
     user.require(Permission::ProductsRead)?;
     Ok(Json(
-        sqlx::query_as(&format!("{SELECT} ORDER BY c.code"))
+        sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT} ORDER BY c.code")))
             .fetch_all(&state.db)
             .await?,
     ))

@@ -81,9 +81,9 @@ pub(crate) async fn load_operations(
     user: &CurrentUser,
     production_order_id: Uuid,
 ) -> AppResult<Vec<ProductionOperation>> {
-    let mut ops: Vec<ProductionOperation> = sqlx::query_as(&format!(
+    let mut ops: Vec<ProductionOperation> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT} WHERE o.production_order_id = $1 AND o.company_id = $2 ORDER BY o.position"
-    ))
+    )))
     .bind(production_order_id)
     .bind(user.company_id)
     .fetch_all(conn)

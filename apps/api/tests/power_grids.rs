@@ -726,11 +726,11 @@ async fn voltage_bounds_roundtrip_validate_and_decide_compatibility(db: PgPool) 
         ("0", "260"),
         ("240", "260"),
     ] {
-        let r = sqlx::query(&format!(
+        let r = sqlx::query(sqlx::AssertSqlSafe(format!(
             "INSERT INTO products.product_power_supplies
                 (id, product_id, current_type, voltage_v, phases, voltage_min_v, voltage_max_v)
              VALUES (gen_random_uuid(), '{BOLT}', 'ac', 230, 1, {lo}, {hi})"
-        ))
+        )))
         .execute(&db)
         .await;
         assert!(r.is_err(), "{lo}..{hi} should violate the check constraint");

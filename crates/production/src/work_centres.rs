@@ -136,11 +136,11 @@ async fn load_all(
     active: Option<bool>,
     division_id: Option<Uuid>,
 ) -> AppResult<Vec<WorkCentre>> {
-    let mut rows: Vec<WorkCentre> = sqlx::query_as(&format!(
+    let mut rows: Vec<WorkCentre> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT} WHERE w.company_id = $1 AND ($2::uuid IS NULL OR w.id = $2)
            AND ($3::bool IS NULL OR w.active = $3) AND ($4::uuid IS NULL OR w.division_id = $4)
          ORDER BY w.sort_order, w.code"
-    ))
+    )))
     .bind(user.company_id)
     .bind(only)
     .bind(active)
@@ -557,9 +557,9 @@ async fn load_closure(
     company_id: Uuid,
     id: Uuid,
 ) -> AppResult<WorkCentreClosure> {
-    sqlx::query_as(&format!(
+    sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT_CLOSURE} WHERE c.id = $1 AND c.company_id = $2"
-    ))
+    )))
     .bind(id)
     .bind(company_id)
     .fetch_optional(conn)
@@ -602,12 +602,12 @@ async fn list_work_centre_closures(
 ) -> AppResult<Json<Vec<WorkCentreClosure>>> {
     user.require(Permission::ProductionRead)?;
     Ok(Json(
-        sqlx::query_as(&format!(
+        sqlx::query_as(sqlx::AssertSqlSafe(format!(
             "{SELECT_CLOSURE} WHERE c.company_id = $1
                AND ($2::uuid IS NULL OR c.work_centre_id IS NULL OR c.work_centre_id = $2)
                AND ($3::date IS NULL OR c.to_date >= $3) AND ($4::date IS NULL OR c.from_date <= $4)
              ORDER BY c.from_date, c.id LIMIT 500"
-        ))
+        )))
         .bind(user.company_id)
         .bind(p.work_centre_id)
         .bind(p.from)

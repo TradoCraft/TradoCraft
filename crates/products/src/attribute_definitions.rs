@@ -187,9 +187,9 @@ pub async fn product_rules(
     conn: &mut sqlx::PgConnection,
     company_id: Uuid,
 ) -> AppResult<std::collections::HashMap<String, ProductRule>> {
-    let rows: Vec<Row> = sqlx::query_as(&format!(
+    let rows: Vec<Row> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT} WHERE company_id = $1 AND scope = 'product' AND active"
-    ))
+    )))
     .bind(company_id)
     .fetch_all(conn)
     .await?;
@@ -228,9 +228,9 @@ pub async fn active_for_scope(
     company_id: Uuid,
     scope: &str,
 ) -> AppResult<Vec<AttributeDefinition>> {
-    let rows: Vec<Row> = sqlx::query_as(&format!(
+    let rows: Vec<Row> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT} WHERE company_id = $1 AND scope = $2 AND active ORDER BY sort_order, key"
-    ))
+    )))
     .bind(company_id)
     .bind(scope)
     .fetch_all(conn)
@@ -272,7 +272,7 @@ const SELECT: &str = "SELECT id, key, label, kind, unit, options, scope, sort_or
                       FROM products.attribute_definitions";
 
 async fn load(db: &sqlx::PgPool, company_id: Uuid, id: Uuid) -> AppResult<AttributeDefinition> {
-    sqlx::query_as::<_, Row>(&format!("{SELECT} WHERE id = $1 AND company_id = $2"))
+    sqlx::query_as::<_, Row>(sqlx::AssertSqlSafe(format!("{SELECT} WHERE id = $1 AND company_id = $2")))
         .bind(id)
         .bind(company_id)
         .fetch_optional(db)
@@ -345,10 +345,10 @@ async fn list_definitions(
     Query(q): Query<ListQuery>,
 ) -> AppResult<Json<Vec<AttributeDefinition>>> {
     require_read(&user, q.scope.as_deref().map(str::trim))?;
-    let rows: Vec<Row> = sqlx::query_as(&format!(
+    let rows: Vec<Row> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT} WHERE company_id = $1 AND ($2::text IS NULL OR scope = $2)
          ORDER BY scope, sort_order, key"
-    ))
+    )))
     .bind(user.company_id)
     .bind(q.scope.as_deref().map(str::trim))
     .fetch_all(&state.db)

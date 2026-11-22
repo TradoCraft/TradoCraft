@@ -389,7 +389,7 @@ const SELECT: &str = "SELECT t.id, t.version, t.number, t.subject, t.status, t.p
 
 pub async fn load_ticket(conn: &mut PgConnection, company_id: Uuid, id: Uuid) -> AppResult<Ticket> {
     let ticket =
-        sqlx::query_as::<_, Ticket>(&format!("{SELECT} WHERE t.id = $1 AND t.company_id = $2"))
+        sqlx::query_as::<_, Ticket>(sqlx::AssertSqlSafe(format!("{SELECT} WHERE t.id = $1 AND t.company_id = $2")))
             .bind(id)
             .bind(company_id)
             .fetch_optional(&mut *conn)
@@ -677,11 +677,11 @@ async fn list_tickets(
     );
     let mine = p.mine.unwrap_or(false);
     let only_unassigned = p.unassigned.unwrap_or(false);
-    let items: Vec<Ticket> = sqlx::query_as(&format!(
+    let items: Vec<Ticket> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT} {filter}
          ORDER BY CASE t.priority WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 ELSE 2 END, t.updated_at DESC
          LIMIT $16 OFFSET $17"
-    ))
+    )))
     .bind(user.company_id)
     .bind(&pattern)
     .bind(&p.status)
@@ -721,9 +721,9 @@ async fn list_tickets(
             t.watching = *watching;
         }
     }
-    let total = sqlx::query_scalar(&format!(
+    let total = sqlx::query_scalar(sqlx::AssertSqlSafe(format!(
         "SELECT count(*) FROM helpdesk.tickets t LEFT JOIN crm.customers c ON c.id = t.customer_id {filter}"
-    ))
+    )))
     .bind(user.company_id)
     .bind(&pattern)
     .bind(&p.status)

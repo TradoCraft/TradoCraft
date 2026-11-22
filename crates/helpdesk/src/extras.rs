@@ -373,9 +373,9 @@ async fn merge(
         ));
     }
     for table in ["articles", "ticket_attachments", "time_entries"] {
-        sqlx::query(&format!(
+        sqlx::query(sqlx::AssertSqlSafe(format!(
             "UPDATE helpdesk.{table} SET ticket_id = $2 WHERE ticket_id = $1"
-        ))
+        )))
         .bind(id)
         .bind(target_id)
         .execute(&mut *tx)

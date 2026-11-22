@@ -132,9 +132,9 @@ const SELECT_COUNT: &str = "SELECT c.id, c.number, c.warehouse_id, w.code AS war
      JOIN core.users u ON u.id = c.created_by";
 
 async fn load_count(conn: &mut PgConnection, company_id: Uuid, id: Uuid) -> AppResult<Count> {
-    sqlx::query_as(&format!(
+    sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT_COUNT} WHERE c.id = $1 AND c.company_id = $2"
-    ))
+    )))
     .bind(id)
     .bind(company_id)
     .fetch_optional(conn)
@@ -193,9 +193,9 @@ async fn list_counts(
              AND ($4::text IS NULL OR strpos(lower(c.number), lower($4)) > 0
                   OR strpos(lower(w.code), lower($4)) > 0)";
     let needle = p.q.as_deref().map(str::trim).filter(|q| !q.is_empty());
-    let items = sqlx::query_as(&format!(
+    let items = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT_COUNT} {filter} ORDER BY c.created_at DESC, c.id DESC LIMIT $5 OFFSET $6"
-    ))
+    )))
     .bind(user.company_id)
     .bind(&p.status)
     .bind(p.warehouse_id)
@@ -204,9 +204,9 @@ async fn list_counts(
     .bind(p.offset.unwrap_or(0).max(0))
     .fetch_all(&state.db)
     .await?;
-    let total = sqlx::query_scalar(&format!(
+    let total = sqlx::query_scalar(sqlx::AssertSqlSafe(format!(
         "SELECT count(*) FROM inventory.counts c JOIN inventory.warehouses w ON w.id = c.warehouse_id {filter}"
-    ))
+    )))
     .bind(user.company_id)
     .bind(&p.status)
     .bind(p.warehouse_id)

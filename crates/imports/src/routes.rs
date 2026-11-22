@@ -265,10 +265,10 @@ fn select_job(with_errors: bool) -> String {
 }
 
 async fn fetch_job(db: &PgPool, company_id: Uuid, id: Uuid) -> AppResult<ImportJob> {
-    sqlx::query_as(&format!(
+    sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{} WHERE j.id = $1 AND j.company_id = $2",
         select_job(true)
-    ))
+    )))
     .bind(id)
     .bind(company_id)
     .fetch_optional(db)
@@ -609,11 +609,11 @@ async fn list_jobs(
             return Err(AppError::Validation(format!("unknown status '{s}'")));
         }
     }
-    let items = sqlx::query_as(&format!(
+    let items = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{} WHERE j.company_id = $1 AND ($2::text IS NULL OR j.status = $2)
          ORDER BY j.created_at DESC, j.id DESC LIMIT $3 OFFSET $4",
         select_job(false)
-    ))
+    )))
     .bind(user.company_id)
     .bind(status)
     .bind(p.limit.unwrap_or(50).clamp(1, 200))

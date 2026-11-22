@@ -100,7 +100,7 @@ async fn load_line(
          WHERE ol.id = $1 AND o.company_id = $2{}",
         if lock { " FOR UPDATE OF o" } else { "" }
     );
-    sqlx::query_as(&sql)
+    sqlx::query_as(sqlx::AssertSqlSafe(sql))
         .bind(line_id)
         .bind(company_id)
         .fetch_optional(conn)
@@ -561,9 +561,9 @@ pub async fn free_to_reserve(
     company_id: Uuid,
     product_id: Uuid,
 ) -> AppResult<Decimal> {
-    Ok(sqlx::query_scalar(&format!(
+    Ok(sqlx::query_scalar(sqlx::AssertSqlSafe(format!(
         "SELECT COALESCE(sum(c.free), 0) FROM ({CANDIDATES}) c"
-    ))
+    )))
     .bind(company_id)
     .bind(product_id)
     .bind(None::<Uuid>)
@@ -580,9 +580,9 @@ async fn allocate(
     mut needed: Decimal,
     pin: &ReservePin,
 ) -> AppResult<()> {
-    let candidates: Vec<Candidate> = sqlx::query_as(&format!(
+    let candidates: Vec<Candidate> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{CANDIDATES} ORDER BY lot.expiry_date NULLS LAST, w.code, l.code FOR UPDATE OF b"
-    ))
+    )))
     .bind(user.company_id)
     .bind(t.product_id)
     .bind(pin.warehouse_id)

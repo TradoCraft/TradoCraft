@@ -86,7 +86,7 @@ const VISIBLE: &str =
     "o.company_id = $1 AND o.customer_id = $2 AND ($3 = 'customer' OR o.contact_id = $4)";
 
 async fn load(conn: &mut PgConnection, v: &PortalViewer, id: Uuid) -> AppResult<PortalOrder> {
-    sqlx::query_as(&format!("{SELECT} WHERE {VISIBLE} AND o.id = $5"))
+    sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT} WHERE {VISIBLE} AND o.id = $5")))
         .bind(v.company_id)
         .bind(v.customer_id)
         .bind(&v.scope)
@@ -98,9 +98,9 @@ async fn load(conn: &mut PgConnection, v: &PortalViewer, id: Uuid) -> AppResult<
 }
 
 pub async fn list(conn: &mut PgConnection, v: &PortalViewer) -> AppResult<Vec<PortalOrder>> {
-    Ok(sqlx::query_as(&format!(
+    Ok(sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT} WHERE {VISIBLE} ORDER BY o.order_date DESC, o.number DESC LIMIT 200"
-    ))
+    )))
     .bind(v.company_id)
     .bind(v.customer_id)
     .bind(&v.scope)

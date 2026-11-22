@@ -171,12 +171,12 @@ async fn list_quotations(
         "id",
         "quote_date DESC, number DESC, revision DESC",
     )?;
-    let items = sqlx::query_as(&format!(
+    let items = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "SELECT id, number, revision, status, customer_id, opportunity_id, customer_name, purpose, shipping_status, quote_date, valid_until,
                 currency::text AS currency, subtotal, total
          FROM sales.quotations {filter}
          ORDER BY {order} LIMIT $6 OFFSET $7"
-    ))
+    )))
     .bind(user.company_id)
     .bind(&pattern)
     .bind(&statuses)
@@ -186,7 +186,7 @@ async fn list_quotations(
     .bind(p.offset.unwrap_or(0).max(0))
     .fetch_all(&state.db)
     .await?;
-    let total = sqlx::query_scalar(&format!("SELECT count(*) FROM sales.quotations {filter}"))
+    let total = sqlx::query_scalar(sqlx::AssertSqlSafe(format!("SELECT count(*) FROM sales.quotations {filter}")))
         .bind(user.company_id)
         .bind(&pattern)
         .bind(&statuses)

@@ -154,11 +154,11 @@ pub async fn viewer_flags(
     user_id: Uuid,
     ids: &[Uuid],
 ) -> Result<HashMap<Uuid, (bool, bool)>, sqlx::Error> {
-    let rows: Vec<(Uuid, bool, bool)> = sqlx::query_as(&format!(
+    let rows: Vec<(Uuid, bool, bool)> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "SELECT t.id, {}, {} FROM helpdesk.tickets t WHERE t.id = ANY($1)",
         unread_sql("$2"),
         watching_sql("$2")
-    ))
+    )))
     .bind(ids)
     .bind(user_id)
     .fetch_all(conn)

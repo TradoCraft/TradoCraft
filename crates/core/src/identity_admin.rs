@@ -227,19 +227,19 @@ const PRIMARY_COMPANY: &str = "SELECT id FROM core.companies
 /// new primary row.
 async fn is_primary_admin(conn: &mut sqlx::PgConnection, user: &CurrentUser) -> AppResult<bool> {
     loop {
-        let locked: Option<Uuid> = sqlx::query_scalar(&format!("{PRIMARY_COMPANY} FOR SHARE"))
+        let locked: Option<Uuid> = sqlx::query_scalar(sqlx::AssertSqlSafe(format!("{PRIMARY_COMPANY} FOR SHARE")))
             .fetch_optional(&mut *conn)
             .await?;
         let Some(locked) = locked else {
             return Ok(false);
         };
         // A new statement reads the committed state after any wait for the lock.
-        let (current, admin): (Option<Uuid>, bool) = sqlx::query_as(&format!(
+        let (current, admin): (Option<Uuid>, bool) = sqlx::query_as(sqlx::AssertSqlSafe(format!(
             "SELECT ({PRIMARY_COMPANY}),
                     EXISTS (SELECT 1 FROM core.user_companies uc
                             WHERE uc.user_id = $1 AND uc.active AND 'admin' = ANY(uc.roles)
                               AND uc.company_id = $2)"
-        ))
+        )))
         .bind(user.user_id)
         .bind(locked)
         .fetch_one(&mut *conn)
@@ -317,9 +317,9 @@ async fn list_providers(
     user: CurrentUser,
 ) -> AppResult<Json<Vec<IdentityProviderInfo>>> {
     guard(&state, &user).await?;
-    let rows: Vec<ProviderRow> = sqlx::query_as(&format!(
+    let rows: Vec<ProviderRow> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "SELECT {PROVIDER_COLUMNS} FROM core.identity_providers ORDER BY created_at, id"
-    ))
+    )))
     .fetch_all(&state.db)
     .await?;
     let mut out: Vec<IdentityProviderInfo> = env_provider(&state)
@@ -352,11 +352,11 @@ async fn create_provider(
     probe(&settings, &cfg).await?;
     let id = new_id();
     let mut tx = state.db.begin().await?;
-    let row: ProviderRow = sqlx::query_as(&format!(
+    let row: ProviderRow = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "INSERT INTO core.identity_providers (id, name, issuer, audience, client_id, scopes, token_use,
              algorithms, email_claim, email_policy, verified_claim, allowed_email_domains, enabled, created_by)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING {PROVIDER_COLUMNS}"
-    ))
+    )))
     .bind(id)
     .bind(&cfg.name)
     .bind(&cfg.issuer)
@@ -400,9 +400,9 @@ async fn lock_providers(conn: &mut sqlx::PgConnection) -> AppResult<()> {
 const IDENTITY_PROVIDERS_LOCK: i64 = 0x1D3_0052;
 
 async fn load(state: &AppState, id: Uuid) -> AppResult<ProviderRow> {
-    sqlx::query_as(&format!(
+    sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "SELECT {PROVIDER_COLUMNS} FROM core.identity_providers WHERE id = $1"
-    ))
+    )))
     .bind(id)
     .fetch_optional(&state.db)
     .await?
@@ -481,9 +481,9 @@ async fn update_provider(
     lock_providers(&mut tx).await?;
     recheck_primary_admin(&mut tx, &user).await?;
     // Re-read under the lock: the guard must see the committed state.
-    let existing: ProviderRow = sqlx::query_as(&format!(
+    let existing: ProviderRow = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "SELECT {PROVIDER_COLUMNS} FROM core.identity_providers WHERE id = $1"
-    ))
+    )))
     .bind(id)
     .fetch_optional(&mut *tx)
     .await?
@@ -498,12 +498,12 @@ async fn update_provider(
         input.confirm_lockout.unwrap_or(false),
     )
     .await?;
-    let row: ProviderRow = sqlx::query_as(&format!(
+    let row: ProviderRow = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "UPDATE core.identity_providers SET name=$2, issuer=$3, audience=$4, client_id=$5, scopes=$6,
              token_use=$13, algorithms=$7, email_claim=$8, email_policy=$9, verified_claim=$10,
              allowed_email_domains=$11, enabled=$12, updated_at=now()
          WHERE id=$1 RETURNING {PROVIDER_COLUMNS}"
-    ))
+    )))
     .bind(id)
     .bind(&cfg.name)
     .bind(&cfg.issuer)
@@ -563,9 +563,9 @@ async fn delete_provider(
     let mut tx = state.db.begin().await?;
     lock_providers(&mut tx).await?;
     recheck_primary_admin(&mut tx, &user).await?;
-    let existing: ProviderRow = sqlx::query_as(&format!(
+    let existing: ProviderRow = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "SELECT {PROVIDER_COLUMNS} FROM core.identity_providers WHERE id = $1"
-    ))
+    )))
     .bind(id)
     .fetch_optional(&mut *tx)
     .await?

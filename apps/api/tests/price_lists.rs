@@ -989,7 +989,7 @@ const NORMALISED_TABLES: [&str; 8] = [
 ];
 
 async fn rows(db: &PgPool, table: &str) -> i64 {
-    sqlx::query_scalar(&format!("SELECT count(*) FROM pricing.{table}"))
+    sqlx::query_scalar(sqlx::AssertSqlSafe(format!("SELECT count(*) FROM pricing.{table}")))
         .fetch_one(db)
         .await
         .unwrap()

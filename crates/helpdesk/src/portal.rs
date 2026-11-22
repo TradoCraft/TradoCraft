@@ -75,9 +75,9 @@ const VISIBLE: &str =
      AND ($3 = 'customer' OR t.contact_id = $4)";
 
 pub async fn list(conn: &mut PgConnection, v: &Viewer) -> AppResult<Vec<PortalTicket>> {
-    Ok(sqlx::query_as(&format!(
+    Ok(sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT} WHERE {VISIBLE} ORDER BY (t.status = 'closed'), t.updated_at DESC LIMIT 200"
-    ))
+    )))
     .bind(v.company_id)
     .bind(v.customer_id)
     .bind(&v.scope)
@@ -87,7 +87,7 @@ pub async fn list(conn: &mut PgConnection, v: &Viewer) -> AppResult<Vec<PortalTi
 }
 
 pub async fn get(conn: &mut PgConnection, v: &Viewer, id: Uuid) -> AppResult<PortalTicketDetail> {
-    let ticket: PortalTicket = sqlx::query_as(&format!("{SELECT} WHERE t.id = $5 AND {VISIBLE}"))
+    let ticket: PortalTicket = sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT} WHERE t.id = $5 AND {VISIBLE}")))
         .bind(v.company_id)
         .bind(v.customer_id)
         .bind(&v.scope)

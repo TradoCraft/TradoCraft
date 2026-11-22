@@ -159,7 +159,7 @@ impl From<Row> for ReportSchedule {
 }
 
 async fn load(conn: &mut PgConnection, company_id: Uuid, id: Uuid) -> AppResult<ReportSchedule> {
-    let row: Row = sqlx::query_as(&format!("{SELECT} WHERE s.id = $1 AND s.company_id = $2"))
+    let row: Row = sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT} WHERE s.id = $1 AND s.company_id = $2")))
         .bind(id)
         .bind(company_id)
         .fetch_optional(conn)
@@ -394,9 +394,9 @@ async fn list_schedules(
     user: CurrentUser,
 ) -> AppResult<Json<Vec<ReportSchedule>>> {
     user.require(Permission::ReportsSchedule)?;
-    let rows: Vec<Row> = sqlx::query_as(&format!(
+    let rows: Vec<Row> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT} WHERE s.company_id = $1 ORDER BY lower(s.name), s.id"
-    ))
+    )))
     .bind(user.company_id)
     .fetch_all(&state.db)
     .await?;
@@ -619,10 +619,10 @@ async fn send_schedule(
             "only the owner or an admin can send a schedule".into(),
         ));
     }
-    let row: ScheduleRow = sqlx::query_as(&format!(
+    let row: ScheduleRow = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{} WHERE id = $1 AND company_id = $2 FOR UPDATE",
         schedule::SELECT_ROW
-    ))
+    )))
     .bind(id)
     .bind(user.company_id)
     .fetch_one(&mut *tx)

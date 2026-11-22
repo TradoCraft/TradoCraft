@@ -100,10 +100,10 @@ pub async fn closure_on<'e>(
     customer_id: Uuid,
     day: NaiveDate,
 ) -> AppResult<Option<Closure>> {
-    Ok(sqlx::query_as(&format!(
+    Ok(sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT} WHERE cl.customer_id = $1 AND $2 BETWEEN cl.starts_on AND cl.ends_on
          ORDER BY cl.ends_on DESC LIMIT 1"
-    ))
+    )))
     .bind(customer_id)
     .bind(day)
     .fetch_optional(db)
@@ -168,11 +168,11 @@ async fn list(
     p: &PeriodParams,
 ) -> AppResult<Vec<Closure>> {
     let from = p.from.unwrap_or_else(|| Utc::now().date_naive());
-    Ok(sqlx::query_as(&format!(
+    Ok(sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT} WHERE ($1::uuid IS NULL OR cl.customer_id = $1)
            AND cl.ends_on >= $2 AND ($3::date IS NULL OR cl.starts_on <= $3)
          ORDER BY cl.starts_on, c.name, cl.id"
-    ))
+    )))
     .bind(customer_id)
     .bind(from)
     .bind(p.to)
@@ -291,7 +291,7 @@ async fn create_closure(
         }),
     )
     .await?;
-    let c = sqlx::query_as(&format!("{SELECT} WHERE cl.id = $1"))
+    let c = sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT} WHERE cl.id = $1")))
         .bind(id)
         .fetch_one(&mut *tx)
         .await?;
@@ -332,7 +332,7 @@ async fn update_closure(
         "closure_id": closure_id, "starts_on": input.starts_on, "ends_on": ends_on, "kind": input.kind,
     }))
     .await?;
-    let c = sqlx::query_as(&format!("{SELECT} WHERE cl.id = $1"))
+    let c = sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT} WHERE cl.id = $1")))
         .bind(closure_id)
         .fetch_one(&mut *tx)
         .await?;
@@ -351,9 +351,9 @@ async fn delete_closure(
 ) -> AppResult<StatusCode> {
     user.require(Permission::ClosuresWrite)?;
     let mut tx = state.db.begin().await?;
-    let removed: Option<Closure> = sqlx::query_as(&format!(
+    let removed: Option<Closure> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT} WHERE cl.id = $1 AND cl.customer_id = $2"
-    ))
+    )))
     .bind(closure_id)
     .bind(customer_id)
     .fetch_optional(&mut *tx)

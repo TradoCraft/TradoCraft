@@ -179,10 +179,10 @@ async fn list_rebates(
 ) -> AppResult<Json<Vec<CustomerRebate>>> {
     user.require(Permission::CustomersRead)?;
     Ok(Json(
-        sqlx::query_as(&format!(
+        sqlx::query_as(sqlx::AssertSqlSafe(format!(
             "{SELECT} WHERE r.company_id = $1 AND r.customer_id = $2
              ORDER BY r.scope, coalesce(p.code, f.code), r.valid_from NULLS FIRST"
-        ))
+        )))
         .bind(user.company_id)
         .bind(customer_id)
         .fetch_all(&state.db)
@@ -227,7 +227,7 @@ async fn create_rebate(
         "percent": input.percent, "valid_from": input.valid_from, "valid_to": input.valid_to,
     }))
     .await?;
-    let r = sqlx::query_as(&format!("{SELECT} WHERE r.id = $1"))
+    let r = sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT} WHERE r.id = $1")))
         .bind(id)
         .fetch_one(&mut *tx)
         .await?;
@@ -279,7 +279,7 @@ async fn update_rebate(
         "rebate_id": rebate_id, "percent": input.percent, "valid_from": input.valid_from, "valid_to": input.valid_to,
     }))
     .await?;
-    let r = sqlx::query_as(&format!("{SELECT} WHERE r.id = $1"))
+    let r = sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT} WHERE r.id = $1")))
         .bind(rebate_id)
         .fetch_one(&mut *tx)
         .await?;
@@ -298,9 +298,9 @@ async fn delete_rebate(
 ) -> AppResult<StatusCode> {
     user.require(Permission::RebatesWrite)?;
     let mut tx = state.db.begin().await?;
-    let removed: Option<CustomerRebate> = sqlx::query_as(&format!(
+    let removed: Option<CustomerRebate> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT} WHERE r.id = $1 AND r.company_id = $2 AND r.customer_id = $3"
-    ))
+    )))
     .bind(rebate_id)
     .bind(user.company_id)
     .bind(customer_id)

@@ -309,10 +309,10 @@ pub fn sees_all(user: &CurrentUser) -> bool {
 }
 
 async fn load_job(conn: &mut PgConnection, user: &CurrentUser, id: Uuid) -> AppResult<Job> {
-    let rows: Vec<JobRow> = sqlx::query_as(&format!(
+    let rows: Vec<JobRow> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT} WHERE j.id = $1 AND j.company_id = $2
            AND ($3 OR EXISTS (SELECT 1 FROM field.job_technicians x WHERE x.job_id = j.id AND x.user_id = $4))"
-    ))
+    )))
     .bind(id)
     .bind(user.company_id)
     .bind(sees_all(user))
@@ -469,7 +469,7 @@ async fn list_jobs_inner(
         _ => (false, None),
     };
     let status = p.status.as_deref().filter(|s| *s != "all");
-    let rows: Vec<JobRow> = sqlx::query_as(&format!(
+    let rows: Vec<JobRow> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT} WHERE j.company_id = $1
            AND ($2 OR EXISTS (SELECT 1 FROM field.job_technicians x WHERE x.job_id = j.id AND x.user_id = $3))
            AND ($4::text IS NULL OR lower(j.number) LIKE $4 OR lower(j.title) LIKE $4 OR lower(c.name) LIKE $4 OR lower(j.city) LIKE $4)
@@ -482,7 +482,7 @@ async fn list_jobs_inner(
            AND ($11 OR j.status <> 'completed' OR j.completed_at > now() - interval '7 days')
            AND ($12::uuid IS NULL OR j.contract_id = $12)
          ORDER BY (j.status IN ('completed', 'cancelled')), j.scheduled_start NULLS LAST, j.number LIMIT 300"
-    ))
+    )))
     .bind(user.company_id)
     .bind(sees_all(user))
     .bind(user.user_id)

@@ -342,7 +342,7 @@ async fn load_item(
     opportunity_id: Uuid,
     id: Uuid,
 ) -> AppResult<BaselineItem> {
-    sqlx::query_as(&format!("{SELECT} WHERE id = $1 AND opportunity_id = $2"))
+    sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT} WHERE id = $1 AND opportunity_id = $2")))
         .bind(id)
         .bind(opportunity_id)
         .fetch_optional(conn)
@@ -396,9 +396,9 @@ pub async fn load_tree(
     conn: &mut PgConnection,
     opportunity_id: Uuid,
 ) -> AppResult<Vec<BaselineItem>> {
-    let flat: Vec<BaselineItem> = sqlx::query_as(&format!(
+    let flat: Vec<BaselineItem> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT} WHERE opportunity_id = $1 ORDER BY sort_order, created_at, id"
-    ))
+    )))
     .bind(opportunity_id)
     .fetch_all(conn)
     .await?;

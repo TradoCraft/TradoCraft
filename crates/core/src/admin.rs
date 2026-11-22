@@ -301,9 +301,9 @@ async fn load_member(
     company_id: Uuid,
     user_id: Uuid,
 ) -> AppResult<AdminUser> {
-    sqlx::query_as(&format!(
+    sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{MEMBER_SELECT} WHERE uc.company_id = $1 AND uc.user_id = $2"
-    ))
+    )))
     .bind(company_id)
     .bind(user_id)
     .fetch_optional(conn)
@@ -397,9 +397,9 @@ async fn list_admin_users(
 ) -> AppResult<Json<Vec<AdminUser>>> {
     user.require(Permission::UsersAdmin)?;
     Ok(Json(
-        sqlx::query_as(&format!(
+        sqlx::query_as(sqlx::AssertSqlSafe(format!(
             "{MEMBER_SELECT} WHERE uc.company_id = $1 ORDER BY lower(u.display_name), u.email"
-        ))
+        )))
         .bind(user.company_id)
         .fetch_all(&state.db)
         .await?,

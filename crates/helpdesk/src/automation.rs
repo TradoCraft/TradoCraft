@@ -381,9 +381,9 @@ const SELECT_RULE: &str =
      FROM helpdesk.automation_rules";
 
 async fn load_rules(conn: &mut PgConnection, company_id: Uuid) -> AppResult<Vec<Rule>> {
-    let rows: Vec<RuleRow> = sqlx::query_as(&format!(
+    let rows: Vec<RuleRow> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT_RULE} WHERE company_id = $1 ORDER BY position, id"
-    ))
+    )))
     .bind(company_id)
     .fetch_all(conn)
     .await?;
@@ -391,7 +391,7 @@ async fn load_rules(conn: &mut PgConnection, company_id: Uuid) -> AppResult<Vec<
 }
 
 async fn load_rule(conn: &mut PgConnection, company_id: Uuid, id: Uuid) -> AppResult<Rule> {
-    let row: RuleRow = sqlx::query_as(&format!("{SELECT_RULE} WHERE id = $1 AND company_id = $2"))
+    let row: RuleRow = sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT_RULE} WHERE id = $1 AND company_id = $2")))
         .bind(id)
         .bind(company_id)
         .fetch_optional(conn)

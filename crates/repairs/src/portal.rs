@@ -87,9 +87,9 @@ const VISIBLE: &str =
     "r.company_id = $1 AND r.customer_id = $2 AND ($3 = 'customer' OR r.contact_id = $4)";
 
 pub async fn list(conn: &mut PgConnection, v: &Viewer) -> AppResult<Vec<PortalRepair>> {
-    let rows: Vec<Row> = sqlx::query_as(&format!(
+    let rows: Vec<Row> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT} WHERE {VISIBLE} ORDER BY (r.status IN ('shipped', 'cancelled')), r.updated_at DESC LIMIT 200"
-    ))
+    )))
     .bind(v.company_id)
     .bind(v.customer_id)
     .bind(&v.scope)
@@ -105,7 +105,7 @@ async fn visible(
     v: &Viewer,
     id: Uuid,
 ) -> AppResult<(PortalRepair, String)> {
-    let row: Row = sqlx::query_as(&format!("{SELECT} WHERE r.id = $5 AND {VISIBLE}"))
+    let row: Row = sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT} WHERE r.id = $5 AND {VISIBLE}")))
         .bind(v.company_id)
         .bind(v.customer_id)
         .bind(&v.scope)

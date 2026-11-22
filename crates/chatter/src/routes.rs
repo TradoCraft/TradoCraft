@@ -339,12 +339,12 @@ async fn thread(
     let mut conn = state.db.acquire().await?;
     let kind = open(&mut conn, &user, &kind, id, false).await?;
     let limit = q.limit.unwrap_or(DEFAULT_LIMIT).clamp(1, MAX_LIMIT);
-    let mut items: Vec<ThreadItem> = sqlx::query_as(&format!(
+    let mut items: Vec<ThreadItem> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{THREAD_SELECT}
          WHERE m.company_id = $3 AND m.record_kind = $4 AND m.record_id = $5
            AND ($6::uuid IS NULL OR m.id < $6)
          ORDER BY m.id DESC LIMIT $7"
-    ))
+    )))
     .bind(user.user_id)
     .bind(window())
     .bind(user.company_id)
@@ -375,9 +375,9 @@ async fn thread(
 }
 
 async fn load_item(conn: &mut PgConnection, user: &CurrentUser, id: Uuid) -> AppResult<ThreadItem> {
-    let item: ThreadItem = sqlx::query_as(&format!(
+    let item: ThreadItem = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{THREAD_SELECT} WHERE m.id = $3 AND m.company_id = $4"
-    ))
+    )))
     .bind(user.user_id)
     .bind(window())
     .bind(id)
@@ -800,11 +800,11 @@ async fn list_activities(
 ) -> AppResult<Json<Vec<Activity>>> {
     let mut conn = state.db.acquire().await?;
     let kind = open(&mut conn, &user, &kind, id, false).await?;
-    let rows = sqlx::query_as(&format!(
+    let rows = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{ACTIVITY_SELECT}
          WHERE a.company_id = $1 AND a.record_kind = $2 AND a.record_id = $3 AND a.done_at IS NULL
          ORDER BY a.due_date, a.id"
-    ))
+    )))
     .bind(user.company_id)
     .bind(kind.as_str())
     .bind(id)
@@ -932,9 +932,9 @@ async fn load_activity(
     user: &CurrentUser,
     id: Uuid,
 ) -> AppResult<Activity> {
-    sqlx::query_as(&format!(
+    sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{ACTIVITY_SELECT} WHERE a.id = $1 AND a.company_id = $2"
-    ))
+    )))
     .bind(id)
     .bind(user.company_id)
     .fetch_optional(&mut *conn)

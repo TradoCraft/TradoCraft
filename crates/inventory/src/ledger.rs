@@ -96,9 +96,9 @@ pub async fn load_move(
     company_id: Uuid,
     id: Uuid,
 ) -> AppResult<StockMove> {
-    sqlx::query_as(&format!(
+    sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT_MOVE} WHERE m.id = $1 AND m.company_id = $2"
-    ))
+    )))
     .bind(id)
     .bind(company_id)
     .fetch_optional(conn)
@@ -1081,7 +1081,7 @@ pub async fn check_balances(
     conn: &mut PgConnection,
     company_id: Uuid,
 ) -> AppResult<Vec<BalanceDifference>> {
-    Ok(sqlx::query_as(&format!(
+    Ok(sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "SELECT COALESCE(l.product_id, b.product_id) AS product_id,
                 COALESCE(l.location_id, b.location_id) AS location_id,
                 COALESCE(l.lot_id, b.lot_id) AS lot_id,
@@ -1090,7 +1090,7 @@ pub async fn check_balances(
          FULL OUTER JOIN (SELECT * FROM inventory.stock_balances WHERE company_id = $1) b
            ON b.product_id = l.product_id AND b.location_id = l.location_id AND b.lot_id IS NOT DISTINCT FROM l.lot_id
          WHERE COALESCE(l.quantity, 0) <> COALESCE(b.quantity, 0)"
-    ))
+    )))
     .bind(company_id)
     .fetch_all(conn)
     .await?)
@@ -1110,11 +1110,11 @@ pub async fn rebuild_balances(conn: &mut PgConnection, company_id: Uuid) -> AppR
         .bind(company_id)
         .execute(&mut *conn)
         .await?;
-    let rows = sqlx::query(&format!(
+    let rows = sqlx::query(sqlx::AssertSqlSafe(format!(
         "INSERT INTO inventory.stock_balances (company_id, product_id, location_id, lot_id, quantity, allow_negative)
          SELECT $1, s.product_id, s.location_id, s.lot_id, s.quantity, loc.kind <> 'internal'
          FROM ({LEDGER_SUMS}) s JOIN inventory.locations loc ON loc.id = s.location_id"
-    ))
+    )))
     .bind(company_id)
     .execute(&mut *conn)
     .await?;

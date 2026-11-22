@@ -961,9 +961,9 @@ async fn rows_of_deleted_records_and_stale_uploads_are_removed(db: PgPool) {
     // the note, the activity and the follower of the deleted customer, and the two stale uploads
     assert_eq!(removed, 5);
     for table in ["messages", "activities", "followers"] {
-        let n: i64 = sqlx::query_scalar(&format!(
+        let n: i64 = sqlx::query_scalar(sqlx::AssertSqlSafe(format!(
             "SELECT count(*) FROM chatter.{table} WHERE record_id = $1::uuid"
-        ))
+        )))
         .bind(&c)
         .fetch_one(&db)
         .await

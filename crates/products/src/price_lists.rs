@@ -699,9 +699,9 @@ fn code_taken() -> AppError {
 }
 
 async fn load_list(db: &mut PgConnection, company_id: Uuid, id: Uuid) -> AppResult<PriceList> {
-    sqlx::query_as(&format!(
+    sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT_LIST} WHERE l.id = $1 AND l.company_id = $2"
-    ))
+    )))
     .bind(id)
     .bind(company_id)
     .fetch_optional(db)
@@ -742,9 +742,9 @@ async fn list_price_lists(
 ) -> AppResult<Json<Vec<PriceList>>> {
     user.require(Permission::PriceListsRead)?;
     Ok(Json(
-        sqlx::query_as(&format!(
+        sqlx::query_as(sqlx::AssertSqlSafe(format!(
             "{SELECT_LIST} WHERE l.company_id = $1 ORDER BY l.code"
-        ))
+        )))
         .bind(user.company_id)
         .fetch_all(&state.db)
         .await?,
@@ -993,7 +993,7 @@ async fn replace_texts(
     owner: Uuid,
     texts: &Texts,
 ) -> AppResult<()> {
-    sqlx::query(&format!("DELETE FROM pricing.{table} WHERE {key} = $1"))
+    sqlx::query(sqlx::AssertSqlSafe(format!("DELETE FROM pricing.{table} WHERE {key} = $1")))
         .bind(owner)
         .execute(&mut *db)
         .await?;
@@ -1002,10 +1002,10 @@ async fn replace_texts(
     }
     let langs: Vec<&str> = texts.keys().map(String::as_str).collect();
     let values: Vec<&str> = texts.values().map(String::as_str).collect();
-    sqlx::query(&format!(
+    sqlx::query(sqlx::AssertSqlSafe(format!(
         "INSERT INTO pricing.{table} ({key}, company_id, language, {column})
          SELECT $1, $2, l, v FROM unnest($3::text[], $4::text[]) AS t(l, v)"
-    ))
+    )))
     .bind(owner)
     .bind(company_id)
     .bind(&langs)
@@ -1020,7 +1020,7 @@ const ITEM_DESCRIPTIONS: (&str, &str, &str) =
     ("price_list_item_descriptions", "item_id", "description");
 
 async fn load_group(db: &mut PgConnection, group_id: Uuid) -> AppResult<PriceListGroup> {
-    sqlx::query_as(&format!("{SELECT_GROUP} WHERE g.id = $1"))
+    sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT_GROUP} WHERE g.id = $1")))
         .bind(group_id)
         .fetch_optional(db)
         .await?
@@ -1038,9 +1038,9 @@ async fn list_groups(
     let mut conn = state.db.acquire().await?;
     load_list(&mut conn, user.company_id, id).await?;
     Ok(Json(
-        sqlx::query_as(&format!(
+        sqlx::query_as(sqlx::AssertSqlSafe(format!(
             "{SELECT_GROUP} WHERE g.price_list_id = $1 ORDER BY g.parent_id NULLS FIRST, g.sort_order, g.id"
-        ))
+        )))
         .bind(id)
         .fetch_all(&mut *conn)
         .await?,
@@ -1263,9 +1263,9 @@ async fn list_items(
     user.require(Permission::PriceListsRead)?;
     let mut conn = state.db.acquire().await?;
     load_list(&mut conn, user.company_id, id).await?;
-    let mut items: Vec<PriceListItem> = sqlx::query_as(&format!(
+    let mut items: Vec<PriceListItem> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT_ITEM} WHERE i.price_list_id = $1 ORDER BY i.group_id, p.code"
-    ))
+    )))
     .bind(id)
     .fetch_all(&mut *conn)
     .await?;
@@ -1357,7 +1357,7 @@ async fn create_item(
         serde_json::json!({ "item_id": item_id, "product_id": input.product_id }),
     )
     .await?;
-    let item = sqlx::query_as(&format!("{SELECT_ITEM} WHERE i.id = $1"))
+    let item = sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT_ITEM} WHERE i.id = $1")))
         .bind(item_id)
         .fetch_one(&mut *tx)
         .await?;
@@ -1418,7 +1418,7 @@ async fn update_item(
         serde_json::json!({ "item_id": item_id }),
     )
     .await?;
-    let item = sqlx::query_as(&format!("{SELECT_ITEM} WHERE i.id = $1"))
+    let item = sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT_ITEM} WHERE i.id = $1")))
         .bind(item_id)
         .fetch_one(&mut *tx)
         .await?;
@@ -1518,7 +1518,7 @@ async fn replace_export_groups(
 }
 
 async fn load_export(db: &mut PgConnection, export_id: Uuid) -> AppResult<PriceListExport> {
-    sqlx::query_as(&format!("{SELECT_EXPORT} WHERE e.id = $1"))
+    sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT_EXPORT} WHERE e.id = $1")))
         .bind(export_id)
         .fetch_optional(db)
         .await?
@@ -1607,9 +1607,9 @@ fn export_code_taken() -> AppError {
 }
 
 async fn load_exports(db: &mut PgConnection, list_id: Uuid) -> AppResult<Vec<PriceListExport>> {
-    Ok(sqlx::query_as(&format!(
+    Ok(sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT_EXPORT} WHERE e.price_list_id = $1 ORDER BY e.sort_order, e.code"
-    ))
+    )))
     .bind(list_id)
     .fetch_all(db)
     .await?)
@@ -1960,9 +1960,9 @@ async fn render_price_list(
     }
     let export: Option<PriceListExport> = match params.export_id {
         Some(export_id) => Some(
-            sqlx::query_as(&format!(
+            sqlx::query_as(sqlx::AssertSqlSafe(format!(
                 "{SELECT_EXPORT} WHERE e.id = $1 AND e.price_list_id = $2"
-            ))
+            )))
             .bind(export_id)
             .bind(id)
             .fetch_optional(&mut *conn)
@@ -1997,7 +1997,7 @@ async fn render_price_list(
         .execute(&mut *tx)
         .await?;
     let all_groups: Vec<AssembleGroup> =
-        sqlx::query_as::<_, PriceListGroup>(&format!("{SELECT_GROUP} WHERE g.price_list_id = $1"))
+        sqlx::query_as::<_, PriceListGroup>(sqlx::AssertSqlSafe(format!("{SELECT_GROUP} WHERE g.price_list_id = $1")))
             .bind(id)
             .fetch_all(&mut *tx)
             .await?

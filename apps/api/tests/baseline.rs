@@ -118,7 +118,10 @@ async fn grid_id(app: &axum::Router, country: &str, voltage: i64, phases: i64) -
 }
 
 async fn count(db: &PgPool, sql: &str) -> i64 {
-    sqlx::query_scalar(sql).fetch_one(db).await.unwrap()
+    sqlx::query_scalar(sqlx::AssertSqlSafe(sql.to_owned()))
+        .fetch_one(db)
+        .await
+        .unwrap()
 }
 
 // ---------------------------------------------------------------------------------------------

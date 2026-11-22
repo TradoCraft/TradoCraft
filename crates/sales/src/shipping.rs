@@ -397,11 +397,11 @@ async fn list_shipping_requests(
         }
     }
     Ok(Json(
-        sqlx::query_as(&format!(
+        sqlx::query_as(sqlx::AssertSqlSafe(format!(
             "{SELECT} WHERE r.company_id = $1
                AND (($2::text IS NULL AND r.status IN ('open', 'requested')) OR r.status = $2)
              ORDER BY r.created_at, r.id"
-        ))
+        )))
         .bind(user.company_id)
         .bind(&p.status)
         .fetch_all(&state.db)
@@ -425,7 +425,7 @@ async fn lock_request(
     .await?
     .ok_or(AppError::NotFound("shipping request"))?;
     let q = service::load_quotation(tx, user.company_id, quotation_id, true).await?;
-    let r: ShippingRequest = sqlx::query_as(&format!("{SELECT} WHERE r.id = $1 FOR UPDATE OF r"))
+    let r: ShippingRequest = sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT} WHERE r.id = $1 FOR UPDATE OF r")))
         .bind(id)
         .fetch_one(&mut *tx)
         .await?;
@@ -480,7 +480,7 @@ async fn mark_shipping_requested(
         serde_json::json!({ "carrier": input.carrier.trim() }),
     )
     .await?;
-    let out = sqlx::query_as(&format!("{SELECT} WHERE r.id = $1"))
+    let out = sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT} WHERE r.id = $1")))
         .bind(id)
         .fetch_one(&mut *tx)
         .await?;
@@ -552,7 +552,7 @@ async fn enter_shipping_quote(
         serde_json::json!({ "amount": amount, "currency": currency }),
     )
     .await?;
-    let out = sqlx::query_as(&format!("{SELECT} WHERE r.id = $1"))
+    let out = sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT} WHERE r.id = $1")))
         .bind(id)
         .fetch_one(&mut *tx)
         .await?;

@@ -104,10 +104,10 @@ async fn list_stock(
 ) -> AppResult<Json<StockRowPage>> {
     user.require(Permission::InventoryRead)?;
     let pattern = p.q.as_deref().map(like_pattern);
-    let items = sqlx::query_as(&format!(
+    let items = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "SELECT *, on_hand - reserved AS available FROM ({STOCK_ROWS}) x
          ORDER BY product_code, location, lot_number NULLS FIRST LIMIT $8 OFFSET $9"
-    ))
+    )))
     .bind(user.company_id)
     .bind(p.product_id)
     .bind(p.warehouse_id)
@@ -119,7 +119,7 @@ async fn list_stock(
     .bind(p.offset.unwrap_or(0).max(0))
     .fetch_all(&state.db)
     .await?;
-    let total = sqlx::query_scalar(&format!("SELECT count(*) FROM ({STOCK_ROWS}) x"))
+    let total = sqlx::query_scalar(sqlx::AssertSqlSafe(format!("SELECT count(*) FROM ({STOCK_ROWS}) x")))
         .bind(user.company_id)
         .bind(p.product_id)
         .bind(p.warehouse_id)
@@ -222,7 +222,7 @@ async fn list_product_stock(
 ) -> AppResult<Json<ProductStockPage>> {
     user.require(Permission::InventoryRead)?;
     let pattern = p.q.as_deref().map(like_pattern);
-    let items = sqlx::query_as(&format!("{PRODUCT_STOCK} ORDER BY code LIMIT $7 OFFSET $8"))
+    let items = sqlx::query_as(sqlx::AssertSqlSafe(format!("{PRODUCT_STOCK} ORDER BY code LIMIT $7 OFFSET $8")))
         .bind(user.company_id)
         .bind(p.product_id)
         .bind(p.warehouse_id)
@@ -233,7 +233,7 @@ async fn list_product_stock(
         .bind(p.offset.unwrap_or(0).max(0))
         .fetch_all(&state.db)
         .await?;
-    let total = sqlx::query_scalar(&format!("SELECT count(*) FROM ({PRODUCT_STOCK}) c"))
+    let total = sqlx::query_scalar(sqlx::AssertSqlSafe(format!("SELECT count(*) FROM ({PRODUCT_STOCK}) c")))
         .bind(user.company_id)
         .bind(p.product_id)
         .bind(p.warehouse_id)

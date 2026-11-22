@@ -96,16 +96,16 @@ const SELECT: &str = "SELECT id, name, baseline_type_code, baseline_attribute_ke
 
 /// The company's rules in evaluation order.
 pub async fn list_rules(conn: &mut PgConnection, company_id: Uuid) -> AppResult<Vec<MatchRule>> {
-    Ok(sqlx::query_as(&format!(
+    Ok(sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT} WHERE company_id = $1 ORDER BY sort_order, name"
-    ))
+    )))
     .bind(company_id)
     .fetch_all(conn)
     .await?)
 }
 
 async fn load(conn: &mut PgConnection, company_id: Uuid, id: Uuid) -> AppResult<MatchRule> {
-    sqlx::query_as(&format!("{SELECT} WHERE id = $1 AND company_id = $2"))
+    sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT} WHERE id = $1 AND company_id = $2")))
         .bind(id)
         .bind(company_id)
         .fetch_optional(conn)

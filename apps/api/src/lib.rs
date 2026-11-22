@@ -243,7 +243,7 @@ pub async fn load_extra_seed(
         let sql =
             std::fs::read_to_string(&f).with_context(|| format!("reading {}", f.display()))?;
         let mut tx = db.begin().await?;
-        sqlx::raw_sql(&sql)
+        sqlx::raw_sql(sqlx::AssertSqlSafe(sql))
             .execute(&mut *tx)
             .await
             .with_context(|| format!("running {}", f.display()))?;

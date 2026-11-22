@@ -164,12 +164,12 @@ struct BomRow {
 }
 
 pub async fn load_bom(conn: &mut PgConnection, id: Uuid, lock: bool) -> AppResult<Bom> {
-    let r: BomRow = sqlx::query_as(&format!(
+    let r: BomRow = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "SELECT b.id, b.product_id, p.code AS product_code, p.name AS product_name, b.revision, b.status, b.notes,
                 b.created_at, b.activated_at
          FROM engineering.boms b JOIN products.products p ON p.id = b.product_id WHERE b.id = $1{}",
         if lock { " FOR UPDATE OF b" } else { "" }
-    ))
+    )))
     .bind(id)
     .fetch_optional(&mut *conn)
     .await?

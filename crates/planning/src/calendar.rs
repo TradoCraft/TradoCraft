@@ -315,11 +315,11 @@ async fn list_absences(
     if p.user_id != Some(user.user_id) {
         user.require(Permission::PlanningRead)?;
     }
-    let rows = sqlx::query_as(&format!(
+    let rows = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{ABSENCE_SELECT} WHERE a.company_id = $1 AND ($2::uuid IS NULL OR a.user_id = $2)
            AND ($3::date IS NULL OR a.to_date >= $3) AND ($4::date IS NULL OR a.from_date <= $4)
          ORDER BY a.from_date, u.display_name LIMIT 500"
-    ))
+    )))
     .bind(user.company_id)
     .bind(p.user_id)
     .bind(p.from)
@@ -345,9 +345,9 @@ fn check_absence(input: &AbsenceInput) -> AppResult<()> {
 }
 
 async fn load_absence(conn: &mut PgConnection, company_id: Uuid, id: Uuid) -> AppResult<Absence> {
-    sqlx::query_as(&format!(
+    sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{ABSENCE_SELECT} WHERE a.id = $1 AND a.company_id = $2"
-    ))
+    )))
     .bind(id)
     .bind(company_id)
     .fetch_optional(conn)

@@ -788,21 +788,21 @@ pub async fn escalate(db: &PgPool) -> anyhow::Result<usize> {
             "t.resolution_due_at < now()",
         ),
     ] {
-        let candidates: Vec<Uuid> = sqlx::query_scalar(&format!(
+        let candidates: Vec<Uuid> = sqlx::query_scalar(sqlx::AssertSqlSafe(format!(
             "SELECT t.id FROM helpdesk.tickets t
              WHERE t.closed_at IS NULL AND NOT t.internal AND t.sla_paused_at IS NULL
                AND t.{column} IS NULL AND {condition}
              ORDER BY t.created_at LIMIT 100"
-        ))
+        )))
         .fetch_all(db)
         .await?;
         for id in candidates {
             let mut tx = db.begin().await?;
-            let claimed: Option<Breach> = sqlx::query_as(&format!(
+            let claimed: Option<Breach> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
                 "UPDATE helpdesk.tickets t SET {column} = now()
                  WHERE t.id = $1 AND t.{column} IS NULL AND t.closed_at IS NULL AND {condition}
                  RETURNING t.id, t.company_id, t.number, t.subject, t.priority, t.owner_user_id, t.team_id"
-            ))
+            )))
             .bind(id)
             .fetch_optional(&mut *tx)
             .await?;

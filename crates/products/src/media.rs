@@ -105,9 +105,9 @@ async fn load_one(
     product_id: Uuid,
     file_id: Uuid,
 ) -> AppResult<ProductMedia> {
-    sqlx::query_as(&format!(
+    sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT} WHERE m.product_id = $1 AND m.file_id = $2"
-    ))
+    )))
     .bind(product_id)
     .bind(file_id)
     .fetch_optional(conn)
@@ -126,10 +126,10 @@ async fn list_media(
     let mut conn = state.db.acquire().await?;
     ensure_product(&mut conn, id).await?;
     // default first, then in the order they were added
-    let rows = sqlx::query_as(&format!(
+    let rows = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT} WHERE m.product_id = $1
          ORDER BY m.is_default DESC, m.created_at, m.file_id"
-    ))
+    )))
     .bind(id)
     .fetch_all(&mut *conn)
     .await?;

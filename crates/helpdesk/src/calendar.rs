@@ -276,7 +276,7 @@ async fn recompute_open(
         Scope::CompanyCalendar => (format!("{BASE}{no_calendar} AND $2::uuid IS NULL"), None),
         Scope::CompanyHolidays => (format!("{BASE}$2::uuid IS NULL"), None),
     };
-    let open: Vec<Uuid> = sqlx::query_scalar(&sql)
+    let open: Vec<Uuid> = sqlx::query_scalar(sqlx::AssertSqlSafe(sql))
         .bind(company_id)
         .bind(team)
         .fetch_all(&mut *conn)
@@ -417,9 +417,9 @@ async fn delete_team_calendar(
     let mut tx = state.db.begin().await?;
     check_team(&mut tx, user.company_id, Some(team)).await?;
     for table in ["business_calendars", "business_hours", "holidays"] {
-        sqlx::query(&format!(
+        sqlx::query(sqlx::AssertSqlSafe(format!(
             "DELETE FROM helpdesk.{table} WHERE company_id = $1 AND team_id = $2"
-        ))
+        )))
         .bind(user.company_id)
         .bind(team)
         .execute(&mut *tx)

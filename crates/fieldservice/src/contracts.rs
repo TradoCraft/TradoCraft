@@ -295,7 +295,7 @@ async fn load_contract(
     id: Uuid,
 ) -> AppResult<ContractDetail> {
     let summary: ContractSummary =
-        sqlx::query_as(&format!("{SELECT} WHERE k.id = $1 AND k.company_id = $2"))
+        sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT} WHERE k.id = $1 AND k.company_id = $2")))
             .bind(id)
             .bind(company_id)
             .fetch_optional(&mut *conn)
@@ -309,13 +309,13 @@ async fn load_contract(
     .bind(id)
     .fetch_one(&mut *conn)
     .await?;
-    let equipment: Vec<JobEquipment> = sqlx::query_as(&format!(
+    let equipment: Vec<JobEquipment> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "SELECT s.id AS serial_unit_id, p.code AS product_code, p.name AS product_name, s.serial_number, s.status,
                 s.warranty_until, s.warranty_note, {WARRANTY_STATUS_SQL} AS warranty_status
          FROM field.contract_equipment e JOIN engineering.serial_units s ON s.id = e.serial_unit_id
          JOIN products.products p ON p.id = s.product_id
          WHERE e.contract_id = $1 ORDER BY p.code, s.serial_number"
-    ))
+    )))
     .bind(id)
     .fetch_all(&mut *conn)
     .await?;
@@ -410,13 +410,13 @@ async fn list_contracts(
             .filter(|q| !q.is_empty())
             .map(|q| format!("%{}%", q.to_lowercase()));
     let status = p.status.as_deref().filter(|s| *s != "all");
-    let rows = sqlx::query_as(&format!(
+    let rows = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT} WHERE k.company_id = $1
            AND ($2::text IS NULL OR lower(k.number) LIKE $2 OR lower(k.title) LIKE $2 OR lower(c.name) LIKE $2)
            AND ($3::text IS NULL OR k.status = $3)
            AND ($4::uuid IS NULL OR k.customer_id = $4)
          ORDER BY (k.status = 'ended'), k.number DESC LIMIT 300"
-    ))
+    )))
     .bind(user.company_id)
     .bind(pattern)
     .bind(status)

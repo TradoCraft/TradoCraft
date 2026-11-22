@@ -147,9 +147,9 @@ impl Importable for Customers {
         // Read and lock the rows we are going to change in one statement, so a concurrent edit
         // cannot slip in between the read and the lock (a row changed meanwhile is returned as
         // committed).
-        Ok(sqlx::query_as::<_, Customer>(&format!(
+        Ok(sqlx::query_as::<_, Customer>(sqlx::AssertSqlSafe(format!(
             "{SELECT_CUSTOMER} WHERE c.code = ANY($2) ORDER BY c.id FOR UPDATE OF c"
-        ))
+        )))
         .bind(user.company_id)
         .bind(keys)
         .fetch_all(conn)
@@ -348,7 +348,7 @@ impl Importable for Customers {
 
     async fn export(pool: &PgPool, user: &CurrentUser) -> AppResult<Vec<Vec<CellValue>>> {
         let customers: Vec<Customer> =
-            sqlx::query_as(&format!("{SELECT_CUSTOMER} ORDER BY c.code"))
+            sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT_CUSTOMER} ORDER BY c.code")))
                 .bind(user.company_id)
                 .fetch_all(pool)
                 .await?;

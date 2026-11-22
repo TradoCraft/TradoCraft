@@ -134,9 +134,9 @@ pub async fn load(
     company_id: Uuid,
     id: Uuid,
 ) -> AppResult<PurchaseOrderDetail> {
-    let summary = sqlx::query_as::<_, PurchaseOrderSummary>(&format!(
+    let summary = sqlx::query_as::<_, PurchaseOrderSummary>(sqlx::AssertSqlSafe(format!(
         "{SELECT_SUMMARY} WHERE po.company_id = $1 AND po.id = $2"
-    ))
+    )))
     .bind(company_id)
     .bind(id)
     .fetch_optional(&mut *conn)
@@ -180,7 +180,7 @@ pub async fn list(
     }
     q.push_str(" ORDER BY po.created_at DESC");
 
-    let mut query = sqlx::query_as::<_, PurchaseOrderSummary>(&q).bind(company_id);
+    let mut query = sqlx::query_as::<_, PurchaseOrderSummary>(sqlx::AssertSqlSafe(q)).bind(company_id);
     if let Some(sid) = supplier_id {
         query = query.bind(sid);
     }

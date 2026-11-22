@@ -493,7 +493,7 @@ async fn save_links(
         "kb.entry_products",
         "kb.entry_ticket_categories",
     ] {
-        sqlx::query(&format!("DELETE FROM {table} WHERE entry_id = $1"))
+        sqlx::query(sqlx::AssertSqlSafe(format!("DELETE FROM {table} WHERE entry_id = $1")))
             .bind(id)
             .execute(&mut *conn)
             .await?;
@@ -851,7 +851,7 @@ async fn list_versions(
     user.require(Permission::KbRead)?;
     let mut conn = state.db.acquire().await?;
     load_entry(&mut conn, user.company_id, id).await?;
-    let rows: Vec<VersionRow> = sqlx::query_as(&format!("{VERSION_SQL} ORDER BY v.version DESC"))
+    let rows: Vec<VersionRow> = sqlx::query_as(sqlx::AssertSqlSafe(format!("{VERSION_SQL} ORDER BY v.version DESC")))
         .bind(id)
         .bind(user.company_id)
         .fetch_all(&mut *conn)
@@ -873,7 +873,7 @@ async fn restore_version(
     user.require(Permission::KbWrite)?;
     let mut tx = state.db.begin().await?;
     lock_entry(&mut tx, user.company_id, id).await?;
-    let row: VersionRow = sqlx::query_as(&format!("{VERSION_SQL} AND v.version = $3"))
+    let row: VersionRow = sqlx::query_as(sqlx::AssertSqlSafe(format!("{VERSION_SQL} AND v.version = $3")))
         .bind(id)
         .bind(user.company_id)
         .bind(version)

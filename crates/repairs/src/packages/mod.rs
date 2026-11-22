@@ -150,9 +150,9 @@ async fn load_package(
     lock: bool,
 ) -> AppResult<Package> {
     let lock = if lock { " FOR UPDATE OF k" } else { "" };
-    sqlx::query_as(&format!(
+    sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT} WHERE k.id = $1 AND k.company_id = $2{lock}"
-    ))
+    )))
     .bind(id)
     .bind(company_id)
     .fetch_optional(conn)
@@ -457,9 +457,9 @@ async fn list_packages(
         AND ($5::text IS NULL OR lower(k.number) LIKE $5 OR lower(k.tracking_number) LIKE $5
              OR lower(k.sender_name) LIKE $5 OR lower(coalesce(c.name, '')) LIKE $5
              OR lower(k.customer_reference) LIKE $5)";
-    let items: Vec<Package> = sqlx::query_as(&format!(
+    let items: Vec<Package> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT} {filter} ORDER BY k.received_at DESC, k.id DESC LIMIT $6 OFFSET $7"
-    ))
+    )))
     .bind(user.company_id)
     .bind(status)
     .bind(p.kind.as_deref())
@@ -469,9 +469,9 @@ async fn list_packages(
     .bind(p.offset.unwrap_or(0).max(0))
     .fetch_all(&state.db)
     .await?;
-    let total: i64 = sqlx::query_scalar(&format!(
+    let total: i64 = sqlx::query_scalar(sqlx::AssertSqlSafe(format!(
         "SELECT count(*) FROM repairs.packages k LEFT JOIN crm.customers c ON c.id = k.customer_id {filter}"
-    ))
+    )))
     .bind(user.company_id)
     .bind(status)
     .bind(p.kind.as_deref())
@@ -853,7 +853,7 @@ async fn repair_suggestions(
             "only an opened repair parcel can be matched".into(),
         ));
     }
-    let announced: Vec<Repair> = sqlx::query_as(&format!(
+    let announced: Vec<Repair> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{} WHERE r.company_id = $1 AND r.status = 'announced'
          ORDER BY (nullif(btrim($2), '') IS NOT NULL AND lower(btrim(r.serial_number)) = lower(btrim($2))) DESC,
                   (nullif(btrim($3), '') IS NOT NULL AND (lower(btrim(t.number)) = lower(btrim($3))
@@ -862,7 +862,7 @@ async fn repair_suggestions(
                   r.created_at DESC
          LIMIT 1000",
         crate::SELECT
-    ))
+    )))
     .bind(user.company_id)
     .bind(p.serial.as_deref().unwrap_or(""))
     .bind(p.ticket.as_deref().unwrap_or(""))
@@ -1328,10 +1328,10 @@ async fn package_suggestions(
     let mut conn = state.db.acquire().await?;
     let repair = load_repair(&mut conn, user.company_id, id).await?;
     Ok(Json(
-        sqlx::query_as(&format!(
+        sqlx::query_as(sqlx::AssertSqlSafe(format!(
             "{SELECT} WHERE k.company_id = $1 AND k.status = 'opened' AND k.kind = 'repair' AND k.customer_id = $2
              ORDER BY k.received_at DESC LIMIT 50"
-        ))
+        )))
         .bind(user.company_id)
         .bind(repair.customer_id)
         .fetch_all(&mut *conn)
@@ -1352,10 +1352,10 @@ async fn repair_packages(
     let mut conn = state.db.acquire().await?;
     load_repair(&mut conn, user.company_id, id).await?;
     Ok(Json(
-        sqlx::query_as(&format!(
+        sqlx::query_as(sqlx::AssertSqlSafe(format!(
             "{SELECT} WHERE k.company_id = $1 AND k.id IN (SELECT package_id FROM repairs.package_repairs WHERE repair_id = $2)
              ORDER BY k.received_at"
-        ))
+        )))
         .bind(user.company_id)
         .bind(id)
         .fetch_all(&mut *conn)
