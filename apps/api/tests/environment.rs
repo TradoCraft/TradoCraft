@@ -25,8 +25,9 @@ async fn defaults_to_live_and_the_database_name(db: PgPool) {
     assert_eq!(body["name"], expected_db.as_str());
     assert_eq!(body["db_name"], expected_db.as_str());
     assert_eq!(body["version"], env!("CARGO_PKG_VERSION"));
-    // Nothing but these four fields: no host, user or password.
-    assert_eq!(body.as_object().unwrap().len(), 4);
+    assert!(body["instance_id"].as_str().is_some_and(|s| !s.is_empty()));
+    // Nothing but these five fields: no host, user or password.
+    assert_eq!(body.as_object().unwrap().len(), 5);
 }
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]

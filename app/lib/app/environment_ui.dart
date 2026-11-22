@@ -148,6 +148,7 @@ class _AddRequest {
     required this.name,
     required this.url,
     required this.kind,
+    this.instanceId,
     required this.openWizard,
   });
 
@@ -158,11 +159,17 @@ class _AddRequest {
   final String name;
   final String url;
   final EnvironmentKind kind;
+  final String? instanceId;
   final bool openWizard;
 
   /// Adds the environment (which switches to it) and then says where to go. True when added.
   Future<bool> run() async {
-    final r = await notifier.add(name: name, serverUrl: url, kind: kind);
+    final r = await notifier.add(
+      name: name,
+      serverUrl: url,
+      kind: kind,
+      instanceId: instanceId,
+    );
     if (r == EnvChange.rejected) return false;
     if (r == EnvChange.notSaved) {
       messenger.showSnackBar(SnackBar(content: Text(notSavedText)));
@@ -459,6 +466,7 @@ class _AddDialogState extends ConsumerState<_AddDialog> {
       name: name,
       url: url,
       kind: probe.kind,
+      instanceId: probe.instanceId.isEmpty ? null : probe.instanceId,
       openWizard: openWizard,
     );
     Navigator.pop(context, request);

@@ -22,6 +22,8 @@ enum EnvironmentKind {
   }
 }
 
+const _keepInstanceId = Object();
+
 /// One server the app can talk to: its address, what kind of data it holds and, per environment,
 /// who is signed in there (the same fields as [Session]).
 class AppEnvironment {
@@ -30,6 +32,7 @@ class AppEnvironment {
     required this.name,
     required this.kind,
     required this.serverUrl,
+    this.instanceId,
     this.devUser,
     this.accessToken,
     this.companyId,
@@ -39,6 +42,7 @@ class AppEnvironment {
   final String name;
   final EnvironmentKind kind;
   final String serverUrl;
+  final String? instanceId;
   final String? devUser;
   final String? accessToken;
   final String? companyId;
@@ -57,22 +61,29 @@ class AppEnvironment {
     name: name,
     kind: kind,
     serverUrl: s.serverUrl,
+    instanceId: instanceId,
     devUser: s.devUser,
     accessToken: s.accessToken,
     companyId: s.companyId,
   );
 
-  /// A copy with another name and/or kind.
-  AppEnvironment copyWith({String? name, EnvironmentKind? kind}) =>
-      AppEnvironment(
-        id: id,
-        name: name ?? this.name,
-        kind: kind ?? this.kind,
-        serverUrl: serverUrl,
-        devUser: devUser,
-        accessToken: accessToken,
-        companyId: companyId,
-      );
+  /// A copy with another name, kind, and/or instance id.
+  AppEnvironment copyWith({
+    String? name,
+    EnvironmentKind? kind,
+    Object? instanceId = _keepInstanceId,
+  }) => AppEnvironment(
+    id: id,
+    name: name ?? this.name,
+    kind: kind ?? this.kind,
+    serverUrl: serverUrl,
+    instanceId: identical(instanceId, _keepInstanceId)
+        ? this.instanceId
+        : instanceId as String?,
+    devUser: devUser,
+    accessToken: accessToken,
+    companyId: companyId,
+  );
 
   /// The stored form of this environment.
   Map<String, Object?> toJson() => {
@@ -80,6 +91,7 @@ class AppEnvironment {
     'name': name,
     'kind': kind.name,
     'url': serverUrl,
+    if (instanceId != null) 'instance_id': instanceId,
     'dev': devUser,
     'token': accessToken,
     'company': companyId,
@@ -94,6 +106,7 @@ class AppEnvironment {
       name: s('name') ?? hostOf(j['url'] as String),
       kind: EnvironmentKind.parse(j['kind']) ?? EnvironmentKind.live,
       serverUrl: j['url'] as String,
+      instanceId: s('instance_id'),
       devUser: s('dev'),
       accessToken: s('token'),
       companyId: s('company'),
@@ -204,12 +217,14 @@ class EnvironmentProbe {
     required this.kind,
     required this.dbName,
     required this.version,
+    this.instanceId = '',
   });
 
   final String name;
   final EnvironmentKind kind;
   final String dbName;
   final String version;
+  final String instanceId;
 }
 
 /// Asks the server at an address which environment it is. Needs no sign-in. Overridden in tests.
@@ -235,6 +250,7 @@ final environmentProbeProvider =
             kind: kind,
             dbName: '${d['db_name'] ?? ''}',
             version: '${d['version'] ?? ''}',
+            instanceId: '${d['instance_id'] ?? ''}',
           );
         } finally {
           dio.close();
@@ -298,6 +314,7 @@ class EnvironmentsNotifier extends Notifier<EnvironmentsState> {
         activeId: known.id,
       );
       _persist();
+      refreshActive();
       return;
     }
     final env = AppEnvironment(
@@ -319,6 +336,8 @@ class EnvironmentsNotifier extends Notifier<EnvironmentsState> {
     return 'env-$n';
   }
 
+  int _refreshGen = 0;
+
   /// Stores the list; false when that failed (the in-memory list stays as it is).
   Future<bool> _persist() async {
     try {
@@ -333,9 +352,10 @@ class EnvironmentsNotifier extends Notifier<EnvironmentsState> {
   /// that is still the address). A server that does not answer leaves things as they are.
   Future<void> refreshActive() async {
     final a = state.active;
+    final gen = ++_refreshGen;
     try {
       final info = await ref.read(environmentProbeProvider)(a.serverUrl);
-      if (!ref.mounted) return;
+      if (!ref.mounted || gen != _refreshGen) return;
       final stillActive = state.active.id == a.id;
       if (!stillActive) return;
       final rename = a.name == hostOf(a.serverUrl);
@@ -343,7 +363,11 @@ class EnvironmentsNotifier extends Notifier<EnvironmentsState> {
         items: [
           for (final e in state.items)
             e.id == a.id
-                ? e.copyWith(name: rename ? info.name : null, kind: info.kind)
+                ? e.copyWith(
+                    name: rename ? info.name : null,
+                    kind: info.kind,
+                    instanceId: info.instanceId.isEmpty ? null : info.instanceId,
+                  )
                 : e,
         ],
       );
@@ -360,6 +384,7 @@ class EnvironmentsNotifier extends Notifier<EnvironmentsState> {
     required String name,
     required String serverUrl,
     required EnvironmentKind kind,
+    String? instanceId,
   }) async {
     final url = normalizeServerUrl(serverUrl) ?? serverUrl;
     if (state.items.any((e) => sameServer(e.serverUrl, url))) {
@@ -370,6 +395,7 @@ class EnvironmentsNotifier extends Notifier<EnvironmentsState> {
       name: name,
       kind: kind,
       serverUrl: url,
+      instanceId: instanceId,
     );
     state = state.copyWith(items: [...state.items, env]);
     final saved = await _persist();

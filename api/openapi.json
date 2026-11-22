@@ -40159,12 +40159,17 @@
           "name",
           "kind",
           "db_name",
-          "version"
+          "version",
+          "instance_id"
         ],
         "properties": {
           "db_name": {
             "type": "string",
             "description": "Name of the database only; never host, user or password."
+          },
+          "instance_id": {
+            "type": "string",
+            "description": "Unique ID of this database instance; changes when the database is dropped and recreated."
           },
           "kind": {
             "$ref": "#/components/schemas/EnvKind"

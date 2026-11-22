@@ -883,6 +883,18 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('env-tile-env-2')), findsOneWidget);
     });
+
+    test('copyWith preserves instanceId when omitted and clears it when null', () {
+      const env = AppEnvironment(
+        id: 'env-1',
+        name: 'Tut',
+        kind: EnvironmentKind.tutorial,
+        serverUrl: 'https://tut.example',
+        instanceId: 'inst-1',
+      );
+      expect(env.copyWith(name: 'Renamed').instanceId, 'inst-1');
+      expect(env.copyWith(instanceId: null).instanceId, isNull);
+    });
   });
 }
 

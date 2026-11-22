@@ -708,5 +708,22 @@ void main() {
         await tester.pumpWidget(const SizedBox());
       },
     );
+
+    test('TutorialScope storageKey isolates progress per backend instanceId', () {
+      const a = TutorialScope(
+        envId: 'e1',
+        kind: EnvironmentKind.tutorial,
+        who: 'dev:admin@example.com',
+        instanceId: 'inst-1',
+      );
+      const b = TutorialScope(
+        envId: 'e1',
+        kind: EnvironmentKind.tutorial,
+        who: 'dev:admin@example.com',
+        instanceId: 'inst-2',
+      );
+      expect(a.storageKey, isNot(b.storageKey));
+      expect(a, isNot(b));
+    });
   });
 }
