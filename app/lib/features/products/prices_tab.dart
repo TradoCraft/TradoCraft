@@ -502,9 +502,10 @@ class _MultiZonePriceDialogState extends ConsumerState<_MultiZonePriceDialog> {
                                       controller: _controllers[zones[i].id]!,
                                       enabled: !_saving,
                                       autofocus: i == 0,
-                                      decoration: const InputDecoration(
+                                      decoration: InputDecoration(
                                         isDense: true,
-                                        border: OutlineInputBorder(),
+                                        border: const OutlineInputBorder(),
+                                        labelText: zones[i].code,
                                       ),
                                     ),
                                   ),

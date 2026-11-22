@@ -315,13 +315,11 @@ test('the whole tutorial, chapter by chapter', async ({ page, request }) => {
     await expectStep(page, 'prices', 'priceExport');
     await page.getByRole('tab', { name: 'Prices' }).click(); // the product page keeps the tab it was left on
     await page.getByRole('button', { name: /New price/ }).click();
-    await choose(page, /^Zone/, /TUT-EXPORT/);
-    await typeInto(field(page, 'Unit price (excl. VAT)'), '1450');
+    await typeInto(field(page, 'TUT-EXPORT'), '1450');
     await page.getByRole('button', { name: 'Save' }).click();
     await expectStep(page, 'prices', 'priceHome');
     await page.getByRole('button', { name: /New price/ }).click();
-    await choose(page, /^Zone/, /^Z1\b/);
-    await typeInto(field(page, 'Unit price (excl. VAT)'), '1200');
+    await typeInto(field(page, 'Z1'), '1200');
     await page.getByRole('button', { name: 'Save' }).click();
     await expectStep(page, 'prices', 'done');
     await next(page);
