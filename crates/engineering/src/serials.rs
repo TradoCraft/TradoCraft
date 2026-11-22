@@ -145,12 +145,14 @@ const SELECT: &str = "SELECT s.id, s.product_id, p.code AS product_code, p.name 
      LEFT JOIN engineering.serial_units ps ON ps.id = link.parent_id";
 
 async fn load(conn: &mut PgConnection, company_id: Uuid, id: Uuid) -> AppResult<SerialUnit> {
-    sqlx::query_as(&format!("{SELECT} WHERE s.id = $1 AND s.company_id = $2"))
-        .bind(id)
-        .bind(company_id)
-        .fetch_optional(conn)
-        .await?
-        .ok_or(AppError::NotFound("serial unit"))
+    sqlx::query_as(sqlx::AssertSqlSafe(format!(
+        "{SELECT} WHERE s.id = $1 AND s.company_id = $2"
+    )))
+    .bind(id)
+    .bind(company_id)
+    .fetch_optional(conn)
+    .await?
+    .ok_or(AppError::NotFound("serial unit"))
 }
 
 async fn lock(conn: &mut PgConnection, ids: &[Uuid]) -> AppResult<()> {
@@ -306,9 +308,9 @@ async fn list_serials(
           AND ($3::uuid IS NULL OR s.product_id = $3)
           AND ($4::text IS NULL OR s.status = $4)
           AND ($5::uuid IS NULL OR s.customer_id = $5)";
-    let items = sqlx::query_as(&format!(
+    let items = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT} {filter} ORDER BY p.code, s.serial_number LIMIT $6 OFFSET $7"
-    ))
+    )))
     .bind(user.company_id)
     .bind(&pattern)
     .bind(p.product_id)
@@ -318,9 +320,9 @@ async fn list_serials(
     .bind(p.offset.unwrap_or(0).max(0))
     .fetch_all(&state.db)
     .await?;
-    let total = sqlx::query_scalar(&format!(
+    let total = sqlx::query_scalar(sqlx::AssertSqlSafe(format!(
         "SELECT count(*) FROM engineering.serial_units s JOIN products.products p ON p.id = s.product_id {filter}"
-    ))
+    )))
     .bind(user.company_id)
     .bind(&pattern)
     .bind(p.product_id)

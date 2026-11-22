@@ -110,10 +110,10 @@ async fn load(
     company_id: Uuid,
     only: Option<Uuid>,
 ) -> AppResult<Vec<Mailbox>> {
-    Ok(sqlx::query_as(&format!(
+    Ok(sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT} WHERE m.company_id = $1 AND ($2::uuid IS NULL OR m.id = $2)
          ORDER BY m.is_default DESC, lower(m.name)"
-    ))
+    )))
     .bind(company_id)
     .bind(only)
     .fetch_all(conn)

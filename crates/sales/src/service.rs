@@ -1010,7 +1010,7 @@ pub async fn load_quotation(
         "{SELECT_HEADER} WHERE id = $1 AND company_id = $2{}",
         if lock { " FOR UPDATE" } else { "" }
     );
-    let header: QuotationHeader = sqlx::query_as(&sql)
+    let header: QuotationHeader = sqlx::query_as(sqlx::AssertSqlSafe(sql))
         .bind(id)
         .bind(company_id)
         .fetch_optional(&mut *conn)

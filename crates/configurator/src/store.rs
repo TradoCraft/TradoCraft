@@ -194,7 +194,7 @@ pub async fn load_model(
          FROM configurator.models WHERE id = $1 AND company_id = $2{}",
         if lock { " FOR UPDATE" } else { "" }
     );
-    let m: ModelRow = sqlx::query_as(&sql)
+    let m: ModelRow = sqlx::query_as(sqlx::AssertSqlSafe(sql))
         .bind(id)
         .bind(company_id)
         .fetch_optional(&mut *conn)
@@ -234,7 +234,7 @@ pub(crate) async fn load_revision(
          WHERE r.id = $1 AND m.company_id = $2{}",
         if lock { " FOR UPDATE OF r" } else { "" }
     );
-    sqlx::query_as(&sql)
+    sqlx::query_as(sqlx::AssertSqlSafe(sql))
         .bind(id)
         .bind(company_id)
         .fetch_optional(conn)

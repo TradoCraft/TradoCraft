@@ -155,7 +155,10 @@ fn bounded(cells: &mut Cells<'_>, column: &str, scale: u32, max: Decimal) -> Cel
 }
 
 /// A `(code, id)` query as a lookup table.
-async fn code_map(conn: &mut sqlx::PgConnection, sql: &str) -> AppResult<HashMap<String, Uuid>> {
+async fn code_map(
+    conn: &mut sqlx::PgConnection,
+    sql: impl sqlx::SqlSafeStr,
+) -> AppResult<HashMap<String, Uuid>> {
     Ok(sqlx::query_as::<_, (String, Uuid)>(sql)
         .fetch_all(conn)
         .await?
@@ -237,9 +240,9 @@ impl Importable for Products {
         let vat_rules =
             tradocraft_core::vat_rates::load_country_rules(&mut *conn, &company.country_code)
                 .await?;
-        let mut products = sqlx::query_as::<_, Product>(&format!(
+        let mut products = sqlx::query_as::<_, Product>(sqlx::AssertSqlSafe(format!(
             "{SELECT_PRODUCT_LOCKABLE} WHERE p.code = ANY($1) ORDER BY p.id FOR UPDATE OF p"
-        ))
+        )))
         .bind(keys)
         .fetch_all(conn)
         .await?;
@@ -507,9 +510,11 @@ impl Importable for Products {
     }
 
     async fn export(pool: &PgPool, user: &CurrentUser) -> AppResult<Vec<Vec<CellValue>>> {
-        let mut products: Vec<Product> = sqlx::query_as(&format!("{SELECT_PRODUCT} ORDER BY code"))
-            .fetch_all(pool)
-            .await?;
+        let mut products: Vec<Product> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
+            "{SELECT_PRODUCT} ORDER BY code"
+        )))
+        .fetch_all(pool)
+        .await?;
         crate::resolve_products_for_company(
             pool,
             user.company_id,

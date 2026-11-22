@@ -387,12 +387,12 @@ async fn per_day(
 ) -> AppResult<HashMap<NaiveDate, i64>> {
     let rows: Vec<(NaiveDate, i64)> =
         bind_scope!(
-            sqlx::query_as(&format!(
+            sqlx::query_as(sqlx::AssertSqlSafe(format!(
             "SELECT ((t.{column}) AT TIME ZONE $7)::date AS day, count(*) FROM helpdesk.tickets t
              WHERE {FILTER} AND {} {} GROUP BY day",
             local_day(&format!("t.{column}")),
             if only_closed { "AND t.closed_at IS NOT NULL" } else { "" }
-        )),
+        ))),
             s
         )
         .fetch_all(conn)
@@ -408,11 +408,11 @@ async fn backlog(
     join: &str,
 ) -> AppResult<Vec<CountRow>> {
     Ok(bind_scope!(
-        sqlx::query_as(&format!(
+        sqlx::query_as(sqlx::AssertSqlSafe(format!(
             "SELECT coalesce({key}::text, '') AS key, coalesce({label}, '') AS label, count(*) AS count
              FROM helpdesk.tickets t {join}
              WHERE {FILTER} AND t.closed_at IS NULL GROUP BY 1, 2 ORDER BY count DESC, 2"
-        )),
+        ))),
         s
     )
     .fetch_all(conn)
@@ -426,11 +426,11 @@ async fn top(conn: &mut PgConnection, s: &Scope, tags: bool) -> AppResult<Vec<Co
         ("t.category", "")
     };
     Ok(bind_scope!(
-        sqlx::query_as(&format!(
+        sqlx::query_as(sqlx::AssertSqlSafe(format!(
             "SELECT {key} AS key, {key} AS label, count(*) AS count FROM helpdesk.tickets t {join}
              WHERE {FILTER} AND {} GROUP BY 1 ORDER BY count DESC, 1 LIMIT 10",
             local_day("t.created_at")
-        )),
+        ))),
         s
     )
     .fetch_all(conn)
@@ -550,11 +550,11 @@ pub async fn build_in_zone(
 
     // Response and resolution times of tickets created in the period.
     let timed: Vec<TimedTicket> = bind_scope!(
-        sqlx::query_as(&format!(
+        sqlx::query_as(sqlx::AssertSqlSafe(format!(
             "SELECT t.id, t.team_id, t.created_at, t.first_response_at, t.closed_at, t.sla_paused_seconds
              FROM helpdesk.tickets t WHERE {FILTER} AND NOT t.internal AND {}",
             local_day("t.created_at")
-        )),
+        ))),
         s
     )
     .fetch_all(&mut *conn)
@@ -595,18 +595,18 @@ pub async fn build_in_zone(
     }
 
     let (with_sla, breached): (i64, i64) = bind_scope!(
-        sqlx::query_as(&format!(
+        sqlx::query_as(sqlx::AssertSqlSafe(format!(
             "SELECT count(*), count(*) FILTER (WHERE {}) FROM helpdesk.tickets t
              WHERE {FILTER} AND NOT t.internal AND t.first_response_due_at IS NOT NULL AND {}",
             sla::sql::breached(),
             local_day("t.created_at")
-        )),
+        ))),
         s
     )
     .fetch_one(&mut *conn)
     .await?;
     let breaches_by_team: Vec<TeamBreaches> = bind_scope!(
-        sqlx::query_as(&format!(
+        sqlx::query_as(sqlx::AssertSqlSafe(format!(
             "SELECT t.team_id, coalesce(tm.name, '') AS team, count(*) AS tickets,
                     count(*) FILTER (WHERE {}) AS breached
              FROM helpdesk.tickets t LEFT JOIN helpdesk.teams tm ON tm.id = t.team_id
@@ -614,19 +614,19 @@ pub async fn build_in_zone(
              GROUP BY t.team_id, tm.name ORDER BY breached DESC, team",
             sla::sql::breached(),
             local_day("t.created_at")
-        )),
+        ))),
         s
     )
     .fetch_all(&mut *conn)
     .await?;
 
     let (good, bad): (i64, i64) = bind_scope!(
-        sqlx::query_as(&format!(
+        sqlx::query_as(sqlx::AssertSqlSafe(format!(
             "SELECT count(*) FILTER (WHERE c.rating = 'good'), count(*) FILTER (WHERE c.rating = 'bad')
              FROM helpdesk.csat_surveys c JOIN helpdesk.tickets t ON t.id = c.ticket_id
              WHERE {FILTER} AND c.rated_at IS NOT NULL AND {}",
             local_day("c.rated_at")
-        )),
+        ))),
         s
     )
     .fetch_one(&mut *conn)
@@ -636,7 +636,7 @@ pub async fn build_in_zone(
     let top_tags = top(conn, &s, true).await?;
 
     let time_by_user: Vec<TimeRow> = bind_scope!(
-        sqlx::query_as(&format!(
+        sqlx::query_as(sqlx::AssertSqlSafe(format!(
             "SELECT e.user_id, u.display_name AS name, sum(e.minutes)::bigint AS total_minutes,
                     coalesce(sum(e.minutes) FILTER (WHERE e.billable), 0)::bigint AS billable_minutes,
                     coalesce(sum(e.minutes) FILTER (WHERE NOT e.billable), 0)::bigint AS non_billable_minutes
@@ -644,7 +644,7 @@ pub async fn build_in_zone(
              JOIN core.users u ON u.id = e.user_id
              WHERE {FILTER} AND {} GROUP BY e.user_id, u.display_name ORDER BY total_minutes DESC, name",
             local_day("e.created_at")
-        )),
+        ))),
         s
     )
     .fetch_all(&mut *conn)

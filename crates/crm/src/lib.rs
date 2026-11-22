@@ -220,12 +220,14 @@ pub async fn get_customer<'e>(
     company_id: Uuid,
     id: Uuid,
 ) -> AppResult<Customer> {
-    sqlx::query_as(&format!("{SELECT_CUSTOMER} WHERE c.id = $2"))
-        .bind(company_id)
-        .bind(id)
-        .fetch_optional(db)
-        .await?
-        .ok_or(AppError::NotFound("customer"))
+    sqlx::query_as(sqlx::AssertSqlSafe(format!(
+        "{SELECT_CUSTOMER} WHERE c.id = $2"
+    )))
+    .bind(company_id)
+    .bind(id)
+    .fetch_optional(db)
+    .await?
+    .ok_or(AppError::NotFound("customer"))
 }
 
 /// Like [`get_customer`], for the row an update is about to change: locks it until the transaction
@@ -314,9 +316,9 @@ async fn list_customers(
     );
     let order =
         tradocraft_core::sort::order_by(p.sort.as_deref(), CUSTOMER_SORT, "c.id", "c.name")?;
-    let items = sqlx::query_as(&format!(
+    let items = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT_CUSTOMER} {filter} ORDER BY {order} LIMIT $3 OFFSET $4"
-    ))
+    )))
     .bind(user.company_id)
     .bind(&pattern)
     .bind(p.limit.unwrap_or(50).clamp(1, 500))
@@ -326,13 +328,13 @@ async fn list_customers(
     .fetch_all(&state.db)
     .await?;
     // The count query has no company or paging binds: $2 becomes $1, $5 and $6 become $2 and $3.
-    let total = sqlx::query_scalar(&format!(
+    let total = sqlx::query_scalar(sqlx::AssertSqlSafe(format!(
         "SELECT count(*) FROM crm.customers c {}",
         filter
             .replace("$2", "$1")
             .replace("$5", "$2")
             .replace("$6", "$3")
-    ))
+    )))
     .bind(&pattern)
     .bind(p.active)
     .bind(&countries)

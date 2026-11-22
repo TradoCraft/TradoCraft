@@ -84,9 +84,9 @@ pub(crate) async fn load_routing(
     company_id: Uuid,
     bom_id: Uuid,
 ) -> AppResult<Vec<RoutingOperation>> {
-    Ok(sqlx::query_as(&format!(
+    Ok(sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT} WHERE r.company_id = $1 AND r.bom_id = $2 ORDER BY r.position"
-    ))
+    )))
     .bind(company_id)
     .bind(bom_id)
     .fetch_all(conn)
@@ -102,10 +102,10 @@ struct BomHead {
 
 async fn load_head(conn: &mut PgConnection, bom_id: Uuid, lock: bool) -> AppResult<BomHead> {
     // BOMs are shared master data: no company filter, as in `engineering::bom`.
-    sqlx::query_as(&format!(
+    sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "SELECT product_id, revision, status FROM engineering.boms WHERE id = $1{}",
         if lock { " FOR UPDATE" } else { "" }
-    ))
+    )))
     .bind(bom_id)
     .fetch_optional(conn)
     .await?

@@ -177,12 +177,14 @@ const SELECT: &str =
      JOIN core.users u ON u.id = o.owner_user_id";
 
 async fn load(conn: &mut PgConnection, company_id: Uuid, id: Uuid) -> AppResult<Opportunity> {
-    sqlx::query_as(&format!("{SELECT} WHERE o.id = $1 AND o.company_id = $2"))
-        .bind(id)
-        .bind(company_id)
-        .fetch_optional(conn)
-        .await?
-        .ok_or(AppError::NotFound("opportunity"))
+    sqlx::query_as(sqlx::AssertSqlSafe(format!(
+        "{SELECT} WHERE o.id = $1 AND o.company_id = $2"
+    )))
+    .bind(id)
+    .bind(company_id)
+    .fetch_optional(conn)
+    .await?
+    .ok_or(AppError::NotFound("opportunity"))
 }
 
 fn validate_probability(p: Option<i16>) -> AppResult<()> {
@@ -386,9 +388,9 @@ async fn list_opportunities(
           AND ($3::text IS NULL OR o.stage = $3)
           AND ($4::uuid IS NULL OR o.customer_id = $4)
           AND ($5::boolean IS NULL OR (o.stage NOT IN ('won', 'lost')) = $5)";
-    let items = sqlx::query_as(&format!(
+    let items = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT} {filter} ORDER BY o.expected_close NULLS LAST, o.number DESC LIMIT $6 OFFSET $7"
-    ))
+    )))
     .bind(user.company_id)
     .bind(&pattern)
     .bind(&p.stage)
@@ -398,9 +400,9 @@ async fn list_opportunities(
     .bind(p.offset.unwrap_or(0).max(0))
     .fetch_all(&state.db)
     .await?;
-    let total = sqlx::query_scalar(&format!(
+    let total = sqlx::query_scalar(sqlx::AssertSqlSafe(format!(
         "SELECT count(*) FROM crm.opportunities o JOIN crm.customers c ON c.id = o.customer_id {filter}"
-    ))
+    )))
     .bind(user.company_id)
     .bind(&pattern)
     .bind(&p.stage)

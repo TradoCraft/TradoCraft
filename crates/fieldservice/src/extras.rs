@@ -80,13 +80,13 @@ pub(crate) async fn equipment_of(
     conn: &mut PgConnection,
     job_id: Uuid,
 ) -> AppResult<Vec<JobEquipment>> {
-    Ok(sqlx::query_as(&format!(
+    Ok(sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "SELECT s.id AS serial_unit_id, p.code AS product_code, p.name AS product_name, s.serial_number, s.status,
                 s.warranty_until, s.warranty_note, {WARRANTY_STATUS_SQL} AS warranty_status
          FROM field.job_equipment e JOIN engineering.serial_units s ON s.id = e.serial_unit_id
          JOIN products.products p ON p.id = s.product_id
          WHERE e.job_id = $1 ORDER BY p.code, s.serial_number"
-    ))
+    )))
     .bind(job_id)
     .fetch_all(conn)
     .await?)
@@ -672,13 +672,13 @@ async fn customer_equipment(
     user.require(Permission::FieldRead)?;
     let mut conn = state.db.acquire().await?;
     tradocraft_crm::get_customer(&mut *conn, user.company_id, id).await?;
-    let units: Vec<JobEquipment> = sqlx::query_as(&format!(
+    let units: Vec<JobEquipment> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "SELECT s.id AS serial_unit_id, p.code AS product_code, p.name AS product_name, s.serial_number, s.status,
                 s.warranty_until, s.warranty_note, {WARRANTY_STATUS_SQL} AS warranty_status
          FROM engineering.serial_units s JOIN products.products p ON p.id = s.product_id
          WHERE s.company_id = $1 AND s.customer_id = $2 AND s.status IN ('delivered', 'installed')
          ORDER BY p.code, s.serial_number"
-    ))
+    )))
     .bind(user.company_id)
     .bind(id)
     .fetch_all(&mut *conn)

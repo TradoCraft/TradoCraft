@@ -106,12 +106,14 @@ const SELECT: &str =
                       FROM crm.baseline_item_types";
 
 async fn load(conn: &mut PgConnection, company_id: Uuid, id: Uuid) -> AppResult<BaselineItemType> {
-    sqlx::query_as(&format!("{SELECT} WHERE id = $1 AND company_id = $2"))
-        .bind(id)
-        .bind(company_id)
-        .fetch_optional(conn)
-        .await?
-        .ok_or(AppError::NotFound("baseline item type"))
+    sqlx::query_as(sqlx::AssertSqlSafe(format!(
+        "{SELECT} WHERE id = $1 AND company_id = $2"
+    )))
+    .bind(id)
+    .bind(company_id)
+    .fetch_optional(conn)
+    .await?
+    .ok_or(AppError::NotFound("baseline item type"))
 }
 
 /// The type with this code in the company, if any.
@@ -120,13 +122,13 @@ pub async fn find_by_code(
     company_id: Uuid,
     code: &str,
 ) -> AppResult<Option<BaselineItemType>> {
-    Ok(
-        sqlx::query_as(&format!("{SELECT} WHERE company_id = $1 AND code = $2"))
-            .bind(company_id)
-            .bind(code)
-            .fetch_optional(conn)
-            .await?,
-    )
+    Ok(sqlx::query_as(sqlx::AssertSqlSafe(format!(
+        "{SELECT} WHERE company_id = $1 AND code = $2"
+    )))
+    .bind(company_id)
+    .bind(code)
+    .fetch_optional(conn)
+    .await?)
 }
 
 /// Like [`find_by_code`], but takes a shared row lock held to the end of the transaction, so an
@@ -136,9 +138,9 @@ pub async fn find_by_code_shared(
     company_id: Uuid,
     code: &str,
 ) -> AppResult<Option<BaselineItemType>> {
-    Ok(sqlx::query_as(&format!(
+    Ok(sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT} WHERE company_id = $1 AND code = $2 FOR SHARE"
-    ))
+    )))
     .bind(company_id)
     .bind(code)
     .fetch_optional(conn)
@@ -176,9 +178,9 @@ async fn list_types(
 ) -> AppResult<Json<Vec<BaselineItemType>>> {
     user.require(Permission::OpportunitiesRead)?;
     Ok(Json(
-        sqlx::query_as(&format!(
+        sqlx::query_as(sqlx::AssertSqlSafe(format!(
             "{SELECT} WHERE company_id = $1 ORDER BY sort_order, code"
-        ))
+        )))
         .bind(user.company_id)
         .fetch_all(&state.db)
         .await?,

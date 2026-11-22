@@ -90,9 +90,9 @@ pub async fn load(
     company_id: Uuid,
     id: Uuid,
 ) -> AppResult<GoodsReceiptDetail> {
-    let summary = sqlx::query_as::<_, GoodsReceiptSummary>(&format!(
+    let summary = sqlx::query_as::<_, GoodsReceiptSummary>(sqlx::AssertSqlSafe(format!(
         "{SELECT_GR_SUMMARY} WHERE gr.company_id = $1 AND gr.id = $2"
-    ))
+    )))
     .bind(company_id)
     .bind(id)
     .fetch_optional(&mut *conn)
@@ -121,9 +121,9 @@ pub async fn list_for_po(
     company_id: Uuid,
     po_id: Uuid,
 ) -> AppResult<Vec<GoodsReceiptSummary>> {
-    sqlx::query_as::<_, GoodsReceiptSummary>(&format!(
+    sqlx::query_as::<_, GoodsReceiptSummary>(sqlx::AssertSqlSafe(format!(
         "{SELECT_GR_SUMMARY} WHERE gr.company_id = $1 AND gr.purchase_order_id = $2 ORDER BY gr.received_date DESC"
-    ))
+    )))
     .bind(company_id)
     .bind(po_id)
     .fetch_all(conn)

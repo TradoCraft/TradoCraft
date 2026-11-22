@@ -291,9 +291,9 @@ pub(crate) async fn load_order(
     id: Uuid,
 ) -> AppResult<ProductionOrder> {
     let company_id = user.company_id;
-    let summary: ProductionSummary = sqlx::query_as(&format!(
+    let summary: ProductionSummary = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT_SUMMARY} WHERE po.id = $1 AND po.company_id = $2"
-    ))
+    )))
     .bind(id)
     .bind(company_id)
     .fetch_optional(&mut *conn)
@@ -1289,13 +1289,13 @@ async fn list_orders(
             .map(str::trim)
             .filter(|q| !q.is_empty())
             .map(|q| format!("%{q}%"));
-    let items: Vec<ProductionSummary> = sqlx::query_as(&format!(
+    let items: Vec<ProductionSummary> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT_SUMMARY} WHERE {filter}
          ORDER BY (po.status IN ('completed', 'cancelled')),
                   CASE COALESCE(o.priority, 'normal') WHEN 'expedite' THEN 0 WHEN 'normal' THEN 1 ELSE 2 END,
                   po.planned_ready_date NULLS LAST, po.number
          LIMIT $8 OFFSET $9"
-    ))
+    )))
     .bind(user.company_id)
     .bind(&p.status)
     .bind(p.division_id)
@@ -1307,12 +1307,12 @@ async fn list_orders(
     .bind(p.offset.unwrap_or(0).max(0))
     .fetch_all(&state.db)
     .await?;
-    let total: i64 = sqlx::query_scalar(&format!(
+    let total: i64 = sqlx::query_scalar(sqlx::AssertSqlSafe(format!(
         "SELECT count(*) FROM production.production_orders po
          JOIN products.products p ON p.id = po.product_id
          LEFT JOIN sales.orders o ON o.id = po.order_id
          WHERE {filter}"
-    ))
+    )))
     .bind(user.company_id)
     .bind(&p.status)
     .bind(p.division_id)

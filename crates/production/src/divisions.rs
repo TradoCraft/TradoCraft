@@ -93,10 +93,10 @@ async fn load_all(
     user_id: Uuid,
     only: Option<Uuid>,
 ) -> AppResult<Vec<Division>> {
-    let rows: Vec<Row> = sqlx::query_as(&format!(
+    let rows: Vec<Row> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT} WHERE d.company_id = $1 AND ($2::uuid IS NULL OR d.id = $2)
          ORDER BY d.sort_order, d.code"
-    ))
+    )))
     .bind(company_id)
     .bind(only)
     .fetch_all(&mut *conn)

@@ -24,7 +24,7 @@ pub async fn remove_orphans(db: &PgPool) -> Result<u64, sqlx::Error> {
                AND NOT EXISTS (SELECT 1 FROM {table} r WHERE r.id = c.record_id)
              RETURNING c.file_id"
         );
-        let ids: Vec<Uuid> = sqlx::query_scalar(&sql)
+        let ids: Vec<Uuid> = sqlx::query_scalar(sqlx::AssertSqlSafe(sql))
             .bind(kind.as_str())
             .fetch_all(db)
             .await?;
@@ -36,7 +36,7 @@ pub async fn remove_orphans(db: &PgPool) -> Result<u64, sqlx::Error> {
                  WHERE c.record_kind = $1
                    AND NOT EXISTS (SELECT 1 FROM {table} r WHERE r.id = c.record_id)"
             );
-            removed += sqlx::query(&sql)
+            removed += sqlx::query(sqlx::AssertSqlSafe(sql))
                 .bind(kind.as_str())
                 .execute(db)
                 .await?
@@ -81,9 +81,9 @@ async fn release_files(db: &PgPool, ids: &[Uuid]) -> Result<(), sqlx::Error> {
             )
         })
         .collect();
-    sqlx::query(&format!(
+    sqlx::query(sqlx::AssertSqlSafe(format!(
         "DELETE FROM core.files f WHERE f.id = ANY($1){unused}"
-    ))
+    )))
     .bind(ids)
     .execute(db)
     .await?;

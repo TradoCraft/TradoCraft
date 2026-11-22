@@ -493,10 +493,12 @@ async fn save_links(
         "kb.entry_products",
         "kb.entry_ticket_categories",
     ] {
-        sqlx::query(&format!("DELETE FROM {table} WHERE entry_id = $1"))
-            .bind(id)
-            .execute(&mut *conn)
-            .await?;
+        sqlx::query(sqlx::AssertSqlSafe(format!(
+            "DELETE FROM {table} WHERE entry_id = $1"
+        )))
+        .bind(id)
+        .execute(&mut *conn)
+        .await?;
     }
     for t in &tags {
         sqlx::query("INSERT INTO kb.entry_tags (entry_id, tag) VALUES ($1, $2)")
@@ -851,11 +853,13 @@ async fn list_versions(
     user.require(Permission::KbRead)?;
     let mut conn = state.db.acquire().await?;
     load_entry(&mut conn, user.company_id, id).await?;
-    let rows: Vec<VersionRow> = sqlx::query_as(&format!("{VERSION_SQL} ORDER BY v.version DESC"))
-        .bind(id)
-        .bind(user.company_id)
-        .fetch_all(&mut *conn)
-        .await?;
+    let rows: Vec<VersionRow> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
+        "{VERSION_SQL} ORDER BY v.version DESC"
+    )))
+    .bind(id)
+    .bind(user.company_id)
+    .fetch_all(&mut *conn)
+    .await?;
     Ok(Json(
         rows.into_iter().map(VersionRow::into_version).collect(),
     ))
@@ -873,13 +877,15 @@ async fn restore_version(
     user.require(Permission::KbWrite)?;
     let mut tx = state.db.begin().await?;
     lock_entry(&mut tx, user.company_id, id).await?;
-    let row: VersionRow = sqlx::query_as(&format!("{VERSION_SQL} AND v.version = $3"))
-        .bind(id)
-        .bind(user.company_id)
-        .bind(version)
-        .fetch_optional(&mut *tx)
-        .await?
-        .ok_or(AppError::NotFound("version"))?;
+    let row: VersionRow = sqlx::query_as(sqlx::AssertSqlSafe(format!(
+        "{VERSION_SQL} AND v.version = $3"
+    )))
+    .bind(id)
+    .bind(user.company_id)
+    .bind(version)
+    .fetch_optional(&mut *tx)
+    .await?
+    .ok_or(AppError::NotFound("version"))?;
     let texts = row.into_version().texts;
     if texts.is_empty() {
         return Err(AppError::Validation("that version has no text".into()));

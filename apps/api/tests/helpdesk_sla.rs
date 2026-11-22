@@ -126,14 +126,14 @@ async fn upload(
 
 /// Makes a ticket older by shifting its creation and due times, as if time had passed.
 async fn age(db: &PgPool, id: &str, interval: &str) {
-    sqlx::query(&format!(
+    sqlx::query(sqlx::AssertSqlSafe(format!(
         "UPDATE helpdesk.tickets SET created_at = created_at - interval '{interval}',
                 first_response_due_at = first_response_due_at - interval '{interval}',
                 resolution_due_at = resolution_due_at - interval '{interval}',
                 first_response_risk_at = first_response_risk_at - interval '{interval}',
                 resolution_risk_at = resolution_risk_at - interval '{interval}'
          WHERE id = $1::uuid"
-    ))
+    )))
     .bind(id)
     .execute(db)
     .await

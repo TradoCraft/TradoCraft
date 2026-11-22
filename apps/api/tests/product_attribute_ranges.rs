@@ -105,9 +105,9 @@ async fn invalid_ranges_are_rejected_and_leave_data_untouched(db: PgPool) {
             "value_number, value_min) VALUES ($1, 'x', 'number', 1, 1",
         ),
     ] {
-        let r = sqlx::query(&format!(
+        let r = sqlx::query(sqlx::AssertSqlSafe(format!(
             "INSERT INTO products.product_attributes (product_id, key, kind, {cols})"
-        ))
+        )))
         .bind(uuid::Uuid::parse_str(PRODUCT).unwrap())
         .execute(&db)
         .await;

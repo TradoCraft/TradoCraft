@@ -1019,7 +1019,10 @@ async fn the_migration_backfill_flags_the_oldest_company(db: PgPool) {
     .unwrap();
     let backfill = sql.split("-- Existing installations").nth(1).unwrap();
     let update = &backfill[backfill.find("UPDATE").unwrap()..];
-    sqlx::raw_sql(update).execute(&db).await.unwrap();
+    sqlx::raw_sql(sqlx::AssertSqlSafe(update))
+        .execute(&db)
+        .await
+        .unwrap();
     assert_eq!(primary_ids(&db).await, vec![old]);
 }
 

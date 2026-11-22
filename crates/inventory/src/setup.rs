@@ -612,13 +612,13 @@ async fn list_lots(
     user.require(Permission::InventoryRead)?;
     // `in_stock` is applied before the limit, so later lots with stock are not cut off by
     // earlier ones without.
-    let lots: Vec<Lot> = sqlx::query_as(&format!(
+    let lots: Vec<Lot> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT_LOT} WHERE l.company_id = $1 AND ($2::uuid IS NULL OR l.product_id = $2)
            AND (NOT $3 OR COALESCE((SELECT sum(b.quantity) FROM inventory.stock_balances b
                                     JOIN inventory.locations loc ON loc.id = b.location_id AND loc.kind = 'internal'
                                     WHERE b.lot_id = l.id), 0) > 0)
          ORDER BY l.expiry_date NULLS LAST, l.lot_number LIMIT 500"
-    ))
+    )))
     .bind(user.company_id)
     .bind(p.product_id)
     .bind(p.in_stock.unwrap_or(false))
@@ -658,7 +658,7 @@ async fn update_lot(
         serde_json::json!({ "expiry_date": input.expiry_date }),
     )
     .await?;
-    let lot = sqlx::query_as(&format!("{SELECT_LOT} WHERE l.id = $1"))
+    let lot = sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT_LOT} WHERE l.id = $1")))
         .bind(id)
         .fetch_one(&mut *tx)
         .await?;

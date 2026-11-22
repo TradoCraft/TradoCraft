@@ -180,10 +180,12 @@ pub async fn set_supplier_product(
     )
     .await?;
 
-    let sp = sqlx::query_as::<_, SupplierProduct>(&format!("{SELECT_QUERY} WHERE sp.id = $1"))
-        .bind(item_id)
-        .fetch_one(conn)
-        .await?;
+    let sp = sqlx::query_as::<_, SupplierProduct>(sqlx::AssertSqlSafe(format!(
+        "{SELECT_QUERY} WHERE sp.id = $1"
+    )))
+    .bind(item_id)
+    .fetch_one(conn)
+    .await?;
 
     Ok(sp)
 }
@@ -231,9 +233,9 @@ pub async fn list_for_supplier(
     company_id: Uuid,
     supplier_id: Uuid,
 ) -> AppResult<Vec<SupplierProduct>> {
-    sqlx::query_as::<_, SupplierProduct>(&format!(
+    sqlx::query_as::<_, SupplierProduct>(sqlx::AssertSqlSafe(format!(
         "{SELECT_QUERY} WHERE sp.company_id = $1 AND sp.supplier_id = $2 ORDER BY p.code ASC"
-    ))
+    )))
     .bind(company_id)
     .bind(supplier_id)
     .fetch_all(conn)
@@ -247,9 +249,9 @@ pub async fn list_for_product(
     company_id: Uuid,
     product_id: Uuid,
 ) -> AppResult<Vec<SupplierProduct>> {
-    sqlx::query_as::<_, SupplierProduct>(&format!(
+    sqlx::query_as::<_, SupplierProduct>(sqlx::AssertSqlSafe(format!(
         "{SELECT_QUERY} WHERE sp.company_id = $1 AND sp.product_id = $2 ORDER BY sp.is_preferred DESC, sp.unit_price ASC"
-    ))
+    )))
     .bind(company_id)
     .bind(product_id)
     .fetch_all(conn)
@@ -263,9 +265,9 @@ pub async fn get_preferred_supplier_for_product(
     company_id: Uuid,
     product_id: Uuid,
 ) -> AppResult<Option<SupplierProduct>> {
-    sqlx::query_as::<_, SupplierProduct>(&format!(
+    sqlx::query_as::<_, SupplierProduct>(sqlx::AssertSqlSafe(format!(
         "{SELECT_QUERY} WHERE sp.company_id = $1 AND sp.product_id = $2 AND sp.is_preferred = true LIMIT 1"
-    ))
+    )))
     .bind(company_id)
     .bind(product_id)
     .fetch_optional(conn)

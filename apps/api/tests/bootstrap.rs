@@ -72,7 +72,10 @@ async fn status(app: &axum::Router) -> Value {
 }
 
 async fn count(db: &PgPool, sql: &str) -> i64 {
-    sqlx::query_scalar(sql).fetch_one(db).await.unwrap()
+    sqlx::query_scalar(sqlx::AssertSqlSafe(sql.to_owned()))
+        .fetch_one(db)
+        .await
+        .unwrap()
 }
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
@@ -97,9 +100,9 @@ async fn bootstraps_an_empty_database_once(db: PgPool) {
     let cid = res["company"]["id"].as_str().unwrap();
     let q = |t: &str| format!("SELECT count(*) FROM {t} WHERE company_id = '{cid}'");
     assert_eq!(count(&db, &q("pricing.price_zones")).await, 5);
-    let codes: Vec<String> = sqlx::query_scalar(&format!(
+    let codes: Vec<String> = sqlx::query_scalar(sqlx::AssertSqlSafe(format!(
         "SELECT code FROM pricing.price_zones WHERE company_id = '{cid}' ORDER BY sort_order"
-    ))
+    )))
     .fetch_all(&db)
     .await
     .unwrap();

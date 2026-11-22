@@ -506,11 +506,11 @@ pub async fn check_products(
     .fetch_all(&mut *conn)
     .await?;
     let families: Vec<Uuid> = set.iter().filter_map(|p| p.family_id).collect();
-    let relations: Vec<ProductRelation> = sqlx::query_as(&format!(
+    let relations: Vec<ProductRelation> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT} WHERE r.active AND (
             r.a_product_id = ANY($1) OR r.b_product_id = ANY($1)
             OR r.a_family_id = ANY($2) OR r.b_family_id = ANY($2))"
-    ))
+    )))
     .bind(product_ids)
     .bind(&families)
     .fetch_all(&mut *conn)
@@ -564,7 +564,7 @@ pub async fn check_products(
 // ------------------------------------------------------------------------------------------
 
 async fn load(db: &mut PgConnection, id: Uuid) -> AppResult<ProductRelation> {
-    sqlx::query_as(&format!("{SELECT} WHERE r.id = $1"))
+    sqlx::query_as(sqlx::AssertSqlSafe(format!("{SELECT} WHERE r.id = $1")))
         .bind(id)
         .fetch_optional(db)
         .await?
@@ -678,14 +678,14 @@ async fn list_product_relations(
         }
     }
     Ok(Json(
-        sqlx::query_as(&format!(
+        sqlx::query_as(sqlx::AssertSqlSafe(format!(
             "{SELECT} WHERE ($1::text IS NULL OR r.kind = $1)
                AND ($2::uuid IS NULL OR r.a_product_id = $2 OR r.b_product_id = $2
                     OR r.a_family_id = (SELECT family_id FROM products.products WHERE id = $2)
                     OR r.b_family_id = (SELECT family_id FROM products.products WHERE id = $2))
                AND ($3::uuid IS NULL OR r.a_family_id = $3 OR r.b_family_id = $3)
              ORDER BY r.kind, r.created_at, r.id"
-        ))
+        )))
         .bind(&p.kind)
         .bind(p.product_id)
         .bind(p.family_id)
@@ -811,11 +811,11 @@ async fn get_related_products(
             .fetch_optional(&mut *conn)
             .await?;
     let family = family.ok_or(AppError::NotFound("product"))?;
-    let rules: Vec<ProductRelation> = sqlx::query_as(&format!(
+    let rules: Vec<ProductRelation> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT} WHERE r.active AND (r.a_product_id = $1 OR r.b_product_id = $1
             OR ($2::uuid IS NOT NULL AND (r.a_family_id = $2 OR r.b_family_id = $2)))
          ORDER BY r.kind, r.created_at, r.id"
-    ))
+    )))
     .bind(id)
     .bind(family)
     .fetch_all(&mut *conn)

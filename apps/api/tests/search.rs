@@ -370,7 +370,7 @@ async fn the_trigram_indexes_match_the_queries(db: PgPool) {
         ),
     ];
     for (sql, indexes) in cases {
-        let plan: Vec<String> = sqlx::query_scalar(&format!("EXPLAIN {sql}"))
+        let plan: Vec<String> = sqlx::query_scalar(sqlx::AssertSqlSafe(format!("EXPLAIN {sql}")))
             .fetch_all(&mut *conn)
             .await
             .unwrap();

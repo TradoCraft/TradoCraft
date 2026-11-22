@@ -525,7 +525,7 @@ async fn load_summary(
         "{SELECT_SUMMARY} WHERE company_id = $1 AND id = $2{}",
         if lock { " FOR UPDATE" } else { "" }
     );
-    let mut s = sqlx::query_as::<_, InvoiceSummary>(&sql)
+    let mut s = sqlx::query_as::<_, InvoiceSummary>(sqlx::AssertSqlSafe(sql))
         .bind(company_id)
         .bind(id)
         .fetch_optional(&mut *conn)
@@ -567,11 +567,7 @@ pub async fn list(
     f: InvoiceFilter,
 ) -> AppResult<InvoicePage> {
     /// Appends the WHERE clause of the list filters to the query.
-    fn filters<'a>(
-        qb: &mut QueryBuilder<'a, sqlx::Postgres>,
-        company_id: Uuid,
-        f: &'a InvoiceFilter,
-    ) {
+    fn filters(qb: &mut QueryBuilder<sqlx::Postgres>, company_id: Uuid, f: &InvoiceFilter) {
         qb.push(" WHERE company_id = ").push_bind(company_id);
         if let Some(s) = &f.status {
             qb.push(" AND status = ").push_bind(s.as_str());

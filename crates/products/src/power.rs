@@ -316,10 +316,10 @@ async fn list_power_grids(
     user.require(Permission::ProductsRead)?;
     let cc = p.country.as_deref().map(country).transpose()?;
     Ok(Json(
-        sqlx::query_as(&format!(
+        sqlx::query_as(sqlx::AssertSqlSafe(format!(
             "{GRID_SELECT} WHERE ($1::text IS NULL OR country_code = $1)
              ORDER BY country_code, phases, voltage_v, frequency_hz"
-        ))
+        )))
         .bind(cc)
         .fetch_all(&state.db)
         .await?,
@@ -327,7 +327,7 @@ async fn list_power_grids(
 }
 
 async fn load_grid(db: &sqlx::PgPool, id: Uuid) -> AppResult<PowerGrid> {
-    sqlx::query_as(&format!("{GRID_SELECT} WHERE id = $1"))
+    sqlx::query_as(sqlx::AssertSqlSafe(format!("{GRID_SELECT} WHERE id = $1")))
         .bind(id)
         .fetch_optional(db)
         .await?
@@ -426,9 +426,9 @@ async fn ensure_product(conn: &mut PgConnection, id: Uuid) -> AppResult<()> {
 }
 
 async fn load_supplies(conn: &mut PgConnection, product_id: Uuid) -> AppResult<Vec<PowerSupply>> {
-    Ok(sqlx::query_as(&format!(
+    Ok(sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SUPPLY_SELECT} WHERE product_id = $1 ORDER BY current_type, voltage_v, phases, frequency_hz"
-    ))
+    )))
     .bind(product_id)
     .fetch_all(conn)
     .await?)
@@ -514,11 +514,12 @@ async fn grids_for(
 ) -> AppResult<(String, Vec<PowerGrid>)> {
     let cc = country_code.map(country).transpose()?;
     if let Some(gid) = grid_id {
-        let g: PowerGrid = sqlx::query_as(&format!("{GRID_SELECT} WHERE id = $1"))
-            .bind(gid)
-            .fetch_optional(&mut *conn)
-            .await?
-            .ok_or(AppError::Validation("unknown power grid".into()))?;
+        let g: PowerGrid =
+            sqlx::query_as(sqlx::AssertSqlSafe(format!("{GRID_SELECT} WHERE id = $1")))
+                .bind(gid)
+                .fetch_optional(&mut *conn)
+                .await?
+                .ok_or(AppError::Validation("unknown power grid".into()))?;
         if cc.as_ref().is_some_and(|c| *c != g.country_code) {
             return Err(AppError::Validation(
                 "the power grid does not belong to the country".into(),
@@ -529,9 +530,9 @@ async fn grids_for(
     let cc = cc.ok_or(AppError::Validation(
         "country or grid_id is required".into(),
     ))?;
-    let grids = sqlx::query_as(&format!(
+    let grids = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{GRID_SELECT} WHERE country_code = $1 AND active ORDER BY phases, voltage_v, frequency_hz"
-    ))
+    )))
     .bind(&cc)
     .fetch_all(&mut *conn)
     .await?;

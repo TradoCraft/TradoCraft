@@ -807,7 +807,7 @@ async fn load_configuration(
          WHERE c.id = $1 AND c.company_id = $2{}",
         if lock { " FOR UPDATE OF c" } else { "" }
     );
-    let r: ConfigRow = sqlx::query_as(&sql)
+    let r: ConfigRow = sqlx::query_as(sqlx::AssertSqlSafe(sql))
         .bind(id)
         .bind(company_id)
         .fetch_optional(conn)

@@ -473,10 +473,10 @@ pub async fn names_of(
         language: String,
         name: String,
     }
-    let rows: Vec<N> = sqlx::query_as(&format!(
+    let rows: Vec<N> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "SELECT category_id, language::text AS language, name FROM kb.category_names
          WHERE category_id = ANY($1) ORDER BY category_id, {LANGUAGE_ORDER}"
-    ))
+    )))
     .bind(ids)
     .fetch_all(conn)
     .await?;

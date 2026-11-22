@@ -1121,9 +1121,9 @@ async fn another_company_sees_and_changes_nothing(db: PgPool) {
     }
     // Nothing leaked into the ticket's tables.
     for table in ["ticket_watchers", "ticket_reads", "ticket_presence"] {
-        let n: i64 = sqlx::query_scalar(&format!(
+        let n: i64 = sqlx::query_scalar(sqlx::AssertSqlSafe(format!(
             "SELECT count(*) FROM helpdesk.{table} WHERE user_id = $1::uuid"
-        ))
+        )))
         .bind(&other_id)
         .fetch_one(&db)
         .await

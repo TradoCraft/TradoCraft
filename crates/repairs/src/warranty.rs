@@ -130,13 +130,13 @@ async fn find_candidates(
     if serial.trim().is_empty() {
         return Ok(vec![]);
     }
-    Ok(sqlx::query_as(&format!(
+    Ok(sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{UNIT_SELECT}
          WHERE s.company_id = $1 AND lower(btrim(s.serial_number)) = lower(btrim($2))
            AND ($3::uuid IS NULL OR s.product_id = $3)
            AND (s.customer_id IS NULL OR s.customer_id = $4)
          ORDER BY p.code, s.serial_number"
-    ))
+    )))
     .bind(company_id)
     .bind(serial)
     .bind(product_id)
@@ -150,9 +150,9 @@ async fn load_unit(
     company_id: Uuid,
     id: Uuid,
 ) -> AppResult<SerialUnitRef> {
-    sqlx::query_as(&format!(
+    sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{UNIT_SELECT} WHERE s.id = $1 AND s.company_id = $2"
-    ))
+    )))
     .bind(id)
     .bind(company_id)
     .fetch_optional(conn)

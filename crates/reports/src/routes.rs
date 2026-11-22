@@ -163,12 +163,14 @@ async fn load_unchecked(
     user: &CurrentUser,
     id: Uuid,
 ) -> AppResult<SavedReport> {
-    let row: Row = sqlx::query_as(&format!("{SELECT} WHERE r.id = $1 AND r.company_id = $2"))
-        .bind(id)
-        .bind(user.company_id)
-        .fetch_optional(&mut *conn)
-        .await?
-        .ok_or(AppError::NotFound("report"))?;
+    let row: Row = sqlx::query_as(sqlx::AssertSqlSafe(format!(
+        "{SELECT} WHERE r.id = $1 AND r.company_id = $2"
+    )))
+    .bind(id)
+    .bind(user.company_id)
+    .fetch_optional(&mut *conn)
+    .await?
+    .ok_or(AppError::NotFound("report"))?;
     to_report(row, user)
 }
 
@@ -314,10 +316,10 @@ async fn list_reports(
     user: CurrentUser,
 ) -> AppResult<Json<Vec<SavedReport>>> {
     user.require(Permission::ReportsRead)?;
-    let rows: Vec<Row> = sqlx::query_as(&format!(
+    let rows: Vec<Row> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT} WHERE r.company_id = $1 AND (r.owner_id = $2 OR r.shared)
          ORDER BY lower(r.name), r.id"
-    ))
+    )))
     .bind(user.company_id)
     .bind(user.user_id)
     .fetch_all(&state.db)

@@ -204,12 +204,14 @@ fn to_item(r: Row, user: &CurrentUser, jobs: &HashSet<Uuid>) -> TodoItem {
 }
 
 async fn load(conn: &mut PgConnection, user: &CurrentUser, id: Uuid) -> AppResult<TodoItem> {
-    let row: Option<Row> = sqlx::query_as(&format!("{SELECT} WHERE i.id = $3 AND {VISIBLE}"))
-        .bind(user.company_id)
-        .bind(user.user_id)
-        .bind(id)
-        .fetch_optional(&mut *conn)
-        .await?;
+    let row: Option<Row> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
+        "{SELECT} WHERE i.id = $3 AND {VISIBLE}"
+    )))
+    .bind(user.company_id)
+    .bind(user.user_id)
+    .bind(id)
+    .fetch_optional(&mut *conn)
+    .await?;
     let row = row.ok_or(AppError::NotFound(NOT_FOUND))?;
     let mut items = to_items(conn, user, vec![row]).await?;
     Ok(items.remove(0))
@@ -238,10 +240,10 @@ const RAW: &str = "SELECT id, parent_id, position, title, notes, owner_id, assig
 
 /// Locks and returns an item the caller may see; 404 otherwise.
 async fn lock(conn: &mut PgConnection, user: &CurrentUser, id: Uuid) -> AppResult<Raw> {
-    let row: Option<Raw> = sqlx::query_as(&format!(
+    let row: Option<Raw> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{RAW} WHERE id = $3 AND company_id = $1 AND (owner_id = $2 OR assignee_id = $2)
          FOR UPDATE"
-    ))
+    )))
     .bind(user.company_id)
     .bind(user.user_id)
     .bind(id)
@@ -603,14 +605,14 @@ async fn list_items(
         }
         TodoScope::AllMine => "(i.owner_id = $2 OR i.assignee_id = $2)",
     };
-    let rows: Vec<Row> = sqlx::query_as(&format!(
+    let rows: Vec<Row> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT} WHERE {VISIBLE} AND {scope}
            AND ($3::bool IS NULL OR i.done = $3)
            AND ($4::text IS NULL OR i.link_kind = $4)
            AND ($5::uuid IS NULL OR i.link_id = $5)
            AND ($6::date IS NULL OR i.due_date < $6)
          ORDER BY i.parent_id NULLS FIRST, i.position, i.created_at, i.id"
-    ))
+    )))
     .bind(user.company_id)
     .bind(user.user_id)
     .bind(q.done)

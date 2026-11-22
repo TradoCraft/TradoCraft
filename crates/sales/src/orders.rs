@@ -433,9 +433,9 @@ pub(crate) async fn revision_lines(
     order_id: Uuid,
     revision: i32,
 ) -> AppResult<Vec<OrderLine>> {
-    Ok(sqlx::query_as(&format!(
+    Ok(sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "SELECT {LINE_COLUMNS} FROM sales.order_lines WHERE order_id = $1 AND revision = $2 ORDER BY position"
-    ))
+    )))
     .bind(order_id)
     .bind(revision)
     .fetch_all(conn)
@@ -506,13 +506,14 @@ pub(crate) async fn load_order_locked(
     id: Uuid,
     revision: Option<i32>,
 ) -> AppResult<Order> {
-    let mut order: OrderSummary =
-        sqlx::query_as(&format!("{SELECT} WHERE o.id = $1 AND o.company_id = $2"))
-            .bind(id)
-            .bind(company_id)
-            .fetch_optional(&mut *conn)
-            .await?
-            .ok_or(AppError::NotFound("order"))?;
+    let mut order: OrderSummary = sqlx::query_as(sqlx::AssertSqlSafe(format!(
+        "{SELECT} WHERE o.id = $1 AND o.company_id = $2"
+    )))
+    .bind(id)
+    .bind(company_id)
+    .fetch_optional(&mut *conn)
+    .await?
+    .ok_or(AppError::NotFound("order"))?;
     #[derive(FromRow)]
     struct Extra {
         version: i64,
@@ -771,9 +772,9 @@ async fn list_orders(
                OR lower(o.customer_name) LIKE $2 OR lower(o.customer_reference) LIKE $2)
           AND ($3::uuid IS NULL OR o.customer_id = $3)
           AND ($4::text IS NULL OR o.status = $4)";
-    let items = sqlx::query_as(&format!(
+    let items = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT} {filter} ORDER BY o.order_date DESC, o.number DESC LIMIT $5 OFFSET $6"
-    ))
+    )))
     .bind(user.company_id)
     .bind(&pattern)
     .bind(p.customer_id)
@@ -782,9 +783,9 @@ async fn list_orders(
     .bind(p.offset.unwrap_or(0).max(0))
     .fetch_all(&state.db)
     .await?;
-    let total = sqlx::query_scalar(&format!(
+    let total = sqlx::query_scalar(sqlx::AssertSqlSafe(format!(
         "SELECT count(*) FROM sales.orders o JOIN sales.quotations q ON q.id = o.quotation_id {filter}"
-    ))
+    )))
     .bind(user.company_id)
     .bind(&pattern)
     .bind(p.customer_id)

@@ -155,7 +155,7 @@ fn orient(relation: LinkRelation, id: Uuid, other: Uuid) -> (&'static str, Uuid,
     }
 }
 
-async fn count(conn: &mut PgConnection, sql: &str, id: Uuid) -> AppResult<i64> {
+async fn count(conn: &mut PgConnection, sql: impl sqlx::SqlSafeStr, id: Uuid) -> AppResult<i64> {
     Ok(sqlx::query_scalar(sql).bind(id).fetch_one(conn).await?)
 }
 

@@ -402,24 +402,24 @@ async fn get_board(
         })
         .collect();
 
-    let jobs: Vec<BoardJob> = sqlx::query_as(&format!(
+    let jobs: Vec<BoardJob> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{BOARD_SELECT} WHERE j.company_id = $1 AND j.status <> 'cancelled' AND j.scheduled_start IS NOT NULL
            AND j.scheduled_start < $3 AND coalesce(j.scheduled_end, j.scheduled_start + make_interval(mins => $4)) > $2
            AND EXISTS (SELECT 1 FROM field.job_technicians t WHERE t.job_id = j.id)
          ORDER BY j.scheduled_start, j.number"
-    ))
+    )))
     .bind(cid)
     .bind(from)
     .bind(to)
     .bind(settings.default_job_minutes)
     .fetch_all(&mut *conn)
     .await?;
-    let backlog: Vec<BoardJob> = sqlx::query_as(&format!(
+    let backlog: Vec<BoardJob> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{BOARD_SELECT} WHERE j.company_id = $1 AND j.status = 'planned'
            AND (j.scheduled_start IS NULL OR NOT EXISTS (SELECT 1 FROM field.job_technicians t WHERE t.job_id = j.id))
          ORDER BY CASE j.priority WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 WHEN 'normal' THEN 2 ELSE 3 END,
                   j.due_date NULLS LAST, j.created_at LIMIT 200"
-    ))
+    )))
     .bind(cid)
     .fetch_all(&mut *conn)
     .await?;
@@ -622,10 +622,12 @@ async fn schedule_job(
     if moved {
         notify::send(&mut tx, cid, &kept, notify::Kind::Rescheduled, &mail).await?;
     }
-    let out: BoardJob = sqlx::query_as(&format!("{BOARD_SELECT} WHERE j.id = $1"))
-        .bind(id)
-        .fetch_one(&mut *tx)
-        .await?;
+    let out: BoardJob = sqlx::query_as(sqlx::AssertSqlSafe(format!(
+        "{BOARD_SELECT} WHERE j.id = $1"
+    )))
+    .bind(id)
+    .fetch_one(&mut *tx)
+    .await?;
     tx.commit().await?;
     Ok(Json(ScheduleResult {
         applied: true,

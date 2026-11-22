@@ -183,7 +183,7 @@ impl World {
         .unwrap()
     }
 
-    async fn count(&self, sql: &str) -> i64 {
+    async fn count(&self, sql: impl sqlx::SqlSafeStr) -> i64 {
         sqlx::query_scalar(sql).fetch_one(&self.db).await.unwrap()
     }
 }
@@ -304,9 +304,9 @@ async fn graph_mailbox_fetches_and_sends(db: PgPool) {
     );
     assert_eq!(w.pass().await, 1);
     assert_eq!(
-        w.count(&format!(
+        w.count(sqlx::AssertSqlSafe(format!(
             "SELECT count(*) FROM helpdesk.articles WHERE ticket_id = '{ticket_id}'"
-        ))
+        )))
         .await,
         3
     );

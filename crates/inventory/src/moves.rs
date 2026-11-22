@@ -608,9 +608,9 @@ async fn list_moves(
         AND ($6::text IS NULL OR m.kind = $6)
         AND ($7::text IS NULL OR m.reference_type = $7)
         AND ($8::uuid IS NULL OR m.reference_id = $8)";
-    let items: Vec<StockMove> = sqlx::query_as(&format!(
+    let items: Vec<StockMove> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT_MOVE} {filter} ORDER BY m.seq DESC LIMIT $9 OFFSET $10"
-    ))
+    )))
     .bind(user.company_id)
     .bind(p.product_id)
     .bind(p.location_id)
@@ -623,9 +623,9 @@ async fn list_moves(
     .bind(p.offset.unwrap_or(0).max(0))
     .fetch_all(&state.db)
     .await?;
-    let total = sqlx::query_scalar(&format!(
+    let total = sqlx::query_scalar(sqlx::AssertSqlSafe(format!(
         "SELECT count(*) FROM inventory.stock_moves m {filter}"
-    ))
+    )))
     .bind(user.company_id)
     .bind(p.product_id)
     .bind(p.location_id)

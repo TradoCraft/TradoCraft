@@ -537,10 +537,10 @@ pub async fn run_due(
     let mut done = 0;
     for _ in 0..BATCH {
         let mut tx = db.begin().await?;
-        let row: Option<ScheduleRow> = sqlx::query_as(&format!(
+        let row: Option<ScheduleRow> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
             "{SELECT_ROW} WHERE active AND next_run_at <= now()
              ORDER BY next_run_at LIMIT 1 FOR UPDATE SKIP LOCKED"
-        ))
+        )))
         .fetch_optional(&mut *tx)
         .await?;
         let Some(s) = row else { break };

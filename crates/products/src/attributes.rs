@@ -149,9 +149,11 @@ pub async fn catalog_snapshot(conn: &mut sqlx::PgConnection) -> AppResult<Vec<Ca
     )
     .fetch_all(&mut *conn)
     .await?;
-    let rows: Vec<Row> = sqlx::query_as(&format!("{SELECT} ORDER BY product_id, key"))
-        .fetch_all(&mut *conn)
-        .await?;
+    let rows: Vec<Row> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
+        "{SELECT} ORDER BY product_id, key"
+    )))
+    .fetch_all(&mut *conn)
+    .await?;
     let mut attrs: HashMap<Uuid, Vec<(String, AttributeValue)>> = HashMap::new();
     for r in &rows {
         attrs
@@ -207,9 +209,9 @@ pub async fn active_products_with(
     let rows: Vec<Row> = if keys.is_empty() {
         Vec::new()
     } else {
-        sqlx::query_as(&format!(
+        sqlx::query_as(sqlx::AssertSqlSafe(format!(
             "{SELECT} WHERE key = ANY($1) AND ($2::uuid[] IS NULL OR product_id = ANY($2))"
-        ))
+        )))
         .bind(keys)
         .bind(product_ids)
         .fetch_all(&mut *conn)
@@ -245,10 +247,12 @@ async fn ensure_product<'e>(db: impl PgExecutor<'e>, id: Uuid) -> AppResult<()> 
 }
 
 async fn load<'e>(db: impl PgExecutor<'e>, id: Uuid) -> AppResult<Vec<ProductAttribute>> {
-    let rows: Vec<Row> = sqlx::query_as(&format!("{SELECT} WHERE product_id = $1 ORDER BY key"))
-        .bind(id)
-        .fetch_all(db)
-        .await?;
+    let rows: Vec<Row> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
+        "{SELECT} WHERE product_id = $1 ORDER BY key"
+    )))
+    .bind(id)
+    .fetch_all(db)
+    .await?;
     Ok(rows.iter().map(Row::to_api).collect())
 }
 

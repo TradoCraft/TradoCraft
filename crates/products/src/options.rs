@@ -65,9 +65,9 @@ const SELECT: &str = "SELECT o.option_product_id, p.code AS option_code, p.name 
 
 /// All options of a product (also the inactive ones), in display order.
 async fn load<'e>(db: impl PgExecutor<'e>, product_id: Uuid) -> AppResult<Vec<ProductOption>> {
-    Ok(sqlx::query_as(&format!(
+    Ok(sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT} WHERE o.parent_product_id = $1 ORDER BY o.sort_order, p.code"
-    ))
+    )))
     .bind(product_id)
     .fetch_all(db)
     .await?)
