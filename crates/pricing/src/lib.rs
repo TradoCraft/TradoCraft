@@ -26,8 +26,6 @@ pub enum PricingError {
     NonPositiveQuantity,
     #[error("discount must be between -100 and 100 percent")]
     InvalidDiscount,
-    #[error("unit price cannot be negative")]
-    NegativePrice,
     #[error("VAT rate cannot be negative")]
     NegativeVatRate,
     #[error("percentage of the parent price must be between 0 and 1000")]
@@ -94,9 +92,6 @@ fn valid_rebate(d: Decimal) -> bool {
 pub fn price_line(input: &LineInput) -> Result<PricedLine, PricingError> {
     if input.quantity <= Decimal::ZERO {
         return Err(PricingError::NonPositiveQuantity);
-    }
-    if input.list_unit_price < Decimal::ZERO {
-        return Err(PricingError::NegativePrice);
     }
     if !valid_rebate(input.customer_discount_percent) || !valid_rebate(input.line_discount_percent)
     {
@@ -317,12 +312,8 @@ pub enum PriceChange {
 }
 
 /// Applies a price change and rounds to the nearest multiple of `step` (e.g. 0.01, 0.05, 1),
-/// half away from zero. Returns an error if the result would be negative.
-pub fn change_price(
-    base: Decimal,
-    change: PriceChange,
-    step: Decimal,
-) -> Result<Decimal, PricingError> {
+/// half away from zero.
+pub fn change_price(base: Decimal, change: PriceChange, step: Decimal) -> Decimal {
     let raw = match change {
         PriceChange::Percent(p) => base * (HUNDRED + p) / HUNDRED,
         PriceChange::Amount(a) => base + a,
@@ -332,10 +323,7 @@ pub fn change_price(
     } else {
         raw
     };
-    if rounded < Decimal::ZERO {
-        return Err(PricingError::NegativePrice);
-    }
-    Ok(rounded.round_dp(4))
+    rounded.round_dp(4)
 }
 
 #[cfg(test)]
@@ -425,13 +413,16 @@ mod tests {
             Err(PricingError::InvalidDiscount)
         );
         assert_eq!(
-            price_line(&line(dec!(-1), dec!(1), dec!(0), dec!(0), dec!(21))),
-            Err(PricingError::NegativePrice)
-        );
-        assert_eq!(
             price_line(&line(dec!(1), dec!(1), dec!(0), dec!(0), dec!(-6))),
             Err(PricingError::NegativeVatRate)
         );
+    }
+
+    #[test]
+    fn negative_unit_price_is_allowed_and_discounted() {
+        let p = price_line(&line(dec!(-125.32), dec!(2), dec!(10), dec!(0), dec!(21))).unwrap();
+        assert_eq!(p.net_unit_price, dec!(-112.788));
+        assert_eq!(p.line_total, dec!(-225.58));
     }
 
     #[test]
@@ -734,27 +725,31 @@ mod tests {
     fn price_changes_round_to_the_step() {
         assert_eq!(
             change_price(dec!(100), PriceChange::Percent(dec!(4.5)), dec!(0.01)),
-            Ok(dec!(104.50))
+            dec!(104.50)
         );
         assert_eq!(
             change_price(dec!(12.40), PriceChange::Percent(dec!(3)), dec!(0.05)),
-            Ok(dec!(12.75))
+            dec!(12.75)
         ); // 12.772
         assert_eq!(
             change_price(dec!(3880), PriceChange::Percent(dec!(2.7)), dec!(1)),
-            Ok(dec!(3985))
+            dec!(3985)
         ); // 3984.76
         assert_eq!(
             change_price(dec!(9.99), PriceChange::Amount(dec!(0.5)), dec!(0.01)),
-            Ok(dec!(10.49))
+            dec!(10.49)
         );
         assert_eq!(
             change_price(dec!(10), PriceChange::Percent(dec!(-10)), dec!(0.01)),
-            Ok(dec!(9.00))
+            dec!(9.00)
         );
         assert_eq!(
             change_price(dec!(1), PriceChange::Amount(dec!(-2)), dec!(0.01)),
-            Err(PricingError::NegativePrice)
+            dec!(-1.00)
+        );
+        assert_eq!(
+            change_price(dec!(-125.32), PriceChange::Percent(dec!(10)), dec!(0.01)),
+            dec!(-137.85)
         );
     }
 }

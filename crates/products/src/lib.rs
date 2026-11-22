@@ -1235,9 +1235,6 @@ async fn add_product_price(
     Json(input): Json<ZonePriceInput>,
 ) -> AppResult<(StatusCode, Json<ZonePriceEntry>)> {
     user.require(Permission::PricesWrite)?;
-    if input.unit_price < Decimal::ZERO {
-        return Err(AppError::Validation("unit_price cannot be negative".into()));
-    }
     let mut tx = state.db.begin().await?;
     let zone_ok: bool = sqlx::query_scalar(
         "SELECT EXISTS (SELECT 1 FROM pricing.price_zones WHERE id = $1 AND company_id = $2)",
@@ -1328,9 +1325,6 @@ async fn correct_product_price(
     Json(input): Json<ZonePriceCorrection>,
 ) -> AppResult<Json<ZonePriceEntry>> {
     user.require(Permission::PricesWrite)?;
-    if input.unit_price < Decimal::ZERO {
-        return Err(AppError::Validation("unit_price cannot be negative".into()));
-    }
     if input.valid_from <= tradocraft_core::today() {
         return Err(AppError::Validation(
             "a corrected price must start after today; add a new price to change today's".into(),
