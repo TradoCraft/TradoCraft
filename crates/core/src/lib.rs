@@ -22,6 +22,7 @@ pub mod logo;
 pub mod mail;
 pub mod modules;
 pub mod numbering;
+pub mod preferences;
 pub mod search;
 pub mod serde_util;
 pub mod sort;

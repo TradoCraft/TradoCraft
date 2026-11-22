@@ -13,11 +13,17 @@ class PriceZone {
     required this.id,
     required this.name,
     required this.sortOrder,
+    this.defaultMultiplier,
+    this.defaultRounding,
   });
   
   factory PriceZone.fromJson(Map<String, Object?> json) => _$PriceZoneFromJson(json);
   
   final String code;
+  @JsonKey(includeIfNull: false,name: 'default_multiplier')
+  final String? defaultMultiplier;
+  @JsonKey(includeIfNull: false,name: 'default_rounding')
+  final String? defaultRounding;
   final String id;
   final String name;
   @JsonKey(name: 'sort_order')

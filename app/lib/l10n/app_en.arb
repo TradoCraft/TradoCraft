@@ -6377,5 +6377,46 @@
   "cbVatRegime": "VAT regime",
   "cbVatTotal": "VAT amount",
   "cbVisible": "Shown on invoices",
-  "cbWordingHelp": "Use these placeholders in your invoice wording."
+  "cbWordingHelp": "Use these placeholders in your invoice wording.",
+  "defaultMultiplier": "Default multiplier",
+  "defaultMultiplierHelp": "Relative to the first zone (e.g. 1.15 = +15%)",
+  "defaultMultiplierInvalid": "Multiplier must be a positive number",
+  "defaultRounding": "Rounding",
+  "roundingNone": "None",
+  "baseZone": "Base",
+  "formula": "Formula",
+  "enterAtLeastOnePrice": "Enter at least one price",
+  "resetToFormula": "Reset to formula",
+  "applyFormulas": "Apply formulas",
+  "copyFromProduct": "Copy from product...",
+  "copiedFromProduct": "Copied from {code}",
+  "@copiedFromProduct": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "selectProductToCopy": "Select product to copy properties from",
+  "listSelectAll": "Select all",
+  "listDeselectAll": "Deselect all",
+  "userPreferences": "Preferences",
+  "shortcutsTab": "Shortcuts",
+  "shortcutSelectAll": "Select all / Deselect all",
+  "shortcutResetDefaults": "Reset all to defaults",
+  "shortcutReset": "Reset",
+  "shortcutPressKeys": "Press a key combination...",
+  "shortcutConflict": "Conflicts with: {action} ({keys})",
+  "@shortcutConflict": {
+    "placeholders": {
+      "action": {
+        "type": "String"
+      },
+      "keys": {
+        "type": "String"
+      }
+    }
+  },
+  "shortcutNeedsModifier": "Use Ctrl, Alt, or Cmd with a key",
+  "shortcutCustom": "Custom"
 }

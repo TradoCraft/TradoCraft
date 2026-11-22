@@ -10711,7 +10711,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get listSelectAll => 'Select all loaded rows';
+  String get listSelectAll => 'Select all';
 
   @override
   String listSelectRow(String name) {
@@ -11403,4 +11403,78 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cbWordingHelp => 'Use these placeholders in your invoice wording.';
+
+  @override
+  String get defaultMultiplier => 'Default multiplier';
+
+  @override
+  String get defaultMultiplierHelp =>
+      'Relative to the first zone (e.g. 1.15 = +15%)';
+
+  @override
+  String get defaultMultiplierInvalid => 'Multiplier must be a positive number';
+
+  @override
+  String get defaultRounding => 'Rounding';
+
+  @override
+  String get roundingNone => 'None';
+
+  @override
+  String get baseZone => 'Base';
+
+  @override
+  String get formula => 'Formula';
+
+  @override
+  String get enterAtLeastOnePrice => 'Enter at least one price';
+
+  @override
+  String get resetToFormula => 'Reset to formula';
+
+  @override
+  String get applyFormulas => 'Apply formulas';
+
+  @override
+  String get copyFromProduct => 'Copy from product...';
+
+  @override
+  String copiedFromProduct(String code) {
+    return 'Copied from $code';
+  }
+
+  @override
+  String get selectProductToCopy => 'Select product to copy properties from';
+
+  @override
+  String get listDeselectAll => 'Deselect all';
+
+  @override
+  String get userPreferences => 'Preferences';
+
+  @override
+  String get shortcutsTab => 'Shortcuts';
+
+  @override
+  String get shortcutSelectAll => 'Select all / Deselect all';
+
+  @override
+  String get shortcutResetDefaults => 'Reset all to defaults';
+
+  @override
+  String get shortcutReset => 'Reset';
+
+  @override
+  String get shortcutPressKeys => 'Press a key combination...';
+
+  @override
+  String shortcutConflict(String action, String keys) {
+    return 'Conflicts with: $action ($keys)';
+  }
+
+  @override
+  String get shortcutNeedsModifier => 'Use Ctrl, Alt, or Cmd with a key';
+
+  @override
+  String get shortcutCustom => 'Custom';
 }

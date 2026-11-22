@@ -18951,7 +18951,7 @@ abstract class AppLocalizations {
   /// No description provided for @listSelectAll.
   ///
   /// In en, this message translates to:
-  /// **'Select all loaded rows'**
+  /// **'Select all'**
   String get listSelectAll;
 
   /// No description provided for @listSelectRow.
@@ -20177,6 +20177,144 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Use these placeholders in your invoice wording.'**
   String get cbWordingHelp;
+
+  /// No description provided for @defaultMultiplier.
+  ///
+  /// In en, this message translates to:
+  /// **'Default multiplier'**
+  String get defaultMultiplier;
+
+  /// No description provided for @defaultMultiplierHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Relative to the first zone (e.g. 1.15 = +15%)'**
+  String get defaultMultiplierHelp;
+
+  /// No description provided for @defaultMultiplierInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Multiplier must be a positive number'**
+  String get defaultMultiplierInvalid;
+
+  /// No description provided for @defaultRounding.
+  ///
+  /// In en, this message translates to:
+  /// **'Rounding'**
+  String get defaultRounding;
+
+  /// No description provided for @roundingNone.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get roundingNone;
+
+  /// No description provided for @baseZone.
+  ///
+  /// In en, this message translates to:
+  /// **'Base'**
+  String get baseZone;
+
+  /// No description provided for @formula.
+  ///
+  /// In en, this message translates to:
+  /// **'Formula'**
+  String get formula;
+
+  /// No description provided for @enterAtLeastOnePrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter at least one price'**
+  String get enterAtLeastOnePrice;
+
+  /// No description provided for @resetToFormula.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset to formula'**
+  String get resetToFormula;
+
+  /// No description provided for @applyFormulas.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply formulas'**
+  String get applyFormulas;
+
+  /// No description provided for @copyFromProduct.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy from product...'**
+  String get copyFromProduct;
+
+  /// No description provided for @copiedFromProduct.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied from {code}'**
+  String copiedFromProduct(String code);
+
+  /// No description provided for @selectProductToCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Select product to copy properties from'**
+  String get selectProductToCopy;
+
+  /// No description provided for @listDeselectAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Deselect all'**
+  String get listDeselectAll;
+
+  /// No description provided for @userPreferences.
+  ///
+  /// In en, this message translates to:
+  /// **'Preferences'**
+  String get userPreferences;
+
+  /// No description provided for @shortcutsTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Shortcuts'**
+  String get shortcutsTab;
+
+  /// No description provided for @shortcutSelectAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Select all / Deselect all'**
+  String get shortcutSelectAll;
+
+  /// No description provided for @shortcutResetDefaults.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset all to defaults'**
+  String get shortcutResetDefaults;
+
+  /// No description provided for @shortcutReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get shortcutReset;
+
+  /// No description provided for @shortcutPressKeys.
+  ///
+  /// In en, this message translates to:
+  /// **'Press a key combination...'**
+  String get shortcutPressKeys;
+
+  /// No description provided for @shortcutConflict.
+  ///
+  /// In en, this message translates to:
+  /// **'Conflicts with: {action} ({keys})'**
+  String shortcutConflict(String action, String keys);
+
+  /// No description provided for @shortcutNeedsModifier.
+  ///
+  /// In en, this message translates to:
+  /// **'Use Ctrl, Alt, or Cmd with a key'**
+  String get shortcutNeedsModifier;
+
+  /// No description provided for @shortcutCustom.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom'**
+  String get shortcutCustom;
 }
 
 class _AppLocalizationsDelegate

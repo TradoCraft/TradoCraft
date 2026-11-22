@@ -10,6 +10,7 @@ import '../../shared/app_icons.dart';
 import '../../shared/decimal_field.dart';
 import '../../shared/format.dart';
 import '../../shared/photos.dart';
+import '../../shared/search_picker.dart';
 import 'families_dialog.dart';
 import 'packaging_dialog.dart';
 import '../../l10n/l10n.dart';
@@ -98,8 +99,50 @@ class _ProductFormState extends ConsumerState<ProductForm> {
   final List<String> _pendingDeletions = [];
   int _defaultMediaIndex = 0;
   Product? _created;
+  Product? _copiedFrom;
   bool _saving = false;
   String? _error;
+
+  void _copyFrom(Product source) {
+    setState(() {
+      _copiedFrom = source;
+      _description.text = source.description;
+      _unit.text = source.unit;
+      _type = productTypes.contains(source.productType)
+          ? source.productType
+          : 'purchased';
+      _vatCategory =
+          const {
+            'standard',
+            'intermediate',
+            'reduced',
+            'zero',
+          }.contains(source.vatCategory)
+          ? source.vatCategory!
+          : 'standard';
+      _vatOverride.text = source.vatRateOverride != null
+          ? number(source.vatRateOverride!)
+          : '';
+      _tracking = source.tracking;
+      _familyId = source.familyId;
+      _nonDiscountable = source.nonDiscountable;
+      _priceOnRequest = source.priceOnRequest;
+      _includedInTurnover = source.includedInTurnover;
+      _includedInTurnoverEdited = source.includedInTurnover != null;
+      _priceIsIndicative = source.priceIsIndicative;
+      _active = source.active;
+      _cost.text = editableDecimal(source.standardCost);
+      _reorderMin.text = editableDecimal(source.reorderMin);
+      _reorderMax.text = editableDecimal(source.reorderMax);
+      _leadTime.text = source.leadTimeDays?.toString() ?? '';
+      _packagingId = source.packagingCategoryId;
+      _length.text = source.lengthMm?.toString() ?? '';
+      _width.text = source.widthMm?.toString() ?? '';
+      _height.text = source.heightMm?.toString() ?? '';
+      _weight.text = source.weightG?.toString() ?? '';
+      _defaultRemark.text = source.defaultProductionRemark ?? '';
+    });
+  }
 
   /// A positive whole number, or null when empty; [ok] is false for anything else.
   static (int?, bool) _positive(TextEditingController c) {
@@ -433,7 +476,7 @@ class _ProductFormState extends ConsumerState<ProductForm> {
         if (c.active || c.id == _packagingId) c,
     ];
     return DropdownButtonFormField<String?>(
-      key: ValueKey('packaging-${options.length}'),
+      key: ValueKey('packaging-${_copiedFrom?.id ?? ''}-${options.length}'),
       initialValue: options.any((c) => c.id == _packagingId)
           ? _packagingId
           : null,
@@ -472,6 +515,7 @@ class _ProductFormState extends ConsumerState<ProductForm> {
       children: [
         Expanded(
           child: DropdownButtonFormField<String>(
+            key: ValueKey('vat-${_copiedFrom?.id ?? ''}'),
             initialValue: _vatCategory,
             isExpanded: true,
             decoration: InputDecoration(labelText: context.l10n.vatCategory),
@@ -532,6 +576,35 @@ class _ProductFormState extends ConsumerState<ProductForm> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (p == null && _created == null) ...[
+              SearchPicker<Product>(
+                key: const ValueKey('product-copy-from'),
+                label: context.l10n.copyFromProduct,
+                initial: _copiedFrom,
+                display: (item) => '${item.code} · ${item.name}',
+                search: (q) async => (await ref
+                        .read(apiProvider)
+                        .products
+                        .listProducts(q: q, limit: 20))
+                    .items,
+                onSelected: _copyFrom,
+              ),
+              if (_copiedFrom != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: Chip(
+                      key: const ValueKey('product-copied-chip'),
+                      avatar: const Icon(AppIcons.copy, size: 16),
+                      label: Text(
+                        context.l10n.copiedFromProduct(_copiedFrom!.code),
+                      ),
+                    ),
+                  ),
+                ),
+              gap,
+            ],
             Row(
               children: [
                 SizedBox(
@@ -560,6 +633,7 @@ class _ProductFormState extends ConsumerState<ProductForm> {
               children: [
                 Expanded(
                   child: DropdownButtonFormField<String>(
+                    key: ValueKey('type-${_copiedFrom?.id ?? ''}'),
                     initialValue: _type,
                     isExpanded: true,
                     decoration: InputDecoration(labelText: context.l10n.type),
@@ -590,6 +664,7 @@ class _ProductFormState extends ConsumerState<ProductForm> {
               children: [
                 Expanded(
                   child: DropdownButtonFormField<String?>(
+                    key: ValueKey('family-${_copiedFrom?.id ?? ''}'),
                     initialValue: _familyId,
                     decoration: InputDecoration(labelText: context.l10n.family),
                     items: [
@@ -647,7 +722,7 @@ class _ProductFormState extends ConsumerState<ProductForm> {
             ),
             gap,
             DropdownButtonFormField<bool?>(
-              key: const ValueKey('included-in-turnover'),
+              key: ValueKey('included-in-turnover-${_copiedFrom?.id ?? ''}'),
               initialValue: _includedInTurnover,
               isExpanded: true,
               decoration: InputDecoration(
@@ -669,6 +744,7 @@ class _ProductFormState extends ConsumerState<ProductForm> {
             ),
             gap,
             DropdownButtonFormField<String>(
+              key: ValueKey('tracking-${_copiedFrom?.id ?? ''}'),
               initialValue: _tracking,
               isExpanded: true,
               decoration: InputDecoration(labelText: context.l10n.tracking),

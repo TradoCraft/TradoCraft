@@ -253,6 +253,7 @@ class EntityListState<T> extends State<EntityList<T>> {
       widget.filterDefs.isEmpty || widget.loadQuery != null,
       'filterDefs needs loadQuery',
     );
+    _filterSel = FilterSelection.allFor(widget.filterDefs);
     _searchFocus.onKeyEvent = _searchKey;
     _resetVisibility();
     if (widget.prefsKey != null) {
@@ -457,7 +458,7 @@ class EntityListState<T> extends State<EntityList<T>> {
                 offset: offset,
                 limit: limit,
                 sort: sort,
-                filters: filters.toQuery(),
+                filters: filters.toActiveQuery(widget.filterDefs),
               ),
             )
           : await widget.load!(q.isEmpty ? null : q, offset, limit);
@@ -505,15 +506,17 @@ class EntityListState<T> extends State<EntityList<T>> {
   }
 
   void _removeLastChip() {
-    final k = _filterSel.lastKey(widget.filterDefs);
-    if (k != null) _setFilters(_filterSel.without(k));
+    final k = _filterSel.lastActiveKey(widget.filterDefs);
+    if (k == null) return;
+    final def = widget.filterDefs.firstWhere((d) => d.key == k);
+    _setFilters(_filterSel.withAllOptions(def));
   }
 
   KeyEventResult _searchKey(FocusNode _, KeyEvent e) {
     if (e is KeyDownEvent &&
         e.logicalKey == LogicalKeyboardKey.backspace &&
         _search.text.isEmpty &&
-        _filterSel.lastKey(widget.filterDefs) != null) {
+        _filterSel.lastActiveKey(widget.filterDefs) != null) {
       _removeLastChip();
       return KeyEventResult.handled;
     }
@@ -570,11 +573,20 @@ class EntityListState<T> extends State<EntityList<T>> {
     reload();
   }
 
+  void _toggleAllFilters() {
+    if (_filterSel.isAllSelected(widget.filterDefs)) {
+      _setFilters(FilterSelection.empty);
+    } else {
+      _setFilters(FilterSelection.allFor(widget.filterDefs));
+    }
+  }
+
   Widget _filterMenu() => FilterMenuButton(
     defs: widget.filterDefs,
     selection: _filterSel,
     onToggle: (k, v) => _setFilters(_filterSel.toggle(k, v)),
-    onClear: () => _setFilters(FilterSelection.empty),
+    onClear: () => _setFilters(FilterSelection.allFor(widget.filterDefs)),
+    onToggleAll: widget.filterDefs.isEmpty ? null : _toggleAllFilters,
     favourites: widget.prefsKey == null ? null : _favs,
     onSaveFavourite: _favRead == _FavRead.ready ? _saveFavourite : null,
     onRetryFavourites: _favRead == _FavRead.failed ? _retryFavourites : null,
@@ -833,7 +845,8 @@ class EntityListState<T> extends State<EntityList<T>> {
                 ),
             ],
           ),
-          if (widget.filterDefs.isNotEmpty && _filterSel.isNotEmpty)
+          if (widget.filterDefs.isNotEmpty &&
+              _filterSel.activeCount(widget.filterDefs) > 0)
             Padding(
               padding: const EdgeInsets.only(top: 4),
               child: Align(
@@ -841,7 +854,10 @@ class EntityListState<T> extends State<EntityList<T>> {
                 child: FilterChips(
                   defs: widget.filterDefs,
                   selection: _filterSel,
-                  onRemove: (k) => _setFilters(_filterSel.without(k)),
+                  onRemove: (k) {
+                    final def = widget.filterDefs.firstWhere((d) => d.key == k);
+                    _setFilters(_filterSel.withAllOptions(def));
+                  },
                 ),
               ),
             ),

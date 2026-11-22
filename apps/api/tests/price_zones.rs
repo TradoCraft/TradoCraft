@@ -31,12 +31,20 @@ async fn create_update_and_delete_an_unused_zone(db: PgPool) {
         ADMIN,
         Method::PUT,
         &format!("/api/v1/price-zones/{id}"),
-        Some(json!({ "code": "ZX", "name": "Export EU", "sort_order": 10 })),
+        Some(json!({
+            "code": "ZX",
+            "name": "Export EU",
+            "sort_order": 10,
+            "default_multiplier": "1.1500",
+            "default_rounding": "0.05"
+        })),
     )
     .await;
     assert_eq!(status, StatusCode::OK, "{z}");
     assert_eq!(z["name"], "Export EU");
     assert_eq!(z["sort_order"], 10);
+    assert_eq!(z["default_multiplier"], "1.1500");
+    assert_eq!(z["default_rounding"], "0.05");
 
     let (_, list) = call(&app, ADMIN, Method::GET, "/api/v1/price-zones", None).await;
     assert!(list.as_array().unwrap().iter().any(|z| z["code"] == "ZX"));
@@ -105,6 +113,54 @@ async fn duplicate_code_is_a_conflict_and_blank_fields_are_rejected(db: PgPool) 
     )
     .await;
     assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+
+    // Negative/zero multiplier or invalid rounding is rejected.
+    let (status, _) = call(
+        &app,
+        ADMIN,
+        Method::POST,
+        "/api/v1/price-zones",
+        Some(json!({ "code": "ZNEG", "name": "Neg", "default_multiplier": "0" })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+
+    let (status, _) = call(
+        &app,
+        ADMIN,
+        Method::POST,
+        "/api/v1/price-zones",
+        Some(json!({ "code": "ZBADR", "name": "BadR", "default_rounding": "0.33" })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn user_preferences_round_trip(db: PgPool) {
+    let app = setup(db).await;
+    let (status, prefs) = call(&app, SALES, Method::GET, "/api/v1/me/preferences", None).await;
+    assert_eq!(status, StatusCode::OK, "{prefs}");
+    assert_eq!(prefs["shortcuts"], json!({}));
+
+    let (status, saved) = call(
+        &app,
+        SALES,
+        Method::PUT,
+        "/api/v1/me/preferences",
+        Some(json!({
+            "shortcuts": {
+                "save": { "key": "keyS", "mod": "standard", "shift": true }
+            }
+        })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{saved}");
+    assert_eq!(saved["shortcuts"]["save"]["shift"], true);
+
+    let (status, fetched) = call(&app, SALES, Method::GET, "/api/v1/me/preferences", None).await;
+    assert_eq!(status, StatusCode::OK, "{fetched}");
+    assert_eq!(fetched["shortcuts"]["save"]["key"], "keyS");
 }
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]

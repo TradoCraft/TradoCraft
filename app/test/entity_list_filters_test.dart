@@ -155,23 +155,24 @@ void main() {
     expect(l.queries.last.offset, 50);
 
     await _openMenu(t);
+    // All options start ticked; unticking Draft leaves Sent and Won selected.
     await _pick(t, 'Draft');
-    expect(_f(l, 'status'), {'draft'});
+    expect(_f(l, 'status'), {'sent', 'won'});
     expect(l.queries.last.offset, 0);
-    expect(find.text('Status: Draft'), findsOneWidget);
-    // The menu stays open for a second pick: values of one filter are OR-ed, filters AND-ed.
+    expect(find.text('Status: Sent or Won'), findsOneWidget);
+    // Unchecking Sent leaves Won; unchecking Germany leaves Netherlands.
     await _pick(t, 'Sent');
     await _pick(t, 'Germany');
-    expect(_f(l, 'status'), {'draft', 'sent'});
-    expect(_f(l, 'country'), {'de'});
-    expect(find.text('Status: Draft or Sent'), findsOneWidget);
-    expect(find.text('Country: Germany'), findsOneWidget);
-    // Unchecking removes the value.
+    expect(_f(l, 'status'), {'won'});
+    expect(_f(l, 'country'), {'nl'});
+    expect(find.text('Status: Won'), findsOneWidget);
+    expect(find.text('Country: Netherlands'), findsOneWidget);
+    // Re-checking Sent restores both Sent and Won.
     await _pick(t, 'Sent');
-    expect(_f(l, 'status'), {'draft'});
+    expect(_f(l, 'status'), {'sent', 'won'});
   });
 
-  testWidgets('chips remove one filter, Clear filters removes all', (t) async {
+  testWidgets('chips remove one filter, Clear filters resets all to ticked', (t) async {
     final l = await _pump(t);
     await _openMenu(t);
     await _pick(t, 'Draft');
@@ -181,7 +182,7 @@ void main() {
     await t.tap(find.byTooltip('Remove filter Status'));
     await t.pumpAndSettle();
     expect(l.queries.last.filters.keys, ['country']);
-    expect(find.text('Status: Draft'), findsNothing);
+    expect(find.text('Status: Sent or Won'), findsNothing);
 
     await _openMenu(t);
     await _pick(t, 'Clear filters');
@@ -195,7 +196,7 @@ void main() {
     await _pick(t, 'Draft');
     await t.tapAt(const Offset(5, 5));
     await t.pumpAndSettle();
-    await t.tap(find.text('Status: Draft'));
+    await t.tap(find.text('Status: Sent or Won'));
     await t.pumpAndSettle();
     expect(l.queries.last.filters, isEmpty);
   });
@@ -218,13 +219,28 @@ void main() {
 
     // With text in the field, backspace edits the text and keeps the chips.
     await _openMenu(t);
-    await _pick(t, 'Won');
+    await _pick(t, 'Draft');
     await t.tapAt(const Offset(5, 5));
     await t.pumpAndSettle();
     await t.enterText(find.byType(TextField), 'ab');
     await t.sendKeyEvent(LogicalKeyboardKey.backspace);
     await t.pumpAndSettle();
-    expect(find.text('Status: Won'), findsOneWidget);
+    expect(find.text('Status: Sent or Won'), findsOneWidget);
+  });
+
+  testWidgets('Select all / Deselect all toggles all options', (t) async {
+    final l = await _pump(t);
+    await _openMenu(t);
+    // Starts with all ticked -> button says Deselect all.
+    expect(find.text('Deselect all'), findsOneWidget);
+    await t.tap(find.byKey(const ValueKey('filter-toggle-all')));
+    await t.pumpAndSettle();
+    expect(find.text('Select all'), findsOneWidget);
+
+    await t.tap(find.byKey(const ValueKey('filter-toggle-all')));
+    await t.pumpAndSettle();
+    expect(find.text('Deselect all'), findsOneWidget);
+    expect(l.queries.last.filters, isEmpty);
   });
 
   testWidgets('a filter change clears the row selection', (t) async {
@@ -299,7 +315,7 @@ void main() {
     await t.pumpAndSettle();
     expect(t.getSize(find.byType(InputChip)).height, greaterThanOrEqualTo(48));
     expect(find.byTooltip('Remove filter Status'), findsOneWidget);
-    expect(find.bySemanticsLabel(RegExp('Status: Draft')), findsWidgets);
+    expect(find.bySemanticsLabel(RegExp('Status: Sent or Won')), findsWidgets);
     expect(l.queries.last.filters, isNotEmpty);
     handle.dispose();
   });
@@ -345,8 +361,8 @@ void main() {
       await t.tap(find.text('My drafts'));
       await t.pumpAndSettle();
       expect(l.queries.last.search, 'Item 1');
-      expect(_f(l, 'status'), {'draft'});
-      expect(find.text('Status: Draft'), findsOneWidget);
+      expect(_f(l, 'status'), {'sent', 'won'});
+      expect(find.text('Status: Sent or Won'), findsOneWidget);
       expect(
         t.widget<TextField>(find.byType(TextField)).controller!.text,
         'Item 1',

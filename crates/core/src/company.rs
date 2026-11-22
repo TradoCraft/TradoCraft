@@ -151,6 +151,7 @@ pub fn router() -> OpenApiRouter<AppState> {
     OpenApiRouter::new()
         .routes(routes!(me))
         .routes(routes!(list_users))
+        .merge(crate::preferences::router())
         .merge(crate::admin::router())
         .merge(crate::worker::router())
 }

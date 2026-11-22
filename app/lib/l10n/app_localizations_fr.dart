@@ -10776,7 +10776,7 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get listSelectAll => 'Sélectionner toutes les lignes chargées';
+  String get listSelectAll => 'Tout sélectionner';
 
   @override
   String listSelectRow(String name) {
@@ -11470,4 +11470,81 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get cbWordingHelp =>
       'Utilisez ces variables dans le texte de la facture.';
+
+  @override
+  String get defaultMultiplier => 'Multiplicateur par défaut';
+
+  @override
+  String get defaultMultiplierHelp =>
+      'Par rapport à la première zone (ex. 1.15 = +15 %)';
+
+  @override
+  String get defaultMultiplierInvalid =>
+      'Le multiplicateur doit être un nombre positif';
+
+  @override
+  String get defaultRounding => 'Arrondi';
+
+  @override
+  String get roundingNone => 'Aucun';
+
+  @override
+  String get baseZone => 'Base';
+
+  @override
+  String get formula => 'Formule';
+
+  @override
+  String get enterAtLeastOnePrice => 'Saisissez au moins un prix';
+
+  @override
+  String get resetToFormula => 'Réinitialiser selon la formule';
+
+  @override
+  String get applyFormulas => 'Appliquer les formules';
+
+  @override
+  String get copyFromProduct => 'Copier depuis un produit...';
+
+  @override
+  String copiedFromProduct(String code) {
+    return 'Copié depuis $code';
+  }
+
+  @override
+  String get selectProductToCopy =>
+      'Sélectionner un produit dont copier les propriétés';
+
+  @override
+  String get listDeselectAll => 'Tout désélectionner';
+
+  @override
+  String get userPreferences => 'Préférences';
+
+  @override
+  String get shortcutsTab => 'Raccourcis';
+
+  @override
+  String get shortcutSelectAll => 'Tout sélectionner / désélectionner';
+
+  @override
+  String get shortcutResetDefaults => 'Tout réinitialiser';
+
+  @override
+  String get shortcutReset => 'Réinitialiser';
+
+  @override
+  String get shortcutPressKeys => 'Appuyez sur une combinaison de touches...';
+
+  @override
+  String shortcutConflict(String action, String keys) {
+    return 'Conflit avec : $action ($keys)';
+  }
+
+  @override
+  String get shortcutNeedsModifier =>
+      'Utilisez Ctrl, Alt ou Cmd avec une touche';
+
+  @override
+  String get shortcutCustom => 'Personnalisé';
 }

@@ -13,6 +13,7 @@ import 'session.dart';
 import 'shortcuts/actions.dart';
 import 'shortcuts/help_dialog.dart';
 import 'shortcuts/key_hint.dart';
+import 'shortcuts/preferences_dialog.dart';
 import 'shortcuts/registry.dart';
 import 'worker_ui.dart';
 import 'workspace.dart';
@@ -220,6 +221,7 @@ class AppShell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final wide = MediaQuery.sizeOf(context).width >= 800;
     final me = ref.watch(meProvider);
+    ref.watch(userPreferencesProvider);
     // Keeps the to-do badge fresh (only while signed in and holding todo.use).
     ref.watch(todoBadgeSyncProvider);
     // Show the sections the user has rights for (all, while the user is still loading), so a
@@ -361,6 +363,11 @@ class AppShell extends ConsumerWidget {
           ),
         PopupMenuItem(value: 'tutorial', child: Text(context.l10n.tutTitle)),
         PopupMenuItem(
+          key: const ValueKey('account-preferences'),
+          value: 'preferences',
+          child: Text(context.l10n.userPreferences),
+        ),
+        PopupMenuItem(
           value: 'env',
           child: Text(context.l10n.envSwitchMenu(activeEnv.name)),
         ),
@@ -396,6 +403,7 @@ class AppShell extends ConsumerWidget {
         if (v == 'signout') ref.read(sessionProvider.notifier).signOut();
         if (v == 'env') showEnvironmentSwitcher(context);
         if (v == 'tutorial') context.push('/tutorial');
+        if (v == 'preferences') showUserPreferences(context);
         if (v == 'todo') showTodoQuickAdd(context, ref);
         if (v.startsWith('theme:')) {
           ref

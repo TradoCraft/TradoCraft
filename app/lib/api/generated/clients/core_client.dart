@@ -21,6 +21,7 @@ import '../models/modules_input.dart';
 import '../models/public_provider.dart';
 import '../models/role_info.dart';
 import '../models/setup_status.dart';
+import '../models/user_preferences.dart';
 import '../models/worker_status.dart';
 
 part 'core_client.g.dart';
@@ -119,6 +120,16 @@ abstract class CoreClient {
 
   @GET('/api/v1/me')
   Future<Me> me();
+
+  /// Returns the authenticated user's preferences.
+  @GET('/api/v1/me/preferences')
+  Future<UserPreferences> getPreferences();
+
+  /// Replaces the authenticated user's preferences.
+  @PUT('/api/v1/me/preferences')
+  Future<UserPreferences> putPreferences({
+    @Body() required UserPreferences body,
+  });
 
   /// Describes this instance: the configured name and kind, plus the database it is connected to.
   @GET('/api/v1/meta/environment')
