@@ -167,7 +167,7 @@ pub(super) fn router() -> OpenApiRouter<AppState> {
 #[utoipa::path(
     get, path = "/customer-invoices/{id}/pdf", tag = "customer_billing",
     params(("id" = Uuid, Path)),
-    responses((status = 200, content_type = "application/pdf", body = Vec<u8>),
+    responses((status = 200, content_type = "application/pdf", body = inline(tradocraft_core::import::BinaryFile)),
               (status = 403), (status = 404), (status = 422))
 )]
 async fn download_customer_document(
@@ -231,5 +231,12 @@ async fn download_customer_document(
     });
     let bytes =
         tradocraft_documents::render_pdf(&state.documents, "customer_invoice", &data).await?;
-    Ok(([(header::CONTENT_TYPE, "application/pdf")], bytes).into_response())
+    Ok((
+        [
+            (header::CONTENT_TYPE, "application/pdf"),
+            (header::CACHE_CONTROL, "private, no-store"),
+        ],
+        bytes,
+    )
+        .into_response())
 }

@@ -5461,12 +5461,9 @@
             "content": {
               "application/pdf": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "integer",
-                    "format": "int32",
-                    "minimum": 0
-                  }
+                  "type": "string",
+                  "format": "binary",
+                  "description": "The raw bytes of a file."
                 }
               }
             }
@@ -53580,6 +53577,18 @@
           "rate_year"
         ],
         "properties": {
+          "eligible_sales": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "proposed_rate": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "rate_year": {
             "type": "integer",
             "format": "int32"

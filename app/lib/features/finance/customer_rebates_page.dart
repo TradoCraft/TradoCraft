@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -31,6 +32,7 @@ class _CustomerRebatesPageState extends ConsumerState<CustomerRebatesPage> {
   BillingJson? _review;
   Customer? _customer;
   String? _assignment;
+  int _assignmentVersion = 0;
   String? _error;
   bool _busy = true;
   int _rateYear = DateTime.now().year;
@@ -111,16 +113,21 @@ class _CustomerRebatesPageState extends ConsumerState<CustomerRebatesPage> {
   }
 
   Future<void> _assign(String? value) => _run(() async {
-    final result = await billingObject(
-      ref
-          .read(dioProvider)
-          .put(
-            '$_customerPath/assignment',
-            data: {'schedule_name': value == '' ? null : value},
-          ),
-    );
-    _assignment = result['schedule_name'] as String?;
-    _review = null;
+    try {
+      final result = await billingObject(
+        ref
+            .read(dioProvider)
+            .put(
+              '$_customerPath/assignment',
+              data: {'schedule_name': value == '' ? null : value},
+            ),
+      );
+      _assignment = result['schedule_name'] as String?;
+      _review = null;
+    } catch (_) {
+      _assignmentVersion++;
+      rethrow;
+    }
   });
 
   Future<void> _import() async {
@@ -142,11 +149,29 @@ class _CustomerRebatesPageState extends ConsumerState<CustomerRebatesPage> {
   });
 
   Future<void> _approveRate() => _run(() async {
-    _review = await billingObject(
-      ref
-          .read(dioProvider)
-          .post('$_customerPath/rates', data: {'rate_year': _rateYear}),
-    );
+    try {
+      _review = await billingObject(
+        ref
+            .read(dioProvider)
+            .post(
+              '$_customerPath/rates',
+              data: {
+                'rate_year': _rateYear,
+                if (_review?['proposed_rate'] != null)
+                  'proposed_rate': _review!['proposed_rate'],
+                if (_review?['eligible_sales'] != null)
+                  'eligible_sales': _review!['eligible_sales'],
+              },
+            ),
+      );
+    } on DioException catch (error) {
+      if (error.response?.statusCode == 409) {
+        _review = await billingObject(
+          ref.read(dioProvider).get('$_customerPath/rates/$_rateYear'),
+        );
+      }
+      rethrow;
+    }
   });
 
   @override
@@ -210,7 +235,7 @@ class _CustomerRebatesPageState extends ConsumerState<CustomerRebatesPage> {
         if (_customer case final customer?) ...[
           ListTile(title: Text(customer.name)),
           DropdownButtonFormField<String>(
-            key: ValueKey((customer.id, _assignment)),
+            key: ValueKey((customer.id, _assignment, _assignmentVersion)),
             initialValue: names.contains(_assignment) ? _assignment : '',
             decoration: InputDecoration(labelText: l.cbAssignedSchedule),
             items: [

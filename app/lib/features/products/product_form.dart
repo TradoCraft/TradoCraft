@@ -88,6 +88,7 @@ class _ProductFormState extends ConsumerState<ProductForm> {
   late bool _nonDiscountable = p?.nonDiscountable ?? false;
   late bool _priceOnRequest = p?.priceOnRequest ?? false;
   late bool? _includedInTurnover = p?.includedInTurnover;
+  bool _includedInTurnoverEdited = false;
   late bool _priceIsIndicative = p?.priceIsIndicative ?? false;
   late bool _active = p?.active ?? true;
   late String? _packagingId = p?.packagingCategoryId;
@@ -165,9 +166,11 @@ class _ProductFormState extends ConsumerState<ProductForm> {
       familyId: _familyId,
       nonDiscountable: _nonDiscountable,
       priceOnRequest: _priceOnRequest,
-      includedInTurnover: _includedInTurnover == p?.includedInTurnover
-          ? null
-          : _includedInTurnover,
+      includedInTurnover:
+          _includedInTurnoverEdited ||
+              _includedInTurnover != p?.includedInTurnover
+          ? _includedInTurnover
+          : null,
       priceIsIndicative: _priceIsIndicative,
       active: _active,
       standardCost: cost,
@@ -190,7 +193,22 @@ class _ProductFormState extends ConsumerState<ProductForm> {
       final api = ref.read(apiProvider).products;
       final dio = ref.read(dioProvider);
       final targetId = p?.id ?? _created?.id;
-      var saved = targetId == null
+      final clearTurnover =
+          _includedInTurnoverEdited && _includedInTurnover == null;
+      var saved = clearTurnover
+          ? Product.fromJson(
+              (await (targetId == null
+                      ? dio.post<Map<String, dynamic>>(
+                          '/api/v1/products',
+                          data: body.toJson()..['included_in_turnover'] = null,
+                        )
+                      : dio.put<Map<String, dynamic>>(
+                          '/api/v1/products/$targetId',
+                          data: body.toJson()..['included_in_turnover'] = null,
+                        )))
+                  .data!,
+            )
+          : targetId == null
           ? await api.createProduct(body: body)
           : await api.updateProduct(id: targetId, body: body);
       if (p == null) _created = saved;
@@ -628,7 +646,7 @@ class _ProductFormState extends ConsumerState<ProductForm> {
               onChanged: (v) => setState(() => _priceIsIndicative = v ?? false),
             ),
             gap,
-            DropdownButtonFormField<bool>(
+            DropdownButtonFormField<bool?>(
               key: const ValueKey('included-in-turnover'),
               initialValue: _includedInTurnover,
               isExpanded: true,
@@ -637,10 +655,17 @@ class _ProductFormState extends ConsumerState<ProductForm> {
               ),
               hint: Text(context.l10n.productTurnoverUnclassified),
               items: [
-                DropdownMenuItem(value: true, child: Text(context.l10n.yes)),
-                DropdownMenuItem(value: false, child: Text(context.l10n.no)),
+                DropdownMenuItem<bool?>(
+                  value: null,
+                  child: Text(context.l10n.productTurnoverUnclassified),
+                ),
+                DropdownMenuItem<bool?>(value: true, child: Text(context.l10n.yes)),
+                DropdownMenuItem<bool?>(value: false, child: Text(context.l10n.no)),
               ],
-              onChanged: (value) => setState(() => _includedInTurnover = value),
+              onChanged: (value) => setState(() {
+                _includedInTurnover = value;
+                _includedInTurnoverEdited = true;
+              }),
             ),
             gap,
             DropdownButtonFormField<String>(

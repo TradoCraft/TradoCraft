@@ -10,10 +10,16 @@ part 'rebate_rate_approval_input.g.dart';
 class RebateRateApprovalInput {
   const RebateRateApprovalInput({
     required this.rateYear,
+    this.eligibleSales,
+    this.proposedRate,
   });
   
   factory RebateRateApprovalInput.fromJson(Map<String, Object?> json) => _$RebateRateApprovalInputFromJson(json);
   
+  @JsonKey(includeIfNull: false,name: 'eligible_sales')
+  final String? eligibleSales;
+  @JsonKey(includeIfNull: false,name: 'proposed_rate')
+  final String? proposedRate;
   @JsonKey(name: 'rate_year')
   final int rateYear;
 

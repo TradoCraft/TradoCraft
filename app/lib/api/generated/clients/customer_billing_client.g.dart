@@ -201,13 +201,18 @@ class _CustomerBillingClient implements CustomerBillingClient {
   }
 
   @override
-  Future<List<int>> downloadCustomerDocument({required String id}) async {
+  Stream<String> downloadCustomerDocument({required String id}) async* {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
-    final _options = _setStreamType<List<int>>(
-      Options(method: 'GET', headers: _headers, extra: _extra)
+    final _options = _setStreamType<String>(
+      Options(
+            method: 'GET',
+            headers: _headers,
+            extra: _extra,
+            responseType: ResponseType.stream,
+          )
           .compose(
             _dio.options,
             '/api/v1/customer-invoices/${id}/pdf',
@@ -216,15 +221,11 @@ class _CustomerBillingClient implements CustomerBillingClient {
           )
           .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
     );
-    final _result = await _dio.fetch<List<dynamic>>(_options);
-    late List<int> _value;
-    try {
-      _value = _result.data!.cast<int>();
-    } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options, response: _result);
-      rethrow;
-    }
-    return _value;
+    final _result = _dio.fetch<ResponseBody>(_options);
+    final _value = _result.asStream().asyncExpand(
+      (response) => utf8.decoder.bind(response.data!.stream),
+    );
+    yield* _value;
   }
 
   @override

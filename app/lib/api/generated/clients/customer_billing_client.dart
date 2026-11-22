@@ -2,6 +2,8 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, unused_import, invalid_annotation_target, unnecessary_import
 
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:retrofit/retrofit.dart';
 
@@ -61,7 +63,8 @@ abstract class CustomerBillingClient {
   });
 
   @GET('/api/v1/customer-invoices/{id}/pdf')
-  Future<List<int>> downloadCustomerDocument({
+  @DioResponseType(ResponseType.stream)
+  Stream<String> downloadCustomerDocument({
     @Path('id') required String id,
   });
 

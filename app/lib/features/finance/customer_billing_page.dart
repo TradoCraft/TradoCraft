@@ -217,7 +217,9 @@ class _BillingDetailState extends ConsumerState<_BillingDetail> {
     final detail = _detail;
     final summary = detail?['document'] as BillingJson?;
     final posted = summary?['status'] == 'posted';
-    return AlertDialog(
+    return PopScope(
+      canPop: !_busy,
+      child: AlertDialog(
       title: Text(
         summary == null
             ? l.cbCustomerInvoices
@@ -294,6 +296,7 @@ class _BillingDetailState extends ConsumerState<_BillingDetail> {
             child: Text(l.cbNewCredit),
           ),
       ],
+      ),
     );
   }
 }
@@ -313,6 +316,9 @@ class _NewBillingDraftState extends ConsumerState<_NewBillingDraft> {
   final _amounts = <String, String>{};
   final _creditNet = <String, String>{};
   DeliveryNote? _delivery;
+  DeliverySummary? _selectedDelivery;
+  int _deliveryVersion = 0;
+  int _lookupGeneration = 0;
   DateTime _date = DateTime.now();
   bool _busy = false;
   String? _error;
@@ -338,27 +344,39 @@ class _NewBillingDraftState extends ConsumerState<_NewBillingDraft> {
   }
 
   Future<void> _selectDelivery(DeliverySummary summary) async {
+    final generation = ++_lookupGeneration;
     setState(() {
       _busy = true;
       _error = null;
+      _delivery = null;
+      _selectedDelivery = null;
+      _amounts.clear();
     });
     try {
       final note = await ref.read(apiProvider).delivery.getNote(id: summary.id);
-      if (!mounted) return;
+      if (!mounted || generation != _lookupGeneration) return;
       _amounts
         ..clear()
         ..addEntries(
           note.lines.map((line) => MapEntry(line.id, line.quantity)),
         );
       _delivery = note;
+      _selectedDelivery = summary;
+      _deliveryVersion++;
     } catch (error) {
-      _error = errorMessage(error);
+      if (mounted && generation == _lookupGeneration) {
+        _error = errorMessage(error);
+      }
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted && generation == _lookupGeneration) {
+        setState(() => _busy = false);
+      }
     }
   }
 
   Future<void> _save() async {
+    final route = ModalRoute.of(context);
+    final navigator = Navigator.of(context);
     setState(() {
       _busy = true;
       _error = null;
@@ -392,7 +410,13 @@ class _NewBillingDraftState extends ConsumerState<_NewBillingDraft> {
             _credit ? '$customerBillingPath/credits' : customerBillingPath,
             data: body,
           );
-      if (mounted) Navigator.of(context).pop();
+      if (mounted && route != null && route.isActive) {
+        if (route.isCurrent) {
+          navigator.pop();
+        } else {
+          navigator.removeRoute(route);
+        }
+      }
     } catch (error) {
       if (mounted) setState(() => _error = errorMessage(error));
     } finally {
@@ -401,7 +425,7 @@ class _NewBillingDraftState extends ConsumerState<_NewBillingDraft> {
   }
 
   Widget _quantity(String id, String title, String unit) => TextFormField(
-    key: ValueKey(id),
+    key: ValueKey((id, _deliveryVersion)),
     initialValue: _amounts[id],
     enabled: !_busy,
     decoration: InputDecoration(labelText: '$title ($unit)'),
@@ -412,33 +436,50 @@ class _NewBillingDraftState extends ConsumerState<_NewBillingDraft> {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
-    return AlertDialog(
-      title: Text(_credit ? l.cbNewCredit : l.cbNewInvoice),
-      content: SizedBox(
-        width: 560,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (!_credit)
-                SearchPicker<DeliverySummary>(
-                  label: l.cbShippedDelivery,
-                  search: (q) async =>
-                      (await ref
-                              .read(apiProvider)
-                              .delivery
-                              .listNotes(status: 'shipped', q: q, limit: 20))
-                          .items,
-                  display: (delivery) =>
-                      '${delivery.number} · ${delivery.customerName}',
+    return PopScope(
+      canPop: !_busy,
+      child: AlertDialog(
+        title: Text(_credit ? l.cbNewCredit : l.cbNewInvoice),
+        content: SizedBox(
+          width: 560,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (!_credit)
+                  SearchPicker<DeliverySummary>(
+                    label: l.cbShippedDelivery,
+                    search: (q) async =>
+                        (await ref
+                                .read(apiProvider)
+                                .delivery
+                                .listNotes(status: 'shipped', q: q, limit: 20))
+                            .items,
+                    display: (delivery) =>
+                        '${delivery.number} · ${delivery.customerName}',
+                    enabled: !_busy,
+                    onTextChanged: (text) {
+                      final selected = _selectedDelivery;
+                      final label = selected == null
+                          ? null
+                          : '${selected.number} · ${selected.customerName}';
+                      if (selected != null && text != label) {
+                        _lookupGeneration++;
+                        setState(() {
+                          _delivery = null;
+                          _selectedDelivery = null;
+                          _amounts.clear();
+                        });
+                      }
+                    },
+                    onSelected: _selectDelivery,
+                  ),
+                InvoiceDateField(
+                  label: l.cbDate,
+                  value: _date,
                   enabled: !_busy,
-                  onSelected: _selectDelivery,
+                  onChanged: (date) => setState(() => _date = date ?? _date),
                 ),
-              InvoiceDateField(
-                label: l.cbDate,
-                value: _date,
-                onChanged: (date) => setState(() => _date = date ?? _date),
-              ),
               if (_credit)
                 TextField(
                   controller: _reason,
@@ -489,6 +530,7 @@ class _NewBillingDraftState extends ConsumerState<_NewBillingDraft> {
           child: Text(l.cbSaveDraft),
         ),
       ],
+      ),
     );
   }
 }
@@ -512,6 +554,8 @@ class _LegacyInvoiceDialogState extends ConsumerState<_LegacyInvoiceDialog> {
   bool _busy = false;
 
   Future<void> _save() async {
+    final route = ModalRoute.of(context);
+    final navigator = Navigator.of(context);
     setState(() => _busy = true);
     try {
       await ref
@@ -525,7 +569,13 @@ class _LegacyInvoiceDialogState extends ConsumerState<_LegacyInvoiceDialog> {
               'lines': _lines,
             },
           );
-      if (mounted) Navigator.of(context).pop();
+      if (mounted && route != null && route.isActive) {
+        if (route.isCurrent) {
+          navigator.pop();
+        } else {
+          navigator.removeRoute(route);
+        }
+      }
     } catch (error) {
       if (mounted) setState(() => _error = errorMessage(error));
     } finally {
@@ -553,31 +603,42 @@ class _LegacyInvoiceDialogState extends ConsumerState<_LegacyInvoiceDialog> {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
-    return AlertDialog(
-      title: Text(l.cbRegisterLegacy),
-      content: SizedBox(
-        width: 580,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SearchPicker<Customer>(
-                label: l.customers,
-                search: (q) async =>
-                    (await ref
-                            .read(apiProvider)
-                            .crm
-                            .listCustomers(q: q, limit: 20))
-                        .items,
-                display: (customer) => '${customer.code} · ${customer.name}',
-                onSelected: (customer) => setState(() => _customer = customer),
-                enabled: !_busy,
-              ),
-              InvoiceDateField(
-                label: l.cbDate,
-                value: _date,
-                onChanged: (date) => setState(() => _date = date ?? _date),
-              ),
+    return PopScope(
+      canPop: !_busy,
+      child: AlertDialog(
+        title: Text(l.cbRegisterLegacy),
+        content: SizedBox(
+          width: 580,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SearchPicker<Customer>(
+                  label: l.customers,
+                  search: (q) async =>
+                      (await ref
+                              .read(apiProvider)
+                              .crm
+                              .listCustomers(q: q, limit: 20))
+                          .items,
+                  display: (customer) => '${customer.code} · ${customer.name}',
+                  onTextChanged: (text) {
+                    if (_customer != null &&
+                        text != '${_customer!.code} · ${_customer!.name}') {
+                      setState(() => _customer = null);
+                    }
+                  },
+                  onSelected: (customer) =>
+                      setState(() => _customer = customer),
+                  enabled: !_busy,
+                ),
+                InvoiceDateField(
+                  label: l.cbDate,
+                  value: _date,
+                  enabled: !_busy,
+                  firstDate: DateTime(2000),
+                  onChanged: (date) => setState(() => _date = date ?? _date),
+                ),
               _field(_header, 'number', l.cbOriginal),
               _field(_header, 'evidence_reference', l.cbEvidence),
               _field(_header, 'currency', l.cbCurrency),
@@ -664,6 +725,7 @@ class _LegacyInvoiceDialogState extends ConsumerState<_LegacyInvoiceDialog> {
           child: Text(l.cbRegisterLegacy),
         ),
       ],
+      ),
     );
   }
 }

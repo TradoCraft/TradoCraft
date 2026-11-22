@@ -219,6 +219,7 @@ struct LineDraft {
     vat_rate: Decimal,
     vat_total: Decimal,
     included_in_turnover: Option<bool>,
+    auto_amounts: bool,
     delivery_line_id: Option<Uuid>,
     source_invoice_line_id: Option<Uuid>,
 }
@@ -459,8 +460,8 @@ async fn write_lines(
             "INSERT INTO finance.customer_document_lines
                  (id, document_id, position, product_id, product_code, description, unit, quantity,
                   stock_quantity, net_unit_price, net_total, vat_rate, vat_total, gross_total,
-                  included_in_turnover, delivery_line_id, source_invoice_line_id)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)",
+                  included_in_turnover, auto_amounts, delivery_line_id, source_invoice_line_id)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)",
         )
         .bind(new_id())
         .bind(document_id)
@@ -477,6 +478,7 @@ async fn write_lines(
         .bind(line.vat_total)
         .bind(gross)
         .bind(line.included_in_turnover)
+        .bind(line.auto_amounts)
         .bind(line.delivery_line_id)
         .bind(line.source_invoice_line_id)
         .execute(&mut *conn)
@@ -629,6 +631,7 @@ async fn draft_invoice_line(
         vat_rate: source.vat_rate,
         vat_total: Decimal::ZERO,
         included_in_turnover: source.included_in_turnover,
+        auto_amounts: false,
         delivery_line_id: Some(input.delivery_line_id),
         source_invoice_line_id: None,
     })
@@ -781,6 +784,37 @@ async fn credited(
     .await?)
 }
 
+fn credit_amounts(
+    original: &CreditSource,
+    quantity: Decimal,
+    explicit_net: Option<Decimal>,
+    quantity_credited: Decimal,
+    net_credited: Decimal,
+    vat_credited: Decimal,
+) -> AppResult<(Decimal, Decimal)> {
+    let net_remaining = original.net_total - net_credited;
+    let suggested_net = if quantity_credited + quantity == original.quantity {
+        net_remaining
+    } else {
+        money(original.net_total * (quantity / original.quantity)).min(net_remaining)
+    };
+    let net_total = explicit_net.unwrap_or(suggested_net);
+    if net_total > net_remaining {
+        return Err(AppError::Conflict(
+            "net amount exceeds what remains creditable on this invoice line".into(),
+        ));
+    }
+    let vat_remaining = original.vat_total - vat_credited;
+    let vat_total = if net_total == net_remaining {
+        vat_remaining
+    } else if original.net_total.is_zero() {
+        Decimal::ZERO
+    } else {
+        money(original.vat_total * (net_total / original.net_total)).min(vat_remaining)
+    };
+    Ok((net_total, vat_total))
+}
+
 async fn draft_credit_line(
     conn: &mut PgConnection,
     invoice_id: Uuid,
@@ -798,26 +832,14 @@ async fn draft_credit_line(
             "quantity exceeds what remains creditable on this invoice line".into(),
         ));
     }
-    let net_remaining = original.net_total - net_credited;
-    let suggested_net = if quantity_credited + input.quantity == original.quantity {
-        net_remaining
-    } else {
-        money(original.net_total * (input.quantity / original.quantity)).min(net_remaining)
-    };
-    let net_total = input.net_total.unwrap_or(suggested_net);
-    if net_total > net_remaining {
-        return Err(AppError::Conflict(
-            "net amount exceeds what remains creditable on this invoice line".into(),
-        ));
-    }
-    let vat_remaining = original.vat_total - vat_credited;
-    let vat_total = if net_total == net_remaining {
-        vat_remaining
-    } else if original.net_total.is_zero() {
-        Decimal::ZERO
-    } else {
-        money(original.vat_total * (net_total / original.net_total)).min(vat_remaining)
-    };
+    let (net_total, vat_total) = credit_amounts(
+        &original,
+        input.quantity,
+        input.net_total,
+        quantity_credited,
+        net_credited,
+        vat_credited,
+    )?;
     Ok(LineDraft {
         product_id: original.product_id,
         product_code: original.product_code,
@@ -833,6 +855,7 @@ async fn draft_credit_line(
         vat_rate: original.vat_rate,
         vat_total,
         included_in_turnover: original.included_in_turnover,
+        auto_amounts: input.net_total.is_none(),
         delivery_line_id: None,
         source_invoice_line_id: Some(input.invoice_line_id),
     })
@@ -922,6 +945,7 @@ struct PostingLine {
     net_total: Decimal,
     vat_total: Decimal,
     included_in_turnover: Option<bool>,
+    auto_amounts: bool,
     delivery_line_id: Option<Uuid>,
     source_invoice_line_id: Option<Uuid>,
 }
@@ -1023,6 +1047,17 @@ async fn check_credit_post(
                     .into(),
             ));
         }
+        if line.auto_amounts {
+            let (expected_net, expected_vat) =
+                credit_amounts(&original, line.quantity, None, quantity, net, vat)?;
+            if line.net_total != expected_net || line.vat_total != expected_vat {
+                return Err(AppError::ConflictCode(
+                    "credit_draft_stale",
+                    "another credit note affected the remaining creditable amounts; recreate the draft"
+                        .into(),
+                ));
+            }
+        }
     }
     Ok(())
 }
@@ -1076,7 +1111,7 @@ pub async fn post(pool: &PgPool, user: &CurrentUser, id: Uuid) -> AppResult<Bill
 
     let lines: Vec<PostingLine> = sqlx::query_as(
         "SELECT id, product_id, quantity, stock_quantity, net_total, vat_total,
-                included_in_turnover, delivery_line_id, source_invoice_line_id
+                included_in_turnover, auto_amounts, delivery_line_id, source_invoice_line_id
          FROM finance.customer_document_lines WHERE document_id = $1 ORDER BY position",
     )
     .bind(id)
@@ -1235,11 +1270,29 @@ pub async fn register_legacy_invoice(
             vat_rate: line.vat_rate,
             vat_total: line.vat_total,
             included_in_turnover: Some(line.included_in_turnover),
+            auto_amounts: false,
             delivery_line_id: None,
             source_invoice_line_id: None,
         });
     }
     let mut tx = pool.begin().await?;
+    customer_rebates::lock_customer(&mut tx, user.company_id, input.customer_id).await?;
+    let cutoff: Option<NaiveDate> = sqlx::query_scalar(
+        "SELECT cutoff FROM finance.customer_rebate_openings
+         WHERE company_id = $1 AND customer_id = $2 AND year = $3",
+    )
+    .bind(user.company_id)
+    .bind(input.customer_id)
+    .bind(input.document_date.year())
+    .fetch_optional(&mut *tx)
+    .await?;
+    if cutoff.is_some_and(|c| input.document_date > c) {
+        return Err(AppError::ConflictCode(
+            "turnover_period_closed",
+            "legacy invoices cannot be dated after the verified opening cutoff for that year"
+                .into(),
+        ));
+    }
     let seller = seller(&mut tx, user.company_id).await?;
     let customer: Option<(String, Json<BillingParty>)> = sqlx::query_as(
         "SELECT language::text, jsonb_build_object('name', name, 'street', street,

@@ -563,6 +563,50 @@ async fn set_product_uoms(
         }
     }
     let mut tx = state.db.begin().await?;
+    let existing_uoms: Vec<(String, Decimal)> = sqlx::query_as(
+        "SELECT uom_code, factor FROM inventory.product_uoms WHERE product_id = $1 FOR UPDATE",
+    )
+    .bind(id)
+    .fetch_all(&mut *tx)
+    .await?;
+    let next_uoms: std::collections::HashMap<&str, Decimal> = input
+        .uoms
+        .iter()
+        .map(|u| (u.uom_code.as_str(), u.factor))
+        .collect();
+    for (uom_code, old_factor) in &existing_uoms {
+        if next_uoms.get(uom_code.as_str()) != Some(old_factor) {
+            let in_use: bool = sqlx::query_scalar(
+                "SELECT EXISTS (
+                     SELECT 1
+                     FROM sales.order_lines ol
+                     JOIN sales.orders o ON o.id = ol.order_id
+                     WHERE ol.product_id = $1
+                       AND ol.unit = $2
+                       AND ol.revision = o.current_revision
+                       AND o.status <> 'cancelled'
+                       AND (
+                           o.status <> 'closed'
+                           OR EXISTS (
+                               SELECT 1
+                               FROM delivery.delivery_note_lines dl
+                               JOIN delivery.delivery_notes dn ON dn.id = dl.delivery_note_id
+                               WHERE dl.order_line_id = ol.id AND dn.status = 'shipped'
+                           )
+                       )
+                 )",
+            )
+            .bind(id)
+            .bind(uom_code)
+            .fetch_one(&mut *tx)
+            .await?;
+            if in_use {
+                return Err(AppError::Conflict(format!(
+                    "cannot change or remove unit {uom_code} while open or shipped order lines depend on it"
+                )));
+            }
+        }
+    }
     sqlx::query("DELETE FROM inventory.product_uoms WHERE product_id = $1")
         .bind(id)
         .execute(&mut *tx)

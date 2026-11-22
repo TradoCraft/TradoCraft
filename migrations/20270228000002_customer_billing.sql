@@ -56,6 +56,7 @@ CREATE TABLE finance.customer_document_lines (
     vat_total              numeric(18,2) NOT NULL CHECK (vat_total >= 0),
     gross_total            numeric(18,2) NOT NULL CHECK (gross_total = net_total + vat_total),
     included_in_turnover   boolean,
+    auto_amounts           boolean NOT NULL DEFAULT false,
     delivery_line_id       uuid REFERENCES delivery.delivery_note_lines(id),
     source_invoice_line_id uuid REFERENCES finance.customer_document_lines(id),
     UNIQUE (document_id, position),

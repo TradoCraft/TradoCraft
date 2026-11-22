@@ -94,6 +94,12 @@ pub struct RebateRateReview {
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct RebateRateApprovalInput {
     pub rate_year: i32,
+    #[serde(default)]
+    #[schema(value_type = Option<String>)]
+    pub proposed_rate: Option<Decimal>,
+    #[serde(default)]
+    #[schema(value_type = Option<String>)]
+    pub eligible_sales: Option<Decimal>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
@@ -624,10 +630,11 @@ async fn eligible_sales_through(
          CROSS JOIN LATERAL (
              SELECT COALESCE(SUM(CASE WHEN d.kind = 'credit_note' THEN -l.net_total ELSE l.net_total END)
                                  FILTER (WHERE l.included_in_turnover), 0) AS total,
-                    COALESCE(BOOL_AND(CASE l.included_in_turnover
-                         WHEN true THEN d.currency = c.currency
-                         WHEN false THEN true
-                         ELSE false
+                    COALESCE(BOOL_AND(CASE
+                         WHEN l.included_in_turnover IS NULL THEN false
+                         WHEN l.net_total = 0 THEN true
+                         WHEN l.included_in_turnover THEN d.currency = c.currency
+                         ELSE true
                     END), true) AS complete
              FROM finance.customer_documents d
              JOIN finance.customer_document_lines l ON l.document_id = d.id
@@ -719,6 +726,13 @@ pub async fn approve_rate(
             "A closed year with verified eligible sales and an effective schedule are required to approve a rate".into(),
         ));
     };
+    if input.proposed_rate.is_some_and(|p| p != rate)
+        || input.eligible_sales.is_some_and(|s| s != sales)
+    {
+        return Err(AppError::Conflict(
+            "The rebate review changed while you were reviewing it; reload and review the current figures".into(),
+        ));
+    }
     sqlx::query(
         "INSERT INTO finance.customer_rebate_rates
             (company_id, customer_id, rate_year, schedule_id, eligible_sales, rate, approved_by)
@@ -784,6 +798,15 @@ pub async fn invoice_progress(
         return Ok(None);
     };
     let tier = next_tier(&schedule.tiers, sales);
+    let highest_reached = schedule
+        .tiers
+        .iter()
+        .filter(|t| t.rate > Decimal::ZERO)
+        .max_by_key(|t| t.threshold)
+        .is_some_and(|t| sales >= t.threshold);
+    if tier.is_none() && !highest_reached {
+        return Ok(None);
+    }
     let wording = settings
         .wording
         .iter()
