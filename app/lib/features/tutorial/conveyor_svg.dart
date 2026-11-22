@@ -4,11 +4,14 @@ import 'dart:typed_data';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../l10n/l10n.dart';
+
 /// Builds a clean schematic SVG of a conveyor belt assembly, optionally with a mounted
 /// 1-phase or 3-phase (+ VFD) motor.
 String buildConveyorAssemblySvg({
   required bool withMotor,
   bool threePhase = true,
+  String withoutMotorLabel = 'without motor',
 }) {
   final motorGroup = !withMotor
       ? ''
@@ -33,7 +36,7 @@ String buildConveyorAssemblySvg({
 
   final subtitle = withMotor
       ? (threePhase ? 'CONV-BELT-1M + MOT-3P-055 + VFD' : 'CONV-BELT-1M + MOT-1P-037')
-      : 'CONV-BELT-1M (without motor)';
+      : 'CONV-BELT-1M ($withoutMotorLabel)';
 
   return '''
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 150">
@@ -80,9 +83,11 @@ class _ConveyorAssemblySvgState extends State<ConveyorAssemblySvg> {
 
   @override
   Widget build(BuildContext context) {
+    final l = context.l10n;
     final svg = buildConveyorAssemblySvg(
       withMotor: _withMotor,
       threePhase: _threePhase,
+      withoutMotorLabel: l.tutConveyorsSvgWithoutMotor,
     );
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -98,13 +103,17 @@ class _ConveyorAssemblySvgState extends State<ConveyorAssemblySvg> {
           runSpacing: 4,
           children: [
             FilterChip(
-              label: const Text('With motor'),
+              label: Text(l.tutConveyorsSvgWithMotor),
               selected: _withMotor,
               onSelected: (v) => setState(() => _withMotor = v),
             ),
             if (_withMotor)
               ChoiceChip(
-                label: Text(_threePhase ? '3-Phase + VFD' : '1-Phase'),
+                label: Text(
+                  _threePhase
+                      ? l.tutConveyorsSvgThreePhase
+                      : l.tutConveyorsSvgOnePhase,
+                ),
                 selected: true,
                 onSelected: (_) => setState(() => _threePhase = !_threePhase),
               ),

@@ -38,7 +38,7 @@
         { "name": "networked_master", "type": "boolean", "label": "Master network controller", "default": false,
           "help": "Connects line PLCs to a supervisory master controller over the plant network.",
           "layout": { "section": "plc", "order": 2 } },
-        { "name": "rs485_displays", "type": "number", "label": "RS-485 operator displays", "min": 0, "max": 16, "default": 1,
+        { "name": "rs485_displays", "type": "integer", "label": "RS-485 operator displays", "min": 0, "max": 16, "default": 1,
           "help": "Operator displays connected over the RS-485 bus.",
           "layout": { "section": "bus", "order": 1 } },
         { "name": "i2c_swipe_card", "type": "boolean", "label": "I2C swipe card reader", "default": true,

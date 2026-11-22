@@ -12933,7 +12933,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutSuppliersNeedsBody.
   ///
   /// In en, this message translates to:
-  /// **'This chapter needs the four products from chapter 1 (MOT-3P-055, VFD-3P-055, PLC-BASE and CONV-BELT-1M) and could not find them. Go back to the chapter map and finish chapter 1 first, then come back here.'**
+  /// **'This chapter needs the four core products from Chapter 1 (Conveyor belts & motors: MOT-3P-055, VFD-3P-055, CONV-BELT-1M) and Chapter 2 (PLCs, parallel licensing & network: PLC-BASE), and could not find them. Go back to the chapter map and finish those chapters first, then come back here.'**
   String get tutSuppliersNeedsBody;
 
   /// No description provided for @tutSuppliersOpenTitle.
@@ -13005,7 +13005,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutSuppliersPriceFrameTitle.
   ///
   /// In en, this message translates to:
-  /// **'A price for the frame'**
+  /// **'A price for the VFD'**
   String get tutSuppliersPriceFrameTitle;
 
   /// No description provided for @tutSuppliersPriceFrameBody.
@@ -13083,7 +13083,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutBuyingNeedsBody.
   ///
   /// In en, this message translates to:
-  /// **'This chapter needs the products of chapter 1 and the supplier Voltaic Drives Ltd with its price list from chapter 2, and could not find the products. Finish those chapters first.'**
+  /// **'This chapter needs the products of Chapter 1 (Conveyor belts & motors) and the supplier Voltaic Drives Ltd with its price list from chapter 2, and could not find the products. Finish those chapters first.'**
   String get tutBuyingNeedsBody;
 
   /// No description provided for @tutBuyingOpenTitle.
@@ -13221,7 +13221,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutBuyingStockBody.
   ///
   /// In en, this message translates to:
-  /// **'Open Stock. The 30 motors, frames and controllers are on hand in warehouse MAIN. Every receipt created a stock movement, so the quantity can always be traced back.'**
+  /// **'Open Stock. The 30 motors, VFDs and PLCs are on hand in warehouse MAIN. Every receipt created a stock movement, so the quantity can always be traced back.'**
   String get tutBuyingStockBody;
 
   /// No description provided for @tutBuyingDoneTitle.
@@ -13389,7 +13389,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutInvoicesDoneBody.
   ///
   /// In en, this message translates to:
-  /// **'The three-way match compares order, receipt and invoice before money moves. Matching invoices are approved and paid, doubtful ones are disputed. Next: building the carts yourself.'**
+  /// **'The three-way match compares order, receipt and invoice before money moves. Matching invoices are approved and paid, doubtful ones are disputed. Next: building the conveyors yourself.'**
   String get tutInvoicesDoneBody;
 
   /// No description provided for @tutManufacturingTitle.
@@ -13401,7 +13401,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutManufacturingSummary.
   ///
   /// In en, this message translates to:
-  /// **'Hats: production manager and production worker. Set up a division, then build five carts from the components.'**
+  /// **'Hats: production manager and production worker. Set up a division, then build five conveyors from the components.'**
   String get tutManufacturingSummary;
 
   /// No description provided for @tutManufacturingNeedsTitle.
@@ -13413,7 +13413,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutManufacturingNeedsBody.
   ///
   /// In en, this message translates to:
-  /// **'This chapter needs the cart with its bill of materials (chapter 1) and components in stock (chapter 3), and could not find the products. Finish those chapters first.'**
+  /// **'This chapter needs the conveyor with its bill of materials (Chapter 1 (Conveyor belts & motors)) and components in stock (chapter 3), and could not find the products. Finish those chapters first.'**
   String get tutManufacturingNeedsBody;
 
   /// No description provided for @tutManufacturingOpenDivisionsTitle.
@@ -13503,13 +13503,13 @@ abstract class AppLocalizations {
   /// No description provided for @tutManufacturingWarehouseTitle.
   ///
   /// In en, this message translates to:
-  /// **'A place for the carts'**
+  /// **'A place for the conveyors'**
   String get tutManufacturingWarehouseTitle;
 
   /// No description provided for @tutManufacturingWarehouseBody.
   ///
   /// In en, this message translates to:
-  /// **'The finished carts need a location to go into, and there is no warehouse yet (chapter 3 creates it). Open Stock, press Warehouses and create the warehouse MAIN with the name Main warehouse, then go back to the production order. If saving is refused because the code MAIN is taken, an inactive warehouse holds it: switch it (and its location) back on in Stock > Warehouses, or give it another code with its edit button, then press Next.'**
+  /// **'The finished conveyors need a location to go into, and there is no warehouse yet (chapter 3 creates it). Open Stock, press Warehouses and create the warehouse MAIN with the name Main warehouse, then go back to the production order. If saving is refused because the code MAIN is taken, an inactive warehouse holds it: switch it (and its location) back on in Stock > Warehouses, or give it another code with its edit button, then press Next.'**
   String get tutManufacturingWarehouseBody;
 
   /// No description provided for @tutManufacturingWarehouseHint.
@@ -13527,7 +13527,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutManufacturingCompleteBody.
   ///
   /// In en, this message translates to:
-  /// **'Press Complete. The dialog shows the output quantity (5) and the components consumed. Choose the warehouse location MAIN in Put into, so the finished carts have a place to go, and confirm: the components leave the stock and five finished carts enter it.'**
+  /// **'Press Complete. The dialog shows the output quantity (5) and the components consumed. Choose the warehouse location MAIN in Put into, so the finished conveyors have a place to go, and confirm: the components leave the stock and five finished conveyors enter it.'**
   String get tutManufacturingCompleteBody;
 
   /// No description provided for @tutManufacturingCompleteHint.
@@ -13545,7 +13545,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutManufacturingStockBody.
   ///
   /// In en, this message translates to:
-  /// **'Open Stock: CONV-BELT-1M now has 5 on hand, and each component is down by 5 (25 left of each). Production is what links purchasing to selling.'**
+  /// **'Open Stock: CONV-BELT-1M now has 5 on hand, its BOM components (MOT-3P-055 and VFD-3P-055) are down by 5 (25 left of each), and PLC-BASE remains at 30. Production is what links purchasing to selling.'**
   String get tutManufacturingStockBody;
 
   /// No description provided for @tutManufacturingDoneTitle.
@@ -13569,7 +13569,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutPricesSummary.
   ///
   /// In en, this message translates to:
-  /// **'Hat: sales manager. Create a price zone and give the cart a price in two zones.'**
+  /// **'Hat: sales manager. Create a price zone and give the conveyor a price in two zones.'**
   String get tutPricesSummary;
 
   /// No description provided for @tutPricesNeedsTitle.
@@ -13581,7 +13581,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutPricesNeedsBody.
   ///
   /// In en, this message translates to:
-  /// **'This chapter needs the cart from chapter 1 and could not find it. Finish chapter 1 first.'**
+  /// **'This chapter needs the conveyor from Chapter 1 (Conveyor belts & motors) and could not find it. Finish Chapter 1 (Conveyor belts & motors) first.'**
   String get tutPricesNeedsBody;
 
   /// No description provided for @tutPricesOpenAdminTitle.
@@ -13617,7 +13617,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutPricesOpenCartTitle.
   ///
   /// In en, this message translates to:
-  /// **'Open the cart'**
+  /// **'Open the conveyor'**
   String get tutPricesOpenCartTitle;
 
   /// No description provided for @tutPricesOpenCartBody.
@@ -13653,7 +13653,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutPricesPriceHomeBody.
   ///
   /// In en, this message translates to:
-  /// **'Add a second price for the cart in one of the existing zones, for example Z1 at 1200. The same product can now cost different amounts depending on the customer\'s zone.'**
+  /// **'Add a second price for the conveyor in one of the existing zones, for example Z1 at 1200. The same product can now cost different amounts depending on the customer\'s zone.'**
   String get tutPricesPriceHomeBody;
 
   /// No description provided for @tutPricesDoneTitle.
@@ -13701,7 +13701,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutCustomerMail1Body.
   ///
   /// In en, this message translates to:
-  /// **'Someone you do not know asks for a quotation for your cart. A real mailbox would deliver the message by itself; here the button below plays the customer and hands a ready-made e-mail (from Maya Okafor, example.test) to the helpdesk, exactly as the mail importer does.'**
+  /// **'Someone you do not know asks for a quotation for your conveyor. A real mailbox would deliver the message by itself; here the button below plays the customer and hands a ready-made e-mail (from Maya Okafor, example.test) to the helpdesk, exactly as the mail importer does.'**
   String get tutCustomerMail1Body;
 
   /// No description provided for @tutCustomerMail1Action.
@@ -13833,7 +13833,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutQuotationSummary.
   ///
   /// In en, this message translates to:
-  /// **'Hat: salesperson. Quote 8 carts to the new customer, get an answer from production on timing and send it.'**
+  /// **'Hat: salesperson. Quote 8 conveyors to the new customer, get an answer from production on timing and send it.'**
   String get tutQuotationSummary;
 
   /// No description provided for @tutQuotationNeedsTitle.
@@ -13947,7 +13947,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutChangeSummary.
   ///
   /// In en, this message translates to:
-  /// **'Hats: sales and production. Revise the quotation, turn it into an order, build the carts and a few extra for stock.'**
+  /// **'Hats: sales and production. Revise the quotation, turn it into an order, build the conveyors and a few extra for stock.'**
   String get tutChangeSummary;
 
   /// No description provided for @tutChangeNeedsTitle.
@@ -13971,7 +13971,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutChangeMail3Body.
   ///
   /// In en, this message translates to:
-  /// **'Maya is happy with the quotation but wants 10 carts instead of 8. Use the button to play her e-mail; it joins the same ticket.'**
+  /// **'Maya is happy with the quotation but wants 10 conveyors instead of 8. Use the button to play her e-mail; it joins the same ticket.'**
   String get tutChangeMail3Body;
 
   /// No description provided for @tutChangeMail3Action.
@@ -14079,7 +14079,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutChangeOpenOrderBody.
   ///
   /// In en, this message translates to:
-  /// **'If the order did not open by itself, open it from Orders. It has the 10 carts, the price and the customer reference. Orders go from draft to sent to confirmed.'**
+  /// **'If the order did not open by itself, open it from Orders. It has the 10 conveyors, the price and the customer reference. Orders go from draft to sent to confirmed.'**
   String get tutChangeOpenOrderBody;
 
   /// No description provided for @tutChangeSendOrderTitle.
@@ -14121,7 +14121,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutChangeReleaseBody.
   ///
   /// In en, this message translates to:
-  /// **'Put on the production hat. Open Production > To release: the confirmed order line with 10 carts is waiting. Press Release to production to create the production order for exactly that line.'**
+  /// **'Put on the production hat. Open Production > To release: the confirmed order line with 10 conveyors is waiting. Press Release to production to create the production order for exactly that line.'**
   String get tutChangeReleaseBody;
 
   /// No description provided for @tutChangeStartTitle.
@@ -14139,13 +14139,13 @@ abstract class AppLocalizations {
   /// No description provided for @tutChangeWarehouseTitle.
   ///
   /// In en, this message translates to:
-  /// **'A place for the carts'**
+  /// **'A place for the conveyors'**
   String get tutChangeWarehouseTitle;
 
   /// No description provided for @tutChangeWarehouseBody.
   ///
   /// In en, this message translates to:
-  /// **'The finished carts need a location to go into, and there is no warehouse yet (chapter 3 creates it). Open Stock, press Warehouses and create the warehouse MAIN with the name Main warehouse, then go back to the production order. If saving is refused because the code MAIN is taken, an inactive warehouse holds it: switch it (and its location) back on in Stock > Warehouses, or give it another code with its edit button, then press Next.'**
+  /// **'The finished conveyors need a location to go into, and there is no warehouse yet (chapter 3 creates it). Open Stock, press Warehouses and create the warehouse MAIN with the name Main warehouse, then go back to the production order. If saving is refused because the code MAIN is taken, an inactive warehouse holds it: switch it (and its location) back on in Stock > Warehouses, or give it another code with its edit button, then press Next.'**
   String get tutChangeWarehouseBody;
 
   /// No description provided for @tutChangeWarehouseHint.
@@ -14163,7 +14163,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutChangeCompleteBody.
   ///
   /// In en, this message translates to:
-  /// **'Press Complete, choose the warehouse location MAIN in Put into and confirm the 10 carts. The components are consumed and the carts go to the order.'**
+  /// **'Press Complete, choose the warehouse location MAIN in Put into and confirm the 10 conveyors. The components are consumed and the conveyors go to the order.'**
   String get tutChangeCompleteBody;
 
   /// No description provided for @tutChangeReadyTitle.
@@ -14187,7 +14187,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutChangeStockBody.
   ///
   /// In en, this message translates to:
-  /// **'Production is often ahead of orders. Open Production, press Build for stock and release 4 more carts of CONV-BELT-1M. Without an order they simply land in stock when completed.'**
+  /// **'Production is often ahead of orders. Open Production, press Build for stock and release 4 more conveyors of CONV-BELT-1M. Without an order they simply land in stock when completed.'**
   String get tutChangeStockBody;
 
   /// No description provided for @tutChangeStockHint.
@@ -14241,7 +14241,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutHelpdeskNoteBody.
   ///
   /// In en, this message translates to:
-  /// **'Open the ticket, switch to Internal note and write what a colleague needs to know, for example that the customer wants a quotation for 8 carts. Press Add note. The customer never sees a note.'**
+  /// **'Open the ticket, switch to Internal note and write what a colleague needs to know, for example that the customer wants a quotation for 8 conveyors. Press Add note. The customer never sees a note.'**
   String get tutHelpdeskNoteBody;
 
   /// No description provided for @tutHelpdeskNoteHint.
@@ -19521,7 +19521,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutAttributesNeedsBody.
   ///
   /// In en, this message translates to:
-  /// **'This chapter records technical properties on PLC-BASE (Controller). Create PLC-BASE in chapter 1 or use Assist to create it now.'**
+  /// **'This chapter records technical properties on PLC-BASE (Standard PLC). Create PLC-BASE in Chapter 2 (PLCs, parallel licensing & network) or use Assist to create it now.'**
   String get tutAttributesNeedsBody;
 
   /// No description provided for @tutAttributesIntroTitle.
@@ -20651,6 +20651,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Create a Number property with key licensed_outputs_tier, label Licensed outputs tier, scope Product.'**
   String get tutAttributesLicensedOutputsBody;
+
+  /// No description provided for @tutConveyorsSvgWithMotor.
+  ///
+  /// In en, this message translates to:
+  /// **'With motor'**
+  String get tutConveyorsSvgWithMotor;
+
+  /// No description provided for @tutConveyorsSvgThreePhase.
+  ///
+  /// In en, this message translates to:
+  /// **'3-Phase + VFD'**
+  String get tutConveyorsSvgThreePhase;
+
+  /// No description provided for @tutConveyorsSvgOnePhase.
+  ///
+  /// In en, this message translates to:
+  /// **'1-Phase'**
+  String get tutConveyorsSvgOnePhase;
+
+  /// No description provided for @tutConveyorsSvgWithoutMotor.
+  ///
+  /// In en, this message translates to:
+  /// **'without motor'**
+  String get tutConveyorsSvgWithoutMotor;
 }
 
 class _AppLocalizationsDelegate

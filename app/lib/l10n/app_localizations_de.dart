@@ -7219,11 +7219,12 @@ class AppLocalizationsDe extends AppLocalizations {
       'Hut: Einkäufer. Legen Sie zwei Lieferanten an und geben Sie ihnen eine Preisliste für Ihre Komponenten.';
 
   @override
-  String get tutSuppliersNeedsTitle => 'Zuerst Kapitel 1';
+  String get tutSuppliersNeedsTitle =>
+      'Zuerst Kapitel 1 (Förderbänder & Motoren)';
 
   @override
   String get tutSuppliersNeedsBody =>
-      'Dieses Kapitel braucht die vier Produkte aus Kapitel 1 (MOT-3P-055, VFD-3P-055, PLC-BASE und CONV-BELT-1M) und hat sie nicht gefunden. Gehen Sie zurück zur Kapitelübersicht und schließen Sie zuerst Kapitel 1 ab.';
+      'Dieses Kapitel benötigt die vier Kernprodukte aus Kapitel 1 (Förderbänder & Motoren: MOT-3P-055, VFD-3P-055, CONV-BELT-1M) und Kapitel 2 (SPS, Parallellizenzen & Netzwerk: PLC-BASE) und konnte sie nicht finden. Kehren Sie zur Übersicht zurück und schließen Sie diese Kapitel zuerst ab.';
 
   @override
   String get tutSuppliersOpenTitle => 'Setzen Sie den Einkäufer-Hut auf';
@@ -7265,7 +7266,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'Wählen Sie das Produkt über das Suchfeld im Dialog; tippen Sie MOT-3P-055.';
 
   @override
-  String get tutSuppliersPriceFrameTitle => 'Ein Preis für den Rahmen';
+  String get tutSuppliersPriceFrameTitle => 'Ein Preis für den VFD';
 
   @override
   String get tutSuppliersPriceFrameBody =>
@@ -7307,11 +7308,12 @@ class AppLocalizationsDe extends AppLocalizations {
       'Hüte: Einkäufer und Wareneingang. Bestellen Sie die Komponenten, senden Sie die Bestellung und nehmen Sie die Ware in zwei Lieferungen an.';
 
   @override
-  String get tutBuyingNeedsTitle => 'Zuerst Kapitel 1 und 2';
+  String get tutBuyingNeedsTitle =>
+      'Zuerst Kapitel 1 (Förderbänder & Motoren) und 2';
 
   @override
   String get tutBuyingNeedsBody =>
-      'Dieses Kapitel braucht die Produkte aus Kapitel 1 und den Lieferanten Voltaic Drives Ltd mit Preisliste aus Kapitel 2 und hat die Produkte nicht gefunden. Schließen Sie diese Kapitel zuerst ab.';
+      'Dieses Kapitel braucht die Produkte aus Kapitel 1 (Förderbänder & Motoren) und den Lieferanten Voltaic Drives Ltd mit Preisliste aus Kapitel 2 und hat die Produkte nicht gefunden. Schließen Sie diese Kapitel zuerst ab.';
 
   @override
   String get tutBuyingOpenTitle => 'Die Bestellliste';
@@ -7393,7 +7395,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get tutBuyingStockBody =>
-      'Öffnen Sie Bestand. Die 30 Motoren, Rahmen und Steuerungen liegen im Lager MAIN. Jeder Wareneingang hat eine Lagerbewegung erzeugt, die Menge ist also immer nachvollziehbar.';
+      'Öffnen Sie Bestand. Die 30 Motoren, VFDs und SPS liegen im Lager MAIN. Jeder Wareneingang hat eine Lagerbewegung erzeugt, die Menge ist also immer nachvollziehbar.';
 
   @override
   String get tutBuyingDoneTitle => 'Was Sie gelernt haben';
@@ -7492,21 +7494,22 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get tutInvoicesDoneBody =>
-      'Der Drei-Wege-Abgleich vergleicht Bestellung, Wareneingang und Rechnung, bevor Geld fließt. Stimmige Rechnungen werden genehmigt und bezahlt, zweifelhafte beanstandet. Als Nächstes: die Karren selbst bauen.';
+      'Der Drei-Wege-Abgleich vergleicht Bestellung, Wareneingang und Rechnung, bevor Geld fließt. Stimmige Rechnungen werden genehmigt und bezahlt, zweifelhafte beanstandet. Als Nächstes: die Förderbänder selbst bauen.';
 
   @override
   String get tutManufacturingTitle => 'Fertigung';
 
   @override
   String get tutManufacturingSummary =>
-      'Hüte: Fertigungsleiter und Werker. Richten Sie eine Abteilung ein und bauen Sie fünf Karren aus den Komponenten.';
+      'Hüte: Fertigungsleiter und Werker. Richten Sie eine Abteilung ein und bauen Sie fünf Förderbänder aus den Komponenten.';
 
   @override
-  String get tutManufacturingNeedsTitle => 'Zuerst Kapitel 1 bis 3';
+  String get tutManufacturingNeedsTitle =>
+      'Zuerst Kapitel 1 (Förderbänder & Motoren) bis 3';
 
   @override
   String get tutManufacturingNeedsBody =>
-      'Dieses Kapitel braucht den Karren mit Stückliste (Kapitel 1) und Komponenten auf Lager (Kapitel 3) und hat die Produkte nicht gefunden. Schließen Sie diese Kapitel zuerst ab.';
+      'Dieses Kapitel braucht den Förderbänder mit Stückliste (Kapitel 1 (Förderbänder & Motoren)) und Komponenten auf Lager (Kapitel 3) und hat die Produkte nicht gefunden. Schließen Sie diese Kapitel zuerst ab.';
 
   @override
   String get tutManufacturingOpenDivisionsTitle => 'Abteilungen';
@@ -7560,11 +7563,12 @@ class AppLocalizationsDe extends AppLocalizations {
       'Setzen Sie den Werker-Hut auf und drücken Sie Starten. Der Auftrag geht von freigegeben auf in Arbeit.';
 
   @override
-  String get tutManufacturingWarehouseTitle => 'Ein Platz für die Karren';
+  String get tutManufacturingWarehouseTitle =>
+      'Ein Lagerplatz für die Förderbänder';
 
   @override
   String get tutManufacturingWarehouseBody =>
-      'Die fertigen Karren brauchen einen Lagerplatz, und es gibt noch kein Lager (Kapitel 3 legt es an). Öffnen Sie Bestand, drücken Sie Lager und Fahrzeuge und legen Sie das Lager MAIN mit dem Namen Hauptlager an; gehen Sie danach zurück zum Fertigungsauftrag. Wird das Speichern abgelehnt, weil der Code MAIN schon vergeben ist, gehört er einem inaktiven Lager: Schalten Sie es (und seinen Lagerplatz) unter Bestand > Lager und Fahrzeuge wieder ein oder geben Sie ihm mit dem Bearbeiten-Knopf einen anderen Code, und drücken Sie dann Weiter.';
+      'Die fertigen Förderbänder brauchen einen Lagerplatz, und es gibt noch kein Lager (Kapitel 3 legt es an). Öffnen Sie Bestand, drücken Sie Lager und Fahrzeuge und legen Sie das Lager MAIN mit dem Namen Hauptlager an; gehen Sie danach zurück zum Fertigungsauftrag. Wird das Speichern abgelehnt, weil der Code MAIN schon vergeben ist, gehört er einem inaktiven Lager: Schalten Sie es (und seinen Lagerplatz) unter Bestand > Lager und Fahrzeuge wieder ein oder geben Sie ihm mit dem Bearbeiten-Knopf einen anderen Code, und drücken Sie dann Weiter.';
 
   @override
   String get tutManufacturingWarehouseHint =>
@@ -7575,7 +7579,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get tutManufacturingCompleteBody =>
-      'Drücken Sie Abschließen. Der Dialog zeigt die Ausbringungsmenge (5) und die verbrauchten Komponenten. Wählen Sie unter Einlagern in den Lagerplatz MAIN, damit die fertigen Karren einen Platz haben, und bestätigen Sie: Die Komponenten verlassen den Bestand und fünf fertige Karren kommen hinein.';
+      'Drücken Sie Abschließen. Der Dialog zeigt die Ausbringungsmenge (5) und die verbrauchten Komponenten. Wählen Sie unter Einlagern in den Lagerplatz MAIN, damit die fertigen Förderbänder einen Platz haben, und bestätigen Sie: Die Komponenten verlassen den Bestand und fünf fertige Förderbänder kommen hinein.';
 
   @override
   String get tutManufacturingCompleteHint =>
@@ -7586,7 +7590,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get tutManufacturingStockBody =>
-      'Öffnen Sie Bestand: CONV-BELT-1M hat jetzt 5 auf Lager und jede Komponente ist um 5 gesunken (je 25 übrig). Die Fertigung verbindet Einkauf und Verkauf.';
+      'Öffnen Sie Bestand: Von CONV-BELT-1M sind nun 5 auf Lager, die Stücklistenkomponenten (MOT-3P-055 und VFD-3P-055) sind um 5 gesunken (jeweils noch 25), und PLC-BASE bleibt bei 30. Die Produktion verbindet Einkauf und Verkauf.';
 
   @override
   String get tutManufacturingDoneTitle => 'Was Sie gelernt haben';
@@ -7600,14 +7604,14 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get tutPricesSummary =>
-      'Hut: Vertriebsleiter. Legen Sie eine Preiszone an und geben Sie dem Karren einen Preis in zwei Zonen.';
+      'Hut: Vertriebsleiter. Legen Sie eine Preiszone an und geben Sie dem Förderbänder einen Preis in zwei Zonen.';
 
   @override
-  String get tutPricesNeedsTitle => 'Zuerst Kapitel 1';
+  String get tutPricesNeedsTitle => 'Zuerst Kapitel 1 (Förderbänder & Motoren)';
 
   @override
   String get tutPricesNeedsBody =>
-      'Dieses Kapitel braucht den Karren aus Kapitel 1 und hat ihn nicht gefunden. Schließen Sie zuerst Kapitel 1 ab.';
+      'Dieses Kapitel braucht den Förderbänder aus Kapitel 1 (Förderbänder & Motoren) und hat ihn nicht gefunden. Schließen Sie zuerst Kapitel 1 (Förderbänder & Motoren) ab.';
 
   @override
   String get tutPricesOpenAdminTitle => 'Öffnen Sie die Verwaltung';
@@ -7628,7 +7632,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'Wählen Sie zuerst oben auf der Verwaltungsseite das Segment Preiszonen.';
 
   @override
-  String get tutPricesOpenCartTitle => 'Öffnen Sie den Karren';
+  String get tutPricesOpenCartTitle => 'Förderband öffnen';
 
   @override
   String get tutPricesOpenCartBody =>
@@ -7650,7 +7654,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get tutPricesPriceHomeBody =>
-      'Fügen Sie einen zweiten Preis für den Karren in einer bestehenden Zone hinzu, zum Beispiel Z1 mit 1200. Dasselbe Produkt kann nun je nach Zone des Kunden unterschiedlich kosten.';
+      'Fügen Sie einen zweiten Preis für den Förderbänder in einer bestehenden Zone hinzu, zum Beispiel Z1 mit 1200. Dasselbe Produkt kann nun je nach Zone des Kunden unterschiedlich kosten.';
 
   @override
   String get tutPricesDoneTitle => 'Was Sie gelernt haben';
@@ -7678,7 +7682,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get tutCustomerMail1Body =>
-      'Jemand Unbekanntes bittet um ein Angebot für Ihren Karren. Ein echtes Postfach würde die Nachricht selbst liefern; hier spielt die Schaltfläche unten den Kunden und übergibt eine fertige E-Mail (von Maya Okafor, example.test) an das Helpdesk, genau wie der Mail-Import.';
+      'Jemand Unbekanntes bittet um ein Angebot für Ihren Förderbänder. Ein echtes Postfach würde die Nachricht selbst liefern; hier spielt die Schaltfläche unten den Kunden und übergibt eine fertige E-Mail (von Maya Okafor, example.test) an das Helpdesk, genau wie der Mail-Import.';
 
   @override
   String get tutCustomerMail1Action => 'Kunden-E-Mail simulieren';
@@ -7755,7 +7759,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get tutQuotationSummary =>
-      'Hut: Vertriebsmitarbeiter. Bieten Sie dem neuen Kunden 8 Karren an, holen Sie die Zeitangabe der Fertigung ein und senden Sie das Angebot.';
+      'Hut: Vertriebsmitarbeiter. Bieten Sie dem neuen Kunden 8 Förderbänder an, holen Sie die Zeitangabe der Fertigung ein und senden Sie das Angebot.';
 
   @override
   String get tutQuotationNeedsTitle => 'Zuerst Kapitel 7';
@@ -7823,7 +7827,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get tutChangeSummary =>
-      'Hüte: Vertrieb und Fertigung. Überarbeiten Sie das Angebot, machen Sie einen Auftrag daraus, bauen Sie die Karren und ein paar zusätzliche für den Bestand.';
+      'Hüte: Vertrieb und Fertigung. Überarbeiten Sie das Angebot, machen Sie einen Auftrag daraus, bauen Sie die Förderbänder und ein paar zusätzliche für den Bestand.';
 
   @override
   String get tutChangeNeedsTitle => 'Zuerst Kapitel 8';
@@ -7837,7 +7841,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get tutChangeMail3Body =>
-      'Maya ist mit dem Angebot zufrieden, will aber 10 Karren statt 8. Spielen Sie ihre E-Mail mit der Schaltfläche ab; sie landet im selben Ticket.';
+      'Maya ist mit dem Angebot zufrieden, will aber 10 Förderbänder statt 8. Spielen Sie ihre E-Mail mit der Schaltfläche ab; sie landet im selben Ticket.';
 
   @override
   String get tutChangeMail3Action => 'Kunden-E-Mail simulieren';
@@ -7901,7 +7905,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get tutChangeOpenOrderBody =>
-      'Hat sich der Auftrag nicht von selbst geöffnet, öffnen Sie ihn unter Aufträge. Er enthält die 10 Karren, den Preis und die Kundenreferenz. Aufträge gehen von Entwurf über gesendet zu bestätigt.';
+      'Hat sich der Auftrag nicht von selbst geöffnet, öffnen Sie ihn unter Aufträge. Er enthält die 10 Förderbänder, den Preis und die Kundenreferenz. Aufträge gehen von Entwurf über gesendet zu bestätigt.';
 
   @override
   String get tutChangeSendOrderTitle => 'Senden Sie die Auftragsbestätigung';
@@ -7926,7 +7930,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get tutChangeReleaseBody =>
-      'Setzen Sie den Fertigungs-Hut auf. Öffnen Sie Fertigung > Freizugeben: Die bestätigte Auftragsposition mit 10 Karren wartet. Drücken Sie Für die Produktion freigeben, um den Fertigungsauftrag genau für diese Position zu erzeugen.';
+      'Setzen Sie den Fertigungs-Hut auf. Öffnen Sie Fertigung > Freizugeben: Die bestätigte Auftragsposition mit 10 Förderbänder wartet. Drücken Sie Für die Produktion freigeben, um den Fertigungsauftrag genau für diese Position zu erzeugen.';
 
   @override
   String get tutChangeStartTitle => 'Starten Sie die Fertigung';
@@ -7936,11 +7940,11 @@ class AppLocalizationsDe extends AppLocalizations {
       'Drücken Sie Starten beim neuen Fertigungsauftrag.';
 
   @override
-  String get tutChangeWarehouseTitle => 'Ein Platz für die Karren';
+  String get tutChangeWarehouseTitle => 'Ein Lagerplatz für die Förderbänder';
 
   @override
   String get tutChangeWarehouseBody =>
-      'Die fertigen Karren brauchen einen Lagerplatz, und es gibt noch kein Lager (Kapitel 3 legt es an). Öffnen Sie Bestand, drücken Sie Lager und Fahrzeuge und legen Sie das Lager MAIN mit dem Namen Hauptlager an; gehen Sie danach zurück zum Fertigungsauftrag. Wird das Speichern abgelehnt, weil der Code MAIN schon vergeben ist, gehört er einem inaktiven Lager: Schalten Sie es (und seinen Lagerplatz) unter Bestand > Lager und Fahrzeuge wieder ein oder geben Sie ihm mit dem Bearbeiten-Knopf einen anderen Code, und drücken Sie dann Weiter.';
+      'Die fertigen Förderbänder brauchen einen Lagerplatz, und es gibt noch kein Lager (Kapitel 3 legt es an). Öffnen Sie Bestand, drücken Sie Lager und Fahrzeuge und legen Sie das Lager MAIN mit dem Namen Hauptlager an; gehen Sie danach zurück zum Fertigungsauftrag. Wird das Speichern abgelehnt, weil der Code MAIN schon vergeben ist, gehört er einem inaktiven Lager: Schalten Sie es (und seinen Lagerplatz) unter Bestand > Lager und Fahrzeuge wieder ein oder geben Sie ihm mit dem Bearbeiten-Knopf einen anderen Code, und drücken Sie dann Weiter.';
 
   @override
   String get tutChangeWarehouseHint =>
@@ -7951,7 +7955,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get tutChangeCompleteBody =>
-      'Drücken Sie Abschließen, wählen Sie unter Einlagern in den Lagerplatz MAIN und bestätigen Sie die 10 Karren. Die Komponenten werden verbraucht und die Karren gehen an den Auftrag.';
+      'Drücken Sie Abschließen, wählen Sie unter Einlagern in den Lagerplatz MAIN und bestätigen Sie die 10 Förderbänder. Die Komponenten werden verbraucht und die Förderbänder gehen an den Auftrag.';
 
   @override
   String get tutChangeReadyTitle => 'Versandbereit';
@@ -7965,7 +7969,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get tutChangeStockBody =>
-      'Die Fertigung läuft oft den Aufträgen voraus. Öffnen Sie Fertigung, drücken Sie Auf Lager fertigen und geben Sie 4 weitere Karren CONV-BELT-1M frei. Ohne Auftrag landen sie nach Abschluss einfach im Bestand.';
+      'Die Fertigung läuft oft den Aufträgen voraus. Öffnen Sie Fertigung, drücken Sie Auf Lager fertigen und geben Sie 4 weitere Förderbänder CONV-BELT-1M frei. Ohne Auftrag landen sie nach Abschluss einfach im Bestand.';
 
   @override
   String get tutChangeStockHint =>
@@ -7997,7 +8001,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get tutHelpdeskNoteBody =>
-      'Öffnen Sie das Ticket, wechseln Sie zu Interne Notiz und schreiben Sie, was ein Kollege wissen muss, zum Beispiel dass der Kunde ein Angebot für 8 Karren möchte. Drücken Sie Notiz hinzufügen. Der Kunde sieht eine Notiz nie.';
+      'Öffnen Sie das Ticket, wechseln Sie zu Interne Notiz und schreiben Sie, was ein Kollege wissen muss, zum Beispiel dass der Kunde ein Angebot für 8 Förderbänder möchte. Drücken Sie Notiz hinzufügen. Der Kunde sieht eine Notiz nie.';
 
   @override
   String get tutHelpdeskNoteHint =>
@@ -11125,7 +11129,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get tutAttributesNeedsBody =>
-      'Dieses Kapitel erfasst technische Eigenschaften an PLC-BASE (Controller). Erstellen Sie PLC-BASE in Kapitel 1 oder nutzen Sie die Assistenz.';
+      'Dieses Kapitel erfasst technische Eigenschaften für PLC-BASE (Standard-SPS). Erstellen Sie PLC-BASE in Kapitel 2 (SPS, Parallellizenzen & Netzwerk) oder nutzen Sie die Hilfe, um sie jetzt anzulegen.';
 
   @override
   String get tutAttributesIntroTitle => 'Warum generische Produkteigenschaften';
@@ -11186,7 +11190,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get tutAttributesFillPropertiesBody =>
-      'Füllen Sie die Felder für die Schlüssel relay_count = 4, fet_count = 2, digital_inputs = 8 und analog_4_20ma_inputs = 2, rs485_ports = 2, i2c_bus = Ja, licensed_outputs_tier = 10 aus (falls ein angezeigtes Label abweicht, nutzen Sie das vorhandene Feld mit diesem Schlüssel), und klicken Sie auf Speichern.';
+      'Füllen Sie die Felder für die Schlüssel relay_count = 4, fet_count = 6, digital_inputs = 8 und analog_4_20ma_inputs = 2, rs485_ports = 2, i2c_bus = Ja, licensed_outputs_tier = 10 aus (falls ein angezeigtes Label abweicht, nutzen Sie das vorhandene Feld mit diesem Schlüssel), und klicken Sie auf Speichern.';
 
   @override
   String get tutAttributesFillPropertiesHint =>
@@ -11758,4 +11762,16 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get tutAttributesLicensedOutputsBody =>
       'Erstellen Sie eine Zahl-Eigenschaft mit Schlüssel licensed_outputs_tier, Bezeichnung Licensed outputs tier, Bereich Produkt.';
+
+  @override
+  String get tutConveyorsSvgWithMotor => 'Mit Motor';
+
+  @override
+  String get tutConveyorsSvgThreePhase => '3-Phasen + VFD';
+
+  @override
+  String get tutConveyorsSvgOnePhase => '1-Phase';
+
+  @override
+  String get tutConveyorsSvgWithoutMotor => 'ohne Motor';
 }

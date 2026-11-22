@@ -487,7 +487,7 @@ async fn unknown_senders_become_leads_once_linked_to_a_customer(db: PgPool) {
         Method::POST,
         "/api/v1/customers",
         Some(json!({ "code": "C0100", "name": "Bombas Juan SL", "email": "juan@gmail.com", "language": "es", "country_code": "ES",
-                     "price_zone_id": "00000000-0000-7000-8000-000000000204" })),
+                     "price_zone_id": "00000000-0000-7000-8000-000000000203" })),
     )
     .await;
     let mut input = t["ticket"].clone();

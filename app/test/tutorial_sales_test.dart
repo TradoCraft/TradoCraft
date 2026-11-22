@@ -12,7 +12,6 @@ import 'package:tradocraft_app/app/environments.dart';
 import 'package:tradocraft_app/features/field/offline/kv_store.dart';
 import 'package:tradocraft_app/features/tutorial/api_events.dart';
 import 'package:tradocraft_app/features/tutorial/controller.dart';
-import 'package:tradocraft_app/features/tutorial/missions.dart';
 import 'package:tradocraft_app/features/tutorial/missions_sales.dart';
 import 'package:tradocraft_app/features/tutorial/simulated_mail.dart';
 

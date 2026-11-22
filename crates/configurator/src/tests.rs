@@ -641,9 +641,10 @@ fn group_overrides_and_sections() {
 
 #[test]
 fn plc_conveyor_line_licensing_and_buses() {
-    let raw: J =
-        serde_json::from_str(include_str!("../../../seed/configurators/plc_conveyor_line.json"))
-            .unwrap();
+    let raw: J = serde_json::from_str(include_str!(
+        "../../../seed/configurators/plc_conveyor_line.json"
+    ))
+    .unwrap();
     let d: Definition = serde_json::from_value(raw["definition"].clone()).unwrap();
     assert!(validate(&d).is_empty(), "{:?}", validate(&d));
     let c = compile(&d).unwrap();
@@ -713,6 +714,9 @@ fn plc_conveyor_line_licensing_and_buses() {
         ("MOD-I2C-SWIPE", dec!(2)),
         ("SENS-I2C-TEMP", dec!(2)),
     ] {
-        assert!(codes.contains(&expected), "missing {expected:?} in {codes:?}");
+        assert!(
+            codes.contains(&expected),
+            "missing {expected:?} in {codes:?}"
+        );
     }
 }

@@ -813,7 +813,10 @@ class TutorialController extends Notifier<TutorialState> {
             'relays',
             'fets',
             'digitalInputs',
-            'polarized24v',
+            'analog420',
+            'rs485Ports',
+            'i2cBus',
+            'licensedOutputs',
           }.contains(s.id)) {
         ref.invalidate(attributeDefinitionsProvider);
       }

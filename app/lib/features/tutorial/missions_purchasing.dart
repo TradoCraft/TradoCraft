@@ -36,8 +36,14 @@ Map? _byField(Object? list, String field, String value) {
   return null;
 }
 
-Map<String, String> _captureProducts(Object? page) {
-  final items = page is Map ? page['items'] : null;
+Map<String, String> _captureProducts(Object? response) {
+  final items = <Object?>[
+    if (response is Map && response['items'] is List)
+      ...(response['items'] as List)
+    else if (response is List)
+      for (final page in response)
+        if (page is Map && page['items'] is List) ...(page['items'] as List),
+  ];
   final out = <String, String>{};
   for (final (code, key, expectedType) in [
     ('MOT-3P-055', 'motorId', 'purchased'),
@@ -58,11 +64,19 @@ Map<String, String> _captureProducts(Object? page) {
   return out;
 }
 
-/// A probe that finds the four core story products and captures their ids, so chapters can be
-/// started on their own (the step it sits on is skipped when the products exist).
+List<String> _expandProducts(Object? _, MissionContext _) => const [
+  '/api/v1/products?q=MOT-3P-055&limit=20',
+  '/api/v1/products?q=VFD-3P-055&limit=20',
+  '/api/v1/products?q=PLC-BASE&limit=20',
+  '/api/v1/products?q=CONV-BELT-1M&limit=20',
+];
+
+/// A probe that finds the four core story products by exact code and captures their ids, so
+/// chapters can be started on their own regardless of catalog size.
 const productsProbe = Probe(
   '/api/v1/products',
-  query: {'limit': 100},
+  query: {'q': 'MOT-3P-055', 'limit': 20},
+  expand: _expandProducts,
   done: _allProducts,
   capture: _productsCapture,
 );

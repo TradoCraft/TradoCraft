@@ -111,6 +111,8 @@ test('the whole tutorial, chapter by chapter', async ({ page, request }) => {
   });
 
   await test.step('chapter 2: PLCs, parallel licensing & network', async () => {
+    await expectStep(page, 'plc', 'open');
+    await overviewTab(page);
     await expectStep(page, 'plc', 'base');
     for (const [step, code, name, type] of [
       ['base', 'PLC-BASE', 'Standard PLC (10 Outputs)', 'purchased'],
@@ -130,6 +132,7 @@ test('the whole tutorial, chapter by chapter', async ({ page, request }) => {
       await page.getByRole('button', { name: 'Save' }).click();
     }
     await expectStep(page, 'plc', 'done');
+    await next(page);
     await startNextChapter(page);
   });
 
@@ -147,6 +150,7 @@ test('the whole tutorial, chapter by chapter', async ({ page, request }) => {
       await page.getByRole('button', { name: 'Save' }).click();
     }
     await expectStep(page, 'displays', 'done');
+    await next(page);
     await startNextChapter(page);
   });
 
@@ -165,6 +169,7 @@ test('the whole tutorial, chapter by chapter', async ({ page, request }) => {
       await page.getByRole('button', { name: 'Save' }).click();
     }
     await expectStep(page, 'sensors', 'done');
+    await next(page);
     await startNextChapter(page);
   });
 
@@ -687,7 +692,9 @@ test('chapter 11 (standalone): custom product properties', async ({ page, reques
     await page.getByRole('button', { name: 'Account' }).click();
     await page.getByRole('menuitem', { name: 'Tutorial', exact: true }).click();
     for (let i = 0; i < 14; i++) {
-      await page.getByRole('button', { name: 'Skip chapter' }).first().click();
+      const skip = page.getByRole('button', { name: 'Skip chapter' }).first();
+      await skip.scrollIntoViewIfNeeded();
+      await skip.click();
     }
     const start = page.getByRole('button', { name: 'Start', exact: true }).last();
     await start.scrollIntoViewIfNeeded();

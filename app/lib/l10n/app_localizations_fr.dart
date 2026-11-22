@@ -7212,11 +7212,12 @@ class AppLocalizationsFr extends AppLocalizations {
       'Casquette : acheteur. Créez deux fournisseurs et donnez-leur un tarif pour vos composants.';
 
   @override
-  String get tutSuppliersNeedsTitle => 'D\'abord le chapitre 1';
+  String get tutSuppliersNeedsTitle =>
+      'D\'abord le Chapitre 1 (Convoyeurs & moteurs)';
 
   @override
   String get tutSuppliersNeedsBody =>
-      'Ce chapitre a besoin des quatre produits du chapitre 1 (MOT-3P-055, VFD-3P-055, PLC-BASE et CONV-BELT-1M) et ne les a pas trouvés. Retournez à la carte des chapitres et terminez d\'abord le chapitre 1.';
+      'Ce chapitre nécessite les quatre produits principaux du Chapitre 1 (Convoyeurs & moteurs : MOT-3P-055, VFD-3P-055, CONV-BELT-1M) et du Chapitre 2 (Automates PLC, licences parallèles & réseau : PLC-BASE), et ne les a pas trouvés. Revenez à la carte et terminez ces chapitres d’abord.';
 
   @override
   String get tutSuppliersOpenTitle => 'Mettez la casquette d\'acheteur';
@@ -7258,7 +7259,7 @@ class AppLocalizationsFr extends AppLocalizations {
       'Choisissez le produit avec la zone de recherche du dialogue ; tapez MOT-3P-055.';
 
   @override
-  String get tutSuppliersPriceFrameTitle => 'Un prix pour le châssis';
+  String get tutSuppliersPriceFrameTitle => 'Un prix pour le VFD';
 
   @override
   String get tutSuppliersPriceFrameBody =>
@@ -7304,7 +7305,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get tutBuyingNeedsBody =>
-      'Ce chapitre a besoin des produits du chapitre 1 et du fournisseur Voltaic Drives Ltd avec son tarif du chapitre 2, et n\'a pas trouvé les produits. Terminez d\'abord ces chapitres.';
+      'Ce chapitre a besoin des produits du Chapitre 1 (Convoyeurs & moteurs) et du fournisseur Voltaic Drives Ltd avec son tarif du chapitre 2, et n\'a pas trouvé les produits. Terminez d\'abord ces chapitres.';
 
   @override
   String get tutBuyingOpenTitle => 'La liste des commandes';
@@ -7386,7 +7387,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get tutBuyingStockBody =>
-      'Ouvrez Stock. Les 30 moteurs, châssis et contrôleurs sont disponibles dans l\'entrepôt MAIN. Chaque réception a créé un mouvement de stock : la quantité reste toujours traçable.';
+      'Ouvrez Stock. Les 30 moteurs, VFD et automates PLC sont disponibles dans l\'entrepôt MAIN. Chaque réception a créé un mouvement de stock : la quantité reste toujours traçable.';
 
   @override
   String get tutBuyingDoneTitle => 'Ce que vous avez appris';
@@ -7485,21 +7486,21 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get tutInvoicesDoneBody =>
-      'Le rapprochement à trois compare commande, réception et facture avant tout paiement. Les factures conformes sont approuvées et payées, les douteuses contestées. Ensuite : fabriquer les chariots.';
+      'Le rapprochement à trois compare commande, réception et facture avant tout paiement. Les factures conformes sont approuvées et payées, les douteuses contestées. Ensuite : fabriquer les convoyeurs.';
 
   @override
   String get tutManufacturingTitle => 'Fabrication';
 
   @override
   String get tutManufacturingSummary =>
-      'Casquettes : responsable de production et opérateur. Créez une division puis fabriquez cinq chariots avec les composants.';
+      'Casquettes : responsable de production et opérateur. Créez une division puis fabriquez cinq convoyeurs avec les composants.';
 
   @override
   String get tutManufacturingNeedsTitle => 'D\'abord les chapitres 1 à 3';
 
   @override
   String get tutManufacturingNeedsBody =>
-      'Ce chapitre a besoin du chariot avec sa nomenclature (chapitre 1) et de composants en stock (chapitre 3), et n\'a pas trouvé les produits. Terminez d\'abord ces chapitres.';
+      'Ce chapitre a besoin du convoyeur avec sa nomenclature (Chapitre 1 (Convoyeurs & moteurs)) et de composants en stock (chapitre 3), et n\'a pas trouvé les produits. Terminez d\'abord ces chapitres.';
 
   @override
   String get tutManufacturingOpenDivisionsTitle => 'Divisions';
@@ -7552,11 +7553,12 @@ class AppLocalizationsFr extends AppLocalizations {
       'Mettez la casquette d\'opérateur et appuyez sur Démarrer. L\'ordre passe de lancé à en cours.';
 
   @override
-  String get tutManufacturingWarehouseTitle => 'Une place pour les chariots';
+  String get tutManufacturingWarehouseTitle =>
+      'Un emplacement pour les convoyeurs';
 
   @override
   String get tutManufacturingWarehouseBody =>
-      'Les chariots finis ont besoin d\'un emplacement où aller, et il n\'y a pas encore d\'entrepôt (le chapitre 3 le crée). Ouvrez Stock, appuyez sur Entrepôts et créez l\'entrepôt MAIN avec le nom Entrepôt principal, puis retournez à l\'ordre de production. Si l\'enregistrement est refusé parce que le code MAIN est déjà pris, un entrepôt inactif le détient : réactivez-le (ainsi que son emplacement) dans Stock > Entrepôts, ou donnez-lui un autre code avec son bouton de modification, puis appuyez sur Suivant.';
+      'Les convoyeurs finis ont besoin d\'un emplacement où aller, et il n\'y a pas encore d\'entrepôt (le chapitre 3 le crée). Ouvrez Stock, appuyez sur Entrepôts et créez l\'entrepôt MAIN avec le nom Entrepôt principal, puis retournez à l\'ordre de production. Si l\'enregistrement est refusé parce que le code MAIN est déjà pris, un entrepôt inactif le détient : réactivez-le (ainsi que son emplacement) dans Stock > Entrepôts, ou donnez-lui un autre code avec son bouton de modification, puis appuyez sur Suivant.';
 
   @override
   String get tutManufacturingWarehouseHint =>
@@ -7567,7 +7569,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get tutManufacturingCompleteBody =>
-      'Appuyez sur Terminer. Le dialogue montre la quantité produite (5) et les composants consommés. Choisissez l\'emplacement MAIN de l\'entrepôt sous Ranger dans, pour que les chariots finis aient une place, et confirmez : les composants sortent du stock et cinq chariots finis y entrent.';
+      'Appuyez sur Terminer. Le dialogue montre la quantité produite (5) et les composants consommés. Choisissez l\'emplacement MAIN de l\'entrepôt sous Ranger dans, pour que les convoyeurs finis aient une place, et confirmez : les composants sortent du stock et cinq convoyeurs finis y entrent.';
 
   @override
   String get tutManufacturingCompleteHint =>
@@ -7578,7 +7580,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get tutManufacturingStockBody =>
-      'Ouvrez Stock : CONV-BELT-1M en a maintenant 5 et chaque composant a baissé de 5 (25 restants de chacun). La production relie les achats à la vente.';
+      'Ouvrez Stock : CONV-BELT-1M en compte désormais 5 en stock, ses composants de nomenclature (MOT-3P-055 et VFD-3P-055) ont diminué de 5 (il en reste 25 de chaque), et PLC-BASE reste à 30. La production relie les achats aux ventes.';
 
   @override
   String get tutManufacturingDoneTitle => 'Ce que vous avez appris';
@@ -7592,14 +7594,15 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get tutPricesSummary =>
-      'Casquette : responsable des ventes. Créez une zone de prix et donnez au chariot un prix dans deux zones.';
+      'Casquette : responsable des ventes. Créez une zone de prix et donnez au convoyeur un prix dans deux zones.';
 
   @override
-  String get tutPricesNeedsTitle => 'D\'abord le chapitre 1';
+  String get tutPricesNeedsTitle =>
+      'D\'abord le Chapitre 1 (Convoyeurs & moteurs)';
 
   @override
   String get tutPricesNeedsBody =>
-      'Ce chapitre a besoin du chariot du chapitre 1 et ne l\'a pas trouvé. Terminez d\'abord le chapitre 1.';
+      'Ce chapitre a besoin du convoyeur du Chapitre 1 (Convoyeurs & moteurs) et ne l\'a pas trouvé. Terminez d\'abord le Chapitre 1 (Convoyeurs & moteurs).';
 
   @override
   String get tutPricesOpenAdminTitle => 'Ouvrez l\'administration';
@@ -7620,7 +7623,7 @@ class AppLocalizationsFr extends AppLocalizations {
       'Choisissez d\'abord le segment Zones de prix en haut de la page Administration.';
 
   @override
-  String get tutPricesOpenCartTitle => 'Ouvrez le chariot';
+  String get tutPricesOpenCartTitle => 'Ouvrir le convoyeur';
 
   @override
   String get tutPricesOpenCartBody =>
@@ -7642,7 +7645,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get tutPricesPriceHomeBody =>
-      'Ajoutez un second prix pour le chariot dans l\'une des zones existantes, par exemple Z1 à 1200. Le même produit peut maintenant coûter différemment selon la zone du client.';
+      'Ajoutez un second prix pour le convoyeur dans l\'une des zones existantes, par exemple Z1 à 1200. Le même produit peut maintenant coûter différemment selon la zone du client.';
 
   @override
   String get tutPricesDoneTitle => 'Ce que vous avez appris';
@@ -7670,7 +7673,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get tutCustomerMail1Body =>
-      'Quelqu\'un que vous ne connaissez pas demande un devis pour votre chariot. Une vraie boîte aux lettres livrerait le message elle-même ; ici le bouton ci-dessous joue le client et remet un e-mail tout prêt (de Maya Okafor, example.test) au helpdesk, exactement comme l\'importateur de courrier.';
+      'Quelqu\'un que vous ne connaissez pas demande un devis pour votre convoyeur. Une vraie boîte aux lettres livrerait le message elle-même ; ici le bouton ci-dessous joue le client et remet un e-mail tout prêt (de Maya Okafor, example.test) au helpdesk, exactement comme l\'importateur de courrier.';
 
   @override
   String get tutCustomerMail1Action => 'Simuler l\'e-mail du client';
@@ -7747,7 +7750,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get tutQuotationSummary =>
-      'Casquette : commercial. Proposez 8 chariots au nouveau client, obtenez l\'avis de la production sur le délai et envoyez.';
+      'Casquette : commercial. Proposez 8 convoyeurs au nouveau client, obtenez l\'avis de la production sur le délai et envoyez.';
 
   @override
   String get tutQuotationNeedsTitle => 'D\'abord le chapitre 7';
@@ -7815,7 +7818,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get tutChangeSummary =>
-      'Casquettes : ventes et production. Révisez le devis, transformez-le en commande, fabriquez les chariots et quelques-uns de plus pour le stock.';
+      'Casquettes : ventes et production. Révisez le devis, transformez-le en commande, fabriquez les convoyeurs et quelques-uns de plus pour le stock.';
 
   @override
   String get tutChangeNeedsTitle => 'D\'abord le chapitre 8';
@@ -7829,7 +7832,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get tutChangeMail3Body =>
-      'Maya est satisfaite du devis mais veut 10 chariots au lieu de 8. Utilisez le bouton pour jouer son e-mail ; il rejoint le même ticket.';
+      'Maya est satisfaite du devis mais veut 10 convoyeurs au lieu de 8. Utilisez le bouton pour jouer son e-mail ; il rejoint le même ticket.';
 
   @override
   String get tutChangeMail3Action => 'Simuler l\'e-mail du client';
@@ -7893,7 +7896,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get tutChangeOpenOrderBody =>
-      'Si la commande ne s\'est pas ouverte seule, ouvrez-la depuis Commandes. Elle contient les 10 chariots, le prix et la référence client. Les commandes passent de brouillon à envoyée puis confirmée.';
+      'Si la commande ne s\'est pas ouverte seule, ouvrez-la depuis Commandes. Elle contient les 10 convoyeurs, le prix et la référence client. Les commandes passent de brouillon à envoyée puis confirmée.';
 
   @override
   String get tutChangeSendOrderTitle => 'Envoyez la confirmation de commande';
@@ -7918,7 +7921,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get tutChangeReleaseBody =>
-      'Mettez la casquette de production. Ouvrez Production > À lancer : la ligne de commande confirmée avec 10 chariots attend. Appuyez sur Lancer en production pour créer l\'ordre de production de cette ligne.';
+      'Mettez la casquette de production. Ouvrez Production > À lancer : la ligne de commande confirmée avec 10 convoyeurs attend. Appuyez sur Lancer en production pour créer l\'ordre de production de cette ligne.';
 
   @override
   String get tutChangeStartTitle => 'Démarrez la production';
@@ -7928,11 +7931,11 @@ class AppLocalizationsFr extends AppLocalizations {
       'Appuyez sur Démarrer sur le nouvel ordre de production.';
 
   @override
-  String get tutChangeWarehouseTitle => 'Une place pour les chariots';
+  String get tutChangeWarehouseTitle => 'Un emplacement pour les convoyeurs';
 
   @override
   String get tutChangeWarehouseBody =>
-      'Les chariots finis ont besoin d\'un emplacement où aller, et il n\'y a pas encore d\'entrepôt (le chapitre 3 le crée). Ouvrez Stock, appuyez sur Entrepôts et créez l\'entrepôt MAIN avec le nom Entrepôt principal, puis retournez à l\'ordre de production. Si l\'enregistrement est refusé parce que le code MAIN est déjà pris, un entrepôt inactif le détient : réactivez-le (ainsi que son emplacement) dans Stock > Entrepôts, ou donnez-lui un autre code avec son bouton de modification, puis appuyez sur Suivant.';
+      'Les convoyeurs finis ont besoin d\'un emplacement où aller, et il n\'y a pas encore d\'entrepôt (le chapitre 3 le crée). Ouvrez Stock, appuyez sur Entrepôts et créez l\'entrepôt MAIN avec le nom Entrepôt principal, puis retournez à l\'ordre de production. Si l\'enregistrement est refusé parce que le code MAIN est déjà pris, un entrepôt inactif le détient : réactivez-le (ainsi que son emplacement) dans Stock > Entrepôts, ou donnez-lui un autre code avec son bouton de modification, puis appuyez sur Suivant.';
 
   @override
   String get tutChangeWarehouseHint =>
@@ -7943,7 +7946,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get tutChangeCompleteBody =>
-      'Appuyez sur Terminer, choisissez l\'emplacement MAIN de l\'entrepôt sous Ranger dans et confirmez les 10 chariots. Les composants sont consommés et les chariots vont à la commande.';
+      'Appuyez sur Terminer, choisissez l\'emplacement MAIN de l\'entrepôt sous Ranger dans et confirmez les 10 convoyeurs. Les composants sont consommés et les convoyeurs vont à la commande.';
 
   @override
   String get tutChangeReadyTitle => 'Prêt à expédier';
@@ -7957,7 +7960,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get tutChangeStockBody =>
-      'La production devance souvent les commandes. Ouvrez Production, appuyez sur Fabriquer pour le stock et lancez encore 4 chariots CONV-BELT-1M. Sans commande ils arrivent simplement en stock à la fin.';
+      'La production devance souvent les commandes. Ouvrez Production, appuyez sur Fabriquer pour le stock et lancez encore 4 convoyeurs CONV-BELT-1M. Sans commande ils arrivent simplement en stock à la fin.';
 
   @override
   String get tutChangeStockHint =>
@@ -7989,7 +7992,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get tutHelpdeskNoteBody =>
-      'Ouvrez le ticket, passez à Note interne et écrivez ce qu\'un collègue doit savoir, par exemple que le client veut un devis pour 8 chariots. Appuyez sur Ajouter une note. Le client ne voit jamais une note.';
+      'Ouvrez le ticket, passez à Note interne et écrivez ce qu\'un collègue doit savoir, par exemple que le client veut un devis pour 8 convoyeurs. Appuyez sur Ajouter une note. Le client ne voit jamais une note.';
 
   @override
   String get tutHelpdeskNoteHint =>
@@ -11111,7 +11114,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get tutAttributesNeedsBody =>
-      'Ce chapitre enregistre des propriétés techniques sur PLC-BASE (Controller). Créez PLC-BASE au chapitre 1 ou utilisez l\'assistant.';
+      'Ce chapitre enregistre des propriétés techniques sur PLC-BASE (PLC standard). Créez PLC-BASE au Chapitre 2 (Automates PLC, licences parallèles & réseau) ou utilisez Assistance pour le créer maintenant.';
 
   @override
   String get tutAttributesIntroTitle => 'Pourquoi des propriétés génériques';
@@ -11174,7 +11177,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get tutAttributesFillPropertiesBody =>
-      'Renseignez les champs pour les clés relay_count = 4, fet_count = 2, digital_inputs = 8 et analog_4_20ma_inputs = 2, rs485_ports = 2, i2c_bus = Oui, licensed_outputs_tier = 10 (si un libellé affiché diffère, utilisez le champ existant portant cette clé), puis cliquez sur Enregistrer.';
+      'Renseignez les champs pour les clés relay_count = 4, fet_count = 6, digital_inputs = 8 et analog_4_20ma_inputs = 2, rs485_ports = 2, i2c_bus = Oui, licensed_outputs_tier = 10 (si un libellé affiché diffère, utilisez le champ existant portant cette clé), puis cliquez sur Enregistrer.';
 
   @override
   String get tutAttributesFillPropertiesHint =>
@@ -11745,4 +11748,16 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get tutAttributesLicensedOutputsBody =>
       'Créez une propriété Nombre avec clé licensed_outputs_tier, libellé Licensed outputs tier, portée Produit.';
+
+  @override
+  String get tutConveyorsSvgWithMotor => 'Avec moteur';
+
+  @override
+  String get tutConveyorsSvgThreePhase => 'Triphasé + VFD';
+
+  @override
+  String get tutConveyorsSvgOnePhase => 'Monophasé';
+
+  @override
+  String get tutConveyorsSvgWithoutMotor => 'sans moteur';
 }

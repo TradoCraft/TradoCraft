@@ -17,11 +17,9 @@ INSERT INTO core.user_companies (user_id, company_id, roles, is_default) VALUES
     ('00000000-0000-7000-8000-000000000103', '00000000-0000-7000-8000-000000000001', '{viewer}', true);
 
 INSERT INTO pricing.price_zones (id, company_id, code, name, sort_order) VALUES
-    ('00000000-0000-7000-8000-000000000201', '00000000-0000-7000-8000-000000000001', 'Z1', 'Zone 1 – Distributors', 1),
-    ('00000000-0000-7000-8000-000000000202', '00000000-0000-7000-8000-000000000001', 'Z2', 'Zone 2 – Installers', 2),
-    ('00000000-0000-7000-8000-000000000203', '00000000-0000-7000-8000-000000000001', 'Z3', 'Zone 3 – Industry', 3),
-    ('00000000-0000-7000-8000-000000000204', '00000000-0000-7000-8000-000000000001', 'Z4', 'Zone 4 – Export', 4),
-    ('00000000-0000-7000-8000-000000000205', '00000000-0000-7000-8000-000000000001', 'Z5', 'Zone 5 – End customers', 5);
+    ('00000000-0000-7000-8000-000000000201', '00000000-0000-7000-8000-000000000001', 'Z1', 'Europe', 1),
+    ('00000000-0000-7000-8000-000000000202', '00000000-0000-7000-8000-000000000001', 'Z2', 'North America', 2),
+    ('00000000-0000-7000-8000-000000000203', '00000000-0000-7000-8000-000000000001', 'Z3', 'Rest of the world', 3);
 
 INSERT INTO products.products (id, code, name, description, unit, product_type, vat_rate) VALUES
     ('00000000-0000-7000-8000-000000000301', 'UNIT-100', 'Process unit 100', 'Standard process unit', 'pcs', 'manufactured', 21),
@@ -54,9 +52,7 @@ FROM (VALUES
 CROSS JOIN (VALUES
         ('00000000-0000-7000-8000-000000000201'::uuid, 0.70),
         ('00000000-0000-7000-8000-000000000202'::uuid, 0.80),
-        ('00000000-0000-7000-8000-000000000203'::uuid, 0.90),
-        ('00000000-0000-7000-8000-000000000204'::uuid, 0.95),
-        ('00000000-0000-7000-8000-000000000205'::uuid, 1.00)
+        ('00000000-0000-7000-8000-000000000203'::uuid, 1.00)
      ) AS zf(zone_id, factor);
 
 INSERT INTO crm.customers (id, code, name, vat_number, email, phone, street, postal_code, city, country_code, language, vat_regime) VALUES
@@ -70,7 +66,7 @@ INSERT INTO crm.customers (id, code, name, vat_number, email, phone, street, pos
 INSERT INTO crm.customer_terms (customer_id, company_id, price_zone_id, discount_percent, payment_terms_days, vat_regime) VALUES
     ('00000000-0000-7000-8000-000000000401', '00000000-0000-7000-8000-000000000001', '00000000-0000-7000-8000-000000000202', 5, 30, 'domestic'),
     ('00000000-0000-7000-8000-000000000402', '00000000-0000-7000-8000-000000000001', '00000000-0000-7000-8000-000000000203', 0, 60, 'domestic'),
-    ('00000000-0000-7000-8000-000000000403', '00000000-0000-7000-8000-000000000001', '00000000-0000-7000-8000-000000000204', 2.5, 30, 'intra_eu');
+    ('00000000-0000-7000-8000-000000000403', '00000000-0000-7000-8000-000000000001', '00000000-0000-7000-8000-000000000201', 2.5, 30, 'intra_eu');
 
 -- Serial tracking: finished units, pumps and controllers get individual serial numbers.
 UPDATE products.products SET tracking = 'serial'

@@ -7200,11 +7200,12 @@ class AppLocalizationsNl extends AppLocalizations {
       'Hoed: inkoper. Maak twee leveranciers en geef ze een prijslijst voor je componenten.';
 
   @override
-  String get tutSuppliersNeedsTitle => 'Eerst hoofdstuk 1';
+  String get tutSuppliersNeedsTitle =>
+      'Eerst Hoofdstuk 1 (Transportbanden & motoren)';
 
   @override
   String get tutSuppliersNeedsBody =>
-      'Dit hoofdstuk heeft de vier producten uit hoofdstuk 1 nodig (MOT-3P-055, VFD-3P-055, PLC-BASE en CONV-BELT-1M) en vond ze niet. Ga terug naar de hoofdstukkaart en rond eerst hoofdstuk 1 af.';
+      'Dit hoofdstuk heeft de vier kernproducten nodig uit Hoofdstuk 1 (Transportbanden & motoren: MOT-3P-055, VFD-3P-055, CONV-BELT-1M) en Hoofdstuk 2 (PLC’s, parallelle licenties & netwerk: PLC-BASE) en kon ze niet vinden. Ga terug naar het overzicht en rond eerst die hoofdstukken af.';
 
   @override
   String get tutSuppliersOpenTitle => 'Zet de inkopershoed op';
@@ -7246,7 +7247,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Kies het product met het zoekveld in het dialoogvenster; typ MOT-3P-055.';
 
   @override
-  String get tutSuppliersPriceFrameTitle => 'Een prijs voor het frame';
+  String get tutSuppliersPriceFrameTitle => 'Een prijs voor de VFD';
 
   @override
   String get tutSuppliersPriceFrameBody =>
@@ -7288,11 +7289,12 @@ class AppLocalizationsNl extends AppLocalizations {
       'Hoeden: inkoper en goederenontvangst. Bestel de componenten, verstuur de order en ontvang de goederen in twee leveringen.';
 
   @override
-  String get tutBuyingNeedsTitle => 'Eerst hoofdstuk 1 en 2';
+  String get tutBuyingNeedsTitle =>
+      'Eerst Hoofdstuk 1 (Transportbanden & motoren) en 2';
 
   @override
   String get tutBuyingNeedsBody =>
-      'Dit hoofdstuk heeft de producten uit hoofdstuk 1 en leverancier Voltaic Drives Ltd met prijslijst uit hoofdstuk 2 nodig, en vond de producten niet. Rond die hoofdstukken eerst af.';
+      'Dit hoofdstuk heeft de producten uit Hoofdstuk 1 (Transportbanden & motoren) en leverancier Voltaic Drives Ltd met prijslijst uit hoofdstuk 2 nodig, en vond de producten niet. Rond die hoofdstukken eerst af.';
 
   @override
   String get tutBuyingOpenTitle => 'De orderlijst';
@@ -7374,7 +7376,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get tutBuyingStockBody =>
-      'Open Voorraad. De 30 motoren, frames en controllers liggen in magazijn MAIN. Elke ontvangst maakte een voorraadbeweging, dus de hoeveelheid is altijd te herleiden.';
+      'Open Voorraad. De 30 motoren, VFD’s en PLC’s liggen in magazijn MAIN. Elke ontvangst maakte een voorraadbeweging, dus de hoeveelheid is altijd te herleiden.';
 
   @override
   String get tutBuyingDoneTitle => 'Wat je geleerd hebt';
@@ -7473,21 +7475,22 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get tutInvoicesDoneBody =>
-      'De driewegmatch vergelijkt order, ontvangst en factuur voordat er geld beweegt. Kloppende facturen worden goedgekeurd en betaald, twijfelachtige betwist. Volgende stap: de karretjes zelf bouwen.';
+      'De driewegmatch vergelijkt order, ontvangst en factuur voordat er geld beweegt. Kloppende facturen worden goedgekeurd en betaald, twijfelachtige betwist. Volgende stap: de transportbanden zelf bouwen.';
 
   @override
   String get tutManufacturingTitle => 'Produceren';
 
   @override
   String get tutManufacturingSummary =>
-      'Hoeden: productiebeheerder en productiemedewerker. Richt een afdeling in en bouw vijf karretjes uit de componenten.';
+      'Hoeden: productiebeheerder en productiemedewerker. Richt een afdeling in en bouw vijf transportbanden uit de componenten.';
 
   @override
-  String get tutManufacturingNeedsTitle => 'Eerst hoofdstuk 1 tot 3';
+  String get tutManufacturingNeedsTitle =>
+      'Eerst Hoofdstuk 1 (Transportbanden & motoren) tot 3';
 
   @override
   String get tutManufacturingNeedsBody =>
-      'Dit hoofdstuk heeft het karretje met stuklijst (hoofdstuk 1) en componenten op voorraad (hoofdstuk 3) nodig en vond de producten niet. Rond die hoofdstukken eerst af.';
+      'Dit hoofdstuk heeft de transportband met stuklijst (Hoofdstuk 1 (Transportbanden & motoren)) en componenten op voorraad (hoofdstuk 3) nodig en vond de producten niet. Rond die hoofdstukken eerst af.';
 
   @override
   String get tutManufacturingOpenDivisionsTitle => 'Afdelingen';
@@ -7540,11 +7543,12 @@ class AppLocalizationsNl extends AppLocalizations {
       'Zet de werknemershoed op en druk op Starten. De order gaat van vrijgegeven naar in uitvoering.';
 
   @override
-  String get tutManufacturingWarehouseTitle => 'Een plek voor de karretjes';
+  String get tutManufacturingWarehouseTitle =>
+      'Een plaats voor de transportbanden';
 
   @override
   String get tutManufacturingWarehouseBody =>
-      'De afgewerkte karretjes hebben een locatie nodig om in te komen, en er is nog geen magazijn (hoofdstuk 3 maakt het aan). Open Voorraad, druk op Magazijnen en maak het magazijn MAIN aan met de naam Hoofdmagazijn; ga daarna terug naar de productieorder. Wordt opslaan geweigerd omdat de code MAIN al bestaat, dan heeft een inactief magazijn hem: zet het (en zijn locatie) weer aan onder Voorraad > Magazijnen, of geef het met de bewerkknop een andere code, en druk daarna op Volgende.';
+      'De afgewerkte transportbanden hebben een locatie nodig om in te komen, en er is nog geen magazijn (hoofdstuk 3 maakt het aan). Open Voorraad, druk op Magazijnen en maak het magazijn MAIN aan met de naam Hoofdmagazijn; ga daarna terug naar de productieorder. Wordt opslaan geweigerd omdat de code MAIN al bestaat, dan heeft een inactief magazijn hem: zet het (en zijn locatie) weer aan onder Voorraad > Magazijnen, of geef het met de bewerkknop een andere code, en druk daarna op Volgende.';
 
   @override
   String get tutManufacturingWarehouseHint =>
@@ -7555,7 +7559,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get tutManufacturingCompleteBody =>
-      'Druk op Afronden. Het dialoogvenster toont de uitvoerhoeveelheid (5) en de verbruikte componenten. Kies de magazijnlocatie MAIN bij Opslaan in, zodat de afgewerkte karretjes een plek hebben, en bevestig: de componenten verdwijnen uit de voorraad en vijf afgewerkte karretjes komen erin.';
+      'Druk op Afronden. Het dialoogvenster toont de uitvoerhoeveelheid (5) en de verbruikte componenten. Kies de magazijnlocatie MAIN bij Opslaan in, zodat de afgewerkte transportbanden een plek hebben, en bevestig: de componenten verdwijnen uit de voorraad en vijf afgewerkte transportbanden komen erin.';
 
   @override
   String get tutManufacturingCompleteHint =>
@@ -7566,7 +7570,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get tutManufacturingStockBody =>
-      'Open Voorraad: CONV-BELT-1M heeft nu 5 op voorraad en elke component is met 5 gedaald (25 over van elk). Productie is de schakel tussen inkoop en verkoop.';
+      'Open Voorraad: CONV-BELT-1M heeft nu 5 stuks op voorraad, de stuklijstcomponenten (MOT-3P-055 en VFD-3P-055) zijn met 5 gedaald (nog 25 van elk), en PLC-BASE blijft op 30. Productie verbindt inkoop met verkoop.';
 
   @override
   String get tutManufacturingDoneTitle => 'Wat je geleerd hebt';
@@ -7580,14 +7584,15 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get tutPricesSummary =>
-      'Hoed: verkoopbeheerder. Maak een prijszone en geef het karretje een prijs in twee zones.';
+      'Hoed: verkoopbeheerder. Maak een prijszone en geef de transportband een prijs in twee zones.';
 
   @override
-  String get tutPricesNeedsTitle => 'Eerst hoofdstuk 1';
+  String get tutPricesNeedsTitle =>
+      'Eerst Hoofdstuk 1 (Transportbanden & motoren)';
 
   @override
   String get tutPricesNeedsBody =>
-      'Dit hoofdstuk heeft het karretje uit hoofdstuk 1 nodig en vond het niet. Rond eerst hoofdstuk 1 af.';
+      'Dit hoofdstuk heeft de transportband uit Hoofdstuk 1 (Transportbanden & motoren) nodig en vond het niet. Rond eerst Hoofdstuk 1 (Transportbanden & motoren) af.';
 
   @override
   String get tutPricesOpenAdminTitle => 'Open het beheer';
@@ -7608,7 +7613,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Kies eerst het segment Prijszones bovenaan de pagina Beheer.';
 
   @override
-  String get tutPricesOpenCartTitle => 'Open het karretje';
+  String get tutPricesOpenCartTitle => 'Open de transportband';
 
   @override
   String get tutPricesOpenCartBody =>
@@ -7630,7 +7635,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get tutPricesPriceHomeBody =>
-      'Voeg een tweede prijs voor het karretje toe in een van de bestaande zones, bijvoorbeeld Z1 voor 1200. Hetzelfde product kan nu verschillend kosten afhankelijk van de zone van de klant.';
+      'Voeg een tweede prijs voor de transportband toe in een van de bestaande zones, bijvoorbeeld Z1 voor 1200. Hetzelfde product kan nu verschillend kosten afhankelijk van de zone van de klant.';
 
   @override
   String get tutPricesDoneTitle => 'Wat je geleerd hebt';
@@ -7658,7 +7663,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get tutCustomerMail1Body =>
-      'Iemand die je niet kent vraagt een offerte voor je karretje. Een echte mailbox levert het bericht zelf af; hier speelt de knop hieronder de klant en geeft een kant-en-klare e-mail (van Maya Okafor, example.test) aan de helpdesk, precies zoals de mailimporter doet.';
+      'Iemand die je niet kent vraagt een offerte voor je transportband. Een echte mailbox levert het bericht zelf af; hier speelt de knop hieronder de klant en geeft een kant-en-klare e-mail (van Maya Okafor, example.test) aan de helpdesk, precies zoals de mailimporter doet.';
 
   @override
   String get tutCustomerMail1Action => 'Klant-e-mail simuleren';
@@ -7735,7 +7740,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get tutQuotationSummary =>
-      'Hoed: verkoper. Offreer 8 karretjes aan de nieuwe klant, vraag productie naar de timing en verstuur.';
+      'Hoed: verkoper. Offreer 8 transportbanden aan de nieuwe klant, vraag productie naar de timing en verstuur.';
 
   @override
   String get tutQuotationNeedsTitle => 'Eerst hoofdstuk 7';
@@ -7803,7 +7808,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get tutChangeSummary =>
-      'Hoeden: verkoop en productie. Herzie de offerte, maak er een order van, bouw de karretjes en enkele extra voor voorraad.';
+      'Hoeden: verkoop en productie. Herzie de offerte, maak er een order van, bouw de transportbanden en enkele extra voor voorraad.';
 
   @override
   String get tutChangeNeedsTitle => 'Eerst hoofdstuk 8';
@@ -7817,7 +7822,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get tutChangeMail3Body =>
-      'Maya is tevreden met de offerte maar wil 10 karretjes in plaats van 8. Gebruik de knop om haar e-mail te spelen; ze komt in hetzelfde ticket.';
+      'Maya is tevreden met de offerte maar wil 10 transportbanden in plaats van 8. Gebruik de knop om haar e-mail te spelen; ze komt in hetzelfde ticket.';
 
   @override
   String get tutChangeMail3Action => 'Klant-e-mail simuleren';
@@ -7881,7 +7886,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get tutChangeOpenOrderBody =>
-      'Is de order niet vanzelf geopend, open hem dan via Orders. Hij heeft de 10 karretjes, de prijs en de klantreferentie. Orders gaan van concept naar verstuurd naar bevestigd.';
+      'Is de order niet vanzelf geopend, open hem dan via Orders. Hij heeft de 10 transportbanden, de prijs en de klantreferentie. Orders gaan van concept naar verstuurd naar bevestigd.';
 
   @override
   String get tutChangeSendOrderTitle => 'Verstuur de orderbevestiging';
@@ -7906,7 +7911,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get tutChangeReleaseBody =>
-      'Zet de productiehoed op. Open Productie > Vrij te geven: de bevestigde orderregel met 10 karretjes wacht. Druk op Vrijgeven aan productie om de productieorder voor precies die regel te maken.';
+      'Zet de productiehoed op. Open Productie > Vrij te geven: de bevestigde orderregel met 10 transportbanden wacht. Druk op Vrijgeven aan productie om de productieorder voor precies die regel te maken.';
 
   @override
   String get tutChangeStartTitle => 'Start de productie';
@@ -7916,11 +7921,11 @@ class AppLocalizationsNl extends AppLocalizations {
       'Druk op Starten bij de nieuwe productieorder.';
 
   @override
-  String get tutChangeWarehouseTitle => 'Een plek voor de karretjes';
+  String get tutChangeWarehouseTitle => 'Een plaats voor de transportbanden';
 
   @override
   String get tutChangeWarehouseBody =>
-      'De afgewerkte karretjes hebben een locatie nodig om in te komen, en er is nog geen magazijn (hoofdstuk 3 maakt het aan). Open Voorraad, druk op Magazijnen en maak het magazijn MAIN aan met de naam Hoofdmagazijn; ga daarna terug naar de productieorder. Wordt opslaan geweigerd omdat de code MAIN al bestaat, dan heeft een inactief magazijn hem: zet het (en zijn locatie) weer aan onder Voorraad > Magazijnen, of geef het met de bewerkknop een andere code, en druk daarna op Volgende.';
+      'De afgewerkte transportbanden hebben een locatie nodig om in te komen, en er is nog geen magazijn (hoofdstuk 3 maakt het aan). Open Voorraad, druk op Magazijnen en maak het magazijn MAIN aan met de naam Hoofdmagazijn; ga daarna terug naar de productieorder. Wordt opslaan geweigerd omdat de code MAIN al bestaat, dan heeft een inactief magazijn hem: zet het (en zijn locatie) weer aan onder Voorraad > Magazijnen, of geef het met de bewerkknop een andere code, en druk daarna op Volgende.';
 
   @override
   String get tutChangeWarehouseHint =>
@@ -7931,7 +7936,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get tutChangeCompleteBody =>
-      'Druk op Afronden, kies de magazijnlocatie MAIN bij Opslaan in en bevestig de 10 karretjes. De componenten worden verbruikt en de karretjes gaan naar de order.';
+      'Druk op Afronden, kies de magazijnlocatie MAIN bij Opslaan in en bevestig de 10 transportbanden. De componenten worden verbruikt en de transportbanden gaan naar de order.';
 
   @override
   String get tutChangeReadyTitle => 'Klaar voor verzending';
@@ -7945,7 +7950,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get tutChangeStockBody =>
-      'Productie loopt vaak vooruit op orders. Open Productie, druk op Voor voorraad maken en geef nog 4 karretjes CONV-BELT-1M vrij. Zonder order komen ze bij voltooiing gewoon op voorraad.';
+      'Productie loopt vaak vooruit op orders. Open Productie, druk op Voor voorraad maken en geef nog 4 transportbanden CONV-BELT-1M vrij. Zonder order komen ze bij voltooiing gewoon op voorraad.';
 
   @override
   String get tutChangeStockHint =>
@@ -7977,7 +7982,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get tutHelpdeskNoteBody =>
-      'Open het ticket, kies Interne notitie en schrijf wat een collega moet weten, bijvoorbeeld dat de klant een offerte voor 8 karretjes wil. Druk op Notitie toevoegen. De klant ziet een notitie nooit.';
+      'Open het ticket, kies Interne notitie en schrijf wat een collega moet weten, bijvoorbeeld dat de klant een offerte voor 8 transportbanden wil. Druk op Notitie toevoegen. De klant ziet een notitie nooit.';
 
   @override
   String get tutHelpdeskNoteHint =>
@@ -11095,7 +11100,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get tutAttributesNeedsBody =>
-      'Dit hoofdstuk legt technische eigenschappen vast op PLC-BASE (Controller). Maak PLC-BASE aan in hoofdstuk 1 of gebruik Assisteren.';
+      'Dit hoofdstuk legt technische eigenschappen vast op PLC-BASE (Standaard PLC). Maak PLC-BASE aan in Hoofdstuk 2 (PLC’s, parallelle licenties & netwerk) of gebruik Hulp om hem nu aan te maken.';
 
   @override
   String get tutAttributesIntroTitle => 'Waarom generieke producteigenschappen';
@@ -11158,7 +11163,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get tutAttributesFillPropertiesBody =>
-      'Vul de velden in voor de sleutels relay_count = 4, fet_count = 2, digital_inputs = 8 en analog_4_20ma_inputs = 2, rs485_ports = 2, i2c_bus = Ja, licensed_outputs_tier = 10 (als een weergegeven label afwijkt, gebruik het bestaande veld met die sleutel), en klik op Opslaan.';
+      'Vul de velden in voor de sleutels relay_count = 4, fet_count = 6, digital_inputs = 8 en analog_4_20ma_inputs = 2, rs485_ports = 2, i2c_bus = Ja, licensed_outputs_tier = 10 (als een weergegeven label afwijkt, gebruik het bestaande veld met die sleutel), en klik op Opslaan.';
 
   @override
   String get tutAttributesFillPropertiesHint =>
@@ -11729,4 +11734,16 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get tutAttributesLicensedOutputsBody =>
       'Maak een Getal-eigenschap met sleutel licensed_outputs_tier, label Licensed outputs tier, bereik Product.';
+
+  @override
+  String get tutConveyorsSvgWithMotor => 'Met motor';
+
+  @override
+  String get tutConveyorsSvgThreePhase => '3-fase + VFD';
+
+  @override
+  String get tutConveyorsSvgOnePhase => '1-fase';
+
+  @override
+  String get tutConveyorsSvgWithoutMotor => 'zonder motor';
 }
