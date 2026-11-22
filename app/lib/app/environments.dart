@@ -22,6 +22,8 @@ enum EnvironmentKind {
   }
 }
 
+const _keepInstanceId = Object();
+
 /// One server the app can talk to: its address, what kind of data it holds and, per environment,
 /// who is signed in there (the same fields as [Session]).
 class AppEnvironment {
@@ -69,13 +71,15 @@ class AppEnvironment {
   AppEnvironment copyWith({
     String? name,
     EnvironmentKind? kind,
-    String? instanceId,
+    Object? instanceId = _keepInstanceId,
   }) => AppEnvironment(
     id: id,
     name: name ?? this.name,
     kind: kind ?? this.kind,
     serverUrl: serverUrl,
-    instanceId: instanceId ?? this.instanceId,
+    instanceId: identical(instanceId, _keepInstanceId)
+        ? this.instanceId
+        : instanceId as String?,
     devUser: devUser,
     accessToken: accessToken,
     companyId: companyId,
@@ -310,6 +314,7 @@ class EnvironmentsNotifier extends Notifier<EnvironmentsState> {
         activeId: known.id,
       );
       _persist();
+      refreshActive();
       return;
     }
     final env = AppEnvironment(
@@ -379,6 +384,7 @@ class EnvironmentsNotifier extends Notifier<EnvironmentsState> {
     required String name,
     required String serverUrl,
     required EnvironmentKind kind,
+    String? instanceId,
   }) async {
     final url = normalizeServerUrl(serverUrl) ?? serverUrl;
     if (state.items.any((e) => sameServer(e.serverUrl, url))) {
@@ -389,6 +395,7 @@ class EnvironmentsNotifier extends Notifier<EnvironmentsState> {
       name: name,
       kind: kind,
       serverUrl: url,
+      instanceId: instanceId,
     );
     state = state.copyWith(items: [...state.items, env]);
     final saved = await _persist();
