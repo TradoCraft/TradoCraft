@@ -341,11 +341,6 @@ pub async fn price_lines(
                 // Price on request: the zone price is never used; the line has no price until one
                 // is entered, and the quotation cannot be sent before (ADR 0084).
                 let (list_price, confirmed) = match (product.price_on_request, input.unit_price) {
-                    (true, Some(p)) if p < Decimal::ZERO => {
-                        return Err(AppError::Validation(format!(
-                            "line {n}: the price cannot be negative"
-                        )))
-                    }
                     (true, Some(p)) => (p, true),
                     (true, None) => (Decimal::ZERO, false),
                     (false, Some(_)) => {
@@ -608,12 +603,6 @@ pub fn validate_input(input: &QuotationInput) -> AppResult<()> {
     }
     validate_structure(&input.lines)?;
     for (i, l) in input.lines.iter().enumerate() {
-        if l.unit_price.is_some_and(|p| p < Decimal::ZERO) {
-            return Err(AppError::Validation(format!(
-                "line {}: unit price cannot be negative",
-                i + 1
-            )));
-        }
         if let Some(rate) = l.vat_rate {
             if rate < Decimal::ZERO || rate >= Decimal::from(100) {
                 return Err(AppError::Validation(format!(

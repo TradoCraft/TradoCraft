@@ -159,12 +159,7 @@ async fn compute(
             without_price += 1;
             continue;
         };
-        let new_price = change_price(current, change, step).map_err(|_| {
-            AppError::Validation(format!(
-                "{} in zone {} would get a negative price",
-                r.product_code, r.zone_code
-            ))
-        })?;
+        let new_price = change_price(current, change, step);
         lines.push(BulkPriceLine {
             product_id: r.product_id,
             product_code: r.product_code,
