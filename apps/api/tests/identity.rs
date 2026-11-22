@@ -221,7 +221,7 @@ async fn picks_the_provider_by_issuer_and_rejects_bad_tokens(db: PgPool) {
             idp::sign(
                 Algorithm::HS256,
                 Some("ka"),
-                &EncodingKey::from_secret(b"secret"),
+                &EncodingKey::from_secret(b"secret").unwrap(),
                 &good,
             ),
         ),
