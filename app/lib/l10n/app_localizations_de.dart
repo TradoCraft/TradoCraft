@@ -11483,4 +11483,84 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get cbWordingHelp =>
       'Verwenden Sie diese Platzhalter im Rechnungstext.';
+
+  @override
+  String get defaultMultiplier => 'Standard-Multiplikator';
+
+  @override
+  String get defaultMultiplierHelp =>
+      'Relativ zur ersten Zone (z. B. 1.15 = +15 %)';
+
+  @override
+  String get defaultMultiplierInvalid =>
+      'Multiplikator muss eine positive Zahl sein';
+
+  @override
+  String get defaultRounding => 'Rundung';
+
+  @override
+  String get roundingNone => 'Keine';
+
+  @override
+  String get baseZone => 'Basis';
+
+  @override
+  String get formula => 'Formel';
+
+  @override
+  String get enterAtLeastOnePrice => 'Mindestens einen Preis eingeben';
+
+  @override
+  String get resetToFormula => 'Auf Formel zurücksetzen';
+
+  @override
+  String get applyFormulas => 'Formeln anwenden';
+
+  @override
+  String get copyFromProduct => 'Von Produkt kopieren...';
+
+  @override
+  String copiedFromProduct(String code) {
+    return 'Kopiert von $code';
+  }
+
+  @override
+  String get selectProductToCopy =>
+      'Produkt zum Kopieren der Eigenschaften auswählen';
+
+  @override
+  String get filterSelectAll => 'Alle auswählen';
+
+  @override
+  String get listDeselectAll => 'Alle abwählen';
+
+  @override
+  String get userPreferences => 'Einstellungen';
+
+  @override
+  String get shortcutsTab => 'Tastenkürzel';
+
+  @override
+  String get shortcutSelectAll => 'Alle auswählen / abwählen';
+
+  @override
+  String get shortcutResetDefaults => 'Alle zurücksetzen';
+
+  @override
+  String get shortcutReset => 'Zurücksetzen';
+
+  @override
+  String get shortcutPressKeys => 'Tastenkombination drücken...';
+
+  @override
+  String shortcutConflict(String action, String keys) {
+    return 'Konflikt mit: $action ($keys)';
+  }
+
+  @override
+  String get shortcutNeedsModifier =>
+      'Strg, Alt oder Cmd mit einer Taste verwenden';
+
+  @override
+  String get shortcutCustom => 'Benutzerdefiniert';
 }

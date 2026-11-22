@@ -360,6 +360,9 @@ pub struct PriceZone {
     pub code: String,
     pub name: String,
     pub sort_order: i32,
+    #[schema(value_type = Option<String>, example = "1.1500")]
+    pub default_multiplier: Option<Decimal>,
+    pub default_rounding: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, FromRow, ToSchema)]
@@ -973,10 +976,13 @@ async fn list_price_zones(
 ) -> AppResult<Json<Vec<PriceZone>>> {
     user.require(Permission::ProductsRead)?;
     Ok(Json(
-        sqlx::query_as("SELECT id, code, name, sort_order FROM pricing.price_zones WHERE company_id = $1 ORDER BY sort_order, code")
-            .bind(user.company_id)
-            .fetch_all(&state.db)
-            .await?,
+        sqlx::query_as(
+            "SELECT id, code, name, sort_order, default_multiplier, default_rounding
+             FROM pricing.price_zones WHERE company_id = $1 ORDER BY sort_order, code",
+        )
+        .bind(user.company_id)
+        .fetch_all(&state.db)
+        .await?,
     ))
 }
 
@@ -987,7 +993,16 @@ pub struct PriceZoneInput {
     pub name: String,
     #[serde(default)]
     pub sort_order: i32,
+    #[serde(default)]
+    #[schema(value_type = Option<String>, example = "1.15")]
+    pub default_multiplier: Option<Decimal>,
+    #[serde(default)]
+    pub default_rounding: Option<String>,
 }
+
+const VALID_ROUNDINGS: &[&str] = &[
+    "none", "0.01", "0.05", "0.10", "0.50", "1.00", "5.00", "10.00",
+];
 
 impl PriceZoneInput {
     /// Trims the fields and rejects a blank or too long (more than 32 characters) code and a blank name.
@@ -1001,6 +1016,26 @@ impl PriceZoneInput {
         }
         if self.name.is_empty() {
             return Err(AppError::Validation("name is required".into()));
+        }
+        if let Some(m) = self.default_multiplier {
+            if m <= Decimal::ZERO || m.normalize().scale() > 4 || m > Decimal::new(9_999_999_999, 4)
+            {
+                return Err(AppError::Validation(
+                    "default_multiplier must be positive and fit NUMERIC(10, 4)".into(),
+                ));
+            }
+        }
+        if let Some(ref r) = self.default_rounding {
+            let trimmed = r.trim();
+            if trimmed.is_empty() {
+                self.default_rounding = None;
+            } else if !VALID_ROUNDINGS.contains(&trimmed) {
+                return Err(AppError::Validation(
+                    "default_rounding must be one of none, 0.01, 0.05, 0.10, 0.50, 1.00, 5.00, 10.00".into(),
+                ));
+            } else {
+                self.default_rounding = Some(trimmed.to_string());
+            }
         }
         Ok(())
     }
@@ -1024,16 +1059,18 @@ async fn create_price_zone(
     let id = new_id();
     let mut tx = state.db.begin().await?;
     let zone: PriceZone = sqlx::query_as(
-        "INSERT INTO pricing.price_zones (id, company_id, code, name, sort_order)
-         VALUES ($1, $2, $3, $4, $5)
+        "INSERT INTO pricing.price_zones (id, company_id, code, name, sort_order, default_multiplier, default_rounding)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
          ON CONFLICT (company_id, code) DO NOTHING
-         RETURNING id, code, name, sort_order",
+         RETURNING id, code, name, sort_order, default_multiplier, default_rounding",
     )
     .bind(id)
     .bind(user.company_id)
     .bind(&input.code)
     .bind(&input.name)
     .bind(input.sort_order)
+    .bind(input.default_multiplier)
+    .bind(&input.default_rounding)
     .fetch_optional(&mut *tx)
     .await?
     .ok_or_else(zone_code_taken)?;
@@ -1050,7 +1087,7 @@ async fn create_price_zone(
     Ok((StatusCode::CREATED, Json(zone)))
 }
 
-/// Changes the code, name or sort order of a price zone.
+/// Changes the code, name, sort order, or default pricing formula of a price zone.
 #[utoipa::path(put, path = "/price-zones/{id}", tag = "products", params(("id" = Uuid, Path)),
     request_body = PriceZoneInput,
     responses((status = 200, body = PriceZone), (status = 409, body = tradocraft_core::error::ErrorBody)))]
@@ -1084,15 +1121,18 @@ async fn update_price_zone(
         return Err(zone_code_taken());
     }
     let zone: PriceZone = sqlx::query_as(
-        "UPDATE pricing.price_zones SET code = $3, name = $4, sort_order = $5
+        "UPDATE pricing.price_zones
+         SET code = $3, name = $4, sort_order = $5, default_multiplier = $6, default_rounding = $7
          WHERE id = $1 AND company_id = $2
-         RETURNING id, code, name, sort_order",
+         RETURNING id, code, name, sort_order, default_multiplier, default_rounding",
     )
     .bind(id)
     .bind(user.company_id)
     .bind(&input.code)
     .bind(&input.name)
     .bind(input.sort_order)
+    .bind(input.default_multiplier)
+    .bind(&input.default_rounding)
     .fetch_optional(&mut *tx)
     .await?
     .ok_or(AppError::NotFound("price zone"))?;

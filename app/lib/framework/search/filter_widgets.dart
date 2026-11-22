@@ -2,8 +2,11 @@
 library;
 
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../app/shortcuts/actions.dart';
+import '../../app/shortcuts/registry.dart';
 import '../../l10n/l10n.dart';
 import '../../shared/app_icons.dart';
 import 'favourite.dart';
@@ -32,7 +35,7 @@ class FilterChips extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
-    final chips = selection.chips(defs, l.listOr);
+    final chips = selection.activeChips(defs, l.listOr);
     if (chips.isEmpty) return const SizedBox.shrink();
     return Wrap(
       spacing: 8,
@@ -66,6 +69,7 @@ class FilterMenuButton extends StatelessWidget {
     required this.selection,
     required this.onToggle,
     required this.onClear,
+    this.onToggleAll,
     this.favourites,
     this.onSaveFavourite,
     this.onRetryFavourites,
@@ -77,6 +81,7 @@ class FilterMenuButton extends StatelessWidget {
   final FilterSelection selection;
   final void Function(String key, String value) onToggle;
   final VoidCallback onClear;
+  final VoidCallback? onToggleAll;
 
   /// The saved favourites; null hides the favourites section.
   final List<Favourite>? favourites;
@@ -97,9 +102,32 @@ class FilterMenuButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = context.l10n;
     final theme = Theme.of(context);
-    final n = selection.count;
+    final n = selection.activeCount(defs);
+    final allSelected = selection.isAllSelected(defs);
     return MenuAnchor(
       menuChildren: [
+        if (onToggleAll != null)
+          _OptionalMenuShortcutScope(
+            action: ShortcutAction.selectAll,
+            onTrigger: onToggleAll!,
+            child: MenuItemButton(
+              key: const ValueKey('filter-toggle-all'),
+              closeOnActivate: false,
+              style: _itemStyle,
+              leadingIcon: Icon(
+                allSelected ? Icons.deselect : Icons.select_all,
+              ),
+              trailingIcon: Text(
+                ShortcutAction.selectAll.describe(),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              onPressed: onToggleAll,
+              child: Text(allSelected ? l.listDeselectAll : l.filterSelectAll),
+            ),
+          ),
+        if (onToggleAll != null) const Divider(height: 1),
         for (final d in defs) ...[
           Semantics(
             header: true,
@@ -125,7 +153,7 @@ class FilterMenuButton extends StatelessWidget {
         const Divider(height: 1),
         MenuItemButton(
           style: _itemStyle,
-          onPressed: selection.isEmpty ? null : onClear,
+          onPressed: allSelected ? null : onClear,
           child: Text(l.listClearFilters),
         ),
         if (favourites != null) ...[
@@ -216,6 +244,34 @@ class FilterMenuButton extends StatelessWidget {
         onPressed: () =>
             controller.isOpen ? controller.close() : controller.open(),
       ),
+    );
+  }
+}
+
+/// Registers [action] on the dialog shortcut layer when a [ProviderScope] is present.
+class _OptionalMenuShortcutScope extends StatelessWidget {
+  const _OptionalMenuShortcutScope({
+    required this.action,
+    required this.onTrigger,
+    required this.child,
+  });
+
+  final ShortcutAction action;
+  final VoidCallback onTrigger;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    var hasScope = false;
+    try {
+      ProviderScope.containerOf(context, listen: false);
+      hasScope = true;
+    } catch (_) {}
+    if (!hasScope) return child;
+    return ShortcutScope(
+      layer: ShortcutLayer.dialog,
+      actions: {action: onTrigger},
+      child: child,
     );
   }
 }

@@ -1,10 +1,24 @@
+import 'package:decimal/decimal.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/api.dart';
 import '../../l10n/l10n.dart';
 import '../../shared/actions.dart';
+import '../../shared/decimal_field.dart';
+import '../../shared/format.dart';
 import '../tutorial/targets.dart';
+
+const _roundingOptions = [
+  'none',
+  '0.01',
+  '0.05',
+  '0.10',
+  '0.50',
+  '1.00',
+  '5.00',
+  '10.00',
+];
 
 /// Price zone management: list, create, edit and delete (the server refuses deleting a zone in use).
 class PriceZonesPage extends ConsumerWidget {
@@ -53,6 +67,16 @@ class PriceZonesPage extends ConsumerWidget {
     if (ok && context.mounted) ref.invalidate(priceZonesProvider);
   }
 
+  String _subtitle(AppLocalizations l, PriceZone z) {
+    final base = '${l.sortOrder}: ${z.sortOrder}';
+    if (z.defaultMultiplier == null) return base;
+    final mult = '× ${number(z.defaultMultiplier)}';
+    final round = z.defaultRounding != null && z.defaultRounding != 'none'
+        ? ' (${l.defaultRounding}: ${z.defaultRounding})'
+        : '';
+    return '$base  ·  $mult$round';
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
@@ -70,12 +94,15 @@ class PriceZonesPage extends ConsumerWidget {
               ),
             ),
             if (canWrite)
-              TutorialTarget(id: 'zone-new', child: FilledButton.icon(
-                key: const ValueKey('zone-new'),
-                onPressed: () => _edit(context, ref),
-                icon: const Icon(Icons.add),
-                label: Text(l.newPriceZone),
-              )),
+              TutorialTarget(
+                id: 'zone-new',
+                child: FilledButton.icon(
+                  key: const ValueKey('zone-new'),
+                  onPressed: () => _edit(context, ref),
+                  icon: const Icon(Icons.add),
+                  label: Text(l.newPriceZone),
+                ),
+              ),
           ],
         ),
         const SizedBox(height: 8),
@@ -102,7 +129,7 @@ class PriceZonesPage extends ConsumerWidget {
                       ListTile(
                         key: ValueKey('zone-${z.code}'),
                         title: Text('${z.code}  ${z.name}'),
-                        subtitle: Text('${l.sortOrder}: ${z.sortOrder}'),
+                        subtitle: Text(_subtitle(l, z)),
                         trailing: canWrite
                             ? Row(
                                 mainAxisSize: MainAxisSize.min,
@@ -146,6 +173,13 @@ class _PriceZoneDialogState extends ConsumerState<PriceZoneDialog> {
   late final _sort = TextEditingController(
     text: '${widget.zone?.sortOrder ?? 0}',
   );
+  late final _multiplier = DecimalInputController(
+    text: editableDecimal(widget.zone?.defaultMultiplier),
+  );
+  late String _rounding =
+      _roundingOptions.contains(widget.zone?.defaultRounding)
+      ? widget.zone!.defaultRounding!
+      : 'none';
   bool _busy = false;
   String? _error;
 
@@ -154,6 +188,7 @@ class _PriceZoneDialogState extends ConsumerState<PriceZoneDialog> {
     _code.dispose();
     _name.dispose();
     _sort.dispose();
+    _multiplier.dispose();
     super.dispose();
   }
 
@@ -169,6 +204,15 @@ class _PriceZoneDialogState extends ConsumerState<PriceZoneDialog> {
       setState(() => _error = l.sortOrderInvalid);
       return;
     }
+    String? mult;
+    if (_multiplier.text.trim().isNotEmpty) {
+      mult = _multiplier.decimal;
+      final parsed = mult == null ? null : Decimal.tryParse(mult);
+      if (parsed == null || parsed <= Decimal.zero) {
+        setState(() => _error = l.defaultMultiplierInvalid);
+        return;
+      }
+    }
     setState(() {
       _busy = true;
       _error = null;
@@ -177,6 +221,8 @@ class _PriceZoneDialogState extends ConsumerState<PriceZoneDialog> {
       code: _code.text.trim(),
       name: _name.text.trim(),
       sortOrder: sort,
+      defaultMultiplier: mult,
+      defaultRounding: _rounding == 'none' ? null : _rounding,
     );
     final products = ref.read(apiProvider).products;
     final z = widget.zone;
@@ -201,7 +247,7 @@ class _PriceZoneDialogState extends ConsumerState<PriceZoneDialog> {
     return AlertDialog(
       title: Text(widget.zone == null ? l.newPriceZone : l.editPriceZone),
       content: SizedBox(
-        width: 400,
+        width: 420,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -211,16 +257,53 @@ class _PriceZoneDialogState extends ConsumerState<PriceZoneDialog> {
               autofocus: true,
               decoration: InputDecoration(labelText: l.code),
             ),
+            const SizedBox(height: 8),
             TextField(
               key: const ValueKey('zone-name'),
               controller: _name,
               decoration: InputDecoration(labelText: l.name),
             ),
+            const SizedBox(height: 8),
             TextField(
               key: const ValueKey('zone-sort'),
               controller: _sort,
               keyboardType: TextInputType.number,
               decoration: InputDecoration(labelText: l.sortOrder),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: DecimalField(
+                    key: const ValueKey('zone-multiplier'),
+                    controller: _multiplier,
+                    decoration: InputDecoration(
+                      labelText: l.defaultMultiplier,
+                      helperText: l.defaultMultiplierHelp,
+                      helperMaxLines: 2,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                SizedBox(
+                  width: 140,
+                  child: DropdownButtonFormField<String>(
+                    key: const ValueKey('zone-rounding'),
+                    initialValue: _rounding,
+                    isExpanded: true,
+                    decoration: InputDecoration(labelText: l.defaultRounding),
+                    items: [
+                      for (final r in _roundingOptions)
+                        DropdownMenuItem(
+                          value: r,
+                          child: Text(r == 'none' ? l.roundingNone : r),
+                        ),
+                    ],
+                    onChanged: (v) => setState(() => _rounding = v ?? 'none'),
+                  ),
+                ),
+              ],
             ),
             if (_error != null)
               Padding(
@@ -238,11 +321,14 @@ class _PriceZoneDialogState extends ConsumerState<PriceZoneDialog> {
           onPressed: _busy ? null : () => Navigator.pop(context, false),
           child: Text(l.cancel),
         ),
-        TutorialTarget(id: 'zone-form-save', child: FilledButton(
-          key: const ValueKey('zone-save'),
-          onPressed: _busy ? null : _save,
-          child: Text(l.save),
-        )),
+        TutorialTarget(
+          id: 'zone-form-save',
+          child: FilledButton(
+            key: const ValueKey('zone-save'),
+            onPressed: _busy ? null : _save,
+            child: Text(l.save),
+          ),
+        ),
       ],
     );
   }

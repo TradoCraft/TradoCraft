@@ -173,6 +173,11 @@ enum ShortcutAction {
   /// The command palette: Ctrl or Cmd with K.
   palette(ShortcutChord(LogicalKeyboardKey.keyK, mod: ChordMod.standard)),
 
+  /// Select all / Deselect all (e.g. in filter menus): Ctrl+Shift+A / Cmd+Shift+A.
+  selectAll(
+    ShortcutChord(LogicalKeyboardKey.keyA, mod: ChordMod.standard, shift: true),
+  ),
+
   /// The shortcut help: Ctrl or Cmd with the slash (with Shift where the layout needs it).
   help(
     ShortcutChord(
@@ -207,8 +212,12 @@ enum ShortcutAction {
   static ShortcutAction? menu(int n) =>
       n >= 1 && n <= menus.length ? menus[n - 1] : null;
 
-  /// The chord in effect: the web override on the web.
+  /// The chord in effect: user override if any, else the web override on the web, else default.
   ShortcutChord chordFor({bool web = kIsWeb}) =>
+      ShortcutBindings.overrideFor(this) ?? (web ? (webOverride ?? chord) : chord);
+
+  /// The default chord for this platform (ignoring user overrides).
+  ShortcutChord defaultChord({bool web = kIsWeb}) =>
       web ? (webOverride ?? chord) : chord;
 
   static String _keyText(ShortcutChord c) => switch (c.key) {
@@ -262,6 +271,7 @@ enum ShortcutAction {
     ticketMerge => l.mergeTicket,
     ticketSplit => l.splitTicket,
     palette => l.shortcutPalette,
+    selectAll => l.shortcutSelectAll,
     help => l.shortcutHelp,
     _ => l.shortcutMenuItem(menus.indexOf(this) + 1),
   };
@@ -367,3 +377,147 @@ const _wd9 = ShortcutChord(
   physical: PhysicalKeyboardKey.digit9,
   shift: true,
 );
+
+/// Runtime holder for user-customized shortcut bindings loaded from backend preferences.
+class ShortcutBindings {
+  static final Map<ShortcutAction, ShortcutChord> _overrides = {};
+
+  static ShortcutChord? overrideFor(ShortcutAction action) {
+    final chord = _overrides[action];
+    if (chord == null) return null;
+    if (action != ShortcutAction.cancel && chord.mod == ChordMod.none) {
+      return null;
+    }
+    return chord;
+  }
+
+  static bool isCustomized(ShortcutAction action) =>
+      overrideFor(action) != null;
+
+  static Map<ShortcutAction, ShortcutChord> get all =>
+      Map.unmodifiable(_overrides);
+
+  static void setOverrides(Map<ShortcutAction, ShortcutChord> next) {
+    _overrides.clear();
+    for (final e in next.entries) {
+      if (e.key != ShortcutAction.cancel && e.value.mod == ChordMod.none) {
+        continue;
+      }
+      _overrides[e.key] = e.value;
+    }
+  }
+
+  /// Exact structural equality between two chords.
+  static bool sameChord(ShortcutChord a, ShortcutChord b) =>
+      a.mod == b.mod &&
+      a.shift == b.shift &&
+      a.anyShift == b.anyShift &&
+      a.key == b.key;
+
+  /// Whether two chords can match the same key event (accounting for [ShortcutChord.anyShift]).
+  static bool chordsOverlap(ShortcutChord a, ShortcutChord b) {
+    if (a.mod != b.mod || a.key != b.key) return false;
+    if (a.anyShift || b.anyShift) return true;
+    return a.shift == b.shift;
+  }
+
+  /// Returns the first other [ShortcutAction] whose active chord overlaps with [candidate], or null.
+  static ShortcutAction? findConflict(
+    ShortcutAction target,
+    ShortcutChord candidate, {
+    bool web = kIsWeb,
+  }) {
+    for (final a in ShortcutAction.values) {
+      if (a == target) continue;
+      if (chordsOverlap(a.chordFor(web: web), candidate)) return a;
+    }
+    return null;
+  }
+
+  static final Map<String, LogicalKeyboardKey> _namedKeys = {
+    'keyA': LogicalKeyboardKey.keyA,
+    'keyB': LogicalKeyboardKey.keyB,
+    'keyC': LogicalKeyboardKey.keyC,
+    'keyD': LogicalKeyboardKey.keyD,
+    'keyE': LogicalKeyboardKey.keyE,
+    'keyF': LogicalKeyboardKey.keyF,
+    'keyG': LogicalKeyboardKey.keyG,
+    'keyH': LogicalKeyboardKey.keyH,
+    'keyI': LogicalKeyboardKey.keyI,
+    'keyJ': LogicalKeyboardKey.keyJ,
+    'keyK': LogicalKeyboardKey.keyK,
+    'keyL': LogicalKeyboardKey.keyL,
+    'keyM': LogicalKeyboardKey.keyM,
+    'keyN': LogicalKeyboardKey.keyN,
+    'keyO': LogicalKeyboardKey.keyO,
+    'keyP': LogicalKeyboardKey.keyP,
+    'keyQ': LogicalKeyboardKey.keyQ,
+    'keyR': LogicalKeyboardKey.keyR,
+    'keyS': LogicalKeyboardKey.keyS,
+    'keyT': LogicalKeyboardKey.keyT,
+    'keyU': LogicalKeyboardKey.keyU,
+    'keyV': LogicalKeyboardKey.keyV,
+    'keyW': LogicalKeyboardKey.keyW,
+    'keyX': LogicalKeyboardKey.keyX,
+    'keyY': LogicalKeyboardKey.keyY,
+    'keyZ': LogicalKeyboardKey.keyZ,
+    'digit0': LogicalKeyboardKey.digit0,
+    'digit1': LogicalKeyboardKey.digit1,
+    'digit2': LogicalKeyboardKey.digit2,
+    'digit3': LogicalKeyboardKey.digit3,
+    'digit4': LogicalKeyboardKey.digit4,
+    'digit5': LogicalKeyboardKey.digit5,
+    'digit6': LogicalKeyboardKey.digit6,
+    'digit7': LogicalKeyboardKey.digit7,
+    'digit8': LogicalKeyboardKey.digit8,
+    'digit9': LogicalKeyboardKey.digit9,
+    'enter': LogicalKeyboardKey.enter,
+    'escape': LogicalKeyboardKey.escape,
+    'slash': LogicalKeyboardKey.slash,
+    'space': LogicalKeyboardKey.space,
+    'backspace': LogicalKeyboardKey.backspace,
+    'tab': LogicalKeyboardKey.tab,
+    'f1': LogicalKeyboardKey.f1,
+    'f2': LogicalKeyboardKey.f2,
+    'f3': LogicalKeyboardKey.f3,
+    'f4': LogicalKeyboardKey.f4,
+    'f5': LogicalKeyboardKey.f5,
+    'f6': LogicalKeyboardKey.f6,
+    'f7': LogicalKeyboardKey.f7,
+    'f8': LogicalKeyboardKey.f8,
+    'f9': LogicalKeyboardKey.f9,
+    'f10': LogicalKeyboardKey.f10,
+    'f11': LogicalKeyboardKey.f11,
+    'f12': LogicalKeyboardKey.f12,
+  };
+
+  static final Map<LogicalKeyboardKey, String> _keyToName = {
+    for (final e in _namedKeys.entries) e.value: e.key,
+  };
+
+  static String keyToName(LogicalKeyboardKey key) =>
+      _keyToName[key] ?? '0x${key.keyId.toRadixString(16)}';
+
+  static LogicalKeyboardKey? keyFromName(String name) {
+    final named = _namedKeys[name];
+    if (named != null) return named;
+    if (name.startsWith('0x')) {
+      final id = int.tryParse(name.substring(2), radix: 16);
+      if (id != null) return LogicalKeyboardKey.findKeyByKeyId(id);
+    }
+    return null;
+  }
+
+  static String modToName(ChordMod mod) => switch (mod) {
+    ChordMod.primary => 'primary',
+    ChordMod.standard => 'standard',
+    ChordMod.none => 'none',
+  };
+
+  static ChordMod? modFromName(String name) => switch (name) {
+    'primary' => ChordMod.primary,
+    'standard' => ChordMod.standard,
+    'none' => ChordMod.none,
+    _ => null,
+  };
+}

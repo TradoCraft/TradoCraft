@@ -276,7 +276,7 @@ abstract class ProductsClient {
     @Body() required PriceZoneInput body,
   });
 
-  /// Changes the code, name or sort order of a price zone.
+  /// Changes the code, name, sort order, or default pricing formula of a price zone.
   @PUT('/api/v1/price-zones/{id}')
   Future<PriceZone> updatePriceZone({
     @Path('id') required String id,

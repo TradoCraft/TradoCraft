@@ -12,12 +12,18 @@ class PriceZoneInput {
   const PriceZoneInput({
     required this.code,
     required this.name,
+    this.defaultMultiplier,
+    this.defaultRounding,
     this.sortOrder,
   });
   
   factory PriceZoneInput.fromJson(Map<String, Object?> json) => _$PriceZoneInputFromJson(json);
   
   final String code;
+  @JsonKey(includeIfNull: false,name: 'default_multiplier')
+  final String? defaultMultiplier;
+  @JsonKey(includeIfNull: false,name: 'default_rounding')
+  final String? defaultRounding;
   final String name;
   @JsonKey(includeIfNull: false,name: 'sort_order')
   final int? sortOrder;

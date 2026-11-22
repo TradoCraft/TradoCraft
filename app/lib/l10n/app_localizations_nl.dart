@@ -11454,4 +11454,83 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get cbWordingHelp => 'Gebruik deze plaatshouders in de factuurtekst.';
+
+  @override
+  String get defaultMultiplier => 'Standaard vermenigvuldiger';
+
+  @override
+  String get defaultMultiplierHelp =>
+      'Ten opzichte van de eerste zone (bijv. 1.15 = +15%)';
+
+  @override
+  String get defaultMultiplierInvalid =>
+      'Vermenigvuldiger moet een positief getal zijn';
+
+  @override
+  String get defaultRounding => 'Afronding';
+
+  @override
+  String get roundingNone => 'Geen';
+
+  @override
+  String get baseZone => 'Basis';
+
+  @override
+  String get formula => 'Formule';
+
+  @override
+  String get enterAtLeastOnePrice => 'Vul minstens één prijs in';
+
+  @override
+  String get resetToFormula => 'Herstel naar formule';
+
+  @override
+  String get applyFormulas => 'Formules toepassen';
+
+  @override
+  String get copyFromProduct => 'Kopiëren van product...';
+
+  @override
+  String copiedFromProduct(String code) {
+    return 'Gekopieerd van $code';
+  }
+
+  @override
+  String get selectProductToCopy =>
+      'Selecteer product om eigenschappen te kopiëren';
+
+  @override
+  String get filterSelectAll => 'Alles selecteren';
+
+  @override
+  String get listDeselectAll => 'Alles deselecteren';
+
+  @override
+  String get userPreferences => 'Voorkeuren';
+
+  @override
+  String get shortcutsTab => 'Sneltoetsen';
+
+  @override
+  String get shortcutSelectAll => 'Alles selecteren / deselecteren';
+
+  @override
+  String get shortcutResetDefaults => 'Standaardwaarden herstellen';
+
+  @override
+  String get shortcutReset => 'Herstellen';
+
+  @override
+  String get shortcutPressKeys => 'Druk op een toetsencombinatie...';
+
+  @override
+  String shortcutConflict(String action, String keys) {
+    return 'Conflict met: $action ($keys)';
+  }
+
+  @override
+  String get shortcutNeedsModifier => 'Gebruik Ctrl, Alt of Cmd met een toets';
+
+  @override
+  String get shortcutCustom => 'Aangepast';
 }

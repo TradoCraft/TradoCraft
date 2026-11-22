@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../features/field/offline/kv_store.dart';
 import '../features/products/product_thumb.dart' show clearProductThumbCache;
+import 'shortcuts/actions.dart' show ShortcutBindings;
 
 /// Connection and identity of the signed-in user.
 ///
@@ -82,6 +83,7 @@ class SessionNotifier extends Notifier<Session> {
 
   Future<void> signOut() async {
     clearProductThumbCache();
+    ShortcutBindings.setOverrides(const {});
     state = Session(serverUrl: state.serverUrl);
     await SessionStore.save(state, ref.read(kvStoreProvider));
   }

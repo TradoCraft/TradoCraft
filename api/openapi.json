@@ -16046,6 +16046,86 @@
         }
       }
     },
+    "/api/v1/me/preferences": {
+      "get": {
+        "tags": [
+          "core"
+        ],
+        "summary": "Returns the authenticated user's preferences.",
+        "operationId": "get_preferences",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserPreferences"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "core"
+        ],
+        "summary": "Replaces the authenticated user's preferences.",
+        "operationId": "put_preferences",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserPreferences"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserPreferences"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/meta/environment": {
       "get": {
         "tags": [
@@ -22652,7 +22732,7 @@
         "tags": [
           "products"
         ],
-        "summary": "Changes the code, name or sort order of a price zone.",
+        "summary": "Changes the code, name, sort order, or default pricing formula of a price zone.",
         "operationId": "update_price_zone",
         "parameters": [
           {
@@ -49742,6 +49822,19 @@
           "code": {
             "type": "string"
           },
+          "default_multiplier": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "1.1500"
+          },
+          "default_rounding": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "id": {
             "type": "string",
             "format": "uuid"
@@ -49765,6 +49858,19 @@
         "properties": {
           "code": {
             "type": "string"
+          },
+          "default_multiplier": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "1.15"
+          },
+          "default_rounding": {
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "name": {
             "type": "string"
@@ -57233,6 +57339,28 @@
           }
         }
       },
+      "ShortcutBinding": {
+        "type": "object",
+        "description": "A single keyboard shortcut chord override.",
+        "required": [
+          "key",
+          "mod"
+        ],
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "Logical key name (e.g. `\"keyB\"`, `\"digit1\"`, `\"enter\"`, `\"escape\"`, `\"slash\"`)."
+          },
+          "mod": {
+            "type": "string",
+            "description": "Modifier group: `\"primary\"` (Alt on Win/Linux, Ctrl on macOS),\n`\"standard\"` (Ctrl on Win/Linux, Cmd on macOS), or `\"none\"`."
+          },
+          "shift": {
+            "type": "boolean",
+            "description": "Whether Shift must also be held."
+          }
+        }
+      },
       "Signature": {
         "type": "object",
         "required": [
@@ -60304,6 +60432,22 @@
               "string",
               "null"
             ]
+          }
+        }
+      },
+      "UserPreferences": {
+        "type": "object",
+        "description": "Per-user preferences stored across sessions and devices.",
+        "properties": {
+          "shortcuts": {
+            "type": "object",
+            "description": "Custom shortcut bindings keyed by `ShortcutAction.name`.",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ShortcutBinding"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
           }
         }
       },

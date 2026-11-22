@@ -47,6 +47,15 @@ class FilterSelection {
 
   static const empty = FilterSelection._({});
 
+  /// Returns a selection where every option of every [FilterDef] is ticked.
+  factory FilterSelection.allFor(List<FilterDef> defs) {
+    if (defs.isEmpty) return empty;
+    return FilterSelection({
+      for (final d in defs)
+        if (d.options.isNotEmpty) d.key: {for (final o in d.options) o.$1},
+    });
+  }
+
   /// Copies [values]; filters without a value are dropped.
   factory FilterSelection(Map<String, Set<String>> values) {
     final copy = <String, Set<String>>{
@@ -87,6 +96,26 @@ class FilterSelection {
       if (e.key != key) e.key: e.value,
   });
 
+  /// Selects all options of [def].
+  FilterSelection withAllOptions(FilterDef def) {
+    final next = {
+      for (final e in _values.entries) e.key: {...e.value},
+    };
+    next[def.key] = {for (final o in def.options) o.$1};
+    return FilterSelection(next);
+  }
+
+  /// Whether every option of [def] is currently selected.
+  bool isAllForDef(FilterDef def) {
+    if (def.options.isEmpty) return true;
+    final selected = of(def.key);
+    return def.options.every((o) => selected.contains(o.$1));
+  }
+
+  /// Whether every option of every [FilterDef] in [defs] is currently selected.
+  bool isAllSelected(List<FilterDef> defs) =>
+      defs.isNotEmpty && defs.every(isAllForDef);
+
   FilterSelection cleared() => empty;
 
   /// Keeps only the filters and options that [defs] know.
@@ -97,6 +126,43 @@ class FilterSelection {
       if (v.isNotEmpty) next[d.key] = v;
     }
     return FilterSelection(next);
+  }
+
+  /// One chip per filter with an active (non-full) selection, in the order of [defs].
+  List<FilterChipData> activeChips(List<FilterDef> defs, String or) => [
+    for (final d in defs)
+      if (of(d.key).isNotEmpty && !isAllForDef(d))
+        FilterChipData(d.key, d.label, '${d.label}: ${_valueText(d, or)}'),
+  ];
+
+  /// The number of selected values across filters that are not all-selected.
+  int activeCount(List<FilterDef> defs) {
+    var total = 0;
+    for (final d in defs) {
+      if (!isAllForDef(d)) {
+        total += of(d.key).where(d.hasOption).length;
+      }
+    }
+    return total;
+  }
+
+  /// The key of the last active (non-full) chip in the order of [defs], or null.
+  String? lastActiveKey(List<FilterDef> defs) {
+    String? last;
+    for (final d in defs) {
+      if (of(d.key).isNotEmpty && !isAllForDef(d)) last = d.key;
+    }
+    return last;
+  }
+
+  /// The `ListQuery.filters` map, omitting filters where all options are selected.
+  Map<String, Object?> toActiveQuery(List<FilterDef> defs) {
+    final byKey = {for (final d in defs) d.key: d};
+    return {
+      for (final e in _values.entries)
+        if (byKey[e.key] == null || !isAllForDef(byKey[e.key]!))
+          e.key: Set<String>.of(e.value),
+    };
   }
 
   /// One chip per filter with a selection, in the order of [defs]; the values in option order.
