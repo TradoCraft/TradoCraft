@@ -2,7 +2,7 @@ use chrono::{Datelike, Duration, NaiveDate};
 use rust_decimal::Decimal;
 use sqlx::{PgConnection, PgPool};
 use tradocraft_core::{new_id, numbering, AppError, AppResult, CurrentUser};
-use tradocraft_crm::rebates::rebate_rules;
+use tradocraft_crm::rebates::{approved_general_rate, rebate_rules};
 use tradocraft_crm::{get_customer_for_quoting, QuotingCustomer};
 use tradocraft_pricing::{
     percent_of_parent_price, price_line, resolve_rebate, totals, LineInput, PricedLine,
@@ -254,7 +254,11 @@ pub async fn price_lines(
     check_favorite_items(db, company_id, inputs).await?;
     let expanded = expand_options(db, inputs).await?;
     let inputs = &expanded[..];
-    let customer = get_customer_for_quoting(db, company_id, customer_id).await?;
+    let mut customer = get_customer_for_quoting(db, company_id, customer_id).await?;
+    let price_date = ctx.price_date;
+    if let Some(rate) = approved_general_rate(db, company_id, customer_id, price_date).await? {
+        customer.discount_percent = rate;
+    }
     let company = tradocraft_core::company::get_company(db, company_id).await?;
     let vat_rules =
         tradocraft_core::vat_rates::load_country_rules(db, &company.country_code).await?;
@@ -269,7 +273,6 @@ pub async fn price_lines(
         has_vat_number,
         ctx.vat_regime_override,
     );
-    let price_date = ctx.price_date;
     let rules = rebate_rules(db, company_id, customer_id).await?;
     let mut ids: Vec<Uuid> = inputs.iter().map(|l| l.product_id).collect();
     ids.sort();

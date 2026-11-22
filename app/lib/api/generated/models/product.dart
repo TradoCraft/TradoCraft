@@ -28,6 +28,7 @@ class Product {
     this.familyCode,
     this.familyId,
     this.heightMm,
+    this.includedInTurnover,
     this.leadTimeDays,
     this.lengthMm,
     this.packagingCategoryCode,
@@ -68,6 +69,10 @@ class Product {
   @JsonKey(includeIfNull: false,name: 'height_mm')
   final int? heightMm;
   final String id;
+
+  /// Whether this product contributes to turnover-based rebates. Null means unclassified.
+  @JsonKey(includeIfNull: false,name: 'included_in_turnover')
+  final bool? includedInTurnover;
   @JsonKey(includeIfNull: false,name: 'lead_time_days')
   final int? leadTimeDays;
 

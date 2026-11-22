@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/api.dart';
 import '../../l10n/l10n.dart';
+import 'customer_billing_page.dart';
+import 'customer_rebates_page.dart';
 import 'finance_settings_page.dart';
 import 'invoices_page.dart';
 
@@ -37,6 +39,18 @@ final financeSegments = <FinanceSegment>[
     label: (l) => l.finSupplierInvoices,
     permission: 'finance.read',
     builder: (_) => const SupplierInvoicesList(),
+  ),
+  FinanceSegment(
+    id: 'customer-invoices',
+    label: (l) => l.cbCustomerInvoices,
+    permission: 'billing.read',
+    builder: (_) => const CustomerBillingPage(),
+  ),
+  FinanceSegment(
+    id: 'customer-rebates',
+    label: (l) => l.cbAnnualRebates,
+    permission: 'rebates.admin',
+    builder: (_) => const CustomerRebatesPage(),
   ),
   FinanceSegment(
     id: 'settings',

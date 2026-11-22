@@ -96,7 +96,7 @@ async fn export_round_trip_is_unchanged(db: PgPool) {
     let app = setup(db.clone()).await;
     for (entity, header) in [
         ("customers", "code,name,vat_number,email,phone,street,postal_code,city,country_code,language,active,price_zone_code,discount_percent,payment_terms_days,vat_regime"),
-        ("products", "code,name,description,unit,product_type,vat_rate,tracking,family_code,non_discountable,price_on_request,price_is_indicative,active,reorder_min,reorder_max,lead_time_days,barcode,packaging_category_code,length_mm,width_mm,height_mm,weight_g,default_production_remark,vat_category,vat_rate_override"),
+        ("products", "code,name,description,unit,product_type,vat_rate,tracking,family_code,non_discountable,price_on_request,price_is_indicative,active,reorder_min,reorder_max,lead_time_days,barcode,packaging_category_code,length_mm,width_mm,height_mm,weight_g,default_production_remark,vat_category,vat_rate_override,included_in_turnover"),
     ] {
         let (status, csv) = export(&app, VIEWER, entity).await;
         assert_eq!(status, StatusCode::OK);
@@ -303,6 +303,32 @@ async fn products_create_update_dry_run_and_cost_is_kept(db: PgPool) {
 
     let (_, r) = import(&app, ADMIN, "products", false, csv).await;
     assert_eq!(counts(&r), (0, 0, 2), "{r}");
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn product_import_classifies_turnover_eligibility(db: PgPool) {
+    let app = setup(db).await;
+    for (csv, expected) in [
+        (
+            "code,included_in_turnover\nPUMP-05,true\n",
+            Value::Bool(true),
+        ),
+        ("code,name\nPUMP-05,Pump five\n", Value::Bool(true)),
+        (
+            "code,included_in_turnover\nPUMP-05,false\n",
+            Value::Bool(false),
+        ),
+        ("code,included_in_turnover\nPUMP-05,\n", Value::Null),
+    ] {
+        let (status, report) = import(&app, ADMIN, "products", false, csv).await;
+        assert_eq!(status, StatusCode::OK, "{report}");
+        let (_, products) =
+            common::call(&app, ADMIN, Method::GET, "/api/v1/products?q=PUMP-05", None).await;
+        assert_eq!(
+            products["items"][0].get("included_in_turnover"),
+            Some(&expected),
+        );
+    }
 }
 
 /// Row errors of a product file are all reported and nothing is written.

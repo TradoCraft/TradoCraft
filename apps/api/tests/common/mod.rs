@@ -23,6 +23,19 @@ pub async fn setup(db: PgPool) -> axum::Router {
     tradocraft_api::app(state)
 }
 
+pub async fn setup_test_environment(db: PgPool) -> axum::Router {
+    use tradocraft_core::environment::{EnvKind, EnvironmentConfig};
+
+    let state = seeded_state(db).await;
+    tradocraft_api::app_with_environment(
+        state,
+        EnvironmentConfig {
+            name: None,
+            kind: EnvKind::Test,
+        },
+    )
+}
+
 pub async fn setup_with_blobs(db: PgPool) -> (axum::Router, tradocraft_core::BlobStore) {
     let state = seeded_state(db).await;
     let blobs = (*state.blobs).clone();

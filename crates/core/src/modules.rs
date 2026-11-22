@@ -165,7 +165,15 @@ impl Module {
                 ProductionAdmin,
             ],
             Module::Reports => &[ReportsRead, ReportsWrite, ReportsSchedule],
-            Module::Finance => &[FinanceRead, FinanceWrite, FinanceApprove],
+            Module::Finance => &[
+                FinanceRead,
+                FinanceWrite,
+                FinanceApprove,
+                CustomerBillingRead,
+                CustomerBillingWrite,
+                CustomerBillingPost,
+                CustomerRebateAdmin,
+            ],
             Module::Todo => &[TodoUse],
         }
     }

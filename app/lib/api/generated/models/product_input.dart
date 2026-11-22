@@ -17,6 +17,7 @@ class ProductInput {
     this.description,
     this.familyId,
     this.heightMm,
+    this.includedInTurnover,
     this.leadTimeDays,
     this.lengthMm,
     this.nonDiscountable,
@@ -54,6 +55,11 @@ class ProductInput {
   final String? familyId;
   @JsonKey(includeIfNull: false,name: 'height_mm')
   final int? heightMm;
+
+  /// Whether this product contributes to turnover-based rebates. On update, omission preserves.
+  /// the stored classification and null clears it.
+  @JsonKey(includeIfNull: false,name: 'included_in_turnover')
+  final bool? includedInTurnover;
   @JsonKey(includeIfNull: false,name: 'lead_time_days')
   final int? leadTimeDays;
 

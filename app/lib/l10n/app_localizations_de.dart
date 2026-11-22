@@ -1840,6 +1840,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get pricingIndicative => 'unverbindlich';
 
   @override
+  String get productIncludedInTurnover => 'Zählt zum rabattberechtigten Umsatz';
+
+  @override
+  String get productTurnoverUnclassified => 'Nicht klassifiziert';
+
+  @override
   String get pricingIndicativeHelp =>
       'Richtpreis (als unverbindlich gedruckt; Rabatte gelten)';
 
@@ -11293,4 +11299,188 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get tutAttributesDoneBody =>
       'TUT-CTRL speichert nun typisierte, geprüfte Eigenschaften Ihrer Produktlinie. Konfiguratorformeln und CRM-Regeln können sie direkt nutzen, ohne das Datenbankschema zu ändern.';
+
+  @override
+  String get cbAddLine => 'Zeile hinzufügen';
+
+  @override
+  String get cbAddSchedule => 'Staffel hinzufügen';
+
+  @override
+  String get cbAddTier => 'Stufe hinzufügen';
+
+  @override
+  String get cbAnnualRebates => 'Jahresrabatte';
+
+  @override
+  String get cbApproveRate => 'Rabatt freigeben';
+
+  @override
+  String get cbApprovedRate => 'Freigegebener Rabatt';
+
+  @override
+  String get cbAssignedSchedule => 'Zugewiesene Staffel';
+
+  @override
+  String get cbCredit => 'Gutschrift';
+
+  @override
+  String get cbCreditReason => 'Gutschriftgrund';
+
+  @override
+  String get cbCurrency => 'Währung';
+
+  @override
+  String get cbCustomerInvoices => 'Kundenrechnungen';
+
+  @override
+  String get cbCutoff => 'Stichtag';
+
+  @override
+  String get cbDate => 'Belegdatum';
+
+  @override
+  String get cbDescription => 'Beschreibung';
+
+  @override
+  String get cbDiscard => 'Entwurf löschen';
+
+  @override
+  String get cbDomestic => 'Inland';
+
+  @override
+  String get cbDraft => 'Entwurf';
+
+  @override
+  String get cbEligible => 'Zählt zum rabattfähigen Umsatz';
+
+  @override
+  String get cbEligibleSales => 'Rabattfähiger Umsatz';
+
+  @override
+  String get cbEvidence => 'Belegreferenz der Buchhaltung';
+
+  @override
+  String get cbHidden => 'Auf Rechnungen ausgeblendet';
+
+  @override
+  String get cbHighestTierWording => 'Text für höchste Stufe';
+
+  @override
+  String get cbImportBalance => 'Geprüften Saldo importieren';
+
+  @override
+  String get cbIntraEu => 'Innergemeinschaftlich';
+
+  @override
+  String get cbInvoice => 'Rechnung';
+
+  @override
+  String get cbInvoiceWording => 'Rechnungstext';
+
+  @override
+  String get cbLegacyInvoice => 'Historische Rechnung';
+
+  @override
+  String get cbNet => 'Ohne MwSt.';
+
+  @override
+  String get cbNewCredit => 'Neue Gutschrift';
+
+  @override
+  String get cbNewInvoice => 'Neue Kundenrechnung';
+
+  @override
+  String get cbNextTierWording => 'Text für nächste Stufe';
+
+  @override
+  String get cbNoDocuments => 'Keine Kundenrechnungen oder Gutschriften';
+
+  @override
+  String get cbNoSchedule => 'Keine Staffel';
+
+  @override
+  String get cbOpeningBalances => 'Geprüfte Anfangssalden';
+
+  @override
+  String get cbOriginal => 'Ursprüngliche Rechnungsnummer';
+
+  @override
+  String get cbOutsideEu => 'Außerhalb der EU';
+
+  @override
+  String get cbPost => 'Beleg buchen';
+
+  @override
+  String get cbProductCode => 'Produktcode';
+
+  @override
+  String get cbQuantity => 'Menge';
+
+  @override
+  String get cbRate => 'Rabatt (%)';
+
+  @override
+  String get cbRateUnavailable => 'Erreichter Rabatt nicht verfügbar';
+
+  @override
+  String get cbRateYear => 'Rabattjahr';
+
+  @override
+  String get cbRegisterLegacy => 'Historische Rechnung erfassen';
+
+  @override
+  String get cbRemoveLine => 'Entfernen';
+
+  @override
+  String get cbReverseCharge => 'Inländische Steuerschuldumkehr';
+
+  @override
+  String get cbReviewRate => 'Erreichten Rabatt prüfen';
+
+  @override
+  String get cbSalesYear => 'Umsatzjahr';
+
+  @override
+  String get cbSave => 'Speichern';
+
+  @override
+  String get cbSaveDraft => 'Entwurf speichern';
+
+  @override
+  String get cbScheduleName => 'Name der Staffel';
+
+  @override
+  String get cbSchedules => 'Rabattstaffeln';
+
+  @override
+  String get cbShippedDelivery => 'Versandte Lieferung';
+
+  @override
+  String get cbShowProgress => 'Rabattfortschritt auf Rechnungen zeigen';
+
+  @override
+  String get cbThreshold => 'Umsatzschwelle';
+
+  @override
+  String get cbTotal => 'Gesamt';
+
+  @override
+  String get cbUnit => 'Einheit';
+
+  @override
+  String get cbVatRate => 'MwSt.-Satz (%)';
+
+  @override
+  String get cbVatRegime => 'MwSt.-Regelung';
+
+  @override
+  String get cbVatTotal => 'MwSt.-Betrag';
+
+  @override
+  String get cbVisible => 'Auf Rechnungen sichtbar';
+
+  @override
+  String get cbWordingHelp =>
+      'Verwenden Sie diese Platzhalter im Rechnungstext.';
 }

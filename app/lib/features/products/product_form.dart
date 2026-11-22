@@ -87,6 +87,7 @@ class _ProductFormState extends ConsumerState<ProductForm> {
   late String? _familyId = p?.familyId;
   late bool _nonDiscountable = p?.nonDiscountable ?? false;
   late bool _priceOnRequest = p?.priceOnRequest ?? false;
+  late bool? _includedInTurnover = p?.includedInTurnover;
   late bool _priceIsIndicative = p?.priceIsIndicative ?? false;
   late bool _active = p?.active ?? true;
   late String? _packagingId = p?.packagingCategoryId;
@@ -164,6 +165,9 @@ class _ProductFormState extends ConsumerState<ProductForm> {
       familyId: _familyId,
       nonDiscountable: _nonDiscountable,
       priceOnRequest: _priceOnRequest,
+      includedInTurnover: _includedInTurnover == p?.includedInTurnover
+          ? null
+          : _includedInTurnover,
       priceIsIndicative: _priceIsIndicative,
       active: _active,
       standardCost: cost,
@@ -623,6 +627,22 @@ class _ProductFormState extends ConsumerState<ProductForm> {
               value: _priceIsIndicative,
               onChanged: (v) => setState(() => _priceIsIndicative = v ?? false),
             ),
+            gap,
+            DropdownButtonFormField<bool>(
+              key: const ValueKey('included-in-turnover'),
+              initialValue: _includedInTurnover,
+              isExpanded: true,
+              decoration: InputDecoration(
+                labelText: context.l10n.productIncludedInTurnover,
+              ),
+              hint: Text(context.l10n.productTurnoverUnclassified),
+              items: [
+                DropdownMenuItem(value: true, child: Text(context.l10n.yes)),
+                DropdownMenuItem(value: false, child: Text(context.l10n.no)),
+              ],
+              onChanged: (value) => setState(() => _includedInTurnover = value),
+            ),
+            gap,
             DropdownButtonFormField<String>(
               initialValue: _tracking,
               isExpanded: true,

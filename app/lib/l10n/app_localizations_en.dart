@@ -1829,6 +1829,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pricingIndicative => 'indicative';
 
   @override
+  String get productIncludedInTurnover => 'Counts toward rebate turnover';
+
+  @override
+  String get productTurnoverUnclassified => 'Unclassified';
+
+  @override
   String get pricingIndicativeHelp =>
       'Indicative price (printed as indicative; rebates apply)';
 
@@ -11214,4 +11220,187 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get tutAttributesDoneBody =>
       'TUT-CTRL now stores typed, validated properties specific to your product line. Configurator formulas can read them with product(code).attr(\'relay_count\') and CRM match rules can check them without changing the database schema.';
+
+  @override
+  String get cbAddLine => 'Add line';
+
+  @override
+  String get cbAddSchedule => 'Add schedule';
+
+  @override
+  String get cbAddTier => 'Add tier';
+
+  @override
+  String get cbAnnualRebates => 'Annual rebates';
+
+  @override
+  String get cbApproveRate => 'Approve rate';
+
+  @override
+  String get cbApprovedRate => 'Approved rate';
+
+  @override
+  String get cbAssignedSchedule => 'Assigned schedule';
+
+  @override
+  String get cbCredit => 'Credit note';
+
+  @override
+  String get cbCreditReason => 'Credit reason';
+
+  @override
+  String get cbCurrency => 'Currency';
+
+  @override
+  String get cbCustomerInvoices => 'Customer invoices';
+
+  @override
+  String get cbCutoff => 'Cutoff date';
+
+  @override
+  String get cbDate => 'Document date';
+
+  @override
+  String get cbDescription => 'Description';
+
+  @override
+  String get cbDiscard => 'Discard draft';
+
+  @override
+  String get cbDomestic => 'Domestic';
+
+  @override
+  String get cbDraft => 'Draft';
+
+  @override
+  String get cbEligible => 'Counts toward rebate turnover';
+
+  @override
+  String get cbEligibleSales => 'Eligible sales';
+
+  @override
+  String get cbEvidence => 'Accounting evidence reference';
+
+  @override
+  String get cbHidden => 'Hidden on invoices';
+
+  @override
+  String get cbHighestTierWording => 'Highest-tier wording';
+
+  @override
+  String get cbImportBalance => 'Import verified balance';
+
+  @override
+  String get cbIntraEu => 'Intra-EU';
+
+  @override
+  String get cbInvoice => 'Invoice';
+
+  @override
+  String get cbInvoiceWording => 'Invoice wording';
+
+  @override
+  String get cbLegacyInvoice => 'Historical invoice';
+
+  @override
+  String get cbNet => 'Excluding VAT';
+
+  @override
+  String get cbNewCredit => 'New credit note';
+
+  @override
+  String get cbNewInvoice => 'New customer invoice';
+
+  @override
+  String get cbNextTierWording => 'Next-tier wording';
+
+  @override
+  String get cbNoDocuments => 'No customer invoices or credit notes';
+
+  @override
+  String get cbNoSchedule => 'No schedule';
+
+  @override
+  String get cbOpeningBalances => 'Verified opening balances';
+
+  @override
+  String get cbOriginal => 'Original invoice number';
+
+  @override
+  String get cbOutsideEu => 'Outside EU';
+
+  @override
+  String get cbPost => 'Post document';
+
+  @override
+  String get cbProductCode => 'Product code';
+
+  @override
+  String get cbQuantity => 'Quantity';
+
+  @override
+  String get cbRate => 'Rebate (%)';
+
+  @override
+  String get cbRateUnavailable => 'Earned rate unavailable';
+
+  @override
+  String get cbRateYear => 'Rate year';
+
+  @override
+  String get cbRegisterLegacy => 'Register historical invoice';
+
+  @override
+  String get cbRemoveLine => 'Remove';
+
+  @override
+  String get cbReverseCharge => 'Domestic reverse charge';
+
+  @override
+  String get cbReviewRate => 'Review earned rate';
+
+  @override
+  String get cbSalesYear => 'Sales year';
+
+  @override
+  String get cbSave => 'Save';
+
+  @override
+  String get cbSaveDraft => 'Save draft';
+
+  @override
+  String get cbScheduleName => 'Schedule name';
+
+  @override
+  String get cbSchedules => 'Rebate schedules';
+
+  @override
+  String get cbShippedDelivery => 'Shipped delivery';
+
+  @override
+  String get cbShowProgress => 'Show rebate progress on invoices';
+
+  @override
+  String get cbThreshold => 'Eligible sales threshold';
+
+  @override
+  String get cbTotal => 'Total';
+
+  @override
+  String get cbUnit => 'Unit';
+
+  @override
+  String get cbVatRate => 'VAT rate (%)';
+
+  @override
+  String get cbVatRegime => 'VAT regime';
+
+  @override
+  String get cbVatTotal => 'VAT amount';
+
+  @override
+  String get cbVisible => 'Shown on invoices';
+
+  @override
+  String get cbWordingHelp => 'Use these placeholders in your invoice wording.';
 }

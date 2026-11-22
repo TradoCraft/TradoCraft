@@ -5157,6 +5157,871 @@
         }
       }
     },
+    "/api/v1/customer-invoices": {
+      "get": {
+        "tags": [
+          "customer_billing"
+        ],
+        "operationId": "list_customer_documents",
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "customer_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BillingSummary"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": ""
+          },
+          "404": {
+            "description": ""
+          },
+          "409": {
+            "description": ""
+          },
+          "422": {
+            "description": ""
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "customer_billing"
+        ],
+        "operationId": "create_customer_invoice",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvoiceDraftInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingDocument"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": ""
+          },
+          "404": {
+            "description": ""
+          },
+          "409": {
+            "description": ""
+          },
+          "422": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/v1/customer-invoices/credits": {
+      "post": {
+        "tags": [
+          "customer_billing"
+        ],
+        "operationId": "create_customer_credit",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreditDraftInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingDocument"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": ""
+          },
+          "404": {
+            "description": ""
+          },
+          "409": {
+            "description": ""
+          },
+          "422": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/v1/customer-invoices/legacy": {
+      "post": {
+        "tags": [
+          "customer_billing"
+        ],
+        "operationId": "register_legacy_customer_invoice",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LegacyInvoiceInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingDocument"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": ""
+          },
+          "404": {
+            "description": ""
+          },
+          "409": {
+            "description": ""
+          },
+          "422": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/v1/customer-invoices/{id}": {
+      "get": {
+        "tags": [
+          "customer_billing"
+        ],
+        "operationId": "get_customer_document",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingDocument"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": ""
+          },
+          "404": {
+            "description": ""
+          },
+          "409": {
+            "description": ""
+          },
+          "422": {
+            "description": ""
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "customer_billing"
+        ],
+        "operationId": "discard_customer_document",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "403": {
+            "description": ""
+          },
+          "404": {
+            "description": ""
+          },
+          "409": {
+            "description": ""
+          },
+          "422": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/v1/customer-invoices/{id}/pdf": {
+      "get": {
+        "tags": [
+          "customer_billing"
+        ],
+        "operationId": "download_customer_document",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "format": "int32",
+                    "minimum": 0
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": ""
+          },
+          "404": {
+            "description": ""
+          },
+          "422": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/v1/customer-invoices/{id}/post": {
+      "post": {
+        "tags": [
+          "customer_billing"
+        ],
+        "operationId": "post_customer_document",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingDocument"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": ""
+          },
+          "404": {
+            "description": ""
+          },
+          "409": {
+            "description": ""
+          },
+          "422": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/v1/customer-rebates/customers/{customer}/assignment": {
+      "get": {
+        "tags": [
+          "customer_billing"
+        ],
+        "operationId": "get_customer_rebate_assignment",
+        "parameters": [
+          {
+            "name": "customer",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RebateAssignment"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": ""
+          },
+          "404": {
+            "description": ""
+          },
+          "409": {
+            "description": ""
+          },
+          "422": {
+            "description": ""
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "customer_billing"
+        ],
+        "operationId": "set_customer_rebate_assignment",
+        "parameters": [
+          {
+            "name": "customer",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RebateAssignmentInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RebateAssignment"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": ""
+          },
+          "404": {
+            "description": ""
+          },
+          "409": {
+            "description": ""
+          },
+          "422": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/v1/customer-rebates/customers/{customer}/history": {
+      "get": {
+        "tags": [
+          "customer_billing"
+        ],
+        "operationId": "list_customer_rebate_history",
+        "parameters": [
+          {
+            "name": "customer",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RebateHistoricalTotal"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": ""
+          },
+          "404": {
+            "description": ""
+          },
+          "409": {
+            "description": ""
+          },
+          "422": {
+            "description": ""
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "customer_billing"
+        ],
+        "operationId": "upsert_customer_rebate_history",
+        "parameters": [
+          {
+            "name": "customer",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RebateHistoricalInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RebateHistoricalTotal"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": ""
+          },
+          "404": {
+            "description": ""
+          },
+          "409": {
+            "description": ""
+          },
+          "422": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/v1/customer-rebates/customers/{customer}/rates": {
+      "post": {
+        "tags": [
+          "customer_billing"
+        ],
+        "operationId": "approve_customer_rebate_rate",
+        "parameters": [
+          {
+            "name": "customer",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RebateRateApprovalInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RebateRateReview"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": ""
+          },
+          "404": {
+            "description": ""
+          },
+          "409": {
+            "description": ""
+          },
+          "422": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/v1/customer-rebates/customers/{customer}/rates/{year}": {
+      "get": {
+        "tags": [
+          "customer_billing"
+        ],
+        "operationId": "review_customer_rebate_rate",
+        "parameters": [
+          {
+            "name": "customer",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "year",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RebateRateReview"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": ""
+          },
+          "404": {
+            "description": ""
+          },
+          "409": {
+            "description": ""
+          },
+          "422": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/v1/customer-rebates/schedules": {
+      "get": {
+        "tags": [
+          "customer_billing"
+        ],
+        "operationId": "list_customer_rebate_schedules",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RebateSchedule"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": ""
+          },
+          "404": {
+            "description": ""
+          },
+          "409": {
+            "description": ""
+          },
+          "422": {
+            "description": ""
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "customer_billing"
+        ],
+        "operationId": "create_customer_rebate_schedule",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RebateScheduleInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RebateSchedule"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": ""
+          },
+          "404": {
+            "description": ""
+          },
+          "409": {
+            "description": ""
+          },
+          "422": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/v1/customer-rebates/schedules/{schedule}": {
+      "put": {
+        "tags": [
+          "customer_billing"
+        ],
+        "operationId": "update_customer_rebate_schedule",
+        "parameters": [
+          {
+            "name": "schedule",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RebateScheduleInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RebateSchedule"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": ""
+          },
+          "404": {
+            "description": ""
+          },
+          "409": {
+            "description": ""
+          },
+          "422": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/v1/customer-rebates/settings": {
+      "get": {
+        "tags": [
+          "customer_billing"
+        ],
+        "operationId": "get_customer_rebate_settings",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RebateSettings"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": ""
+          },
+          "404": {
+            "description": ""
+          },
+          "409": {
+            "description": ""
+          },
+          "422": {
+            "description": ""
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "customer_billing"
+        ],
+        "operationId": "update_customer_rebate_settings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RebateSettings"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RebateSettings"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": ""
+          },
+          "404": {
+            "description": ""
+          },
+          "409": {
+            "description": ""
+          },
+          "422": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/v1/customers": {
       "get": {
         "tags": [
@@ -35576,6 +36441,272 @@
           }
         }
       },
+      "BillingDocument": {
+        "type": "object",
+        "required": [
+          "document",
+          "lines",
+          "language",
+          "vat_regime",
+          "seller",
+          "customer"
+        ],
+        "properties": {
+          "customer": {
+            "$ref": "#/components/schemas/BillingParty"
+          },
+          "document": {
+            "$ref": "#/components/schemas/BillingSummary"
+          },
+          "language": {
+            "type": "string"
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BillingLine"
+            }
+          },
+          "rebate_progress": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RebateProgress"
+              }
+            ]
+          },
+          "seller": {
+            "$ref": "#/components/schemas/BillingParty"
+          },
+          "vat_regime": {
+            "type": "string"
+          }
+        }
+      },
+      "BillingLine": {
+        "type": "object",
+        "required": [
+          "id",
+          "position",
+          "product_code",
+          "description",
+          "unit",
+          "quantity",
+          "net_unit_price",
+          "net_total",
+          "vat_rate",
+          "vat_total",
+          "gross_total"
+        ],
+        "properties": {
+          "creditable_net_total": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "creditable_quantity": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "delivery_line_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "description": {
+            "type": "string"
+          },
+          "gross_total": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "included_in_turnover": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "net_total": {
+            "type": "string"
+          },
+          "net_unit_price": {
+            "type": "string"
+          },
+          "position": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "product_code": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "string"
+          },
+          "source_invoice_line_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "vat_rate": {
+            "type": "string"
+          },
+          "vat_total": {
+            "type": "string"
+          }
+        }
+      },
+      "BillingParty": {
+        "type": "object",
+        "required": [
+          "name",
+          "street",
+          "postal_code",
+          "city",
+          "country_code"
+        ],
+        "properties": {
+          "city": {
+            "type": "string"
+          },
+          "country_code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "postal_code": {
+            "type": "string"
+          },
+          "street": {
+            "type": "string"
+          },
+          "vat_number": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "BillingSummary": {
+        "type": "object",
+        "required": [
+          "id",
+          "customer_id",
+          "customer_name",
+          "kind",
+          "status",
+          "currency",
+          "document_date",
+          "reason",
+          "is_legacy",
+          "net_total",
+          "vat_total",
+          "gross_total"
+        ],
+        "properties": {
+          "currency": {
+            "type": "string"
+          },
+          "customer_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "customer_name": {
+            "type": "string"
+          },
+          "delivery_note_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "document_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "due_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "evidence_reference": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "gross_total": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "is_legacy": {
+            "type": "boolean"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "net_total": {
+            "type": "string"
+          },
+          "number": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "posted_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "source_invoice_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "source_invoice_number": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "string"
+          },
+          "vat_total": {
+            "type": "string"
+          }
+        }
+      },
       "BindingResult": {
         "type": "object",
         "description": "What signing in with the sample token would do.",
@@ -38501,6 +39632,65 @@
               "null"
             ],
             "description": "The sheet of a workbook; the first one when absent."
+          }
+        }
+      },
+      "CreditDraftInput": {
+        "type": "object",
+        "required": [
+          "invoice_id",
+          "document_date",
+          "reason",
+          "lines"
+        ],
+        "properties": {
+          "document_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "invoice_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreditDraftLineInput"
+            }
+          },
+          "reason": {
+            "type": "string"
+          },
+          "request_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
+      "CreditDraftLineInput": {
+        "type": "object",
+        "required": [
+          "invoice_line_id",
+          "quantity"
+        ],
+        "properties": {
+          "invoice_line_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "net_total": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional refund below the line's remaining value, excluding VAT."
+          },
+          "quantity": {
+            "type": "string",
+            "description": "Quantity in the original invoice line's unit."
           }
         }
       },
@@ -42262,6 +43452,54 @@
         ],
         "description": "An invoice with its lines and the live match report."
       },
+      "InvoiceDraftInput": {
+        "type": "object",
+        "required": [
+          "delivery_note_id",
+          "document_date",
+          "lines"
+        ],
+        "properties": {
+          "delivery_note_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "document_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InvoiceDraftLineInput"
+            }
+          },
+          "request_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
+      "InvoiceDraftLineInput": {
+        "type": "object",
+        "required": [
+          "delivery_line_id",
+          "quantity"
+        ],
+        "properties": {
+          "delivery_line_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "quantity": {
+            "type": "string",
+            "description": "Quantity in the stock unit printed on the delivery note."
+          }
+        }
+      },
       "InvoiceLine": {
         "type": "object",
         "description": "A supplier invoice line.",
@@ -43337,6 +44575,86 @@
               "null"
             ],
             "description": "Defaults to the ticket subject."
+          }
+        }
+      },
+      "LegacyInvoiceInput": {
+        "type": "object",
+        "required": [
+          "customer_id",
+          "number",
+          "document_date",
+          "currency",
+          "vat_regime",
+          "evidence_reference",
+          "lines"
+        ],
+        "properties": {
+          "currency": {
+            "type": "string"
+          },
+          "customer_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "document_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "evidence_reference": {
+            "type": "string",
+            "description": "Reference to the external evidence reviewed by the person registering the invoice."
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LegacyInvoiceLineInput"
+            }
+          },
+          "number": {
+            "type": "string"
+          },
+          "vat_regime": {
+            "type": "string"
+          }
+        }
+      },
+      "LegacyInvoiceLineInput": {
+        "type": "object",
+        "required": [
+          "product_code",
+          "description",
+          "unit",
+          "quantity",
+          "net_total",
+          "vat_total",
+          "vat_rate",
+          "included_in_turnover"
+        ],
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "included_in_turnover": {
+            "type": "boolean"
+          },
+          "net_total": {
+            "type": "string"
+          },
+          "product_code": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "vat_rate": {
+            "type": "string"
+          },
+          "vat_total": {
+            "type": "string"
           }
         }
       },
@@ -48809,6 +50127,13 @@
             "type": "string",
             "format": "uuid"
           },
+          "included_in_turnover": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Whether this product contributes to turnover-based rebates. Null means unclassified."
+          },
           "lead_time_days": {
             "type": [
               "integer",
@@ -49062,6 +50387,13 @@
               "null"
             ],
             "format": "int32"
+          },
+          "included_in_turnover": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Whether this product contributes to turnover-based rebates. On update, omission preserves\nthe stored classification and null clears it."
           },
           "lead_time_days": {
             "type": [
@@ -52074,6 +53406,83 @@
           }
         }
       },
+      "RebateAssignment": {
+        "type": "object",
+        "required": [
+          "customer_id"
+        ],
+        "properties": {
+          "customer_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "schedule_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "RebateAssignmentInput": {
+        "type": "object",
+        "properties": {
+          "schedule_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "RebateHistoricalInput": {
+        "type": "object",
+        "required": [
+          "year",
+          "cutoff",
+          "eligible_sales"
+        ],
+        "properties": {
+          "cutoff": {
+            "type": "string",
+            "format": "date",
+            "description": "Date through which the imported eligible sales have been verified, inclusive."
+          },
+          "eligible_sales": {
+            "type": "string"
+          },
+          "year": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "RebateHistoricalTotal": {
+        "type": "object",
+        "required": [
+          "customer_id",
+          "year",
+          "cutoff",
+          "eligible_sales"
+        ],
+        "properties": {
+          "customer_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "cutoff": {
+            "type": "string",
+            "format": "date"
+          },
+          "eligible_sales": {
+            "type": "string"
+          },
+          "year": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "RebateInput": {
         "type": "object",
         "required": [
@@ -52119,6 +53528,201 @@
               "null"
             ],
             "format": "date"
+          }
+        }
+      },
+      "RebateProgress": {
+        "type": "object",
+        "required": [
+          "eligible_sales",
+          "rate_year",
+          "currency",
+          "message"
+        ],
+        "properties": {
+          "amount_to_next_tier": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "currency": {
+            "type": "string"
+          },
+          "eligible_sales": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "next_rate": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "next_threshold": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "rate_year": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Calendar year for which purchases are earning a rate."
+          }
+        }
+      },
+      "RebateRateApprovalInput": {
+        "type": "object",
+        "required": [
+          "rate_year"
+        ],
+        "properties": {
+          "rate_year": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "RebateRateReview": {
+        "type": "object",
+        "required": [
+          "customer_id",
+          "rate_year"
+        ],
+        "properties": {
+          "approved_rate": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "customer_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "eligible_sales": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "proposed_rate": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "rate_year": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Calendar year in which the approved rate is used. The sales basis is the preceding year."
+          }
+        }
+      },
+      "RebateSchedule": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "effective_year",
+          "tiers"
+        ],
+        "properties": {
+          "effective_year": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "tiers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RebateTier"
+            }
+          }
+        }
+      },
+      "RebateScheduleInput": {
+        "type": "object",
+        "required": [
+          "name",
+          "effective_year",
+          "tiers"
+        ],
+        "properties": {
+          "effective_year": {
+            "type": "integer",
+            "format": "int32",
+            "description": "First pricing year for this version of the schedule."
+          },
+          "name": {
+            "type": "string"
+          },
+          "tiers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RebateTier"
+            }
+          }
+        }
+      },
+      "RebateSettings": {
+        "type": "object",
+        "required": [
+          "show_on_invoices",
+          "wording"
+        ],
+        "properties": {
+          "show_on_invoices": {
+            "type": "boolean"
+          },
+          "wording": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RebateWording"
+            }
+          }
+        }
+      },
+      "RebateTier": {
+        "type": "object",
+        "required": [
+          "threshold",
+          "rate"
+        ],
+        "properties": {
+          "rate": {
+            "type": "string"
+          },
+          "threshold": {
+            "type": "string"
+          }
+        }
+      },
+      "RebateWording": {
+        "type": "object",
+        "required": [
+          "language",
+          "active",
+          "highest"
+        ],
+        "properties": {
+          "active": {
+            "type": "string"
+          },
+          "highest": {
+            "type": "string"
+          },
+          "language": {
+            "type": "string"
           }
         }
       },
@@ -59814,6 +61418,10 @@
     {
       "name": "finance",
       "description": "Supplier invoices (AP register), the three-way match, approval and payment status"
+    },
+    {
+      "name": "customer_billing",
+      "description": "Customer invoices, correction credits, and annual rebates"
     },
     {
       "name": "delivery",

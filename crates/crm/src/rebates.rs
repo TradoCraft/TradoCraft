@@ -5,7 +5,7 @@
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::Json;
-use chrono::{DateTime, NaiveDate, Utc};
+use chrono::{DateTime, Datelike, NaiveDate, Utc};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, PgConnection, PgExecutor};
@@ -17,6 +17,24 @@ use utoipa_axum::routes;
 use uuid::Uuid;
 
 type ErrorBody = tradocraft_core::error::ErrorBody;
+
+/// A finance-approved general rebate applies to new pricing in its earned calendar year.
+pub async fn approved_general_rate<'e>(
+    db: impl PgExecutor<'e>,
+    company_id: Uuid,
+    customer_id: Uuid,
+    price_date: NaiveDate,
+) -> AppResult<Option<Decimal>> {
+    Ok(sqlx::query_scalar(
+        "SELECT rate FROM finance.customer_rebate_rates
+         WHERE company_id = $1 AND customer_id = $2 AND rate_year = $3",
+    )
+    .bind(company_id)
+    .bind(customer_id)
+    .bind(price_date.year())
+    .fetch_optional(db)
+    .await?)
+}
 
 #[derive(Debug, Clone, Serialize, FromRow, ToSchema)]
 pub struct CustomerRebate {

@@ -31,7 +31,7 @@ use crate::{
 
 /// The columns, in export order. `code` is the key; the others are optional in an import file.
 /// `required` means a new product needs a value.
-const COLUMNS: [Column; 24] = [
+const COLUMNS: [Column; 25] = [
     Column::new("code", ColumnKind::Code, true),
     Column::new("name", ColumnKind::Text, true),
     Column::new("description", ColumnKind::Text, false),
@@ -56,6 +56,7 @@ const COLUMNS: [Column; 24] = [
     Column::new("default_production_remark", ColumnKind::Text, false),
     Column::new("vat_category", ColumnKind::Code, false),
     Column::new("vat_rate_override", ColumnKind::Decimal, false),
+    Column::new("included_in_turnover", ColumnKind::Boolean, false),
 ];
 
 /// One product as the cells of an export row, in [`COLUMNS`] order.
@@ -88,6 +89,8 @@ fn export_row(p: &Product) -> Vec<CellValue> {
         CellValue::text(&p.default_production_remark),
         CellValue::text(&p.vat_category),
         dec(p.vat_rate_override),
+        p.included_in_turnover
+            .map_or(CellValue::Empty, CellValue::Bool),
     ]
 }
 
@@ -106,6 +109,8 @@ fn same(p: &Product, i: &ProductInput) -> bool {
         && p.non_discountable == i.non_discountable
         && p.price_on_request == i.price_on_request
         && p.price_is_indicative == i.price_is_indicative
+        && i.included_in_turnover
+            .is_none_or(|value| p.included_in_turnover == value)
         && p.active == i.active
         && p.reorder_min == i.reorder_min
         && p.reorder_max == i.reorder_max
@@ -290,6 +295,7 @@ impl Importable for Products {
                 non_discountable: p.non_discountable,
                 price_on_request: p.price_on_request,
                 price_is_indicative: p.price_is_indicative,
+                included_in_turnover: None,
                 active: p.active,
                 standard_cost: None,
                 reorder_min: p.reorder_min,
@@ -317,6 +323,7 @@ impl Importable for Products {
                 non_discountable: false,
                 price_on_request: false,
                 price_is_indicative: false,
+                included_in_turnover: None,
                 active: true,
                 standard_cost: None,
                 reorder_min: None,
@@ -345,6 +352,11 @@ impl Importable for Products {
         cells
             .boolean("price_is_indicative")
             .apply(&mut input.price_is_indicative);
+        input.included_in_turnover = match cells.boolean("included_in_turnover") {
+            Cell::Absent => None,
+            Cell::Blank => Some(None),
+            Cell::Value(value) => Some(Some(value)),
+        };
         cells.boolean("active").apply(&mut input.active);
 
         let cat_cell = cells.trimmed("vat_category");

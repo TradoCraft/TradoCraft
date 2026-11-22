@@ -3434,6 +3434,18 @@ abstract class AppLocalizations {
   /// **'indicative'**
   String get pricingIndicative;
 
+  /// No description provided for @productIncludedInTurnover.
+  ///
+  /// In en, this message translates to:
+  /// **'Counts toward rebate turnover'**
+  String get productIncludedInTurnover;
+
+  /// No description provided for @productTurnoverUnclassified.
+  ///
+  /// In en, this message translates to:
+  /// **'Unclassified'**
+  String get productTurnoverUnclassified;
+
   /// No description provided for @pricingIndicativeHelp.
   ///
   /// In en, this message translates to:
@@ -19799,6 +19811,372 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'TUT-CTRL now stores typed, validated properties specific to your product line. Configurator formulas can read them with product(code).attr(\'relay_count\') and CRM match rules can check them without changing the database schema.'**
   String get tutAttributesDoneBody;
+
+  /// No description provided for @cbAddLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Add line'**
+  String get cbAddLine;
+
+  /// No description provided for @cbAddSchedule.
+  ///
+  /// In en, this message translates to:
+  /// **'Add schedule'**
+  String get cbAddSchedule;
+
+  /// No description provided for @cbAddTier.
+  ///
+  /// In en, this message translates to:
+  /// **'Add tier'**
+  String get cbAddTier;
+
+  /// No description provided for @cbAnnualRebates.
+  ///
+  /// In en, this message translates to:
+  /// **'Annual rebates'**
+  String get cbAnnualRebates;
+
+  /// No description provided for @cbApproveRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve rate'**
+  String get cbApproveRate;
+
+  /// No description provided for @cbApprovedRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved rate'**
+  String get cbApprovedRate;
+
+  /// No description provided for @cbAssignedSchedule.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned schedule'**
+  String get cbAssignedSchedule;
+
+  /// No description provided for @cbCredit.
+  ///
+  /// In en, this message translates to:
+  /// **'Credit note'**
+  String get cbCredit;
+
+  /// No description provided for @cbCreditReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Credit reason'**
+  String get cbCreditReason;
+
+  /// No description provided for @cbCurrency.
+  ///
+  /// In en, this message translates to:
+  /// **'Currency'**
+  String get cbCurrency;
+
+  /// No description provided for @cbCustomerInvoices.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer invoices'**
+  String get cbCustomerInvoices;
+
+  /// No description provided for @cbCutoff.
+  ///
+  /// In en, this message translates to:
+  /// **'Cutoff date'**
+  String get cbCutoff;
+
+  /// No description provided for @cbDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Document date'**
+  String get cbDate;
+
+  /// No description provided for @cbDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get cbDescription;
+
+  /// No description provided for @cbDiscard.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard draft'**
+  String get cbDiscard;
+
+  /// No description provided for @cbDomestic.
+  ///
+  /// In en, this message translates to:
+  /// **'Domestic'**
+  String get cbDomestic;
+
+  /// No description provided for @cbDraft.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft'**
+  String get cbDraft;
+
+  /// No description provided for @cbEligible.
+  ///
+  /// In en, this message translates to:
+  /// **'Counts toward rebate turnover'**
+  String get cbEligible;
+
+  /// No description provided for @cbEligibleSales.
+  ///
+  /// In en, this message translates to:
+  /// **'Eligible sales'**
+  String get cbEligibleSales;
+
+  /// No description provided for @cbEvidence.
+  ///
+  /// In en, this message translates to:
+  /// **'Accounting evidence reference'**
+  String get cbEvidence;
+
+  /// No description provided for @cbHidden.
+  ///
+  /// In en, this message translates to:
+  /// **'Hidden on invoices'**
+  String get cbHidden;
+
+  /// No description provided for @cbHighestTierWording.
+  ///
+  /// In en, this message translates to:
+  /// **'Highest-tier wording'**
+  String get cbHighestTierWording;
+
+  /// No description provided for @cbImportBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Import verified balance'**
+  String get cbImportBalance;
+
+  /// No description provided for @cbIntraEu.
+  ///
+  /// In en, this message translates to:
+  /// **'Intra-EU'**
+  String get cbIntraEu;
+
+  /// No description provided for @cbInvoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice'**
+  String get cbInvoice;
+
+  /// No description provided for @cbInvoiceWording.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice wording'**
+  String get cbInvoiceWording;
+
+  /// No description provided for @cbLegacyInvoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Historical invoice'**
+  String get cbLegacyInvoice;
+
+  /// No description provided for @cbNet.
+  ///
+  /// In en, this message translates to:
+  /// **'Excluding VAT'**
+  String get cbNet;
+
+  /// No description provided for @cbNewCredit.
+  ///
+  /// In en, this message translates to:
+  /// **'New credit note'**
+  String get cbNewCredit;
+
+  /// No description provided for @cbNewInvoice.
+  ///
+  /// In en, this message translates to:
+  /// **'New customer invoice'**
+  String get cbNewInvoice;
+
+  /// No description provided for @cbNextTierWording.
+  ///
+  /// In en, this message translates to:
+  /// **'Next-tier wording'**
+  String get cbNextTierWording;
+
+  /// No description provided for @cbNoDocuments.
+  ///
+  /// In en, this message translates to:
+  /// **'No customer invoices or credit notes'**
+  String get cbNoDocuments;
+
+  /// No description provided for @cbNoSchedule.
+  ///
+  /// In en, this message translates to:
+  /// **'No schedule'**
+  String get cbNoSchedule;
+
+  /// No description provided for @cbOpeningBalances.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified opening balances'**
+  String get cbOpeningBalances;
+
+  /// No description provided for @cbOriginal.
+  ///
+  /// In en, this message translates to:
+  /// **'Original invoice number'**
+  String get cbOriginal;
+
+  /// No description provided for @cbOutsideEu.
+  ///
+  /// In en, this message translates to:
+  /// **'Outside EU'**
+  String get cbOutsideEu;
+
+  /// No description provided for @cbPost.
+  ///
+  /// In en, this message translates to:
+  /// **'Post document'**
+  String get cbPost;
+
+  /// No description provided for @cbProductCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Product code'**
+  String get cbProductCode;
+
+  /// No description provided for @cbQuantity.
+  ///
+  /// In en, this message translates to:
+  /// **'Quantity'**
+  String get cbQuantity;
+
+  /// No description provided for @cbRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Rebate (%)'**
+  String get cbRate;
+
+  /// No description provided for @cbRateUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Earned rate unavailable'**
+  String get cbRateUnavailable;
+
+  /// No description provided for @cbRateYear.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate year'**
+  String get cbRateYear;
+
+  /// No description provided for @cbRegisterLegacy.
+  ///
+  /// In en, this message translates to:
+  /// **'Register historical invoice'**
+  String get cbRegisterLegacy;
+
+  /// No description provided for @cbRemoveLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get cbRemoveLine;
+
+  /// No description provided for @cbReverseCharge.
+  ///
+  /// In en, this message translates to:
+  /// **'Domestic reverse charge'**
+  String get cbReverseCharge;
+
+  /// No description provided for @cbReviewRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Review earned rate'**
+  String get cbReviewRate;
+
+  /// No description provided for @cbSalesYear.
+  ///
+  /// In en, this message translates to:
+  /// **'Sales year'**
+  String get cbSalesYear;
+
+  /// No description provided for @cbSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get cbSave;
+
+  /// No description provided for @cbSaveDraft.
+  ///
+  /// In en, this message translates to:
+  /// **'Save draft'**
+  String get cbSaveDraft;
+
+  /// No description provided for @cbScheduleName.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule name'**
+  String get cbScheduleName;
+
+  /// No description provided for @cbSchedules.
+  ///
+  /// In en, this message translates to:
+  /// **'Rebate schedules'**
+  String get cbSchedules;
+
+  /// No description provided for @cbShippedDelivery.
+  ///
+  /// In en, this message translates to:
+  /// **'Shipped delivery'**
+  String get cbShippedDelivery;
+
+  /// No description provided for @cbShowProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Show rebate progress on invoices'**
+  String get cbShowProgress;
+
+  /// No description provided for @cbThreshold.
+  ///
+  /// In en, this message translates to:
+  /// **'Eligible sales threshold'**
+  String get cbThreshold;
+
+  /// No description provided for @cbTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get cbTotal;
+
+  /// No description provided for @cbUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'Unit'**
+  String get cbUnit;
+
+  /// No description provided for @cbVatRate.
+  ///
+  /// In en, this message translates to:
+  /// **'VAT rate (%)'**
+  String get cbVatRate;
+
+  /// No description provided for @cbVatRegime.
+  ///
+  /// In en, this message translates to:
+  /// **'VAT regime'**
+  String get cbVatRegime;
+
+  /// No description provided for @cbVatTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'VAT amount'**
+  String get cbVatTotal;
+
+  /// No description provided for @cbVisible.
+  ///
+  /// In en, this message translates to:
+  /// **'Shown on invoices'**
+  String get cbVisible;
+
+  /// No description provided for @cbWordingHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Use these placeholders in your invoice wording.'**
+  String get cbWordingHelp;
 }
 
 class _AppLocalizationsDelegate
