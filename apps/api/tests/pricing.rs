@@ -237,11 +237,13 @@ async fn the_three_price_flags_combine(db: PgPool) {
         e["message"].as_str().unwrap().contains("not discountable"),
         "{e}"
     );
-    let (status, _) = preview(json!([
+    let (status, neg) = preview(json!([
         { "product_id": HOSE, "quantity": "1", "unit_price": "-1" }
     ]))
     .await;
-    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(status, StatusCode::OK, "{neg}");
+    assert_eq!(neg["lines"][0]["price_confirmed"], true);
+    assert_eq!(d(&neg["lines"][0]["line_total"]), "-1");
 
     // An indicative price is the list price: it cannot be overridden on the line.
     let (status, _) = preview(json!([
