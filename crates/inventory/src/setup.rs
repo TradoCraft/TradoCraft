@@ -581,19 +581,13 @@ async fn set_product_uoms(
                      SELECT 1
                      FROM sales.order_lines ol
                      JOIN sales.orders o ON o.id = ol.order_id
+                     JOIN delivery.delivery_note_lines dl ON dl.order_line_id = ol.id
+                     JOIN delivery.delivery_notes dn ON dn.id = dl.delivery_note_id
                      WHERE ol.product_id = $1
                        AND ol.unit = $2
                        AND ol.revision = o.current_revision
                        AND o.status <> 'cancelled'
-                       AND (
-                           o.status <> 'closed'
-                           OR EXISTS (
-                               SELECT 1
-                               FROM delivery.delivery_note_lines dl
-                               JOIN delivery.delivery_notes dn ON dn.id = dl.delivery_note_id
-                               WHERE dl.order_line_id = ol.id AND dn.status = 'shipped'
-                           )
-                       )
+                       AND dn.status = 'shipped'
                  )",
             )
             .bind(id)
