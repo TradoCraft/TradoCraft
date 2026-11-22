@@ -8,7 +8,7 @@ const api = `http://127.0.0.1:${API_PORT}/api/v1`;
 const headers = { 'x-dev-user': 'admin@example.com' };
 
 async function tutorialTicket(request: APIRequestContext) {
-  const response = await request.get(`${api}/tickets`, { headers, params: { q: 'TUT-CART' } });
+  const response = await request.get(`${api}/tickets`, { headers, params: { q: 'CONV-BELT-1M' } });
   await expect(response).toBeOK();
   const matches = (await response.json()).items.filter(
     (item: { contact_email: string }) => item.contact_email === 'maya.okafor@example.test',
@@ -68,37 +68,15 @@ test('the whole tutorial, chapter by chapter', async ({ page, request }) => {
     await page.getByRole('button', { name: 'Start next chapter' }).click();
   });
 
-  await test.step('chapter 1: products and bill of materials', async () => {
-    await expectStep(page, 'product', 'motor');
-    await page.getByRole('button', { name: 'New product' }).click();
-    await typeInto(field(page, 'Code'), 'tut-motor');
-    await typeInto(field(page, 'Name'), 'Motor');
-    await page.getByRole('button', { name: 'Save' }).click();
-    await expect(page.getByRole('alertdialog')).toBeHidden();
-    await expectStep(page, 'product', 'motor');
-    await page.getByRole('button', { name: 'Do this step for me' }).click();
-    await expect(page.getByText('1. New product', { exact: true })).toBeVisible();
-    await expect(page.getByText('2. Code, Name, Type', { exact: true })).toBeVisible();
-    await expect(page.getByText('3. Save', { exact: true })).toBeVisible();
-    await page.getByRole('button', { name: 'Run this step' }).click();
-    await expectStep(page, 'product', 'frame');
-    const motorSearch = await request.get(`${api}/products`, {
-      headers,
-      params: { q: 'TUT-MOTOR' },
-    });
-    await expect(motorSearch).toBeOK();
-    const motors = (await motorSearch.json()).items;
-    expect(motors.filter((item: { code: string }) => item.code === 'TUT-MOTOR'))
-      .toEqual([expect.objectContaining({ name: 'Motor', product_type: 'purchased' })]);
-    expect(motors).toEqual(expect.arrayContaining([
-      expect.objectContaining({ code: 'tut-motor', name: 'Motor' }),
-    ]));
+  await test.step('chapter 1: conveyor belts & motors', async () => {
+    await expectStep(page, 'conveyors', 'motor1p');
     for (const [step, code, name, type] of [
-      ['frame', 'TUT-FRAME', 'Frame', 'purchased'],
-      ['controller', 'TUT-CTRL', 'Controller', 'purchased'],
-      ['cart', 'TUT-CART', 'Cart', 'manufactured'],
+      ['motor1p', 'MOT-1P-037', 'Single-Phase AC Motor', 'purchased'],
+      ['motor', 'MOT-3P-055', '3-Phase AC Motor', 'purchased'],
+      ['vfd', 'VFD-3P-055', 'Variable Frequency Drive', 'purchased'],
+      ['conveyor', 'CONV-BELT-1M', 'Conveyor Belt Assembly', 'manufactured'],
     ] as const) {
-      await expectStep(page, 'product', step);
+      await expectStep(page, 'conveyors', step);
       await page.getByRole('button', { name: 'New product' }).click();
       await typeInto(field(page, 'Code'), code);
       await typeInto(field(page, 'Name'), name);
@@ -108,26 +86,86 @@ test('the whole tutorial, chapter by chapter', async ({ page, request }) => {
       }
       await page.getByRole('button', { name: 'Save' }).click();
     }
-    await expectStep(page, 'product', 'openCart');
-    await page.getByRole('button', { name: /^TUT-CART Cart/ }).click();
-    await expectStep(page, 'product', 'bomTab');
+    await expectStep(page, 'conveyors', 'openConveyor');
+    await page.getByRole('button', { name: /^CONV-BELT-1M Conveyor Belt Assembly/ }).click();
+    await expectStep(page, 'conveyors', 'svgPreview');
+    await next(page);
+    await expectStep(page, 'conveyors', 'bomTab');
     await page.getByRole('tab', { name: 'Bill of materials' }).click();
     await next(page);
-    await expectStep(page, 'product', 'revision');
+    await expectStep(page, 'conveyors', 'revision');
     await page.getByRole('button', { name: 'New revision' }).click();
-    await expectStep(page, 'product', 'lines');
+    await expectStep(page, 'conveyors', 'lines');
     await expect(page.getByRole('button', { name: /Save draft/ })).toBeVisible();
     await dump(page, 'bom-draft');
-    for (const code of ['TUT-MOTOR', 'TUT-FRAME', 'TUT-CTRL']) {
+    for (const code of ['MOT-3P-055', 'VFD-3P-055']) {
       await searchPick(page, 'Add component', code, new RegExp(`^${code} ·`));
     }
     await page.getByRole('button', { name: 'Save draft' }).click();
-    await expectStep(page, 'product', 'activate');
+    await expectStep(page, 'conveyors', 'activate');
     await page.getByRole('button', { name: 'Activate' }).click();
-    await expectStep(page, 'product', 'done');
+    await expectStep(page, 'conveyors', 'done');
     await page.getByRole('button', { name: 'Next', exact: true }).click();
     await expect(page.getByRole('button', { name: 'Start next chapter' })).toBeVisible();
     await page.getByRole('button', { name: 'Start next chapter' }).click();
+  });
+
+  await test.step('chapter 2: PLCs, parallel licensing & network', async () => {
+    await expectStep(page, 'plc', 'base');
+    for (const [step, code, name, type] of [
+      ['base', 'PLC-BASE', 'Standard PLC (10 Outputs)', 'purchased'],
+      ['lic30', 'PLC-LIC-30', 'PLC 30-Output Parallel License', 'service'],
+      ['lic50', 'PLC-LIC-50', 'PLC 50-Output Parallel License', 'service'],
+      ['lic100', 'PLC-LIC-100', 'PLC 100-Output Parallel License', 'service'],
+      ['expansion', 'PLC-EXP-RS485', 'RS-485 I/O Expansion Module', 'purchased'],
+      ['master', 'PLC-MASTER', 'Master Network Controller', 'purchased'],
+    ] as const) {
+      await expectStep(page, 'plc', step);
+      await page.getByRole('button', { name: 'New product' }).click();
+      await typeInto(field(page, 'Code'), code);
+      await typeInto(field(page, 'Name'), name);
+      if (type !== 'purchased') {
+        await choose(page, 'Type purchased', type);
+      }
+      await page.getByRole('button', { name: 'Save' }).click();
+    }
+    await expectStep(page, 'plc', 'done');
+    await startNextChapter(page);
+  });
+
+  await test.step('chapter 3: RS-485 displays & I2C peripherals', async () => {
+    await expectStep(page, 'displays', 'display');
+    for (const [step, code, name] of [
+      ['display', 'DISP-RS485', 'RS-485 Operator Display'],
+      ['swipe', 'MOD-I2C-SWIPE', 'I2C Swipe Card Reader'],
+      ['temp', 'SENS-I2C-TEMP', 'I2C Temperature Sensor'],
+    ] as const) {
+      await expectStep(page, 'displays', step);
+      await page.getByRole('button', { name: 'New product' }).click();
+      await typeInto(field(page, 'Code'), code);
+      await typeInto(field(page, 'Name'), name);
+      await page.getByRole('button', { name: 'Save' }).click();
+    }
+    await expectStep(page, 'displays', 'done');
+    await startNextChapter(page);
+  });
+
+  await test.step('chapter 4: sensors & PowerFET devices', async () => {
+    await expectStep(page, 'sensors', 'ir');
+    for (const [step, code, name] of [
+      ['ir', 'SENS-IR-24V', 'IR Photoelectric Sensor'],
+      ['analog', 'SENS-420MA', '4-20 mA Analog Sensor'],
+      ['pusher', 'SOL-PUSH', 'PowerFET Solenoid Pusher'],
+      ['labeler', 'SOL-LABEL', 'PowerFET Label Stamper'],
+    ] as const) {
+      await expectStep(page, 'sensors', step);
+      await page.getByRole('button', { name: 'New product' }).click();
+      await typeInto(field(page, 'Code'), code);
+      await typeInto(field(page, 'Name'), name);
+      await page.getByRole('button', { name: 'Save' }).click();
+    }
+    await expectStep(page, 'sensors', 'done');
+    await startNextChapter(page);
   });
 
   await test.step('chapter 2: suppliers and price lists', async () => {
@@ -150,9 +188,9 @@ test('the whole tutorial, chapter by chapter', async ({ page, request }) => {
     await expectStep(page, 'suppliers', 'openA');
     await takeMeThere(page); // the supplier's own screen
     for (const [step, code, price, lead, moq] of [
-      ['priceMotor', 'TUT-MOTOR', 120, 14, 5],
-      ['priceFrame', 'TUT-FRAME', 45, 10, 5],
-      ['priceController', 'TUT-CTRL', 30, 7, 5],
+      ['priceMotor', 'MOT-3P-055', 120, 14, 5],
+      ['priceFrame', 'VFD-3P-055', 45, 10, 5],
+      ['priceController', 'PLC-BASE', 30, 7, 5],
     ] as const) {
       await expectStep(page, 'suppliers', step);
       await addSupplierPrice(page, code, price, lead, moq);
@@ -160,7 +198,7 @@ test('the whole tutorial, chapter by chapter', async ({ page, request }) => {
     await expectStep(page, 'suppliers', 'openB');
     await takeMeThere(page);
     await expectStep(page, 'suppliers', 'priceMotorB');
-    await addSupplierPrice(page, 'TUT-MOTOR', 135, 5, 1);
+    await addSupplierPrice(page, 'MOT-3P-055', 135, 5, 1);
     await expectStep(page, 'suppliers', 'done');
     await next(page);
     await expect(page.getByRole('button', { name: 'Start next chapter' })).toBeVisible();
@@ -178,7 +216,7 @@ test('the whole tutorial, chapter by chapter', async ({ page, request }) => {
     // The goods picker lists the supplier's price list as rows with a checkbox (no accessible name) and a
     // quantity box. Typing a quantity above zero ticks the row, so narrow the list with the filter box and
     // type 30 into the one remaining row's Quantity (the first one: "Other products" comes below the list).
-    for (const code of ['TUT-MOTOR', 'TUT-FRAME', 'TUT-CTRL']) {
+    for (const code of ['MOT-3P-055', 'VFD-3P-055', 'PLC-BASE']) {
       await typeInto(field(page, 'Filter goods'), code);
       await typeInto(field(page, 'Quantity').first(), '30');
     }
@@ -278,7 +316,7 @@ test('the whole tutorial, chapter by chapter', async ({ page, request }) => {
     await takeMeThere(page);
     await expectStep(page, 'manufacturing', 'release');
     await page.getByRole('button', { name: /Build for stock/ }).click();
-    await searchPick(page, 'Product', 'TUT-CART', /^TUT-CART ·/);
+    await searchPick(page, 'Product', 'CONV-BELT-1M', /^CONV-BELT-1M ·/);
     await typeInto(field(page, 'Quantity'), '5');
     await page.getByRole('button', { name: 'Release to production' }).click();
     await expectStep(page, 'manufacturing', 'assign');
@@ -371,7 +409,7 @@ test('the whole tutorial, chapter by chapter', async ({ page, request }) => {
     await expectStep(page, 'quotation', 'create');
     await page.getByRole('button', { name: /New quotation/ }).click();
     await searchPick(page, 'Customer', 'Brightwheel', /Brightwheel/);
-    await searchPick(page, 'Add product', 'TUT-CART', /^TUT-CART ·/);
+    await searchPick(page, 'Add product', 'CONV-BELT-1M', /^CONV-BELT-1M ·/);
     await typeInto(field(page, 'Quantity'), '8');
     await expect(page.getByText('11.600,00').first()).toBeVisible();
     await page.getByRole('button', { name: 'Save draft' }).click();
@@ -440,7 +478,7 @@ test('the whole tutorial, chapter by chapter', async ({ page, request }) => {
     await railTo(page, 'Production');
     await overviewTab(page);
     await page.getByRole('button', { name: /Build for stock/ }).click();
-    await searchPick(page, 'Product', 'TUT-CART', /^TUT-CART ·/);
+    await searchPick(page, 'Product', 'CONV-BELT-1M', /^CONV-BELT-1M ·/);
     await typeInto(field(page, 'Quantity'), '4');
     await page.getByRole('button', { name: 'Release to production' }).click();
     await expectStep(page, 'change', 'done');
@@ -508,7 +546,7 @@ test('the whole tutorial, chapter by chapter', async ({ page, request }) => {
   });
 
   await test.step('chapter 11: custom product properties', async () => {
-    // TUT-CTRL was created in chapter 1, so `needs` is skipped automatically.
+    // PLC-BASE was created in chapter 1, so `needs` is skipped automatically.
     await expectStep(page, 'attributes', 'intro');
     await next(page);
     await expectStep(page, 'attributes', 'openAdmin');
@@ -516,10 +554,13 @@ test('the whole tutorial, chapter by chapter', async ({ page, request }) => {
     await page.getByRole('button', { name: 'Attributes', exact: true }).click();
 
     for (const [step, key, label, kind] of [
-      ['relays', 'relay_count', 'Relays', 'Number'],
-      ['fets', 'fet_count', 'FETs', 'Number'],
+      ['relays', 'relay_count', 'Relay outputs', 'Number'],
+      ['fets', 'fet_count', 'PowerFET outputs', 'Number'],
       ['digitalInputs', 'digital_inputs', 'Digital inputs', 'Number'],
-      ['polarized24v', 'supports_24v_polarized_2wire', '24V polarized 2-wire output', 'Yes/No'],
+      ['analog420', 'analog_4_20ma_inputs', '4-20 mA analog inputs', 'Number'],
+      ['rs485Ports', 'rs485_ports', 'RS-485 ports', 'Number'],
+      ['i2cBus', 'i2c_bus', 'I2C peripheral bus', 'Yes/No'],
+      ['licensedOutputs', 'licensed_outputs_tier', 'Licensed outputs tier', 'Number'],
     ] as const) {
       await expectStep(page, 'attributes', step);
       await page.getByRole('button', { name: 'New attribute' }).click();
@@ -536,15 +577,18 @@ test('the whole tutorial, chapter by chapter', async ({ page, request }) => {
 
     await expectStep(page, 'attributes', 'openController');
     await railTo(page, 'Products');
-    await page.getByRole('button', { name: /^TUT-CTRL Controller/ }).click();
+    await page.getByRole('button', { name: /^PLC-BASE Standard PLC/ }).click();
     await expectStep(page, 'attributes', 'suitabilityTab');
     await page.getByRole('tab', { name: 'Suitability' }).click();
     await next(page);
     await expectStep(page, 'attributes', 'fillProperties');
-    await typeInto(field(page, 'Relays'), '4');
-    await typeInto(field(page, 'FETs'), '2');
+    await typeInto(field(page, 'Relay outputs'), '4');
+    await typeInto(field(page, 'PowerFET outputs'), '6');
     await typeInto(field(page, 'Digital inputs'), '8');
-    await choose(page, /^24V polarized 2-wire output/, 'Yes');
+    await typeInto(field(page, '4-20 mA analog inputs'), '2');
+    await typeInto(field(page, 'RS-485 ports'), '2');
+    await choose(page, /^I2C peripheral bus/, 'Yes');
+    await typeInto(field(page, 'Licensed outputs tier'), '10');
     await page.getByRole('button', { name: 'Save', exact: true }).click();
     await expectStep(page, 'attributes', 'done');
     await next(page);
@@ -561,13 +605,16 @@ test('the whole tutorial, chapter by chapter', async ({ page, request }) => {
         expect.objectContaining({ key: 'relay_count', kind: 'number', scope: 'product' }),
         expect.objectContaining({ key: 'fet_count', kind: 'number', scope: 'product' }),
         expect.objectContaining({ key: 'digital_inputs', kind: 'number', scope: 'product' }),
-        expect.objectContaining({ key: 'supports_24v_polarized_2wire', kind: 'boolean', scope: 'product' }),
+        expect.objectContaining({ key: 'analog_4_20ma_inputs', kind: 'number', scope: 'product' }),
+        expect.objectContaining({ key: 'rs485_ports', kind: 'number', scope: 'product' }),
+        expect.objectContaining({ key: 'i2c_bus', kind: 'boolean', scope: 'product' }),
+        expect.objectContaining({ key: 'licensed_outputs_tier', kind: 'number', scope: 'product' }),
       ]),
     );
 
-    const prodRes = await request.get(`${api}/products`, { headers, params: { q: 'TUT-CTRL' } });
+    const prodRes = await request.get(`${api}/products`, { headers, params: { q: 'PLC-BASE' } });
     await expect(prodRes).toBeOK();
-    const ctrl = (await prodRes.json()).items.find((i: { code: string }) => i.code === 'TUT-CTRL');
+    const ctrl = (await prodRes.json()).items.find((i: { code: string }) => i.code === 'PLC-BASE');
     expect(ctrl).toBeTruthy();
 
     const attrsRes = await request.get(`${api}/products/${ctrl.id}/attributes`, { headers });
@@ -575,9 +622,12 @@ test('the whole tutorial, chapter by chapter', async ({ page, request }) => {
     expect(await attrsRes.json()).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ key: 'relay_count', kind: 'number', value: '4' }),
-        expect.objectContaining({ key: 'fet_count', kind: 'number', value: '2' }),
+        expect.objectContaining({ key: 'fet_count', kind: 'number', value: '6' }),
         expect.objectContaining({ key: 'digital_inputs', kind: 'number', value: '8' }),
-        expect.objectContaining({ key: 'supports_24v_polarized_2wire', kind: 'boolean', value: 'true' }),
+        expect.objectContaining({ key: 'analog_4_20ma_inputs', kind: 'number', value: '2' }),
+        expect.objectContaining({ key: 'rs485_ports', kind: 'number', value: '2' }),
+        expect.objectContaining({ key: 'i2c_bus', kind: 'boolean', value: 'true' }),
+        expect.objectContaining({ key: 'licensed_outputs_tier', kind: 'number', value: '10' }),
       ]),
     );
   });
@@ -587,7 +637,10 @@ const tutorialAttrKeys = [
   'relay_count',
   'fet_count',
   'digital_inputs',
-  'supports_24v_polarized_2wire',
+  'analog_4_20ma_inputs',
+  'rs485_ports',
+  'i2c_bus',
+  'licensed_outputs_tier',
 ];
 
 async function cleanupAttributes(request: APIRequestContext, ctrlId: string) {
@@ -614,14 +667,14 @@ async function cleanupAttributes(request: APIRequestContext, ctrlId: string) {
 }
 
 test('chapter 11 (standalone): custom product properties', async ({ page, request }) => {
-  // Ensure TUT-CTRL exists so the chapter starts directly at `intro` without depending on chapter 1.
-  const existing = await request.get(`${api}/products`, { headers, params: { q: 'TUT-CTRL' } });
+  // Ensure PLC-BASE exists so the chapter starts directly at `intro` without depending on chapter 1.
+  const existing = await request.get(`${api}/products`, { headers, params: { q: 'PLC-BASE' } });
   await expect(existing).toBeOK();
-  let ctrl = (await existing.json()).items.find((i: { code: string }) => i.code === 'TUT-CTRL');
+  let ctrl = (await existing.json()).items.find((i: { code: string }) => i.code === 'PLC-BASE');
   if (!ctrl) {
     const created = await request.post(`${api}/products`, {
       headers,
-      data: { code: 'TUT-CTRL', name: 'Controller', product_type: 'purchased' },
+      data: { code: 'PLC-BASE', name: 'Standard PLC (10 Outputs)', product_type: 'purchased' },
     });
     await expect(created).toBeOK();
     ctrl = await created.json();
@@ -633,7 +686,7 @@ test('chapter 11 (standalone): custom product properties', async ({ page, reques
     await boot(page);
     await page.getByRole('button', { name: 'Account' }).click();
     await page.getByRole('menuitem', { name: 'Tutorial', exact: true }).click();
-    for (let i = 0; i < 11; i++) {
+    for (let i = 0; i < 14; i++) {
       await page.getByRole('button', { name: 'Skip chapter' }).first().click();
     }
     const start = page.getByRole('button', { name: 'Start', exact: true }).last();
@@ -647,10 +700,13 @@ test('chapter 11 (standalone): custom product properties', async ({ page, reques
     await page.getByRole('button', { name: 'Attributes', exact: true }).click();
 
     for (const [step, key, label, kind] of [
-      ['relays', 'relay_count', 'Relays', 'Number'],
-      ['fets', 'fet_count', 'FETs', 'Number'],
+      ['relays', 'relay_count', 'Relay outputs', 'Number'],
+      ['fets', 'fet_count', 'PowerFET outputs', 'Number'],
       ['digitalInputs', 'digital_inputs', 'Digital inputs', 'Number'],
-      ['polarized24v', 'supports_24v_polarized_2wire', '24V polarized 2-wire output', 'Yes/No'],
+      ['analog420', 'analog_4_20ma_inputs', '4-20 mA analog inputs', 'Number'],
+      ['rs485Ports', 'rs485_ports', 'RS-485 ports', 'Number'],
+      ['i2cBus', 'i2c_bus', 'I2C peripheral bus', 'Yes/No'],
+      ['licensedOutputs', 'licensed_outputs_tier', 'Licensed outputs tier', 'Number'],
     ] as const) {
       await expectStep(page, 'attributes', step);
       await page.getByRole('button', { name: 'New attribute' }).click();
@@ -667,15 +723,18 @@ test('chapter 11 (standalone): custom product properties', async ({ page, reques
 
     await expectStep(page, 'attributes', 'openController');
     await railTo(page, 'Products');
-    await page.getByRole('button', { name: /^TUT-CTRL Controller/ }).click();
+    await page.getByRole('button', { name: /^PLC-BASE Standard PLC/ }).click();
     await expectStep(page, 'attributes', 'suitabilityTab');
     await page.getByRole('tab', { name: 'Suitability' }).click();
     await next(page);
     await expectStep(page, 'attributes', 'fillProperties');
-    await typeInto(field(page, 'Relays'), '4');
-    await typeInto(field(page, 'FETs'), '2');
+    await typeInto(field(page, 'Relay outputs'), '4');
+    await typeInto(field(page, 'PowerFET outputs'), '6');
     await typeInto(field(page, 'Digital inputs'), '8');
-    await choose(page, /^24V polarized 2-wire output/, 'Yes');
+    await typeInto(field(page, '4-20 mA analog inputs'), '2');
+    await typeInto(field(page, 'RS-485 ports'), '2');
+    await choose(page, /^I2C peripheral bus/, 'Yes');
+    await typeInto(field(page, 'Licensed outputs tier'), '10');
     await page.getByRole('button', { name: 'Save', exact: true }).click();
     await expectStep(page, 'attributes', 'done');
     await next(page);
@@ -686,9 +745,12 @@ test('chapter 11 (standalone): custom product properties', async ({ page, reques
     expect(await attrsRes.json()).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ key: 'relay_count', kind: 'number', value: '4' }),
-        expect.objectContaining({ key: 'fet_count', kind: 'number', value: '2' }),
+        expect.objectContaining({ key: 'fet_count', kind: 'number', value: '6' }),
         expect.objectContaining({ key: 'digital_inputs', kind: 'number', value: '8' }),
-        expect.objectContaining({ key: 'supports_24v_polarized_2wire', kind: 'boolean', value: 'true' }),
+        expect.objectContaining({ key: 'analog_4_20ma_inputs', kind: 'number', value: '2' }),
+        expect.objectContaining({ key: 'rs485_ports', kind: 'number', value: '2' }),
+        expect.objectContaining({ key: 'i2c_bus', kind: 'boolean', value: 'true' }),
+        expect.objectContaining({ key: 'licensed_outputs_tier', kind: 'number', value: '10' }),
       ]),
     );
   } finally {

@@ -40,10 +40,10 @@ Map<String, String> _captureProducts(Object? page) {
   final items = page is Map ? page['items'] : null;
   final out = <String, String>{};
   for (final (code, key, expectedType) in [
-    ('TUT-MOTOR', 'motorId', 'purchased'),
-    ('TUT-FRAME', 'frameId', 'purchased'),
-    ('TUT-CTRL', 'controllerId', 'purchased'),
-    ('TUT-CART', 'cartId', 'manufactured'),
+    ('MOT-3P-055', 'motorId', 'purchased'),
+    ('VFD-3P-055', 'frameId', 'purchased'),
+    ('PLC-BASE', 'controllerId', 'purchased'),
+    ('CONV-BELT-1M', 'cartId', 'manufactured'),
   ]) {
     final p = _byField(items, 'code', code);
     final id = p?['id'];
@@ -58,11 +58,11 @@ Map<String, String> _captureProducts(Object? page) {
   return out;
 }
 
-/// A probe that finds the four products of chapter 1 and captures their ids, so chapters can be
+/// A probe that finds the four core story products and captures their ids, so chapters can be
 /// started on their own (the step it sits on is skipped when the products exist).
 const productsProbe = Probe(
   '/api/v1/products',
-  query: {'q': 'TUT-', 'limit': 50},
+  query: {'limit': 100},
   done: _allProducts,
   capture: _productsCapture,
 );

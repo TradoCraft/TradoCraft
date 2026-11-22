@@ -16,6 +16,10 @@ use crate::expr::Value;
 /// The public demo definition, loaded by the development seed.
 pub const DEMO_CONVEYOR_LINE: &str = include_str!("../../../seed/configurators/conveyor_line.json");
 
+/// The automated conveyor & PLC line definition (parallel licensing, RS-485 & I2C).
+pub const PLC_CONVEYOR_LINE: &str =
+    include_str!("../../../seed/configurators/plc_conveyor_line.json");
+
 /// The `format` of an exported model.
 pub const EXPORT_FORMAT: &str = "tradocraft.configurator";
 
@@ -392,11 +396,17 @@ pub fn parse_export(e: &ModelExport) -> AppResult<Definition> {
         .map_err(|e| AppError::Validation(format!("{}: {}", e.path, e.message)))
 }
 
-/// Loads the demo configurator into a company as an active revision, unless a model with its
-/// code exists. Used by the development seed.
+/// Loads the demo configurators into a company as active revisions, unless models with their
+/// codes already exist. Used by the development seed.
 pub async fn seed_demo(db: &sqlx::PgPool, company_id: Uuid) -> AppResult<bool> {
+    let a = seed_export(db, company_id, DEMO_CONVEYOR_LINE).await?;
+    let b = seed_export(db, company_id, PLC_CONVEYOR_LINE).await?;
+    Ok(a || b)
+}
+
+async fn seed_export(db: &sqlx::PgPool, company_id: Uuid, raw: &str) -> AppResult<bool> {
     let export: ModelExport =
-        serde_json::from_str(DEMO_CONVEYOR_LINE).map_err(|e| AppError::Internal(e.into()))?;
+        serde_json::from_str(raw).map_err(|e| AppError::Internal(e.into()))?;
     let def = parse_export(&export)?;
     let errors = definition::validate(&def);
     if !errors.is_empty() {

@@ -13,7 +13,7 @@ String? tutorialMenuPath(
   final module = moduleMenuPath(l, route);
   if (module.isEmpty) return null;
   final tab = switch ((mission.id, step.id)) {
-    ('product', 'bomTab' || 'revision' || 'lines' || 'activate') =>
+    ('conveyors', 'bomTab' || 'revision' || 'lines' || 'activate') =>
       l.billOfMaterials,
     ('suppliers', _)
         when route == '/purchasing' || route.startsWith('/suppliers/') =>
@@ -34,7 +34,14 @@ String? tutorialMenuPath(
     ('prices', 'priceExport' || 'priceHome') => l.prices,
     (
       'attributes',
-      'openAdmin' || 'relays' || 'fets' || 'digitalInputs' || 'polarized24v',
+      'openAdmin' ||
+          'relays' ||
+          'fets' ||
+          'digitalInputs' ||
+          'analog420' ||
+          'rs485Ports' ||
+          'i2cBus' ||
+          'licensedOutputs',
     ) => l.adminAttributes,
     ('attributes', 'suitabilityTab' || 'fillProperties') => l.suitabilityTab,
     _ => null,
@@ -54,14 +61,17 @@ List<String> tutorialManualActions(
     [l.code, l.name].join(', '),
     l.save,
   ],
-  ('product', 'motor' || 'frame' || 'controller' || 'cart') => [
+  ('conveyors', 'motor1p' || 'motor' || 'vfd' || 'conveyor') ||
+  ('plc', 'base' || 'lic30' || 'lic50' || 'lic100' || 'expansion' || 'master') ||
+  ('displays', 'display' || 'swipe' || 'temp') ||
+  ('sensors', 'ir' || 'analog' || 'pusher' || 'labeler') => [
     l.newProduct,
     [l.code, l.name, l.type].join(', '),
     l.save,
   ],
-  ('product', 'revision') => [l.newRevision],
-  ('product', 'lines') => [l.addComponent, l.saveDraft],
-  ('product', 'activate') => [l.activate],
+  ('conveyors', 'revision') => [l.newRevision],
+  ('conveyors', 'lines') => [l.addComponent, l.saveDraft],
+  ('conveyors', 'activate') => [l.activate],
   ('suppliers', 'supplierA' || 'supplierB') => [
     l.purchNewSupplier,
     [l.code, l.name].join(', '),
@@ -120,7 +130,13 @@ List<String> tutorialManualActions(
   ],
   (
     'attributes',
-    'relays' || 'fets' || 'digitalInputs' || 'polarized24v',
+    'relays' ||
+        'fets' ||
+        'digitalInputs' ||
+        'analog420' ||
+        'rs485Ports' ||
+        'i2cBus' ||
+        'licensedOutputs',
   ) => [
     l.newAttrDef,
     [l.attrKey, l.attrLabel, l.type, l.attrScope].join(', '),

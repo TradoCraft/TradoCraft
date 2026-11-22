@@ -13,6 +13,7 @@ import 'package:tradocraft_app/features/field/offline/kv_store.dart';
 import 'package:tradocraft_app/features/tutorial/api_events.dart';
 import 'package:tradocraft_app/features/tutorial/controller.dart';
 import 'package:tradocraft_app/features/tutorial/missions.dart';
+import 'package:tradocraft_app/features/tutorial/missions_sales.dart';
 import 'package:tradocraft_app/features/tutorial/simulated_mail.dart';
 
 import 'fake_http.dart';
@@ -175,7 +176,7 @@ void main() {
   });
 
   group('chapter 7: a new customer writes in', () {
-    final done = ['welcome', 'product', 'suppliers', 'buying', 'invoices', 'manufacturing', 'prices'];
+    final done = ['welcome', 'conveyors', 'plc', 'displays', 'sensors', 'suppliers', 'buying', 'invoices', 'manufacturing', 'prices'];
     test('scripted mails, reply, customer creation and verified link', () async {
       final http = FakeHttp({
         'POST /api/v1/helpdesk/inbound': (b) => {
@@ -307,7 +308,7 @@ void main() {
   });
 
   group('chapter 8: the quotation', () {
-    final done = ['welcome', 'product', 'suppliers', 'buying', 'invoices', 'manufacturing', 'prices', 'customer'];
+    final done = ['welcome', 'conveyors', 'plc', 'displays', 'sensors', 'suppliers', 'buying', 'invoices', 'manufacturing', 'prices', 'customer'];
     test('create, note, send, pdf', () async {
       final http = FakeHttp({
         'POST /api/v1/quotations': (b) => {
@@ -328,7 +329,7 @@ void main() {
       t.routeChanged('/quotations');
       expect(step(), 2);
       expect(
-        c.read(tutorialProvider).context.resolve(allMissions[8].steps[2].route!),
+        c.read(tutorialProvider).context.resolve(quotationMission.steps[2].route!),
         '/quotations/new?customer=cu1',
       );
       await dio.post<Object?>('/api/v1/quotations', data: {
@@ -408,7 +409,7 @@ void main() {
   });
 
   group('chapter 9: change, order, production', () {
-    final done = ['welcome', 'product', 'suppliers', 'buying', 'invoices', 'manufacturing', 'prices', 'customer', 'quotation'];
+    final done = ['welcome', 'conveyors', 'plc', 'displays', 'sensors', 'suppliers', 'buying', 'invoices', 'manufacturing', 'prices', 'customer', 'quotation'];
     test('revision to production, then stock', () async {
       final http = FakeHttp({
         'POST /api/v1/helpdesk/inbound': (_) => {
@@ -506,7 +507,7 @@ void main() {
     });
   });
   group('probe precision of chapters 8 and 9', () {
-    final done = ['welcome', 'product', 'suppliers', 'buying', 'invoices', 'manufacturing', 'prices', 'customer', 'quotation'];
+    final done = ['welcome', 'conveyors', 'plc', 'displays', 'sensors', 'suppliers', 'buying', 'invoices', 'manufacturing', 'prices', 'customer', 'quotation'];
     test('only a revision pointing back at the quotation counts, the same for done and capture', () async {
       final http = FakeHttp({
         'GET /api/v1/quotations': (_) => {
@@ -574,7 +575,7 @@ void main() {
   });
 
   group('scripted e-mail button', () {
-    final done = ['welcome', 'product', 'suppliers', 'buying', 'invoices', 'manufacturing', 'prices'];
+    final done = ['welcome', 'conveyors', 'plc', 'displays', 'sensors', 'suppliers', 'buying', 'invoices', 'manufacturing', 'prices'];
 
     test('language: the first supported device language wins over an unsupported first one', () {
       expect(resolveTutorialLanguage(null, [const Locale('ja'), const Locale('fr', 'BE')]), 'fr');
@@ -638,7 +639,7 @@ void main() {
     });
   });
   group('action edge cases', () {
-    final done = ['welcome', 'product', 'suppliers', 'buying', 'invoices', 'manufacturing', 'prices'];
+    final done = ['welcome', 'conveyors', 'plc', 'displays', 'sensors', 'suppliers', 'buying', 'invoices', 'manufacturing', 'prices'];
     Object? ok(Object? _) =>
         {'ticket_id': 't1', 'ticket_number': 'T1', 'new_ticket': true};
 
@@ -741,7 +742,7 @@ void main() {
   });
 
   group('action ownership', () {
-    final done = ['welcome', 'product', 'suppliers', 'buying', 'invoices', 'manufacturing', 'prices'];
+    final done = ['welcome', 'conveyors', 'plc', 'displays', 'sensors', 'suppliers', 'buying', 'invoices', 'manufacturing', 'prices'];
     Object? ok(Object? _) =>
         {'ticket_id': 't1', 'ticket_number': 'T1', 'new_ticket': true};
 

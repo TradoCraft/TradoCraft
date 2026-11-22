@@ -7,17 +7,20 @@ saved-progress keys.
 | Chapter | Needs at entry | Produces or teaches |
 | --- | --- | --- |
 | 0 · `welcome` | A signed-in learner in a tutorial or test environment | Environment banner, tabs, and tutorial controls |
-| 1 · `product` | Standard demo setup and product editing access | Three components (`TUT-MOTOR`, `TUT-FRAME`, `TUT-CTRL`), the finished `TUT-CART`, and its active BOM |
-| 2 · `suppliers` | The four tutorial products, found by product code | Suppliers `TUT-SUP-A` and `TUT-SUP-B` with component prices |
-| 3 · `buying` | Tutorial products and Supplier A with its component prices. The existing story carries `supplierAId` from chapter 2. | An approved and sent PO, active MAIN warehouse/location if needed, two receipts, and component stock |
-| 4 · `invoices` | Fully received tutorial PO and its `poId` | The match, approval, dispute, and payment workflow for supplier invoices |
-| 5 · `manufacturing` | Tutorial products, an active cart BOM, and enough component stock for the build | A production division, a completed five-cart build, and output stock. It can create MAIN if needed. |
-| 6 · `prices` | The four tutorial products under the current probe and a second demo price zone | `TUT-EXPORT` and the cart priced in two zones |
-| 7 · `customer` | The `TUT-EXPORT` price zone from chapter 6 | Maya's simulated enquiry, a threaded ticket and contact details, and the linked Brightwheel customer |
-| 8 · `quotation` | Brightwheel, a priced tutorial cart, and the cart ID used by the quantity check | An eight-cart quotation, production timing note, sent status, and PDF |
-| 9 · `change` | The sent quotation and its ID, the customer, cart, ticket thread, and the stock and active BOM needed for order production | A revised quotation, a confirmed order, completed production for the order, and a separate stock build |
-| 10 · `helpdesk` | Maya's tutorial ticket, which this chapter can find by sender and capture by ID | An internal note, tag, time entry, escalation, and a tour of prepared answers |
-| 11 · `attributes` | `TUT-CTRL` (Controller), which this chapter can find by code or create via Assist | Four company-specific `product`-scope attribute definitions (`relay_count`, `fet_count`, `digital_inputs`, `supports_24v_polarized_2wire`) and their typed values on `TUT-CTRL` |
+| 1 · `conveyors` | Standard demo setup and product editing access | `MOT-1P-037`, `MOT-3P-055`, `VFD-3P-055`, `CONV-BELT-1M`, interactive SVG assembly preview (with/without motor), and its active BOM |
+| 2 · `plc` | Standard demo setup and product editing access | `PLC-BASE` (10 outputs), parallel output licenses (`PLC-LIC-30`, `PLC-LIC-50`, `PLC-LIC-100`), `PLC-EXP-RS485`, and `PLC-MASTER` |
+| 3 · `displays` | Standard demo setup and product editing access | `DISP-RS485` (RS-485 bus) with I2C `MOD-I2C-SWIPE` (swipe card) and `SENS-I2C-TEMP` (temperature) |
+| 4 · `sensors` | Standard demo setup and product editing access | `SENS-IR-24V` (digital input), `SENS-420MA` (4–20 mA), and PowerFET devices `SOL-PUSH` & `SOL-LABEL` |
+| 5 · `suppliers` | The four core story products (`MOT-3P-055`, `VFD-3P-055`, `PLC-BASE`, `CONV-BELT-1M`), found by product code | Suppliers `TUT-SUP-A` and `TUT-SUP-B` with component prices |
+| 6 · `buying` | Core story products and Supplier A with its component prices. The existing story carries `supplierAId` from `suppliers`. | An approved and sent PO, active MAIN warehouse/location if needed, two receipts, and component stock |
+| 7 · `invoices` | Fully received tutorial PO and its `poId` | The match, approval, dispute, and payment workflow for supplier invoices |
+| 8 · `manufacturing` | Core story products, an active conveyor BOM, and enough component stock for the build | A production division, a completed five-unit build, and output stock. It can create MAIN if needed. |
+| 9 · `prices` | The four core story products under the current probe and a second demo price zone | `TUT-EXPORT` and `CONV-BELT-1M` priced in two zones |
+| 10 · `customer` | The `TUT-EXPORT` price zone from `prices` | Maya's simulated enquiry, a threaded ticket and contact details, and the linked Brightwheel customer |
+| 11 · `quotation` | Brightwheel, a priced `CONV-BELT-1M`, and the product ID used by the quantity check | An eight-unit quotation, production timing note, sent status, and PDF |
+| 12 · `change` | The sent quotation and its ID, the customer, `CONV-BELT-1M`, ticket thread, and the stock and active BOM needed for order production | A revised quotation, a confirmed order, completed production for the order, and a separate stock build |
+| 13 · `helpdesk` | Maya's tutorial ticket, which this chapter can find by sender and capture by ID | An internal note, tag, time entry, escalation, and a tour of prepared answers |
+| 14 · `attributes` | `PLC-BASE` (Standard PLC), which this chapter can find by code or create via Assist | Seven company-specific `product`-scope attribute definitions (`relay_count`, `fet_count`, `digital_inputs`, `analog_4_20ma_inputs`, `rs485_ports`, `i2c_bus`, `licensed_outputs_tier`) and their typed values on `PLC-BASE` |
 
 The production chapters also depend on the relevant production setup and permissions.
 The existing full story uses the development admin as the learner. Selecting a path

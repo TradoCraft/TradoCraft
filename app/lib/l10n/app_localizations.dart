@@ -11640,18 +11640,6 @@ abstract class AppLocalizations {
   /// **'Find your way around: the environment banner, the tabs and the tutorial controls.'**
   String get tutWelcomeSummary;
 
-  /// No description provided for @tutProductTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Your first product'**
-  String get tutProductTitle;
-
-  /// No description provided for @tutProductSummary.
-  ///
-  /// In en, this message translates to:
-  /// **'Hat: product manager. Create three components, a finished product and its bill of materials.'**
-  String get tutProductSummary;
-
   /// No description provided for @tutWelcomeBannerTitle.
   ///
   /// In en, this message translates to:
@@ -11711,150 +11699,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open the Products section. The next chapter starts there.'**
   String get tutWelcomeProductsBody;
-
-  /// No description provided for @tutProductOpenTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Products'**
-  String get tutProductOpenTitle;
-
-  /// No description provided for @tutProductOpenBody.
-  ///
-  /// In en, this message translates to:
-  /// **'Today you are the product manager. Everything the company sells or builds is a product. Open the Products section.'**
-  String get tutProductOpenBody;
-
-  /// No description provided for @tutProductMotorTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Component: Motor'**
-  String get tutProductMotorTitle;
-
-  /// No description provided for @tutProductMotorBody.
-  ///
-  /// In en, this message translates to:
-  /// **'Create the first component. Press New product, enter code TUT-MOTOR and name Motor, keep the type Purchased, and save.'**
-  String get tutProductMotorBody;
-
-  /// No description provided for @tutProductMotorHint.
-  ///
-  /// In en, this message translates to:
-  /// **'The TUT- prefix marks tutorial data, so you can recognise it later.'**
-  String get tutProductMotorHint;
-
-  /// No description provided for @tutProductFrameTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Component: Frame'**
-  String get tutProductFrameTitle;
-
-  /// No description provided for @tutProductFrameBody.
-  ///
-  /// In en, this message translates to:
-  /// **'Create a second component the same way: code TUT-FRAME, name Frame, type Purchased.'**
-  String get tutProductFrameBody;
-
-  /// No description provided for @tutProductControllerTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Component: Controller'**
-  String get tutProductControllerTitle;
-
-  /// No description provided for @tutProductControllerBody.
-  ///
-  /// In en, this message translates to:
-  /// **'And a third one: code TUT-CTRL, name Controller, type Purchased.'**
-  String get tutProductControllerBody;
-
-  /// No description provided for @tutProductCartTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'The finished product'**
-  String get tutProductCartTitle;
-
-  /// No description provided for @tutProductCartBody.
-  ///
-  /// In en, this message translates to:
-  /// **'Now the product you build from those parts. Create code TUT-CART, name Cart, and choose the type Manufactured: only manufactured products have a bill of materials.'**
-  String get tutProductCartBody;
-
-  /// No description provided for @tutProductOpenCartTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Open the cart'**
-  String get tutProductOpenCartTitle;
-
-  /// No description provided for @tutProductOpenCartBody.
-  ///
-  /// In en, this message translates to:
-  /// **'Open the new Cart product from the list to see its tabs.'**
-  String get tutProductOpenCartBody;
-
-  /// No description provided for @tutProductBomTabTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Bill of materials'**
-  String get tutProductBomTabTitle;
-
-  /// No description provided for @tutProductBomTabBody.
-  ///
-  /// In en, this message translates to:
-  /// **'Choose the Bill of materials tab. It lists the components needed to build one unit. A revision is a draft you edit, or the active one that production uses. Press Next when you are there.'**
-  String get tutProductBomTabBody;
-
-  /// No description provided for @tutProductRevisionTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'A first revision'**
-  String get tutProductRevisionTitle;
-
-  /// No description provided for @tutProductRevisionBody.
-  ///
-  /// In en, this message translates to:
-  /// **'Press New revision to start a draft.'**
-  String get tutProductRevisionBody;
-
-  /// No description provided for @tutProductLinesTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Add the components'**
-  String get tutProductLinesTitle;
-
-  /// No description provided for @tutProductLinesBody.
-  ///
-  /// In en, this message translates to:
-  /// **'Search each component and add it: Motor, Frame and Controller. Then press Save draft.'**
-  String get tutProductLinesBody;
-
-  /// No description provided for @tutProductLinesHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Type TUT in the search box to find the three components.'**
-  String get tutProductLinesHint;
-
-  /// No description provided for @tutProductActivateTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Activate it'**
-  String get tutProductActivateTitle;
-
-  /// No description provided for @tutProductActivateBody.
-  ///
-  /// In en, this message translates to:
-  /// **'Press Activate. From now on production and quotations use this revision; later changes go through a new revision.'**
-  String get tutProductActivateBody;
-
-  /// No description provided for @tutProductDoneTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Well done'**
-  String get tutProductDoneTitle;
-
-  /// No description provided for @tutProductDoneBody.
-  ///
-  /// In en, this message translates to:
-  /// **'You have a finished product with a bill of materials of three components. Later chapters build on it.'**
-  String get tutProductDoneBody;
 
   /// No description provided for @purchasing.
   ///
@@ -13089,7 +12933,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutSuppliersNeedsBody.
   ///
   /// In en, this message translates to:
-  /// **'This chapter needs the four products from chapter 1 (TUT-MOTOR, TUT-FRAME, TUT-CTRL and TUT-CART) and could not find them. Go back to the chapter map and finish chapter 1 first, then come back here.'**
+  /// **'This chapter needs the four products from chapter 1 (MOT-3P-055, VFD-3P-055, PLC-BASE and CONV-BELT-1M) and could not find them. Go back to the chapter map and finish chapter 1 first, then come back here.'**
   String get tutSuppliersNeedsBody;
 
   /// No description provided for @tutSuppliersOpenTitle.
@@ -13149,13 +12993,13 @@ abstract class AppLocalizations {
   /// No description provided for @tutSuppliersPriceMotorBody.
   ///
   /// In en, this message translates to:
-  /// **'Add TUT-MOTOR to the price list: unit price 120, lead time 14 days, minimum order quantity 5. Purchase orders use these values to pre-fill their lines.'**
+  /// **'Add MOT-3P-055 to the price list: unit price 120, lead time 14 days, minimum order quantity 5. Purchase orders use these values to pre-fill their lines.'**
   String get tutSuppliersPriceMotorBody;
 
   /// No description provided for @tutSuppliersPriceMotorHint.
   ///
   /// In en, this message translates to:
-  /// **'Pick the product with the search box in the dialog; type TUT-MOTOR.'**
+  /// **'Pick the product with the search box in the dialog; type MOT-3P-055.'**
   String get tutSuppliersPriceMotorHint;
 
   /// No description provided for @tutSuppliersPriceFrameTitle.
@@ -13167,7 +13011,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutSuppliersPriceFrameBody.
   ///
   /// In en, this message translates to:
-  /// **'Same again for TUT-FRAME: unit price 45, lead time 10 days, minimum order quantity 5.'**
+  /// **'Same again for VFD-3P-055: unit price 45, lead time 10 days, minimum order quantity 5.'**
   String get tutSuppliersPriceFrameBody;
 
   /// No description provided for @tutSuppliersPriceControllerTitle.
@@ -13179,7 +13023,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutSuppliersPriceControllerBody.
   ///
   /// In en, this message translates to:
-  /// **'And TUT-CTRL: unit price 30, lead time 7 days, minimum order quantity 5. This supplier now covers all three components.'**
+  /// **'And PLC-BASE: unit price 30, lead time 7 days, minimum order quantity 5. This supplier now covers all three components.'**
   String get tutSuppliersPriceControllerBody;
 
   /// No description provided for @tutSuppliersOpenBTitle.
@@ -13203,7 +13047,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutSuppliersPriceMotorBBody.
   ///
   /// In en, this message translates to:
-  /// **'Give this supplier a price for TUT-MOTOR too: unit price 135, lead time 5 days, minimum order quantity 1. It is dearer but faster; that is the kind of choice a price list helps with.'**
+  /// **'Give this supplier a price for MOT-3P-055 too: unit price 135, lead time 5 days, minimum order quantity 1. It is dearer but faster; that is the kind of choice a price list helps with.'**
   String get tutSuppliersPriceMotorBBody;
 
   /// No description provided for @tutSuppliersDoneTitle.
@@ -13263,7 +13107,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutBuyingOrderBody.
   ///
   /// In en, this message translates to:
-  /// **'Create a purchase order for Voltaic Drives Ltd. After choosing the supplier its goods are listed: tick TUT-MOTOR, TUT-FRAME and TUT-CTRL and set the quantity to 30 for each, then save. The prices come from the price list.'**
+  /// **'Create a purchase order for Voltaic Drives Ltd. After choosing the supplier its goods are listed: tick MOT-3P-055, VFD-3P-055 and PLC-BASE and set the quantity to 30 for each, then save. The prices come from the price list.'**
   String get tutBuyingOrderBody;
 
   /// No description provided for @tutBuyingOrderHint.
@@ -13623,7 +13467,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutManufacturingReleaseBody.
   ///
   /// In en, this message translates to:
-  /// **'Press Build for stock, choose TUT-CART and quantity 5, and release. The bill of materials is frozen and the components are reserved. Normally production starts from a sales order line; you will see that in chapter 9.'**
+  /// **'Press Build for stock, choose CONV-BELT-1M and quantity 5, and release. The bill of materials is frozen and the components are reserved. Normally production starts from a sales order line; you will see that in chapter 9.'**
   String get tutManufacturingReleaseBody;
 
   /// No description provided for @tutManufacturingReleaseHint.
@@ -13701,7 +13545,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutManufacturingStockBody.
   ///
   /// In en, this message translates to:
-  /// **'Open Stock: TUT-CART now has 5 on hand, and each component is down by 5 (25 left of each). Production is what links purchasing to selling.'**
+  /// **'Open Stock: CONV-BELT-1M now has 5 on hand, and each component is down by 5 (25 left of each). Production is what links purchasing to selling.'**
   String get tutManufacturingStockBody;
 
   /// No description provided for @tutManufacturingDoneTitle.
@@ -13779,7 +13623,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutPricesOpenCartBody.
   ///
   /// In en, this message translates to:
-  /// **'Open the product TUT-CART from the Products list. Its first tab, Prices, holds the prices per zone.'**
+  /// **'Open the product CONV-BELT-1M from the Products list. Its first tab, Prices, holds the prices per zone.'**
   String get tutPricesOpenCartBody;
 
   /// No description provided for @tutPricesPriceExportTitle.
@@ -14025,13 +13869,13 @@ abstract class AppLocalizations {
   /// No description provided for @tutQuotationCreateBody.
   ///
   /// In en, this message translates to:
-  /// **'Press New quotation, choose Brightwheel Logistics BV, add TUT-CART with quantity 8 and save the draft. The unit price comes from the customer\'s price zone, TUT-EXPORT, so it is the 1450 you entered in chapter 6.'**
+  /// **'Press New quotation, choose Brightwheel Logistics BV, add CONV-BELT-1M with quantity 8 and save the draft. The unit price comes from the customer\'s price zone, TUT-EXPORT, so it is the 1450 you entered in chapter 6.'**
   String get tutQuotationCreateBody;
 
   /// No description provided for @tutQuotationCreateHint.
   ///
   /// In en, this message translates to:
-  /// **'Use the product search in the lines section; type TUT-CART. If the customer is not preselected, search for Brightwheel.'**
+  /// **'Use the product search in the lines section; type CONV-BELT-1M. If the customer is not preselected, search for Brightwheel.'**
   String get tutQuotationCreateHint;
 
   /// No description provided for @tutQuotationLeadTitle.
@@ -14175,7 +14019,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutChangeEditBody.
   ///
   /// In en, this message translates to:
-  /// **'Set the quantity of TUT-CART to 10 and save the draft.'**
+  /// **'Set the quantity of CONV-BELT-1M to 10 and save the draft.'**
   String get tutChangeEditBody;
 
   /// No description provided for @tutChangeEditHint.
@@ -14343,7 +14187,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutChangeStockBody.
   ///
   /// In en, this message translates to:
-  /// **'Production is often ahead of orders. Open Production, press Build for stock and release 4 more carts of TUT-CART. Without an order they simply land in stock when completed.'**
+  /// **'Production is often ahead of orders. Open Production, press Build for stock and release 4 more carts of CONV-BELT-1M. Without an order they simply land in stock when completed.'**
   String get tutChangeStockBody;
 
   /// No description provided for @tutChangeStockHint.
@@ -19677,7 +19521,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutAttributesNeedsBody.
   ///
   /// In en, this message translates to:
-  /// **'This chapter records technical properties on TUT-CTRL (Controller). Create TUT-CTRL in chapter 1 or use Assist to create it now.'**
+  /// **'This chapter records technical properties on PLC-BASE (Controller). Create PLC-BASE in chapter 1 or use Assist to create it now.'**
   String get tutAttributesNeedsBody;
 
   /// No description provided for @tutAttributesIntroTitle.
@@ -19689,7 +19533,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutAttributesIntroBody.
   ///
   /// In en, this message translates to:
-  /// **'Every company has properties specific to its own product lines—such as relay counts, FET counts, digital inputs, or 24V polarized 2-wire output—that are irrelevant to other companies. Instead of hard-coding columns, an administrator defines them once under Admin → Attributes, and they immediately appear on every product.'**
+  /// **'Every company has properties specific to its own product lines—such as relay counts, FET counts, digital inputs, or 4-20 mA analog inputs, RS-485 ports, I2C bus, or licensed outputs—that are irrelevant to other companies. Instead of hard-coding columns, an administrator defines them once under Admin → Attributes, and they immediately appear on every product.'**
   String get tutAttributesIntroBody;
 
   /// No description provided for @tutAttributesOpenAdminTitle.
@@ -19746,18 +19590,6 @@ abstract class AppLocalizations {
   /// **'Click New attribute and create a Number property with key digital_inputs, label Digital inputs, type Number, and scope Product.'**
   String get tutAttributesDigitalInputsBody;
 
-  /// No description provided for @tutAttributesPolarized24vTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Define 24V polarized 2-wire output'**
-  String get tutAttributesPolarized24vTitle;
-
-  /// No description provided for @tutAttributesPolarized24vBody.
-  ///
-  /// In en, this message translates to:
-  /// **'Click New attribute and create a Yes/No property with key supports_24v_polarized_2wire, label 24V polarized 2-wire output, type Yes/No, and scope Product.'**
-  String get tutAttributesPolarized24vBody;
-
   /// No description provided for @tutAttributesOpenControllerTitle.
   ///
   /// In en, this message translates to:
@@ -19767,7 +19599,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutAttributesOpenControllerBody.
   ///
   /// In en, this message translates to:
-  /// **'Open Products and select TUT-CTRL (Controller).'**
+  /// **'Open Products and select PLC-BASE (Controller).'**
   String get tutAttributesOpenControllerBody;
 
   /// No description provided for @tutAttributesSuitabilityTabTitle.
@@ -19791,7 +19623,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutAttributesFillPropertiesBody.
   ///
   /// In en, this message translates to:
-  /// **'Fill in the fields for keys relay_count = 4, fet_count = 2, digital_inputs = 8, and supports_24v_polarized_2wire = Yes (if a displayed label differs, use the existing field with that key), then click Save.'**
+  /// **'Fill in the fields for keys relay_count = 4, fet_count = 2, digital_inputs = 8, and analog_4_20ma_inputs = 2, rs485_ports = 2, i2c_bus = Yes, licensed_outputs_tier = 10 (if a displayed label differs, use the existing field with that key), then click Save.'**
   String get tutAttributesFillPropertiesBody;
 
   /// No description provided for @tutAttributesFillPropertiesHint.
@@ -19809,7 +19641,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutAttributesDoneBody.
   ///
   /// In en, this message translates to:
-  /// **'TUT-CTRL now stores typed, validated properties specific to your product line. Configurator formulas can read them with product(code).attr(\'relay_count\') and CRM match rules can check them without changing the database schema.'**
+  /// **'PLC-BASE now stores typed, validated properties specific to your product line. Configurator formulas can read them with product(code).attr(\'relay_count\') and CRM match rules can check them without changing the database schema.'**
   String get tutAttributesDoneBody;
 
   /// No description provided for @cbAddLine.
@@ -20321,6 +20153,504 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Custom'**
   String get shortcutCustom;
+
+  /// No description provided for @tutConveyorsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Conveyor belts & motors'**
+  String get tutConveyorsTitle;
+
+  /// No description provided for @tutConveyorsSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Create single-phase and three-phase motors, a VFD, and a conveyor belt assembly with an SVG diagram and BOM.'**
+  String get tutConveyorsSummary;
+
+  /// No description provided for @tutConveyorsOpenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Products'**
+  String get tutConveyorsOpenTitle;
+
+  /// No description provided for @tutConveyorsOpenBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the Products section to build the conveyor belt and motor line.'**
+  String get tutConveyorsOpenBody;
+
+  /// No description provided for @tutConveyorsMotor1pTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Single-phase AC motor'**
+  String get tutConveyorsMotor1pTitle;
+
+  /// No description provided for @tutConveyorsMotor1pBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Create code MOT-1P-037, name Single-Phase AC Motor, type Purchased (for fixed-speed belts via PLC relay outputs).'**
+  String get tutConveyorsMotor1pBody;
+
+  /// No description provided for @tutConveyorsMotorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Three-phase AC motor'**
+  String get tutConveyorsMotorTitle;
+
+  /// No description provided for @tutConveyorsMotorBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Create code MOT-3P-055, name 3-Phase AC Motor, type Purchased (for variable-speed main conveyors).'**
+  String get tutConveyorsMotorBody;
+
+  /// No description provided for @tutConveyorsMotorHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Product codes do not need a prefix; keep them clean and descriptive.'**
+  String get tutConveyorsMotorHint;
+
+  /// No description provided for @tutConveyorsVfdTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Variable frequency drive'**
+  String get tutConveyorsVfdTitle;
+
+  /// No description provided for @tutConveyorsVfdBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Create code VFD-3P-055, name Variable Frequency Drive, type Purchased to control the 3-phase motor.'**
+  String get tutConveyorsVfdBody;
+
+  /// No description provided for @tutConveyorsConveyorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Conveyor belt assembly'**
+  String get tutConveyorsConveyorTitle;
+
+  /// No description provided for @tutConveyorsConveyorBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Create code CONV-BELT-1M, name Conveyor Belt Assembly, type Manufactured.'**
+  String get tutConveyorsConveyorBody;
+
+  /// No description provided for @tutConveyorsOpenConveyorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the conveyor assembly'**
+  String get tutConveyorsOpenConveyorTitle;
+
+  /// No description provided for @tutConveyorsOpenConveyorBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open CONV-BELT-1M to inspect its SVG assembly diagram and bill of materials.'**
+  String get tutConveyorsOpenConveyorBody;
+
+  /// No description provided for @tutConveyorsSvgPreviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'SVG assembly preview (with or without motor)'**
+  String get tutConveyorsSvgPreviewTitle;
+
+  /// No description provided for @tutConveyorsSvgPreviewBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the toggles below to preview the conveyor belt SVG with or without a motor (1-phase or 3-phase + VFD). You can also upload image/svg+xml drawings on the Media tab.'**
+  String get tutConveyorsSvgPreviewBody;
+
+  /// No description provided for @tutConveyorsBomTabTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Bill of materials'**
+  String get tutConveyorsBomTabTitle;
+
+  /// No description provided for @tutConveyorsBomTabBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the Bill of materials tab on CONV-BELT-1M, then press Next.'**
+  String get tutConveyorsBomTabBody;
+
+  /// No description provided for @tutConveyorsRevisionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a BOM revision'**
+  String get tutConveyorsRevisionTitle;
+
+  /// No description provided for @tutConveyorsRevisionBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Press New revision to start a draft BOM.'**
+  String get tutConveyorsRevisionBody;
+
+  /// No description provided for @tutConveyorsLinesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add motor and VFD'**
+  String get tutConveyorsLinesTitle;
+
+  /// No description provided for @tutConveyorsLinesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Add MOT-3P-055 and VFD-3P-055 to the draft BOM, then save.'**
+  String get tutConveyorsLinesBody;
+
+  /// No description provided for @tutConveyorsLinesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search for MOT-3P-055 and VFD-3P-055 in the component picker.'**
+  String get tutConveyorsLinesHint;
+
+  /// No description provided for @tutConveyorsActivateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Activate the BOM'**
+  String get tutConveyorsActivateTitle;
+
+  /// No description provided for @tutConveyorsActivateBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Press Activate so production and configurators can use this conveyor assembly.'**
+  String get tutConveyorsActivateBody;
+
+  /// No description provided for @tutConveyorsDoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Conveyor assembly ready'**
+  String get tutConveyorsDoneTitle;
+
+  /// No description provided for @tutConveyorsDoneBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You created the conveyor belt, 1-phase/3-phase motors, VFD, SVG assembly preview, and active BOM.'**
+  String get tutConveyorsDoneBody;
+
+  /// No description provided for @tutPlcTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'PLCs, parallel licensing & network'**
+  String get tutPlcTitle;
+
+  /// No description provided for @tutPlcSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Model standard PLCs (10 outputs), parallel output licenses (30/50/100), RS-485 expansion, and a master controller.'**
+  String get tutPlcSummary;
+
+  /// No description provided for @tutPlcOpenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Products'**
+  String get tutPlcOpenTitle;
+
+  /// No description provided for @tutPlcOpenBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Products to add the PLC family and its parallel licensing SKUs.'**
+  String get tutPlcOpenBody;
+
+  /// No description provided for @tutPlcBaseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Standard PLC (10 outputs)'**
+  String get tutPlcBaseTitle;
+
+  /// No description provided for @tutPlcBaseBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Create code PLC-BASE, name Standard PLC (10 Outputs), type Purchased.'**
+  String get tutPlcBaseBody;
+
+  /// No description provided for @tutPlcBaseHint.
+  ///
+  /// In en, this message translates to:
+  /// **'A standard PLC ships with 10 usable outputs; parallel licenses unlock 30, 50, or 100 outputs.'**
+  String get tutPlcBaseHint;
+
+  /// No description provided for @tutPlcLic30Title.
+  ///
+  /// In en, this message translates to:
+  /// **'30-output parallel license'**
+  String get tutPlcLic30Title;
+
+  /// No description provided for @tutPlcLic30Body.
+  ///
+  /// In en, this message translates to:
+  /// **'Create code PLC-LIC-30, name PLC 30-Output Parallel License, type Service.'**
+  String get tutPlcLic30Body;
+
+  /// No description provided for @tutPlcLic50Title.
+  ///
+  /// In en, this message translates to:
+  /// **'50-output parallel license'**
+  String get tutPlcLic50Title;
+
+  /// No description provided for @tutPlcLic50Body.
+  ///
+  /// In en, this message translates to:
+  /// **'Create code PLC-LIC-50, name PLC 50-Output Parallel License, type Service.'**
+  String get tutPlcLic50Body;
+
+  /// No description provided for @tutPlcLic100Title.
+  ///
+  /// In en, this message translates to:
+  /// **'100-output parallel license'**
+  String get tutPlcLic100Title;
+
+  /// No description provided for @tutPlcLic100Body.
+  ///
+  /// In en, this message translates to:
+  /// **'Create code PLC-LIC-100, name PLC 100-Output Parallel License, type Service.'**
+  String get tutPlcLic100Body;
+
+  /// No description provided for @tutPlcExpansionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'RS-485 I/O expansion module'**
+  String get tutPlcExpansionTitle;
+
+  /// No description provided for @tutPlcExpansionBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Create code PLC-EXP-RS485, name RS-485 I/O Expansion Module, type Purchased.'**
+  String get tutPlcExpansionBody;
+
+  /// No description provided for @tutPlcMasterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Master network controller'**
+  String get tutPlcMasterTitle;
+
+  /// No description provided for @tutPlcMasterBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Create code PLC-MASTER, name Master Network Controller, type Purchased to govern networked PLCs.'**
+  String get tutPlcMasterBody;
+
+  /// No description provided for @tutPlcDoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'PLC & licensing catalog ready'**
+  String get tutPlcDoneTitle;
+
+  /// No description provided for @tutPlcDoneBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The PLC-CONVEYOR-LINE configurator validates required outputs against the 10/30/50/100 license tier and adds RS-485 expansion and Master Controller automatically.'**
+  String get tutPlcDoneBody;
+
+  /// No description provided for @tutDisplaysTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'RS-485 displays & I2C peripherals'**
+  String get tutDisplaysTitle;
+
+  /// No description provided for @tutDisplaysSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Add operator displays on the RS-485 bus with I2C swipe card and temperature measurement modules.'**
+  String get tutDisplaysSummary;
+
+  /// No description provided for @tutDisplaysOpenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Products'**
+  String get tutDisplaysOpenTitle;
+
+  /// No description provided for @tutDisplaysOpenBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Products to add the RS-485 display and its I2C bus peripherals.'**
+  String get tutDisplaysOpenBody;
+
+  /// No description provided for @tutDisplaysDisplayTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'RS-485 operator display'**
+  String get tutDisplaysDisplayTitle;
+
+  /// No description provided for @tutDisplaysDisplayBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Create code DISP-RS485, name RS-485 Operator Display, type Purchased.'**
+  String get tutDisplaysDisplayBody;
+
+  /// No description provided for @tutDisplaysDisplayHint.
+  ///
+  /// In en, this message translates to:
+  /// **'DISP-RS485 connects to the PLC over RS-485 and exposes an I2C bus for local peripherals.'**
+  String get tutDisplaysDisplayHint;
+
+  /// No description provided for @tutDisplaysSwipeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'I2C swipe card reader'**
+  String get tutDisplaysSwipeTitle;
+
+  /// No description provided for @tutDisplaysSwipeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Create code MOD-I2C-SWIPE, name I2C Swipe Card Reader, type Purchased.'**
+  String get tutDisplaysSwipeBody;
+
+  /// No description provided for @tutDisplaysTempTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'I2C temperature sensor'**
+  String get tutDisplaysTempTitle;
+
+  /// No description provided for @tutDisplaysTempBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Create code SENS-I2C-TEMP, name I2C Temperature Sensor, type Purchased.'**
+  String get tutDisplaysTempBody;
+
+  /// No description provided for @tutDisplaysDoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Displays & I2C bus ready'**
+  String get tutDisplaysDoneTitle;
+
+  /// No description provided for @tutDisplaysDoneBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Operators can authenticate via swipe card and monitor cabinet temperature over the display I2C bus.'**
+  String get tutDisplaysDoneBody;
+
+  /// No description provided for @tutSensorsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sensors & PowerFET devices'**
+  String get tutSensorsTitle;
+
+  /// No description provided for @tutSensorsSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Add IR digital inputs, 4-20 mA analog sensors, and PowerFET-operated solenoid actuators.'**
+  String get tutSensorsSummary;
+
+  /// No description provided for @tutSensorsOpenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Products'**
+  String get tutSensorsOpenTitle;
+
+  /// No description provided for @tutSensorsOpenBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Products to add the line sensors and PowerFET solenoid devices.'**
+  String get tutSensorsOpenBody;
+
+  /// No description provided for @tutSensorsIrTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'IR photoelectric sensor'**
+  String get tutSensorsIrTitle;
+
+  /// No description provided for @tutSensorsIrBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Create code SENS-IR-24V, name IR Photoelectric Sensor, type Purchased (digital input).'**
+  String get tutSensorsIrBody;
+
+  /// No description provided for @tutSensorsIrHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Detects products passing on the conveyor belt and feeds a PLC digital input.'**
+  String get tutSensorsIrHint;
+
+  /// No description provided for @tutSensorsAnalogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'4-20 mA analog sensor'**
+  String get tutSensorsAnalogTitle;
+
+  /// No description provided for @tutSensorsAnalogBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Create code SENS-420MA, name 4-20 mA Analog Sensor, type Purchased.'**
+  String get tutSensorsAnalogBody;
+
+  /// No description provided for @tutSensorsPusherTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'PowerFET solenoid pusher'**
+  String get tutSensorsPusherTitle;
+
+  /// No description provided for @tutSensorsPusherBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Create code SOL-PUSH, name PowerFET Solenoid Pusher, type Purchased.'**
+  String get tutSensorsPusherBody;
+
+  /// No description provided for @tutSensorsLabelerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'PowerFET label stamper'**
+  String get tutSensorsLabelerTitle;
+
+  /// No description provided for @tutSensorsLabelerBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Create code SOL-LABEL, name PowerFET Label Stamper, type Purchased.'**
+  String get tutSensorsLabelerBody;
+
+  /// No description provided for @tutSensorsDoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sensors & actuators ready'**
+  String get tutSensorsDoneTitle;
+
+  /// No description provided for @tutSensorsDoneBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your automation catalog now covers conveyors, motors, PLCs, buses, sensors, and PowerFET mechanical devices.'**
+  String get tutSensorsDoneBody;
+
+  /// No description provided for @tutAttributesAnalog420Title.
+  ///
+  /// In en, this message translates to:
+  /// **'Define 4-20 mA analog inputs'**
+  String get tutAttributesAnalog420Title;
+
+  /// No description provided for @tutAttributesAnalog420Body.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a Number property with key analog_4_20ma_inputs, label 4-20 mA analog inputs, scope Product.'**
+  String get tutAttributesAnalog420Body;
+
+  /// No description provided for @tutAttributesRs485PortsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Define RS-485 ports'**
+  String get tutAttributesRs485PortsTitle;
+
+  /// No description provided for @tutAttributesRs485PortsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a Number property with key rs485_ports, label RS-485 ports, scope Product.'**
+  String get tutAttributesRs485PortsBody;
+
+  /// No description provided for @tutAttributesI2cBusTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Define I2C peripheral bus'**
+  String get tutAttributesI2cBusTitle;
+
+  /// No description provided for @tutAttributesI2cBusBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a Yes/No property with key i2c_bus, label I2C peripheral bus, scope Product.'**
+  String get tutAttributesI2cBusBody;
+
+  /// No description provided for @tutAttributesLicensedOutputsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Define licensed outputs tier'**
+  String get tutAttributesLicensedOutputsTitle;
+
+  /// No description provided for @tutAttributesLicensedOutputsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a Number property with key licensed_outputs_tier, label Licensed outputs tier, scope Product.'**
+  String get tutAttributesLicensedOutputsBody;
 }
 
 class _AppLocalizationsDelegate
