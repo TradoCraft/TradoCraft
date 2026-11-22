@@ -1262,8 +1262,13 @@ async fn render_confirmation(
                 .into_iter()
                 .filter(|(_, (name, _))| !name.ends_with(".svg"))
                 .collect();
-            let raster_doc =
-                order_doc::document_with_images(&company, order, snapshot, language, &raster_images);
+            let raster_doc = order_doc::document_with_images(
+                &company,
+                order,
+                snapshot,
+                language,
+                &raster_images,
+            );
             let raster_files: Vec<(String, Vec<u8>)> = raster_images.into_values().collect();
             match tradocraft_documents::render_pdf_with_files(
                 &state.documents,
@@ -1277,14 +1282,12 @@ async fn render_confirmation(
                 Err(e2) => {
                     tracing::warn!(error = ?e2, "order confirmation with raster pictures failed; rendering without");
                     let bare = order_doc::document(&company, order, snapshot, language);
-                    Ok(
-                        tradocraft_documents::render_pdf(
-                            &state.documents,
-                            "order_confirmation",
-                            &bare,
-                        )
-                        .await?,
+                    Ok(tradocraft_documents::render_pdf(
+                        &state.documents,
+                        "order_confirmation",
+                        &bare,
                     )
+                    .await?)
                 }
             }
         }
