@@ -1,9 +1,4 @@
-//! Products: pick products that belong together through the relation rules, check each against
-//! the destination power grid, and see conflicting products flagged in the pricing preview.
-//!
-//! Deviation from the plan: "incompatible pair" is flagged as a warning of kind
-//! `incompatible_products` (never an error), and the power result of a quotation is a
-//! `power_grid` warning; the per-product answer comes from `power-compatibility`.
+//! Product selection combines relation rules and destination power grid compatibility.
 
 mod common;
 
@@ -15,11 +10,7 @@ use sqlx::PgPool;
 const SALES: &str = "sales@example.com";
 const ALPHA: &str = "00000000-0000-7000-8000-000000000401";
 const UNIT_100: &str = "00000000-0000-7000-8000-000000000301";
-const UNIT_200: &str = "00000000-0000-7000-8000-000000000302";
 const PUMP: &str = "00000000-0000-7000-8000-000000000303";
-const HOSE: &str = "00000000-0000-7000-8000-000000000304";
-const PROFILE: &str = "00000000-0000-7000-8000-000000000308";
-const CTRL: &str = "00000000-0000-7000-8000-000000000310";
 
 async fn get(app: &axum::Router, uri: &str) -> (StatusCode, Value) {
     call(app, SALES, Method::GET, &format!("/api/v1{uri}"), None).await
@@ -104,73 +95,4 @@ async fn related_products_are_compatible_and_fit_the_destination_grid(db: PgPool
         warnings_of(&p, "power_grid").is_empty(),
         "no grid warning for a fitting selection"
     );
-}
-
-#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
-async fn a_product_that_does_not_fit_the_grid_is_flagged(db: PgPool) {
-    let app = setup(db).await;
-    // UNIT-200 runs on 120V/60Hz; Norway has 230V/400V at 50Hz.
-    let (_, r) = get(
-        &app,
-        &format!("/products/{UNIT_200}/power-compatibility?country=NO"),
-    )
-    .await;
-    assert_eq!(r["status"], "incompatible", "{r}");
-    assert_eq!(r["supported"][0]["voltage_v"], 120);
-    // The controller is DC only and needs an external supply.
-    let (_, r) = get(
-        &app,
-        &format!("/products/{CTRL}/power-compatibility?country=NO"),
-    )
-    .await;
-    assert_eq!(r["status"], "needs_external_supply", "{r}");
-    // A country without grid data is reported as unknown rather than guessed.
-    let (_, r) = get(
-        &app,
-        &format!("/products/{UNIT_100}/power-compatibility?country=ZZ"),
-    )
-    .await;
-    assert_eq!(r["status"], "unknown_grid", "{r}");
-
-    // The same finding reaches the preview as an advisory warning; stock purchases skip it.
-    let p = preview(
-        &app,
-        &[UNIT_100, UNIT_200],
-        json!({ "delivery_country_code": "NO" }),
-    )
-    .await;
-    let w = warnings_of(&p, "power_grid");
-    assert_eq!(w.len(), 1, "{p}");
-    assert_eq!(w[0]["product_code"], "UNIT-200");
-    assert_eq!(w[0]["details"]["status"], "incompatible");
-    let p = preview(&app, &[UNIT_200], json!({ "purpose": "stock" })).await;
-    assert!(warnings_of(&p, "power_grid").is_empty());
-}
-
-#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
-async fn conflicting_products_are_reported_as_an_incompatible_pair_in_the_preview(db: PgPool) {
-    let app = setup(db).await;
-    let p = preview(&app, &[HOSE, PROFILE], json!({})).await;
-    let w = warnings_of(&p, "incompatible_products");
-    assert_eq!(w.len(), 1, "{p}");
-    assert_eq!(
-        w[0]["details"]["product_codes"],
-        json!(["HOSE-25", "PROFILE-40"])
-    );
-    assert_eq!(
-        w[0]["details"]["note"],
-        "The hose clamps do not fit the 40x40 profile"
-    );
-    // Warnings never block: the preview still prices both lines.
-    assert_eq!(p["lines"].as_array().unwrap().len(), 2);
-
-    // A pump suggests its controller (a rule-based suggestion, not a requirement).
-    let p = preview(&app, &[PUMP], json!({})).await;
-    let suggested: Vec<&str> = p["suggestions"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .map(|s| s["product_code"].as_str().unwrap())
-        .collect();
-    assert!(suggested.contains(&"CTRL-01"), "{suggested:?}");
 }

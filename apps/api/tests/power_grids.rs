@@ -259,6 +259,11 @@ async fn supplies_are_replaced_and_validated(db: PgPool) {
 async fn compatibility_endpoint_cases(db: PgPool) {
     let app = setup(db).await;
 
+    // The seeded 120V/60Hz supply does not match Norway's grids.
+    let r = compat(&app, UNIT_200, "country=NO").await;
+    assert_eq!(r["status"], "incompatible", "{r}");
+    assert_eq!(r["supported"][0]["voltage_v"], 120);
+
     // 220V product on a 230V country.
     put_supplies(
         &app,
@@ -439,16 +444,27 @@ async fn quotation_warnings_for_mismatch_and_none_for_match(db: PgPool) {
         }
         body
     };
-    let (status, p) = api(
-        &app,
-        SALES,
-        Method::POST,
-        "/pricing/preview",
-        Some(preview(json!({}))),
-    )
-    .await;
-    assert_eq!(status, StatusCode::OK, "{p}");
-    assert_eq!(warning_codes(&p), ["UNIT-200"]);
+    for body in [
+        preview(json!({})),
+        preview(json!({
+            "delivery_country_code": "NO",
+            "lines": [
+                { "product_id": UNIT_100, "quantity": "1" },
+                { "product_id": UNIT_200, "quantity": "1" }
+            ]
+        })),
+    ] {
+        let (status, p) = api(&app, SALES, Method::POST, "/pricing/preview", Some(body)).await;
+        assert_eq!(status, StatusCode::OK, "{p}");
+        assert_eq!(warning_codes(&p), ["UNIT-200"]);
+        let warning = p["warnings"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|w| w["kind"] == "power_grid")
+            .unwrap();
+        assert_eq!(warning["details"]["status"], "incompatible");
+    }
     let (_, p) = api(
         &app,
         SALES,

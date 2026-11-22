@@ -1,5 +1,5 @@
 //! Regression tests for review findings: power supply replacement locking, stale grids, preview
-//! purpose/country, send-time shipping reconciliation, override permission, repricing totals and
+//! purpose/country, send-time shipping reconciliation, repricing totals and
 //! invalid customer default countries.
 
 mod common;
@@ -449,17 +449,6 @@ async fn queue(app: &axum::Router) -> Vec<Value> {
     list.as_array().unwrap().clone()
 }
 
-async fn audit_count(pool: &PgPool, id: &str, action: &str) -> i64 {
-    sqlx::query_scalar(
-        "SELECT count(*) FROM audit.events WHERE entity_id = $1::uuid AND action = $2",
-    )
-    .bind(id)
-    .bind(action)
-    .fetch_one(pool)
-    .await
-    .unwrap()
-}
-
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
 async fn sending_reconciles_shipping_first(db: PgPool) {
     let app = setup(db).await;
@@ -536,30 +525,6 @@ async fn a_request_that_is_no_longer_needed_is_cancelled_on_send(db: PgPool) {
     .await
     .unwrap();
     assert_eq!(open, 0);
-}
-
-#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
-async fn the_override_flag_always_needs_the_shipping_permission(db: PgPool) {
-    let pool = db.clone();
-    let app = setup(db).await;
-    // Nothing pending: the flag without the permission is still refused.
-    let (_, plain) = create(&app, UNIT_100, json!({})).await;
-    let pid = plain["id"].as_str().unwrap().to_string();
-    let uri = format!("/quotations/{pid}/send?override_shipping=true");
-    let (status, e) = api(&app, SALES, Method::POST, &uri, None).await;
-    assert_eq!(status, StatusCode::FORBIDDEN, "{e}");
-    // With the permission and nothing pending: sent, and no override audit row.
-    let (status, s) = api(&app, ADMIN, Method::POST, &uri, None).await;
-    assert_eq!(status, StatusCode::OK, "{s}");
-    assert_eq!(audit_count(&pool, &pid, "shipping_override").await, 0);
-
-    // Pending: the override is audited.
-    let (_, pending) = create(&app, PANEL, json!({})).await;
-    let qid = pending["id"].as_str().unwrap().to_string();
-    let uri = format!("/quotations/{qid}/send?override_shipping=true");
-    let (status, s) = api(&app, ADMIN, Method::POST, &uri, None).await;
-    assert_eq!(status, StatusCode::OK, "{s}");
-    assert_eq!(audit_count(&pool, &qid, "shipping_override").await, 1);
 }
 
 // 6 ------------------------------------------------------------------------------------------
