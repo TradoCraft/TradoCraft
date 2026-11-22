@@ -418,8 +418,8 @@ abstract class ProductsClient {
     @Path('id') required String id,
   });
 
-  /// Adds a picture or video: the request body is the file itself (JPEG, PNG or WebP up to 12 MB,.
-  /// MP4 or WebM up to 64 MB). The first item of a product becomes its default.
+  /// Adds a picture or video: the request body is the file itself (JPEG, PNG, WebP or SVG up to.
+  /// 12 MB, MP4 or WebM up to 64 MB). The first item of a product becomes its default.
   ///
   /// [filename] - The original file name.
   ///

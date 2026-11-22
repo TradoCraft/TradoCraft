@@ -25857,7 +25857,7 @@
         "tags": [
           "products"
         ],
-        "summary": "Adds a picture or video: the request body is the file itself (JPEG, PNG or WebP up to 12 MB,\nMP4 or WebM up to 64 MB). The first item of a product becomes its default.",
+        "summary": "Adds a picture or video: the request body is the file itself (JPEG, PNG, WebP or SVG up to\n12 MB, MP4 or WebM up to 64 MB). The first item of a product becomes its default.",
         "operationId": "upload_product_media",
         "parameters": [
           {
@@ -25997,6 +25997,16 @@
                   }
                 }
               },
+              "image/svg+xml": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "format": "int32",
+                    "minimum": 0
+                  }
+                }
+              },
               "video/mp4": {
                 "schema": {
                   "type": "array",
@@ -26084,6 +26094,16 @@
                 }
               },
               "image/webp": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "format": "int32",
+                    "minimum": 0
+                  }
+                }
+              },
+              "image/svg+xml": {
                 "schema": {
                   "type": "array",
                   "items": {

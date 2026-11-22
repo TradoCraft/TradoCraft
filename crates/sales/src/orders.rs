@@ -1244,7 +1244,7 @@ async fn render_confirmation(
         tradocraft_products::media::default_images(&mut conn, &state.blobs, &product_ids).await?;
     drop(conn);
     let doc = order_doc::document_with_images(&company, order, snapshot, language, &images);
-    let files: Vec<(String, Vec<u8>)> = images.into_values().collect();
+    let files: Vec<(String, Vec<u8>)> = images.values().cloned().collect();
     match tradocraft_documents::render_pdf_with_files(
         &state.documents,
         "order_confirmation",
@@ -1254,6 +1254,43 @@ async fn render_confirmation(
     .await
     {
         Ok(bytes) => Ok(bytes),
+        // a picture typst cannot read must not stop the confirmation from printing; drop SVGs first
+        // so valid JPEG and PNG defaults are preserved
+        Err(e) if images.values().any(|(name, _)| name.ends_with(".svg")) => {
+            tracing::warn!(error = ?e, "order confirmation with SVG pictures failed; retrying without SVGs");
+            let raster_images: std::collections::HashMap<_, _> = images
+                .into_iter()
+                .filter(|(_, (name, _))| !name.ends_with(".svg"))
+                .collect();
+            let raster_doc = order_doc::document_with_images(
+                &company,
+                order,
+                snapshot,
+                language,
+                &raster_images,
+            );
+            let raster_files: Vec<(String, Vec<u8>)> = raster_images.into_values().collect();
+            match tradocraft_documents::render_pdf_with_files(
+                &state.documents,
+                "order_confirmation",
+                &raster_doc,
+                &raster_files,
+            )
+            .await
+            {
+                Ok(bytes) => Ok(bytes),
+                Err(e2) => {
+                    tracing::warn!(error = ?e2, "order confirmation with raster pictures failed; rendering without");
+                    let bare = order_doc::document(&company, order, snapshot, language);
+                    Ok(tradocraft_documents::render_pdf(
+                        &state.documents,
+                        "order_confirmation",
+                        &bare,
+                    )
+                    .await?)
+                }
+            }
+        }
         // a picture typst cannot read must not stop the confirmation from printing
         Err(e) if !files.is_empty() => {
             tracing::warn!(error = ?e, "order confirmation with pictures failed; rendering without");

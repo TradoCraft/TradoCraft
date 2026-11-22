@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -16,11 +16,6 @@ import '../../l10n/l10n.dart';
 import '../tutorial/targets.dart';
 
 const productTypes = ['purchased', 'manufactured', 'configurable', 'service'];
-
-Future<List<PickedPhoto>> _pickProductMedia(BuildContext context) async {
-  final files = await ImagePicker().pickMultipleMedia();
-  return [for (final f in files) PickedPhoto(await f.readAsBytes(), f.name)];
-}
 
 /// Create or edit a product. Returns the saved product, or null when cancelled.
 Future<Product?> showProductForm(
@@ -261,7 +256,7 @@ class _ProductFormState extends ConsumerState<ProductForm> {
   }
 
   Future<void> _addMedia() async {
-    final picker = widget.pickMedia ?? _pickProductMedia;
+    final picker = widget.pickMedia ?? pickProductMedia;
     try {
       final picked = await picker(context);
       if (picked.isEmpty || !mounted) return;
@@ -349,6 +344,11 @@ class _ProductFormState extends ConsumerState<ProductForm> {
                                           AppIcons.playCircle,
                                           size: 36,
                                         ),
+                                      )
+                                    : isSvgBytes(_media[i].bytes)
+                                    ? SvgPicture.memory(
+                                        _media[i].bytes,
+                                        fit: BoxFit.contain,
                                       )
                                     : Image.memory(
                                         _media[i].bytes,

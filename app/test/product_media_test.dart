@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:tradocraft_app/app/api.dart';
@@ -87,6 +89,11 @@ final _png = Uint8List.fromList([
 ]);
 
 final _mp4 = Uint8List.fromList([0, 0, 0, 0x18, ...'ftypmp42'.codeUnits]);
+final _svg = Uint8List.fromList(
+  utf8.encode(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect width="10" height="10"/></svg>',
+  ),
+);
 
 Map<String, Object?> _productJson({
   String? defaultMediaId,
@@ -319,5 +326,65 @@ void main() {
     expect(find.byType(Image), findsOneWidget);
     expect(find.byIcon(AppIcons.playCircle), findsOneWidget);
     expect(find.byIcon(AppIcons.photo), findsOneWidget);
+  });
+
+  testWidgets('SVG pictures render in ProductForm, MediaTab and ProductThumb', (
+    tester,
+  ) async {
+    final http = FakeHttp({
+      'GET /api/v1/me': (_) => meJson(['products.read', 'products.write']),
+      'GET /api/v1/product-families': (_) => <Object?>[],
+      'GET /api/v1/packaging-categories': (_) => <Object?>[],
+      'GET /api/v1/vat-rates': (_) => <Object?>[],
+      'GET /api/v1/products/p1/media': (_) => [
+        {
+          'id': 'm-svg',
+          'kind': 'image',
+          'content_type': 'image/svg+xml',
+          'filename': 'diagram.svg',
+          'size_bytes': _svg.length,
+          'caption': '',
+          'is_default': true,
+          'created_at': '2026-11-21T00:00:00Z',
+        },
+      ],
+      'GET /api/v1/products/p1/media/m-svg': (_) => _svg,
+    });
+
+    await _pump(
+      tester,
+      http,
+      Column(
+        children: [
+          const ProductThumb(productId: 'p1', mediaId: 'm-svg'),
+          const Expanded(child: MediaTab(productId: 'p1')),
+          Builder(
+            builder: (context) => FilledButton(
+              onPressed: () => showProductForm(
+                context,
+                pickMedia: (_) async => [PickedPhoto(_svg, 'diagram.svg')],
+              ),
+              child: const Text('New'),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    // ProductThumb + MediaTab both render the SVG with SvgPicture.
+    expect(find.byType(SvgPicture), findsNWidgets(2));
+
+    // ProductForm staged media preview also renders the SVG with SvgPicture.
+    await tester.tap(find.text('New'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('product-form-add-media')));
+    await tester.pumpAndSettle();
+    expect(find.byType(SvgPicture), findsNWidgets(3));
+  });
+
+  test('isSvgBytes detects SVG after a long leading XML comment', () {
+    final longComment = '<!-- ${'a' * 1024} -->\n<svg xmlns="http://www.w3.org/2000/svg"/>';
+    expect(isSvgBytes(Uint8List.fromList(utf8.encode(longComment))), isTrue);
+    expect(isSvgBytes(_png), isFalse);
   });
 }

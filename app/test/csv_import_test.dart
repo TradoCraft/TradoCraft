@@ -2,12 +2,14 @@ import 'dart:convert';
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:file_selector/file_selector.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tradocraft_app/app/api.dart';
 import 'package:tradocraft_app/features/customers/customers_page.dart';
+import 'package:tradocraft_app/features/field/offline/kv_store.dart';
 import 'package:tradocraft_app/l10n/app_localizations.dart';
 import 'package:tradocraft_app/shared/csv_import_dialog.dart';
 import 'package:tradocraft_app/shared/csv_transfer.dart';
@@ -461,4 +463,83 @@ void main() {
       expect(await run(ShareResultStatus.unavailable), isFalse);
     });
   });
+
+  group('pickFileWithRememberedDirectory', () {
+    test('remembers the chosen folder and reuses it on subsequent picks', () async {
+      final store = MemoryKvStore();
+      final seenInitialDirs = <String?>[];
+      var existingDirs = <String>{'/imports/2026'};
+
+      Future<PickedFile?> pick({String? returnPath}) =>
+          pickFileWithRememberedDirectory(
+            importFileTypes,
+            store: store,
+            dirExists: (path) async => existingDirs.contains(path),
+            opener: ({
+              List<XTypeGroup> acceptedTypeGroups = const [],
+              String? initialDirectory,
+            }) async {
+              seenInitialDirs.add(initialDirectory);
+              if (returnPath == null) return null;
+              return XFile.fromData(
+                Uint8List.fromList(utf8.encode('a;b\n1;2\n')),
+                name: 'customers.csv',
+                path: returnPath,
+              );
+            },
+          );
+
+      // First pick: no saved directory yet.
+      final first = await pick(returnPath: '/imports/2026/customers.csv');
+      expect(first?.name, 'customers.csv');
+      expect(seenInitialDirs.last, isNull);
+      expect(await store.get(lastImportDirectoryKey), '/imports/2026');
+
+      // Second pick: reuses the remembered directory, even if user cancels.
+      final cancelled = await pick();
+      expect(cancelled, isNull);
+      expect(seenInitialDirs.last, '/imports/2026');
+      expect(await store.get(lastImportDirectoryKey), '/imports/2026');
+
+      // Third pick: choosing from another folder updates the remembered directory.
+      existingDirs.add('/imports/archive');
+      await pick(returnPath: '/imports/archive/products.xlsx');
+      expect(seenInitialDirs.last, '/imports/2026');
+      expect(await store.get(lastImportDirectoryKey), '/imports/archive');
+
+      // Fourth pick: if the remembered folder no longer exists, falls back to null.
+      existingDirs.remove('/imports/archive');
+      await pick();
+      expect(seenInitialDirs.last, isNull);
+    });
+
+    test('still returns the selected file when saving the folder fails', () async {
+      final failingStore = _FailingSetKvStore();
+      final picked = await pickFileWithRememberedDirectory(
+        importFileTypes,
+        store: failingStore,
+        opener: ({
+          List<XTypeGroup> acceptedTypeGroups = const [],
+          String? initialDirectory,
+        }) async => XFile.fromData(
+          Uint8List.fromList(utf8.encode('a;b\n1;2\n')),
+          name: 'customers.csv',
+          path: '/imports/2026/customers.csv',
+        ),
+      );
+      expect(picked?.name, 'customers.csv');
+    });
+  });
+}
+
+class _FailingSetKvStore implements KvStore {
+  @override
+  Future<String?> get(String key) async => null;
+
+  @override
+  Future<void> set(String key, String value) =>
+      Future.error(StateError('disk full'));
+
+  @override
+  Future<void> remove(String key) async {}
 }

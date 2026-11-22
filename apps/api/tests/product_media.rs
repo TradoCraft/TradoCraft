@@ -411,3 +411,40 @@ async fn the_default_picture_is_printed_on_the_quotation(db: PgPool) {
     assert_eq!(s, StatusCode::OK);
     assert!(has_image(&quotation_pdf(&app).await), "no image in the PDF");
 }
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn svg_pictures_are_accepted_when_safe_and_rejected_when_unsafe(db: PgPool) {
+    let app = setup(db).await;
+    let svg =
+        b"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 10 10\"><rect width=\"10\" height=\"10\"/></svg>";
+
+    let (s, item) = upload(&app, SALES, UNIT_100, svg.to_vec(), "?filename=diagram.svg").await;
+    assert_eq!(s, StatusCode::CREATED, "{item}");
+    assert_eq!(item["kind"], "image");
+    assert_eq!(item["content_type"], "image/svg+xml");
+    assert_eq!(item["filename"], "diagram.svg");
+
+    let media_id = item["id"].as_str().unwrap();
+    let (s, headers, body) = raw(
+        &app,
+        Who::Staff(SALES),
+        Method::GET,
+        &format!("/api/v1/products/{UNIT_100}/media/{media_id}"),
+        None,
+    )
+    .await;
+    assert_eq!(s, StatusCode::OK);
+    assert_eq!(headers["content-type"], "image/svg+xml");
+    assert_eq!(body.as_slice(), svg);
+
+    let unsafe_svg = b"<svg xmlns=\"http://www.w3.org/2000/svg\"><script>alert(1)</script></svg>";
+    let (s, _) = upload(
+        &app,
+        SALES,
+        UNIT_100,
+        unsafe_svg.to_vec(),
+        "?filename=bad.svg",
+    )
+    .await;
+    assert_eq!(s, StatusCode::UNPROCESSABLE_ENTITY);
+}

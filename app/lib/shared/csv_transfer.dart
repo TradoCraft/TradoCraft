@@ -3,13 +3,24 @@ import 'package:file_selector/file_selector.dart';
 import 'package:flutter/foundation.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path/path.dart' as p;
 import 'package:share_plus/share_plus.dart';
 
 import '../app/api.dart';
+import '../features/field/offline/kv_store.dart';
 import '../l10n/l10n.dart';
 import 'app_icons.dart';
 import 'csv_import_dialog.dart';
 import 'file_export_platform.dart';
+
+/// Key in [KvStore] where the folder of the last imported file is remembered.
+const lastImportDirectoryKey = 'import.last_directory';
+
+/// Opens a file dialog; replaced in tests.
+typedef FileOpener = Future<XFile?> Function({
+  List<XTypeGroup> acceptedTypeGroups,
+  String? initialDirectory,
+});
 
 /// A file the person chose: its name and raw bytes.
 typedef PickedFile = ({String name, Uint8List bytes});
@@ -32,12 +43,19 @@ typedef CsvImporter = Future<ImportReport> Function(
 });
 
 /// Picks a CSV file only (the configurator tables).
-final csvPickerProvider = Provider<CsvPicker>((_) => pickCsvFile);
+final csvPickerProvider = Provider<CsvPicker>(
+  (ref) => () => pickCsvFile(store: ref.read(kvStoreProvider)),
+);
 
 /// Picks a CSV, XLSX or ODS file for an import.
-final importFilePickerProvider = Provider<CsvPicker>((_) => pickImportFile);
+final importFilePickerProvider = Provider<CsvPicker>(
+  (ref) => () => pickImportFile(store: ref.read(kvStoreProvider)),
+);
+
 /// Picks a JSON file (a tower configurator export).
-final jsonPickerProvider = Provider<CsvPicker>((_) => pickJsonFile);
+final jsonPickerProvider = Provider<CsvPicker>(
+  (ref) => () => pickJsonFile(store: ref.read(kvStoreProvider)),
+);
 final csvSaverProvider = Provider<CsvSaver>((_) => saveCsvFile);
 
 const _csvTypes = XTypeGroup(
@@ -74,17 +92,49 @@ const _jsonTypes = XTypeGroup(
 /// The spreadsheet and CSV types an import accepts.
 const importFileTypes = [_csvTypes, _xlsxTypes, _odsTypes];
 
-Future<PickedFile?> _pick(List<XTypeGroup> types) async {
-  final f = await openFile(acceptedTypeGroups: types);
+/// Opens the file picker for [types], starting in the folder remembered in [store] (if it still
+/// exists) and saving the chosen file's folder back to [store].
+Future<PickedFile?> pickFileWithRememberedDirectory(
+  List<XTypeGroup> types, {
+  KvStore? store,
+  FileOpener? opener,
+  Future<bool> Function(String path)? dirExists,
+}) async {
+  String? initialDirectory;
+  if (!kIsWeb && store != null) {
+    final saved = await store.get(lastImportDirectoryKey);
+    if (saved != null &&
+        saved.isNotEmpty &&
+        await (dirExists ?? directoryExists)(saved)) {
+      initialDirectory = saved;
+    }
+  }
+  final f = await (opener ?? openFile)(
+    acceptedTypeGroups: types,
+    initialDirectory: initialDirectory,
+  );
   if (f == null) return null;
+  if (!kIsWeb && store != null && f.path.isNotEmpty) {
+    final dir = p.dirname(f.path);
+    if (dir.isNotEmpty && dir != '.') {
+      try {
+        await store.set(lastImportDirectoryKey, dir);
+      } catch (_) {
+        // Remembering the folder is best-effort; still return the chosen file.
+      }
+    }
+  }
   return (name: f.name, bytes: await f.readAsBytes());
 }
 
-Future<PickedFile?> pickCsvFile() => _pick(const [_csvTypes]);
+Future<PickedFile?> pickCsvFile({KvStore? store}) =>
+    pickFileWithRememberedDirectory(const [_csvTypes], store: store);
 
-Future<PickedFile?> pickJsonFile() => _pick(const [_jsonTypes]);
+Future<PickedFile?> pickJsonFile({KvStore? store}) =>
+    pickFileWithRememberedDirectory(const [_jsonTypes], store: store);
 
-Future<PickedFile?> pickImportFile() => _pick(importFileTypes);
+Future<PickedFile?> pickImportFile({KvStore? store}) =>
+    pickFileWithRememberedDirectory(importFileTypes, store: store);
 
 /// MIME type of a file we save, from its extension.
 String mimeTypeFor(String filename) {

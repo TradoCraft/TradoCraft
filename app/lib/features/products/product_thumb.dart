@@ -1,11 +1,13 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../app/api.dart';
 import '../../app/session.dart';
 import '../../shared/app_icons.dart';
+import '../../shared/photos.dart' show isSvgBytes;
 
 /// Maximum total bytes of completed thumbnail payloads retained in memory.
 const int maxProductThumbCacheBytes = 8 * 1024 * 1024;
@@ -173,13 +175,18 @@ class _ProductThumbState extends ConsumerState<ProductThumb> {
                   key: ValueKey(scope),
                   future: _bytes,
                   builder: (context, snap) => snap.hasData
-                      ? Image.memory(
-                          snap.data!,
-                          fit: BoxFit.cover,
-                          cacheWidth: (s * 3).round(),
-                          errorBuilder: (_, _, _) =>
-                              placeholder(AppIcons.brokenImage),
-                        )
+                      ? (isSvgBytes(snap.data!)
+                            ? SvgPicture.memory(
+                                snap.data!,
+                                fit: BoxFit.contain,
+                              )
+                            : Image.memory(
+                                snap.data!,
+                                fit: BoxFit.cover,
+                                cacheWidth: (s * 3).round(),
+                                errorBuilder: (_, _, _) =>
+                                    placeholder(AppIcons.brokenImage),
+                              ))
                       : snap.hasError
                       ? placeholder(AppIcons.brokenImage)
                       : const SizedBox.shrink(),

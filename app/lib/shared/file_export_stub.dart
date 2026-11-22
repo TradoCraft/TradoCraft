@@ -7,3 +7,5 @@ Future<String> writeUnique(String baseFolder, String relativePath, Uint8List byt
     throw UnsupportedError('Writing to a folder is not available in the browser.');
 
 Future<void> openPathInSystem(String path) async {}
+
+Future<bool> directoryExists(String path) async => false;

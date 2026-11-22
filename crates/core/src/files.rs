@@ -68,6 +68,7 @@ pub fn clean_filename(name: &str, content_type: &str) -> String {
         let ext = match content_type {
             "image/png" => "png",
             "image/webp" => "webp",
+            "image/svg+xml" => "svg",
             "application/pdf" => return "document.pdf".to_string(),
             "video/mp4" => return "video.mp4".to_string(),
             "video/webm" => return "video.webm".to_string(),
@@ -138,7 +139,30 @@ pub async fn store_document(
     .await
 }
 
-/// Stores a product picture or video: JPEG, PNG, WebP, MP4 or WebM. Images are limited to
+const MEDIA_REFUSAL: &str =
+    "only JPEG, PNG, WebP or SVG images and MP4 or WebM videos are accepted";
+
+fn looks_like_svg_start(bytes: &[u8]) -> bool {
+    let bytes = bytes.strip_prefix(&[0xEF, 0xBB, 0xBF]).unwrap_or(bytes);
+    match bytes.iter().find(|b| !b.is_ascii_whitespace()) {
+        Some(b'<') => true,
+        // All-whitespace so far in the first few bytes: could still be an SVG after leading spaces.
+        None => true,
+        Some(_) => false,
+    }
+}
+
+fn validate_svg_media(bytes: &[u8]) -> AppResult<&'static str> {
+    match crate::logo::svg_problem(bytes) {
+        None => Ok("image/svg+xml"),
+        Some(Some(why)) => Err(AppError::Validation(format!(
+            "the SVG image is not accepted: {why}"
+        ))),
+        Some(None) => Err(AppError::Validation(MEDIA_REFUSAL.into())),
+    }
+}
+
+/// Stores a product picture or video: JPEG, PNG, WebP, SVG, MP4 or WebM. Images are limited to
 /// [`MAX_FILE_BYTES`], videos to [`MAX_VIDEO_BYTES`]. Returns `(file, created)` where `created` is
 /// `true` only when this call inserted the `core.files` row.
 #[allow(clippy::too_many_arguments)]
@@ -152,11 +176,14 @@ pub async fn store_media(
     uploaded_by: Option<Uuid>,
     uploader_name: &str,
 ) -> AppResult<(FileInfo, bool)> {
-    const REFUSAL: &str = "only JPEG, PNG and WebP images and MP4 or WebM videos are accepted";
     if bytes.is_empty() {
         return Err(AppError::Validation("the file is empty".into()));
     }
-    let max = if sniff_image(bytes).is_some() {
+    let content_type = match sniff_media(bytes) {
+        Some(ct) => ct,
+        None => validate_svg_media(bytes)?,
+    };
+    let max = if content_type.starts_with("image/") {
         MAX_FILE_BYTES
     } else {
         MAX_VIDEO_BYTES
@@ -167,7 +194,6 @@ pub async fn store_media(
             max / 1024 / 1024
         )));
     }
-    let content_type = sniff_media(bytes).ok_or_else(|| AppError::Validation(REFUSAL.into()))?;
     let storage_key = blobs.put(bytes).await?;
     record_staged_media(
         conn,
@@ -204,7 +230,6 @@ pub async fn stage_media_stream(
     use std::pin::Pin;
     use tokio::io::AsyncWriteExt;
 
-    const REFUSAL: &str = "only JPEG, PNG and WebP images and MP4 or WebM videos are accepted";
     let staged = blobs.begin_write().await?;
     let file = match tokio::fs::File::create(&staged.tmp_path).await {
         Ok(f) => f,
@@ -219,6 +244,7 @@ pub async fn stage_media_stream(
     let mut stream = body.into_data_stream();
     let mut header = Vec::with_capacity(16);
     let mut content_type: Option<&'static str> = None;
+    let mut candidate_svg = false;
     let mut max_bytes = MAX_VIDEO_BYTES;
     let mut total_bytes: usize = 0;
 
@@ -238,18 +264,22 @@ pub async fn stage_media_stream(
             let take = (16 - header.len()).min(chunk.len());
             header.extend_from_slice(&chunk[..take]);
         }
-        if content_type.is_none() && header.len() >= 13 {
-            let Some(ct) = sniff_media(&header) else {
+        if content_type.is_none() && !candidate_svg && header.len() >= 13 {
+            if let Some(ct) = sniff_media(&header) {
+                content_type = Some(ct);
+                max_bytes = if ct.starts_with("image/") {
+                    MAX_FILE_BYTES
+                } else {
+                    MAX_VIDEO_BYTES
+                };
+            } else if looks_like_svg_start(&header) {
+                candidate_svg = true;
+                max_bytes = MAX_FILE_BYTES;
+            } else {
                 drop(writer);
                 staged.abort().await;
-                return Err(AppError::Validation(REFUSAL.into()));
-            };
-            content_type = Some(ct);
-            max_bytes = if ct.starts_with("image/") {
-                MAX_FILE_BYTES
-            } else {
-                MAX_VIDEO_BYTES
-            };
+                return Err(AppError::Validation(MEDIA_REFUSAL.into()));
+            }
         }
         total_bytes = total_bytes.saturating_add(chunk.len());
         if total_bytes > max_bytes {
@@ -274,27 +304,6 @@ pub async fn stage_media_stream(
         staged.abort().await;
         return Err(AppError::Validation("the file is empty".into()));
     }
-    let ct = match content_type.or_else(|| sniff_media(&header)) {
-        Some(ct) => ct,
-        None => {
-            drop(writer);
-            staged.abort().await;
-            return Err(AppError::Validation(REFUSAL.into()));
-        }
-    };
-    let final_max = if ct.starts_with("image/") {
-        MAX_FILE_BYTES
-    } else {
-        MAX_VIDEO_BYTES
-    };
-    if total_bytes > final_max {
-        drop(writer);
-        staged.abort().await;
-        return Err(AppError::Validation(format!(
-            "the file is too large (at most {} MB)",
-            final_max / 1024 / 1024
-        )));
-    }
     if let Err(e) = writer.flush().await {
         drop(writer);
         staged.abort().await;
@@ -303,6 +312,42 @@ pub async fn stage_media_stream(
             .into());
     }
     drop(writer);
+
+    let ct = if let Some(ct) = content_type.or_else(|| sniff_media(&header)) {
+        ct
+    } else if looks_like_svg_start(&header) {
+        let bytes = match tokio::fs::read(&staged.tmp_path).await {
+            Ok(b) => b,
+            Err(e) => {
+                staged.abort().await;
+                return Err(anyhow::Error::from(e)
+                    .context("read staged svg media file")
+                    .into());
+            }
+        };
+        match validate_svg_media(&bytes) {
+            Ok(ct) => ct,
+            Err(e) => {
+                staged.abort().await;
+                return Err(e);
+            }
+        }
+    } else {
+        staged.abort().await;
+        return Err(AppError::Validation(MEDIA_REFUSAL.into()));
+    };
+    let final_max = if ct.starts_with("image/") {
+        MAX_FILE_BYTES
+    } else {
+        MAX_VIDEO_BYTES
+    };
+    if total_bytes > final_max {
+        staged.abort().await;
+        return Err(AppError::Validation(format!(
+            "the file is too large (at most {} MB)",
+            final_max / 1024 / 1024
+        )));
+    }
     let storage_key = staged.commit().await?;
     Ok(StagedMedia {
         storage_key,
@@ -559,5 +604,41 @@ mod tests {
         assert_eq!(clean_filename("a\"<b>.png", "image/png"), "ab.png");
         assert_eq!(clean_filename("  ", "image/png"), "photo.png");
         assert_eq!(clean_filename("", "image/webp"), "photo.webp");
+        assert_eq!(clean_filename("", "image/svg+xml"), "photo.svg");
+    }
+
+    #[tokio::test]
+    async fn stage_media_stream_accepts_safe_svg_and_rejects_unsafe_svg() {
+        let dir = std::env::temp_dir().join(format!("tradocraft-test-{}", Uuid::new_v4()));
+        let blobs = BlobStore::new(&dir);
+
+        let svg = b"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'><rect width='10' height='10'/></svg>";
+        let staged = stage_media_stream(&blobs, axum::body::Body::from(svg.as_slice()))
+            .await
+            .unwrap();
+        assert_eq!(staged.content_type, "image/svg+xml");
+        assert_eq!(staged.size_bytes, svg.len() as i32);
+
+        let unsafe_svg = b"<svg xmlns='http://www.w3.org/2000/svg'><script>alert(1)</script></svg>";
+        let err = stage_media_stream(&blobs, axum::body::Body::from(unsafe_svg.as_slice()))
+            .await
+            .err()
+            .expect("script SVG must be rejected");
+        assert!(matches!(err, AppError::Validation(_)));
+
+        let bad_xml = b"<svg xmlns='http://www.w3.org/2000/svg'><rect></svg>";
+        let err = stage_media_stream(&blobs, axum::body::Body::from(bad_xml.as_slice()))
+            .await
+            .err()
+            .expect("malformed SVG must be rejected");
+        assert!(matches!(err, AppError::Validation(_)));
+
+        let text = b"plain text not media";
+        let err = stage_media_stream(&blobs, axum::body::Body::from(text.as_slice()))
+            .await
+            .err()
+            .expect("plain text must be rejected");
+        assert!(matches!(err, AppError::Validation(_)));
+        let _ = tokio::fs::remove_dir_all(&dir).await;
     }
 }

@@ -137,6 +137,12 @@ fn svg_is_well_formed(text: &str) -> bool {
                 }
             }
             Ok(Event::End(_)) => depth = depth.saturating_sub(1),
+            Ok(Event::Text(e)) if depth == 0 => {
+                if !e.as_ref().chars().all(|b| b.is_ascii_whitespace()) {
+                    return false;
+                }
+            }
+            Ok(Event::CData(_)) if depth == 0 => return false,
             Ok(Event::Eof) => return root_seen && depth == 0,
             Err(_) => return false,
             _ => {}
@@ -144,9 +150,36 @@ fn svg_is_well_formed(text: &str) -> bool {
     }
 }
 
+fn forbidden_element_reason(local_name: &str) -> Option<&'static str> {
+    let lower = local_name.to_ascii_lowercase();
+    match lower.as_str() {
+        "script" => Some("scripts are not allowed"),
+        "foreignobject" => Some("foreignObject is not allowed"),
+        "iframe" | "embed" | "object" => Some("embedded documents are not allowed"),
+        name if name == "set" || name.starts_with("animate") => Some("animation is not allowed"),
+        _ => None,
+    }
+}
+
+fn active_element_problem(text: &str) -> Option<&'static str> {
+    use quick_xml::events::Event;
+    let mut reader = quick_xml::Reader::from_str(text);
+    loop {
+        match reader.read_event() {
+            Ok(Event::Start(e)) | Ok(Event::Empty(e)) => {
+                if let Some(why) = forbidden_element_reason(e.local_name().as_ref()) {
+                    return Some(why);
+                }
+            }
+            Ok(Event::Eof) | Err(_) => return None,
+            _ => {}
+        }
+    }
+}
+
 /// `None` when `bytes` is an acceptable SVG; `Some(None)` when it is not an SVG at all;
 /// `Some(Some(why))` when it is an SVG with active or external content.
-fn svg_problem(bytes: &[u8]) -> Option<Option<&'static str>> {
+pub fn svg_problem(bytes: &[u8]) -> Option<Option<&'static str>> {
     let Ok(text) = std::str::from_utf8(bytes) else {
         return Some(None);
     };
@@ -159,20 +192,16 @@ fn svg_problem(bytes: &[u8]) -> Option<Option<&'static str>> {
         return Some(None);
     }
     for (needle, why) in [
-        ("<script", "scripts are not allowed"),
-        ("<foreignobject", "foreignObject is not allowed"),
         ("<!entity", "entity declarations are not allowed"),
         ("<!doctype", "a document type is not allowed"),
         ("javascript:", "scripts are not allowed"),
-        ("<iframe", "embedded documents are not allowed"),
-        ("<embed", "embedded documents are not allowed"),
-        ("<object", "embedded documents are not allowed"),
-        ("<animate", "animation is not allowed"),
-        ("<set", "animation is not allowed"),
     ] {
         if lower.contains(needle) {
             return Some(Some(why));
         }
+    }
+    if let Some(why) = active_element_problem(text) {
+        return Some(Some(why));
     }
     if has_event_handler(&lower) {
         return Some(Some("event handlers are not allowed"));
@@ -356,6 +385,11 @@ mod tests {
             "<svg xmlns=\"http://www.w3.org/2000/svg\"><rect x=\"1\" x=\"2\"/></svg>",
             "<svg xmlns=\"http://www.w3.org/2000/svg\" width=10></svg>",
             "<svg xmlns=\"http://www.w3.org/2000/svg\"><rect height=5/></svg>",
+            // Non-whitespace text and CDATA at depth 0 (before or after root).
+            "<svg></svg>trailing",
+            "leading<svg></svg>",
+            "<svg></svg><![CDATA[x]]>",
+            "<![CDATA[x]]><svg></svg>",
         ] {
             assert!(check(svg.as_bytes()).is_err(), "{svg}");
         }
@@ -366,6 +400,7 @@ mod tests {
         for svg in [
             "<svg><script>alert(1)</script></svg>",
             "<svg><SCRIPT src=x></SCRIPT></svg>",
+            "<svg xmlns:x=\"http://www.w3.org/2000/svg\"><x:script>alert(1)</x:script></svg>",
             "<svg><foreignObject><div/></foreignObject></svg>",
             "<svg onload=\"x()\"></svg>",
             "<svg\n onclick = 'x()'></svg>",
@@ -375,6 +410,7 @@ mod tests {
             "<svg><rect style=\"fill:url(http://evil/x)\"/></svg>",
             "<!DOCTYPE svg [<!ENTITY a \"b\">]><svg/>",
             "<svg><animate attributeName=\"href\"/></svg>",
+            "<svg xmlns:x=\"http://www.w3.org/2000/svg\"><x:animate attributeName=\"href\"/></svg>",
         ] {
             assert!(check(svg.as_bytes()).is_err(), "{svg}");
         }

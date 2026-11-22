@@ -1,12 +1,69 @@
 import 'dart:math';
 
 import 'package:dio/dio.dart';
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter/foundation.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../l10n/l10n.dart';
 import 'app_icons.dart';
+
+const _productMediaTypes = XTypeGroup(
+  label: 'Images and videos',
+  extensions: ['jpg', 'jpeg', 'png', 'webp', 'svg', 'mp4', 'webm'],
+  mimeTypes: [
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+    'image/svg+xml',
+    'video/mp4',
+    'video/webm',
+  ],
+  uniformTypeIdentifiers: [
+    'public.jpeg',
+    'public.png',
+    'org.webmproject.webp',
+    'public.svg-image',
+    'public.mpeg-4',
+    'org.webmproject.webm',
+  ],
+);
+
+/// Picks one or more product pictures (JPEG, PNG, WebP, SVG) or videos (MP4, WebM).
+Future<List<PickedPhoto>> pickProductMedia(BuildContext context) async {
+  final files = await openFiles(acceptedTypeGroups: const [_productMediaTypes]);
+  return [for (final f in files) PickedPhoto(await f.readAsBytes(), f.name)];
+}
+
+/// Whether [bytes] starts like an SVG document (`<svg`, `<?xml`, or `<!--` containing `<svg`).
+bool isSvgBytes(Uint8List bytes) {
+  if (bytes.isEmpty) return false;
+  var start = 0;
+  if (bytes.length >= 3 &&
+      bytes[0] == 0xEF &&
+      bytes[1] == 0xBB &&
+      bytes[2] == 0xBF) {
+    start = 3;
+  }
+  while (start < bytes.length &&
+      (bytes[start] == 0x20 ||
+          bytes[start] == 0x09 ||
+          bytes[start] == 0x0A ||
+          bytes[start] == 0x0D)) {
+    start++;
+  }
+  if (start >= bytes.length || bytes[start] != 0x3C /* '<' */) {
+    return false;
+  }
+  final text = String.fromCharCodes(bytes.skip(start)).toLowerCase();
+  if (!(text.startsWith('<svg') ||
+      text.startsWith('<?xml') ||
+      text.startsWith('<!--'))) {
+    return false;
+  }
+  return text.contains('<svg');
+}
 
 /// A photo as listed by the API: its id (the file id), who added it and its caption.
 class PhotoItem {

@@ -35,9 +35,9 @@ const SELECT: &str = "SELECT m.file_id AS id, m.kind, f.content_type, f.filename
         m.caption, m.is_default, m.created_at
      FROM products.media m JOIN core.files f ON f.id = m.file_id";
 
-/// The default pictures of products, for documents: product id to `(file name, bytes)`. Only JPEG
-/// and PNG pictures are returned (the formats every PDF renderer reads); products whose default
-/// is a video or has another format are left out, and so are products without media.
+/// The default pictures of products, for documents: product id to `(file name, bytes)`. JPEG, PNG
+/// and SVG pictures are returned; products whose default is a video or has another format are left
+/// out, and so are products without media.
 pub async fn default_images(
     conn: &mut PgConnection,
     blobs: &tradocraft_core::BlobStore,
@@ -47,7 +47,7 @@ pub async fn default_images(
         "SELECT m.product_id, m.file_id, m.company_id, f.content_type
          FROM products.media m JOIN core.files f ON f.id = m.file_id
          WHERE m.is_default AND m.product_id = ANY($1)
-           AND f.content_type IN ('image/jpeg', 'image/png')",
+           AND f.content_type IN ('image/jpeg', 'image/png', 'image/svg+xml')",
     )
     .bind(product_ids)
     .fetch_all(&mut *conn)
@@ -58,10 +58,13 @@ pub async fn default_images(
         let Ok((_, bytes)) = files::load(conn, blobs, owner, file_id).await else {
             continue;
         };
-        let ext = if content_type == "image/png" {
-            "png"
-        } else {
-            "jpg"
+        if content_type == "image/svg+xml" && tradocraft_core::logo::svg_problem(&bytes).is_some() {
+            continue;
+        }
+        let ext = match content_type.as_str() {
+            "image/png" => "png",
+            "image/svg+xml" => "svg",
+            _ => "jpg",
         };
         out.insert(product_id, (format!("p-{product_id}.{ext}"), bytes));
     }
@@ -173,8 +176,8 @@ async fn verify_client_id(
     }
 }
 
-/// Adds a picture or video: the request body is the file itself (JPEG, PNG or WebP up to 12 MB,
-/// MP4 or WebM up to 64 MB). The first item of a product becomes its default.
+/// Adds a picture or video: the request body is the file itself (JPEG, PNG, WebP or SVG up to
+/// 12 MB, MP4 or WebM up to 64 MB). The first item of a product becomes its default.
 #[utoipa::path(post, path = "/products/{id}/media", tag = "products", operation_id = "upload_product_media",
     params(("id" = Uuid, Path), UploadParams),
     request_body(content = Vec<u8>, content_type = "application/octet-stream"),
@@ -285,6 +288,7 @@ async fn upload_media(
             (Vec<u8> = "image/jpeg"),
             (Vec<u8> = "image/png"),
             (Vec<u8> = "image/webp"),
+            (Vec<u8> = "image/svg+xml"),
             (Vec<u8> = "video/mp4"),
             (Vec<u8> = "video/webm"),
         )),
@@ -317,6 +321,7 @@ async fn get_media(
             (Vec<u8> = "image/jpeg"),
             (Vec<u8> = "image/png"),
             (Vec<u8> = "image/webp"),
+            (Vec<u8> = "image/svg+xml"),
             (Vec<u8> = "video/mp4"),
             (Vec<u8> = "video/webm"),
         )),
