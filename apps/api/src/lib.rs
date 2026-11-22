@@ -46,6 +46,7 @@ pub const DEV_SEED_SQL: &str = include_str!("../../../seed/dev_seed.sql");
         (name = "planning", description = "Planning board: technician calendars, absences, skills, conflicts and suggestions"),
         (name = "purchasing", description = "Suppliers, price lists, purchase orders and goods receipts"),
         (name = "finance", description = "Supplier invoices (AP register), the three-way match, approval and payment status"),
+        (name = "customer_billing", description = "Customer invoices, correction credits, and annual rebates"),
         (name = "delivery", description = "Delivery notes for sales orders: planning, picking, shipping and the closure policy"),
         (name = "production", description = "Production orders from the BOM: divisions, release, component reservation, completion and output"),
         (name = "configurator", description = "Admin-defined product configurators: models, revisions, formulas, evaluation and saved configurations"),

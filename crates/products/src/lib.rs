@@ -64,6 +64,8 @@ pub struct Product {
     pub price_on_request: bool,
     /// The list price applies but is printed as indicative.
     pub price_is_indicative: bool,
+    /// Whether this product contributes to turnover-based rebates. Null means unclassified.
+    pub included_in_turnover: Option<bool>,
     pub active: bool,
     /// The default picture or video of the product (`GET /products/{id}/media/{id}`), if it has
     /// media.
@@ -140,6 +142,11 @@ pub struct ProductInput {
     /// The list price applies but is printed as indicative.
     #[serde(default)]
     pub price_is_indicative: bool,
+    /// Whether this product contributes to turnover-based rebates. On update, omission preserves
+    /// the stored classification and null clears it.
+    #[serde(default, deserialize_with = "deserialize_turnover_eligibility")]
+    #[schema(value_type = Option<bool>, required = false)]
+    pub included_in_turnover: Option<Option<bool>>,
     #[serde(default = "default_true")]
     pub active: bool,
     /// Ignored (the stored cost is kept) without the permission `inventory.cost`.
@@ -162,6 +169,12 @@ pub struct ProductInput {
     /// customers).
     #[serde(default)]
     pub default_production_remark: String,
+}
+
+fn deserialize_turnover_eligibility<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Option<Option<bool>>, D::Error> {
+    Option::<bool>::deserialize(deserializer).map(Some)
 }
 
 pub(crate) fn barcode(input: &ProductInput) -> Option<&str> {
@@ -385,6 +398,7 @@ macro_rules! product_columns {
         "SELECT p.id, p.code, p.name, p.description, p.unit, p.product_type, p.vat_rate,
                 p.vat_category, p.vat_rate_override, p.tracking,
                p.family_id, f.code AS family_code, p.non_discountable, p.price_on_request,
+               p.included_in_turnover,
                p.price_is_indicative, p.active, dm.file_id AS default_media_id,
                dm.kind AS default_media_kind, p.standard_cost, p.reorder_min,
                p.reorder_max, p.lead_time_days, p.barcode, p.packaging_category_id,
@@ -734,9 +748,9 @@ pub(crate) async fn insert_product(
                                         vat_rate_override, active, tracking, family_id, non_discountable, standard_cost,
                                         reorder_min, reorder_max, lead_time_days, barcode, packaging_category_id,
                                         length_mm, width_mm, height_mm, weight_g, default_production_remark,
-                                        price_on_request, price_is_indicative)
+                                        price_on_request, price_is_indicative, included_in_turnover)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24,
-                 $25, $26)",
+                 $25, $26, $27)",
     )
     .bind(id)
     .bind(input.code.trim())
@@ -764,6 +778,7 @@ pub(crate) async fn insert_product(
     .bind(input.default_production_remark.trim())
     .bind(input.price_on_request)
     .bind(input.price_is_indicative)
+    .bind(input.included_in_turnover.flatten())
     .execute(&mut *conn)
     .await?;
     Ok(())
@@ -827,7 +842,9 @@ pub(crate) async fn update_product_row(
                 standard_cost = CASE WHEN $12 THEN $13 ELSE standard_cost END,
                 reorder_min = $14, reorder_max = $15, lead_time_days = $16, barcode = $17,
                 packaging_category_id = $18, length_mm = $19, width_mm = $20, height_mm = $21, weight_g = $22,
-                default_production_remark = $23, updated_at = now()
+                default_production_remark = $23,
+                included_in_turnover = CASE WHEN $28 THEN $29 ELSE included_in_turnover END,
+                updated_at = now()
          WHERE id = $1",
     )
     .bind(id)
@@ -857,6 +874,8 @@ pub(crate) async fn update_product_row(
     .bind(vat_rate_override)
     .bind(input.price_on_request)
     .bind(input.price_is_indicative)
+    .bind(input.included_in_turnover.is_some())
+    .bind(input.included_in_turnover.flatten())
     .execute(&mut *conn)
     .await?;
     if updated.rows_affected() == 0 {

@@ -1832,6 +1832,12 @@ class AppLocalizationsNl extends AppLocalizations {
   String get pricingIndicative => 'indicatief';
 
   @override
+  String get productIncludedInTurnover => 'Telt mee voor de omzetkorting';
+
+  @override
+  String get productTurnoverUnclassified => 'Niet geclassificeerd';
+
+  @override
   String get pricingIndicativeHelp =>
       'Indicatieve prijs (afgedrukt als indicatief; kortingen van toepassing)';
 
@@ -11265,4 +11271,187 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get tutAttributesDoneBody =>
       'TUT-CTRL bevat nu getypeerde, gevalideerde eigenschappen voor uw productlijn. Configurators en CRM-matchregels kunnen ze direct gebruiken zonder het databaseschema te wijzigen.';
+
+  @override
+  String get cbAddLine => 'Regel toevoegen';
+
+  @override
+  String get cbAddSchedule => 'Staffel toevoegen';
+
+  @override
+  String get cbAddTier => 'Trede toevoegen';
+
+  @override
+  String get cbAnnualRebates => 'Jaarkortingen';
+
+  @override
+  String get cbApproveRate => 'Korting goedkeuren';
+
+  @override
+  String get cbApprovedRate => 'Goedgekeurde korting';
+
+  @override
+  String get cbAssignedSchedule => 'Toegewezen staffel';
+
+  @override
+  String get cbCredit => 'Creditnota';
+
+  @override
+  String get cbCreditReason => 'Reden voor creditering';
+
+  @override
+  String get cbCurrency => 'Valuta';
+
+  @override
+  String get cbCustomerInvoices => 'Klantfacturen';
+
+  @override
+  String get cbCutoff => 'Peildatum';
+
+  @override
+  String get cbDate => 'Documentdatum';
+
+  @override
+  String get cbDescription => 'Omschrijving';
+
+  @override
+  String get cbDiscard => 'Concept verwijderen';
+
+  @override
+  String get cbDomestic => 'Binnenlands';
+
+  @override
+  String get cbDraft => 'Concept';
+
+  @override
+  String get cbEligible => 'Telt mee voor de kortingsomzet';
+
+  @override
+  String get cbEligibleSales => 'In aanmerking komende omzet';
+
+  @override
+  String get cbEvidence => 'Referentie boekhoudbewijs';
+
+  @override
+  String get cbHidden => 'Verborgen op facturen';
+
+  @override
+  String get cbHighestTierWording => 'Tekst voor de hoogste trede';
+
+  @override
+  String get cbImportBalance => 'Gecontroleerd saldo importeren';
+
+  @override
+  String get cbIntraEu => 'Intracommunautair';
+
+  @override
+  String get cbInvoice => 'Factuur';
+
+  @override
+  String get cbInvoiceWording => 'Factuurtekst';
+
+  @override
+  String get cbLegacyInvoice => 'Historische factuur';
+
+  @override
+  String get cbNet => 'Exclusief btw';
+
+  @override
+  String get cbNewCredit => 'Nieuwe creditnota';
+
+  @override
+  String get cbNewInvoice => 'Nieuwe klantfactuur';
+
+  @override
+  String get cbNextTierWording => 'Tekst voor de volgende trede';
+
+  @override
+  String get cbNoDocuments => 'Geen klantfacturen of creditnota’s';
+
+  @override
+  String get cbNoSchedule => 'Geen staffel';
+
+  @override
+  String get cbOpeningBalances => 'Gecontroleerde beginsaldi';
+
+  @override
+  String get cbOriginal => 'Oorspronkelijk factuurnummer';
+
+  @override
+  String get cbOutsideEu => 'Buiten de EU';
+
+  @override
+  String get cbPost => 'Document boeken';
+
+  @override
+  String get cbProductCode => 'Productcode';
+
+  @override
+  String get cbQuantity => 'Aantal';
+
+  @override
+  String get cbRate => 'Korting (%)';
+
+  @override
+  String get cbRateUnavailable => 'Verdiende korting niet beschikbaar';
+
+  @override
+  String get cbRateYear => 'Kortingsjaar';
+
+  @override
+  String get cbRegisterLegacy => 'Historische factuur registreren';
+
+  @override
+  String get cbRemoveLine => 'Verwijderen';
+
+  @override
+  String get cbReverseCharge => 'Binnenlandse btw-verlegging';
+
+  @override
+  String get cbReviewRate => 'Verdiende korting bekijken';
+
+  @override
+  String get cbSalesYear => 'Omzetjaar';
+
+  @override
+  String get cbSave => 'Opslaan';
+
+  @override
+  String get cbSaveDraft => 'Concept opslaan';
+
+  @override
+  String get cbScheduleName => 'Naam van de staffel';
+
+  @override
+  String get cbSchedules => 'Kortingsstaffels';
+
+  @override
+  String get cbShippedDelivery => 'Verzonden levering';
+
+  @override
+  String get cbShowProgress => 'Toon kortingsvoortgang op facturen';
+
+  @override
+  String get cbThreshold => 'Omzetdrempel';
+
+  @override
+  String get cbTotal => 'Totaal';
+
+  @override
+  String get cbUnit => 'Eenheid';
+
+  @override
+  String get cbVatRate => 'Btw-tarief (%)';
+
+  @override
+  String get cbVatRegime => 'Btw-regime';
+
+  @override
+  String get cbVatTotal => 'Btw-bedrag';
+
+  @override
+  String get cbVisible => 'Zichtbaar op facturen';
+
+  @override
+  String get cbWordingHelp => 'Gebruik deze plaatshouders in de factuurtekst.';
 }

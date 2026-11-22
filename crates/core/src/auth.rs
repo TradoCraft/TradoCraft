@@ -142,6 +142,14 @@ pub enum Permission {
     /// Approve supplier invoices (also against a failed match, with a reason), record payment
     /// and change the match tolerances.
     FinanceApprove,
+    /// View customer invoices and credit notes.
+    CustomerBillingRead,
+    /// Draft customer invoices and credit notes.
+    CustomerBillingWrite,
+    /// Post customer invoices and credit notes.
+    CustomerBillingPost,
+    /// Manage annual customer rebate schedules, settings, imports and approvals.
+    CustomerRebateAdmin,
     /// Build configurators: models, revisions, tables, formulas, activation (ADR 0034).
     ConfiguratorDesign,
     /// Run configurators, save configurations and turn them into quotations (ADR 0034).
@@ -189,7 +197,7 @@ pub enum Permission {
 }
 
 impl Permission {
-    pub const ALL: [Permission; 77] = [
+    pub const ALL: [Permission; 81] = [
         Permission::CustomersRead,
         Permission::CustomersWrite,
         Permission::MailMergeSend,
@@ -249,6 +257,10 @@ impl Permission {
         Permission::FinanceRead,
         Permission::FinanceWrite,
         Permission::FinanceApprove,
+        Permission::CustomerBillingRead,
+        Permission::CustomerBillingWrite,
+        Permission::CustomerBillingPost,
+        Permission::CustomerRebateAdmin,
         Permission::ConfiguratorDesign,
         Permission::ConfiguratorUse,
         Permission::DeliveryRead,
@@ -330,6 +342,10 @@ impl Permission {
             Permission::FinanceRead => "finance.read",
             Permission::FinanceWrite => "finance.write",
             Permission::FinanceApprove => "finance.approve",
+            Permission::CustomerBillingRead => "billing.read",
+            Permission::CustomerBillingWrite => "billing.write",
+            Permission::CustomerBillingPost => "billing.post",
+            Permission::CustomerRebateAdmin => "rebates.admin",
             Permission::ConfiguratorDesign => "configurator.design",
             Permission::ConfiguratorUse => "configurator.use",
             Permission::DeliveryRead => "delivery.read",
@@ -597,6 +613,7 @@ pub fn role_grants(role: &str, p: Permission) -> bool {
                 | InventoryRead
                 | PurchasingRead
                 | FinanceRead
+                | CustomerBillingRead
                 | DeliveryRead
                 | ProductionRead
                 | ReportsRead
@@ -626,6 +643,10 @@ pub fn role_grants(role: &str, p: Permission) -> bool {
                 | FinanceRead
                 | FinanceWrite
                 | FinanceApprove
+                | CustomerBillingRead
+                | CustomerBillingWrite
+                | CustomerBillingPost
+                | DeliveryRead
                 | ReportsRead
         ),
         // The receiving dock: registers and photographs incoming parcels (ADR 0030, step 1).

@@ -183,6 +183,7 @@ final _allDestinations = [
     (l) => l.finance,
     AppIcons.accountBalance,
     'finance.read',
+    alsoFor: ['billing.read', 'rebates.admin'],
     alsoPaths: ['/supplier-invoices'],
   ),
   _Dest('/reports', (l) => l.crTitle, AppIcons.tableChart, 'reports.read'),

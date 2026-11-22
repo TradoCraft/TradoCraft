@@ -76,6 +76,15 @@ struct Env {
 
 async fn env(db: PgPool) -> Env {
     let app = setup(db.clone()).await;
+    env_with_app(db, app).await
+}
+
+async fn test_env(db: PgPool) -> Env {
+    let app = common::setup_test_environment(db.clone()).await;
+    env_with_app(db, app).await
+}
+
+async fn env_with_app(db: PgPool, app: axum::Router) -> Env {
     add_user(&db, STORES, "warehouse").await;
     let (status, w) = post(
         &app,
@@ -1028,4 +1037,377 @@ async fn a_shipped_note_keeps_the_product_as_it_was_shipped(db: PgPool) {
         .unwrap();
     let (_, shipped) = get(&e.app, VIEWER, &format!("/deliveries/{n}")).await;
     assert_eq!(shipped["lines"][0]["product_name"], before.as_str());
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn customer_billing_posts_a_shipment_once_and_credits_its_frozen_eligibility(db: PgPool) {
+    let e = test_env(db).await;
+    let (order, _) = e.reserved_order(FRAME, "3", "3").await;
+    let (status, note) = e.plan(&order, json!({})).await;
+    assert_eq!(status, StatusCode::CREATED, "{note}");
+    let (status, shipped) = e.ship(&id(&note), json!({})).await;
+    assert_eq!(status, StatusCode::OK, "{shipped}");
+
+    sqlx::query("UPDATE products.products SET included_in_turnover = NULL WHERE id = $1::uuid")
+        .bind(FRAME)
+        .execute(&e.db)
+        .await
+        .unwrap();
+    let today = chrono::Utc::now().date_naive();
+    let request = json!({
+        "request_id": uid(),
+        "delivery_note_id": id(&shipped),
+        "document_date": today,
+        "lines": [{ "delivery_line_id": id(&shipped["lines"][0]), "quantity": "2" }]
+    });
+    let (status, draft) = post(&e.app, ADMIN, "/customer-invoices", request.clone()).await;
+    assert_eq!(status, StatusCode::OK, "{draft}");
+    assert_eq!(draft["document"]["status"], "draft");
+    assert!(draft["document"]["number"].is_null());
+    let (status, replay) = post(&e.app, ADMIN, "/customer-invoices", request.clone()).await;
+    assert_eq!(status, StatusCode::OK, "{replay}");
+    assert_eq!(replay["document"]["id"], draft["document"]["id"]);
+    let mut changed = request.clone();
+    changed["lines"][0]["quantity"] = json!("1");
+    let (status, result) = post(&e.app, ADMIN, "/customer-invoices", changed).await;
+    assert_eq!(status, StatusCode::CONFLICT, "{result}");
+    let draft_post = format!("/customer-invoices/{}/post", id(&draft["document"]));
+    let (status, response) = post(&e.app, ADMIN, &draft_post, json!({})).await;
+    assert_eq!(status, StatusCode::CONFLICT, "{response}");
+    assert_eq!(response["code"], "turnover_eligibility_unknown");
+
+    sqlx::query("UPDATE products.products SET included_in_turnover = true WHERE id = $1::uuid")
+        .bind(FRAME)
+        .execute(&e.db)
+        .await
+        .unwrap();
+    let mut competing_request = request.clone();
+    competing_request["request_id"] = json!(uid());
+    let (status, competing_draft) =
+        post(&e.app, ADMIN, "/customer-invoices", competing_request).await;
+    assert_eq!(status, StatusCode::OK, "{competing_draft}");
+    let competing_post = format!(
+        "/customer-invoices/{}/post",
+        id(&competing_draft["document"])
+    );
+    let (first, second) = tokio::join!(
+        post(&e.app, ADMIN, &draft_post, json!({})),
+        post(&e.app, ADMIN, &competing_post, json!({}))
+    );
+    let (posted, posted_path, failed) = if first.0 == StatusCode::OK {
+        (first.1, draft_post, second)
+    } else {
+        assert_eq!(second.0, StatusCode::OK, "{first:?} {second:?}");
+        (second.1, competing_post, first)
+    };
+    assert_eq!(failed.0, StatusCode::CONFLICT, "{failed:?}");
+    assert_eq!(posted["document"]["status"], "posted");
+    assert_eq!(posted["lines"][0]["included_in_turnover"], true);
+    let number = posted["document"]["number"].as_str().unwrap();
+    assert!(number.ends_with("-000001"), "{number}");
+    let (status, replay) = post(&e.app, ADMIN, &posted_path, json!({})).await;
+    assert_eq!(status, StatusCode::OK, "{replay}");
+    assert_eq!(replay["document"]["number"], number);
+
+    let mut remainder_request = request;
+    remainder_request["request_id"] = json!(uid());
+    remainder_request["lines"][0]["quantity"] = json!("1");
+    let (status, remainder_draft) =
+        post(&e.app, ADMIN, "/customer-invoices", remainder_request).await;
+    assert_eq!(status, StatusCode::OK, "{remainder_draft}");
+    let (status, remainder) = post(
+        &e.app,
+        ADMIN,
+        &format!(
+            "/customer-invoices/{}/post",
+            id(&remainder_draft["document"])
+        ),
+        json!({}),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{remainder}");
+    assert_eq!(dec(&remainder["lines"][0]["quantity"]), q("1"));
+    let (status, order) = get(&e.app, ADMIN, &format!("/orders/{order}")).await;
+    assert_eq!(status, StatusCode::OK, "{order}");
+    assert_eq!(
+        dec(&posted["document"]["net_total"]) + dec(&remainder["document"]["net_total"]),
+        dec(&order["order"]["subtotal"])
+    );
+
+    sqlx::query("UPDATE products.products SET included_in_turnover = false WHERE id = $1::uuid")
+        .bind(FRAME)
+        .execute(&e.db)
+        .await
+        .unwrap();
+    let credit_request = json!({
+        "invoice_id": id(&posted["document"]),
+        "document_date": today,
+        "reason": "One returned item",
+        "lines": [{ "invoice_line_id": id(&posted["lines"][0]), "quantity": "1" }]
+    });
+    let (status, credit) = post(&e.app, ADMIN, "/customer-invoices/credits", credit_request).await;
+    assert_eq!(status, StatusCode::OK, "{credit}");
+    let (status, credit) = post(
+        &e.app,
+        ADMIN,
+        &format!("/customer-invoices/{}/post", id(&credit["document"])),
+        json!({}),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{credit}");
+    assert_eq!(credit["document"]["source_invoice_number"], number);
+    assert_eq!(credit["lines"][0]["included_in_turnover"], true);
+    assert!(
+        (dec(&credit["document"]["net_total"]) * q("2") - dec(&posted["document"]["net_total"]))
+            .abs()
+            <= q("0.01")
+    );
+
+    let (status, invoice) = get(
+        &e.app,
+        ADMIN,
+        &format!("/customer-invoices/{}", id(&posted["document"])),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{invoice}");
+    assert_eq!(dec(&invoice["lines"][0]["creditable_quantity"]), q("1"));
+    assert_eq!(
+        dec(&invoice["lines"][0]["creditable_net_total"]),
+        dec(&posted["document"]["net_total"]) - dec(&credit["document"]["net_total"])
+    );
+
+    let (status, overcredit) = post(
+        &e.app,
+        ADMIN,
+        "/customer-invoices/credits",
+        json!({
+            "invoice_id": id(&posted["document"]),
+            "document_date": today,
+            "reason": "More than the remaining quantity",
+            "lines": [{ "invoice_line_id": id(&posted["lines"][0]), "quantity": "2" }]
+        }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CONFLICT, "{overcredit}");
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn posted_invoices_snapshot_localized_rebate_progress_and_net_posted_credits(db: PgPool) {
+    use chrono::Datelike;
+
+    let e = test_env(db).await;
+    let today = tradocraft_core::today();
+    let rate_year = today.year() + 1;
+    let customer_rebates = format!("/customer-rebates/customers/{ALPHA}");
+    let (status, settings) = put(
+        &e.app,
+        ADMIN,
+        "/customer-rebates/settings",
+        json!({
+            "show_on_invoices": true,
+            "wording": [{
+                "language": "nl",
+                "active": "Meetellende aankopen {eligible_sales}. Nog {amount_to_next_tier} tot {next_threshold} voor {next_rate} in {rate_year}.",
+                "highest": "Hoogste niveau bereikt voor {rate_year}."
+            }]
+        }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{settings}");
+    let (status, schedule) = post(
+        &e.app,
+        ADMIN,
+        "/customer-rebates/schedules",
+        json!({
+            "name": "Annual sales",
+            "effective_year": rate_year,
+            "tiers": [{ "threshold": "100000", "rate": "4" }]
+        }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{schedule}");
+    let (status, assignment) = put(
+        &e.app,
+        ADMIN,
+        &format!("{customer_rebates}/assignment"),
+        json!({ "schedule_name": "Annual sales" }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{assignment}");
+    let (status, opening) = put(
+        &e.app,
+        ADMIN,
+        &format!("{customer_rebates}/history"),
+        json!({
+            "year": today.year(),
+            "cutoff": chrono::NaiveDate::from_ymd_opt(today.year() - 1, 12, 31).unwrap(),
+            "eligible_sales": "0"
+        }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{opening}");
+    sqlx::query("UPDATE products.products SET included_in_turnover = true WHERE id = $1::uuid")
+        .bind(FRAME)
+        .execute(&e.db)
+        .await
+        .unwrap();
+
+    let (order, _) = e.reserved_order(FRAME, "2", "2").await;
+    let (status, note) = e.plan(&order, json!({})).await;
+    assert_eq!(status, StatusCode::CREATED, "{note}");
+    let (status, shipped) = e.ship(&id(&note), json!({})).await;
+    assert_eq!(status, StatusCode::OK, "{shipped}");
+    let invoice_half = || async {
+        let (status, draft) = post(
+            &e.app,
+            ADMIN,
+            "/customer-invoices",
+            json!({
+                "request_id": uid(),
+                "delivery_note_id": id(&shipped),
+                "document_date": today,
+                "lines": [{ "delivery_line_id": id(&shipped["lines"][0]), "quantity": "1" }]
+            }),
+        )
+        .await;
+        assert_eq!(status, StatusCode::OK, "{draft}");
+        let (status, posted) = post(
+            &e.app,
+            ADMIN,
+            &format!("/customer-invoices/{}/post", id(&draft["document"])),
+            json!({}),
+        )
+        .await;
+        assert_eq!(status, StatusCode::OK, "{posted}");
+        posted
+    };
+    let first = invoice_half().await;
+    let first_progress = &first["rebate_progress"];
+    let net = dec(&first["document"]["net_total"]);
+    assert_eq!(dec(&first_progress["eligible_sales"]), net);
+    assert_eq!(dec(&first_progress["next_threshold"]), q("100000"));
+    assert_eq!(
+        dec(&first_progress["amount_to_next_tier"]),
+        q("100000") - net
+    );
+    assert_eq!(dec(&first_progress["next_rate"]), q("4"));
+    assert_eq!(first_progress["rate_year"], rate_year);
+    let message = first_progress["message"].as_str().unwrap();
+    assert!(message.starts_with("Meetellende aankopen"), "{message}");
+    assert!(message.contains("100.000,00 EUR"), "{message}");
+    assert!(!message.contains('{'), "{message}");
+
+    let (status, credit) = post(
+        &e.app,
+        ADMIN,
+        "/customer-invoices/credits",
+        json!({
+            "invoice_id": id(&first["document"]),
+            "document_date": today,
+            "reason": "Returned item",
+            "lines": [{ "invoice_line_id": id(&first["lines"][0]), "quantity": "1" }]
+        }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{credit}");
+    let (status, credited) = post(
+        &e.app,
+        ADMIN,
+        &format!("/customer-invoices/{}/post", id(&credit["document"])),
+        json!({}),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{credited}");
+    assert!(credited["rebate_progress"].is_null());
+
+    let second = invoice_half().await;
+    assert_eq!(dec(&second["rebate_progress"]["eligible_sales"]), net);
+    let (status, settings) = put(
+        &e.app,
+        ADMIN,
+        "/customer-rebates/settings",
+        json!({ "show_on_invoices": false, "wording": [] }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{settings}");
+    let (status, read_back) = get(
+        &e.app,
+        ADMIN,
+        &format!("/customer-invoices/{}", id(&first["document"])),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{read_back}");
+    assert_eq!(&read_back["rebate_progress"], first_progress);
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn customer_billing_registered_legacy_credits_respect_the_opening_cutoff(db: PgPool) {
+    let app = common::setup_test_environment(db.clone()).await;
+    let today = chrono::Utc::now().date_naive();
+    let closed =
+        chrono::NaiveDate::from_ymd_opt(chrono::Datelike::year(&today) - 1, 12, 31).unwrap();
+    let legacy = json!({
+        "customer_id": ALPHA,
+        "number": "EXT-741",
+        "document_date": closed,
+        "currency": "EUR",
+        "vat_regime": "domestic",
+        "evidence_reference": "Accounting archive EXT-741 verified",
+        "lines": [{
+            "product_code": "FRAME",
+            "description": "Frame assembly",
+            "unit": "pcs",
+            "quantity": "3",
+            "net_total": "150.00",
+            "vat_total": "31.50",
+            "vat_rate": "21",
+            "included_in_turnover": true
+        }]
+    });
+    let (status, origin) = post(&app, ADMIN, "/customer-invoices/legacy", legacy.clone()).await;
+    assert_eq!(status, StatusCode::OK, "{origin}");
+    assert_eq!(origin["document"]["number"], "EXT-741");
+    assert_eq!(origin["document"]["is_legacy"], true);
+    assert_eq!(origin["document"]["status"], "posted");
+    let (status, duplicate) = post(&app, ADMIN, "/customer-invoices/legacy", legacy).await;
+    assert_eq!(status, StatusCode::CONFLICT, "{duplicate}");
+
+    sqlx::query(
+        "INSERT INTO finance.customer_rebate_openings
+             (company_id, customer_id, year, cutoff, eligible_sales, verified_by)
+         SELECT $1::uuid, $2::uuid, $3, $4, 150, id FROM core.users WHERE email = $5",
+    )
+    .bind(COMPANY)
+    .bind(ALPHA)
+    .bind(chrono::Datelike::year(&closed))
+    .bind(closed)
+    .bind(ADMIN)
+    .execute(&db)
+    .await
+    .unwrap();
+
+    let mut request = json!({
+        "invoice_id": id(&origin["document"]),
+        "document_date": closed,
+        "reason": "Returned frame",
+        "lines": [{ "invoice_line_id": id(&origin["lines"][0]), "quantity": "1" }]
+    });
+    let (status, draft) = post(&app, ADMIN, "/customer-invoices/credits", request.clone()).await;
+    assert_eq!(status, StatusCode::OK, "{draft}");
+    let post_path = format!("/customer-invoices/{}/post", id(&draft["document"]));
+    let (status, rejected) = post(&app, ADMIN, &post_path, json!({})).await;
+    assert_eq!(status, StatusCode::CONFLICT, "{rejected}");
+    assert_eq!(rejected["code"], "turnover_period_closed");
+
+    request["document_date"] = json!(today);
+    let (status, draft) = post(&app, ADMIN, "/customer-invoices/credits", request).await;
+    assert_eq!(status, StatusCode::OK, "{draft}");
+    let post_path = format!("/customer-invoices/{}/post", id(&draft["document"]));
+    let (status, credit) = post(&app, ADMIN, &post_path, json!({})).await;
+    assert_eq!(status, StatusCode::OK, "{credit}");
+    assert_eq!(credit["document"]["source_invoice_number"], "EXT-741");
+    assert_eq!(credit["lines"][0]["included_in_turnover"], true);
+    assert_eq!(dec(&credit["document"]["net_total"]), q("50"));
+    assert_eq!(dec(&credit["document"]["vat_total"]), q("10.50"));
+    assert_eq!(credit["document"]["document_date"], json!(today));
 }

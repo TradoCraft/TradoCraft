@@ -1835,6 +1835,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get pricingIndicative => 'orientativo';
 
   @override
+  String get productIncludedInTurnover =>
+      'Cuenta para la facturación que da derecho al descuento';
+
+  @override
+  String get productTurnoverUnclassified => 'Sin clasificar';
+
+  @override
   String get pricingIndicativeHelp =>
       'Precio orientativo (se imprime como orientativo; se aplican descuentos)';
 
@@ -11267,4 +11274,187 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get tutAttributesDoneBody =>
       'TUT-CTRL ahora guarda propiedades tipadas y validadas propias de su gama. Las fórmulas del configurador y las reglas CRM pueden usarlas sin cambiar el esquema de la base de datos.';
+
+  @override
+  String get cbAddLine => 'Añadir línea';
+
+  @override
+  String get cbAddSchedule => 'Añadir escala';
+
+  @override
+  String get cbAddTier => 'Añadir tramo';
+
+  @override
+  String get cbAnnualRebates => 'Descuentos anuales';
+
+  @override
+  String get cbApproveRate => 'Aprobar porcentaje';
+
+  @override
+  String get cbApprovedRate => 'Porcentaje aprobado';
+
+  @override
+  String get cbAssignedSchedule => 'Escala asignada';
+
+  @override
+  String get cbCredit => 'Nota de crédito';
+
+  @override
+  String get cbCreditReason => 'Motivo del abono';
+
+  @override
+  String get cbCurrency => 'Moneda';
+
+  @override
+  String get cbCustomerInvoices => 'Facturas de clientes';
+
+  @override
+  String get cbCutoff => 'Fecha de corte';
+
+  @override
+  String get cbDate => 'Fecha del documento';
+
+  @override
+  String get cbDescription => 'Descripción';
+
+  @override
+  String get cbDiscard => 'Eliminar borrador';
+
+  @override
+  String get cbDomestic => 'Nacional';
+
+  @override
+  String get cbDraft => 'Borrador';
+
+  @override
+  String get cbEligible => 'Cuenta para el volumen elegible';
+
+  @override
+  String get cbEligibleSales => 'Ventas elegibles';
+
+  @override
+  String get cbEvidence => 'Referencia del justificante contable';
+
+  @override
+  String get cbHidden => 'Oculto en las facturas';
+
+  @override
+  String get cbHighestTierWording => 'Texto del tramo máximo';
+
+  @override
+  String get cbImportBalance => 'Importar saldo verificado';
+
+  @override
+  String get cbIntraEu => 'Intracomunitario';
+
+  @override
+  String get cbInvoice => 'Factura';
+
+  @override
+  String get cbInvoiceWording => 'Texto de la factura';
+
+  @override
+  String get cbLegacyInvoice => 'Factura histórica';
+
+  @override
+  String get cbNet => 'Sin IVA';
+
+  @override
+  String get cbNewCredit => 'Nueva nota de crédito';
+
+  @override
+  String get cbNewInvoice => 'Nueva factura de cliente';
+
+  @override
+  String get cbNextTierWording => 'Texto del siguiente tramo';
+
+  @override
+  String get cbNoDocuments => 'Sin facturas de clientes ni notas de crédito';
+
+  @override
+  String get cbNoSchedule => 'Sin escala';
+
+  @override
+  String get cbOpeningBalances => 'Saldos de apertura verificados';
+
+  @override
+  String get cbOriginal => 'Número de factura original';
+
+  @override
+  String get cbOutsideEu => 'Fuera de la UE';
+
+  @override
+  String get cbPost => 'Contabilizar documento';
+
+  @override
+  String get cbProductCode => 'Código de producto';
+
+  @override
+  String get cbQuantity => 'Cantidad';
+
+  @override
+  String get cbRate => 'Descuento (%)';
+
+  @override
+  String get cbRateUnavailable => 'Porcentaje obtenido no disponible';
+
+  @override
+  String get cbRateYear => 'Año de aplicación';
+
+  @override
+  String get cbRegisterLegacy => 'Registrar factura histórica';
+
+  @override
+  String get cbRemoveLine => 'Eliminar';
+
+  @override
+  String get cbReverseCharge => 'Inversión del sujeto pasivo nacional';
+
+  @override
+  String get cbReviewRate => 'Revisar porcentaje obtenido';
+
+  @override
+  String get cbSalesYear => 'Año de ventas';
+
+  @override
+  String get cbSave => 'Guardar';
+
+  @override
+  String get cbSaveDraft => 'Guardar borrador';
+
+  @override
+  String get cbScheduleName => 'Nombre de la escala';
+
+  @override
+  String get cbSchedules => 'Escalas de descuento';
+
+  @override
+  String get cbShippedDelivery => 'Entrega expedida';
+
+  @override
+  String get cbShowProgress => 'Mostrar el progreso en las facturas';
+
+  @override
+  String get cbThreshold => 'Umbral de ventas elegibles';
+
+  @override
+  String get cbTotal => 'Total';
+
+  @override
+  String get cbUnit => 'Unidad';
+
+  @override
+  String get cbVatRate => 'Tipo de IVA (%)';
+
+  @override
+  String get cbVatRegime => 'Régimen de IVA';
+
+  @override
+  String get cbVatTotal => 'Importe del IVA';
+
+  @override
+  String get cbVisible => 'Visible en las facturas';
+
+  @override
+  String get cbWordingHelp => 'Use estos marcadores en el texto de la factura.';
 }

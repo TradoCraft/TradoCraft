@@ -532,6 +532,42 @@ async fn bulk_price_change_is_previewed_then_applied(db: PgPool) {
 }
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn product_turnover_eligibility_is_explicit_and_survives_legacy_updates(db: PgPool) {
+    let app = setup(db).await;
+    let input = json!({ "code": "TURNOVER", "name": "Turnover product", "vat_rate": "21" });
+    let (status, product) = call(
+        &app,
+        ADMIN,
+        Method::POST,
+        "/api/v1/products",
+        Some(input.clone()),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{product}");
+    assert_eq!(product.get("included_in_turnover"), Some(&Value::Null));
+    let id = product["id"].as_str().unwrap();
+    let path = format!("/api/v1/products/{id}");
+    let mut eligible = input.clone();
+    eligible["included_in_turnover"] = true.into();
+    let (status, product) = call(&app, ADMIN, Method::PUT, &path, Some(eligible)).await;
+    assert_eq!(status, StatusCode::OK, "{product}");
+    assert_eq!(product["included_in_turnover"], true);
+    let (status, product) = call(&app, ADMIN, Method::PUT, &path, Some(input.clone())).await;
+    assert_eq!(status, StatusCode::OK, "{product}");
+    assert_eq!(product["included_in_turnover"], true);
+    let mut excluded = input.clone();
+    excluded["included_in_turnover"] = false.into();
+    let (status, product) = call(&app, ADMIN, Method::PUT, &path, Some(excluded)).await;
+    assert_eq!(status, StatusCode::OK, "{product}");
+    assert_eq!(product["included_in_turnover"], false);
+    let mut cleared = input;
+    cleared["included_in_turnover"] = Value::Null;
+    let (status, product) = call(&app, ADMIN, Method::PUT, &path, Some(cleared)).await;
+    assert_eq!(status, StatusCode::OK, "{product}");
+    assert_eq!(product.get("included_in_turnover"), Some(&Value::Null));
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
 async fn products_belong_to_families(db: PgPool) {
     let app = setup(db).await;
     let (status, f) = call(

@@ -18,6 +18,9 @@ class InvoiceDateField extends StatelessWidget {
     required this.value,
     required this.onChanged,
     this.clearable = false,
+    this.enabled = true,
+    this.firstDate,
+    this.lastDate,
   });
 
   /// Field caption.
@@ -32,6 +35,15 @@ class InvoiceDateField extends StatelessWidget {
   /// Whether a clear button is shown while a date is set.
   final bool clearable;
 
+  /// Whether the date picker and clear button are interactive.
+  final bool enabled;
+
+  /// Earliest selectable date; defaults to 5 years ago.
+  final DateTime? firstDate;
+
+  /// Latest selectable date; defaults to 5 years ahead.
+  final DateTime? lastDate;
+
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -40,21 +52,23 @@ class InvoiceDateField extends StatelessWidget {
         OutlinedButton.icon(
           icon: const Icon(AppIcons.calendarToday),
           label: Text(value == null ? label : '$label: ${date(value)}'),
-          onPressed: () async {
-            final now = DateTime.now();
-            final d = await showDatePicker(
-              context: context,
-              initialDate: value ?? now,
-              firstDate: DateTime(now.year - 5),
-              lastDate: DateTime(now.year + 5),
-            );
-            if (d != null) onChanged(d);
-          },
+          onPressed: enabled
+              ? () async {
+                  final now = DateTime.now();
+                  final d = await showDatePicker(
+                    context: context,
+                    initialDate: value ?? now,
+                    firstDate: firstDate ?? DateTime(now.year - 5),
+                    lastDate: lastDate ?? DateTime(now.year + 5),
+                  );
+                  if (d != null) onChanged(d);
+                }
+              : null,
         ),
         if (clearable && value != null)
           IconButton(
             icon: const Icon(AppIcons.close),
-            onPressed: () => onChanged(null),
+            onPressed: enabled ? () => onChanged(null) : null,
           ),
       ],
     );

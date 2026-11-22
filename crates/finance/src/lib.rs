@@ -2,6 +2,13 @@
 //! order, goods receipt and invoice (ADR 0046). Not a general ledger: statutory accounting stays
 //! in the external package (ADR 0008).
 
+/// Customer invoice and credit note lifecycle.
+pub mod billing;
+mod billing_routes;
+/// Annual customer turnover and rebates.
+pub mod customer_rebates;
+mod rebate_routes;
+
 /// Supplier invoices: registration, match, approval, dispute, payment.
 pub mod invoices;
 /// The three-way match as a pure function.
@@ -17,4 +24,6 @@ use utoipa_axum::router::OpenApiRouter;
 /// Builds the finance router (supplier invoices, match, approval, payment, settings).
 pub fn router() -> OpenApiRouter<AppState> {
     routes::router()
+        .merge(billing_routes::router())
+        .merge(rebate_routes::router())
 }
