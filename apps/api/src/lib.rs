@@ -174,7 +174,10 @@ pub fn app_with_vies(
         std::sync::Arc::new(tradocraft_configurator::motor::ConfiguratorMotors);
     router
         .route("/health", axum::routing::get(|| async { "ok" }))
-        .merge(Scalar::with_url("/docs", doc.clone()))
+        .merge(Scalar::with_url(
+            "/docs",
+            serde_json::to_value(&doc).expect("OpenAPI document serializes"),
+        ))
         .route(
             "/api-docs/openapi.json",
             axum::routing::get(move || async move { axum::Json(doc) }),

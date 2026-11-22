@@ -3626,7 +3626,7 @@ dependencies = [
  "tradocraft-reports",
  "tradocraft-sales",
  "tradocraft-todo",
- "utoipa",
+ "utoipa 5.5.0",
  "utoipa-axum",
  "utoipa-scalar",
  "uuid",
@@ -3643,7 +3643,7 @@ dependencies = [
  "serde_json",
  "sqlx",
  "tradocraft-core",
- "utoipa",
+ "utoipa 5.5.0",
  "utoipa-axum",
  "uuid",
 ]
@@ -3664,7 +3664,7 @@ dependencies = [
  "tradocraft-crm",
  "tradocraft-products",
  "tradocraft-sales",
- "utoipa",
+ "utoipa 5.5.0",
  "utoipa-axum",
  "uuid",
 ]
@@ -3694,7 +3694,7 @@ dependencies = [
  "tower-http 0.7.1",
  "tracing",
  "url",
- "utoipa",
+ "utoipa 5.5.0",
  "utoipa-axum",
  "uuid",
  "zip",
@@ -3715,7 +3715,7 @@ dependencies = [
  "tradocraft-core",
  "tradocraft-pricing",
  "tradocraft-products",
- "utoipa",
+ "utoipa 5.5.0",
  "utoipa-axum",
  "uuid",
 ]
@@ -3736,7 +3736,7 @@ dependencies = [
  "tradocraft-inventory",
  "tradocraft-products",
  "tradocraft-sales",
- "utoipa",
+ "utoipa 5.5.0",
  "utoipa-axum",
  "uuid",
 ]
@@ -3772,7 +3772,7 @@ dependencies = [
  "sqlx",
  "tradocraft-core",
  "tradocraft-products",
- "utoipa",
+ "utoipa 5.5.0",
  "utoipa-axum",
  "uuid",
 ]
@@ -3793,7 +3793,7 @@ dependencies = [
  "tradocraft-core",
  "tradocraft-crm",
  "tradocraft-documents",
- "utoipa",
+ "utoipa 5.5.0",
  "utoipa-axum",
  "uuid",
 ]
@@ -3811,7 +3811,7 @@ dependencies = [
  "sqlx",
  "tradocraft-core",
  "tradocraft-purchasing",
- "utoipa",
+ "utoipa 5.5.0",
  "utoipa-axum",
  "uuid",
 ]
@@ -3844,7 +3844,7 @@ dependencies = [
  "tradocraft-crm",
  "tradocraft-documents",
  "tradocraft-sales",
- "utoipa",
+ "utoipa 5.5.0",
  "utoipa-axum",
  "uuid",
  "webpki-roots",
@@ -3864,7 +3864,7 @@ dependencies = [
  "tradocraft-core",
  "tradocraft-crm",
  "tradocraft-products",
- "utoipa",
+ "utoipa 5.5.0",
  "utoipa-axum",
  "uuid",
 ]
@@ -3883,7 +3883,7 @@ dependencies = [
  "tradocraft-core",
  "tradocraft-engineering",
  "tradocraft-products",
- "utoipa",
+ "utoipa 5.5.0",
  "utoipa-axum",
  "uuid",
 ]
@@ -3898,7 +3898,7 @@ dependencies = [
  "serde_json",
  "sqlx",
  "tradocraft-core",
- "utoipa",
+ "utoipa 5.5.0",
  "utoipa-axum",
  "uuid",
 ]
@@ -3936,7 +3936,7 @@ dependencies = [
  "sqlx",
  "tradocraft-core",
  "tradocraft-fieldservice",
- "utoipa",
+ "utoipa 5.5.0",
  "utoipa-axum",
  "uuid",
 ]
@@ -3959,7 +3959,7 @@ dependencies = [
  "tradocraft-kb",
  "tradocraft-repairs",
  "tradocraft-sales",
- "utoipa",
+ "utoipa 5.5.0",
  "utoipa-axum",
  "uuid",
 ]
@@ -4014,7 +4014,7 @@ dependencies = [
  "tradocraft-inventory",
  "tradocraft-products",
  "tradocraft-sales",
- "utoipa",
+ "utoipa 5.5.0",
  "utoipa-axum",
  "uuid",
 ]
@@ -4034,7 +4034,7 @@ dependencies = [
  "tradocraft-core",
  "tradocraft-documents",
  "tradocraft-pricing",
- "utoipa",
+ "utoipa 5.5.0",
  "utoipa-axum",
  "uuid",
 ]
@@ -4054,7 +4054,7 @@ dependencies = [
  "tradocraft-engineering",
  "tradocraft-inventory",
  "tradocraft-products",
- "utoipa",
+ "utoipa 5.5.0",
  "utoipa-axum",
  "uuid",
 ]
@@ -4072,7 +4072,7 @@ dependencies = [
  "tradocraft-core",
  "tradocraft-crm",
  "tradocraft-helpdesk",
- "utoipa",
+ "utoipa 5.5.0",
  "utoipa-axum",
  "uuid",
 ]
@@ -4093,7 +4093,7 @@ dependencies = [
  "tradocraft-core",
  "tradocraft-documents",
  "tradocraft-helpdesk",
- "utoipa",
+ "utoipa 5.5.0",
  "utoipa-axum",
  "uuid",
 ]
@@ -4117,7 +4117,7 @@ dependencies = [
  "tradocraft-inventory",
  "tradocraft-pricing",
  "tradocraft-products",
- "utoipa",
+ "utoipa 5.5.0",
  "utoipa-axum",
  "uuid",
 ]
@@ -4133,7 +4133,7 @@ dependencies = [
  "sqlx",
  "tradocraft-core",
  "tradocraft-fieldservice",
- "utoipa",
+ "utoipa 5.5.0",
  "utoipa-axum",
  "uuid",
 ]
@@ -4252,7 +4252,19 @@ dependencies = [
  "indexmap",
  "serde",
  "serde_json",
- "utoipa-gen",
+ "utoipa-gen 5.5.0",
+]
+
+[[package]]
+name = "utoipa"
+version = "6.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8765fe27aeff71012a3f90fa474cf1df863a7d0dd81ed25de4e63fff2544994f"
+dependencies = [
+ "indexmap",
+ "serde",
+ "serde_json",
+ "utoipa-gen 6.0.1",
 ]
 
 [[package]]
@@ -4265,7 +4277,7 @@ dependencies = [
  "paste",
  "tower-layer",
  "tower-service",
- "utoipa",
+ "utoipa 5.5.0",
 ]
 
 [[package]]
@@ -4282,15 +4294,26 @@ dependencies = [
 ]
 
 [[package]]
-name = "utoipa-scalar"
-version = "0.3.0"
+name = "utoipa-gen"
+version = "6.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "59559e1509172f6b26c1cdbc7247c4ddd1ac6560fe94b584f81ee489b141f719"
+checksum = "d935f1c83fdf8b88f09bbe050d0cea78ea4afee6d7b0317403228c1200b2c8ab"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 3.0.9",
+]
+
+[[package]]
+name = "utoipa-scalar"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8eb5bc76936ceb2bb790a62bec7fb99e22b8ecffca739e3d5a5afec0081ea7f3"
 dependencies = [
  "axum",
  "serde",
  "serde_json",
- "utoipa",
+ "utoipa 6.0.0",
 ]
 
 [[package]]
