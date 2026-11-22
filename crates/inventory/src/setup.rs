@@ -563,6 +563,14 @@ async fn set_product_uoms(
         }
     }
     let mut tx = state.db.begin().await?;
+    let locked: Option<Uuid> =
+        sqlx::query_scalar("SELECT id FROM products.products WHERE id = $1 FOR UPDATE")
+            .bind(id)
+            .fetch_optional(&mut *tx)
+            .await?;
+    if locked.is_none() {
+        return Err(AppError::NotFound("product"));
+    }
     let existing_uoms: Vec<(String, Decimal)> = sqlx::query_as(
         "SELECT uom_code, factor FROM inventory.product_uoms WHERE product_id = $1 FOR UPDATE",
     )
