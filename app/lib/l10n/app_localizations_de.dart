@@ -10788,7 +10788,7 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get listSelectAll => 'Alle auswählen';
+  String get listSelectAll => 'Alle geladenen Zeilen auswählen';
 
   @override
   String listSelectRow(String name) {
@@ -11527,6 +11527,9 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get selectProductToCopy =>
       'Produkt zum Kopieren der Eigenschaften auswählen';
+
+  @override
+  String get filterSelectAll => 'Alle auswählen';
 
   @override
   String get listDeselectAll => 'Alle abwählen';

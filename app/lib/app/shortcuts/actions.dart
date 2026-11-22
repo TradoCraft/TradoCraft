@@ -382,26 +382,46 @@ const _wd9 = ShortcutChord(
 class ShortcutBindings {
   static final Map<ShortcutAction, ShortcutChord> _overrides = {};
 
-  static ShortcutChord? overrideFor(ShortcutAction action) =>
-      _overrides[action];
+  static ShortcutChord? overrideFor(ShortcutAction action) {
+    final chord = _overrides[action];
+    if (chord == null) return null;
+    if (action != ShortcutAction.cancel && chord.mod == ChordMod.none) {
+      return null;
+    }
+    return chord;
+  }
 
   static bool isCustomized(ShortcutAction action) =>
-      _overrides.containsKey(action);
+      overrideFor(action) != null;
 
   static Map<ShortcutAction, ShortcutChord> get all =>
       Map.unmodifiable(_overrides);
 
   static void setOverrides(Map<ShortcutAction, ShortcutChord> next) {
-    _overrides
-      ..clear()
-      ..addAll(next);
+    _overrides.clear();
+    for (final e in next.entries) {
+      if (e.key != ShortcutAction.cancel && e.value.mod == ChordMod.none) {
+        continue;
+      }
+      _overrides[e.key] = e.value;
+    }
   }
 
-  /// Whether two chords trigger on the same modifier + shift + key combination.
+  /// Exact structural equality between two chords.
   static bool sameChord(ShortcutChord a, ShortcutChord b) =>
-      a.mod == b.mod && a.shift == b.shift && a.key == b.key;
+      a.mod == b.mod &&
+      a.shift == b.shift &&
+      a.anyShift == b.anyShift &&
+      a.key == b.key;
 
-  /// Returns the first other [ShortcutAction] whose active chord conflicts with [candidate], or null.
+  /// Whether two chords can match the same key event (accounting for [ShortcutChord.anyShift]).
+  static bool chordsOverlap(ShortcutChord a, ShortcutChord b) {
+    if (a.mod != b.mod || a.key != b.key) return false;
+    if (a.anyShift || b.anyShift) return true;
+    return a.shift == b.shift;
+  }
+
+  /// Returns the first other [ShortcutAction] whose active chord overlaps with [candidate], or null.
   static ShortcutAction? findConflict(
     ShortcutAction target,
     ShortcutChord candidate, {
@@ -409,7 +429,7 @@ class ShortcutBindings {
   }) {
     for (final a in ShortcutAction.values) {
       if (a == target) continue;
-      if (sameChord(a.chordFor(web: web), candidate)) return a;
+      if (chordsOverlap(a.chordFor(web: web), candidate)) return a;
     }
     return null;
   }

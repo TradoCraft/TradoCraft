@@ -10711,7 +10711,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get listSelectAll => 'Select all';
+  String get listSelectAll => 'Select all loaded rows';
 
   @override
   String listSelectRow(String name) {
@@ -11445,6 +11445,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get selectProductToCopy => 'Select product to copy properties from';
+
+  @override
+  String get filterSelectAll => 'Select all';
 
   @override
   String get listDeselectAll => 'Deselect all';

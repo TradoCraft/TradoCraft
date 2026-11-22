@@ -18951,7 +18951,7 @@ abstract class AppLocalizations {
   /// No description provided for @listSelectAll.
   ///
   /// In en, this message translates to:
-  /// **'Select all'**
+  /// **'Select all loaded rows'**
   String get listSelectAll;
 
   /// No description provided for @listSelectRow.
@@ -20255,6 +20255,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Select product to copy properties from'**
   String get selectProductToCopy;
+
+  /// No description provided for @filterSelectAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Select all'**
+  String get filterSelectAll;
 
   /// No description provided for @listDeselectAll.
   ///

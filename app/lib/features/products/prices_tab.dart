@@ -39,8 +39,8 @@ String? computeZonePrice(
       ? null
       : Decimal.tryParse(rounding);
   if (step != null && step > Decimal.zero) {
-    final quotient = (raw / step).toDouble().round();
-    raw = step * Decimal.fromInt(quotient);
+    final quotient = (raw / step).round();
+    raw = step * Decimal.fromBigInt(quotient);
     return raw.toStringAsFixed(2);
   }
   final s = raw.toStringAsFixed(4);
@@ -81,7 +81,11 @@ class PricesTab extends ConsumerWidget {
                 onPressed: () async {
                   final added = await showDialog<bool>(
                     context: context,
-                    builder: (_) => _MultiZonePriceDialog(product: product),
+                    builder: (_) => _MultiZonePriceDialog(
+                      product: product,
+                      onCommitted: () =>
+                          ref.invalidate(_pricesProvider(product.id)),
+                    ),
                   );
                   if (added == true) {
                     ref.invalidate(_pricesProvider(product.id));
@@ -165,8 +169,9 @@ class PricesTab extends ConsumerWidget {
 
 /// Multi-zone table dialog for entering prices across all zones at once.
 class _MultiZonePriceDialog extends ConsumerStatefulWidget {
-  const _MultiZonePriceDialog({required this.product});
+  const _MultiZonePriceDialog({required this.product, this.onCommitted});
   final Product product;
+  final VoidCallback? onCommitted;
 
   @override
   ConsumerState<_MultiZonePriceDialog> createState() =>
@@ -175,7 +180,12 @@ class _MultiZonePriceDialog extends ConsumerStatefulWidget {
 
 class _MultiZonePriceDialogState extends ConsumerState<_MultiZonePriceDialog> {
   final Map<String, DecimalInputController> _controllers = {};
+  final Map<String, String> _lastTexts = {};
   final Set<String> _overridden = {};
+  final Set<String> _savedZoneIds = {};
+  List<PriceZone> _zones = const [];
+  String? _lastAttemptedZoneId;
+  bool _anyCommitted = false;
   DateTime _from = DateTime.now();
   bool _programmatic = false;
   bool _saving = false;
@@ -189,14 +199,16 @@ class _MultiZonePriceDialogState extends ConsumerState<_MultiZonePriceDialog> {
     super.dispose();
   }
 
-  DecimalInputController _controllerFor(
-    PriceZone zone,
-    List<PriceZone> zones,
-  ) {
+  DecimalInputController _controllerFor(PriceZone zone) {
     return _controllers.putIfAbsent(zone.id, () {
       final c = DecimalInputController();
+      _lastTexts[zone.id] = c.text;
       c.addListener(() {
+        final prevText = _lastTexts[zone.id] ?? '';
+        _lastTexts[zone.id] = c.text;
         if (_programmatic) return;
+        if (c.text == prevText) return;
+        final zones = _zones;
         if (zones.isNotEmpty && zone.id == zones.first.id) {
           _recomputeFromFirst(zones);
         } else {
@@ -226,7 +238,9 @@ class _MultiZonePriceDialogState extends ConsumerState<_MultiZonePriceDialog> {
           multiplier: z.defaultMultiplier,
           rounding: z.defaultRounding,
         );
-        c.text = computed == null ? '' : editableDecimal(computed);
+        final nextText = computed == null ? '' : editableDecimal(computed);
+        c.text = nextText;
+        _lastTexts[z.id] = c.text;
       }
       if (forceAll) _overridden.clear();
     } finally {
@@ -246,19 +260,25 @@ class _MultiZonePriceDialogState extends ConsumerState<_MultiZonePriceDialog> {
     _programmatic = true;
     try {
       _overridden.remove(zone.id);
-      _controllers[zone.id]?.text = computed == null
-          ? ''
-          : editableDecimal(computed);
+      final c = _controllers[zone.id];
+      if (c != null) {
+        c.text = computed == null ? '' : editableDecimal(computed);
+        _lastTexts[zone.id] = c.text;
+      }
     } finally {
       _programmatic = false;
     }
     setState(() {});
   }
 
+  bool _sameDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
+
   Future<void> _save(List<PriceZone> zones) async {
     final l = context.l10n;
     final entries = <(PriceZone, String)>[];
     for (final z in zones) {
+      if (_savedZoneIds.contains(z.id)) continue;
       final c = _controllers[z.id];
       if (c == null || c.text.trim().isEmpty) continue;
       final dec = c.decimal;
@@ -269,6 +289,10 @@ class _MultiZonePriceDialogState extends ConsumerState<_MultiZonePriceDialog> {
       entries.add((z, dec));
     }
     if (entries.isEmpty) {
+      if (_anyCommitted) {
+        if (mounted) Navigator.pop(context, true);
+        return;
+      }
       setState(() => _error = l.enterAtLeastOnePrice);
       return;
     }
@@ -278,7 +302,29 @@ class _MultiZonePriceDialogState extends ConsumerState<_MultiZonePriceDialog> {
     });
     try {
       final products = ref.read(apiProvider).products;
+      if (_lastAttemptedZoneId != null) {
+        final existing = await products.listProductPrices(id: widget.product.id);
+        final match = entries
+            .where((e) => e.$1.id == _lastAttemptedZoneId)
+            .firstOrNull;
+        if (match != null) {
+          final targetDec = Decimal.tryParse(match.$2);
+          final alreadySaved = existing.any(
+            (p) =>
+                p.zoneId == match.$1.id &&
+                _sameDay(p.validFrom, _from) &&
+                Decimal.tryParse(p.unitPrice) == targetDec,
+          );
+          if (alreadySaved) {
+            _savedZoneIds.add(match.$1.id);
+            _anyCommitted = true;
+          }
+        }
+        _lastAttemptedZoneId = null;
+      }
       for (final (z, price) in entries) {
+        if (_savedZoneIds.contains(z.id)) continue;
+        _lastAttemptedZoneId = z.id;
         await products.addProductPrice(
           id: widget.product.id,
           body: ZonePriceInput(
@@ -287,9 +333,15 @@ class _MultiZonePriceDialogState extends ConsumerState<_MultiZonePriceDialog> {
             validFrom: _from,
           ),
         );
+        _savedZoneIds.add(z.id);
+        _anyCommitted = true;
+        _lastAttemptedZoneId = null;
       }
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
+      if (_anyCommitted) {
+        widget.onCommitted?.call();
+      }
       if (mounted) {
         setState(() {
           _saving = false;
@@ -314,171 +366,211 @@ class _MultiZonePriceDialogState extends ConsumerState<_MultiZonePriceDialog> {
     final l = context.l10n;
     final theme = Theme.of(context);
     final zonesAsync = ref.watch(priceZonesProvider);
-    final zones = zonesAsync.value ?? const <PriceZone>[];
-
-    // Ensure controllers exist for all zones.
-    for (final z in zones) {
-      _controllerFor(z, zones);
+    final loadedZones = zonesAsync.value;
+    if (loadedZones != null) {
+      _zones = loadedZones;
+      for (final z in loadedZones) {
+        _controllerFor(z);
+      }
     }
 
-    return AlertDialog(
-      title: Text(l.newPrice),
-      content: SizedBox(
-        width: 600,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(l.validFromDate(date(_from))),
-                trailing: const Icon(AppIcons.calendarToday),
-                onTap: _saving
-                    ? null
-                    : () async {
-                        final d = await showDatePicker(
-                          context: context,
-                          initialDate: _from,
-                          firstDate: DateTime(2000),
-                          lastDate: DateTime(2100),
-                        );
-                        if (d != null) setState(() => _from = d);
-                      },
-              ),
-              const Divider(height: 16),
-              if (zonesAsync.isLoading)
-                const LinearProgressIndicator()
-              else if (zones.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  child: Text(l.noPriceZones),
-                )
-              else
-                Table(
-                  columnWidths: const {
-                    0: FlexColumnWidth(2),
-                    1: FlexColumnWidth(1.4),
-                    2: FixedColumnWidth(160),
-                    3: FixedColumnWidth(44),
-                  },
-                  defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-                  children: [
-                    TableRow(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: Text(
-                            l.zone,
-                            style: theme.textTheme.labelMedium,
-                          ),
+    return PopScope(
+      canPop: !_saving,
+      child: AlertDialog(
+        title: Text(l.newPrice),
+        content: SizedBox(
+          width: 600,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(l.validFromDate(date(_from))),
+                  trailing: const Icon(AppIcons.calendarToday),
+                  onTap: _saving
+                      ? null
+                      : () async {
+                          final d = await showDatePicker(
+                            context: context,
+                            initialDate: _from,
+                            firstDate: DateTime(2000),
+                            lastDate: DateTime(2100),
+                          );
+                          if (d != null) setState(() => _from = d);
+                        },
+                ),
+                const Divider(height: 16),
+                zonesAsync.when(
+                  loading: () => const LinearProgressIndicator(),
+                  error: (e, _) => Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          errorMessage(e),
+                          style: TextStyle(color: theme.colorScheme.error),
                         ),
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: Text(
-                            l.formula,
-                            style: theme.textTheme.labelMedium,
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: Text(
-                            l.unitPriceExclVat,
-                            style: theme.textTheme.labelMedium,
-                            textAlign: TextAlign.end,
-                          ),
-                        ),
-                        const SizedBox.shrink(),
-                      ],
-                    ),
-                    for (var i = 0; i < zones.length; i++)
-                      TableRow(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 6),
-                            child: Text(
-                              '${zones[i].code} – ${zones[i].name}',
-                              overflow: TextOverflow.ellipsis,
+                      ),
+                      TextButton(
+                        key: const ValueKey('multi-price-retry'),
+                        onPressed: () => ref.invalidate(priceZonesProvider),
+                        child: Text(l.retry),
+                      ),
+                    ],
+                  ),
+                  data: (zones) => zones.isEmpty
+                      ? Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          child: Text(l.noPriceZones),
+                        )
+                      : Table(
+                          columnWidths: const {
+                            0: FlexColumnWidth(2),
+                            1: FlexColumnWidth(1.4),
+                            2: FixedColumnWidth(160),
+                            3: FixedColumnWidth(44),
+                          },
+                          defaultVerticalAlignment:
+                              TableCellVerticalAlignment.middle,
+                          children: [
+                            TableRow(
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 8),
+                                  child: Text(
+                                    l.zone,
+                                    style: theme.textTheme.labelMedium,
+                                  ),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 8),
+                                  child: Text(
+                                    l.formula,
+                                    style: theme.textTheme.labelMedium,
+                                  ),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 8),
+                                  child: Text(
+                                    l.unitPriceExclVat,
+                                    style: theme.textTheme.labelMedium,
+                                    textAlign: TextAlign.end,
+                                  ),
+                                ),
+                                const SizedBox.shrink(),
+                              ],
                             ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 6,
-                              horizontal: 4,
-                            ),
-                            child: Text(
-                              _formulaLabel(l, zones[i], i == 0),
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
-                                fontFeatures: const [
-                                  FontFeature.tabularFigures(),
+                            for (var i = 0; i < zones.length; i++)
+                              TableRow(
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 6,
+                                    ),
+                                    child: Text(
+                                      '${zones[i].code} – ${zones[i].name}',
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 6,
+                                      horizontal: 4,
+                                    ),
+                                    child: Text(
+                                      _formulaLabel(l, zones[i], i == 0),
+                                      style: theme.textTheme.bodySmall
+                                          ?.copyWith(
+                                            color: theme
+                                                .colorScheme
+                                                .onSurfaceVariant,
+                                            fontFeatures: const [
+                                              FontFeature.tabularFigures(),
+                                            ],
+                                          ),
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 4,
+                                    ),
+                                    child: DecimalField(
+                                      key: ValueKey(
+                                        'zone-price-${zones[i].code}',
+                                      ),
+                                      controller: _controllers[zones[i].id]!,
+                                      enabled: !_saving,
+                                      autofocus: i == 0,
+                                      decoration: const InputDecoration(
+                                        isDense: true,
+                                        border: OutlineInputBorder(),
+                                      ),
+                                    ),
+                                  ),
+                                  if (i > 0 &&
+                                      zones[i].defaultMultiplier != null &&
+                                      _overridden.contains(zones[i].id))
+                                    IconButton(
+                                      key: ValueKey(
+                                        'zone-reset-${zones[i].code}',
+                                      ),
+                                      tooltip: l.resetToFormula,
+                                      icon: const Icon(
+                                        AppIcons.refresh,
+                                        size: 18,
+                                      ),
+                                      constraints: const BoxConstraints(
+                                        minWidth: 40,
+                                        minHeight: 40,
+                                      ),
+                                      onPressed: _saving
+                                          ? null
+                                          : () => _resetZone(zones[i], zones),
+                                    )
+                                  else
+                                    const SizedBox(width: 40, height: 40),
                                 ],
                               ),
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 4),
-                            child: DecimalField(
-                              key: ValueKey('zone-price-${zones[i].code}'),
-                              controller: _controllers[zones[i].id]!,
-                              autofocus: i == 0,
-                              decoration: const InputDecoration(
-                                isDense: true,
-                                border: OutlineInputBorder(),
-                              ),
-                            ),
-                          ),
-                          if (i > 0 &&
-                              zones[i].defaultMultiplier != null &&
-                              _overridden.contains(zones[i].id))
-                            IconButton(
-                              key: ValueKey('zone-reset-${zones[i].code}'),
-                              tooltip: l.resetToFormula,
-                              icon: const Icon(AppIcons.refresh, size: 18),
-                              constraints: const BoxConstraints(
-                                minWidth: 40,
-                                minHeight: 40,
-                              ),
-                              onPressed: _saving
-                                  ? null
-                                  : () => _resetZone(zones[i], zones),
-                            )
-                          else
-                            const SizedBox(width: 40, height: 40),
-                        ],
-                      ),
-                  ],
+                          ],
+                        ),
                 ),
-              if (_error != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 10),
-                  child: Text(
-                    _error!,
-                    style: TextStyle(color: theme.colorScheme.error),
+                if (_error != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 10),
+                    child: Text(
+                      _error!,
+                      style: TextStyle(color: theme.colorScheme.error),
+                    ),
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
         ),
-      ),
-      actions: [
-        if (_overridden.isNotEmpty)
+        actions: [
+          if (_overridden.isNotEmpty && loadedZones != null)
+            TextButton(
+              onPressed: _saving
+                  ? null
+                  : () => _recomputeFromFirst(loadedZones, forceAll: true),
+              child: Text(l.applyFormulas),
+            ),
           TextButton(
-            onPressed: _saving
-                ? null
-                : () => _recomputeFromFirst(zones, forceAll: true),
-            child: Text(l.applyFormulas),
+            onPressed: _saving ? null : () => Navigator.pop(context, false),
+            child: Text(l.cancel),
           ),
-        TextButton(
-          onPressed: _saving ? null : () => Navigator.pop(context, false),
-          child: Text(l.cancel),
-        ),
-        FilledButton(
-          key: const ValueKey('multi-price-save'),
-          onPressed: _saving || zones.isEmpty ? null : () => _save(zones),
-          child: Text(l.save),
-        ),
-      ],
+          TutorialTarget(
+            id: 'price-form-save',
+            child: FilledButton(
+              key: const ValueKey('multi-price-save'),
+              onPressed: _saving || loadedZones == null || loadedZones.isEmpty
+                  ? null
+                  : () => _save(loadedZones),
+              child: Text(l.save),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -3826,7 +3826,7 @@
   "copyFromProduct": "Von Produkt kopieren...",
   "copiedFromProduct": "Kopiert von {code}",
   "selectProductToCopy": "Produkt zum Kopieren der Eigenschaften auswählen",
-  "listSelectAll": "Alle auswählen",
+  "filterSelectAll": "Alle auswählen",
   "listDeselectAll": "Alle abwählen",
   "userPreferences": "Einstellungen",
   "shortcutsTab": "Tastenkürzel",

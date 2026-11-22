@@ -59,12 +59,11 @@ async fn get_preferences(
     State(state): State<AppState>,
     user: CurrentUser,
 ) -> AppResult<Json<UserPreferences>> {
-    let row: Option<SqlJson<BTreeMap<String, ShortcutBinding>>> = sqlx::query_scalar(
-        "SELECT shortcuts FROM core.user_preferences WHERE user_id = $1",
-    )
-    .bind(user.user_id)
-    .fetch_optional(&state.db)
-    .await?;
+    let row: Option<SqlJson<BTreeMap<String, ShortcutBinding>>> =
+        sqlx::query_scalar("SELECT shortcuts FROM core.user_preferences WHERE user_id = $1")
+            .bind(user.user_id)
+            .fetch_optional(&state.db)
+            .await?;
     Ok(Json(UserPreferences {
         shortcuts: row.map(|r| r.0).unwrap_or_default(),
     }))

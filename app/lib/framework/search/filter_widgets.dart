@@ -124,7 +124,7 @@ class FilterMenuButton extends StatelessWidget {
                 ),
               ),
               onPressed: onToggleAll,
-              child: Text(allSelected ? l.listDeselectAll : l.listSelectAll),
+              child: Text(allSelected ? l.listDeselectAll : l.filterSelectAll),
             ),
           ),
         if (onToggleAll != null) const Divider(height: 1),

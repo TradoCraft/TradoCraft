@@ -3826,7 +3826,7 @@
   "copyFromProduct": "Kopiëren van product...",
   "copiedFromProduct": "Gekopieerd van {code}",
   "selectProductToCopy": "Selecteer product om eigenschappen te kopiëren",
-  "listSelectAll": "Alles selecteren",
+  "filterSelectAll": "Alles selecteren",
   "listDeselectAll": "Alles deselecteren",
   "userPreferences": "Voorkeuren",
   "shortcutsTab": "Sneltoetsen",

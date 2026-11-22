@@ -6398,7 +6398,7 @@
     }
   },
   "selectProductToCopy": "Select product to copy properties from",
-  "listSelectAll": "Select all",
+  "filterSelectAll": "Select all",
   "listDeselectAll": "Deselect all",
   "userPreferences": "Preferences",
   "shortcutsTab": "Shortcuts",

@@ -124,7 +124,11 @@ class _ProductFormState extends ConsumerState<ProductForm> {
           ? number(source.vatRateOverride!)
           : '';
       _tracking = source.tracking;
-      _familyId = source.familyId;
+      final families =
+          ref.read(familiesProvider).value ?? const <ProductFamily>[];
+      _familyId = families.any((f) => f.id == source.familyId)
+          ? source.familyId
+          : null;
       _nonDiscountable = source.nonDiscountable;
       _priceOnRequest = source.priceOnRequest;
       _includedInTurnover = source.includedInTurnover;
@@ -663,24 +667,31 @@ class _ProductFormState extends ConsumerState<ProductForm> {
             Row(
               children: [
                 Expanded(
-                  child: DropdownButtonFormField<String?>(
-                    key: ValueKey('family-${_copiedFrom?.id ?? ''}'),
-                    initialValue: _familyId,
-                    decoration: InputDecoration(labelText: context.l10n.family),
-                    items: [
-                      DropdownMenuItem<String?>(
-                        value: null,
-                        child: Text(context.l10n.none),
-                      ),
-                      for (final f
-                          in ref.watch(familiesProvider).value ??
-                              <ProductFamily>[])
-                        DropdownMenuItem<String?>(
-                          value: f.id,
-                          child: Text('${f.code} · ${f.name}'),
-                        ),
-                    ],
-                    onChanged: (v) => setState(() => _familyId = v),
+                  child: Builder(
+                    builder: (context) {
+                      final families =
+                          ref.watch(familiesProvider).value ?? <ProductFamily>[];
+                      return DropdownButtonFormField<String?>(
+                        key: ValueKey('family-${_copiedFrom?.id ?? ''}-${families.length}'),
+                        initialValue: families.any((f) => f.id == _familyId)
+                            ? _familyId
+                            : null,
+                        isExpanded: true,
+                        decoration: InputDecoration(labelText: context.l10n.family),
+                        items: [
+                          DropdownMenuItem<String?>(
+                            value: null,
+                            child: Text(context.l10n.none),
+                          ),
+                          for (final f in families)
+                            DropdownMenuItem<String?>(
+                              value: f.id,
+                              child: Text('${f.code} · ${f.name}'),
+                            ),
+                        ],
+                        onChanged: (v) => setState(() => _familyId = v),
+                      );
+                    },
                   ),
                 ),
               ],

@@ -81,7 +81,7 @@ void main() {
   });
 
   group('ShortcutBindings & preferences', () {
-    test('detects conflicts and applies user overrides', () {
+    test('detects conflicts including anyShift and rejects modifier-free non-cancel', () {
       const saveChord = ShortcutChord(
         LogicalKeyboardKey.keyS,
         mod: ChordMod.standard,
@@ -92,6 +92,39 @@ void main() {
         web: false,
       );
       expect(conflict, ShortcutAction.save);
+
+      // help uses anyShift: true, so both Ctrl+/ and Ctrl+Shift+/ conflict with help.
+      const slashNoShift = ShortcutChord(
+        LogicalKeyboardKey.slash,
+        mod: ChordMod.standard,
+      );
+      const slashWithShift = ShortcutChord(
+        LogicalKeyboardKey.slash,
+        mod: ChordMod.standard,
+        shift: true,
+      );
+      expect(
+        ShortcutBindings.findConflict(ShortcutAction.find, slashNoShift, web: false),
+        ShortcutAction.help,
+      );
+      expect(
+        ShortcutBindings.findConflict(ShortcutAction.find, slashWithShift, web: false),
+        ShortcutAction.help,
+      );
+
+      // Modifier-free override for non-cancel action is rejected.
+      applyUserShortcutPreferences(
+        const UserPreferences(
+          shortcuts: {
+            'find': ShortcutBinding(
+              key: 'keyG',
+              mod: 'none',
+              shift: false,
+            ),
+          },
+        ),
+      );
+      expect(ShortcutBindings.overrideFor(ShortcutAction.find), isNull);
 
       applyUserShortcutPreferences(
         const UserPreferences(
@@ -181,10 +214,15 @@ void main() {
       await t.pumpAndSettle();
       expect(find.byKey(const ValueKey('zone-reset-FR')), findsOneWidget);
 
-      // Resetting FR restores 120.
+      // Changing BE's base price to 200 keeps FR's manual override at 130.
+      await t.enterText(find.byKey(const ValueKey('zone-price-BE')), '200');
+      await t.pumpAndSettle();
+      expect(frField.controller.text, '130');
+
+      // Resetting FR restores 240 (200 * 1.20).
       await t.tap(find.byKey(const ValueKey('zone-reset-FR')));
       await t.pumpAndSettle();
-      expect(frField.controller.text, '120');
+      expect(frField.controller.text, '240');
     });
   });
 }

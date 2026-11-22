@@ -134,6 +134,27 @@ async fn duplicate_code_is_a_conflict_and_blank_fields_are_rejected(db: PgPool) 
     )
     .await;
     assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+
+    // Excess fractional precision or magnitude beyond NUMERIC(10, 4) is rejected.
+    let (status, _) = call(
+        &app,
+        ADMIN,
+        Method::POST,
+        "/api/v1/price-zones",
+        Some(json!({ "code": "ZPREC", "name": "Prec", "default_multiplier": "1.12345" })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+
+    let (status, _) = call(
+        &app,
+        ADMIN,
+        Method::POST,
+        "/api/v1/price-zones",
+        Some(json!({ "code": "ZBIG", "name": "Big", "default_multiplier": "1000000.0000" })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
 }
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]

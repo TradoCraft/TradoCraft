@@ -1018,9 +1018,10 @@ impl PriceZoneInput {
             return Err(AppError::Validation("name is required".into()));
         }
         if let Some(m) = self.default_multiplier {
-            if m <= Decimal::ZERO {
+            if m <= Decimal::ZERO || m.normalize().scale() > 4 || m > Decimal::new(9_999_999_999, 4)
+            {
                 return Err(AppError::Validation(
-                    "default_multiplier must be positive".into(),
+                    "default_multiplier must be positive and fit NUMERIC(10, 4)".into(),
                 ));
             }
         }

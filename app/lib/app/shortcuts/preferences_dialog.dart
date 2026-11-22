@@ -7,17 +7,33 @@ import '../../l10n/l10n.dart';
 import '../../shared/actions.dart';
 import '../../shared/app_icons.dart';
 import '../api.dart';
+import '../session.dart';
 import 'actions.dart';
 import 'platform.dart';
 
+int _prefsEpoch = 0;
+
 /// Loads the signed-in user's preferences from the backend and syncs [ShortcutBindings].
 final userPreferencesProvider = FutureProvider<UserPreferences>((ref) async {
+  final session = ref.watch(sessionProvider);
+  if (!session.isSignedIn) {
+    ShortcutBindings.setOverrides(const {});
+    return const UserPreferences();
+  }
+  var disposed = false;
+  ref.onDispose(() => disposed = true);
+  final epoch = ++_prefsEpoch;
   final prefs = await ref.watch(apiProvider).core.getPreferences();
+  if (disposed ||
+      epoch != _prefsEpoch ||
+      !identical(ref.read(sessionProvider), session)) {
+    return prefs;
+  }
   applyUserShortcutPreferences(prefs);
   return prefs;
 });
 
-/// Parses [prefs.shortcuts] and applies them to [ShortcutBindings].
+/// Parses [prefs.shortcuts] and applies valid entries to [ShortcutBindings].
 void applyUserShortcutPreferences(UserPreferences prefs) {
   final overrides = <ShortcutAction, ShortcutChord>{};
   for (final entry in (prefs.shortcuts ?? const {}).entries) {
@@ -28,6 +44,7 @@ void applyUserShortcutPreferences(UserPreferences prefs) {
     final key = ShortcutBindings.keyFromName(entry.value.key);
     final mod = ShortcutBindings.modFromName(entry.value.mod);
     if (key == null || mod == null) continue;
+    if (action != ShortcutAction.cancel && mod == ChordMod.none) continue;
     overrides[action] = ShortcutChord(
       key,
       mod: mod,
@@ -80,26 +97,47 @@ class _UserPreferencesDialogState extends ConsumerState<UserPreferencesDialog> {
   ];
 
   bool _saving = false;
+  String? _conflictError;
 
-  Future<void> _saveOverrides(Map<ShortcutAction, ShortcutChord> next) async {
-    setState(() => _saving = true);
-    final payload = UserPreferences(
-      shortcuts: {
-        for (final e in next.entries)
-          e.key.name: ShortcutBinding(
-            key: ShortcutBindings.keyToName(e.value.key),
-            mod: ShortcutBindings.modToName(e.value.mod),
-            shift: e.value.shift,
-          ),
-      },
+  Future<void> _saveOverrides(
+    Map<ShortcutAction, ShortcutChord> next,
+    UserPreferences loaded,
+  ) async {
+    setState(() {
+      _saving = true;
+      _conflictError = null;
+    });
+    final merged = Map<String, ShortcutBinding>.of(
+      loaded.shortcuts ?? const {},
     );
+    for (final a in ShortcutAction.values) {
+      final chord = next[a];
+      if (chord == null) {
+        merged.remove(a.name);
+      } else {
+        if (a != ShortcutAction.cancel && chord.mod == ChordMod.none) continue;
+        merged[a.name] = ShortcutBinding(
+          key: ShortcutBindings.keyToName(chord.key),
+          mod: ShortcutBindings.modToName(chord.mod),
+          shift: chord.shift,
+        );
+      }
+    }
+    final payload = UserPreferences(shortcuts: merged);
+    final container = ProviderScope.containerOf(context, listen: false);
+    final session = container.read(sessionProvider);
+    final epoch = ++_prefsEpoch;
     final ok = await runAction(context, () async {
-      final saved = await ref
+      final saved = await container
           .read(apiProvider)
           .core
           .putPreferences(body: payload);
-      applyUserShortcutPreferences(saved);
-      ref.invalidate(userPreferencesProvider);
+      if (epoch == _prefsEpoch &&
+          identical(container.read(sessionProvider), session) &&
+          session.isSignedIn) {
+        applyUserShortcutPreferences(saved);
+      }
+      container.invalidate(userPreferencesProvider);
     }, success: context.l10n.saved);
     if (mounted) {
       setState(() => _saving = false);
@@ -107,7 +145,10 @@ class _UserPreferencesDialogState extends ConsumerState<UserPreferencesDialog> {
     }
   }
 
-  Future<void> _editAction(ShortcutAction action) async {
+  Future<void> _editAction(
+    ShortcutAction action,
+    UserPreferences loaded,
+  ) async {
     final picked = await showDialog<ShortcutChord>(
       context: context,
       builder: (_) => _KeyCaptureDialog(action: action),
@@ -119,25 +160,47 @@ class _UserPreferencesDialogState extends ConsumerState<UserPreferencesDialog> {
     } else {
       next[action] = picked;
     }
-    await _saveOverrides(next);
+    await _saveOverrides(next, loaded);
   }
 
-  Future<void> _resetAction(ShortcutAction action) async {
+  Future<void> _resetAction(
+    ShortcutAction action,
+    UserPreferences loaded,
+  ) async {
+    final def = action.defaultChord();
+    final conflict = ShortcutBindings.findConflict(
+      action,
+      def,
+      web: kIsWeb,
+    );
+    if (conflict != null) {
+      setState(() {
+        _conflictError = context.l10n.shortcutConflict(
+          conflict.label(context.l10n),
+          _describeChord(def),
+        );
+      });
+      return;
+    }
     final next = Map<ShortcutAction, ShortcutChord>.of(ShortcutBindings.all)
       ..remove(action);
-    await _saveOverrides(next);
+    await _saveOverrides(next, loaded);
   }
 
-  Future<void> _resetAll() async {
-    await _saveOverrides(const {});
+  Future<void> _resetAll(UserPreferences loaded) async {
+    await _saveOverrides(const {}, loaded);
   }
 
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
     final theme = Theme.of(context);
-    final prefs = ref.watch(userPreferencesProvider).value;
-    if (prefs != null) applyUserShortcutPreferences(prefs);
+    final prefsAsync = ref.watch(userPreferencesProvider);
+    final loaded = prefsAsync.value;
+    if (loaded != null) {
+      applyUserShortcutPreferences(loaded);
+    }
+    final ready = loaded != null && !prefsAsync.isLoading && !prefsAsync.hasError;
 
     Widget section(String title, List<ShortcutAction> actions) => Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -180,7 +243,9 @@ class _UserPreferencesDialogState extends ConsumerState<UserPreferencesDialog> {
                 InkWell(
                   key: ValueKey('pref-shortcut-${a.name}'),
                   borderRadius: BorderRadius.circular(8),
-                  onTap: _saving ? null : () => _editAction(a),
+                  onTap: !ready || _saving
+                      ? null
+                      : () => _editAction(a, loaded),
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(minHeight: 40),
                     child: Padding(
@@ -191,10 +256,13 @@ class _UserPreferencesDialogState extends ConsumerState<UserPreferencesDialog> {
                       child: Center(
                         child: Text(
                           a.describe(),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontFamily: 'monospace',
                             fontWeight: FontWeight.w700,
-                            fontFeatures: [FontFeature.tabularFigures()],
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                            color: !ready
+                                ? theme.disabledColor
+                                : null,
                           ),
                         ),
                       ),
@@ -209,9 +277,10 @@ class _UserPreferencesDialogState extends ConsumerState<UserPreferencesDialog> {
                     minWidth: 40,
                     minHeight: 40,
                   ),
-                  onPressed: _saving || !ShortcutBindings.isCustomized(a)
+                  onPressed:
+                      !ready || _saving || !ShortcutBindings.isCustomized(a)
                       ? null
-                      : () => _resetAction(a),
+                      : () => _resetAction(a, loaded),
                 ),
               ],
             ),
@@ -229,6 +298,37 @@ class _UserPreferencesDialogState extends ConsumerState<UserPreferencesDialog> {
           child: Column(
             children: [
               TabBar(tabs: [Tab(text: l.shortcutsTab)]),
+              if (prefsAsync.isLoading) const LinearProgressIndicator(),
+              if (prefsAsync.hasError)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          errorMessage(prefsAsync.error!),
+                          style: TextStyle(color: theme.colorScheme.error),
+                        ),
+                      ),
+                      TextButton(
+                        key: const ValueKey('pref-retry'),
+                        onPressed: () => ref.invalidate(userPreferencesProvider),
+                        child: Text(l.retry),
+                      ),
+                    ],
+                  ),
+                ),
+              if (_conflictError != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: Text(
+                      _conflictError!,
+                      style: TextStyle(color: theme.colorScheme.error),
+                    ),
+                  ),
+                ),
               Expanded(
                 child: TabBarView(
                   children: [
@@ -253,9 +353,9 @@ class _UserPreferencesDialogState extends ConsumerState<UserPreferencesDialog> {
       actions: [
         TextButton(
           key: const ValueKey('pref-reset-all'),
-          onPressed: _saving || ShortcutBindings.all.isEmpty
+          onPressed: !ready || _saving || ShortcutBindings.all.isEmpty
               ? null
-              : _resetAll,
+              : () => _resetAll(loaded),
           child: Text(l.shortcutResetDefaults),
         ),
         FilledButton(
@@ -265,6 +365,24 @@ class _UserPreferencesDialogState extends ConsumerState<UserPreferencesDialog> {
       ],
     );
   }
+}
+
+String _describeChord(ShortcutChord c) {
+  final keyText = switch (c.key) {
+    LogicalKeyboardKey.slash => '/',
+    LogicalKeyboardKey.enter => 'Enter',
+    LogicalKeyboardKey.escape => 'Esc',
+    _ => c.key.keyLabel.toUpperCase(),
+  };
+  return [
+    switch (c.mod) {
+      ChordMod.primary => primaryModifierLabel,
+      ChordMod.standard => standardModifierLabel,
+      ChordMod.none => null,
+    },
+    if (c.shift) 'Shift',
+    keyText,
+  ].whereType<String>().join('+');
 }
 
 class _KeyCaptureDialog extends StatefulWidget {
@@ -300,6 +418,11 @@ class _KeyCaptureDialogState extends State<_KeyCaptureDialog> {
     final meta = kb.isMetaPressed;
     final shift = kb.isShiftPressed;
 
+    // Allow unmodified Tab / Shift+Tab for standard focus traversal.
+    if (e.logicalKey == LogicalKeyboardKey.tab && !ctrl && !alt && !meta) {
+      return KeyEventResult.ignored;
+    }
+
     ChordMod? mod;
     if (isMac) {
       if (meta && !ctrl && !alt) mod = ChordMod.standard;
@@ -333,24 +456,6 @@ class _KeyCaptureDialogState extends State<_KeyCaptureDialog> {
             );
     });
     return KeyEventResult.handled;
-  }
-
-  static String _describeChord(ShortcutChord c) {
-    final keyText = switch (c.key) {
-      LogicalKeyboardKey.slash => '/',
-      LogicalKeyboardKey.enter => 'Enter',
-      LogicalKeyboardKey.escape => 'Esc',
-      _ => c.key.keyLabel.toUpperCase(),
-    };
-    return [
-      switch (c.mod) {
-        ChordMod.primary => primaryModifierLabel,
-        ChordMod.standard => standardModifierLabel,
-        ChordMod.none => null,
-      },
-      if (c.shift) 'Shift',
-      keyText,
-    ].whereType<String>().join('+');
   }
 
   @override
