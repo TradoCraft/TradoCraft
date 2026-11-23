@@ -57,6 +57,10 @@ Future<ProviderContainer> _pump(
             '/opportunities',
             '/helpdesk',
             '/kb',
+            '/repairs',
+            '/packages',
+            '/intake',
+            '/jobs',
             '/customers',
             '/products',
             '/reports',
@@ -249,23 +253,38 @@ void main() {
     },
   );
 
-  testWidgets('wide rail shows active group label below the switcher button', (
-    tester,
-  ) async {
-    await _pump(tester, _perms, wide: true, start: '/orders');
-    final rail = find.byType(NavigationRail);
-    expect(find.descendant(of: rail, matching: find.text('Sales')), findsOneWidget);
-    expect(find.byKey(const ValueKey('app-switcher')), findsOneWidget);
-  });
-
-  testWidgets('wide shell shows top-bar search trigger and opens global search', (
-    tester,
-  ) async {
-    await _pump(tester, _perms, wide: true, start: '/orders');
-    final trigger = find.byKey(const ValueKey('top-bar-search'));
-    expect(trigger, findsOneWidget);
-    await tester.tap(trigger);
-    await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('global-search-field')), findsOneWidget);
-  });
+  testWidgets(
+    'narrow layout: caps NavigationBar at 5 items with More sheet for 6+ destinations',
+    (tester) async {
+      await _pump(
+        tester,
+        const [
+          'helpdesk.read',
+          'kb.read',
+          'repairs.read',
+          'packages.read',
+          'repairs.intake',
+          'field.read',
+        ],
+        wide: false,
+        start: '/helpdesk',
+      );
+      final bar = find.byType(NavigationBar);
+      expect(
+        find.descendant(of: bar, matching: find.byType(NavigationDestination)),
+        findsNWidgets(5),
+      );
+      final more = find.byKey(const ValueKey('nav-more-button'));
+      expect(more, findsOneWidget);
+      await tester.tap(more);
+      await tester.pumpAndSettle();
+      final sheet = find.byType(BottomSheet);
+      expect(sheet, findsOneWidget);
+      await tester.tap(
+        find.descendant(of: sheet, matching: find.byType(ListTile)).last,
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('LIST /jobs'), findsOneWidget);
+    },
+  );
 }

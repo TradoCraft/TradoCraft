@@ -561,17 +561,89 @@ class AppShell extends ConsumerWidget {
           ],
         ),
       ),
-      bottomNavigationBar: NavigationBar(
+      bottomNavigationBar: _NarrowNavigationBar(
+        destinations: [for (final i in shownIdx) destinations[i]],
         selectedIndex: shownSel,
-        onDestinationSelected: goShown,
+        onSelected: goShown,
+        iconOf: (pos, d) => hinted(shownIdx[pos], _destIcon(d)),
+      ),
+    );
+  }
+}
+
+/// Bottom navigation bar for narrow viewports. Caps visible destinations at 5 by folding any
+/// overflow beyond the first 4 into a `More` bottom sheet.
+class _NarrowNavigationBar extends StatelessWidget {
+  const _NarrowNavigationBar({
+    required this.destinations,
+    required this.selectedIndex,
+    required this.onSelected,
+    required this.iconOf,
+  });
+
+  final List<_Dest> destinations;
+  final int selectedIndex;
+  final ValueChanged<int> onSelected;
+  final Widget Function(int index, _Dest dest) iconOf;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    if (destinations.length <= 5) {
+      return NavigationBar(
+        selectedIndex: selectedIndex,
+        onDestinationSelected: onSelected,
         destinations: [
-          for (final i in shownIdx)
+          for (var i = 0; i < destinations.length; i++)
             NavigationDestination(
-              icon: hinted(i, _destIcon(destinations[i])),
-              label: destinations[i].label(context.l10n),
+              icon: iconOf(i, destinations[i]),
+              label: destinations[i].label(l),
             ),
         ],
-      ),
+      );
+    }
+    const visibleCount = 4;
+    final moreLabel = MaterialLocalizations.of(context).moreButtonTooltip;
+    return NavigationBar(
+      selectedIndex: selectedIndex >= visibleCount
+          ? visibleCount
+          : selectedIndex,
+      onDestinationSelected: (i) async {
+        if (i < visibleCount) {
+          onSelected(i);
+          return;
+        }
+        final picked = await showModalBottomSheet<int>(
+          context: context,
+          builder: (ctx) => SafeArea(
+            child: ListView(
+              shrinkWrap: true,
+              children: [
+                for (var j = visibleCount; j < destinations.length; j++)
+                  ListTile(
+                    leading: iconOf(j, destinations[j]),
+                    title: Text(destinations[j].label(l)),
+                    selected: selectedIndex == j,
+                    onTap: () => Navigator.of(ctx).pop(j),
+                  ),
+              ],
+            ),
+          ),
+        );
+        if (picked != null) onSelected(picked);
+      },
+      destinations: [
+        for (var i = 0; i < visibleCount; i++)
+          NavigationDestination(
+            icon: iconOf(i, destinations[i]),
+            label: destinations[i].label(l),
+          ),
+        NavigationDestination(
+          key: const ValueKey('nav-more-button'),
+          icon: const Icon(AppIcons.moreVert),
+          label: moreLabel,
+        ),
+      ],
     );
   }
 }
