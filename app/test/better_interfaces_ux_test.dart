@@ -52,6 +52,8 @@ const _me = Me(
     currency: 'EUR',
     isPrimary: true,
     defaultLanguage: 'en',
+    autosaveMinutes: 5,
+    quotationSingleLineItems: true,
   ),
   roles: ['admin'],
   permissions: ['prices.write', 'products.read'],

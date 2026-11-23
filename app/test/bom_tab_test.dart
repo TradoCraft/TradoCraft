@@ -151,6 +151,8 @@ class _FakeApi implements HttpClientAdapter {
           'currency': 'EUR',
           'default_language': 'nl',
           'is_primary': true,
+          'autosave_minutes': 5,
+          'quotation_single_line_items': true,
         },
       },
       _ => null,

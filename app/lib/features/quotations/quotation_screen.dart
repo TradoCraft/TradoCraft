@@ -387,6 +387,7 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
     if (widget.id == old.id || widget.id == _id) return;
     _debounce?.cancel();
     _autosaveTimer?.cancel();
+    _autosaveMinutes = null;
     _previewSeq++;
     _oppSeq++;
     _loadSeq++;
@@ -447,6 +448,7 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
       ..dispose();
     _debounce?.cancel();
     _autosaveTimer?.cancel();
+    _autosaveMinutes = null;
     _scroll.dispose();
     _notes.dispose();
     _country.dispose();
@@ -610,7 +612,6 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
   void _onEdited() {
     _setDirty(true);
     _debounce?.cancel();
-    _autosaveTimer?.cancel();
     _debounce = Timer(const Duration(milliseconds: 350), _refreshPreview);
   }
 
@@ -1405,6 +1406,7 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
       const SizedBox(height: 16),
       TextField(
         controller: _notes,
+        enabled: !_form.busy,
         maxLines: 3,
         onChanged: (_) => _setDirty(true),
         decoration: InputDecoration(labelText: context.l10n.notes),

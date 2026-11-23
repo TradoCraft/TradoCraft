@@ -139,10 +139,13 @@ class _CompanyLogoPageState extends ConsumerState<CompanyLogoPage> {
             ),
         success: l.quotationSettingsSaved,
       );
+      if (ok && mounted) {
+        ref.invalidate(meProvider);
+        await ref.read(meProvider.future);
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
-    if (ok && mounted) ref.invalidate(meProvider);
   }
 
   @override

@@ -62,13 +62,12 @@ async fn get_preferences(
     State(state): State<AppState>,
     user: CurrentUser,
 ) -> AppResult<Json<UserPreferences>> {
-    let row: Option<(SqlJson<BTreeMap<String, ShortcutBinding>>, Option<i32>)> =
-        sqlx::query_as(
-            "SELECT shortcuts, autosave_minutes FROM core.user_preferences WHERE user_id = $1",
-        )
-        .bind(user.user_id)
-        .fetch_optional(&state.db)
-        .await?;
+    let row: Option<(SqlJson<BTreeMap<String, ShortcutBinding>>, Option<i32>)> = sqlx::query_as(
+        "SELECT shortcuts, autosave_minutes FROM core.user_preferences WHERE user_id = $1",
+    )
+    .bind(user.user_id)
+    .fetch_optional(&state.db)
+    .await?;
     let (shortcuts, autosave_minutes) = match row {
         Some((s, a)) => (s.0, a),
         None => (BTreeMap::new(), None),

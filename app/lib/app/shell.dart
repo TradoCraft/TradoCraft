@@ -251,7 +251,27 @@ class AppShell extends ConsumerWidget {
         body: Column(
           children: [
             const EnvironmentBanner(),
-            Expanded(child: Center(child: Text(context.l10n.noAccess))),
+            Expanded(
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(context.l10n.noAccess),
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      key: const ValueKey('no-access-switch-env'),
+                      onPressed: () => showEnvironmentSwitcher(context),
+                      icon: const Icon(AppIcons.swapHoriz),
+                      label: Text(
+                        context.l10n.envSwitchMenu(
+                          ref.watch(activeEnvironmentProvider).name,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       );

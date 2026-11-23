@@ -893,10 +893,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.text('LIST'), findsNothing);
-      await c.read(environmentsProvider.notifier).switchTo('env-2');
-      await tester.pumpAndSettle();
-      expect(find.byType(EnvironmentBanner), findsOneWidget);
-      await tester.tap(find.byType(EnvironmentBanner));
+      await tester.tap(find.byKey(const ValueKey('no-access-switch-env')));
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('env-tile-env-2')), findsOneWidget);
     });

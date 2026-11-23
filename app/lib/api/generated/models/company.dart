@@ -10,6 +10,7 @@ part 'company.g.dart';
 @JsonSerializable()
 class Company {
   const Company({
+    required this.autosaveMinutes,
     required this.city,
     required this.countryCode,
     required this.currency,
@@ -18,17 +19,17 @@ class Company {
     required this.isPrimary,
     required this.name,
     required this.postalCode,
+    required this.quotationSingleLineItems,
     required this.street,
-    this.autosaveMinutes = 5,
     this.email,
     this.iban,
     this.phone,
-    this.quotationSingleLineItems = true,
     this.vatNumber,
   });
   
   factory Company.fromJson(Map<String, Object?> json) => _$CompanyFromJson(json);
   
+  /// Draft autosave interval in minutes (0 = disabled; default 5).
   @JsonKey(name: 'autosave_minutes')
   final int autosaveMinutes;
   final String city;
@@ -52,6 +53,8 @@ class Company {
   final String? phone;
   @JsonKey(name: 'postal_code')
   final String postalCode;
+
+  /// Render quotation items on a single line (remarks in a dialog) instead of two lines.
   @JsonKey(name: 'quotation_single_line_items')
   final bool quotationSingleLineItems;
   final String street;

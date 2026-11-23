@@ -10,7 +10,9 @@ import '../models/admin_user_create.dart';
 import '../models/admin_user_update.dart';
 import '../models/bootstrap_request.dart';
 import '../models/bootstrap_result.dart';
+import '../models/company.dart';
 import '../models/company_logo_info.dart';
+import '../models/company_settings_input.dart';
 import '../models/company_user.dart';
 import '../models/country_vat_rate.dart';
 import '../models/country_vat_rate_input.dart';
@@ -44,6 +46,12 @@ abstract class CoreClient {
   /// Removes the company logo. 404 when there is none.
   @DELETE('/api/v1/admin/company/logo')
   Future<void> deleteLogo();
+
+  /// Updates company-wide presentation settings and returns the updated company.
+  @PUT('/api/v1/admin/company/settings')
+  Future<Company> setCompanySettings({
+    @Body() required CompanySettingsInput body,
+  });
 
   /// The module catalogue with the company's switches.
   @GET('/api/v1/admin/modules')

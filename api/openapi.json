@@ -194,6 +194,57 @@
         }
       }
     },
+    "/api/v1/admin/company/settings": {
+      "put": {
+        "tags": [
+          "core"
+        ],
+        "summary": "Updates company-wide presentation settings and returns the updated company.",
+        "operationId": "set_company_settings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompanySettingsInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Company"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/identity-providers": {
       "get": {
         "tags": [
@@ -38106,9 +38157,16 @@
           "country_code",
           "currency",
           "default_language",
-          "is_primary"
+          "is_primary",
+          "quotation_single_line_items",
+          "autosave_minutes"
         ],
         "properties": {
+          "autosave_minutes": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Draft autosave interval in minutes (0 = disabled; default 5)."
+          },
           "city": {
             "type": "string"
           },
@@ -38153,6 +38211,10 @@
           "postal_code": {
             "type": "string"
           },
+          "quotation_single_line_items": {
+            "type": "boolean",
+            "description": "Render quotation items on a single line (remarks in a dialog) instead of two lines."
+          },
           "street": {
             "type": "string"
           },
@@ -38184,6 +38246,24 @@
           "updated_at": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "CompanySettingsInput": {
+        "type": "object",
+        "description": "Company-wide presentation settings managed by an administrator.",
+        "required": [
+          "quotation_single_line_items"
+        ],
+        "properties": {
+          "autosave_minutes": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Draft autosave interval in minutes (0 = disabled, 1..=120; default 5)."
+          },
+          "quotation_single_line_items": {
+            "type": "boolean",
+            "description": "Render quotation items on a single line (remarks in a dialog) instead of two lines."
           }
         }
       },
@@ -60451,6 +60531,14 @@
         "type": "object",
         "description": "Per-user preferences stored across sessions and devices.",
         "properties": {
+          "autosave_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Per-user override for draft autosave interval in minutes (`None` = use company default, `0` = off)."
+          },
           "shortcuts": {
             "type": "object",
             "description": "Custom shortcut bindings keyed by `ShortcutAction.name`.",
