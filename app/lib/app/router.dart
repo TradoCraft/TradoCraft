@@ -27,6 +27,7 @@ import '../features/reports/report_screen.dart';
 import '../features/reports/reports_page.dart';
 import '../features/todo/todo_page.dart';
 import '../features/helpdesk/tickets_page.dart';
+import '../features/home/home_page.dart';
 import '../features/kb/kb_categories_page.dart';
 import '../features/kb/document_library_page.dart';
 import '../features/kb/kb_page.dart';
@@ -94,6 +95,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           child: AppShell(location: state.matchedLocation, child: child),
         ),
         routes: [
+          GoRoute(path: '/home', builder: (_, _) => const HomePage()),
           GoRoute(
             path: '/quotations',
             builder: (_, _) => const QuotationsPage(),
