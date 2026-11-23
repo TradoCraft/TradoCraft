@@ -52,7 +52,7 @@ FROM (VALUES
 CROSS JOIN (VALUES
         ('00000000-0000-7000-8000-000000000201'::uuid, 0.70),
         ('00000000-0000-7000-8000-000000000202'::uuid, 0.80),
-        ('00000000-0000-7000-8000-000000000203'::uuid, 1.00)
+        ('00000000-0000-7000-8000-000000000203'::uuid, 0.90)
      ) AS zf(zone_id, factor);
 
 INSERT INTO crm.customers (id, code, name, vat_number, email, phone, street, postal_code, city, country_code, language, vat_regime) VALUES

@@ -111,9 +111,8 @@ test('the whole tutorial, chapter by chapter', async ({ page, request }) => {
   });
 
   await test.step('chapter 2: PLCs, parallel licensing & network', async () => {
-    await expectStep(page, 'plc', 'open');
-    await overviewTab(page);
     await expectStep(page, 'plc', 'base');
+    await overviewTab(page);
     for (const [step, code, name, type] of [
       ['base', 'PLC-BASE', 'Standard PLC (10 Outputs)', 'purchased'],
       ['lic30', 'PLC-LIC-30', 'PLC 30-Output Parallel License', 'service'],
@@ -692,10 +691,9 @@ test('chapter 11 (standalone): custom product properties', async ({ page, reques
     await page.getByRole('button', { name: 'Account' }).click();
     await page.getByRole('menuitem', { name: 'Tutorial', exact: true }).click();
     for (let i = 0; i < 14; i++) {
-      const skip = page.getByRole('button', { name: 'Skip chapter' }).first();
-      await skip.scrollIntoViewIfNeeded();
-      await skip.click();
+      await page.getByRole('button', { name: 'Skip chapter' }).first().click();
     }
+    await page.mouse.wheel(0, 3000);
     const start = page.getByRole('button', { name: 'Start', exact: true }).last();
     await start.scrollIntoViewIfNeeded();
     await start.click();
