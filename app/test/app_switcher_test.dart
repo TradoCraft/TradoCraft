@@ -57,6 +57,10 @@ Future<ProviderContainer> _pump(
             '/opportunities',
             '/helpdesk',
             '/kb',
+            '/repairs',
+            '/packages',
+            '/intake',
+            '/jobs',
             '/customers',
             '/products',
             '/reports',
@@ -246,6 +250,41 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('app-group-master')));
       await tester.pumpAndSettle();
       expect(find.text('LIST /customers'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'narrow layout: caps NavigationBar at 5 items with More sheet for 6+ destinations',
+    (tester) async {
+      await _pump(
+        tester,
+        const [
+          'helpdesk.read',
+          'kb.read',
+          'repairs.read',
+          'packages.read',
+          'repairs.intake',
+          'field.read',
+        ],
+        wide: false,
+        start: '/helpdesk',
+      );
+      final bar = find.byType(NavigationBar);
+      expect(
+        find.descendant(of: bar, matching: find.byType(NavigationDestination)),
+        findsNWidgets(5),
+      );
+      final more = find.byKey(const ValueKey('nav-more-button'));
+      expect(more, findsOneWidget);
+      await tester.tap(more);
+      await tester.pumpAndSettle();
+      final sheet = find.byType(BottomSheet);
+      expect(sheet, findsOneWidget);
+      await tester.tap(
+        find.descendant(of: sheet, matching: find.byType(ListTile)).last,
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('LIST /jobs'), findsOneWidget);
     },
   );
 }
