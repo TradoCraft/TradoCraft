@@ -671,7 +671,6 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
     if (_loading) return;
     final form = _form;
     final id = _id;
-    bool stale() => !mounted || !identical(form, _form);
     final saved = await form.save((expectedVersion) async {
       final inputs = _lineInputs();
       if (_customer == null || inputs == null || inputs.isEmpty) {
@@ -716,7 +715,7 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
       final q = id == null
           ? await _quotations.create(body)
           : await _quotations.update(id, body);
-      if (stale()) return q;
+      if (!mounted || !identical(form, _form)) return q;
       _apply(q);
       _startWatcher();
       ScaffoldMessenger.of(context).showSnackBar(
@@ -724,7 +723,7 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
       );
       return q;
     });
-    if (!stale() && saved != null) _changed = true;
+    if (mounted && identical(form, _form) && saved != null) _changed = true;
   }
 
   Future<void> _transition(Future<Quotation> Function(String id) call) =>
