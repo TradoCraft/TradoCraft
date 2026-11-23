@@ -1,0 +1,87 @@
+# TradoCraft local suite using pre-built GHCR images (zero manual PostgreSQL or Typst setup).
+#
+# Quick start on Windows (Docker Desktop + WSL 2):
+#   1. Save this file as docker-compose.yml in an empty folder.
+#   2. Run: docker compose up -d
+#   3. Choose your UI:
+#      - Zero-install Web UI: open http://localhost:8088 in your browser.
+#      - Native Windows app: unzip tradocraft-windows-x64.zip, run tradocraft_app.exe,
+#        and connect to http://localhost:8080.
+#
+# For local evaluation only (AUTH_MODE=dev, loopback-bound ports).
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: tradocraft
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tradocraft}
+      POSTGRES_DB: tradocraft
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tradocraft"]
+      interval: 2s
+      retries: 30
+
+  api:
+    image: ghcr.io/tradocraft/tradocraft-backend:${TRADOCRAFT_VERSION:-0.2.0}
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://tradocraft:${POSTGRES_PASSWORD:-tradocraft}@db/tradocraft
+      AUTH_MODE: dev
+      ALLOW_INSECURE_DEV_AUTH: "true"
+      SEED_DEV_DATA: "true"
+      APP_ENV_KIND: tutorial
+      FILE_STORAGE_DIR: /var/lib/tradocraft/files
+      RUST_LOG: info
+    volumes:
+      - filestorage:/var/lib/tradocraft/files
+    ports:
+      - "127.0.0.1:8080:8080"
+
+  portal-api:
+    image: ghcr.io/tradocraft/tradocraft-backend:${TRADOCRAFT_VERSION:-0.2.0}
+    command: ["tradocraft-portal-api"]
+    depends_on:
+      - api
+    restart: on-failure
+    environment:
+      DATABASE_URL: postgresql://tradocraft:${POSTGRES_PASSWORD:-tradocraft}@db/tradocraft
+      PORTAL_BIND_ADDR: 0.0.0.0:8090
+      FILE_STORAGE_DIR: /var/lib/tradocraft/files
+      RUST_LOG: info
+    volumes:
+      - filestorage:/var/lib/tradocraft/files
+    ports:
+      - "127.0.0.1:8090:8090"
+
+  worker:
+    image: ghcr.io/tradocraft/tradocraft-backend:${TRADOCRAFT_VERSION:-0.2.0}
+    command: ["tradocraft-worker"]
+    depends_on:
+      - api
+    environment:
+      DATABASE_URL: postgresql://tradocraft:${POSTGRES_PASSWORD:-tradocraft}@db/tradocraft
+      MAIL_TRANSPORT: files
+      MAIL_FILES_DIR: /app/outbox
+      POLL_SECONDS: "15"
+      FILE_STORAGE_DIR: /var/lib/tradocraft/files
+      RUST_LOG: info
+    volumes:
+      - filestorage:/var/lib/tradocraft/files
+
+  web:
+    image: ghcr.io/tradocraft/tradocraft-web:${TRADOCRAFT_VERSION:-0.2.0}
+    depends_on:
+      - api
+    ports:
+      - "127.0.0.1:8088:80"
+
+volumes:
+  pgdata:
+  filestorage:

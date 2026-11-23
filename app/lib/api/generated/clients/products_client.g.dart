@@ -1309,6 +1309,7 @@ class _ProductsClient implements ProductsClient {
   @override
   Future<ProductPage> listProducts({
     String? q,
+    String? code,
     bool? active,
     String? familyId,
     String? productType,
@@ -1319,6 +1320,7 @@ class _ProductsClient implements ProductsClient {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
       r'q': q,
+      r'code': code,
       r'active': active,
       r'family_id': familyId,
       r'product_type': productType,
