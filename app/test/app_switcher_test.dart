@@ -248,4 +248,24 @@ void main() {
       expect(find.text('LIST /customers'), findsOneWidget);
     },
   );
+
+  testWidgets('wide rail shows active group label below the switcher button', (
+    tester,
+  ) async {
+    await _pump(tester, _perms, wide: true, start: '/orders');
+    final rail = find.byType(NavigationRail);
+    expect(find.descendant(of: rail, matching: find.text('Sales')), findsOneWidget);
+    expect(find.byKey(const ValueKey('app-switcher')), findsOneWidget);
+  });
+
+  testWidgets('wide shell shows top-bar search trigger and opens global search', (
+    tester,
+  ) async {
+    await _pump(tester, _perms, wide: true, start: '/orders');
+    final trigger = find.byKey(const ValueKey('top-bar-search'));
+    expect(trigger, findsOneWidget);
+    await tester.tap(trigger);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('global-search-field')), findsOneWidget);
+  });
 }
