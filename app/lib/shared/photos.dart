@@ -10,8 +10,8 @@ import '../l10n/l10n.dart';
 import 'app_icons.dart';
 
 const _productMediaTypes = XTypeGroup(
-  label: 'Images and videos',
-  extensions: ['jpg', 'jpeg', 'png', 'webp', 'svg', 'mp4', 'webm'],
+  label: 'Images, videos and 3D models (.glb)',
+  extensions: ['jpg', 'jpeg', 'png', 'webp', 'svg', 'mp4', 'webm', 'glb'],
   mimeTypes: [
     'image/jpeg',
     'image/png',
@@ -19,6 +19,7 @@ const _productMediaTypes = XTypeGroup(
     'image/svg+xml',
     'video/mp4',
     'video/webm',
+    'model/gltf-binary',
   ],
   uniformTypeIdentifiers: [
     'public.jpeg',
@@ -27,8 +28,21 @@ const _productMediaTypes = XTypeGroup(
     'public.svg-image',
     'public.mpeg-4',
     'org.webmproject.webm',
+    'org.khronos.gltf-binary',
   ],
 );
+
+/// Whether [bytes] starts with the glTF 2.0 binary (`.glb`) header (`glTF` + version 2).
+bool isGlbBytes(Uint8List bytes) =>
+    bytes.length >= 12 &&
+    bytes[0] == 0x67 &&
+    bytes[1] == 0x6C &&
+    bytes[2] == 0x54 &&
+    bytes[3] == 0x46 &&
+    bytes[4] == 2 &&
+    bytes[5] == 0 &&
+    bytes[6] == 0 &&
+    bytes[7] == 0;
 
 /// Picks one or more product pictures (JPEG, PNG, WebP, SVG) or videos (MP4, WebM).
 Future<List<PickedPhoto>> pickProductMedia(BuildContext context) async {

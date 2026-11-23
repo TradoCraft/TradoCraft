@@ -240,6 +240,8 @@ async fn upload_media(
         } else {
             let kind = if file.content_type.starts_with("video/") {
                 "video"
+            } else if file.content_type == "model/gltf-binary" {
+                "model"
             } else {
                 "image"
             };
@@ -291,6 +293,7 @@ async fn upload_media(
             (Vec<u8> = "image/svg+xml"),
             (Vec<u8> = "video/mp4"),
             (Vec<u8> = "video/webm"),
+            (Vec<u8> = "model/gltf-binary"),
         )),
         (status = 404, body = tradocraft_core::error::ErrorBody)
     ))]
@@ -324,6 +327,7 @@ async fn get_media(
             (Vec<u8> = "image/svg+xml"),
             (Vec<u8> = "video/mp4"),
             (Vec<u8> = "video/webm"),
+            (Vec<u8> = "model/gltf-binary"),
         )),
         (status = 404, body = tradocraft_core::error::ErrorBody)
     ))]
@@ -481,6 +485,10 @@ mod tests {
         assert_eq!(
             sniff_media(&[0x1A, 0x45, 0xDF, 0xA3, 1, 2, 3]),
             Some("video/webm")
+        );
+        assert_eq!(
+            sniff_media(b"glTF\x02\x00\x00\x00\x20\x00\x00\x00"),
+            Some("model/gltf-binary")
         );
         assert_eq!(sniff_media(b"%PDF-1.7 not media"), None);
         assert_eq!(sniff_media(b"<svg></svg>"), None);

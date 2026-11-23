@@ -50,6 +50,11 @@ pub fn sniff_media(bytes: &[u8]) -> Option<&'static str> {
         Some("video/mp4")
     } else if bytes.starts_with(&[0x1A, 0x45, 0xDF, 0xA3]) {
         Some("video/webm")
+    } else if bytes.len() >= 12
+        && &bytes[0..4] == b"glTF"
+        && u32::from_le_bytes([bytes[4], bytes[5], bytes[6], bytes[7]]) == 2
+    {
+        Some("model/gltf-binary")
     } else {
         None
     }
@@ -72,6 +77,7 @@ pub fn clean_filename(name: &str, content_type: &str) -> String {
             "application/pdf" => return "document.pdf".to_string(),
             "video/mp4" => return "video.mp4".to_string(),
             "video/webm" => return "video.webm".to_string(),
+            "model/gltf-binary" => return "model.glb".to_string(),
             _ => "jpg",
         };
         format!("photo.{ext}")

@@ -10,6 +10,7 @@ import '../../app/workspace.dart';
 import '../../shared/app_icons.dart';
 import '../../shared/decimal_field.dart';
 import '../../shared/format.dart';
+import '../../shared/glb_viewer.dart';
 import '../../shared/photos.dart';
 import '../../shared/search_picker.dart';
 import 'families_dialog.dart';
@@ -451,6 +452,9 @@ class _ProductFormState extends ConsumerState<ProductForm> {
     return lower.endsWith('.mp4') || lower.endsWith('.webm');
   }
 
+  static bool _isModelFilename(String name) =>
+      name.toLowerCase().endsWith('.glb');
+
   Widget _mediaSection(BuildContext context) {
     final l = context.l10n;
     final theme = Theme.of(context);
@@ -506,6 +510,28 @@ class _ProductFormState extends ConsumerState<ProductForm> {
                                         child: Icon(
                                           AppIcons.playCircle,
                                           size: 36,
+                                        ),
+                                      )
+                                    : _isModelFilename(_media[i].filename)
+                                    ? InkWell(
+                                        onTap: () => showDialog<void>(
+                                          context: context,
+                                          builder: (_) => Dialog(
+                                            child: SizedBox(
+                                              width: 720,
+                                              height: 520,
+                                              child: GlbViewer(
+                                                bytes: _media[i].bytes,
+                                                filename: _media[i].filename,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        child: const Center(
+                                          child: Icon(
+                                            Icons.view_in_ar_outlined,
+                                            size: 36,
+                                          ),
                                         ),
                                       )
                                     : isSvgBytes(_media[i].bytes)
