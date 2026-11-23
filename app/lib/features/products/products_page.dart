@@ -110,8 +110,10 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
           id: 'picture',
           cell: (context, p) => ProductThumb(
             productId: p.id,
+            productCode: p.code,
             mediaId: p.defaultMediaId,
             isVideo: p.defaultMediaKind == 'video',
+            isModel: p.defaultMediaKind == 'model',
           ),
         ),
         EntityColumn(context.l10n.code, (p) => p.code, sortKey: 'code'),

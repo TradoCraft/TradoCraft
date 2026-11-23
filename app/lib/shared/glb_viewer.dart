@@ -6,6 +6,27 @@ import 'package:material_ui/material_ui.dart';
 
 import 'app_icons.dart';
 
+/// Bundled `.glb` asset paths for the 14 standalone tutorial products.
+const tutorialGlbAssets = <String, String>{
+  'CONV-BELT-1M': 'assets/models/CONV-BELT-1M.glb',
+  'MOT-1P-037': 'assets/models/MOT-1P-037.glb',
+  'MOT-3P-055': 'assets/models/MOT-3P-055.glb',
+  'VFD-3P-055': 'assets/models/VFD-3P-055.glb',
+  'PLC-BASE': 'assets/models/PLC-BASE.glb',
+  'PLC-EXP-RS485': 'assets/models/PLC-EXP-RS485.glb',
+  'PLC-MASTER': 'assets/models/PLC-MASTER.glb',
+  'DISP-RS485': 'assets/models/DISP-RS485.glb',
+  'MOD-I2C-SWIPE': 'assets/models/MOD-I2C-SWIPE.glb',
+  'SENS-I2C-TEMP': 'assets/models/SENS-I2C-TEMP.glb',
+  'SENS-IR-24V': 'assets/models/SENS-IR-24V.glb',
+  'SENS-420MA': 'assets/models/SENS-420MA.glb',
+  'SOL-PUSH': 'assets/models/SOL-PUSH.glb',
+  'SOL-LABEL': 'assets/models/SOL-LABEL.glb',
+};
+
+/// Returns the bundled `.glb` asset path for [code], or null if none exists.
+String? tutorialGlbAssetForCode(String code) => tutorialGlbAssets[code];
+
 /// A single node in a glTF 2.0 `.glb` assembly.
 class GlbNode {
   const GlbNode({
@@ -415,6 +436,60 @@ class GlbAsset {
     final len = math.sqrt(nx * nx + ny * ny + nz * nz);
     if (len < 1e-8) return const GlbVec3(0, 1, 0);
     return GlbVec3(nx / len, ny / len, nz / len);
+  }
+}
+
+/// Compact non-interactive 3D preview of a `.glb` model for list thumbnails and hover cards.
+class GlbMiniPreview extends StatefulWidget {
+  const GlbMiniPreview({super.key, required this.bytes});
+
+  final Uint8List bytes;
+
+  @override
+  State<GlbMiniPreview> createState() => _GlbMiniPreviewState();
+}
+
+class _GlbMiniPreviewState extends State<GlbMiniPreview> {
+  GlbAsset? _asset;
+
+  @override
+  void initState() {
+    super.initState();
+    _parse();
+  }
+
+  @override
+  void didUpdateWidget(GlbMiniPreview oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.bytes, widget.bytes)) _parse();
+  }
+
+  void _parse() {
+    try {
+      _asset = GlbAsset.parse(widget.bytes);
+    } catch (_) {
+      _asset = null;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final asset = _asset;
+    if (asset == null || asset.triangles.isEmpty) {
+      return const Center(child: Icon(Icons.view_in_ar_outlined));
+    }
+    return CustomPaint(
+      size: Size.infinite,
+      painter: _GlbPainter(
+        triangles: asset.triangles,
+        hiddenNodes: const {},
+        selectedNode: null,
+        highlightColor: Theme.of(context).colorScheme.primary,
+        yaw: 0.6,
+        pitch: 0.4,
+        zoom: 1.0,
+      ),
+    );
   }
 }
 

@@ -1,8 +1,11 @@
 import 'dart:convert';
+import 'dart:ui' show PointerDeviceKind;
 import 'dart:typed_data';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:tradocraft_app/features/products/product_thumb.dart';
 import 'package:tradocraft_app/shared/glb_viewer.dart';
 import 'package:tradocraft_app/shared/photos.dart';
 
@@ -156,4 +159,51 @@ void main() {
     await tester.pump();
     expect(find.byKey(const ValueKey('glb-show-all')), findsNothing);
   });
+
+  testWidgets(
+    'ProductThumb shows bundled tutorial GLB small and enlarges on mouse hover',
+    (tester) async {
+      expect(tutorialGlbAssets.length, 14);
+      expect(
+        tutorialGlbAssetForCode('CONV-BELT-1M'),
+        'assets/models/CONV-BELT-1M.glb',
+      );
+
+      await tester.pumpWidget(
+        const ProviderScope(
+          child: MaterialApp(
+            home: Scaffold(
+              body: Center(
+                child: ProductThumb(
+                  productId: 'p-conv',
+                  productCode: 'CONV-BELT-1M',
+                  mediaId: null,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(GlbMiniPreview), findsOneWidget);
+      expect(find.byKey(const ValueKey('thumb-hover-p-conv')), findsNothing);
+
+      final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await gesture.addPointer(location: Offset.zero);
+      addTearDown(gesture.removePointer);
+      await tester.pump();
+      await gesture.moveTo(
+        tester.getCenter(find.byKey(const ValueKey('thumb-p-conv'))),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('thumb-hover-p-conv')), findsOneWidget);
+      expect(find.byType(GlbMiniPreview), findsNWidgets(2));
+
+      await gesture.moveTo(const Offset(10, 10));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('thumb-hover-p-conv')), findsNothing);
+    },
+  );
 }

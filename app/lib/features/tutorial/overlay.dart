@@ -7,7 +7,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../l10n/l10n.dart';
 import 'controller.dart';
+import 'package:flutter/services.dart';
 import 'conveyor_svg.dart';
+import '../../shared/glb_viewer.dart';
 import 'guidance.dart';
 import 'model.dart';
 import 'strings.dart';
@@ -563,6 +565,23 @@ class NarratorCard extends ConsumerWidget {
                                     step.id == 'bomTab')) ...[
                               const SizedBox(height: 8),
                               const ConveyorAssemblySvg(),
+                              const SizedBox(height: 8),
+                              SizedBox(
+                                height: 240,
+                                child: FutureBuilder<ByteData>(
+                                  future: rootBundle.load(
+                                    'assets/models/CONV-BELT-1M_assembly.glb',
+                                  ),
+                                  builder: (context, snap) => snap.hasData
+                                      ? GlbViewer(
+                                          bytes: snap.data!.buffer
+                                              .asUint8List(),
+                                          filename:
+                                              'CONV-BELT-1M_assembly.glb',
+                                        )
+                                      : const SizedBox.shrink(),
+                                ),
+                              ),
                             ],
                             if (m.id == 'welcome' && step.id == 'controls')
                               Text(
