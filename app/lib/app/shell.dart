@@ -281,6 +281,7 @@ class AppShell extends ConsumerWidget {
         : AppSwitcherButton(
             groups: groups,
             active: activeGroup,
+            showLabel: wide,
             onSelected: (g) {
               final i = destinations.indexWhere((d) => g.contains(d.path));
               if (i >= 0) go(i);
@@ -504,9 +505,24 @@ class AppShell extends ConsumerWidget {
                     Expanded(
                       child: Column(
                         children: [
-                          SectionBreadcrumbs(
-                            section: destinations[index].label(context.l10n),
-                            onSection: () => go(index),
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(12, 6, 12, 0),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: SectionBreadcrumbs(
+                                    section: destinations[index].label(
+                                      context.l10n,
+                                    ),
+                                    onSection: () => go(index),
+                                  ),
+                                ),
+                                GlobalSearchPill(
+                                  destinations: searchDestinations,
+                                  onGoTo: searchGoTo,
+                                ),
+                              ],
+                            ),
                           ),
                           Expanded(
                             child: WorkspaceBody(home: child, wide: true),
