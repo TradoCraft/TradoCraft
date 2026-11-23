@@ -158,7 +158,12 @@ FakeHttp _http({
   final stored = lines ?? _lines();
   late final FakeHttp http;
   http = FakeHttp({
-    'GET /api/v1/me': (_) => meJson(['quotations.read', 'quotations.write']),
+    'GET /api/v1/me': (_) {
+      final me = meJson(['quotations.read', 'quotations.write']);
+      (me['company']! as Map<String, Object?>)['quotation_single_line_items'] =
+          false;
+      return me;
+    },
     'GET /api/v1/quotations/q1': (_) => _quotation(status, stored),
     'PUT /api/v1/quotations/q1': (_) => _quotation(status, stored),
     'POST /api/v1/quotations/q1/send': (_) => _quotation('sent', stored),

@@ -55,6 +55,8 @@ pub struct UserPreferences {
     pub autosave_minutes: Option<i32>,
 }
 
+type PrefsRow = (SqlJson<BTreeMap<String, ShortcutBinding>>, Option<i32>);
+
 /// Returns the authenticated user's preferences.
 #[utoipa::path(get, path = "/me/preferences", tag = "core",
     responses((status = 200, body = UserPreferences), (status = 401, body = crate::error::ErrorBody)))]
@@ -62,7 +64,7 @@ async fn get_preferences(
     State(state): State<AppState>,
     user: CurrentUser,
 ) -> AppResult<Json<UserPreferences>> {
-    let row: Option<(SqlJson<BTreeMap<String, ShortcutBinding>>, Option<i32>)> = sqlx::query_as(
+    let row: Option<PrefsRow> = sqlx::query_as(
         "SELECT shortcuts, autosave_minutes FROM core.user_preferences WHERE user_id = $1",
     )
     .bind(user.user_id)

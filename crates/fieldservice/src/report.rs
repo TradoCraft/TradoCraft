@@ -566,6 +566,8 @@ mod tests {
             iban: None,
             default_language: "nl".into(),
             is_primary: true,
+            quotation_single_line_items: true,
+            autosave_minutes: 5,
         };
         let customer = Customer {
             id: Uuid::nil(),
