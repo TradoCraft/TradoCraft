@@ -30,6 +30,7 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(productsRefreshProvider, (_, _) => _list.currentState?.reload());
     ref.listen(tutorialAssistCompletedProvider, (_, completed) {
       if (completed == null) return;
       final isProductStep = switch (completed.missionId) {
@@ -220,7 +221,7 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
       onCreate: canWrite
           ? () async {
               if (GoRouter.maybeOf(context) != null) {
-                return await context.push<bool>('/products/new') ?? true;
+                return await context.push<bool>('/products/new') ?? false;
               }
               return await showProductForm(context) != null;
             }

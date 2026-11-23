@@ -19,6 +19,18 @@ import '../tutorial/targets.dart';
 
 const productTypes = ['purchased', 'manufactured', 'configurable', 'service'];
 
+class ProductsRefreshNotifier extends Notifier<int> {
+  @override
+  int build() => 0;
+
+  void bump() => state++;
+}
+
+/// Incremented whenever a product is created or updated from [ProductForm].
+final productsRefreshProvider = NotifierProvider<ProductsRefreshNotifier, int>(
+  ProductsRefreshNotifier.new,
+);
+
 /// Create or edit a product. Returns the saved product, or null when cancelled.
 Future<Product?> showProductForm(
   BuildContext context, {
@@ -160,6 +172,11 @@ class _ProductFormState extends ConsumerState<ProductForm> {
     }
   }
 
+  void _setDirtyState(VoidCallback fn) {
+    setState(fn);
+    _markDirty();
+  }
+
   Future<void> _cancel() async {
     if (widget.onCancel != null) {
       if (_dirty) {
@@ -194,7 +211,7 @@ class _ProductFormState extends ConsumerState<ProductForm> {
   }
 
   void _copyFrom(Product source) {
-    setState(() {
+    _setDirtyState(() {
       _copiedFrom = source;
       _description.text = source.description;
       _unit.text = source.unit;
@@ -385,6 +402,7 @@ class _ProductFormState extends ConsumerState<ProductForm> {
         saved = await api.getProduct(id: saved.id);
       }
       _dirty = false;
+      ref.read(productsRefreshProvider.notifier).bump();
       if (mounted) {
         TabScope.reportDirty(context, false);
         if (widget.onSaved != null) {
@@ -405,7 +423,7 @@ class _ProductFormState extends ConsumerState<ProductForm> {
     try {
       final picked = await picker(context);
       if (picked.isEmpty || !mounted) return;
-      setState(() {
+      _setDirtyState(() {
         _media.addAll([for (final item in picked) _StagedMedia(item)]);
         if (_defaultMediaIndex >= _media.length) _defaultMediaIndex = 0;
       });
@@ -415,7 +433,7 @@ class _ProductFormState extends ConsumerState<ProductForm> {
   }
 
   void _removeMedia(int index) {
-    setState(() {
+    _setDirtyState(() {
       final removed = _media.removeAt(index);
       _pendingDeletions.add(removed.uploadedId ?? removed.clientId);
       if (_media.isEmpty) {
@@ -541,7 +559,7 @@ class _ProductFormState extends ConsumerState<ProductForm> {
                                   key: ValueKey('staged-media-make-default-$i'),
                                   onPressed: _saving
                                       ? null
-                                      : () => setState(
+                                      : () => _setDirtyState(
                                           () => _defaultMediaIndex = i,
                                         ),
                                   child: Text(
@@ -592,7 +610,7 @@ class _ProductFormState extends ConsumerState<ProductForm> {
             child: Text('${c.code} · ${c.name}'),
           ),
       ],
-      onChanged: (v) => setState(() => _packagingId = v),
+      onChanged: (v) => _setDirtyState(() => _packagingId = v),
     );
   }
 
@@ -639,7 +657,7 @@ class _ProductFormState extends ConsumerState<ProductForm> {
                 child: Text(context.l10n.vatCategoryZero),
               ),
             ],
-            onChanged: (v) => setState(() => _vatCategory = v!),
+            onChanged: (v) => _setDirtyState(() => _vatCategory = v!),
           ),
         ),
         gap,
@@ -803,7 +821,7 @@ class _ProductFormState extends ConsumerState<ProductForm> {
                           child: Text(context.l10n.productType(t)),
                         ),
                     ],
-                    onChanged: (v) => setState(() => _type = v!),
+                    onChanged: (v) => _setDirtyState(() => _type = v!),
                   ),
                 ),
                 gap,
@@ -844,7 +862,7 @@ class _ProductFormState extends ConsumerState<ProductForm> {
                               child: Text('${f.code} · ${f.name}'),
                             ),
                         ],
-                        onChanged: (v) => setState(() => _familyId = v),
+                        onChanged: (v) => _setDirtyState(() => _familyId = v),
                       );
                     },
                   ),
@@ -866,7 +884,8 @@ class _ProductFormState extends ConsumerState<ProductForm> {
               controlAffinity: ListTileControlAffinity.leading,
               title: Text(context.l10n.pricingNetHelp),
               value: _nonDiscountable,
-              onChanged: (v) => setState(() => _nonDiscountable = v ?? false),
+              onChanged: (v) =>
+                  _setDirtyState(() => _nonDiscountable = v ?? false),
             ),
             CheckboxListTile(
               key: const ValueKey('pricing-on-request'),
@@ -875,7 +894,8 @@ class _ProductFormState extends ConsumerState<ProductForm> {
               controlAffinity: ListTileControlAffinity.leading,
               title: Text(context.l10n.pricingOnRequestHelp),
               value: _priceOnRequest,
-              onChanged: (v) => setState(() => _priceOnRequest = v ?? false),
+              onChanged: (v) =>
+                  _setDirtyState(() => _priceOnRequest = v ?? false),
             ),
             CheckboxListTile(
               key: const ValueKey('pricing-indicative'),
@@ -884,7 +904,8 @@ class _ProductFormState extends ConsumerState<ProductForm> {
               controlAffinity: ListTileControlAffinity.leading,
               title: Text(context.l10n.pricingIndicativeHelp),
               value: _priceIsIndicative,
-              onChanged: (v) => setState(() => _priceIsIndicative = v ?? false),
+              onChanged: (v) =>
+                  _setDirtyState(() => _priceIsIndicative = v ?? false),
             ),
             gap,
             DropdownButtonFormField<bool?>(
@@ -903,7 +924,7 @@ class _ProductFormState extends ConsumerState<ProductForm> {
                 DropdownMenuItem<bool?>(value: true, child: Text(context.l10n.yes)),
                 DropdownMenuItem<bool?>(value: false, child: Text(context.l10n.no)),
               ],
-              onChanged: (value) => setState(() {
+              onChanged: (value) => _setDirtyState(() {
                 _includedInTurnover = value;
                 _includedInTurnoverEdited = true;
               }),
@@ -927,7 +948,7 @@ class _ProductFormState extends ConsumerState<ProductForm> {
               ],
               onChanged: _type == 'service'
                   ? null
-                  : (v) => setState(() => _tracking = v!),
+                  : (v) => _setDirtyState(() => _tracking = v!),
             ),
             gap,
             Row(
@@ -1027,7 +1048,7 @@ class _ProductFormState extends ConsumerState<ProductForm> {
               contentPadding: EdgeInsets.zero,
               title: Text(context.l10n.active),
               value: _active,
-              onChanged: (v) => setState(() => _active = v),
+              onChanged: (v) => _setDirtyState(() => _active = v),
             ),
             if (p == null) ...[gap, _mediaSection(context)],
             if (_error != null)

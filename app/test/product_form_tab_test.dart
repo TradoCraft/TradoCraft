@@ -6,6 +6,7 @@ import 'package:tradocraft_app/app/api.dart';
 import 'package:tradocraft_app/app/shell.dart';
 import 'package:tradocraft_app/app/workspace.dart';
 import 'package:tradocraft_app/features/field/offline/kv_store.dart';
+import 'package:tradocraft_app/features/products/product_form.dart';
 import 'package:tradocraft_app/features/tutorial/targets.dart';
 import 'package:tradocraft_app/l10n/app_localizations.dart';
 
@@ -116,7 +117,15 @@ void main() {
       final tabId = c.read(workspaceProvider).tabs.first.id;
       expect(c.read(tutorialTargetsProvider)['product-form-save'], isNotNull);
 
-      // Editing a field marks the tab dirty and triggers the unsaved-changes dialog on close.
+      // Toggling a checkbox without typing in a TextField marks the tab dirty.
+      final refreshBefore = c.read(productsRefreshProvider);
+      await tester.ensureVisible(find.byKey(const ValueKey('pricing-on-request')));
+      await tester.tap(find.byKey(const ValueKey('pricing-on-request')));
+      await tester.pump();
+      expect(c.read(workspaceProvider.notifier).isDirty(tabId), isTrue);
+
+      // Editing a field also keeps the tab dirty and triggers the unsaved-changes dialog on close.
+      await tester.ensureVisible(find.widgetWithText(TextField, 'Code'));
       await tester.enterText(find.widgetWithText(TextField, 'Code'), 'M-100');
       await tester.pump();
       expect(c.read(workspaceProvider.notifier).isDirty(tabId), isTrue);
@@ -139,6 +148,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(c.read(workspaceProvider.notifier).isDirty(tabId), isFalse);
+      expect(c.read(productsRefreshProvider), greaterThan(refreshBefore));
       expect(
         c.read(workspaceProvider).tabs.first.location,
         '/products/p-new',
