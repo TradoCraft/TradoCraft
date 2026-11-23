@@ -12,12 +12,13 @@ COPY apps apps
 COPY crates crates
 COPY migrations migrations
 COPY seed seed
-RUN cargo build --release -p tradocraft-api -p tradocraft-worker -p tradocraft-portal-api
+RUN cargo build --locked --release -p tradocraft-api -p tradocraft-worker -p tradocraft-portal-api
 
 FROM debian:trixie-slim
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates \
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl \
     && rm -rf /var/lib/apt/lists/* \
-    && useradd --system --home /app tradocraft
+    && useradd --system --home /app tradocraft \
+    && install -d -o tradocraft -g tradocraft /var/lib/tradocraft/files /app/outbox
 WORKDIR /app
 COPY --from=typst /usr/local/cargo/bin/typst /usr/local/bin/typst
 COPY --from=build /src/target/release/tradocraft-api /usr/local/bin/tradocraft-api

@@ -61,6 +61,23 @@ app/                 Flutter application
 docs/                architecture and decision records
 ```
 
+## Running a packaged release
+
+On Windows, start Docker Desktop in Linux container mode. Download `docker-compose.yml` from
+the [release](https://github.com/TradoCraft/TradoCraft/releases) into a folder and run:
+
+```bash
+docker compose up -d
+```
+
+- **Web UI** — open http://localhost:8088 and use the local tutorial sign-in.
+- **Windows app** — download and extract `tradocraft-windows-x64.zip`, open
+  `tradocraft_app.exe`, and connect to http://localhost:8080.
+
+Both use the same local backend and database. Compose pulls the prebuilt images and starts
+PostgreSQL automatically. The backend image includes Typst. The packaged setup is for local
+evaluation and uses development sign-in with loopback-bound ports.
+
 ## Running locally
 
 Prerequisites: Rust (stable), PostgreSQL 16, [Typst](https://typst.app) CLI, Flutter SDK.

@@ -17,8 +17,6 @@ services:
       POSTGRES_USER: tradocraft
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tradocraft}
       POSTGRES_DB: tradocraft
-    ports:
-      - "127.0.0.1:5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -43,16 +41,23 @@ services:
       - filestorage:/var/lib/tradocraft/files
     ports:
       - "127.0.0.1:8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://127.0.0.1:8080/api/v1/meta/environment"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
 
   portal-api:
     image: ghcr.io/tradocraft/tradocraft-backend:${TRADOCRAFT_VERSION:-0.2.0}
     command: ["tradocraft-portal-api"]
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     restart: on-failure
     environment:
       DATABASE_URL: postgresql://tradocraft:${POSTGRES_PASSWORD:-tradocraft}@db/tradocraft
       PORTAL_BIND_ADDR: 0.0.0.0:8090
+      PORTAL_ALLOWED_ORIGINS: http://localhost:8088, http://127.0.0.1:8088
       FILE_STORAGE_DIR: /var/lib/tradocraft/files
       RUST_LOG: info
     volumes:
@@ -64,9 +69,11 @@ services:
     image: ghcr.io/tradocraft/tradocraft-backend:${TRADOCRAFT_VERSION:-0.2.0}
     command: ["tradocraft-worker"]
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     environment:
       DATABASE_URL: postgresql://tradocraft:${POSTGRES_PASSWORD:-tradocraft}@db/tradocraft
+      APP_ENV_KIND: tutorial
       MAIL_TRANSPORT: files
       MAIL_FILES_DIR: /app/outbox
       POLL_SECONDS: "15"
@@ -74,14 +81,17 @@ services:
       RUST_LOG: info
     volumes:
       - filestorage:/var/lib/tradocraft/files
+      - outbox:/app/outbox
 
   web:
     image: ghcr.io/tradocraft/tradocraft-web:${TRADOCRAFT_VERSION:-0.2.0}
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     ports:
       - "127.0.0.1:8088:80"
 
 volumes:
   pgdata:
   filestorage:
+  outbox:

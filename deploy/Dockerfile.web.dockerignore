@@ -1,0 +1,15 @@
+**
+!deploy/
+!deploy/nginx.conf
+!app/
+!app/**
+app/.dart_tool/
+app/build/
+app/**/.env
+app/**/.env.*
+app/**/*.pem
+app/**/*.key
+app/**/*.jks
+app/**/*.p12
+app/**/*.keystore
+app/**/key.properties
