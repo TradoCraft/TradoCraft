@@ -44,7 +44,9 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
         onSaved: (saved) {
           final scope = TabScope.maybeOf(context);
           if (scope != null) {
-            ref.read(workspaceProvider.notifier).close(scope.id);
+            final ws = ref.read(workspaceProvider.notifier);
+            ws.close(scope.id);
+            ws.focusHome();
           } else if (context.mounted) {
             context.go('/products/${saved.id}');
           }

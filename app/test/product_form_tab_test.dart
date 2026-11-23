@@ -108,13 +108,19 @@ void main() {
       });
       final c = await _pumpProductsShell(tester, http);
 
+      // Open a reference tab first, then open /products/new in a second workspace tab.
+      c.read(workspaceProvider.notifier).open('/products/existing');
+      await tester.pumpAndSettle();
+      c.read(workspaceProvider.notifier).focusHome();
+      await tester.pumpAndSettle();
+
       // Open /products/new in a workspace tab.
       await tester.tap(find.text('New product'));
       await tester.pumpAndSettle();
 
       expect(find.byType(AlertDialog), findsNothing);
-      expect(c.read(workspaceProvider).tabs.length, 1);
-      final tabId = c.read(workspaceProvider).tabs.first.id;
+      expect(c.read(workspaceProvider).tabs.length, 2);
+      final tabId = c.read(workspaceProvider).active!;
       expect(c.read(tutorialTargetsProvider)['product-form-save'], isNotNull);
 
       // Toggling a checkbox without typing in a TextField marks the tab dirty.
@@ -137,7 +143,7 @@ void main() {
       // Keep editing returns to the form.
       await tester.tap(find.text('Cancel').last);
       await tester.pumpAndSettle();
-      expect(c.read(workspaceProvider).tabs.length, 1);
+      expect(c.read(workspaceProvider).tabs.length, 2);
 
       // Fill name and save: clears dirty, bumps refresh, and closes the creation tab.
       await tester.enterText(
@@ -149,7 +155,8 @@ void main() {
 
       expect(c.read(workspaceProvider.notifier).isDirty(tabId), isFalse);
       expect(c.read(productsRefreshProvider), greaterThan(refreshBefore));
-      expect(c.read(workspaceProvider).tabs, isEmpty);
+      expect(c.read(workspaceProvider).tabs.length, 1);
+      expect(c.read(workspaceProvider).active, isNull);
     },
   );
 }
