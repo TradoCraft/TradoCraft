@@ -422,7 +422,7 @@ class AppShell extends ConsumerWidget {
     final userMenu = TutorialTarget(id: 'user-menu', child: userMenuButton);
     final homeButton = IconButton(
       key: const ValueKey('shell-home-button'),
-      tooltip: context.l10n.workspaceOverview,
+      tooltip: context.l10n.shortcutHome,
       icon: const Icon(AppIcons.home),
       onPressed: () {
         workspaceNotifier.focusHome();
