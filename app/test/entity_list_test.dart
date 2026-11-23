@@ -88,4 +88,88 @@ void main() {
     expect(find.text('Old'), findsNothing);
     expect(find.text('New'), findsOneWidget);
   });
+
+  testWidgets('search field shows clear button when non-empty and clears query', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1200, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    final queries = <String?>[];
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: [
+          AppLocalizations.delegate,
+          ...GlobalMaterialLocalizations.delegates,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: EntityList<String>(
+            title: 'Things',
+            load: (q, offset, limit) async {
+              queries.add(q);
+              return (['Alpha', 'Beta'], 2);
+            },
+            columns: [EntityColumn('Name', (s) => s)],
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final clearBtn = find.byKey(const ValueKey('entity-list-clear-search'));
+    expect(clearBtn, findsNothing);
+
+    await tester.enterText(find.byType(TextField), 'Alp');
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+    expect(queries.last, 'Alp');
+    expect(clearBtn, findsOneWidget);
+
+    await tester.tap(clearBtn);
+    await tester.pumpAndSettle();
+    expect(queries.last, isNull);
+    expect(clearBtn, findsNothing);
+  });
+
+  testWidgets('narrow header wraps title and multiple actions without overflow', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(360, 700);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: [
+          AppLocalizations.delegate,
+          ...GlobalMaterialLocalizations.delegates,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: EntityList<String>(
+            title: 'Production orders & assemblies',
+            load: (_, _, _) async => (['Row 1'], 1),
+            columns: [EntityColumn('Name', (s) => s)],
+            actions: [
+              OutlinedButton(onPressed: () {}, child: const Text('Import CSV')),
+              OutlinedButton(onPressed: () {}, child: const Text('Export CSV')),
+            ],
+            onCreate: () async => false,
+            createLabel: 'New assembly',
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('Production orders & assemblies'), findsOneWidget);
+    expect(find.text('Import CSV'), findsOneWidget);
+    expect(find.text('Export CSV'), findsOneWidget);
+    expect(find.text('New assembly'), findsOneWidget);
+  });
 }

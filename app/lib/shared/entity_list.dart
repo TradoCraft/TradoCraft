@@ -496,6 +496,12 @@ class EntityListState<T> extends State<EntityList<T>> {
     _debounce = Timer(const Duration(milliseconds: 300), reload);
   }
 
+  void _clearSearch() {
+    _debounce?.cancel();
+    _search.clear();
+    reload();
+  }
+
   // ---- filters and favourites ----
 
   void _setFilters(FilterSelection next) {
@@ -802,26 +808,48 @@ class EntityListState<T> extends State<EntityList<T>> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 8,
+            runSpacing: 8,
             children: [
               Text(widget.title, style: theme.textTheme.headlineSmall),
-              const Spacer(),
-              for (final a in widget.actions)
-                Padding(padding: const EdgeInsets.only(right: 8), child: a),
-              if (widget.onCreate != null) _createButton(context),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  ...widget.actions,
+                  if (widget.onCreate != null) _createButton(context),
+                ],
+              ),
             ],
           ),
           const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
-                child: TextField(
-                  controller: _search,
-                  focusNode: _searchFocus,
-                  onChanged: _onSearchChanged,
-                  decoration: InputDecoration(
-                    prefixIcon: Icon(AppIcons.search),
-                    hintText: context.l10n.search,
+                child: ValueListenableBuilder<TextEditingValue>(
+                  valueListenable: _search,
+                  builder: (context, value, _) => TextField(
+                    controller: _search,
+                    focusNode: _searchFocus,
+                    onChanged: _onSearchChanged,
+                    decoration: InputDecoration(
+                      prefixIcon: const Icon(AppIcons.search),
+                      hintText: context.l10n.search,
+                      suffixIcon: value.text.isEmpty
+                          ? null
+                          : IconButton(
+                              key: const ValueKey('entity-list-clear-search'),
+                              tooltip: MaterialLocalizations.of(
+                                context,
+                              ).deleteButtonTooltip,
+                              icon: const Icon(AppIcons.close),
+                              onPressed: _clearSearch,
+                            ),
+                    ),
                   ),
                 ),
               ),
