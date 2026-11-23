@@ -42,7 +42,12 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
       return ProductForm(
         asTab: true,
         onSaved: (saved) {
-          if (context.mounted) context.go('/products/${saved.id}');
+          final scope = TabScope.maybeOf(context);
+          if (scope != null) {
+            ref.read(workspaceProvider.notifier).close(scope.id);
+          } else if (context.mounted) {
+            context.go('/products/${saved.id}');
+          }
         },
       );
     }

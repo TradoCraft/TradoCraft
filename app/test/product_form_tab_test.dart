@@ -139,7 +139,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(c.read(workspaceProvider).tabs.length, 1);
 
-      // Fill name and save: clears dirty and replaces tab location with /products/p-new.
+      // Fill name and save: clears dirty, bumps refresh, and closes the creation tab.
       await tester.enterText(
         find.widgetWithText(TextField, 'Name'),
         'Motor 100',
@@ -149,10 +149,7 @@ void main() {
 
       expect(c.read(workspaceProvider.notifier).isDirty(tabId), isFalse);
       expect(c.read(productsRefreshProvider), greaterThan(refreshBefore));
-      expect(
-        c.read(workspaceProvider).tabs.first.location,
-        '/products/p-new',
-      );
+      expect(c.read(workspaceProvider).tabs, isEmpty);
     },
   );
 }
