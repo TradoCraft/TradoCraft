@@ -600,19 +600,25 @@ class _GlbViewerState extends State<GlbViewer> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   IconButton(
-                    tooltip: 'Zoom in',
+                    tooltip: Overlay.maybeOf(context) != null
+                        ? 'Zoom in'
+                        : null,
                     icon: const Icon(AppIcons.add),
                     onPressed: () =>
                         setState(() => _zoom = (_zoom * 1.25).clamp(0.3, 5.0)),
                   ),
                   IconButton(
-                    tooltip: 'Zoom out',
+                    tooltip: Overlay.maybeOf(context) != null
+                        ? 'Zoom out'
+                        : null,
                     icon: const Icon(Icons.remove),
                     onPressed: () =>
                         setState(() => _zoom = (_zoom / 1.25).clamp(0.3, 5.0)),
                   ),
                   IconButton(
-                    tooltip: 'Reset view',
+                    tooltip: Overlay.maybeOf(context) != null
+                        ? 'Reset view'
+                        : null,
                     icon: const Icon(AppIcons.refresh),
                     onPressed: _resetView,
                   ),

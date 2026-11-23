@@ -1,11 +1,11 @@
-import 'dart:typed_data';
-
 import 'package:dio/dio.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/api.dart';
+import '../../app/environments.dart';
 import '../../app/workspace.dart';
 import '../../shared/app_icons.dart';
 import '../../shared/decimal_field.dart';
@@ -122,6 +122,8 @@ class _ProductFormState extends ConsumerState<ProductForm> {
   final List<_StagedMedia> _media = [];
   final List<String> _pendingDeletions = [];
   int _defaultMediaIndex = 0;
+  String? _autoStagedCode;
+  bool _manualMedia = false;
   Product? _created;
   Product? _copiedFrom;
   bool _saving = false;
@@ -152,6 +154,7 @@ class _ProductFormState extends ConsumerState<ProductForm> {
     for (final c in _trackedControllers) {
       c.addListener(_markDirty);
     }
+    _code.addListener(_maybeStageTutorialGlb);
     if (widget.asTab) {
       TabScope.reportTitle(context, p?.code ?? '');
     }
@@ -159,11 +162,42 @@ class _ProductFormState extends ConsumerState<ProductForm> {
 
   @override
   void dispose() {
+    _code.removeListener(_maybeStageTutorialGlb);
     for (final c in _trackedControllers) {
       c.removeListener(_markDirty);
       c.dispose();
     }
     super.dispose();
+  }
+
+  Future<void> _maybeStageTutorialGlb() async {
+    if (p != null || _manualMedia) return;
+    if (ref.read(activeEnvironmentProvider).kind != EnvironmentKind.tutorial) {
+      return;
+    }
+    final code = _code.text.trim();
+    if (code == _autoStagedCode) return;
+    final assetPath = tutorialGlbAssetForCode(code);
+    if (assetPath == null) {
+      if (_autoStagedCode != null) {
+        _autoStagedCode = null;
+        if (mounted) setState(() => _media.clear());
+      }
+      return;
+    }
+    _autoStagedCode = code;
+    try {
+      final bd = await rootBundle.load(assetPath);
+      if (!mounted || _manualMedia || _code.text.trim() != code) return;
+      setState(() {
+        _media
+          ..clear()
+          ..add(
+            _StagedMedia(PickedPhoto(bd.buffer.asUint8List(), '$code.glb')),
+          );
+        _defaultMediaIndex = 0;
+      });
+    } catch (_) {}
   }
 
   void _markDirty() {
@@ -424,6 +458,7 @@ class _ProductFormState extends ConsumerState<ProductForm> {
     try {
       final picked = await picker(context);
       if (picked.isEmpty || !mounted) return;
+      _manualMedia = true;
       _setDirtyState(() {
         _media.addAll([for (final item in picked) _StagedMedia(item)]);
         if (_defaultMediaIndex >= _media.length) _defaultMediaIndex = 0;
@@ -434,6 +469,7 @@ class _ProductFormState extends ConsumerState<ProductForm> {
   }
 
   void _removeMedia(int index) {
+    _manualMedia = true;
     _setDirtyState(() {
       final removed = _media.removeAt(index);
       _pendingDeletions.add(removed.uploadedId ?? removed.clientId);

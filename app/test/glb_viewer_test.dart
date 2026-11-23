@@ -5,9 +5,16 @@ import 'dart:typed_data';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:tradocraft_app/app/api.dart';
+import 'package:tradocraft_app/app/environments.dart';
+import 'package:tradocraft_app/features/field/offline/kv_store.dart';
+import 'package:tradocraft_app/features/products/product_form.dart';
 import 'package:tradocraft_app/features/products/product_thumb.dart';
+import 'package:tradocraft_app/l10n/app_localizations.dart';
 import 'package:tradocraft_app/shared/glb_viewer.dart';
 import 'package:tradocraft_app/shared/photos.dart';
+
+import 'fake_http.dart';
 
 /// Builds a minimal valid glTF 2.0 binary (`.glb`) assembly with named nodes and a triangle mesh.
 Uint8List _buildTestGlb() {
@@ -204,6 +211,56 @@ void main() {
       await gesture.moveTo(const Offset(10, 10));
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('thumb-hover-p-conv')), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'ProductForm auto-stages matching tutorial GLB in tutorial environment',
+    (tester) async {
+      final http = FakeHttp({
+        'GET /api/v1/me': (_) => meJson(['products.read', 'products.write']),
+        'GET /api/v1/product-families': (_) => <Object?>[],
+        'GET /api/v1/packaging-categories': (_) => <Object?>[],
+      });
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            dioProvider.overrideWithValue(fakeDio(http)),
+            kvStoreProvider.overrideWithValue(MemoryKvStore()),
+            initialEnvironmentsProvider.overrideWithValue(
+              EnvironmentsState(
+                items: const [
+                  AppEnvironment(
+                    id: 'tut',
+                    name: 'Tutorial',
+                    kind: EnvironmentKind.tutorial,
+                    serverUrl: 'http://test',
+                  ),
+                ],
+                activeId: 'tut',
+              ),
+            ),
+          ],
+          child: MaterialApp(
+            locale: const Locale('en'),
+            localizationsDelegates: [
+              AppLocalizations.delegate,
+              ...GlobalMaterialLocalizations.delegates,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: const Scaffold(body: ProductForm(asTab: true)),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Code'),
+        'MOT-1P-037',
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('MOT-1P-037.glb'), findsOneWidget);
     },
   );
 }
