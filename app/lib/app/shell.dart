@@ -238,7 +238,7 @@ class AppShell extends ConsumerWidget {
     // The section of the focused tab is highlighted, so a ticket tab belongs to Helpdesk.
     final shown = workspace.activeTab?.location ?? location;
     final found = destinations.indexWhere((d) => d.matches(shown));
-    if (found < 0 && destinations.isNotEmpty && perms != null) {
+    if (found < 0 && shown != '/home' && destinations.isNotEmpty && perms != null) {
       // The current page is not for this user (e.g. the default start page): go to their first.
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (context.mounted) context.go(destinations.first.path);
@@ -421,6 +421,15 @@ class AppShell extends ConsumerWidget {
     );
 
     final userMenu = TutorialTarget(id: 'user-menu', child: userMenuButton);
+    final homeButton = IconButton(
+      key: const ValueKey('shell-home-button'),
+      tooltip: context.l10n.shortcutHome,
+      icon: const Icon(AppIcons.home),
+      onPressed: () {
+        workspaceNotifier.focusHome();
+        context.go('/home');
+      },
+    );
     final searchButton = GlobalSearchButton(
       destinations: searchDestinations,
       onGoTo: searchGoTo,
@@ -467,6 +476,7 @@ class AppShell extends ConsumerWidget {
                                       const SizedBox(height: 6),
                                       badge,
                                     ],
+                                    homeButton,
                                     searchButton,
                                     if (switcher != null) ...[
                                       const SizedBox(height: 6),
@@ -544,6 +554,7 @@ class AppShell extends ConsumerWidget {
         actions: [
           ?switcher,
           ?badge,
+          homeButton,
           searchButton,
           const WorkspaceMenuButton(),
           const NotificationsButton(),
