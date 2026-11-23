@@ -42,6 +42,7 @@ class CompanyLogoPage extends ConsumerStatefulWidget {
 class _CompanyLogoPageState extends ConsumerState<CompanyLogoPage> {
   String? _error;
   bool _busy = false;
+  ({bool singleLine, int autosaveMinutes})? _savedSettings;
 
   void _refresh() {
     ref.invalidate(companyLogoBytesProvider);
@@ -124,9 +125,8 @@ class _CompanyLogoPageState extends ConsumerState<CompanyLogoPage> {
   }) async {
     final l = context.l10n;
     setState(() => _busy = true);
-    var ok = false;
     try {
-      ok = await runAction(
+      final ok = await runAction(
         context,
         () => ref
             .read(dioProvider)
@@ -140,8 +140,11 @@ class _CompanyLogoPageState extends ConsumerState<CompanyLogoPage> {
         success: l.quotationSettingsSaved,
       );
       if (ok && mounted) {
+        _savedSettings = (
+          singleLine: singleLine,
+          autosaveMinutes: autosaveMinutes,
+        );
         ref.invalidate(meProvider);
-        await ref.read(meProvider.future);
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -153,8 +156,20 @@ class _CompanyLogoPageState extends ConsumerState<CompanyLogoPage> {
     final l = context.l10n;
     final logo = ref.watch(companyLogoBytesProvider);
     final company = ref.watch(meProvider).value?.company;
-    final singleLine = company?.quotationSingleLineItems ?? true;
-    final autosaveMinutes = company?.autosaveMinutes ?? 5;
+    ref.listen(meProvider, (_, next) {
+      if (next.isLoading) return;
+      final confirmed = next.asData?.value.company;
+      final saved = _savedSettings;
+      if (saved != null &&
+          confirmed?.quotationSingleLineItems == saved.singleLine &&
+          confirmed?.autosaveMinutes == saved.autosaveMinutes) {
+        setState(() => _savedSettings = null);
+      }
+    });
+    final singleLine =
+        _savedSettings?.singleLine ?? company?.quotationSingleLineItems ?? true;
+    final autosaveMinutes =
+        _savedSettings?.autosaveMinutes ?? company?.autosaveMinutes ?? 5;
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
