@@ -6479,13 +6479,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'Orientación: la banda del entorno, las pestañas y los controles del tutorial.';
 
   @override
-  String get tutProductTitle => 'Tu primer producto';
-
-  @override
-  String get tutProductSummary =>
-      'Sombrero: responsable de producto. Crea tres componentes, un producto terminado y su lista de materiales.';
-
-  @override
   String get tutWelcomeBannerTitle => 'La banda superior';
 
   @override
@@ -6519,91 +6512,6 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get tutWelcomeProductsBody =>
       'Abre la sección Productos. El siguiente capítulo empieza allí.';
-
-  @override
-  String get tutProductOpenTitle => 'Productos';
-
-  @override
-  String get tutProductOpenBody =>
-      'Hoy eres el responsable de producto. Todo lo que la empresa vende o fabrica es un producto. Abre la sección Productos.';
-
-  @override
-  String get tutProductMotorTitle => 'Componente: Motor';
-
-  @override
-  String get tutProductMotorBody =>
-      'Crea el primer componente. Pulsa Nuevo producto, escribe el código TUT-MOTOR y el nombre Motor, deja el tipo Comprado y guarda.';
-
-  @override
-  String get tutProductMotorHint =>
-      'El prefijo TUT- marca los datos del tutorial, para reconocerlos más tarde.';
-
-  @override
-  String get tutProductFrameTitle => 'Componente: Frame';
-
-  @override
-  String get tutProductFrameBody =>
-      'Crea un segundo componente del mismo modo: código TUT-FRAME, nombre Frame, tipo Comprado.';
-
-  @override
-  String get tutProductControllerTitle => 'Componente: Controller';
-
-  @override
-  String get tutProductControllerBody =>
-      'Y un tercero: código TUT-CTRL, nombre Controller, tipo Comprado.';
-
-  @override
-  String get tutProductCartTitle => 'El producto terminado';
-
-  @override
-  String get tutProductCartBody =>
-      'Ahora el producto que fabricas con esas piezas. Crea el código TUT-CART, el nombre Cart y elige el tipo Fabricado: solo los productos fabricados tienen lista de materiales.';
-
-  @override
-  String get tutProductOpenCartTitle => 'Abre el Cart';
-
-  @override
-  String get tutProductOpenCartBody =>
-      'Abre el nuevo producto Cart de la lista para ver sus pestañas.';
-
-  @override
-  String get tutProductBomTabTitle => 'Lista de materiales';
-
-  @override
-  String get tutProductBomTabBody =>
-      'Elige la pestaña Lista de materiales. Enumera los componentes necesarios para fabricar una unidad. Una revisión es un borrador que editas, o la activa que usa producción. Pulsa Siguiente cuando estés allí.';
-
-  @override
-  String get tutProductRevisionTitle => 'Una primera revisión';
-
-  @override
-  String get tutProductRevisionBody =>
-      'Pulsa Nueva revisión para empezar un borrador.';
-
-  @override
-  String get tutProductLinesTitle => 'Añade los componentes';
-
-  @override
-  String get tutProductLinesBody =>
-      'Busca cada componente y añádelo: Motor, Frame y Controller. Después pulsa Guardar borrador.';
-
-  @override
-  String get tutProductLinesHint =>
-      'Escribe TUT en el cuadro de búsqueda para encontrar los tres componentes.';
-
-  @override
-  String get tutProductActivateTitle => 'Actívala';
-
-  @override
-  String get tutProductActivateBody =>
-      'Pulsa Activar. Desde ahora producción y presupuestos usan esta revisión; los cambios posteriores pasan por una nueva revisión.';
-
-  @override
-  String get tutProductDoneTitle => 'Bien hecho';
-
-  @override
-  String get tutProductDoneBody =>
-      'Tienes un producto terminado con una lista de materiales de tres componentes. Los capítulos siguientes se basan en él.';
 
   @override
   String get purchasing => 'Compras';
@@ -7292,11 +7200,12 @@ class AppLocalizationsEs extends AppLocalizations {
       'Sombrero: comprador. Cree dos proveedores y dé a cada uno una lista de precios para sus componentes.';
 
   @override
-  String get tutSuppliersNeedsTitle => 'Primero el capítulo 1';
+  String get tutSuppliersNeedsTitle =>
+      'Primero el Capítulo 1 (Cintas transportadoras y motores)';
 
   @override
   String get tutSuppliersNeedsBody =>
-      'Este capítulo necesita los cuatro productos del capítulo 1 (TUT-MOTOR, TUT-FRAME, TUT-CTRL y TUT-CART) y no los ha encontrado. Vuelva al mapa de capítulos y termine primero el capítulo 1.';
+      'Este capítulo necesita los cuatro productos principales del Capítulo 1 (Cintas transportadoras y motores: MOT-3P-055, VFD-3P-055, CONV-BELT-1M) y del Capítulo 2 (PLCs, licencias paralelas y red: PLC-BASE), y no pudo encontrarlos. Vuelva al mapa y complete esos capítulos primero.';
 
   @override
   String get tutSuppliersOpenTitle => 'Póngase el sombrero de comprador';
@@ -7331,18 +7240,18 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get tutSuppliersPriceMotorBody =>
-      'Añada TUT-MOTOR a la lista de precios: precio unitario 120, plazo 14 días, cantidad mínima de pedido 5. Los pedidos de compra la usan para rellenar sus líneas.';
+      'Añada MOT-3P-055 a la lista de precios: precio unitario 120, plazo 14 días, cantidad mínima de pedido 5. Los pedidos de compra la usan para rellenar sus líneas.';
 
   @override
   String get tutSuppliersPriceMotorHint =>
-      'Elija el producto con el cuadro de búsqueda del diálogo; escriba TUT-MOTOR.';
+      'Elija el producto con el cuadro de búsqueda del diálogo; escriba MOT-3P-055.';
 
   @override
-  String get tutSuppliersPriceFrameTitle => 'Un precio para el bastidor';
+  String get tutSuppliersPriceFrameTitle => 'Un precio para el VFD';
 
   @override
   String get tutSuppliersPriceFrameBody =>
-      'Lo mismo para TUT-FRAME: precio unitario 45, plazo 10 días, cantidad mínima 5.';
+      'Lo mismo para VFD-3P-055: precio unitario 45, plazo 10 días, cantidad mínima 5.';
 
   @override
   String get tutSuppliersPriceControllerTitle =>
@@ -7350,7 +7259,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get tutSuppliersPriceControllerBody =>
-      'Y TUT-CTRL: precio unitario 30, plazo 7 días, cantidad mínima 5. Este proveedor ya cubre los tres componentes.';
+      'Y PLC-BASE: precio unitario 30, plazo 7 días, cantidad mínima 5. Este proveedor ya cubre los tres componentes.';
 
   @override
   String get tutSuppliersOpenBTitle => 'Abra el segundo proveedor';
@@ -7364,7 +7273,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get tutSuppliersPriceMotorBBody =>
-      'Dé también a este proveedor un precio para TUT-MOTOR: precio unitario 135, plazo 5 días, cantidad mínima 1. Más caro pero más rápido: una lista de precios ayuda a elegir así.';
+      'Dé también a este proveedor un precio para MOT-3P-055: precio unitario 135, plazo 5 días, cantidad mínima 1. Más caro pero más rápido: una lista de precios ayuda a elegir así.';
 
   @override
   String get tutSuppliersDoneTitle => 'Lo que ha aprendido';
@@ -7385,7 +7294,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get tutBuyingNeedsBody =>
-      'Este capítulo necesita los productos del capítulo 1 y el proveedor Voltaic Drives Ltd con su lista de precios del capítulo 2, y no ha encontrado los productos. Termine antes esos capítulos.';
+      'Este capítulo necesita los productos del Capítulo 1 (Cintas transportadoras y motores) y el proveedor Voltaic Drives Ltd con su lista de precios del capítulo 2, y no ha encontrado los productos. Termine antes esos capítulos.';
 
   @override
   String get tutBuyingOpenTitle => 'La lista de pedidos';
@@ -7399,7 +7308,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get tutBuyingOrderBody =>
-      'Cree un pedido de compra a Voltaic Drives Ltd. Al elegir el proveedor se listan sus artículos: marque TUT-MOTOR, TUT-FRAME y TUT-CTRL, ponga la cantidad 30 en cada uno y guarde. Los precios salen de la lista de precios.';
+      'Cree un pedido de compra a Voltaic Drives Ltd. Al elegir el proveedor se listan sus artículos: marque MOT-3P-055, VFD-3P-055 y PLC-BASE, ponga la cantidad 30 en cada uno y guarde. Los precios salen de la lista de precios.';
 
   @override
   String get tutBuyingOrderHint =>
@@ -7467,7 +7376,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get tutBuyingStockBody =>
-      'Abra Stock. Los 30 motores, bastidores y controladores están en el almacén MAIN. Cada recepción creó un movimiento de stock, así que la cantidad siempre se puede rastrear.';
+      'Abra Stock. Los 30 motores, VFDs y PLCs están en el almacén MAIN. Cada recepción creó un movimiento de stock, así que la cantidad siempre se puede rastrear.';
 
   @override
   String get tutBuyingDoneTitle => 'Lo que ha aprendido';
@@ -7566,21 +7475,21 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get tutInvoicesDoneBody =>
-      'La conciliación a tres bandas compara pedido, recepción y factura antes de mover dinero. Las facturas correctas se aprueban y pagan, las dudosas se disputan. Siguiente: fabricar los carritos.';
+      'La conciliación a tres bandas compara pedido, recepción y factura antes de mover dinero. Las facturas correctas se aprueban y pagan, las dudosas se disputan. Siguiente: fabricar los cintas transportadoras.';
 
   @override
   String get tutManufacturingTitle => 'Fabricación';
 
   @override
   String get tutManufacturingSummary =>
-      'Sombreros: jefe de producción y operario. Configure una división y fabrique cinco carritos con los componentes.';
+      'Sombreros: jefe de producción y operario. Configure una división y fabrique cinco cintas transportadoras con los componentes.';
 
   @override
   String get tutManufacturingNeedsTitle => 'Primero los capítulos 1 a 3';
 
   @override
   String get tutManufacturingNeedsBody =>
-      'Este capítulo necesita el carrito con su lista de materiales (capítulo 1) y componentes en stock (capítulo 3), y no ha encontrado los productos. Termine antes esos capítulos.';
+      'Este capítulo necesita la cinta transportadora con su lista de materiales (Capítulo 1 (Cintas transportadoras y motores)) y componentes en stock (capítulo 3), y no ha encontrado los productos. Termine antes esos capítulos.';
 
   @override
   String get tutManufacturingOpenDivisionsTitle => 'Divisiones';
@@ -7612,7 +7521,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get tutManufacturingReleaseBody =>
-      'Pulse Fabricar para stock, elija TUT-CART con cantidad 5 y libere. La lista de materiales se congela y los componentes se reservan. Normalmente la producción parte de una línea de pedido de venta; lo verá en el capítulo 9.';
+      'Pulse Fabricar para stock, elija CONV-BELT-1M con cantidad 5 y libere. La lista de materiales se congela y los componentes se reservan. Normalmente la producción parte de una línea de pedido de venta; lo verá en el capítulo 9.';
 
   @override
   String get tutManufacturingReleaseHint =>
@@ -7633,11 +7542,11 @@ class AppLocalizationsEs extends AppLocalizations {
       'Póngase el sombrero de operario y pulse Iniciar. La orden pasa de liberada a en curso.';
 
   @override
-  String get tutManufacturingWarehouseTitle => 'Un lugar para los carritos';
+  String get tutManufacturingWarehouseTitle => 'Un lugar para las cintas';
 
   @override
   String get tutManufacturingWarehouseBody =>
-      'Los carritos terminados necesitan una ubicación donde ir, y todavía no hay ningún almacén (el capítulo 3 lo crea). Abra Stock, pulse Almacenes y cree el almacén MAIN con el nombre Almacén principal; después vuelva a la orden de producción. Si se rechaza al guardar porque el código MAIN ya existe, lo tiene un almacén inactivo: vuelva a activarlo (y su ubicación) en Stock > Almacenes, o cámbiele el código con su botón de editar, y pulse después Siguiente.';
+      'Los cintas transportadoras terminados necesitan una ubicación donde ir, y todavía no hay ningún almacén (el capítulo 3 lo crea). Abra Stock, pulse Almacenes y cree el almacén MAIN con el nombre Almacén principal; después vuelva a la orden de producción. Si se rechaza al guardar porque el código MAIN ya existe, lo tiene un almacén inactivo: vuelva a activarlo (y su ubicación) en Stock > Almacenes, o cámbiele el código con su botón de editar, y pulse después Siguiente.';
 
   @override
   String get tutManufacturingWarehouseHint =>
@@ -7648,7 +7557,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get tutManufacturingCompleteBody =>
-      'Pulse Completar. El diálogo muestra la cantidad producida (5) y los componentes consumidos. Elija la ubicación MAIN del almacén en Almacenar en, para que los carritos terminados tengan dónde ir, y confirme: los componentes salen del stock y entran cinco carritos terminados.';
+      'Pulse Completar. El diálogo muestra la cantidad producida (5) y los componentes consumidos. Elija la ubicación MAIN del almacén en Almacenar en, para que los cintas transportadoras terminados tengan dónde ir, y confirme: los componentes salen del stock y entran cinco cintas transportadoras terminados.';
 
   @override
   String get tutManufacturingCompleteHint =>
@@ -7659,7 +7568,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get tutManufacturingStockBody =>
-      'Abra Stock: TUT-CART tiene ahora 5 y cada componente ha bajado 5 (quedan 25 de cada uno). La producción une compras y ventas.';
+      'Abra Stock: CONV-BELT-1M ahora tiene 5 unidades en stock, sus componentes de lista de materiales (MOT-3P-055 y VFD-3P-055) bajaron en 5 (quedan 25 de cada uno) y PLC-BASE se mantiene en 30. La producción conecta las compras con las ventas.';
 
   @override
   String get tutManufacturingDoneTitle => 'Lo que ha aprendido';
@@ -7673,14 +7582,15 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get tutPricesSummary =>
-      'Sombrero: jefe de ventas. Cree una zona de precios y dé al carrito un precio en dos zonas.';
+      'Sombrero: jefe de ventas. Cree una zona de precios y dé al cinta transportadora un precio en dos zonas.';
 
   @override
-  String get tutPricesNeedsTitle => 'Primero el capítulo 1';
+  String get tutPricesNeedsTitle =>
+      'Primero el Capítulo 1 (Cintas transportadoras y motores)';
 
   @override
   String get tutPricesNeedsBody =>
-      'Este capítulo necesita el carrito del capítulo 1 y no lo ha encontrado. Termine antes el capítulo 1.';
+      'Este capítulo necesita la cinta transportadora del Capítulo 1 (Cintas transportadoras y motores) y no lo ha encontrado. Termine antes el Capítulo 1 (Cintas transportadoras y motores).';
 
   @override
   String get tutPricesOpenAdminTitle => 'Abra la administración';
@@ -7701,11 +7611,11 @@ class AppLocalizationsEs extends AppLocalizations {
       'Elija primero el segmento Zonas de precios en la parte superior de la página de Administración.';
 
   @override
-  String get tutPricesOpenCartTitle => 'Abra el carrito';
+  String get tutPricesOpenCartTitle => 'Abrir la cinta transportadora';
 
   @override
   String get tutPricesOpenCartBody =>
-      'Abra el producto TUT-CART desde la lista de productos. Su primera pestaña, Precios, contiene los precios por zona.';
+      'Abra el producto CONV-BELT-1M desde la lista de productos. Su primera pestaña, Precios, contiene los precios por zona.';
 
   @override
   String get tutPricesPriceExportTitle => 'Un precio en la nueva zona';
@@ -7723,7 +7633,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get tutPricesPriceHomeBody =>
-      'Añada un segundo precio para el carrito en una de las zonas existentes, por ejemplo Z1 a 1200. El mismo producto puede costar distinto según la zona del cliente.';
+      'Añada un segundo precio para la cinta transportadora en una de las zonas existentes, por ejemplo Z1 a 1200. El mismo producto puede costar distinto según la zona del cliente.';
 
   @override
   String get tutPricesDoneTitle => 'Lo que ha aprendido';
@@ -7751,7 +7661,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get tutCustomerMail1Body =>
-      'Alguien que no conoce pide un presupuesto para su carrito. Un buzón real entregaría el mensaje solo; aquí el botón de abajo hace de cliente y entrega al helpdesk un correo ya preparado (de Maya Okafor, example.test), igual que el importador de correo.';
+      'Alguien que no conoce pide un presupuesto para su cinta transportadora. Un buzón real entregaría el mensaje solo; aquí el botón de abajo hace de cliente y entrega al helpdesk un correo ya preparado (de Maya Okafor, example.test), igual que el importador de correo.';
 
   @override
   String get tutCustomerMail1Action => 'Simular correo del cliente';
@@ -7828,7 +7738,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get tutQuotationSummary =>
-      'Sombrero: comercial. Presupueste 8 carritos al cliente nuevo, pida a producción el plazo y envíelo.';
+      'Sombrero: comercial. Presupueste 8 cintas transportadoras al cliente nuevo, pida a producción el plazo y envíelo.';
 
   @override
   String get tutQuotationNeedsTitle => 'Primero el capítulo 7';
@@ -7849,11 +7759,11 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get tutQuotationCreateBody =>
-      'Pulse Nuevo presupuesto, elija Brightwheel Logistics BV, añada TUT-CART con cantidad 8 y guarde el borrador. El precio unitario sale de la zona de precios del cliente, TUT-EXPORT: son los 1450 del capítulo 6.';
+      'Pulse Nuevo presupuesto, elija Brightwheel Logistics BV, añada CONV-BELT-1M con cantidad 8 y guarde el borrador. El precio unitario sale de la zona de precios del cliente, TUT-EXPORT: son los 1450 del capítulo 6.';
 
   @override
   String get tutQuotationCreateHint =>
-      'Use la búsqueda de producto en las líneas; escriba TUT-CART. Si el cliente no está preseleccionado, busque Brightwheel.';
+      'Use la búsqueda de producto en las líneas; escriba CONV-BELT-1M. Si el cliente no está preseleccionado, busque Brightwheel.';
 
   @override
   String get tutQuotationLeadTitle => '¿Cuánto tardará?';
@@ -7896,7 +7806,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get tutChangeSummary =>
-      'Sombreros: ventas y producción. Revise el presupuesto, conviértalo en pedido, fabrique los carritos y algunos más para stock.';
+      'Sombreros: ventas y producción. Revise el presupuesto, conviértalo en pedido, fabrique los cintas transportadoras y algunos más para stock.';
 
   @override
   String get tutChangeNeedsTitle => 'Primero el capítulo 8';
@@ -7910,7 +7820,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get tutChangeMail3Body =>
-      'Maya está contenta con el presupuesto pero quiere 10 carritos en lugar de 8. Use el botón para reproducir su correo; llega al mismo ticket.';
+      'Maya está contenta con el presupuesto pero quiere 10 cintas transportadoras en lugar de 8. Use el botón para reproducir su correo; llega al mismo ticket.';
 
   @override
   String get tutChangeMail3Action => 'Simular correo del cliente';
@@ -7938,7 +7848,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get tutChangeEditBody =>
-      'Ponga la cantidad de TUT-CART en 10 y guarde el borrador.';
+      'Ponga la cantidad de CONV-BELT-1M en 10 y guarde el borrador.';
 
   @override
   String get tutChangeEditHint =>
@@ -7974,7 +7884,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get tutChangeOpenOrderBody =>
-      'Si el pedido no se abrió solo, ábralo desde Pedidos. Tiene los 10 carritos, el precio y la referencia del cliente. Los pedidos pasan de borrador a enviado y a confirmado.';
+      'Si el pedido no se abrió solo, ábralo desde Pedidos. Tiene los 10 cintas transportadoras, el precio y la referencia del cliente. Los pedidos pasan de borrador a enviado y a confirmado.';
 
   @override
   String get tutChangeSendOrderTitle => 'Envíe la confirmación del pedido';
@@ -7999,7 +7909,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get tutChangeReleaseBody =>
-      'Póngase el sombrero de producción. Abra Producción > Por liberar: la línea de pedido confirmada con 10 carritos espera. Pulse Liberar a producción para crear la orden de producción de esa línea.';
+      'Póngase el sombrero de producción. Abra Producción > Por liberar: la línea de pedido confirmada con 10 cintas transportadoras espera. Pulse Liberar a producción para crear la orden de producción de esa línea.';
 
   @override
   String get tutChangeStartTitle => 'Inicie la producción';
@@ -8009,11 +7919,11 @@ class AppLocalizationsEs extends AppLocalizations {
       'Pulse Iniciar en la nueva orden de producción.';
 
   @override
-  String get tutChangeWarehouseTitle => 'Un lugar para los carritos';
+  String get tutChangeWarehouseTitle => 'Un lugar para las cintas';
 
   @override
   String get tutChangeWarehouseBody =>
-      'Los carritos terminados necesitan una ubicación donde ir, y todavía no hay ningún almacén (el capítulo 3 lo crea). Abra Stock, pulse Almacenes y cree el almacén MAIN con el nombre Almacén principal; después vuelva a la orden de producción. Si se rechaza al guardar porque el código MAIN ya existe, lo tiene un almacén inactivo: vuelva a activarlo (y su ubicación) en Stock > Almacenes, o cámbiele el código con su botón de editar, y pulse después Siguiente.';
+      'Los cintas transportadoras terminados necesitan una ubicación donde ir, y todavía no hay ningún almacén (el capítulo 3 lo crea). Abra Stock, pulse Almacenes y cree el almacén MAIN con el nombre Almacén principal; después vuelva a la orden de producción. Si se rechaza al guardar porque el código MAIN ya existe, lo tiene un almacén inactivo: vuelva a activarlo (y su ubicación) en Stock > Almacenes, o cámbiele el código con su botón de editar, y pulse después Siguiente.';
 
   @override
   String get tutChangeWarehouseHint =>
@@ -8024,7 +7934,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get tutChangeCompleteBody =>
-      'Pulse Completar, elija la ubicación MAIN del almacén en Almacenar en y confirme los 10 carritos. Se consumen los componentes y los carritos van al pedido.';
+      'Pulse Completar, elija la ubicación MAIN del almacén en Almacenar en y confirme los 10 cintas transportadoras. Se consumen los componentes y los cintas transportadoras van al pedido.';
 
   @override
   String get tutChangeReadyTitle => 'Listo para enviar';
@@ -8038,7 +7948,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get tutChangeStockBody =>
-      'La producción suele adelantarse a los pedidos. Abra Producción, pulse Fabricar para stock y libere 4 carritos más de TUT-CART. Sin pedido, simplemente entran en stock al completarse.';
+      'La producción suele adelantarse a los pedidos. Abra Producción, pulse Fabricar para stock y libere 4 cintas transportadoras más de CONV-BELT-1M. Sin pedido, simplemente entran en stock al completarse.';
 
   @override
   String get tutChangeStockHint =>
@@ -8070,7 +7980,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get tutHelpdeskNoteBody =>
-      'Abra el ticket, cambie a Nota interna y escriba lo que un compañero necesita saber, por ejemplo que el cliente quiere un presupuesto para 8 carritos. Pulse Añadir nota. El cliente nunca ve una nota.';
+      'Abra el ticket, cambie a Nota interna y escriba lo que un compañero necesita saber, por ejemplo que el cliente quiere un presupuesto para 8 cintas transportadoras. Pulse Añadir nota. El cliente nunca ve una nota.';
 
   @override
   String get tutHelpdeskNoteHint =>
@@ -11193,7 +11103,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get tutAttributesNeedsBody =>
-      'Este capítulo registra propiedades técnicas en TUT-CTRL (Controller). Cree TUT-CTRL en el capítulo 1 o use la asistencia.';
+      'Este capítulo registra propiedades técnicas en PLC-BASE (PLC estándar). Cree PLC-BASE en el Capítulo 2 (PLCs, licencias paralelas y red) o use Asistencia para crearlo ahora.';
 
   @override
   String get tutAttributesIntroTitle => 'Por qué usar propiedades genéricas';
@@ -11235,19 +11145,11 @@ class AppLocalizationsEs extends AppLocalizations {
       'Pulse Nuevo atributo y cree una propiedad Número con clave digital_inputs, etiqueta Digital inputs, tipo Número y ámbito Producto.';
 
   @override
-  String get tutAttributesPolarized24vTitle =>
-      'Definir salida polarizada 24V por 2 hilos';
-
-  @override
-  String get tutAttributesPolarized24vBody =>
-      'Pulse Nuevo atributo y cree una propiedad Sí/No con clave supports_24v_polarized_2wire, etiqueta 24V polarized 2-wire output, tipo Sí/No y ámbito Producto.';
-
-  @override
   String get tutAttributesOpenControllerTitle => 'Abrir el producto Controller';
 
   @override
   String get tutAttributesOpenControllerBody =>
-      'Abra Productos y seleccione TUT-CTRL (Controller).';
+      'Abra Productos y seleccione PLC-BASE (Controller).';
 
   @override
   String get tutAttributesSuitabilityTabTitle => 'Abrir la pestaña Idoneidad';
@@ -11262,7 +11164,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get tutAttributesFillPropertiesBody =>
-      'Complete los campos para las claves relay_count = 4, fet_count = 2, digital_inputs = 8 y supports_24v_polarized_2wire = Sí (si una etiqueta mostrada difiere, use el campo existente con esa clave), luego pulse Guardar.';
+      'Complete los campos para las claves relay_count = 4, fet_count = 6, digital_inputs = 8 y analog_4_20ma_inputs = 2, rs485_ports = 2, i2c_bus = Sí, licensed_outputs_tier = 10 (si una etiqueta mostrada difiere, use el campo existente con esa clave), luego pulse Guardar.';
 
   @override
   String get tutAttributesFillPropertiesHint =>
@@ -11273,7 +11175,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get tutAttributesDoneBody =>
-      'TUT-CTRL ahora guarda propiedades tipadas y validadas propias de su gama. Las fórmulas del configurador y las reglas CRM pueden usarlas sin cambiar el esquema de la base de datos.';
+      'PLC-BASE ahora guarda propiedades tipadas y validadas propias de su gama. Las fórmulas del configurador y las reglas CRM pueden usarlas sin cambiar el esquema de la base de datos.';
 
   @override
   String get cbAddLine => 'Añadir línea';
@@ -11536,4 +11438,312 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get shortcutCustom => 'Personalizado';
+
+  @override
+  String get tutConveyorsTitle => 'Cintas transportadoras y motores';
+
+  @override
+  String get tutConveyorsSummary =>
+      'Cree motores monofásicos y trifásicos, un variador VFD y una cinta transportadora con diagrama SVG y lista de materiales.';
+
+  @override
+  String get tutConveyorsOpenTitle => 'Productos';
+
+  @override
+  String get tutConveyorsOpenBody =>
+      'Abra Productos para crear la línea de cintas transportadoras y motores.';
+
+  @override
+  String get tutConveyorsMotor1pTitle => 'Motor AC monofásico';
+
+  @override
+  String get tutConveyorsMotor1pBody =>
+      'Cree el código MOT-1P-037, nombre Single-Phase AC Motor, tipo Comprado.';
+
+  @override
+  String get tutConveyorsMotorTitle => 'Motor AC trifásico';
+
+  @override
+  String get tutConveyorsMotorBody =>
+      'Cree el código MOT-3P-055, nombre 3-Phase AC Motor, tipo Comprado.';
+
+  @override
+  String get tutConveyorsMotorHint =>
+      'Los códigos de producto no necesitan prefijo; manténgalos claros y descriptivos.';
+
+  @override
+  String get tutConveyorsVfdTitle => 'Variador de frecuencia (VFD)';
+
+  @override
+  String get tutConveyorsVfdBody =>
+      'Cree el código VFD-3P-055, nombre Variable Frequency Drive, tipo Comprado.';
+
+  @override
+  String get tutConveyorsConveyorTitle => 'Conjunto cinta transportadora';
+
+  @override
+  String get tutConveyorsConveyorBody =>
+      'Cree el código CONV-BELT-1M, nombre Conveyor Belt Assembly, tipo Fabricado.';
+
+  @override
+  String get tutConveyorsOpenConveyorTitle => 'Abrir la cinta transportadora';
+
+  @override
+  String get tutConveyorsOpenConveyorBody =>
+      'Abra CONV-BELT-1M para ver su diagrama SVG y lista de materiales.';
+
+  @override
+  String get tutConveyorsSvgPreviewTitle =>
+      'Vista previa SVG (con o sin motor)';
+
+  @override
+  String get tutConveyorsSvgPreviewBody =>
+      'Use los controles inferiores para ver la cinta con o sin motor (monofásico o trifásico + VFD). También puede subir archivos image/svg+xml en Multimedia.';
+
+  @override
+  String get tutConveyorsBomTabTitle => 'Lista de materiales';
+
+  @override
+  String get tutConveyorsBomTabBody =>
+      'Abra la pestaña Lista de materiales en CONV-BELT-1M y pulse Siguiente.';
+
+  @override
+  String get tutConveyorsRevisionTitle => 'Crear una revisión';
+
+  @override
+  String get tutConveyorsRevisionBody =>
+      'Pulse Nueva revisión para iniciar un borrador.';
+
+  @override
+  String get tutConveyorsLinesTitle => 'Añadir motor y VFD';
+
+  @override
+  String get tutConveyorsLinesBody =>
+      'Añada MOT-3P-055 y VFD-3P-055 al borrador y guarde.';
+
+  @override
+  String get tutConveyorsLinesHint =>
+      'Busque MOT-3P-055 y VFD-3P-055 en el selector de componentes.';
+
+  @override
+  String get tutConveyorsActivateTitle => 'Activar la lista de materiales';
+
+  @override
+  String get tutConveyorsActivateBody =>
+      'Pulse Activar para que producción y configuradores usen esta revisión.';
+
+  @override
+  String get tutConveyorsDoneTitle => 'Cinta transportadora lista';
+
+  @override
+  String get tutConveyorsDoneBody =>
+      'Ha creado la cinta, los motores, el VFD, el diagrama SVG y la lista de materiales activa.';
+
+  @override
+  String get tutPlcTitle => 'PLCs, licencias paralelas y red';
+
+  @override
+  String get tutPlcSummary =>
+      'Modele PLCs estándar (10 salidas), licencias paralelas (30/50/100), expansión RS-485 y controlador maestro.';
+
+  @override
+  String get tutPlcOpenTitle => 'Abrir Productos';
+
+  @override
+  String get tutPlcOpenBody =>
+      'Abra Productos para añadir la familia PLC y sus licencias paralelas.';
+
+  @override
+  String get tutPlcBaseTitle => 'PLC estándar (10 salidas)';
+
+  @override
+  String get tutPlcBaseBody =>
+      'Cree el código PLC-BASE, nombre Standard PLC (10 Outputs), tipo Comprado.';
+
+  @override
+  String get tutPlcBaseHint =>
+      'El PLC estándar incluye 10 salidas; las licencias paralelas desbloquean 30, 50 o 100 salidas.';
+
+  @override
+  String get tutPlcLic30Title => 'Licencia paralela de 30 salidas';
+
+  @override
+  String get tutPlcLic30Body =>
+      'Cree el código PLC-LIC-30, nombre PLC 30-Output Parallel License, tipo Servicio.';
+
+  @override
+  String get tutPlcLic50Title => 'Licencia paralela de 50 salidas';
+
+  @override
+  String get tutPlcLic50Body =>
+      'Cree el código PLC-LIC-50, nombre PLC 50-Output Parallel License, tipo Servicio.';
+
+  @override
+  String get tutPlcLic100Title => 'Licencia paralela de 100 salidas';
+
+  @override
+  String get tutPlcLic100Body =>
+      'Cree el código PLC-LIC-100, nombre PLC 100-Output Parallel License, tipo Servicio.';
+
+  @override
+  String get tutPlcExpansionTitle => 'Módulo de expansión RS-485';
+
+  @override
+  String get tutPlcExpansionBody =>
+      'Cree el código PLC-EXP-RS485, nombre RS-485 I/O Expansion Module, tipo Comprado.';
+
+  @override
+  String get tutPlcMasterTitle => 'Controlador maestro de red';
+
+  @override
+  String get tutPlcMasterBody =>
+      'Cree el código PLC-MASTER, nombre Master Network Controller, tipo Comprado.';
+
+  @override
+  String get tutPlcDoneTitle => 'Catálogo PLC y licencias listo';
+
+  @override
+  String get tutPlcDoneBody =>
+      'El configurador PLC-CONVEYOR-LINE valida las salidas necesarias frente a la licencia 10/30/50/100.';
+
+  @override
+  String get tutDisplaysTitle => 'Pantallas RS-485 y periféricos I2C';
+
+  @override
+  String get tutDisplaysSummary =>
+      'Añada pantallas por bus RS-485 con lector de tarjetas y sensor de temperatura I2C.';
+
+  @override
+  String get tutDisplaysOpenTitle => 'Abrir Productos';
+
+  @override
+  String get tutDisplaysOpenBody =>
+      'Abra Productos para añadir la pantalla RS-485 y los módulos I2C.';
+
+  @override
+  String get tutDisplaysDisplayTitle => 'Pantalla de operador RS-485';
+
+  @override
+  String get tutDisplaysDisplayBody =>
+      'Cree el código DISP-RS485, nombre RS-485 Operator Display, tipo Comprado.';
+
+  @override
+  String get tutDisplaysDisplayHint =>
+      'DISP-RS485 se conecta por RS-485 y ofrece un bus I2C para periféricos locales.';
+
+  @override
+  String get tutDisplaysSwipeTitle => 'Lector de tarjetas I2C';
+
+  @override
+  String get tutDisplaysSwipeBody =>
+      'Cree el código MOD-I2C-SWIPE, nombre I2C Swipe Card Reader, tipo Comprado.';
+
+  @override
+  String get tutDisplaysTempTitle => 'Sensor de temperatura I2C';
+
+  @override
+  String get tutDisplaysTempBody =>
+      'Cree el código SENS-I2C-TEMP, nombre I2C Temperature Sensor, tipo Comprado.';
+
+  @override
+  String get tutDisplaysDoneTitle => 'Pantallas y bus I2C listos';
+
+  @override
+  String get tutDisplaysDoneBody =>
+      'Los operadores pueden identificarse con tarjeta y medir temperatura por el bus I2C.';
+
+  @override
+  String get tutSensorsTitle => 'Sensores y dispositivos PowerFET';
+
+  @override
+  String get tutSensorsSummary =>
+      'Añada sensores IR, sensores 4-20 mA y actuadores solenoides gobernados por PowerFET.';
+
+  @override
+  String get tutSensorsOpenTitle => 'Abrir Productos';
+
+  @override
+  String get tutSensorsOpenBody =>
+      'Abra Productos para añadir los sensores y dispositivos PowerFET.';
+
+  @override
+  String get tutSensorsIrTitle => 'Sensor fotoeléctrico IR';
+
+  @override
+  String get tutSensorsIrBody =>
+      'Cree el código SENS-IR-24V, nombre IR Photoelectric Sensor, tipo Comprado.';
+
+  @override
+  String get tutSensorsIrHint =>
+      'Detecta productos en la cinta transportadora mediante una entrada digital del PLC.';
+
+  @override
+  String get tutSensorsAnalogTitle => 'Sensor analógico 4-20 mA';
+
+  @override
+  String get tutSensorsAnalogBody =>
+      'Cree el código SENS-420MA, nombre 4-20 mA Analog Sensor, tipo Comprado.';
+
+  @override
+  String get tutSensorsPusherTitle => 'Empujador solenoide PowerFET';
+
+  @override
+  String get tutSensorsPusherBody =>
+      'Cree el código SOL-PUSH, nombre PowerFET Solenoid Pusher, tipo Comprado.';
+
+  @override
+  String get tutSensorsLabelerTitle => 'Etiquetadora solenoide PowerFET';
+
+  @override
+  String get tutSensorsLabelerBody =>
+      'Cree el código SOL-LABEL, nombre PowerFET Label Stamper, tipo Comprado.';
+
+  @override
+  String get tutSensorsDoneTitle => 'Sensores y actuadores listos';
+
+  @override
+  String get tutSensorsDoneBody =>
+      'Su catálogo ya cubre cintas, motores, PLCs, buses, sensores y dispositivos PowerFET.';
+
+  @override
+  String get tutAttributesAnalog420Title =>
+      'Definir entradas analógicas 4-20 mA';
+
+  @override
+  String get tutAttributesAnalog420Body =>
+      'Cree una propiedad Número con clave analog_4_20ma_inputs, etiqueta 4-20 mA analog inputs, ámbito Producto.';
+
+  @override
+  String get tutAttributesRs485PortsTitle => 'Definir puertos RS-485';
+
+  @override
+  String get tutAttributesRs485PortsBody =>
+      'Cree una propiedad Número con clave rs485_ports, etiqueta RS-485 ports, ámbito Producto.';
+
+  @override
+  String get tutAttributesI2cBusTitle => 'Definir bus periférico I2C';
+
+  @override
+  String get tutAttributesI2cBusBody =>
+      'Cree una propiedad Sí/No con clave i2c_bus, etiqueta I2C peripheral bus, ámbito Producto.';
+
+  @override
+  String get tutAttributesLicensedOutputsTitle =>
+      'Definir nivel de salidas licenciadas';
+
+  @override
+  String get tutAttributesLicensedOutputsBody =>
+      'Cree una propiedad Número con clave licensed_outputs_tier, etiqueta Licensed outputs tier, ámbito Producto.';
+
+  @override
+  String get tutConveyorsSvgWithMotor => 'Con motor';
+
+  @override
+  String get tutConveyorsSvgThreePhase => 'Trifásico + VFD';
+
+  @override
+  String get tutConveyorsSvgOnePhase => 'Monofásico';
+
+  @override
+  String get tutConveyorsSvgWithoutMotor => 'sin motor';
 }

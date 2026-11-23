@@ -43,7 +43,7 @@ class FakeHttp implements HttpClientAdapter {
       sent = o.data;
     }
     bodies[key] = sent;
-    final route = routes[key];
+    final route = routes[key] ?? routes['${o.method} ${o.uri.path}'];
     if (route == null) {
       return ResponseBody.fromString(
         jsonEncode({'error': 'not_found', 'message': key}),

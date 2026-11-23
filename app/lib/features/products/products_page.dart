@@ -31,13 +31,36 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
   @override
   Widget build(BuildContext context) {
     ref.listen(tutorialAssistCompletedProvider, (_, completed) {
-      if (completed?.missionId == 'product' &&
-          const {
-            'motor',
-            'frame',
-            'controller',
-            'cart',
-          }.contains(completed?.stepId)) {
+      if (completed == null) return;
+      final isProductStep = switch (completed.missionId) {
+        'conveyors' => const {
+          'motor1p',
+          'motor',
+          'vfd',
+          'conveyor',
+        }.contains(completed.stepId),
+        'plc' => const {
+          'base',
+          'lic30',
+          'lic50',
+          'lic100',
+          'expansion',
+          'master',
+        }.contains(completed.stepId),
+        'displays' => const {
+          'display',
+          'swipe',
+          'temp',
+        }.contains(completed.stepId),
+        'sensors' => const {
+          'ir',
+          'analog',
+          'pusher',
+          'labeler',
+        }.contains(completed.stepId),
+        _ => false,
+      };
+      if (isProductStep) {
         _list.currentState?.reload();
       }
     });

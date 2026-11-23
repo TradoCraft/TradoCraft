@@ -6461,13 +6461,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Find your way around: the environment banner, the tabs and the tutorial controls.';
 
   @override
-  String get tutProductTitle => 'Your first product';
-
-  @override
-  String get tutProductSummary =>
-      'Hat: product manager. Create three components, a finished product and its bill of materials.';
-
-  @override
   String get tutWelcomeBannerTitle => 'The strip at the top';
 
   @override
@@ -6501,90 +6494,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get tutWelcomeProductsBody =>
       'Open the Products section. The next chapter starts there.';
-
-  @override
-  String get tutProductOpenTitle => 'Products';
-
-  @override
-  String get tutProductOpenBody =>
-      'Today you are the product manager. Everything the company sells or builds is a product. Open the Products section.';
-
-  @override
-  String get tutProductMotorTitle => 'Component: Motor';
-
-  @override
-  String get tutProductMotorBody =>
-      'Create the first component. Press New product, enter code TUT-MOTOR and name Motor, keep the type Purchased, and save.';
-
-  @override
-  String get tutProductMotorHint =>
-      'The TUT- prefix marks tutorial data, so you can recognise it later.';
-
-  @override
-  String get tutProductFrameTitle => 'Component: Frame';
-
-  @override
-  String get tutProductFrameBody =>
-      'Create a second component the same way: code TUT-FRAME, name Frame, type Purchased.';
-
-  @override
-  String get tutProductControllerTitle => 'Component: Controller';
-
-  @override
-  String get tutProductControllerBody =>
-      'And a third one: code TUT-CTRL, name Controller, type Purchased.';
-
-  @override
-  String get tutProductCartTitle => 'The finished product';
-
-  @override
-  String get tutProductCartBody =>
-      'Now the product you build from those parts. Create code TUT-CART, name Cart, and choose the type Manufactured: only manufactured products have a bill of materials.';
-
-  @override
-  String get tutProductOpenCartTitle => 'Open the cart';
-
-  @override
-  String get tutProductOpenCartBody =>
-      'Open the new Cart product from the list to see its tabs.';
-
-  @override
-  String get tutProductBomTabTitle => 'Bill of materials';
-
-  @override
-  String get tutProductBomTabBody =>
-      'Choose the Bill of materials tab. It lists the components needed to build one unit. A revision is a draft you edit, or the active one that production uses. Press Next when you are there.';
-
-  @override
-  String get tutProductRevisionTitle => 'A first revision';
-
-  @override
-  String get tutProductRevisionBody => 'Press New revision to start a draft.';
-
-  @override
-  String get tutProductLinesTitle => 'Add the components';
-
-  @override
-  String get tutProductLinesBody =>
-      'Search each component and add it: Motor, Frame and Controller. Then press Save draft.';
-
-  @override
-  String get tutProductLinesHint =>
-      'Type TUT in the search box to find the three components.';
-
-  @override
-  String get tutProductActivateTitle => 'Activate it';
-
-  @override
-  String get tutProductActivateBody =>
-      'Press Activate. From now on production and quotations use this revision; later changes go through a new revision.';
-
-  @override
-  String get tutProductDoneTitle => 'Well done';
-
-  @override
-  String get tutProductDoneBody =>
-      'You have a finished product with a bill of materials of three components. Later chapters build on it.';
 
   @override
   String get purchasing => 'Purchasing';
@@ -7270,7 +7179,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tutSuppliersNeedsBody =>
-      'This chapter needs the four products from chapter 1 (TUT-MOTOR, TUT-FRAME, TUT-CTRL and TUT-CART) and could not find them. Go back to the chapter map and finish chapter 1 first, then come back here.';
+      'This chapter needs the four core products from Chapter 1 (Conveyor belts & motors: MOT-3P-055, VFD-3P-055, CONV-BELT-1M) and Chapter 2 (PLCs, parallel licensing & network: PLC-BASE), and could not find them. Go back to the chapter map and finish those chapters first, then come back here.';
 
   @override
   String get tutSuppliersOpenTitle => 'Put on the purchaser hat';
@@ -7305,25 +7214,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tutSuppliersPriceMotorBody =>
-      'Add TUT-MOTOR to the price list: unit price 120, lead time 14 days, minimum order quantity 5. Purchase orders use these values to pre-fill their lines.';
+      'Add MOT-3P-055 to the price list: unit price 120, lead time 14 days, minimum order quantity 5. Purchase orders use these values to pre-fill their lines.';
 
   @override
   String get tutSuppliersPriceMotorHint =>
-      'Pick the product with the search box in the dialog; type TUT-MOTOR.';
+      'Pick the product with the search box in the dialog; type MOT-3P-055.';
 
   @override
-  String get tutSuppliersPriceFrameTitle => 'A price for the frame';
+  String get tutSuppliersPriceFrameTitle => 'A price for the VFD';
 
   @override
   String get tutSuppliersPriceFrameBody =>
-      'Same again for TUT-FRAME: unit price 45, lead time 10 days, minimum order quantity 5.';
+      'Same again for VFD-3P-055: unit price 45, lead time 10 days, minimum order quantity 5.';
 
   @override
   String get tutSuppliersPriceControllerTitle => 'A price for the controller';
 
   @override
   String get tutSuppliersPriceControllerBody =>
-      'And TUT-CTRL: unit price 30, lead time 7 days, minimum order quantity 5. This supplier now covers all three components.';
+      'And PLC-BASE: unit price 30, lead time 7 days, minimum order quantity 5. This supplier now covers all three components.';
 
   @override
   String get tutSuppliersOpenBTitle => 'Open the second supplier';
@@ -7337,7 +7246,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tutSuppliersPriceMotorBBody =>
-      'Give this supplier a price for TUT-MOTOR too: unit price 135, lead time 5 days, minimum order quantity 1. It is dearer but faster; that is the kind of choice a price list helps with.';
+      'Give this supplier a price for MOT-3P-055 too: unit price 135, lead time 5 days, minimum order quantity 1. It is dearer but faster; that is the kind of choice a price list helps with.';
 
   @override
   String get tutSuppliersDoneTitle => 'What you learned';
@@ -7358,7 +7267,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tutBuyingNeedsBody =>
-      'This chapter needs the products of chapter 1 and the supplier Voltaic Drives Ltd with its price list from chapter 2, and could not find the products. Finish those chapters first.';
+      'This chapter needs the products of Chapter 1 (Conveyor belts & motors) and the supplier Voltaic Drives Ltd with its price list from chapter 2, and could not find the products. Finish those chapters first.';
 
   @override
   String get tutBuyingOpenTitle => 'The orders list';
@@ -7372,7 +7281,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tutBuyingOrderBody =>
-      'Create a purchase order for Voltaic Drives Ltd. After choosing the supplier its goods are listed: tick TUT-MOTOR, TUT-FRAME and TUT-CTRL and set the quantity to 30 for each, then save. The prices come from the price list.';
+      'Create a purchase order for Voltaic Drives Ltd. After choosing the supplier its goods are listed: tick MOT-3P-055, VFD-3P-055 and PLC-BASE and set the quantity to 30 for each, then save. The prices come from the price list.';
 
   @override
   String get tutBuyingOrderHint =>
@@ -7440,7 +7349,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tutBuyingStockBody =>
-      'Open Stock. The 30 motors, frames and controllers are on hand in warehouse MAIN. Every receipt created a stock movement, so the quantity can always be traced back.';
+      'Open Stock. The 30 motors, VFDs and PLCs are on hand in warehouse MAIN. Every receipt created a stock movement, so the quantity can always be traced back.';
 
   @override
   String get tutBuyingDoneTitle => 'What you learned';
@@ -7539,21 +7448,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tutInvoicesDoneBody =>
-      'The three-way match compares order, receipt and invoice before money moves. Matching invoices are approved and paid, doubtful ones are disputed. Next: building the carts yourself.';
+      'The three-way match compares order, receipt and invoice before money moves. Matching invoices are approved and paid, doubtful ones are disputed. Next: building the conveyors yourself.';
 
   @override
   String get tutManufacturingTitle => 'Manufacturing';
 
   @override
   String get tutManufacturingSummary =>
-      'Hats: production manager and production worker. Set up a division, then build five carts from the components.';
+      'Hats: production manager and production worker. Set up a division, then build five conveyors from the components.';
 
   @override
   String get tutManufacturingNeedsTitle => 'Chapters 1 to 3 first';
 
   @override
   String get tutManufacturingNeedsBody =>
-      'This chapter needs the cart with its bill of materials (chapter 1) and components in stock (chapter 3), and could not find the products. Finish those chapters first.';
+      'This chapter needs the conveyor with its bill of materials (Chapter 1 (Conveyor belts & motors)) and components in stock (chapter 3), and could not find the products. Finish those chapters first.';
 
   @override
   String get tutManufacturingOpenDivisionsTitle => 'Divisions';
@@ -7585,7 +7494,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tutManufacturingReleaseBody =>
-      'Press Build for stock, choose TUT-CART and quantity 5, and release. The bill of materials is frozen and the components are reserved. Normally production starts from a sales order line; you will see that in chapter 9.';
+      'Press Build for stock, choose CONV-BELT-1M and quantity 5, and release. The bill of materials is frozen and the components are reserved. Normally production starts from a sales order line; you will see that in chapter 9.';
 
   @override
   String get tutManufacturingReleaseHint =>
@@ -7606,11 +7515,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Put on the worker hat and press Start. The order moves from released to in progress.';
 
   @override
-  String get tutManufacturingWarehouseTitle => 'A place for the carts';
+  String get tutManufacturingWarehouseTitle => 'A place for the conveyors';
 
   @override
   String get tutManufacturingWarehouseBody =>
-      'The finished carts need a location to go into, and there is no warehouse yet (chapter 3 creates it). Open Stock, press Warehouses and create the warehouse MAIN with the name Main warehouse, then go back to the production order. If saving is refused because the code MAIN is taken, an inactive warehouse holds it: switch it (and its location) back on in Stock > Warehouses, or give it another code with its edit button, then press Next.';
+      'The finished conveyors need a location to go into, and there is no warehouse yet (chapter 3 creates it). Open Stock, press Warehouses and create the warehouse MAIN with the name Main warehouse, then go back to the production order. If saving is refused because the code MAIN is taken, an inactive warehouse holds it: switch it (and its location) back on in Stock > Warehouses, or give it another code with its edit button, then press Next.';
 
   @override
   String get tutManufacturingWarehouseHint =>
@@ -7621,7 +7530,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tutManufacturingCompleteBody =>
-      'Press Complete. The dialog shows the output quantity (5) and the components consumed. Choose the warehouse location MAIN in Put into, so the finished carts have a place to go, and confirm: the components leave the stock and five finished carts enter it.';
+      'Press Complete. The dialog shows the output quantity (5) and the components consumed. Choose the warehouse location MAIN in Put into, so the finished conveyors have a place to go, and confirm: the components leave the stock and five finished conveyors enter it.';
 
   @override
   String get tutManufacturingCompleteHint =>
@@ -7632,7 +7541,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tutManufacturingStockBody =>
-      'Open Stock: TUT-CART now has 5 on hand, and each component is down by 5 (25 left of each). Production is what links purchasing to selling.';
+      'Open Stock: CONV-BELT-1M now has 5 on hand, its BOM components (MOT-3P-055 and VFD-3P-055) are down by 5 (25 left of each), and PLC-BASE remains at 30. Production is what links purchasing to selling.';
 
   @override
   String get tutManufacturingDoneTitle => 'What you learned';
@@ -7646,14 +7555,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tutPricesSummary =>
-      'Hat: sales manager. Create a price zone and give the cart a price in two zones.';
+      'Hat: sales manager. Create a price zone and give the conveyor a price in two zones.';
 
   @override
   String get tutPricesNeedsTitle => 'Chapter 1 first';
 
   @override
   String get tutPricesNeedsBody =>
-      'This chapter needs the cart from chapter 1 and could not find it. Finish chapter 1 first.';
+      'This chapter needs the conveyor from Chapter 1 (Conveyor belts & motors) and could not find it. Finish Chapter 1 (Conveyor belts & motors) first.';
 
   @override
   String get tutPricesOpenAdminTitle => 'Open the admin area';
@@ -7674,11 +7583,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Choose the Price zones segment at the top of the Admin page first.';
 
   @override
-  String get tutPricesOpenCartTitle => 'Open the cart';
+  String get tutPricesOpenCartTitle => 'Open the conveyor';
 
   @override
   String get tutPricesOpenCartBody =>
-      'Open the product TUT-CART from the Products list. Its first tab, Prices, holds the prices per zone.';
+      'Open the product CONV-BELT-1M from the Products list. Its first tab, Prices, holds the prices per zone.';
 
   @override
   String get tutPricesPriceExportTitle => 'A price in the new zone';
@@ -7696,7 +7605,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tutPricesPriceHomeBody =>
-      'Add a second price for the cart in one of the existing zones, for example Z1 at 1200. The same product can now cost different amounts depending on the customer\'s zone.';
+      'Add a second price for the conveyor in one of the existing zones, for example Z1 at 1200. The same product can now cost different amounts depending on the customer\'s zone.';
 
   @override
   String get tutPricesDoneTitle => 'What you learned';
@@ -7724,7 +7633,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tutCustomerMail1Body =>
-      'Someone you do not know asks for a quotation for your cart. A real mailbox would deliver the message by itself; here the button below plays the customer and hands a ready-made e-mail (from Maya Okafor, example.test) to the helpdesk, exactly as the mail importer does.';
+      'Someone you do not know asks for a quotation for your conveyor. A real mailbox would deliver the message by itself; here the button below plays the customer and hands a ready-made e-mail (from Maya Okafor, example.test) to the helpdesk, exactly as the mail importer does.';
 
   @override
   String get tutCustomerMail1Action => 'Simulate customer e-mail';
@@ -7801,7 +7710,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tutQuotationSummary =>
-      'Hat: salesperson. Quote 8 carts to the new customer, get an answer from production on timing and send it.';
+      'Hat: salesperson. Quote 8 conveyors to the new customer, get an answer from production on timing and send it.';
 
   @override
   String get tutQuotationNeedsTitle => 'Chapter 7 first';
@@ -7822,11 +7731,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tutQuotationCreateBody =>
-      'Press New quotation, choose Brightwheel Logistics BV, add TUT-CART with quantity 8 and save the draft. The unit price comes from the customer\'s price zone, TUT-EXPORT, so it is the 1450 you entered in chapter 6.';
+      'Press New quotation, choose Brightwheel Logistics BV, add CONV-BELT-1M with quantity 8 and save the draft. The unit price comes from the customer\'s price zone, TUT-EXPORT, so it is the 1450 you entered in chapter 6.';
 
   @override
   String get tutQuotationCreateHint =>
-      'Use the product search in the lines section; type TUT-CART. If the customer is not preselected, search for Brightwheel.';
+      'Use the product search in the lines section; type CONV-BELT-1M. If the customer is not preselected, search for Brightwheel.';
 
   @override
   String get tutQuotationLeadTitle => 'How long will it take?';
@@ -7869,7 +7778,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tutChangeSummary =>
-      'Hats: sales and production. Revise the quotation, turn it into an order, build the carts and a few extra for stock.';
+      'Hats: sales and production. Revise the quotation, turn it into an order, build the conveyors and a few extra for stock.';
 
   @override
   String get tutChangeNeedsTitle => 'Chapter 8 first';
@@ -7883,7 +7792,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tutChangeMail3Body =>
-      'Maya is happy with the quotation but wants 10 carts instead of 8. Use the button to play her e-mail; it joins the same ticket.';
+      'Maya is happy with the quotation but wants 10 conveyors instead of 8. Use the button to play her e-mail; it joins the same ticket.';
 
   @override
   String get tutChangeMail3Action => 'Simulate customer e-mail';
@@ -7911,7 +7820,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tutChangeEditBody =>
-      'Set the quantity of TUT-CART to 10 and save the draft.';
+      'Set the quantity of CONV-BELT-1M to 10 and save the draft.';
 
   @override
   String get tutChangeEditHint =>
@@ -7946,7 +7855,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tutChangeOpenOrderBody =>
-      'If the order did not open by itself, open it from Orders. It has the 10 carts, the price and the customer reference. Orders go from draft to sent to confirmed.';
+      'If the order did not open by itself, open it from Orders. It has the 10 conveyors, the price and the customer reference. Orders go from draft to sent to confirmed.';
 
   @override
   String get tutChangeSendOrderTitle => 'Send the order confirmation';
@@ -7971,7 +7880,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tutChangeReleaseBody =>
-      'Put on the production hat. Open Production > To release: the confirmed order line with 10 carts is waiting. Press Release to production to create the production order for exactly that line.';
+      'Put on the production hat. Open Production > To release: the confirmed order line with 10 conveyors is waiting. Press Release to production to create the production order for exactly that line.';
 
   @override
   String get tutChangeStartTitle => 'Start production';
@@ -7980,11 +7889,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tutChangeStartBody => 'Press Start on the new production order.';
 
   @override
-  String get tutChangeWarehouseTitle => 'A place for the carts';
+  String get tutChangeWarehouseTitle => 'A place for the conveyors';
 
   @override
   String get tutChangeWarehouseBody =>
-      'The finished carts need a location to go into, and there is no warehouse yet (chapter 3 creates it). Open Stock, press Warehouses and create the warehouse MAIN with the name Main warehouse, then go back to the production order. If saving is refused because the code MAIN is taken, an inactive warehouse holds it: switch it (and its location) back on in Stock > Warehouses, or give it another code with its edit button, then press Next.';
+      'The finished conveyors need a location to go into, and there is no warehouse yet (chapter 3 creates it). Open Stock, press Warehouses and create the warehouse MAIN with the name Main warehouse, then go back to the production order. If saving is refused because the code MAIN is taken, an inactive warehouse holds it: switch it (and its location) back on in Stock > Warehouses, or give it another code with its edit button, then press Next.';
 
   @override
   String get tutChangeWarehouseHint =>
@@ -7995,7 +7904,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tutChangeCompleteBody =>
-      'Press Complete, choose the warehouse location MAIN in Put into and confirm the 10 carts. The components are consumed and the carts go to the order.';
+      'Press Complete, choose the warehouse location MAIN in Put into and confirm the 10 conveyors. The components are consumed and the conveyors go to the order.';
 
   @override
   String get tutChangeReadyTitle => 'Ready for shipping';
@@ -8009,7 +7918,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tutChangeStockBody =>
-      'Production is often ahead of orders. Open Production, press Build for stock and release 4 more carts of TUT-CART. Without an order they simply land in stock when completed.';
+      'Production is often ahead of orders. Open Production, press Build for stock and release 4 more conveyors of CONV-BELT-1M. Without an order they simply land in stock when completed.';
 
   @override
   String get tutChangeStockHint =>
@@ -8041,7 +7950,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tutHelpdeskNoteBody =>
-      'Open the ticket, switch to Internal note and write what a colleague needs to know, for example that the customer wants a quotation for 8 carts. Press Add note. The customer never sees a note.';
+      'Open the ticket, switch to Internal note and write what a colleague needs to know, for example that the customer wants a quotation for 8 conveyors. Press Add note. The customer never sees a note.';
 
   @override
   String get tutHelpdeskNoteHint =>
@@ -11138,14 +11047,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tutAttributesNeedsBody =>
-      'This chapter records technical properties on TUT-CTRL (Controller). Create TUT-CTRL in chapter 1 or use Assist to create it now.';
+      'This chapter records technical properties on PLC-BASE (Standard PLC). Create PLC-BASE in Chapter 2 (PLCs, parallel licensing & network) or use Assist to create it now.';
 
   @override
   String get tutAttributesIntroTitle => 'Why generic product properties';
 
   @override
   String get tutAttributesIntroBody =>
-      'Every company has properties specific to its own product lines—such as relay counts, FET counts, digital inputs, or 24V polarized 2-wire output—that are irrelevant to other companies. Instead of hard-coding columns, an administrator defines them once under Admin → Attributes, and they immediately appear on every product.';
+      'Every company has properties specific to its own product lines—such as relay counts, FET counts, digital inputs, or 4-20 mA analog inputs, RS-485 ports, I2C bus, or licensed outputs—that are irrelevant to other companies. Instead of hard-coding columns, an administrator defines them once under Admin → Attributes, and they immediately appear on every product.';
 
   @override
   String get tutAttributesOpenAdminTitle => 'Open Admin → Attributes';
@@ -11181,19 +11090,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Click New attribute and create a Number property with key digital_inputs, label Digital inputs, type Number, and scope Product.';
 
   @override
-  String get tutAttributesPolarized24vTitle =>
-      'Define 24V polarized 2-wire output';
-
-  @override
-  String get tutAttributesPolarized24vBody =>
-      'Click New attribute and create a Yes/No property with key supports_24v_polarized_2wire, label 24V polarized 2-wire output, type Yes/No, and scope Product.';
-
-  @override
   String get tutAttributesOpenControllerTitle => 'Open the Controller product';
 
   @override
   String get tutAttributesOpenControllerBody =>
-      'Open Products and select TUT-CTRL (Controller).';
+      'Open Products and select PLC-BASE (Controller).';
 
   @override
   String get tutAttributesSuitabilityTabTitle => 'Open the Suitability tab';
@@ -11208,7 +11109,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tutAttributesFillPropertiesBody =>
-      'Fill in the fields for keys relay_count = 4, fet_count = 2, digital_inputs = 8, and supports_24v_polarized_2wire = Yes (if a displayed label differs, use the existing field with that key), then click Save.';
+      'Fill in the fields for keys relay_count = 4, fet_count = 2, digital_inputs = 8, and analog_4_20ma_inputs = 2, rs485_ports = 2, i2c_bus = Yes, licensed_outputs_tier = 10 (if a displayed label differs, use the existing field with that key), then click Save.';
 
   @override
   String get tutAttributesFillPropertiesHint =>
@@ -11219,7 +11120,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tutAttributesDoneBody =>
-      'TUT-CTRL now stores typed, validated properties specific to your product line. Configurator formulas can read them with product(code).attr(\'relay_count\') and CRM match rules can check them without changing the database schema.';
+      'PLC-BASE now stores typed, validated properties specific to your product line. Configurator formulas can read them with product(code).attr(\'relay_count\') and CRM match rules can check them without changing the database schema.';
 
   @override
   String get cbAddLine => 'Add line';
@@ -11480,4 +11381,311 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get shortcutCustom => 'Custom';
+
+  @override
+  String get tutConveyorsTitle => 'Conveyor belts & motors';
+
+  @override
+  String get tutConveyorsSummary =>
+      'Create single-phase and three-phase motors, a VFD, and a conveyor belt assembly with an SVG diagram and BOM.';
+
+  @override
+  String get tutConveyorsOpenTitle => 'Products';
+
+  @override
+  String get tutConveyorsOpenBody =>
+      'Open the Products section to build the conveyor belt and motor line.';
+
+  @override
+  String get tutConveyorsMotor1pTitle => 'Single-phase AC motor';
+
+  @override
+  String get tutConveyorsMotor1pBody =>
+      'Create code MOT-1P-037, name Single-Phase AC Motor, type Purchased (for fixed-speed belts via PLC relay outputs).';
+
+  @override
+  String get tutConveyorsMotorTitle => 'Three-phase AC motor';
+
+  @override
+  String get tutConveyorsMotorBody =>
+      'Create code MOT-3P-055, name 3-Phase AC Motor, type Purchased (for variable-speed main conveyors).';
+
+  @override
+  String get tutConveyorsMotorHint =>
+      'Product codes do not need a prefix; keep them clean and descriptive.';
+
+  @override
+  String get tutConveyorsVfdTitle => 'Variable frequency drive';
+
+  @override
+  String get tutConveyorsVfdBody =>
+      'Create code VFD-3P-055, name Variable Frequency Drive, type Purchased to control the 3-phase motor.';
+
+  @override
+  String get tutConveyorsConveyorTitle => 'Conveyor belt assembly';
+
+  @override
+  String get tutConveyorsConveyorBody =>
+      'Create code CONV-BELT-1M, name Conveyor Belt Assembly, type Manufactured.';
+
+  @override
+  String get tutConveyorsOpenConveyorTitle => 'Open the conveyor assembly';
+
+  @override
+  String get tutConveyorsOpenConveyorBody =>
+      'Open CONV-BELT-1M to inspect its SVG assembly diagram and bill of materials.';
+
+  @override
+  String get tutConveyorsSvgPreviewTitle =>
+      'SVG assembly preview (with or without motor)';
+
+  @override
+  String get tutConveyorsSvgPreviewBody =>
+      'Use the toggles below to preview the conveyor belt SVG with or without a motor (1-phase or 3-phase + VFD). You can also upload image/svg+xml drawings on the Media tab.';
+
+  @override
+  String get tutConveyorsBomTabTitle => 'Bill of materials';
+
+  @override
+  String get tutConveyorsBomTabBody =>
+      'Open the Bill of materials tab on CONV-BELT-1M, then press Next.';
+
+  @override
+  String get tutConveyorsRevisionTitle => 'Create a BOM revision';
+
+  @override
+  String get tutConveyorsRevisionBody =>
+      'Press New revision to start a draft BOM.';
+
+  @override
+  String get tutConveyorsLinesTitle => 'Add motor and VFD';
+
+  @override
+  String get tutConveyorsLinesBody =>
+      'Add MOT-3P-055 and VFD-3P-055 to the draft BOM, then save.';
+
+  @override
+  String get tutConveyorsLinesHint =>
+      'Search for MOT-3P-055 and VFD-3P-055 in the component picker.';
+
+  @override
+  String get tutConveyorsActivateTitle => 'Activate the BOM';
+
+  @override
+  String get tutConveyorsActivateBody =>
+      'Press Activate so production and configurators can use this conveyor assembly.';
+
+  @override
+  String get tutConveyorsDoneTitle => 'Conveyor assembly ready';
+
+  @override
+  String get tutConveyorsDoneBody =>
+      'You created the conveyor belt, 1-phase/3-phase motors, VFD, SVG assembly preview, and active BOM.';
+
+  @override
+  String get tutPlcTitle => 'PLCs, parallel licensing & network';
+
+  @override
+  String get tutPlcSummary =>
+      'Model standard PLCs (10 outputs), parallel output licenses (30/50/100), RS-485 expansion, and a master controller.';
+
+  @override
+  String get tutPlcOpenTitle => 'Open Products';
+
+  @override
+  String get tutPlcOpenBody =>
+      'Open Products to add the PLC family and its parallel licensing SKUs.';
+
+  @override
+  String get tutPlcBaseTitle => 'Standard PLC (10 outputs)';
+
+  @override
+  String get tutPlcBaseBody =>
+      'Create code PLC-BASE, name Standard PLC (10 Outputs), type Purchased.';
+
+  @override
+  String get tutPlcBaseHint =>
+      'A standard PLC ships with 10 usable outputs; parallel licenses unlock 30, 50, or 100 outputs.';
+
+  @override
+  String get tutPlcLic30Title => '30-output parallel license';
+
+  @override
+  String get tutPlcLic30Body =>
+      'Create code PLC-LIC-30, name PLC 30-Output Parallel License, type Service.';
+
+  @override
+  String get tutPlcLic50Title => '50-output parallel license';
+
+  @override
+  String get tutPlcLic50Body =>
+      'Create code PLC-LIC-50, name PLC 50-Output Parallel License, type Service.';
+
+  @override
+  String get tutPlcLic100Title => '100-output parallel license';
+
+  @override
+  String get tutPlcLic100Body =>
+      'Create code PLC-LIC-100, name PLC 100-Output Parallel License, type Service.';
+
+  @override
+  String get tutPlcExpansionTitle => 'RS-485 I/O expansion module';
+
+  @override
+  String get tutPlcExpansionBody =>
+      'Create code PLC-EXP-RS485, name RS-485 I/O Expansion Module, type Purchased.';
+
+  @override
+  String get tutPlcMasterTitle => 'Master network controller';
+
+  @override
+  String get tutPlcMasterBody =>
+      'Create code PLC-MASTER, name Master Network Controller, type Purchased to govern networked PLCs.';
+
+  @override
+  String get tutPlcDoneTitle => 'PLC & licensing catalog ready';
+
+  @override
+  String get tutPlcDoneBody =>
+      'The PLC-CONVEYOR-LINE configurator validates required outputs against the 10/30/50/100 license tier and adds RS-485 expansion and Master Controller automatically.';
+
+  @override
+  String get tutDisplaysTitle => 'RS-485 displays & I2C peripherals';
+
+  @override
+  String get tutDisplaysSummary =>
+      'Add operator displays on the RS-485 bus with I2C swipe card and temperature measurement modules.';
+
+  @override
+  String get tutDisplaysOpenTitle => 'Open Products';
+
+  @override
+  String get tutDisplaysOpenBody =>
+      'Open Products to add the RS-485 display and its I2C bus peripherals.';
+
+  @override
+  String get tutDisplaysDisplayTitle => 'RS-485 operator display';
+
+  @override
+  String get tutDisplaysDisplayBody =>
+      'Create code DISP-RS485, name RS-485 Operator Display, type Purchased.';
+
+  @override
+  String get tutDisplaysDisplayHint =>
+      'DISP-RS485 connects to the PLC over RS-485 and exposes an I2C bus for local peripherals.';
+
+  @override
+  String get tutDisplaysSwipeTitle => 'I2C swipe card reader';
+
+  @override
+  String get tutDisplaysSwipeBody =>
+      'Create code MOD-I2C-SWIPE, name I2C Swipe Card Reader, type Purchased.';
+
+  @override
+  String get tutDisplaysTempTitle => 'I2C temperature sensor';
+
+  @override
+  String get tutDisplaysTempBody =>
+      'Create code SENS-I2C-TEMP, name I2C Temperature Sensor, type Purchased.';
+
+  @override
+  String get tutDisplaysDoneTitle => 'Displays & I2C bus ready';
+
+  @override
+  String get tutDisplaysDoneBody =>
+      'Operators can authenticate via swipe card and monitor cabinet temperature over the display I2C bus.';
+
+  @override
+  String get tutSensorsTitle => 'Sensors & PowerFET devices';
+
+  @override
+  String get tutSensorsSummary =>
+      'Add IR digital inputs, 4-20 mA analog sensors, and PowerFET-operated solenoid actuators.';
+
+  @override
+  String get tutSensorsOpenTitle => 'Open Products';
+
+  @override
+  String get tutSensorsOpenBody =>
+      'Open Products to add the line sensors and PowerFET solenoid devices.';
+
+  @override
+  String get tutSensorsIrTitle => 'IR photoelectric sensor';
+
+  @override
+  String get tutSensorsIrBody =>
+      'Create code SENS-IR-24V, name IR Photoelectric Sensor, type Purchased (digital input).';
+
+  @override
+  String get tutSensorsIrHint =>
+      'Detects products passing on the conveyor belt and feeds a PLC digital input.';
+
+  @override
+  String get tutSensorsAnalogTitle => '4-20 mA analog sensor';
+
+  @override
+  String get tutSensorsAnalogBody =>
+      'Create code SENS-420MA, name 4-20 mA Analog Sensor, type Purchased.';
+
+  @override
+  String get tutSensorsPusherTitle => 'PowerFET solenoid pusher';
+
+  @override
+  String get tutSensorsPusherBody =>
+      'Create code SOL-PUSH, name PowerFET Solenoid Pusher, type Purchased.';
+
+  @override
+  String get tutSensorsLabelerTitle => 'PowerFET label stamper';
+
+  @override
+  String get tutSensorsLabelerBody =>
+      'Create code SOL-LABEL, name PowerFET Label Stamper, type Purchased.';
+
+  @override
+  String get tutSensorsDoneTitle => 'Sensors & actuators ready';
+
+  @override
+  String get tutSensorsDoneBody =>
+      'Your automation catalog now covers conveyors, motors, PLCs, buses, sensors, and PowerFET mechanical devices.';
+
+  @override
+  String get tutAttributesAnalog420Title => 'Define 4-20 mA analog inputs';
+
+  @override
+  String get tutAttributesAnalog420Body =>
+      'Create a Number property with key analog_4_20ma_inputs, label 4-20 mA analog inputs, scope Product.';
+
+  @override
+  String get tutAttributesRs485PortsTitle => 'Define RS-485 ports';
+
+  @override
+  String get tutAttributesRs485PortsBody =>
+      'Create a Number property with key rs485_ports, label RS-485 ports, scope Product.';
+
+  @override
+  String get tutAttributesI2cBusTitle => 'Define I2C peripheral bus';
+
+  @override
+  String get tutAttributesI2cBusBody =>
+      'Create a Yes/No property with key i2c_bus, label I2C peripheral bus, scope Product.';
+
+  @override
+  String get tutAttributesLicensedOutputsTitle =>
+      'Define licensed outputs tier';
+
+  @override
+  String get tutAttributesLicensedOutputsBody =>
+      'Create a Number property with key licensed_outputs_tier, label Licensed outputs tier, scope Product.';
+
+  @override
+  String get tutConveyorsSvgWithMotor => 'With motor';
+
+  @override
+  String get tutConveyorsSvgThreePhase => '3-Phase + VFD';
+
+  @override
+  String get tutConveyorsSvgOnePhase => '1-Phase';
+
+  @override
+  String get tutConveyorsSvgWithoutMotor => 'without motor';
 }

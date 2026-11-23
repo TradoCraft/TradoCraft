@@ -144,7 +144,7 @@ final customerMission = Mission(
       }),
       probe: Probe(
         '/api/v1/tickets',
-        query: {'q': 'TUT-CART', 'limit': 50},
+        query: {'q': 'CONV-BELT-1M', 'limit': 50},
         done: (json, _) => _first(json, _isTutorialTicket) != null,
         capture: (json, _) {
           final t = _first(json, _isTutorialTicket);

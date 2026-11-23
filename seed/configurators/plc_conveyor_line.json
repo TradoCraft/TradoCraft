@@ -1,0 +1,124 @@
+{
+  "format": "tradocraft.configurator",
+  "format_version": 1,
+  "model": {
+    "code": "PLC-CONVEYOR-LINE",
+    "name": "Automated conveyor & PLC line",
+    "description": "Conveyor belts with 1-phase/3-phase motors, VFDs, PLCs with parallel output licensing (10/30/50/100), RS-485 expansion & displays, I2C peripherals, sensors, and PowerFET solenoids.",
+    "translations": {
+      "nl": { "label": "Geautomatiseerde transportband & PLC-lijn" },
+      "fr": { "label": "Ligne de convoyage & automate PLC" },
+      "de": { "label": "Automatisierte Förder- & SPS-Linie" },
+      "es": { "label": "Línea transportadora y PLC automatizada" }
+    }
+  },
+  "definition": {
+    "schema_version": 1,
+    "name": "Automated conveyor & PLC line",
+    "description": "Configure conveyor segments, motor drives, PowerFET solenoids, sensors, RS-485 displays with I2C peripherals, and PLC parallel output licensing.",
+    "sections": [
+      { "name": "supply", "label": "Supply & Motors" },
+      { "name": "plc", "label": "PLC & Licensing" },
+      { "name": "bus", "label": "RS-485 & I2C Bus" }
+    ],
+    "project": {
+      "fields": [
+        { "name": "phases", "type": "choice", "label": "Supply phases", "required": true, "default": 3,
+          "options": [ { "value": 1, "label": "Single phase (1P)" }, { "value": 3, "label": "Three phase (3P)" } ],
+          "layout": { "section": "supply", "order": 1 } },
+        { "name": "plc_licensed_outputs", "type": "choice", "label": "PLC licensed outputs", "required": true, "default": 10,
+          "help": "Standard PLC ships with 10 usable outputs. Parallel license upgrades unlock 30, 50, or 100 outputs.",
+          "options": [
+            { "value": 10, "label": "10 outputs (Standard)" },
+            { "value": 30, "label": "30 outputs (License upgrade)" },
+            { "value": 50, "label": "50 outputs (License upgrade)" },
+            { "value": 100, "label": "100 outputs (License upgrade)" }
+          ],
+          "layout": { "section": "plc", "order": 1 } },
+        { "name": "networked_master", "type": "boolean", "label": "Master network controller", "default": false,
+          "help": "Connects line PLCs to a supervisory master controller over the plant network.",
+          "layout": { "section": "plc", "order": 2 } },
+        { "name": "rs485_displays", "type": "integer", "label": "RS-485 operator displays", "min": 0, "max": 16, "default": 1,
+          "help": "Operator displays connected over the RS-485 bus.",
+          "layout": { "section": "bus", "order": 1 } },
+        { "name": "i2c_swipe_card", "type": "boolean", "label": "I2C swipe card reader", "default": true,
+          "visible_if": "rs485_displays > 0",
+          "layout": { "section": "bus", "order": 2 } },
+        { "name": "i2c_temp_sensor", "type": "boolean", "label": "I2C temperature measurement", "default": true,
+          "visible_if": "rs485_displays > 0",
+          "layout": { "section": "bus", "order": 3 } }
+      ],
+      "computed": [
+        { "name": "total_length", "label": "Total conveyor length", "unit": "m", "expr": "sum(segments, s => s.length_m)" },
+        { "name": "outputs_required", "label": "PLC outputs required",
+          "expr": "sum(segments, s => 1 + (s.reject_pusher ? 1 : 0) + (s.label_stamper ? 1 : 0))" }
+      ]
+    },
+    "item_tables": [
+      {
+        "name": "segments",
+        "label": "Conveyor segment",
+        "item_label": "Segment {index}",
+        "min_rows": 1,
+        "max_rows": 60,
+        "fields": [
+          { "name": "length_m", "type": "number", "label": "Length", "dimension": "length", "unit": "m",
+            "min": 0.5, "max": 50, "default": 2, "required": true },
+          { "name": "ir_sensor", "type": "boolean", "label": "IR photoelectric sensor (DI)", "default": true },
+          { "name": "analog_4_20ma", "type": "boolean", "label": "4-20 mA analog sensor", "default": false },
+          { "name": "reject_pusher", "type": "boolean", "label": "PowerFET solenoid pusher", "default": false },
+          { "name": "label_stamper", "type": "boolean", "label": "PowerFET label stamper", "default": false }
+        ],
+        "computed": []
+      }
+    ],
+    "tables": [],
+    "outputs": [
+      { "id": "conveyor", "label": "Conveyor belt", "scope": "item", "code": "'CONV-BELT-1M'",
+        "quantity": "ceil(length_m)", "merge_identical": true },
+      { "id": "motor_3p", "label": "3-Phase AC motor", "scope": "item", "when": "phases == 3",
+        "code": "'MOT-3P-055'", "merge_identical": true },
+      { "id": "vfd_3p", "label": "Variable frequency drive", "scope": "item", "when": "phases == 3",
+        "code": "'VFD-3P-055'", "merge_identical": true },
+      { "id": "motor_1p", "label": "Single-phase AC motor", "scope": "item", "when": "phases == 1",
+        "code": "'MOT-1P-037'", "merge_identical": true },
+      { "id": "ir_sensor", "label": "IR sensor", "scope": "item", "when": "ir_sensor",
+        "code": "'SENS-IR-24V'", "merge_identical": true },
+      { "id": "analog_sensor", "label": "4-20 mA sensor", "scope": "item", "when": "analog_4_20ma",
+        "code": "'SENS-420MA'", "merge_identical": true },
+      { "id": "sol_push", "label": "PowerFET solenoid pusher", "scope": "item", "when": "reject_pusher",
+        "code": "'SOL-PUSH'", "merge_identical": true },
+      { "id": "sol_label", "label": "PowerFET label stamper", "scope": "item", "when": "label_stamper",
+        "code": "'SOL-LABEL'", "merge_identical": true },
+      { "id": "plc_base", "label": "Standard PLC (10 outputs)", "scope": "project",
+        "code": "'PLC-BASE'", "quantity": "1",
+        "comment": "{outputs_required} outputs required ({plc_licensed_outputs} licensed)" },
+      { "id": "plc_lic_30", "label": "PLC 30-output license", "scope": "project",
+        "when": "plc_licensed_outputs == 30", "code": "'PLC-LIC-30'", "quantity": "1" },
+      { "id": "plc_lic_50", "label": "PLC 50-output license", "scope": "project",
+        "when": "plc_licensed_outputs == 50", "code": "'PLC-LIC-50'", "quantity": "1" },
+      { "id": "plc_lic_100", "label": "PLC 100-output license", "scope": "project",
+        "when": "plc_licensed_outputs == 100", "code": "'PLC-LIC-100'", "quantity": "1" },
+      { "id": "plc_expansion", "label": "RS-485 expansion module", "scope": "project",
+        "when": "outputs_required > 10", "code": "'PLC-EXP-RS485'",
+        "quantity": "ceil((outputs_required - 10) / 16)",
+        "comment": "RS-485 I/O expansion for {outputs_required} outputs" },
+      { "id": "plc_master", "label": "Master network controller", "scope": "project",
+        "when": "networked_master", "code": "'PLC-MASTER'", "quantity": "1" },
+      { "id": "rs485_display", "label": "RS-485 operator display", "scope": "project",
+        "when": "rs485_displays > 0", "code": "'DISP-RS485'", "quantity": "rs485_displays" },
+      { "id": "i2c_swipe", "label": "I2C swipe card reader", "scope": "project",
+        "when": "rs485_displays > 0 and i2c_swipe_card", "code": "'MOD-I2C-SWIPE'", "quantity": "rs485_displays" },
+      { "id": "i2c_temp", "label": "I2C temperature sensor", "scope": "project",
+        "when": "rs485_displays > 0 and i2c_temp_sensor", "code": "'SENS-I2C-TEMP'", "quantity": "rs485_displays" }
+    ],
+    "validations": [
+      { "id": "plc_license_insufficient", "scope": "project", "severity": "error", "field": "plc_licensed_outputs",
+        "when": "outputs_required > plc_licensed_outputs",
+        "message": "line requires {outputs_required} outputs, but the PLC license only allows {plc_licensed_outputs}; upgrade to 30, 50 or 100 outputs" },
+      { "id": "rs485_expansion_needed", "scope": "project", "severity": "info", "field": "plc_licensed_outputs",
+        "when": "outputs_required > 10 and outputs_required <= plc_licensed_outputs",
+        "message": "{outputs_required} outputs exceed the 10 onboard channels; RS-485 expansion modules are included" }
+    ]
+  }
+}

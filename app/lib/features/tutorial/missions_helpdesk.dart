@@ -20,7 +20,7 @@ final helpdeskMission = Mission(
       id: 'needs',
       probe: Probe(
         '/api/v1/tickets',
-        query: {'q': 'TUT-CART', 'limit': 50},
+        query: {'q': 'CONV-BELT-1M', 'limit': 50},
         done: (json, _) => _tutorialTicket(json) != null,
         capture: (json, _) {
           final t = _tutorialTicket(json);

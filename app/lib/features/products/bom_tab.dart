@@ -356,7 +356,7 @@ class _BomTabState extends ConsumerState<BomTab> {
   @override
   Widget build(BuildContext context) {
     ref.listen(tutorialAssistCompletedProvider, (_, completed) {
-      if (completed?.missionId != 'product' ||
+      if (completed?.missionId != 'conveyors' ||
           !const {
             'revision',
             'lines',

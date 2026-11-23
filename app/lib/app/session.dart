@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -34,7 +35,11 @@ class Session {
     'X-Company-Id': ?companyId,
   };
 
-  static const signedOut = Session(serverUrl: 'http://localhost:8080');
+  static final signedOut = Session(
+    serverUrl: kIsWeb && const bool.fromEnvironment('TRADOCRAFT_SAME_ORIGIN')
+        ? Uri.base.origin
+        : 'http://localhost:8080',
+  );
 }
 
 class SessionStore {

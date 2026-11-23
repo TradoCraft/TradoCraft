@@ -1,7 +1,7 @@
 import 'model.dart';
 
-/// Chapter 11: defining company-specific product properties (attribute definitions) and filling
-/// them on a product (`TUT-CTRL`).
+/// Chapter 14: defining company-specific product properties (attribute definitions) and filling
+/// them on the standard PLC (`PLC-BASE`).
 
 Map? _productByCode(Object? page, String code) {
   final items = page is Map ? page['items'] : null;
@@ -96,9 +96,12 @@ MissionStep _defineAttribute({
 
 const _expectedControllerAttrs = <String, ({String kind, String value})>{
   'relay_count': (kind: 'number', value: '4'),
-  'fet_count': (kind: 'number', value: '2'),
+  'fet_count': (kind: 'number', value: '6'),
   'digital_inputs': (kind: 'number', value: '8'),
-  'supports_24v_polarized_2wire': (kind: 'boolean', value: 'true'),
+  'analog_4_20ma_inputs': (kind: 'number', value: '2'),
+  'rs485_ports': (kind: 'number', value: '2'),
+  'i2c_bus': (kind: 'boolean', value: 'true'),
+  'licensed_outputs_tier': (kind: 'number', value: '10'),
 };
 
 bool _controllerAttrsSet(Object? json, MissionContext _) {
@@ -129,7 +132,7 @@ bool _controllerAttrsSet(Object? json, MissionContext _) {
 Future<void> _fillControllerAttrs(ActionHost host) async {
   final controllerId = host.context.values['controllerId'];
   if (controllerId == null) {
-    throw StateError('Create or locate TUT-CTRL first.');
+    throw StateError('Create or locate PLC-BASE first.');
   }
   final existingRes = await host.dio.get<Object?>(
     '/api/v1/products/$controllerId/attributes',
@@ -161,7 +164,7 @@ Future<void> _fillControllerAttrs(ActionHost host) async {
   );
 }
 
-/// Chapter 11: defining company-specific product properties without hard-coding them.
+/// Chapter 14: defining company-specific PLC properties without hard-coding them.
 final attributesMission = Mission(
   id: 'attributes',
   steps: [
@@ -174,33 +177,33 @@ final attributesMission = Mission(
       ],
       probe: Probe(
         '/api/v1/products',
-        query: const {'q': 'TUT-CTRL', 'limit': 20},
+        query: const {'q': 'PLC-BASE', 'limit': 20},
         done: (json, _) {
-          final p = _productByCode(json, 'TUT-CTRL');
+          final p = _productByCode(json, 'PLC-BASE');
           return p != null && p['id'] is String && p['active'] != false;
         },
         capture: (json, _) {
-          final p = _productByCode(json, 'TUT-CTRL');
+          final p = _productByCode(json, 'PLC-BASE');
           return p == null ? const {} : {'controllerId': '${p['id']}'};
         },
       ),
       assist: (host) async {
         final res = await host.dio.get<Object?>(
           '/api/v1/products',
-          queryParameters: const {'q': 'TUT-CTRL', 'limit': 20},
+          queryParameters: const {'q': 'PLC-BASE', 'limit': 20},
         );
-        final existing = _productByCode(res.data, 'TUT-CTRL');
+        final existing = _productByCode(res.data, 'PLC-BASE');
         if (existing != null) {
           if (existing['active'] == false) {
-            throw StateError('Edit TUT-CTRL so Active is on.');
+            throw StateError('Edit PLC-BASE so Active is on.');
           }
           return;
         }
         await host.dio.post<Object?>(
           '/api/v1/products',
           data: const {
-            'code': 'TUT-CTRL',
-            'name': 'Controller',
+            'code': 'PLC-BASE',
+            'name': 'Standard PLC (10 Outputs)',
             'product_type': 'purchased',
           },
         );
@@ -215,7 +218,7 @@ final attributesMission = Mission(
     _defineAttribute(
       id: 'relays',
       key: 'relay_count',
-      label: 'Relays',
+      label: 'Relay outputs',
       kind: 'number',
       sortOrder: 10,
       hasHint: true,
@@ -223,7 +226,7 @@ final attributesMission = Mission(
     _defineAttribute(
       id: 'fets',
       key: 'fet_count',
-      label: 'FETs',
+      label: 'PowerFET outputs',
       kind: 'number',
       sortOrder: 20,
     ),
@@ -235,11 +238,32 @@ final attributesMission = Mission(
       sortOrder: 30,
     ),
     _defineAttribute(
-      id: 'polarized24v',
-      key: 'supports_24v_polarized_2wire',
-      label: '24V polarized 2-wire output',
-      kind: 'boolean',
+      id: 'analog420',
+      key: 'analog_4_20ma_inputs',
+      label: '4-20 mA analog inputs',
+      kind: 'number',
       sortOrder: 40,
+    ),
+    _defineAttribute(
+      id: 'rs485Ports',
+      key: 'rs485_ports',
+      label: 'RS-485 ports',
+      kind: 'number',
+      sortOrder: 50,
+    ),
+    _defineAttribute(
+      id: 'i2cBus',
+      key: 'i2c_bus',
+      label: 'I2C peripheral bus',
+      kind: 'boolean',
+      sortOrder: 60,
+    ),
+    _defineAttribute(
+      id: 'licensedOutputs',
+      key: 'licensed_outputs_tier',
+      label: 'Licensed outputs tier',
+      kind: 'number',
+      sortOrder: 70,
     ),
     const MissionStep(
       id: 'openController',

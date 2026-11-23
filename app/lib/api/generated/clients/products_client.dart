@@ -342,6 +342,8 @@ abstract class ProductsClient {
 
   /// [q] - Searches code and name, ignoring case and accents.
   ///
+  /// [code] - Exact product code match.
+  ///
   /// [productType] - Only these product types: one value or a comma-separated list (at most 20). Values:.
   /// purchased, manufactured, configurable, service. They combine with OR.
   ///
@@ -352,6 +354,7 @@ abstract class ProductsClient {
   @GET('/api/v1/products')
   Future<ProductPage> listProducts({
     @Query('q') String? q,
+    @Query('code') String? code,
     @Query('active') bool? active,
     @Query('family_id') String? familyId,
     @Query('product_type') String? productType,

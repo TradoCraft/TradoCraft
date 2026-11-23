@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../l10n/l10n.dart';
 import 'controller.dart';
+import 'conveyor_svg.dart';
 import 'guidance.dart';
 import 'model.dart';
 import 'strings.dart';
@@ -557,6 +558,12 @@ class NarratorCard extends ConsumerWidget {
                               const SizedBox(height: 6),
                             ],
                             Text(body, style: theme.textTheme.bodyMedium),
+                            if (m.id == 'conveyors' &&
+                                (step.id == 'svgPreview' ||
+                                    step.id == 'bomTab')) ...[
+                              const SizedBox(height: 8),
+                              const ConveyorAssemblySvg(),
+                            ],
                             if (m.id == 'welcome' && step.id == 'controls')
                               Text(
                                 l.tutShortcutHelp(

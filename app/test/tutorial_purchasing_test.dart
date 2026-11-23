@@ -75,10 +75,10 @@ FakeHttp _withProducts(Map<String, Object? Function(Object?)> routes) =>
     FakeHttp({
       'GET /api/v1/products': (_) => {
         'items': [
-          _product('m1', 'TUT-MOTOR', 'purchased'),
-          _product('f1', 'TUT-FRAME', 'purchased'),
-          _product('c1', 'TUT-CTRL', 'purchased'),
-          _product('k1', 'TUT-CART', 'manufactured'),
+          _product('m1', 'MOT-3P-055', 'purchased'),
+          _product('f1', 'VFD-3P-055', 'purchased'),
+          _product('c1', 'PLC-BASE', 'purchased'),
+          _product('k1', 'CONV-BELT-1M', 'manufactured'),
         ],
       },
       ...routes,
@@ -170,7 +170,7 @@ void main() {
       });
       final c = _boot(
         http,
-        completed: ['welcome', 'product'],
+        completed: ['welcome', 'conveyors', 'plc', 'displays', 'sensors'],
         active: 'suppliers',
         step: 2,
       );
@@ -193,10 +193,10 @@ void main() {
 
     test('a product prerequisite needs a usable record of the right type', () {
       final products = [
-        _product('m1', 'TUT-MOTOR', 'purchased'),
-        _product('f1', 'TUT-FRAME', 'purchased'),
-        _product('c1', 'TUT-CTRL', 'purchased'),
-        _product('k1', 'TUT-CART', 'manufactured'),
+        _product('m1', 'MOT-3P-055', 'purchased'),
+        _product('f1', 'VFD-3P-055', 'purchased'),
+        _product('c1', 'PLC-BASE', 'purchased'),
+        _product('k1', 'CONV-BELT-1M', 'manufactured'),
       ];
       final context = MissionContext();
       expect(productsProbe.done({'items': products}, context), isTrue);
@@ -226,7 +226,7 @@ void main() {
         'POST /api/v1/suppliers/s-TUT-SUP-B/products/m1': (_) => {'id': 'x'},
         'POST /api/v1/suppliers/s-TUT-SUP-B/products/f1': (_) => {'id': 'x'},
       });
-      final c = _boot(http, completed: ['welcome', 'product'], active: 'suppliers');
+      final c = _boot(http, completed: ['welcome', 'conveyors', 'plc', 'displays', 'sensors'], active: 'suppliers');
       final t = c.read(tutorialProvider.notifier);
       await t.ready;
       await t.resume();
@@ -284,7 +284,7 @@ void main() {
       });
       final c = _boot(
         http,
-        completed: ['welcome', 'product'],
+        completed: ['welcome', 'conveyors', 'plc', 'displays', 'sensors'],
         active: 'suppliers',
       );
       final t = c.read(tutorialProvider.notifier);
@@ -325,7 +325,7 @@ void main() {
       });
       final c = _boot(
         http,
-        completed: ['welcome', 'product', 'suppliers'],
+        completed: ['welcome', 'conveyors', 'plc', 'displays', 'sensors', 'suppliers'],
         active: 'buying',
         values: {'supplierAId': 'sa'},
       );
@@ -384,7 +384,7 @@ void main() {
       });
       final c = _boot(
         http,
-        completed: ['welcome', 'product', 'suppliers'],
+        completed: ['welcome', 'conveyors', 'plc', 'displays', 'sensors', 'suppliers'],
         active: 'buying',
         values: {'supplierAId': 'sa'},
       );
@@ -410,7 +410,7 @@ void main() {
       });
       final c = _boot(
         http,
-        completed: ['welcome', 'product', 'suppliers'],
+        completed: ['welcome', 'conveyors', 'plc', 'displays', 'sensors', 'suppliers'],
         active: 'buying',
       ); // no supplierAId captured
       final t = c.read(tutorialProvider.notifier);
@@ -563,7 +563,7 @@ void main() {
       });
       final c = _boot(
         http,
-        completed: ['welcome', 'product', 'suppliers'],
+        completed: ['welcome', 'conveyors', 'plc', 'displays', 'sensors', 'suppliers'],
         active: 'buying',
         values: {'supplierAId': 'sa'},
       );
@@ -590,7 +590,7 @@ void main() {
 
       ProviderContainer atTheStep(FakeHttp http) => _boot(
         http,
-        completed: ['welcome', 'product', 'suppliers'],
+        completed: ['welcome', 'conveyors', 'plc', 'displays', 'sensors', 'suppliers'],
         active: 'buying',
         values: {'supplierAId': 'sa', 'poId': 'po1'},
         step: openWarehouses,
@@ -920,7 +920,7 @@ void main() {
       });
       final c = _boot(
         http,
-        completed: ['welcome', 'product', 'suppliers', 'buying'],
+        completed: ['welcome', 'conveyors', 'plc', 'displays', 'sensors', 'suppliers', 'buying'],
         active: 'invoices',
         values: {'supplierAId': 'sa', 'poId': 'po1'},
       );
@@ -986,7 +986,7 @@ void main() {
       });
       final c = _boot(
         http,
-        completed: ['welcome', 'product', 'suppliers', 'buying'],
+        completed: ['welcome', 'conveyors', 'plc', 'displays', 'sensors', 'suppliers', 'buying'],
         active: 'invoices',
         values: {'supplierAId': 'sa', 'poId': 'po1'},
       );

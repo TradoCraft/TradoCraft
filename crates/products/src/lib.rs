@@ -327,6 +327,8 @@ pub struct ProductPage {
 pub struct ListParams {
     /// Searches code and name, ignoring case and accents.
     pub q: Option<String>,
+    /// Exact product code match.
+    pub code: Option<String>,
     pub active: Option<bool>,
     pub family_id: Option<Uuid>,
     /// Only these product types: one value or a comma-separated list (at most 20). Values:
@@ -608,7 +610,8 @@ async fn list_products(
         "WHERE ($1::text IS NULL OR {} OR {})
                   AND ($2::boolean IS NULL OR active = $2)
                   AND ($5::uuid IS NULL OR family_id = $5)
-                  AND ($6::text[] IS NULL OR product_type = ANY($6))",
+                  AND ($6::text[] IS NULL OR product_type = ANY($6))
+                  AND ($7::text IS NULL OR code = $7)",
         tradocraft_core::search::matches("code", "$1"),
         tradocraft_core::search::matches("name", "$1"),
     );
@@ -622,6 +625,7 @@ async fn list_products(
     .bind(p.offset.unwrap_or(0).max(0))
     .bind(p.family_id)
     .bind(&types)
+    .bind(&p.code)
     .fetch_all(&state.db)
     .await?;
     resolve_products_for_company(
@@ -633,12 +637,16 @@ async fn list_products(
     .await?;
     let total = sqlx::query_scalar(sqlx::AssertSqlSafe(format!(
         "SELECT count(*) FROM products.products {}",
-        filter.replace("$5", "$3").replace("$6", "$4")
+        filter
+            .replace("$5", "$3")
+            .replace("$6", "$4")
+            .replace("$7", "$5")
     )))
     .bind(&pattern)
     .bind(p.active)
     .bind(p.family_id)
     .bind(&types)
+    .bind(&p.code)
     .fetch_one(&state.db)
     .await?;
     let items = items

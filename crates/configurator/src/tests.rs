@@ -638,3 +638,85 @@ fn group_overrides_and_sections() {
     );
     let _ = BTreeMap::<String, String>::new();
 }
+
+#[test]
+fn plc_conveyor_line_licensing_and_buses() {
+    let raw: J = serde_json::from_str(include_str!(
+        "../../../seed/configurators/plc_conveyor_line.json"
+    ))
+    .unwrap();
+    let d: Definition = serde_json::from_value(raw["definition"].clone()).unwrap();
+    assert!(validate(&d).is_empty(), "{:?}", validate(&d));
+    let c = compile(&d).unwrap();
+
+    // 4 segments x (1 motor + 1 pusher + 1 stamper) = 12 outputs > default 10 license -> error.
+    let seg = json!({
+        "length_m": 2,
+        "ir_sensor": true,
+        "analog_4_20ma": true,
+        "reject_pusher": true,
+        "label_stamper": true
+    });
+    let over = evaluate(
+        &c,
+        &inputs(json!({
+            "project": { "phases": 3, "plc_licensed_outputs": 10 },
+            "items": { "segments": [seg.clone(), seg.clone(), seg.clone(), seg.clone()] }
+        })),
+        &Catalog::default(),
+    );
+    assert!(over.has_errors());
+    assert!(over
+        .issues
+        .iter()
+        .any(|i| i.code == "plc_license_insufficient" && i.severity == Severity::Error));
+
+    // Upgrading license to 30 outputs clears error, emits PLC-LIC-30, PLC-EXP-RS485,
+    // PLC-MASTER, DISP-RS485, MOD-I2C-SWIPE, SENS-I2C-TEMP, MOT-3P-055, VFD-3P-055, and solenoids.
+    let upgraded = evaluate(
+        &c,
+        &inputs(json!({
+            "project": {
+                "phases": 3,
+                "plc_licensed_outputs": 30,
+                "networked_master": true,
+                "rs485_displays": 2,
+                "i2c_swipe_card": true,
+                "i2c_temp_sensor": true
+            },
+            "items": { "segments": [seg.clone(), seg.clone(), seg.clone(), seg] }
+        })),
+        &Catalog::default(),
+    );
+    assert!(!upgraded.has_errors(), "{:?}", upgraded.issues);
+    assert!(upgraded
+        .issues
+        .iter()
+        .any(|i| i.code == "rs485_expansion_needed" && i.severity == Severity::Info));
+    let codes: Vec<(&str, Decimal)> = upgraded
+        .lines
+        .iter()
+        .map(|l| (l.code.as_str(), l.quantity.normalize()))
+        .collect();
+    for expected in [
+        ("CONV-BELT-1M", dec!(8)),
+        ("MOT-3P-055", dec!(4)),
+        ("VFD-3P-055", dec!(4)),
+        ("SENS-IR-24V", dec!(4)),
+        ("SENS-420MA", dec!(4)),
+        ("SOL-PUSH", dec!(4)),
+        ("SOL-LABEL", dec!(4)),
+        ("PLC-BASE", dec!(1)),
+        ("PLC-LIC-30", dec!(1)),
+        ("PLC-EXP-RS485", dec!(1)),
+        ("PLC-MASTER", dec!(1)),
+        ("DISP-RS485", dec!(2)),
+        ("MOD-I2C-SWIPE", dec!(2)),
+        ("SENS-I2C-TEMP", dec!(2)),
+    ] {
+        assert!(
+            codes.contains(&expected),
+            "missing {expected:?} in {codes:?}"
+        );
+    }
+}

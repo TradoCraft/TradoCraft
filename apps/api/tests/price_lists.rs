@@ -828,7 +828,7 @@ async fn zones_export_profiles_render_and_plan(db: PgPool) {
     assert_eq!(plan.len(), 3 * 5);
     assert_eq!(
         plan[0]["relative_path"],
-        "Multi/Zone 2 – Installers/nl/Multi.xlsx"
+        "Multi/North America/nl/Multi.xlsx"
     );
     assert_eq!(plan[0]["export_id"], Value::Null);
     assert_eq!(plan[0]["zone_code"], "Z2");

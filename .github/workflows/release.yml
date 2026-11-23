@@ -1,0 +1,160 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g. v0.2.0)'
+        required: true
+        default: 'v0.2.0'
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  release-info:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.release.outputs.tag }}
+      version: ${{ steps.release.outputs.version }}
+      owner: ${{ steps.release.outputs.owner }}
+    steps:
+      - id: release
+        env:
+          RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "Expected a tag such as v0.2.0"; exit 1; }
+          echo "tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+          echo "version=${RELEASE_TAG#v}" >> "$GITHUB_OUTPUT"
+          echo "owner=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v7
+        with:
+          ref: refs/tags/${{ steps.release.outputs.tag }}
+
+  docker-backend:
+    needs: release-info
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: refs/tags/${{ needs.release-info.outputs.tag }}
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ needs.release-info.outputs.owner }}/tradocraft-backend:${{ needs.release-info.outputs.version }}
+            ghcr.io/${{ needs.release-info.outputs.owner }}/tradocraft-backend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  docker-web:
+    needs: release-info
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: refs/tags/${{ needs.release-info.outputs.tag }}
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/Dockerfile.web
+          push: true
+          tags: |
+            ghcr.io/${{ needs.release-info.outputs.owner }}/tradocraft-web:${{ needs.release-info.outputs.version }}
+            ghcr.io/${{ needs.release-info.outputs.owner }}/tradocraft-web:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  windows-app:
+    needs: release-info
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: refs/tags/${{ needs.release-info.outputs.tag }}
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.50.0
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter build windows --release --build-name=${{ needs.release-info.outputs.version }}
+      - name: Package Windows zip
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path ../dist | Out-Null
+          Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath ../dist/tradocraft-windows-x64.zip -Force
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tradocraft-windows-x64
+          path: dist/tradocraft-windows-x64.zip
+
+  release:
+    needs: [release-info, docker-backend, docker-web, windows-app]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: refs/tags/${{ needs.release-info.outputs.tag }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: tradocraft-windows-x64
+          path: dist
+      - name: Prepare docker-compose.yml
+        env:
+          IMAGE_OWNER: ${{ needs.release-info.outputs.owner }}
+          IMAGE_VERSION: ${{ needs.release-info.outputs.version }}
+        run: |
+          sed -e "s@ghcr.io/tradocraft/@ghcr.io/${IMAGE_OWNER}/@g" \
+              -e "s/:-0.2.0}/:-${IMAGE_VERSION}}/g" deploy/docker-compose.release.yml > dist/docker-compose.yml
+          docker compose -f dist/docker-compose.yml config -q
+      - name: Smoke-test the packaged release
+        run: |
+          docker compose -f dist/docker-compose.yml pull || {
+            echo "::error::Could not pull the release images anonymously. Check that both TradoCraft GHCR packages are public and available, then rerun this job."
+            exit 1
+          }
+          docker compose -f dist/docker-compose.yml up -d --wait --wait-timeout 180
+          curl --fail --silent --show-error --retry 10 --retry-all-errors http://localhost:8088/
+          curl --fail --silent --show-error --retry 10 --retry-all-errors http://localhost:8088/api/v1/meta/environment |
+            jq -e '.kind == "tutorial"'
+          curl --fail --silent --show-error -H 'X-Dev-User: admin@example.com' http://localhost:8088/api/v1/me > /dev/null
+          curl --fail --silent --show-error --retry 10 --retry-all-errors http://localhost:8090/health
+          docker compose -f dist/docker-compose.yml exec -T api typst --version
+          docker compose -f dist/docker-compose.yml exec -T api test -w /var/lib/tradocraft/files
+          docker compose -f dist/docker-compose.yml exec -T worker test -w /app/outbox
+      - name: Stop smoke-test containers
+        if: always()
+        run: |
+          if [ -f dist/docker-compose.yml ]; then
+            docker compose -f dist/docker-compose.yml down --volumes
+          fi
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ needs.release-info.outputs.tag }}
+        run: |
+          gh release create "$RELEASE_TAG" --verify-tag dist/tradocraft-windows-x64.zip dist/docker-compose.yml \
+            --title "TradoCraft $RELEASE_TAG" \
+            --notes "Run docker compose up -d. Open http://localhost:8088 for the Web UI, or extract the Windows x64 zip and connect to http://localhost:8080. Docker Desktop runs PostgreSQL and the prebuilt backend with Typst."

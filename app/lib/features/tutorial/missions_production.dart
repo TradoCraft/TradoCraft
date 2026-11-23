@@ -113,7 +113,7 @@ final manufacturingMission = Mission(
           json is Map ? {'productionId': '${json['id']}'} : const {},
       probe: Probe(
         '/api/v1/production-orders',
-        query: {'q': 'TUT-CART', 'limit': 20},
+        query: {'q': 'CONV-BELT-1M', 'limit': 20},
         done: (json, ctx) => _cartOrder(json, ctx) != null,
         capture: (json, ctx) {
           final o = _cartOrder(json, ctx);

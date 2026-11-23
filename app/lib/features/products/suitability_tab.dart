@@ -37,7 +37,10 @@ class SuitabilityTab extends ConsumerWidget {
           'relays',
           'fets',
           'digitalInputs',
-          'polarized24v',
+          'analog420',
+          'rs485Ports',
+          'i2cBus',
+          'licensedOutputs',
         }.contains(completed?.stepId)) {
           ref.invalidate(_definitionsProvider);
         }

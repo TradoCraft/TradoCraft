@@ -125,25 +125,25 @@ const _sign = '\n\nMaya Okafor\nBrightwheel Logistics';
 
 final _texts = <TutorialMailKind, Map<String, (String, String)>>{
   TutorialMailKind.request: {
-    'en': ('Request for quotation: TUT-CART', 'Hello,\n\nWe are looking for 8 carts (your model TUT-CART) for our warehouse. Could you send us a quotation with a delivery time?\n\nKind regards$_sign'),
-    'nl': ('Offerteaanvraag: TUT-CART', 'Goedendag,\n\nWij zoeken 8 karretjes (uw model TUT-CART) voor ons magazijn. Kunt u ons een offerte met leveringstermijn sturen?\n\nMet vriendelijke groet$_sign'),
-    'fr': ('Demande de devis : TUT-CART', 'Bonjour,\n\nNous cherchons 8 chariots (votre modèle TUT-CART) pour notre entrepôt. Pouvez-vous nous envoyer un devis avec un délai de livraison ?\n\nCordialement$_sign'),
-    'de': ('Angebotsanfrage: TUT-CART', 'Guten Tag,\n\nwir suchen 8 Karren (Ihr Modell TUT-CART) für unser Lager. Können Sie uns ein Angebot mit Lieferzeit schicken?\n\nMit freundlichen Grüßen$_sign'),
-    'es': ('Solicitud de presupuesto: TUT-CART', 'Hola,\n\nBuscamos 8 carritos (su modelo TUT-CART) para nuestro almacén. ¿Pueden enviarnos un presupuesto con plazo de entrega?\n\nUn saludo$_sign'),
+    'en': ('Request for quotation: CONV-BELT-1M', 'Hello,\n\nWe are looking for 8 conveyor belt assemblies (your model CONV-BELT-1M) for our warehouse. Could you send us a quotation with a delivery time?\n\nKind regards$_sign'),
+    'nl': ('Offerteaanvraag: CONV-BELT-1M', 'Goedendag,\n\nWij zoeken 8 transportbanden (uw model CONV-BELT-1M) voor ons magazijn. Kunt u ons een offerte met leveringstermijn sturen?\n\nMet vriendelijke groet$_sign'),
+    'fr': ('Demande de devis : CONV-BELT-1M', 'Bonjour,\n\nNous cherchons 8 convoyeurs (votre modèle CONV-BELT-1M) pour notre entrepôt. Pouvez-vous nous envoyer un devis avec un délai de livraison ?\n\nCordialement$_sign'),
+    'de': ('Angebotsanfrage: CONV-BELT-1M', 'Guten Tag,\n\nwir suchen 8 Förderbänder (Ihr Modell CONV-BELT-1M) für unser Lager. Können Sie uns ein Angebot mit Lieferzeit schicken?\n\nMit freundlichen Grüßen$_sign'),
+    'es': ('Solicitud de presupuesto: CONV-BELT-1M', 'Hola,\n\nBuscamos 8 cintas transportadoras (su modelo CONV-BELT-1M) para nuestro almacén. ¿Pueden enviarnos un presupuesto con plazo de entrega?\n\nUn saludo$_sign'),
   },
   TutorialMailKind.details: {
-    'en': ('Re: Request for quotation: TUT-CART', 'Hello,\n\nThank you. Our company details:\n\nBrightwheel Logistics BV\nVAT number: BE0123456749\nVoorbeeldlaan 12, 9000 Gent, Belgium\n\nKind regards$_sign'),
-    'nl': ('Re: Offerteaanvraag: TUT-CART', 'Goedendag,\n\nBedankt. Onze bedrijfsgegevens:\n\nBrightwheel Logistics BV\nBTW-nummer: BE0123456749\nVoorbeeldlaan 12, 9000 Gent, België\n\nMet vriendelijke groet$_sign'),
-    'fr': ('Re: Demande de devis : TUT-CART', 'Bonjour,\n\nMerci. Les coordonnées de notre société :\n\nBrightwheel Logistics BV\nNuméro de TVA : BE0123456749\nVoorbeeldlaan 12, 9000 Gand, Belgique\n\nCordialement$_sign'),
-    'de': ('Re: Angebotsanfrage: TUT-CART', 'Guten Tag,\n\nvielen Dank. Unsere Firmendaten:\n\nBrightwheel Logistics BV\nUSt-IdNr.: BE0123456749\nVoorbeeldlaan 12, 9000 Gent, Belgien\n\nMit freundlichen Grüßen$_sign'),
-    'es': ('Re: Solicitud de presupuesto: TUT-CART', 'Hola,\n\nGracias. Los datos de nuestra empresa:\n\nBrightwheel Logistics BV\nNIF-IVA: BE0123456749\nVoorbeeldlaan 12, 9000 Gante, Bélgica\n\nUn saludo$_sign'),
+    'en': ('Re: Request for quotation: CONV-BELT-1M', 'Hello,\n\nThank you. Our company details:\n\nBrightwheel Logistics BV\nVAT number: BE0123456749\nVoorbeeldlaan 12, 9000 Gent, Belgium\n\nKind regards$_sign'),
+    'nl': ('Re: Offerteaanvraag: CONV-BELT-1M', 'Goedendag,\n\nBedankt. Onze bedrijfsgegevens:\n\nBrightwheel Logistics BV\nBTW-nummer: BE0123456749\nVoorbeeldlaan 12, 9000 Gent, België\n\nMet vriendelijke groet$_sign'),
+    'fr': ('Re: Demande de devis : CONV-BELT-1M', 'Bonjour,\n\nMerci. Les coordonnées de notre société :\n\nBrightwheel Logistics BV\nNuméro de TVA : BE0123456749\nVoorbeeldlaan 12, 9000 Gand, Belgique\n\nCordialement$_sign'),
+    'de': ('Re: Angebotsanfrage: CONV-BELT-1M', 'Guten Tag,\n\nvielen Dank. Unsere Firmendaten:\n\nBrightwheel Logistics BV\nUSt-IdNr.: BE0123456749\nVoorbeeldlaan 12, 9000 Gent, Belgien\n\nMit freundlichen Grüßen$_sign'),
+    'es': ('Re: Solicitud de presupuesto: CONV-BELT-1M', 'Hola,\n\nGracias. Los datos de nuestra empresa:\n\nBrightwheel Logistics BV\nNIF-IVA: BE0123456749\nVoorbeeldlaan 12, 9000 Gante, Bélgica\n\nUn saludo$_sign'),
   },
   TutorialMailKind.change: {
-    'en': ('Re: Quotation for 8 carts', 'Hello,\n\nWe accept your quotation, but we need 10 carts instead of 8. Could you send an updated quotation?\n\nKind regards$_sign'),
-    'nl': ('Re: Offerte voor 8 karretjes', 'Goedendag,\n\nWij gaan akkoord met uw offerte, maar we hebben 10 karretjes nodig in plaats van 8. Kunt u een aangepaste offerte sturen?\n\nMet vriendelijke groet$_sign'),
-    'fr': ('Re: Devis pour 8 chariots', 'Bonjour,\n\nNous acceptons votre devis, mais il nous faut 10 chariots au lieu de 8. Pouvez-vous envoyer un devis mis à jour ?\n\nCordialement$_sign'),
-    'de': ('Re: Angebot für 8 Karren', 'Guten Tag,\n\nwir nehmen Ihr Angebot an, brauchen aber 10 Karren statt 8. Können Sie ein angepasstes Angebot schicken?\n\nMit freundlichen Grüßen$_sign'),
-    'es': ('Re: Presupuesto para 8 carritos', 'Hola,\n\nAceptamos su presupuesto, pero necesitamos 10 carritos en lugar de 8. ¿Pueden enviar un presupuesto actualizado?\n\nUn saludo$_sign'),
+    'en': ('Re: Quotation for 8 conveyor assemblies', 'Hello,\n\nWe accept your quotation, but we need 10 conveyor assemblies instead of 8. Could you send an updated quotation?\n\nKind regards$_sign'),
+    'nl': ('Re: Offerte voor 8 transportbanden', 'Goedendag,\n\nWij gaan akkoord met uw offerte, maar we hebben 10 transportbanden nodig in plaats van 8. Kunt u een aangepaste offerte sturen?\n\nMet vriendelijke groet$_sign'),
+    'fr': ('Re: Devis pour 8 convoyeurs', 'Bonjour,\n\nNous acceptons votre devis, mais il nous faut 10 convoyeurs au lieu de 8. Pouvez-vous envoyer un devis mis à jour ?\n\nCordialement$_sign'),
+    'de': ('Re: Angebot für 8 Förderbänder', 'Guten Tag,\n\nwir nehmen Ihr Angebot an, brauchen aber 10 Förderbänder statt 8. Können Sie ein angepasstes Angebot schicken?\n\nMit freundlichen Grüßen$_sign'),
+    'es': ('Re: Presupuesto para 8 cintas transportadoras', 'Hola,\n\nAceptamos su presupuesto, pero necesitamos 10 cintas transportadoras en lugar de 8. ¿Pueden enviar un presupuesto actualizado?\n\nUn saludo$_sign'),
   },
 };
 

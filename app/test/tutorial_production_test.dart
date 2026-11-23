@@ -64,10 +64,10 @@ FakeHttp _withProducts(Map<String, Object? Function(Object?)> routes) =>
     FakeHttp({
       'GET /api/v1/products': (_) => {
         'items': [
-          _product('m1', 'TUT-MOTOR', 'purchased'),
-          _product('f1', 'TUT-FRAME', 'purchased'),
-          _product('c1', 'TUT-CTRL', 'purchased'),
-          _product('k1', 'TUT-CART', 'manufactured'),
+          _product('m1', 'MOT-3P-055', 'purchased'),
+          _product('f1', 'VFD-3P-055', 'purchased'),
+          _product('c1', 'PLC-BASE', 'purchased'),
+          _product('k1', 'CONV-BELT-1M', 'manufactured'),
         ],
       },
       ...routes,
@@ -98,7 +98,7 @@ void main() {
       });
       final c = _boot(
         http,
-        completed: ['welcome', 'product', 'suppliers', 'buying', 'invoices'],
+        completed: ['welcome', 'conveyors', 'plc', 'displays', 'sensors', 'suppliers', 'buying', 'invoices'],
         active: 'manufacturing',
       );
       final t = c.read(tutorialProvider.notifier);
@@ -185,7 +185,7 @@ void main() {
       });
       final c = _boot(
         http,
-        completed: ['welcome', 'product', 'suppliers', 'buying', 'invoices'],
+        completed: ['welcome', 'conveyors', 'plc', 'displays', 'sensors', 'suppliers', 'buying', 'invoices'],
         active: 'manufacturing',
       );
       final t = c.read(tutorialProvider.notifier);
@@ -201,7 +201,7 @@ void main() {
       await pumpEventQueue(times: 200);
       expect(c.read(tutorialProvider).values['productionId'], 'po2');
       expect(
-        http.queries.any((q) => q['q'] == 'TUT-CART'),
+        http.queries.any((q) => q['q'] == 'CONV-BELT-1M'),
         isTrue,
         reason: 'the production probe asks for the cart',
       );
@@ -223,7 +223,7 @@ void main() {
       final c = _boot(
         http,
         completed: [
-          'welcome', 'product', 'suppliers', 'buying', 'invoices', 'manufacturing',
+          'welcome', 'conveyors', 'plc', 'displays', 'sensors', 'suppliers', 'buying', 'invoices', 'manufacturing',
         ],
         active: 'prices',
       );
@@ -277,7 +277,7 @@ void main() {
       final c = _boot(
         http,
         completed: [
-          'welcome', 'product', 'suppliers', 'buying', 'invoices', 'manufacturing',
+          'welcome', 'conveyors', 'plc', 'displays', 'sensors', 'suppliers', 'buying', 'invoices', 'manufacturing',
         ],
         active: 'prices',
       );

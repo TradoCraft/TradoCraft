@@ -176,11 +176,11 @@ void main() {
     final http = FakeHttp({
       'GET /api/v1/products': (_) => {'items': products},
       'POST /api/v1/products': (body) {
-        expect((body as Map)['code'], 'TUT-MOTOR');
+        expect((body as Map)['code'], 'MOT-1P-037');
         expect(body['product_type'], 'purchased');
         final motor = {
           'id': 'motor',
-          'code': 'TUT-MOTOR',
+          'code': 'MOT-1P-037',
           'name': 'Motor',
           'product_type': 'purchased',
           'active': true,
@@ -189,9 +189,9 @@ void main() {
         return motor;
       },
     });
-    final c = _boot(http, missions: [productMission]);
+    final c = _boot(http, missions: [conveyorsMission]);
     await tester.pumpWidget(_app(c, _router()));
-    final t = await _startIn(tester, c, 'product');
+    final t = await _startIn(tester, c, 'conveyors');
     const path = 'Switch application › Master data › Products';
     expect(find.text('Menu path · $path'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('tutorial-take-me')));
@@ -210,15 +210,15 @@ void main() {
     expect(http.requests, isNot(contains('POST /api/v1/products')));
     await tester.tap(find.text('Cancel'));
     await _settle(tester);
-    expect(t.step?.id, 'motor');
+    expect(t.step?.id, 'motor1p');
     await tester.tap(assist);
     await _settle(tester);
     await tester.tap(find.text('Run this step'));
     await _settle(tester);
 
-    expect(t.step?.id, 'frame');
-    expect(c.read(tutorialProvider).values['motorId'], 'motor');
-    expect(products.map((p) => p['code']), ['tut-motor', 'TUT-MOTOR']);
+    expect(t.step?.id, 'motor');
+    expect(c.read(tutorialProvider).values['motor1pId'], 'motor');
+    expect(products.map((p) => p['code']), ['tut-motor', 'MOT-1P-037']);
     final write = http.requests.indexOf('POST /api/v1/products');
     expect(write, greaterThanOrEqualTo(1));
     expect(http.requests[write + 1], 'GET /api/v1/products');
@@ -234,12 +234,12 @@ void main() {
       },
       'POST /api/v1/products': (_) => motor = {
         'id': 'motor',
-        'code': 'TUT-MOTOR',
+        'code': 'MOT-1P-037',
         'product_type': 'purchased',
         'active': true,
       },
     });
-    final c = _boot(http, missions: [productMission]);
+    final c = _boot(http, missions: [conveyorsMission]);
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: c,
@@ -251,7 +251,7 @@ void main() {
         ),
       ),
     );
-    final t = await _startIn(tester, c, 'product');
+    final t = await _startIn(tester, c, 'conveyors');
     t.routeChanged('/products');
     await _settle(tester);
 
@@ -261,8 +261,8 @@ void main() {
     await tester.tap(find.text('Run this step'));
     await _settle(tester);
 
-    expect(t.step?.id, 'frame');
-    expect(c.read(tutorialProvider).values['motorId'], 'motor');
+    expect(t.step?.id, 'motor');
+    expect(c.read(tutorialProvider).values['motor1pId'], 'motor');
   });
 
   test(
@@ -275,34 +275,34 @@ void main() {
         },
         'POST /api/v1/products': (_) => {
           'id': 'motor',
-          'code': 'TUT-MOTOR',
+          'code': 'MOT-1P-037',
           'product_type': 'purchased',
           'active': true,
         },
       });
-      final c = _boot(http, missions: [productMission]);
+      final c = _boot(http, missions: [conveyorsMission]);
       final t = c.read(tutorialProvider.notifier);
-      await t.start('product');
+      await t.start('conveyors');
       t.routeChanged('/products');
       t.skipStep();
-      expect(t.step?.id, 'motor');
+      expect(t.step?.id, 'motor1p');
 
       // A successful response alone does not establish that later steps can find the product.
       await t.runAction();
-      expect(t.step?.id, 'motor');
+      expect(t.step?.id, 'motor1p');
       expect(c.read(tutorialProvider).actionError, isNotNull);
       expect(c.read(tutorialProvider).values['motorId'], isNull);
 
       motor = {
         'id': 'motor',
-        'code': 'TUT-MOTOR',
+        'code': 'MOT-1P-037',
         'product_type': 'purchased',
         'active': true,
       };
       await t.runAction();
-      expect(t.step?.id, 'frame');
+      expect(t.step?.id, 'motor');
       expect(c.read(tutorialProvider).actionError, isNull);
-      expect(c.read(tutorialProvider).values['motorId'], 'motor');
+      expect(c.read(tutorialProvider).values['motor1pId'], 'motor');
       expect(
         http.requests.where((r) => r == 'POST /api/v1/products'),
         hasLength(1),
@@ -316,7 +316,7 @@ void main() {
     });
     final c = _boot(
       http,
-      missions: [productMission],
+      missions: [conveyorsMission],
       scope: const TutorialScope(
         envId: 'test-copy',
         kind: EnvironmentKind.test,
@@ -324,12 +324,12 @@ void main() {
       ),
     );
     final t = c.read(tutorialProvider.notifier);
-    await t.start('product');
+    await t.start('conveyors');
     t.routeChanged('/products');
-    expect(t.step?.id, 'motor');
+    expect(t.step?.id, 'motor1p');
     expect(t.canAssist, isFalse);
     await t.runAction();
-    expect(t.step?.id, 'motor');
+    expect(t.step?.id, 'motor1p');
     expect(
       http.requests.every((request) => request.startsWith('GET ')),
       isTrue,
@@ -354,14 +354,14 @@ void main() {
           }
           return motor = {
             'id': 'motor',
-            'code': 'TUT-MOTOR',
+            'code': 'MOT-1P-037',
             'product_type': 'purchased',
           };
         },
       });
-      final c = _boot(http, missions: [productMission]);
+      final c = _boot(http, missions: [conveyorsMission]);
       final t = c.read(tutorialProvider.notifier);
-      await t.start('product');
+      await t.start('conveyors');
       t.routeChanged('/products');
       final pending = t.runAction();
       await dispatched.future;
@@ -370,7 +370,7 @@ void main() {
         t.back();
         expect(t.step?.id, 'open');
         t.next();
-        expect(t.step?.id, 'motor');
+        expect(t.step?.id, 'motor1p');
         await t.runAction();
         expect(
           http.requests.where((request) => request == write),
@@ -384,12 +384,12 @@ void main() {
 
       expect(
         t.step?.id,
-        'motor',
+        'motor1p',
         reason: 'the original action lost step ownership',
       );
       expect(c.read(tutorialProvider).actionBusy, isFalse);
       await t.runAction();
-      expect(t.step?.id, 'frame');
+      expect(t.step?.id, 'motor');
       expect(http.requests.where((request) => request == write), hasLength(1));
     },
   );

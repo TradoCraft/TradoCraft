@@ -276,7 +276,7 @@ async fn strict_mode_refuses_unknown_codes(db: PgPool) {
     // A zone the customer is not priced in is refused in strict mode, a warning otherwise.
     let mut p = json!(p);
     p["lines"][0]["children"].as_array_mut().unwrap().pop();
-    p["price_zone_code"] = json!("Z5");
+    p["price_zone_code"] = json!("Z1");
     let (status, e) = import(&app, INTEGRATION, p.clone()).await;
     assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{e}");
     p["strict"] = json!(false);
