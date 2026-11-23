@@ -123,6 +123,7 @@ class _ProductFormState extends ConsumerState<ProductForm> {
   final List<String> _pendingDeletions = [];
   int _defaultMediaIndex = 0;
   String? _autoStagedCode;
+  ({String code, Object token})? _autoStageRequest;
   bool _manualMedia = false;
   Product? _created;
   Product? _copiedFrom;
@@ -176,28 +177,39 @@ class _ProductFormState extends ConsumerState<ProductForm> {
       return;
     }
     final code = _code.text.trim();
-    if (code == _autoStagedCode) return;
-    final assetPath = tutorialGlbAssetForCode(code);
-    if (assetPath == null) {
-      if (_autoStagedCode != null) {
-        _autoStagedCode = null;
-        if (mounted) setState(() => _media.clear());
-      }
-      return;
-    }
-    _autoStagedCode = code;
-    try {
-      final bd = await rootBundle.load(assetPath);
-      if (!mounted || _manualMedia || _code.text.trim() != code) return;
+    if (code == _autoStagedCode || code == _autoStageRequest?.code) return;
+    _autoStageRequest = null;
+    if (_autoStagedCode != null) {
       setState(() {
-        _media
-          ..clear()
-          ..add(
-            _StagedMedia(PickedPhoto(bd.buffer.asUint8List(), '$code.glb')),
-          );
+        _autoStagedCode = null;
+        _media.clear();
         _defaultMediaIndex = 0;
       });
-    } catch (_) {}
+    }
+    final assetPath = tutorialGlbAssetForCode(code);
+    if (assetPath == null) return;
+
+    final request = (code: code, token: Object());
+    _autoStageRequest = request;
+    try {
+      final bd = await rootBundle.load(assetPath);
+      if (!mounted ||
+          _manualMedia ||
+          _autoStageRequest != request ||
+          _code.text.trim() != code) {
+        return;
+      }
+      setState(() {
+        _media.add(
+          _StagedMedia(PickedPhoto(bd.buffer.asUint8List(), '$code.glb')),
+        );
+        _autoStagedCode = code;
+      });
+    } catch (_) {
+      // Tutorial models are optional. A later code notification can retry.
+    } finally {
+      if (_autoStageRequest == request) _autoStageRequest = null;
+    }
   }
 
   void _markDirty() {
@@ -369,6 +381,8 @@ class _ProductFormState extends ConsumerState<ProductForm> {
       weightG: weight,
       defaultProductionRemark: _defaultRemark.text.trim(),
     );
+    final media = List<_StagedMedia>.of(_media);
+    final defaultMediaIndex = _defaultMediaIndex;
     setState(() {
       _saving = true;
       _error = null;
@@ -396,7 +410,7 @@ class _ProductFormState extends ConsumerState<ProductForm> {
           ? await api.createProduct(body: body)
           : await api.updateProduct(id: targetId, body: body);
       if (p == null) _created = saved;
-      if (_pendingDeletions.isNotEmpty || _media.isNotEmpty) {
+      if (_pendingDeletions.isNotEmpty || media.isNotEmpty) {
         final base = '/api/v1/products/${saved.id}/media';
         while (_pendingDeletions.isNotEmpty) {
           final deadId = _pendingDeletions.first;
@@ -407,10 +421,10 @@ class _ProductFormState extends ConsumerState<ProductForm> {
           }
           _pendingDeletions.removeAt(0);
         }
-        if (_media.isNotEmpty) {
-          final chosenIndex = _defaultMediaIndex.clamp(0, _media.length - 1);
-          final chosen = _media[chosenIndex];
-          for (final item in _media) {
+        if (media.isNotEmpty) {
+          final chosenIndex = defaultMediaIndex.clamp(0, media.length - 1);
+          final chosen = media[chosenIndex];
+          for (final item in media) {
             if (item.uploadedId == null) {
               final res = await uploadPhoto(
                 dio,
