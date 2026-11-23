@@ -65,17 +65,17 @@ Map<String, String> _captureProducts(Object? response) {
 }
 
 List<String> _expandProducts(Object? _, MissionContext _) => const [
-  '/api/v1/products?q=MOT-3P-055&limit=20',
-  '/api/v1/products?q=VFD-3P-055&limit=20',
-  '/api/v1/products?q=PLC-BASE&limit=20',
-  '/api/v1/products?q=CONV-BELT-1M&limit=20',
+  '/api/v1/products?code=MOT-3P-055',
+  '/api/v1/products?code=VFD-3P-055',
+  '/api/v1/products?code=PLC-BASE',
+  '/api/v1/products?code=CONV-BELT-1M',
 ];
 
 /// A probe that finds the four core story products by exact code and captures their ids, so
 /// chapters can be started on their own regardless of catalog size.
 const productsProbe = Probe(
   '/api/v1/products',
-  query: {'q': 'MOT-3P-055', 'limit': 20},
+  query: {'code': 'MOT-3P-055'},
   expand: _expandProducts,
   done: _allProducts,
   capture: _productsCapture,
