@@ -13,18 +13,21 @@ class AppSwitcherButton extends StatelessWidget {
     required this.groups,
     required this.active,
     required this.onSelected,
+    this.showLabel = false,
   });
 
   final List<AppGroup> groups;
   final AppGroup? active;
+  final bool showLabel;
 
   /// Called with the chosen group; the shell goes to its first permitted destination.
   final ValueChanged<AppGroup> onSelected;
 
   @override
   Widget build(BuildContext context) {
-    final label = context.l10n.appSwitcherTooltip;
-    return IconButton(
+    final l = context.l10n;
+    final label = l.appSwitcherTooltip;
+    final button = IconButton(
       key: const ValueKey('app-switcher'),
       tooltip: label,
       icon: const Icon(AppIcons.apps),
@@ -35,6 +38,22 @@ class AppSwitcherButton extends StatelessWidget {
         );
         if (picked != null) onSelected(picked);
       },
+    );
+    if (!showLabel || active == null) return button;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        button,
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: Space.xs),
+          child: Text(
+            active!.label(l),
+            style: Theme.of(context).textTheme.labelSmall,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
     );
   }
 }

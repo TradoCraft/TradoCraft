@@ -61,6 +61,30 @@ class GlobalSearchButton extends StatelessWidget {
   }
 }
 
+/// A prominent top-bar search trigger showing the search label and keyboard shortcut.
+class GlobalSearchPill extends StatelessWidget {
+  const GlobalSearchPill({
+    super.key,
+    required this.destinations,
+    this.onGoTo,
+  });
+
+  final List<SearchDestination> destinations;
+  final void Function(String path)? onGoTo;
+
+  @override
+  Widget build(BuildContext context) {
+    final shortcut = ShortcutAction.palette.describe();
+    return OutlinedButton.icon(
+      key: const ValueKey('top-bar-search'),
+      icon: const Icon(AppIcons.search, size: 16),
+      label: Text('${context.l10n.search} ($shortcut)'),
+      onPressed: () =>
+          showGlobalSearch(context, destinations: destinations, onGoTo: onGoTo),
+    );
+  }
+}
+
 class _Row {
   const _Row.header(this.header, this.icon)
     : path = null,
