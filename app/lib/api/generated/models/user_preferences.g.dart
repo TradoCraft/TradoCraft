@@ -8,6 +8,7 @@ part of 'user_preferences.dart';
 
 UserPreferences _$UserPreferencesFromJson(Map<String, dynamic> json) =>
     UserPreferences(
+      autosaveMinutes: (json['autosave_minutes'] as num?)?.toInt(),
       shortcuts: (json['shortcuts'] as Map<String, dynamic>?)?.map(
         (k, e) =>
             MapEntry(k, ShortcutBinding.fromJson(e as Map<String, dynamic>)),
@@ -15,4 +16,7 @@ UserPreferences _$UserPreferencesFromJson(Map<String, dynamic> json) =>
     );
 
 Map<String, dynamic> _$UserPreferencesToJson(UserPreferences instance) =>
-    <String, dynamic>{'shortcuts': ?instance.shortcuts};
+    <String, dynamic>{
+      'autosave_minutes': ?instance.autosaveMinutes,
+      'shortcuts': ?instance.shortcuts,
+    };

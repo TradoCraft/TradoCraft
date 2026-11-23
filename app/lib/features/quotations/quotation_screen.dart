@@ -11,6 +11,8 @@ import '../../framework/components/chatter/chatter_panel.dart';
 import '../../framework/components/chatter/chatter_repository.dart';
 import '../../app/api.dart';
 import '../../app/shortcuts/actions.dart';
+import '../../app/shortcuts/preferences_dialog.dart'
+    show effectiveAutosaveMinutesProvider;
 import '../../app/shortcuts/registry.dart';
 import '../../app/workspace.dart' show TabScope;
 import '../../shared/grid_key_nav.dart';
@@ -238,6 +240,8 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
   /// Notes shown after a main product was changed (what was cleared, which options do not apply).
   final List<_SwapNotice> _notices = [];
   Timer? _debounce;
+  Timer? _autosaveTimer;
+  int? _autosaveMinutes;
   int _previewSeq = 0;
 
   /// Generation of the running [_load]: a load that is no longer current must not apply anything.
@@ -382,6 +386,7 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
     super.didUpdateWidget(old);
     if (widget.id == old.id || widget.id == _id) return;
     _debounce?.cancel();
+    _autosaveTimer?.cancel();
     _previewSeq++;
     _oppSeq++;
     _loadSeq++;
@@ -441,6 +446,7 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
       ..removeListener(_rebuild)
       ..dispose();
     _debounce?.cancel();
+    _autosaveTimer?.cancel();
     _scroll.dispose();
     _notes.dispose();
     _country.dispose();
@@ -604,6 +610,7 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
   void _onEdited() {
     _setDirty(true);
     _debounce?.cancel();
+    _autosaveTimer?.cancel();
     _debounce = Timer(const Duration(milliseconds: 350), _refreshPreview);
   }
 
@@ -836,8 +843,28 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
     }
   }
 
+  void _syncAutosaveTimer(int minutes) {
+    if (_autosaveMinutes == minutes) return;
+    _autosaveMinutes = minutes;
+    _autosaveTimer?.cancel();
+    _autosaveTimer = null;
+    if (minutes <= 0) return;
+    _autosaveTimer = Timer.periodic(
+      Duration(minutes: minutes),
+      (_) => _autosaveIfReady(),
+    );
+  }
+
+  void _autosaveIfReady() {
+    if (!mounted || _loading || _form.busy || !_form.dirty) return;
+    if (_q != null && _q!.status != QuotationStatus.draft) return;
+    if (_customer == null || _lines.isEmpty) return;
+    unawaited(_save());
+  }
+
   @override
   Widget build(BuildContext context) {
+    _syncAutosaveTimer(ref.watch(effectiveAutosaveMinutesProvider));
     final canWrite =
         ref.watch(meProvider).value?.permissions.contains('quotations.write') ??
         false;
@@ -1318,7 +1345,12 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
               warning: _notOffered(l)
                   ? context.l10n.optionNotOffered(l.parent!.product.code)
                   : null,
-              extra: _remarkFields(l),
+              remarkKey: l.product.id,
+              hasRemarks:
+                  l.customerRemark.text.trim().isNotEmpty ||
+                  l.productionRemark.text.trim().isNotEmpty,
+              onRemarks: _singleLineItems ? () => _openRemarksDialog(l) : null,
+              extra: _singleLineItems ? null : _remarkFields(l),
             ),
           // Added by logistics (no product); the server keeps it, so it is never sent back. Once the
           // preview is there its lines (which carry the same shipping line) decide, like its totals.
@@ -1795,15 +1827,19 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
 
   /// The two remark fields of an editable line, each with a button for the history of earlier
   /// remarks on this product.
-  Widget _remarkFields(_Line l) {
+  bool get _singleLineItems =>
+      ref.watch(meProvider).value?.company.quotationSingleLineItems ?? true;
+
+  Widget _remarkFields(_Line l, {bool padded = true}) {
     final l10n = context.l10n;
     Widget field(
       TextEditingController c,
       String kind,
       String label,
-      String help,
-    ) => Expanded(
-      child: Tooltip(
+      String help, {
+      bool expand = true,
+    }) {
+      final tf = Tooltip(
         message: help,
         waitDuration: const Duration(milliseconds: 600),
         child: TextField(
@@ -1826,8 +1862,32 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
             _setDirty(true);
           },
         ),
-      ),
-    );
+      );
+      return expand ? Expanded(child: tf) : tf;
+    }
+
+    if (!padded) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          field(
+            l.customerRemark,
+            'customer',
+            l10n.remarkCustomer,
+            l10n.remarkCustomerHelp,
+            expand: false,
+          ),
+          const SizedBox(height: 12),
+          field(
+            l.productionRemark,
+            'production',
+            l10n.remarkProduction,
+            l10n.remarkProductionHelp,
+            expand: false,
+          ),
+        ],
+      );
+    }
     return Padding(
       padding: EdgeInsets.only(left: 124 + 16.0 * l.level, top: 4, bottom: 4),
       child: SizedBox(
@@ -1853,6 +1913,45 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
       ),
     );
   }
+
+  Future<void> _openRemarksDialog(_Line l) => showDialog<void>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Text('${l.product.code} · ${context.l10n.remarks}'),
+      content: SizedBox(width: 480, child: _remarkFields(l, padded: false)),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx),
+          child: Text(context.l10n.close),
+        ),
+      ],
+    ),
+  );
+
+  Future<void> _openReadOnlyRemarksDialog(QuotationLine l) => showDialog<void>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Text('${l.productCode} · ${context.l10n.remarks}'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (l.customerRemark?.isNotEmpty ?? false) Text(l.customerRemark!),
+          if ((l.customerRemark?.isNotEmpty ?? false) &&
+              (l.productionRemark?.isNotEmpty ?? false))
+            const SizedBox(height: 8),
+          if (l.productionRemark?.isNotEmpty ?? false)
+            Text('${context.l10n.remarkProduction}: ${l.productionRemark}'),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx),
+          child: Text(context.l10n.close),
+        ),
+      ],
+    ),
+  );
 
   /// Opens the history panel for a remark field and fills the field with the chosen text.
   Future<void> _pickRemark(
@@ -1917,12 +2016,21 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
     return level;
   }
 
-  _TableRow _lineRow(QuotationLine l, String currency, {int level = 0}) =>
-      _TableRow(
-        level: level,
-        code: l.productCode,
-        description: l.description,
-        extra: _remarkText(l),
+  _TableRow _lineRow(QuotationLine l, String currency, {int level = 0}) {
+    final singleLine = _singleLineItems;
+    final hasRemarks =
+        (l.customerRemark?.isNotEmpty ?? false) ||
+        (l.productionRemark?.isNotEmpty ?? false);
+    return _TableRow(
+      level: level,
+      code: l.productCode,
+      description: l.description,
+      remarkKey: 'ro-${l.position}',
+      hasRemarks: hasRemarks,
+      onRemarks: singleLine && hasRemarks
+          ? () => _openReadOnlyRemarksDialog(l)
+          : null,
+      extra: singleLine ? null : _remarkText(l),
         quantity: Text('${number(l.quantity)} ${l.unit}'),
         listPrice: Text(money(l.listUnitPrice, currency: currency)),
         rebate: _rebateText(l),
@@ -1934,6 +2042,7 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
         netPrice: money(l.netUnitPrice, currency: currency),
         total: money(l.lineTotal, currency: currency),
       );
+  }
 
   /// Tells the salesperson that logistics still has to price the shipment (or has done so).
   List<Widget> _shippingBanner(Quotation q) {
@@ -2036,7 +2145,7 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
       110.0,
       110.0,
       120.0,
-      144.0,
+      196.0,
     ];
     Widget cell(int i, Widget child, {bool right = false}) => SizedBox(
       width: widths[i],
@@ -2130,12 +2239,26 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
                       cell(5, r.discount, right: true),
                       cell(6, Text(r.netPrice), right: true),
                       cell(7, Text(r.total), right: true),
-                      if (r.onRemove != null)
+                      if (r.onRemove != null || r.onRemarks != null)
                         SizedBox(
                           width: widths[8],
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
+                              if (r.onRemarks != null)
+                                IconButton(
+                                  key: ValueKey(
+                                    'line-remarks-${r.remarkKey ?? ''}',
+                                  ),
+                                  tooltip: context.l10n.remarks,
+                                  onPressed: r.onRemarks,
+                                  icon: Icon(
+                                    AppIcons.notes,
+                                    color: r.hasRemarks
+                                        ? theme.colorScheme.primary
+                                        : null,
+                                  ),
+                                ),
                               if (r.onChangeProduct != null)
                                 IconButton(
                                   tooltip: context.l10n.changeProduct,
@@ -2148,11 +2271,12 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
                                   onPressed: r.onAddSub,
                                   icon: const Icon(AppIcons.add),
                                 ),
-                              IconButton(
-                                tooltip: context.l10n.removeLine,
-                                onPressed: r.onRemove,
-                                icon: const Icon(AppIcons.close),
-                              ),
+                              if (r.onRemove != null)
+                                IconButton(
+                                  tooltip: context.l10n.removeLine,
+                                  onPressed: r.onRemove,
+                                  icon: const Icon(AppIcons.close),
+                                ),
                             ],
                           ),
                         ),
@@ -2287,6 +2411,9 @@ class _TableRow {
     this.onRemove,
     this.onAddSub,
     this.onChangeProduct,
+    this.onRemarks,
+    this.remarkKey,
+    this.hasRemarks = false,
     this.warning,
     this.detail,
     this.extra,
@@ -2317,6 +2444,11 @@ class _TableRow {
 
   /// Swaps the main product of this line (null: not offered, e.g. on sub-lines).
   final VoidCallback? onChangeProduct;
+
+  /// Opens the remarks dialog when items are shown on a single line.
+  final VoidCallback? onRemarks;
+  final String? remarkKey;
+  final bool hasRemarks;
 
   /// Marks a sub-line that its parent product does not offer.
   final String? warning;

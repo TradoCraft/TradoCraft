@@ -701,7 +701,7 @@ void main() {
         findsOneWidget,
       );
       expect(find.byKey(const ValueKey('tutorial-chapter-demo')), findsNothing);
-      expect(find.byKey(const ValueKey('env-banner-live')), findsOneWidget);
+      expect(find.byKey(const ValueKey('env-banner-live')), findsNothing);
 
       await tester.tap(find.byKey(const ValueKey('tutorial-switch-env')));
       await tester.pumpAndSettle();

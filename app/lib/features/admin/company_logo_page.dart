@@ -116,10 +116,42 @@ class _CompanyLogoPageState extends ConsumerState<CompanyLogoPage> {
     if (ok && mounted) _refresh();
   }
 
+  static const _autosaveOptions = [0, 1, 2, 5, 10, 15, 30];
+
+  Future<void> _saveCompanySettings({
+    required bool singleLine,
+    required int autosaveMinutes,
+  }) async {
+    final l = context.l10n;
+    setState(() => _busy = true);
+    var ok = false;
+    try {
+      ok = await runAction(
+        context,
+        () => ref
+            .read(dioProvider)
+            .put<Map<String, dynamic>>(
+              '/api/v1/admin/company/settings',
+              data: {
+                'quotation_single_line_items': singleLine,
+                'autosave_minutes': autosaveMinutes,
+              },
+            ),
+        success: l.quotationSettingsSaved,
+      );
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+    if (ok && mounted) ref.invalidate(meProvider);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
     final logo = ref.watch(companyLogoBytesProvider);
+    final company = ref.watch(meProvider).value?.company;
+    final singleLine = company?.quotationSingleLineItems ?? true;
+    final autosaveMinutes = company?.autosaveMinutes ?? 5;
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -194,6 +226,60 @@ class _CompanyLogoPageState extends ConsumerState<CompanyLogoPage> {
                 label: Text(l.logoRemove),
               ),
           ],
+        ),
+        const Divider(height: 32),
+        Text(
+          l.quotationLineLayoutTitle,
+          style: Theme.of(context).textTheme.headlineSmall,
+        ),
+        const SizedBox(height: 8),
+        SwitchListTile(
+          key: const ValueKey('quotation-single-line-switch'),
+          contentPadding: EdgeInsets.zero,
+          title: Text(l.quotationSingleLineLabel),
+          subtitle: Text(l.quotationSingleLineHelp),
+          value: singleLine,
+          onChanged: _busy
+              ? null
+              : (v) => _saveCompanySettings(
+                  singleLine: v,
+                  autosaveMinutes: autosaveMinutes,
+                ),
+        ),
+        const Divider(height: 32),
+        Text(
+          l.autosaveTitle,
+          style: Theme.of(context).textTheme.headlineSmall,
+        ),
+        const SizedBox(height: 4),
+        Text(l.autosaveAdminHelp),
+        const SizedBox(height: 12),
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 320),
+          child: DropdownButtonFormField<int>(
+            key: const ValueKey('admin-autosave-minutes'),
+            initialValue: _autosaveOptions.contains(autosaveMinutes)
+                ? autosaveMinutes
+                : 5,
+            decoration: InputDecoration(labelText: l.autosaveTitle),
+            items: [
+              for (final m in _autosaveOptions)
+                DropdownMenuItem(
+                  value: m,
+                  child: Text(m == 0 ? l.autosaveOff : l.autosaveMinutes(m)),
+                ),
+            ],
+            onChanged: _busy
+                ? null
+                : (v) {
+                    if (v != null) {
+                      _saveCompanySettings(
+                        singleLine: singleLine,
+                        autosaveMinutes: v,
+                      );
+                    }
+                  },
+          ),
         ),
       ],
     );

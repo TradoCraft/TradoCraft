@@ -20675,6 +20675,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'without motor'**
   String get tutConveyorsSvgWithoutMotor;
+
+  /// No description provided for @quotationLineLayoutTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Quotation item layout'**
+  String get quotationLineLayoutTitle;
+
+  /// No description provided for @quotationSingleLineLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Single line per item'**
+  String get quotationSingleLineLabel;
+
+  /// No description provided for @quotationSingleLineHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Show each item on one compact row with remarks in a dialog; turn off to show remark fields on a second line.'**
+  String get quotationSingleLineHelp;
+
+  /// No description provided for @quotationSettingsSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Company settings saved'**
+  String get quotationSettingsSaved;
+
+  /// No description provided for @remarks.
+  ///
+  /// In en, this message translates to:
+  /// **'Remarks'**
+  String get remarks;
+
+  /// No description provided for @autosaveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft autosave'**
+  String get autosaveTitle;
+
+  /// No description provided for @autosaveOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get autosaveOff;
+
+  /// No description provided for @autosaveMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} min'**
+  String autosaveMinutes(int minutes);
+
+  /// No description provided for @autosaveDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Company default ({minutes} min)'**
+  String autosaveDefault(int minutes);
+
+  /// No description provided for @autosaveDefaultOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Company default (Off)'**
+  String get autosaveDefaultOff;
+
+  /// No description provided for @autosaveUserHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Override how often open drafts autosave.'**
+  String get autosaveUserHelp;
+
+  /// No description provided for @autosaveAdminHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Default interval for autosaving open drafts (users can override this in their preferences).'**
+  String get autosaveAdminHelp;
 }
 
 class _AppLocalizationsDelegate
