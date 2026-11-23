@@ -549,7 +549,7 @@ class AppShell extends ConsumerWidget {
         destinations: [for (final i in shownIdx) destinations[i]],
         selectedIndex: shownSel,
         onSelected: goShown,
-        iconOf: _destIcon,
+        iconOf: (pos, d) => hinted(shownIdx[pos], _destIcon(d)),
       ),
     );
   }
@@ -568,7 +568,7 @@ class _NarrowNavigationBar extends StatelessWidget {
   final List<_Dest> destinations;
   final int selectedIndex;
   final ValueChanged<int> onSelected;
-  final Widget Function(_Dest) iconOf;
+  final Widget Function(int index, _Dest dest) iconOf;
 
   @override
   Widget build(BuildContext context) {
@@ -578,8 +578,11 @@ class _NarrowNavigationBar extends StatelessWidget {
         selectedIndex: selectedIndex,
         onDestinationSelected: onSelected,
         destinations: [
-          for (final d in destinations)
-            NavigationDestination(icon: iconOf(d), label: d.label(l)),
+          for (var i = 0; i < destinations.length; i++)
+            NavigationDestination(
+              icon: iconOf(i, destinations[i]),
+              label: destinations[i].label(l),
+            ),
         ],
       );
     }
@@ -602,7 +605,7 @@ class _NarrowNavigationBar extends StatelessWidget {
               children: [
                 for (var j = visibleCount; j < destinations.length; j++)
                   ListTile(
-                    leading: iconOf(destinations[j]),
+                    leading: iconOf(j, destinations[j]),
                     title: Text(destinations[j].label(l)),
                     selected: selectedIndex == j,
                     onTap: () => Navigator.of(ctx).pop(j),
@@ -614,8 +617,11 @@ class _NarrowNavigationBar extends StatelessWidget {
         if (picked != null) onSelected(picked);
       },
       destinations: [
-        for (final d in destinations.take(visibleCount))
-          NavigationDestination(icon: iconOf(d), label: d.label(l)),
+        for (var i = 0; i < visibleCount; i++)
+          NavigationDestination(
+            icon: iconOf(i, destinations[i]),
+            label: destinations[i].label(l),
+          ),
         NavigationDestination(
           key: const ValueKey('nav-more-button'),
           icon: const Icon(AppIcons.moreVert),
