@@ -19,14 +19,18 @@ class Company {
     required this.name,
     required this.postalCode,
     required this.street,
+    this.autosaveMinutes = 5,
     this.email,
     this.iban,
     this.phone,
+    this.quotationSingleLineItems = true,
     this.vatNumber,
   });
   
   factory Company.fromJson(Map<String, Object?> json) => _$CompanyFromJson(json);
   
+  @JsonKey(name: 'autosave_minutes')
+  final int autosaveMinutes;
   final String city;
   @JsonKey(name: 'country_code')
   final String countryCode;
@@ -48,6 +52,8 @@ class Company {
   final String? phone;
   @JsonKey(name: 'postal_code')
   final String postalCode;
+  @JsonKey(name: 'quotation_single_line_items')
+  final bool quotationSingleLineItems;
   final String street;
   @JsonKey(includeIfNull: false,name: 'vat_number')
   final String? vatNumber;

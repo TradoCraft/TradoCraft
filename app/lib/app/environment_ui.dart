@@ -17,7 +17,7 @@ String environmentKindLabel(AppLocalizations l, EnvironmentKind kind) =>
       EnvironmentKind.tutorial => l.envTutorial,
     };
 
-/// Background and text colour of a kind: red for live, amber for test, blue for tutorial.
+/// Background and text colour of a kind: blue for live, yellow for test, green for tutorial.
 /// Dark mode uses deeper shades so the strip does not glare; text contrast stays above 4.5:1.
 ({Color background, Color foreground}) environmentColors(
   EnvironmentKind kind,
@@ -26,29 +26,31 @@ String environmentKindLabel(AppLocalizations l, EnvironmentKind kind) =>
   final dark = brightness == Brightness.dark;
   return switch (kind) {
     EnvironmentKind.live => (
-      background: dark ? const Color(0xFF8C1D18) : const Color(0xFFB3261E),
+      background: dark ? const Color(0xFF0D47A1) : const Color(0xFF1565C0),
       foreground: Colors.white,
     ),
     EnvironmentKind.test => (
-      background: dark ? const Color(0xFFC79100) : const Color(0xFFFFB300),
+      background: dark ? const Color(0xFFC79100) : const Color(0xFFFBC02D),
       foreground: Colors.black,
     ),
     EnvironmentKind.tutorial => (
-      background: dark ? const Color(0xFF0D47A1) : const Color(0xFF1565C0),
+      background: dark ? const Color(0xFF1B5E20) : const Color(0xFF2E7D32),
       foreground: Colors.white,
     ),
   };
 }
 
-/// A slim strip across the top of the app that always says which environment is in use: the name
-/// and the kind written out (the colour is a second signal, not the only one). Tapping it opens
-/// the environment switcher.
+/// A slim strip across the top of non-live environments (test and tutorial) that always says
+/// which environment is in use: the name and the kind written out (the colour is a second signal,
+/// not the only one). Tapping it opens the environment switcher. Live environments render no
+/// ribbon to preserve screen real estate.
 class EnvironmentBanner extends ConsumerWidget {
   const EnvironmentBanner({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final env = ref.watch(activeEnvironmentProvider);
+    if (env.kind == EnvironmentKind.live) return const SizedBox.shrink();
     final l = context.l10n;
     final kind = environmentKindLabel(l, env.kind);
     final colors = environmentColors(env.kind, Theme.of(context).brightness);

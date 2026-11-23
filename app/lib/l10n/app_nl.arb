@@ -3895,5 +3895,17 @@
   "tutConveyorsSvgWithMotor": "Met motor",
   "tutConveyorsSvgThreePhase": "3-fase + VFD",
   "tutConveyorsSvgOnePhase": "1-fase",
-  "tutConveyorsSvgWithoutMotor": "zonder motor"
+  "tutConveyorsSvgWithoutMotor": "zonder motor",
+  "quotationLineLayoutTitle": "Regelindeling offertes",
+  "quotationSingleLineLabel": "Eén regel per artikel",
+  "quotationSingleLineHelp": "Toon elk artikel op één compacte regel met opmerkingen in een dialoog; schakel uit om opmerkingsvelden op een tweede regel te tonen.",
+  "quotationSettingsSaved": "Bedrijfsinstellingen opgeslagen",
+  "remarks": "Opmerkingen",
+  "autosaveTitle": "Concept automatisch opslaan",
+  "autosaveOff": "Uit",
+  "autosaveMinutes": "{minutes} min",
+  "autosaveDefault": "Bedrijfsstandaard ({minutes} min)",
+  "autosaveDefaultOff": "Bedrijfsstandaard (Uit)",
+  "autosaveUserHelp": "Overschrijf hoe vaak open concepten automatisch worden opgeslagen.",
+  "autosaveAdminHelp": "Standaardinterval voor het automatisch opslaan van open concepten (gebruikers kunnen dit overschrijven in hun voorkeuren)."
 }

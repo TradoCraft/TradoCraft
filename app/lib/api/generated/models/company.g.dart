@@ -7,6 +7,7 @@ part of 'company.dart';
 // **************************************************************************
 
 Company _$CompanyFromJson(Map<String, dynamic> json) => Company(
+  autosaveMinutes: (json['autosave_minutes'] as num?)?.toInt() ?? 5,
   city: json['city'] as String,
   countryCode: json['country_code'] as String,
   currency: json['currency'] as String,
@@ -19,10 +20,13 @@ Company _$CompanyFromJson(Map<String, dynamic> json) => Company(
   email: json['email'] as String?,
   iban: json['iban'] as String?,
   phone: json['phone'] as String?,
+  quotationSingleLineItems:
+      json['quotation_single_line_items'] as bool? ?? true,
   vatNumber: json['vat_number'] as String?,
 );
 
 Map<String, dynamic> _$CompanyToJson(Company instance) => <String, dynamic>{
+  'autosave_minutes': instance.autosaveMinutes,
   'city': instance.city,
   'country_code': instance.countryCode,
   'currency': instance.currency,
@@ -34,6 +38,7 @@ Map<String, dynamic> _$CompanyToJson(Company instance) => <String, dynamic>{
   'name': instance.name,
   'phone': ?instance.phone,
   'postal_code': instance.postalCode,
+  'quotation_single_line_items': instance.quotationSingleLineItems,
   'street': instance.street,
   'vat_number': ?instance.vatNumber,
 };

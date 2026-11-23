@@ -343,6 +343,14 @@ void main() {
             EnvironmentKind.test: 'TEST',
             EnvironmentKind.tutorial: 'TUTORIAL',
           }[kind]!;
+          if (kind == EnvironmentKind.live) {
+            expect(
+              find.byKey(ValueKey('env-banner-${kind.name}')),
+              findsNothing,
+            );
+            expect(find.text('$word · Acme'), findsNothing);
+            return;
+          }
           // The kind is written out, whatever the colour.
           expect(find.text('$word · Acme'), findsOneWidget);
           final material = tester.widget<Material>(
@@ -362,17 +370,20 @@ void main() {
       }
     }
 
-    test('colours: red live, amber test, blue tutorial', () {
+    test('colours: blue live, yellow test, green tutorial', () {
       Color bg(EnvironmentKind k) =>
           environmentColors(k, Brightness.light).background;
-      expect(HSLColor.fromColor(bg(EnvironmentKind.live)).hue, lessThan(10));
+      expect(
+        HSLColor.fromColor(bg(EnvironmentKind.live)).hue,
+        inInclusiveRange(200, 225),
+      );
       expect(
         HSLColor.fromColor(bg(EnvironmentKind.test)).hue,
-        inInclusiveRange(35, 50),
+        inInclusiveRange(40, 55),
       );
       expect(
         HSLColor.fromColor(bg(EnvironmentKind.tutorial)).hue,
-        inInclusiveRange(200, 225),
+        inInclusiveRange(115, 140),
       );
     });
 
@@ -428,15 +439,28 @@ void main() {
     }
   });
 
+  Widget switcherButton() => Scaffold(
+    body: Column(
+      children: [
+        const EnvironmentBanner(),
+        Builder(
+          builder: (ctx) => TextButton(
+            key: const ValueKey('open-env-switcher'),
+            onPressed: () => showEnvironmentSwitcher(ctx),
+            child: const Text('Switch'),
+          ),
+        ),
+      ],
+    ),
+  );
+
   group('switcher', () {
     testWidgets('adding takes the kind from the server and switches', (
       tester,
     ) async {
       final c = _container();
-      await tester.pumpWidget(
-        _app(c, const Scaffold(body: EnvironmentBanner())),
-      );
-      await tester.tap(find.byType(EnvironmentBanner));
+      await tester.pumpWidget(_app(c, switcherButton()));
+      await tester.tap(find.byKey(const ValueKey('open-env-switcher')));
       await tester.pumpAndSettle();
       expect(find.text('Acme test'), findsOneWidget);
 
@@ -498,7 +522,7 @@ void main() {
         routes: [
           GoRoute(
             path: '/',
-            builder: (_, _) => const Scaffold(body: EnvironmentBanner()),
+            builder: (_, _) => switcherButton(),
           ),
           GoRoute(
             path: '/setup',
@@ -519,7 +543,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.byType(EnvironmentBanner));
+      await tester.tap(find.byKey(const ValueKey('open-env-switcher')));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('env-add')));
       await tester.pumpAndSettle();
@@ -539,10 +563,8 @@ void main() {
 
     testWidgets('an unreachable server cannot be added', (tester) async {
       final c = _container();
-      await tester.pumpWidget(
-        _app(c, const Scaffold(body: EnvironmentBanner())),
-      );
-      await tester.tap(find.byType(EnvironmentBanner));
+      await tester.pumpWidget(_app(c, switcherButton()));
+      await tester.tap(find.byKey(const ValueKey('open-env-switcher')));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('env-add')));
       await tester.pumpAndSettle();
@@ -563,10 +585,8 @@ void main() {
 
     testWidgets('tapping another environment switches to it', (tester) async {
       final c = _container();
-      await tester.pumpWidget(
-        _app(c, const Scaffold(body: EnvironmentBanner())),
-      );
-      await tester.tap(find.byType(EnvironmentBanner));
+      await tester.pumpWidget(_app(c, switcherButton()));
+      await tester.tap(find.byKey(const ValueKey('open-env-switcher')));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('env-tile-env-2')));
       await tester.pumpAndSettle();
@@ -577,10 +597,8 @@ void main() {
 
     testWidgets('removing asks first and keeps the active one', (tester) async {
       final c = _container();
-      await tester.pumpWidget(
-        _app(c, const Scaffold(body: EnvironmentBanner())),
-      );
-      await tester.tap(find.byType(EnvironmentBanner));
+      await tester.pumpWidget(_app(c, switcherButton()));
+      await tester.tap(find.byKey(const ValueKey('open-env-switcher')));
       await tester.pumpAndSettle();
       // The active environment has no remove button.
       expect(find.byKey(const ValueKey('env-remove-env-1')), findsNothing);
@@ -597,7 +615,7 @@ void main() {
       final c = _container();
       await tester.pumpWidget(_app(c, const LoginPage()));
       await tester.pump();
-      expect(find.text('LIVE · Acme production'), findsOneWidget);
+      expect(find.text('LIVE · Acme production'), findsNothing);
       await tester.tap(find.byKey(const ValueKey('login-environments')));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('env-tile-env-2')));
@@ -618,10 +636,8 @@ void main() {
       final id = ws.open('/orders/o1');
       ws.open('/quotations/q1');
       if (dirty) ws.dirtyOf(id).value = true;
-      await tester.pumpWidget(
-        _app(c, const Scaffold(body: EnvironmentBanner())),
-      );
-      await tester.tap(find.byType(EnvironmentBanner));
+      await tester.pumpWidget(_app(c, switcherButton()));
+      await tester.tap(find.byKey(const ValueKey('open-env-switcher')));
       await tester.pumpAndSettle();
       return c;
     }
@@ -796,6 +812,7 @@ void main() {
     ) async {
       final handle = tester.ensureSemantics();
       final c = _container();
+      await c.read(environmentsProvider.notifier).switchTo('env-2');
       await tester.pumpWidget(
         _app(c, const Scaffold(body: EnvironmentBanner())),
       );
@@ -812,10 +829,8 @@ void main() {
     ) async {
       final gate = Completer<EnvironmentProbe>();
       final c = _container(probe: (url) => gate.future);
-      await tester.pumpWidget(
-        _app(c, const Scaffold(body: EnvironmentBanner())),
-      );
-      await tester.tap(find.byType(EnvironmentBanner));
+      await tester.pumpWidget(_app(c, switcherButton()));
+      await tester.tap(find.byKey(const ValueKey('open-env-switcher')));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('env-add')));
       await tester.pumpAndSettle();
@@ -878,6 +893,8 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.text('LIST'), findsNothing);
+      await c.read(environmentsProvider.notifier).switchTo('env-2');
+      await tester.pumpAndSettle();
       expect(find.byType(EnvironmentBanner), findsOneWidget);
       await tester.tap(find.byType(EnvironmentBanner));
       await tester.pumpAndSettle();

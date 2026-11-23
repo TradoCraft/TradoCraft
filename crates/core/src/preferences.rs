@@ -50,6 +50,9 @@ pub struct UserPreferences {
     /// Custom shortcut bindings keyed by `ShortcutAction.name`.
     #[serde(default)]
     pub shortcuts: BTreeMap<String, ShortcutBinding>,
+    /// Per-user override for draft autosave interval in minutes (`None` = use company default, `0` = off).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub autosave_minutes: Option<i32>,
 }
 
 /// Returns the authenticated user's preferences.
@@ -59,13 +62,20 @@ async fn get_preferences(
     State(state): State<AppState>,
     user: CurrentUser,
 ) -> AppResult<Json<UserPreferences>> {
-    let row: Option<SqlJson<BTreeMap<String, ShortcutBinding>>> =
-        sqlx::query_scalar("SELECT shortcuts FROM core.user_preferences WHERE user_id = $1")
-            .bind(user.user_id)
-            .fetch_optional(&state.db)
-            .await?;
+    let row: Option<(SqlJson<BTreeMap<String, ShortcutBinding>>, Option<i32>)> =
+        sqlx::query_as(
+            "SELECT shortcuts, autosave_minutes FROM core.user_preferences WHERE user_id = $1",
+        )
+        .bind(user.user_id)
+        .fetch_optional(&state.db)
+        .await?;
+    let (shortcuts, autosave_minutes) = match row {
+        Some((s, a)) => (s.0, a),
+        None => (BTreeMap::new(), None),
+    };
     Ok(Json(UserPreferences {
-        shortcuts: row.map(|r| r.0).unwrap_or_default(),
+        shortcuts,
+        autosave_minutes,
     }))
 }
 
@@ -77,6 +87,13 @@ async fn put_preferences(
     user: CurrentUser,
     Json(input): Json<UserPreferences>,
 ) -> AppResult<Json<UserPreferences>> {
+    if let Some(m) = input.autosave_minutes {
+        if !(0..=120).contains(&m) {
+            return Err(AppError::Validation(
+                "autosave_minutes must be between 0 and 120".into(),
+            ));
+        }
+    }
     let mut cleaned = BTreeMap::new();
     for (action, mut binding) in input.shortcuts {
         let action = action.trim().to_string();
@@ -90,16 +107,22 @@ async fn put_preferences(
     }
     let json = SqlJson(cleaned.clone());
     sqlx::query(
-        "INSERT INTO core.user_preferences (user_id, shortcuts, updated_at)
-         VALUES ($1, $2, now())
+        "INSERT INTO core.user_preferences (user_id, shortcuts, autosave_minutes, updated_at)
+         VALUES ($1, $2, $3, now())
          ON CONFLICT (user_id) DO UPDATE
-         SET shortcuts = EXCLUDED.shortcuts, updated_at = now()",
+         SET shortcuts = EXCLUDED.shortcuts,
+             autosave_minutes = EXCLUDED.autosave_minutes,
+             updated_at = now()",
     )
     .bind(user.user_id)
     .bind(json)
+    .bind(input.autosave_minutes)
     .execute(&state.db)
     .await?;
-    Ok(Json(UserPreferences { shortcuts: cleaned }))
+    Ok(Json(UserPreferences {
+        shortcuts: cleaned,
+        autosave_minutes: input.autosave_minutes,
+    }))
 }
 
 pub fn router() -> OpenApiRouter<AppState> {

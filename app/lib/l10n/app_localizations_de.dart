@@ -11774,4 +11774,47 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get tutConveyorsSvgWithoutMotor => 'ohne Motor';
+
+  @override
+  String get quotationLineLayoutTitle => 'Angebotszeilen-Layout';
+
+  @override
+  String get quotationSingleLineLabel => 'Eine Zeile pro Position';
+
+  @override
+  String get quotationSingleLineHelp =>
+      'Jede Position in einer kompakten Zeile mit Bemerkungen im Dialog anzeigen; deaktivieren für Bemerkungsfelder in einer zweiten Zeile.';
+
+  @override
+  String get quotationSettingsSaved => 'Unternehmenseinstellungen gespeichert';
+
+  @override
+  String get remarks => 'Bemerkungen';
+
+  @override
+  String get autosaveTitle => 'Automatisches Speichern';
+
+  @override
+  String get autosaveOff => 'Aus';
+
+  @override
+  String autosaveMinutes(int minutes) {
+    return '$minutes Min.';
+  }
+
+  @override
+  String autosaveDefault(int minutes) {
+    return 'Unternehmensstandard ($minutes Min.)';
+  }
+
+  @override
+  String get autosaveDefaultOff => 'Unternehmensstandard (Aus)';
+
+  @override
+  String get autosaveUserHelp =>
+      'Abweichendes Intervall für das automatische Speichern offener Entwürfe.';
+
+  @override
+  String get autosaveAdminHelp =>
+      'Standardintervall für das automatische Speichern offener Entwürfe (Benutzer können dies in ihren Einstellungen überschreiben).';
 }

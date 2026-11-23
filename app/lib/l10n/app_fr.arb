@@ -3895,5 +3895,17 @@
   "tutConveyorsSvgWithMotor": "Avec moteur",
   "tutConveyorsSvgThreePhase": "Triphasé + VFD",
   "tutConveyorsSvgOnePhase": "Monophasé",
-  "tutConveyorsSvgWithoutMotor": "sans moteur"
+  "tutConveyorsSvgWithoutMotor": "sans moteur",
+  "quotationLineLayoutTitle": "Affichage des lignes de devis",
+  "quotationSingleLineLabel": "Une seule ligne par article",
+  "quotationSingleLineHelp": "Afficher chaque article sur une ligne compacte avec les remarques dans une fenêtre ; désactiver pour afficher les remarques sur une deuxième ligne.",
+  "quotationSettingsSaved": "Paramètres de l'entreprise enregistrés",
+  "remarks": "Remarques",
+  "autosaveTitle": "Enregistrement automatique des brouillons",
+  "autosaveOff": "Désactivé",
+  "autosaveMinutes": "{minutes} min",
+  "autosaveDefault": "Par défaut ({minutes} min)",
+  "autosaveDefaultOff": "Par défaut (Désactivé)",
+  "autosaveUserHelp": "Remplacer la fréquence d'enregistrement automatique des brouillons.",
+  "autosaveAdminHelp": "Intervalle par défaut pour l'enregistrement automatique des brouillons (les utilisateurs peuvent le remplacer dans leurs préférences)."
 }

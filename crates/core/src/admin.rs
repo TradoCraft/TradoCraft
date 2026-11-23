@@ -14,6 +14,7 @@ use utoipa_axum::routes;
 use uuid::Uuid;
 
 use crate::auth::{role_grants, Permission, ROLES};
+use crate::company::{get_company, Company};
 use crate::logo::{self, MAX_LOGO_BYTES};
 use crate::modules::{self, Module};
 use crate::{audit, mail, new_id, AppError, AppResult, AppState, CurrentUser};
@@ -254,6 +255,62 @@ async fn delete_logo(State(state): State<AppState>, user: CurrentUser) -> AppRes
     .await?;
     tx.commit().await?;
     Ok(StatusCode::NO_CONTENT)
+}
+
+fn default_autosave_minutes() -> i32 {
+    5
+}
+
+/// Company-wide presentation settings managed by an administrator.
+#[derive(Debug, serde::Deserialize, utoipa::ToSchema)]
+pub struct CompanySettingsInput {
+    /// Render quotation items on a single line (remarks in a dialog) instead of two lines.
+    pub quotation_single_line_items: bool,
+    /// Draft autosave interval in minutes (0 = disabled, 1..=120; default 5).
+    #[serde(default = "default_autosave_minutes")]
+    pub autosave_minutes: i32,
+}
+
+/// Updates company-wide presentation settings and returns the updated company.
+#[utoipa::path(put, path = "/admin/company/settings", tag = "core",
+    request_body = CompanySettingsInput,
+    responses((status = 200, body = Company), (status = 400, body = ErrorBody), (status = 403, body = ErrorBody)))]
+async fn set_company_settings(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Json(input): Json<CompanySettingsInput>,
+) -> AppResult<Json<Company>> {
+    user.require(Permission::UsersAdmin)?;
+    if !(0..=120).contains(&input.autosave_minutes) {
+        return Err(AppError::Validation(
+            "autosave_minutes must be between 0 and 120".into(),
+        ));
+    }
+    let mut tx = state.db.begin().await?;
+    sqlx::query(
+        "UPDATE core.companies
+         SET quotation_single_line_items = $1, autosave_minutes = $2
+         WHERE id = $3",
+    )
+    .bind(input.quotation_single_line_items)
+    .bind(input.autosave_minutes)
+    .bind(user.company_id)
+    .execute(&mut *tx)
+    .await?;
+    audit::record(
+        &mut tx,
+        &user,
+        "company",
+        user.company_id,
+        "settings_updated",
+        serde_json::json!({
+            "quotation_single_line_items": input.quotation_single_line_items,
+            "autosave_minutes": input.autosave_minutes,
+        }),
+    )
+    .await?;
+    tx.commit().await?;
+    Ok(Json(get_company(&state.db, user.company_id).await?))
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -621,6 +678,7 @@ pub fn router() -> OpenApiRouter<AppState> {
     OpenApiRouter::new()
         .routes(routes!(list_roles))
         .routes(routes!(get_modules, set_modules))
+        .routes(routes!(set_company_settings))
         .merge(
             OpenApiRouter::new()
                 .routes(routes!(get_logo, put_logo, delete_logo))

@@ -12,11 +12,14 @@ part 'user_preferences.g.dart';
 @JsonSerializable()
 class UserPreferences {
   const UserPreferences({
+    this.autosaveMinutes,
     this.shortcuts,
   });
   
   factory UserPreferences.fromJson(Map<String, Object?> json) => _$UserPreferencesFromJson(json);
   
+  @JsonKey(includeIfNull: false, name: 'autosave_minutes')
+  final int? autosaveMinutes;
   /// Custom shortcut bindings keyed by `ShortcutAction.name`.
   @JsonKey(includeIfNull: false)
   final Map<String, ShortcutBinding>? shortcuts;
