@@ -466,13 +466,13 @@ async fn bulk_price_change_is_previewed_then_applied(db: PgPool) {
     .await;
     assert_eq!(status, StatusCode::OK, "{p}");
     let lines = p["lines"].as_array().unwrap();
-    assert_eq!(lines.len(), 5, "one pump in five zones");
+    assert_eq!(lines.len(), 3, "one pump in each seeded zone");
     assert!(lines.iter().all(|l| l["product_code"] == "PUMP-05"));
     let z1 = lines.iter().find(|l| l["zone_code"] == "Z1").unwrap();
     assert_eq!(d(&z1["current_price"]), "448");
     assert_eq!(d(&z1["new_price"]), "470.4");
-    let z5 = lines.iter().find(|l| l["zone_code"] == "Z5").unwrap();
-    assert_eq!(d(&z5["new_price"]), "672");
+    let z3 = lines.iter().find(|l| l["zone_code"] == "Z3").unwrap();
+    assert_eq!(d(&z3["new_price"]), "604.8");
 
     let (status, a) = call(
         &app,
@@ -483,7 +483,7 @@ async fn bulk_price_change_is_previewed_then_applied(db: PgPool) {
     )
     .await;
     assert_eq!(status, StatusCode::OK, "{a}");
-    assert_eq!(a["applied"], 5);
+    assert_eq!(a["applied"], 3);
 
     // The new prices start on their date; quotes before that keep the current price.
     let (_, prices) = call(
