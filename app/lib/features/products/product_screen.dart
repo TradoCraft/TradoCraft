@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/api.dart';
+import '../../app/workspace.dart';
 import '../../shared/actions.dart';
 import '../../shared/format.dart';
 import 'bom_tab.dart';
@@ -22,12 +23,29 @@ final productProvider = FutureProvider.autoDispose.family<Product, String>(
 );
 
 /// Product detail: prices, bill of materials and serial numbers.
-class ProductScreen extends ConsumerWidget {
+class ProductScreen extends ConsumerStatefulWidget {
   const ProductScreen({super.key, required this.id});
   final String id;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ProductScreen> createState() => _ProductScreenState();
+}
+
+class _ProductScreenState extends ConsumerState<ProductScreen> {
+  bool _editing = false;
+
+  String get id => widget.id;
+
+  @override
+  Widget build(BuildContext context) {
+    if (id == 'new') {
+      return ProductForm(
+        asTab: true,
+        onSaved: (saved) {
+          if (context.mounted) context.go('/products/${saved.id}');
+        },
+      );
+    }
     final product = ref.watch(productProvider(id));
     final canWrite =
         ref.watch(meProvider).value?.permissions.contains('products.write') ??
@@ -40,6 +58,20 @@ class ProductScreen extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text(errorMessage(e))),
         data: (p) {
+          if (_editing) {
+            return ProductForm(
+              product: p,
+              asTab: true,
+              onSaved: (_) {
+                ref.invalidate(productProvider(id));
+                setState(() => _editing = false);
+              },
+              onCancel: () {
+                TabScope.reportDirty(context, false);
+                setState(() => _editing = false);
+              },
+            );
+          }
           final hasBom =
               p.productType == 'manufactured' ||
               p.productType == 'configurable';
@@ -89,6 +121,10 @@ class ProductScreen extends ConsumerWidget {
                           icon: const Icon(AppIcons.edit),
                           label: Text(context.l10n.edit),
                           onPressed: () async {
+                            if (TabScope.maybeOf(context) != null) {
+                              setState(() => _editing = true);
+                              return;
+                            }
                             if (await showProductForm(context, product: p) !=
                                 null) {
                               ref.invalidate(productProvider(id));

@@ -218,7 +218,12 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
       createLabel: context.l10n.newProduct,
       createTargetId: 'products-create',
       onCreate: canWrite
-          ? () async => await showProductForm(context) != null
+          ? () async {
+              if (GoRouter.maybeOf(context) != null) {
+                return await context.push<bool>('/products/new') ?? true;
+              }
+              return await showProductForm(context) != null;
+            }
           : null,
       locationOf: (p) => '/products/${p.id}',
       onOpen: (p) async =>
