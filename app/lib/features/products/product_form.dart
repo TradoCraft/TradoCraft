@@ -341,6 +341,7 @@ class _ProductFormState extends ConsumerState<ProductForm> {
     try {
       final api = ref.read(apiProvider).products;
       final dio = ref.read(dioProvider);
+      final refresh = ref.read(productsRefreshProvider.notifier);
       final targetId = p?.id ?? _created?.id;
       final clearTurnover =
           _includedInTurnoverEdited && _includedInTurnover == null;
@@ -402,7 +403,7 @@ class _ProductFormState extends ConsumerState<ProductForm> {
         saved = await api.getProduct(id: saved.id);
       }
       _dirty = false;
-      ref.read(productsRefreshProvider.notifier).bump();
+      refresh.bump();
       if (mounted) {
         TabScope.reportDirty(context, false);
         if (widget.onSaved != null) {
