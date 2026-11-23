@@ -146,14 +146,53 @@ class _MediaTabState extends ConsumerState<MediaTab> {
     if (m.isModel) {
       await showDialog<void>(
         context: context,
-        builder: (ctx) => Dialog(
-          child: SizedBox(
-            width: 820,
-            height: 580,
-            child: FutureBuilder<Uint8List>(
-              future: _bytes(m.id),
-              builder: (context, s) => s.hasData
-                  ? Column(
+        builder: (ctx) {
+          var modelFuture = _bytes(m.id);
+          return StatefulBuilder(
+            builder: (ctx, setDialogState) => Dialog(
+              child: SizedBox(
+                width: 820,
+                height: 580,
+                child: FutureBuilder<Uint8List>(
+                  future: modelFuture,
+                  builder: (context, s) {
+                    if (s.hasError) {
+                      return Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                errorMessage(s.error!),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 16),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  TextButton(
+                                    onPressed: () => setDialogState(() {
+                                      modelFuture = _bytes(m.id);
+                                    }),
+                                    child: Text(context.l10n.retry),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  FilledButton(
+                                    onPressed: () => Navigator.pop(ctx),
+                                    child: Text(context.l10n.close),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+                    if (!s.hasData) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    return Column(
                       children: [
                         Padding(
                           padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
@@ -171,14 +210,23 @@ class _MediaTabState extends ConsumerState<MediaTab> {
                               IconButton(
                                 tooltip: context.l10n.open,
                                 icon: const Icon(AppIcons.fileDownload),
-                                onPressed: () => saveExport(
-                                  ctx,
-                                  ref,
-                                  m.filename.isNotEmpty
-                                      ? m.filename
-                                      : 'model.glb',
-                                  s.data!,
-                                ),
+                                onPressed: () async {
+                                  final messenger = ScaffoldMessenger.of(ctx);
+                                  try {
+                                    await saveExport(
+                                      ctx,
+                                      ref,
+                                      m.filename.isNotEmpty
+                                          ? m.filename
+                                          : 'model.glb',
+                                      s.data!,
+                                    );
+                                  } catch (e) {
+                                    messenger.showSnackBar(
+                                      SnackBar(content: Text(errorMessage(e))),
+                                    );
+                                  }
+                                },
                               ),
                               IconButton(
                                 tooltip: context.l10n.close,
@@ -196,11 +244,13 @@ class _MediaTabState extends ConsumerState<MediaTab> {
                           ),
                         ),
                       ],
-                    )
-                  : const Center(child: CircularProgressIndicator()),
+                    );
+                  },
+                ),
+              ),
             ),
-          ),
-        ),
+          );
+        },
       );
       return;
     }

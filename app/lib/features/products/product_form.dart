@@ -541,14 +541,13 @@ class _ProductFormState extends ConsumerState<ProductForm> {
                               SizedBox(
                                 width: 120,
                                 height: 90,
-                                child: _isVideoFilename(_media[i].filename)
-                                    ? const Center(
-                                        child: Icon(
-                                          AppIcons.playCircle,
-                                          size: 36,
-                                        ),
-                                      )
-                                    : _isModelFilename(_media[i].filename)
+                                child: isGlbBytes(_media[i].bytes) ||
+                                        (!_isVideoFilename(
+                                              _media[i].filename,
+                                            ) &&
+                                            _isModelFilename(
+                                              _media[i].filename,
+                                            ))
                                     ? InkWell(
                                         onTap: () => showDialog<void>(
                                           context: context,
@@ -568,6 +567,13 @@ class _ProductFormState extends ConsumerState<ProductForm> {
                                             Icons.view_in_ar_outlined,
                                             size: 36,
                                           ),
+                                        ),
+                                      )
+                                    : _isVideoFilename(_media[i].filename)
+                                    ? const Center(
+                                        child: Icon(
+                                          AppIcons.playCircle,
+                                          size: 36,
                                         ),
                                       )
                                     : isSvgBytes(_media[i].bytes)

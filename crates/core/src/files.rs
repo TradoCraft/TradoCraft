@@ -354,12 +354,85 @@ pub async fn stage_media_stream(
             final_max / 1024 / 1024
         )));
     }
+    if ct == "model/gltf-binary" {
+        if let Err(e) = validate_glb_file(&staged.tmp_path, total_bytes).await {
+            staged.abort().await;
+            return Err(e);
+        }
+    }
     let storage_key = staged.commit().await?;
     Ok(StagedMedia {
         storage_key,
         content_type: ct,
         size_bytes: total_bytes as i32,
     })
+}
+
+async fn validate_glb_file(path: &std::path::Path, total_bytes: usize) -> AppResult<()> {
+    use tokio::io::{AsyncReadExt, AsyncSeekExt};
+
+    if total_bytes < 20 {
+        return Err(AppError::Validation(
+            "invalid GLB file: file is too small".into(),
+        ));
+    }
+    let mut file = tokio::fs::File::open(path)
+        .await
+        .map_err(|e| anyhow::Error::from(e).context("open staged GLB file"))?;
+    let mut hdr = [0u8; 12];
+    file.read_exact(&mut hdr)
+        .await
+        .map_err(|_| AppError::Validation("invalid GLB file: truncated header".into()))?;
+    let version = u32::from_le_bytes([hdr[4], hdr[5], hdr[6], hdr[7]]);
+    let declared_len = u32::from_le_bytes([hdr[8], hdr[9], hdr[10], hdr[11]]) as u64;
+    if &hdr[0..4] != b"glTF" || version != 2 || declared_len != total_bytes as u64 {
+        return Err(AppError::Validation(
+            "invalid GLB file: header length does not match uploaded size".into(),
+        ));
+    }
+
+    let mut offset = 12u64;
+    let mut has_json = false;
+    while offset < declared_len {
+        if offset + 8 > declared_len {
+            return Err(AppError::Validation(
+                "invalid GLB file: truncated chunk header".into(),
+            ));
+        }
+        let mut ch = [0u8; 8];
+        file.read_exact(&mut ch)
+            .await
+            .map_err(|_| AppError::Validation("invalid GLB file: truncated chunk header".into()))?;
+        let chunk_len = u32::from_le_bytes([ch[0], ch[1], ch[2], ch[3]]) as u64;
+        let chunk_type = u32::from_le_bytes([ch[4], ch[5], ch[6], ch[7]]);
+        let next_offset = offset
+            .checked_add(8)
+            .and_then(|v| v.checked_add(chunk_len))
+            .ok_or_else(|| {
+                AppError::Validation("invalid GLB file: chunk length overflow".into())
+            })?;
+        if next_offset > declared_len {
+            return Err(AppError::Validation(
+                "invalid GLB file: chunk extends past end of file".into(),
+            ));
+        }
+        if chunk_type == 0x4E4F534A {
+            has_json = true;
+        }
+        offset = next_offset;
+        if offset < declared_len {
+            file.seek(std::io::SeekFrom::Start(offset))
+                .await
+                .map_err(|_| AppError::Validation("invalid GLB file: seek failed".into()))?;
+        }
+    }
+
+    if !has_json {
+        return Err(AppError::Validation(
+            "invalid GLB file: missing JSON chunk".into(),
+        ));
+    }
+    Ok(())
 }
 
 /// Records a [`StagedMedia`] in `core.files`, returning `(file, created)` where `created` is
@@ -645,6 +718,52 @@ mod tests {
             .err()
             .expect("plain text must be rejected");
         assert!(matches!(err, AppError::Validation(_)));
+        let _ = tokio::fs::remove_dir_all(&dir).await;
+    }
+
+    #[tokio::test]
+    async fn stage_media_stream_validates_glb_framing() {
+        let dir = std::env::temp_dir().join(format!("tradocraft-glb-test-{}", Uuid::new_v4()));
+        let blobs = BlobStore::new(&dir);
+
+        let json_payload = b"{\"asset\":{\"version\":\"2.0\"}}";
+        let mut valid = Vec::new();
+        valid.extend_from_slice(b"glTF");
+        valid.extend_from_slice(&2u32.to_le_bytes());
+        let total_len = (12 + 8 + json_payload.len()) as u32;
+        valid.extend_from_slice(&total_len.to_le_bytes());
+        valid.extend_from_slice(&(json_payload.len() as u32).to_le_bytes());
+        valid.extend_from_slice(&0x4E4F534Au32.to_le_bytes());
+        valid.extend_from_slice(json_payload);
+
+        let staged = stage_media_stream(&blobs, axum::body::Body::from(valid.clone()))
+            .await
+            .unwrap();
+        assert_eq!(staged.content_type, "model/gltf-binary");
+        assert_eq!(staged.size_bytes, valid.len() as i32);
+
+        // Truncated GLB (header declares full length, but bytes are cut short).
+        let truncated = valid[..valid.len() - 4].to_vec();
+        let err = stage_media_stream(&blobs, axum::body::Body::from(truncated))
+            .await
+            .err()
+            .expect("truncated GLB must be rejected");
+        assert!(matches!(err, AppError::Validation(_)));
+
+        // GLB missing JSON chunk (only BIN chunk).
+        let mut no_json = Vec::new();
+        no_json.extend_from_slice(b"glTF");
+        no_json.extend_from_slice(&2u32.to_le_bytes());
+        no_json.extend_from_slice(&24u32.to_le_bytes());
+        no_json.extend_from_slice(&4u32.to_le_bytes());
+        no_json.extend_from_slice(&0x004E4942u32.to_le_bytes());
+        no_json.extend_from_slice(&[0u8; 4]);
+        let err = stage_media_stream(&blobs, axum::body::Body::from(no_json))
+            .await
+            .err()
+            .expect("GLB without JSON chunk must be rejected");
+        assert!(matches!(err, AppError::Validation(_)));
+
         let _ = tokio::fs::remove_dir_all(&dir).await;
     }
 }

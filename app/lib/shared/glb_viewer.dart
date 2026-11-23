@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show setEquals;
 import 'package:material_ui/material_ui.dart';
 
 import 'app_icons.dart';
@@ -35,6 +36,7 @@ class GlbNode {
     required this.depth,
     required this.meshIndex,
     required this.worldMatrix,
+    this.parentIndex,
   });
 
   final int index;
@@ -42,6 +44,7 @@ class GlbNode {
   final int depth;
   final int? meshIndex;
   final Float64List worldMatrix;
+  final int? parentIndex;
 }
 
 class GlbTriangle {
@@ -86,6 +89,67 @@ class GlbAsset {
       if (n.name.isNotEmpty) n,
   ];
 
+  static List<dynamic> _optList(Map<String, dynamic> map, String key) {
+    final v = map[key];
+    if (v == null) return const [];
+    if (v is! List) {
+      throw FormatException('GLB "$key" must be a list');
+    }
+    return v;
+  }
+
+  static Map<String, dynamic> _asMap(Object? v, String name) {
+    if (v is! Map<String, dynamic>) {
+      throw FormatException('GLB $name must be an object');
+    }
+    return v;
+  }
+
+  static Map<String, dynamic>? _optMap(
+    Map<String, dynamic> map,
+    String key,
+    String name,
+  ) {
+    final v = map[key];
+    if (v == null) return null;
+    return _asMap(v, '$name.$key');
+  }
+
+  static int? _optInt(Map<String, dynamic> map, String key, String name) {
+    final v = map[key];
+    if (v == null) return null;
+    if (v is! int) {
+      throw FormatException('GLB $name.$key must be an integer');
+    }
+    return v;
+  }
+
+  static String? _optString(Map<String, dynamic> map, String key, String name) {
+    final v = map[key];
+    if (v == null) return null;
+    if (v is! String) {
+      throw FormatException('GLB $name.$key must be a string');
+    }
+    return v;
+  }
+
+  static List<double> _numList(
+    Object? raw,
+    int expectedLen,
+    String name,
+  ) {
+    if (raw is! List || raw.length != expectedLen) {
+      throw FormatException('GLB $name must be a list of length $expectedLen');
+    }
+    return [
+      for (final item in raw)
+        if (item is num)
+          item.toDouble()
+        else
+          throw FormatException('GLB $name entries must be numbers'),
+    ];
+  }
+
   /// Parses a glTF 2.0 binary (`.glb`) buffer. Throws [FormatException] if invalid.
   static GlbAsset parse(Uint8List bytes) {
     if (bytes.length < 20) {
@@ -94,56 +158,79 @@ class GlbAsset {
     final bd = ByteData.sublistView(bytes);
     final magic = bd.getUint32(0, Endian.little);
     final version = bd.getUint32(4, Endian.little);
+    final declaredLength = bd.getUint32(8, Endian.little);
     if (magic != 0x46546C67 || version != 2) {
       throw const FormatException('Not a valid glTF 2.0 binary (.glb) file');
+    }
+    if (declaredLength < 20 || declaredLength > bytes.length) {
+      throw const FormatException(
+        'GLB header length is invalid or file is truncated',
+      );
     }
 
     Uint8List? jsonChunk;
     Uint8List? binChunk;
     var offset = 12;
-    while (offset + 8 <= bytes.length) {
+    while (offset < declaredLength) {
+      if (offset + 8 > declaredLength) {
+        throw const FormatException('GLB chunk header is truncated');
+      }
       final chunkLen = bd.getUint32(offset, Endian.little);
       final chunkType = bd.getUint32(offset + 4, Endian.little);
       final dataStart = offset + 8;
-      final dataEnd = math.min(dataStart + chunkLen, bytes.length);
+      final dataEnd = dataStart + chunkLen;
+      if (dataEnd > declaredLength) {
+        throw const FormatException(
+          'GLB chunk extends past declared file length',
+        );
+      }
       if (chunkType == 0x4E4F534A && jsonChunk == null) {
         jsonChunk = Uint8List.sublistView(bytes, dataStart, dataEnd);
       } else if (chunkType == 0x004E4942 && binChunk == null) {
         binChunk = Uint8List.sublistView(bytes, dataStart, dataEnd);
       }
-      offset = dataStart + chunkLen;
+      offset = dataEnd;
     }
     if (jsonChunk == null) {
       throw const FormatException('GLB is missing its JSON chunk');
     }
 
-    final root = jsonDecode(utf8.decode(jsonChunk)) as Map<String, dynamic>;
-    final rawNodes = (root['nodes'] as List?) ?? const [];
-    final rawMeshes = (root['meshes'] as List?) ?? const [];
-    final rawMaterials = (root['materials'] as List?) ?? const [];
-    final rawAccessors = (root['accessors'] as List?) ?? const [];
-    final rawViews = (root['bufferViews'] as List?) ?? const [];
+    final decoded = jsonDecode(utf8.decode(jsonChunk));
+    if (decoded is! Map<String, dynamic>) {
+      throw const FormatException('GLB JSON root must be an object');
+    }
+    final root = decoded;
+    final rawNodes = _optList(root, 'nodes');
+    final rawMeshes = _optList(root, 'meshes');
+    final rawMaterials = _optList(root, 'materials');
+    final rawAccessors = _optList(root, 'accessors');
+    final rawViews = _optList(root, 'bufferViews');
 
     // Determine root nodes from the default scene (or nodes without parents).
     final hasParent = List<bool>.filled(rawNodes.length, false);
-    for (final n in rawNodes) {
-      if (n is Map) {
-        for (final c in (n['children'] as List?) ?? const []) {
-          if (c is int && c >= 0 && c < rawNodes.length) {
-            hasParent[c] = true;
-          }
+    for (var i = 0; i < rawNodes.length; i++) {
+      final n = _asMap(rawNodes[i], 'nodes[$i]');
+      for (final c in _optList(n, 'children')) {
+        if (c is! int) {
+          throw FormatException('GLB nodes[$i].children must contain integers');
+        }
+        if (c >= 0 && c < rawNodes.length) {
+          hasParent[c] = true;
         }
       }
     }
-    final scenes = (root['scenes'] as List?) ?? const [];
-    final sceneIdx = (root['scene'] as int?) ?? 0;
+    final scenes = _optList(root, 'scenes');
+    final sceneIdx = _optInt(root, 'scene', 'root') ?? 0;
     final rootIds = <int>[];
     if (sceneIdx >= 0 && sceneIdx < scenes.length) {
-      final s = scenes[sceneIdx];
-      if (s is Map && s['nodes'] is List) {
-        for (final id in s['nodes'] as List) {
-          if (id is int && id >= 0 && id < rawNodes.length) rootIds.add(id);
+      final s = _asMap(scenes[sceneIdx], 'scenes[$sceneIdx]');
+      for (final id in _optList(s, 'nodes')) {
+        if (id is! int) {
+          throw FormatException(
+            'GLB scenes[$sceneIdx].nodes must contain integers',
+          );
         }
+        if (id >= 0 && id < rawNodes.length) rootIds.add(id);
       }
     }
     if (rootIds.isEmpty) {
@@ -154,28 +241,32 @@ class GlbAsset {
 
     final nodes = <GlbNode>[];
     final visited = <int>{};
-    void walk(int idx, int depth, Float64List parentMat) {
+    void walk(int idx, int depth, Float64List parentMat, int? parentIdx) {
       if (idx < 0 || idx >= rawNodes.length || !visited.add(idx)) return;
-      final m = rawNodes[idx] as Map<String, dynamic>;
+      final m = _asMap(rawNodes[idx], 'nodes[$idx]');
       final local = _nodeLocalMatrix(m);
       final world = _mulMat4(parentMat, local);
       nodes.add(
         GlbNode(
           index: idx,
-          name: (m['name'] as String?)?.trim() ?? '',
+          name: (_optString(m, 'name', 'nodes[$idx]') ?? '').trim(),
           depth: depth,
-          meshIndex: m['mesh'] as int?,
+          meshIndex: _optInt(m, 'mesh', 'nodes[$idx]'),
           worldMatrix: world,
+          parentIndex: parentIdx,
         ),
       );
-      for (final c in (m['children'] as List?) ?? const []) {
-        if (c is int) walk(c, depth + 1, world);
+      for (final c in _optList(m, 'children')) {
+        if (c is! int) {
+          throw FormatException('GLB nodes[$idx].children must contain integers');
+        }
+        walk(c, depth + 1, world, idx);
       }
     }
 
     final identity = _identityMat4();
     for (final r in rootIds) {
-      walk(r, 0, identity);
+      walk(r, 0, identity, null);
     }
 
     var hasDraco = false;
@@ -187,19 +278,24 @@ class GlbAsset {
         if (meshIdx == null || meshIdx < 0 || meshIdx >= rawMeshes.length) {
           continue;
         }
-        final mesh = rawMeshes[meshIdx] as Map<String, dynamic>;
-        final primitives = (mesh['primitives'] as List?) ?? const [];
-        for (final prim in primitives) {
-          if (prim is! Map<String, dynamic>) continue;
+        final mesh = _asMap(rawMeshes[meshIdx], 'meshes[$meshIdx]');
+        final primitives = _optList(mesh, 'primitives');
+        for (var pIdx = 0; pIdx < primitives.length; pIdx++) {
+          final prim = _asMap(
+            primitives[pIdx],
+            'meshes[$meshIdx].primitives[$pIdx]',
+          );
           final exts = prim['extensions'];
           if (exts is Map && exts.containsKey('KHR_draco_mesh_compression')) {
             hasDraco = true;
             continue;
           }
-          final mode = (prim['mode'] as int?) ?? 4;
-          if (mode != 4) continue;
-          final attrs = prim['attributes'] as Map<String, dynamic>?;
-          final posIdx = attrs?['POSITION'] as int?;
+          final mode = _optInt(prim, 'mode', 'primitive') ?? 4;
+          if (mode != 4 && mode != 5 && mode != 6) continue;
+          final attrs = _optMap(prim, 'attributes', 'primitive');
+          final posIdx = attrs == null
+              ? null
+              : _optInt(attrs, 'POSITION', 'primitive.attributes');
           if (posIdx == null) continue;
           final positions = _readVec3(
             rawAccessors,
@@ -209,43 +305,66 @@ class GlbAsset {
             posIdx,
           );
           if (positions.isEmpty) continue;
-          final indices = prim['indices'] is int
+          final idxAcc = _optInt(prim, 'indices', 'primitive');
+          final indices = idxAcc != null
               ? _readIndices(
                   rawAccessors,
                   rawViews,
                   binChunk,
                   binBd,
-                  prim['indices'] as int,
+                  idxAcc,
                 )
               : List<int>.generate(positions.length, (i) => i);
-          final color = _materialColor(rawMaterials, prim['material'] as int?);
+          final color = _materialColor(
+            rawMaterials,
+            _optInt(prim, 'material', 'primitive'),
+          );
 
           final worldPositions = [
             for (final p in positions) _transformPoint(node.worldMatrix, p),
           ];
-          for (var i = 0; i + 2 < indices.length; i += 3) {
-            final i0 = indices[i];
-            final i1 = indices[i + 1];
-            final i2 = indices[i + 2];
-            if (i0 >= worldPositions.length ||
+
+          void addTri(int i0, int i1, int i2) {
+            if (i0 < 0 ||
+                i1 < 0 ||
+                i2 < 0 ||
+                i0 >= worldPositions.length ||
                 i1 >= worldPositions.length ||
                 i2 >= worldPositions.length) {
-              continue;
+              return;
             }
             final v0 = worldPositions[i0];
             final v1 = worldPositions[i1];
             final v2 = worldPositions[i2];
-            final n = _faceNormal(v0, v1, v2);
             triangles.add(
               GlbTriangle(
                 nodeIndex: node.index,
                 v0: v0,
                 v1: v1,
                 v2: v2,
-                normal: n,
+                normal: _faceNormal(v0, v1, v2),
                 color: color,
               ),
             );
+          }
+
+          if (mode == 4) {
+            for (var i = 0; i + 2 < indices.length; i += 3) {
+              addTri(indices[i], indices[i + 1], indices[i + 2]);
+            }
+          } else if (mode == 5) {
+            for (var i = 0; i + 2 < indices.length; i++) {
+              if (i.isEven) {
+                addTri(indices[i], indices[i + 1], indices[i + 2]);
+              } else {
+                addTri(indices[i + 1], indices[i], indices[i + 2]);
+              }
+            }
+          } else {
+            // mode == 6: TRIANGLE_FAN anchored at indices[0].
+            for (var i = 1; i + 1 < indices.length; i++) {
+              addTri(indices[0], indices[i], indices[i + 1]);
+            }
           }
         }
       }
@@ -258,19 +377,112 @@ class GlbAsset {
     if (matIdx == null || matIdx < 0 || matIdx >= materials.length) {
       return const Color(0xFF90A4AE);
     }
-    final mat = materials[matIdx];
-    if (mat is! Map<String, dynamic>) return const Color(0xFF90A4AE);
-    final pbr = mat['pbrMetallicRoughness'];
-    if (pbr is Map<String, dynamic> && pbr['baseColorFactor'] is List) {
-      final f = pbr['baseColorFactor'] as List;
-      if (f.length >= 3) {
-        final r = ((f[0] as num).toDouble().clamp(0.0, 1.0) * 255).round();
-        final g = ((f[1] as num).toDouble().clamp(0.0, 1.0) * 255).round();
-        final b = ((f[2] as num).toDouble().clamp(0.0, 1.0) * 255).round();
+    final mat = _asMap(materials[matIdx], 'materials[$matIdx]');
+    final pbr = _optMap(mat, 'pbrMetallicRoughness', 'materials[$matIdx]');
+    if (pbr != null && pbr['baseColorFactor'] != null) {
+      final rawFactor = pbr['baseColorFactor'];
+      if (rawFactor is! List) {
+        throw FormatException(
+          'GLB materials[$matIdx].pbrMetallicRoughness.baseColorFactor must be a list',
+        );
+      }
+      if (rawFactor.length >= 3) {
+        for (var i = 0; i < 3; i++) {
+          if (rawFactor[i] is! num) {
+            throw FormatException(
+              'GLB materials[$matIdx] baseColorFactor[$i] must be a number',
+            );
+          }
+        }
+        final r = ((rawFactor[0] as num).toDouble().clamp(0.0, 1.0) * 255)
+            .round();
+        final g = ((rawFactor[1] as num).toDouble().clamp(0.0, 1.0) * 255)
+            .round();
+        final b = ((rawFactor[2] as num).toDouble().clamp(0.0, 1.0) * 255)
+            .round();
         return Color.fromARGB(255, r, g, b);
       }
     }
     return const Color(0xFF90A4AE);
+  }
+
+  static ({int viewOffset, int viewEnd, int? stride}) _viewBounds(
+    List<dynamic> views,
+    int viewIdx,
+    int binLength,
+  ) {
+    final view = _asMap(views[viewIdx], 'bufferViews[$viewIdx]');
+    final viewOffset = _optInt(view, 'byteOffset', 'bufferViews[$viewIdx]') ?? 0;
+    final viewLength = _optInt(view, 'byteLength', 'bufferViews[$viewIdx]');
+    if (viewOffset < 0 || viewLength == null || viewLength < 0) {
+      throw FormatException(
+        'GLB bufferViews[$viewIdx] has invalid byteOffset/byteLength',
+      );
+    }
+    final stride = _optInt(view, 'byteStride', 'bufferViews[$viewIdx]');
+    final viewEnd = math.min(binLength, viewOffset + viewLength);
+    return (viewOffset: viewOffset, viewEnd: viewEnd, stride: stride);
+  }
+
+  static List<int> _readScalarIndicesFromView(
+    List<dynamic> views,
+    Uint8List bin,
+    ByteData bd,
+    int viewIdx,
+    int accOffset,
+    int count,
+    int? comp,
+  ) {
+    if (viewIdx < 0 || viewIdx >= views.length || accOffset < 0 || count <= 0) {
+      return const [];
+    }
+    final bounds = _viewBounds(views, viewIdx, bin.length);
+    final base = bounds.viewOffset + accOffset;
+    if (base < bounds.viewOffset) return const [];
+    final out = <int>[];
+    if (comp == 5121) {
+      for (var i = 0; i < count && base + i < bounds.viewEnd; i++) {
+        out.add(bin[base + i]);
+      }
+    } else if (comp == 5123) {
+      for (var i = 0; i < count && base + i * 2 + 2 <= bounds.viewEnd; i++) {
+        out.add(bd.getUint16(base + i * 2, Endian.little));
+      }
+    } else if (comp == 5125) {
+      for (var i = 0; i < count && base + i * 4 + 4 <= bounds.viewEnd; i++) {
+        out.add(bd.getUint32(base + i * 4, Endian.little));
+      }
+    }
+    return out;
+  }
+
+  static List<GlbVec3> _readVec3FromView(
+    List<dynamic> views,
+    Uint8List bin,
+    ByteData bd,
+    int viewIdx,
+    int accOffset,
+    int count,
+  ) {
+    if (viewIdx < 0 || viewIdx >= views.length || accOffset < 0 || count <= 0) {
+      return const [];
+    }
+    final bounds = _viewBounds(views, viewIdx, bin.length);
+    final stride = bounds.stride ?? 12;
+    if (stride < 12) return const [];
+    final out = <GlbVec3>[];
+    for (var i = 0; i < count; i++) {
+      final base = bounds.viewOffset + accOffset + i * stride;
+      if (base < bounds.viewOffset || base + 12 > bounds.viewEnd) break;
+      out.add(
+        GlbVec3(
+          bd.getFloat32(base, Endian.little),
+          bd.getFloat32(base + 4, Endian.little),
+          bd.getFloat32(base + 8, Endian.little),
+        ),
+      );
+    }
+    return out;
   }
 
   static List<GlbVec3> _readVec3(
@@ -281,28 +493,76 @@ class GlbAsset {
     int accIdx,
   ) {
     if (accIdx < 0 || accIdx >= accessors.length) return const [];
-    final acc = accessors[accIdx] as Map<String, dynamic>;
-    if (acc['componentType'] != 5126 || acc['type'] != 'VEC3') return const [];
-    final viewIdx = acc['bufferView'] as int?;
-    if (viewIdx == null || viewIdx < 0 || viewIdx >= views.length) {
+    final acc = _asMap(accessors[accIdx], 'accessors[$accIdx]');
+    if (_optInt(acc, 'componentType', 'accessors[$accIdx]') != 5126 ||
+        _optString(acc, 'type', 'accessors[$accIdx]') != 'VEC3') {
       return const [];
     }
-    final view = views[viewIdx] as Map<String, dynamic>;
-    final count = (acc['count'] as int?) ?? 0;
-    final viewOffset = (view['byteOffset'] as int?) ?? 0;
-    final accOffset = (acc['byteOffset'] as int?) ?? 0;
-    final stride = (view['byteStride'] as int?) ?? 12;
-    final out = <GlbVec3>[];
-    for (var i = 0; i < count; i++) {
-      final base = viewOffset + accOffset + i * stride;
-      if (base + 12 > bin.length) break;
-      out.add(
-        GlbVec3(
-          bd.getFloat32(base, Endian.little),
-          bd.getFloat32(base + 4, Endian.little),
-          bd.getFloat32(base + 8, Endian.little),
-        ),
+    final count = _optInt(acc, 'count', 'accessors[$accIdx]') ?? 0;
+    if (count <= 0) return const [];
+    final viewIdx = _optInt(acc, 'bufferView', 'accessors[$accIdx]');
+    final accOffset = _optInt(acc, 'byteOffset', 'accessors[$accIdx]') ?? 0;
+    final sparse = _optMap(acc, 'sparse', 'accessors[$accIdx]');
+
+    List<GlbVec3> out;
+    if (viewIdx == null) {
+      if (sparse == null) return const [];
+      out = List<GlbVec3>.filled(
+        count,
+        const GlbVec3(0, 0, 0),
+        growable: true,
       );
+    } else {
+      if (viewIdx < 0 || viewIdx >= views.length) return const [];
+      out = _readVec3FromView(views, bin, bd, viewIdx, accOffset, count);
+    }
+
+    if (sparse != null) {
+      final sparseCount = _optInt(sparse, 'count', 'sparse') ?? 0;
+      if (sparseCount > 0) {
+        final sIndices = _optMap(sparse, 'indices', 'sparse');
+        final sValues = _optMap(sparse, 'values', 'sparse');
+        if (sIndices == null || sValues == null) {
+          throw const FormatException(
+            'GLB sparse accessor must define indices and values',
+          );
+        }
+        final idxView = _optInt(sIndices, 'bufferView', 'sparse.indices');
+        final valView = _optInt(sValues, 'bufferView', 'sparse.values');
+        if (idxView == null || valView == null) {
+          throw const FormatException(
+            'GLB sparse indices and values must specify bufferView',
+          );
+        }
+        final idxOffset =
+            _optInt(sIndices, 'byteOffset', 'sparse.indices') ?? 0;
+        final idxComp = _optInt(sIndices, 'componentType', 'sparse.indices');
+        final valOffset = _optInt(sValues, 'byteOffset', 'sparse.values') ?? 0;
+        final patchIdx = _readScalarIndicesFromView(
+          views,
+          bin,
+          bd,
+          idxView,
+          idxOffset,
+          sparseCount,
+          idxComp,
+        );
+        final patchVals = _readVec3FromView(
+          views,
+          bin,
+          bd,
+          valView,
+          valOffset,
+          sparseCount,
+        );
+        final n = math.min(patchIdx.length, patchVals.length);
+        for (var k = 0; k < n; k++) {
+          final target = patchIdx[k];
+          if (target >= 0 && target < out.length) {
+            out[target] = patchVals[k];
+          }
+        }
+      }
     }
     return out;
   }
@@ -315,32 +575,23 @@ class GlbAsset {
     int accIdx,
   ) {
     if (accIdx < 0 || accIdx >= accessors.length) return const [];
-    final acc = accessors[accIdx] as Map<String, dynamic>;
-    final viewIdx = acc['bufferView'] as int?;
+    final acc = _asMap(accessors[accIdx], 'accessors[$accIdx]');
+    final viewIdx = _optInt(acc, 'bufferView', 'accessors[$accIdx]');
     if (viewIdx == null || viewIdx < 0 || viewIdx >= views.length) {
       return const [];
     }
-    final view = views[viewIdx] as Map<String, dynamic>;
-    final count = (acc['count'] as int?) ?? 0;
-    final comp = acc['componentType'] as int?;
-    final viewOffset = (view['byteOffset'] as int?) ?? 0;
-    final accOffset = (acc['byteOffset'] as int?) ?? 0;
-    final base = viewOffset + accOffset;
-    final out = <int>[];
-    if (comp == 5121) {
-      for (var i = 0; i < count && base + i < bin.length; i++) {
-        out.add(bin[base + i]);
-      }
-    } else if (comp == 5123) {
-      for (var i = 0; i < count && base + i * 2 + 2 <= bin.length; i++) {
-        out.add(bd.getUint16(base + i * 2, Endian.little));
-      }
-    } else if (comp == 5125) {
-      for (var i = 0; i < count && base + i * 4 + 4 <= bin.length; i++) {
-        out.add(bd.getUint32(base + i * 4, Endian.little));
-      }
-    }
-    return out;
+    final count = _optInt(acc, 'count', 'accessors[$accIdx]') ?? 0;
+    final comp = _optInt(acc, 'componentType', 'accessors[$accIdx]');
+    final accOffset = _optInt(acc, 'byteOffset', 'accessors[$accIdx]') ?? 0;
+    return _readScalarIndicesFromView(
+      views,
+      bin,
+      bd,
+      viewIdx,
+      accOffset,
+      count,
+      comp,
+    );
   }
 
   static Float64List _identityMat4() => Float64List.fromList([
@@ -351,24 +602,28 @@ class GlbAsset {
   ]);
 
   static Float64List _nodeLocalMatrix(Map<String, dynamic> node) {
-    if (node['matrix'] is List && (node['matrix'] as List).length == 16) {
-      return Float64List.fromList([
-        for (final v in node['matrix'] as List) (v as num).toDouble(),
-      ]);
+    if (node['matrix'] != null) {
+      return Float64List.fromList(_numList(node['matrix'], 16, 'node.matrix'));
     }
-    final t = (node['translation'] as List?) ?? const [0, 0, 0];
-    final r = (node['rotation'] as List?) ?? const [0, 0, 0, 1];
-    final s = (node['scale'] as List?) ?? const [1, 1, 1];
-    final tx = (t[0] as num).toDouble();
-    final ty = (t[1] as num).toDouble();
-    final tz = (t[2] as num).toDouble();
-    final x = (r[0] as num).toDouble();
-    final y = (r[1] as num).toDouble();
-    final z = (r[2] as num).toDouble();
-    final w = (r[3] as num).toDouble();
-    final sx = (s[0] as num).toDouble();
-    final sy = (s[1] as num).toDouble();
-    final sz = (s[2] as num).toDouble();
+    final t = node['translation'] != null
+        ? _numList(node['translation'], 3, 'node.translation')
+        : const [0.0, 0.0, 0.0];
+    final r = node['rotation'] != null
+        ? _numList(node['rotation'], 4, 'node.rotation')
+        : const [0.0, 0.0, 0.0, 1.0];
+    final s = node['scale'] != null
+        ? _numList(node['scale'], 3, 'node.scale')
+        : const [1.0, 1.0, 1.0];
+    final tx = t[0];
+    final ty = t[1];
+    final tz = t[2];
+    final x = r[0];
+    final y = r[1];
+    final z = r[2];
+    final w = r[3];
+    final sx = s[0];
+    final sy = s[1];
+    final sz = s[2];
 
     final x2 = x + x;
     final y2 = y + y;
@@ -481,9 +736,15 @@ class _GlbMiniPreviewState extends State<GlbMiniPreview> {
     return CustomPaint(
       size: Size.infinite,
       painter: _GlbPainter(
-        triangles: asset.triangles,
+        triangles: asset.triangles.length <= 4000
+            ? asset.triangles
+            : List<GlbTriangle>.generate(
+                4000,
+                (i) => asset.triangles[(i * asset.triangles.length) ~/ 4000],
+                growable: false,
+              ),
         hiddenNodes: const {},
-        selectedNode: null,
+        selectedNodes: const {},
         highlightColor: Theme.of(context).colorScheme.primary,
         yaw: 0.6,
         pitch: 0.4,
@@ -505,7 +766,10 @@ class GlbViewer extends StatefulWidget {
 }
 
 class _GlbViewerState extends State<GlbViewer> {
+  static const int _maxPreviewTriangles = 12000;
+
   GlbAsset? _asset;
+  List<GlbTriangle> _previewTriangles = const [];
   String? _error;
   int? _selectedNode;
   final Set<int> _hiddenNodes = {};
@@ -531,12 +795,33 @@ class _GlbViewerState extends State<GlbViewer> {
 
   void _parse() {
     try {
-      _asset = GlbAsset.parse(widget.bytes);
+      final asset = GlbAsset.parse(widget.bytes);
+      final tris = asset.triangles;
+      _asset = asset;
+      _previewTriangles = tris.length <= _maxPreviewTriangles
+          ? tris
+          : List<GlbTriangle>.generate(
+              _maxPreviewTriangles,
+              (i) => tris[(i * tris.length) ~/ _maxPreviewTriangles],
+              growable: false,
+            );
       _error = null;
     } catch (e) {
       _asset = null;
+      _previewTriangles = const [];
       _error = e.toString();
     }
+  }
+
+  static Set<int> _expandSubtree(List<GlbNode> nodes, Set<int> roots) {
+    if (roots.isEmpty) return const {};
+    final out = <int>{...roots};
+    for (final n in nodes) {
+      if (n.parentIndex != null && out.contains(n.parentIndex)) {
+        out.add(n.index);
+      }
+    }
+    return out;
   }
 
   void _resetView() {
@@ -582,9 +867,16 @@ class _GlbViewerState extends State<GlbViewer> {
                     key: const ValueKey('glb-canvas'),
                     size: Size.infinite,
                     painter: _GlbPainter(
-                      triangles: asset.triangles,
-                      hiddenNodes: _hiddenNodes,
-                      selectedNode: _selectedNode,
+                      triangles: _previewTriangles,
+                      hiddenNodes: Set<int>.unmodifiable(
+                        _expandSubtree(asset.nodes, _hiddenNodes),
+                      ),
+                      selectedNodes: Set<int>.unmodifiable(
+                        _expandSubtree(
+                          asset.nodes,
+                          _selectedNode == null ? const {} : {_selectedNode!},
+                        ),
+                      ),
                       highlightColor: theme.colorScheme.primary,
                       yaw: _yaw,
                       pitch: _pitch,
@@ -738,7 +1030,7 @@ class _GlbPainter extends CustomPainter {
   _GlbPainter({
     required this.triangles,
     required this.hiddenNodes,
-    required this.selectedNode,
+    required this.selectedNodes,
     required this.highlightColor,
     required this.yaw,
     required this.pitch,
@@ -747,7 +1039,7 @@ class _GlbPainter extends CustomPainter {
 
   final List<GlbTriangle> triangles;
   final Set<int> hiddenNodes;
-  final int? selectedNode;
+  final Set<int> selectedNodes;
   final Color highlightColor;
   final double yaw;
   final double pitch;
@@ -811,8 +1103,8 @@ class _GlbPainter extends CustomPainter {
       );
       final light = (0.35 + 0.65 * nr.z.abs()).clamp(0.25, 1.0);
       var base = t.color;
-      if (selectedNode != null) {
-        base = t.nodeIndex == selectedNode
+      if (selectedNodes.isNotEmpty) {
+        base = selectedNodes.contains(t.nodeIndex)
             ? highlightColor
             : base.withValues(alpha: 0.35);
       }
@@ -851,7 +1143,8 @@ class _GlbPainter extends CustomPainter {
       old.yaw != yaw ||
       old.pitch != pitch ||
       old.zoom != zoom ||
-      old.selectedNode != selectedNode ||
-      old.hiddenNodes.length != hiddenNodes.length ||
+      old.highlightColor != highlightColor ||
+      !setEquals(old.selectedNodes, selectedNodes) ||
+      !setEquals(old.hiddenNodes, hiddenNodes) ||
       old.triangles != triangles;
 }
