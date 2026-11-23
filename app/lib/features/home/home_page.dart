@@ -20,41 +20,52 @@ class HomePage extends ConsumerWidget {
     final perms = me?.permissions ?? const <String>[];
     final tabs = ref.watch(workspaceProvider).tabs;
 
-    final cards = <Widget>[
-      if (tabs.isNotEmpty) _WorkspaceTabsCard(tabs: tabs),
-      if (perms.contains('todo.use')) const _TodoSummaryCard(),
+    final cards = <(String, Widget)>[
+      if (tabs.isNotEmpty) ('tabs', _WorkspaceTabsCard(tabs: tabs)),
+      if (perms.contains('todo.use')) ('todo', const _TodoSummaryCard()),
       if (perms.contains('helpdesk.read'))
-        _ApiListCard(
-          title: l.helpdesk,
-          icon: AppIcons.supportAgent,
-          path: '/api/v1/tickets',
-          query: const {'status': 'open', 'limit': 5},
-          seeAllRoute: '/helpdesk',
-          labelOf: (item) =>
-              '${item['number'] ?? ''} · ${item['subject'] ?? ''}'.trim(),
-          routeOf: (item) => '/helpdesk/${item['id']}',
+        (
+          'helpdesk',
+          _ApiListCard(
+            title: l.helpdesk,
+            icon: AppIcons.supportAgent,
+            path: '/api/v1/tickets',
+            query: const {'status': 'open', 'limit': 5},
+            seeAllRoute: '/helpdesk',
+            labelOf: (item) =>
+                '${item['number'] ?? ''} · ${item['subject'] ?? ''}'.trim(),
+            routeOf: (item) => '/helpdesk/${item['id']}',
+          ),
         ),
       if (perms.contains('quotations.read'))
-        _ApiListCard(
-          title: l.quotations,
-          icon: AppIcons.requestQuote,
-          path: '/api/v1/quotations',
-          query: const {'limit': 5},
-          seeAllRoute: '/quotations',
-          labelOf: (item) =>
-              '${item['number'] ?? ''} · ${item['customer_name'] ?? ''}'.trim(),
-          routeOf: (item) => '/quotations/${item['id']}',
+        (
+          'quotations',
+          _ApiListCard(
+            title: l.quotations,
+            icon: AppIcons.requestQuote,
+            path: '/api/v1/quotations',
+            query: const {'limit': 5},
+            seeAllRoute: '/quotations',
+            labelOf: (item) =>
+                '${item['number'] ?? ''} · ${item['customer_name'] ?? ''}'
+                    .trim(),
+            routeOf: (item) => '/quotations/${item['id']}',
+          ),
         ),
       if (perms.contains('purchasing.read'))
-        _ApiListCard(
-          title: l.purchasing,
-          icon: AppIcons.shoppingCart,
-          path: '/api/v1/purchase-orders',
-          query: const {'limit': 5},
-          seeAllRoute: '/purchasing',
-          labelOf: (item) =>
-              '${item['number'] ?? ''} · ${item['supplier_name'] ?? ''}'.trim(),
-          routeOf: (item) => '/purchase-orders/${item['id']}',
+        (
+          'purchasing',
+          _ApiListCard(
+            title: l.purchasing,
+            icon: AppIcons.shoppingCart,
+            path: '/api/v1/purchase-orders',
+            query: const {'limit': 5},
+            seeAllRoute: '/purchasing',
+            labelOf: (item) =>
+                '${item['number'] ?? ''} · ${item['supplier_name'] ?? ''}'
+                    .trim(),
+            routeOf: (item) => '/purchase-orders/${item['id']}',
+          ),
         ),
     ];
 
@@ -78,8 +89,9 @@ class HomePage extends ConsumerWidget {
             spacing: Space.md,
             runSpacing: Space.md,
             children: [
-              for (final card in cards)
+              for (final (id, card) in cards)
                 ConstrainedBox(
+                  key: ValueKey('home-card-$id'),
                   constraints: const BoxConstraints(
                     minWidth: 280,
                     maxWidth: 420,
@@ -139,6 +151,11 @@ class _TodoSummaryCard extends ConsumerWidget {
                 padding: EdgeInsets.all(Space.md),
                 child: Center(child: CircularProgressIndicator()),
               )
+            else if (snap.hasError)
+              Padding(
+                padding: const EdgeInsets.all(Space.md),
+                child: Text(errorMessage(snap.error!)),
+              )
             else if (items.isEmpty)
               const Padding(
                 padding: EdgeInsets.all(Space.md),
@@ -191,7 +208,7 @@ class _ApiListCardState extends ConsumerState<_ApiListCard> {
     final data = res.data;
     final raw = data is Map ? data['items'] : data;
     if (raw is! List) return const [];
-    return raw.whereType<Map<String, dynamic>>().toList();
+    return raw.whereType<Map<String, dynamic>>().take(5).toList();
   }
 
   @override
