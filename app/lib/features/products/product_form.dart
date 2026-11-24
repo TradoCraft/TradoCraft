@@ -1,15 +1,16 @@
-import 'dart:typed_data';
-
 import 'package:dio/dio.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/api.dart';
+import '../../app/environments.dart';
 import '../../app/workspace.dart';
 import '../../shared/app_icons.dart';
 import '../../shared/decimal_field.dart';
 import '../../shared/format.dart';
+import '../../shared/glb_viewer.dart';
 import '../../shared/photos.dart';
 import '../../shared/search_picker.dart';
 import 'families_dialog.dart';
@@ -121,6 +122,9 @@ class _ProductFormState extends ConsumerState<ProductForm> {
   final List<_StagedMedia> _media = [];
   final List<String> _pendingDeletions = [];
   int _defaultMediaIndex = 0;
+  String? _autoStagedCode;
+  ({String code, Object token})? _autoStageRequest;
+  bool _manualMedia = false;
   Product? _created;
   Product? _copiedFrom;
   bool _saving = false;
@@ -151,6 +155,7 @@ class _ProductFormState extends ConsumerState<ProductForm> {
     for (final c in _trackedControllers) {
       c.addListener(_markDirty);
     }
+    _code.addListener(_maybeStageTutorialGlb);
     if (widget.asTab) {
       TabScope.reportTitle(context, p?.code ?? '');
     }
@@ -158,11 +163,56 @@ class _ProductFormState extends ConsumerState<ProductForm> {
 
   @override
   void dispose() {
+    _code.removeListener(_maybeStageTutorialGlb);
     for (final c in _trackedControllers) {
       c.removeListener(_markDirty);
       c.dispose();
     }
     super.dispose();
+  }
+
+  Future<void> _maybeStageTutorialGlb() async {
+    if (p != null || _manualMedia) return;
+    if (ref.read(activeEnvironmentProvider).kind != EnvironmentKind.tutorial) {
+      return;
+    }
+    final code = _code.text.trim();
+    if (code == _autoStagedCode || code == _autoStageRequest?.code) return;
+    _autoStageRequest = null;
+    if (_autoStagedCode != null) {
+      setState(() {
+        _autoStagedCode = null;
+        _pendingDeletions.addAll(
+          _media.map((item) => item.uploadedId ?? item.clientId),
+        );
+        _media.clear();
+        _defaultMediaIndex = 0;
+      });
+    }
+    final assetPath = tutorialGlbAssetForCode(code);
+    if (assetPath == null) return;
+
+    final request = (code: code, token: Object());
+    _autoStageRequest = request;
+    try {
+      final bd = await rootBundle.load(assetPath);
+      if (!mounted ||
+          _manualMedia ||
+          _autoStageRequest != request ||
+          _code.text.trim() != code) {
+        return;
+      }
+      setState(() {
+        _media.add(
+          _StagedMedia(PickedPhoto(bd.buffer.asUint8List(), '$code.glb')),
+        );
+        _autoStagedCode = code;
+      });
+    } catch (_) {
+      // Tutorial models are optional. A later code notification can retry.
+    } finally {
+      if (_autoStageRequest == request) _autoStageRequest = null;
+    }
   }
 
   void _markDirty() {
@@ -334,6 +384,9 @@ class _ProductFormState extends ConsumerState<ProductForm> {
       weightG: weight,
       defaultProductionRemark: _defaultRemark.text.trim(),
     );
+    final media = List<_StagedMedia>.of(_media);
+    final pendingDeletions = List<String>.of(_pendingDeletions);
+    final defaultMediaIndex = _defaultMediaIndex;
     setState(() {
       _saving = true;
       _error = null;
@@ -362,21 +415,20 @@ class _ProductFormState extends ConsumerState<ProductForm> {
           ? await api.createProduct(body: body)
           : await api.updateProduct(id: targetId, body: body);
       if (p == null) _created = saved;
-      if (_pendingDeletions.isNotEmpty || _media.isNotEmpty) {
+      if (pendingDeletions.isNotEmpty || media.isNotEmpty) {
         final base = '/api/v1/products/${saved.id}/media';
-        while (_pendingDeletions.isNotEmpty) {
-          final deadId = _pendingDeletions.first;
+        for (final deadId in pendingDeletions) {
           try {
             await dio.delete<Object?>('$base/$deadId');
           } on DioException catch (e) {
             if (e.response?.statusCode != 404) rethrow;
           }
-          _pendingDeletions.removeAt(0);
+          _pendingDeletions.remove(deadId);
         }
-        if (_media.isNotEmpty) {
-          final chosenIndex = _defaultMediaIndex.clamp(0, _media.length - 1);
-          final chosen = _media[chosenIndex];
-          for (final item in _media) {
+        if (media.isNotEmpty) {
+          final chosenIndex = defaultMediaIndex.clamp(0, media.length - 1);
+          final chosen = media[chosenIndex];
+          for (final item in media) {
             if (item.uploadedId == null) {
               final res = await uploadPhoto(
                 dio,
@@ -424,6 +476,7 @@ class _ProductFormState extends ConsumerState<ProductForm> {
     try {
       final picked = await picker(context);
       if (picked.isEmpty || !mounted) return;
+      _manualMedia = true;
       _setDirtyState(() {
         _media.addAll([for (final item in picked) _StagedMedia(item)]);
         if (_defaultMediaIndex >= _media.length) _defaultMediaIndex = 0;
@@ -434,6 +487,7 @@ class _ProductFormState extends ConsumerState<ProductForm> {
   }
 
   void _removeMedia(int index) {
+    _manualMedia = true;
     _setDirtyState(() {
       final removed = _media.removeAt(index);
       _pendingDeletions.add(removed.uploadedId ?? removed.clientId);
@@ -451,6 +505,9 @@ class _ProductFormState extends ConsumerState<ProductForm> {
     final lower = name.toLowerCase();
     return lower.endsWith('.mp4') || lower.endsWith('.webm');
   }
+
+  static bool _isModelFilename(String name) =>
+      name.toLowerCase().endsWith('.glb');
 
   Widget _mediaSection(BuildContext context) {
     final l = context.l10n;
@@ -502,7 +559,35 @@ class _ProductFormState extends ConsumerState<ProductForm> {
                               SizedBox(
                                 width: 120,
                                 height: 90,
-                                child: _isVideoFilename(_media[i].filename)
+                                child: isGlbBytes(_media[i].bytes) ||
+                                        (!_isVideoFilename(
+                                              _media[i].filename,
+                                            ) &&
+                                            _isModelFilename(
+                                              _media[i].filename,
+                                            ))
+                                    ? InkWell(
+                                        onTap: () => showDialog<void>(
+                                          context: context,
+                                          builder: (_) => Dialog(
+                                            child: SizedBox(
+                                              width: 720,
+                                              height: 520,
+                                              child: GlbViewer(
+                                                bytes: _media[i].bytes,
+                                                filename: _media[i].filename,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        child: const Center(
+                                          child: Icon(
+                                            Icons.view_in_ar_outlined,
+                                            size: 36,
+                                          ),
+                                        ),
+                                      )
+                                    : _isVideoFilename(_media[i].filename)
                                     ? const Center(
                                         child: Icon(
                                           AppIcons.playCircle,

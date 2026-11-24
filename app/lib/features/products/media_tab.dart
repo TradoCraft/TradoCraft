@@ -9,6 +9,7 @@ import '../../app/api.dart';
 import '../../l10n/l10n.dart';
 import '../../shared/app_icons.dart';
 import '../../shared/file_export.dart';
+import '../../shared/glb_viewer.dart';
 import '../../shared/photos.dart';
 
 /// One picture or video of a product, as listed by `GET /products/{id}/media`.
@@ -35,6 +36,7 @@ class ProductMediaItem {
   final String caption;
   final bool isDefault;
   bool get isVideo => kind == 'video';
+  bool get isModel => kind == 'model';
 }
 
 final _mediaProvider = FutureProvider.autoDispose
@@ -141,6 +143,117 @@ class _MediaTabState extends ConsumerState<MediaTab> {
       }
       return;
     }
+    if (m.isModel) {
+      await showDialog<void>(
+        context: context,
+        builder: (ctx) {
+          var modelFuture = _bytes(m.id);
+          return StatefulBuilder(
+            builder: (ctx, setDialogState) => Dialog(
+              child: SizedBox(
+                width: 820,
+                height: 580,
+                child: FutureBuilder<Uint8List>(
+                  future: modelFuture,
+                  builder: (context, s) {
+                    if (s.hasError) {
+                      return Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                errorMessage(s.error!),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 16),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  TextButton(
+                                    onPressed: () => setDialogState(() {
+                                      modelFuture = _bytes(m.id);
+                                    }),
+                                    child: Text(context.l10n.retry),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  FilledButton(
+                                    onPressed: () => Navigator.pop(ctx),
+                                    child: Text(context.l10n.close),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+                    if (!s.hasData) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    return Column(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.view_in_ar_outlined, size: 20),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  m.filename.isNotEmpty ? m.filename : '3D',
+                                  overflow: TextOverflow.ellipsis,
+                                  style: Theme.of(context).textTheme.titleMedium,
+                                ),
+                              ),
+                              IconButton(
+                                tooltip: context.l10n.open,
+                                icon: const Icon(AppIcons.fileDownload),
+                                onPressed: () async {
+                                  final messenger = ScaffoldMessenger.of(ctx);
+                                  try {
+                                    await saveExport(
+                                      ctx,
+                                      ref,
+                                      m.filename.isNotEmpty
+                                          ? m.filename
+                                          : 'model.glb',
+                                      s.data!,
+                                    );
+                                  } catch (e) {
+                                    messenger.showSnackBar(
+                                      SnackBar(content: Text(errorMessage(e))),
+                                    );
+                                  }
+                                },
+                              ),
+                              IconButton(
+                                tooltip: context.l10n.close,
+                                icon: const Icon(AppIcons.close),
+                                onPressed: () => Navigator.pop(ctx),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Divider(height: 1),
+                        Expanded(
+                          child: GlbViewer(
+                            bytes: s.data!,
+                            filename: m.filename,
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ),
+          );
+        },
+      );
+      return;
+    }
     await showDialog<void>(
       context: context,
       builder: (_) => Dialog(
@@ -196,6 +309,17 @@ class _MediaTabState extends ConsumerState<MediaTab> {
                           ),
                         ),
                       ],
+                    )
+                  : m.isModel
+                  ? const Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.view_in_ar_outlined, size: 44),
+                          SizedBox(height: 4),
+                          Text('3D · GLB'),
+                        ],
+                      ),
                     )
                   : FutureBuilder<Uint8List>(
                       future: _bytes(m.id),

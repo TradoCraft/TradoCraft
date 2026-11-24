@@ -26169,6 +26169,16 @@
                     "minimum": 0
                   }
                 }
+              },
+              "model/gltf-binary": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "format": "int32",
+                    "minimum": 0
+                  }
+                }
               }
             }
           },
@@ -26267,6 +26277,16 @@
                 }
               },
               "video/webm": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "format": "int32",
+                    "minimum": 0
+                  }
+                }
+              },
+              "model/gltf-binary": {
                 "schema": {
                   "type": "array",
                   "items": {

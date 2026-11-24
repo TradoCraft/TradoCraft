@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:material_ui/material_ui.dart';
@@ -7,7 +8,8 @@ import 'package:material_ui/material_ui.dart';
 import '../../app/api.dart';
 import '../../app/session.dart';
 import '../../shared/app_icons.dart';
-import '../../shared/photos.dart' show isSvgBytes;
+import '../../shared/glb_viewer.dart';
+import '../../shared/photos.dart' show isGlbBytes, isSvgBytes;
 
 /// Maximum total bytes of completed thumbnail payloads retained in memory.
 const int maxProductThumbCacheBytes = 8 * 1024 * 1024;
@@ -94,13 +96,17 @@ class ProductThumb extends ConsumerStatefulWidget {
     super.key,
     required this.productId,
     required this.mediaId,
+    this.productCode,
     this.isVideo = false,
+    this.isModel = false,
     this.size = 40,
   });
 
   final String productId;
   final String? mediaId;
+  final String? productCode;
   final bool isVideo;
+  final bool isModel;
   final double size;
 
   @override
@@ -109,7 +115,10 @@ class ProductThumb extends ConsumerStatefulWidget {
 
 class _ProductThumbState extends ConsumerState<ProductThumb> {
   Future<Uint8List>? _bytes;
+  Uint8List? _resolvedBytes;
   String? _lastSessionScope;
+  final _hoverLink = LayerLink();
+  final _hoverController = OverlayPortalController();
 
   @override
   void initState() {
@@ -122,21 +131,50 @@ class _ProductThumbState extends ConsumerState<ProductThumb> {
     super.didUpdateWidget(old);
     if (old.mediaId != widget.mediaId ||
         old.productId != widget.productId ||
-        old.isVideo != widget.isVideo) {
+        old.productCode != widget.productCode ||
+        old.isVideo != widget.isVideo ||
+        old.isModel != widget.isModel) {
       _load();
     }
   }
 
   void _load([Session? session]) {
+    _resolvedBytes = null;
     final id = widget.mediaId;
-    if (id == null || widget.isVideo) {
+    if (widget.isVideo) {
       _bytes = null;
+      return;
+    }
+    if (id == null) {
+      final assetPath = tutorialGlbAssetForCode(widget.productCode ?? '');
+      if (assetPath == null) {
+        _bytes = null;
+        return;
+      }
+      _bytes = rootBundle
+          .load(assetPath)
+          .then((bd) => bd.buffer.asUint8List());
       return;
     }
     final dio = ref.read(dioProvider);
     final scope = _sessionScopeKey(session ?? ref.read(sessionProvider));
     _lastSessionScope = scope;
     _bytes = _fetchThumb(dio, scope, widget.productId, id);
+  }
+
+  Widget _renderBytes(Uint8List bytes, double size, Widget placeholder) {
+    if (isGlbBytes(bytes)) {
+      return GlbMiniPreview(bytes: bytes);
+    }
+    if (isSvgBytes(bytes)) {
+      return SvgPicture.memory(bytes, fit: BoxFit.contain);
+    }
+    return Image.memory(
+      bytes,
+      fit: BoxFit.cover,
+      cacheWidth: (size * 3).round(),
+      errorBuilder: (_, _, _) => placeholder,
+    );
   }
 
   @override
@@ -155,7 +193,7 @@ class _ProductThumbState extends ConsumerState<ProductThumb> {
     Widget placeholder(IconData icon) => Center(
       child: Icon(icon, size: s * 0.5, color: outline),
     );
-    return SizedBox(
+    final thumbBox = SizedBox(
       key: ValueKey('thumb-${widget.productId}'),
       width: s,
       height: s,
@@ -170,27 +208,71 @@ class _ProductThumbState extends ConsumerState<ProductThumb> {
           child: widget.isVideo
               ? placeholder(AppIcons.playCircle)
               : _bytes == null
-              ? placeholder(AppIcons.photo)
+              ? placeholder(
+                  widget.isModel ? Icons.view_in_ar_outlined : AppIcons.photo,
+                )
               : FutureBuilder<Uint8List>(
-                  key: ValueKey(scope),
+                  key: ValueKey('${scope}_${widget.productCode ?? ''}'),
                   future: _bytes,
-                  builder: (context, snap) => snap.hasData
-                      ? (isSvgBytes(snap.data!)
-                            ? SvgPicture.memory(
-                                snap.data!,
-                                fit: BoxFit.contain,
-                              )
-                            : Image.memory(
-                                snap.data!,
-                                fit: BoxFit.cover,
-                                cacheWidth: (s * 3).round(),
-                                errorBuilder: (_, _, _) =>
-                                    placeholder(AppIcons.brokenImage),
-                              ))
-                      : snap.hasError
-                      ? placeholder(AppIcons.brokenImage)
-                      : const SizedBox.shrink(),
+                  builder: (context, snap) {
+                    if (snap.hasData) {
+                      _resolvedBytes = snap.data!;
+                      return _renderBytes(
+                        snap.data!,
+                        s,
+                        placeholder(AppIcons.brokenImage),
+                      );
+                    }
+                    return snap.hasError
+                        ? placeholder(AppIcons.brokenImage)
+                        : const SizedBox.shrink();
+                  },
                 ),
+        ),
+      ),
+    );
+    return CompositedTransformTarget(
+      link: _hoverLink,
+      child: OverlayPortal(
+        controller: _hoverController,
+        overlayChildBuilder: (_) {
+          final bytes = _resolvedBytes;
+          if (bytes == null) return const SizedBox.shrink();
+          return IgnorePointer(
+            child: CompositedTransformFollower(
+              link: _hoverLink,
+              targetAnchor: Alignment.centerRight,
+              followerAnchor: Alignment.centerLeft,
+              offset: const Offset(12, 0),
+              child: Align(
+                alignment: Alignment.topLeft,
+                child: Card(
+                  key: ValueKey('thumb-hover-${widget.productId}'),
+                  elevation: 8,
+                  clipBehavior: Clip.antiAlias,
+                  child: SizedBox(
+                    width: 240,
+                    height: 240,
+                    child: Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: _renderBytes(
+                        bytes,
+                        240,
+                        placeholder(AppIcons.brokenImage),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+        child: MouseRegion(
+          onEnter: (_) {
+            if (_resolvedBytes != null) _hoverController.show();
+          },
+          onExit: (_) => _hoverController.hide(),
+          child: thumbBox,
         ),
       ),
     );
