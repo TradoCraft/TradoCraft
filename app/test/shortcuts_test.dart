@@ -102,6 +102,10 @@ void main() {
               AppShell(location: s.matchedLocation, child: child),
           routes: [
             GoRoute(
+              path: '/home',
+              builder: (_, _) => const Text('HOME SCREEN'),
+            ),
+            GoRoute(
               path: '/quotations',
               builder: (_, _) => const Text('QUOTATIONS LIST'),
             ),
@@ -253,16 +257,16 @@ void main() {
       expect(await chord(t, LogicalKeyboardKey.keyN, ctrl: true), isFalse);
     });
 
-    testWidgets('H shows the first permitted section and the main area', (
+    testWidgets('Home shows the home screen and the main area', (
       t,
     ) async {
       await pump(t);
       ws().open('/orders/a');
       await t.pumpAndSettle();
       expect(container.read(workspaceProvider).active, isNotNull);
-      expect(await chord(t, LogicalKeyboardKey.keyH, alt: true), isTrue);
+      expect(await chord(t, LogicalKeyboardKey.home, alt: true), isTrue);
       expect(container.read(workspaceProvider).active, isNull);
-      expect(find.text('QUOTATIONS LIST'), findsOneWidget);
+      expect(find.text('HOME SCREEN'), findsOneWidget);
     });
   });
 
@@ -478,7 +482,7 @@ void main() {
         'Ctrl+F',
         'Ctrl+N',
         'Alt+B',
-        'Alt+H',
+        'Alt+Home',
         'Alt+L',
         'Alt+1 - 9',
       ]) {
@@ -694,6 +698,15 @@ void main() {
       expect(ShortcutAction.create.describe(web: false), 'Ctrl+N');
       expect(ShortcutAction.cancel.describe(), 'Esc');
       expect(ShortcutAction.kbShare.hintLabelFor(web: false), '⇧S');
+      expect(ShortcutAction.home.describe(web: false), 'Alt+Home');
+      expect(ShortcutAction.tutorialNext.describe(web: false), 'Alt+→');
+      expect(ShortcutAction.tutorialBack.describe(web: false), 'Alt+←');
+      expect(ShortcutAction.tutorialMap.describe(web: false), 'Alt+↑');
+      expect(ShortcutAction.tutorialTakeMe.describe(web: false), 'Alt+↓');
+      expect(
+        ShortcutAction.tutorialPauseOrShowControl.describe(web: false),
+        'Alt+Esc',
+      );
     });
   });
 
@@ -721,6 +734,21 @@ void main() {
       expect(calls.last, 'page1');
       r.update(shell, {});
       expect(r.resolve(ShortcutAction.back), isNull);
+    });
+
+    test('tutorial layer wins even when a dialog is open', () {
+      final r = ShortcutStack();
+      addTearDown(r.dispose);
+      final calls = <String>[];
+      r.register(ShortcutLayer.dialog, {
+        ShortcutAction.save: () => calls.add('dialog-save'),
+      });
+      r.register(ShortcutLayer.tutorial, {
+        ShortcutAction.tutorialNext: () => calls.add('tut-next'),
+      });
+      r.resolve(ShortcutAction.tutorialNext)!();
+      r.resolve(ShortcutAction.save)!();
+      expect(calls, ['tut-next', 'dialog-save']);
     });
   });
 }

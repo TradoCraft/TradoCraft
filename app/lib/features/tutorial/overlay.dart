@@ -17,6 +17,7 @@ import 'targets.dart';
 import '../../app/environments.dart';
 import '../../app/workspace.dart';
 import '../../app/shortcuts/actions.dart';
+import '../../app/shortcuts/registry.dart';
 
 /// Where tutorial pages live (the chapter map); the narrator card stays out of the way there.
 const tutorialRoute = '/tutorial';
@@ -429,40 +430,46 @@ class NarratorCard extends ConsumerWidget {
       try {
         confirmed = await showDialog<bool>(
           context: navigatorContext,
-          builder: (dialog) => AlertDialog(
-            title: Text(l.tutAssistManual),
-            scrollable: true,
-            content: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (menuPath != null)
-                  Text(
-                    l.tutMenuPath(menuPath),
-                    style: theme.textTheme.labelLarge,
-                  ),
-                const SizedBox(height: 8),
-                for (final (index, action) in actions.indexed)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
-                    child: Text('${index + 1}. $action'),
-                  ),
-                const SizedBox(height: 8),
-                Text(body),
-                const SizedBox(height: 8),
-                Text(l.tutAssistConfirm),
+          builder: (dialog) => ShortcutScope(
+            layer: ShortcutLayer.dialog,
+            actions: {
+              ShortcutAction.tutorialNext: () => Navigator.pop(dialog, true),
+            },
+            child: AlertDialog(
+              title: Text(l.tutAssistManual),
+              scrollable: true,
+              content: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (menuPath != null)
+                    Text(
+                      l.tutMenuPath(menuPath),
+                      style: theme.textTheme.labelLarge,
+                    ),
+                  const SizedBox(height: 8),
+                  for (final (index, action) in actions.indexed)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Text('${index + 1}. $action'),
+                    ),
+                  const SizedBox(height: 8),
+                  Text(body),
+                  const SizedBox(height: 8),
+                  Text(l.tutAssistConfirm),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialog, false),
+                  child: Text(l.cancel),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.pop(dialog, true),
+                  child: Text(l.tutAssistRun),
+                ),
               ],
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialog, false),
-                child: Text(l.cancel),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.pop(dialog, true),
-                child: Text(l.tutAssistRun),
-              ),
-            ],
           ),
         );
       } finally {
@@ -477,9 +484,40 @@ class NarratorCard extends ConsumerWidget {
     }
 
     final completion = step.completion;
+    final canTakeMe =
+        route != null &&
+        !here &&
+        (!targetVisible || completion is OnRoute) &&
+        router != null;
+    final canShowControl =
+        onShowControl != null && (here || route == null || targetVisible);
+    final VoidCallback? nextAction;
+    if (c.canAssist) {
+      nextAction = s.actionBusy || reviewNavigator == null
+          ? null
+          : () => reviewAssist(reviewNavigator);
+    } else if (completion is ActionCompletion) {
+      nextAction = s.actionBusy ? null : c.runAction;
+    } else if (completion is ManualNext) {
+      nextAction = c.next;
+    } else if (canTakeMe) {
+      nextAction = takeMe;
+    } else {
+      nextAction = null;
+    }
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
     final width = (MediaQuery.sizeOf(context).width - 32).clamp(0.0, 420.0);
-    return FocusTraversalGroup(
+    return ShortcutScope(
+      layer: ShortcutLayer.tutorial,
+      actions: {
+        ShortcutAction.tutorialNext: nextAction,
+        ShortcutAction.tutorialBack: s.stepIndex > 0 ? c.back : null,
+        ShortcutAction.tutorialTakeMe: canTakeMe ? takeMe : null,
+        ShortcutAction.tutorialPauseOrShowControl: canShowControl
+            ? onShowControl
+            : c.pause,
+      },
+      child: FocusTraversalGroup(
       child: AnimatedSwitcher(
         duration: reduceMotion
             ? Duration.zero
@@ -741,6 +779,7 @@ class NarratorCard extends ConsumerWidget {
           ),
         ),
       ),
+    ),
     );
   }
 }
@@ -772,7 +811,16 @@ class _FinishedCard extends ConsumerWidget {
     final next = c.nextChapter;
     final name = tutorialText(l, missionKey(done, 'Title'));
     final narrow = MediaQuery.sizeOf(context).width < 800;
-    return Align(
+    return ShortcutScope(
+      layer: ShortcutLayer.tutorial,
+      actions: {
+        ShortcutAction.tutorialNext: next != null ? () => c.start(next.id) : null,
+        ShortcutAction.tutorialMap: () {
+          c.dismissFinished();
+          router?.go(tutorialRoute);
+        },
+      },
+      child: Align(
       alignment: Alignment.bottomRight,
       child: Padding(
         padding: EdgeInsets.fromLTRB(
@@ -859,6 +907,7 @@ class _FinishedCard extends ConsumerWidget {
           ),
         ),
       ),
+    ),
     );
   }
 }
