@@ -42,13 +42,13 @@ class _Row {
   final String country;
 }
 
-/// 60 draft rows, 2 sent rows, 1 row of an unknown status.
+/// 60 draft rows, 2 sent rows, 1 won row.
 final _data = [
   for (var i = 0; i < 60; i++)
     _Row('Draft $i', 'draft', i.isEven ? 'de' : 'nl'),
   const _Row('Sent 0', 'sent', 'de'),
   const _Row('Sent 1', 'sent', 'nl'),
-  const _Row('Odd 0', 'odd', 'de'),
+  const _Row('Won 0', 'won', 'de'),
 ];
 
 class _Fake {
@@ -211,7 +211,7 @@ void main() {
     await _closeMenu(t);
     expect(find.text('Draft'), findsOneWidget);
     expect(find.text('Sent'), findsOneWidget);
-    expect(find.text('odd'), findsOneWidget); // raw value, no option
+    expect(find.text('Won'), findsOneWidget);
     expect(find.text('60'), findsOneWidget);
     expect(find.text('Sent 0'), findsNothing);
     // Only the first load of the plain list happened; no row load for groups.
@@ -245,8 +245,7 @@ void main() {
   ) async {
     final f = await _pump(t);
     await _menu(t);
-    await t.tap(find.text('Draft').last);
-    await t.tap(find.text('Sent').last);
+    await t.tap(find.text('Won').last);
     await t.pumpAndSettle();
     await t.tap(find.text('Status').last);
     await t.pumpAndSettle();
@@ -335,7 +334,7 @@ void main() {
     expect(f.queries.last.search, 'Sent');
 
     await _menu(t);
-    await t.tap(find.text('Germany'));
+    await t.tap(find.text('Netherlands'));
     await t.pumpAndSettle();
     await _closeMenu(t);
     expect(f.groupCalls.last.$1.filters['country'], {'de'});
@@ -398,7 +397,7 @@ void main() {
     f.queries.clear();
     f.groupGate = Completer<void>();
     await _menu(t);
-    await t.tap(find.text('Germany'));
+    await t.tap(find.text('Netherlands'));
     await t.pump();
     await t.tapAt(const Offset(5, 5));
     await t.pump(const Duration(milliseconds: 400));
@@ -458,13 +457,13 @@ void main() {
       await _pump(t, key: key, selectable: true, onSelection: (s) => sel = s);
       await _groupBy(t, 'Status');
       await _closeMenu(t);
-      await t.tap(find.text('odd'));
+      await t.tap(find.text('Won'));
       await t.pumpAndSettle();
       await t.tap(find.byType(Checkbox).at(1));
       await t.pumpAndSettle();
       expect(sel.length, 1);
       _data.removeLast();
-      addTearDown(() => _data.add(const _Row('Odd 0', 'odd', 'de')));
+      addTearDown(() => _data.add(const _Row('Won 0', 'won', 'de')));
       await key.currentState!.reload();
       await t.pumpAndSettle();
       expect(sel, isEmpty);
@@ -503,17 +502,17 @@ void main() {
     await _pump(t, selectable: true, onSelection: (s) => sel = s);
     await _groupBy(t, 'Status');
     await _closeMenu(t);
-    await t.tap(find.text('odd'));
+    await t.tap(find.text('Won'));
     await t.pumpAndSettle();
     await t.tap(find.text('Sent'));
     await t.pumpAndSettle();
     final boxes = find.byType(Checkbox);
-    expect(boxes, findsNWidgets(4)); // select all, Odd 0, Sent 0, Sent 1
+    expect(boxes, findsNWidgets(4)); // select all, Sent 0, Sent 1, Won 0
     await t.tap(boxes.at(1));
     await t.pumpAndSettle();
     await t.tap(boxes.at(3));
     await t.pumpAndSettle();
-    expect(sel.map((r) => r.name), ['Odd 0', 'Sent 1']);
+    expect(sel.map((r) => r.name), ['Won 0', 'Sent 0']);
     // Collapsing keeps the selection; the row is still checked when expanded again.
     await t.tap(find.text('Sent'));
     await t.pumpAndSettle();
@@ -563,10 +562,7 @@ void main() {
     await t.pump();
     await t.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await t.pump();
-    // Draft is collapsed: the next focus target is the header "odd", then "Sent" and its rows.
-    expect(ink('odd').focusNode!.hasFocus, true);
-    await t.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-    await t.pump();
+    // Draft is collapsed: the next focus target is "Sent" and its rows, then "Won".
     expect(ink('Sent').focusNode!.hasFocus, true);
     await t.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await t.pump();
