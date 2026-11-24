@@ -479,7 +479,7 @@ class EntityListState<T> extends State<EntityList<T>> {
       search: q.isEmpty ? null : q,
       limit: _pageSize,
       sort: sort,
-      filters: filters.toQuery(),
+      filters: filters.toActiveQuery(widget.filterDefs),
     );
     final key = '$q\u0000${sort ?? ''}\u0000${filters.stableKey}\u0000$by';
     // A reload of the same query and grouping (e.g. after a failed bulk action) keeps the
@@ -597,6 +597,7 @@ class EntityListState<T> extends State<EntityList<T>> {
         st.items = more ? [...st.items, ...items] : items;
         st.total = total;
       });
+      if (refresh) _pruneGroupSelection();
     } catch (e) {
       if (mounted && generation == _generation) {
         setState(() {

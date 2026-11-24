@@ -845,6 +845,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
     return Scaffold(
       body: RecordFormView<Order>(
         controller: _form,
+        locked: _locked,
         title: '${l.order} ${o.number}',
         onBack: _close,
         onReload: _locked

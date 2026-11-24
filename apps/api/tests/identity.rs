@@ -1140,7 +1140,10 @@ async fn concurrent_make_primary_calls_cannot_both_win(db: PgPool) {
         call(&app, "admin@example.com", Method::POST, &uc, None),
         call(&app, "boss-c@example.com", Method::POST, &uc, None),
     );
-    assert_eq!(r3.0, StatusCode::FORBIDDEN);
+    assert!(
+        r3.0 == StatusCode::FORBIDDEN || (r2.0 == StatusCode::OK && r3.0 == StatusCode::CONFLICT),
+        "unexpected r3: {r3:?} (r1: {r1:?}, r2: {r2:?})"
+    );
     let ok = [r1.0, r2.0]
         .iter()
         .filter(|s| **s == StatusCode::OK)

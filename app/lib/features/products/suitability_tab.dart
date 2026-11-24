@@ -83,6 +83,7 @@ class SuitabilityTab extends ConsumerWidget {
       );
     }
     return _SuitabilityForm(
+      key: ValueKey(active.map((d) => '${d.key}:${d.kind.name}').join('\u0000')),
       product: product,
       defs: active,
       stored: attrs.requireValue,
@@ -92,6 +93,7 @@ class SuitabilityTab extends ConsumerWidget {
 
 class _SuitabilityForm extends ConsumerStatefulWidget {
   const _SuitabilityForm({
+    super.key,
     required this.product,
     required this.defs,
     required this.stored,
