@@ -595,6 +595,87 @@ pub async fn get_products_for_quoting_with(
     Ok(result)
 }
 
+/// The parsed search pattern and product type filter shared by the product list and its groups.
+fn product_filter_values(
+    q: Option<&str>,
+    product_type: Option<&str>,
+) -> AppResult<(Option<String>, Option<Vec<String>>)> {
+    let types = tradocraft_core::filter::values(product_type, "product_type", &PRODUCT_TYPES)?;
+    Ok((tradocraft_core::search::pattern(q), types))
+}
+
+/// The `WHERE` clause of the product list. The arguments are the numbers of the parameters that
+/// carry the search pattern, the `active` flag, the family and the product type list.
+fn product_where(
+    q: usize,
+    active: usize,
+    family: usize,
+    types: usize,
+    code: Option<usize>,
+) -> String {
+    let qp = format!("${q}");
+    let code_clause = match code {
+        Some(c) => format!("\n                  AND (${c}::text IS NULL OR code = ${c})"),
+        None => String::new(),
+    };
+    format!(
+        "WHERE (${q}::text IS NULL OR {} OR {})
+                  AND (${active}::boolean IS NULL OR active = ${active})
+                  AND (${family}::uuid IS NULL OR family_id = ${family})
+                  AND (${types}::text[] IS NULL OR product_type = ANY(${types})){code_clause}",
+        tradocraft_core::search::matches("code", &qp),
+        tradocraft_core::search::matches("name", &qp),
+    )
+}
+
+/// API group keys of `GET /products/groups` and the SQL (text) they stand for. Never NULL.
+const PRODUCT_GROUPS: &[(&str, &str)] = &[("active", "active"), ("product_type", "product_type")];
+
+#[derive(Debug, Deserialize, IntoParams)]
+pub struct GroupParams {
+    /// What to count by: `active` or `product_type`.
+    #[param(required = true, nullable = false)]
+    pub group_by: Option<String>,
+    /// Same as the list.
+    pub q: Option<String>,
+    /// Exact product code match.
+    pub code: Option<String>,
+    /// Same as the list.
+    pub active: Option<bool>,
+    /// Same as the list.
+    pub family_id: Option<Uuid>,
+    /// Same as the list.
+    pub product_type: Option<String>,
+}
+
+#[utoipa::path(get, path = "/products/groups", tag = "products", params(GroupParams),
+    responses((status = 200, body = tradocraft_core::group::GroupPage)))]
+async fn product_groups(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Query(p): Query<GroupParams>,
+) -> AppResult<Json<tradocraft_core::group::GroupPage>> {
+    user.require(Permission::ProductsRead)?;
+    let expr = tradocraft_core::group::expr(p.group_by.as_deref(), PRODUCT_GROUPS)?;
+    let (pattern, types) = product_filter_values(p.q.as_deref(), p.product_type.as_deref())?;
+    let sql = tradocraft_core::group::count_sql(
+        expr,
+        &format!("products.products {}", product_where(1, 2, 3, 4, Some(5))),
+    );
+    let rows: Vec<(String, i64)> = sqlx::query_as(sqlx::AssertSqlSafe(sql))
+        .bind(&pattern)
+        .bind(p.active)
+        .bind(p.family_id)
+        .bind(&types)
+        .bind(&p.code)
+        .fetch_all(&state.db)
+        .await?;
+    Ok(Json(tradocraft_core::group::page(
+        p.group_by.as_deref().unwrap_or_default(),
+        rows,
+    )?))
+}
+
 #[utoipa::path(get, path = "/products", tag = "products", params(ListParams),
     responses((status = 200, body = ProductPage)))]
 async fn list_products(
@@ -603,18 +684,8 @@ async fn list_products(
     Query(p): Query<ListParams>,
 ) -> AppResult<Json<ProductPage>> {
     user.require(Permission::ProductsRead)?;
-    let pattern = tradocraft_core::search::pattern(p.q.as_deref());
-    let types =
-        tradocraft_core::filter::values(p.product_type.as_deref(), "product_type", &PRODUCT_TYPES)?;
-    let filter = format!(
-        "WHERE ($1::text IS NULL OR {} OR {})
-                  AND ($2::boolean IS NULL OR active = $2)
-                  AND ($5::uuid IS NULL OR family_id = $5)
-                  AND ($6::text[] IS NULL OR product_type = ANY($6))
-                  AND ($7::text IS NULL OR code = $7)",
-        tradocraft_core::search::matches("code", "$1"),
-        tradocraft_core::search::matches("name", "$1"),
-    );
+    let (pattern, types) = product_filter_values(p.q.as_deref(), p.product_type.as_deref())?;
+    let filter = product_where(1, 2, 5, 6, Some(7));
     let order = tradocraft_core::sort::order_by(p.sort.as_deref(), PRODUCT_SORT, "p.id", "code")?;
     let mut items: Vec<Product> = sqlx::query_as(sqlx::AssertSqlSafe(format!(
         "{SELECT_PRODUCT} {filter} ORDER BY {order} LIMIT $3 OFFSET $4"
@@ -637,10 +708,7 @@ async fn list_products(
     .await?;
     let total = sqlx::query_scalar(sqlx::AssertSqlSafe(format!(
         "SELECT count(*) FROM products.products {}",
-        filter
-            .replace("$5", "$3")
-            .replace("$6", "$4")
-            .replace("$7", "$5")
+        product_where(1, 2, 3, 4, Some(5))
     )))
     .bind(&pattern)
     .bind(p.active)
@@ -1426,6 +1494,7 @@ async fn delete_product_price(
 pub fn router() -> OpenApiRouter<AppState> {
     OpenApiRouter::new()
         .routes(routes!(list_products, create_product))
+        .routes(routes!(product_groups))
         .routes(routes!(get_product_handler, update_product))
         .routes(routes!(list_product_prices, add_product_price))
         .routes(routes!(correct_product_price, delete_product_price))

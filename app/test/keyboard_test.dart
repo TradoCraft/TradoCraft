@@ -495,9 +495,9 @@ void main() {
       expect(find.byKey(_altBadge), findsNothing);
       await t.sendKeyDownEvent(LogicalKeyboardKey.altLeft);
       await t.pump();
-      // Delete is disabled. Save S, Cancel C, Éditer E, Home (h is Home) O, Refresh R, Open P.
+      // Delete is disabled. Save S, Cancel C, Éditer E, Home H, Refresh R, Open O.
       expect(find.byKey(_altBadge), findsNWidgets(6));
-      expect(badges(t, _altBadge), {'S', 'C', 'E', 'O', 'R', 'P'});
+      expect(badges(t, _altBadge), {'S', 'C', 'E', 'H', 'R', 'O'});
       await t.sendKeyUpEvent(LogicalKeyboardKey.altLeft);
       await t.pump();
       expect(find.byKey(_altBadge), findsNothing);
@@ -513,8 +513,8 @@ void main() {
       // Disabled Delete (d) and unused letters do nothing.
       expect(await chord(t, LogicalKeyboardKey.keyD, alt: true), isFalse);
       expect(await chord(t, LogicalKeyboardKey.keyZ, alt: true), isFalse);
-      // Reserved: Alt+H is the Home chord, not the Home button.
-      await chord(t, LogicalKeyboardKey.keyH, alt: true);
+      // Reserved: Alt+B is the Back chord, not a button letter.
+      await chord(t, LogicalKeyboardKey.keyB, alt: true);
       expect(log, isNot(contains('home')));
     });
 

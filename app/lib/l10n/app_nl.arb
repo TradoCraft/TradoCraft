@@ -3907,5 +3907,11 @@
   "autosaveDefault": "Bedrijfsstandaard ({minutes} min)",
   "autosaveDefaultOff": "Bedrijfsstandaard (Uit)",
   "autosaveUserHelp": "Overschrijf hoe vaak open concepten automatisch worden opgeslagen.",
-  "autosaveAdminHelp": "Standaardinterval voor het automatisch opslaan van open concepten (gebruikers kunnen dit overschrijven in hun voorkeuren)."
+  "autosaveAdminHelp": "Standaardinterval voor het automatisch opslaan van open concepten (gebruikers kunnen dit overschrijven in hun voorkeuren).",
+  "listGroupBy": "Groeperen op",
+  "listGroupNone": "Geen",
+  "listGroupChip": "Groep: {group}",
+  "listRemoveGrouping": "Groepering {group} verwijderen",
+  "listGroupExpanded": "{label}, {count} rijen, uitgevouwen",
+  "listGroupCollapsed": "{label}, {count} rijen, ingeklapt"
 }

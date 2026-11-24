@@ -40,6 +40,7 @@ class RecordFormView<T extends Object> extends StatefulWidget {
     this.beforeSheet = const [],
     this.chatter,
     this.chatterBeside = true,
+    this.locked = false,
   });
 
   final RecordFormController<T> controller;
@@ -81,6 +82,9 @@ class RecordFormView<T extends Object> extends StatefulWidget {
   /// Whether a wide page puts the chatter beside the sheet; a sheet that needs its full width
   /// (a line editor) keeps it below.
   final bool chatterBeside;
+
+  /// Extra lock (for example while the screen itself is reloading) in addition to [controller.busy].
+  final bool locked;
 
   @override
   State<RecordFormView<T>> createState() => _RecordFormViewState<T>();
@@ -219,15 +223,15 @@ class _RecordFormViewState<T extends Object> extends State<RecordFormView<T>>
   Widget _sheet(ThemeData theme) {
     final c = widget.controller;
     final tabs = _tabs;
-    final sheet = Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(Space.xl),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLowest,
+    final sheet = Material(
+      color: theme.colorScheme.surfaceContainerLowest,
+      shape: RoundedRectangleBorder(
         borderRadius: Radii.large,
-        border: Border.all(color: theme.colorScheme.outlineVariant),
+        side: BorderSide(color: theme.colorScheme.outlineVariant),
       ),
-      child: Column(
+      child: Padding(
+        padding: const EdgeInsets.all(Space.xl),
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -261,13 +265,23 @@ class _RecordFormViewState<T extends Object> extends State<RecordFormView<T>>
             for (final (i, t) in widget.tabs.indexed)
               Offstage(
                 offstage: i != tabs.index,
-                child: TickerMode(enabled: i == tabs.index, child: t.child),
+                child: TickerMode(
+                  enabled: i == tabs.index,
+                  child: ExcludeFocus(
+                    excluding: i != tabs.index,
+                    child: t.child,
+                  ),
+                ),
               ),
           ],
         ],
       ),
+    ),
     );
-    return Form(key: c.formKey, child: sheet.lockRecordEditing(c.busy));
+    return Form(
+      key: c.formKey,
+      child: sheet.lockRecordEditing(c.busy || widget.locked),
+    );
   }
 
   /// The sheet, with the chatter beside it when there is room (the sheet keeps the width it
@@ -316,7 +330,9 @@ class _RecordFormViewState<T extends Object> extends State<RecordFormView<T>>
         const SizedBox(height: Space.md),
         RecordConflictNotice(
           notice: notice,
-          onReload: widget.onReload == null || c.busy ? null : widget.onReload,
+          onReload: widget.onReload == null || c.busy || widget.locked
+              ? null
+              : widget.onReload,
           onDismiss: c.dismissNotice,
         ),
       ],

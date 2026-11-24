@@ -87,6 +87,36 @@ void main() {
       },
     );
 
+    test('groups sends group_by with the search and filters', () async {
+      final http = FakeHttp({
+        'GET /api/v1/customers/groups': (_) => {
+          'group_by': 'active',
+          'groups': [
+            {'value': 'true', 'count': 4},
+            {'value': 'false', 'count': 1},
+          ],
+        },
+      });
+      final groups = await CustomerRepository(_api(http).crm).groups(
+        const ListQuery(
+          search: 'be',
+          filters: {
+            'country_code': {'NL', 'BE'},
+          },
+        ),
+        'active',
+      );
+      expect(
+        [for (final g in groups) (g.value, g.count)],
+        [('true', 4), ('false', 1)],
+      );
+      expect(http.queries.single, {
+        'group_by': 'active',
+        'q': 'be',
+        'country_code': 'BE,NL',
+      });
+    });
+
     test('get reads by id', () async {
       final http = FakeHttp({
         'GET /api/v1/customers/c2': (_) => customerJson(),

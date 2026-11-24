@@ -10,6 +10,7 @@ import 'package:go_router/go_router.dart';
 import '../../framework/components/chatter/chatter_panel.dart';
 import '../../framework/components/chatter/chatter_repository.dart';
 import '../../app/api.dart';
+import '../../core/theme/tokens.dart';
 import '../../app/shortcuts/actions.dart';
 import '../../app/shortcuts/preferences_dialog.dart'
     show effectiveAutosaveMinutesProvider;
@@ -1295,7 +1296,9 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
           ),
           actions: const [SizedBox.shrink()],
         ),
-      const SizedBox(height: 8),
+      const SizedBox(height: Space.md),
+      const Divider(height: 1),
+      const SizedBox(height: Space.lg),
       for (final n in _notices) _swapNotice(theme, n),
       _linesTable(
         theme,
@@ -2165,137 +2168,170 @@ class _QuotationPageState extends ConsumerState<QuotationScreen> {
             : child,
       ),
     );
-    Text h(String s) => Text(s, style: theme.textTheme.labelLarge);
-    final table = SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              cell(0, h(context.l10n.code)),
-              cell(1, h(context.l10n.description)),
-              cell(2, h(context.l10n.quantity), right: true),
-              cell(3, h(context.l10n.listPrice), right: true),
-              cell(4, h(context.l10n.rebate), right: true),
-              cell(5, h(context.l10n.lineDiscount), right: true),
-              cell(6, h(context.l10n.netPrice), right: true),
-              cell(7, h(context.l10n.total), right: true),
-            ],
-          ),
-          const Divider(),
-          for (final r in rows)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+    Text h(String s) => Text(
+      s,
+      style: theme.textTheme.labelLarge?.copyWith(
+        color: theme.colorScheme.onSurfaceVariant,
+      ),
+    );
+    final table = Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: Radii.medium,
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              color: theme.colorScheme.surfaceContainerHigh,
+              padding: const EdgeInsets.symmetric(
+                horizontal: Space.md,
+                vertical: Space.sm + 2,
+              ),
+              child: Row(
                 children: [
-                  Row(
-                    children: [
-                      cell(
-                        0,
-                        Padding(
-                          padding: EdgeInsets.only(left: 16.0 * r.level),
-                          child: Text(r.code, overflow: TextOverflow.ellipsis),
-                        ),
-                      ),
-                      cell(
-                        1,
-                        Padding(
-                          padding: EdgeInsets.zero,
-                          child: Row(
-                            children: [
-                              if (r.level > 0)
-                                Tooltip(
-                                  message: context.l10n.optionLine,
-                                  child: const Icon(
-                                    AppIcons.subdirectoryArrowRight,
-                                    size: 16,
-                                  ),
-                                ),
-                              Flexible(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      r.description,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    if (r.detail != null)
-                                      Text(
-                                        r.detail!,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: theme.textTheme.bodySmall,
-                                      ),
-                                    if (r.warning != null)
-                                      _notOfferedChip(theme, r.warning!),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      cell(2, r.quantity, right: true),
-                      cell(3, r.listPrice, right: true),
-                      cell(4, Text(r.rebate), right: true),
-                      cell(5, r.discount, right: true),
-                      cell(6, Text(r.netPrice), right: true),
-                      cell(7, Text(r.total), right: true),
-                      if (r.onRemove != null || r.onRemarks != null)
-                        SizedBox(
-                          width: widths[8],
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (r.onRemarks != null)
-                                IconButton(
-                                  key: ValueKey(
-                                    'line-remarks-${r.remarkKey ?? ''}',
-                                  ),
-                                  tooltip: context.l10n.remarks,
-                                  onPressed: r.onRemarks,
-                                  icon: Icon(
-                                    AppIcons.notes,
-                                    color: r.hasRemarks
-                                        ? theme.colorScheme.primary
-                                        : null,
-                                  ),
-                                ),
-                              if (r.onChangeProduct != null)
-                                IconButton(
-                                  tooltip: context.l10n.changeProduct,
-                                  onPressed: r.onChangeProduct,
-                                  icon: const Icon(AppIcons.swapHoriz),
-                                ),
-                              if (r.onAddSub != null)
-                                IconButton(
-                                  tooltip: context.l10n.addSubItem,
-                                  onPressed: r.onAddSub,
-                                  icon: const Icon(AppIcons.add),
-                                ),
-                              if (r.onRemove != null)
-                                IconButton(
-                                  tooltip: context.l10n.removeLine,
-                                  onPressed: r.onRemove,
-                                  icon: const Icon(AppIcons.close),
-                                ),
-                            ],
-                          ),
-                        ),
-                    ],
-                  ),
-                  if (r.extra != null) r.extra!,
+                  cell(0, h(context.l10n.code)),
+                  cell(1, h(context.l10n.description)),
+                  cell(2, h(context.l10n.quantity), right: true),
+                  cell(3, h(context.l10n.listPrice), right: true),
+                  cell(4, h(context.l10n.rebate), right: true),
+                  cell(5, h(context.l10n.lineDiscount), right: true),
+                  cell(6, h(context.l10n.netPrice), right: true),
+                  cell(7, h(context.l10n.total), right: true),
+                  SizedBox(width: widths[8]),
                 ],
               ),
             ),
-          if (rows.isEmpty)
-            Padding(
-              padding: EdgeInsets.all(8),
-              child: Text(context.l10n.noLines),
-            ),
-        ],
+            const Divider(height: 1),
+            for (final (idx, r) in rows.indexed) ...[
+              if (idx > 0) const Divider(height: 1),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: Space.md,
+                  vertical: Space.xs + 2,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        cell(
+                          0,
+                          Padding(
+                            padding: EdgeInsets.only(left: 16.0 * r.level),
+                            child: Text(r.code, overflow: TextOverflow.ellipsis),
+                          ),
+                        ),
+                        cell(
+                          1,
+                          Padding(
+                            padding: EdgeInsets.zero,
+                            child: Row(
+                              children: [
+                                if (r.level > 0)
+                                  Tooltip(
+                                    message: context.l10n.optionLine,
+                                    child: const Icon(
+                                      AppIcons.subdirectoryArrowRight,
+                                      size: 16,
+                                    ),
+                                  ),
+                                Flexible(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        r.description,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      if (r.detail != null)
+                                        Text(
+                                          r.detail!,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: theme.textTheme.bodySmall,
+                                        ),
+                                      if (r.warning != null)
+                                        _notOfferedChip(theme, r.warning!),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        cell(2, r.quantity, right: true),
+                        cell(3, r.listPrice, right: true),
+                        cell(4, Text(r.rebate), right: true),
+                        cell(5, r.discount, right: true),
+                        cell(6, Text(r.netPrice), right: true),
+                        cell(7, Text(r.total), right: true),
+                        if (r.onRemove != null || r.onRemarks != null)
+                          SizedBox(
+                            width: widths[8],
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (r.onRemarks != null)
+                                  IconButton(
+                                    key: ValueKey(
+                                      'line-remarks-${r.remarkKey ?? ''}',
+                                    ),
+                                    tooltip: context.l10n.remarks,
+                                    onPressed: r.onRemarks,
+                                    icon: Icon(
+                                      AppIcons.notes,
+                                      color: r.hasRemarks
+                                          ? theme.colorScheme.primary
+                                          : null,
+                                    ),
+                                  ),
+                                if (r.onChangeProduct != null)
+                                  IconButton(
+                                    tooltip: context.l10n.changeProduct,
+                                    onPressed: r.onChangeProduct,
+                                    icon: const Icon(AppIcons.swapHoriz),
+                                  ),
+                                if (r.onAddSub != null)
+                                  IconButton(
+                                    tooltip: context.l10n.addSubItem,
+                                    onPressed: r.onAddSub,
+                                    icon: const Icon(AppIcons.add),
+                                  ),
+                                if (r.onRemove != null)
+                                  IconButton(
+                                    tooltip: context.l10n.removeLine,
+                                    onPressed: r.onRemove,
+                                    icon: const Icon(AppIcons.close),
+                                  ),
+                              ],
+                            ),
+                          )
+                        else
+                          SizedBox(width: widths[8]),
+                      ],
+                    ),
+                    if (r.extra != null) r.extra!,
+                  ],
+                ),
+              ),
+            ],
+            if (rows.isEmpty)
+              Padding(
+                padding: const EdgeInsets.all(Space.md),
+                child: Text(
+                  context.l10n.noLines,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
     // Spreadsheet keys inside the lines: arrows between lines, Ctrl+arrows to the ends.

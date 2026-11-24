@@ -11817,4 +11817,30 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get autosaveAdminHelp =>
       'Standardintervall für das automatische Speichern offener Entwürfe (Benutzer können dies in ihren Einstellungen überschreiben).';
+
+  @override
+  String get listGroupBy => 'Gruppieren nach';
+
+  @override
+  String get listGroupNone => 'Keine';
+
+  @override
+  String listGroupChip(String group) {
+    return 'Gruppe: $group';
+  }
+
+  @override
+  String listRemoveGrouping(String group) {
+    return 'Gruppierung $group entfernen';
+  }
+
+  @override
+  String listGroupExpanded(String label, int count) {
+    return '$label, $count Zeilen, aufgeklappt';
+  }
+
+  @override
+  String listGroupCollapsed(String label, int count) {
+    return '$label, $count Zeilen, zugeklappt';
+  }
 }

@@ -2,8 +2,8 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/api.dart';
+import '../../framework/form/one2many_line_editor.dart';
 import '../../l10n/l10n.dart';
-import '../../shared/app_icons.dart';
 import '../../shared/decimal_field.dart';
 import '../../shared/format.dart';
 import '../../shared/search_picker.dart';
@@ -204,98 +204,86 @@ class _PoLinesEditorState extends ConsumerState<PoLinesEditor> {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        for (var i = 0; i < widget.lines.length; i++)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  flex: 4,
-                  child: widget.lines[i].productId != null
-                      ? Padding(
-                          padding: const EdgeInsets.only(top: 16),
-                          child: Text(
-                            widget.lines[i].label,
-                            key: ValueKey('po-line-label-$i'),
-                          ),
-                        )
-                      : SearchPicker<Product>(
-                          key: ValueKey('po-line-product-$i'),
-                          label: l.product,
-                          display: (p) => '${p.code} · ${p.name}',
-                          search: (q) async =>
-                              (await ref
-                                      .read(apiProvider)
-                                      .products
-                                      .listProducts(q: q, limit: 20))
-                                  .items,
-                          onSelected: (p) => _pick(widget.lines[i], p),
-                        ),
+    final scheme = Theme.of(context).colorScheme;
+    InputDecoration cellDeco(String label) => InputDecoration(
+      labelText: label,
+      filled: true,
+      fillColor: scheme.surfaceContainerLowest,
+    );
+    return One2ManyLineEditor<PoLineDraft>(
+      rows: widget.lines,
+      addButtonKey: const ValueKey('po-line-add'),
+      addLabel: l.purchAddLine,
+      removeTooltip: l.remove,
+      removeKeyBuilder: (i, _) => ValueKey('po-line-remove-$i'),
+      onAdd: () {
+        widget.lines.add(PoLineDraft());
+        _changed();
+      },
+      onRemove: (i, _) {
+        widget.lines.removeAt(i).dispose();
+        _changed();
+      },
+      columns: [
+        One2ManyColumn<PoLineDraft>(
+          label: l.product,
+          flex: 4,
+          cell: (context, i, d) => d.productId != null
+              ? Text(d.label, key: ValueKey('po-line-label-$i'))
+              : SearchPicker<Product>(
+                  key: ValueKey('po-line-product-$i'),
+                  label: l.product,
+                  display: (p) => '${p.code} · ${p.name}',
+                  search: (q) async =>
+                      (await ref
+                              .read(apiProvider)
+                              .products
+                              .listProducts(q: q, limit: 20))
+                          .items,
+                  onSelected: (p) => _pick(d, p),
                 ),
-                const SizedBox(width: 8),
-                SizedBox(
-                  width: 90,
-                  child: DecimalField(
-                    fieldKey: ValueKey('po-line-qty-$i'),
-                    controller: widget.lines[i].qty,
-                    decoration: InputDecoration(labelText: l.quantity),
-                    onChanged: (_) => _changed(),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                SizedBox(
-                  width: 110,
-                  child: DecimalField(
-                    fieldKey: ValueKey('po-line-price-$i'),
-                    controller: widget.lines[i].price,
-                    decoration: InputDecoration(labelText: l.unitPrice),
-                    onChanged: (_) => _changed(),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                SizedBox(
-                  width: 72,
-                  child: DecimalField(
-                    fieldKey: ValueKey('po-line-vat-$i'),
-                    controller: widget.lines[i].vat,
-                    decoration: InputDecoration(labelText: l.vatPercent),
-                    onChanged: (_) => _changed(),
-                  ),
-                ),
-                SizedBox(
-                  width: 90,
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 16),
-                    child: Text(
-                      _lineTotal(widget.lines[i]),
-                      textAlign: TextAlign.end,
-                    ),
-                  ),
-                ),
-                IconButton(
-                  key: ValueKey('po-line-remove-$i'),
-                  tooltip: l.remove,
-                  icon: const Icon(AppIcons.delete),
-                  onPressed: () {
-                    widget.lines.removeAt(i).dispose();
-                    _changed();
-                  },
-                ),
-              ],
-            ),
+        ),
+        One2ManyColumn<PoLineDraft>(
+          label: l.quantity,
+          width: 90,
+          numeric: true,
+          cell: (context, i, d) => DecimalField(
+            fieldKey: ValueKey('po-line-qty-$i'),
+            controller: d.qty,
+            decoration: cellDeco(l.quantity),
+            onChanged: (_) => _changed(),
           ),
-        TextButton.icon(
-          key: const ValueKey('po-line-add'),
-          onPressed: () {
-            widget.lines.add(PoLineDraft());
-            _changed();
-          },
-          icon: const Icon(AppIcons.add),
-          label: Text(l.purchAddLine),
+        ),
+        One2ManyColumn<PoLineDraft>(
+          label: l.unitPrice,
+          width: 110,
+          numeric: true,
+          cell: (context, i, d) => DecimalField(
+            fieldKey: ValueKey('po-line-price-$i'),
+            controller: d.price,
+            decoration: cellDeco(l.unitPrice),
+            onChanged: (_) => _changed(),
+          ),
+        ),
+        One2ManyColumn<PoLineDraft>(
+          label: l.vatPercent,
+          width: 72,
+          numeric: true,
+          cell: (context, i, d) => DecimalField(
+            fieldKey: ValueKey('po-line-vat-$i'),
+            controller: d.vat,
+            decoration: cellDeco(l.vatPercent),
+            onChanged: (_) => _changed(),
+          ),
+        ),
+        One2ManyColumn<PoLineDraft>(
+          label: l.total,
+          width: 90,
+          numeric: true,
+          cell: (context, i, d) => Text(
+            _lineTotal(d),
+            textAlign: TextAlign.end,
+          ),
         ),
       ],
     );

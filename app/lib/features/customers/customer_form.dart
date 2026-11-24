@@ -20,6 +20,15 @@ import '../../l10n/l10n.dart';
 import '../../shared/app_icons.dart';
 import '../tutorial/targets.dart';
 
+final customerCountsProvider = FutureProvider.autoDispose
+    .family<CustomerCounts?, String>((ref, id) async {
+      try {
+        return await ref.watch(apiProvider).crm.getCustomerCounts(id: id);
+      } catch (_) {
+        return null;
+      }
+    });
+
 /// Shows the customer form; returns true when saved.
 Future<bool?> showCustomerForm(
   BuildContext context, {
@@ -540,15 +549,26 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
     router.push('/jobs/equipment/${c!.id}');
   }
 
-  void _openClosures() => showDialog<void>(
-    context: context,
-    builder: (_) => ClosuresDialog(customer: c!),
-  );
+  Future<void> _openContacts() async {
+    await showContactsDialog(context, c!);
+    if (mounted) ref.invalidate(customerCountsProvider(c!.id));
+  }
 
-  void _openRebates() => showDialog<void>(
-    context: context,
-    builder: (_) => RebatesDialog(customer: c!),
-  );
+  Future<void> _openClosures() async {
+    await showDialog<void>(
+      context: context,
+      builder: (_) => ClosuresDialog(customer: c!),
+    );
+    if (mounted) ref.invalidate(customerCountsProvider(c!.id));
+  }
+
+  Future<void> _openRebates() async {
+    await showDialog<void>(
+      context: context,
+      builder: (_) => RebatesDialog(customer: c!),
+    );
+    if (mounted) ref.invalidate(customerCountsProvider(c!.id));
+  }
 
   Widget _saveButton() => TutorialTarget(
     id: 'customer-form-save',
@@ -571,54 +591,63 @@ class _CustomerFormState extends ConsumerState<CustomerForm> {
     return _dialog(context, c);
   }
 
-  Widget _page(BuildContext context, Customer? c) => RecordFormView<Customer>(
-    controller: _form,
-    title: c?.name ?? context.l10n.newCustomer,
-    onBack: () => _finish(null),
-    titleExtras: widget.titleExtras,
-    reportDirty: !widget.readOnly,
-    maxSheetWidth: 720,
-    chatter: c == null
+  Widget _page(BuildContext context, Customer? c) {
+    final counts = c == null
         ? null
-        : ChatterPanel(
-            kind: ChatterKind.customer,
-            recordId: c.id,
-            refresh: _form.chatterTick,
-          ),
-    onReload: _reloadCustomer,
-    actions: [
-      if (!widget.readOnly) _saveButton(),
-      _closeButton(),
-      if (c != null)
-        RecordHistoryButton(entity: 'customer', id: c.id, title: c.name),
-    ],
-    smartButtons: [
-      if (c != null) ...[
-        SmartButton(
-          icon: AppIcons.people,
-          label: context.l10n.contacts,
-          onPressed: () => showContactsDialog(context, c),
-        ),
-        if (_canSeeEquipment)
-          SmartButton(
-            icon: AppIcons.precisionManufacturing,
-            label: context.l10n.customerEquipment,
-            onPressed: _openEquipment,
-          ),
-        SmartButton(
-          icon: AppIcons.eventBusy,
-          label: context.l10n.closures,
-          onPressed: _openClosures,
-        ),
-        SmartButton(
-          icon: AppIcons.percent,
-          label: context.l10n.productRebates,
-          onPressed: _openRebates,
-        ),
+        : ref.watch(customerCountsProvider(c.id)).value;
+    return RecordFormView<Customer>(
+      controller: _form,
+      title: c?.name ?? context.l10n.newCustomer,
+      onBack: () => _finish(null),
+      titleExtras: widget.titleExtras,
+      reportDirty: !widget.readOnly,
+      maxSheetWidth: 720,
+      chatter: c == null
+          ? null
+          : ChatterPanel(
+              kind: ChatterKind.customer,
+              recordId: c.id,
+              refresh: _form.chatterTick,
+            ),
+      onReload: _reloadCustomer,
+      actions: [
+        if (!widget.readOnly) _saveButton(),
+        _closeButton(),
+        if (c != null)
+          RecordHistoryButton(entity: 'customer', id: c.id, title: c.name),
       ],
-    ],
-    body: _fields(context),
-  );
+      smartButtons: [
+        if (c != null) ...[
+          SmartButton(
+            icon: AppIcons.people,
+            label: context.l10n.contacts,
+            count: counts == null ? null : '${counts.contacts}',
+            onPressed: _openContacts,
+          ),
+          if (_canSeeEquipment)
+            SmartButton(
+              icon: AppIcons.precisionManufacturing,
+              label: context.l10n.customerEquipment,
+              count: counts?.equipment == null ? null : '${counts!.equipment}',
+              onPressed: _openEquipment,
+            ),
+          SmartButton(
+            icon: AppIcons.eventBusy,
+            label: context.l10n.closures,
+            count: counts == null ? null : '${counts.closures}',
+            onPressed: _openClosures,
+          ),
+          SmartButton(
+            icon: AppIcons.percent,
+            label: context.l10n.productRebates,
+            count: counts == null ? null : '${counts.productRebates}',
+            onPressed: _openRebates,
+          ),
+        ],
+      ],
+      body: _fields(context),
+    );
+  }
 
   Widget _dialog(BuildContext context, Customer? c) {
     const gap = SizedBox(width: 12, height: 12);

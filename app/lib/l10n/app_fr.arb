@@ -3907,5 +3907,11 @@
   "autosaveDefault": "Par défaut ({minutes} min)",
   "autosaveDefaultOff": "Par défaut (Désactivé)",
   "autosaveUserHelp": "Remplacer la fréquence d'enregistrement automatique des brouillons.",
-  "autosaveAdminHelp": "Intervalle par défaut pour l'enregistrement automatique des brouillons (les utilisateurs peuvent le remplacer dans leurs préférences)."
+  "autosaveAdminHelp": "Intervalle par défaut pour l'enregistrement automatique des brouillons (les utilisateurs peuvent le remplacer dans leurs préférences).",
+  "listGroupBy": "Grouper par",
+  "listGroupNone": "Aucun",
+  "listGroupChip": "Groupe : {group}",
+  "listRemoveGrouping": "Supprimer le regroupement {group}",
+  "listGroupExpanded": "{label}, {count} lignes, développé",
+  "listGroupCollapsed": "{label}, {count} lignes, réduit"
 }

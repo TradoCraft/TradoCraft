@@ -17,6 +17,9 @@ enum ShortcutLayer {
 
   /// A dialog or sheet. It is modal: shortcuts it does not handle are not passed to lower layers.
   dialog,
+
+  /// The tutorial narrator and completion overlay above everything (even dialogs).
+  tutorial,
 }
 
 /// What the scopes currently offer, and which of them wins (topmost dialog, then the active tab,

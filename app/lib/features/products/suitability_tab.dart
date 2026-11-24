@@ -8,7 +8,7 @@ import '../tutorial/controller.dart';
 import '../tutorial/targets.dart';
 import 'suitability_logic.dart';
 
-final _definitionsProvider =
+final productAttributeDefinitionsProvider =
     FutureProvider.autoDispose<List<AttributeDefinition>>(
       (ref) =>
           ref.watch(apiProvider).products.listDefinitions(scope: 'product'),
@@ -42,11 +42,11 @@ class SuitabilityTab extends ConsumerWidget {
           'i2cBus',
           'licensedOutputs',
         }.contains(completed?.stepId)) {
-          ref.invalidate(_definitionsProvider);
+          ref.invalidate(productAttributeDefinitionsProvider);
         }
       }
     });
-    final defs = ref.watch(_definitionsProvider);
+    final defs = ref.watch(productAttributeDefinitionsProvider);
     final attrs = ref.watch(_attributesProvider(product.id));
     final failed = defs.error ?? attrs.error;
     if (failed != null) {
@@ -56,7 +56,7 @@ class SuitabilityTab extends ConsumerWidget {
           Text(errorMessage(failed)),
           TextButton(
             onPressed: () {
-              ref.invalidate(_definitionsProvider);
+              ref.invalidate(productAttributeDefinitionsProvider);
               ref.invalidate(_attributesProvider(product.id));
             },
             child: Text(context.l10n.retry),
@@ -83,6 +83,7 @@ class SuitabilityTab extends ConsumerWidget {
       );
     }
     return _SuitabilityForm(
+      key: ValueKey(active.map((d) => '${d.key}:${d.kind.name}').join('\u0000')),
       product: product,
       defs: active,
       stored: attrs.requireValue,
@@ -92,6 +93,7 @@ class SuitabilityTab extends ConsumerWidget {
 
 class _SuitabilityForm extends ConsumerStatefulWidget {
   const _SuitabilityForm({
+    super.key,
     required this.product,
     required this.defs,
     required this.stored,

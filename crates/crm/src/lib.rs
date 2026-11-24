@@ -120,7 +120,7 @@ impl CustomerInput {
         if self.code.trim().is_empty() || self.name.trim().is_empty() {
             out.push("code and name are required".to_string());
         }
-        if self.country_code.len() != 2 {
+        if tradocraft_core::filter::country_code(&self.country_code).is_none() {
             out.push("country_code must be a 2-letter code".to_string());
         }
         if !tradocraft_core::is_language(&self.language.to_lowercase()) {
@@ -290,6 +290,78 @@ pub async fn get_customer_for_quoting<'e>(
     }
 }
 
+/// The parsed search pattern and country filter shared by the customer list and its groups.
+fn customer_filter_values(
+    q: Option<&str>,
+    country_code: Option<&str>,
+) -> AppResult<(Option<String>, Option<Vec<String>>)> {
+    let countries = tradocraft_core::filter::values_with(
+        country_code,
+        "country_code",
+        "two-letter country codes",
+        tradocraft_core::filter::country_code,
+    )?;
+    Ok((search::pattern(q), countries))
+}
+
+/// The `WHERE` clause of the customer list (alias `c`). The arguments are the numbers of the
+/// parameters that carry the search pattern, the `active` flag and the country list.
+fn customer_where(q: usize, active: usize, countries: usize) -> String {
+    let qp = format!("${q}");
+    format!(
+        "WHERE (${q}::text IS NULL OR {} OR {} OR {} OR {})
+                  AND (${active}::boolean IS NULL OR c.active = ${active})
+                  AND (${countries}::text[] IS NULL OR c.country_code::text = ANY(${countries}))",
+        search::matches("c.code", &qp),
+        search::matches("c.name", &qp),
+        search::matches("c.vat_number", &qp),
+        search::matches("c.city", &qp),
+    )
+}
+
+/// API group keys of `GET /customers/groups` and the SQL (text) they stand for. Never NULL.
+const CUSTOMER_GROUPS: &[(&str, &str)] =
+    &[("active", "c.active"), ("country_code", "c.country_code")];
+
+#[derive(Debug, Deserialize, IntoParams)]
+pub struct GroupParams {
+    /// What to count by: `active` or `country_code`.
+    #[param(required = true, nullable = false)]
+    pub group_by: Option<String>,
+    /// Same as the list.
+    pub q: Option<String>,
+    /// Same as the list.
+    pub active: Option<bool>,
+    /// Same as the list.
+    pub country_code: Option<String>,
+}
+
+#[utoipa::path(get, path = "/customers/groups", tag = "crm", params(GroupParams),
+    responses((status = 200, body = tradocraft_core::group::GroupPage)))]
+async fn customer_groups(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Query(p): Query<GroupParams>,
+) -> AppResult<Json<tradocraft_core::group::GroupPage>> {
+    user.require(Permission::CustomersRead)?;
+    let expr = tradocraft_core::group::expr(p.group_by.as_deref(), CUSTOMER_GROUPS)?;
+    let (pattern, countries) = customer_filter_values(p.q.as_deref(), p.country_code.as_deref())?;
+    let sql = tradocraft_core::group::count_sql(
+        expr,
+        &format!("crm.customers c {}", customer_where(1, 2, 3)),
+    );
+    let rows: Vec<(String, i64)> = sqlx::query_as(sqlx::AssertSqlSafe(sql))
+        .bind(&pattern)
+        .bind(p.active)
+        .bind(&countries)
+        .fetch_all(&state.db)
+        .await?;
+    Ok(Json(tradocraft_core::group::page(
+        p.group_by.as_deref().unwrap_or_default(),
+        rows,
+    )?))
+}
+
 #[utoipa::path(get, path = "/customers", tag = "crm", params(ListParams),
     responses((status = 200, body = CustomerPage)))]
 async fn list_customers(
@@ -298,22 +370,8 @@ async fn list_customers(
     Query(p): Query<ListParams>,
 ) -> AppResult<Json<CustomerPage>> {
     user.require(Permission::CustomersRead)?;
-    let pattern = search::pattern(p.q.as_deref());
-    let countries = tradocraft_core::filter::values_with(
-        p.country_code.as_deref(),
-        "country_code",
-        "two-letter country codes",
-        tradocraft_core::filter::country_code,
-    )?;
-    let filter = format!(
-        "WHERE ($2::text IS NULL OR {} OR {} OR {} OR {})
-                  AND ($5::boolean IS NULL OR c.active = $5)
-                  AND ($6::text[] IS NULL OR c.country_code::text = ANY($6))",
-        search::matches("c.code", "$2"),
-        search::matches("c.name", "$2"),
-        search::matches("c.vat_number", "$2"),
-        search::matches("c.city", "$2"),
-    );
+    let (pattern, countries) = customer_filter_values(p.q.as_deref(), p.country_code.as_deref())?;
+    let filter = customer_where(2, 5, 6);
     let order =
         tradocraft_core::sort::order_by(p.sort.as_deref(), CUSTOMER_SORT, "c.id", "c.name")?;
     let items = sqlx::query_as(sqlx::AssertSqlSafe(format!(
@@ -327,13 +385,10 @@ async fn list_customers(
     .bind(&countries)
     .fetch_all(&state.db)
     .await?;
-    // The count query has no company or paging binds: $2 becomes $1, $5 and $6 become $2 and $3.
+    // The count query has no company or paging binds: the filter uses $1, $2 and $3.
     let total = sqlx::query_scalar(sqlx::AssertSqlSafe(format!(
         "SELECT count(*) FROM crm.customers c {}",
-        filter
-            .replace("$2", "$1")
-            .replace("$5", "$2")
-            .replace("$6", "$3")
+        customer_where(1, 2, 3)
     )))
     .bind(&pattern)
     .bind(p.active)
@@ -341,6 +396,53 @@ async fn list_customers(
     .fetch_one(&state.db)
     .await?;
     Ok(Json(CustomerPage { items, total }))
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct CustomerCounts {
+    pub contacts: i64,
+    pub closures: i64,
+    pub product_rebates: i64,
+    pub equipment: Option<i64>,
+}
+
+#[utoipa::path(get, path = "/customers/{id}/counts", tag = "crm", operation_id = "get_customer_counts", params(("id" = Uuid, Path)),
+    responses((status = 200, body = CustomerCounts), (status = 404, body = tradocraft_core::error::ErrorBody)))]
+async fn get_customer_counts(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Path(id): Path<Uuid>,
+) -> AppResult<Json<CustomerCounts>> {
+    user.require(Permission::CustomersRead)?;
+    get_customer(&state.db, user.company_id, id).await?;
+    let (contacts, closures, product_rebates): (i64, i64, i64) = sqlx::query_as(
+        "SELECT
+           (SELECT count(*) FROM crm.contacts WHERE customer_id = $2 AND active),
+           (SELECT count(*) FROM crm.customer_closures WHERE customer_id = $2),
+           (SELECT count(*) FROM crm.customer_rebates WHERE company_id = $1 AND customer_id = $2)",
+    )
+    .bind(user.company_id)
+    .bind(id)
+    .fetch_one(&state.db)
+    .await?;
+    let equipment = if user.require(Permission::FieldRead).is_ok() {
+        let n: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM engineering.serial_units WHERE company_id = $1 AND customer_id = $2",
+        )
+        .bind(user.company_id)
+        .bind(id)
+        .fetch_one(&state.db)
+        .await?;
+        Some(n)
+    } else {
+        None
+    };
+    Ok(Json(CustomerCounts {
+        contacts,
+        closures,
+        product_rebates,
+        equipment,
+    }))
 }
 
 #[utoipa::path(get, path = "/customers/{id}", tag = "crm", operation_id = "get_customer", params(("id" = Uuid, Path)),
@@ -688,7 +790,9 @@ pub fn router() -> OpenApiRouter<AppState> {
     OpenApiRouter::new()
         .routes(routes!(check_vat))
         .routes(routes!(list_customers, create_customer))
+        .routes(routes!(customer_groups))
         .routes(routes!(get_customer_handler, update_customer))
+        .routes(routes!(get_customer_counts))
         .merge(import::router())
         .merge(contacts::router())
         .merge(opportunities::router())

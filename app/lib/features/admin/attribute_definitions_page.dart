@@ -2,6 +2,8 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/api.dart';
+import '../products/suitability_tab.dart'
+    show productAttributeDefinitionsProvider;
 import '../../l10n/l10n.dart';
 import '../../shared/actions.dart';
 import '../tutorial/targets.dart';
@@ -280,6 +282,7 @@ class _AttributeDefinitionDialogState
     }, success: context.l10n.saved);
     if (!mounted) return;
     if (ok) {
+      ref.invalidate(productAttributeDefinitionsProvider);
       Navigator.pop(context, true);
     } else {
       setState(() => _busy = false);

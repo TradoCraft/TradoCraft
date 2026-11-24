@@ -11804,4 +11804,30 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get autosaveAdminHelp =>
       'Intervalle par défaut pour l\'enregistrement automatique des brouillons (les utilisateurs peuvent le remplacer dans leurs préférences).';
+
+  @override
+  String get listGroupBy => 'Grouper par';
+
+  @override
+  String get listGroupNone => 'Aucun';
+
+  @override
+  String listGroupChip(String group) {
+    return 'Groupe : $group';
+  }
+
+  @override
+  String listRemoveGrouping(String group) {
+    return 'Supprimer le regroupement $group';
+  }
+
+  @override
+  String listGroupExpanded(String label, int count) {
+    return '$label, $count lignes, développé';
+  }
+
+  @override
+  String listGroupCollapsed(String label, int count) {
+    return '$label, $count lignes, réduit';
+  }
 }

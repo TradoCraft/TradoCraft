@@ -14,6 +14,7 @@ import '../framework/data/repository.dart';
 import '../framework/search/favourite.dart';
 import '../framework/search/filter_model.dart';
 import '../framework/search/filter_widgets.dart';
+import '../framework/search/group_model.dart';
 import '../l10n/l10n.dart';
 import 'actions.dart';
 import 'app_icons.dart';
@@ -104,6 +105,8 @@ class EntityList<T> extends StatefulWidget {
     this.filters,
     this.filterDefs = const [],
     this.moreFilters,
+    this.groupDefs = const [],
+    this.loadGroups,
     this.actions = const [],
     this.emptyText,
     this.emptyAction,
@@ -165,6 +168,17 @@ class EntityList<T> extends StatefulWidget {
   /// The selection goes to [loadQuery] as `ListQuery.filters` (key to the set of selected values).
   /// Needs [loadQuery]. Empty (default): the list looks and behaves as before.
   final List<FilterDef> filterDefs;
+
+  /// Declared groupings (ADR 0084): a "Group by" section in the filter menu and a removable chip.
+  /// Every key needs a [FilterDef] in [filterDefs]; needs [loadQuery] and [loadGroups]. Empty
+  /// (default): the list looks and behaves as before.
+  final List<GroupDef> groupDefs;
+
+  /// The groups (value and row count) of the rows [query] would show, for the grouping [groupBy].
+  /// Set together with [groupDefs]. Expanding a group calls [loadQuery] with the group value as the
+  /// only selection of the filter `query.filters[groupBy]`.
+  final Future<List<GroupBucket>> Function(ListQuery query, String groupBy)?
+  loadGroups;
 
   /// More filters, on a line of their own under the search box (for lists with many).
   final Widget? moreFilters;
@@ -235,6 +249,27 @@ class EntityListState<T> extends State<EntityList<T>> {
   int _favSeq = 0;
   final _searchFocus = FocusNode();
 
+  // ---- grouping (ADR 0084) ----
+
+  String? _groupBy;
+  List<GroupBucket> _groups = const [];
+
+  /// The search, sort and filters the groups were loaded for; a group loads its rows with these.
+  ListQuery _groupBase = const ListQuery();
+  String? _groupsFor;
+  final _open = <String>{};
+  final _gstate = <String, _GroupState<T>>{};
+  final _groupNodes = <(String, int), FocusNode>{};
+
+  bool get _grouped => _groupBy != null && widget.loadGroups != null;
+
+  Iterable<T> get _loadedItems => _grouped
+      ? [
+          for (final e in _gstate.entries)
+            if (_open.contains(e.key)) ...e.value.items,
+        ]
+      : _items;
+
   String _cid(EntityColumn<T> c) => c.id ?? c.sortKey ?? c.label;
 
   List<EntityColumn<T>> get _visible => [
@@ -254,6 +289,20 @@ class EntityListState<T> extends State<EntityList<T>> {
       'filterDefs needs loadQuery',
     );
     _filterSel = FilterSelection.allFor(widget.filterDefs);
+    assert(
+      widget.groupDefs.isEmpty == (widget.loadGroups == null),
+      'groupDefs and loadGroups are set together',
+    );
+    assert(
+      widget.groupDefs.isEmpty || widget.loadQuery != null,
+      'groupDefs needs loadQuery',
+    );
+    assert(
+      widget.groupDefs.every(
+        (g) => widget.filterDefs.any((f) => f.key == g.key),
+      ),
+      'every GroupDef key needs a FilterDef',
+    );
     _searchFocus.onKeyEvent = _searchKey;
     _resetVisibility();
     if (widget.prefsKey != null) {
@@ -403,6 +452,9 @@ class EntityListState<T> extends State<EntityList<T>> {
     for (final n in _rowNodes.values) {
       n.dispose();
     }
+    for (final n in _groupNodes.values) {
+      n.dispose();
+    }
     super.dispose();
   }
 
@@ -413,16 +465,200 @@ class EntityListState<T> extends State<EntityList<T>> {
   List<T> get _selectedList => widget.idOf == null
       ? const []
       : [
-          for (final i in _items)
+          for (final i in _loadedItems)
             if (_selected.contains(widget.idOf!(i))) i,
         ];
 
-  Future<void> _fetch({required bool reset}) async {
+  Future<void> _fetchGroups() async {
     final generation = ++_generation;
     final q = _search.text.trim();
     final sort = _sortString;
     final filters = _filterSel;
-    final queryKey = '$q\u0000${sort ?? ''}\u0000${filters.stableKey}';
+    final by = _groupBy!;
+    final base = ListQuery(
+      search: q.isEmpty ? null : q,
+      limit: _pageSize,
+      sort: sort,
+      filters: filters.toActiveQuery(widget.filterDefs),
+    );
+    final key = '$q\u0000${sort ?? ''}\u0000${filters.stableKey}\u0000$by';
+    // A reload of the same query and grouping (e.g. after a failed bulk action) keeps the
+    // selection, like the flat list. Then the expanded groups stay expanded and each one's
+    // loaded range is re-read once the new buckets are in, so the retained selection still
+    // refers to rows on screen; selected rows that are gone are pruned. Any other change
+    // collapses the groups and clears the selection.
+    final same = key == _lastQueryKey;
+    var cleared = false;
+    setState(() {
+      _loading = true;
+      _error = null;
+      // The old buckets and their query are stale from here on: nothing may expand or load
+      // with them until the new snapshot arrives.
+      _groups = const [];
+      _groupBase = const ListQuery();
+      _groupsFor = null;
+      if (!same) {
+        _open.clear();
+        _gstate.clear();
+        if (_selected.isNotEmpty) {
+          _selected.clear();
+          _anchor = null;
+          cleared = true;
+        }
+      }
+      _lastQueryKey = key;
+    });
+    if (cleared) _emitSelection();
+    try {
+      final buckets = await widget.loadGroups!(base, by);
+      if (!mounted || generation != _generation) return;
+      final known = {for (final g in buckets) g.value};
+      setState(() {
+        _groups = buckets;
+        _groupBase = base;
+        _groupsFor = by;
+        _loadedKey = key;
+        _open.removeWhere((v) => !known.contains(v));
+        _gstate.removeWhere((v, _) => !known.contains(v) || !_open.contains(v));
+      });
+      if (same) {
+        await Future.wait([
+          for (final v in _open.toList()) _loadGroup(v, refresh: true),
+        ]);
+        if (!mounted || generation != _generation) return;
+        _pruneGroupSelection();
+      }
+    } catch (e) {
+      if (mounted && generation == _generation) {
+        setState(() => _error = errorMessage(e));
+      }
+    } finally {
+      if (mounted && generation == _generation) {
+        setState(() => _loading = false);
+      }
+    }
+  }
+
+  /// Drops selected rows that the refresh of the expanded groups no longer returned. Rows of
+  /// collapsed groups are not loaded, so they are not selectable and not kept.
+  void _pruneGroupSelection() {
+    if (widget.idOf == null || _selected.isEmpty) return;
+    // A group whose refresh failed keeps its old rows, so nothing is pruned wrongly.
+    final present = {for (final i in _loadedItems) widget.idOf!(i)};
+    final before = _selected.length;
+    setState(() {
+      _selected.removeWhere((id) => !present.contains(id));
+      if (_selected.length != before) _anchor = null;
+    });
+    if (_selected.length != before) _emitSelection();
+  }
+
+  bool _isGroupLoading(_GroupState<T> st) => st.loadingGen == _generation;
+
+  /// The first page (or, with [more], the next one) of the rows of group [value]. With
+  /// [refresh] the already loaded range is read again from the start.
+  Future<void> _loadGroup(
+    String value, {
+    bool more = false,
+    bool refresh = false,
+  }) async {
+    final by = _groupsFor;
+    // Only the current, successfully loaded bucket snapshot may load rows.
+    if (by == null) return;
+    final st = _gstate.putIfAbsent(value, _GroupState<T>.new);
+    final generation = _generation;
+    if (refresh) {
+      st.loadingGen = null;
+    } else if (_isGroupLoading(st)) {
+      return;
+    }
+    final limit = refresh
+        ? math.min(math.max(_pageSize, st.items.length), _maxRefresh)
+        : _pageSize;
+    setState(() {
+      st.loadingGen = generation;
+      st.error = null;
+    });
+    try {
+      final (items, total) = await widget.loadQuery!(
+        ListQuery(
+          search: _groupBase.search,
+          offset: more ? st.items.length : 0,
+          limit: limit,
+          sort: _groupBase.sort,
+          filters: {
+            ..._groupBase.filters,
+            by: <String>{value},
+          },
+        ),
+      );
+      if (!mounted || generation != _generation) return;
+      setState(() {
+        st.items = more ? [...st.items, ...items] : items;
+        st.total = total;
+      });
+      if (refresh) _pruneGroupSelection();
+    } catch (e) {
+      if (mounted && generation == _generation) {
+        setState(() {
+          st.error = errorMessage(e);
+          st.failedMore = more;
+          st.failedRefresh = refresh;
+        });
+      }
+    } finally {
+      if (mounted && generation == _generation) {
+        setState(() => st.loadingGen = null);
+      }
+    }
+  }
+
+  void _toggleGroup(String value) {
+    final opening = !_open.contains(value);
+    final st = _gstate[value];
+    var selectionChanged = false;
+    setState(() {
+      if (opening) {
+        _open.add(value);
+      } else {
+        _open.remove(value);
+        if (widget.idOf != null && _selected.isNotEmpty && st != null) {
+          final before = _selected.length;
+          for (final item in st.items) {
+            _selected.remove(widget.idOf!(item));
+          }
+          if (_selected.length != before) {
+            _anchor = null;
+            selectionChanged = true;
+          }
+        }
+      }
+    });
+    if (selectionChanged) _emitSelection();
+    if (opening && (st == null || (st.items.isEmpty && !_isGroupLoading(st)))) {
+      _loadGroup(value);
+    }
+  }
+
+  void _setGroupBy(String? key) {
+    if (key == _groupBy) return;
+    _debounce?.cancel();
+    setState(() {
+      _groupBy = key;
+      _open.clear();
+      _gstate.clear();
+      if (key == null) _groups = const [];
+    });
+    reload();
+  }
+
+  Future<void> _fetch({required bool reset}) async {
+    if (_grouped) return _fetchGroups();
+    final generation = ++_generation;
+    final q = _search.text.trim();
+    final sort = _sortString;
+    final filters = _filterSel;
+    final queryKey = '$q\u0000${sort ?? ''}\u0000${filters.stableKey}\u0000';
     // The search or sort changed since these rows were loaded (a debounce still pending): the
     // next page of the new query must not be appended to the old rows.
     if (!reset && queryKey != _loadedKey) reset = true;
@@ -564,17 +800,24 @@ class EntityListState<T> extends State<EntityList<T>> {
           name: name,
           search: _search.text.trim(),
           filters: _filterSel.sanitized(widget.filterDefs),
+          groupBy: _grouped ? _groupBy : null,
         ),
       ),
     );
   }
 
   void _applyFavourite(Favourite f) {
-    final fav = f.sanitized(widget.filterDefs);
+    final fav = f.sanitized(widget.filterDefs, groups: widget.groupDefs);
     _debounce?.cancel();
     setState(() {
       _search.text = fav.search;
       _filterSel = fav.filters;
+      _groupBy = fav.groupBy;
+      if (fav.groupBy == null) {
+        _open.clear();
+        _gstate.clear();
+        _groups = const [];
+      }
     });
     reload();
   }
@@ -593,6 +836,9 @@ class EntityListState<T> extends State<EntityList<T>> {
     onToggle: (k, v) => _setFilters(_filterSel.toggle(k, v)),
     onClear: () => _setFilters(FilterSelection.allFor(widget.filterDefs)),
     onToggleAll: widget.filterDefs.isEmpty ? null : _toggleAllFilters,
+    groupDefs: widget.groupDefs,
+    groupBy: _groupBy,
+    onGroupBy: _setGroupBy,
     favourites: widget.prefsKey == null ? null : _favs,
     onSaveFavourite: _favRead == _FavRead.ready ? _saveFavourite : null,
     onRetryFavourites: _favRead == _FavRead.failed ? _retryFavourites : null,
@@ -716,12 +962,22 @@ class EntityListState<T> extends State<EntityList<T>> {
     _emitSelection();
   }
 
+  void _toggleItem(T item, bool on) {
+    final id = widget.idOf!(item);
+    setState(() {
+      on ? _selected.add(id) : _selected.remove(id);
+      _anchor = null;
+    });
+    _emitSelection();
+  }
+
   void _toggleAll() {
     final id = widget.idOf!;
+    final loaded = _loadedItems.toList();
     setState(() {
       final all =
-          _items.isNotEmpty && _items.every((i) => _selected.contains(id(i)));
-      for (final i in _items) {
+          loaded.isNotEmpty && loaded.every((i) => _selected.contains(id(i)));
+      for (final i in loaded) {
         all ? _selected.remove(id(i)) : _selected.add(id(i));
       }
       _anchor = null;
@@ -792,7 +1048,7 @@ class EntityListState<T> extends State<EntityList<T>> {
 
   @override
   Widget build(BuildContext context) => GridKeyNav(
-    include: _rowNodes.containsValue,
+    include: (n) => _rowNodes.containsValue(n) || _groupNodes.containsValue(n),
     scrollController: _scroll,
     enterFromOutside: true,
     child: _body(context),
@@ -866,7 +1122,12 @@ class EntityListState<T> extends State<EntityList<T>> {
                 Flexible(flex: 2, child: _bulkBar(theme))
               else if (!selecting)
                 Text(
-                  context.l10n.countOf(_items.length, _total),
+                  _grouped
+                      ? context.l10n.countOf(
+                          _loadedItems.length,
+                          _groups.fold(0, (a, g) => a + g.count),
+                        )
+                      : context.l10n.countOf(_items.length, _total),
                   style: const TextStyle(
                     fontFeatures: [FontFeature.tabularFigures()],
                   ),
@@ -874,7 +1135,7 @@ class EntityListState<T> extends State<EntityList<T>> {
             ],
           ),
           if (widget.filterDefs.isNotEmpty &&
-              _filterSel.activeCount(widget.filterDefs) > 0)
+              (_filterSel.activeCount(widget.filterDefs) > 0 || _grouped))
             Padding(
               padding: const EdgeInsets.only(top: 4),
               child: Align(
@@ -886,6 +1147,13 @@ class EntityListState<T> extends State<EntityList<T>> {
                     final def = widget.filterDefs.firstWhere((d) => d.key == k);
                     _setFilters(_filterSel.withAllOptions(def));
                   },
+                  group: _grouped
+                      ? widget.groupDefs.firstWhere(
+                          (g) => g.key == _groupBy,
+                          orElse: () => GroupDef(_groupBy!, _groupBy!),
+                        )
+                      : null,
+                  onRemoveGroup: () => _setGroupBy(null),
                 ),
               ),
             ),
@@ -922,7 +1190,7 @@ class EntityListState<T> extends State<EntityList<T>> {
     if (widget.emptyText == null ||
         _loading ||
         _error != null ||
-        _items.isNotEmpty) {
+        (_grouped ? _groups.isNotEmpty : _items.isNotEmpty)) {
       return null;
     }
     return Padding(
@@ -962,24 +1230,158 @@ class EntityListState<T> extends State<EntityList<T>> {
     },
   );
 
-  Widget _list(bool wide, Map<String, double>? widths) => ListView.separated(
-    controller: _scroll,
-    itemCount: _items.length + 1,
-    separatorBuilder: (_, _) => const Divider(height: 1),
-    itemBuilder: (context, i) {
-      if (i == _items.length) return _footer();
-      final item = _items[i];
-      final selecting = widget.selectable && _selected.isNotEmpty;
-      final onTap = widget.selectable && selecting && !wide
-          ? () => _toggleRow(i, !_isSelected(item))
-          : (widget.onOpen == null ? null : () => _after(widget.onOpen!(item)));
-      final node = _rowNodes.putIfAbsent(i, FocusNode.new);
-      final row = wide
-          ? _row(i, item, onTap, node, widths)
-          : _tile(i, item, onTap, node);
-      return OpenInTab(location: widget.locationOf?.call(item), child: row);
-    },
-  );
+  Widget _list(bool wide, Map<String, double>? widths) =>
+      _grouped ? _groupedList(wide, widths) : _plainList(wide, widths);
+
+  Widget _plainList(bool wide, Map<String, double>? widths) =>
+      ListView.separated(
+        controller: _scroll,
+        itemCount: _items.length + 1,
+        separatorBuilder: (_, _) => const Divider(height: 1),
+        itemBuilder: (context, i) {
+          if (i == _items.length) return _footer();
+          final item = _items[i];
+          final selecting = widget.selectable && _selected.isNotEmpty;
+          final onTap = widget.selectable && selecting && !wide
+              ? () => _toggleRow(i, !_isSelected(item))
+              : (widget.onOpen == null
+                    ? null
+                    : () => _after(widget.onOpen!(item)));
+          final node = _rowNodes.putIfAbsent(i, FocusNode.new);
+          final row = wide
+              ? _row(i, item, onTap, node, widths)
+              : _tile(i, item, onTap, node);
+          return OpenInTab(location: widget.locationOf?.call(item), child: row);
+        },
+      );
+
+  FocusNode _groupNode((String, int) k) =>
+      _groupNodes.putIfAbsent(k, FocusNode.new);
+
+  Widget _groupedList(bool wide, Map<String, double>? widths) {
+    final theme = Theme.of(context);
+    final headers = groupHeaders(
+      _groups,
+      widget.filterDefs.where((f) => f.key == _groupsFor).firstOrNull,
+    );
+    final entries = <Widget Function()>[];
+    for (final h in headers) {
+      final open = _open.contains(h.value);
+      entries.add(() => _groupHeader(theme, h, open));
+      final st = _gstate[h.value];
+      if (!open || st == null) continue;
+      for (var i = 0; i < st.items.length; i++) {
+        final item = st.items[i];
+        entries.add(() {
+          final selecting = widget.selectable && _selected.isNotEmpty;
+          final onTap = widget.selectable && selecting && !wide
+              ? () => _toggleItem(item, !_isSelected(item))
+              : (widget.onOpen == null
+                    ? null
+                    : () => _after(widget.onOpen!(item)));
+          final node = _groupNode((h.value, i));
+          final row = wide
+              ? _row(i, item, onTap, node, widths, group: true)
+              : _tile(i, item, onTap, node, group: true);
+          return OpenInTab(location: widget.locationOf?.call(item), child: row);
+        });
+      }
+      entries.add(() => _groupFooter(h.value, st));
+    }
+    return ListView.separated(
+      controller: _scroll,
+      itemCount: entries.length,
+      separatorBuilder: (_, _) => const Divider(height: 1),
+      itemBuilder: (context, i) => entries[i](),
+    );
+  }
+
+  Widget _groupHeader(ThemeData theme, GroupHeader h, bool open) {
+    final l = context.l10n;
+    void toggle() => _toggleGroup(h.value);
+    return Semantics(
+      button: true,
+      expanded: open,
+      label: open
+          ? l.listGroupExpanded(h.label, h.count)
+          : l.listGroupCollapsed(h.label, h.count),
+      child: Material(
+        color: theme.colorScheme.surfaceContainerHigh,
+        child: InkWell(
+          focusNode: _groupNode((h.value, -1)),
+          onTap: toggle,
+          child: ExcludeSemantics(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 48),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                child: Row(
+                  children: [
+                    Icon(open ? AppIcons.expandMore : AppIcons.chevronRight),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        h.label,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleSmall,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '${h.count}',
+                      style: const TextStyle(
+                        fontFeatures: [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _groupFooter(String value, _GroupState<T> st) {
+    final l = context.l10n;
+    if (_isGroupLoading(st)) {
+      return const Padding(
+        padding: EdgeInsets.all(12),
+        child: LinearProgressIndicator(),
+      );
+    }
+    if (st.error != null) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        child: Row(
+          children: [
+            Expanded(child: Text(st.error!)),
+            TextButton(
+              onPressed: () => _loadGroup(
+                value,
+                more: st.failedMore,
+                refresh: st.failedRefresh,
+              ),
+              child: Text(l.retry),
+            ),
+          ],
+        ),
+      );
+    }
+    if (st.items.length < st.total) {
+      return Center(
+        child: TextButton(
+          onPressed: () => _loadGroup(value, more: true),
+          child: Text(l.loadMore),
+        ),
+      );
+    }
+    return const SizedBox.shrink();
+  }
 
   bool _isSelected(T item) =>
       widget.idOf != null && _selected.contains(widget.idOf!(item));
@@ -1056,8 +1458,9 @@ class EntityListState<T> extends State<EntityList<T>> {
 
   Widget _selectAllBox() {
     final id = widget.idOf!;
-    final n = _items.where((i) => _selected.contains(id(i))).length;
-    final all = _items.isNotEmpty && n == _items.length;
+    final loaded = _loadedItems.toList();
+    final n = loaded.where((i) => _selected.contains(id(i))).length;
+    final all = loaded.isNotEmpty && n == loaded.length;
     final l = context.l10n;
     return SizedBox(
       width: _selectWidth,
@@ -1069,7 +1472,7 @@ class EntityListState<T> extends State<EntityList<T>> {
             child: Checkbox(
               tristate: true,
               value: all ? true : (n == 0 ? false : null),
-              onChanged: _items.isEmpty ? null : (_) => _toggleAll(),
+              onChanged: loaded.isEmpty ? null : (_) => _toggleAll(),
             ),
           ),
         ),
@@ -1161,14 +1564,15 @@ class EntityListState<T> extends State<EntityList<T>> {
     );
   }
 
-  Widget _checkbox(int i, T item) => SizedBox(
+  Widget _checkbox(int i, T item, bool group) => SizedBox(
     width: _selectWidth,
     child: Center(
       child: Semantics(
         label: context.l10n.listSelectRow(widget.columns.first.value(item)),
         child: Checkbox(
           value: _isSelected(item),
-          onChanged: (v) => _toggleRow(i, v ?? false),
+          onChanged: (v) =>
+              group ? _toggleItem(item, v ?? false) : _toggleRow(i, v ?? false),
         ),
       ),
     ),
@@ -1179,8 +1583,9 @@ class EntityListState<T> extends State<EntityList<T>> {
     T item,
     VoidCallback? onTap,
     FocusNode node,
-    Map<String, double>? widths,
-  ) {
+    Map<String, double>? widths, {
+    bool group = false,
+  }) {
     final ink = InkWell(
       focusNode: node,
       onTap: onTap,
@@ -1188,7 +1593,7 @@ class EntityListState<T> extends State<EntityList<T>> {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         child: Row(
           children: [
-            if (widget.selectable) _checkbox(i, item),
+            if (widget.selectable) _checkbox(i, item, group),
             for (final c in _visible)
               _cell(
                 c,
@@ -1221,7 +1626,9 @@ class EntityListState<T> extends State<EntityList<T>> {
           if (e is KeyDownEvent &&
               e.logicalKey == LogicalKeyboardKey.space &&
               identical(FocusManager.instance.primaryFocus, node)) {
-            _toggleRow(i, !_isSelected(item));
+            group
+                ? _toggleItem(item, !_isSelected(item))
+                : _toggleRow(i, !_isSelected(item));
             return KeyEventResult.handled;
           }
           return KeyEventResult.ignored;
@@ -1231,7 +1638,13 @@ class EntityListState<T> extends State<EntityList<T>> {
     );
   }
 
-  Widget _tile(int i, T item, VoidCallback? onTap, FocusNode node) {
+  Widget _tile(
+    int i,
+    T item,
+    VoidCallback? onTap,
+    FocusNode node, {
+    bool group = false,
+  }) {
     final cols = _visible.isEmpty ? widget.columns : _visible;
     final leadingCol =
         cols.isNotEmpty && cols.first.cell != null && cols.first.sortKey == null
@@ -1250,7 +1663,7 @@ class EntityListState<T> extends State<EntityList<T>> {
       focusNode: node,
       onTap: onTap,
       onLongPress: widget.selectable && !selecting
-          ? () => _toggleRow(i, true)
+          ? () => group ? _toggleItem(item, true) : _toggleRow(i, true)
           : null,
       minTileHeight: widget.selectable ? 56 : null,
       selected: selected,
@@ -1259,7 +1672,9 @@ class EntityListState<T> extends State<EntityList<T>> {
               label: context.l10n.listSelectRow(titleCol.value(item)),
               child: Checkbox(
                 value: selected,
-                onChanged: (v) => _toggleRow(i, v ?? false),
+                onChanged: (v) => group
+                    ? _toggleItem(item, v ?? false)
+                    : _toggleRow(i, v ?? false),
               ),
             )
           : leadingCol?.cell?.call(context, item),
@@ -1314,6 +1729,16 @@ class EntityListState<T> extends State<EntityList<T>> {
           : const SizedBox.shrink(),
     ),
   );
+}
+
+/// The rows of one expanded group: first page, "load more" and its own loading and error state.
+class _GroupState<T> {
+  List<T> items = [];
+  int total = 0;
+  int? loadingGen;
+  String? error;
+  bool failedMore = false;
+  bool failedRefresh = false;
 }
 
 /// The drag handle on a column border: drag or Left/Right to resize, double-click to reset.

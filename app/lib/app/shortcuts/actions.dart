@@ -100,8 +100,8 @@ enum ShortcutAction {
     webOverride: ShortcutChord(LogicalKeyboardKey.keyC),
   ),
 
-  /// Home: the first permitted menu entry.
-  home(ShortcutChord(LogicalKeyboardKey.keyH)),
+  /// Home: the home screen.
+  home(ShortcutChord(LogicalKeyboardKey.home)),
 
   /// Discard the edits (reset the form or close the tab).
   discard(ShortcutChord(LogicalKeyboardKey.keyJ)),
@@ -185,7 +185,22 @@ enum ShortcutAction {
       mod: ChordMod.standard,
       anyShift: true,
     ),
-  );
+  ),
+
+  /// Tutorial: Do this step for me / Run this step / Start next chapter / Next.
+  tutorialNext(ShortcutChord(LogicalKeyboardKey.arrowRight)),
+
+  /// Tutorial: Back to the previous step.
+  tutorialBack(ShortcutChord(LogicalKeyboardKey.arrowLeft)),
+
+  /// Tutorial: Back to the chapter map.
+  tutorialMap(ShortcutChord(LogicalKeyboardKey.arrowUp)),
+
+  /// Tutorial: Take me there.
+  tutorialTakeMe(ShortcutChord(LogicalKeyboardKey.arrowDown)),
+
+  /// Tutorial: Pause or show control.
+  tutorialPauseOrShowControl(ShortcutChord(LogicalKeyboardKey.escape));
 
   const ShortcutAction(this.chord, {this.webOverride});
 
@@ -224,6 +239,11 @@ enum ShortcutAction {
     LogicalKeyboardKey.slash => '/',
     LogicalKeyboardKey.enter => 'Enter',
     LogicalKeyboardKey.escape => 'Esc',
+    LogicalKeyboardKey.home => 'Home',
+    LogicalKeyboardKey.arrowRight => '→',
+    LogicalKeyboardKey.arrowLeft => '←',
+    LogicalKeyboardKey.arrowUp => '↑',
+    LogicalKeyboardKey.arrowDown => '↓',
     _ => c.key.keyLabel.toUpperCase(),
   };
 
@@ -273,6 +293,11 @@ enum ShortcutAction {
     palette => l.shortcutPalette,
     selectAll => l.shortcutSelectAll,
     help => l.shortcutHelp,
+    tutorialNext => '${l.tutNext} / ${l.tutAssistRun}',
+    tutorialBack => l.tutBack,
+    tutorialMap => l.tutBackToMap,
+    tutorialTakeMe => l.tutTakeMe,
+    tutorialPauseOrShowControl => '${l.tutPause} / ${l.tutShowControl}',
     _ => l.shortcutMenuItem(menus.indexOf(this) + 1),
   };
 
@@ -489,6 +514,11 @@ class ShortcutBindings {
     'f10': LogicalKeyboardKey.f10,
     'f11': LogicalKeyboardKey.f11,
     'f12': LogicalKeyboardKey.f12,
+    'home': LogicalKeyboardKey.home,
+    'arrowRight': LogicalKeyboardKey.arrowRight,
+    'arrowLeft': LogicalKeyboardKey.arrowLeft,
+    'arrowUp': LogicalKeyboardKey.arrowUp,
+    'arrowDown': LogicalKeyboardKey.arrowDown,
   };
 
   static final Map<LogicalKeyboardKey, String> _keyToName = {

@@ -327,7 +327,7 @@ class AppShell extends ConsumerWidget {
       onGoTo: searchGoTo,
     );
     final shellActions = <ShortcutAction, VoidCallback?>{
-      ShortcutAction.home: () => go(0),
+      ShortcutAction.home: () => searchGoTo('/home'),
       ShortcutAction.help: () => showShortcutHelp(context),
       ShortcutAction.palette: openSearch,
       if (canTodo) ShortcutAction.newTodo: () => showTodoQuickAdd(context, ref),

@@ -3907,5 +3907,11 @@
   "autosaveDefault": "Unternehmensstandard ({minutes} Min.)",
   "autosaveDefaultOff": "Unternehmensstandard (Aus)",
   "autosaveUserHelp": "Abweichendes Intervall für das automatische Speichern offener Entwürfe.",
-  "autosaveAdminHelp": "Standardintervall für das automatische Speichern offener Entwürfe (Benutzer können dies in ihren Einstellungen überschreiben)."
+  "autosaveAdminHelp": "Standardintervall für das automatische Speichern offener Entwürfe (Benutzer können dies in ihren Einstellungen überschreiben).",
+  "listGroupBy": "Gruppieren nach",
+  "listGroupNone": "Keine",
+  "listGroupChip": "Gruppe: {group}",
+  "listRemoveGrouping": "Gruppierung {group} entfernen",
+  "listGroupExpanded": "{label}, {count} Zeilen, aufgeklappt",
+  "listGroupCollapsed": "{label}, {count} Zeilen, zugeklappt"
 }

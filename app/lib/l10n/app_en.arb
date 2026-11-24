@@ -6503,5 +6503,15 @@
   },
   "autosaveDefaultOff": "Company default (Off)",
   "autosaveUserHelp": "Override how often open drafts autosave.",
-  "autosaveAdminHelp": "Default interval for autosaving open drafts (users can override this in their preferences)."
+  "autosaveAdminHelp": "Default interval for autosaving open drafts (users can override this in their preferences).",
+  "listGroupBy": "Group by",
+  "listGroupNone": "None",
+  "listGroupChip": "Group: {group}",
+  "@listGroupChip": {"placeholders": {"group": {"type": "String"}}},
+  "listRemoveGrouping": "Remove grouping {group}",
+  "@listRemoveGrouping": {"placeholders": {"group": {"type": "String"}}},
+  "listGroupExpanded": "{label}, {count} rows, expanded",
+  "@listGroupExpanded": {"placeholders": {"label": {"type": "String"}, "count": {"type": "int"}}},
+  "listGroupCollapsed": "{label}, {count} rows, collapsed",
+  "@listGroupCollapsed": {"placeholders": {"label": {"type": "String"}, "count": {"type": "int"}}}
 }

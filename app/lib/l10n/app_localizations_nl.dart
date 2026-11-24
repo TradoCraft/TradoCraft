@@ -11789,4 +11789,30 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get autosaveAdminHelp =>
       'Standaardinterval voor het automatisch opslaan van open concepten (gebruikers kunnen dit overschrijven in hun voorkeuren).';
+
+  @override
+  String get listGroupBy => 'Groeperen op';
+
+  @override
+  String get listGroupNone => 'Geen';
+
+  @override
+  String listGroupChip(String group) {
+    return 'Groep: $group';
+  }
+
+  @override
+  String listRemoveGrouping(String group) {
+    return 'Groepering $group verwijderen';
+  }
+
+  @override
+  String listGroupExpanded(String label, int count) {
+    return '$label, $count rijen, uitgevouwen';
+  }
+
+  @override
+  String listGroupCollapsed(String label, int count) {
+    return '$label, $count rijen, ingeklapt';
+  }
 }
