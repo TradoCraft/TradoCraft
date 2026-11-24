@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../app/api.dart';
 import '../../core/theme/tokens.dart';
+import '../../framework/form/one2many_line_editor.dart';
 import '../../l10n/l10n.dart';
 import '../../shared/app_icons.dart';
 import '../../shared/decimal_field.dart';
@@ -223,249 +224,135 @@ class InvoiceLinesEditor extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final headerStyle = theme.textTheme.labelLarge?.copyWith(
-      color: scheme.onSurfaceVariant,
+    final scheme = Theme.of(context).colorScheme;
+    InputDecoration cellDeco(String label) => InputDecoration(
+      hintText: label,
+      filled: true,
+      fillColor: scheme.surfaceContainerLowest,
     );
-    final tabular = const TextStyle(
-      fontFeatures: [FontFeature.tabularFigures()],
-    );
-    return Container(
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerLow,
-        borderRadius: Radii.medium,
-        border: Border.all(color: scheme.outlineVariant),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final wide = constraints.maxWidth >= 560;
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (wide) ...[
-                Container(
-                  color: scheme.surfaceContainerHigh,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: Space.md,
-                    vertical: Space.sm,
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(child: Text(l.description, style: headerStyle)),
-                      const SizedBox(width: Space.sm),
-                      SizedBox(
-                        width: 100,
-                        child: Text(
-                          l.quantity,
-                          style: headerStyle,
-                          textAlign: TextAlign.right,
-                        ),
-                      ),
-                      const SizedBox(width: Space.sm),
-                      SizedBox(
-                        width: 110,
-                        child: Text(
-                          l.unitPrice,
-                          style: headerStyle,
-                          textAlign: TextAlign.right,
-                        ),
-                      ),
-                      const SizedBox(width: Space.sm),
-                      SizedBox(
-                        width: 90,
-                        child: Text(
-                          l.vatPercent,
-                          style: headerStyle,
-                          textAlign: TextAlign.right,
-                        ),
-                      ),
-                      const SizedBox(width: Space.sm),
-                      const SizedBox(width: 40),
-                    ],
-                  ),
-                ),
-                const Divider(height: 1),
-              ],
-              for (var i = 0; i < lines.length; i++) ...[
-                if (i > 0) const Divider(height: 1),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: Space.md,
-                    vertical: Space.sm,
-                  ),
-                  child: wide
-                      ? Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Expanded(
-                              child: TextField(
-                                key: ValueKey('inv-line-desc-$i'),
-                                controller: lines[i].desc,
-                                decoration: InputDecoration(
-                                  hintText: l.description,
-                                  filled: true,
-                                  fillColor: scheme.surfaceContainerLowest,
-                                ),
-                                onChanged: (_) => onChanged(),
-                              ),
-                            ),
-                            const SizedBox(width: Space.sm),
-                            SizedBox(
-                              width: 100,
-                              child: DefaultTextStyle.merge(
-                                style: tabular,
-                                child: DecimalField(
-                                  fieldKey: ValueKey('inv-line-qty-$i'),
-                                  controller: lines[i].qty,
-                                  decoration: InputDecoration(
-                                    hintText: l.quantity,
-                                    filled: true,
-                                    fillColor: scheme.surfaceContainerLowest,
-                                  ),
-                                  onChanged: (_) => onChanged(),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: Space.sm),
-                            SizedBox(
-                              width: 110,
-                              child: DefaultTextStyle.merge(
-                                style: tabular,
-                                child: DecimalField(
-                                  fieldKey: ValueKey('inv-line-price-$i'),
-                                  controller: lines[i].price,
-                                  decoration: InputDecoration(
-                                    hintText: l.unitPrice,
-                                    filled: true,
-                                    fillColor: scheme.surfaceContainerLowest,
-                                  ),
-                                  onChanged: (_) => onChanged(),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: Space.sm),
-                            SizedBox(
-                              width: 90,
-                              child: DefaultTextStyle.merge(
-                                style: tabular,
-                                child: DecimalField(
-                                  fieldKey: ValueKey('inv-line-vat-$i'),
-                                  controller: lines[i].vat,
-                                  decoration: InputDecoration(
-                                    hintText: l.vatPercent,
-                                    filled: true,
-                                    fillColor: scheme.surfaceContainerLowest,
-                                  ),
-                                  onChanged: (_) => onChanged(),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: Space.sm),
-                            IconButton(
-                              key: ValueKey('inv-line-remove-$i'),
-                              tooltip: l.delete,
-                              icon: const Icon(AppIcons.delete),
-                              onPressed: () {
-                                lines.removeAt(i).dispose();
-                                onChanged();
-                              },
-                            ),
-                          ],
-                        )
-                      : Wrap(
-                          spacing: Space.sm,
-                          runSpacing: Space.sm,
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          children: [
-                            SizedBox(
-                              width: 260,
-                              child: TextField(
-                                key: ValueKey('inv-line-desc-$i'),
-                                controller: lines[i].desc,
-                                decoration: InputDecoration(
-                                  labelText: l.description,
-                                  filled: true,
-                                  fillColor: scheme.surfaceContainerLowest,
-                                ),
-                                onChanged: (_) => onChanged(),
-                              ),
-                            ),
-                            SizedBox(
-                              width: 100,
-                              child: DecimalField(
-                                fieldKey: ValueKey('inv-line-qty-$i'),
-                                controller: lines[i].qty,
-                                decoration: InputDecoration(
-                                  labelText: l.quantity,
-                                  filled: true,
-                                  fillColor: scheme.surfaceContainerLowest,
-                                ),
-                                onChanged: (_) => onChanged(),
-                              ),
-                            ),
-                            SizedBox(
-                              width: 110,
-                              child: DecimalField(
-                                fieldKey: ValueKey('inv-line-price-$i'),
-                                controller: lines[i].price,
-                                decoration: InputDecoration(
-                                  labelText: l.unitPrice,
-                                  filled: true,
-                                  fillColor: scheme.surfaceContainerLowest,
-                                ),
-                                onChanged: (_) => onChanged(),
-                              ),
-                            ),
-                            SizedBox(
-                              width: 90,
-                              child: DecimalField(
-                                fieldKey: ValueKey('inv-line-vat-$i'),
-                                controller: lines[i].vat,
-                                decoration: InputDecoration(
-                                  labelText: l.vatPercent,
-                                  filled: true,
-                                  fillColor: scheme.surfaceContainerLowest,
-                                ),
-                                onChanged: (_) => onChanged(),
-                              ),
-                            ),
-                            IconButton(
-                              key: ValueKey('inv-line-remove-$i'),
-                              tooltip: l.delete,
-                              icon: const Icon(AppIcons.delete),
-                              onPressed: () {
-                                lines.removeAt(i).dispose();
-                                onChanged();
-                              },
-                            ),
-                          ],
-                        ),
-                ),
-              ],
-              const Divider(height: 1),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: Space.sm,
-                  vertical: Space.xs,
-                ),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: TextButton.icon(
-                    key: const ValueKey('inv-add-line'),
-                    icon: const Icon(AppIcons.add),
-                    label: Text(l.purchAddLine),
-                    onPressed: () {
-                      lines.add(InvLineDraft());
-                      onChanged();
-                    },
-                  ),
-                ),
+    return One2ManyLineEditor<InvLineDraft>(
+      rows: lines,
+      addButtonKey: const ValueKey('inv-add-line'),
+      addLabel: l.purchAddLine,
+      removeTooltip: l.delete,
+      removeKeyBuilder: (i, _) => ValueKey('inv-line-remove-$i'),
+      onAdd: () {
+        lines.add(InvLineDraft());
+        onChanged();
+      },
+      onRemove: (i, d) {
+        lines.removeAt(i).dispose();
+        onChanged();
+      },
+      columns: [
+        One2ManyColumn<InvLineDraft>(
+          label: l.description,
+          cell: (context, i, d) => TextField(
+            key: ValueKey('inv-line-desc-$i'),
+            controller: d.desc,
+            decoration: cellDeco(l.description),
+            onChanged: (_) => onChanged(),
+          ),
+        ),
+        One2ManyColumn<InvLineDraft>(
+          label: l.quantity,
+          width: 100,
+          numeric: true,
+          cell: (context, i, d) => DecimalField(
+            fieldKey: ValueKey('inv-line-qty-$i'),
+            controller: d.qty,
+            decoration: cellDeco(l.quantity),
+            onChanged: (_) => onChanged(),
+          ),
+        ),
+        One2ManyColumn<InvLineDraft>(
+          label: l.unitPrice,
+          width: 110,
+          numeric: true,
+          cell: (context, i, d) => DecimalField(
+            fieldKey: ValueKey('inv-line-price-$i'),
+            controller: d.price,
+            decoration: cellDeco(l.unitPrice),
+            onChanged: (_) => onChanged(),
+          ),
+        ),
+        One2ManyColumn<InvLineDraft>(
+          label: l.vatPercent,
+          width: 90,
+          numeric: true,
+          cell: (context, i, d) => DecimalField(
+            fieldKey: ValueKey('inv-line-vat-$i'),
+            controller: d.vat,
+            decoration: cellDeco(l.vatPercent),
+            onChanged: (_) => onChanged(),
+          ),
+        ),
+      ],
+      narrowBuilder: (context, i, d, remove) => Wrap(
+        spacing: Space.sm,
+        runSpacing: Space.sm,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          SizedBox(
+            width: 260,
+            child: TextField(
+              key: ValueKey('inv-line-desc-$i'),
+              controller: d.desc,
+              decoration: InputDecoration(
+                labelText: l.description,
+                filled: true,
+                fillColor: scheme.surfaceContainerLowest,
               ),
-            ],
-          );
-        },
+              onChanged: (_) => onChanged(),
+            ),
+          ),
+          SizedBox(
+            width: 100,
+            child: DecimalField(
+              fieldKey: ValueKey('inv-line-qty-$i'),
+              controller: d.qty,
+              decoration: InputDecoration(
+                labelText: l.quantity,
+                filled: true,
+                fillColor: scheme.surfaceContainerLowest,
+              ),
+              onChanged: (_) => onChanged(),
+            ),
+          ),
+          SizedBox(
+            width: 110,
+            child: DecimalField(
+              fieldKey: ValueKey('inv-line-price-$i'),
+              controller: d.price,
+              decoration: InputDecoration(
+                labelText: l.unitPrice,
+                filled: true,
+                fillColor: scheme.surfaceContainerLowest,
+              ),
+              onChanged: (_) => onChanged(),
+            ),
+          ),
+          SizedBox(
+            width: 90,
+            child: DecimalField(
+              fieldKey: ValueKey('inv-line-vat-$i'),
+              controller: d.vat,
+              decoration: InputDecoration(
+                labelText: l.vatPercent,
+                filled: true,
+                fillColor: scheme.surfaceContainerLowest,
+              ),
+              onChanged: (_) => onChanged(),
+            ),
+          ),
+          if (remove != null)
+            IconButton(
+              key: ValueKey('inv-line-remove-$i'),
+              tooltip: l.delete,
+              icon: const Icon(AppIcons.delete),
+              onPressed: remove,
+            ),
+        ],
       ),
     );
   }
