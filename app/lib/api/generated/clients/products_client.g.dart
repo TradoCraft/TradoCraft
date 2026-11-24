@@ -1412,6 +1412,7 @@ class _ProductsClient implements ProductsClient {
   Future<GroupPage> productGroups({
     required String groupBy,
     String? q,
+    String? code,
     bool? active,
     String? familyId,
     String? productType,
@@ -1420,6 +1421,7 @@ class _ProductsClient implements ProductsClient {
     final queryParameters = <String, dynamic>{
       r'group_by': groupBy,
       r'q': q,
+      r'code': code,
       r'active': active,
       r'family_id': familyId,
       r'product_type': productType,

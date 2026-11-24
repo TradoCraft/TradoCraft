@@ -85,7 +85,9 @@ export async function searchPick(page: Page, label: string, query: string, resul
 
 /** A text field by its exact label ("Code" must not also match "Barcode"). */
 export const field = (scope: Page | Locator, label: string) =>
-  scope.getByRole('textbox', { name: label, exact: true });
+  scope
+    .getByRole('textbox', { name: label, exact: true })
+    .and(scope.locator('[data-semantics-role="text-field"]'));
 
 /** Opens the Flutter web app, turns on its accessibility tree and signs in as a development user. */
 export async function boot(page: Page, user = 'admin') {

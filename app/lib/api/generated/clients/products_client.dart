@@ -381,6 +381,8 @@ abstract class ProductsClient {
   ///
   /// [q] - Same as the list.
   ///
+  /// [code] - Exact product code match.
+  ///
   /// [active] - Same as the list.
   ///
   /// [familyId] - Same as the list.
@@ -390,6 +392,7 @@ abstract class ProductsClient {
   Future<GroupPage> productGroups({
     @Query('group_by') required String groupBy,
     @Query('q') String? q,
+    @Query('code') String? code,
     @Query('active') bool? active,
     @Query('family_id') String? familyId,
     @Query('product_type') String? productType,

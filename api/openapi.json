@@ -25667,6 +25667,18 @@
             }
           },
           {
+            "name": "code",
+            "in": "query",
+            "description": "Exact product code match.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
             "name": "active",
             "in": "query",
             "description": "Same as the list.",

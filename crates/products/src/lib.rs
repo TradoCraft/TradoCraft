@@ -638,6 +638,8 @@ pub struct GroupParams {
     pub group_by: Option<String>,
     /// Same as the list.
     pub q: Option<String>,
+    /// Exact product code match.
+    pub code: Option<String>,
     /// Same as the list.
     pub active: Option<bool>,
     /// Same as the list.
@@ -658,13 +660,14 @@ async fn product_groups(
     let (pattern, types) = product_filter_values(p.q.as_deref(), p.product_type.as_deref())?;
     let sql = tradocraft_core::group::count_sql(
         expr,
-        &format!("products.products {}", product_where(1, 2, 3, 4, None)),
+        &format!("products.products {}", product_where(1, 2, 3, 4, Some(5))),
     );
     let rows: Vec<(String, i64)> = sqlx::query_as(sqlx::AssertSqlSafe(sql))
         .bind(&pattern)
         .bind(p.active)
         .bind(p.family_id)
         .bind(&types)
+        .bind(&p.code)
         .fetch_all(&state.db)
         .await?;
     Ok(Json(tradocraft_core::group::page(

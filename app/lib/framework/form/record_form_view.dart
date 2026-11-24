@@ -261,7 +261,13 @@ class _RecordFormViewState<T extends Object> extends State<RecordFormView<T>>
             for (final (i, t) in widget.tabs.indexed)
               Offstage(
                 offstage: i != tabs.index,
-                child: TickerMode(enabled: i == tabs.index, child: t.child),
+                child: TickerMode(
+                  enabled: i == tabs.index,
+                  child: ExcludeFocus(
+                    excluding: i != tabs.index,
+                    child: t.child,
+                  ),
+                ),
               ),
           ],
         ],

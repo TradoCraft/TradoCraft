@@ -206,7 +206,7 @@ class _PoLinesEditorState extends ConsumerState<PoLinesEditor> {
     final l = context.l10n;
     final scheme = Theme.of(context).colorScheme;
     InputDecoration cellDeco(String label) => InputDecoration(
-      hintText: label,
+      labelText: label,
       filled: true,
       fillColor: scheme.surfaceContainerLowest,
     );

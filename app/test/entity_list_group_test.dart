@@ -513,13 +513,13 @@ void main() {
     await t.tap(boxes.at(3));
     await t.pumpAndSettle();
     expect(sel.map((r) => r.name), ['Won 0', 'Sent 0']);
-    // Collapsing keeps the selection; the row is still checked when expanded again.
+    // Collapsing drops the collapsed group's rows from the selection while keeping its cached rows.
     await t.tap(find.text('Sent'));
     await t.pumpAndSettle();
-    expect(sel.length, 2);
+    expect(sel.map((r) => r.name), ['Won 0']);
     await t.tap(find.text('Sent'));
     await t.pumpAndSettle();
-    expect(t.widget<Checkbox>(find.byType(Checkbox).at(3)).value, true);
+    expect(t.widget<Checkbox>(find.byType(Checkbox).at(1)).value, false);
     // Select all covers the loaded rows of every expanded group.
     await t.tap(find.byType(Checkbox).first);
     await t.pumpAndSettle();

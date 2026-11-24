@@ -48,6 +48,7 @@ class OrderScreen extends ConsumerStatefulWidget {
 
 class _OrderScreenState extends ConsumerState<OrderScreen> {
   final _form = RecordFormController<Order>(versionOf: (d) => d.version);
+  bool _formBusy = false;
   bool _loading = false;
   bool get _locked => _form.busy || _loading;
   bool _changed = false;
@@ -71,12 +72,20 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
   @override
   void initState() {
     super.initState();
+    _form.addListener(_onFormChanged);
     _load(() => _api.getOrder(id: widget.id));
     _form.watch(ref, entityType: 'order', recordId: widget.id);
   }
 
+  void _onFormChanged() {
+    if (_formBusy == _form.busy) return;
+    _formBusy = _form.busy;
+    if (mounted) setState(() {});
+  }
+
   @override
   void dispose() {
+    _form.removeListener(_onFormChanged);
     _form.dispose();
     _disposeEditors();
     _notes.dispose();

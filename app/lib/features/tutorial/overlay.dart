@@ -344,22 +344,18 @@ class _RunningLayerState extends ConsumerState<_RunningLayer>
               16,
               atTop ? 16 : (narrow ? 92 : 16),
             ),
-            child: showingControl
-                ? FilledButton.tonal(
-                    key: const ValueKey('tutorial-show-instructions'),
-                    onPressed: () => setState(() => _showingControl = null),
-                    child: Text(context.l10n.tutShowInstructions),
-                  )
-                : NarratorCard(
-                    targetVisible: target != null,
-                    router: widget.router,
-                    onReviewChanged: widget.onReviewChanged,
-                    onShowControl: step == null || step.targets.isEmpty
-                        ? null
-                        : () => _showControl(step),
-                    controlMissing:
-                        step != null && identical(_missingControl, step),
-                  ),
+            child: NarratorCard(
+              targetVisible: target != null,
+              router: widget.router,
+              onReviewChanged: widget.onReviewChanged,
+              showingControl: showingControl,
+              onShowInstructions: () => setState(() => _showingControl = null),
+              onShowControl: step == null || step.targets.isEmpty
+                  ? null
+                  : () => _showControl(step),
+              controlMissing:
+                  step != null && identical(_missingControl, step),
+            ),
           ),
         ),
       ],
@@ -373,6 +369,8 @@ class NarratorCard extends ConsumerWidget {
     super.key,
     required this.targetVisible,
     required this.onReviewChanged,
+    this.showingControl = false,
+    this.onShowInstructions,
     this.onShowControl,
     this.controlMissing = false,
     this.router,
@@ -380,6 +378,8 @@ class NarratorCard extends ConsumerWidget {
 
   final bool targetVisible;
   final ValueChanged<bool> onReviewChanged;
+  final bool showingControl;
+  final VoidCallback? onShowInstructions;
   final VoidCallback? onShowControl;
   final bool controlMissing;
   final GoRouter? router;
@@ -513,11 +513,20 @@ class NarratorCard extends ConsumerWidget {
         ShortcutAction.tutorialNext: nextAction,
         ShortcutAction.tutorialBack: s.stepIndex > 0 ? c.back : null,
         ShortcutAction.tutorialTakeMe: canTakeMe ? takeMe : null,
-        ShortcutAction.tutorialPauseOrShowControl: canShowControl
-            ? onShowControl
-            : c.pause,
+        ShortcutAction.tutorialMap: router == null
+            ? null
+            : () => router!.go(tutorialRoute),
+        ShortcutAction.tutorialPauseOrShowControl: showingControl
+            ? c.pause
+            : (canShowControl ? onShowControl : c.pause),
       },
-      child: FocusTraversalGroup(
+      child: showingControl
+          ? FilledButton.tonal(
+              key: const ValueKey('tutorial-show-instructions'),
+              onPressed: onShowInstructions,
+              child: Text(context.l10n.tutShowInstructions),
+            )
+          : FocusTraversalGroup(
       child: AnimatedSwitcher(
         duration: reduceMotion
             ? Duration.zero

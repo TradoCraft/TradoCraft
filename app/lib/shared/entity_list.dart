@@ -263,8 +263,12 @@ class EntityListState<T> extends State<EntityList<T>> {
 
   bool get _grouped => _groupBy != null && widget.loadGroups != null;
 
-  Iterable<T> get _loadedItems =>
-      _grouped ? [for (final s in _gstate.values) ...s.items] : _items;
+  Iterable<T> get _loadedItems => _grouped
+      ? [
+          for (final e in _gstate.entries)
+            if (_open.contains(e.key)) ...e.value.items,
+        ]
+      : _items;
 
   String _cid(EntityColumn<T> c) => c.id ?? c.sortKey ?? c.label;
 
@@ -515,7 +519,7 @@ class EntityListState<T> extends State<EntityList<T>> {
         _groupsFor = by;
         _loadedKey = key;
         _open.removeWhere((v) => !known.contains(v));
-        _gstate.removeWhere((v, _) => !known.contains(v));
+        _gstate.removeWhere((v, _) => !known.contains(v) || !_open.contains(v));
       });
       if (same) {
         await Future.wait([
@@ -549,6 +553,8 @@ class EntityListState<T> extends State<EntityList<T>> {
     if (_selected.length != before) _emitSelection();
   }
 
+  bool _isGroupLoading(_GroupState<T> st) => st.loadingGen == _generation;
+
   /// The first page (or, with [more], the next one) of the rows of group [value]. With
   /// [refresh] the already loaded range is read again from the start.
   Future<void> _loadGroup(
@@ -560,17 +566,17 @@ class EntityListState<T> extends State<EntityList<T>> {
     // Only the current, successfully loaded bucket snapshot may load rows.
     if (by == null) return;
     final st = _gstate.putIfAbsent(value, _GroupState<T>.new);
+    final generation = _generation;
     if (refresh) {
-      st.loading = false;
-    } else if (st.loading) {
+      st.loadingGen = null;
+    } else if (_isGroupLoading(st)) {
       return;
     }
-    final generation = _generation;
     final limit = refresh
         ? math.min(math.max(_pageSize, st.items.length), _maxRefresh)
         : _pageSize;
     setState(() {
-      st.loading = true;
+      st.loadingGen = generation;
       st.error = null;
     });
     try {
@@ -593,20 +599,42 @@ class EntityListState<T> extends State<EntityList<T>> {
       });
     } catch (e) {
       if (mounted && generation == _generation) {
-        setState(() => st.error = errorMessage(e));
+        setState(() {
+          st.error = errorMessage(e);
+          st.failedMore = more;
+          st.failedRefresh = refresh;
+        });
       }
     } finally {
       if (mounted && generation == _generation) {
-        setState(() => st.loading = false);
+        setState(() => st.loadingGen = null);
       }
     }
   }
 
   void _toggleGroup(String value) {
     final opening = !_open.contains(value);
-    setState(() => opening ? _open.add(value) : _open.remove(value));
     final st = _gstate[value];
-    if (opening && (st == null || (st.items.isEmpty && !st.loading))) {
+    var selectionChanged = false;
+    setState(() {
+      if (opening) {
+        _open.add(value);
+      } else {
+        _open.remove(value);
+        if (widget.idOf != null && _selected.isNotEmpty && st != null) {
+          final before = _selected.length;
+          for (final item in st.items) {
+            _selected.remove(widget.idOf!(item));
+          }
+          if (_selected.length != before) {
+            _anchor = null;
+            selectionChanged = true;
+          }
+        }
+      }
+    });
+    if (selectionChanged) _emitSelection();
+    if (opening && (st == null || (st.items.isEmpty && !_isGroupLoading(st)))) {
       _loadGroup(value);
     }
   }
@@ -784,9 +812,11 @@ class EntityListState<T> extends State<EntityList<T>> {
       _search.text = fav.search;
       _filterSel = fav.filters;
       _groupBy = fav.groupBy;
-      _open.clear();
-      _gstate.clear();
-      if (fav.groupBy == null) _groups = const [];
+      if (fav.groupBy == null) {
+        _open.clear();
+        _gstate.clear();
+        _groups = const [];
+      }
     });
     reload();
   }
@@ -1317,7 +1347,7 @@ class EntityListState<T> extends State<EntityList<T>> {
 
   Widget _groupFooter(String value, _GroupState<T> st) {
     final l = context.l10n;
-    if (st.loading) {
+    if (_isGroupLoading(st)) {
       return const Padding(
         padding: EdgeInsets.all(12),
         child: LinearProgressIndicator(),
@@ -1330,7 +1360,11 @@ class EntityListState<T> extends State<EntityList<T>> {
           children: [
             Expanded(child: Text(st.error!)),
             TextButton(
-              onPressed: () => _loadGroup(value, more: st.items.isNotEmpty),
+              onPressed: () => _loadGroup(
+                value,
+                more: st.failedMore,
+                refresh: st.failedRefresh,
+              ),
               child: Text(l.retry),
             ),
           ],
@@ -1700,8 +1734,10 @@ class EntityListState<T> extends State<EntityList<T>> {
 class _GroupState<T> {
   List<T> items = [];
   int total = 0;
-  bool loading = false;
+  int? loadingGen;
   String? error;
+  bool failedMore = false;
+  bool failedRefresh = false;
 }
 
 /// The drag handle on a column border: drag or Left/Right to resize, double-click to reset.

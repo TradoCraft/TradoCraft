@@ -29,6 +29,7 @@ class SupplierScreen extends ConsumerStatefulWidget {
 
 class _SupplierScreenState extends ConsumerState<SupplierScreen> {
   final _form = RecordFormController<Supplier>(versionOf: (_) => null);
+  bool _formBusy = false;
   List<SupplierProduct> _prices = const [];
   int _priceGeneration = 0;
   SupplierDraft? _draft;
@@ -39,11 +40,19 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
   @override
   void initState() {
     super.initState();
+    _form.addListener(_onFormChanged);
     _load();
+  }
+
+  void _onFormChanged() {
+    if (_formBusy == _form.busy) return;
+    _formBusy = _form.busy;
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
+    _form.removeListener(_onFormChanged);
     _form.dispose();
     _draft?.dispose();
     super.dispose();
