@@ -1,0 +1,1865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>TradoCraft — Tutorial Architecture &amp; Database Flow (Ch. 0–11 + Search)</title>
+<style>
+  :root {
+    --bg: #060913;
+    --surface: #0d1424;
+    --surface-2: #131d33;
+    --surface-3: #192642;
+    --border: rgba(148, 163, 184, 0.16);
+    --border-bright: rgba(56, 189, 248, 0.45);
+    --text: #f1f5f9;
+    --muted: #94a3b8;
+    --dim: #64748b;
+    --flutter: #38bdf8;
+    --rust: #fb923c;
+    --pg: #34d399;
+    --search: #a78bfa;
+    --warn: #fbbf24;
+    --danger: #f87171;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    --sans: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: radial-gradient(circle at 50% 0%, #0f172a 0%, var(--bg) 70%);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 14px;
+    overflow-x: hidden;
+  }
+
+  /* 16:9 Stage Container */
+  .stage-wrap {
+    width: 100%;
+    max-width: 1440px;
+    aspect-ratio: 16 / 9;
+    background: linear-gradient(180deg, #0b1120 0%, #070b14 100%);
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    border-radius: 16px;
+    box-shadow: 0 30px 90px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* Top HUD */
+  .hud-top {
+    height: 54px;
+    padding: 0 18px;
+    background: rgba(13, 20, 36, 0.92);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+  .brand-badge {
+    background: linear-gradient(135deg, #0284c7, #6366f1);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 800;
+    padding: 3px 8px;
+    border-radius: 6px;
+    letter-spacing: 0.06em;
+  }
+
+  .chapter-strip {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding: 2px 0;
+  }
+  .chapter-strip::-webkit-scrollbar { display: none; }
+
+  .ch-pill {
+    background: var(--surface-2);
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 4px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    white-space: nowrap;
+  }
+  .ch-pill:hover { color: var(--text); border-color: rgba(148, 163, 184, 0.4); }
+  .ch-pill.active {
+    background: rgba(56, 189, 248, 0.16);
+    color: #e0f2fe;
+    border-color: var(--flutter);
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.25);
+  }
+  .ch-pill.search-pill.active {
+    background: rgba(167, 139, 250, 0.2);
+    color: #ede9fe;
+    border-color: var(--search);
+    box-shadow: 0 0 14px rgba(167, 139, 250, 0.3);
+  }
+
+  .hud-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .btn-hud {
+    background: var(--surface-2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 5px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .btn-hud:hover { background: var(--surface-3); border-color: rgba(148, 163, 184, 0.4); }
+  .btn-hud.on { border-color: var(--pg); color: #a7f3d0; background: rgba(52, 211, 153, 0.12); }
+
+  /* Main 3-Lane Stage */
+  .stage-body {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 28% 24% 48%;
+    position: relative;
+    padding: 12px 14px;
+    gap: 12px;
+  }
+
+  /* SVG Connection Overlay */
+  .flow-svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 5;
+  }
+
+  .lane {
+    background: rgba(13, 20, 36, 0.72);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    position: relative;
+    z-index: 2;
+    overflow: hidden;
+  }
+
+  .lane-header {
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    flex-shrink: 0;
+  }
+  .lane-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 7px;
+  }
+  .lane-flutter .lane-dot { background: var(--flutter); box-shadow: 0 0 8px var(--flutter); }
+  .lane-rust .lane-dot { background: var(--rust); box-shadow: 0 0 8px var(--rust); }
+  .lane-pg .lane-dot { background: var(--pg); box-shadow: 0 0 8px var(--pg); }
+
+  .lane-sub {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--dim);
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  .lane-content {
+    flex: 1;
+    min-height: 0;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(148,163,184,0.25) transparent;
+  }
+
+  /* Flutter UI Mockup */
+  .flutter-window {
+    background: #0f172a;
+    border: 1px solid rgba(56, 189, 248, 0.28);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.4);
+  }
+  .flutter-bar {
+    background: #172554;
+    padding: 6px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 10px;
+    font-family: var(--mono);
+    color: #bae6fd;
+  }
+  .env-chip {
+    background: rgba(56, 189, 248, 0.25);
+    color: #e0f2fe;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 700;
+    font-size: 9px;
+  }
+  .flutter-screen {
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .ui-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #f8fafc;
+  }
+  .ui-desc {
+    font-size: 11.5px;
+    line-height: 1.45;
+    color: var(--muted);
+  }
+  .ui-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-top: 2px;
+  }
+  .ui-field {
+    background: rgba(30, 41, 59, 0.85);
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    border-radius: 6px;
+    padding: 5px 8px;
+    font-size: 11px;
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .ui-field-k { color: var(--dim); font-family: var(--mono); font-size: 10px; }
+  .ui-field-v { color: #e2e8f0; font-weight: 600; font-family: var(--mono); font-size: 10.5px; text-align: right; }
+
+  .ui-action-btn {
+    margin-top: 4px;
+    background: linear-gradient(135deg, #0284c7, #2563eb);
+    color: #fff;
+    border: 1px solid rgba(125, 211, 252, 0.5);
+    border-radius: 7px;
+    padding: 7px 10px;
+    font-size: 11.5px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 0 18px rgba(56, 189, 248, 0.25);
+    animation: pulseGlow 2.2s infinite;
+  }
+  .ui-action-btn.search-mode {
+    background: linear-gradient(135deg, #7c3aed, #4f46e5);
+    border-color: rgba(196, 181, 253, 0.5);
+    box-shadow: 0 0 18px rgba(167, 139, 250, 0.3);
+  }
+  .target-tag {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    background: rgba(0,0,0,0.28);
+    padding: 2px 5px;
+    border-radius: 4px;
+  }
+
+  /* Search presets box in Flutter lane */
+  .search-presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 4px;
+  }
+  .preset-btn {
+    background: rgba(167, 139, 250, 0.14);
+    border: 1px solid rgba(167, 139, 250, 0.35);
+    color: #ddd6fe;
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 10.5px;
+    font-family: var(--mono);
+    cursor: pointer;
+  }
+  .preset-btn.active {
+    background: rgba(167, 139, 250, 0.35);
+    color: #fff;
+    border-color: #c4b5fd;
+  }
+
+  /* Rust API Lane */
+  .api-card {
+    background: #14121d;
+    border: 1px solid rgba(251, 146, 60, 0.32);
+    border-radius: 10px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35);
+  }
+  .api-card.search-mode {
+    border-color: rgba(167, 139, 250, 0.45);
+    background: #131126;
+  }
+  .http-line {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    word-break: break-all;
+  }
+  .method {
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 800;
+    flex-shrink: 0;
+  }
+  .m-POST { background: rgba(52, 211, 153, 0.2); color: #6ee7b7; border: 1px solid rgba(52, 211, 153, 0.4); }
+  .m-PUT  { background: rgba(251, 191, 36, 0.2); color: #fde68a; border: 1px solid rgba(251, 191, 36, 0.4); }
+  .m-GET  { background: rgba(56, 189, 248, 0.2); color: #7dd3fc; border: 1px solid rgba(56, 189, 248, 0.4); }
+  .m-FAN  { background: rgba(167, 139, 250, 0.25); color: #ddd6fe; border: 1px solid rgba(167, 139, 250, 0.5); }
+
+  .crate-ref {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--rust);
+    opacity: 0.9;
+  }
+  .payload-box {
+    background: rgba(2, 6, 23, 0.72);
+    border: 1px solid rgba(148, 163, 184, 0.14);
+    border-radius: 6px;
+    padding: 7px 8px;
+    font-family: var(--mono);
+    font-size: 10px;
+    line-height: 1.4;
+    color: #cbd5e1;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .fanout-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .fanout-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(30, 27, 75, 0.45);
+    border: 1px solid rgba(167, 139, 250, 0.25);
+    border-radius: 5px;
+    padding: 4px 7px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: #e2e8f0;
+    animation: slideIn 0.35s ease backwards;
+  }
+  .fanout-item .badge {
+    font-size: 9px;
+    color: #c4b5fd;
+  }
+
+  /* PostgreSQL Lane */
+  .pg-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    align-content: start;
+  }
+
+  .pg-table {
+    background: rgba(15, 23, 42, 0.92);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    overflow: hidden;
+    transition: all 0.25s ease;
+  }
+  .pg-table.op-write {
+    border-color: rgba(52, 211, 153, 0.75);
+    box-shadow: 0 0 18px rgba(52, 211, 153, 0.2);
+  }
+  .pg-table.op-update {
+    border-color: rgba(251, 191, 36, 0.75);
+    box-shadow: 0 0 18px rgba(251, 191, 36, 0.18);
+  }
+  .pg-table.op-read {
+    border-color: rgba(56, 189, 248, 0.7);
+    box-shadow: 0 0 16px rgba(56, 189, 248, 0.16);
+  }
+  .pg-table.op-join {
+    border-color: rgba(167, 139, 250, 0.8);
+    box-shadow: 0 0 18px rgba(167, 139, 250, 0.22);
+  }
+  .pg-table.span-2 {
+    grid-column: span 2;
+  }
+
+  .pg-head {
+    padding: 5px 8px;
+    background: rgba(30, 41, 59, 0.85);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+  }
+  .pg-name {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    font-weight: 700;
+    color: #f8fafc;
+  }
+  .pg-op {
+    font-family: var(--mono);
+    font-size: 9px;
+    font-weight: 800;
+    padding: 1px 5px;
+    border-radius: 4px;
+    text-transform: uppercase;
+  }
+  .op-INSERT { background: rgba(52, 211, 153, 0.2); color: #6ee7b7; }
+  .op-UPDATE { background: rgba(251, 191, 36, 0.2); color: #fde68a; }
+  .op-SELECT { background: rgba(56, 189, 248, 0.2); color: #7dd3fc; }
+  .op-JOIN   { background: rgba(167, 139, 250, 0.24); color: #ddd6fe; }
+
+  .pg-rows {
+    padding: 6px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .pg-row {
+    font-family: var(--mono);
+    font-size: 9.8px;
+    line-height: 1.35;
+    padding: 4px 6px;
+    border-radius: 5px;
+    background: rgba(2, 6, 23, 0.58);
+    border-left: 2px solid var(--dim);
+    color: #cbd5e1;
+    animation: slideIn 0.3s ease backwards;
+  }
+  .pg-row.new { border-left-color: var(--pg); background: rgba(16, 185, 129, 0.1); }
+  .pg-row.upd { border-left-color: var(--warn); background: rgba(245, 158, 11, 0.1); }
+  .pg-row.hit { border-left-color: var(--search); background: rgba(139, 92, 246, 0.12); }
+
+  /* Combined Search Result Banner */
+  .combined-box {
+    background: rgba(30, 27, 75, 0.55);
+    border: 1px solid rgba(167, 139, 250, 0.45);
+    border-radius: 9px;
+    padding: 8px 10px;
+    grid-column: span 2;
+  }
+  .combined-title {
+    font-size: 10.5px;
+    font-weight: 700;
+    color: #ddd6fe;
+    margin-bottom: 5px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .combined-groups {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .combined-chip {
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid rgba(167, 139, 250, 0.35);
+    border-radius: 6px;
+    padding: 4px 7px;
+    font-family: var(--mono);
+    font-size: 9.8px;
+    color: #f1f5f9;
+  }
+
+  /* Caption Bar (Accessibility / Sound-Off) */
+  .caption-bar {
+    background: rgba(2, 6, 23, 0.92);
+    border-top: 1px solid var(--border);
+    padding: 8px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    flex-shrink: 0;
+  }
+  .caption-text {
+    font-size: 12.5px;
+    line-height: 1.4;
+    color: #f8fafc;
+  }
+  .caption-text strong { color: var(--flutter); }
+  .caption-badge {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    padding: 3px 8px;
+    border-radius: 5px;
+    white-space: nowrap;
+  }
+
+  /* Transport Controls */
+  .transport {
+    height: 48px;
+    background: rgba(13, 20, 36, 0.96);
+    border-top: 1px solid var(--border);
+    padding: 0 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    flex-shrink: 0;
+  }
+  .transport-left {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .t-btn {
+    background: var(--surface-2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 11.5px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .t-btn:hover { background: var(--surface-3); }
+  .t-btn.primary {
+    background: var(--flutter);
+    color: #061224;
+    border-color: var(--flutter);
+    font-weight: 800;
+  }
+
+  .progress-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .progress-track {
+    flex: 1;
+    height: 6px;
+    background: var(--surface-2);
+    border-radius: 999px;
+    overflow: hidden;
+    cursor: pointer;
+    position: relative;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--flutter), var(--search), var(--pg));
+    border-radius: 999px;
+    transition: width 0.25s ease;
+  }
+  .step-counter {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  /* Animations */
+  @keyframes pulseGlow {
+    0%, 100% { box-shadow: 0 0 12px rgba(56, 189, 248, 0.2); }
+    50% { box-shadow: 0 0 22px rgba(56, 189, 248, 0.45); }
+  }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes dashFlow {
+    to { stroke-dashoffset: -28; }
+  }
+  .flow-line {
+    stroke-dasharray: 7 7;
+    animation: dashFlow 0.9s linear infinite;
+  }
+
+  /* Responsive fallback for smaller screens */
+  @media (max-width: 1000px) {
+    .stage-wrap { aspect-ratio: auto; min-height: 92vh; }
+    .stage-body { grid-template-columns: 1fr; overflow-y: auto; }
+    .flow-svg { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="stage-wrap" id="stage">
+  <!-- Top HUD -->
+  <header class="hud-top">
+    <div class="brand">
+      <span class="brand-badge">16:9</span>
+      <span>TradoCraft DB Flow</span>
+    </div>
+    <nav class="chapter-strip" id="chapterStrip"></nav>
+    <div class="hud-actions">
+      <button class="btn-hud on" id="toggleCaptions">CC On</button>
+      <button class="btn-hud" id="toggleFullscreen">Fullscreen</button>
+    </div>
+  </header>
+
+  <!-- Main 3-Lane Stage -->
+  <main class="stage-body" id="stageBody">
+    <svg class="flow-svg" id="flowSvg" viewBox="0 0 1440 640" preserveAspectRatio="none">
+      <defs>
+        <marker id="arrowBlue" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+          <path d="M0,0 L8,4 L0,8 Z" fill="#38bdf8" />
+        </marker>
+        <marker id="arrowOrange" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+          <path d="M0,0 L8,4 L0,8 Z" fill="#fb923c" />
+        </marker>
+        <marker id="arrowPurple" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+          <path d="M0,0 L8,4 L0,8 Z" fill="#a78bfa" />
+        </marker>
+      </defs>
+      <!-- Connector lines updated dynamically per mode -->
+      <path id="beamLeft" d="M 398 310 C 420 310, 412 310, 434 310" fill="none" stroke="#38bdf8" stroke-width="2.5" class="flow-line" marker-end="url(#arrowBlue)" />
+      <path id="beamRight" d="M 742 310 C 765 310, 756 310, 780 310" fill="none" stroke="#fb923c" stroke-width="2.5" class="flow-line" marker-end="url(#arrowOrange)" />
+    </svg>
+
+    <!-- Lane 1: Flutter Frontend -->
+    <section class="lane lane-flutter">
+      <div class="lane-header">
+        <span><span class="lane-dot"></span>Flutter Frontend</span>
+        <span class="lane-sub" id="flutterRoute">/products</span>
+      </div>
+      <div class="lane-content" id="flutterPane"></div>
+    </section>
+
+    <!-- Lane 2: Rust Backend -->
+    <section class="lane lane-rust">
+      <div class="lane-header">
+        <span><span class="lane-dot"></span>Rust API (Axum)</span>
+        <span class="lane-sub">/api/v1</span>
+      </div>
+      <div class="lane-content" id="rustPane"></div>
+    </section>
+
+    <!-- Lane 3: PostgreSQL Tables -->
+    <section class="lane lane-pg">
+      <div class="lane-header">
+        <span><span class="lane-dot"></span>PostgreSQL Tables</span>
+        <span class="lane-sub" id="pgSummary">migrations/</span>
+      </div>
+      <div class="lane-content">
+        <div class="pg-grid" id="pgGrid"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Burned-in / Toggleable Caption Bar -->
+  <div class="caption-bar" id="captionBar">
+    <div class="caption-text" id="captionText"></div>
+    <span class="caption-badge" id="chapterBadge">Ch 0 · Welcome</span>
+  </div>
+
+  <!-- Transport Controls -->
+  <footer class="transport">
+    <div class="transport-left">
+      <button class="t-btn" id="prevBtn" title="Previous step (Left Arrow)">◀ Prev</button>
+      <button class="t-btn primary" id="playBtn" title="Play / Pause (Space)">▶ Play</button>
+      <button class="t-btn" id="nextBtn" title="Next step (Right Arrow)">Next ▶</button>
+      <button class="t-btn" id="speedBtn" title="Playback speed">1.0× (4.5s)</button>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-track" id="progressTrack">
+        <div class="progress-fill" id="progressFill" style="width: 0%;"></div>
+      </div>
+      <span class="step-counter" id="stepCounter">1 / 1</span>
+    </div>
+  </footer>
+</div>
+
+<script>
+// Grounded directly in TradoCraft's Flutter tutorial missions, Rust crates, and PostgreSQL migrations.
+const CHAPTERS = [
+  { id: 'ch0', label: '0 · Welcome' },
+  { id: 'ch1', label: '1 · Products & BOM' },
+  { id: 'ch2', label: '2 · Suppliers' },
+  { id: 'ch3', label: '3 · Buying & Stock' },
+  { id: 'ch4', label: '4 · Invoices' },
+  { id: 'ch5', label: '5 · Manufacturing' },
+  { id: 'ch6', label: '6 · Prices' },
+  { id: 'ch7', label: '7 · Customer' },
+  { id: 'ch8', label: '8 · Quotation' },
+  { id: 'ch9', label: '9 · Change & Order' },
+  { id: 'ch10', label: '10 · Helpdesk' },
+  { id: 'ch11', label: '11 · Attributes' },
+  { id: 'search', label: '🔍 Multi-Table Search', isSearch: true }
+];
+
+const STEPS = [
+  // CH 0: Welcome
+  {
+    ch: 'ch0',
+    title: 'Tutorial Mode & Workspace Shell',
+    route: '/products',
+    uiTitle: 'Welcome to TradoCraft',
+    uiDesc: 'Learner inspects the blue tutorial environment banner, workspace tabs, and narrator controls, then opens Products.',
+    uiFields: [
+      ['env-banner', 'Tutorial environment (blue)'],
+      ['user-menu', 'Chapter map & progress'],
+      ['OnRoute', '/products']
+    ],
+    uiAction: 'Open Products',
+    uiTarget: 'nav-products',
+    method: 'GET',
+    endpoint: '/api/v1/products?limit=20',
+    crate: 'crates/products/src/lib.rs',
+    payload: '{\n  "q": null,\n  "limit": 20\n}',
+    caption: '<strong>Ch 0 (Welcome):</strong> Every action in Flutter hits <code>/api/v1</code> in Rust, while the tutorial engine listens via <code>ApiEventInterceptor</code>.',
+    tables: [
+      {
+        name: 'products.products',
+        op: 'SELECT',
+        cls: 'op-read',
+        rows: [
+          { cls: '', text: 'Reads existing catalog rows (LEFT JOIN product_families, media)' }
+        ]
+      },
+      {
+        name: 'core.users',
+        op: 'SELECT',
+        cls: 'op-read',
+        rows: [
+          { cls: '', text: 'Session identity & permissions verified for tutorial learner' }
+        ]
+      }
+    ]
+  },
+
+  // CH 1: Product & BOM
+  {
+    ch: 'ch1',
+    title: 'Create 3 Components + Manufactured Cart',
+    route: '/products',
+    uiTitle: 'New Products (Ch 1)',
+    uiDesc: 'User creates purchased components TUT-MOTOR, TUT-FRAME, TUT-CTRL, then manufactured product TUT-CART.',
+    uiFields: [
+      ['TUT-MOTOR', 'purchased · Motor'],
+      ['TUT-FRAME', 'purchased · Frame'],
+      ['TUT-CTRL', 'purchased · Controller'],
+      ['TUT-CART', 'manufactured · Cart']
+    ],
+    uiAction: 'Save Product',
+    uiTarget: 'product-form-save',
+    method: 'POST',
+    endpoint: '/api/v1/products',
+    crate: 'crates/products/src/lib.rs',
+    payload: '{\n  "code": "TUT-CART",\n  "name": "Cart",\n  "product_type": "manufactured"\n}',
+    caption: '<strong>Ch 1 (Product):</strong> Creating <code>TUT-MOTOR</code>, <code>TUT-FRAME</code>, <code>TUT-CTRL</code>, and <code>TUT-CART</code> inserts 4 rows into <code>products.products</code>.',
+    tables: [
+      {
+        name: 'products.products',
+        op: 'INSERT',
+        cls: 'op-write',
+        span: true,
+        rows: [
+          { cls: 'new', text: '+ code: "TUT-MOTOR" | type: "purchased" | id: motorId' },
+          { cls: 'new', text: '+ code: "TUT-FRAME" | type: "purchased" | id: frameId' },
+          { cls: 'new', text: '+ code: "TUT-CTRL"  | type: "purchased" | id: controllerId' },
+          { cls: 'new', text: '+ code: "TUT-CART"  | type: "manufactured" | id: cartId' }
+        ]
+      },
+      {
+        name: 'core.audit_log',
+        op: 'INSERT',
+        cls: 'op-write',
+        span: true,
+        rows: [
+          { cls: 'new', text: '+ entity: "product" | action: "created" | 4 audit entries' }
+        ]
+      }
+    ]
+  },
+  {
+    ch: 'ch1',
+    title: 'Create Draft BOM, Add 3 Lines & Activate',
+    route: '/products/{cartId}',
+    uiTitle: 'TUT-CART → Bill of Materials',
+    uiDesc: 'User creates a BOM revision, links Motor, Frame, and Controller (qty 1 each), then clicks Activate.',
+    uiFields: [
+      ['bom-new-revision', 'POST /products/{cartId}/boms'],
+      ['bom-add-component', 'PUT /boms/{bomId} (3 lines)'],
+      ['bom-activate', 'POST /boms/{bomId}/activate']
+    ],
+    uiAction: 'Activate BOM',
+    uiTarget: 'bom-activate',
+    method: 'POST',
+    endpoint: '/api/v1/boms/{bomId}/activate',
+    crate: 'crates/engineering/src/boms.rs',
+    payload: '{\n  "lines": [\n    { "component_id": "motorId", "qty": 1 },\n    { "component_id": "frameId", "qty": 1 },\n    { "component_id": "controllerId", "qty": 1 }\n  ]\n}',
+    caption: '<strong>Ch 1 (BOM):</strong> Rust writes the BOM header to <code>engineering.boms</code>, the 3 component links to <code>engineering.bom_lines</code>, and flips status to <code>active</code>.',
+    tables: [
+      {
+        name: 'engineering.boms',
+        op: 'UPDATE',
+        cls: 'op-update',
+        rows: [
+          { cls: 'upd', text: 'id: bomId | product_id: cartId | status: "draft" → "active"' }
+        ]
+      },
+      {
+        name: 'engineering.bom_lines',
+        op: 'INSERT',
+        cls: 'op-write',
+        rows: [
+          { cls: 'new', text: '+ bom_id: bomId | component: TUT-MOTOR (1)' },
+          { cls: 'new', text: '+ bom_id: bomId | component: TUT-FRAME (1)' },
+          { cls: 'new', text: '+ bom_id: bomId | component: TUT-CTRL (1)' }
+        ]
+      }
+    ]
+  },
+
+  // CH 2: Suppliers
+  {
+    ch: 'ch2',
+    title: 'Create Suppliers & Component Prices',
+    route: '/purchasing',
+    uiTitle: 'Suppliers & Price Catalog',
+    uiDesc: 'User creates TUT-SUP-A (Voltaic Drives Ltd) and TUT-SUP-B (Ironbridge Frames), then assigns component unit prices & lead times.',
+    uiFields: [
+      ['TUT-SUP-A', 'Voltaic Drives Ltd (Motor 120, Frame 45, Ctrl 30)'],
+      ['TUT-SUP-B', 'Ironbridge Frames (Motor 135, 5d lead, MOQ 1)']
+    ],
+    uiAction: 'Save Supplier Price',
+    uiTarget: 'supplier-price-save',
+    method: 'POST',
+    endpoint: '/api/v1/suppliers/{supplierAId}/products/{motorId}',
+    crate: 'crates/purchasing/src/suppliers.rs',
+    payload: '{\n  "unit_price": 120.00,\n  "lead_time_days": 14,\n  "min_order_qty": 5\n}',
+    caption: '<strong>Ch 2 (Suppliers):</strong> Suppliers land in <code>purchasing.suppliers</code>; each supplier–product price & MOQ row is stored in <code>purchasing.supplier_products</code>.',
+    tables: [
+      {
+        name: 'purchasing.suppliers',
+        op: 'INSERT',
+        cls: 'op-write',
+        rows: [
+          { cls: 'new', text: '+ code: "TUT-SUP-A" | "Voltaic Drives Ltd"' },
+          { cls: 'new', text: '+ code: "TUT-SUP-B" | "Ironbridge Frames"' }
+        ]
+      },
+      {
+        name: 'purchasing.supplier_products',
+        op: 'INSERT',
+        cls: 'op-write',
+        rows: [
+          { cls: 'new', text: '+ SUP-A → TUT-MOTOR | 120.00 | 14d | MOQ 5' },
+          { cls: 'new', text: '+ SUP-A → TUT-FRAME | 45.00 | 10d | MOQ 5' },
+          { cls: 'new', text: '+ SUP-A → TUT-CTRL  | 30.00 | 7d  | MOQ 5' },
+          { cls: 'new', text: '+ SUP-B → TUT-MOTOR | 135.00 | 5d  | MOQ 1' }
+        ]
+      }
+    ]
+  },
+
+  // CH 3: Buying & Stock
+  {
+    ch: 'ch3',
+    title: 'Create, Approve & Send Purchase Order',
+    route: '/purchase-orders/{poId}',
+    uiTitle: 'Purchase Order (Qty 30 Each)',
+    uiDesc: 'User creates a PO for Voltaic Drives Ltd (30 × Motor, Frame, Controller), then clicks Approve and Send.',
+    uiFields: [
+      ['supplier_id', 'supplierAId (TUT-SUP-A)'],
+      ['lines', '30 × TUT-MOTOR, TUT-FRAME, TUT-CTRL'],
+      ['workflow', 'draft → approved → sent']
+    ],
+    uiAction: 'Approve & Send PO',
+    uiTarget: 'po-send',
+    method: 'POST',
+    endpoint: '/api/v1/purchase-orders/{poId}/send',
+    crate: 'crates/purchasing/src/orders.rs',
+    payload: '{\n  "supplier_id": "supplierAId",\n  "lines": ["30x MOTOR", "30x FRAME", "30x CTRL"]\n}',
+    caption: '<strong>Ch 3 (Buying):</strong> Creating and sending the PO writes <code>purchasing.purchase_orders</code> and <code>purchase_order_lines</code>, advancing status to <code>sent</code>.',
+    tables: [
+      {
+        name: 'purchasing.purchase_orders',
+        op: 'UPDATE',
+        cls: 'op-update',
+        rows: [
+          { cls: 'upd', text: 'id: poId | supplier: supplierAId | status: "draft" → "sent"' }
+        ]
+      },
+      {
+        name: 'purchasing.purchase_order_lines',
+        op: 'INSERT',
+        cls: 'op-write',
+        rows: [
+          { cls: 'new', text: '+ TUT-MOTOR qty: 30 | received: 0' },
+          { cls: 'new', text: '+ TUT-FRAME qty: 30 | received: 0' },
+          { cls: 'new', text: '+ TUT-CTRL  qty: 30 | received: 0' }
+        ]
+      }
+    ]
+  },
+  {
+    ch: 'ch3',
+    title: 'Create MAIN Warehouse & Receive 10 + 20 Units',
+    route: '/purchase-orders/{poId}',
+    uiTitle: 'Warehouse & Two-Step Goods Receipt',
+    uiDesc: 'User ensures MAIN warehouse/location exists, then receives 10 units and the remaining 20 units into MAIN.',
+    uiFields: [
+      ['warehouse', 'MAIN (Main warehouse)'],
+      ['receipt 1', '+10 each → status: partially_received'],
+      ['receipt 2', '+20 each → status: received']
+    ],
+    uiAction: 'Submit Receipt (+20)',
+    uiTarget: 'po-receive-submit',
+    method: 'POST',
+    endpoint: '/api/v1/purchase-orders/{poId}/receipts',
+    crate: 'crates/purchasing/src/receipts.rs',
+    payload: '{\n  "location_id": "MAIN",\n  "lines": [{ "qty": 20 }, ...]\n}',
+    caption: '<strong>Ch 3 (Stock Receipt):</strong> Each receipt logs immutable movements in <code>inventory.stock_moves</code> and increments on-hand totals in <code>inventory.stock_balances</code> to 30.',
+    tables: [
+      {
+        name: 'inventory.warehouses & locations',
+        op: 'INSERT',
+        cls: 'op-write',
+        rows: [
+          { cls: 'new', text: '+ warehouse: "MAIN" | location: "MAIN" (active)' }
+        ]
+      },
+      {
+        name: 'purchasing.purchase_orders',
+        op: 'UPDATE',
+        cls: 'op-update',
+        rows: [
+          { cls: 'upd', text: 'poId | status: "partially_received" → "received"' }
+        ]
+      },
+      {
+        name: 'inventory.stock_moves',
+        op: 'INSERT',
+        cls: 'op-write',
+        rows: [
+          { cls: 'new', text: '+ receipt +10 & +20 for MOTOR, FRAME, CTRL → MAIN' }
+        ]
+      },
+      {
+        name: 'inventory.stock_balances',
+        op: 'UPDATE',
+        cls: 'op-update',
+        rows: [
+          { cls: 'upd', text: 'MAIN: MOTOR=30 | FRAME=30 | CTRL=30' }
+        ]
+      }
+    ]
+  },
+
+  // CH 4: Invoices
+  {
+    ch: 'ch4',
+    title: '3-Way Match, Dispute & Payment',
+    route: '/supplier-invoices/{invoiceId}',
+    uiTitle: 'Supplier Invoices (Ch 4)',
+    uiDesc: 'User creates TUT-INV-001 from the PO (green 3-way match), approves & pays it; then creates & disputes mismatched TUT-INV-002.',
+    uiFields: [
+      ['TUT-INV-001', 'PO-linked → 3-way match → paid (TUT-PAY-001)'],
+      ['TUT-INV-002', 'Free-text 10 × 150 → mismatch → disputed']
+    ],
+    uiAction: 'Mark Paid / Dispute',
+    uiTarget: 'inv-mark-paid',
+    method: 'POST',
+    endpoint: '/api/v1/supplier-invoices/{invoiceId}/mark-paid',
+    crate: 'crates/finance/src/invoices.rs',
+    payload: '{\n  "payment_reference": "TUT-PAY-001"\n}',
+    caption: '<strong>Ch 4 (Invoices):</strong> Rust compares <code>finance.supplier_invoices</code> against <code>purchasing.purchase_order_lines</code> & receipts for 3-way matching, then records payment or dispute.',
+    tables: [
+      {
+        name: 'finance.supplier_invoices',
+        op: 'UPDATE',
+        cls: 'op-update',
+        rows: [
+          { cls: 'upd', text: 'TUT-INV-001 | po_id: poId | status: "paid" (TUT-PAY-001)' },
+          { cls: 'new', text: 'TUT-INV-002 | po_id: null | status: "disputed"' }
+        ]
+      },
+      {
+        name: 'purchasing.purchase_order_lines',
+        op: 'SELECT',
+        cls: 'op-read',
+        rows: [
+          { cls: '', text: '3-way match reads ordered qty, unit price & received qty' }
+        ]
+      }
+    ]
+  },
+
+  // CH 5: Manufacturing
+  {
+    ch: 'ch5',
+    title: 'Division & Build 5 Carts for Stock',
+    route: '/production/{productionId}',
+    uiTitle: 'Production Order (5 × TUT-CART)',
+    uiDesc: 'User creates division TUT-ASM, releases a 5-cart build-for-stock order, assigns TUT-ASM, starts, and completes into MAIN.',
+    uiFields: [
+      ['division', 'TUT-ASM (Tutorial assembly)'],
+      ['production', '5 × TUT-CART | BOM: active'],
+      ['complete', 'Put into MAIN → -5 components, +5 carts']
+    ],
+    uiAction: 'Complete Production',
+    uiTarget: 'production-complete-save',
+    method: 'POST',
+    endpoint: '/api/v1/production-orders/{productionId}/complete',
+    crate: 'crates/production/src/complete.rs',
+    payload: '{\n  "location_id": "MAIN",\n  "completed_quantity": 5\n}',
+    caption: '<strong>Ch 5 (Manufacturing):</strong> Completing the build consumes 5 of each component via <code>inventory.stock_moves</code> (30 → 25) and outputs +5 <code>TUT-CART</code> into <code>MAIN</code>.',
+    tables: [
+      {
+        name: 'production.divisions',
+        op: 'INSERT',
+        cls: 'op-write',
+        rows: [
+          { cls: 'new', text: '+ code: "TUT-ASM" | "Tutorial assembly"' }
+        ]
+      },
+      {
+        name: 'production.production_orders',
+        op: 'UPDATE',
+        cls: 'op-update',
+        rows: [
+          { cls: 'upd', text: 'id: productionId | qty: 5 | status: "completed"' }
+        ]
+      },
+      {
+        name: 'inventory.stock_moves',
+        op: 'INSERT',
+        cls: 'op-write',
+        rows: [
+          { cls: 'new', text: '-5 MOTOR, -5 FRAME, -5 CTRL (consumed)' },
+          { cls: 'new', text: '+5 TUT-CART (finished output → MAIN)' }
+        ]
+      },
+      {
+        name: 'inventory.stock_balances',
+        op: 'UPDATE',
+        cls: 'op-update',
+        rows: [
+          { cls: 'upd', text: 'MAIN: MOTOR=25, FRAME=25, CTRL=25, CART=5' }
+        ]
+      }
+    ]
+  },
+
+  // CH 6: Prices
+  {
+    ch: 'ch6',
+    title: 'Export Price Zone & Zone Pricing',
+    route: '/products/{cartId}',
+    uiTitle: 'Price Zones & TUT-CART Prices',
+    uiDesc: 'User creates price zone TUT-EXPORT in Admin, then sets effective prices for TUT-CART in Export (1450) and Home (1200).',
+    uiFields: [
+      ['TUT-EXPORT', 'Export zone (price_zones)'],
+      ['Export price', '1450.00 (valid_from: today)'],
+      ['Home price', '1200.00 (zone Z1)']
+    ],
+    uiAction: 'Save Zone Price',
+    uiTarget: 'price-form-save',
+    method: 'POST',
+    endpoint: '/api/v1/products/{cartId}/prices',
+    crate: 'crates/products/src/lib.rs',
+    payload: '{\n  "price_zone_id": "zoneId",\n  "unit_price": 1450.00\n}',
+    caption: '<strong>Ch 6 (Prices):</strong> Price zones live in <code>pricing.price_zones</code> and effective product prices per zone are written to <code>pricing.zone_prices</code>.',
+    tables: [
+      {
+        name: 'pricing.price_zones',
+        op: 'INSERT',
+        cls: 'op-write',
+        rows: [
+          { cls: 'new', text: '+ code: "TUT-EXPORT" | name: "Export zone"' }
+        ]
+      },
+      {
+        name: 'pricing.zone_prices',
+        op: 'INSERT',
+        cls: 'op-write',
+        rows: [
+          { cls: 'new', text: '+ product: TUT-CART | zone: TUT-EXPORT | 1450.00' },
+          { cls: 'new', text: '+ product: TUT-CART | zone: Z1 (Home) | 1200.00' }
+        ]
+      }
+    ]
+  },
+
+  // CH 7: Customer & Helpdesk Inbound
+  {
+    ch: 'ch7',
+    title: 'Simulated Inbound Email, Reply & Brightwheel',
+    route: '/helpdesk/{ticketId}',
+    uiTitle: 'Maya’s Enquiry → Brightwheel BV',
+    uiDesc: 'Simulated emails create a threaded ticket; agent replies, creates customer Brightwheel Logistics BV (TUT-CUST), and links it to the ticket.',
+    uiFields: [
+      ['inbound', 'maya.okafor@example.test → ticketId'],
+      ['customer', 'TUT-CUST · Brightwheel Logistics BV'],
+      ['VAT / Zone', 'BE0123456749 · TUT-EXPORT']
+    ],
+    uiAction: 'Create & Link Customer',
+    uiTarget: 'ticket-save-properties',
+    method: 'PUT',
+    endpoint: '/api/v1/tickets/{ticketId}',
+    crate: 'crates/helpdesk/src/tickets.rs · crates/crm/src/lib.rs',
+    payload: '{\n  "customer_id": "customerId"\n}',
+    caption: '<strong>Ch 7 (Customer):</strong> Inbound mail writes <code>helpdesk.tickets</code> + <code>helpdesk.articles</code>; creating Brightwheel writes <code>crm.customers</code> + <code>crm.customer_terms</code>, then links <code>customer_id</code>.',
+    tables: [
+      {
+        name: 'helpdesk.tickets',
+        op: 'UPDATE',
+        cls: 'op-update',
+        rows: [
+          { cls: 'upd', text: 'id: ticketId | customer_id: null → customerId' }
+        ]
+      },
+      {
+        name: 'helpdesk.articles',
+        op: 'INSERT',
+        cls: 'op-write',
+        rows: [
+          { cls: 'new', text: '+ kind: "email_in" (Maya) & "email_out" (Reply)' }
+        ]
+      },
+      {
+        name: 'crm.customers',
+        op: 'INSERT',
+        cls: 'op-write',
+        rows: [
+          { cls: 'new', text: '+ code: "TUT-CUST" | "Brightwheel Logistics BV"' }
+        ]
+      },
+      {
+        name: 'crm.customer_terms',
+        op: 'INSERT',
+        cls: 'op-write',
+        rows: [
+          { cls: 'new', text: '+ customer_id | price_zone_id: zoneId (TUT-EXPORT)' }
+        ]
+      }
+    ]
+  },
+
+  // CH 8: Quotation
+  {
+    ch: 'ch8',
+    title: '8-Cart Quotation, Lead Note, Send & PDF',
+    route: '/quotations/{quotationId}',
+    uiTitle: 'Quotation for Brightwheel (8 × TUT-CART)',
+    uiDesc: 'User creates a quotation for 8 carts (using TUT-EXPORT pricing), adds a delivery timing note, sends it, and previews the Typst PDF.',
+    uiFields: [
+      ['customer_id', 'Brightwheel Logistics BV'],
+      ['line 1', '8 × TUT-CART @ 1450.00 (zone price)'],
+      ['status', 'draft → sent + PDF generated']
+    ],
+    uiAction: 'Send Quotation',
+    uiTarget: 'quotation-send',
+    method: 'POST',
+    endpoint: '/api/v1/quotations/{quotationId}/send',
+    crate: 'crates/sales/src/routes.rs',
+    payload: '{\n  "customer_id": "customerId",\n  "lines": [{ "product_id": "cartId", "qty": 8 }]\n}',
+    caption: '<strong>Ch 8 (Quotation):</strong> Rust allocates a number from <code>core.number_sequences</code>, writes <code>sales.quotations</code> + <code>sales.quotation_lines</code>, and freezes status to <code>sent</code>.',
+    tables: [
+      {
+        name: 'core.number_sequences',
+        op: 'UPDATE',
+        cls: 'op-update',
+        rows: [
+          { cls: 'upd', text: 'Next quotation number allocated atomically' }
+        ]
+      },
+      {
+        name: 'sales.quotations',
+        op: 'UPDATE',
+        cls: 'op-update',
+        rows: [
+          { cls: 'upd', text: 'id: quotationId | status: "draft" → "sent" | notes set' }
+        ]
+      },
+      {
+        name: 'sales.quotation_lines',
+        op: 'INSERT',
+        cls: 'op-write',
+        rows: [
+          { cls: 'new', text: '+ product: TUT-CART | qty: 8 | unit_price: 1450.00' }
+        ]
+      },
+      {
+        name: 'chatter.messages',
+        op: 'INSERT',
+        cls: 'op-write',
+        rows: [
+          { cls: 'new', text: '+ Quotation sent event logged in chatter' }
+        ]
+      }
+    ]
+  },
+
+  // CH 9: Change, Order & Fulfilment
+  {
+    ch: 'ch9',
+    title: 'Revise to 10 Carts, Accept & Convert to Order',
+    route: '/quotations/{quotation2Id}',
+    uiTitle: 'Revision (10 Carts) → Sales Order',
+    uiDesc: 'Maya asks for 10 carts. User revises the quote, updates qty to 10, sends, marks accepted, and converts to a Sales Order.',
+    uiFields: [
+      ['revise', 'quotationId (superseded) → quotation2Id'],
+      ['qty', '8 → 10 × TUT-CART'],
+      ['convert', 'POST /quotations/{id}/convert → orderId']
+    ],
+    uiAction: 'Convert to Order',
+    uiTarget: 'quotation-convert',
+    method: 'POST',
+    endpoint: '/api/v1/quotations/{quotation2Id}/convert',
+    crate: 'crates/sales/src/orders.rs',
+    payload: '{\n  "quotation_id": "quotation2Id"\n}',
+    caption: '<strong>Ch 9 (Revise & Convert):</strong> Revising supersedes the old quote; converting creates <code>sales.orders</code>, <code>sales.order_revisions</code>, and <code>sales.order_lines</code>.',
+    tables: [
+      {
+        name: 'sales.quotations',
+        op: 'UPDATE',
+        cls: 'op-update',
+        rows: [
+          { cls: 'upd', text: 'quotationId: "superseded" | quotation2Id: "accepted"' }
+        ]
+      },
+      {
+        name: 'sales.orders',
+        op: 'INSERT',
+        cls: 'op-write',
+        rows: [
+          { cls: 'new', text: '+ id: orderId | quotation_id: quotation2Id | status: "draft"' }
+        ]
+      },
+      {
+        name: 'sales.order_revisions',
+        op: 'INSERT',
+        cls: 'op-write',
+        rows: [
+          { cls: 'new', text: '+ order_id: orderId | rev: 1' }
+        ]
+      },
+      {
+        name: 'sales.order_lines',
+        op: 'INSERT',
+        cls: 'op-write',
+        rows: [
+          { cls: 'new', text: '+ order_id: orderId | TUT-CART | qty: 10' }
+        ]
+      }
+    ]
+  },
+  {
+    ch: 'ch9',
+    title: 'Confirm Order, Release & Complete Production',
+    route: '/orders/{orderId}',
+    uiTitle: 'Order Production → Ready for Shipping',
+    uiDesc: 'User sends & confirms the order, releases the order line to production, starts & completes the 10-cart build into MAIN.',
+    uiFields: [
+      ['order', 'confirmed → in_production → ready_for_shipping'],
+      ['production', 'orderProductionId (10 × TUT-CART)'],
+      ['stock build', 'Additional build-for-stock released']
+    ],
+    uiAction: 'Complete Order Build',
+    uiTarget: 'production-complete-save',
+    method: 'POST',
+    endpoint: '/api/v1/production-orders/{orderProductionId}/complete',
+    crate: 'crates/production/src/complete.rs',
+    payload: '{\n  "location_id": "MAIN",\n  "completed_quantity": 10\n}',
+    caption: '<strong>Ch 9 (Order Fulfilment):</strong> Completing the order-linked production run updates <code>production.production_orders</code>, posts <code>inventory.stock_moves</code>, and sets <code>sales.orders.status = "ready_for_shipping"</code>.',
+    tables: [
+      {
+        name: 'sales.orders',
+        op: 'UPDATE',
+        cls: 'op-update',
+        rows: [
+          { cls: 'upd', text: 'orderId | status: "confirmed" → "ready_for_shipping"' }
+        ]
+      },
+      {
+        name: 'production.production_orders',
+        op: 'UPDATE',
+        cls: 'op-update',
+        rows: [
+          { cls: 'upd', text: 'orderProductionId | order_id: orderId | status: "completed"' }
+        ]
+      },
+      {
+        name: 'inventory.stock_moves',
+        op: 'INSERT',
+        cls: 'op-write',
+        rows: [
+          { cls: 'new', text: '-10 components consumed | +10 TUT-CART → MAIN' }
+        ]
+      },
+      {
+        name: 'inventory.reservations',
+        op: 'UPDATE',
+        cls: 'op-update',
+        rows: [
+          { cls: 'upd', text: 'Component reservations consumed & released' }
+        ]
+      }
+    ]
+  },
+
+  // CH 10: Helpdesk
+  {
+    ch: 'ch10',
+    title: 'Internal Note, Tag, Time Entry & Escalation',
+    route: '/helpdesk/{ticketId}',
+    uiTitle: 'Helpdesk Collaboration (Ch 10)',
+    uiDesc: 'User adds an internal note, tags the ticket, logs 15 minutes, escalates it, and tours prepared answers (/helpdesk/answers).',
+    uiFields: [
+      ['note', 'POST /tickets/{id}/notes (internal)'],
+      ['tag + time', 'POST /tags & POST /time-entries (15m)'],
+      ['escalate', 'POST /tickets/{id}/escalate']
+    ],
+    uiAction: 'Escalate Ticket',
+    uiTarget: 'escalate-ticket',
+    method: 'POST',
+    endpoint: '/api/v1/tickets/{ticketId}/escalate',
+    crate: 'crates/helpdesk/src/collab.rs · extras.rs',
+    payload: '{\n  "reason": "Urgent customer change"\n}',
+    caption: '<strong>Ch 10 (Helpdesk):</strong> Each action writes to its dedicated helpdesk table (<code>articles</code>, <code>ticket_tags</code>, <code>time_entries</code>) and escalation queues a notice in <code>core.mail_outbox</code>.',
+    tables: [
+      {
+        name: 'helpdesk.articles',
+        op: 'INSERT',
+        cls: 'op-write',
+        rows: [
+          { cls: 'new', text: '+ ticket_id | kind: "note" (internal)' }
+        ]
+      },
+      {
+        name: 'helpdesk.ticket_tags & time_entries',
+        op: 'INSERT',
+        cls: 'op-write',
+        rows: [
+          { cls: 'new', text: '+ ticket_tags row | + time_entries (15 min)' }
+        ]
+      },
+      {
+        name: 'helpdesk.tickets',
+        op: 'UPDATE',
+        cls: 'op-update',
+        rows: [
+          { cls: 'upd', text: 'ticketId | escalated_at = NOW() | escalated_by = userId' }
+        ]
+      },
+      {
+        name: 'core.mail_outbox',
+        op: 'INSERT',
+        cls: 'op-write',
+        rows: [
+          { cls: 'new', text: '+ Escalation notification queued' }
+        ]
+      }
+    ]
+  },
+
+  // CH 11: Attributes
+  {
+    ch: 'ch11',
+    title: 'Define Attributes & Set TUT-CTRL Values',
+    route: '/products/{controllerId}',
+    uiTitle: 'Technical Attributes (Ch 11)',
+    uiDesc: 'User defines 4 product-scope attribute definitions in Admin, then sets their typed values on TUT-CTRL.',
+    uiFields: [
+      ['relay_count', 'number → 4'],
+      ['fet_count', 'number → 2'],
+      ['digital_inputs', 'number → 8'],
+      ['supports_24v_polarized_2wire', 'boolean → true']
+    ],
+    uiAction: 'Save Suitability Attributes',
+    uiTarget: 'suitability-save',
+    method: 'PUT',
+    endpoint: '/api/v1/products/{controllerId}/attributes',
+    crate: 'crates/products/src/attributes.rs',
+    payload: '{\n  "relay_count": 4,\n  "fet_count": 2,\n  "digital_inputs": 8,\n  "supports_24v_polarized_2wire": true\n}',
+    caption: '<strong>Ch 11 (Attributes):</strong> Definitions live in <code>products.attribute_definitions</code>; setting values on <code>TUT-CTRL</code> replaces its rows in <code>products.product_attributes</code>.',
+    tables: [
+      {
+        name: 'products.attribute_definitions',
+        op: 'INSERT',
+        cls: 'op-write',
+        rows: [
+          { cls: 'new', text: '+ relay_count (number, sort 10)' },
+          { cls: 'new', text: '+ fet_count (number, sort 20)' },
+          { cls: 'new', text: '+ digital_inputs (number, sort 30)' },
+          { cls: 'new', text: '+ supports_24v_polarized_2wire (boolean, sort 40)' }
+        ]
+      },
+      {
+        name: 'products.product_attributes',
+        op: 'INSERT',
+        cls: 'op-write',
+        rows: [
+          { cls: 'new', text: '+ TUT-CTRL | relay_count = 4' },
+          { cls: 'new', text: '+ TUT-CTRL | fet_count = 2' },
+          { cls: 'new', text: '+ TUT-CTRL | digital_inputs = 8' },
+          { cls: 'new', text: '+ TUT-CTRL | supports_24v_polarized_2wire = true' }
+        ]
+      }
+    ]
+  },
+
+  // MULTI-TABLE SEARCH
+  {
+    ch: 'search',
+    title: 'Global Search: Parallel Fan-Out & Multi-Table JOINs',
+    route: 'Ctrl+K · Global Search',
+    isSearch: true,
+    uiTitle: 'Global Search Bar',
+    uiDesc: 'User types a query. After a 250ms debounce, GlobalSearch filters by user permissions and fans out concurrently via Future.wait (limit 5 each).',
+    presets: [
+      {
+        q: 'TUT-CART',
+        fanout: [
+          ['GET /api/v1/products?q=TUT-CART&limit=5', 'products.products + families'],
+          ['GET /api/v1/inventory/stock?q=TUT-CART&limit=5', 'stock_balances JOIN locations JOIN products'],
+          ['GET /api/v1/production-orders?q=TUT-CART&limit=5', 'production_orders JOIN products JOIN divisions'],
+          ['GET /api/v1/tickets?q=TUT-CART&limit=5', 'helpdesk.tickets JOIN customers JOIN teams']
+        ],
+        tables: [
+          {
+            name: 'products.products (GIN trgm)',
+            op: 'SELECT',
+            cls: 'op-read',
+            rows: [
+              { cls: 'hit', text: 'core.search_fold(code, name) LIKE "%tut-cart%" → Cart' }
+            ]
+          },
+          {
+            name: 'inventory.stock_balances + locations',
+            op: 'JOIN',
+            cls: 'op-join',
+            rows: [
+              { cls: 'hit', text: 'JOIN products + warehouses → 15 on hand in MAIN' }
+            ]
+          },
+          {
+            name: 'production.production_orders + divisions',
+            op: 'JOIN',
+            cls: 'op-join',
+            rows: [
+              { cls: 'hit', text: 'JOIN products + sales.orders → 2 completed builds' }
+            ]
+          },
+          {
+            name: 'helpdesk.tickets + crm.customers',
+            op: 'JOIN',
+            cls: 'op-join',
+            rows: [
+              { cls: 'hit', text: 'JOIN crm.customers + teams → Maya’s TUT-CART ticket' }
+            ]
+          }
+        ],
+        combined: [
+          'Go to: Products / Stock',
+          'Products (1): TUT-CART',
+          'Stock (1): TUT-CART · MAIN',
+          'Production (2): Build #1, #2',
+          'Tickets (1): Maya enquiry'
+        ]
+      },
+      {
+        q: 'Brightwheel',
+        fanout: [
+          ['GET /api/v1/customers?q=Brightwheel&limit=5', 'crm.customers LEFT JOIN terms & price_zones'],
+          ['GET /api/v1/quotations?q=Brightwheel&limit=5', 'sales.quotations'],
+          ['GET /api/v1/orders?q=Brightwheel&limit=5', 'sales.orders JOIN quotations JOIN users'],
+          ['GET /api/v1/tickets?q=Brightwheel&limit=5', 'helpdesk.tickets JOIN crm.customers']
+        ],
+        tables: [
+          {
+            name: 'crm.customers + price_zones',
+            op: 'JOIN',
+            cls: 'op-join',
+            rows: [
+              { cls: 'hit', text: 'core.search_fold(name) → Brightwheel Logistics BV (TUT-EXPORT)' }
+            ]
+          },
+          {
+            name: 'sales.quotations',
+            op: 'SELECT',
+            cls: 'op-read',
+            rows: [
+              { cls: 'hit', text: 'lower(customer_name) LIKE → 2 quotes (superseded, accepted)' }
+            ]
+          },
+          {
+            name: 'sales.orders + quotations + users',
+            op: 'JOIN',
+            cls: 'op-join',
+            rows: [
+              { cls: 'hit', text: 'JOIN sales.quotations + core.users → 10 carts (ready_for_shipping)' }
+            ]
+          },
+          {
+            name: 'helpdesk.tickets + crm.customers',
+            op: 'JOIN',
+            cls: 'op-join',
+            rows: [
+              { cls: 'hit', text: 'c.name LIKE "%brightwheel%" → Linked escalated ticket' }
+            ]
+          }
+        ],
+        combined: [
+          'Customers (1): Brightwheel BV',
+          'Quotations (2): Q-rev1, Q-rev2',
+          'Orders (1): SO-001 (10 carts)',
+          'Tickets (1): Escalated'
+        ]
+      },
+      {
+        q: 'Maya',
+        fanout: [
+          ['GET /api/v1/tickets?q=Maya&limit=5', 'helpdesk.tickets JOIN customers JOIN teams'],
+          ['GET /api/v1/kb/entries?q=Maya&limit=5', 'kb.entries + entry_texts (ts_rank_cd FTS)'],
+          ['GET /api/v1/customers?q=Maya&limit=5', 'crm.customers (0 hits — omitted)']
+        ],
+        tables: [
+          {
+            name: 'helpdesk.tickets + articles + teams',
+            op: 'JOIN',
+            cls: 'op-join',
+            rows: [
+              { cls: 'hit', text: 'contact_name / contact_email LIKE "%maya%" → 1 ticket' }
+            ]
+          },
+          {
+            name: 'kb.entries + entry_texts (FTS)',
+            op: 'JOIN',
+            cls: 'op-join',
+            rows: [
+              { cls: 'hit', text: 'eff.search @@ kb.query("Maya") ranked by ts_rank_cd' }
+            ]
+          },
+          {
+            name: 'crm.customers (GIN trgm)',
+            op: 'SELECT',
+            cls: 'op-read',
+            rows: [
+              { cls: '', text: '0 rows matched → empty group omitted in UI' }
+            ]
+          }
+        ],
+        combined: [
+          'Tickets (1): maya.okafor@example.test',
+          'KB Articles (0–N): FTS ranked'
+        ]
+      }
+    ],
+    caption: '<strong>Multi-Table Search:</strong> No single SQL union exists—Flutter fans out to up to <strong>13 permitted endpoints</strong> in parallel, each running its own <code>JOIN</code>s / <code>core.search_fold</code> / FTS, and groups results by entity.'
+  }
+];
+
+let currentIdx = 0;
+let searchPresetIdx = 0;
+let isPlaying = false;
+let timerId = null;
+let speedMs = 4500;
+let captionsOn = true;
+
+const chapterStrip = document.getElementById('chapterStrip');
+const flutterPane = document.getElementById('flutterPane');
+const rustPane = document.getElementById('rustPane');
+const pgGrid = document.getElementById('pgGrid');
+const flutterRoute = document.getElementById('flutterRoute');
+const pgSummary = document.getElementById('pgSummary');
+const captionBar = document.getElementById('captionBar');
+const captionText = document.getElementById('captionText');
+const chapterBadge = document.getElementById('chapterBadge');
+const stepCounter = document.getElementById('stepCounter');
+const progressFill = document.getElementById('progressFill');
+const playBtn = document.getElementById('playBtn');
+const speedBtn = document.getElementById('speedBtn');
+const beamLeft = document.getElementById('beamLeft');
+const beamRight = document.getElementById('beamRight');
+
+function renderChapterPills() {
+  chapterStrip.innerHTML = '';
+  const activeCh = STEPS[currentIdx].ch;
+  CHAPTERS.forEach(c => {
+    const btn = document.createElement('button');
+    btn.className = 'ch-pill' + (c.isSearch ? ' search-pill' : '') + (c.id === activeCh ? ' active' : '');
+    btn.textContent = c.label;
+    btn.onclick = () => {
+      const idx = STEPS.findIndex(s => s.ch === c.id);
+      if (idx !== -1) goToStep(idx);
+    };
+    chapterStrip.appendChild(btn);
+  });
+}
+
+function renderStep() {
+  const step = STEPS[currentIdx];
+  renderChapterPills();
+
+  flutterRoute.textContent = step.route;
+  captionText.innerHTML = step.caption;
+  const chMeta = CHAPTERS.find(c => c.id === step.ch);
+  chapterBadge.textContent = chMeta ? chMeta.label : step.ch;
+  stepCounter.textContent = `${currentIdx + 1} / ${STEPS.length}`;
+  progressFill.style.width = `${((currentIdx + 1) / STEPS.length) * 100}%`;
+
+  if (step.isSearch) {
+    const preset = step.presets[searchPresetIdx];
+    pgSummary.textContent = '13 permitted endpoints · parallel fan-out';
+    beamLeft.setAttribute('stroke', '#a78bfa');
+    beamLeft.setAttribute('marker-end', 'url(#arrowPurple)');
+    beamRight.setAttribute('stroke', '#a78bfa');
+    beamRight.setAttribute('marker-end', 'url(#arrowPurple)');
+
+    // Flutter Search UI
+    flutterPane.innerHTML = `
+      <div class="flutter-window">
+        <div class="flutter-bar">
+          <span>global_search.dart</span>
+          <span class="env-chip">250ms DEBOUNCE</span>
+        </div>
+        <div class="flutter-screen">
+          <div class="ui-title">${step.uiTitle}</div>
+          <div class="ui-desc">${step.uiDesc}</div>
+          <div class="ui-field">
+            <span class="ui-field-k">query</span>
+            <span class="ui-field-v">"${preset.q}"</span>
+          </div>
+          <div class="ui-desc" style="margin-top:2px;font-size:10.5px;">Try another live search query:</div>
+          <div class="search-presets">
+            ${step.presets.map((p, i) => `<button class="preset-btn ${i === searchPresetIdx ? 'active' : ''}" data-p="${i}">"${p.q}"</button>`).join('')}
+          </div>
+          <div class="ui-action-btn search-mode">
+            <span>Future.wait(permitted)</span>
+            <span class="target-tag">limit=5</span>
+          </div>
+        </div>
+      </div>
+    `;
+    flutterPane.querySelectorAll('.preset-btn').forEach(b => {
+      b.onclick = () => {
+        searchPresetIdx = Number(b.dataset.p);
+        renderStep();
+      };
+    });
+
+    // Rust Parallel Fan-out
+    rustPane.innerHTML = `
+      <div class="api-card search-mode">
+        <div class="http-line">
+          <span class="method m-FAN">FAN-OUT</span>
+          <span>${preset.fanout.length} active queries shown (of 13)</span>
+        </div>
+        <div class="crate-ref">crates/core/src/search.rs · core.search_fold()</div>
+        <div class="fanout-list">
+          ${preset.fanout.map(([ep, tbl]) => `
+            <div class="fanout-item">
+              <span>${ep}</span>
+              <span class="badge">${tbl}</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+
+    // PG Tables + Combined Result
+    pgGrid.innerHTML = preset.tables.map(t => `
+      <div class="pg-table ${t.cls}">
+        <div class="pg-head">
+          <span class="pg-name">${t.name}</span>
+          <span class="pg-op op-${t.op}">${t.op}</span>
+        </div>
+        <div class="pg-rows">
+          ${t.rows.map(r => `<div class="pg-row ${r.cls}">${r.text}</div>`).join('')}
+        </div>
+      </div>
+    `).join('') + `
+      <div class="combined-box">
+        <div class="combined-title">
+          <span>Combined &amp; Grouped in GlobalSearch (Fixed Entity Order)</span>
+          <span style="font-family:var(--mono);font-size:9.5px;">Empty groups omitted</span>
+        </div>
+        <div class="combined-groups">
+          ${preset.combined.map(c => `<span class="combined-chip">${c}</span>`).join('')}
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  // Normal Tutorial Write/Read Step
+  pgSummary.textContent = `${step.tables.length} table${step.tables.length > 1 ? 's' : ''} touched`;
+  beamLeft.setAttribute('stroke', '#38bdf8');
+  beamLeft.setAttribute('marker-end', 'url(#arrowBlue)');
+  beamRight.setAttribute('stroke', '#fb923c');
+  beamRight.setAttribute('marker-end', 'url(#arrowOrange)');
+
+  flutterPane.innerHTML = `
+    <div class="flutter-window">
+      <div class="flutter-bar">
+        <span>${step.route}</span>
+        <span class="env-chip">TUTORIAL</span>
+      </div>
+      <div class="flutter-screen">
+        <div class="ui-title">${step.uiTitle}</div>
+        <div class="ui-desc">${step.uiDesc}</div>
+        <div class="ui-fields">
+          ${step.uiFields.map(([k, v]) => `
+            <div class="ui-field">
+              <span class="ui-field-k">${k}</span>
+              <span class="ui-field-v">${v}</span>
+            </div>
+          `).join('')}
+        </div>
+        <div class="ui-action-btn">
+          <span>${step.uiAction}</span>
+          <span class="target-tag">${step.uiTarget}</span>
+        </div>
+      </div>
+    </div>
+  `;
+
+  rustPane.innerHTML = `
+    <div class="api-card">
+      <div class="http-line">
+        <span class="method m-${step.method}">${step.method}</span>
+        <span>${step.endpoint}</span>
+      </div>
+      <div class="crate-ref">${step.crate}</div>
+      <div class="payload-box">${step.payload}</div>
+    </div>
+  `;
+
+  pgGrid.innerHTML = step.tables.map(t => `
+    <div class="pg-table ${t.cls} ${t.span ? 'span-2' : ''}">
+      <div class="pg-head">
+        <span class="pg-name">${t.name}</span>
+        <span class="pg-op op-${t.op}">${t.op}</span>
+      </div>
+      <div class="pg-rows">
+        ${t.rows.map(r => `<div class="pg-row ${r.cls}">${r.text}</div>`).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+function goToStep(idx) {
+  currentIdx = (idx + STEPS.length) % STEPS.length;
+  renderStep();
+}
+
+function togglePlay() {
+  isPlaying = !isPlaying;
+  playBtn.textContent = isPlaying ? '❚❚ Pause' : '▶ Play';
+  clearInterval(timerId);
+  if (isPlaying) {
+    timerId = setInterval(() => goToStep(currentIdx + 1), speedMs);
+  }
+}
+
+document.getElementById('prevBtn').onclick = () => goToStep(currentIdx - 1);
+document.getElementById('nextBtn').onclick = () => goToStep(currentIdx + 1);
+playBtn.onclick = togglePlay;
+
+const speeds = [
+  { ms: 6500, label: '0.7× (6.5s)' },
+  { ms: 4500, label: '1.0× (4.5s)' },
+  { ms: 2800, label: '1.5× (2.8s)' }
+];
+let speedIdx = 1;
+speedBtn.onclick = () => {
+  speedIdx = (speedIdx + 1) % speeds.length;
+  speedMs = speeds[speedIdx].ms;
+  speedBtn.textContent = speeds[speedIdx].label;
+  if (isPlaying) {
+    clearInterval(timerId);
+    timerId = setInterval(() => goToStep(currentIdx + 1), speedMs);
+  }
+};
+
+document.getElementById('progressTrack').onclick = (e) => {
+  const rect = e.currentTarget.getBoundingClientRect();
+  const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+  goToStep(Math.min(STEPS.length - 1, Math.floor(ratio * STEPS.length)));
+};
+
+document.getElementById('toggleCaptions').onclick = (e) => {
+  captionsOn = !captionsOn;
+  captionBar.style.display = captionsOn ? 'flex' : 'none';
+  e.target.textContent = captionsOn ? 'CC On' : 'CC Off';
+  e.target.classList.toggle('on', captionsOn);
+};
+
+document.getElementById('toggleFullscreen').onclick = () => {
+  const stage = document.getElementById('stage');
+  if (!document.fullscreenElement) stage.requestFullscreen?.();
+  else document.exitFullscreen?.();
+};
+
+window.addEventListener('keydown', (e) => {
+  if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
+  else if (e.code === 'ArrowRight') goToStep(currentIdx + 1);
+  else if (e.code === 'ArrowLeft') goToStep(currentIdx - 1);
+});
+
+renderStep();
+</script>
+</body>
+</html>
