@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/api.dart';
+import '../../core/theme/tokens.dart';
 import '../../l10n/l10n.dart';
 import '../../shared/app_icons.dart';
 import '../../shared/format.dart';
@@ -317,7 +318,9 @@ class _NewInvoiceDialogState extends ConsumerState<_NewInvoiceDialog> {
                 decoration: InputDecoration(labelText: l.notes),
                 maxLines: 2,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: Space.lg),
+              const Divider(height: 1),
+              const SizedBox(height: Space.lg),
               if (_orderId != null)
                 Text(
                   l.finOrderPrefillHint,
@@ -328,7 +331,7 @@ class _NewInvoiceDialogState extends ConsumerState<_NewInvoiceDialog> {
                   l.purchLines,
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: Space.sm),
                 InvoiceLinesEditor(
                   lines: _lines,
                   onChanged: () => setState(() => _error = null),
