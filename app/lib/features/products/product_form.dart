@@ -182,6 +182,9 @@ class _ProductFormState extends ConsumerState<ProductForm> {
     if (_autoStagedCode != null) {
       setState(() {
         _autoStagedCode = null;
+        _pendingDeletions.addAll(
+          _media.map((item) => item.uploadedId ?? item.clientId),
+        );
         _media.clear();
         _defaultMediaIndex = 0;
       });
@@ -382,6 +385,7 @@ class _ProductFormState extends ConsumerState<ProductForm> {
       defaultProductionRemark: _defaultRemark.text.trim(),
     );
     final media = List<_StagedMedia>.of(_media);
+    final pendingDeletions = List<String>.of(_pendingDeletions);
     final defaultMediaIndex = _defaultMediaIndex;
     setState(() {
       _saving = true;
@@ -410,16 +414,15 @@ class _ProductFormState extends ConsumerState<ProductForm> {
           ? await api.createProduct(body: body)
           : await api.updateProduct(id: targetId, body: body);
       if (p == null) _created = saved;
-      if (_pendingDeletions.isNotEmpty || media.isNotEmpty) {
+      if (pendingDeletions.isNotEmpty || media.isNotEmpty) {
         final base = '/api/v1/products/${saved.id}/media';
-        while (_pendingDeletions.isNotEmpty) {
-          final deadId = _pendingDeletions.first;
+        for (final deadId in pendingDeletions) {
           try {
             await dio.delete<Object?>('$base/$deadId');
           } on DioException catch (e) {
             if (e.response?.statusCode != 404) rethrow;
           }
-          _pendingDeletions.removeAt(0);
+          _pendingDeletions.remove(deadId);
         }
         if (media.isNotEmpty) {
           final chosenIndex = defaultMediaIndex.clamp(0, media.length - 1);
