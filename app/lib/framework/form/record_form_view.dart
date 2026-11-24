@@ -219,15 +219,15 @@ class _RecordFormViewState<T extends Object> extends State<RecordFormView<T>>
   Widget _sheet(ThemeData theme) {
     final c = widget.controller;
     final tabs = _tabs;
-    final sheet = Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(Space.xl),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLowest,
+    final sheet = Material(
+      color: theme.colorScheme.surfaceContainerLowest,
+      shape: RoundedRectangleBorder(
         borderRadius: Radii.large,
-        border: Border.all(color: theme.colorScheme.outlineVariant),
+        side: BorderSide(color: theme.colorScheme.outlineVariant),
       ),
-      child: Column(
+      child: Padding(
+        padding: const EdgeInsets.all(Space.xl),
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -266,6 +266,7 @@ class _RecordFormViewState<T extends Object> extends State<RecordFormView<T>>
           ],
         ],
       ),
+    ),
     );
     return Form(key: c.formKey, child: sheet.lockRecordEditing(c.busy));
   }

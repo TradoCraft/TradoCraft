@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/api.dart';
 import '../../app/workspace.dart' show TabScope;
+import '../../framework/form/record_form_controller.dart';
+import '../../framework/form/record_form_view.dart';
 import '../../l10n/l10n.dart';
 import '../../shared/actions.dart';
 import '../../shared/app_icons.dart';
@@ -26,13 +28,11 @@ class SupplierScreen extends ConsumerStatefulWidget {
 }
 
 class _SupplierScreenState extends ConsumerState<SupplierScreen> {
-  Supplier? _supplier;
+  final _form = RecordFormController<Supplier>(versionOf: (_) => null);
   List<SupplierProduct> _prices = const [];
   int _priceGeneration = 0;
   SupplierDraft? _draft;
-  String? _error;
   bool _loading = true;
-  bool _busy = false;
 
   PurchasingClient get _api => ref.read(apiProvider).purchasing;
 
@@ -44,38 +44,32 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
 
   @override
   void dispose() {
+    _form.dispose();
     _draft?.dispose();
     super.dispose();
   }
 
   Future<void> _load() async {
     final generation = ++_priceGeneration;
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-    try {
-      final s = await _api.getSupplier(id: widget.id);
-      if (!mounted) return;
-      List<SupplierProduct>? prices;
+    setState(() => _loading = true);
+    final s = await _form.reload(() => _api.getSupplier(id: widget.id));
+    if (!mounted) return;
+    if (s != null) {
+      TabScope.reportTitle(context, s.name);
       if (generation == _priceGeneration) {
         try {
-          prices = await _api.listSupplierProducts(id: widget.id);
-        } catch (_) {
-          if (generation == _priceGeneration) rethrow;
+          final prices = await _api.listSupplierProducts(id: widget.id);
+          if (mounted && generation == _priceGeneration) {
+            setState(() => _prices = prices);
+          }
+        } catch (e) {
+          if (mounted && generation == _priceGeneration) {
+            _form.error = errorMessage(e);
+          }
         }
       }
-      if (!mounted) return;
-      TabScope.reportTitle(context, s.name);
-      setState(() {
-        _supplier = s;
-        if (prices != null && generation == _priceGeneration) _prices = prices;
-      });
-    } catch (e) {
-      if (mounted) setState(() => _error = errorMessage(e));
-    } finally {
-      if (mounted) setState(() => _loading = false);
     }
+    if (mounted) setState(() => _loading = false);
   }
 
   Future<void> _reloadPrices() async {
@@ -87,19 +81,20 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
       }
     } catch (e) {
       if (mounted && generation == _priceGeneration) {
-        setState(() => _error = errorMessage(e));
+        _form.error = errorMessage(e);
       }
     }
   }
 
   void _edit() {
-    final draft = SupplierDraft(_supplier);
-    draft.addListener(() => TabScope.reportDirty(context, true));
+    final draft = SupplierDraft(_form.record);
+    draft.addListener(_form.markDirty);
     setState(() => _draft = draft);
   }
 
   void _stopEditing() {
-    TabScope.reportDirty(context, false);
+    final record = _form.record;
+    if (record != null) _form.apply(record);
     final d = _draft;
     setState(() => _draft = null);
     // The fields are still on screen for this frame.
@@ -110,33 +105,21 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
     final draft = _draft!;
     final problem = draft.validate(context);
     if (problem != null) {
-      setState(() => _error = problem);
+      _form.error = problem;
       return;
     }
-    setState(() {
-      _busy = true;
-      _error = null;
-    });
-    try {
-      final s = await _api.updateSupplier(
-        id: widget.id,
-        body: draft.toUpdate(),
-      );
-      if (!mounted) return;
-      TabScope.reportTitle(context, s.name);
-      setState(() => _supplier = s);
-      _stopEditing();
-    } catch (e) {
-      if (mounted) setState(() => _error = errorMessage(e));
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
+    final saved = await _form.save(
+      (_) => _api.updateSupplier(id: widget.id, body: draft.toUpdate()),
+    );
+    if (saved == null || !mounted) return;
+    TabScope.reportTitle(context, saved.name);
+    _stopEditing();
   }
 
   Future<void> _addOrEdit([SupplierProduct? existing]) async {
     final saved = await showSupplierPriceDialog(
       context,
-      supplier: _supplier!,
+      supplier: _form.record!,
       existing: existing,
     );
     if (saved == true) await _reloadPrices();
@@ -184,14 +167,14 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
       }
     });
     final l = context.l10n;
-    final s = _supplier;
+    final s = _form.record;
     if (s == null) {
       if (_loading) return const Center(child: CircularProgressIndicator());
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(_error ?? ''),
+            Text(_form.error ?? ''),
             TextButton(onPressed: _load, child: Text(l.retry)),
           ],
         ),
@@ -199,107 +182,89 @@ class _SupplierScreenState extends ConsumerState<SupplierScreen> {
     }
     final canWrite = can(ref, 'purchasing.write');
     final editing = _draft != null;
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Wrap(
-                spacing: 12,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  Text(
-                    s.name,
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                  Text(s.code),
-                  if (!s.active) Chip(label: Text(l.purchInactive)),
-                ],
-              ),
-            ),
-            RecordHistoryButton(entity: 'supplier', id: s.id, title: s.name),
-            if (canWrite && !editing)
-              OutlinedButton.icon(
-                key: const ValueKey('supplier-edit'),
-                onPressed: _edit,
-                icon: const Icon(AppIcons.edit),
-                label: Text(l.edit),
-              ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        if (_error != null)
-          MaterialBanner(
-            content: Text(_error!),
-            actions: [
-              TextButton(
-                onPressed: () => setState(() => _error = null),
-                child: Text(l.close),
-              ),
-            ],
+    final busy = _form.busy || _loading;
+    return RecordFormView<Supplier>(
+      controller: _form,
+      title: s.name,
+      onReload: _load,
+      titleExtras: [
+        Text(s.code),
+        if (!s.active) Chip(label: Text(l.purchInactive)),
+      ],
+      actions: [
+        RecordHistoryButton(entity: 'supplier', id: s.id, title: s.name),
+        if (canWrite && !editing)
+          OutlinedButton.icon(
+            key: const ValueKey('supplier-edit'),
+            onPressed: busy ? null : _edit,
+            icon: const Icon(AppIcons.edit),
+            label: Text(l.edit),
           ),
-        if (_loading) const LinearProgressIndicator(),
         if (editing) ...[
-          SupplierFields(
-            draft: _draft!,
-            supplierId: widget.id,
-            showActive: true,
-            enabled: !_busy,
-            onActiveChanged: (v) {
-              setState(() => _draft!.active = v);
-              TabScope.reportDirty(context, true);
-            },
+          FilledButton(
+            key: const ValueKey('supplier-save'),
+            onPressed: busy ? null : _save,
+            child: Text(l.save),
           ),
-          const SizedBox(height: 12),
+          TextButton(
+            key: const ValueKey('supplier-cancel'),
+            onPressed: busy ? null : _stopEditing,
+            child: Text(l.cancel),
+          ),
+        ],
+      ],
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (_loading) const LinearProgressIndicator(),
+          if (editing)
+            SupplierFields(
+              draft: _draft!,
+              supplierId: widget.id,
+              showActive: true,
+              enabled: !busy,
+              onActiveChanged: (v) {
+                setState(() => _draft!.active = v);
+                _form.markDirty();
+              },
+            )
+          else
+            _Facts(supplier: s),
+          const Divider(height: 32),
           Row(
             children: [
-              FilledButton(
-                key: const ValueKey('supplier-save'),
-                onPressed: _busy ? null : _save,
-                child: Text(l.save),
+              Text(
+                l.purchPriceList,
+                style: Theme.of(context).textTheme.titleLarge,
               ),
-              const SizedBox(width: 8),
-              TextButton(
-                key: const ValueKey('supplier-cancel'),
-                onPressed: _busy ? null : _stopEditing,
-                child: Text(l.cancel),
-              ),
+              const Spacer(),
+              if (canWrite)
+                TutorialTarget(
+                  id: 'supplier-price-add',
+                  child: FilledButton.icon(
+                    key: const ValueKey('price-add'),
+                    onPressed: () => _addOrEdit(),
+                    icon: const Icon(AppIcons.add),
+                    label: Text(l.purchAddProduct),
+                  ),
+                ),
             ],
           ),
-        ] else
-          _Facts(supplier: s),
-        const Divider(height: 32),
-        Row(
-          children: [
-            Text(
-              l.purchPriceList,
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const Spacer(),
-            if (canWrite)
-              TutorialTarget(id: 'supplier-price-add', child: FilledButton.icon(
-                key: const ValueKey('price-add'),
-                onPressed: () => _addOrEdit(),
-                icon: const Icon(AppIcons.add),
-                label: Text(l.purchAddProduct),
-              )),
-          ],
-        ),
-        const SizedBox(height: 8),
-        if (_prices.isEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            child: Text(l.purchNoPrices),
-          )
-        else
-          for (final p in _prices)
-            _PriceTile(
-              price: p,
-              onEdit: canWrite ? () => _addOrEdit(p) : null,
-              onRemove: canWrite ? () => _remove(p) : null,
-            ),
-      ],
+          const SizedBox(height: 8),
+          if (_prices.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Text(l.purchNoPrices),
+            )
+          else
+            for (final p in _prices)
+              _PriceTile(
+                price: p,
+                onEdit: canWrite ? () => _addOrEdit(p) : null,
+                onRemove: canWrite ? () => _remove(p) : null,
+              ),
+        ],
+      ),
     );
   }
 }

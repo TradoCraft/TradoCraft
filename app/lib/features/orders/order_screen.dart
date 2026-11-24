@@ -5,14 +5,14 @@ import 'package:go_router/go_router.dart';
 
 import '../../framework/components/chatter/chatter_panel.dart';
 import '../../framework/components/chatter/chatter_repository.dart';
-import '../../framework/form/record_form_controller.dart' show ChatterTick;
+import '../../framework/form/record_form_controller.dart';
+import '../../framework/form/record_form_view.dart';
 import '../../app/api.dart';
 import '../../app/workspace.dart' show TabScope;
 import '../../l10n/l10n.dart';
 import '../../shared/actions.dart';
 import '../../shared/decimal_field.dart';
 import '../../shared/format.dart';
-import '../../shared/live_record_watcher.dart';
 import '../../shared/order_widgets.dart';
 import '../../shared/power_grid_field.dart';
 import '../../shared/sales_hints.dart';
@@ -47,17 +47,11 @@ class OrderScreen extends ConsumerStatefulWidget {
 }
 
 class _OrderScreenState extends ConsumerState<OrderScreen> {
-  Order? _order;
+  final _form = RecordFormController<Order>(versionOf: (d) => d.version);
   bool _loading = false;
-  bool get _locked => _busy || _loading;
-  bool _busy = false;
+  bool get _locked => _form.busy || _loading;
   bool _changed = false;
-  String? _error;
   bool _missing = false;
-  RecordLiveWatcher? _watcher;
-  final _chatterTick = ChatterTick();
-  String? _conflictMessage;
-  bool _isConflict = false;
 
   bool _editing = false;
   final _qty = <int, DecimalInputController>{};
@@ -78,33 +72,12 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
   void initState() {
     super.initState();
     _load(() => _api.getOrder(id: widget.id));
-    _watcher = watchRecordChanges(
-      ref,
-      entityType: 'order',
-      recordId: widget.id,
-      currentVersion: () => _order?.version,
-      onReconnect: _chatterTick.fire,
-      onExternalChange: (ev) {
-        if (!mounted) return;
-        // A note or activity is not an edit conflict (ADR 0086): reload the chatter only.
-        if (ev.kind.startsWith('chatter_')) {
-          _chatterTick.fire();
-          return;
-        }
-        setState(() {
-          _conflictMessage = ev.kind == 'resync'
-              ? context.l10n.recordConflictMessage
-              : context.l10n.recordUpdatedBy(ev.changedByName);
-          _isConflict = false;
-        });
-      },
-    );
+    _form.watch(ref, entityType: 'order', recordId: widget.id);
   }
 
   @override
   void dispose() {
-    _watcher?.dispose();
-    _chatterTick.dispose();
+    _form.dispose();
     _disposeEditors();
     _notes.dispose();
     _reference.dispose();
@@ -126,17 +99,16 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
     if (_locked) return;
     setState(() {
       _loading = true;
-      _error = null;
+      _missing = false;
     });
+    _form.error = null;
     try {
       final o = await call();
       if (mounted) _show(o);
     } catch (e) {
       if (mounted) {
-        setState(() {
-          _error = errorMessage(e);
-          _missing = errorStatus(e) == 404;
-        });
+        _form.error = errorMessage(e);
+        setState(() => _missing = errorStatus(e) == 404);
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -149,15 +121,12 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
 
   void _show(Order o) {
     TabScope.reportTitle(context, o.order.number);
-    TabScope.reportDirty(context, false);
     // A save, send or confirmation writes a message to the chatter: show it at once.
-    _chatterTick.fire();
+    _form.apply(o);
+    _form.chatterTick.fire();
     setState(() {
       _stockReload++;
-      _order = o;
       _editing = false;
-      _conflictMessage = null;
-      _isConflict = false;
       _disposeEditors();
     });
     ref.invalidate(_historyProvider(widget.id));
@@ -166,28 +135,11 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
 
   Future<void> _run(Future<void> Function() action) async {
     if (_locked) return;
-    setState(() {
-      _busy = true;
-      _error = null;
-    });
-    try {
+    await _form.run(() async {
       await action();
       _changed = true;
-    } catch (e) {
-      if (mounted) {
-        if (isRecordChangedError(e)) {
-          setState(() {
-            _conflictMessage = context.l10n.recordConflictMessage;
-            _isConflict = true;
-            _error = null;
-          });
-        } else {
-          setState(() => _error = errorMessage(e));
-        }
-      }
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
+      return null;
+    });
   }
 
   void _snack(String text) =>
@@ -202,7 +154,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
   }
 
   Future<void> _openRevision(int revision) {
-    final current = _order!.order.currentRevision;
+    final current = _form.record!.order.currentRevision;
     return _load(
       () => revision == current
           ? _api.getOrder(id: widget.id)
@@ -211,7 +163,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
   }
 
   void _startEditing() {
-    final o = _order!;
+    final o = _form.record!;
     _disposeEditors();
     for (final line in o.lines) {
       _qty[line.position] = DecimalInputController(
@@ -229,7 +181,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
     _country.text = o.order.deliveryCountryCode ?? '';
     _purpose = o.order.purpose;
     _gridId = o.order.powerGridId;
-    TabScope.reportDirty(context, true);
+    _form.markDirty();
     setState(() => _editing = true);
   }
 
@@ -240,7 +192,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
   }
 
   Future<void> _save() => _run(() async {
-    final o = _order!;
+    final o = _form.record!;
     final lines = <OrderLineEdit>[];
     for (final line in o.lines) {
       if (_removed.contains(line.position)) continue;
@@ -348,7 +300,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
       final o = await _api.confirm(
         id: widget.id,
         body: ConfirmOrderInput(
-          revision: _order!.revision,
+          revision: _form.record!.revision,
           note: note.isEmpty ? null : note,
         ),
       );
@@ -410,7 +362,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
   Future<void> _changePriority() async {
     final result = await showDialog<(String, String)>(
       context: context,
-      builder: (_) => _PriorityDialog(current: _order!.order.priority),
+      builder: (_) => _PriorityDialog(current: _form.record!.order.priority),
     );
     if (result == null) return;
     await _applyPriority(result.$1, result.$2, null);
@@ -469,7 +421,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
   }
 
   Future<void> _pdf() => _run(() async {
-    final o = _order!;
+    final o = _form.record!;
     final bytes = await downloadBytes(
       ref.read(dioProvider),
       '/api/v1/orders/${o.order.id}/revisions/${o.revision}/pdf',
@@ -541,7 +493,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
     if (done && mounted) context.push('/helpdesk/${t!.ticket.id}');
   }
 
-  Widget _actions(Order d, bool canWrite) {
+  List<Widget> _actionButtons(Order d, bool canWrite) {
     final l = context.l10n;
     final o = d.order;
     final isCurrent = d.revision == o.currentRevision;
@@ -552,65 +504,61 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
       'shipped',
     ].contains(o.status);
     final busy = _locked;
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
-        OutlinedButton.icon(
-          onPressed: busy ? null : _pdf,
-          icon: const Icon(AppIcons.pictureAsPdf),
-          label: Text(l.pdf),
-        ),
-        if (canWrite && isCurrent && o.status == 'draft') ...[
-          if (_editing) ...[
-            FilledButton.icon(
-              onPressed: busy ? null : _save,
-              icon: const Icon(AppIcons.save),
-              label: Text(l.save),
-            ),
-            TextButton(
-              onPressed: busy ? null : () => _show(d),
-              child: Text(l.cancel),
-            ),
-          ] else ...[
-            OutlinedButton.icon(
-              onPressed: busy ? null : _startEditing,
-              icon: const Icon(AppIcons.edit),
-              label: Text(l.edit),
-            ),
-            TutorialTarget(
-              id: 'order-send',
-              child: FilledButton.icon(
-                onPressed: busy ? null : _send,
-                icon: const Icon(AppIcons.forwardToInbox),
-                label: Text(l.sendOrderConfirmation),
-              ),
-            ),
-          ],
-        ],
-        if (canWrite && isCurrent && o.status == 'sent') ...[
+    return [
+      OutlinedButton.icon(
+        onPressed: busy ? null : _pdf,
+        icon: const Icon(AppIcons.pictureAsPdf),
+        label: Text(l.pdf),
+      ),
+      if (canWrite && isCurrent && o.status == 'draft') ...[
+        if (_editing) ...[
+          FilledButton.icon(
+            onPressed: busy ? null : _save,
+            icon: const Icon(AppIcons.save),
+            label: Text(l.save),
+          ),
+          TextButton(
+            onPressed: busy ? null : () => _show(d),
+            child: Text(l.cancel),
+          ),
+        ] else ...[
           OutlinedButton.icon(
-            onPressed: busy ? null : _newRevision,
-            icon: const Icon(AppIcons.copy),
-            label: Text(l.newRevision),
+            onPressed: busy ? null : _startEditing,
+            icon: const Icon(AppIcons.edit),
+            label: Text(l.edit),
           ),
           TutorialTarget(
-            id: 'order-confirm',
+            id: 'order-send',
             child: FilledButton.icon(
-              onPressed: busy ? null : _confirmOnBehalf,
-              icon: const Icon(AppIcons.check),
-              label: Text(l.confirmOnBehalf),
+              onPressed: busy ? null : _send,
+              icon: const Icon(AppIcons.forwardToInbox),
+              label: Text(l.sendOrderConfirmation),
             ),
           ),
         ],
-        if (canWrite && isCurrent && open && !_editing)
-          OutlinedButton.icon(
-            onPressed: busy ? null : _cancelOrder,
-            icon: const Icon(AppIcons.cancel),
-            label: Text(l.cancelOrder),
-          ),
       ],
-    );
+      if (canWrite && isCurrent && o.status == 'sent') ...[
+        OutlinedButton.icon(
+          onPressed: busy ? null : _newRevision,
+          icon: const Icon(AppIcons.copy),
+          label: Text(l.newRevision),
+        ),
+        TutorialTarget(
+          id: 'order-confirm',
+          child: FilledButton.icon(
+            onPressed: busy ? null : _confirmOnBehalf,
+            icon: const Icon(AppIcons.check),
+            label: Text(l.confirmOnBehalf),
+          ),
+        ),
+      ],
+      if (canWrite && isCurrent && open && !_editing)
+        OutlinedButton.icon(
+          onPressed: busy ? null : _cancelOrder,
+          icon: const Icon(AppIcons.cancel),
+          label: Text(l.cancelOrder),
+        ),
+    ];
   }
 
   Widget _revisions(Order d) {
@@ -633,7 +581,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
                   '${l.revisionNumber(r.revision)} · ${l.orderStatus(r.status)}'
                   ' · ${money(r.total, currency: d.order.currency)}',
                 ),
-                onSelected: _busy || _editing
+                onSelected: _locked || _editing
                     ? null
                     : (_) => _openRevision(r.revision),
               ),
@@ -696,6 +644,8 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: DataTable(
+        horizontalMargin: 12,
+        columnSpacing: 16,
         columns: [
           DataColumn(label: Text(l.code)),
           DataColumn(label: Text(l.description)),
@@ -714,7 +664,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
                   DataCell(
                     editing
                         ? SizedBox(
-                            width: 280,
+                            width: 220,
                             child: TextField(controller: _desc[line.position]),
                           )
                         : Text(line.description),
@@ -772,7 +722,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
             const Spacer(),
             if (canWrite && open)
               OutlinedButton.icon(
-                onPressed: _busy ? null : _changePriority,
+                onPressed: _locked ? null : _changePriority,
                 icon: const Icon(AppIcons.flag),
                 label: Text(l.changePriority),
               ),
@@ -809,13 +759,13 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
                                 spacing: 8,
                                 children: [
                                   FilledButton.tonal(
-                                    onPressed: _busy
+                                    onPressed: _locked
                                         ? null
                                         : () => _applyRequest(r),
                                     child: Text(l.apply),
                                   ),
                                   TextButton(
-                                    onPressed: _busy
+                                    onPressed: _locked
                                         ? null
                                         : () => _dismissRequest(r),
                                     child: Text(l.dismiss),
@@ -863,13 +813,13 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
     final perms = ref.watch(meProvider).value?.permissions ?? const [];
     final canWrite = perms.contains('orders.write');
     final theme = Theme.of(context);
-    final d = _order;
+    final d = _form.record;
     if (d == null) {
       return Scaffold(
-        body: _loading || _error == null
+        body: _loading || _form.error == null
             ? const Center(child: CircularProgressIndicator())
             : LoadFailedView(
-                message: _error!,
+                message: _form.error!,
                 leaveTo: '/orders',
                 notFound: _missing,
                 todoKind: TodoLinkKind.order,
@@ -884,216 +834,193 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
     final subtotal = rev?.subtotal ?? o.subtotal;
     final total = rev?.total ?? o.total;
     return Scaffold(
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Wrap(
-            spacing: 12,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              IconButton(
-                tooltip: MaterialLocalizations.of(context).backButtonTooltip,
-                onPressed: _close,
-                icon: const Icon(AppIcons.arrowBack),
-              ),
-              Text(
-                '${l.order} ${o.number}',
-                style: theme.textTheme.headlineSmall,
-              ),
-              OrderStatusChip(o.status),
-              PriorityIndicator(o.priority),
-              Chip(
-                label: Text(l.revisionNumber(d.revision)),
-                visualDensity: VisualDensity.compact,
-              ),
-              ObjectTodosButton(
-                kind: TodoLinkKind.order,
-                id: o.id,
-                label: o.number,
-              ),
-              OutlinedButton.icon(
-                icon: const Icon(AppIcons.requestQuote),
-                label: Text('${o.quotationNumber} rev. ${o.quotationRevision}'),
-                onPressed: () => context.push('/quotations/${o.quotationId}'),
-              ),
-              if (perms.contains('helpdesk.write'))
-                FilledButton.tonalIcon(
-                  icon: const Icon(AppIcons.help),
-                  label: Text(l.questionToSales),
-                  onPressed: () => _ask(o),
-                ),
-              if (_loading || _busy)
-                const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-            ],
+      body: RecordFormView<Order>(
+        controller: _form,
+        title: '${l.order} ${o.number}',
+        onBack: _close,
+        onReload: _locked
+            ? null
+            : () => _load(() => _api.getOrder(id: widget.id)),
+        titleExtras: [
+          OrderStatusChip(o.status),
+          PriorityIndicator(o.priority),
+          Chip(
+            label: Text(l.revisionNumber(d.revision)),
+            visualDensity: VisualDensity.compact,
           ),
-          if (_conflictMessage != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: RecordConflictBanner(
-                message: _conflictMessage!,
-                isConflict: _isConflict,
-                onReload: _locked
-                    ? null
-                    : () => _load(() => _api.getOrder(id: widget.id)),
-                onDismiss: () => setState(() => _conflictMessage = null),
-              ),
+          ObjectTodosButton(
+            kind: TodoLinkKind.order,
+            id: o.id,
+            label: o.number,
+          ),
+          if (_loading)
+            const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
             ),
-          if (_error != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Text(
-                _error!,
-                style: TextStyle(color: theme.colorScheme.error),
-              ),
+        ],
+        smartButtons: [
+          OutlinedButton.icon(
+            icon: const Icon(AppIcons.requestQuote),
+            label: Text('${o.quotationNumber} rev. ${o.quotationRevision}'),
+            onPressed: () => context.push('/quotations/${o.quotationId}'),
+          ),
+          if (perms.contains('helpdesk.write'))
+            FilledButton.tonalIcon(
+              icon: const Icon(AppIcons.help),
+              label: Text(l.questionToSales),
+              onPressed: () => _ask(o),
             ),
-          gap,
-          _actions(d, canWrite),
-          gap,
-          Wrap(
-            children: [
-              InfoItem(l.customer, o.customerName),
-              if (_editing)
-                Padding(
-                  padding: const EdgeInsets.only(right: 32, bottom: 8),
-                  child: SizedBox(
-                    width: 240,
-                    child: TextField(
-                      controller: _reference,
-                      decoration: InputDecoration(
-                        labelText: l.customerReference,
+        ],
+        actions: _actionButtons(d, canWrite),
+        chatterBeside: false,
+        chatter: ChatterPanel(
+          kind: ChatterKind.order,
+          recordId: o.id,
+          refresh: _form.chatterTick,
+        ),
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Wrap(
+              children: [
+                InfoItem(l.customer, o.customerName),
+                if (_editing)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 32, bottom: 8),
+                    child: SizedBox(
+                      width: 240,
+                      child: TextField(
+                        controller: _reference,
+                        decoration: InputDecoration(
+                          labelText: l.customerReference,
+                        ),
+                      ),
+                    ),
+                  )
+                else
+                  InfoItem(l.customerReference, o.customerReference),
+                if (_editing) ...[
+                  Padding(
+                    padding: const EdgeInsets.only(right: 32, bottom: 8),
+                    child: SegmentedButton<String>(
+                      key: const ValueKey('purpose'),
+                      showSelectedIcon: false,
+                      segments: [
+                        for (final p in const ['installation', 'stock'])
+                          ButtonSegment(value: p, label: Text(l.purposeName(p))),
+                      ],
+                      selected: {_purpose},
+                      onSelectionChanged: (s) =>
+                          setState(() => _purpose = s.first),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(right: 32, bottom: 8),
+                    child: SizedBox(
+                      width: 160,
+                      child: TextField(
+                        key: const ValueKey('deliveryCountry'),
+                        controller: _country,
+                        textCapitalization: TextCapitalization.characters,
+                        inputFormatters: [
+                          LengthLimitingTextInputFormatter(2),
+                          TextInputFormatter.withFunction(
+                            (old, v) => v.copyWith(text: v.text.toUpperCase()),
+                          ),
+                        ],
+                        decoration: InputDecoration(
+                          labelText: l.deliveryCountry,
+                        ),
+                        // A grid belongs to one country.
+                        onChanged: (_) => setState(() => _gridId = null),
                       ),
                     ),
                   ),
-                )
-              else
-                InfoItem(l.customerReference, o.customerReference),
-              if (_editing) ...[
-                Padding(
-                  padding: const EdgeInsets.only(right: 32, bottom: 8),
-                  child: SegmentedButton<String>(
-                    key: const ValueKey('purpose'),
-                    showSelectedIcon: false,
-                    segments: [
-                      for (final p in const ['installation', 'stock'])
-                        ButtonSegment(value: p, label: Text(l.purposeName(p))),
-                    ],
-                    selected: {_purpose},
-                    onSelectionChanged: (s) =>
-                        setState(() => _purpose = s.first),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(right: 32, bottom: 8),
-                  child: SizedBox(
-                    width: 160,
-                    child: TextField(
-                      key: const ValueKey('deliveryCountry'),
-                      controller: _country,
-                      textCapitalization: TextCapitalization.characters,
-                      inputFormatters: [
-                        LengthLimitingTextInputFormatter(2),
-                        TextInputFormatter.withFunction(
-                          (old, v) => v.copyWith(text: v.text.toUpperCase()),
-                        ),
-                      ],
-                      decoration: InputDecoration(labelText: l.deliveryCountry),
-                      // A grid belongs to one country.
-                      onChanged: (_) => setState(() => _gridId = null),
+                  if (_purpose == 'installation')
+                    Padding(
+                      padding: const EdgeInsets.only(right: 32, bottom: 8),
+                      child: PowerGridField(
+                        country: _gridCountry(o),
+                        selectedId: _gridId,
+                        onChanged: (v) => setState(() => _gridId = v),
+                      ),
                     ),
-                  ),
-                ),
-                if (_purpose == 'installation')
-                  Padding(
-                    padding: const EdgeInsets.only(right: 32, bottom: 8),
-                    child: PowerGridField(
-                      country: _gridCountry(o),
-                      selectedId: _gridId,
-                      onChanged: (v) => setState(() => _gridId = v),
-                    ),
-                  ),
-              ] else ...[
-                InfoItem(l.purpose, l.purposeName(o.purpose)),
-                InfoItem(l.deliveryCountry, o.deliveryCountryCode ?? ''),
+                ] else ...[
+                  InfoItem(l.purpose, l.purposeName(o.purpose)),
+                  InfoItem(l.deliveryCountry, o.deliveryCountryCode ?? ''),
+                ],
+                InfoItem(l.date, date(o.orderDate)),
+                if (o.promisedDate != null)
+                  InfoItem(l.productionPromised, date(o.promisedDate)),
+                InfoItem(l.salesperson, o.salespersonName),
+                InfoItem(l.totalExclVat, money(subtotal, currency: o.currency)),
+                InfoItem(l.vat, money(d.vatTotal, currency: o.currency)),
+                InfoItem(l.totalInclVat, money(total, currency: o.currency)),
               ],
-              InfoItem(l.date, date(o.orderDate)),
-              if (o.promisedDate != null)
-                InfoItem(l.productionPromised, date(o.promisedDate)),
-              InfoItem(l.salesperson, o.salespersonName),
-              InfoItem(l.totalExclVat, money(subtotal, currency: o.currency)),
-              InfoItem(l.vat, money(d.vatTotal, currency: o.currency)),
-              InfoItem(l.totalInclVat, money(total, currency: o.currency)),
+            ),
+            if (o.status == 'cancelled' && d.cancelReason.isNotEmpty) ...[
+              Text(
+                l.cancelledReason(d.cancelReason),
+                style: TextStyle(color: theme.colorScheme.error),
+              ),
+              gap,
             ],
-          ),
-          if (o.status == 'cancelled' && d.cancelReason.isNotEmpty) ...[
-            Text(
-              l.cancelledReason(d.cancelReason),
-              style: TextStyle(color: theme.colorScheme.error),
-            ),
+            if (d.confirmedAt != null) ...[_confirmation(d), gap],
+            _revisions(d),
             gap,
-          ],
-          if (d.confirmedAt != null) ...[_confirmation(d), gap],
-          _revisions(d),
-          gap,
-          if (_editing)
-            TextField(
-              controller: _notes,
-              maxLines: 3,
-              decoration: InputDecoration(labelText: l.notes),
-            )
-          else if (d.notes.isNotEmpty)
-            Text(d.notes),
-          gap,
-          _lines(d),
-          if (perms.contains('inventory.read') &&
-              o.status != 'cancelled' &&
-              d.revision == o.currentRevision) ...[
+            if (_editing)
+              TextField(
+                controller: _notes,
+                maxLines: 3,
+                decoration: InputDecoration(labelText: l.notes),
+              )
+            else if (d.notes.isNotEmpty)
+              Text(d.notes),
             gap,
-            OrderStockPanel(
-              orderId: o.id,
-              revision: '${o.status}-${d.revision}-$_stockReload',
-            ),
-          ],
-          if (perms.contains('production.read') &&
-              d.revision == o.currentRevision &&
-              !const ['draft', 'sent'].contains(o.status)) ...[
+            _lines(d),
+            if (perms.contains('inventory.read') &&
+                o.status != 'cancelled' &&
+                d.revision == o.currentRevision) ...[
+              gap,
+              OrderStockPanel(
+                orderId: o.id,
+                revision: '${o.status}-${d.revision}-$_stockReload',
+              ),
+            ],
+            if (perms.contains('production.read') &&
+                d.revision == o.currentRevision &&
+                !const ['draft', 'sent'].contains(o.status)) ...[
+              gap,
+              OrderProduction(
+                orderId: o.id,
+                orderStatus: o.status,
+                onChanged: () {
+                  _changed = true;
+                  _load(() => _api.getOrder(id: widget.id));
+                },
+              ),
+            ],
+            if (perms.contains('delivery.read') &&
+                d.revision == o.currentRevision &&
+                !const ['draft', 'sent'].contains(o.status)) ...[
+              gap,
+              OrderDeliveries(
+                orderId: o.id,
+                orderStatus: o.status,
+                onChanged: () {
+                  _changed = true;
+                  _load(() => _api.getOrder(id: widget.id));
+                },
+              ),
+            ],
             gap,
-            OrderProduction(
-              orderId: o.id,
-              orderStatus: o.status,
-              onChanged: () {
-                _changed = true;
-                _load(() => _api.getOrder(id: widget.id));
-              },
-            ),
+            const Divider(),
+            _priority(d, canWrite),
           ],
-          if (perms.contains('delivery.read') &&
-              d.revision == o.currentRevision &&
-              !const ['draft', 'sent'].contains(o.status)) ...[
-            gap,
-            OrderDeliveries(
-              orderId: o.id,
-              orderStatus: o.status,
-              onChanged: () {
-                _changed = true;
-                _load(() => _api.getOrder(id: widget.id));
-              },
-            ),
-          ],
-          gap,
-          const Divider(),
-          _priority(d, canWrite),
-          gap,
-          ChatterPanel(
-            kind: ChatterKind.order,
-            recordId: o.id,
-            refresh: _chatterTick,
-          ),
-        ],
-      ).lockRecordEditing(_locked),
+        ),
+      ),
     );
   }
 }
