@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:ui' show PointerDeviceKind;
+import 'package:flutter/services.dart' show rootBundle;
 import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -439,5 +440,36 @@ void main() {
       0x5B, 0x5D, 0x20, 0x20, // "[]  " (array instead of object)
     ]);
     expect(() => GlbAsset.parse(badJsonGlb), throwsFormatException);
+  });
+
+  testWidgets('all bundled tutorial GLBs parse and assembly renders in NarratorCard size', (
+    tester,
+  ) async {
+    for (final path in [
+      ...tutorialGlbAssets.values,
+      'assets/models/CONV-BELT-1M_assembly.glb',
+    ]) {
+      final bd = await rootBundle.load(path);
+      final asset = GlbAsset.parse(bd.buffer.asUint8List());
+      expect(asset.triangles, isNotEmpty, reason: '$path should have triangles');
+    }
+
+    final asm = await rootBundle.load('assets/models/CONV-BELT-1M_assembly.glb');
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            width: 340,
+            height: 240,
+            child: GlbViewer(
+              bytes: asm.buffer.asUint8List(),
+              filename: 'CONV-BELT-1M_assembly.glb',
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('glb-canvas')), findsOneWidget);
   });
 }
