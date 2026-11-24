@@ -109,6 +109,7 @@ export 'models/column_kind.dart';
 export 'models/column_pair.dart';
 export 'models/company.dart';
 export 'models/company_logo_info.dart';
+export 'models/company_settings_input.dart';
 export 'models/company_user.dart';
 export 'models/complete_input.dart';
 export 'models/complete_production_input.dart';

@@ -6477,5 +6477,31 @@
   "tutConveyorsSvgWithMotor": "With motor",
   "tutConveyorsSvgThreePhase": "3-Phase + VFD",
   "tutConveyorsSvgOnePhase": "1-Phase",
-  "tutConveyorsSvgWithoutMotor": "without motor"
+  "tutConveyorsSvgWithoutMotor": "without motor",
+  "quotationLineLayoutTitle": "Quotation item layout",
+  "quotationSingleLineLabel": "Single line per item",
+  "quotationSingleLineHelp": "Show each item on one compact row with remarks in a dialog; turn off to show remark fields on a second line.",
+  "quotationSettingsSaved": "Company settings saved",
+  "remarks": "Remarks",
+  "autosaveTitle": "Draft autosave",
+  "autosaveOff": "Off",
+  "autosaveMinutes": "{minutes} min",
+  "@autosaveMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "autosaveDefault": "Company default ({minutes} min)",
+  "@autosaveDefault": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "autosaveDefaultOff": "Company default (Off)",
+  "autosaveUserHelp": "Override how often open drafts autosave.",
+  "autosaveAdminHelp": "Default interval for autosaving open drafts (users can override this in their preferences)."
 }

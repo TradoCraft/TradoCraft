@@ -9,6 +9,8 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter/services.dart';
 import 'package:tradocraft_app/app/api.dart';
 import 'package:tradocraft_app/app/shortcuts/host.dart';
+import 'package:tradocraft_app/app/shortcuts/preferences_dialog.dart'
+    show effectiveAutosaveMinutesProvider;
 import 'package:tradocraft_app/features/quotations/quotation_screen.dart';
 import 'package:tradocraft_app/l10n/app_localizations.dart';
 import 'package:tradocraft_app/framework/form/record_form_view.dart';
@@ -155,6 +157,7 @@ class FakeApi implements HttpClientAdapter {
     this.linkedOpportunity,
     this.openOpportunities = const [],
     this.canEditBaseline = true,
+    this.singleLine = true,
   });
   final String status;
   final bool configured;
@@ -162,6 +165,7 @@ class FakeApi implements HttpClientAdapter {
   /// Opportunity the stored quotation is linked to (may be closed, so not in the open list).
   final String? linkedOpportunity;
   final bool canEditBaseline;
+  final bool singleLine;
 
   /// Ids returned by the open-opportunities list (answered after a delay, like a slow network).
   final List<String> openOpportunities;
@@ -452,6 +456,8 @@ class FakeApi implements HttpClientAdapter {
             'currency': 'EUR',
             'default_language': 'nl',
             'is_primary': true,
+            'autosave_minutes': 5,
+            'quotation_single_line_items': singleLine,
           },
         };
       default:
@@ -481,12 +487,13 @@ Future<FakeApi> _pump(
   String status, {
   bool configured = false,
   bool keys = false,
+  bool singleLine = true,
   Size size = const Size(1400, 1000),
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
-  final fake = FakeApi(status, configured: configured);
+  final fake = FakeApi(status, configured: configured, singleLine: singleLine);
   final dio = Dio(BaseOptions(baseUrl: 'http://test'))
     ..httpClientAdapter = fake;
   await tester.pumpWidget(
@@ -1086,6 +1093,11 @@ void main() {
     tester,
   ) async {
     final fake = await _pump(tester, 'draft');
+    // Default single-line mode keeps remarks in a dialog instead of a second row.
+    expect(find.text('Production remark'), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('line-remarks-$_productId')));
+    await tester.pumpAndSettle();
+
     expect(find.text('Production remark'), findsOneWidget);
     expect(find.text('Customer remark'), findsOneWidget);
     final production = find.byKey(
@@ -1105,6 +1117,8 @@ void main() {
     );
 
     await tester.enterText(customer, ' Call before delivery ');
+    await tester.tap(find.text('Close'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Save draft'));
     await tester.pumpAndSettle();
 
@@ -1118,6 +1132,8 @@ void main() {
     tester,
   ) async {
     final fake = await _pump(tester, 'draft');
+    await tester.tap(find.byKey(const ValueKey('line-remarks-$_productId')));
+    await tester.pumpAndSettle();
     await tester.tap(
       find.byKey(const ValueKey('customer-remark-history-$_productId')),
     );
@@ -1153,11 +1169,22 @@ void main() {
 
   testWidgets('sent quotation shows the remarks read-only', (tester) async {
     await _pump(tester, 'sent');
+    await tester.tap(find.byKey(const ValueKey('line-remarks-ro-1')));
+    await tester.pumpAndSettle();
     expect(find.textContaining('Delivered on a pallet'), findsOneWidget);
     expect(
       find.textContaining('Production remark: Weld first'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('two-line quotation layout shows remarks inline when configured', (
+    tester,
+  ) async {
+    await _pump(tester, 'draft', singleLine: false);
+    expect(find.text('Production remark'), findsOneWidget);
+    expect(find.text('Customer remark'), findsOneWidget);
+    expect(find.byKey(const ValueKey('line-remarks-$_productId')), findsNothing);
   });
 
   testWidgets('configured draft keeps its structure in preview and save', (
@@ -1332,5 +1359,52 @@ void main() {
       await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
       expect(focusedText(), '1');
     });
+  });
+
+  testWidgets('dirty draft quotation autosaves on the configured interval', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1400, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final fake = FakeApi('draft');
+    final dio = Dio(BaseOptions(baseUrl: 'http://test'))
+      ..httpClientAdapter = fake;
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          dioProvider.overrideWithValue(dio),
+          effectiveAutosaveMinutesProvider.overrideWithValue(1),
+        ],
+        child: MaterialApp(
+          locale: const Locale('en'),
+          localizationsDelegates: [
+            AppLocalizations.delegate,
+            ...GlobalMaterialLocalizations.delegates,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: QuotationScreen(id: _quotationId),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byType(TextField).last,
+      'Autosave note',
+    );
+    await tester.pump();
+    expect(
+      fake.requests.where((r) => r == 'PUT /api/v1/quotations/$_quotationId'),
+      isEmpty,
+    );
+
+    await tester.pump(const Duration(minutes: 1));
+    await tester.pumpAndSettle();
+
+    expect(
+      fake.requests.where((r) => r == 'PUT /api/v1/quotations/$_quotationId'),
+      hasLength(1),
+    );
   });
 }

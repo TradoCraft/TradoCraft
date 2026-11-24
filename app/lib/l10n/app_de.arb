@@ -3895,5 +3895,17 @@
   "tutConveyorsSvgWithMotor": "Mit Motor",
   "tutConveyorsSvgThreePhase": "3-Phasen + VFD",
   "tutConveyorsSvgOnePhase": "1-Phase",
-  "tutConveyorsSvgWithoutMotor": "ohne Motor"
+  "tutConveyorsSvgWithoutMotor": "ohne Motor",
+  "quotationLineLayoutTitle": "Angebotszeilen-Layout",
+  "quotationSingleLineLabel": "Eine Zeile pro Position",
+  "quotationSingleLineHelp": "Jede Position in einer kompakten Zeile mit Bemerkungen im Dialog anzeigen; deaktivieren für Bemerkungsfelder in einer zweiten Zeile.",
+  "quotationSettingsSaved": "Unternehmenseinstellungen gespeichert",
+  "remarks": "Bemerkungen",
+  "autosaveTitle": "Automatisches Speichern",
+  "autosaveOff": "Aus",
+  "autosaveMinutes": "{minutes} Min.",
+  "autosaveDefault": "Unternehmensstandard ({minutes} Min.)",
+  "autosaveDefaultOff": "Unternehmensstandard (Aus)",
+  "autosaveUserHelp": "Abweichendes Intervall für das automatische Speichern offener Entwürfe.",
+  "autosaveAdminHelp": "Standardintervall für das automatische Speichern offener Entwürfe (Benutzer können dies in ihren Einstellungen überschreiben)."
 }

@@ -11688,4 +11688,46 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tutConveyorsSvgWithoutMotor => 'without motor';
+
+  @override
+  String get quotationLineLayoutTitle => 'Quotation item layout';
+
+  @override
+  String get quotationSingleLineLabel => 'Single line per item';
+
+  @override
+  String get quotationSingleLineHelp =>
+      'Show each item on one compact row with remarks in a dialog; turn off to show remark fields on a second line.';
+
+  @override
+  String get quotationSettingsSaved => 'Company settings saved';
+
+  @override
+  String get remarks => 'Remarks';
+
+  @override
+  String get autosaveTitle => 'Draft autosave';
+
+  @override
+  String get autosaveOff => 'Off';
+
+  @override
+  String autosaveMinutes(int minutes) {
+    return '$minutes min';
+  }
+
+  @override
+  String autosaveDefault(int minutes) {
+    return 'Company default ($minutes min)';
+  }
+
+  @override
+  String get autosaveDefaultOff => 'Company default (Off)';
+
+  @override
+  String get autosaveUserHelp => 'Override how often open drafts autosave.';
+
+  @override
+  String get autosaveAdminHelp =>
+      'Default interval for autosaving open drafts (users can override this in their preferences).';
 }

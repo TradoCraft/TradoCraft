@@ -28,13 +28,18 @@ pub struct Company {
     /// True for the installation's primary company, whose administrators change the
     /// installation-wide settings (identity providers, ADR 0055).
     pub is_primary: bool,
+    /// Render quotation items on a single line (remarks in a dialog) instead of two lines.
+    pub quotation_single_line_items: bool,
+    /// Draft autosave interval in minutes (0 = disabled; default 5).
+    pub autosave_minutes: i32,
 }
 
 pub async fn get_company<'e>(db: impl PgExecutor<'e>, id: Uuid) -> Result<Company, sqlx::Error> {
     sqlx::query_as(
         "SELECT id, name, vat_number, street, postal_code, city, country_code::text AS country_code,
                 currency::text AS currency, email, phone, iban,
-                default_language::text AS default_language, is_primary
+                default_language::text AS default_language, is_primary,
+                quotation_single_line_items, autosave_minutes
          FROM core.companies WHERE id = $1",
     )
     .bind(id)

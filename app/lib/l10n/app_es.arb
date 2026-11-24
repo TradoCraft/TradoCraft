@@ -3895,5 +3895,17 @@
   "tutConveyorsSvgWithMotor": "Con motor",
   "tutConveyorsSvgThreePhase": "Trifásico + VFD",
   "tutConveyorsSvgOnePhase": "Monofásico",
-  "tutConveyorsSvgWithoutMotor": "sin motor"
+  "tutConveyorsSvgWithoutMotor": "sin motor",
+  "quotationLineLayoutTitle": "Diseño de líneas de presupuesto",
+  "quotationSingleLineLabel": "Una sola línea por artículo",
+  "quotationSingleLineHelp": "Mostrar cada artículo en una fila compacta con las observaciones en un diálogo; desactivar para mostrarlas en una segunda línea.",
+  "quotationSettingsSaved": "Configuración de empresa guardada",
+  "remarks": "Observaciones",
+  "autosaveTitle": "Autoguardado de borradores",
+  "autosaveOff": "Desactivado",
+  "autosaveMinutes": "{minutes} min",
+  "autosaveDefault": "Por defecto ({minutes} min)",
+  "autosaveDefaultOff": "Por defecto (Desactivado)",
+  "autosaveUserHelp": "Anular la frecuencia de autoguardado de los borradores abiertos.",
+  "autosaveAdminHelp": "Intervalo predeterminado para autoguardar borradores abiertos (los usuarios pueden anularlo en sus preferencias)."
 }

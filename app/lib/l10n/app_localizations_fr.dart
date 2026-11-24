@@ -11760,4 +11760,48 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get tutConveyorsSvgWithoutMotor => 'sans moteur';
+
+  @override
+  String get quotationLineLayoutTitle => 'Affichage des lignes de devis';
+
+  @override
+  String get quotationSingleLineLabel => 'Une seule ligne par article';
+
+  @override
+  String get quotationSingleLineHelp =>
+      'Afficher chaque article sur une ligne compacte avec les remarques dans une fenêtre ; désactiver pour afficher les remarques sur une deuxième ligne.';
+
+  @override
+  String get quotationSettingsSaved =>
+      'Paramètres de l\'entreprise enregistrés';
+
+  @override
+  String get remarks => 'Remarques';
+
+  @override
+  String get autosaveTitle => 'Enregistrement automatique des brouillons';
+
+  @override
+  String get autosaveOff => 'Désactivé';
+
+  @override
+  String autosaveMinutes(int minutes) {
+    return '$minutes min';
+  }
+
+  @override
+  String autosaveDefault(int minutes) {
+    return 'Par défaut ($minutes min)';
+  }
+
+  @override
+  String get autosaveDefaultOff => 'Par défaut (Désactivé)';
+
+  @override
+  String get autosaveUserHelp =>
+      'Remplacer la fréquence d\'enregistrement automatique des brouillons.';
+
+  @override
+  String get autosaveAdminHelp =>
+      'Intervalle par défaut pour l\'enregistrement automatique des brouillons (les utilisateurs peuvent le remplacer dans leurs préférences).';
 }

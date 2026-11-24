@@ -152,6 +152,8 @@ Map<String, Object?> meJson(List<String> permissions, {bool primary = true}) => 
     'currency': 'EUR',
     'default_language': 'nl',
     'is_primary': primary,
+    'autosave_minutes': 5,
+    'quotation_single_line_items': true,
   },
 };
 

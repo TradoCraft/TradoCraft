@@ -54,6 +54,16 @@ void applyUserShortcutPreferences(UserPreferences prefs) {
   ShortcutBindings.setOverrides(overrides);
 }
 
+/// Available draft autosave intervals in minutes (`0` disables autosave).
+const autosaveIntervals = [0, 1, 2, 5, 10, 15, 30];
+
+/// Effective draft autosave interval in minutes (user override, else company default, else 5).
+final effectiveAutosaveMinutesProvider = Provider<int>((ref) {
+  final userOverride = ref.watch(userPreferencesProvider).value?.autosaveMinutes;
+  if (userOverride != null) return userOverride;
+  return ref.watch(meProvider).value?.company.autosaveMinutes ?? 5;
+});
+
 /// Opens the User Preferences dialog (with the Shortcuts customization tab).
 Future<void> showUserPreferences(BuildContext context) => showDialog<void>(
   context: context,
@@ -123,7 +133,10 @@ class _UserPreferencesDialogState extends ConsumerState<UserPreferencesDialog> {
         );
       }
     }
-    final payload = UserPreferences(shortcuts: merged);
+    final payload = UserPreferences(
+      autosaveMinutes: loaded.autosaveMinutes,
+      shortcuts: merged,
+    );
     final container = ProviderScope.containerOf(context, listen: false);
     final session = container.read(sessionProvider);
     final epoch = ++_prefsEpoch;
@@ -143,6 +156,20 @@ class _UserPreferencesDialogState extends ConsumerState<UserPreferencesDialog> {
       setState(() => _saving = false);
       if (ok) setState(() {});
     }
+  }
+
+  Future<void> _saveAutosave(int? minutes, UserPreferences loaded) async {
+    setState(() => _saving = true);
+    final payload = UserPreferences(
+      autosaveMinutes: minutes,
+      shortcuts: loaded.shortcuts,
+    );
+    final container = ProviderScope.containerOf(context, listen: false);
+    await runAction(context, () async {
+      await container.read(apiProvider).core.putPreferences(body: payload);
+      container.invalidate(userPreferencesProvider);
+    }, success: context.l10n.saved);
+    if (mounted) setState(() => _saving = false);
   }
 
   Future<void> _editAction(
@@ -288,15 +315,52 @@ class _UserPreferencesDialogState extends ConsumerState<UserPreferencesDialog> {
       ],
     );
 
+    final companyAutosave =
+        ref.watch(meProvider).value?.company.autosaveMinutes ?? 5;
+    final userAutosave = loaded?.autosaveMinutes;
+
     return AlertDialog(
       title: Text(l.userPreferences),
       content: SizedBox(
         width: 520,
-        height: 460,
+        height: 520,
         child: DefaultTabController(
           length: 1,
           child: Column(
             children: [
+              DropdownButtonFormField<int?>(
+                key: const ValueKey('user-autosave-minutes'),
+                initialValue:
+                    userAutosave == null ||
+                        autosaveIntervals.contains(userAutosave)
+                    ? userAutosave
+                    : null,
+                decoration: InputDecoration(
+                  labelText: l.autosaveTitle,
+                  helperText: l.autosaveUserHelp,
+                ),
+                items: [
+                  DropdownMenuItem<int?>(
+                    value: null,
+                    child: Text(
+                      companyAutosave == 0
+                          ? l.autosaveDefaultOff
+                          : l.autosaveDefault(companyAutosave),
+                    ),
+                  ),
+                  for (final m in autosaveIntervals)
+                    DropdownMenuItem<int?>(
+                      value: m,
+                      child: Text(
+                        m == 0 ? l.autosaveOff : l.autosaveMinutes(m),
+                      ),
+                    ),
+                ],
+                onChanged: !ready || _saving
+                    ? null
+                    : (v) => _saveAutosave(v, loaded),
+              ),
+              const SizedBox(height: 8),
               TabBar(tabs: [Tab(text: l.shortcutsTab)]),
               if (prefsAsync.isLoading) const LinearProgressIndicator(),
               if (prefsAsync.hasError)

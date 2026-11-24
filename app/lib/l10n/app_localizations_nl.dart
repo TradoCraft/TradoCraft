@@ -11746,4 +11746,47 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get tutConveyorsSvgWithoutMotor => 'zonder motor';
+
+  @override
+  String get quotationLineLayoutTitle => 'Regelindeling offertes';
+
+  @override
+  String get quotationSingleLineLabel => 'Eén regel per artikel';
+
+  @override
+  String get quotationSingleLineHelp =>
+      'Toon elk artikel op één compacte regel met opmerkingen in een dialoog; schakel uit om opmerkingsvelden op een tweede regel te tonen.';
+
+  @override
+  String get quotationSettingsSaved => 'Bedrijfsinstellingen opgeslagen';
+
+  @override
+  String get remarks => 'Opmerkingen';
+
+  @override
+  String get autosaveTitle => 'Concept automatisch opslaan';
+
+  @override
+  String get autosaveOff => 'Uit';
+
+  @override
+  String autosaveMinutes(int minutes) {
+    return '$minutes min';
+  }
+
+  @override
+  String autosaveDefault(int minutes) {
+    return 'Bedrijfsstandaard ($minutes min)';
+  }
+
+  @override
+  String get autosaveDefaultOff => 'Bedrijfsstandaard (Uit)';
+
+  @override
+  String get autosaveUserHelp =>
+      'Overschrijf hoe vaak open concepten automatisch worden opgeslagen.';
+
+  @override
+  String get autosaveAdminHelp =>
+      'Standaardinterval voor het automatisch opslaan van open concepten (gebruikers kunnen dit overschrijven in hun voorkeuren).';
 }

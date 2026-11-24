@@ -11746,4 +11746,47 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get tutConveyorsSvgWithoutMotor => 'sin motor';
+
+  @override
+  String get quotationLineLayoutTitle => 'Diseño de líneas de presupuesto';
+
+  @override
+  String get quotationSingleLineLabel => 'Una sola línea por artículo';
+
+  @override
+  String get quotationSingleLineHelp =>
+      'Mostrar cada artículo en una fila compacta con las observaciones en un diálogo; desactivar para mostrarlas en una segunda línea.';
+
+  @override
+  String get quotationSettingsSaved => 'Configuración de empresa guardada';
+
+  @override
+  String get remarks => 'Observaciones';
+
+  @override
+  String get autosaveTitle => 'Autoguardado de borradores';
+
+  @override
+  String get autosaveOff => 'Desactivado';
+
+  @override
+  String autosaveMinutes(int minutes) {
+    return '$minutes min';
+  }
+
+  @override
+  String autosaveDefault(int minutes) {
+    return 'Por defecto ($minutes min)';
+  }
+
+  @override
+  String get autosaveDefaultOff => 'Por defecto (Desactivado)';
+
+  @override
+  String get autosaveUserHelp =>
+      'Anular la frecuencia de autoguardado de los borradores abiertos.';
+
+  @override
+  String get autosaveAdminHelp =>
+      'Intervalo predeterminado para autoguardar borradores abiertos (los usuarios pueden anularlo en sus preferencias).';
 }
