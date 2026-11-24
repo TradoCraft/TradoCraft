@@ -19,6 +19,7 @@ import '../models/closure_input.dart';
 import '../models/contact.dart';
 import '../models/contact_input.dart';
 import '../models/customer.dart';
+import '../models/customer_counts.dart';
 import '../models/customer_input.dart';
 import '../models/customer_page.dart';
 import '../models/customer_rebate.dart';
@@ -275,6 +276,11 @@ abstract class CrmClient {
   Future<Contact> createContact({
     @Path('id') required String id,
     @Body() required ContactInput body,
+  });
+
+  @GET('/api/v1/customers/{id}/counts')
+  Future<CustomerCounts> getCustomerCounts({
+    @Path('id') required String id,
   });
 
   @GET('/api/v1/customers/{id}/rebates')

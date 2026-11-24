@@ -151,6 +151,7 @@ export 'models/csat_info.dart';
 export 'models/csat_input.dart';
 export 'models/csat_stats.dart';
 export 'models/customer.dart';
+export 'models/customer_counts.dart';
 export 'models/customer_equipment.dart';
 export 'models/customer_input.dart';
 export 'models/customer_match.dart';

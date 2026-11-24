@@ -19,6 +19,11 @@ Future<void> _pump(WidgetTester t, Widget home, {double width = 1000}) async {
   final http = FakeHttp({
     'GET /api/v1/me': (_) => meJson(['customers.read', 'customers.write']),
     'GET /api/v1/customers/c2': (_) => _customer(),
+    'GET /api/v1/customers/c2/counts': (_) => {
+      'contacts': 3,
+      'closures': 1,
+      'product_rebates': 2,
+    },
     'PUT /api/v1/customers/c2': (_) => _customer(),
     'GET /api/v1/price-zones': (_) => [
       {'id': 'z1', 'code': 'Z1', 'name': 'Zone'},
@@ -131,5 +136,14 @@ void main() {
       await t.pumpAndSettle();
       expect(dirty.value, isFalse);
     });
+  });
+
+  testWidgets('smart buttons display counts from /customers/{id}/counts', (
+    t,
+  ) async {
+    await _pump(t, const CustomerScreen(id: 'c2'));
+    expect(find.text('3'), findsOneWidget);
+    expect(find.text('1'), findsOneWidget);
+    expect(find.text('2'), findsOneWidget);
   });
 }

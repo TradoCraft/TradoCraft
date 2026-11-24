@@ -398,6 +398,53 @@ async fn list_customers(
     Ok(Json(CustomerPage { items, total }))
 }
 
+#[derive(Debug, Serialize, ToSchema)]
+pub struct CustomerCounts {
+    pub contacts: i64,
+    pub closures: i64,
+    pub product_rebates: i64,
+    pub equipment: Option<i64>,
+}
+
+#[utoipa::path(get, path = "/customers/{id}/counts", tag = "crm", operation_id = "get_customer_counts", params(("id" = Uuid, Path)),
+    responses((status = 200, body = CustomerCounts), (status = 404, body = tradocraft_core::error::ErrorBody)))]
+async fn get_customer_counts(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Path(id): Path<Uuid>,
+) -> AppResult<Json<CustomerCounts>> {
+    user.require(Permission::CustomersRead)?;
+    get_customer(&state.db, user.company_id, id).await?;
+    let (contacts, closures, product_rebates): (i64, i64, i64) = sqlx::query_as(
+        "SELECT
+           (SELECT count(*) FROM crm.contacts WHERE customer_id = $2 AND active),
+           (SELECT count(*) FROM crm.customer_closures WHERE customer_id = $2),
+           (SELECT count(*) FROM crm.customer_rebates WHERE company_id = $1 AND customer_id = $2)",
+    )
+    .bind(user.company_id)
+    .bind(id)
+    .fetch_one(&state.db)
+    .await?;
+    let equipment = if user.require(Permission::FieldRead).is_ok() {
+        let n: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM engineering.serial_units WHERE company_id = $1 AND customer_id = $2",
+        )
+        .bind(user.company_id)
+        .bind(id)
+        .fetch_one(&state.db)
+        .await?;
+        Some(n)
+    } else {
+        None
+    };
+    Ok(Json(CustomerCounts {
+        contacts,
+        closures,
+        product_rebates,
+        equipment,
+    }))
+}
+
 #[utoipa::path(get, path = "/customers/{id}", tag = "crm", operation_id = "get_customer", params(("id" = Uuid, Path)),
     responses((status = 200, body = Customer), (status = 404, body = tradocraft_core::error::ErrorBody)))]
 async fn get_customer_handler(
@@ -745,6 +792,7 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(list_customers, create_customer))
         .routes(routes!(customer_groups))
         .routes(routes!(get_customer_handler, update_customer))
+        .routes(routes!(get_customer_counts))
         .merge(import::router())
         .merge(contacts::router())
         .merge(opportunities::router())

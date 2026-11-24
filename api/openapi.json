@@ -7084,6 +7084,47 @@
         }
       }
     },
+    "/api/v1/customers/{id}/counts": {
+      "get": {
+        "tags": [
+          "crm"
+        ],
+        "operationId": "get_customer_counts",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerCounts"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/customers/{id}/rebates": {
       "get": {
         "tags": [
@@ -40307,6 +40348,35 @@
             "type": "integer",
             "format": "int64",
             "description": "Raised on every change. Send it back as `expected_version` when saving: a customer someone\nelse changed meanwhile is refused (409 `record_changed`)."
+          }
+        }
+      },
+      "CustomerCounts": {
+        "type": "object",
+        "required": [
+          "contacts",
+          "closures",
+          "product_rebates"
+        ],
+        "properties": {
+          "closures": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "contacts": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "equipment": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "product_rebates": {
+            "type": "integer",
+            "format": "int64"
           }
         }
       },
