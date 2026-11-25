@@ -8651,6 +8651,185 @@ class AppLocalizationsNl extends AppLocalizations {
   String get productionCapacityEmpty => 'Geen werkplekken om te tonen.';
 
   @override
+  String get mrpTitle => 'Planningsvoorstellen';
+
+  @override
+  String get mrpRun => 'Planning uitvoeren';
+
+  @override
+  String mrpRunDone(String count) {
+    return 'Planning klaar: $count voorstellen.';
+  }
+
+  @override
+  String mrpHorizon(String days) {
+    return '$days dagen';
+  }
+
+  @override
+  String get mrpEmpty => 'Niets te kopen of te maken.';
+
+  @override
+  String get mrpKindPurchase => 'Kopen';
+
+  @override
+  String get mrpKindProduction => 'Maken';
+
+  @override
+  String get mrpReasonDemand => 'Nodig';
+
+  @override
+  String get mrpReasonSafety => 'Veiligheidsvoorraad';
+
+  @override
+  String mrpOrderBy(String date) {
+    return 'Bestellen tegen $date';
+  }
+
+  @override
+  String mrpNeededOn(String date) {
+    return 'Nodig op $date';
+  }
+
+  @override
+  String get mrpLate => 'Te laat';
+
+  @override
+  String get mrpConvert => 'Bestelling maken';
+
+  @override
+  String get mrpDismiss => 'Verwerpen';
+
+  @override
+  String mrpConverted(String number) {
+    return 'Bestelling $number gemaakt.';
+  }
+
+  @override
+  String get mrpDismissed => 'Voorstel verworpen.';
+
+  @override
+  String get mrpChooseSupplier => 'Kies een leverancier';
+
+  @override
+  String get mrpNoSupplier => 'Dit product heeft geen voorkeursleverancier.';
+
+  @override
+  String get mrpStatusOpen => 'Open';
+
+  @override
+  String get mrpStatusConverted => 'Omgezet';
+
+  @override
+  String get mrpStatusDismissed => 'Verworpen';
+
+  @override
+  String get mrpStatusAll => 'Alle';
+
+  @override
+  String get mrpStatusSuperseded => 'Vervangen';
+
+  @override
+  String get mrpLoadMore => 'Meer tonen';
+
+  @override
+  String mrpPegSales(String number) {
+    return 'Bestelling $number';
+  }
+
+  @override
+  String mrpPegProduction(String number) {
+    return 'Productieorder $number';
+  }
+
+  @override
+  String mrpPegPlanned(String number) {
+    return 'Voor het maken van $number';
+  }
+
+  @override
+  String mrpPegPurchase(String number) {
+    return 'Inkooporder $number';
+  }
+
+  @override
+  String get productSafetyStock => 'Veiligheidsvoorraad';
+
+  @override
+  String get productOrderMultiple => 'Bestelveelvoud';
+
+  @override
+  String mrpLastRun(String number) {
+    return 'Laatste run: $number';
+  }
+
+  @override
+  String get mrpNoRun => 'De planning is nog niet uitgevoerd.';
+
+  @override
+  String get productionBoardTitle => 'Werkplekplanning';
+
+  @override
+  String get productionBoardLate => 'Achterstallige bewerkingen';
+
+  @override
+  String get productionBoardNoLate => 'Niets is achterstallig.';
+
+  @override
+  String productionBoardUtilisation(String percent) {
+    return '$percent% belast';
+  }
+
+  @override
+  String get productionBoardMoved => 'Bewerking verplaatst.';
+
+  @override
+  String get productionBoardConfirmTitle => 'Verplaatsen met conflicten?';
+
+  @override
+  String get productionBoardConfirmBody => 'Deze verplaatsing heeft fouten:';
+
+  @override
+  String get productionBoardMoveAnyway => 'Toch verplaatsen';
+
+  @override
+  String get productionBoardRefusedTitle =>
+      'Deze bewerking kan niet verplaatst worden';
+
+  @override
+  String get productionConflictInactiveWorkCentre =>
+      'De werkplek is niet actief.';
+
+  @override
+  String get productionConflictOperationStarted =>
+      'De bewerking is gestart en kan niet verplaatst worden.';
+
+  @override
+  String productionConflictOnClosure(String day) {
+    return 'De werkplek werkt niet op $day.';
+  }
+
+  @override
+  String productionConflictOverload(String day) {
+    return '$day zou overbelast zijn.';
+  }
+
+  @override
+  String productionConflictBeforePredecessor(String day) {
+    return 'Ze zou beginnen vóór de vorige bewerking eindigt ($day).';
+  }
+
+  @override
+  String productionConflictAfterSuccessor(String day) {
+    return 'Ze zou eindigen nadat de volgende bewerking begint ($day).';
+  }
+
+  @override
+  String productionConflictLaterThanReady(String day) {
+    return 'Ze zou eindigen na de geplande gereeddatum ($day).';
+  }
+
+  @override
   String get productionCapacityEarlier => 'Eerder';
 
   @override

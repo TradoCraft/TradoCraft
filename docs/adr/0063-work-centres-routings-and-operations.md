@@ -5,8 +5,8 @@
 **Context.** Production orders ([ADR 0036](0036-production.md)) said what to build and from what, but
 not where or how: no work centres, no routing on the BOM, no operations on the order, no
 labour, no capacity and no cost beyond the standard cost of the components. This is C1b of the roadmap.
-The work-centre planning board (finite loading, drag and drop) is the work-centre half of C3 and stays
-open.
+The work-centre planning board (finite loading, drag and drop) is the work-centre half of C3 and is
+decided in [ADR 0090](0090-work-centre-planning-board.md).
 
 **Decision.** Migration `20270205000001_production_routings.sql`, in schema `production` and crate
 `tradocraft-production`. No new module and **no new permissions**: the four `production.*` rights and
@@ -118,5 +118,5 @@ here); operations overlapping or running in parallel, lead-time offsets and alte
 time entries, timers and an offline queue for the shop floor; consuming components at the operation that
 needs them; valuation and work in progress at actual cost, and booking output at the rolled-up cost;
 editing a routing on an active revision (each correction is a new revision); using routing times and
-lead times in MRP (C2); a notification to the production team; a seeded routing and a tutorial chapter;
+lead times in MRP ([ADR 0091](0091-material-requirements-planning.md) uses `lead_time_days` only); a notification to the production team; a seeded routing and a tutorial chapter;
 and the planned-ready date still being set by hand.

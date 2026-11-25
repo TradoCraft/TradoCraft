@@ -9,6 +9,7 @@ part of 'production_schedule_input.dart';
 ProductionScheduleInput _$ProductionScheduleInputFromJson(
   Map<String, dynamic> json,
 ) => ProductionScheduleInput(
+  finite: json['finite'] as bool?,
   startDate: json['start_date'] == null
       ? null
       : DateTime.parse(json['start_date'] as String),
@@ -16,4 +17,7 @@ ProductionScheduleInput _$ProductionScheduleInputFromJson(
 
 Map<String, dynamic> _$ProductionScheduleInputToJson(
   ProductionScheduleInput instance,
-) => <String, dynamic>{'start_date': ?instance.startDate?.toIso8601String()};
+) => <String, dynamic>{
+  'finite': ?instance.finite,
+  'start_date': ?instance.startDate?.toIso8601String(),
+};

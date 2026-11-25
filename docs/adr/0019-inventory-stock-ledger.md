@@ -260,6 +260,6 @@ Purchasing receipts (B2) and delivery consumption (B3) will post moves with thei
 references; production (C1a, [ADR 0036](0036-production.md)) posts `production_output`, `consumption` and `scrap`. Deferred: two-step
 transfers and deliveries through the `transit` location (the kind exists, nothing posts to it yet),
 putaway rules, bin capacity, quarantine locations, stock on open POs/MOs in ATP, cycle-count
-scheduling, valuation, reorder proposals (MRP, C2); in the app, naming the reservation to consume
+scheduling, valuation, reorder proposals (MRP, done: [ADR 0091](0091-material-requirements-planning.md)); in the app, naming the reservation to consume
 when issuing (the API has it) and an HTTP endpoint for non-sales reservations (the Rust function
 exists).

@@ -8663,6 +8663,186 @@ class AppLocalizationsFr extends AppLocalizations {
   String get productionCapacityEmpty => 'Aucun poste de travail à afficher.';
 
   @override
+  String get mrpTitle => 'Propositions de planification';
+
+  @override
+  String get mrpRun => 'Lancer la planification';
+
+  @override
+  String mrpRunDone(String count) {
+    return 'Planification terminée : $count propositions.';
+  }
+
+  @override
+  String mrpHorizon(String days) {
+    return '$days jours';
+  }
+
+  @override
+  String get mrpEmpty => 'Rien à acheter ni à fabriquer.';
+
+  @override
+  String get mrpKindPurchase => 'Acheter';
+
+  @override
+  String get mrpKindProduction => 'Fabriquer';
+
+  @override
+  String get mrpReasonDemand => 'Nécessaire';
+
+  @override
+  String get mrpReasonSafety => 'Stock de sécurité';
+
+  @override
+  String mrpOrderBy(String date) {
+    return 'Commander au plus tard le $date';
+  }
+
+  @override
+  String mrpNeededOn(String date) {
+    return 'Nécessaire le $date';
+  }
+
+  @override
+  String get mrpLate => 'En retard';
+
+  @override
+  String get mrpConvert => 'Créer la commande';
+
+  @override
+  String get mrpDismiss => 'Écarter';
+
+  @override
+  String mrpConverted(String number) {
+    return 'Commande $number créée.';
+  }
+
+  @override
+  String get mrpDismissed => 'Proposition écartée.';
+
+  @override
+  String get mrpChooseSupplier => 'Choisissez un fournisseur';
+
+  @override
+  String get mrpNoSupplier => 'Ce produit n\'a pas de fournisseur préféré.';
+
+  @override
+  String get mrpStatusOpen => 'Ouvertes';
+
+  @override
+  String get mrpStatusConverted => 'Converties';
+
+  @override
+  String get mrpStatusDismissed => 'Écartées';
+
+  @override
+  String get mrpStatusAll => 'Toutes';
+
+  @override
+  String get mrpStatusSuperseded => 'Remplacée';
+
+  @override
+  String get mrpLoadMore => 'Afficher plus';
+
+  @override
+  String mrpPegSales(String number) {
+    return 'Commande $number';
+  }
+
+  @override
+  String mrpPegProduction(String number) {
+    return 'Ordre de fabrication $number';
+  }
+
+  @override
+  String mrpPegPlanned(String number) {
+    return 'Pour fabriquer $number';
+  }
+
+  @override
+  String mrpPegPurchase(String number) {
+    return 'Commande d\'achat $number';
+  }
+
+  @override
+  String get productSafetyStock => 'Stock de sécurité';
+
+  @override
+  String get productOrderMultiple => 'Multiple de commande';
+
+  @override
+  String mrpLastRun(String number) {
+    return 'Dernier calcul : $number';
+  }
+
+  @override
+  String get mrpNoRun => 'La planification n\'a pas encore été lancée.';
+
+  @override
+  String get productionBoardTitle => 'Planning des postes de travail';
+
+  @override
+  String get productionBoardLate => 'Opérations en retard';
+
+  @override
+  String get productionBoardNoLate => 'Rien n\'est en retard.';
+
+  @override
+  String productionBoardUtilisation(String percent) {
+    return '$percent% chargé';
+  }
+
+  @override
+  String get productionBoardMoved => 'Opération déplacée.';
+
+  @override
+  String get productionBoardConfirmTitle => 'Déplacer malgré les conflits ?';
+
+  @override
+  String get productionBoardConfirmBody =>
+      'Ce déplacement comporte des erreurs :';
+
+  @override
+  String get productionBoardMoveAnyway => 'Déplacer quand même';
+
+  @override
+  String get productionBoardRefusedTitle =>
+      'Cette opération ne peut pas être déplacée';
+
+  @override
+  String get productionConflictInactiveWorkCentre =>
+      'Le poste de travail n\'est pas actif.';
+
+  @override
+  String get productionConflictOperationStarted =>
+      'L\'opération a commencé et ne peut pas être déplacée.';
+
+  @override
+  String productionConflictOnClosure(String day) {
+    return 'Le poste de travail ne travaille pas le $day.';
+  }
+
+  @override
+  String productionConflictOverload(String day) {
+    return 'Le $day serait surchargé.';
+  }
+
+  @override
+  String productionConflictBeforePredecessor(String day) {
+    return 'Elle commencerait avant la fin de l\'opération précédente ($day).';
+  }
+
+  @override
+  String productionConflictAfterSuccessor(String day) {
+    return 'Elle finirait après le début de l\'opération suivante ($day).';
+  }
+
+  @override
+  String productionConflictLaterThanReady(String day) {
+    return 'Elle finirait après la date de fin prévue ($day).';
+  }
+
+  @override
   String get productionCapacityEarlier => 'Plus tôt';
 
   @override

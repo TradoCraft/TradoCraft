@@ -31,10 +31,12 @@ class Product {
     this.includedInTurnover,
     this.leadTimeDays,
     this.lengthMm,
+    this.orderMultiple,
     this.packagingCategoryCode,
     this.packagingCategoryId,
     this.reorderMax,
     this.reorderMin,
+    this.safetyStock,
     this.standardCost,
     this.vatCategory,
     this.vatRateOverride,
@@ -84,6 +86,10 @@ class Product {
   /// Never discounted: no customer rebate and no manual line discount.
   @JsonKey(name: 'non_discountable')
   final bool nonDiscountable;
+
+  /// The planning rounds an order up to a multiple of this (a pack, a pallet, a batch).
+  @JsonKey(includeIfNull: false,name: 'order_multiple')
+  final String? orderMultiple;
   @JsonKey(includeIfNull: false,name: 'packaging_category_code')
   final String? packagingCategoryCode;
   @JsonKey(includeIfNull: false,name: 'packaging_category_id')
@@ -108,6 +114,11 @@ class Product {
   /// Reorder when the available stock falls below this quantity.
   @JsonKey(includeIfNull: false,name: 'reorder_min')
   final String? reorderMin;
+
+  /// Stock to keep on hand: the planning (MRP) proposes orders to stay at or above it (the.
+  /// larger of this and `reorder_min` counts).
+  @JsonKey(includeIfNull: false,name: 'safety_stock')
+  final String? safetyStock;
 
   /// Standard cost per stock unit. Only returned with the permission `inventory.cost`, else null.
   @JsonKey(includeIfNull: false,name: 'standard_cost')

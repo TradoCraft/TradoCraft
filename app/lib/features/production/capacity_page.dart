@@ -1,6 +1,7 @@
 import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../app/api.dart';
 import '../../l10n/l10n.dart';
@@ -56,7 +57,18 @@ class _CapacityPageState extends ConsumerState<CapacityPage> {
     );
     final scheme = Theme.of(context).colorScheme;
     return Scaffold(
-      appBar: AppBar(title: Text(l.productionCapacity)),
+      appBar: AppBar(
+        title: Text(l.productionCapacity),
+        actions: [
+          if (perms.contains('production.read'))
+            TextButton.icon(
+              key: const ValueKey('open-board'),
+              icon: const Icon(AppIcons.tune),
+              label: Text(l.productionBoardTitle),
+              onPressed: () => context.push('/production/board'),
+            ),
+        ],
+      ),
       body: !perms.contains('production.read')
           ? Center(child: Text(l.noPermission))
           : ListView(

@@ -308,9 +308,18 @@ class _Cell extends StatelessWidget {
                   key: ValueKey(
                     'shade-${s.kind.name}-${row.id}-${dayKey(day)}',
                   ),
-                  color: s.kind == ShadeKind.absence
-                      ? scheme.errorContainer.withValues(alpha: 0.7)
-                      : scheme.onSurface.withValues(alpha: 0.07),
+                  color: switch (s.kind) {
+                    ShadeKind.absence => scheme.errorContainer.withValues(
+                      alpha: 0.7,
+                    ),
+                    ShadeKind.overload => Colors.red.withValues(alpha: 0.18),
+                    ShadeKind.closure => scheme.onSurface.withValues(
+                      alpha: 0.14,
+                    ),
+                    ShadeKind.offHours => scheme.onSurface.withValues(
+                      alpha: 0.07,
+                    ),
+                  },
                   alignment: Alignment.center,
                   child: s.label == null
                       ? null

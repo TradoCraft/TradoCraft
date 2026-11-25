@@ -8613,6 +8613,184 @@ class AppLocalizationsEn extends AppLocalizations {
   String get productionCapacityEmpty => 'No work centres to show.';
 
   @override
+  String get mrpTitle => 'Planning proposals';
+
+  @override
+  String get mrpRun => 'Run planning';
+
+  @override
+  String mrpRunDone(String count) {
+    return 'Planning done: $count proposals.';
+  }
+
+  @override
+  String mrpHorizon(String days) {
+    return '$days days';
+  }
+
+  @override
+  String get mrpEmpty => 'Nothing to buy or build.';
+
+  @override
+  String get mrpKindPurchase => 'Buy';
+
+  @override
+  String get mrpKindProduction => 'Build';
+
+  @override
+  String get mrpReasonDemand => 'Needed';
+
+  @override
+  String get mrpReasonSafety => 'Safety stock';
+
+  @override
+  String mrpOrderBy(String date) {
+    return 'Order by $date';
+  }
+
+  @override
+  String mrpNeededOn(String date) {
+    return 'Needed $date';
+  }
+
+  @override
+  String get mrpLate => 'Late';
+
+  @override
+  String get mrpConvert => 'Create order';
+
+  @override
+  String get mrpDismiss => 'Dismiss';
+
+  @override
+  String mrpConverted(String number) {
+    return 'Order $number created.';
+  }
+
+  @override
+  String get mrpDismissed => 'Proposal dismissed.';
+
+  @override
+  String get mrpChooseSupplier => 'Choose a supplier';
+
+  @override
+  String get mrpNoSupplier => 'This product has no preferred supplier.';
+
+  @override
+  String get mrpStatusOpen => 'Open';
+
+  @override
+  String get mrpStatusConverted => 'Converted';
+
+  @override
+  String get mrpStatusDismissed => 'Dismissed';
+
+  @override
+  String get mrpStatusAll => 'All';
+
+  @override
+  String get mrpStatusSuperseded => 'Replaced';
+
+  @override
+  String get mrpLoadMore => 'Show more';
+
+  @override
+  String mrpPegSales(String number) {
+    return 'Order $number';
+  }
+
+  @override
+  String mrpPegProduction(String number) {
+    return 'Production order $number';
+  }
+
+  @override
+  String mrpPegPlanned(String number) {
+    return 'For building $number';
+  }
+
+  @override
+  String mrpPegPurchase(String number) {
+    return 'Purchase order $number';
+  }
+
+  @override
+  String get productSafetyStock => 'Safety stock';
+
+  @override
+  String get productOrderMultiple => 'Order multiple';
+
+  @override
+  String mrpLastRun(String number) {
+    return 'Last run: $number';
+  }
+
+  @override
+  String get mrpNoRun => 'No planning has been run yet.';
+
+  @override
+  String get productionBoardTitle => 'Work-centre board';
+
+  @override
+  String get productionBoardLate => 'Late operations';
+
+  @override
+  String get productionBoardNoLate => 'Nothing is late.';
+
+  @override
+  String productionBoardUtilisation(String percent) {
+    return '$percent% loaded';
+  }
+
+  @override
+  String get productionBoardMoved => 'Operation moved.';
+
+  @override
+  String get productionBoardConfirmTitle => 'Move with conflicts?';
+
+  @override
+  String get productionBoardConfirmBody => 'This move has errors:';
+
+  @override
+  String get productionBoardMoveAnyway => 'Move anyway';
+
+  @override
+  String get productionBoardRefusedTitle => 'This operation cannot be moved';
+
+  @override
+  String get productionConflictInactiveWorkCentre =>
+      'The work centre is not active.';
+
+  @override
+  String get productionConflictOperationStarted =>
+      'The operation has started and cannot be moved.';
+
+  @override
+  String productionConflictOnClosure(String day) {
+    return 'The work centre does not work on $day.';
+  }
+
+  @override
+  String productionConflictOverload(String day) {
+    return '$day would be overloaded.';
+  }
+
+  @override
+  String productionConflictBeforePredecessor(String day) {
+    return 'It would start before the previous operation ends ($day).';
+  }
+
+  @override
+  String productionConflictAfterSuccessor(String day) {
+    return 'It would end after the next operation starts ($day).';
+  }
+
+  @override
+  String productionConflictLaterThanReady(String day) {
+    return 'It would end after the planned-ready date ($day).';
+  }
+
+  @override
   String get productionCapacityEarlier => 'Earlier';
 
   @override

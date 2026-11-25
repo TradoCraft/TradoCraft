@@ -21,12 +21,14 @@ class ProductInput {
     this.leadTimeDays,
     this.lengthMm,
     this.nonDiscountable,
+    this.orderMultiple,
     this.packagingCategoryId,
     this.priceIsIndicative,
     this.priceOnRequest,
     this.productType,
     this.reorderMax,
     this.reorderMin,
+    this.safetyStock,
     this.standardCost,
     this.tracking,
     this.unit,
@@ -72,6 +74,10 @@ class ProductInput {
   @JsonKey(includeIfNull: false,name: 'non_discountable')
   final bool? nonDiscountable;
 
+  /// More than 0 when given.
+  @JsonKey(includeIfNull: false,name: 'order_multiple')
+  final String? orderMultiple;
+
   /// Must be an active packaging category.
   @JsonKey(includeIfNull: false,name: 'packaging_category_id')
   final String? packagingCategoryId;
@@ -89,6 +95,8 @@ class ProductInput {
   final String? reorderMax;
   @JsonKey(includeIfNull: false,name: 'reorder_min')
   final String? reorderMin;
+  @JsonKey(includeIfNull: false,name: 'safety_stock')
+  final String? safetyStock;
 
   /// Ignored (the stored cost is kept) without the permission `inventory.cost`.
   @JsonKey(includeIfNull: false,name: 'standard_cost')

@@ -216,6 +216,12 @@ class _ProductionQueuePageState extends ConsumerState<ProductionQueuePage> {
           onPressed: () => context.push('/production/capacity'),
         ),
         IconButton(
+          key: const ValueKey('mrp'),
+          tooltip: l.mrpTitle,
+          icon: const Icon(AppIcons.checklist),
+          onPressed: () => context.push('/mrp'),
+        ),
+        IconButton(
           key: const ValueKey('work-centres'),
           tooltip: l.productionWorkCentres,
           icon: const Icon(AppIcons.precisionManufacturing),
