@@ -2917,6 +2917,8 @@
   "mrpStatusConverted": "Umgesetzt",
   "mrpStatusDismissed": "Verworfen",
   "mrpStatusAll": "Alle",
+  "mrpStatusSuperseded": "Ersetzt",
+  "mrpLoadMore": "Mehr anzeigen",
   "mrpPegSales": "Auftrag {number}",
   "@mrpPegSales": {
     "placeholders": {

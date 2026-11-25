@@ -15,12 +15,15 @@ and the open purchase orders.
    days, at most 730) and keeps **proposals**: to buy a purchased product or to build a manufactured
    one. Nothing is ordered by itself. A run replaces the open proposals of earlier runs (they become
    `superseded`, kept for the record); converted and dismissed ones stay as they are. The run is one
-   request; moving it to the worker is not needed at this size.
-2. **What counts** (everything is read, nothing is locked):
+   request, on one repeatable-read snapshot, and it is the only writer of a company's proposals at a
+   time (item 8); moving it to the worker is not needed at this size.
+2. **What counts**:
    * *requirements*: the open quantity of every line of the confirmed revision of an order that is
      being worked on (`confirmed` to `partially_shipped`), less what has shipped, due on the
      promised date or else the order date; the components that production orders in progress still
-     take (due today: they are reserved but still in the warehouse);
+     take, from the day the order's work starts (`production_orders.planned_start_date`, set at
+     release and when the order is scheduled again; an order without one counts as today): they
+     are reserved but still in the warehouse;
    * *receipts*: open purchase orders (approved, sent, partially received; a draft is an intention)
      due on the expected delivery date, and released or in-progress production orders due on their
      planned-ready date;
@@ -51,7 +54,17 @@ and the open purchase orders.
    order for stock (ready on the need date, started on the order date; its components are reserved as
    for any release, and the subassemblies that are short have proposals of their own). Nothing is
    approved or sent. `POST /mrp/proposals/{id}/dismiss` sets it aside. Both are audited.
-8. **No permission of its own.** Running and acting on a production proposal need `production.write`,
+8. **One writer at a time.** A run, converting a proposal and dismissing one take the company's
+   planning lock (`pg_advisory_xact_lock(hashtextextended('mrp:<company>', 0))`). A conversion that
+   meets a run waits for it and finds its proposal replaced (409); a run waits for a conversion and
+   then sees the order it made, so it does not propose the same thing again. The run holds the lock as
+   a session lock on a connection of its own, taken before its snapshot starts (a lock waited for
+   inside a repeatable-read transaction is waited for with a snapshot that does not show what the
+   holder commits), in a task that a client going away cannot cancel. Other companies do not wait.
+9. **Paged list.** `GET /mrp/proposals` returns at most `limit` proposals (default 100, at most 500),
+   ordered by the day to order, the need date, the product code and the id; `after` takes the id of
+   the last proposal of the page before. The app shows "show more" while a page is full.
+10. **No permission of its own.** Running and acting on a production proposal need `production.write`,
    a purchase proposal `purchasing.write`; reading needs `production.read` (what is built) or
    `purchasing.read` (what is bought), each seeing only its kind.
 
@@ -61,10 +74,12 @@ and the open purchase orders.
   planned as early as the rest. A per-line date is a later addition.
 - Stock is one number per product: lots, locations and expiry dates are not looked at, and expired
   lots still count as stock.
+- Components are rounded the way a release rounds them (up to four decimals,
+  `production::orders::required`), so a proposal asks for what the production order will need.
 - A dismissed proposal is not remembered: the next run proposes the same shortage again when it is
   still there.
-- A run reads in one request without a snapshot; planners should not expect it to be exact to the
-  minute while orders are being entered.
+- A run is a consistent picture of the moment its snapshot was taken; orders entered while it runs
+  are in the next one. Waiting for another run or a conversion of the same company can delay it.
 
 **Not done yet.** Routing times and calendars in lead times; supplier calendars and order days;
 net-change runs and a worker job for large companies; a per-line delivery date; a minimum or fixed

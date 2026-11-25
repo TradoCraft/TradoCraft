@@ -8731,6 +8731,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get mrpStatusAll => 'Todas';
 
   @override
+  String get mrpStatusSuperseded => 'Reemplazada';
+
+  @override
+  String get mrpLoadMore => 'Mostrar más';
+
+  @override
   String mrpPegSales(String number) {
     return 'Pedido $number';
   }

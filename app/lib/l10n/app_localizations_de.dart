@@ -8750,6 +8750,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get mrpStatusAll => 'Alle';
 
   @override
+  String get mrpStatusSuperseded => 'Ersetzt';
+
+  @override
+  String get mrpLoadMore => 'Mehr anzeigen';
+
+  @override
   String mrpPegSales(String number) {
     return 'Auftrag $number';
   }

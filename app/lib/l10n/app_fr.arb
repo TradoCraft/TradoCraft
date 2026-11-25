@@ -2883,7 +2883,7 @@
   "mrpKindProduction": "Fabriquer",
   "mrpReasonDemand": "Nécessaire",
   "mrpReasonSafety": "Stock de sécurité",
-  "mrpOrderBy": "Commander pour le {date}",
+  "mrpOrderBy": "Commander au plus tard le {date}",
   "@mrpOrderBy": {
     "placeholders": {
       "date": {
@@ -2917,6 +2917,8 @@
   "mrpStatusConverted": "Converties",
   "mrpStatusDismissed": "Écartées",
   "mrpStatusAll": "Toutes",
+  "mrpStatusSuperseded": "Remplacée",
+  "mrpLoadMore": "Afficher plus",
   "mrpPegSales": "Commande {number}",
   "@mrpPegSales": {
     "placeholders": {

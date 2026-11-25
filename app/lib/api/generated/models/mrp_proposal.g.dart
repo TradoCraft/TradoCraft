@@ -12,7 +12,9 @@ MrpProposal _$MrpProposalFromJson(Map<String, dynamic> json) => MrpProposal(
   lateValue: json['late'] as bool,
   needDate: DateTime.parse(json['need_date'] as String),
   orderDate: DateTime.parse(json['order_date'] as String),
-  pegging: json['pegging'],
+  pegging: (json['pegging'] as List<dynamic>)
+      .map((e) => MrpPeg.fromJson(e as Map<String, dynamic>))
+      .toList(),
   productCode: json['product_code'] as String,
   productId: json['product_id'] as String,
   productName: json['product_name'] as String,

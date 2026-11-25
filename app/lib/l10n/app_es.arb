@@ -2917,6 +2917,8 @@
   "mrpStatusConverted": "Convertidas",
   "mrpStatusDismissed": "Descartadas",
   "mrpStatusAll": "Todas",
+  "mrpStatusSuperseded": "Reemplazada",
+  "mrpLoadMore": "Mostrar más",
   "mrpPegSales": "Pedido {number}",
   "@mrpPegSales": {
     "placeholders": {

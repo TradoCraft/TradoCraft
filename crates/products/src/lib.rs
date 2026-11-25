@@ -263,6 +263,12 @@ impl ProductInput {
         }
         if self.order_multiple.is_some_and(|m| m <= Decimal::ZERO) {
             out.push("order_multiple must be more than 0".to_string());
+        } else if self
+            .order_multiple
+            .is_some_and(|m| m.normalize().scale() > 4)
+        {
+            // The column keeps four decimals: more would be rounded, to nothing for 0.00004.
+            out.push("order_multiple has at most 4 decimals".to_string());
         }
         if let (Some(min), Some(max)) = (self.reorder_min, self.reorder_max) {
             if max < min {

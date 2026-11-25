@@ -4729,6 +4729,8 @@
   "mrpStatusConverted": "Converted",
   "mrpStatusDismissed": "Dismissed",
   "mrpStatusAll": "All",
+  "mrpStatusSuperseded": "Replaced",
+  "mrpLoadMore": "Show more",
   "mrpPegSales": "Order {number}",
   "@mrpPegSales": {
     "placeholders": {

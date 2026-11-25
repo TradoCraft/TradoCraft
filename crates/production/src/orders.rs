@@ -474,7 +474,7 @@ pub(crate) async fn sync_order_status(
 
 /// A component needs this much for the whole order: BOM quantity x order quantity x (1 + scrap %),
 /// rounded up to four decimals so the order never runs short by rounding.
-pub(crate) fn required(per_unit: Decimal, quantity: Decimal, scrap_percent: Decimal) -> Decimal {
+pub fn required(per_unit: Decimal, quantity: Decimal, scrap_percent: Decimal) -> Decimal {
     (per_unit * quantity * (Decimal::ONE_HUNDRED + scrap_percent) / Decimal::ONE_HUNDRED)
         .round_dp_with_strategy(4, RoundingStrategy::AwayFromZero)
 }
@@ -638,8 +638,9 @@ fn release_in_tx<'a>(
         sqlx::query(
             "INSERT INTO production.production_orders
                  (id, company_id, number, product_id, quantity, bom_id, bom_revision, division_id, order_id,
-                  order_line_id, parent_order_id, planned_ready_date, notes, created_by)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)",
+                  order_line_id, parent_order_id, planned_ready_date, notes, created_by,
+                  planned_start_date)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)",
         )
         .bind(id)
         .bind(user.company_id)
@@ -655,6 +656,7 @@ fn release_in_tx<'a>(
         .bind(spec.planned_ready_date)
         .bind(spec.notes.trim())
         .bind(user.user_id)
+        .bind(spec.start_date.unwrap_or_else(tradocraft_core::today))
         .execute(&mut *tx)
         .await?;
         // Subassemblies that are built from a BOM and that stock could not cover: (product, need).

@@ -26,6 +26,8 @@ class _MrpClient implements MrpClient {
     String? kind,
     String? productId,
     String? runId,
+    int? limit,
+    String? after,
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
@@ -33,6 +35,8 @@ class _MrpClient implements MrpClient {
       r'kind': kind,
       r'product_id': productId,
       r'run_id': runId,
+      r'limit': limit,
+      r'after': after,
     };
     queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};

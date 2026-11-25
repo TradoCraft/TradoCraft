@@ -17,18 +17,25 @@ part 'mrp_client.g.dart';
 abstract class MrpClient {
   factory MrpClient(Dio dio, {String? baseUrl}) = _MrpClient;
 
-  /// The proposals, by the day to order. What the user may not read (production or purchasing) is.
-  /// left out.
+  /// The proposals, by the day to order, a page at a time (`limit`, and `after` with the id of the.
+  /// last one of the page before). What the user may not read (production or purchasing) is left out.
   ///
   /// [status] - `open` (default), `converted`, `dismissed`, `superseded` or `all`.
   ///
   /// [kind] - `purchase` or `production`.
+  ///
+  /// [limit] - How many to return: 1 to 500, default 100.
+  ///
+  /// [after] - Continue after this proposal (the last of the previous page): the list is ordered by the day.
+  /// to order, the need date, the product code and the id, so the next page starts right after it.
   @GET('/api/v1/mrp/proposals')
   Future<List<MrpProposal>> listProposals({
     @Query('status') String? status,
     @Query('kind') String? kind,
     @Query('product_id') String? productId,
     @Query('run_id') String? runId,
+    @Query('limit') int? limit,
+    @Query('after') String? after,
   });
 
   /// Turns an open proposal into a draft purchase order (for the supplier of the proposal, at the.

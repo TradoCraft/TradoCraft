@@ -9,6 +9,11 @@ ALTER TABLE products.products
     -- Orders are rounded up to a multiple of this (a pack, a pallet, a batch).
     ADD COLUMN order_multiple numeric(18,4) CHECK (order_multiple > 0);
 
+-- The day a production order's work starts, hence the day its components are needed: set at
+-- release and when the order is scheduled again. The planning (MRP) reads it; older orders have
+-- none and count as needed today.
+ALTER TABLE production.production_orders ADD COLUMN planned_start_date date;
+
 CREATE SCHEMA IF NOT EXISTS mrp;
 
 CREATE TABLE mrp.runs (

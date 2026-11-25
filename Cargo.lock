@@ -3720,6 +3720,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sqlx",
+ "tokio",
  "tradocraft-core",
  "tradocraft-engineering",
  "tradocraft-production",

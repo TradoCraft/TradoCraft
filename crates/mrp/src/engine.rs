@@ -294,8 +294,9 @@ fn plan_item(
                 let Some(&c) = index.get(&b.component) else {
                     continue;
                 };
-                let per = b.quantity * (Decimal::ONE + b.scrap_percent / Decimal::from(100));
-                let need = (quantity * per).round_dp(4);
+                // The same quantity, rounded the same way (up to four places), as a release makes.
+                let need =
+                    tradocraft_production::orders::required(b.quantity, quantity, b.scrap_percent);
                 if need > Decimal::ZERO {
                     items[c].requirements.push(Flow {
                         date: order_date,
@@ -574,6 +575,55 @@ mod tests {
         let r = plan(vec![top, part], &settings()).unwrap();
         let part_q = r.iter().find(|x| x.product_id == id(2)).unwrap().quantity;
         assert_eq!(part_q, dec!(21), "2 x 10 x 1.05");
+    }
+
+    #[test]
+    fn components_are_rounded_up_like_a_release_rounds_them() {
+        // A fraction beyond the fourth place: 0.00011 per piece is 0.0002 when a production order is
+        // released (rounded away from zero), not 0.0001.
+        for (per, qty, scrap) in [
+            (dec!(0.00011), dec!(1), dec!(0)),
+            (dec!(0.3333), dec!(3), dec!(0)),
+            (dec!(1.1), dec!(0.37), dec!(2.5)),
+            (dec!(10), dec!(2), dec!(5)),
+        ] {
+            let mut top = made(
+                1,
+                dec!(0),
+                0,
+                vec![BomUse {
+                    component: id(2),
+                    quantity: per,
+                    scrap_percent: scrap,
+                }],
+            );
+            top.requirements = vec![need(10, qty)];
+            let r = plan(vec![top, bought(2, dec!(0), 0)], &settings()).unwrap();
+            let planned = r.iter().find(|x| x.product_id == id(2)).unwrap().quantity;
+            // The proposal builds `qty` (nothing is on hand), so a release for it needs this much.
+            assert_eq!(
+                planned,
+                tradocraft_production::orders::required(per, qty, scrap),
+                "{per} x {qty} + {scrap} %"
+            );
+        }
+        // Exact quantities stay exact.
+        let mut top = made(
+            1,
+            dec!(0),
+            0,
+            vec![BomUse {
+                component: id(2),
+                quantity: dec!(10),
+                scrap_percent: dec!(5),
+            }],
+        );
+        top.requirements = vec![need(10, dec!(2))];
+        let r = plan(vec![top, bought(2, dec!(0), 0)], &settings()).unwrap();
+        assert_eq!(
+            r.iter().find(|x| x.product_id == id(2)).unwrap().quantity,
+            dec!(21)
+        );
     }
 
     #[test]

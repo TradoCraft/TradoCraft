@@ -292,12 +292,27 @@ async fn planning_parameters_and_the_preferred_supplier_shape_a_proposal(db: PgP
     assert_eq!(status, StatusCode::OK, "{saved}");
     assert_eq!(dec(&saved["order_multiple"]), Decimal::from(12));
     assert_eq!(dec(&saved["safety_stock"]), Decimal::from(5));
-    for (field, value) in [("order_multiple", "0"), ("safety_stock", "-1")] {
+    // A multiple of nothing, a negative stock and a fraction the column would round away.
+    for (field, value) in [
+        ("order_multiple", "0"),
+        ("order_multiple", "0.00004"),
+        ("order_multiple", "1.23456"),
+        ("safety_stock", "-1"),
+    ] {
         let mut bad = body.clone();
         bad[field] = json!(value);
         let (status, _) = put(&e.app, ADMIN, &format!("/products/{PROFILE}"), bad).await;
-        assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{field}");
+        assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{field} {value}");
     }
+    // Four decimals, and zeros after them, are fine.
+    for value in ["0.0001", "12.0000", "12"] {
+        let mut ok = body.clone();
+        ok["order_multiple"] = json!(value);
+        let (status, saved) = put(&e.app, ADMIN, &format!("/products/{PROFILE}"), ok).await;
+        assert_eq!(status, StatusCode::OK, "{value}: {saved}");
+    }
+    let (status, _) = put(&e.app, ADMIN, &format!("/products/{PROFILE}"), body.clone()).await;
+    assert_eq!(status, StatusCode::OK);
 
     e.run(PLANNER, json!({})).await;
     let open = e.proposals(PLANNER, "").await;
@@ -524,13 +539,14 @@ async fn what_is_on_order_and_in_production_counts(db: PgPool) {
     )
     .await;
     let supplier = id(&supplier);
-    // 20 m of profile and 100 bolts are on a purchase order that is approved.
+    // 10 m of profile (4.3 short of what the frames need) and 100 bolts (enough) are on a purchase
+    // order.
     let (status, po) = post(
         &e.app,
         BUYER,
         "/purchase-orders",
         json!({ "supplier_id": supplier, "lines": [
-            { "product_id": PROFILE, "quantity": "20", "unit_price": "3" },
+            { "product_id": PROFILE, "quantity": "10", "unit_price": "3" },
             { "product_id": BOLT, "quantity": "100", "unit_price": "0.1" } ] }),
     )
     .await;
@@ -548,8 +564,12 @@ async fn what_is_on_order_and_in_production_counts(db: PgPool) {
     assert_eq!(status, StatusCode::OK, "{a}");
     e.run(PLANNER, json!({})).await;
     let open = e.proposals(PLANNER, "").await;
-    assert_eq!(open.len(), 1, "only the frames are left: {open:?}");
-    assert_eq!(open[0]["product_id"], FRAME);
+    assert_eq!(open.len(), 2, "the frames and 4.3 m of profile: {open:?}");
+    assert_eq!(of(&open, FRAME)["kind"], "production");
+    assert_eq!(
+        dec(&of(&open, PROFILE)["quantity"]),
+        "4.3".parse::<Decimal>().unwrap()
+    );
 
     // A production order that is released counts as supply, and its components as demand.
     let (status, mo) = post(
@@ -561,10 +581,200 @@ async fn what_is_on_order_and_in_production_counts(db: PgPool) {
     .await;
     assert_eq!(status, StatusCode::CREATED, "{mo}");
     let (_, run) = e.run(PLANNER, json!({})).await;
-    // The frames are covered by it; the parts it needs were reserved from a stock that is not
-    // there yet (the purchase order has not arrived), so they are asked for again... or not: the
-    // purchase order still covers them.
-    assert_eq!(run["proposals"], 0, "{run}");
+    // The build covers the order, so no frames are proposed again. Its components are asked for
+    // from stock that is not there: the purchase order covers the bolts and 10 m of the 14.3 m of
+    // profile, and what is still short is exactly the 4.3 m.
+    assert_eq!(run["proposals"], 1, "{run}");
+    let open = e.proposals(PLANNER, "").await;
+    assert_eq!(open[0]["product_id"], PROFILE);
+    assert_eq!(open[0]["reason"], "demand");
+    assert_eq!(dec(&open[0]["quantity"]), "4.3".parse::<Decimal>().unwrap());
+    assert_eq!(open[0]["pegging"][0]["kind"], "production_order");
+    assert_eq!(open[0]["pegging"][0]["number"], mo["number"]);
     let (_, runs) = get(&e.app, PLANNER, "/mrp/runs").await;
     assert_eq!(runs.as_array().unwrap().len(), 3);
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn the_proposals_are_paged_in_a_stable_order(db: PgPool) {
+    let e = env(db).await;
+    e.order(FRAME, "2").await;
+    e.run(PLANNER, json!({})).await;
+    let all = e.proposals(PLANNER, "").await;
+    assert_eq!(all.len(), 3);
+    // One at a time, each page after the last one of the page before, gives the same list.
+    let mut paged: Vec<String> = Vec::new();
+    let mut after = String::new();
+    loop {
+        let query = if after.is_empty() {
+            "limit=1".to_string()
+        } else {
+            format!("limit=1&after={after}")
+        };
+        let page = e.proposals(PLANNER, &query).await;
+        assert!(page.len() <= 1);
+        let Some(last) = page.last() else { break };
+        after = id(last);
+        paged.push(after.clone());
+    }
+    let all_ids: Vec<String> = all.iter().map(id).collect();
+    assert_eq!(paged, all_ids);
+    // The filters carry over, and the page size is bounded.
+    let page = e.proposals(PLANNER, "kind=purchase&limit=1").await;
+    assert_eq!(page.len(), 1);
+    let rest = e
+        .proposals(
+            PLANNER,
+            &format!("kind=purchase&limit=500&after={}", id(&page[0])),
+        )
+        .await;
+    assert_eq!(rest.len(), 1);
+    assert_ne!(id(&rest[0]), id(&page[0]));
+    // Out-of-range limits are clamped, not refused: both give a page of one.
+    for limit in ["limit=0", "limit=-3"] {
+        assert_eq!(e.proposals(PLANNER, limit).await.len(), 1, "{limit}");
+    }
+    let (status, _) = get(
+        &e.app,
+        PLANNER,
+        &format!("/mrp/proposals?after={}", Uuid::now_v7()),
+    )
+    .await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn runs_of_one_company_follow_each_other_and_do_not_duplicate_proposals(db: PgPool) {
+    let e = env(db).await;
+    e.order(FRAME, "2").await;
+    let (a, b) = tokio::join!(e.run(PLANNER, json!({})), e.run(PLANNER, json!({})));
+    assert_eq!(a.0, StatusCode::CREATED, "{}", a.1);
+    assert_eq!(b.0, StatusCode::CREATED, "{}", b.1);
+    // Whichever came second replaced what the first made: three open, three replaced.
+    assert_eq!(e.proposals(PLANNER, "").await.len(), 3);
+    assert_eq!(e.proposals(PLANNER, "status=superseded").await.len(), 3);
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn a_conversion_waits_for_the_run_in_progress_and_finds_its_proposal_replaced(db: PgPool) {
+    let e = env(db.clone()).await;
+    e.order(FRAME, "2").await;
+    let (_, supplier) = post(
+        &e.app,
+        BUYER,
+        "/suppliers",
+        json!({ "name": "Steel NV", "code": "STEEL", "country": "be" }),
+    )
+    .await;
+    let supplier = id(&supplier);
+    e.run(PLANNER, json!({})).await;
+    let profile = id(of(&e.proposals(PLANNER, "").await, PROFILE));
+
+    // Stand in for a run that is half way: it holds the company's planning lock.
+    let mut holder = db.acquire().await.unwrap();
+    sqlx::query("SELECT pg_advisory_lock(hashtextextended($1, 0))")
+        .bind(format!("mrp:{COMPANY}"))
+        .execute(&mut *holder)
+        .await
+        .unwrap();
+    let app = e.app.clone();
+    let convert = tokio::spawn({
+        let profile = profile.clone();
+        async move {
+            post(
+                &app,
+                BUYER,
+                &format!("/mrp/proposals/{profile}/convert"),
+                json!({ "supplier_id": supplier }),
+            )
+            .await
+        }
+    });
+    tokio::time::sleep(std::time::Duration::from_millis(400)).await;
+    assert!(!convert.is_finished(), "the conversion waits for the run");
+    // The run replaces the proposals and ends.
+    sqlx::query("UPDATE mrp.proposals SET status = 'superseded' WHERE status = 'open'")
+        .execute(&mut *holder)
+        .await
+        .unwrap();
+    sqlx::query("SELECT pg_advisory_unlock(hashtextextended($1, 0))")
+        .bind(format!("mrp:{COMPANY}"))
+        .execute(&mut *holder)
+        .await
+        .unwrap();
+    let (status, r) = convert.await.unwrap();
+    assert_eq!(status, StatusCode::CONFLICT, "{r}");
+    let orders: i64 = sqlx::query_scalar("SELECT count(*) FROM purchasing.purchase_orders")
+        .fetch_one(&e.db)
+        .await
+        .unwrap();
+    assert_eq!(orders, 0, "nothing was ordered from a replaced proposal");
+
+    // A run waits for a conversion in the same way (the lock is the company's, not the proposal's).
+    sqlx::query("SELECT pg_advisory_lock(hashtextextended($1, 0))")
+        .bind(format!("mrp:{COMPANY}"))
+        .execute(&mut *holder)
+        .await
+        .unwrap();
+    let app = e.app.clone();
+    let run = tokio::spawn(async move { post(&app, PLANNER, "/mrp/runs", json!({})).await });
+    tokio::time::sleep(std::time::Duration::from_millis(400)).await;
+    assert!(!run.is_finished(), "the run waits for the lock");
+    sqlx::query("SELECT pg_advisory_unlock(hashtextextended($1, 0))")
+        .bind(format!("mrp:{COMPANY}"))
+        .execute(&mut *holder)
+        .await
+        .unwrap();
+    let (status, r) = run.await.unwrap();
+    assert_eq!(status, StatusCode::CREATED, "{r}");
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn the_components_of_a_build_are_needed_from_the_day_its_work_starts(db: PgPool) {
+    let e = env(db).await;
+    // A build for stock that starts in five days: nothing is on hand for its components.
+    let start: String = sqlx::query_scalar("SELECT (current_date + 5)::text")
+        .fetch_one(&e.db)
+        .await
+        .unwrap();
+    let (status, mo) = post(
+        &e.app,
+        PLANNER,
+        "/production-orders",
+        json!({ "product_id": FRAME, "quantity": "2", "start_date": start }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{mo}");
+    e.run(PLANNER, json!({})).await;
+    let open = e.proposals(PLANNER, "").await;
+    let profile = of(&open, PROFILE);
+    assert_eq!(profile["need_date"], start.as_str(), "{profile}");
+    assert_eq!(profile["pegging"][0]["kind"], "production_order");
+    // Scheduling the order again from another day moves the day its materials are needed.
+    let later: String = sqlx::query_scalar("SELECT (current_date + 9)::text")
+        .fetch_one(&e.db)
+        .await
+        .unwrap();
+    let (status, r) = post(
+        &e.app,
+        PLANNER,
+        &format!("/production-orders/{}/schedule", id(&mo)),
+        json!({ "start_date": later }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{r}");
+    e.run(PLANNER, json!({})).await;
+    let open = e.proposals(PLANNER, "").await;
+    assert_eq!(of(&open, PROFILE)["need_date"], later.as_str());
+    // An order from before the planning knew start days is needed today.
+    sqlx::query("UPDATE production.production_orders SET planned_start_date = NULL")
+        .execute(&e.db)
+        .await
+        .unwrap();
+    e.run(PLANNER, json!({})).await;
+    let today = e.today().await;
+    assert_eq!(
+        of(&e.proposals(PLANNER, "").await, PROFILE)["need_date"],
+        today.as_str()
+    );
 }

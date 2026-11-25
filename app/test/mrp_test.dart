@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:tradocraft_app/app/api.dart';
 import 'package:tradocraft_app/features/mrp/mrp_page.dart';
 import 'package:tradocraft_app/l10n/app_localizations.dart';
+import 'package:tradocraft_app/l10n/app_localizations_fr.dart';
 
 import 'fake_http.dart';
 
@@ -65,7 +66,10 @@ FakeHttp _server({
     'purchasing.write',
   ],
   List<Map<String, Object?>>? proposals,
+  // Answers `GET /mrp/proposals` from the request's query instead of a fixed list.
+  List<Map<String, Object?>> Function(Map<String, dynamic> query)? pages,
 }) {
+  late FakeHttp http;
   final list =
       proposals ??
       [
@@ -86,9 +90,10 @@ FakeHttp _server({
           pegging: const [],
         ),
       ];
-  return FakeHttp({
+  http = FakeHttp({
     'GET /api/v1/me': (_) => meJson(permissions),
-    'GET /api/v1/mrp/proposals': (_) => list,
+    'GET /api/v1/mrp/proposals': (_) =>
+        pages == null ? list : pages(http.queries.last),
     'GET /api/v1/mrp/runs': (_) => [_run],
     'POST /api/v1/mrp/runs': (_) => _run,
     'POST /api/v1/mrp/proposals/b/convert': (_) => {
@@ -146,6 +151,7 @@ FakeHttp _server({
       },
     ],
   });
+  return http;
 }
 
 Future<void> _pump(
@@ -187,6 +193,13 @@ Future<void> _pump(
 }
 
 void main() {
+  test('the French order date is the latest day to place the order', () {
+    expect(
+      AppLocalizationsFr().mrpOrderBy('lun. 5 mars'),
+      'Commander au plus tard le lun. 5 mars',
+    );
+  });
+
   testWidgets('lists the proposals with what they are for', (tester) async {
     final http = _server();
     await _pump(tester, http);
@@ -203,10 +216,130 @@ void main() {
     expect(find.text('Needed Wed 10 Mar'), findsNWidgets(3));
     // The latest run, and the open proposals were asked for.
     expect(find.text('Last run: MRP2027-00002'), findsOneWidget);
-    expect(
-      http.queries.firstWhere((q) => q.containsKey('status'))['status'],
-      'open',
+    final first = http.queries.firstWhere((q) => q.containsKey('status'));
+    expect(first['status'], 'open');
+    expect(first['limit'], mrpPageSize);
+    expect(first.containsKey('after'), false);
+  });
+
+  testWidgets('says what became of a proposal that is not open', (
+    tester,
+  ) async {
+    final http = _server(
+      proposals: [
+        _proposal('o', 'purchase', 'OPEN-1'),
+        _proposal(
+          'c',
+          'purchase',
+          'CONV-1',
+          status: 'converted',
+          convertedTo: 'po1',
+        ),
+        _proposal('d', 'production', 'DISM-1', status: 'dismissed'),
+        _proposal('s', 'purchase', 'SUPER-1', status: 'superseded'),
+      ],
     );
+    await _pump(tester, http);
+    // Open proposals carry no status; the others are told apart, a replaced one included.
+    expect(find.byKey(const ValueKey('mrp-status-o')), findsNothing);
+    expect(
+      tester.widget<Text>(find.byKey(const ValueKey('mrp-status-c'))).data,
+      'Converted',
+    );
+    expect(
+      tester.widget<Text>(find.byKey(const ValueKey('mrp-status-d'))).data,
+      'Dismissed',
+    );
+    expect(
+      tester.widget<Text>(find.byKey(const ValueKey('mrp-status-s'))).data,
+      'Replaced',
+    );
+    // Only an open proposal can be acted on.
+    expect(find.byKey(const ValueKey('mrp-convert-o')), findsOneWidget);
+    for (final id in ['c', 'd', 's']) {
+      expect(find.byKey(ValueKey('mrp-convert-$id')), findsNothing);
+      expect(find.byKey(ValueKey('mrp-dismiss-$id')), findsNothing);
+    }
+  });
+
+  testWidgets('the replaced proposals can be asked for', (tester) async {
+    final http = _server();
+    await _pump(tester, http);
+    await tester.tap(find.byKey(const ValueKey('mrp-status')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Replaced').last);
+    await tester.pumpAndSettle();
+    expect(
+      http.queries.where((q) => q.containsKey('status')).last['status'],
+      'superseded',
+    );
+  });
+
+  testWidgets('shows more when a page is full, after the last one shown', (
+    tester,
+  ) async {
+    // 103 proposals: a full page of 100, then the 3 that are left.
+    final all = [
+      for (var i = 0; i < mrpPageSize + 3; i++)
+        _proposal('p$i', 'purchase', 'CODE-$i'),
+    ];
+    final http = _server(
+      pages: (q) {
+        final after = q['after'] as String?;
+        final from = after == null
+            ? 0
+            : all.indexWhere((p) => p['id'] == after) + 1;
+        return all.skip(from).take(q['limit'] as int).toList();
+      },
+    );
+    await _pump(tester, http, size: const Size(1200, 20000));
+    expect(find.byKey(const ValueKey('mrp-more')), findsOneWidget);
+    expect(find.byKey(const ValueKey('mrp-p99')), findsOneWidget);
+    expect(find.byKey(const ValueKey('mrp-p100')), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('mrp-more')));
+    await tester.pumpAndSettle();
+    // The next page started after the last proposal shown, with the same filters.
+    final next = http.queries.where((q) => q.containsKey('after')).single;
+    expect(next['after'], 'p99');
+    expect(next['status'], 'open');
+    expect(next['limit'], mrpPageSize);
+    expect(find.byKey(const ValueKey('mrp-p102')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('mrp-more')),
+      findsNothing,
+      reason: 'a short page is the last',
+    );
+  });
+
+  testWidgets('changing a filter starts again from the first page', (
+    tester,
+  ) async {
+    final all = [
+      for (var i = 0; i < mrpPageSize + 3; i++)
+        _proposal('p$i', 'purchase', 'CODE-$i'),
+    ];
+    final http = _server(
+      pages: (q) {
+        final after = q['after'] as String?;
+        final from = after == null
+            ? 0
+            : all.indexWhere((p) => p['id'] == after) + 1;
+        return all.skip(from).take(q['limit'] as int).toList();
+      },
+    );
+    await _pump(tester, http, size: const Size(1200, 20000));
+    await tester.tap(find.byKey(const ValueKey('mrp-more')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('mrp-p102')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('mrp-kind')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Buy').last);
+    await tester.pumpAndSettle();
+    final last = http.queries.where((q) => q.containsKey('status')).last;
+    expect(last['kind'], 'purchase');
+    expect(last.containsKey('after'), false, reason: 'back to the first page');
+    expect(find.byKey(const ValueKey('mrp-p102')), findsNothing);
+    expect(find.byKey(const ValueKey('mrp-more')), findsOneWidget);
   });
 
   testWidgets('says so when there is nothing to buy or build', (tester) async {

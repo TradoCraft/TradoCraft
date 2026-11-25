@@ -327,6 +327,7 @@ export 'models/modules_input.dart';
 export 'models/move_page.dart';
 export 'models/mrp_conversion.dart';
 export 'models/mrp_convert_input.dart';
+export 'models/mrp_peg.dart';
 export 'models/mrp_proposal.dart';
 export 'models/mrp_run.dart';
 export 'models/mrp_run_input.dart';

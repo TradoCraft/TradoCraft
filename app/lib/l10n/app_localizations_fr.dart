@@ -8695,7 +8695,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String mrpOrderBy(String date) {
-    return 'Commander pour le $date';
+    return 'Commander au plus tard le $date';
   }
 
   @override
@@ -8737,6 +8737,12 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get mrpStatusAll => 'Toutes';
+
+  @override
+  String get mrpStatusSuperseded => 'Remplacée';
+
+  @override
+  String get mrpLoadMore => 'Afficher plus';
 
   @override
   String mrpPegSales(String number) {

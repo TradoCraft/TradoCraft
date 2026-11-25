@@ -6,7 +6,7 @@ use std::collections::{BTreeSet, HashMap, HashSet};
 
 use chrono::{Datelike, Days, NaiveDate};
 use rust_decimal::Decimal;
-use sqlx::{FromRow, PgConnection};
+use sqlx::{Connection, FromRow, PgConnection, PgPool};
 use tradocraft_core::{audit, new_id, numbering, AppError, AppResult, CurrentUser};
 use uuid::Uuid;
 
@@ -63,6 +63,16 @@ struct BuildComponent {
     number: String,
     product_id: Uuid,
     remaining: Decimal,
+    /// The day the order's work starts, when it is known.
+    needed: Option<NaiveDate>,
+}
+
+#[derive(FromRow)]
+struct Preferred {
+    product_id: Uuid,
+    supplier_id: Uuid,
+    moq: Decimal,
+    lead_time_days: i32,
 }
 
 #[derive(FromRow)]
@@ -86,18 +96,88 @@ fn peg(kind: PegKind, id: Uuid, number: &str, quantity: Decimal) -> Peg {
     }
 }
 
-/// Runs the planning and keeps its proposals. The open proposals of earlier runs are replaced
-/// (marked `superseded`); the converted and dismissed ones stay as they were.
-pub async fn run(
-    conn: &mut PgConnection,
+/// The name of the lock that serialises everything that changes the proposals of a company: a run
+/// (which replaces the open ones), converting a proposal and dismissing one.
+fn lock_name(company: Uuid) -> String {
+    format!("mrp:{company}")
+}
+
+/// Takes the company's planning lock for the rest of the transaction. A conversion or a dismissal
+/// calls this first: it waits for a run in progress and then finds its proposal superseded, and a
+/// run waits for it and then sees the order it made.
+pub(crate) async fn lock_company(conn: &mut PgConnection, company: Uuid) -> AppResult<()> {
+    sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))")
+        .bind(lock_name(company))
+        .execute(conn)
+        .await?;
+    Ok(())
+}
+
+/// Runs the planning for a company: alone (a second run, a conversion and a dismissal of the same
+/// company wait for it, other companies do not) and on one snapshot of the data, so that the
+/// demand, the supply and the stock it reads belong together.
+///
+/// The lock is a session lock taken on a connection of its own *before* the transaction starts: a
+/// snapshot is fixed by the first statement of a repeatable-read transaction, so a lock taken
+/// inside it would be waited for with a snapshot that does not yet show what the holder commits.
+/// The work runs in a task of its own so that a client that goes away cannot leave the lock held.
+pub async fn run_locked(
+    pool: &PgPool,
     user: &CurrentUser,
     horizon_days: i32,
 ) -> AppResult<RunOutcome> {
+    check_horizon(horizon_days)?;
+    let pool = pool.clone();
+    let user = user.clone();
+    tokio::spawn(async move {
+        let key = lock_name(user.company_id);
+        let mut conn = pool.acquire().await?;
+        sqlx::query("SELECT pg_advisory_lock(hashtextextended($1, 0))")
+            .bind(&key)
+            .execute(&mut *conn)
+            .await?;
+        let result = async {
+            let mut tx = conn.begin().await?;
+            sqlx::query("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
+                .execute(&mut *tx)
+                .await?;
+            let outcome = run(&mut tx, &user, horizon_days).await?;
+            tx.commit().await?;
+            Ok::<_, AppError>(outcome)
+        }
+        .await;
+        let unlocked = sqlx::query("SELECT pg_advisory_unlock(hashtextextended($1, 0))")
+            .bind(&key)
+            .execute(&mut *conn)
+            .await;
+        if unlocked.is_err() {
+            // Closing the session releases the lock; the connection is not given back to the pool.
+            let _ = conn.detach().close().await;
+        }
+        result
+    })
+    .await
+    .map_err(|e| AppError::Internal(e.into()))?
+}
+
+fn check_horizon(horizon_days: i32) -> AppResult<()> {
     if !(1..=MAX_HORIZON_DAYS).contains(&horizon_days) {
         return Err(AppError::Validation(format!(
             "the horizon must be between 1 and {MAX_HORIZON_DAYS} days"
         )));
     }
+    Ok(())
+}
+
+/// Runs the planning and keeps its proposals. The open proposals of earlier runs are replaced
+/// (marked `superseded`); the converted and dismissed ones stay as they were. The caller holds the
+/// company's lock ([`run_locked`]).
+pub async fn run(
+    conn: &mut PgConnection,
+    user: &CurrentUser,
+    horizon_days: i32,
+) -> AppResult<RunOutcome> {
+    check_horizon(horizon_days)?;
     let company = user.company_id;
     let today = tradocraft_core::today();
     let horizon_end = today
@@ -150,7 +230,8 @@ pub async fn run(
     .await?;
     let components: Vec<BuildComponent> = sqlx::query_as(
         "SELECT po.id, po.number, c.component_product_id AS product_id,
-                c.required_quantity - c.consumed_quantity AS remaining
+                c.required_quantity - c.consumed_quantity AS remaining,
+                po.planned_start_date AS needed
          FROM production.order_components c
          JOIN production.production_orders po ON po.id = c.production_order_id
          WHERE po.company_id = $1 AND po.status IN ('released', 'in_progress')
@@ -184,9 +265,10 @@ pub async fn run(
         });
     }
     for c in &components {
-        // Reserved at release, but still in the warehouse until it is used.
+        // Reserved at release, but still in the warehouse until it is used: needed from the day the
+        // work starts (today for an order that has no start day; a day gone by counts as today).
         requirements.entry(c.product_id).or_default().push(Flow {
-            date: today,
+            date: c.needed.unwrap_or(today),
             quantity: c.remaining,
             peg: peg(PegKind::ProductionOrder, c.id, &c.number, c.remaining),
         });
@@ -194,7 +276,7 @@ pub async fn run(
 
     // The products to plan: everything with a requirement or a supply, everything that keeps a
     // stock level, and (below) whatever the built ones are made of.
-    let mut queue: Vec<Uuid> = requirements
+    let mut frontier: Vec<Uuid> = requirements
         .keys()
         .chain(incoming.keys())
         .copied()
@@ -208,50 +290,51 @@ pub async fn run(
     )
     .fetch_all(&mut *conn)
     .await?;
-    queue.extend(kept);
+    frontier.extend(kept);
+    // One query per level of the bills of materials, not one per product.
     let mut seen: HashSet<Uuid> = HashSet::new();
     let mut infos: Vec<(ProductInfo, Option<Vec<BomUse>>)> = Vec::new();
-    while let Some(pid) = queue.pop() {
-        if !seen.insert(pid) {
-            continue;
+    loop {
+        let batch: Vec<Uuid> = frontier.drain(..).filter(|p| seen.insert(*p)).collect();
+        if batch.is_empty() {
+            break;
         }
-        let Some(info): Option<ProductInfo> = sqlx::query_as(
+        let rows: Vec<ProductInfo> = sqlx::query_as(
             "SELECT id, code, product_type, lead_time_days, reorder_min, reorder_max,
                     safety_stock, order_multiple
-             FROM products.products WHERE id = $1",
+             FROM products.products WHERE id = ANY($1)",
         )
-        .bind(pid)
-        .fetch_optional(&mut *conn)
-        .await?
-        else {
-            continue;
-        };
-        if info.product_type == "service" {
-            continue;
+        .bind(&batch)
+        .fetch_all(&mut *conn)
+        .await?;
+        for info in rows {
+            if info.product_type == "service" {
+                continue;
+            }
+            let built = matches!(info.product_type.as_str(), "manufactured" | "configurable");
+            let bom = if built {
+                tradocraft_engineering::bom::active_bom_lines(&mut *conn, info.id)
+                    .await?
+                    .map(|(_, _, lines)| lines)
+                    .filter(|l| !l.is_empty())
+            } else {
+                None
+            };
+            let uses = bom.map(|lines| {
+                lines
+                    .into_iter()
+                    .map(|l| {
+                        frontier.push(l.component_product_id);
+                        BomUse {
+                            component: l.component_product_id,
+                            quantity: l.quantity,
+                            scrap_percent: l.scrap_percent,
+                        }
+                    })
+                    .collect::<Vec<_>>()
+            });
+            infos.push((info, uses));
         }
-        let built = matches!(info.product_type.as_str(), "manufactured" | "configurable");
-        let bom = if built {
-            tradocraft_engineering::bom::active_bom_lines(&mut *conn, pid)
-                .await?
-                .map(|(_, _, lines)| lines)
-                .filter(|l| !l.is_empty())
-        } else {
-            None
-        };
-        let uses = bom.map(|lines| {
-            lines
-                .into_iter()
-                .map(|l| {
-                    queue.push(l.component_product_id);
-                    BomUse {
-                        component: l.component_product_id,
-                        quantity: l.quantity,
-                        scrap_percent: l.scrap_percent,
-                    }
-                })
-                .collect::<Vec<_>>()
-        });
-        infos.push((info, uses));
     }
 
     // Stock in the normal warehouses (reserved stock included: what is reserved is a requirement).
@@ -270,25 +353,41 @@ pub async fn run(
     .await?;
     let on_hand: HashMap<Uuid, Decimal> = stock.into_iter().collect();
 
+    // The preferred supplier of everything that is bought, in one query.
+    let bought: Vec<Uuid> = infos
+        .iter()
+        .filter(|(_, uses)| uses.is_none())
+        .map(|(i, _)| i.id)
+        .collect();
+    let preferred: HashMap<Uuid, Preferred> = sqlx::query_as::<_, Preferred>(
+        "SELECT DISTINCT ON (product_id) product_id, supplier_id, moq, lead_time_days
+         FROM purchasing.supplier_products
+         WHERE company_id = $1 AND product_id = ANY($2) AND is_preferred
+         ORDER BY product_id, created_at, id",
+    )
+    .bind(company)
+    .bind(&bought)
+    .fetch_all(&mut *conn)
+    .await?
+    .into_iter()
+    .map(|p| (p.product_id, p))
+    .collect();
+
     let mut items: Vec<Item> = Vec::with_capacity(infos.len());
     for (info, uses) in infos {
         let (supply, lead) = match uses {
             Some(_) => (Supply::Make, info.lead_time_days.unwrap_or(0)),
             None => {
-                let preferred =
-                    tradocraft_purchasing::supplier_products::get_preferred_supplier_for_product(
-                        &mut *conn, company, info.id,
-                    )
-                    .await?;
+                let preferred = preferred.get(&info.id);
+                // The supplier's lead time wins when it has one; else the product's.
                 let lead = preferred
-                    .as_ref()
                     .map(|p| p.lead_time_days)
                     .filter(|d| *d > 0)
                     .or(info.lead_time_days)
                     .unwrap_or(0);
                 (
                     Supply::Buy {
-                        supplier_id: preferred.as_ref().map(|p| p.supplier_id),
+                        supplier_id: preferred.map(|p| p.supplier_id),
                         moq: preferred.map(|p| p.moq).unwrap_or(Decimal::ZERO),
                     },
                     lead,

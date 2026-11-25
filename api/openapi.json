@@ -16314,7 +16314,7 @@
         "tags": [
           "mrp"
         ],
-        "summary": "The proposals, by the day to order. What the user may not read (production or purchasing) is\nleft out.",
+        "summary": "The proposals, by the day to order, a page at a time (`limit`, and `after` with the id of the\nlast one of the page before). What the user may not read (production or purchasing) is left out.",
         "operationId": "list_proposals",
         "parameters": [
           {
@@ -16356,6 +16356,32 @@
           {
             "name": "run_id",
             "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many to return: 1 to 500, default 100.",
+            "required": false,
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "description": "Continue after this proposal (the last of the previous page): the list is ordered by the day\nto order, the need date, the product code and the id, so the next page starts right after it.",
             "required": false,
             "schema": {
               "type": [
@@ -47536,6 +47562,36 @@
           }
         }
       },
+      "MrpPeg": {
+        "type": "object",
+        "description": "What a proposed quantity is for.",
+        "required": [
+          "kind",
+          "number",
+          "quantity"
+        ],
+        "properties": {
+          "id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "The order, when the requirement is one."
+          },
+          "kind": {
+            "type": "string",
+            "description": "`sales_order`, `production_order`, `purchase_order` or `planned` (a component of a proposed\nbuild)."
+          },
+          "number": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "string",
+            "description": "The quantity of that requirement."
+          }
+        }
+      },
       "MrpProposal": {
         "type": "object",
         "description": "A proposal to buy or build.",
@@ -47594,8 +47650,11 @@
             "description": "When to order, or to start the build."
           },
           "pegging": {
-            "type": "object",
-            "description": "What the quantity is for: `[{kind, id, number, quantity}]`, kind `sales_order`,\n`production_order`, `purchase_order` or `planned` (a component of a proposed build)."
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MrpPeg"
+            },
+            "description": "What the quantity is for."
           },
           "product_code": {
             "type": "string"

@@ -8727,6 +8727,12 @@ class AppLocalizationsNl extends AppLocalizations {
   String get mrpStatusAll => 'Alle';
 
   @override
+  String get mrpStatusSuperseded => 'Vervangen';
+
+  @override
+  String get mrpLoadMore => 'Meer tonen';
+
+  @override
   String mrpPegSales(String number) {
     return 'Bestelling $number';
   }

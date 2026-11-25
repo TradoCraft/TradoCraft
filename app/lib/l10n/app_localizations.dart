@@ -15516,6 +15516,18 @@ abstract class AppLocalizations {
   /// **'All'**
   String get mrpStatusAll;
 
+  /// No description provided for @mrpStatusSuperseded.
+  ///
+  /// In en, this message translates to:
+  /// **'Replaced'**
+  String get mrpStatusSuperseded;
+
+  /// No description provided for @mrpLoadMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Show more'**
+  String get mrpLoadMore;
+
   /// No description provided for @mrpPegSales.
   ///
   /// In en, this message translates to:

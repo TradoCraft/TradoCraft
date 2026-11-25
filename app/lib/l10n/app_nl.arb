@@ -2917,6 +2917,8 @@
   "mrpStatusConverted": "Omgezet",
   "mrpStatusDismissed": "Verworpen",
   "mrpStatusAll": "Alle",
+  "mrpStatusSuperseded": "Vervangen",
+  "mrpLoadMore": "Meer tonen",
   "mrpPegSales": "Bestelling {number}",
   "@mrpPegSales": {
     "placeholders": {

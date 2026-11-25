@@ -11,7 +11,10 @@ import '../../l10n/l10n.dart';
 const mrpHorizons = [30, 90, 180];
 
 /// The statuses of the filter: the open proposals first.
-const _statuses = ['open', 'converted', 'dismissed', 'all'];
+const _statuses = ['open', 'converted', 'dismissed', 'superseded', 'all'];
+
+/// How many proposals a page holds.
+const mrpPageSize = 100;
 
 /// The proposals of the material requirements planning (ADR 0091): what to buy and what to build,
 /// by the day to order. A planner runs the planning, then turns a proposal into a draft purchase
@@ -28,17 +31,79 @@ class _MrpPageState extends ConsumerState<MrpPage> {
   String? _kind;
   int _horizon = 90;
   bool _busy = false;
-  Future<List<MrpProposal>>? _proposals;
+  List<MrpProposal> _items = const [];
+  bool _loading = true;
+  bool _loadingMore = false;
+  bool _hasMore = false;
+  Object? _error;
+  // A reload that overtakes a page still on its way: the late page is dropped.
+  int _token = 0;
   Future<List<MrpRun>>? _runs;
+  bool _started = false;
 
-  Future<List<MrpProposal>> _loadProposals() =>
-      ref.read(apiProvider).mrp.listProposals(status: _status, kind: _kind);
+  /// The first page of the list for the current filters; what was shown is cleared, so the old
+  /// filter's proposals are never under the new filter's name.
+  Future<void> _loadFirst() async {
+    final token = ++_token;
+    setState(() {
+      _loading = true;
+      _error = null;
+      _items = const [];
+      _hasMore = false;
+    });
+    try {
+      final page = await ref
+          .read(apiProvider)
+          .mrp
+          .listProposals(status: _status, kind: _kind, limit: mrpPageSize);
+      if (!mounted || token != _token) return;
+      setState(() {
+        _items = page;
+        _hasMore = page.length == mrpPageSize;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted || token != _token) return;
+      setState(() {
+        _error = e;
+        _loading = false;
+      });
+    }
+  }
+
+  /// The next page: after the last proposal shown, with the same filters.
+  Future<void> _loadMore() async {
+    if (_loadingMore || _items.isEmpty) return;
+    final token = _token;
+    setState(() => _loadingMore = true);
+    try {
+      final page = await ref
+          .read(apiProvider)
+          .mrp
+          .listProposals(
+            status: _status,
+            kind: _kind,
+            limit: mrpPageSize,
+            after: _items.last.id,
+          );
+      if (!mounted || token != _token) return;
+      setState(() {
+        _items = [..._items, ...page];
+        _hasMore = page.length == mrpPageSize;
+        _loadingMore = false;
+      });
+    } catch (e) {
+      if (!mounted || token != _token) return;
+      setState(() {
+        _error = e;
+        _loadingMore = false;
+      });
+    }
+  }
 
   void _reload() {
-    setState(() {
-      _proposals = _loadProposals();
-      _runs = ref.read(apiProvider).mrp.listRuns();
-    });
+    _runs = ref.read(apiProvider).mrp.listRuns();
+    _loadFirst();
   }
 
   Future<void> _run() async {
@@ -148,6 +213,7 @@ class _MrpPageState extends ConsumerState<MrpPage> {
       'open' => l.mrpStatusOpen,
       'converted' => l.mrpStatusConverted,
       'dismissed' => l.mrpStatusDismissed,
+      'superseded' => l.mrpStatusSuperseded,
       _ => l.mrpStatusAll,
     };
   }
@@ -157,8 +223,14 @@ class _MrpPageState extends ConsumerState<MrpPage> {
     final l = context.l10n;
     final perms = ref.watch(meProvider).value?.permissions.toSet() ?? const {};
     final canRun = perms.contains('production.write');
-    _proposals ??= _loadProposals();
-    _runs ??= ref.read(apiProvider).mrp.listRuns();
+    if (!_started) {
+      _started = true;
+      _runs = ref.read(apiProvider).mrp.listRuns();
+      // After the first frame: loading starts with a state change.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _loadFirst();
+      });
+    }
     return Scaffold(
       appBar: AppBar(title: Text(l.mrpTitle)),
       body: Column(
@@ -244,45 +316,58 @@ class _MrpPageState extends ConsumerState<MrpPage> {
               ],
             ),
           ),
-          Expanded(
-            child: FutureBuilder<List<MrpProposal>>(
-              future: _proposals,
-              builder: (context, s) {
-                if (s.hasError) {
-                  return Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(errorMessage(s.error!)),
-                        TextButton(onPressed: _reload, child: Text(l.retry)),
-                      ],
-                    ),
-                  );
-                }
-                if (s.connectionState != ConnectionState.done || !s.hasData) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                final list = s.data!;
-                if (list.isEmpty) {
-                  return Center(child: Text(l.mrpEmpty));
-                }
-                return ListView.separated(
-                  key: const ValueKey('mrp-list'),
-                  itemCount: list.length,
-                  separatorBuilder: (_, _) => const Divider(height: 1),
-                  itemBuilder: (context, i) => _tile(context, list[i], perms),
-                );
-              },
-            ),
-          ),
+          Expanded(child: _body(context, perms)),
         ],
       ),
     );
   }
 
-  String _peg(AppLocalizations l, Map<String, dynamic> p) {
-    final number = '${p['number']}';
-    return switch (p['kind']) {
+  Widget _body(BuildContext context, Set<String> perms) {
+    final l = context.l10n;
+    if (_error != null && _items.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(errorMessage(_error!)),
+            TextButton(onPressed: _reload, child: Text(l.retry)),
+          ],
+        ),
+      );
+    }
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_items.isEmpty) {
+      return Center(child: Text(l.mrpEmpty));
+    }
+    return ListView.separated(
+      key: const ValueKey('mrp-list'),
+      itemCount: _items.length + (_hasMore ? 1 : 0),
+      separatorBuilder: (_, _) => const Divider(height: 1),
+      itemBuilder: (context, i) {
+        if (i == _items.length) {
+          return Padding(
+            padding: const EdgeInsets.all(12),
+            child: Center(
+              child: _loadingMore
+                  ? const CircularProgressIndicator()
+                  : OutlinedButton(
+                      key: const ValueKey('mrp-more'),
+                      onPressed: _loadMore,
+                      child: Text(l.mrpLoadMore),
+                    ),
+            ),
+          );
+        }
+        return _tile(context, _items[i], perms);
+      },
+    );
+  }
+
+  String _peg(AppLocalizations l, MrpPeg p) {
+    final number = p.number;
+    return switch (p.kind) {
       'sales_order' => l.mrpPegSales(number),
       'production_order' => l.mrpPegProduction(number),
       'purchase_order' => l.mrpPegPurchase(number),
@@ -298,12 +383,7 @@ class _MrpPageState extends ConsumerState<MrpPage> {
     final canAct = perms.contains(
       p.kind == 'purchase' ? 'purchasing.write' : 'production.write',
     );
-    final pegs =
-        (p.pegging as List?)
-            ?.map((e) => _peg(l, Map<String, dynamic>.from(e as Map)))
-            .toSet()
-            .toList() ??
-        const <String>[];
+    final pegs = p.pegging.map((e) => _peg(l, e)).toSet().toList();
     return ListTile(
       key: ValueKey('mrp-${p.id}'),
       leading: Icon(
@@ -323,6 +403,17 @@ class _MrpPageState extends ConsumerState<MrpPage> {
           Text(l.mrpNeededOn(fmt.format(p.needDate))),
           if (p.supplierName != null) Text(p.supplierName!),
           Text(p.reason == 'demand' ? l.mrpReasonDemand : l.mrpReasonSafety),
+          // What became of a proposal that is not open any more: converted, dismissed, or replaced
+          // by a later run.
+          if (p.status != 'open')
+            Text(
+              _statusLabel(p.status),
+              key: ValueKey('mrp-status-${p.id}'),
+              style: TextStyle(
+                color: scheme.primary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           if (p.lateValue)
             Text(
               l.mrpLate,

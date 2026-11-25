@@ -17,7 +17,7 @@ use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 use uuid::Uuid;
 
-use crate::run::{run, DEFAULT_HORIZON_DAYS, MAX_HORIZON_DAYS};
+use crate::run::{lock_company, run_locked, DEFAULT_HORIZON_DAYS};
 
 type ErrorBody = tradocraft_core::error::ErrorBody;
 
@@ -32,6 +32,20 @@ pub struct MrpRun {
     /// How many proposals it made.
     pub proposals: i32,
     pub created_at: DateTime<Utc>,
+}
+
+/// What a proposed quantity is for.
+#[derive(Debug, Serialize, ToSchema)]
+pub struct MrpPeg {
+    /// `sales_order`, `production_order`, `purchase_order` or `planned` (a component of a proposed
+    /// build).
+    pub kind: String,
+    /// The order, when the requirement is one.
+    pub id: Option<Uuid>,
+    pub number: String,
+    /// The quantity of that requirement.
+    #[schema(value_type = String)]
+    pub quantity: Decimal,
 }
 
 /// A proposal to buy or build.
@@ -57,9 +71,8 @@ pub struct MrpProposal {
     pub supplier_name: Option<String>,
     /// `demand` (a requirement is not covered) or `safety_stock`.
     pub reason: String,
-    /// What the quantity is for: `[{kind, id, number, quantity}]`, kind `sales_order`,
-    /// `production_order`, `purchase_order` or `planned` (a component of a proposed build).
-    #[schema(value_type = Object)]
+    /// What the quantity is for.
+    #[schema(value_type = Vec<MrpPeg>)]
     pub pegging: serde_json::Value,
     /// `open`, `converted`, `dismissed` or `superseded` (a later run replaced it).
     pub status: String,
@@ -110,15 +123,14 @@ async fn start_run(
     Json(input): Json<MrpRunInput>,
 ) -> AppResult<(StatusCode, Json<MrpRun>)> {
     user.require(Permission::ProductionWrite)?;
-    let mut tx = state.db.begin().await?;
-    let outcome = run(
-        &mut tx,
+    let outcome = run_locked(
+        &state.db,
         &user,
         input.horizon_days.unwrap_or(DEFAULT_HORIZON_DAYS),
     )
     .await?;
-    let out = load_run(&mut tx, user.company_id, outcome.id).await?;
-    tx.commit().await?;
+    let mut conn = state.db.acquire().await?;
+    let out = load_run(&mut conn, user.company_id, outcome.id).await?;
     Ok((StatusCode::CREATED, Json(out)))
 }
 
@@ -161,10 +173,15 @@ pub struct ProposalParams {
     pub kind: Option<String>,
     pub product_id: Option<Uuid>,
     pub run_id: Option<Uuid>,
+    /// How many to return: 1 to 500, default 100.
+    pub limit: Option<i64>,
+    /// Continue after this proposal (the last of the previous page): the list is ordered by the day
+    /// to order, the need date, the product code and the id, so the next page starts right after it.
+    pub after: Option<Uuid>,
 }
 
-/// The proposals, by the day to order. What the user may not read (production or purchasing) is
-/// left out.
+/// The proposals, by the day to order, a page at a time (`limit`, and `after` with the id of the
+/// last one of the page before). What the user may not read (production or purchasing) is left out.
 #[utoipa::path(get, path = "/mrp/proposals", tag = "mrp", params(ProposalParams),
     responses((status = 200, body = Vec<MrpProposal>), (status = 403, body = ErrorBody), (status = 422, body = ErrorBody)))]
 async fn list_proposals(
@@ -185,13 +202,31 @@ async fn list_proposals(
             return Err(AppError::Validation(format!("unknown kind {k}")));
         }
     }
+    if let Some(after) = p.after {
+        let known: bool = sqlx::query_scalar(
+            "SELECT EXISTS (SELECT 1 FROM mrp.proposals WHERE id = $1 AND company_id = $2)",
+        )
+        .bind(after)
+        .bind(user.company_id)
+        .fetch_one(&state.db)
+        .await?;
+        if !known {
+            return Err(AppError::Validation(
+                "after is not a proposal of this company".into(),
+            ));
+        }
+    }
     Ok(Json(
         sqlx::query_as(sqlx::AssertSqlSafe(format!(
             "{SELECT_PROPOSAL}
              WHERE p.company_id = $1 AND ($2::text IS NULL OR p.status = $2)
                AND ($3::text IS NULL OR p.kind = $3) AND ($4::uuid IS NULL OR p.product_id = $4)
                AND ($5::uuid IS NULL OR p.run_id = $5) AND p.kind = ANY($6)
-             ORDER BY p.order_date, p.need_date, pr.code LIMIT 500"
+               AND ($7::uuid IS NULL OR (p.order_date, p.need_date, pr.code, p.id) > (
+                    SELECT a.order_date, a.need_date, ap.code, a.id
+                    FROM mrp.proposals a JOIN products.products ap ON ap.id = a.product_id
+                    WHERE a.id = $7 AND a.company_id = $1))
+             ORDER BY p.order_date, p.need_date, pr.code, p.id LIMIT $8"
         )))
         .bind(user.company_id)
         .bind(status)
@@ -199,6 +234,8 @@ async fn list_proposals(
         .bind(p.product_id)
         .bind(p.run_id)
         .bind(kinds)
+        .bind(p.after)
+        .bind(p.limit.unwrap_or(100).clamp(1, 500))
         .fetch_all(&state.db)
         .await?,
     ))
@@ -230,6 +267,8 @@ struct Locked {
 /// Locks an open proposal and checks who may act on it: a purchase proposal needs purchasing
 /// rights, a production proposal production rights.
 async fn lock_open(conn: &mut PgConnection, user: &CurrentUser, id: Uuid) -> AppResult<Locked> {
+    // After a run in progress, which may have replaced the proposal; and before the next run.
+    lock_company(conn, user.company_id).await?;
     let p: Locked = sqlx::query_as(
         "SELECT p.kind, p.product_id, p.quantity, p.need_date, p.order_date, p.supplier_id,
                 p.status, r.number AS run_number
@@ -410,6 +449,3 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(convert_proposal))
         .routes(routes!(dismiss_proposal))
 }
-
-/// The longest horizon, for the documentation of the input.
-pub const _MAX_HORIZON_DAYS: i32 = MAX_HORIZON_DAYS;

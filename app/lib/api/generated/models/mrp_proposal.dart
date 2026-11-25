@@ -4,6 +4,8 @@
 
 import 'package:json_annotation/json_annotation.dart';
 
+import 'mrp_peg.dart';
+
 part 'mrp_proposal.g.dart';
 
 /// A proposal to buy or build.
@@ -56,9 +58,8 @@ class MrpProposal {
   @JsonKey(name: 'order_date')
   final DateTime orderDate;
 
-  /// What the quantity is for: `[{kind, id, number, quantity}]`, kind `sales_order`,.
-  /// `production_order`, `purchase_order` or `planned` (a component of a proposed build).
-  final dynamic pegging;
+  /// What the quantity is for.
+  final List<MrpPeg> pegging;
   @JsonKey(name: 'product_code')
   final String productCode;
   @JsonKey(name: 'product_id')

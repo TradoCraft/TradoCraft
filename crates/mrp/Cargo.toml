@@ -13,6 +13,7 @@ tradocraft-production.workspace = true
 tradocraft-purchasing.workspace = true
 axum.workspace = true
 sqlx.workspace = true
+tokio.workspace = true
 utoipa.workspace = true
 utoipa-axum.workspace = true
 chrono.workspace = true
