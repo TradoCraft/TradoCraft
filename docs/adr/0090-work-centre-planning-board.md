@@ -19,8 +19,11 @@ with translated message keys.
 2. **Finite rule** (`finite::schedule_finite`). A day offers the centre's capacity minutes (one unit's
    minutes times its parallel units) minus the minutes the other operations already book. One
    operation runs on one unit, so it takes at most one unit's minutes of a day however many units
-   are free. Operations of one call count against each other. A centre with no free working day in
-   two years gives up with the same message as infinite scheduling.
+   are free. Operations of one call count against each other. Only the first and the last day of an
+   operation are stored and everything that reads them spreads its minutes over that range in
+   proportion, so a range found by filling free minutes is also checked against that split; when a
+   day would overload, the search goes on from the next day. A centre with no free capacity in two
+   years gives up.
 3. **Conflicts of a move** (`finite::detect`, pure). Errors, which need `force` (except an inactive
    work centre and an operation that has started or finished, which are never moved): inactive work centre,
    operation already started or finished, a first or last day without working minutes (closure or
@@ -34,7 +37,8 @@ with translated message keys.
    operations of released and in-progress orders with the neighbouring dates the checks need.
    `PUT /production-orders/{id}/operations/{operation_id}/move?dry_run&force` (`production.write`) takes
    the body of the existing operation update and returns the conflicts; `dry_run` never writes, errors
-   without `force` are a 409 naming the conflict keys (a forced move is also recorded as
+   without `force` are a 409 whose body is the whole report (`applied: false`, every conflict with
+   its severity and day, warnings included; a forced move is also recorded as
    `operation_move_forced`), a write records `operation_updated` in the audit
    trail like the unchecked `PUT`, which stays for compatibility. No new permission and no new module.
 5. **Finite re-schedule.** `POST /production-orders/{id}/schedule` takes `finite: true` to place the
@@ -47,6 +51,13 @@ with translated message keys.
    a move with errors, late operations listed beside the board, an agenda under 720 px).
 
 **Consequences.**
+
+- A real move locks the target work centre row (after the order and the operation) and the finite
+  re-schedule locks the centres it reads, in id order, so two writers onto one centre are checked one
+  after the other and a centre cannot be deactivated under a move. The board reads capacity and
+  operations in one repeatable-read snapshot.
+- A booking's minutes are spread with the closures that fall inside its range, so the calendar reaches
+  back to the earliest overlapping booking, not only to the dates being checked.
 
 - No stored data changes, so nothing to back-fill; the finite rule only applies to the new board, the
   move endpoint and the `finite` option.

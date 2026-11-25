@@ -103,12 +103,13 @@ class _WorkCentreBoardPageState extends ConsumerState<WorkCentreBoardPage> {
     final op = drop.data.payload as ProductionBoardOperation;
     final token = ++_token;
     _debounce?.cancel();
-    final span = dateOnly(op.plannedEnd).difference(dateOnly(op.plannedStart));
-    final start = dateOnly(drop.start)
-        .add(const Duration(minutes: workCentreAxisStart));
-    final end = dateOnly(drop.start)
-        .add(Duration(days: span.inDays))
-        .add(const Duration(minutes: workCentreAxisEnd));
+    final days = calendarDays(op.plannedStart, op.plannedEnd);
+    final first = dateOnly(drop.start);
+    final start = atMinute(first, workCentreAxisStart);
+    final end = atMinute(
+      DateTime(first.year, first.month, first.day + days),
+      workCentreAxisEnd,
+    );
     setState(() {
       _preview = BoardPreview(rowId: drop.rowId, start: start, end: end);
       _previewConflicts = null;
@@ -142,11 +143,11 @@ class _WorkCentreBoardPageState extends ConsumerState<WorkCentreBoardPage> {
     final messenger = ScaffoldMessenger.maybeOf(context);
     try {
       final conflicts = await _check(op, drop);
+      if (!mounted) return;
       var force = false;
       if (hasMoveErrors(conflicts)) {
-        if (!mounted) return;
         final ok = await _confirm(l, locale, conflicts);
-        if (ok != true) return;
+        if (ok != true || !mounted) return;
         force = true;
       }
       await ref
@@ -161,8 +162,28 @@ class _WorkCentreBoardPageState extends ConsumerState<WorkCentreBoardPage> {
       messenger?.showSnackBar(SnackBar(content: Text(l.productionBoardMoved)));
       if (mounted) _reload();
     } on DioException catch (e) {
-      messenger?.showSnackBar(SnackBar(content: Text(errorMessage(e))));
+      messenger?.showSnackBar(SnackBar(content: Text(_refusal(l, locale, e))));
     }
+  }
+
+  /// The text of a failed move: a refused move (409) names its conflicts, anything else is the
+  /// server's message.
+  String _refusal(AppLocalizations l, String locale, DioException e) {
+    final data = e.response?.data;
+    if (e.response?.statusCode == 409 &&
+        data is Map &&
+        data['conflicts'] is List) {
+      final report = ProductionOperationMove.fromJson(
+        Map<String, Object?>.from(data),
+      );
+      final errors = report.conflicts.where((c) => c.severity == 'error');
+      if (errors.isNotEmpty) {
+        return errors
+            .map((c) => productionConflictText(l, c, locale))
+            .join(' ');
+      }
+    }
+    return errorMessage(e);
   }
 
   /// Asks before a move with errors; a move the server will refuse whatever is asked only informs.
@@ -220,38 +241,45 @@ class _WorkCentreBoardPageState extends ConsumerState<WorkCentreBoardPage> {
       appBar: AppBar(title: Text(l.productionBoardTitle)),
       body: !perms.contains('production.read')
           ? const SizedBox.shrink()
-          : FutureBuilder<ProductionPlanningBoard>(
-              future: _board,
-              builder: (context, s) {
-                if (s.hasError) {
-                  return Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(errorMessage(s.error!)),
-                        TextButton(onPressed: _reload, child: Text(l.retry)),
-                      ],
-                    ),
-                  );
-                }
-                if (!s.hasData) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                final b = s.data!;
-                return Column(
-                  children: [
-                    _toolbar(context),
-                    _banner(context),
-                    Expanded(
-                      child: b.centres.isEmpty
+          : Column(
+              children: [
+                // Outside the future: the week can be changed while a week is loading.
+                _toolbar(context),
+                _banner(context),
+                Expanded(
+                  child: FutureBuilder<ProductionPlanningBoard>(
+                    future: _board,
+                    builder: (context, s) {
+                      if (s.hasError) {
+                        return Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(errorMessage(s.error!)),
+                              TextButton(
+                                onPressed: _reload,
+                                child: Text(l.retry),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+                      // A builder keeps the last answer while the next one is on its way; it
+                      // belongs to another week, so wait for this one.
+                      if (s.connectionState != ConnectionState.done ||
+                          !s.hasData) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      final b = s.data!;
+                      return b.centres.isEmpty
                           ? Center(child: Text(l.productionCapacityEmpty))
                           : phone
                           ? _agenda(b)
-                          : _wide(b, perms.contains('production.write')),
-                    ),
-                  ],
-                );
-              },
+                          : _wide(b, perms.contains('production.write'));
+                    },
+                  ),
+                ),
+              ],
             ),
     );
   }

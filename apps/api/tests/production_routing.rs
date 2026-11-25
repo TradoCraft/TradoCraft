@@ -3792,9 +3792,13 @@ impl Env {
     }
 
     async fn release_frames(&self, quantity: &str) -> Value {
+        self.release_frames_from(quantity, "2027-03-01").await
+    }
+
+    async fn release_frames_from(&self, quantity: &str, start: &str) -> Value {
         let (order, line) = self.order(FRAME, quantity).await;
         let (status, po) = self
-            .release(&order, &line, json!({ "start_date": "2027-03-01" }))
+            .release(&order, &line, json!({ "start_date": start }))
             .await;
         assert_eq!(status, StatusCode::CREATED, "{po}");
         po
@@ -3909,6 +3913,30 @@ async fn the_board_lists_open_operations_with_capacity_and_their_neighbours(db: 
         e.board(PLANNER, "from=2027-03-07&to=2027-03-01").await.0,
         StatusCode::UNPROCESSABLE_ENTITY
     );
+    // 62 days counted inclusively are fine (`to` is 61 days after `from`), 63 are not.
+    for (to, expected) in [
+        ("2027-05-01", StatusCode::OK),
+        ("2027-05-02", StatusCode::UNPROCESSABLE_ENTITY),
+    ] {
+        assert_eq!(
+            e.board(PLANNER, &format!("from=2027-03-01&to={to}"))
+                .await
+                .0,
+            expected,
+            "board to {to}"
+        );
+        assert_eq!(
+            get(
+                &e.app,
+                PLANNER,
+                &format!("/production/capacity?from=2027-03-01&to={to}")
+            )
+            .await
+            .0,
+            expected,
+            "capacity to {to}"
+        );
+    }
 }
 
 #[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
@@ -3954,7 +3982,13 @@ async fn a_move_is_checked_before_it_is_made(db: PgPool) {
     let body = json!({ "planned_start": "2027-03-06", "planned_end": "2027-03-06" });
     let (status, r) = put(&e.app, PLANNER, &mv(&cut, ""), body.clone()).await;
     assert_eq!(status, StatusCode::CONFLICT, "{r}");
-    assert!(r.to_string().contains("on_closure"), "{r}");
+    // The refusal carries the whole report, warnings included, and nothing was applied.
+    assert_eq!(r["applied"], false, "{r}");
+    assert_eq!(r["order"], Value::Null);
+    assert!(conflict_kinds(&r).contains(&"on_closure".into()), "{r}");
+    assert_eq!(find_conflict(&r, "on_closure")["day"], "2027-03-06");
+    assert_eq!(find_conflict(&r, "on_closure")["severity"], "error");
+    assert_eq!(find_conflict(&r, "after_successor")["severity"], "warning");
     assert_eq!(
         cut_dates(e.production_order(PLANNER, &n).await),
         ("2027-03-01".into(), "2027-03-01".into())
@@ -4216,6 +4250,20 @@ async fn a_finite_schedule_places_work_around_other_orders(db: PgPool) {
         dates(&again, "Cut"),
         ("2027-03-02".into(), "2027-03-02".into())
     );
+    // What was placed passes the same check as a move onto the stored dates: no overload.
+    let weld_id = id(operation(&again, "Weld"));
+    let (weld_from, weld_to) = dates(&again, "Weld");
+    let (_, check) = put(
+        &e.app,
+        PLANNER,
+        &format!("/production-orders/{n}/operations/{weld_id}/move?dry_run=true"),
+        json!({ "planned_start": weld_from, "planned_end": weld_to }),
+    )
+    .await;
+    assert!(
+        !conflict_kinds(&check).contains(&"overload".into()),
+        "{check}"
+    );
     let data: Value = sqlx::query_scalar(
         "SELECT data FROM audit.events WHERE entity = 'production_order' AND action = 'scheduled'
            AND entity_id = $1::uuid ORDER BY id DESC LIMIT 1",
@@ -4225,4 +4273,55 @@ async fn a_finite_schedule_places_work_around_other_orders(db: PgPool) {
     .await
     .unwrap();
     assert_eq!(data["finite"], true);
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn a_booking_that_starts_before_a_closure_is_spread_with_it(db: PgPool) {
+    let e = env(db).await;
+    e.board_parts().await;
+    let (saw, _weld) = e.frame_routing().await;
+    // The first order's Cut is 480 minutes; it is stretched over Monday to Friday, and SAW is
+    // closed on Tuesday, so it works four days: 120 minutes on each, 120 on Thursday too.
+    let first = e.release_frames("45").await;
+    let first_id = id(&first);
+    let first_cut = id(operation(&first, "Cut"));
+    let (status, r) = put(
+        &e.app,
+        PLANNER,
+        &format!("/production-orders/{first_id}/operations/{first_cut}"),
+        json!({ "planned_start": "2027-03-01", "planned_end": "2027-03-05" }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{r}");
+    close(&e, Some(&saw), "2027-03-02", "2027-03-02").await;
+    // The second order's Cut is 370 minutes: on Thursday it adds to 120 and overloads the day
+    // (490 of 480); with the closure missed the first booking would be only 96 a day (466).
+    // It is released from Thursday, so its own dates do not reach back to the closure.
+    let second = e.release_frames_from("34", "2027-03-04").await;
+    assert_eq!(minutes(&second, "Cut"), 370);
+    let n = id(&second);
+    let cut = id(operation(&second, "Cut"));
+    let (_, r) = put(
+        &e.app,
+        PLANNER,
+        &format!("/production-orders/{n}/operations/{cut}/move?dry_run=true"),
+        json!({ "planned_start": "2027-03-04", "planned_end": "2027-03-04" }),
+    )
+    .await;
+    assert_eq!(find_conflict(&r, "overload")["day"], "2027-03-04", "{r}");
+    // The capacity page counts the same 120 on that Thursday.
+    let (_, cap) = get(
+        &e.app,
+        PLANNER,
+        "/production/capacity?from=2027-03-04&to=2027-03-04",
+    )
+    .await;
+    let day = cap["centres"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|c| c["id"] == saw.as_str())
+        .unwrap()["days"][0]
+        .clone();
+    assert_eq!(day["load_minutes"], 120 + 370, "{cap}");
 }

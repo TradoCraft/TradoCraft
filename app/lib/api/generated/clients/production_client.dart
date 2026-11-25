@@ -151,7 +151,8 @@ abstract class ProductionClient {
   /// closures and the order of the operations. Errors among the conflicts refuse the move (409).
   /// unless `force=true`; an inactive work centre and an operation that has started are never.
   /// moved. Warnings never refuse. The conflicts are returned either way; `dry_run` changes.
-  /// nothing.
+  /// nothing. A refused move answers 409 with the same body (`applied: false` and every conflict,.
+  /// warnings included); the other 409s (the order is not open, ...) carry the usual error body.
   ///
   /// [dryRun] - Only report the conflicts; change nothing (used while dragging).
   ///
@@ -217,7 +218,7 @@ abstract class ProductionClient {
   ///
   /// [from] - First day.
   ///
-  /// [to] - Last day, inclusive; at most 62 days after `from`.
+  /// [to] - Last day, inclusive. The period is at most 62 days, so `to` is at most 61 days after `from`.
   ///
   /// [divisionId] - Only the work centres of this division.
   @GET('/api/v1/production/capacity')
@@ -288,7 +289,7 @@ abstract class ProductionClient {
   ///
   /// [from] - First day.
   ///
-  /// [to] - Last day, inclusive; at most 62 days after `from`.
+  /// [to] - Last day, inclusive. The period is at most 62 days, so `to` is at most 61 days after `from`.
   ///
   /// [divisionId] - Only the work centres of this division.
   @GET('/api/v1/production/planning-board')

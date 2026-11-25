@@ -31,7 +31,7 @@ pub struct ProductionCapacityParams {
     #[serde(deserialize_with = "tradocraft_core::serde_util::date")]
     #[param(value_type = String, format = Date)]
     pub from: NaiveDate,
-    /// Last day, inclusive; at most 62 days after `from`.
+    /// Last day, inclusive. The period is at most 62 days, so `to` is at most 61 days after `from`.
     #[serde(deserialize_with = "tradocraft_core::serde_util::date")]
     #[param(value_type = String, format = Date)]
     pub to: NaiveDate,
@@ -82,12 +82,12 @@ struct CentreRow {
     capacity: i32,
 }
 
-#[derive(FromRow)]
-struct OpLoad {
-    work_centre_id: Uuid,
-    planned_minutes: i32,
-    planned_start: NaiveDate,
-    planned_end: NaiveDate,
+#[derive(FromRow, Clone)]
+pub(crate) struct OpLoad {
+    pub work_centre_id: Uuid,
+    pub planned_minutes: i32,
+    pub planned_start: NaiveDate,
+    pub planned_end: NaiveDate,
 }
 
 /// Capacity against load per work centre and day. Load is the planned minutes of every operation
@@ -103,10 +103,25 @@ async fn production_capacity(
     Query(p): Query<ProductionCapacityParams>,
 ) -> AppResult<Json<ProductionCapacity>> {
     user.require(Permission::ProductionRead)?;
+    validate_period(p.from, p.to)?;
     let mut conn = state.db.acquire().await?;
     Ok(Json(
         compute_capacity(&mut conn, user.company_id, p.from, p.to, p.division_id).await?,
     ))
+}
+
+/// A period of the board and the capacity page: `to` not before `from`, at most [`MAX_DAYS`] days
+/// counted inclusively.
+pub(crate) fn validate_period(from: NaiveDate, to: NaiveDate) -> AppResult<()> {
+    if to < from {
+        return Err(AppError::Validation("to must not be before from".into()));
+    }
+    if (to - from).num_days() + 1 > MAX_DAYS {
+        return Err(AppError::Validation(format!(
+            "the period can be at most {MAX_DAYS} days"
+        )));
+    }
+    Ok(())
 }
 
 /// Capacity against load for the work centres of a company over `[from, to]`, optionally of one
@@ -118,14 +133,7 @@ pub(crate) async fn compute_capacity(
     to: NaiveDate,
     division_id: Option<Uuid>,
 ) -> AppResult<ProductionCapacity> {
-    if to < from {
-        return Err(AppError::Validation("to must not be before from".into()));
-    }
-    if (to - from).num_days() + 1 > MAX_DAYS {
-        return Err(AppError::Validation(format!(
-            "the period can be at most {MAX_DAYS} days"
-        )));
-    }
+    validate_period(from, to)?;
     // Inactive work centres show up only while they still have work.
     let centres: Vec<CentreRow> = sqlx::query_as(
         "SELECT w.id, w.code, w.name, w.division_id, w.active, w.capacity
@@ -217,29 +225,45 @@ pub(crate) async fn compute_capacity(
     Ok(ProductionCapacity { from, to, centres })
 }
 
-/// The minutes the other open operations put on one work centre, per day: every pending or running
-/// operation of a released or in-progress order except `exclude`, spread over its own dates like
-/// [`compute_capacity`] does. Late work is not moved onto another day here.
-pub(crate) async fn other_load(
+/// The open operations on a work centre whose dates overlap `[start, end]`, except `exclude`: every
+/// pending or running operation of a released or in-progress order. Their full dates are kept, so
+/// spreading them later gives each its usual load per day.
+pub(crate) async fn overlapping_bookings(
     conn: &mut PgConnection,
     company_id: Uuid,
     work_centre_id: Uuid,
     exclude: Uuid,
-    cal: &Calendar,
-) -> AppResult<HashMap<NaiveDate, i64>> {
-    let rows: Vec<OpLoad> = sqlx::query_as(
+    start: NaiveDate,
+    end: NaiveDate,
+) -> AppResult<Vec<OpLoad>> {
+    Ok(sqlx::query_as(
         "SELECT o.work_centre_id, o.planned_minutes, o.planned_start, o.planned_end
          FROM production.order_operations o
          JOIN production.production_orders po ON po.id = o.production_order_id
          WHERE o.company_id = $1 AND o.work_centre_id = $2 AND o.id <> $3
            AND o.status IN ('pending', 'in_progress') AND po.status IN ('released', 'in_progress')
-           AND o.planned_minutes > 0",
+           AND o.planned_minutes > 0 AND o.planned_start <= $5 AND o.planned_end >= $4",
     )
     .bind(company_id)
     .bind(work_centre_id)
     .bind(exclude)
+    .bind(start)
+    .bind(end)
     .fetch_all(conn)
-    .await?;
+    .await?)
+}
+
+/// The earliest day a calendar must reach back to for these bookings and a candidate starting on
+/// `from`: closures inside a booking's range change how its minutes are spread.
+pub(crate) fn earliest_start(rows: &[OpLoad], from: NaiveDate) -> NaiveDate {
+    rows.iter()
+        .map(|o| o.planned_start)
+        .fold(from, NaiveDate::min)
+}
+
+/// The minutes of the bookings per day, each spread over its own dates like [`compute_capacity`]
+/// does. Late work is not moved onto another day here.
+pub(crate) fn spread_bookings(rows: &[OpLoad], cal: &Calendar) -> HashMap<NaiveDate, i64> {
     let mut by_day: HashMap<NaiveDate, i64> = HashMap::new();
     for o in rows {
         for (day, minutes) in spread_load(
@@ -251,49 +275,48 @@ pub(crate) async fn other_load(
             *by_day.entry(day).or_default() += minutes;
         }
     }
-    Ok(by_day)
+    by_day
 }
 
-/// The minutes other work already books on the work centres, per calendar index and day, for a
-/// finite re-schedule of one order: every pending or running operation of a released or
-/// in-progress order, except the pending operations of `replacing_order` (they are being placed
-/// again). `centres` and `calendars` are parallel lists.
-pub(crate) async fn booked_load(
+/// The open operations on the work centres that end on or after `from`, for a finite re-schedule
+/// of one order: every pending or running operation of a released or in-progress order, except
+/// the pending operations of `replacing_order` (they are being placed again).
+pub(crate) async fn open_bookings(
     conn: &mut PgConnection,
     company_id: Uuid,
     centres: &[Uuid],
-    calendars: &[Calendar],
     replacing_order: Uuid,
-) -> AppResult<BookedLoad> {
-    let rows: Vec<OpLoad> = sqlx::query_as(
+    from: NaiveDate,
+) -> AppResult<Vec<OpLoad>> {
+    Ok(sqlx::query_as(
         "SELECT o.work_centre_id, o.planned_minutes, o.planned_start, o.planned_end
          FROM production.order_operations o
          JOIN production.production_orders po ON po.id = o.production_order_id
          WHERE o.company_id = $1 AND o.work_centre_id = ANY($2)
            AND o.status IN ('pending', 'in_progress') AND po.status IN ('released', 'in_progress')
-           AND o.planned_minutes > 0
+           AND o.planned_minutes > 0 AND o.planned_end >= $4
            AND NOT (o.production_order_id = $3 AND o.status = 'pending')",
     )
     .bind(company_id)
     .bind(centres)
     .bind(replacing_order)
+    .bind(from)
     .fetch_all(conn)
-    .await?;
+    .await?)
+}
+
+/// The bookings as the load per calendar index and day; `centres` and `calendars` are parallel.
+pub(crate) fn booked_from(rows: &[OpLoad], centres: &[Uuid], calendars: &[Calendar]) -> BookedLoad {
     let mut booked: BookedLoad = vec![HashMap::new(); centres.len()];
-    for o in rows {
-        let Some(i) = centres.iter().position(|c| *c == o.work_centre_id) else {
-            continue;
-        };
-        for (day, minutes) in spread_load(
-            i64::from(o.planned_minutes),
-            o.planned_start,
-            o.planned_end,
-            &calendars[i],
-        ) {
-            *booked[i].entry(day).or_default() += minutes;
-        }
+    for (i, cal) in calendars.iter().enumerate() {
+        let own: Vec<OpLoad> = rows
+            .iter()
+            .filter(|o| o.work_centre_id == centres[i])
+            .cloned()
+            .collect();
+        booked[i] = spread_bookings(&own, cal);
     }
-    Ok(booked)
+    booked
 }
 
 /// The capacity routes.

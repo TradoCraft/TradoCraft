@@ -10,6 +10,17 @@ import '../planning/board_model.dart';
 const workCentreAxisStart = 6 * 60;
 const workCentreAxisEnd = 18 * 60;
 
+/// Whole calendar days from [a] to [b]. Both are read as dates (year, month, day) in UTC, so a
+/// daylight-saving change between them does not make a day 23 or 25 hours long.
+int calendarDays(DateTime a, DateTime b) =>
+    DateTime.utc(b.year, b.month, b.day)
+        .difference(DateTime.utc(a.year, a.month, a.day))
+        .inDays;
+
+/// [day] at [minute] of the day, built from calendar components (not by adding a duration).
+DateTime atMinute(DateTime day, int minute) =>
+    DateTime(day.year, day.month, day.day, minute ~/ 60, minute % 60);
+
 /// Conflicts that `force` cannot override: the server refuses the move whatever is asked.
 const neverForced = {'inactive_work_centre', 'operation_started'};
 
@@ -64,10 +75,8 @@ List<BoardItem> workCentreItems(
         BoardItem(
           id: o.id,
           rowId: o.workCentreId,
-          start: dateOnly(o.plannedStart)
-              .add(const Duration(minutes: workCentreAxisStart)),
-          end: dateOnly(o.plannedEnd)
-              .add(const Duration(minutes: workCentreAxisEnd)),
+          start: atMinute(o.plannedStart, workCentreAxisStart),
+          end: atMinute(o.plannedEnd, workCentreAxisEnd),
           title: '${o.orderNumber} · ${o.name}',
           subtitle: '${o.productName} · ${o.plannedMinutes} min',
           color: o.status == 'in_progress' ? Colors.teal : Colors.indigo,
@@ -77,19 +86,20 @@ List<BoardItem> workCentreItems(
   ];
 }
 
-/// The update that drops [op] on [rowId] with its first day at [day]: the same number of days,
-/// the other work centre when the row differs.
+/// The update that drops [op] on [rowId] with its first day at [day]: the same number of calendar
+/// days (none for an operation within one day). The work centre is always named, so a board that
+/// is out of date cannot leave the operation on the centre somebody else moved it to.
 ProductionOperationUpdate moveBody(
   ProductionBoardOperation op,
   String rowId,
   DateTime day,
 ) {
   final start = dateOnly(day);
-  final span = dateOnly(op.plannedEnd).difference(dateOnly(op.plannedStart));
+  final days = calendarDays(op.plannedStart, op.plannedEnd);
   return ProductionOperationUpdate(
-    workCentreId: rowId == op.workCentreId ? null : rowId,
+    workCentreId: rowId,
     plannedStart: start,
-    plannedEnd: DateTime(start.year, start.month, start.day + span.inDays),
+    plannedEnd: DateTime(start.year, start.month, start.day + days),
   );
 }
 

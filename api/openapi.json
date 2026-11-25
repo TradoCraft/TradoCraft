@@ -24151,7 +24151,7 @@
         "tags": [
           "production"
         ],
-        "summary": "Moves an operation to another work centre and/or other days, checked against capacity,\nclosures and the order of the operations. Errors among the conflicts refuse the move (409)\nunless `force=true`; an inactive work centre and an operation that has started are never\nmoved. Warnings never refuse. The conflicts are returned either way; `dry_run` changes\nnothing.",
+        "summary": "Moves an operation to another work centre and/or other days, checked against capacity,\nclosures and the order of the operations. Errors among the conflicts refuse the move (409)\nunless `force=true`; an inactive work centre and an operation that has started are never\nmoved. Warnings never refuse. The conflicts are returned either way; `dry_run` changes\nnothing. A refused move answers 409 with the same body (`applied: false` and every conflict,\nwarnings included); the other 409s (the order is not open, ...) carry the usual error body.",
         "operationId": "move_production_operation",
         "parameters": [
           {
@@ -24227,7 +24227,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/ProductionOperationMove"
                 }
               }
             }
@@ -24624,7 +24624,7 @@
           {
             "name": "to",
             "in": "query",
-            "description": "Last day, inclusive; at most 62 days after `from`.",
+            "description": "Last day, inclusive. The period is at most 62 days, so `to` is at most 61 days after `from`.",
             "required": true,
             "schema": {
               "type": "string",
@@ -25067,7 +25067,7 @@
           {
             "name": "to",
             "in": "query",
-            "description": "Last day, inclusive; at most 62 days after `from`.",
+            "description": "Last day, inclusive. The period is at most 62 days, so `to` is at most 61 days after `from`.",
             "required": true,
             "schema": {
               "type": "string",

@@ -21,6 +21,12 @@ pub type BookedLoad = Vec<HashMap<NaiveDate, i64>>;
 /// operations in `booked` leave free. An operation with no minutes sits on the day the previous
 /// one ended. Minutes of operations placed earlier in this call count as booked for the later
 /// ones.
+///
+/// Only the first and the last day of an operation are stored, and everything that reads them
+/// (the capacity page, the board, [`detect`]) spreads its minutes over the working days of that
+/// range in proportion ([`spread_load`]). So a candidate range found by filling the free minutes
+/// is checked against that split too: when any day would exceed the centre's capacity, the search
+/// goes on from the day after the candidate's first day.
 pub fn schedule_finite(
     ops: &[OpSpec],
     calendars: &[Calendar],
@@ -39,39 +45,63 @@ pub fn schedule_finite(
             continue;
         }
         let cal = &calendars[op.calendar];
-        let mut remaining = op.minutes;
-        let mut day = cursor;
-        let mut first_day = None;
-        let mut walked = 0_i64;
-        loop {
-            let used = booked
+        let used = |own: &HashMap<NaiveDate, i64>, day: NaiveDate| -> i64 {
+            booked
                 .get(op.calendar)
                 .and_then(|m| m.get(&day))
                 .copied()
                 .unwrap_or(0)
-                + own[op.calendar].get(&day).copied().unwrap_or(0);
-            let free = (cal.capacity_minutes_on(day) - used).max(0);
-            let part = remaining.min(free).min(cal.minutes_on(day));
-            if part > 0 {
-                first_day.get_or_insert(day);
-                *own[op.calendar].entry(day).or_insert(0) += part;
-                remaining -= part;
-                if remaining == 0 {
-                    break;
+                + own.get(&day).copied().unwrap_or(0)
+        };
+        let fail = NoWorkingTime { op: i };
+        let mut from_day = cursor;
+        let mut attempts = 0_i64;
+        let (first, last) = loop {
+            attempts += 1;
+            if attempts > MAX_DAYS {
+                return Err(fail);
+            }
+            // Fill the free minutes of the days from `from_day` on.
+            let mut remaining = op.minutes;
+            let mut day = from_day;
+            let mut first_day = None;
+            let mut walked = 0_i64;
+            let last_day = loop {
+                let free = (cal.capacity_minutes_on(day) - used(&own[op.calendar], day)).max(0);
+                let part = remaining.min(free).min(cal.minutes_on(day));
+                if part > 0 {
+                    first_day.get_or_insert(day);
+                    remaining -= part;
+                    if remaining == 0 {
+                        break day;
+                    }
                 }
+                walked += 1;
+                if walked > MAX_DAYS {
+                    return Err(fail);
+                }
+                day = day.succ_opt().ok_or(fail)?;
+            };
+            let first_day = first_day.expect("an operation with minutes works at least one day");
+            // The split everybody else will see for this range.
+            let parts = spread_load(op.minutes, first_day, last_day, cal);
+            let fits = parts
+                .iter()
+                .all(|(d, m)| used(&own[op.calendar], *d) + m <= cal.capacity_minutes_on(*d));
+            if fits {
+                for (d, m) in parts {
+                    *own[op.calendar].entry(d).or_insert(0) += m;
+                }
+                break (first_day, last_day);
             }
-            walked += 1;
-            if walked > MAX_DAYS {
-                return Err(NoWorkingTime { op: i });
-            }
-            day = day.succ_opt().ok_or(NoWorkingTime { op: i })?;
-        }
+            from_day = first_day.succ_opt().ok_or(fail)?;
+        };
         out.push(Placement {
-            start: first_day.expect("an operation with minutes works at least one day"),
-            end: day,
+            start: first,
+            end: last,
         });
         // The next operation may start on the day this one ended.
-        cursor = day;
+        cursor = last;
     }
     Ok(out)
 }
@@ -253,7 +283,74 @@ mod tests {
         let cals = [cal(1)];
         // Monday is full, Tuesday has 120 free minutes.
         let p = schedule_finite(&[op(300)], &cals, &booked(&[(1, 480), (2, 360)]), d(1)).unwrap();
-        assert_eq!((p[0].start, p[0].end), (d(2), d(3)));
+        // Filling Tuesday's 120 and 180 on Wednesday would be stored as Tuesday to Wednesday and
+        // read back as 150 a day, which overloads Tuesday: the search goes on to Wednesday.
+        assert_eq!((p[0].start, p[0].end), (d(3), d(3)));
+    }
+
+    #[test]
+    fn a_range_that_the_stored_dates_would_spread_onto_a_full_day_is_not_taken() {
+        let cals = [cal(1)];
+        // Monday has 60 free minutes, Tuesday is free: 540 minutes filled greedily are 60 + 480.
+        let load = booked(&[(1, 420)]);
+        let p = schedule_finite(&[op(540)], &cals, &load, d(1)).unwrap();
+        assert_eq!(
+            (p[0].start, p[0].end),
+            (d(2), d(3)),
+            "spread as 270 and 270"
+        );
+        // Whatever is placed passes the same check as a move onto those dates.
+        let c = MoveCandidate {
+            minutes: 540,
+            start: p[0].start,
+            end: p[0].end,
+            work_centre_active: true,
+            operation_open: true,
+            predecessor_end: None,
+            successor_start: None,
+            ready_date: None,
+        };
+        assert!(detect(&c, &cals[0], &load[0]).is_empty());
+    }
+
+    #[test]
+    fn what_is_placed_never_overloads_a_day_in_any_arrangement() {
+        let cals = [cal(1), cal(2)];
+        for centre in 0..2 {
+            for minutes in [30_i64, 200, 480, 500, 900, 1300] {
+                for entries in [
+                    vec![],
+                    vec![(1, 100)],
+                    vec![(1, 480), (3, 250)],
+                    vec![(1, 300), (2, 100), (3, 450), (4, 20)],
+                ] {
+                    let mut load = booked(&entries);
+                    load = vec![load[0].clone(), load[0].clone()];
+                    let spec = OpSpec {
+                        minutes,
+                        calendar: centre,
+                    };
+                    let Ok(p) = schedule_finite(&[spec], &cals, &load, d(1)) else {
+                        continue;
+                    };
+                    let c = MoveCandidate {
+                        minutes,
+                        start: p[0].start,
+                        end: p[0].end,
+                        work_centre_active: true,
+                        operation_open: true,
+                        predecessor_end: None,
+                        successor_start: None,
+                        ready_date: None,
+                    };
+                    let found = detect(&c, &cals[centre], &load[centre]);
+                    assert!(
+                        !found.iter().any(|x| x.kind == ConflictKind::Overload),
+                        "{minutes} min on centre {centre} with {entries:?}: {found:?}"
+                    );
+                }
+            }
+        }
     }
 
     #[test]

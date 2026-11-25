@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -78,10 +80,16 @@ Map<String, Object?> _board() => {
 /// A server for the board: moving anything onto WELD on Wednesday is an overload.
 FakeHttp _server({
   List<String> permissions = const ['production.read', 'production.write'],
+  // The second request for the board (the next week) waits for this.
+  Completer<void>? holdReload,
+  // Every check and move waits for this.
+  Completer<void>? holdMoves,
 }) {
   late FakeHttp http;
-  Object? move(Object? body) {
-    final q = http.queries.last;
+  var boards = 0;
+  Future<Object?> move(Object? body) async {
+    final q = Map<String, dynamic>.of(http.queries.last);
+    if (holdMoves != null) await holdMoves.future;
     final overload = [
       {
         'kind': 'overload',
@@ -104,7 +112,11 @@ FakeHttp _server({
 
   http = FakeHttp({
     'GET /api/v1/me': (_) => meJson(permissions),
-    'GET /api/v1/production/planning-board': (_) => _board(),
+    'GET /api/v1/production/planning-board': (_) async {
+      boards++;
+      if (boards > 1 && holdReload != null) await holdReload.future;
+      return _board();
+    },
     'PUT /api/v1/production-orders/p-PO-1/operations/o1/move': move,
   });
   return http;
@@ -290,7 +302,7 @@ void main() {
     );
   });
 
-  test('the body of a move keeps the number of days and changes the centre only when it differs', () {
+  test('the body of a move keeps the number of calendar days and always names the centre', () {
     final op = ProductionBoardOperation.fromJson(
       _op('o9', 'PO-9', 'Weld', 'c1', 9, 11),
     );
@@ -298,8 +310,18 @@ void main() {
     expect(other.workCentreId, 'c2');
     expect(other.plannedStart, DateTime(2026, 11, 16));
     expect(other.plannedEnd, DateTime(2026, 11, 18));
+    // The same centre is named too, so a stale board cannot leave the operation where somebody
+    // else moved it.
     final same = moveBody(op, 'c1', DateTime(2026, 11, 12));
-    expect(same.workCentreId, isNull);
+    expect(same.workCentreId, 'c1');
+    // An operation within one day stays within one day.
+    final oneDay = ProductionBoardOperation.fromJson(
+      _op('o8', 'PO-8', 'Cut', 'c1', 9, 9),
+    );
+    expect(
+      moveBody(oneDay, 'c1', DateTime(2026, 11, 12)).plannedEnd,
+      DateTime(2026, 11, 12),
+    );
     expect(canForce([]), true);
     expect(
       canForce([
@@ -311,6 +333,106 @@ void main() {
       ]),
       false,
     );
+  });
+
+  test('calendar days are not shortened by a daylight-saving change', () {
+    // The clocks change on 25 October 2026 in Europe and on 1 November in North America, on 29
+    // March and 8 March in spring: a local difference of two such days is 47 or 49 hours.
+    expect(calendarDays(DateTime(2026, 10, 24), DateTime(2026, 10, 26)), 2);
+    expect(calendarDays(DateTime(2026, 10, 31), DateTime(2026, 11, 2)), 2);
+    expect(calendarDays(DateTime(2026, 3, 28), DateTime(2026, 3, 30)), 2);
+    expect(calendarDays(DateTime(2026, 3, 7), DateTime(2026, 3, 9)), 2);
+    expect(calendarDays(DateTime(2026, 11, 9), DateTime(2026, 11, 9)), 0);
+    final op = ProductionBoardOperation.fromJson(
+      _op('o7', 'PO-7', 'Weld', 'c1', 9, 9),
+    ).toJson();
+    final across = ProductionBoardOperation.fromJson({
+      ...op,
+      'planned_start': '2026-10-24',
+      'planned_end': '2026-10-26',
+    });
+    expect(
+      moveBody(across, 'c1', DateTime(2026, 10, 24)).plannedEnd,
+      DateTime(2026, 10, 26),
+    );
+    // A block fills the same part of its first and last day however long the days are.
+    expect(atMinute(DateTime(2026, 10, 25), workCentreAxisStart).hour, 6);
+    expect(atMinute(DateTime(2026, 10, 25), workCentreAxisEnd).hour, 18);
+  });
+
+  testWidgets(
+    'changing the week waits for the new week and keeps the week buttons',
+    (tester) async {
+      final hold = Completer<void>();
+      final http = _server(holdReload: hold);
+      await _pump(tester, http);
+      expect(find.byType(ResourceBoard), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('wc-next')));
+      await tester.pump();
+      // The old week is not shown under the new week's dates.
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(ResourceBoard), findsNothing);
+      expect(find.byKey(const ValueKey('wc-next')), findsOneWidget);
+      expect(find.byKey(const ValueKey('wc-prev')), findsOneWidget);
+      expect(find.byKey(const ValueKey('wc-today')), findsOneWidget);
+      hold.complete();
+      await tester.pumpAndSettle();
+      expect(find.byType(ResourceBoard), findsOneWidget);
+      final froms = http.queries.where((q) => q.containsKey('from')).toList();
+      expect(froms.last['from'], startsWith('2026-11-16'));
+      expect(froms.last['to'], startsWith('2026-11-22'));
+    },
+  );
+
+  testWidgets('leaving the page while a drop is being checked does nothing', (
+    tester,
+  ) async {
+    final hold = Completer<void>();
+    final http = _server(holdMoves: hold);
+    await _pump(tester, http);
+    final g = await _dragCutToWeldWednesday(tester);
+    await g.up();
+    await tester.pump();
+    // The page goes away while the check is still on its way.
+    await tester.pumpWidget(const SizedBox.shrink());
+    hold.complete();
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(_realMoves(http), isEmpty);
+  });
+
+  testWidgets('a refused move names its conflicts', (tester) async {
+    // Another planner made the day full between the check and the move: the server refuses with
+    // its report and the board says why.
+    late FakeHttp http;
+    http = FakeHttp({
+      'GET /api/v1/me': (_) =>
+          meJson(const ['production.read', 'production.write']),
+      'GET /api/v1/production/planning-board': (_) => _board(),
+      'PUT /api/v1/production-orders/p-PO-1/operations/o1/move': (_) {
+        final q = http.queries.last;
+        final overload = [
+          {
+            'kind': 'overload',
+            'severity': q['dry_run'] == true ? 'warning' : 'error',
+            'message_key': 'production.conflict.overload',
+            'day': _d(11),
+          },
+        ];
+        return q['dry_run'] == true
+            ? {'applied': false, 'conflicts': overload, 'order': null}
+            : FakeStatus(409, {
+                'applied': false,
+                'conflicts': overload,
+                'order': null,
+              });
+      },
+    });
+    await _pump(tester, http);
+    final g = await _dragCutToWeldWednesday(tester);
+    await g.up();
+    await tester.pumpAndSettle();
+    expect(find.text('Wed 11 Nov would be overloaded.'), findsOneWidget);
   });
 
   testWidgets('a phone gets a list per work centre', (tester) async {

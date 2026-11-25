@@ -16,7 +16,7 @@ use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 use uuid::Uuid;
 
-use crate::capacity::booked_load;
+use crate::capacity::{booked_from, earliest_start, open_bookings};
 use crate::finite::schedule_finite;
 use crate::orders::{begin_order, load_order, lock_order, Locked, ProductionOrder};
 use crate::routing::load_routing;
@@ -221,7 +221,26 @@ pub(crate) async fn place_pending(
     let mut centres: Vec<Uuid> = pending.iter().map(|p| p.work_centre_id).collect();
     centres.sort();
     centres.dedup();
-    let mut by_id = load_calendars(conn, company_id, &centres, from).await?;
+    // A finite placement reads the load of the other orders on these centres, so it first locks
+    // them (in id order, after the order itself): two schedules or moves onto one centre are
+    // checked one after the other.
+    let bookings = if finite {
+        sqlx::query_scalar::<_, Uuid>(
+            "SELECT id FROM production.work_centres WHERE id = ANY($1) AND company_id = $2
+             ORDER BY id FOR UPDATE",
+        )
+        .bind(&centres)
+        .bind(company_id)
+        .fetch_all(&mut *conn)
+        .await?;
+        open_bookings(conn, company_id, &centres, production_order_id, from).await?
+    } else {
+        Vec::new()
+    };
+    // Closures inside the range of an existing booking change how its minutes are spread, so the
+    // calendars reach back to the earliest booking; new work is still placed from `from` on.
+    let mut by_id =
+        load_calendars(conn, company_id, &centres, earliest_start(&bookings, from)).await?;
     let calendars: Vec<Calendar> = centres
         .iter()
         .map(|c| by_id.remove(c).ok_or(AppError::NotFound("work centre")))
@@ -237,17 +256,23 @@ pub(crate) async fn place_pending(
         })
         .collect();
     let placed = if finite {
-        let booked =
-            booked_load(conn, company_id, &centres, &calendars, production_order_id).await?;
+        let booked = booked_from(&bookings, &centres, &calendars);
         schedule_finite(&specs, &calendars, &booked, from)
     } else {
         schedule_forward(&specs, &calendars, from)
     }
     .map_err(|e| {
-        AppError::Validation(format!(
-            "operation \"{}\": its work centre has no working time in the next two years; check its hours and closures",
-            pending[e.op].name
-        ))
+        AppError::Validation(if finite {
+            format!(
+                "operation \"{}\": its work centre has no free capacity in the next two years; try another start date or review the bookings on the work centre",
+                pending[e.op].name
+            )
+        } else {
+            format!(
+                "operation \"{}\": its work centre has no working time in the next two years; check its hours and closures",
+                pending[e.op].name
+            )
+        })
     })?;
     for (p, at) in pending.iter().zip(placed) {
         sqlx::query(

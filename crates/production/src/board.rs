@@ -3,6 +3,8 @@
 //! loads what they need and writes the move through the same path as the unchecked update.
 
 use axum::extract::{Path, Query, State};
+use axum::http::StatusCode;
+use axum::response::{IntoResponse, Response};
 use axum::Json;
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
@@ -14,7 +16,8 @@ use utoipa_axum::routes;
 use uuid::Uuid;
 
 use crate::capacity::{
-    compute_capacity, other_load, ProductionCapacityCentre, ProductionCapacityParams,
+    compute_capacity, earliest_start, overlapping_bookings, spread_bookings,
+    ProductionCapacityCentre, ProductionCapacityParams,
 };
 use crate::finite::{detect, has_errors, Conflict, ConflictKind, MoveCandidate, Severity};
 use crate::operations::{
@@ -74,9 +77,14 @@ async fn production_planning_board(
     Query(p): Query<ProductionCapacityParams>,
 ) -> AppResult<Json<ProductionPlanningBoard>> {
     user.require(Permission::ProductionRead)?;
-    let mut conn = state.db.acquire().await?;
-    let capacity =
-        compute_capacity(&mut conn, user.company_id, p.from, p.to, p.division_id).await?;
+    crate::capacity::validate_period(p.from, p.to)?;
+    // The capacity and the operations are read in one snapshot, so a move made in between cannot
+    // show an operation that the capacity does not count (or the other way round).
+    let mut tx = state.db.begin().await?;
+    sqlx::query("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY")
+        .execute(&mut *tx)
+        .await?;
+    let capacity = compute_capacity(&mut tx, user.company_id, p.from, p.to, p.division_id).await?;
     let ids: Vec<Uuid> = capacity.centres.iter().map(|c| c.id).collect();
     let mut operations: Vec<ProductionBoardOperation> = sqlx::query_as(
         "SELECT * FROM (
@@ -99,8 +107,9 @@ async fn production_planning_board(
     .bind(user.company_id)
     .bind(p.to)
     .bind(&ids)
-    .fetch_all(&mut *conn)
+    .fetch_all(&mut *tx)
     .await?;
+    tx.commit().await?;
     for o in &mut operations {
         o.late = o.planned_end < p.from;
         o.locked = o.status != "pending";
@@ -169,18 +178,19 @@ pub struct ProductionOperationMove {
 /// closures and the order of the operations. Errors among the conflicts refuse the move (409)
 /// unless `force=true`; an inactive work centre and an operation that has started are never
 /// moved. Warnings never refuse. The conflicts are returned either way; `dry_run` changes
-/// nothing.
+/// nothing. A refused move answers 409 with the same body (`applied: false` and every conflict,
+/// warnings included); the other 409s (the order is not open, ...) carry the usual error body.
 #[utoipa::path(put, path = "/production-orders/{id}/operations/{operation_id}/move", tag = "production",
     params(("id" = Uuid, Path), ("operation_id" = Uuid, Path), MoveParams), request_body = ProductionOperationUpdate,
     responses((status = 200, body = ProductionOperationMove), (status = 404, body = ErrorBody),
-        (status = 409, body = ErrorBody), (status = 422, body = ErrorBody)))]
+        (status = 409, body = ProductionOperationMove), (status = 422, body = ErrorBody)))]
 async fn move_production_operation(
     State(state): State<AppState>,
     user: CurrentUser,
     Path((id, operation_id)): Path<(Uuid, Uuid)>,
     Query(p): Query<MoveParams>,
     Json(input): Json<ProductionOperationUpdate>,
-) -> AppResult<Json<ProductionOperationMove>> {
+) -> AppResult<Response> {
     user.require(Permission::ProductionWrite)?;
     let mut tx = state.db.begin().await?;
     let po = open_order(&mut tx, &user, id).await?;
@@ -193,9 +203,19 @@ async fn move_production_operation(
         ));
     }
     let centre = input.work_centre_id.unwrap_or(op.work_centre_id);
-    let active: Option<bool> = sqlx::query_scalar(
-        "SELECT active FROM production.work_centres WHERE id = $1 AND company_id = $2",
-    )
+    // A real move locks the target work centre (after the order and the operation, always in
+    // this order): two moves onto one centre are checked one after the other, and the centre
+    // cannot be deactivated before the move is made. A check only reads.
+    let active: Option<bool> = if p.dry_run {
+        sqlx::query_scalar(
+            "SELECT active FROM production.work_centres WHERE id = $1 AND company_id = $2",
+        )
+    } else {
+        sqlx::query_scalar(
+            "SELECT active FROM production.work_centres WHERE id = $1 AND company_id = $2
+             FOR UPDATE",
+        )
+    }
     .bind(centre)
     .bind(user.company_id)
     .fetch_optional(&mut *tx)
@@ -225,17 +245,21 @@ async fn move_production_operation(
     .bind(user.company_id)
     .fetch_one(&mut *tx)
     .await?;
+    // The bookings first: a closure inside a booking's range changes how its minutes are spread,
+    // so the calendar reaches back to the earliest booking that overlaps the new dates.
+    let bookings =
+        overlapping_bookings(&mut tx, user.company_id, centre, operation_id, start, end).await?;
     let mut calendars = load_calendars(
         &mut tx,
         user.company_id,
         &[centre],
-        start.min(op.planned_start),
+        earliest_start(&bookings, start.min(op.planned_start)),
     )
     .await?;
     let cal = calendars
         .remove(&centre)
         .ok_or(AppError::NotFound("work centre"))?;
-    let others = other_load(&mut tx, user.company_id, centre, operation_id, &cal).await?;
+    let others = spread_bookings(&bookings, &cal);
     let found = detect(
         &MoveCandidate {
             minutes: i64::from(op.planned_minutes),
@@ -256,7 +280,8 @@ async fn move_production_operation(
             applied: false,
             conflicts: report,
             order: None,
-        }));
+        })
+        .into_response());
     }
     let never = found.iter().any(|c| {
         matches!(
@@ -265,16 +290,16 @@ async fn move_production_operation(
         )
     });
     if never || (has_errors(&found) && !p.force) {
-        let keys: Vec<&str> = found
-            .iter()
-            .filter(|c| c.kind.severity() == Severity::Error)
-            .map(|c| c.kind.message_key())
-            .collect();
-        return Err(AppError::Conflict(format!(
-            "move conflicts: {}{}",
-            keys.join(", "),
-            if never { "" } else { "; confirm with force" }
-        )));
+        // Refused: the whole report, nothing is written (the transaction is dropped).
+        return Ok((
+            StatusCode::CONFLICT,
+            Json(ProductionOperationMove {
+                applied: false,
+                conflicts: report,
+                order: None,
+            }),
+        )
+            .into_response());
     }
     write_operation_move(
         &mut tx,
@@ -308,7 +333,8 @@ async fn move_production_operation(
         applied: true,
         conflicts: report,
         order: Some(order),
-    }))
+    })
+    .into_response())
 }
 
 /// The planning board routes.
