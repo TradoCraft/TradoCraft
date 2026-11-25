@@ -74,16 +74,15 @@ finding numbers below cannot be checked against it until it is restored.
   and falls back to the debug key, and such a build must not be distributed); #7 tokens in SharedPreferences and `allowBackup`. #6 and #7 must land before any distribution.
   The roughly 310 `WHERE id = $1` sites were not read; add the `company_id` query-scan test from the
   per-item checklist.
-- Release mechanics: done: a release workflow with Docker images, Windows artifacts and checksums, and the tag
-  convention `vMAJOR.MINOR.PATCH`. Open: a signed Android build (the SBOM job in `security.yml` already
-  attaches to a release), a versioning policy, a CHANGELOG, release signing keys, Docker hygiene (pinned image tags, HEALTHCHECK, no default database
-  credentials, `.env*` in `.dockerignore`), and a README status line that no longer says "vertical slice" (still there). The Dockerfile runs as a
-  non-root user and `.dockerignore` excludes `.env*`; there is still no `HEALTHCHECK`, and `docker-compose.yml`
-  defaults the database password to `tradocraft`.
+- Release mechanics. Done: a release workflow (Docker images, Windows artifacts, checksums), the tag convention
+  `vMAJOR.MINOR.PATCH`, a non-root Docker user and `.env*` in `.dockerignore`. Open: a signed Android build (the SBOM
+  job in `security.yml` already attaches to a release), a versioning policy, a CHANGELOG, release signing keys,
+  pinned image tags, a Docker `HEALTHCHECK`, no default database credentials (`docker-compose.yml` defaults the
+  password to `tradocraft`), and a README status line that no longer says "vertical slice".
 - Decide whether to include P2 (site baseline) in the first release. An end-to-end test remains open and ADR 0068 is still Proposed. Apply its
   migrations to a database that already has companies first.
 - Run in a real app what has only been tested in isolation: price-list save, open and share, PDF layout with
-  real data, Windows paths, Typst 0.15.1 (CI) against 0.11.1 (local); one request to the live VIES service
+  real data, Windows paths, Typst 0.15.1 (pinned in the Dockerfile and CI; check a local install matches); one request to the live VIES service
   (D4); a full `cargo test --workspace` on the final code. The helpdesk end-to-end test (PR #111) now covers one workflow.
 - Review the machine-written nl, de, fr and es strings of price lists and site baseline.
 
