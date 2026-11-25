@@ -3709,6 +3709,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "tradocraft-mrp"
+version = "0.3.0"
+dependencies = [
+ "chrono",
+ "rust_decimal",
+ "rust_decimal_macros",
+ "serde",
+ "serde_json",
+ "uuid",
+]
+
+[[package]]
 name = "tradocraft-planning"
 version = "0.3.0"
 dependencies = [

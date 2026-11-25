@@ -28,6 +28,7 @@ tradocraft-purchasing = { path = "crates/purchasing" }
 tradocraft-finance = { path = "crates/finance" }
 tradocraft-delivery = { path = "crates/delivery" }
 tradocraft-production = { path = "crates/production" }
+tradocraft-mrp = { path = "crates/mrp" }
 tradocraft-reports = { path = "crates/reports" }
 tradocraft-chatter = { path = "crates/chatter" }
 tradocraft-todo = { path = "crates/todo" }
