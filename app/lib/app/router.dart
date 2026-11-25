@@ -10,6 +10,7 @@ import '../features/configurator/runner_screen.dart';
 import '../features/customers/customers_page.dart';
 import '../features/customers/mail_merge_page.dart';
 import '../features/delivery/deliveries_page.dart';
+import '../features/mrp/mrp_page.dart';
 import '../features/production/capacity_page.dart';
 import '../features/production/work_centre_board_page.dart';
 import '../features/production/divisions_page.dart';
@@ -268,6 +269,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/production/board',
             builder: (_, _) => const WorkCentreBoardPage(),
           ),
+          GoRoute(path: '/mrp', builder: (_, _) => const MrpPage()),
           GoRoute(
             path: '/production/:id',
             builder: (_, s) => DetailPortal(location: s.uri.toString()),

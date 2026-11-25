@@ -81,6 +81,13 @@ pub struct Product {
     /// Order up to this quantity.
     #[schema(value_type = Option<String>, example = "40")]
     pub reorder_max: Option<Decimal>,
+    /// Stock to keep on hand: the planning (MRP) proposes orders to stay at or above it (the
+    /// larger of this and `reorder_min` counts).
+    #[schema(value_type = Option<String>, example = "5")]
+    pub safety_stock: Option<Decimal>,
+    /// The planning rounds an order up to a multiple of this (a pack, a pallet, a batch).
+    #[schema(value_type = Option<String>, example = "12")]
+    pub order_multiple: Option<Decimal>,
     pub lead_time_days: Option<i32>,
     pub barcode: Option<String>,
     pub packaging_category_id: Option<Uuid>,
@@ -156,6 +163,11 @@ pub struct ProductInput {
     pub reorder_min: Option<Decimal>,
     #[schema(value_type = Option<String>, example = "40")]
     pub reorder_max: Option<Decimal>,
+    #[schema(value_type = Option<String>, example = "5")]
+    pub safety_stock: Option<Decimal>,
+    /// More than 0 when given.
+    #[schema(value_type = Option<String>, example = "12")]
+    pub order_multiple: Option<Decimal>,
     pub lead_time_days: Option<i32>,
     pub barcode: Option<String>,
     /// Must be an active packaging category.
@@ -242,9 +254,21 @@ impl ProductInput {
             out.push("services cannot be tracked".to_string());
         }
         let negative = |v: Option<Decimal>| v.is_some_and(|v| v < Decimal::ZERO);
-        if negative(self.standard_cost) || negative(self.reorder_min) || negative(self.reorder_max)
+        if negative(self.standard_cost)
+            || negative(self.reorder_min)
+            || negative(self.reorder_max)
+            || negative(self.safety_stock)
         {
-            out.push("cost and reorder quantities cannot be negative".to_string());
+            out.push("cost, reorder quantities and safety stock cannot be negative".to_string());
+        }
+        if self.order_multiple.is_some_and(|m| m <= Decimal::ZERO) {
+            out.push("order_multiple must be more than 0".to_string());
+        } else if self
+            .order_multiple
+            .is_some_and(|m| m.normalize().scale() > 4)
+        {
+            // The column keeps four decimals: more would be rounded, to nothing for 0.00004.
+            out.push("order_multiple has at most 4 decimals".to_string());
         }
         if let (Some(min), Some(max)) = (self.reorder_min, self.reorder_max) {
             if max < min {
@@ -406,7 +430,8 @@ macro_rules! product_columns {
                p.included_in_turnover,
                p.price_is_indicative, p.active, dm.file_id AS default_media_id,
                dm.kind AS default_media_kind, p.standard_cost, p.reorder_min,
-               p.reorder_max, p.lead_time_days, p.barcode, p.packaging_category_id,
+               p.reorder_max, p.safety_stock, p.order_multiple, p.lead_time_days, p.barcode,
+               p.packaging_category_id,
                pc.code AS packaging_category_code, p.length_mm, p.width_mm, p.height_mm, p.weight_g,
                p.default_production_remark
         FROM products.products p LEFT JOIN products.product_families f ON f.id = p.family_id
@@ -827,9 +852,10 @@ pub(crate) async fn insert_product(
                                         vat_rate_override, active, tracking, family_id, non_discountable, standard_cost,
                                         reorder_min, reorder_max, lead_time_days, barcode, packaging_category_id,
                                         length_mm, width_mm, height_mm, weight_g, default_production_remark,
-                                        price_on_request, price_is_indicative, included_in_turnover)
+                                        price_on_request, price_is_indicative, included_in_turnover,
+                                        safety_stock, order_multiple)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24,
-                 $25, $26, $27)",
+                 $25, $26, $27, $28, $29)",
     )
     .bind(id)
     .bind(input.code.trim())
@@ -858,6 +884,8 @@ pub(crate) async fn insert_product(
     .bind(input.price_on_request)
     .bind(input.price_is_indicative)
     .bind(input.included_in_turnover.flatten())
+    .bind(input.safety_stock)
+    .bind(input.order_multiple)
     .execute(&mut *conn)
     .await?;
     Ok(())
@@ -923,6 +951,7 @@ pub(crate) async fn update_product_row(
                 packaging_category_id = $18, length_mm = $19, width_mm = $20, height_mm = $21, weight_g = $22,
                 default_production_remark = $23,
                 included_in_turnover = CASE WHEN $28 THEN $29 ELSE included_in_turnover END,
+                safety_stock = $30, order_multiple = $31,
                 updated_at = now()
          WHERE id = $1",
     )
@@ -955,6 +984,8 @@ pub(crate) async fn update_product_row(
     .bind(input.price_is_indicative)
     .bind(input.included_in_turnover.is_some())
     .bind(input.included_in_turnover.flatten())
+    .bind(input.safety_stock)
+    .bind(input.order_multiple)
     .execute(&mut *conn)
     .await?;
     if updated.rows_affected() == 0 {

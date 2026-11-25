@@ -1,0 +1,26 @@
+[package]
+name = "tradocraft-mrp"
+description = "Material requirements planning: net requirements from orders, stock and open purchase and production orders; proposals for POs and MOs."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+tradocraft-core.workspace = true
+tradocraft-engineering.workspace = true
+tradocraft-production.workspace = true
+tradocraft-purchasing.workspace = true
+axum.workspace = true
+sqlx.workspace = true
+tokio.workspace = true
+utoipa.workspace = true
+utoipa-axum.workspace = true
+chrono.workspace = true
+rust_decimal.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+uuid.workspace = true
+
+[dev-dependencies]
+rust_decimal_macros.workspace = true

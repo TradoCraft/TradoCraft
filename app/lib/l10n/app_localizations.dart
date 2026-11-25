@@ -15384,6 +15384,198 @@ abstract class AppLocalizations {
   /// **'No work centres to show.'**
   String get productionCapacityEmpty;
 
+  /// No description provided for @mrpTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Planning proposals'**
+  String get mrpTitle;
+
+  /// No description provided for @mrpRun.
+  ///
+  /// In en, this message translates to:
+  /// **'Run planning'**
+  String get mrpRun;
+
+  /// No description provided for @mrpRunDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Planning done: {count} proposals.'**
+  String mrpRunDone(String count);
+
+  /// No description provided for @mrpHorizon.
+  ///
+  /// In en, this message translates to:
+  /// **'{days} days'**
+  String mrpHorizon(String days);
+
+  /// No description provided for @mrpEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to buy or build.'**
+  String get mrpEmpty;
+
+  /// No description provided for @mrpKindPurchase.
+  ///
+  /// In en, this message translates to:
+  /// **'Buy'**
+  String get mrpKindPurchase;
+
+  /// No description provided for @mrpKindProduction.
+  ///
+  /// In en, this message translates to:
+  /// **'Build'**
+  String get mrpKindProduction;
+
+  /// No description provided for @mrpReasonDemand.
+  ///
+  /// In en, this message translates to:
+  /// **'Needed'**
+  String get mrpReasonDemand;
+
+  /// No description provided for @mrpReasonSafety.
+  ///
+  /// In en, this message translates to:
+  /// **'Safety stock'**
+  String get mrpReasonSafety;
+
+  /// No description provided for @mrpOrderBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Order by {date}'**
+  String mrpOrderBy(String date);
+
+  /// No description provided for @mrpNeededOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Needed {date}'**
+  String mrpNeededOn(String date);
+
+  /// No description provided for @mrpLate.
+  ///
+  /// In en, this message translates to:
+  /// **'Late'**
+  String get mrpLate;
+
+  /// No description provided for @mrpConvert.
+  ///
+  /// In en, this message translates to:
+  /// **'Create order'**
+  String get mrpConvert;
+
+  /// No description provided for @mrpDismiss.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get mrpDismiss;
+
+  /// No description provided for @mrpConverted.
+  ///
+  /// In en, this message translates to:
+  /// **'Order {number} created.'**
+  String mrpConverted(String number);
+
+  /// No description provided for @mrpDismissed.
+  ///
+  /// In en, this message translates to:
+  /// **'Proposal dismissed.'**
+  String get mrpDismissed;
+
+  /// No description provided for @mrpChooseSupplier.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a supplier'**
+  String get mrpChooseSupplier;
+
+  /// No description provided for @mrpNoSupplier.
+  ///
+  /// In en, this message translates to:
+  /// **'This product has no preferred supplier.'**
+  String get mrpNoSupplier;
+
+  /// No description provided for @mrpStatusOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get mrpStatusOpen;
+
+  /// No description provided for @mrpStatusConverted.
+  ///
+  /// In en, this message translates to:
+  /// **'Converted'**
+  String get mrpStatusConverted;
+
+  /// No description provided for @mrpStatusDismissed.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismissed'**
+  String get mrpStatusDismissed;
+
+  /// No description provided for @mrpStatusAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get mrpStatusAll;
+
+  /// No description provided for @mrpStatusSuperseded.
+  ///
+  /// In en, this message translates to:
+  /// **'Replaced'**
+  String get mrpStatusSuperseded;
+
+  /// No description provided for @mrpLoadMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Show more'**
+  String get mrpLoadMore;
+
+  /// No description provided for @mrpPegSales.
+  ///
+  /// In en, this message translates to:
+  /// **'Order {number}'**
+  String mrpPegSales(String number);
+
+  /// No description provided for @mrpPegProduction.
+  ///
+  /// In en, this message translates to:
+  /// **'Production order {number}'**
+  String mrpPegProduction(String number);
+
+  /// No description provided for @mrpPegPlanned.
+  ///
+  /// In en, this message translates to:
+  /// **'For building {number}'**
+  String mrpPegPlanned(String number);
+
+  /// No description provided for @mrpPegPurchase.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase order {number}'**
+  String mrpPegPurchase(String number);
+
+  /// No description provided for @productSafetyStock.
+  ///
+  /// In en, this message translates to:
+  /// **'Safety stock'**
+  String get productSafetyStock;
+
+  /// No description provided for @productOrderMultiple.
+  ///
+  /// In en, this message translates to:
+  /// **'Order multiple'**
+  String get productOrderMultiple;
+
+  /// No description provided for @mrpLastRun.
+  ///
+  /// In en, this message translates to:
+  /// **'Last run: {number}'**
+  String mrpLastRun(String number);
+
+  /// No description provided for @mrpNoRun.
+  ///
+  /// In en, this message translates to:
+  /// **'No planning has been run yet.'**
+  String get mrpNoRun;
+
   /// No description provided for @productionBoardTitle.
   ///
   /// In en, this message translates to:

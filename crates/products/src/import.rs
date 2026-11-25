@@ -311,6 +311,8 @@ impl Importable for Products {
                 height_mm: p.height_mm,
                 weight_g: p.weight_g,
                 default_production_remark: p.default_production_remark.clone(),
+                safety_stock: p.safety_stock,
+                order_multiple: p.order_multiple,
             },
             None => ProductInput {
                 code: key.to_string(),
@@ -339,6 +341,8 @@ impl Importable for Products {
                 height_mm: None,
                 weight_g: None,
                 default_production_remark: String::new(),
+                safety_stock: None,
+                order_multiple: None,
             },
         };
         cells.text("name").apply(&mut input.name);

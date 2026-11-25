@@ -67,7 +67,7 @@ Production never writes `sales.*`, `inventory.*` or `engineering.*` directly.
   start, complete dialog with output, actual consumption, scrap and serial units, cancel), a
   Production section on the order screen, and the divisions page.
 
-**Not done yet.** MRP and availability with open production orders and purchase orders (C2);
+**Not done yet.** MRP and availability with open production orders and purchase orders (MRP is done, [ADR 0091](0091-material-requirements-planning.md); the order screen's availability is not);
 work in progress and valuation at actual cost; phantoms and alternative components; notifying the
 production team; the portal showing the promised date; and the product's default division in the Flutter
 product screen (the API has it). Work centres, routings, operations, labour, capacity, multi-level

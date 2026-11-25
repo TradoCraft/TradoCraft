@@ -97,6 +97,15 @@ class _PurchaseOrdersListState extends ConsumerState<PurchaseOrdersList> {
     return EntityList<PurchaseOrderSummary>(
       key: _list,
       title: l.purchOrders,
+      actions: [
+        if (can(ref, 'purchasing.read'))
+          IconButton(
+            key: const ValueKey('mrp'),
+            tooltip: l.mrpTitle,
+            icon: const Icon(Icons.checklist),
+            onPressed: () => context.push('/mrp'),
+          ),
+      ],
       emptyText: l.purchNoOrders,
       load: _load,
       columns: [

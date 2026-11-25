@@ -666,6 +666,16 @@ async fn schedule_production_order(
         start = start.max(day_after(end));
     }
     let placed = place_pending(&mut tx, user.company_id, id, start, input.finite).await?;
+    // The materials are needed from the day the work starts (the planning reads it).
+    sqlx::query(
+        "UPDATE production.production_orders SET planned_start_date = $2
+         WHERE id = $1 AND company_id = $3",
+    )
+    .bind(id)
+    .bind(start)
+    .bind(user.company_id)
+    .execute(&mut *tx)
+    .await?;
     audit::record(
         &mut tx,
         &user,

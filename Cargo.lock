@@ -3397,6 +3397,7 @@ dependencies = [
  "tradocraft-imports",
  "tradocraft-inventory",
  "tradocraft-kb",
+ "tradocraft-mrp",
  "tradocraft-planning",
  "tradocraft-portal",
  "tradocraft-production",
@@ -3705,6 +3706,27 @@ dependencies = [
  "tradocraft-core",
  "tradocraft-sales",
  "url",
+ "uuid",
+]
+
+[[package]]
+name = "tradocraft-mrp"
+version = "0.3.0"
+dependencies = [
+ "axum",
+ "chrono",
+ "rust_decimal",
+ "rust_decimal_macros",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "tokio",
+ "tradocraft-core",
+ "tradocraft-engineering",
+ "tradocraft-production",
+ "tradocraft-purchasing",
+ "utoipa 5.5.0",
+ "utoipa-axum",
  "uuid",
 ]
 

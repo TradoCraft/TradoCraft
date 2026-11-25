@@ -2860,6 +2860,108 @@
   "productionCapacityLegend": "Last der offenen Arbeitsgänge gegenüber dem, was jeder Arbeitsplatz leisten kann. Rot: überlastet.",
   "productionCapacityOverloaded": "Überlastet",
   "productionCapacityEmpty": "Keine Arbeitsplätze anzuzeigen.",
+  "mrpTitle": "Planungsvorschläge",
+  "mrpRun": "Planung ausführen",
+  "mrpRunDone": "Planung fertig: {count} Vorschläge.",
+  "@mrpRunDone": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "mrpHorizon": "{days} Tage",
+  "@mrpHorizon": {
+    "placeholders": {
+      "days": {
+        "type": "String"
+      }
+    }
+  },
+  "mrpEmpty": "Nichts zu kaufen oder zu fertigen.",
+  "mrpKindPurchase": "Kaufen",
+  "mrpKindProduction": "Fertigen",
+  "mrpReasonDemand": "Benötigt",
+  "mrpReasonSafety": "Sicherheitsbestand",
+  "mrpOrderBy": "Bestellen bis {date}",
+  "@mrpOrderBy": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "mrpNeededOn": "Benötigt am {date}",
+  "@mrpNeededOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "mrpLate": "Verspätet",
+  "mrpConvert": "Auftrag anlegen",
+  "mrpDismiss": "Verwerfen",
+  "mrpConverted": "Auftrag {number} angelegt.",
+  "@mrpConverted": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "mrpDismissed": "Vorschlag verworfen.",
+  "mrpChooseSupplier": "Lieferanten wählen",
+  "mrpNoSupplier": "Dieses Produkt hat keinen bevorzugten Lieferanten.",
+  "mrpStatusOpen": "Offen",
+  "mrpStatusConverted": "Umgesetzt",
+  "mrpStatusDismissed": "Verworfen",
+  "mrpStatusAll": "Alle",
+  "mrpStatusSuperseded": "Ersetzt",
+  "mrpLoadMore": "Mehr anzeigen",
+  "mrpPegSales": "Auftrag {number}",
+  "@mrpPegSales": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "mrpPegProduction": "Fertigungsauftrag {number}",
+  "@mrpPegProduction": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "mrpPegPlanned": "Zur Fertigung von {number}",
+  "@mrpPegPlanned": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "mrpPegPurchase": "Bestellung {number}",
+  "@mrpPegPurchase": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "productSafetyStock": "Sicherheitsbestand",
+  "productOrderMultiple": "Bestellvielfaches",
+  "mrpLastRun": "Letzter Lauf: {number}",
+  "@mrpLastRun": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "mrpNoRun": "Die Planung wurde noch nicht ausgeführt.",
   "productionBoardTitle": "Arbeitsplatzplanung",
   "productionBoardLate": "Verspätete Arbeitsgänge",
   "productionBoardNoLate": "Nichts ist verspätet.",
