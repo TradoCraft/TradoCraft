@@ -200,7 +200,19 @@ async fn main() -> anyhow::Result<()> {
     );
     let bound_addr = listener.local_addr()?;
     if let Some(path) = env("TRADOCRAFT_READY_FILE") {
-        std::fs::write(path, bound_addr.to_string()).context("writing launcher address")?;
+        use std::io::Write;
+
+        let path = std::path::absolute(path).context("resolving launcher address path")?;
+        let parent = path
+            .parent()
+            .context("launcher address path needs a parent")?;
+        let mut temporary = tempfile::NamedTempFile::new_in(parent)?;
+        write!(temporary, "{bound_addr}").context("writing launcher address")?;
+        // Close the writer before publishing the address on Windows.
+        let temporary = temporary.into_temp_path();
+        temporary
+            .persist(path)
+            .context("publishing launcher address")?;
     }
     tracing::info!("listening on http://{bound_addr} (API docs at /docs)");
     // The VIES lookup is an outbound call: live environments only (ADR 0048, ADR 0058).

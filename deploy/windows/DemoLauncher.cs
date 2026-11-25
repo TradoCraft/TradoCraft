@@ -64,8 +64,8 @@ internal static class DemoLauncher
                         // leave the active database paired with old files or credentials.
                         string retired = Path.Combine(Root, "reset-" + Guid.NewGuid().ToString("N"));
                         Directory.Move(Instance, retired);
-                        Directory.Delete(retired, true);
                     }
+                    DeleteRetiredInstances();
                     if (smoke) return 0;
                 }
                 RunDemo(smoke);
@@ -85,6 +85,12 @@ internal static class DemoLauncher
 
     private static void RunDemo(bool smoke)
     {
+        // PostgreSQL 16's Windows pg_ctl starts the server through cmd.exe.
+        if (Bundle.IndexOfAny(new[] { '%', '!' }) >= 0)
+            throw new IOException("Extract the demo to a folder without % or ! in its path, such as Documents\\TradoCraft Demo.");
+        if (Root.IndexOfAny(new[] { '%', '!' }) >= 0)
+            throw new IOException("The demo needs a Windows profile whose Local AppData path does not contain % or !.");
+
         using (var job = new ProcessJob())
         {
             Initialise(job);
@@ -96,9 +102,7 @@ internal static class DemoLauncher
             bool pgStarted = false;
             try
             {
-                Run(job, Path.Combine(Postgres, "pg_ctl.exe"), "launcher", "start",
-                    "-D", PgData, "-l", Path.Combine(Logs, "postgres.log"), "-w", "-t", "60",
-                    "-o", "-h 127.0.0.1 -p " + port);
+                StartPostgres(job, port);
                 pgStarted = true;
                 string database = "postgresql://tradocraft_demo:" + File.ReadAllText(Password).Trim()
                     + "@127.0.0.1:" + port + "/postgres";
@@ -138,6 +142,52 @@ internal static class DemoLauncher
                         "-D", PgData, "-w", "-t", "30", "-m", "fast");
             }
         }
+    }
+
+    private static void DeleteRetiredInstances()
+    {
+        foreach (string directory in Directory.GetDirectories(Root, "reset-*"))
+        {
+            Guid id;
+            if (!Guid.TryParseExact(Path.GetFileName(directory).Substring("reset-".Length), "N", out id))
+                continue;
+            RejectReparsePoint(directory);
+            for (int attempt = 0; ; attempt++)
+            {
+                try
+                {
+                    Directory.Delete(directory, true);
+                    break;
+                }
+                catch (IOException ex)
+                {
+                    if (ex is DirectoryNotFoundException && !Directory.Exists(directory)) break;
+                    if (attempt == 9) throw;
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    if (attempt == 9) throw;
+                }
+                Thread.Sleep(300);
+            }
+        }
+    }
+
+    private static void StartPostgres(ProcessJob job, int port)
+    {
+        string pgCtl = Path.Combine(Postgres, "pg_ctl.exe");
+        string[] args = { pgCtl, "start", "-D", PgData, "-l", Path.Combine(Logs, "postgres.log"),
+            "-w", "-t", "60", "-o", "-h 127.0.0.1 -p " + port };
+        // Use a file for pg_ctl diagnostics. Its background server can inherit handles,
+        // so waiting for EOF on pg_ctl's redirected pipes can hang after pg_ctl exits.
+        string cmd = Path.Combine(Environment.SystemDirectory, "cmd.exe");
+        var spec = Command(cmd);
+        spec.EnvironmentVariables["COMSPEC"] = cmd;
+        spec.RedirectStandardOutput = false;
+        spec.RedirectStandardError = false;
+        spec.Arguments = "/d /v:off /s /c \"" + String.Join(" ", Array.ConvertAll(args, Quote))
+            + " >> " + Quote(Path.Combine(Logs, "pg_ctl.log")) + " 2>&1\"";
+        Run(job, spec, "launcher", "pg_ctl.exe start");
     }
 
     private static void Initialise(ProcessJob job)
@@ -263,13 +313,17 @@ internal static class DemoLauncher
         if (!Regex.IsMatch(Request(url + "/api/v1/meta/environment"), @"""kind""\s*:\s*""tutorial"""))
             throw new Exception("Expected a tutorial environment.");
         var serializer = new JavaScriptSerializer();
+        var workerStarted = new DateTimeOffset(worker.StartTime.ToUniversalTime());
         var timeout = Stopwatch.StartNew();
         while (true)
         {
             RequireRunning(worker, "Worker");
             var status = serializer.DeserializeObject(Request(url + "/api/v1/admin/worker"))
                 as System.Collections.Generic.Dictionary<string, object>;
-            if (Object.Equals(status["state"], "running")) break;
+            DateTimeOffset reportedStart;
+            if (Object.Equals(status["state"], "running") &&
+                DateTimeOffset.TryParse(status["started_at"] as string, out reportedStart) &&
+                reportedStart > workerStarted) break;
             if (timeout.Elapsed > TimeSpan.FromSeconds(30))
                 throw new Exception("The demo worker did not report a heartbeat.");
             Thread.Sleep(500);
@@ -333,8 +387,8 @@ internal static class DemoLauncher
         try
         {
             job.Add(process);
-            process.BeginOutputReadLine();
-            process.BeginErrorReadLine();
+            if (spec.RedirectStandardOutput) process.BeginOutputReadLine();
+            if (spec.RedirectStandardError) process.BeginErrorReadLine();
             return process;
         }
         catch
@@ -346,16 +400,21 @@ internal static class DemoLauncher
 
     private static void Run(ProcessJob job, string exe, string log, params string[] args)
     {
-        using (var process = Start(job, Command(exe, args), log))
+        Run(job, Command(exe, args), log, Path.GetFileName(exe));
+    }
+
+    private static void Run(ProcessJob job, ProcessStartInfo spec, string log, string name)
+    {
+        using (var process = Start(job, spec, log))
         {
             if (!process.WaitForExit(90000))
             {
                 process.Kill();
-                throw new Exception(Path.GetFileName(exe) + " timed out.");
+                throw new Exception(name + " timed out.");
             }
-            process.WaitForExit();
+            if (spec.RedirectStandardOutput || spec.RedirectStandardError) process.WaitForExit();
             if (process.ExitCode != 0)
-                throw new Exception(Path.GetFileName(exe) + " failed with code " + process.ExitCode);
+                throw new Exception(name + " failed with code " + process.ExitCode);
         }
     }
 

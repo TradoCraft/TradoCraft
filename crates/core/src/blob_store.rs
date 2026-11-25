@@ -138,8 +138,7 @@ impl BlobStore {
         let temp = std::path::absolute(&tmp_dir).context("resolve temporary directory")?;
         let sync_parent = parent.clone();
         tokio::task::spawn_blocking(move || -> anyhow::Result<()> {
-            // A new root is published with its private lock already held. Other
-            // writers find that same inode and wait until root ancestors are durable.
+            // Keep shard creation serialized, including when the root is new.
             let _lock = lock_storage_root(&root)?;
             let mut dirs = vec![
                 sync_parent.clone(),
@@ -308,9 +307,24 @@ async fn publish_blob(source: &Path, dest: &Path) -> std::io::Result<()> {
     }
 
     const MOVEFILE_WRITE_THROUGH: u32 = 0x8;
-    let source: Vec<_> = source.as_os_str().encode_wide().chain([0]).collect();
-    let dest: Vec<_> = dest.as_os_str().encode_wide().chain([0]).collect();
+    let source = source.to_owned();
+    let dest = dest.to_owned();
     tokio::task::spawn_blocking(move || {
+        fn wide_path(path: &Path) -> std::io::Result<Vec<u16>> {
+            // Canonicalizing an existing directory gives Windows' verbatim absolute
+            // form. The destination file itself does not exist yet.
+            let parent = path.parent().ok_or(std::io::ErrorKind::InvalidInput)?;
+            let name = path.file_name().ok_or(std::io::ErrorKind::InvalidInput)?;
+            Ok(parent
+                .canonicalize()?
+                .join(name)
+                .as_os_str()
+                .encode_wide()
+                .chain([0])
+                .collect())
+        }
+        let source = wide_path(&source)?;
+        let dest = wide_path(&dest)?;
         // Both buffers are NUL-terminated and live until Windows returns.
         if unsafe { MoveFileExW(source.as_ptr(), dest.as_ptr(), MOVEFILE_WRITE_THROUGH) } == 0 {
             return Err(std::io::Error::last_os_error());
@@ -342,23 +356,31 @@ fn sync_directory(_path: impl AsRef<Path>) -> std::io::Result<()> {
 }
 
 /// Locks initialization in a private directory within the configured storage root.
-fn lock_storage_root(root: &Path) -> anyhow::Result<std::fs::File> {
-    fn lock_existing(root: &Path) -> anyhow::Result<std::fs::File> {
-        let dir = root.join(".locks");
-        match private_dir_builder().create(&dir) {
-            Ok(()) => (),
-            Err(e) if e.kind() == ErrorKind::AlreadyExists => (),
-            Err(e) => return Err(e.into()),
-        }
-        let mut options = std::fs::OpenOptions::new();
-        options.read(true).write(true).create(true).truncate(false);
-        #[cfg(unix)]
-        options.mode(0o600);
-        let lock = options.open(dir.join("directories.lock"))?;
-        lock.lock()?;
-        sync_directory(root)?;
-        Ok(lock)
+fn lock_existing(root: &Path) -> anyhow::Result<std::fs::File> {
+    let dir = root.join(".locks");
+    match private_dir_builder().create(&dir) {
+        Ok(()) => (),
+        Err(e) if e.kind() == ErrorKind::AlreadyExists => (),
+        Err(e) => return Err(e.into()),
     }
+    let mut options = std::fs::OpenOptions::new();
+    options.read(true).write(true).create(true).truncate(false);
+    #[cfg(unix)]
+    options.mode(0o600);
+    let lock = options.open(dir.join("directories.lock"))?;
+    lock.lock()?;
+    sync_directory(root)?;
+    Ok(lock)
+}
+
+#[cfg(windows)]
+fn lock_storage_root(root: &Path) -> anyhow::Result<std::fs::File> {
+    std::fs::create_dir_all(root)?;
+    lock_existing(root)
+}
+
+#[cfg(unix)]
+fn lock_storage_root(root: &Path) -> anyhow::Result<std::fs::File> {
     if root.try_exists()? {
         return lock_existing(root);
     }
@@ -426,6 +448,17 @@ mod tests {
         // Idempotent delete
         store.delete(&key).await.unwrap();
         let _ = std::fs::remove_dir_all(store.root());
+    }
+
+    #[cfg(windows)]
+    #[tokio::test]
+    async fn publishes_under_an_extended_length_path() {
+        let base = BlobStore::temp_for_tests();
+        let root = base.root().join("a".repeat(120)).join("b".repeat(120));
+        let store = BlobStore::new(root);
+        let key = store.put(b"long path").await.unwrap();
+        assert_eq!(store.get(&key).await.unwrap(), b"long path");
+        std::fs::remove_dir_all(base.root()).unwrap();
     }
 
     #[tokio::test]

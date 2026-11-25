@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path/path.dart' as p;
 
 import 'app/router.dart';
 import 'l10n/l10n.dart';
@@ -30,7 +31,17 @@ Future<KvStore> _openStore(String? profile) async {
 
 Future<void> main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
-  final demoUrl = _demoServer(args);
+  final String? demoUrl;
+  try {
+    demoUrl = _demoServer(args);
+  } on FormatException catch (error) {
+    runApp(
+      MaterialApp(
+        home: Scaffold(body: Center(child: Text(error.message))),
+      ),
+    );
+    return;
+  }
   final profile = demoUrl == null ? parseProfile(args) : 'portable-demo';
   // A profile keeps everything in a file of its own; without one the platform preferences are used.
   final KvStore store = demoUrl == null
@@ -60,16 +71,25 @@ Future<void> main(List<String> args) async {
 }
 
 String? _demoServer(List<String> args) {
-  if (kIsWeb ||
-      !Platform.isWindows ||
-      !args.contains('--portable-demo') ||
-      Platform.environment['TRADOCRAFT_DEMO_PROFILE']?.isNotEmpty != true) {
-    return null;
-  }
+  if (!args.contains('--portable-demo')) return null;
+  const error = FormatException(
+    'Portable demo configuration is invalid. Open Start TradoCraft Demo.exe.',
+  );
+  if (kIsWeb || !Platform.isWindows) throw error;
+
+  final profile = Platform.environment['TRADOCRAFT_DEMO_PROFILE'];
   final url = Platform.environment['TRADOCRAFT_DEMO_URL'];
-  return url != null && RegExp(r'^http://127\.0\.0\.1:[0-9]+$').hasMatch(url)
-      ? url
-      : null;
+  final uri = url == null ? null : Uri.tryParse(url);
+  if (profile == null ||
+      !p.isAbsolute(profile) ||
+      url == null ||
+      !RegExp(r'^http://127\.0\.0\.1:[0-9]+$').hasMatch(url) ||
+      uri == null ||
+      uri.port < 1 ||
+      uri.port > 65535) {
+    throw error;
+  }
+  return url;
 }
 
 class TradocraftApp extends ConsumerWidget {
