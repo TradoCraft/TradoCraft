@@ -1,0 +1,530 @@
+/* TradoCraft Web UI theme tokens (ADR 0077 & app/lib/core/theme/tokens.dart).
+ * Brand seed: #2F5D62; neutral surfaces; 4pt spacing scale; compact density.
+ */
+
+:root,
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --brand-seed: #2f5d62;
+  --primary: #8ad2d8;
+  --on-primary: #00363a;
+  --primary-container: #004f55;
+  --on-primary-container: #a6eef5;
+
+  --surface: #101414;
+  --surface-container-low: #181c1d;
+  --surface-container: #1c2021;
+  --surface-container-high: #262b2b;
+  --surface-container-highest: #313636;
+  --on-surface: #e0e3e3;
+  --on-surface-variant: #bec8c9;
+
+  --outline: #889393;
+  --outline-variant: #3f4949;
+  --inverse-surface: #e0e3e3;
+  --on-inverse-surface: #2d3131;
+
+  --error: #ffb4ab;
+  --on-error: #690005;
+  --error-container: #93000a;
+  --on-error-container: #ffdad6;
+  --success: #81c995;
+  --success-container: #143822;
+  --warning: #f2b866;
+  --warning-container: #3d2c10;
+
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 24px;
+  --space-xxl: 32px;
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  --font-sans: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --brand-seed: #2f5d62;
+  --primary: #2f5d62;
+  --on-primary: #ffffff;
+  --primary-container: #d3ecef;
+  --on-primary-container: #0f2c2f;
+
+  --surface: #f7fafa;
+  --surface-container-low: #f0f4f4;
+  --surface-container: #eaeff0;
+  --surface-container-high: #e3e9ea;
+  --surface-container-highest: #dce3e4;
+  --on-surface: #181c1d;
+  --on-surface-variant: #444d4e;
+
+  --outline: #70797a;
+  --outline-variant: #c3cdce;
+  --inverse-surface: #2d3131;
+  --on-inverse-surface: #eff1f1;
+
+  --error: #ba1a1a;
+  --on-error: #ffffff;
+  --error-container: #ffdad6;
+  --on-error-container: #410002;
+  --success: #1b6b3a;
+  --success-container: #d3f2dd;
+  --warning: #8a5600;
+  --warning-container: #ffebcc;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--surface);
+  color: var(--on-surface);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+select {
+  font-family: inherit;
+  font-size: 13px;
+}
+
+/* Compact outlined inputs (ADR 0077) */
+.tc-input,
+.tc-select {
+  background: var(--surface);
+  color: var(--on-surface);
+  border: 1px solid var(--outline);
+  border-radius: var(--radius-sm);
+  padding: 7px var(--space-md);
+  min-height: 34px;
+  outline: none;
+  transition: border-color 120ms ease;
+}
+
+.tc-input:focus,
+.tc-select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 1px var(--primary);
+}
+
+.tc-input::placeholder {
+  color: var(--outline);
+}
+
+.tc-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  min-height: 34px;
+  padding: 6px var(--space-lg);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--outline-variant);
+  background: var(--surface-container-high);
+  color: var(--on-surface);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.tc-btn:hover:not(:disabled) {
+  background: var(--surface-container-highest);
+}
+
+.tc-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.tc-btn-primary {
+  background: var(--primary);
+  color: var(--on-primary);
+  border-color: transparent;
+}
+
+.tc-btn-primary:hover:not(:disabled) {
+  filter: brightness(1.06);
+  background: var(--primary);
+}
+
+.tc-btn-ghost {
+  background: transparent;
+  border-color: transparent;
+}
+
+.tc-btn-ghost:hover:not(:disabled) {
+  background: var(--surface-container-high);
+}
+
+.tc-btn-sm {
+  min-height: 28px;
+  padding: 4px var(--space-sm);
+  font-size: 12px;
+}
+
+.tc-card {
+  background: var(--surface-container-low);
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius-md);
+  padding: var(--space-lg);
+}
+
+.tc-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--surface-container-highest);
+  color: var(--on-surface-variant);
+}
+
+.tc-badge-primary {
+  background: var(--primary-container);
+  color: var(--on-primary-container);
+}
+
+.tc-badge-success {
+  background: var(--success-container);
+  color: var(--success);
+}
+
+.tc-badge-warning {
+  background: var(--warning-container);
+  color: var(--warning);
+}
+
+.tc-badge-error {
+  background: var(--error-container);
+  color: var(--on-error-container);
+}
+
+.tc-alert-error {
+  background: var(--error-container);
+  color: var(--on-error-container);
+  border: 1px solid var(--error);
+  border-radius: var(--radius-sm);
+  padding: var(--space-sm) var(--space-md);
+  font-size: 13px;
+}
+
+/* App Shell */
+.tc-shell {
+  display: grid;
+  grid-template-rows: 48px 36px 1fr;
+  grid-template-columns: 232px 1fr;
+  grid-template-areas:
+    "topbar topbar"
+    "sidebar tabbar"
+    "sidebar main";
+  height: 100vh;
+  overflow: hidden;
+}
+
+.tc-topbar {
+  grid-area: topbar;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-lg);
+  background: var(--surface-container);
+  border-bottom: 1px solid var(--outline-variant);
+  gap: var(--space-md);
+}
+
+.tc-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.tc-brand-mark {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-sm);
+  background: var(--brand-seed);
+  color: #ffffff;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.tc-topbar-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+/* Workspace Tab Bar (ADR 0041 placeholder) */
+.tc-tabbar {
+  grid-area: tabbar;
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  padding: 0 var(--space-md);
+  background: var(--surface-container-low);
+  border-bottom: 1px solid var(--outline-variant);
+  overflow-x: auto;
+}
+
+.tc-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  height: 30px;
+  padding: 0 var(--space-md);
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  background: transparent;
+  color: var(--on-surface-variant);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tc-tab:hover {
+  background: var(--surface-container);
+  color: var(--on-surface);
+}
+
+.tc-tab-active {
+  background: var(--surface);
+  color: var(--on-surface);
+  border-color: var(--outline-variant);
+  font-weight: 600;
+}
+
+.tc-tab-close {
+  border: none;
+  background: transparent;
+  color: var(--on-surface-variant);
+  cursor: pointer;
+  padding: 0 2px;
+  font-size: 13px;
+  line-height: 1;
+}
+
+.tc-tab-close:hover {
+  color: var(--on-surface);
+}
+
+/* Sidebar module navigation */
+.tc-sidebar {
+  grid-area: sidebar;
+  background: var(--surface-container-low);
+  border-right: 1px solid var(--outline-variant);
+  padding: var(--space-md) var(--space-sm);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.tc-nav-group-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--outline);
+  padding: 0 var(--space-sm) var(--space-xs);
+}
+
+.tc-nav-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tc-nav-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px var(--space-sm);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  color: var(--on-surface-variant);
+}
+
+.tc-nav-item:hover {
+  background: var(--surface-container-high);
+  color: var(--on-surface);
+}
+
+.tc-nav-item.active {
+  background: var(--primary-container);
+  color: var(--on-primary-container);
+  font-weight: 600;
+}
+
+/* Main workspace */
+.tc-main {
+  grid-area: main;
+  overflow-y: auto;
+  padding: var(--space-xl);
+}
+
+.tc-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+.tc-page-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.tc-page-subtitle {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--on-surface-variant);
+}
+
+.tc-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+/* Compact Data Table (ADR 0077) */
+.tc-table-wrap {
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius-md);
+  overflow: auto;
+  background: var(--surface-container-low);
+}
+
+.tc-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 13px;
+}
+
+.tc-table thead th {
+  background: var(--surface-container-high);
+  color: var(--on-surface-variant);
+  font-size: 12px;
+  font-weight: 600;
+  height: 40px;
+  padding: 0 var(--space-lg);
+  border-bottom: 1px solid var(--outline-variant);
+  white-space: nowrap;
+}
+
+.tc-table tbody td {
+  height: 40px;
+  padding: 0 var(--space-lg);
+  border-bottom: 1px solid var(--outline-variant);
+  vertical-align: middle;
+}
+
+.tc-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.tc-table tbody tr.tc-row-clickable {
+  cursor: pointer;
+}
+
+.tc-table tbody tr.tc-row-clickable:hover {
+  background: var(--surface-container);
+}
+
+.tc-mono {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.tc-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Login Page */
+.tc-login-wrap {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: var(--space-xl);
+  background:
+    radial-gradient(circle at top right, rgba(47, 93, 98, 0.22), transparent 45%),
+    var(--surface);
+}
+
+.tc-login-card {
+  width: 100%;
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.tc-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.tc-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--on-surface-variant);
+}
+
+.tc-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.tc-chip {
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--outline-variant);
+  background: var(--surface-container);
+  color: var(--on-surface-variant);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.tc-chip:hover {
+  background: var(--surface-container-high);
+  color: var(--on-surface);
+}
