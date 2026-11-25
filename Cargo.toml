@@ -9,6 +9,7 @@ license = "AGPL-3.0-or-later"
 publish = false
 
 [workspace.dependencies]
+tradocraft-api-client = { path = "crates/api-client" }
 tradocraft-core = { path = "crates/core" }
 tradocraft-pricing = { path = "crates/pricing" }
 tradocraft-crm = { path = "crates/crm" }
