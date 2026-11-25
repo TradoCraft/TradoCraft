@@ -24,7 +24,7 @@ class Favourite {
   final String search;
   final FilterSelection filters;
 
-  /// The key of the grouping (ADR 0084); null: not grouped.
+  /// The key of the grouping (ADR 0089); null: not grouped.
   final String? groupBy;
 
   /// The favourite without filters or options that [defs] do not know, and without a grouping

@@ -28,7 +28,7 @@ class QuotationRepository
     return Page(page.items, total: page.total);
   }
 
-  /// Row counts per value of [groupBy] for the rows [query] would list (ADR 0084).
+  /// Row counts per value of [groupBy] for the rows [query] would list (ADR 0089).
   Future<List<GroupBucket>> groups(ListQuery query, String groupBy) async {
     final page = await _sales.quotationGroups(
       groupBy: groupBy,

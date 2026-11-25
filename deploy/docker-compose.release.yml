@@ -25,7 +25,7 @@ services:
       retries: 30
 
   api:
-    image: ghcr.io/tradocraft/tradocraft-backend:${TRADOCRAFT_VERSION:-0.2.0}
+    image: ghcr.io/tradocraft/tradocraft-backend:${TRADOCRAFT_VERSION:-0.3.0}
     depends_on:
       db:
         condition: service_healthy
@@ -48,7 +48,7 @@ services:
       retries: 30
 
   portal-api:
-    image: ghcr.io/tradocraft/tradocraft-backend:${TRADOCRAFT_VERSION:-0.2.0}
+    image: ghcr.io/tradocraft/tradocraft-backend:${TRADOCRAFT_VERSION:-0.3.0}
     command: ["tradocraft-portal-api"]
     depends_on:
       api:
@@ -66,7 +66,7 @@ services:
       - "127.0.0.1:8090:8090"
 
   worker:
-    image: ghcr.io/tradocraft/tradocraft-backend:${TRADOCRAFT_VERSION:-0.2.0}
+    image: ghcr.io/tradocraft/tradocraft-backend:${TRADOCRAFT_VERSION:-0.3.0}
     command: ["tradocraft-worker"]
     depends_on:
       api:
@@ -84,7 +84,7 @@ services:
       - outbox:/app/outbox
 
   web:
-    image: ghcr.io/tradocraft/tradocraft-web:${TRADOCRAFT_VERSION:-0.2.0}
+    image: ghcr.io/tradocraft/tradocraft-web:${TRADOCRAFT_VERSION:-0.3.0}
     depends_on:
       api:
         condition: service_healthy

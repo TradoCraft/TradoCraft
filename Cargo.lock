@@ -3365,7 +3365,7 @@ dependencies = [
 
 [[package]]
 name = "tradocraft-api"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "axum",
@@ -3415,7 +3415,7 @@ dependencies = [
 
 [[package]]
 name = "tradocraft-chatter"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "axum",
  "chrono",
@@ -3430,7 +3430,7 @@ dependencies = [
 
 [[package]]
 name = "tradocraft-configurator"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "axum",
  "chrono",
@@ -3451,7 +3451,7 @@ dependencies = [
 
 [[package]]
 name = "tradocraft-core"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "axum",
@@ -3483,7 +3483,7 @@ dependencies = [
 
 [[package]]
 name = "tradocraft-crm"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "axum",
  "chrono",
@@ -3502,7 +3502,7 @@ dependencies = [
 
 [[package]]
 name = "tradocraft-delivery"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "axum",
  "chrono",
@@ -3523,7 +3523,7 @@ dependencies = [
 
 [[package]]
 name = "tradocraft-documents"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "chrono",
@@ -3540,7 +3540,7 @@ dependencies = [
 
 [[package]]
 name = "tradocraft-engineering"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "axum",
@@ -3559,7 +3559,7 @@ dependencies = [
 
 [[package]]
 name = "tradocraft-fieldservice"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "axum",
@@ -3580,7 +3580,7 @@ dependencies = [
 
 [[package]]
 name = "tradocraft-finance"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "axum",
  "chrono",
@@ -3601,7 +3601,7 @@ dependencies = [
 
 [[package]]
 name = "tradocraft-helpdesk"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "async-imap",
@@ -3635,7 +3635,7 @@ dependencies = [
 
 [[package]]
 name = "tradocraft-imports"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "axum",
  "chrono",
@@ -3654,7 +3654,7 @@ dependencies = [
 
 [[package]]
 name = "tradocraft-inventory"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "axum",
  "chrono",
@@ -3673,7 +3673,7 @@ dependencies = [
 
 [[package]]
 name = "tradocraft-kb"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "axum",
  "chrono",
@@ -3688,7 +3688,7 @@ dependencies = [
 
 [[package]]
 name = "tradocraft-mcp"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "axum",
@@ -3710,7 +3710,7 @@ dependencies = [
 
 [[package]]
 name = "tradocraft-planning"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "axum",
  "chrono",
@@ -3726,7 +3726,7 @@ dependencies = [
 
 [[package]]
 name = "tradocraft-portal"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "axum",
  "chrono",
@@ -3749,7 +3749,7 @@ dependencies = [
 
 [[package]]
 name = "tradocraft-portal-api"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "axum",
@@ -3770,7 +3770,7 @@ dependencies = [
 
 [[package]]
 name = "tradocraft-pricing"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "chrono",
  "rust_decimal",
@@ -3782,7 +3782,7 @@ dependencies = [
 
 [[package]]
 name = "tradocraft-production"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "axum",
  "chrono",
@@ -3804,7 +3804,7 @@ dependencies = [
 
 [[package]]
 name = "tradocraft-products"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "axum",
  "chrono",
@@ -3824,7 +3824,7 @@ dependencies = [
 
 [[package]]
 name = "tradocraft-purchasing"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "axum",
  "chrono",
@@ -3844,7 +3844,7 @@ dependencies = [
 
 [[package]]
 name = "tradocraft-repairs"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "axum",
  "chrono",
@@ -3862,7 +3862,7 @@ dependencies = [
 
 [[package]]
 name = "tradocraft-reports"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "axum",
@@ -3883,7 +3883,7 @@ dependencies = [
 
 [[package]]
 name = "tradocraft-sales"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "axum",
  "chrono",
@@ -3907,7 +3907,7 @@ dependencies = [
 
 [[package]]
 name = "tradocraft-todo"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "axum",
  "chrono",
@@ -3923,7 +3923,7 @@ dependencies = [
 
 [[package]]
 name = "tradocraft-worker"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "chrono",

@@ -1,4 +1,4 @@
-//! Group counts of the list endpoints (ADR 0084): `GET /customers/groups`, `/products/groups`
+//! Group counts of the list endpoints (ADR 0089): `GET /customers/groups`, `/products/groups`
 //! and `/quotations/groups`. The groups follow the same search and filters as the list, their
 //! counts add up to the list total, a missing or unknown `group_by` is a 422 and other companies'
 //! rows are not counted.

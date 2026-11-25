@@ -30,7 +30,7 @@ import 'clients/planning_client.dart';
 import 'clients/portal_client.dart';
 import 'clients/todo_client.dart';
 
-/// tradocraft API `v0.1.0`.
+/// tradocraft API `v0.3.0`.
 ///
 /// Business platform API (CRM, products, pricing, sales, engineering, helpdesk, customer portal).
 class TradocraftApi {
@@ -43,7 +43,7 @@ class TradocraftApi {
   final Dio _dio;
   final String? _baseUrl;
 
-  static String get version => '0.1.0';
+  static String get version => '0.3.0';
 
   AdminClient? _admin;
   CoreClient? _core;
