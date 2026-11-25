@@ -100,6 +100,12 @@ class _ProductFormState extends ConsumerState<ProductForm> {
   late final _reorderMax = DecimalInputController(
     text: editableDecimal(p?.reorderMax),
   );
+  late final _safetyStock = DecimalInputController(
+    text: editableDecimal(p?.safetyStock),
+  );
+  late final _orderMultiple = DecimalInputController(
+    text: editableDecimal(p?.orderMultiple),
+  );
   late final _leadTime = TextEditingController(
     text: p?.leadTimeDays?.toString() ?? '',
   );
@@ -140,6 +146,8 @@ class _ProductFormState extends ConsumerState<ProductForm> {
     _cost,
     _reorderMin,
     _reorderMax,
+    _safetyStock,
+    _orderMultiple,
     _leadTime,
     _barcode,
     _length,
@@ -295,6 +303,8 @@ class _ProductFormState extends ConsumerState<ProductForm> {
       _cost.text = editableDecimal(source.standardCost);
       _reorderMin.text = editableDecimal(source.reorderMin);
       _reorderMax.text = editableDecimal(source.reorderMax);
+      _safetyStock.text = editableDecimal(source.safetyStock);
+      _orderMultiple.text = editableDecimal(source.orderMultiple);
       _leadTime.text = source.leadTimeDays?.toString() ?? '';
       _packagingId = source.packagingCategoryId;
       _length.text = source.lengthMm?.toString() ?? '';
@@ -334,12 +344,17 @@ class _ProductFormState extends ConsumerState<ProductForm> {
     final cost = _cost.decimal;
     final min = _reorderMin.decimal;
     final max = _reorderMax.decimal;
+    final safety = _safetyStock.decimal;
+    final multiple = _orderMultiple.decimal;
     final lead = _leadTime.text.trim().isEmpty
         ? null
         : int.tryParse(_leadTime.text.trim());
     if ((_cost.text.trim().isNotEmpty && cost == null) ||
         (_reorderMin.text.trim().isNotEmpty && min == null) ||
         (_reorderMax.text.trim().isNotEmpty && max == null) ||
+        (_safetyStock.text.trim().isNotEmpty && safety == null) ||
+        (_orderMultiple.text.trim().isNotEmpty &&
+            (multiple == null || (double.tryParse(multiple) ?? 0) <= 0)) ||
         (_leadTime.text.trim().isNotEmpty && lead == null)) {
       setState(() => _error = context.l10n.stockInvalidNumbers);
       return;
@@ -375,6 +390,8 @@ class _ProductFormState extends ConsumerState<ProductForm> {
       standardCost: cost,
       reorderMin: min,
       reorderMax: max,
+      safetyStock: safety,
+      orderMultiple: multiple,
       leadTimeDays: lead,
       barcode: _barcode.text.trim().isEmpty ? null : _barcode.text.trim(),
       packagingCategoryId: _packagingId,
@@ -1062,6 +1079,29 @@ class _ProductFormState extends ConsumerState<ProductForm> {
                     controller: _leadTime,
                     decoration: InputDecoration(
                       labelText: context.l10n.stockLeadTime,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            gap,
+            // What the planning (MRP) keeps on hand and rounds its orders to.
+            Row(
+              children: [
+                Expanded(
+                  child: DecimalField(
+                    controller: _safetyStock,
+                    decoration: InputDecoration(
+                      labelText: context.l10n.productSafetyStock,
+                    ),
+                  ),
+                ),
+                gap,
+                Expanded(
+                  child: DecimalField(
+                    controller: _orderMultiple,
+                    decoration: InputDecoration(
+                      labelText: context.l10n.productOrderMultiple,
                     ),
                   ),
                 ),

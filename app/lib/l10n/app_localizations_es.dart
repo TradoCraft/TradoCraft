@@ -8655,6 +8655,116 @@ class AppLocalizationsEs extends AppLocalizations {
       'No hay puestos de trabajo que mostrar.';
 
   @override
+  String get mrpTitle => 'Propuestas de planificación';
+
+  @override
+  String get mrpRun => 'Ejecutar la planificación';
+
+  @override
+  String mrpRunDone(String count) {
+    return 'Planificación terminada: $count propuestas.';
+  }
+
+  @override
+  String mrpHorizon(String days) {
+    return '$days días';
+  }
+
+  @override
+  String get mrpEmpty => 'Nada que comprar ni fabricar.';
+
+  @override
+  String get mrpKindPurchase => 'Comprar';
+
+  @override
+  String get mrpKindProduction => 'Fabricar';
+
+  @override
+  String get mrpReasonDemand => 'Necesario';
+
+  @override
+  String get mrpReasonSafety => 'Stock de seguridad';
+
+  @override
+  String mrpOrderBy(String date) {
+    return 'Pedir antes del $date';
+  }
+
+  @override
+  String mrpNeededOn(String date) {
+    return 'Necesario el $date';
+  }
+
+  @override
+  String get mrpLate => 'Con retraso';
+
+  @override
+  String get mrpConvert => 'Crear el pedido';
+
+  @override
+  String get mrpDismiss => 'Descartar';
+
+  @override
+  String mrpConverted(String number) {
+    return 'Pedido $number creado.';
+  }
+
+  @override
+  String get mrpDismissed => 'Propuesta descartada.';
+
+  @override
+  String get mrpChooseSupplier => 'Elija un proveedor';
+
+  @override
+  String get mrpNoSupplier => 'Este producto no tiene un proveedor preferido.';
+
+  @override
+  String get mrpStatusOpen => 'Abiertas';
+
+  @override
+  String get mrpStatusConverted => 'Convertidas';
+
+  @override
+  String get mrpStatusDismissed => 'Descartadas';
+
+  @override
+  String get mrpStatusAll => 'Todas';
+
+  @override
+  String mrpPegSales(String number) {
+    return 'Pedido $number';
+  }
+
+  @override
+  String mrpPegProduction(String number) {
+    return 'Orden de producción $number';
+  }
+
+  @override
+  String mrpPegPlanned(String number) {
+    return 'Para fabricar $number';
+  }
+
+  @override
+  String mrpPegPurchase(String number) {
+    return 'Pedido de compra $number';
+  }
+
+  @override
+  String get productSafetyStock => 'Stock de seguridad';
+
+  @override
+  String get productOrderMultiple => 'Múltiplo de pedido';
+
+  @override
+  String mrpLastRun(String number) {
+    return 'Última ejecución: $number';
+  }
+
+  @override
+  String get mrpNoRun => 'La planificación aún no se ha ejecutado.';
+
+  @override
   String get productionBoardTitle => 'Planificación de centros de trabajo';
 
   @override

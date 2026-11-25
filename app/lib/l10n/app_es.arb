@@ -2860,6 +2860,106 @@
   "productionCapacityLegend": "Carga de las operaciones abiertas frente a lo que cada puesto puede trabajar. Rojo: sobrecargado.",
   "productionCapacityOverloaded": "Sobrecargado",
   "productionCapacityEmpty": "No hay puestos de trabajo que mostrar.",
+  "mrpTitle": "Propuestas de planificación",
+  "mrpRun": "Ejecutar la planificación",
+  "mrpRunDone": "Planificación terminada: {count} propuestas.",
+  "@mrpRunDone": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "mrpHorizon": "{days} días",
+  "@mrpHorizon": {
+    "placeholders": {
+      "days": {
+        "type": "String"
+      }
+    }
+  },
+  "mrpEmpty": "Nada que comprar ni fabricar.",
+  "mrpKindPurchase": "Comprar",
+  "mrpKindProduction": "Fabricar",
+  "mrpReasonDemand": "Necesario",
+  "mrpReasonSafety": "Stock de seguridad",
+  "mrpOrderBy": "Pedir antes del {date}",
+  "@mrpOrderBy": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "mrpNeededOn": "Necesario el {date}",
+  "@mrpNeededOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "mrpLate": "Con retraso",
+  "mrpConvert": "Crear el pedido",
+  "mrpDismiss": "Descartar",
+  "mrpConverted": "Pedido {number} creado.",
+  "@mrpConverted": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "mrpDismissed": "Propuesta descartada.",
+  "mrpChooseSupplier": "Elija un proveedor",
+  "mrpNoSupplier": "Este producto no tiene un proveedor preferido.",
+  "mrpStatusOpen": "Abiertas",
+  "mrpStatusConverted": "Convertidas",
+  "mrpStatusDismissed": "Descartadas",
+  "mrpStatusAll": "Todas",
+  "mrpPegSales": "Pedido {number}",
+  "@mrpPegSales": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "mrpPegProduction": "Orden de producción {number}",
+  "@mrpPegProduction": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "mrpPegPlanned": "Para fabricar {number}",
+  "@mrpPegPlanned": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "mrpPegPurchase": "Pedido de compra {number}",
+  "@mrpPegPurchase": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "productSafetyStock": "Stock de seguridad",
+  "productOrderMultiple": "Múltiplo de pedido",
+  "mrpLastRun": "Última ejecución: {number}",
+  "@mrpLastRun": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "mrpNoRun": "La planificación aún no se ha ejecutado.",
   "productionBoardTitle": "Planificación de centros de trabajo",
   "productionBoardLate": "Operaciones atrasadas",
   "productionBoardNoLate": "Nada está atrasado.",

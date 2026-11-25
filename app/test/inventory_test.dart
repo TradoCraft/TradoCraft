@@ -575,4 +575,68 @@ void main() {
       expect(body['barcode'], '5412345678901');
     }
   });
+
+  testWidgets(
+    'the product form keeps the safety stock and order multiple of the planning',
+    (tester) async {
+      final http = _http(
+        ['products.read', 'products.write'],
+        {'PUT /api/v1/products/p1': (_) => _product()},
+      );
+      await _pump(
+        tester,
+        http,
+        Builder(
+          builder: (context) => TextButton(
+            onPressed: () => showProductForm(
+              context,
+              product: Product.fromJson({
+                ..._product(),
+                'safety_stock': '3.0000',
+                'order_multiple': '12.0000',
+              }),
+            ),
+            child: const Text('open'),
+          ),
+        ),
+      );
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+      final safety = find.widgetWithText(TextField, 'Safety stock');
+      final multiple = find.widgetWithText(TextField, 'Order multiple');
+      expect(safety, findsOneWidget);
+      expect(multiple, findsOneWidget);
+      // What was stored is shown, and sent back as it is.
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+      var body = http.bodies['PUT /api/v1/products/p1'] as Map;
+      expect(body['safety_stock'], '3');
+      expect(body['order_multiple'], '12');
+      // A multiple of nothing is refused before anything is sent.
+      http.bodies.clear();
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Order multiple'),
+        '0',
+      );
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+      expect(http.bodies['PUT /api/v1/products/p1'], isNull);
+      // Empty means none.
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Order multiple'),
+        '',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Safety stock'),
+        '',
+      );
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+      body = http.bodies['PUT /api/v1/products/p1'] as Map;
+      expect(body['safety_stock'], isNull);
+      expect(body['order_multiple'], isNull);
+    },
+  );
 }

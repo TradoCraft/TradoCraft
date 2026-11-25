@@ -2860,6 +2860,106 @@
   "productionCapacityLegend": "Belasting door de openstaande bewerkingen tegenover wat elke werkplek kan werken. Rood: overbelast.",
   "productionCapacityOverloaded": "Overbelast",
   "productionCapacityEmpty": "Geen werkplekken om te tonen.",
+  "mrpTitle": "Planningsvoorstellen",
+  "mrpRun": "Planning uitvoeren",
+  "mrpRunDone": "Planning klaar: {count} voorstellen.",
+  "@mrpRunDone": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "mrpHorizon": "{days} dagen",
+  "@mrpHorizon": {
+    "placeholders": {
+      "days": {
+        "type": "String"
+      }
+    }
+  },
+  "mrpEmpty": "Niets te kopen of te maken.",
+  "mrpKindPurchase": "Kopen",
+  "mrpKindProduction": "Maken",
+  "mrpReasonDemand": "Nodig",
+  "mrpReasonSafety": "Veiligheidsvoorraad",
+  "mrpOrderBy": "Bestellen tegen {date}",
+  "@mrpOrderBy": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "mrpNeededOn": "Nodig op {date}",
+  "@mrpNeededOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "mrpLate": "Te laat",
+  "mrpConvert": "Bestelling maken",
+  "mrpDismiss": "Verwerpen",
+  "mrpConverted": "Bestelling {number} gemaakt.",
+  "@mrpConverted": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "mrpDismissed": "Voorstel verworpen.",
+  "mrpChooseSupplier": "Kies een leverancier",
+  "mrpNoSupplier": "Dit product heeft geen voorkeursleverancier.",
+  "mrpStatusOpen": "Open",
+  "mrpStatusConverted": "Omgezet",
+  "mrpStatusDismissed": "Verworpen",
+  "mrpStatusAll": "Alle",
+  "mrpPegSales": "Bestelling {number}",
+  "@mrpPegSales": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "mrpPegProduction": "Productieorder {number}",
+  "@mrpPegProduction": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "mrpPegPlanned": "Voor het maken van {number}",
+  "@mrpPegPlanned": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "mrpPegPurchase": "Inkooporder {number}",
+  "@mrpPegPurchase": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "productSafetyStock": "Veiligheidsvoorraad",
+  "productOrderMultiple": "Bestelveelvoud",
+  "mrpLastRun": "Laatste run: {number}",
+  "@mrpLastRun": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "mrpNoRun": "De planning is nog niet uitgevoerd.",
   "productionBoardTitle": "Werkplekplanning",
   "productionBoardLate": "Achterstallige bewerkingen",
   "productionBoardNoLate": "Niets is achterstallig.",

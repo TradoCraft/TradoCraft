@@ -4672,6 +4672,106 @@
   "productionCapacityLegend": "Load of the open operations against what each work centre can work. Red: overloaded.",
   "productionCapacityOverloaded": "Overloaded",
   "productionCapacityEmpty": "No work centres to show.",
+  "mrpTitle": "Planning proposals",
+  "mrpRun": "Run planning",
+  "mrpRunDone": "Planning done: {count} proposals.",
+  "@mrpRunDone": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "mrpHorizon": "{days} days",
+  "@mrpHorizon": {
+    "placeholders": {
+      "days": {
+        "type": "String"
+      }
+    }
+  },
+  "mrpEmpty": "Nothing to buy or build.",
+  "mrpKindPurchase": "Buy",
+  "mrpKindProduction": "Build",
+  "mrpReasonDemand": "Needed",
+  "mrpReasonSafety": "Safety stock",
+  "mrpOrderBy": "Order by {date}",
+  "@mrpOrderBy": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "mrpNeededOn": "Needed {date}",
+  "@mrpNeededOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "mrpLate": "Late",
+  "mrpConvert": "Create order",
+  "mrpDismiss": "Dismiss",
+  "mrpConverted": "Order {number} created.",
+  "@mrpConverted": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "mrpDismissed": "Proposal dismissed.",
+  "mrpChooseSupplier": "Choose a supplier",
+  "mrpNoSupplier": "This product has no preferred supplier.",
+  "mrpStatusOpen": "Open",
+  "mrpStatusConverted": "Converted",
+  "mrpStatusDismissed": "Dismissed",
+  "mrpStatusAll": "All",
+  "mrpPegSales": "Order {number}",
+  "@mrpPegSales": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "mrpPegProduction": "Production order {number}",
+  "@mrpPegProduction": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "mrpPegPlanned": "For building {number}",
+  "@mrpPegPlanned": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "mrpPegPurchase": "Purchase order {number}",
+  "@mrpPegPurchase": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "productSafetyStock": "Safety stock",
+  "productOrderMultiple": "Order multiple",
+  "mrpLastRun": "Last run: {number}",
+  "@mrpLastRun": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "mrpNoRun": "No planning has been run yet.",
   "productionBoardTitle": "Work-centre board",
   "productionBoardLate": "Late operations",
   "productionBoardNoLate": "Nothing is late.",

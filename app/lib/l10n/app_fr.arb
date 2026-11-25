@@ -2860,6 +2860,106 @@
   "productionCapacityLegend": "Charge des opérations ouvertes face à ce que chaque poste peut travailler. Rouge : surchargé.",
   "productionCapacityOverloaded": "Surchargé",
   "productionCapacityEmpty": "Aucun poste de travail à afficher.",
+  "mrpTitle": "Propositions de planification",
+  "mrpRun": "Lancer la planification",
+  "mrpRunDone": "Planification terminée : {count} propositions.",
+  "@mrpRunDone": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "mrpHorizon": "{days} jours",
+  "@mrpHorizon": {
+    "placeholders": {
+      "days": {
+        "type": "String"
+      }
+    }
+  },
+  "mrpEmpty": "Rien à acheter ni à fabriquer.",
+  "mrpKindPurchase": "Acheter",
+  "mrpKindProduction": "Fabriquer",
+  "mrpReasonDemand": "Nécessaire",
+  "mrpReasonSafety": "Stock de sécurité",
+  "mrpOrderBy": "Commander pour le {date}",
+  "@mrpOrderBy": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "mrpNeededOn": "Nécessaire le {date}",
+  "@mrpNeededOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "mrpLate": "En retard",
+  "mrpConvert": "Créer la commande",
+  "mrpDismiss": "Écarter",
+  "mrpConverted": "Commande {number} créée.",
+  "@mrpConverted": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "mrpDismissed": "Proposition écartée.",
+  "mrpChooseSupplier": "Choisissez un fournisseur",
+  "mrpNoSupplier": "Ce produit n'a pas de fournisseur préféré.",
+  "mrpStatusOpen": "Ouvertes",
+  "mrpStatusConverted": "Converties",
+  "mrpStatusDismissed": "Écartées",
+  "mrpStatusAll": "Toutes",
+  "mrpPegSales": "Commande {number}",
+  "@mrpPegSales": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "mrpPegProduction": "Ordre de fabrication {number}",
+  "@mrpPegProduction": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "mrpPegPlanned": "Pour fabriquer {number}",
+  "@mrpPegPlanned": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "mrpPegPurchase": "Commande d'achat {number}",
+  "@mrpPegPurchase": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "productSafetyStock": "Stock de sécurité",
+  "productOrderMultiple": "Multiple de commande",
+  "mrpLastRun": "Dernier calcul : {number}",
+  "@mrpLastRun": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "mrpNoRun": "La planification n'a pas encore été lancée.",
   "productionBoardTitle": "Planning des postes de travail",
   "productionBoardLate": "Opérations en retard",
   "productionBoardNoLate": "Rien n'est en retard.",
