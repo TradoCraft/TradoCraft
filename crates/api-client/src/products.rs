@@ -49,6 +49,10 @@ pub struct Product {
     #[serde(default)]
     pub reorder_max: Option<Decimal>,
     #[serde(default)]
+    pub order_multiple: Option<Decimal>,
+    #[serde(default)]
+    pub safety_stock: Option<Decimal>,
+    #[serde(default)]
     pub lead_time_days: Option<i32>,
     #[serde(default)]
     pub barcode: Option<String>,
@@ -118,6 +122,10 @@ pub struct ProductInput {
     #[serde(default)]
     pub reorder_max: Option<Decimal>,
     #[serde(default)]
+    pub order_multiple: Option<Decimal>,
+    #[serde(default)]
+    pub safety_stock: Option<Decimal>,
+    #[serde(default)]
     pub lead_time_days: Option<i32>,
     #[serde(default)]
     pub barcode: Option<String>,
@@ -185,6 +193,8 @@ impl Default for ProductInput {
             standard_cost: None,
             reorder_min: None,
             reorder_max: None,
+            order_multiple: None,
+            safety_stock: None,
             lead_time_days: None,
             barcode: None,
             packaging_category_id: None,
@@ -219,6 +229,8 @@ impl From<&Product> for ProductInput {
             standard_cost: product.standard_cost,
             reorder_min: product.reorder_min,
             reorder_max: product.reorder_max,
+            order_multiple: product.order_multiple,
+            safety_stock: product.safety_stock,
             lead_time_days: product.lead_time_days,
             barcode: product.barcode.clone(),
             packaging_category_id: product.packaging_category_id,
@@ -444,6 +456,8 @@ mod tests {
             standard_cost: Some(Decimal::from_str("42.50").unwrap()),
             reorder_min: Some(Decimal::from(5)),
             reorder_max: Some(Decimal::from(20)),
+            order_multiple: None,
+            safety_stock: None,
             lead_time_days: Some(7),
             barcode: Some("5412345678901".to_string()),
             packaging_category_id: None,

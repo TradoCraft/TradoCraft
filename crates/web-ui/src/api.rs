@@ -351,6 +351,8 @@ fn apply_product_input(id: Uuid, req: &ProductInput, existing: Option<&Product>)
         standard_cost: req.standard_cost,
         reorder_min: req.reorder_min,
         reorder_max: req.reorder_max,
+        order_multiple: req.order_multiple,
+        safety_stock: req.safety_stock,
         lead_time_days: req.lead_time_days,
         barcode: req
             .barcode
@@ -929,6 +931,8 @@ fn demo_products() -> Vec<Product> {
                 standard_cost: None,
                 reorder_min: None,
                 reorder_max: None,
+                order_multiple: None,
+                safety_stock: None,
                 lead_time_days: None,
                 barcode: None,
                 packaging_category_id: None,

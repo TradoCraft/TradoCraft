@@ -2,6 +2,7 @@ pub mod api;
 pub mod components;
 pub mod pages;
 pub mod state;
+pub mod tutorial;
 
 use leptos::prelude::*;
 use leptos_router::components::{Redirect, Route, Router, Routes};
@@ -17,6 +18,7 @@ use crate::pages::placeholder::PlaceholderPage;
 use crate::pages::portal::PortalPage;
 use crate::pages::products::ProductsPage;
 use crate::pages::quotations::QuotationsPage;
+use crate::pages::suppliers::SuppliersPage;
 use crate::state::{apply_theme_to_dom, AppContext};
 
 #[component]
@@ -145,7 +147,7 @@ pub fn App() -> impl IntoView {
                     path=path!("/purchasing")
                     view=|| view! {
                         <AppShell>
-                            <PlaceholderPage title="Purchasing" route="/purchasing" />
+                            <SuppliersPage />
                         </AppShell>
                     }
                 />

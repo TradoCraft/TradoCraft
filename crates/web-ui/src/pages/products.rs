@@ -194,6 +194,8 @@ impl ProductTab {
             standard_cost: parse_opt_decimal("Standard cost", &self.standard_cost)?,
             reorder_min: parse_opt_decimal("Reorder min", &self.reorder_min)?,
             reorder_max: parse_opt_decimal("Reorder max", &self.reorder_max)?,
+            order_multiple: None,
+            safety_stock: None,
             lead_time_days: parse_opt_i32("Lead time (days)", &self.lead_time_days)?,
             barcode: opt_trimmed(&self.barcode),
             packaging_category_id: self.packaging_category_id,

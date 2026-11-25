@@ -7,6 +7,7 @@ pub mod placeholder;
 pub mod portal;
 pub mod products;
 pub mod quotations;
+pub mod suppliers;
 
 use std::str::FromStr;
 

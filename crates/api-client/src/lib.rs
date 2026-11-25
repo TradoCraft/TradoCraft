@@ -11,6 +11,7 @@ pub mod helpdesk;
 pub mod portal;
 pub mod products;
 pub mod sales;
+pub mod suppliers;
 
 pub use auth::{
     Auth, Company, EnvKind, EnvironmentInfo, Me, MeModule, Membership, PublicProvider, Session,
@@ -44,4 +45,8 @@ pub use sales::{
     OrderLine, OrderLineEdit, OrderPage, OrderRevisionInfo, OrderSummary, PercentBase, Quotation,
     QuotationInput, QuotationLine, QuotationLineInput, QuotationPage, QuotationStatus,
     QuotationSummary, SalesSuggestion, SalesWarning, UpdateQuotationRequest, VatGroup,
+};
+pub use suppliers::{
+    CreateSupplierRequest, ListSuppliersParams, SetSupplierProductInput, Supplier, SupplierInput,
+    SupplierProduct, SupplierProductInput, UpdateSupplierInput, UpdateSupplierRequest,
 };

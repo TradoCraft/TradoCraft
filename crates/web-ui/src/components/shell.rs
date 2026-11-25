@@ -114,7 +114,7 @@ const NAV_GROUPS: &[NavGroup] = &[
                 id: "nav-purchasing",
                 path: "/purchasing",
                 label: "Purchasing",
-                live: false,
+                live: true,
             },
             NavItem {
                 id: "nav-finance",
@@ -154,6 +154,7 @@ pub fn AppShell(children: Children) -> impl IntoView {
     let ctx = expect_context::<AppContext>();
     let location = use_location();
     let navigate = use_navigate();
+    let tutorial_state = RwSignal::new(crate::tutorial::TutorialState::new());
 
     let session_info = Memo::new(move |_| {
         ctx.session.with(|s| {
@@ -212,6 +213,14 @@ pub fn AppShell(children: Children) -> impl IntoView {
                             </span>
                             <button
                                 type="button"
+                                data-target="tutorial-toggle"
+                                class="tc-btn tc-btn-ghost tc-btn-sm"
+                                on:click=move |_| tutorial_state.update(|t| t.active = !t.active)
+                            >
+                                "Tutorial"
+                            </button>
+                            <button
+                                type="button"
                                 data-target="theme-toggle"
                                 class="tc-btn tc-btn-ghost tc-btn-sm"
                                 on:click=on_toggle_theme
@@ -231,6 +240,14 @@ pub fn AppShell(children: Children) -> impl IntoView {
                             </button>
                         }.into_any(),
                         None => view! {
+                            <button
+                                type="button"
+                                data-target="tutorial-toggle"
+                                class="tc-btn tc-btn-ghost tc-btn-sm"
+                                on:click=move |_| tutorial_state.update(|t| t.active = !t.active)
+                            >
+                                "Tutorial"
+                            </button>
                             <button
                                 type="button"
                                 data-target="theme-toggle"
@@ -354,6 +371,7 @@ pub fn AppShell(children: Children) -> impl IntoView {
                     {children()}
                 </div>
             </main>
+            <crate::components::tutorial_overlay::TutorialOverlay state=tutorial_state />
         </div>
     }
 }
