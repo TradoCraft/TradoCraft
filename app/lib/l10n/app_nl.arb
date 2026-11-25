@@ -2860,6 +2860,64 @@
   "productionCapacityLegend": "Belasting door de openstaande bewerkingen tegenover wat elke werkplek kan werken. Rood: overbelast.",
   "productionCapacityOverloaded": "Overbelast",
   "productionCapacityEmpty": "Geen werkplekken om te tonen.",
+  "productionBoardTitle": "Werkplekplanning",
+  "productionBoardLate": "Achterstallige bewerkingen",
+  "productionBoardNoLate": "Niets is achterstallig.",
+  "productionBoardUtilisation": "{percent}% belast",
+  "@productionBoardUtilisation": {
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "productionBoardMoved": "Bewerking verplaatst.",
+  "productionBoardConfirmTitle": "Verplaatsen met conflicten?",
+  "productionBoardConfirmBody": "Deze verplaatsing heeft fouten:",
+  "productionBoardMoveAnyway": "Toch verplaatsen",
+  "productionBoardRefusedTitle": "Deze bewerking kan niet verplaatst worden",
+  "productionConflictInactiveWorkCentre": "De werkplek is niet actief.",
+  "productionConflictOperationStarted": "De bewerking is gestart en kan niet verplaatst worden.",
+  "productionConflictOnClosure": "De werkplek werkt niet op {day}.",
+  "@productionConflictOnClosure": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "productionConflictOverload": "{day} zou overbelast zijn.",
+  "@productionConflictOverload": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "productionConflictBeforePredecessor": "Ze zou beginnen vóór de vorige bewerking eindigt ({day}).",
+  "@productionConflictBeforePredecessor": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "productionConflictAfterSuccessor": "Ze zou eindigen nadat de volgende bewerking begint ({day}).",
+  "@productionConflictAfterSuccessor": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "productionConflictLaterThanReady": "Ze zou eindigen na de geplande gereeddatum ({day}).",
+  "@productionConflictLaterThanReady": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
   "productionCapacityEarlier": "Eerder",
   "productionCapacityLater": "Later",
   "productionCapacityToday": "Vandaag",

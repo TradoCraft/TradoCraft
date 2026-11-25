@@ -24146,6 +24146,105 @@
         }
       }
     },
+    "/api/v1/production-orders/{id}/operations/{operation_id}/move": {
+      "put": {
+        "tags": [
+          "production"
+        ],
+        "summary": "Moves an operation to another work centre and/or other days, checked against capacity,\nclosures and the order of the operations. Errors among the conflicts refuse the move (409)\nunless `force=true`; an inactive work centre and an operation that has started are never\nmoved. Warnings never refuse. The conflicts are returned either way; `dry_run` changes\nnothing. A refused move answers 409 with the same body (`applied: false` and every conflict,\nwarnings included); the other 409s (the order is not open, ...) carry the usual error body.",
+        "operationId": "move_production_operation",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "operation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "dry_run",
+            "in": "query",
+            "description": "Only report the conflicts; change nothing (used while dragging).",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "force",
+            "in": "query",
+            "description": "Move although there are errors that can be overridden (an overloaded day, a closure, ...).",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductionOperationUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductionOperationMove"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductionOperationMove"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/production-orders/{id}/operations/{operation_id}/reopen": {
       "post": {
         "tags": [
@@ -24525,7 +24624,7 @@
           {
             "name": "to",
             "in": "query",
-            "description": "Last day, inclusive; at most 62 days after `from`.",
+            "description": "Last day, inclusive. The period is at most 62 days, so `to` is at most 61 days after `from`.",
             "required": true,
             "schema": {
               "type": "string",
@@ -24935,6 +25034,72 @@
             }
           },
           "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/production/planning-board": {
+      "get": {
+        "tags": [
+          "production"
+        ],
+        "summary": "What the work-centre board shows: capacity per centre and day and the open operations.",
+        "operationId": "production_planning_board",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "description": "First day.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "Last day, inclusive. The period is at most 62 days, so `to` is at most 61 days after `from`.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "division_id",
+            "in": "query",
+            "description": "Only the work centres of this division.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductionPlanningBoard"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "",
             "content": {
               "application/json": {
@@ -51594,6 +51759,100 @@
           }
         }
       },
+      "ProductionBoardOperation": {
+        "type": "object",
+        "description": "An open operation on the board.",
+        "required": [
+          "id",
+          "production_order_id",
+          "order_number",
+          "product_name",
+          "position",
+          "name",
+          "status",
+          "work_centre_id",
+          "planned_minutes",
+          "planned_start",
+          "planned_end",
+          "late",
+          "locked"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "late": {
+            "type": "boolean",
+            "description": "Planned to end before the period starts: still to do, so it is shown at the start."
+          },
+          "locked": {
+            "type": "boolean",
+            "description": "Only a pending operation can be dragged."
+          },
+          "name": {
+            "type": "string"
+          },
+          "order_number": {
+            "type": "string"
+          },
+          "planned_end": {
+            "type": "string",
+            "format": "date"
+          },
+          "planned_minutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "planned_ready_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "The order's planned-ready date."
+          },
+          "planned_start": {
+            "type": "string",
+            "format": "date"
+          },
+          "position": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "predecessor_end": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "When the previous operation of the order ends."
+          },
+          "product_name": {
+            "type": "string"
+          },
+          "production_order_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "description": "`pending` or `in_progress`."
+          },
+          "successor_start": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "When the next operation of the order starts."
+          },
+          "work_centre_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
       "ProductionBuildComponentInput": {
         "type": "object",
         "properties": {
@@ -51963,6 +52222,37 @@
           }
         }
       },
+      "ProductionMoveConflict": {
+        "type": "object",
+        "description": "One problem with a move.",
+        "required": [
+          "kind",
+          "severity",
+          "message_key"
+        ],
+        "properties": {
+          "day": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "The day concerned, when there is one."
+          },
+          "kind": {
+            "type": "string",
+            "description": "`inactive_work_centre`, `operation_started`, `on_closure`, `overload`, `before_predecessor`,\n`after_successor` or `later_than_ready`."
+          },
+          "message_key": {
+            "type": "string",
+            "description": "The key the app translates, `production.conflict.<kind>`."
+          },
+          "severity": {
+            "type": "string",
+            "description": "`error` or `warning`."
+          }
+        }
+      },
       "ProductionOperation": {
         "type": "object",
         "description": "One operation of a production order.",
@@ -52113,6 +52403,36 @@
           "note": {
             "type": "string",
             "description": "Added to the notes of the operation."
+          }
+        }
+      },
+      "ProductionOperationMove": {
+        "type": "object",
+        "required": [
+          "applied",
+          "conflicts"
+        ],
+        "properties": {
+          "applied": {
+            "type": "boolean",
+            "description": "False for a dry run."
+          },
+          "conflicts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductionMoveConflict"
+            }
+          },
+          "order": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ProductionOrder",
+                "description": "The production order after the move."
+              }
+            ]
           }
         }
       },
@@ -52397,6 +52717,39 @@
           }
         }
       },
+      "ProductionPlanningBoard": {
+        "type": "object",
+        "required": [
+          "from",
+          "to",
+          "centres",
+          "operations"
+        ],
+        "properties": {
+          "centres": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductionCapacityCentre"
+            },
+            "description": "Capacity against load per work centre and day, as `GET /production/capacity`."
+          },
+          "from": {
+            "type": "string",
+            "format": "date"
+          },
+          "operations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductionBoardOperation"
+            },
+            "description": "Open operations of released and in-progress orders on those work centres that start on or\nbefore `to`, in order of start."
+          },
+          "to": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
       "ProductionQuestionInput": {
         "type": "object",
         "description": "A question from production about an order, routed to the salesperson who sold it.",
@@ -52421,6 +52774,10 @@
       "ProductionScheduleInput": {
         "type": "object",
         "properties": {
+          "finite": {
+            "type": "boolean",
+            "description": "Place the operations around the load of the other orders (finite loading, ADR 0090)\ninstead of ignoring it. Defaults to false."
+          },
           "start_date": {
             "type": [
               "string",

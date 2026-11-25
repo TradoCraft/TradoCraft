@@ -406,6 +406,44 @@ class _ProductionClient implements ProductionClient {
   }
 
   @override
+  Future<ProductionOperationMove> moveProductionOperation({
+    required String id,
+    required String operationId,
+    required ProductionOperationUpdate body,
+    bool? dryRun,
+    bool? force,
+  }) async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{
+      r'dry_run': dryRun,
+      r'force': force,
+    };
+    queryParameters.removeWhere((k, v) => v == null);
+    final _headers = <String, dynamic>{};
+    final _data = <String, dynamic>{};
+    _data.addAll(body.toJson());
+    final _options = _setStreamType<ProductionOperationMove>(
+      Options(method: 'PUT', headers: _headers, extra: _extra)
+          .compose(
+            _dio.options,
+            '/api/v1/production-orders/${id}/operations/${operationId}/move',
+            queryParameters: queryParameters,
+            data: _data,
+          )
+          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
+    );
+    final _result = await _dio.fetch<Map<String, Object?>>(_options);
+    late ProductionOperationMove _value;
+    try {
+      _value = ProductionOperationMove.fromJson(_result.data!);
+    } on Object catch (e, s) {
+      errorLogger?.logError(e, s, _options, response: _result);
+      rethrow;
+    }
+    return _value;
+  }
+
+  @override
   Future<ProductionOrder> reopenProductionOperation({
     required String id,
     required String operationId,
@@ -832,6 +870,42 @@ class _ProductionClient implements ProductionClient {
           .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
     );
     await _dio.fetch<void>(_options);
+  }
+
+  @override
+  Future<ProductionPlanningBoard> productionPlanningBoard({
+    required DateTime from,
+    required DateTime to,
+    String? divisionId,
+  }) async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{
+      r'from': from.toIso8601String(),
+      r'to': to.toIso8601String(),
+      r'division_id': divisionId,
+    };
+    queryParameters.removeWhere((k, v) => v == null);
+    final _headers = <String, dynamic>{};
+    const Map<String, dynamic>? _data = null;
+    final _options = _setStreamType<ProductionPlanningBoard>(
+      Options(method: 'GET', headers: _headers, extra: _extra)
+          .compose(
+            _dio.options,
+            '/api/v1/production/planning-board',
+            queryParameters: queryParameters,
+            data: _data,
+          )
+          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
+    );
+    final _result = await _dio.fetch<Map<String, Object?>>(_options);
+    late ProductionPlanningBoard _value;
+    try {
+      _value = ProductionPlanningBoard.fromJson(_result.data!);
+    } on Object catch (e, s) {
+      errorLogger?.logError(e, s, _options, response: _result);
+      rethrow;
+    }
+    return _value;
   }
 
   @override

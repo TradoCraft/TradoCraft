@@ -8651,6 +8651,69 @@ class AppLocalizationsNl extends AppLocalizations {
   String get productionCapacityEmpty => 'Geen werkplekken om te tonen.';
 
   @override
+  String get productionBoardTitle => 'Werkplekplanning';
+
+  @override
+  String get productionBoardLate => 'Achterstallige bewerkingen';
+
+  @override
+  String get productionBoardNoLate => 'Niets is achterstallig.';
+
+  @override
+  String productionBoardUtilisation(String percent) {
+    return '$percent% belast';
+  }
+
+  @override
+  String get productionBoardMoved => 'Bewerking verplaatst.';
+
+  @override
+  String get productionBoardConfirmTitle => 'Verplaatsen met conflicten?';
+
+  @override
+  String get productionBoardConfirmBody => 'Deze verplaatsing heeft fouten:';
+
+  @override
+  String get productionBoardMoveAnyway => 'Toch verplaatsen';
+
+  @override
+  String get productionBoardRefusedTitle =>
+      'Deze bewerking kan niet verplaatst worden';
+
+  @override
+  String get productionConflictInactiveWorkCentre =>
+      'De werkplek is niet actief.';
+
+  @override
+  String get productionConflictOperationStarted =>
+      'De bewerking is gestart en kan niet verplaatst worden.';
+
+  @override
+  String productionConflictOnClosure(String day) {
+    return 'De werkplek werkt niet op $day.';
+  }
+
+  @override
+  String productionConflictOverload(String day) {
+    return '$day zou overbelast zijn.';
+  }
+
+  @override
+  String productionConflictBeforePredecessor(String day) {
+    return 'Ze zou beginnen vóór de vorige bewerking eindigt ($day).';
+  }
+
+  @override
+  String productionConflictAfterSuccessor(String day) {
+    return 'Ze zou eindigen nadat de volgende bewerking begint ($day).';
+  }
+
+  @override
+  String productionConflictLaterThanReady(String day) {
+    return 'Ze zou eindigen na de geplande gereeddatum ($day).';
+  }
+
+  @override
   String get productionCapacityEarlier => 'Eerder';
 
   @override

@@ -8673,6 +8673,69 @@ class AppLocalizationsDe extends AppLocalizations {
   String get productionCapacityEmpty => 'Keine Arbeitsplätze anzuzeigen.';
 
   @override
+  String get productionBoardTitle => 'Arbeitsplatzplanung';
+
+  @override
+  String get productionBoardLate => 'Verspätete Arbeitsgänge';
+
+  @override
+  String get productionBoardNoLate => 'Nichts ist verspätet.';
+
+  @override
+  String productionBoardUtilisation(String percent) {
+    return '$percent% ausgelastet';
+  }
+
+  @override
+  String get productionBoardMoved => 'Arbeitsgang verschoben.';
+
+  @override
+  String get productionBoardConfirmTitle => 'Trotz Konflikten verschieben?';
+
+  @override
+  String get productionBoardConfirmBody => 'Diese Verschiebung hat Fehler:';
+
+  @override
+  String get productionBoardMoveAnyway => 'Trotzdem verschieben';
+
+  @override
+  String get productionBoardRefusedTitle =>
+      'Dieser Arbeitsgang kann nicht verschoben werden';
+
+  @override
+  String get productionConflictInactiveWorkCentre =>
+      'Der Arbeitsplatz ist nicht aktiv.';
+
+  @override
+  String get productionConflictOperationStarted =>
+      'Der Arbeitsgang hat begonnen und kann nicht verschoben werden.';
+
+  @override
+  String productionConflictOnClosure(String day) {
+    return 'Der Arbeitsplatz arbeitet am $day nicht.';
+  }
+
+  @override
+  String productionConflictOverload(String day) {
+    return 'Der $day wäre überlastet.';
+  }
+
+  @override
+  String productionConflictBeforePredecessor(String day) {
+    return 'Er würde beginnen, bevor der vorherige Arbeitsgang endet ($day).';
+  }
+
+  @override
+  String productionConflictAfterSuccessor(String day) {
+    return 'Er würde enden, nachdem der nächste Arbeitsgang beginnt ($day).';
+  }
+
+  @override
+  String productionConflictLaterThanReady(String day) {
+    return 'Er würde nach dem geplanten Fertigstellungstermin enden ($day).';
+  }
+
+  @override
   String get productionCapacityEarlier => 'Früher';
 
   @override

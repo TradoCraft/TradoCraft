@@ -2860,6 +2860,64 @@
   "productionCapacityLegend": "Carga de las operaciones abiertas frente a lo que cada puesto puede trabajar. Rojo: sobrecargado.",
   "productionCapacityOverloaded": "Sobrecargado",
   "productionCapacityEmpty": "No hay puestos de trabajo que mostrar.",
+  "productionBoardTitle": "Planificación de centros de trabajo",
+  "productionBoardLate": "Operaciones atrasadas",
+  "productionBoardNoLate": "Nada está atrasado.",
+  "productionBoardUtilisation": "{percent}% de carga",
+  "@productionBoardUtilisation": {
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "productionBoardMoved": "Operación movida.",
+  "productionBoardConfirmTitle": "¿Mover a pesar de los conflictos?",
+  "productionBoardConfirmBody": "Este movimiento tiene errores:",
+  "productionBoardMoveAnyway": "Mover de todos modos",
+  "productionBoardRefusedTitle": "Esta operación no se puede mover",
+  "productionConflictInactiveWorkCentre": "El centro de trabajo no está activo.",
+  "productionConflictOperationStarted": "La operación ha comenzado y no se puede mover.",
+  "productionConflictOnClosure": "El centro de trabajo no trabaja el {day}.",
+  "@productionConflictOnClosure": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "productionConflictOverload": "El {day} quedaría sobrecargado.",
+  "@productionConflictOverload": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "productionConflictBeforePredecessor": "Empezaría antes de que termine la operación anterior ({day}).",
+  "@productionConflictBeforePredecessor": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "productionConflictAfterSuccessor": "Terminaría después de que empiece la operación siguiente ({day}).",
+  "@productionConflictAfterSuccessor": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "productionConflictLaterThanReady": "Terminaría después de la fecha de finalización prevista ({day}).",
+  "@productionConflictLaterThanReady": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
   "productionCapacityEarlier": "Antes",
   "productionCapacityLater": "Después",
   "productionCapacityToday": "Hoy",

@@ -8655,6 +8655,68 @@ class AppLocalizationsEs extends AppLocalizations {
       'No hay puestos de trabajo que mostrar.';
 
   @override
+  String get productionBoardTitle => 'Planificación de centros de trabajo';
+
+  @override
+  String get productionBoardLate => 'Operaciones atrasadas';
+
+  @override
+  String get productionBoardNoLate => 'Nada está atrasado.';
+
+  @override
+  String productionBoardUtilisation(String percent) {
+    return '$percent% de carga';
+  }
+
+  @override
+  String get productionBoardMoved => 'Operación movida.';
+
+  @override
+  String get productionBoardConfirmTitle => '¿Mover a pesar de los conflictos?';
+
+  @override
+  String get productionBoardConfirmBody => 'Este movimiento tiene errores:';
+
+  @override
+  String get productionBoardMoveAnyway => 'Mover de todos modos';
+
+  @override
+  String get productionBoardRefusedTitle => 'Esta operación no se puede mover';
+
+  @override
+  String get productionConflictInactiveWorkCentre =>
+      'El centro de trabajo no está activo.';
+
+  @override
+  String get productionConflictOperationStarted =>
+      'La operación ha comenzado y no se puede mover.';
+
+  @override
+  String productionConflictOnClosure(String day) {
+    return 'El centro de trabajo no trabaja el $day.';
+  }
+
+  @override
+  String productionConflictOverload(String day) {
+    return 'El $day quedaría sobrecargado.';
+  }
+
+  @override
+  String productionConflictBeforePredecessor(String day) {
+    return 'Empezaría antes de que termine la operación anterior ($day).';
+  }
+
+  @override
+  String productionConflictAfterSuccessor(String day) {
+    return 'Terminaría después de que empiece la operación siguiente ($day).';
+  }
+
+  @override
+  String productionConflictLaterThanReady(String day) {
+    return 'Terminaría después de la fecha de finalización prevista ($day).';
+  }
+
+  @override
   String get productionCapacityEarlier => 'Antes';
 
   @override

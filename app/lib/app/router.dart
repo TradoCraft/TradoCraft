@@ -11,6 +11,7 @@ import '../features/customers/customers_page.dart';
 import '../features/customers/mail_merge_page.dart';
 import '../features/delivery/deliveries_page.dart';
 import '../features/production/capacity_page.dart';
+import '../features/production/work_centre_board_page.dart';
 import '../features/production/divisions_page.dart';
 import '../features/production/production_page.dart';
 import '../features/production/release_page.dart';
@@ -191,7 +192,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             ),
           ),
           GoRoute(path: '/kb', builder: (_, _) => const KbPage()),
-          GoRoute(path: '/kb/documents', builder: (_, _) => const DocumentLibraryPage()),
+          GoRoute(
+            path: '/kb/documents',
+            builder: (_, _) => const DocumentLibraryPage(),
+          ),
           GoRoute(
             path: '/kb/categories',
             builder: (_, _) => const KbCategoriesPage(),
@@ -259,6 +263,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/production/capacity',
             builder: (_, _) => const CapacityPage(),
+          ),
+          GoRoute(
+            path: '/production/board',
+            builder: (_, _) => const WorkCentreBoardPage(),
           ),
           GoRoute(
             path: '/production/:id',
