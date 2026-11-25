@@ -20,6 +20,8 @@ https://github.com/user-attachments/assets/5c0a13d6-0781-4483-b2d3-06a2690ea5f5
 
 ### Introduction and tutorial videos
 
+[Explore the interactive tutorial database visualizer](https://tradocraft.github.io/TradoCraft/tutorial-db-visualizer.html) to follow each chapter from the Flutter interface through the Rust API to PostgreSQL.
+
 Short walkthroughs recorded from the real app in a tutorial environment. The voiceover is AI-generated.
 Click a picture to play the video. ([All releases](https://github.com/TradoCraft/TradoCraft/releases))
 
