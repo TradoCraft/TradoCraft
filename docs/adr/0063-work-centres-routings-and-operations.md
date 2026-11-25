@@ -118,5 +118,5 @@ here); operations overlapping or running in parallel, lead-time offsets and alte
 time entries, timers and an offline queue for the shop floor; consuming components at the operation that
 needs them; valuation and work in progress at actual cost, and booking output at the rolled-up cost;
 editing a routing on an active revision (each correction is a new revision); using routing times and
-lead times in MRP (C2); a notification to the production team; a seeded routing and a tutorial chapter;
+lead times in MRP ([ADR 0091](0091-material-requirements-planning.md) uses `lead_time_days` only); a notification to the production team; a seeded routing and a tutorial chapter;
 and the planned-ready date still being set by hand.

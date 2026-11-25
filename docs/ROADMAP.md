@@ -31,7 +31,7 @@ Module overview: [ARCHITECTURE.md](ARCHITECTURE.md).
 | B3 Delivery | Done, [ADR 0035](adr/0035-delivery.md) |
 | C1a Production orders | Done, [ADR 0036](adr/0036-production.md) |
 | C1b Work centres, routings, operations | Done, [ADR 0063](adr/0063-work-centres-routings-and-operations.md) |
-| C2 MRP | Open (needs B1, B2, C1) |
+| C2 MRP | Done, [ADR 0091](adr/0091-material-requirements-planning.md): a run nets open order lines, production components, stock and open purchase and production orders per product down the BOMs and proposes what to buy or build (`/mrp`); safety stock and order multiple on the product; a proposal becomes a draft purchase order or a released production order. Routing times and calendars in lead times, supplier calendars, net-change runs, a worker job, per-line delivery dates and reschedule proposals follow |
 | C3 Planning board, field-jobs half (calendars, absences, skills, conflicts, suggestions, drag-and-drop board) | Done, [ADR 0024](adr/0024-planning-board.md) |
 | C3 Planning board, work-centre half (finite loading, drag-and-drop board) | Done, [ADR 0090](adr/0090-work-centre-planning-board.md): `GET /production/planning-board`, a dry-run `PUT .../operations/{id}/move` with `force`, a `finite` re-schedule and the board in the app (`ResourceBoard`, day granularity). Suggestions of the earliest free slot, a re-flow of the queue after a move, per-hour sequencing and parent/subassembly dependencies follow |
 | D1 Worker heartbeat and "worker was down" alert | Done, [ADR 0052](adr/0052-worker-heartbeat.md) |
@@ -94,7 +94,7 @@ finding numbers below cannot be checked against it until it is restored.
 - Merge or close the pending Dependabot branches (tower-http, webpki-roots, setup-node, upload-artifact, @types/node) and
   note the deferred `swagger-parser-2` migration (PR #94).
 
-**After the first release**: A6b, C2, D8, D9, and security findings
+**After the first release**: A6b, D8, D9, and security findings
 #8 to #17.
 
 ## Sequencing
@@ -196,9 +196,15 @@ Remaining knowledge base gaps (ADR 0018): non-image attachments, analytics, sema
 - Later: per-person time and a shop-floor offline queue, valuation and
   work in progress at actual cost, parallel or overlapping operations, routing times in MRP.
 
-**C2 MRP** (large)
+**C2 MRP** (large, done, [ADR 0091](adr/0091-material-requirements-planning.md))
 - Reorder rules and an MRP run for make-to-stock and make-to-order: net requirements from orders, stock and
   open POs/MOs; proposals for POs and MOs; lead-time offsetting.
+- Done: `POST /mrp/runs`, the proposals with their pegging, conversion to a draft purchase order or a
+  released production order, `safety_stock` and `order_multiple` on the product, and the proposals page
+  (`/mrp`). Lead times are calendar days (`lead_time_days`, the preferred supplier's).
+- Still to do: routing times and work-centre calendars in the lead time of a built product, supplier
+  calendars, net-change runs and a worker job, a delivery date per order line, forecast demand, reschedule
+  proposals for orders that arrive too early or too late.
 
 **C3 Planning board** (medium-large)
 - One calendar/Gantt component in Flutter for field jobs (drag-assign, availability, absences, skills,

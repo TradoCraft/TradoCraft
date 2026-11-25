@@ -16309,6 +16309,327 @@
         ]
       }
     },
+    "/api/v1/mrp/proposals": {
+      "get": {
+        "tags": [
+          "mrp"
+        ],
+        "summary": "The proposals, by the day to order. What the user may not read (production or purchasing) is\nleft out.",
+        "operationId": "list_proposals",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "description": "`open` (default), `converted`, `dismissed`, `superseded` or `all`.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "description": "`purchase` or `production`.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "product_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "run_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MrpProposal"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mrp/proposals/{id}/convert": {
+      "post": {
+        "tags": [
+          "mrp"
+        ],
+        "summary": "Turns an open proposal into a draft purchase order (for the supplier of the proposal, at the\nprice of its supplier product, or the standard cost) or a released production order (for stock,\nready on the need date). Nothing is approved or sent.",
+        "operationId": "convert_proposal",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MrpConvertInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MrpConversion"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mrp/proposals/{id}/dismiss": {
+      "post": {
+        "tags": [
+          "mrp"
+        ],
+        "summary": "Dismisses an open proposal: it stays in the list of dismissed ones and is not proposed again\nby itself (a later run looks at the requirements afresh).",
+        "operationId": "dismiss_proposal",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MrpProposal"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mrp/runs": {
+      "get": {
+        "tags": [
+          "mrp"
+        ],
+        "summary": "The latest runs, newest first (at most 20).",
+        "operationId": "list_runs",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MrpRun"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "mrp"
+        ],
+        "summary": "Plans the requirements of the company: what customers wait for and what production uses, against\nstock and what is on order, and proposes what to buy or build. The open proposals of earlier runs\nare replaced. Nothing is ordered until a proposal is converted.",
+        "operationId": "start_run",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MrpRunInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MrpRun"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/opportunities": {
       "get": {
         "tags": [
@@ -47172,6 +47493,205 @@
           }
         }
       },
+      "MrpConversion": {
+        "type": "object",
+        "required": [
+          "proposal",
+          "converted_to",
+          "number"
+        ],
+        "properties": {
+          "converted_to": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The purchase order (draft) or the production order made."
+          },
+          "number": {
+            "type": "string",
+            "description": "Its number."
+          },
+          "proposal": {
+            "$ref": "#/components/schemas/MrpProposal"
+          }
+        }
+      },
+      "MrpConvertInput": {
+        "type": "object",
+        "properties": {
+          "division_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "For a production order: the division that builds it; defaults to the one that normally does."
+          },
+          "supplier_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "For a purchase: the supplier, when the proposal has none (the product has no preferred one)."
+          }
+        }
+      },
+      "MrpProposal": {
+        "type": "object",
+        "description": "A proposal to buy or build.",
+        "required": [
+          "id",
+          "run_id",
+          "run_number",
+          "product_id",
+          "product_code",
+          "product_name",
+          "kind",
+          "quantity",
+          "need_date",
+          "order_date",
+          "late",
+          "reason",
+          "pegging",
+          "status"
+        ],
+        "properties": {
+          "converted_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "converted_to": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "The purchase order or production order made from it."
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "type": "string",
+            "description": "`purchase` or `production`."
+          },
+          "late": {
+            "type": "boolean",
+            "description": "The lead time reaches past the need date: the goods will be late."
+          },
+          "need_date": {
+            "type": "string",
+            "format": "date",
+            "description": "When the stock is needed."
+          },
+          "order_date": {
+            "type": "string",
+            "format": "date",
+            "description": "When to order, or to start the build."
+          },
+          "pegging": {
+            "type": "object",
+            "description": "What the quantity is for: `[{kind, id, number, quantity}]`, kind `sales_order`,\n`production_order`, `purchase_order` or `planned` (a component of a proposed build)."
+          },
+          "product_code": {
+            "type": "string"
+          },
+          "product_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "product_name": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string",
+            "description": "`demand` (a requirement is not covered) or `safety_stock`."
+          },
+          "run_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "run_number": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "description": "`open`, `converted`, `dismissed` or `superseded` (a later run replaced it)."
+          },
+          "supplier_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "supplier_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "MrpRun": {
+        "type": "object",
+        "description": "A planning run.",
+        "required": [
+          "id",
+          "number",
+          "planned_on",
+          "horizon_days",
+          "proposals",
+          "created_at"
+        ],
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "horizon_days": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "number": {
+            "type": "string"
+          },
+          "planned_on": {
+            "type": "string",
+            "format": "date",
+            "description": "The day the plan started from."
+          },
+          "proposals": {
+            "type": "integer",
+            "format": "int32",
+            "description": "How many proposals it made."
+          }
+        }
+      },
+      "MrpRunInput": {
+        "type": "object",
+        "properties": {
+          "horizon_days": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "How many days ahead to plan; default 90, at most 730."
+          }
+        }
+      },
       "NewBomInput": {
         "type": "object",
         "properties": {
@@ -50908,6 +51428,14 @@
             "type": "boolean",
             "description": "Never discounted: no customer rebate and no manual line discount."
           },
+          "order_multiple": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The planning rounds an order up to a multiple of this (a pack, a pallet, a batch).",
+            "example": "12"
+          },
           "packaging_category_code": {
             "type": [
               "string",
@@ -50948,6 +51476,14 @@
             ],
             "description": "Reorder when the available stock falls below this quantity.",
             "example": "10"
+          },
+          "safety_stock": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Stock to keep on hand: the planning (MRP) proposes orders to stay at or above it (the\nlarger of this and `reorder_min` counts).",
+            "example": "5"
           },
           "standard_cost": {
             "type": [
@@ -51169,6 +51705,14 @@
             "type": "boolean",
             "description": "Never discounted: no customer rebate and no manual line discount."
           },
+          "order_multiple": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "More than 0 when given.",
+            "example": "12"
+          },
           "packaging_category_id": {
             "type": [
               "string",
@@ -51201,6 +51745,13 @@
               "null"
             ],
             "example": "10"
+          },
+          "safety_stock": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "5"
           },
           "standard_cost": {
             "type": [

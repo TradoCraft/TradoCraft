@@ -894,6 +894,51 @@ async fn release(
     Ok((StatusCode::CREATED, Json(out)))
 }
 
+/// Releases a production order to build a quantity for stock, in the caller's transaction: what
+/// converting a proposal of the material requirements planning does (ADR 0091). The components are
+/// reserved as for any release; the subassemblies that are short get proposals of their own, so
+/// none is released here. Returns the id and the number of the production order.
+#[allow(clippy::too_many_arguments)]
+pub async fn release_for_stock(
+    conn: &mut PgConnection,
+    user: &CurrentUser,
+    product_id: Uuid,
+    quantity: Decimal,
+    division_id: Option<Uuid>,
+    planned_ready_date: Option<NaiveDate>,
+    start_date: Option<NaiveDate>,
+    notes: String,
+) -> AppResult<(Uuid, String)> {
+    user.require(Permission::ProductionWrite)?;
+    let released = release_in_tx(
+        conn,
+        user,
+        ReleaseSpec {
+            product_id,
+            quantity,
+            order: None,
+            order_number: None,
+            division_id,
+            planned_ready_date,
+            parent_order_id: None,
+            start_date,
+            notes,
+            auto_release_subassemblies: false,
+        },
+        &mut Vec::new(),
+        &mut HashMap::new(),
+    )
+    .await?;
+    let number: String = sqlx::query_scalar(
+        "SELECT number FROM production.production_orders WHERE id = $1 AND company_id = $2",
+    )
+    .bind(released.id)
+    .bind(user.company_id)
+    .fetch_one(&mut *conn)
+    .await?;
+    Ok((released.id, number))
+}
+
 #[derive(Debug, Default, Deserialize, ToSchema)]
 pub struct ProductionBuildComponentInput {
     /// Also release the subassemblies of the new production order that are short.

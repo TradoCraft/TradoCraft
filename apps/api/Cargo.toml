@@ -16,6 +16,7 @@ tradocraft-crm.workspace = true
 tradocraft-engineering.workspace = true
 tradocraft-helpdesk.workspace = true
 tradocraft-reports.workspace = true
+tradocraft-mrp.workspace = true
 tradocraft-todo.workspace = true
 tradocraft-chatter.workspace = true
 tradocraft-imports.workspace = true
