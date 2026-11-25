@@ -37,7 +37,9 @@ class BoardAxis {
   );
 }
 
-enum ShadeKind { offHours, absence }
+/// What a shade means: outside working hours, an absence, a closed day of a work centre or a day
+/// on which its load is more than it can work.
+enum ShadeKind { offHours, absence, closure, overload }
 
 /// A shaded part of one day of one row: outside working hours, or an absence.
 class BoardShade {

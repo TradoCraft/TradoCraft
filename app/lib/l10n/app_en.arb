@@ -4672,6 +4672,64 @@
   "productionCapacityLegend": "Load of the open operations against what each work centre can work. Red: overloaded.",
   "productionCapacityOverloaded": "Overloaded",
   "productionCapacityEmpty": "No work centres to show.",
+  "productionBoardTitle": "Work-centre board",
+  "productionBoardLate": "Late operations",
+  "productionBoardNoLate": "Nothing is late.",
+  "productionBoardUtilisation": "{percent}% loaded",
+  "@productionBoardUtilisation": {
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "productionBoardMoved": "Operation moved.",
+  "productionBoardConfirmTitle": "Move with conflicts?",
+  "productionBoardConfirmBody": "This move has errors:",
+  "productionBoardMoveAnyway": "Move anyway",
+  "productionBoardRefusedTitle": "This operation cannot be moved",
+  "productionConflictInactiveWorkCentre": "The work centre is not active.",
+  "productionConflictOperationStarted": "The operation has started and cannot be moved.",
+  "productionConflictOnClosure": "The work centre does not work on {day}.",
+  "@productionConflictOnClosure": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "productionConflictOverload": "{day} would be overloaded.",
+  "@productionConflictOverload": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "productionConflictBeforePredecessor": "It would start before the previous operation ends ({day}).",
+  "@productionConflictBeforePredecessor": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "productionConflictAfterSuccessor": "It would end after the next operation starts ({day}).",
+  "@productionConflictAfterSuccessor": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "productionConflictLaterThanReady": "It would end after the planned-ready date ({day}).",
+  "@productionConflictLaterThanReady": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
   "productionCapacityEarlier": "Earlier",
   "productionCapacityLater": "Later",
   "productionCapacityToday": "Today",

@@ -15384,6 +15384,102 @@ abstract class AppLocalizations {
   /// **'No work centres to show.'**
   String get productionCapacityEmpty;
 
+  /// No description provided for @productionBoardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Work-centre board'**
+  String get productionBoardTitle;
+
+  /// No description provided for @productionBoardLate.
+  ///
+  /// In en, this message translates to:
+  /// **'Late operations'**
+  String get productionBoardLate;
+
+  /// No description provided for @productionBoardNoLate.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing is late.'**
+  String get productionBoardNoLate;
+
+  /// No description provided for @productionBoardUtilisation.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}% loaded'**
+  String productionBoardUtilisation(String percent);
+
+  /// No description provided for @productionBoardMoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Operation moved.'**
+  String get productionBoardMoved;
+
+  /// No description provided for @productionBoardConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Move with conflicts?'**
+  String get productionBoardConfirmTitle;
+
+  /// No description provided for @productionBoardConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This move has errors:'**
+  String get productionBoardConfirmBody;
+
+  /// No description provided for @productionBoardMoveAnyway.
+  ///
+  /// In en, this message translates to:
+  /// **'Move anyway'**
+  String get productionBoardMoveAnyway;
+
+  /// No description provided for @productionBoardRefusedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'This operation cannot be moved'**
+  String get productionBoardRefusedTitle;
+
+  /// No description provided for @productionConflictInactiveWorkCentre.
+  ///
+  /// In en, this message translates to:
+  /// **'The work centre is not active.'**
+  String get productionConflictInactiveWorkCentre;
+
+  /// No description provided for @productionConflictOperationStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'The operation has started and cannot be moved.'**
+  String get productionConflictOperationStarted;
+
+  /// No description provided for @productionConflictOnClosure.
+  ///
+  /// In en, this message translates to:
+  /// **'The work centre does not work on {day}.'**
+  String productionConflictOnClosure(String day);
+
+  /// No description provided for @productionConflictOverload.
+  ///
+  /// In en, this message translates to:
+  /// **'{day} would be overloaded.'**
+  String productionConflictOverload(String day);
+
+  /// No description provided for @productionConflictBeforePredecessor.
+  ///
+  /// In en, this message translates to:
+  /// **'It would start before the previous operation ends ({day}).'**
+  String productionConflictBeforePredecessor(String day);
+
+  /// No description provided for @productionConflictAfterSuccessor.
+  ///
+  /// In en, this message translates to:
+  /// **'It would end after the next operation starts ({day}).'**
+  String productionConflictAfterSuccessor(String day);
+
+  /// No description provided for @productionConflictLaterThanReady.
+  ///
+  /// In en, this message translates to:
+  /// **'It would end after the planned-ready date ({day}).'**
+  String productionConflictLaterThanReady(String day);
+
   /// No description provided for @productionCapacityEarlier.
   ///
   /// In en, this message translates to:
