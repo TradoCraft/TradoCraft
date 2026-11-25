@@ -85,9 +85,11 @@ internal static class DemoLauncher
 
     private static void RunDemo(bool smoke)
     {
-        // PostgreSQL 16's Windows pg_ctl starts the server through cmd.exe.
-        if (Bundle.IndexOfAny(new[] { '%', '!' }) >= 0)
-            throw new IOException("Extract the demo to a folder without % or ! in its path, such as Documents\\TradoCraft Demo.");
+        // Windows initdb embeds the share path in a UTF-8 SQL script using the local code page.
+        // PostgreSQL 16's Windows pg_ctl also starts the server through cmd.exe.
+        if (Regex.IsMatch(Bundle, @"[^\x20-\x7e]|[%!]"))
+            throw new IOException("Open the demo from a path containing only ASCII characters, without % or !. "
+                + "Spaces are allowed. Choose a folder such as C:\\TradoCraft Demo if it is writable.");
         if (Root.IndexOfAny(new[] { '%', '!' }) >= 0)
             throw new IOException("The demo needs a Windows profile whose Local AppData path does not contain % or !.");
 

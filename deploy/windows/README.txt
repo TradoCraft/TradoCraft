@@ -2,6 +2,8 @@ TradoCraft Demo for Windows x64
 
 Extract the entire ZIP to a writable folder and open Start TradoCraft Demo.exe.
 The setup EXE installs for the current user and creates Start menu shortcuts.
+Choose a writable install or extraction path with ASCII characters only.
+Spaces are supported. Avoid percent signs and exclamation marks in the path.
 The demo uses fictitious data and runs on this PC without an internet connection.
 Open Tutorial from the account menu to start the guided walkthrough.
 

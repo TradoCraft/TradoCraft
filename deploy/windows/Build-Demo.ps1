@@ -18,13 +18,16 @@ function Expand-VerifiedZip($Url, $Hash, $Destination) {
     Expand-Archive -LiteralPath $zip -DestinationPath $Destination
 }
 
-function Invoke-DemoSmoke($Exe, [string[]]$Flags) {
+$smokeLogs = Join-Path $env:LOCALAPPDATA 'TradoCraft/Demo packaging smoke/logs'
+
+function Invoke-DemoSmoke($Exe, [string[]]$Flags, [int]$ExpectedExit = 0) {
+    Write-Host "Running demo check: $Flags (expected exit $ExpectedExit)"
     $process = Start-Process -FilePath $Exe -ArgumentList $Flags -PassThru
     if (!$process.WaitForExit(300000)) {
         $process.Kill()
         throw 'The native demo smoke test timed out.'
     }
-    if ($process.ExitCode -ne 0) {
+    if ($process.ExitCode -ne $ExpectedExit) {
         throw "The native demo smoke test failed with exit code $($process.ExitCode)."
     }
 }
@@ -90,12 +93,19 @@ try {
 
     $zip = Join-Path $outputPath 'tradocraft-demo-windows-x64.zip'
     Compress-Archive -LiteralPath $stage -DestinationPath $zip -Force
-    $smokeRoot = Join-Path $work 'Démonstration extracted'
+    $smokeRoot = Join-Path $work 'Demo extracted'
     Expand-Archive -LiteralPath $zip -DestinationPath $smokeRoot
     $extracted = Join-Path $smokeRoot 'TradoCraft Demo'
     $smoke = Join-Path $extracted 'Smoke Demo.exe'
     Copy-Item -LiteralPath (Join-Path $extracted 'Start TradoCraft Demo.exe') -Destination $smoke
     try {
+        $unsupported = New-Item -ItemType Directory -Path (Join-Path $work 'Démonstration')
+        Copy-Item -LiteralPath $smoke -Destination $unsupported.FullName
+        Invoke-DemoSmoke (Join-Path $unsupported.FullName 'Smoke Demo.exe') @('--smoke') 1
+        $lastLaunch = Get-Content (Join-Path $smokeLogs 'launcher.log') -Tail 8
+        if (!($lastLaunch -match 'Open the demo from a path containing only ASCII characters')) {
+            throw 'The launcher did not explain the unsupported extraction path.'
+        }
         Invoke-DemoSmoke $smoke @('--smoke', '--reset')
         Invoke-DemoSmoke $smoke @('--smoke')
         Invoke-DemoSmoke $smoke @('--smoke')
@@ -103,6 +113,13 @@ try {
         if (Test-Path (Join-Path $env:LOCALAPPDATA 'TradoCraft/Demo packaging smoke/instance')) {
             throw 'Reset left the smoke-test instance behind.'
         }
+    } catch {
+        Get-ChildItem -LiteralPath $smokeLogs -Filter '*.log' -File -ErrorAction SilentlyContinue |
+            ForEach-Object {
+                Write-Host "--- $($_.Name) ---"
+                Get-Content -LiteralPath $_.FullName -Tail 40
+            }
+        throw
     } finally { Remove-Item -LiteralPath $smoke -Force }
 
     $iscc = Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6/ISCC.exe'
