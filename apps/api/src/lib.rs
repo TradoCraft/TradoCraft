@@ -1,6 +1,9 @@
 //! HTTP application: wires the business modules into one API.
 
+use std::path::{Path, PathBuf};
+
 use axum::Router;
+use tower_http::services::{ServeDir, ServeFile};
 use tower_http::trace::TraceLayer;
 use tradocraft_core::companies::BootstrapConfig;
 use tradocraft_core::cors::CorsConfig;
@@ -174,7 +177,7 @@ pub fn app_with_vies(
     // Bell motors for the product matching of the CRM come from the configurator tables.
     let motors: tradocraft_crm::product_matches::BellMotors =
         std::sync::Arc::new(tradocraft_configurator::motor::ConfiguratorMotors);
-    router
+    let router = router
         .route("/health", axum::routing::get(|| async { "ok" }))
         .merge(Scalar::with_url(
             "/docs",
@@ -183,7 +186,8 @@ pub fn app_with_vies(
         .route(
             "/api-docs/openapi.json",
             axum::routing::get(move || async move { axum::Json(doc) }),
-        )
+        );
+    mount_web_ui(router, None)
         .layer(axum::Extension(environment))
         .layer(axum::Extension(bootstrap))
         .layer(axum::Extension(identity))
@@ -192,6 +196,33 @@ pub fn app_with_vies(
         .layer(TraceLayer::new_for_http())
         .layer(cors.layer())
         .with_state(state)
+}
+
+fn default_web_ui_dir() -> PathBuf {
+    std::env::var("WEB_UI_DIR")
+        .ok()
+        .filter(|v| !v.trim().is_empty())
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from("crates/web-ui/dist"))
+}
+
+/// Mounts the built Leptos web UI at `/app` when `dir` (or `WEB_UI_DIR`, defaulting to
+/// `crates/web-ui/dist`) exists on disk.
+pub fn mount_web_ui<S>(router: Router<S>, dir: Option<&Path>) -> Router<S>
+where
+    S: Clone + Send + Sync + 'static,
+{
+    let resolved = dir.map(PathBuf::from).unwrap_or_else(default_web_ui_dir);
+    if !resolved.is_dir() {
+        return router;
+    }
+    let service = ServeDir::new(&resolved).fallback(ServeFile::new(resolved.join("index.html")));
+    router
+        .route(
+            "/app",
+            axum::routing::get(|| async { axum::response::Redirect::permanent("/app/") }),
+        )
+        .nest_service("/app/", service)
 }
 
 /// Loads development seed data if the database has no company yet.
@@ -260,4 +291,77 @@ pub async fn load_extra_seed(
         );
     }
     Ok(ran)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::mount_web_ui;
+    use axum::body::Body;
+    use axum::http::{header, Request, StatusCode};
+    use axum::Router;
+    use http_body_util::BodyExt;
+    use tower::ServiceExt;
+
+    #[tokio::test]
+    async fn web_ui_mounts_when_dir_exists_and_falls_back_to_index() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("index.html"), "<html>web-ui</html>").unwrap();
+        std::fs::write(dir.path().join("app.js"), "console.log('ok');").unwrap();
+
+        let app = mount_web_ui(Router::new(), Some(dir.path()));
+
+        let res = app
+            .clone()
+            .oneshot(Request::builder().uri("/app").body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+        assert_eq!(res.status(), StatusCode::PERMANENT_REDIRECT);
+        assert_eq!(res.headers()[header::LOCATION], "/app/");
+
+        let res = app
+            .clone()
+            .oneshot(Request::builder().uri("/app/").body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+        assert_eq!(res.status(), StatusCode::OK);
+        let body = res.into_body().collect().await.unwrap().to_bytes();
+        assert_eq!(&body[..], b"<html>web-ui</html>");
+
+        let res = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .uri("/app/app.js")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(res.status(), StatusCode::OK);
+        let body = res.into_body().collect().await.unwrap().to_bytes();
+        assert_eq!(&body[..], b"console.log('ok');");
+
+        let res = app
+            .oneshot(
+                Request::builder()
+                    .uri("/app/products")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        let body = res.into_body().collect().await.unwrap().to_bytes();
+        assert_eq!(&body[..], b"<html>web-ui</html>");
+    }
+
+    #[tokio::test]
+    async fn web_ui_is_skipped_when_dir_is_missing() {
+        let missing = tempfile::tempdir().unwrap().path().join("nonexistent");
+        let app = mount_web_ui(Router::new(), Some(&missing));
+        let res = app
+            .oneshot(Request::builder().uri("/app/").body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+        assert_eq!(res.status(), StatusCode::NOT_FOUND);
+    }
 }

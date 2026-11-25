@@ -1,0 +1,14 @@
+[build]
+target = "index.html"
+dist = "dist"
+public_url = "/app/"
+
+[serve]
+addresses = ["127.0.0.1"]
+# apps/api defaults to 127.0.0.1:8080 (BIND_ADDR in .env.example), so serve the UI on 8081.
+port = 8081
+open = false
+
+# Forward /api/* directly to apps/api without stripping the /api prefix.
+[[proxy]]
+backend = "http://127.0.0.1:8080/api/"

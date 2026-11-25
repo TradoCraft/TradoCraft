@@ -12,6 +12,7 @@
 pub mod limit;
 
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
@@ -19,9 +20,10 @@ use axum::extract::{ConnectInfo, Request, State};
 use axum::http::header::{HeaderName, HeaderValue, RETRY_AFTER};
 use axum::http::{Method, StatusCode};
 use axum::middleware::Next;
-use axum::response::{IntoResponse, Response};
+use axum::response::{IntoResponse, Redirect, Response};
 use axum::{Json, Router};
 use limit::{client_ip, IpNet, Limiter};
+use tower_http::services::{ServeDir, ServeFile};
 use tower_http::trace::TraceLayer;
 use tradocraft_core::cors::CorsConfig;
 use tradocraft_core::error::ErrorBody;
@@ -73,6 +75,33 @@ fn routes() -> Router<AppState> {
     router
 }
 
+fn default_web_ui_dir() -> PathBuf {
+    std::env::var("WEB_UI_DIR")
+        .ok()
+        .filter(|v| !v.trim().is_empty())
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from("crates/web-ui/dist"))
+}
+
+/// Mounts the built Leptos web UI at `/app` when `dir` (or `WEB_UI_DIR`, defaulting to
+/// `crates/web-ui/dist`) exists on disk.
+pub fn mount_web_ui<S>(router: Router<S>, dir: Option<&Path>) -> Router<S>
+where
+    S: Clone + Send + Sync + 'static,
+{
+    let resolved = dir.map(PathBuf::from).unwrap_or_else(default_web_ui_dir);
+    if !resolved.is_dir() {
+        return router;
+    }
+    let service = ServeDir::new(&resolved).fallback(ServeFile::new(resolved.join("index.html")));
+    router
+        .route(
+            "/app",
+            axum::routing::get(|| async { Redirect::permanent("/app/") }),
+        )
+        .nest_service("/app/", service)
+}
+
 /// Serve it with `into_make_service_with_connect_info::<SocketAddr>()`: the limits are per client
 /// address. Without connection info every request counts as one and the same client.
 pub fn app(state: AppState, config: PortalConfig) -> Router {
@@ -82,8 +111,8 @@ pub fn app(state: AppState, config: PortalConfig) -> Router {
         trusted_proxies: config.trusted_proxies,
         request_timeout: config.request_timeout,
     });
-    routes()
-        .route("/health", axum::routing::get(|| async { "ok" }))
+    let router = routes().route("/health", axum::routing::get(|| async { "ok" }));
+    mount_web_ui(router, None)
         .layer(axum::middleware::from_fn_with_state(guard, protect))
         .layer(TraceLayer::new_for_http())
         // Outermost: a refused request still carries the CORS headers (so the portal can show
