@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -27,13 +30,20 @@ Future<KvStore> _openStore(String? profile) async {
 
 Future<void> main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
-  final profile = parseProfile(args);
+  final demoUrl = _demoServer(args);
+  final profile = demoUrl == null ? parseProfile(args) : 'portable-demo';
   // A profile keeps everything in a file of its own; without one the platform preferences are used.
-  final KvStore store = await _openStore(profile);
-  final session = await SessionStore.load(store);
+  final KvStore store = demoUrl == null
+      ? await _openStore(profile)
+      : JsonFileKvStore(File(Platform.environment['TRADOCRAFT_DEMO_PROFILE']!));
+  final session = demoUrl == null
+      ? await SessionStore.load(store)
+      : Session(serverUrl: demoUrl, devUser: 'admin@example.com');
   // The stored list of environments; an installation from before them gets its one session as
   // the first environment.
-  final environments = await EnvironmentStore.load(store, session);
+  final environments = demoUrl == null
+      ? await EnvironmentStore.load(store, session)
+      : EnvironmentStore.fromSession(session);
   // The active environment's sign-in is the session that is used.
   final active = environments.active.session;
   runApp(
@@ -47,6 +57,19 @@ Future<void> main(List<String> args) async {
       child: const TradocraftApp(),
     ),
   );
+}
+
+String? _demoServer(List<String> args) {
+  if (kIsWeb ||
+      !Platform.isWindows ||
+      !args.contains('--portable-demo') ||
+      Platform.environment['TRADOCRAFT_DEMO_PROFILE']?.isNotEmpty != true) {
+    return null;
+  }
+  final url = Platform.environment['TRADOCRAFT_DEMO_URL'];
+  return url != null && RegExp(r'^http://127\.0\.0\.1:[0-9]+$').hasMatch(url)
+      ? url
+      : null;
 }
 
 class TradocraftApp extends ConsumerWidget {

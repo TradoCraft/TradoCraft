@@ -198,7 +198,11 @@ async fn main() -> anyhow::Result<()> {
         name = environment.name.as_deref().unwrap_or("(database name)"),
         "environment"
     );
-    tracing::info!("listening on http://{addr} (API docs at /docs)");
+    let bound_addr = listener.local_addr()?;
+    if let Some(path) = env("TRADOCRAFT_READY_FILE") {
+        std::fs::write(path, bound_addr.to_string()).context("writing launcher address")?;
+    }
+    tracing::info!("listening on http://{bound_addr} (API docs at /docs)");
     // The VIES lookup is an outbound call: live environments only (ADR 0048, ADR 0058).
     let vies = tradocraft_core::vies::ViesConfig::for_environment(&environment);
     axum::serve(
@@ -212,9 +216,7 @@ async fn main() -> anyhow::Result<()> {
             vies,
         ),
     )
-    .with_graceful_shutdown(async {
-        let _ = tokio::signal::ctrl_c().await;
-    })
+    .with_graceful_shutdown(tradocraft_core::environment::shutdown_signal())
     .await?;
     Ok(())
 }

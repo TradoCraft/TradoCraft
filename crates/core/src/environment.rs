@@ -249,6 +249,23 @@ pub fn router() -> OpenApiRouter<AppState> {
     OpenApiRouter::new().routes(routes!(get_environment))
 }
 
+/// Wait for Ctrl-C, or for the portable launcher to close its private stdin pipe.
+pub async fn shutdown_signal() {
+    if std::env::var("TRADOCRAFT_SHUTDOWN_ON_STDIN").as_deref() == Ok("1") {
+        let (done, closed) = tokio::sync::oneshot::channel();
+        std::thread::spawn(move || {
+            let _ = std::io::copy(&mut std::io::stdin().lock(), &mut std::io::sink());
+            let _ = done.send(());
+        });
+        tokio::select! {
+            _ = closed => {}
+            _ = tokio::signal::ctrl_c() => {}
+        }
+    } else {
+        let _ = tokio::signal::ctrl_c().await;
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

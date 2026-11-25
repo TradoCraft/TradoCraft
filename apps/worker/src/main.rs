@@ -214,6 +214,8 @@ async fn main() -> anyhow::Result<()> {
         }
     });
     tracing::info!(seconds = interval.as_secs(), "worker started");
+    let shutdown = tradocraft_core::environment::shutdown_signal();
+    tokio::pin!(shutdown);
     loop {
         // First, so that a pass that hangs (a stuck IMAP or SMTP server) stops the beat.
         match tradocraft_core::worker::beat(&db, &heartbeat).await {
@@ -343,7 +345,7 @@ async fn main() -> anyhow::Result<()> {
         }
         tokio::select! {
             _ = tokio::time::sleep(interval) => {}
-            _ = tokio::signal::ctrl_c() => {
+            _ = &mut shutdown => {
                 tracing::info!("stopping");
                 return Ok(());
             }

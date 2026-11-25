@@ -5,11 +5,12 @@
 //! directory layout (`<aa>/<bb>/<uuid>`), written atomically via `.tmp/<uuid>.part` and `rename`.
 //! Storage keys are always UUIDv7 strings validated on every read/delete, so user-supplied paths
 //! can never escape the root directory.
-//! Durable writes require a Unix filesystem supporting file and directory fsync. Unsupported
-//! directory synchronization fails the write; it is never silently treated as durable.
+//! On Unix, committed writes sync the payload and directory entries. On Windows, the payload
+//! is flushed and published with a write-through rename. The demo uses a private data directory.
 
 use std::collections::HashSet;
 use std::io::ErrorKind;
+#[cfg(unix)]
 use std::os::unix::fs::{DirBuilderExt, OpenOptionsExt};
 use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime};
@@ -28,7 +29,9 @@ pub struct BlobStore {
 pub(crate) struct StagedBlob {
     pub(crate) key: String,
     dest: PathBuf,
+    #[cfg(unix)]
     parent: PathBuf,
+    #[cfg(unix)]
     tmp_dir: PathBuf,
     pub(crate) tmp_path: PathBuf,
 }
@@ -52,25 +55,21 @@ impl StagedBlob {
             let _ = tokio::fs::remove_file(&self.tmp_path).await;
             return Err(anyhow::Error::from(e).context("sync blob payload").into());
         }
-        if let Err(e) = tokio::fs::rename(&self.tmp_path, &self.dest).await {
+        if let Err(e) = publish_blob(&self.tmp_path, &self.dest).await {
             let _ = tokio::fs::remove_file(&self.tmp_path).await;
             return Err(anyhow::Error::from(e)
                 .context(format!("rename blob into {}", self.dest.display()))
                 .into());
         }
-        // Persist the rename; directory creation was synchronized under the lock above.
-        tokio::fs::File::open(&self.parent)
-            .await
-            .context("open blob directory")?
-            .sync_all()
-            .await
-            .context("sync blob directory")?;
-        tokio::fs::File::open(&self.tmp_dir)
-            .await
-            .context("open temporary directory")?
-            .sync_all()
-            .await
-            .context("sync temporary directory")?;
+        #[cfg(unix)]
+        for dir in [&self.parent, &self.tmp_dir] {
+            tokio::fs::File::open(dir)
+                .await
+                .context("open blob directory")?
+                .sync_all()
+                .await
+                .context("sync blob directory")?;
+        }
         Ok(self.key)
     }
 }
@@ -157,9 +156,9 @@ impl BlobStore {
             // Both shard levels are always synchronized. Root ancestors created under
             // the lock are durable before another writer can observe them as existing.
             for dir in dirs {
-                std::fs::File::open(dir)?.sync_all()?;
+                sync_directory(dir)?;
             }
-            std::fs::File::open(temp)?.sync_all()?;
+            sync_directory(temp)?;
             Ok(())
         })
         .await
@@ -168,7 +167,9 @@ impl BlobStore {
         Ok(StagedBlob {
             key,
             dest,
+            #[cfg(unix)]
             parent,
+            #[cfg(unix)]
             tmp_dir,
             tmp_path,
         })
@@ -292,24 +293,70 @@ impl BlobStore {
     }
 }
 
+#[cfg(not(windows))]
+async fn publish_blob(source: &Path, dest: &Path) -> std::io::Result<()> {
+    tokio::fs::rename(source, dest).await
+}
+
+#[cfg(windows)]
+async fn publish_blob(source: &Path, dest: &Path) -> std::io::Result<()> {
+    use std::os::windows::ffi::OsStrExt;
+
+    #[link(name = "kernel32")]
+    extern "system" {
+        fn MoveFileExW(source: *const u16, dest: *const u16, flags: u32) -> i32;
+    }
+
+    const MOVEFILE_WRITE_THROUGH: u32 = 0x8;
+    let source: Vec<_> = source.as_os_str().encode_wide().chain([0]).collect();
+    let dest: Vec<_> = dest.as_os_str().encode_wide().chain([0]).collect();
+    tokio::task::spawn_blocking(move || {
+        // Both buffers are NUL-terminated and live until Windows returns.
+        if unsafe { MoveFileExW(source.as_ptr(), dest.as_ptr(), MOVEFILE_WRITE_THROUGH) } == 0 {
+            return Err(std::io::Error::last_os_error());
+        }
+        Ok(())
+    })
+    .await
+    .map_err(std::io::Error::other)?
+}
+
+fn private_dir_builder() -> std::fs::DirBuilder {
+    let mut builder = std::fs::DirBuilder::new();
+    #[cfg(unix)]
+    builder.mode(0o700);
+    #[cfg(windows)]
+    builder.recursive(false);
+    builder
+}
+
+#[cfg(unix)]
+fn sync_directory(path: impl AsRef<Path>) -> std::io::Result<()> {
+    std::fs::File::open(path)?.sync_all()
+}
+
+#[cfg(windows)]
+fn sync_directory(_path: impl AsRef<Path>) -> std::io::Result<()> {
+    // Windows does not offer Unix directory fsync. Publication uses MoveFileExW above.
+    Ok(())
+}
+
 /// Locks initialization in a private directory within the configured storage root.
 fn lock_storage_root(root: &Path) -> anyhow::Result<std::fs::File> {
     fn lock_existing(root: &Path) -> anyhow::Result<std::fs::File> {
         let dir = root.join(".locks");
-        match std::fs::DirBuilder::new().mode(0o700).create(&dir) {
+        match private_dir_builder().create(&dir) {
             Ok(()) => (),
             Err(e) if e.kind() == ErrorKind::AlreadyExists => (),
             Err(e) => return Err(e.into()),
         }
-        let lock = std::fs::OpenOptions::new()
-            .read(true)
-            .write(true)
-            .create(true)
-            .truncate(false)
-            .mode(0o600)
-            .open(dir.join("directories.lock"))?;
+        let mut options = std::fs::OpenOptions::new();
+        options.read(true).write(true).create(true).truncate(false);
+        #[cfg(unix)]
+        options.mode(0o600);
+        let lock = options.open(dir.join("directories.lock"))?;
         lock.lock()?;
-        std::fs::File::open(root)?.sync_all()?;
+        sync_directory(root)?;
         Ok(lock)
     }
     if root.try_exists()? {
@@ -323,18 +370,15 @@ fn lock_storage_root(root: &Path) -> anyhow::Result<std::fs::File> {
     }
     let top = missing.last().unwrap();
     let staged = ancestor.join(format!(".blob-init-{}", new_id()));
-    std::fs::DirBuilder::new().mode(0o700).create(&staged)?;
+    private_dir_builder().create(&staged)?;
     let result = (|| -> anyhow::Result<std::fs::File> {
         let staged_root = staged.join(root.strip_prefix(top)?);
-        std::fs::DirBuilder::new()
-            .recursive(true)
-            .mode(0o700)
-            .create(&staged_root)?;
+        private_dir_builder().recursive(true).create(&staged_root)?;
         // The lock stays held across publication and fsync of the existing ancestor.
         let lock = lock_existing(&staged_root)?;
         let mut cursor = staged_root.as_path();
         loop {
-            std::fs::File::open(cursor)?.sync_all()?;
+            sync_directory(cursor)?;
             if cursor == staged {
                 break;
             }
@@ -342,7 +386,7 @@ fn lock_storage_root(root: &Path) -> anyhow::Result<std::fs::File> {
         }
         match std::fs::rename(&staged, top) {
             Ok(()) => {
-                std::fs::File::open(ancestor)?.sync_all()?;
+                sync_directory(ancestor)?;
                 Ok(lock)
             }
             Err(e)
@@ -407,16 +451,23 @@ mod tests {
 
     #[tokio::test]
     async fn lock_is_private_and_scoped_to_storage_root() {
-        use std::os::unix::fs::PermissionsExt;
         let store = BlobStore::temp_for_tests();
         store.put(b"initialize").await.unwrap();
         let lock_dir = store.root().join(".locks");
-        assert_eq!(
-            std::fs::metadata(&lock_dir).unwrap().permissions().mode() & 0o077,
-            0
-        );
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            assert_eq!(
+                std::fs::metadata(&lock_dir).unwrap().permissions().mode() & 0o077,
+                0
+            );
+        }
         let lock_path = lock_dir.join("directories.lock");
-        let held = std::fs::File::open(&lock_path).unwrap();
+        let held = std::fs::OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(&lock_path)
+            .unwrap();
         held.lock().unwrap();
         let writing = {
             let same_root = BlobStore::new(store.root());
