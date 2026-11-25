@@ -1,4 +1,4 @@
-/// Grouping of a list (ADR 0084): the definition a page declares and the pure header labels.
+/// Grouping of a list (ADR 0089): the definition a page declares and the pure header labels.
 library;
 
 import 'filter_model.dart';

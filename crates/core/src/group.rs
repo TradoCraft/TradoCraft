@@ -1,4 +1,4 @@
-//! Server-side list grouping (ADR 0084).
+//! Server-side list grouping (ADR 0089).
 //!
 //! A `GET /<resource>/groups` endpoint takes `group_by=<key>` plus the same search and filter
 //! parameters as the list and returns one count per distinct value. Each endpoint declares a

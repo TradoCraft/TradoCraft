@@ -35,7 +35,7 @@ class FilterChips extends StatelessWidget {
   /// Called with the filter key whose chip was removed.
   final ValueChanged<String> onRemove;
 
-  /// The active grouping (ADR 0084), shown as a chip after the filter chips; null: none.
+  /// The active grouping (ADR 0089), shown as a chip after the filter chips; null: none.
   final GroupDef? group;
   final VoidCallback? onRemoveGroup;
 
@@ -118,7 +118,7 @@ class FilterMenuButton extends StatelessWidget {
   final ValueChanged<Favourite>? onApplyFavourite;
   final ValueChanged<Favourite>? onDeleteFavourite;
 
-  /// The groupings on offer (ADR 0084); empty hides the "Group by" section.
+  /// The groupings on offer (ADR 0089); empty hides the "Group by" section.
   final List<GroupDef> groupDefs;
 
   /// The key of the active grouping; null: "None".

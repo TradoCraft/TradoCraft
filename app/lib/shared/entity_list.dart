@@ -169,7 +169,7 @@ class EntityList<T> extends StatefulWidget {
   /// Needs [loadQuery]. Empty (default): the list looks and behaves as before.
   final List<FilterDef> filterDefs;
 
-  /// Declared groupings (ADR 0084): a "Group by" section in the filter menu and a removable chip.
+  /// Declared groupings (ADR 0089): a "Group by" section in the filter menu and a removable chip.
   /// Every key needs a [FilterDef] in [filterDefs]; needs [loadQuery] and [loadGroups]. Empty
   /// (default): the list looks and behaves as before.
   final List<GroupDef> groupDefs;
@@ -249,7 +249,7 @@ class EntityListState<T> extends State<EntityList<T>> {
   int _favSeq = 0;
   final _searchFocus = FocusNode();
 
-  // ---- grouping (ADR 0084) ----
+  // ---- grouping (ADR 0089) ----
 
   String? _groupBy;
   List<GroupBucket> _groups = const [];
