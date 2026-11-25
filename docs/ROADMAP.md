@@ -47,8 +47,14 @@ Module overview: [ARCHITECTURE.md](ARCHITECTURE.md).
 | D10 Data import framework (CSV, XLSX, ODS, Parquet) | Done for the shared importer, CSV/XLSX/ODS readers, XLSX/ODS export, admin screen and background jobs, [ADR 0067](adr/0067-data-import-framework.md); Parquet and further entities (contacts, suppliers, stock opening balances, quotations, orders, tickets) follow |
 | P1 Price lists (zones, chapters, export profiles, PDF and Excel) | Done (PRs #95, #97), [ADR 0074](adr/0074-price-lists.md); never run in a real app (see the release checklist) |
 | P2 Site baseline and product suitability | In progress, [ADR 0068](adr/0068-site-baseline-and-product-suitability.md) (still Proposed). Baseline, matching, tower configurator import and quotation picker suitability are implemented. The quote can open its linked baseline directly. An end-to-end test remains open. |
-| U1 Shared UI framework (theme tokens and dark mode, repository layer, app switcher and breadcrumbs, global search and notifications, generic list view, server-side sort, filters, facets and saved favourites, generic form view) | In progress. Done and merged: phases 0 to 2 except group-by ([ADR 0077](adr/0077-ui-theme-tokens-and-dark-mode.md) to [ADR 0083](adr/0083-list-filters-and-favourites.md), PRs #109, #110, #112, #113) and phase 3, the generic form view with customers and quotations moved over ([ADR 0085](adr/0085-generic-form-view.md), PRs #119, #123). Open: list group-by (its PR #114 never reached main and there is no ADR for it on main), moving the other list and record screens (orders, tickets, products, suppliers) onto the generic views, a one2many line editor and smart-button counts, phase 5 calendar. Phase 5, kanban: the generic board and the opportunity pipeline board are done ([ADR 0087](adr/0087-generic-kanban-view.md)); tickets on the board are done too ([ADR 0088](adr/0088-tickets-on-the-kanban-board.md), with a status endpoint); open: the calendar view, live updates of the board, team, tag and SLA filters on the ticket board. Phase 4, chatter, followers and activities on customers, quotations, orders and opportunities ([ADR 0086](adr/0086-generic-chatter-and-activities.md), accepted): done: backend, panel, file attachments, field-level messages, assignment mail, live updates and clean-up; open: attachments on activities, messages for quotation and order line changes |
-| T1 Tutorial chapter 10, working a helpdesk ticket (internal note, tag, time entry, escalation, prepared answers; continues the ticket of chapter 7) | Draft (strings in five languages; branch `claude/hopeful-carson-ohbvx6`); the e2e tutorial walk has a chapter 10 step (`e2e/tests/tutorial.spec.ts`); none of it has been analysed or run, and the generated l10n files were edited by hand, so run `flutter gen-l10n`, the tutorial tests and the e2e walk. Open: links and bundles, checklists, watching, hand-over and the call log |
+| U1 Shared UI framework (theme tokens and dark mode, repository layer, app switcher and breadcrumbs, global search and notifications, generic list view, server-side sort, filters, facets and saved favourites, group-by, generic form view, kanban, chatter) | In progress. Done and merged: phases 0 to 3 ([ADR 0077](adr/0077-ui-theme-tokens-and-dark-mode.md) to [ADR 0085](adr/0085-generic-form-view.md), including list group-by, [ADR 0089](adr/0089-list-group-by.md)); the generic list view now serves orders, tickets, products and suppliers as well, and the generic form view customers, quotations, orders, products and suppliers (PRs #109 to #113, #119, #123, #159). The invoice line editor and smart buttons on quotations and orders exist. Phase 4, chatter, followers and activities ([ADR 0086](adr/0086-generic-chatter-and-activities.md), accepted, on customers, quotations, orders and opportunities; PR #124): backend, panel, file attachments on notes, field-level messages, assignment mail, live updates and clean-up are done. Phase 5, kanban: the generic board and the opportunity pipeline ([ADR 0087](adr/0087-generic-kanban-view.md), PR #125) and tickets on the board ([ADR 0088](adr/0088-tickets-on-the-kanban-board.md), PR #126) are done. Open: the ticket record screen on the generic form view, a one2many line editor beyond invoices, the calendar view, live updates of the board, team, tag and SLA filters on the ticket board, attachments on activities, messages for quotation and order line changes. A comment in `entity_list.dart` cites group-by as ADR 0084; it is ADR 0089 |
+| UX1 Frontend UX phases 1 to 5 (entity list search clear and responsive header, active group label and top-bar search pill, five-item navigation bar with a More sheet, role-aware home overview, non-blocking tab editing in the product form) | Done (PRs #152 to #156); no ADR |
+| T1 Tutorial chapters 10 and 11 (10: working a helpdesk ticket; 11: custom product properties) and the tutorial tooling (assisted steps, menu guidance, show control, instance-scoped progress, `tutorial-env` update) | Merged (PRs #116, #127, #128, #133, #134, #136 to #138); both chapters are in the e2e walk (`e2e/tests/tutorial.spec.ts`). The chapter 10 text was written without being run: run `flutter gen-l10n`, the tutorial tests and the e2e walk. Open from chapter 10: links and bundles, checklists, watching, hand-over and the call log |
+| W1 Portable Windows demo (tutorial ZIP and per-user setup EXE) and release artifacts | Done (PR #161, `windows-demo.yml`, `release.yml`); published with v0.3.0 |
+| PM1 Product media (pictures, videos, SVG, default selection) and the `.glb` 3D assembly viewer | Done (PRs #132, #148, #158); no ADR |
+| F1 Customer billing (customer invoices, correction credits, annual rebates) | Done (PR #147; `crates/finance`); no ADR |
+| DL1 Document library and customer mail merge | Done (PR #131; `crates/documents`); no ADR |
+| PR1 Negative unit prices; three price flags and planned zone price corrections; multi-zone pricing table, product copy and shortcut preferences | Done, [ADR 0084](adr/0084-price-flags-and-planned-price-corrections.md) (PR #118); negative prices and the pricing table in PRs #149 and #150 |
 | M1 MCP pilot (`apps/mcp`: delegated, read-only `get_order` over Streamable HTTP with OAuth, same company boundary and permission as the staff API) | Done as a pilot (PR #115, [README](../apps/mcp/README.md)); no ADR yet, no further tools planned |
 
 ## First release checklist
@@ -57,19 +63,23 @@ v0.2.0 and v0.3.0 are tagged and published by `.github/workflows/release.yml` (D
 artifacts, checksums, a portable Windows demo). Versions are `0.3.0` across Cargo, OpenAPI, the Flutter app and
 the deploy files; there is still no CHANGELOG. The items below are what remains before a distributable
 release. Findings refer to
-`docs/security-review-2026-11-14.md` (no Critical or High findings).
+`docs/security-review-2026-11-14.md` (no Critical or High findings); that file is not in the repository, so the
+finding numbers below cannot be checked against it until it is restored.
 
 **Blockers**
 - Security: re-verify, then fix the open Medium findings. #1 portal photo upload IDOR and file-ID oracle;
   #2 OIDC first login trusts an unverified email; #3 and #4 wildcard CORS and dev-auth defaults (partly
   addressed by ADR 0070 and D7); #5 JWKS refresh throttle and timeout; #6 Android release signed with the
-  debug key; #7 tokens in SharedPreferences and `allowBackup`. #6 and #7 must land before any distribution.
+  debug key (partly addressed: `app/android/app/build.gradle.kts` signs with a release key when one is configured
+  and falls back to the debug key, and such a build must not be distributed); #7 tokens in SharedPreferences and `allowBackup`. #6 and #7 must land before any distribution.
   The roughly 310 `WHERE id = $1` sites were not read; add the `company_id` query-scan test from the
   per-item checklist.
 - Release mechanics: done: a release workflow with Docker images, Windows artifacts and checksums, and the tag
   convention `vMAJOR.MINOR.PATCH`. Open: a signed Android build (the SBOM job in `security.yml` already
   attaches to a release), a versioning policy, a CHANGELOG, release signing keys, Docker hygiene (pinned image tags, HEALTHCHECK, no default database
-  credentials, `.env*` in `.dockerignore`), and a README status line that no longer says "vertical slice".
+  credentials, `.env*` in `.dockerignore`), and a README status line that no longer says "vertical slice" (still there). The Dockerfile runs as a
+  non-root user and `.dockerignore` excludes `.env*`; there is still no `HEALTHCHECK`, and `docker-compose.yml`
+  defaults the database password to `tradocraft`.
 - Decide whether to include P2 (site baseline) in the first release. An end-to-end test remains open and ADR 0068 is still Proposed. Apply its
   migrations to a database that already has companies first.
 - Run in a real app what has only been tested in isolation: price-list save, open and share, PDF layout with
@@ -78,10 +88,11 @@ release. Findings refer to
 - Review the machine-written nl, de, fr and es strings of price lists and site baseline.
 
 **Housekeeping**
-- ADR numbering was fixed in `3eb5d9b`; check the ADR index once more. A7 and M1 (MCP) have no ADR; write them.
-- Remove the unused `printing` package from `app/pubspec.yaml`; never commit the hook-created `.compliance/`.
-- Delete the merged and stale local and remote branches (about 70) before the first tag.
-- Merge or close the pending Dependabot branches (tower-http, webpki-roots, setup-node, @types/node) and
+- ADR numbering was fixed in `3eb5d9b`; the ADR index lists 0001 to 0089 with no duplicate numbers. A7 and M1 (MCP) have no ADR; write them.
+- Keep the `printing` package: `app/lib/features/kb/document_library_page.dart` uses its `PdfPreview`. Never commit the
+  hook-created `.compliance/` (none is in the tree today).
+- Delete the merged and stale remote branches (140 heads today) before the next tag.
+- Merge or close the pending Dependabot branches (tower-http, webpki-roots, setup-node, upload-artifact, @types/node) and
   note the deferred `swagger-parser-2` migration (PR #94).
 
 **After the first release**: A6b, C2, the work-centre half of C3, D8, D9, and security findings
