@@ -15,7 +15,7 @@ pub fn PlaceholderPage(#[prop(into)] title: String, #[prop(into)] route: String)
             <p style="margin: 0 0 var(--space-md); color: var(--on-surface-variant);">
                 "This module screen is not part of the Phase 1 spike yet. Use Products to test the live API connection."
             </p>
-            <A href="/products" attr:class="tc-btn tc-btn-primary">
+            <A href=crate::components::shell::app_href("/products") attr:class="tc-btn tc-btn-primary">
                 "Open Products"
             </A>
         </div>

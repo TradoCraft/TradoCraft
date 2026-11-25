@@ -33,6 +33,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
+          targets: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@v2
       - name: Install Typst
         run: |
@@ -51,6 +52,10 @@ jobs:
         run: |
           cargo run -q -p tradocraft-api -- openapi > api/openapi.json
           git diff --exit-code api/openapi.json
+      - name: API client matches OpenAPI contract
+        run: ./scripts/gen-api-client.sh --check
+      - name: Check wasm32 web client and UI crates
+        run: cargo check -p tradocraft-api-client -p tradocraft-web-ui --target wasm32-unknown-unknown
 
   flutter:
     runs-on: ubuntu-latest

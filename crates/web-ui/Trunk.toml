@@ -1,6 +1,7 @@
 [build]
 target = "index.html"
 dist = "dist"
+public_url = "/app/"
 
 [serve]
 addresses = ["127.0.0.1"]

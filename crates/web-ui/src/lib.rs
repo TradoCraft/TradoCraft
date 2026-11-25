@@ -24,7 +24,7 @@ pub fn App() -> impl IntoView {
     });
 
     view! {
-        <Router>
+        <Router base="/app">
             <Routes fallback=|| view! {
                 <AppShell>
                     <PlaceholderPage title="Not found" route="404" />

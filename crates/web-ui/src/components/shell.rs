@@ -5,6 +5,12 @@ use leptos_router::NavigateOptions;
 
 use crate::state::{AppContext, ThemeMode, WorkspaceTab};
 
+const APP_BASE: &str = "/app";
+
+pub fn app_href(path: &str) -> String {
+    format!("{APP_BASE}{path}")
+}
+
 struct NavItem {
     id: &'static str,
     path: &'static str,
@@ -213,7 +219,7 @@ pub fn AppShell(children: Children) -> impl IntoView {
                                     ThemeMode::Light => "Dark mode",
                                 }}
                             </button>
-                            <A href="/login" attr:class="tc-btn tc-btn-primary tc-btn-sm" attr:data-target="sign-in-link">
+                            <A href=app_href("/login") attr:class="tc-btn tc-btn-primary tc-btn-sm" attr:data-target="sign-in-link">
                                 "Sign in"
                             </A>
                         }.into_any(),
@@ -285,9 +291,10 @@ pub fn AppShell(children: Children) -> impl IntoView {
                             <div class="tc-nav-group-label">{group.title}</div>
                             <div class="tc-nav-list">
                                 {group.items.iter().map(|item| {
-                                    let path = item.path;
+                                    let href = app_href(item.path);
+                                    let active_href = href.clone();
                                     let active_class = move || {
-                                        if location.pathname.get() == path {
+                                        if location.pathname.get() == active_href {
                                             "tc-nav-item active"
                                         } else {
                                             "tc-nav-item"
@@ -295,7 +302,7 @@ pub fn AppShell(children: Children) -> impl IntoView {
                                     };
                                     view! {
                                         <A
-                                            href=path
+                                            href=href
                                             attr:class=active_class
                                             attr:data-target=item.id
                                             on:click=move |_| ctx.active_tab.set(None)

@@ -1,11 +1,14 @@
+use std::cell::RefCell;
 use std::future::Future;
 use std::pin::Pin;
 use std::str::FromStr;
 
 use rust_decimal::Decimal;
 pub use tradocraft_api_client::{
-    ApiError, Auth, Client, Company, Customer, CustomerPage, ListCustomersParams,
-    ListProductsParams, Me, MeModule, Membership, Product, ProductPage, Session,
+    ApiError, Auth, Client, Company, CreateCustomerRequest, CreateProductRequest, Customer,
+    CustomerInput, CustomerPage, ErrorBody, ListCustomersParams, ListProductsParams, Me, MeModule,
+    Membership, Product, ProductInput, ProductPage, Session, UpdateCustomerRequest,
+    UpdateProductRequest,
 };
 use uuid::Uuid;
 
@@ -51,11 +54,35 @@ pub trait ApiClient {
         mode: &'a ConnectionMode,
         params: &'a ListProductsParams,
     ) -> ApiFuture<'a, ProductPage>;
+    fn get_product<'a>(&'a self, mode: &'a ConnectionMode, id: Uuid) -> ApiFuture<'a, Product>;
+    fn create_product<'a>(
+        &'a self,
+        mode: &'a ConnectionMode,
+        req: &'a CreateProductRequest,
+    ) -> ApiFuture<'a, Product>;
+    fn update_product<'a>(
+        &'a self,
+        mode: &'a ConnectionMode,
+        id: Uuid,
+        req: &'a UpdateProductRequest,
+    ) -> ApiFuture<'a, Product>;
     fn list_customers<'a>(
         &'a self,
         mode: &'a ConnectionMode,
         params: &'a ListCustomersParams,
     ) -> ApiFuture<'a, CustomerPage>;
+    fn get_customer<'a>(&'a self, mode: &'a ConnectionMode, id: Uuid) -> ApiFuture<'a, Customer>;
+    fn create_customer<'a>(
+        &'a self,
+        mode: &'a ConnectionMode,
+        req: &'a CreateCustomerRequest,
+    ) -> ApiFuture<'a, Customer>;
+    fn update_customer<'a>(
+        &'a self,
+        mode: &'a ConnectionMode,
+        id: Uuid,
+        req: &'a UpdateCustomerRequest,
+    ) -> ApiFuture<'a, Customer>;
 }
 
 /// Live client delegating to `tradocraft_api_client::Client`, with offline `MockDemo` fallback.
@@ -102,6 +129,54 @@ impl ApiClient for WebApiClient {
         })
     }
 
+    fn get_product<'a>(&'a self, mode: &'a ConnectionMode, id: Uuid) -> ApiFuture<'a, Product> {
+        Box::pin(async move {
+            match mode {
+                ConnectionMode::MockDemo => MockApiClient.get_product(mode, id).await,
+                ConnectionMode::Live(session) => {
+                    Client::from_session(resolved_session(session))
+                        .get_product(id)
+                        .await
+                }
+            }
+        })
+    }
+
+    fn create_product<'a>(
+        &'a self,
+        mode: &'a ConnectionMode,
+        req: &'a CreateProductRequest,
+    ) -> ApiFuture<'a, Product> {
+        Box::pin(async move {
+            match mode {
+                ConnectionMode::MockDemo => MockApiClient.create_product(mode, req).await,
+                ConnectionMode::Live(session) => {
+                    Client::from_session(resolved_session(session))
+                        .create_product(req)
+                        .await
+                }
+            }
+        })
+    }
+
+    fn update_product<'a>(
+        &'a self,
+        mode: &'a ConnectionMode,
+        id: Uuid,
+        req: &'a UpdateProductRequest,
+    ) -> ApiFuture<'a, Product> {
+        Box::pin(async move {
+            match mode {
+                ConnectionMode::MockDemo => MockApiClient.update_product(mode, id, req).await,
+                ConnectionMode::Live(session) => {
+                    Client::from_session(resolved_session(session))
+                        .update_product(id, req)
+                        .await
+                }
+            }
+        })
+    }
+
     fn list_customers<'a>(
         &'a self,
         mode: &'a ConnectionMode,
@@ -118,12 +193,267 @@ impl ApiClient for WebApiClient {
             }
         })
     }
+
+    fn get_customer<'a>(&'a self, mode: &'a ConnectionMode, id: Uuid) -> ApiFuture<'a, Customer> {
+        Box::pin(async move {
+            match mode {
+                ConnectionMode::MockDemo => MockApiClient.get_customer(mode, id).await,
+                ConnectionMode::Live(session) => {
+                    Client::from_session(resolved_session(session))
+                        .get_customer(id)
+                        .await
+                }
+            }
+        })
+    }
+
+    fn create_customer<'a>(
+        &'a self,
+        mode: &'a ConnectionMode,
+        req: &'a CreateCustomerRequest,
+    ) -> ApiFuture<'a, Customer> {
+        Box::pin(async move {
+            match mode {
+                ConnectionMode::MockDemo => MockApiClient.create_customer(mode, req).await,
+                ConnectionMode::Live(session) => {
+                    Client::from_session(resolved_session(session))
+                        .create_customer(req)
+                        .await
+                }
+            }
+        })
+    }
+
+    fn update_customer<'a>(
+        &'a self,
+        mode: &'a ConnectionMode,
+        id: Uuid,
+        req: &'a UpdateCustomerRequest,
+    ) -> ApiFuture<'a, Customer> {
+        Box::pin(async move {
+            match mode {
+                ConnectionMode::MockDemo => MockApiClient.update_customer(mode, id, req).await,
+                ConnectionMode::Live(session) => {
+                    Client::from_session(resolved_session(session))
+                        .update_customer(id, req)
+                        .await
+                }
+            }
+        })
+    }
 }
 
 fn resolved_session(session: &Session) -> Session {
     let mut out = session.clone();
     out.base_url = resolve_base_url(&session.base_url);
     out
+}
+
+struct MockStore {
+    products: Vec<Product>,
+    customers: Vec<Customer>,
+    next_id: u128,
+}
+
+impl MockStore {
+    fn seeded() -> Self {
+        Self {
+            products: demo_products(),
+            customers: demo_customers(),
+            next_id: 0x0000_0000_0000_7000_8000_0000_0000_1000,
+        }
+    }
+
+    fn alloc_id(&mut self) -> Uuid {
+        let id = Uuid::from_u128(self.next_id);
+        self.next_id += 1;
+        id
+    }
+}
+
+thread_local! {
+    static MOCK_STORE: RefCell<MockStore> = RefCell::new(MockStore::seeded());
+}
+
+fn mock_http_error(status: u16, error: &str, code: Option<&str>, message: &str) -> ApiError {
+    ApiError::Http {
+        status,
+        body: Some(ErrorBody {
+            error: error.to_string(),
+            code: code.map(str::to_string),
+            message: message.to_string(),
+        }),
+        raw_body: message.to_string(),
+    }
+}
+
+fn validate_product_input(req: &ProductInput) -> Result<(), ApiError> {
+    if req.code.trim().is_empty() || req.name.trim().is_empty() {
+        return Err(mock_http_error(
+            400,
+            "validation",
+            None,
+            "code and name are required",
+        ));
+    }
+    if req.product_type == "service" && req.tracking != "none" {
+        return Err(mock_http_error(
+            400,
+            "validation",
+            None,
+            "services cannot be tracked",
+        ));
+    }
+    Ok(())
+}
+
+fn apply_product_input(id: Uuid, req: &ProductInput, existing: Option<&Product>) -> Product {
+    let vat_category = req
+        .vat_category
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .unwrap_or("standard")
+        .to_string();
+    let vat_rate =
+        req.vat_rate_override
+            .or(req.vat_rate)
+            .unwrap_or_else(|| match vat_category.as_str() {
+                "intermediate" => Decimal::from(12),
+                "reduced" => Decimal::from(6),
+                "zero" => Decimal::ZERO,
+                _ => Decimal::from(21),
+            });
+    let included_in_turnover = match req.included_in_turnover {
+        Some(v) => v,
+        None => existing.and_then(|p| p.included_in_turnover),
+    };
+    Product {
+        id,
+        code: req.code.trim().to_string(),
+        name: req.name.trim().to_string(),
+        description: req.description.clone(),
+        unit: req.unit.clone(),
+        product_type: req.product_type.clone(),
+        vat_rate,
+        vat_category,
+        vat_rate_override: req.vat_rate_override,
+        tracking: req.tracking.clone(),
+        family_id: req.family_id,
+        family_code: existing.and_then(|p| p.family_code.clone()),
+        non_discountable: req.non_discountable,
+        price_on_request: req.price_on_request,
+        price_is_indicative: req.price_is_indicative,
+        included_in_turnover,
+        active: req.active,
+        default_media_id: existing.and_then(|p| p.default_media_id),
+        default_media_kind: existing.and_then(|p| p.default_media_kind.clone()),
+        standard_cost: req.standard_cost,
+        reorder_min: req.reorder_min,
+        reorder_max: req.reorder_max,
+        lead_time_days: req.lead_time_days,
+        barcode: req
+            .barcode
+            .as_deref()
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .map(str::to_string),
+        packaging_category_id: req.packaging_category_id,
+        packaging_category_code: existing.and_then(|p| p.packaging_category_code.clone()),
+        length_mm: req.length_mm,
+        width_mm: req.width_mm,
+        height_mm: req.height_mm,
+        weight_g: req.weight_g,
+        default_production_remark: req.default_production_remark.trim().to_string(),
+    }
+}
+
+fn validate_customer_input(req: &CustomerInput) -> Result<(), ApiError> {
+    if req.code.trim().is_empty() || req.name.trim().is_empty() {
+        return Err(mock_http_error(
+            400,
+            "validation",
+            None,
+            "code and name are required",
+        ));
+    }
+    if req.country_code.trim().len() != 2 {
+        return Err(mock_http_error(
+            400,
+            "validation",
+            None,
+            "country_code must be a 2-letter code",
+        ));
+    }
+    if req.payment_terms_days < 0 {
+        return Err(mock_http_error(
+            400,
+            "validation",
+            None,
+            "payment_terms_days cannot be negative",
+        ));
+    }
+    Ok(())
+}
+
+fn mock_zone_code(zone_id: Uuid) -> Option<String> {
+    match zone_id.to_string().as_str() {
+        "00000000-0000-7000-8000-000000000201" => Some("Z1".to_string()),
+        "00000000-0000-7000-8000-000000000202" => Some("Z2".to_string()),
+        "00000000-0000-7000-8000-000000000203" => Some("Z3".to_string()),
+        _ => None,
+    }
+}
+
+fn apply_customer_input(id: Uuid, version: i64, req: &CustomerInput) -> Customer {
+    let vat_regime = req
+        .vat_regime
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(str::to_string)
+        .unwrap_or_else(|| {
+            if req.country_code.eq_ignore_ascii_case("BE") {
+                "domestic".to_string()
+            } else {
+                "intra_eu".to_string()
+            }
+        });
+    Customer {
+        id,
+        version,
+        code: req.code.trim().to_string(),
+        name: req.name.trim().to_string(),
+        vat_number: req
+            .vat_number
+            .as_deref()
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .map(str::to_string),
+        vat_regime,
+        email: req
+            .email
+            .as_deref()
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .map(str::to_string),
+        phone: req
+            .phone
+            .as_deref()
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .map(str::to_string),
+        street: req.street.trim().to_string(),
+        postal_code: req.postal_code.trim().to_string(),
+        city: req.city.trim().to_string(),
+        country_code: req.country_code.trim().to_ascii_uppercase(),
+        language: req.language.trim().to_ascii_lowercase(),
+        active: req.active,
+        price_zone_id: Some(req.price_zone_id),
+        price_zone_code: mock_zone_code(req.price_zone_id),
+        discount_percent: Some(req.discount_percent),
+        payment_terms_days: Some(req.payment_terms_days),
+    }
 }
 
 /// Offline demo client seeded with records matching `seed/dev_seed.sql`.
@@ -167,7 +497,12 @@ impl ApiClient for MockApiClient {
                     autosave_minutes: 5,
                 },
                 roles: vec!["sales".to_string()],
-                permissions: vec!["products.read".to_string(), "customers.read".to_string()],
+                permissions: vec![
+                    "products.read".to_string(),
+                    "products.write".to_string(),
+                    "customers.read".to_string(),
+                    "customers.write".to_string(),
+                ],
                 modules: vec![
                     MeModule {
                         code: "products".to_string(),
@@ -198,7 +533,7 @@ impl ApiClient for MockApiClient {
         params: &'a ListProductsParams,
     ) -> ApiFuture<'a, ProductPage> {
         Box::pin(async move {
-            let mut items = demo_products();
+            let mut items = MOCK_STORE.with(|store| store.borrow().products.clone());
             if let Some(q) = params.q.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
                 let needle = q.to_ascii_lowercase();
                 items.retain(|p| {
@@ -225,13 +560,97 @@ impl ApiClient for MockApiClient {
         })
     }
 
+    fn get_product<'a>(&'a self, _mode: &'a ConnectionMode, id: Uuid) -> ApiFuture<'a, Product> {
+        Box::pin(async move {
+            MOCK_STORE.with(|store| {
+                store
+                    .borrow()
+                    .products
+                    .iter()
+                    .find(|p| p.id == id)
+                    .cloned()
+                    .ok_or_else(|| mock_http_error(404, "not_found", None, "Product not found."))
+            })
+        })
+    }
+
+    fn create_product<'a>(
+        &'a self,
+        _mode: &'a ConnectionMode,
+        req: &'a CreateProductRequest,
+    ) -> ApiFuture<'a, Product> {
+        let req = req.clone();
+        Box::pin(async move {
+            validate_product_input(&req)?;
+            let code_trimmed = req.code.trim();
+            MOCK_STORE.with(|store| {
+                let mut store = store.borrow_mut();
+                if store
+                    .products
+                    .iter()
+                    .any(|p| p.code.eq_ignore_ascii_case(code_trimmed))
+                {
+                    return Err(mock_http_error(
+                        409,
+                        "conflict",
+                        None,
+                        &format!("Product code '{code_trimmed}' already exists."),
+                    ));
+                }
+                let id = store.alloc_id();
+                let created = apply_product_input(id, &req, None);
+                store.products.push(created.clone());
+                Ok(created)
+            })
+        })
+    }
+
+    fn update_product<'a>(
+        &'a self,
+        _mode: &'a ConnectionMode,
+        id: Uuid,
+        req: &'a UpdateProductRequest,
+    ) -> ApiFuture<'a, Product> {
+        let req = req.clone();
+        Box::pin(async move {
+            validate_product_input(&req)?;
+            let code_trimmed = req.code.trim();
+            MOCK_STORE.with(|store| {
+                let mut store = store.borrow_mut();
+                if store
+                    .products
+                    .iter()
+                    .any(|p| p.id != id && p.code.eq_ignore_ascii_case(code_trimmed))
+                {
+                    return Err(mock_http_error(
+                        409,
+                        "conflict",
+                        None,
+                        &format!("Product code '{code_trimmed}' already exists."),
+                    ));
+                }
+                let Some(idx) = store.products.iter().position(|p| p.id == id) else {
+                    return Err(mock_http_error(
+                        404,
+                        "not_found",
+                        None,
+                        "Product not found.",
+                    ));
+                };
+                let updated = apply_product_input(id, &req, Some(&store.products[idx]));
+                store.products[idx] = updated.clone();
+                Ok(updated)
+            })
+        })
+    }
+
     fn list_customers<'a>(
         &'a self,
         _mode: &'a ConnectionMode,
         params: &'a ListCustomersParams,
     ) -> ApiFuture<'a, CustomerPage> {
         Box::pin(async move {
-            let mut items = demo_customers();
+            let mut items = MOCK_STORE.with(|store| store.borrow().customers.clone());
             if let Some(q) = params.q.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
                 let needle = q.to_ascii_lowercase();
                 items.retain(|c| {
@@ -248,6 +667,101 @@ impl ApiClient for MockApiClient {
             let limit = params.limit.unwrap_or(50).clamp(1, 500) as usize;
             let page = items.into_iter().skip(offset).take(limit).collect();
             Ok(CustomerPage { items: page, total })
+        })
+    }
+
+    fn get_customer<'a>(&'a self, _mode: &'a ConnectionMode, id: Uuid) -> ApiFuture<'a, Customer> {
+        Box::pin(async move {
+            MOCK_STORE.with(|store| {
+                store
+                    .borrow()
+                    .customers
+                    .iter()
+                    .find(|c| c.id == id)
+                    .cloned()
+                    .ok_or_else(|| mock_http_error(404, "not_found", None, "Customer not found."))
+            })
+        })
+    }
+
+    fn create_customer<'a>(
+        &'a self,
+        _mode: &'a ConnectionMode,
+        req: &'a CreateCustomerRequest,
+    ) -> ApiFuture<'a, Customer> {
+        let req = req.clone();
+        Box::pin(async move {
+            validate_customer_input(&req)?;
+            let code_trimmed = req.code.trim();
+            MOCK_STORE.with(|store| {
+                let mut store = store.borrow_mut();
+                if store
+                    .customers
+                    .iter()
+                    .any(|c| c.code.eq_ignore_ascii_case(code_trimmed))
+                {
+                    return Err(mock_http_error(
+                        409,
+                        "conflict",
+                        None,
+                        &format!("Customer code '{code_trimmed}' already exists."),
+                    ));
+                }
+                let id = store.alloc_id();
+                let created = apply_customer_input(id, 1, &req);
+                store.customers.push(created.clone());
+                Ok(created)
+            })
+        })
+    }
+
+    fn update_customer<'a>(
+        &'a self,
+        _mode: &'a ConnectionMode,
+        id: Uuid,
+        req: &'a UpdateCustomerRequest,
+    ) -> ApiFuture<'a, Customer> {
+        let req = req.clone();
+        Box::pin(async move {
+            validate_customer_input(&req)?;
+            let code_trimmed = req.code.trim();
+            MOCK_STORE.with(|store| {
+                let mut store = store.borrow_mut();
+                if store
+                    .customers
+                    .iter()
+                    .any(|c| c.id != id && c.code.eq_ignore_ascii_case(code_trimmed))
+                {
+                    return Err(mock_http_error(
+                        409,
+                        "conflict",
+                        None,
+                        &format!("Customer code '{code_trimmed}' already exists."),
+                    ));
+                }
+                let Some(idx) = store.customers.iter().position(|c| c.id == id) else {
+                    return Err(mock_http_error(
+                        404,
+                        "not_found",
+                        None,
+                        "Customer not found.",
+                    ));
+                };
+                let current_version = store.customers[idx].version;
+                if let Some(expected) = req.expected_version {
+                    if expected != current_version {
+                        return Err(mock_http_error(
+                            409,
+                            "conflict",
+                            Some("record_changed"),
+                            "Customer was modified by someone else.",
+                        ));
+                    }
+                }
+                let updated = apply_customer_input(id, current_version + 1, &req);
+                store.customers[idx] = updated.clone();
+                Ok(updated)
+            })
         })
     }
 }
@@ -370,10 +884,16 @@ fn demo_customers() -> Vec<Customer> {
             "Alpha Installaties NV",
             Some("BE0000000097"),
             "domestic",
+            Some("info@alpha.example"),
+            Some("+32 3 000 00 01"),
+            "Havenlaan 10",
+            "2000",
             "Antwerpen",
             "BE",
             "nl",
+            "00000000-0000-7000-8000-000000000202",
             Some("Z2"),
+            Some("5"),
             Some(30),
         ),
         (
@@ -382,10 +902,16 @@ fn demo_customers() -> Vec<Customer> {
             "Bêta Industrie SA",
             Some("BE0000000196"),
             "domestic",
+            Some("contact@beta.example"),
+            Some("+32 4 000 00 02"),
+            "Rue de l'Usine 5",
+            "4000",
             "Liège",
             "BE",
             "fr",
+            "00000000-0000-7000-8000-000000000203",
             Some("Z3"),
+            Some("0"),
             Some(60),
         ),
         (
@@ -394,34 +920,57 @@ fn demo_customers() -> Vec<Customer> {
             "Gamma Trading GmbH",
             Some("DE000000000"),
             "intra_eu",
+            Some("office@gamma.example"),
+            Some("+49 221 000 003"),
+            "Werkstraße 3",
+            "50667",
             "Köln",
             "DE",
             "en",
+            "00000000-0000-7000-8000-000000000201",
             Some("Z1"),
+            Some("2.5"),
             Some(30),
         ),
     ];
 
     rows.into_iter()
         .map(
-            |(id, code, name, vat, regime, city, country, lang, zone, terms)| Customer {
+            |(
+                id,
+                code,
+                name,
+                vat,
+                regime,
+                email,
+                phone,
+                street,
+                postal_code,
+                city,
+                country,
+                lang,
+                zone_id,
+                zone,
+                discount,
+                terms,
+            )| Customer {
                 id: Uuid::parse_str(id).unwrap_or_else(|_| Uuid::nil()),
                 version: 1,
                 code: code.to_string(),
                 name: name.to_string(),
                 vat_number: vat.map(str::to_string),
                 vat_regime: regime.to_string(),
-                email: None,
-                phone: None,
-                street: String::new(),
-                postal_code: String::new(),
+                email: email.map(str::to_string),
+                phone: phone.map(str::to_string),
+                street: street.to_string(),
+                postal_code: postal_code.to_string(),
                 city: city.to_string(),
                 country_code: country.to_string(),
                 language: lang.to_string(),
                 active: true,
-                price_zone_id: None,
+                price_zone_id: Uuid::parse_str(zone_id).ok(),
                 price_zone_code: zone.map(str::to_string),
-                discount_percent: None,
+                discount_percent: discount.and_then(|d| Decimal::from_str(d).ok()),
                 payment_terms_days: terms,
             },
         )
@@ -430,7 +979,24 @@ fn demo_customers() -> Vec<Customer> {
 
 #[cfg(test)]
 mod tests {
+    use std::task::{Context, Poll, RawWaker, RawWakerVTable, Waker};
+
     use super::*;
+
+    fn block_on_ready<F: Future>(fut: F) -> F::Output {
+        fn no_op(_: *const ()) {}
+        fn clone(ptr: *const ()) -> RawWaker {
+            RawWaker::new(ptr, &VTABLE)
+        }
+        static VTABLE: RawWakerVTable = RawWakerVTable::new(clone, no_op, no_op, no_op);
+        let waker = unsafe { Waker::from_raw(RawWaker::new(std::ptr::null(), &VTABLE)) };
+        let mut cx = Context::from_waker(&waker);
+        let mut pinned = Box::pin(fut);
+        match pinned.as_mut().poll(&mut cx) {
+            Poll::Ready(out) => out,
+            Poll::Pending => panic!("MockApiClient future unexpectedly yielded Pending"),
+        }
+    }
 
     #[test]
     fn resolves_base_url_cleanly() {
@@ -468,5 +1034,62 @@ mod tests {
         assert_eq!(page.total, 1);
         assert_eq!(page.items[0].code, "UNIT-100");
         assert_eq!(page.items[0].vat_rate, Decimal::from(21));
+    }
+
+    #[test]
+    fn mock_client_product_crud_roundtrip() {
+        let mode = ConnectionMode::MockDemo;
+        let created = block_on_ready(MockApiClient.create_product(
+            &mode,
+            &CreateProductRequest {
+                code: "TEST-PROD-1".to_string(),
+                name: "Test Valve".to_string(),
+                description: "Brass valve".to_string(),
+                ..CreateProductRequest::default()
+            },
+        ))
+        .expect("create_product succeeds");
+        assert_eq!(created.code, "TEST-PROD-1");
+
+        let fetched = block_on_ready(MockApiClient.get_product(&mode, created.id))
+            .expect("get_product finds created item");
+        assert_eq!(fetched.name, "Test Valve");
+
+        let mut update_req = UpdateProductRequest::from(&fetched);
+        update_req.name = "Updated Brass Valve".to_string();
+        let updated = block_on_ready(MockApiClient.update_product(&mode, created.id, &update_req))
+            .expect("update_product succeeds");
+        assert_eq!(updated.name, "Updated Brass Valve");
+    }
+
+    #[test]
+    fn mock_client_customer_crud_and_optimistic_lock() {
+        let mode = ConnectionMode::MockDemo;
+        let zone_id = Uuid::parse_str("00000000-0000-7000-8000-000000000201").unwrap();
+        let created = block_on_ready(MockApiClient.create_customer(
+            &mode,
+            &CreateCustomerRequest {
+                code: "C9001".to_string(),
+                name: "Test Customer BV".to_string(),
+                city: "Gent".to_string(),
+                price_zone_id: zone_id,
+                ..CreateCustomerRequest::default()
+            },
+        ))
+        .expect("create_customer succeeds");
+        assert_eq!(created.version, 1);
+
+        let mut update_req = UpdateCustomerRequest::from_customer(&created, zone_id);
+        update_req.city = "Brugge".to_string();
+        let updated = block_on_ready(MockApiClient.update_customer(&mode, created.id, &update_req))
+            .expect("update_customer succeeds");
+        assert_eq!(updated.version, 2);
+        assert_eq!(updated.city, "Brugge");
+
+        let conflict =
+            block_on_ready(MockApiClient.update_customer(&mode, created.id, &update_req))
+                .expect_err("stale expected_version returns conflict");
+        assert_eq!(conflict.status(), Some(409));
+        assert_eq!(conflict.code(), Some("record_changed"));
     }
 }

@@ -73,6 +73,15 @@ impl Client {
         self.send_json(req).await
     }
 
+    pub(crate) async fn post_json<B, T>(&self, path: &str, body: &B) -> Result<T, ApiError>
+    where
+        B: Serialize + ?Sized,
+        T: DeserializeOwned,
+    {
+        let req = self.apply_headers(self.http.post(self.url(path)).json(body));
+        self.send_json(req).await
+    }
+
     pub(crate) async fn put_json<B, T>(&self, path: &str, body: &B) -> Result<T, ApiError>
     where
         B: Serialize + ?Sized,

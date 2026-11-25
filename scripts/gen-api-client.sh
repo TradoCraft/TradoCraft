@@ -15,13 +15,26 @@ python3 - <<'PY'
 import json
 import pathlib
 import re
-import sys
 
 spec = json.loads(pathlib.Path("api/openapi.json").read_text())
 schemas = spec["components"]["schemas"]
 paths = spec["paths"]
 
-def check_path(path, method, expected_query_params=None):
+def schema_ref_name(node):
+    if not isinstance(node, dict):
+        return None
+    ref = node.get("$ref")
+    if ref and ref.startswith("#/components/schemas/"):
+        return ref.split("/")[-1]
+    return None
+
+def check_path(
+    path,
+    method,
+    expected_query_params=None,
+    expected_request_schema=None,
+    expected_response_schema=None,
+):
     assert path in paths, f"Missing path in api/openapi.json: {path}"
     op = paths[path].get(method)
     assert op is not None, f"Missing method {method.upper()} on {path}"
@@ -33,6 +46,29 @@ def check_path(path, method, expected_query_params=None):
         }
         missing = set(expected_query_params) - actual
         assert not missing, f"{method.upper()} {path} missing query params in OpenAPI: {sorted(missing)}"
+    if expected_request_schema is not None:
+        req_schema = (
+            op.get("requestBody", {})
+            .get("content", {})
+            .get("application/json", {})
+            .get("schema", {})
+        )
+        actual_req = schema_ref_name(req_schema)
+        assert actual_req == expected_request_schema, (
+            f"{method.upper()} {path} request schema mismatch: expected {expected_request_schema}, got {actual_req}"
+        )
+    if expected_response_schema is not None:
+        responses = op.get("responses", {})
+        ok_resp = responses.get("200") or responses.get("201") or {}
+        resp_schema = (
+            ok_resp.get("content", {})
+            .get("application/json", {})
+            .get("schema", {})
+        )
+        actual_resp = schema_ref_name(resp_schema)
+        assert actual_resp == expected_response_schema, (
+            f"{method.upper()} {path} response schema mismatch: expected {expected_response_schema}, got {actual_resp}"
+        )
 
 def rust_struct_fields(rs_path, struct_name):
     text = pathlib.Path(rs_path).read_text()
@@ -65,21 +101,40 @@ def check_schema_fields(rs_path, struct_name, schema_name):
     assert not extra, f"{struct_name} has fields not in {schema_name}: {sorted(extra)}"
     assert not missing, f"{struct_name} is missing fields from {schema_name}: {sorted(missing)}"
 
-check_path("/api/v1/auth/providers", "get")
-check_path("/api/v1/meta/environment", "get")
-check_path("/api/v1/me", "get")
-check_path("/api/v1/me/preferences", "get")
-check_path("/api/v1/me/preferences", "put")
-check_path(
-    "/api/v1/products",
-    "get",
-    ["q", "code", "active", "family_id", "product_type", "sort", "limit", "offset"],
-)
-check_path(
-    "/api/v1/customers",
-    "get",
-    ["q", "sort", "active", "country_code", "limit", "offset"],
-)
+def check_symbol(rs_path, pattern, label):
+    text = pathlib.Path(rs_path).read_text()
+    assert re.search(pattern, text, re.M), f"Missing {label} in {rs_path}"
+
+endpoints = [
+    ("/api/v1/auth/providers", "get", None, None, None),
+    ("/api/v1/meta/environment", "get", None, None, "EnvironmentInfo"),
+    ("/api/v1/me", "get", None, None, "Me"),
+    ("/api/v1/me/preferences", "get", None, None, "UserPreferences"),
+    ("/api/v1/me/preferences", "put", None, "UserPreferences", "UserPreferences"),
+    (
+        "/api/v1/products",
+        "get",
+        ["q", "code", "active", "family_id", "product_type", "sort", "limit", "offset"],
+        None,
+        "ProductPage",
+    ),
+    ("/api/v1/products", "post", None, "ProductInput", "Product"),
+    ("/api/v1/products/{id}", "get", None, None, "Product"),
+    ("/api/v1/products/{id}", "put", None, "ProductInput", "Product"),
+    (
+        "/api/v1/customers",
+        "get",
+        ["q", "sort", "active", "country_code", "limit", "offset"],
+        None,
+        "CustomerPage",
+    ),
+    ("/api/v1/customers", "post", None, "CustomerInput", "Customer"),
+    ("/api/v1/customers/{id}", "get", None, None, "Customer"),
+    ("/api/v1/customers/{id}", "put", None, "CustomerInput", "Customer"),
+]
+
+for path, method, query_params, req_schema, resp_schema in endpoints:
+    check_path(path, method, query_params, req_schema, resp_schema)
 
 checks = [
     ("crates/api-client/src/error.rs", "ErrorBody", "ErrorBody"),
@@ -93,12 +148,30 @@ checks = [
     ("crates/api-client/src/auth.rs", "UserPreferences", "UserPreferences"),
     ("crates/api-client/src/products.rs", "Product", "Product"),
     ("crates/api-client/src/products.rs", "ProductPage", "ProductPage"),
+    ("crates/api-client/src/products.rs", "ProductInput", "ProductInput"),
     ("crates/api-client/src/customers.rs", "Customer", "Customer"),
     ("crates/api-client/src/customers.rs", "CustomerPage", "CustomerPage"),
+    ("crates/api-client/src/customers.rs", "CustomerInput", "CustomerInput"),
 ]
 
 for rs_path, struct_name, schema_name in checks:
     check_schema_fields(rs_path, struct_name, schema_name)
 
-print(f"OK: {len(checks)} DTO structs and 7 endpoints match api/openapi.json")
+symbols = [
+    ("crates/api-client/src/products.rs", r"pub type CreateProductRequest = ProductInput;", "CreateProductRequest"),
+    ("crates/api-client/src/products.rs", r"pub type UpdateProductRequest = ProductInput;", "UpdateProductRequest"),
+    ("crates/api-client/src/products.rs", r"pub async fn get_product\(", "Client::get_product"),
+    ("crates/api-client/src/products.rs", r"pub async fn create_product\(", "Client::create_product"),
+    ("crates/api-client/src/products.rs", r"pub async fn update_product\(", "Client::update_product"),
+    ("crates/api-client/src/customers.rs", r"pub type CreateCustomerRequest = CustomerInput;", "CreateCustomerRequest"),
+    ("crates/api-client/src/customers.rs", r"pub type UpdateCustomerRequest = CustomerInput;", "UpdateCustomerRequest"),
+    ("crates/api-client/src/customers.rs", r"pub async fn get_customer\(", "Client::get_customer"),
+    ("crates/api-client/src/customers.rs", r"pub async fn create_customer\(", "Client::create_customer"),
+    ("crates/api-client/src/customers.rs", r"pub async fn update_customer\(", "Client::update_customer"),
+]
+
+for rs_path, pattern, label in symbols:
+    check_symbol(rs_path, pattern, label)
+
+print(f"OK: {len(checks)} DTO structs and {len(endpoints)} endpoints match api/openapi.json")
 PY

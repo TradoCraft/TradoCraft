@@ -14,6 +14,12 @@ pub use auth::{
     ShortcutBinding, UserPreferences,
 };
 pub use client::Client;
-pub use customers::{Customer, CustomerPage, ListCustomersParams};
+pub use customers::{
+    CreateCustomerRequest, Customer, CustomerInput, CustomerPage, ListCustomersParams,
+    UpdateCustomerRequest,
+};
 pub use error::{ApiError, ErrorBody};
-pub use products::{ListProductsParams, Product, ProductPage};
+pub use products::{
+    CreateProductRequest, ListProductsParams, Product, ProductInput, ProductPage,
+    UpdateProductRequest,
+};
