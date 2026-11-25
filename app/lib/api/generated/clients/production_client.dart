@@ -16,9 +16,11 @@ import '../models/production_build_component_input.dart';
 import '../models/production_capacity.dart';
 import '../models/production_cost_rollup.dart';
 import '../models/production_operation_finish.dart';
+import '../models/production_operation_move.dart';
 import '../models/production_operation_update.dart';
 import '../models/production_order.dart';
 import '../models/production_page.dart';
+import '../models/production_planning_board.dart';
 import '../models/production_schedule_input.dart';
 import '../models/production_serial_candidate.dart';
 import '../models/production_to_release.dart';
@@ -145,6 +147,24 @@ abstract class ProductionClient {
     @Body() required ProductionOperationFinish body,
   });
 
+  /// Moves an operation to another work centre and/or other days, checked against capacity,.
+  /// closures and the order of the operations. Errors among the conflicts refuse the move (409).
+  /// unless `force=true`; an inactive work centre and an operation that has started are never.
+  /// moved. Warnings never refuse. The conflicts are returned either way; `dry_run` changes.
+  /// nothing.
+  ///
+  /// [dryRun] - Only report the conflicts; change nothing (used while dragging).
+  ///
+  /// [force] - Move although there are errors that can be overridden (an overloaded day, a closure, ...).
+  @PUT('/api/v1/production-orders/{id}/operations/{operation_id}/move')
+  Future<ProductionOperationMove> moveProductionOperation({
+    @Path('id') required String id,
+    @Path('operation_id') required String operationId,
+    @Body() required ProductionOperationUpdate body,
+    @Query('dry_run') bool? dryRun,
+    @Query('force') bool? force,
+  });
+
   /// Takes back the finish (or skip) of an operation, for a mistake.
   @POST('/api/v1/production-orders/{id}/operations/{operation_id}/reopen')
   Future<ProductionOrder> reopenProductionOperation({
@@ -262,6 +282,20 @@ abstract class ProductionClient {
   @DELETE('/api/v1/production/divisions/{id}')
   Future<void> deleteDivision({
     @Path('id') required String id,
+  });
+
+  /// What the work-centre board shows: capacity per centre and day and the open operations.
+  ///
+  /// [from] - First day.
+  ///
+  /// [to] - Last day, inclusive; at most 62 days after `from`.
+  ///
+  /// [divisionId] - Only the work centres of this division.
+  @GET('/api/v1/production/planning-board')
+  Future<ProductionPlanningBoard> productionPlanningBoard({
+    @Query('from') required DateTime from,
+    @Query('to') required DateTime to,
+    @Query('division_id') String? divisionId,
   });
 
   /// The cost of building a quantity of a product from its active BOM and routing, through every.

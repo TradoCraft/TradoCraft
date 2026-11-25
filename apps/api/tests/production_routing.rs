@@ -3780,3 +3780,449 @@ async fn building_a_component_listed_twice_covers_all_its_lines_once(db: PgPool)
     .await;
     assert_eq!(status, StatusCode::CONFLICT, "{r}");
 }
+
+// ---- Work-centre planning board (ADR 0090) ----
+// 2027-03-01 is a Monday; the default week is Monday to Friday, 480 minutes a day.
+
+impl Env {
+    /// Plenty of parts for the big orders of the board tests.
+    async fn board_parts(&self) {
+        self.receive(PROFILE, "600").await;
+        self.receive(BOLT, "3000").await;
+    }
+
+    async fn release_frames(&self, quantity: &str) -> Value {
+        let (order, line) = self.order(FRAME, quantity).await;
+        let (status, po) = self
+            .release(&order, &line, json!({ "start_date": "2027-03-01" }))
+            .await;
+        assert_eq!(status, StatusCode::CREATED, "{po}");
+        po
+    }
+
+    async fn board(&self, who: &str, query: &str) -> (StatusCode, Value) {
+        get(
+            &self.app,
+            who,
+            &format!("/production/planning-board?{query}"),
+        )
+        .await
+    }
+}
+
+fn conflict_kinds(r: &Value) -> Vec<String> {
+    r["conflicts"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|c| c["kind"].as_str().unwrap().to_string())
+        .collect()
+}
+
+fn find_conflict<'a>(r: &'a Value, kind: &str) -> &'a Value {
+    r["conflicts"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|c| c["kind"] == kind)
+        .unwrap_or_else(|| panic!("no {kind} conflict in {r}"))
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn the_board_lists_open_operations_with_capacity_and_their_neighbours(db: PgPool) {
+    let e = env(db).await;
+    e.frame_parts().await;
+    let (saw, weld) = e.frame_routing().await;
+    let po = e.release_frames("2").await;
+    let n = id(&po);
+
+    let (status, b) = e.board(PLANNER, "from=2027-03-01&to=2027-03-07").await;
+    assert_eq!(status, StatusCode::OK, "{b}");
+    assert_eq!(b["from"], "2027-03-01");
+    let centres = b["centres"].as_array().unwrap();
+    assert_eq!(centres.len(), 2);
+    let saw_centre = centres.iter().find(|c| c["id"] == saw.as_str()).unwrap();
+    assert_eq!(saw_centre["days"].as_array().unwrap().len(), 7);
+    assert_eq!(saw_centre["days"][0]["available_minutes"], 480);
+    assert_eq!(
+        saw_centre["days"][0]["load_minutes"], 50,
+        "cut: 30 + 10 x 2"
+    );
+    assert_eq!(saw_centre["days"][5]["available_minutes"], 0, "saturday");
+
+    let ops = b["operations"].as_array().unwrap();
+    assert_eq!(ops.len(), 2);
+    let cut = ops.iter().find(|o| o["name"] == "Cut").unwrap();
+    let weld_op = ops.iter().find(|o| o["name"] == "Weld").unwrap();
+    assert_eq!(cut["production_order_id"], n.as_str());
+    assert_eq!(cut["work_centre_id"], saw.as_str());
+    assert_eq!(cut["planned_minutes"], 50);
+    assert_eq!(cut["predecessor_end"], Value::Null);
+    assert_eq!(cut["successor_start"], weld_op["planned_start"]);
+    assert_eq!(weld_op["work_centre_id"], weld.as_str());
+    assert_eq!(weld_op["predecessor_end"], cut["planned_end"]);
+    assert_eq!(weld_op["successor_start"], Value::Null);
+    assert_eq!(cut["locked"], false);
+    assert_eq!(cut["late"], false);
+
+    // A period after the work shows it as late; one before the work does not list it.
+    let (_, later) = e.board(PLANNER, "from=2027-03-15&to=2027-03-21").await;
+    let ops = later["operations"].as_array().unwrap();
+    assert_eq!(ops.len(), 2);
+    assert!(ops.iter().all(|o| o["late"] == true));
+    let (_, earlier) = e.board(PLANNER, "from=2027-02-15&to=2027-02-21").await;
+    assert_eq!(earlier["operations"], json!([]));
+
+    // A running operation is shown but locked.
+    let started = id(operation(&po, "Cut"));
+    post(
+        &e.app,
+        STORES,
+        &format!("/production-orders/{n}/operations/{started}/start"),
+        json!({}),
+    )
+    .await;
+    let (_, b) = e.board(PLANNER, "from=2027-03-01&to=2027-03-07").await;
+    let cut = b["operations"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|o| o["name"] == "Cut")
+        .unwrap();
+    assert_eq!(cut["status"], "in_progress");
+    assert_eq!(cut["locked"], true);
+
+    // Reading is for whoever sees production; a period is at most 62 days.
+    assert_eq!(
+        e.board(TECHNICIAN, "from=2027-03-01&to=2027-03-07").await.0,
+        StatusCode::FORBIDDEN
+    );
+    assert_eq!(
+        e.board(VIEWER, "from=2027-03-01&to=2027-03-07").await.0,
+        StatusCode::OK
+    );
+    assert_eq!(
+        e.board(PLANNER, "from=2027-03-01&to=2027-05-31").await.0,
+        StatusCode::UNPROCESSABLE_ENTITY
+    );
+    assert_eq!(
+        e.board(PLANNER, "from=2027-03-07&to=2027-03-01").await.0,
+        StatusCode::UNPROCESSABLE_ENTITY
+    );
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn a_move_is_checked_before_it_is_made(db: PgPool) {
+    let e = env(db).await;
+    e.frame_parts().await;
+    let (saw, _weld) = e.frame_routing().await;
+    let po = e.release_frames("2").await;
+    let n = id(&po);
+    let cut = id(operation(&po, "Cut"));
+    let weld_op = id(operation(&po, "Weld"));
+    let mv = |op: &str, flags: &str| format!("/production-orders/{n}/operations/{op}/move{flags}");
+    let cut_dates = |po: Value| dates(&po, "Cut");
+
+    // A dry run reports and changes nothing: onto Saturday (closed) and after the next operation.
+    let (status, r) = put(
+        &e.app,
+        PLANNER,
+        &mv(&cut, "?dry_run=true"),
+        json!({ "planned_start": "2027-03-06", "planned_end": "2027-03-06" }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{r}");
+    assert_eq!(r["applied"], false);
+    assert_eq!(r["order"], Value::Null);
+    let kinds = conflict_kinds(&r);
+    assert!(kinds.contains(&"on_closure".into()), "{r}");
+    assert!(kinds.contains(&"after_successor".into()), "{r}");
+    assert_eq!(find_conflict(&r, "on_closure")["severity"], "error");
+    assert_eq!(find_conflict(&r, "on_closure")["day"], "2027-03-06");
+    assert_eq!(
+        find_conflict(&r, "on_closure")["message_key"],
+        "production.conflict.on_closure"
+    );
+    assert_eq!(find_conflict(&r, "after_successor")["severity"], "warning");
+    let unchanged = e.production_order(PLANNER, &n).await;
+    assert_eq!(
+        cut_dates(unchanged),
+        ("2027-03-01".into(), "2027-03-01".into())
+    );
+
+    // The same move for real is refused (409) without force and nothing changes.
+    let body = json!({ "planned_start": "2027-03-06", "planned_end": "2027-03-06" });
+    let (status, r) = put(&e.app, PLANNER, &mv(&cut, ""), body.clone()).await;
+    assert_eq!(status, StatusCode::CONFLICT, "{r}");
+    assert!(r.to_string().contains("on_closure"), "{r}");
+    assert_eq!(
+        cut_dates(e.production_order(PLANNER, &n).await),
+        ("2027-03-01".into(), "2027-03-01".into())
+    );
+
+    // With force it is made, and the override is in the audit trail.
+    let (status, r) = put(&e.app, PLANNER, &mv(&cut, "?force=true"), body).await;
+    assert_eq!(status, StatusCode::OK, "{r}");
+    assert_eq!(r["applied"], true);
+    assert_eq!(
+        cut_dates(r["order"].clone()),
+        ("2027-03-06".into(), "2027-03-06".into())
+    );
+    let actions: Vec<String> = sqlx::query_scalar(
+        "SELECT action FROM audit.events WHERE entity = 'production_order' AND entity_id = $1::uuid
+           AND action IN ('operation_updated', 'operation_move_forced') ORDER BY id",
+    )
+    .bind(&n)
+    .fetch_all(&e.db)
+    .await
+    .unwrap();
+    assert_eq!(actions, ["operation_updated", "operation_move_forced"]);
+
+    // Starting before the previous operation ends is an error; ending after the next starts only
+    // warns and goes through without force.
+    let (_, r) = put(
+        &e.app,
+        PLANNER,
+        &mv(&weld_op, "?dry_run=true"),
+        json!({ "planned_start": "2027-02-26", "planned_end": "2027-02-26" }),
+    )
+    .await;
+    assert_eq!(find_conflict(&r, "before_predecessor")["severity"], "error");
+    let (status, r) = put(
+        &e.app,
+        PLANNER,
+        &mv(&cut, ""),
+        json!({ "planned_start": "2027-03-02", "planned_end": "2027-03-02" }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{r}");
+    assert_eq!(conflict_kinds(&r), ["after_successor"]);
+    assert_eq!(r["applied"], true);
+
+    // Another work centre that works on the day: no conflict, and the rate is taken again.
+    let other = e
+        .work_centre("SPARE", json!({ "cost_per_hour": "99" }))
+        .await;
+    let (status, r) = put(
+        &e.app,
+        PLANNER,
+        &mv(&cut, ""),
+        json!({ "work_centre_id": id(&other), "planned_start": "2027-03-01", "planned_end": "2027-03-01" }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{r}");
+    assert_eq!(conflict_kinds(&r), Vec::<String>::new());
+    assert_eq!(operation(&r["order"], "Cut")["work_centre_code"], "SPARE");
+    let as_admin = e.production_order(ADMIN, &n).await;
+    assert_eq!(dec(&operation(&as_admin, "Cut")["cost_rate"]), q("99"));
+
+    // A closure of the centre on the day is the same error as a weekend.
+    close(&e, Some(&saw), "2027-03-10", "2027-03-10").await;
+    let (_, r) = put(
+        &e.app,
+        PLANNER,
+        &mv(&cut, "?dry_run=true"),
+        json!({ "work_centre_id": saw, "planned_start": "2027-03-10", "planned_end": "2027-03-10" }),
+    )
+    .await;
+    assert_eq!(find_conflict(&r, "on_closure")["day"], "2027-03-10");
+
+    // Validation and permissions.
+    let (status, _) = put(
+        &e.app,
+        PLANNER,
+        &mv(&cut, ""),
+        json!({ "planned_start": "2027-03-04", "planned_end": "2027-03-03" }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+    let (status, _) = put(
+        &e.app,
+        PLANNER,
+        &mv(&cut, ""),
+        json!({ "work_centre_id": uid() }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "unknown centre");
+    for who in [STORES, SALES, VIEWER, TECHNICIAN] {
+        let (status, _) = put(
+            &e.app,
+            who,
+            &mv(&cut, "?dry_run=true"),
+            json!({ "planned_end": "2027-03-03" }),
+        )
+        .await;
+        assert_eq!(status, StatusCode::FORBIDDEN, "{who}");
+    }
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn an_overloaded_day_is_an_error_and_a_started_operation_is_never_moved(db: PgPool) {
+    let e = env(db).await;
+    e.board_parts().await;
+    let (_saw, _weld) = e.frame_routing().await;
+    // 45 frames: Cut is 30 + 10 x 45 = 480 minutes, a full day on SAW on Monday 1 March.
+    let big = e.release_frames("45").await;
+    assert_eq!(minutes(&big, "Cut"), 480);
+    let po = e.release_frames("2").await;
+    let n = id(&po);
+    let cut = id(operation(&po, "Cut"));
+    let mv = |flags: &str| format!("/production-orders/{n}/operations/{cut}/move{flags}");
+
+    // The small order's Cut already shares the day with the full one: staying is an overload.
+    let (_, r) = put(
+        &e.app,
+        PLANNER,
+        &mv("?dry_run=true"),
+        json!({ "planned_start": "2027-03-01", "planned_end": "2027-03-01" }),
+    )
+    .await;
+    assert_eq!(find_conflict(&r, "overload")["day"], "2027-03-01");
+    assert_eq!(find_conflict(&r, "overload")["severity"], "error");
+    // The next day is free.
+    let (_, r) = put(
+        &e.app,
+        PLANNER,
+        &mv("?dry_run=true"),
+        json!({ "planned_start": "2027-03-02", "planned_end": "2027-03-02" }),
+    )
+    .await;
+    assert!(!conflict_kinds(&r).contains(&"overload".into()), "{r}");
+
+    // The capacity page agrees: Monday is over.
+    let (_, cap) = get(
+        &e.app,
+        PLANNER,
+        "/production/capacity?from=2027-03-01&to=2027-03-02",
+    )
+    .await;
+    let day = &cap["centres"][0]["days"][0];
+    assert_eq!(day["overloaded"], true, "{cap}");
+
+    // A running operation, and one on an inactive work centre, are refused even with force.
+    post(
+        &e.app,
+        STORES,
+        &format!("/production-orders/{n}/operations/{cut}/start"),
+        json!({}),
+    )
+    .await;
+    let (_, r) = put(
+        &e.app,
+        PLANNER,
+        &mv("?dry_run=true"),
+        json!({ "planned_start": "2027-03-02", "planned_end": "2027-03-02" }),
+    )
+    .await;
+    assert_eq!(find_conflict(&r, "operation_started")["severity"], "error");
+    let (status, r) = put(
+        &e.app,
+        PLANNER,
+        &mv("?force=true"),
+        json!({ "planned_start": "2027-03-02", "planned_end": "2027-03-02" }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CONFLICT, "{r}");
+
+    let retired = e.work_centre("OLD", json!({})).await;
+    put(
+        &e.app,
+        ADMIN,
+        &format!("/production/work-centres/{}", id(&retired)),
+        json!({ "code": "OLD", "name": "Old", "active": false }),
+    )
+    .await;
+    let weld_op = id(operation(&po, "Weld"));
+    let to_old = json!({ "work_centre_id": id(&retired) });
+    let uri = format!("/production-orders/{n}/operations/{weld_op}/move");
+    let (_, r) = put(
+        &e.app,
+        PLANNER,
+        &format!("{uri}?dry_run=true"),
+        to_old.clone(),
+    )
+    .await;
+    assert!(
+        conflict_kinds(&r).contains(&"inactive_work_centre".into()),
+        "{r}"
+    );
+    let (status, r) = put(&e.app, PLANNER, &format!("{uri}?force=true"), to_old).await;
+    assert_eq!(status, StatusCode::CONFLICT, "{r}");
+}
+
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn a_finite_schedule_places_work_around_other_orders(db: PgPool) {
+    let e = env(db).await;
+    e.board_parts().await;
+    e.frame_routing().await;
+    let big = e.release_frames("45").await;
+    assert_eq!(
+        dates(&big, "Cut"),
+        ("2027-03-01".into(), "2027-03-01".into())
+    );
+    let po = e.release_frames("2").await;
+    let n = id(&po);
+    // Released as before: infinite capacity, on top of the full day.
+    assert_eq!(
+        dates(&po, "Cut"),
+        ("2027-03-01".into(), "2027-03-01".into())
+    );
+
+    // The default stays infinite.
+    let (status, r) = post(
+        &e.app,
+        PLANNER,
+        &format!("/production-orders/{n}/schedule"),
+        json!({ "start_date": "2027-03-01" }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{r}");
+    assert_eq!(dates(&r, "Cut"), ("2027-03-01".into(), "2027-03-01".into()));
+
+    // Finite: SAW is full on Monday, so Cut goes to Tuesday and Weld follows the same day.
+    let (status, r) = post(
+        &e.app,
+        PLANNER,
+        &format!("/production-orders/{n}/schedule"),
+        json!({ "start_date": "2027-03-01", "finite": true }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{r}");
+    assert_eq!(dates(&r, "Cut"), ("2027-03-02".into(), "2027-03-02".into()));
+    // Weld follows the same day, but the big order's 2700 minutes of welding leave WELD only about
+    // 30 free minutes a day, so the 120 minutes spread over the days that have room.
+    let (weld_start, weld_end) = dates(&r, "Weld");
+    assert_eq!(weld_start, "2027-03-02");
+    assert!(
+        weld_end.as_str() > "2027-03-02",
+        "spread over free days: {weld_end}"
+    );
+    // The other order did not move.
+    let big_now = e.production_order(PLANNER, &id(&big)).await;
+    assert_eq!(
+        dates(&big_now, "Cut"),
+        ("2027-03-01".into(), "2027-03-01".into())
+    );
+    // Scheduling finitely again gives the same answer: the order's own pending work is not counted
+    // against itself.
+    let (_, again) = post(
+        &e.app,
+        PLANNER,
+        &format!("/production-orders/{n}/schedule"),
+        json!({ "start_date": "2027-03-01", "finite": true }),
+    )
+    .await;
+    assert_eq!(
+        dates(&again, "Cut"),
+        ("2027-03-02".into(), "2027-03-02".into())
+    );
+    let data: Value = sqlx::query_scalar(
+        "SELECT data FROM audit.events WHERE entity = 'production_order' AND action = 'scheduled'
+           AND entity_id = $1::uuid ORDER BY id DESC LIMIT 1",
+    )
+    .bind(&n)
+    .fetch_one(&e.db)
+    .await
+    .unwrap();
+    assert_eq!(data["finite"], true);
+}

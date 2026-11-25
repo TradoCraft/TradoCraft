@@ -16,6 +16,8 @@ use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 use uuid::Uuid;
 
+use crate::capacity::booked_load;
+use crate::finite::schedule_finite;
 use crate::orders::{begin_order, load_order, lock_order, Locked, ProductionOrder};
 use crate::routing::load_routing;
 use crate::schedule::{schedule_forward, Calendar, OpSpec};
@@ -168,7 +170,7 @@ pub(crate) async fn snapshot_routing(
         .execute(&mut *conn)
         .await?;
     }
-    place_pending(conn, user.company_id, production_order_id, start).await?;
+    place_pending(conn, user.company_id, production_order_id, start, false).await?;
     Ok(routing.len())
 }
 
@@ -192,6 +194,7 @@ pub(crate) async fn place_pending(
     company_id: Uuid,
     production_order_id: Uuid,
     start: NaiveDate,
+    finite: bool,
 ) -> AppResult<usize> {
     let pending: Vec<Pending> = sqlx::query_as(
         "SELECT id, name, work_centre_id, planned_minutes FROM production.order_operations
@@ -233,7 +236,14 @@ pub(crate) async fn place_pending(
                 .expect("the work centre was collected from this list"),
         })
         .collect();
-    let placed = schedule_forward(&specs, &calendars, from).map_err(|e| {
+    let placed = if finite {
+        let booked =
+            booked_load(conn, company_id, &centres, &calendars, production_order_id).await?;
+        schedule_finite(&specs, &calendars, &booked, from)
+    } else {
+        schedule_forward(&specs, &calendars, from)
+    }
+    .map_err(|e| {
         AppError::Validation(format!(
             "operation \"{}\": its work centre has no working time in the next two years; check its hours and closures",
             pending[e.op].name
@@ -254,17 +264,17 @@ pub(crate) async fn place_pending(
 
 /// The operation of a production order, locked until the transaction ends.
 #[derive(Debug, FromRow)]
-struct OpRow {
-    name: String,
-    position: i32,
-    status: String,
-    planned_minutes: i32,
-    work_centre_id: Uuid,
-    planned_start: NaiveDate,
-    planned_end: NaiveDate,
+pub(crate) struct OpRow {
+    pub name: String,
+    pub position: i32,
+    pub status: String,
+    pub planned_minutes: i32,
+    pub work_centre_id: Uuid,
+    pub planned_start: NaiveDate,
+    pub planned_end: NaiveDate,
 }
 
-async fn lock_operation(
+pub(crate) async fn lock_operation(
     conn: &mut PgConnection,
     company_id: Uuid,
     production_order_id: Uuid,
@@ -285,7 +295,11 @@ async fn lock_operation(
 
 /// Locks the production order and checks that it is still open (operations are only worked on
 /// while the order is released or in progress).
-async fn open_order(conn: &mut PgConnection, user: &CurrentUser, id: Uuid) -> AppResult<Locked> {
+pub(crate) async fn open_order(
+    conn: &mut PgConnection,
+    user: &CurrentUser,
+    id: Uuid,
+) -> AppResult<Locked> {
     let po = lock_order(conn, user.company_id, id).await?;
     if !matches!(po.status.as_str(), "released" | "in_progress") {
         return Err(AppError::Conflict(format!(
@@ -296,7 +310,7 @@ async fn open_order(conn: &mut PgConnection, user: &CurrentUser, id: Uuid) -> Ap
     Ok(po)
 }
 
-fn wrong_status(op: &OpRow, wanted: &str) -> AppError {
+pub(crate) fn wrong_status(op: &OpRow, wanted: &str) -> AppError {
     AppError::Conflict(format!(
         "operation \"{}\" is {}; {wanted}",
         op.name, op.status
@@ -457,6 +471,60 @@ async fn reopen_production_operation(
     Ok(Json(out))
 }
 
+/// Writes a move of an operation (work centre and dates): takes the new centre's cost rate when
+/// the centre changes and records `operation_updated`. The caller has checked the operation is
+/// open and the centre exists and is active.
+#[allow(clippy::too_many_arguments)]
+pub(crate) async fn write_operation_move(
+    conn: &mut PgConnection,
+    user: &CurrentUser,
+    order_id: Uuid,
+    order_number: &str,
+    operation_id: Uuid,
+    op: &OpRow,
+    centre: Uuid,
+    start: NaiveDate,
+    end: NaiveDate,
+) -> AppResult<()> {
+    if centre != op.work_centre_id {
+        let rate: Option<Decimal> = sqlx::query_scalar(
+            "SELECT cost_per_hour FROM production.work_centres WHERE id = $1 AND company_id = $2",
+        )
+        .bind(centre)
+        .bind(user.company_id)
+        .fetch_one(&mut *conn)
+        .await?;
+        sqlx::query("UPDATE production.order_operations SET cost_rate = $2 WHERE id = $1")
+            .bind(operation_id)
+            .bind(rate)
+            .execute(&mut *conn)
+            .await?;
+    }
+    sqlx::query(
+        "UPDATE production.order_operations
+         SET work_centre_id = $2, planned_start = $3, planned_end = $4 WHERE id = $1",
+    )
+    .bind(operation_id)
+    .bind(centre)
+    .bind(start)
+    .bind(end)
+    .execute(&mut *conn)
+    .await?;
+    audit::record(
+        conn,
+        user,
+        "production_order",
+        order_id,
+        "operation_updated",
+        serde_json::json!({
+            "number": order_number, "operation": op.name, "position": op.position,
+            "work_centre_id": centre, "planned_start": start, "planned_end": end,
+        }),
+    )
+    .await?;
+    Ok(())
+}
+
 /// What a planner may change on an operation that is not finished. What is left out stays.
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct ProductionOperationUpdate {
@@ -511,35 +579,19 @@ async fn update_production_operation(
             Some((false, _)) => {
                 return Err(AppError::Validation("the work centre is not active".into()))
             }
-            Some((true, rate)) => {
-                sqlx::query("UPDATE production.order_operations SET cost_rate = $2 WHERE id = $1")
-                    .bind(operation_id)
-                    .bind(rate)
-                    .execute(&mut *tx)
-                    .await?;
-            }
+            Some((true, _)) => {}
         }
     }
-    sqlx::query(
-        "UPDATE production.order_operations
-         SET work_centre_id = $2, planned_start = $3, planned_end = $4 WHERE id = $1",
-    )
-    .bind(operation_id)
-    .bind(centre)
-    .bind(start)
-    .bind(end)
-    .execute(&mut *tx)
-    .await?;
-    audit::record(
+    write_operation_move(
         &mut tx,
         &user,
-        "production_order",
         id,
-        "operation_updated",
-        serde_json::json!({
-            "number": po.number, "operation": op.name, "position": op.position,
-            "work_centre_id": centre, "planned_start": start, "planned_end": end,
-        }),
+        &po.number,
+        operation_id,
+        &op,
+        centre,
+        start,
+        end,
     )
     .await?;
     let out = load_order(&mut tx, &user, id).await?;
@@ -552,6 +604,10 @@ pub struct ProductionScheduleInput {
     /// The first day work can start; defaults to today.
     #[serde(default, deserialize_with = "tradocraft_core::serde_util::opt_date")]
     pub start_date: Option<NaiveDate>,
+    /// Place the operations around the load of the other orders (finite loading, ADR 0090)
+    /// instead of ignoring it. Defaults to false.
+    #[serde(default)]
+    pub finite: bool,
 }
 
 /// Schedules the operations that have not started again from a date, one after the other on the
@@ -584,14 +640,14 @@ async fn schedule_production_order(
     if let Some(end) = children_end {
         start = start.max(day_after(end));
     }
-    let placed = place_pending(&mut tx, user.company_id, id, start).await?;
+    let placed = place_pending(&mut tx, user.company_id, id, start, input.finite).await?;
     audit::record(
         &mut tx,
         &user,
         "production_order",
         id,
         "scheduled",
-        serde_json::json!({ "number": po.number, "start_date": start, "operations": placed }),
+        serde_json::json!({ "number": po.number, "start_date": start, "operations": placed, "finite": input.finite }),
     )
     .await?;
     let out = load_order(&mut tx, &user, id).await?;

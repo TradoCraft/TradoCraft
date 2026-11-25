@@ -96,7 +96,7 @@ and every query filters on it (another company gets "not found" or empty lists).
 * Absence rows are not an approval workflow; a planner enters them (technicians cannot request
   leave here).
 
-**Not yet.** Work-centre capacity and finite loading (C3 second half; reuses the calendar
-tables and `ResourceBoard`), routing-based travel times and home addresses, mail when a
+**Not yet.** Work-centre capacity and finite loading (C3 second half, see
+[ADR 0090](0090-work-centre-planning-board.md)), routing-based travel times and home addresses, mail when a
 technician is removed from a job or on absence changes, recurring absences and public holidays,
 resizing a block by its edge, a time-zone aware client.
