@@ -1,4 +1,5 @@
 pub mod customers;
+pub mod helpdesk;
 pub mod kb;
 pub mod login;
 pub mod orders;

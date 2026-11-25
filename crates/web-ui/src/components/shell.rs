@@ -84,7 +84,7 @@ const NAV_GROUPS: &[NavGroup] = &[
                 id: "nav-helpdesk",
                 path: "/helpdesk",
                 label: "Helpdesk",
-                live: false,
+                live: true,
             },
             NavItem {
                 id: "nav-repairs",

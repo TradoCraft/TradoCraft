@@ -7,6 +7,7 @@ pub mod auth;
 pub mod client;
 pub mod customers;
 pub mod error;
+pub mod helpdesk;
 pub mod portal;
 pub mod products;
 pub mod sales;
@@ -21,6 +22,12 @@ pub use customers::{
     UpdateCustomerRequest,
 };
 pub use error::{ApiError, ErrorBody};
+pub use helpdesk::{
+    AnswerText, CreateTicketInput, EscalateInput, LibraryPdf, ListPreparedAnswersParams,
+    ListTicketsParams, NoteInput, PreparedAnswer, ReplyInput, TagInput, TargetState, TicketArticle,
+    TicketDetail, TicketPage, TicketReader, TicketSla, TicketStatusInput, TicketSummary,
+    TicketTimeEntries, TicketTimeEntry, TicketWatcher, TimeEntryInput, UpdateTicketInput,
+};
 pub use portal::{
     ConfirmPortalOrder, FileInfo, KbLanguageParams, ListPublicKbEntriesParams, LoginLinkInput,
     MessageInput, NewTicket, PortalMessage, PortalOrder, PortalOrderDetail, PortalOrderLine,

@@ -9,6 +9,7 @@ use leptos_router::path;
 
 use crate::components::shell::AppShell;
 use crate::pages::customers::CustomersPage;
+use crate::pages::helpdesk::HelpdeskPage;
 use crate::pages::kb::KbPage;
 use crate::pages::login::LoginPage;
 use crate::pages::orders::OrdersPage;
@@ -112,7 +113,7 @@ pub fn App() -> impl IntoView {
                     path=path!("/helpdesk")
                     view=|| view! {
                         <AppShell>
-                            <PlaceholderPage title="Helpdesk" route="/helpdesk" />
+                            <HelpdeskPage />
                         </AppShell>
                     }
                 />
