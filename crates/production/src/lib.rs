@@ -13,6 +13,7 @@ pub mod capacity;
 pub mod complete;
 pub mod cost;
 pub mod divisions;
+pub mod finite;
 pub mod operations;
 pub mod orders;
 pub mod pdf;
