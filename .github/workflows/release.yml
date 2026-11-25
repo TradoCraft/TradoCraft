@@ -137,8 +137,8 @@ jobs:
           IMAGE_OWNER: ${{ needs.release-info.outputs.owner }}
           IMAGE_VERSION: ${{ needs.release-info.outputs.version }}
         run: |
-          sed -e "s@ghcr.io/tradocraft/@ghcr.io/${IMAGE_OWNER}/@g" \
-              -e "s/:-0.3.0}/:-${IMAGE_VERSION}}/g" deploy/docker-compose.release.yml > dist/docker-compose.yml
+          sed -E -e "s@ghcr.io/tradocraft/@ghcr.io/${IMAGE_OWNER}/@g" \
+              -e "s/(TRADOCRAFT_VERSION:-)[0-9]+\.[0-9]+\.[0-9]+\}/\1${IMAGE_VERSION}}/g" deploy/docker-compose.release.yml > dist/docker-compose.yml
           docker compose -f dist/docker-compose.yml config -q
       - name: Smoke-test the packaged release
         run: |

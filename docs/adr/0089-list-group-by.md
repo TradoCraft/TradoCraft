@@ -1,4 +1,4 @@
-# 0084 — List grouping
+# 0089 — List grouping
 
 **Status:** Accepted (shared UI framework; extends [ADR 0081](0081-generic-list-view.md) and [ADR 0083](0083-list-filters-and-favourites.md))
 
