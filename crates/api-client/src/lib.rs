@@ -7,7 +7,9 @@ pub mod auth;
 pub mod client;
 pub mod customers;
 pub mod error;
+pub mod portal;
 pub mod products;
+pub mod sales;
 
 pub use auth::{
     Auth, Company, EnvKind, EnvironmentInfo, Me, MeModule, Membership, PublicProvider, Session,
@@ -19,7 +21,20 @@ pub use customers::{
     UpdateCustomerRequest,
 };
 pub use error::{ApiError, ErrorBody};
+pub use portal::{
+    ConfirmPortalOrder, FileInfo, KbLanguageParams, ListPublicKbEntriesParams, LoginLinkInput,
+    MessageInput, NewTicket, PortalMessage, PortalOrder, PortalOrderDetail, PortalOrderLine,
+    PortalProfile, PortalSession, PortalTicket, PortalTicketDetail, ReaderCategory, ReaderEntry,
+    ReaderImage, ReaderLink, ReaderSummary, SessionInput,
+};
 pub use products::{
     CreateProductRequest, ListProductsParams, Product, ProductInput, ProductPage,
     UpdateProductRequest,
+};
+pub use sales::{
+    ConfirmOrderInput, ConfirmOrderRequest, ConvertInput, ConvertQuotationRequest,
+    CreateQuotationRequest, ListOrdersParams, ListQuotationsParams, Order, OrderEditInput,
+    OrderLine, OrderLineEdit, OrderPage, OrderRevisionInfo, OrderSummary, PercentBase, Quotation,
+    QuotationInput, QuotationLine, QuotationLineInput, QuotationPage, QuotationStatus,
+    QuotationSummary, SalesSuggestion, SalesWarning, UpdateQuotationRequest, VatGroup,
 };

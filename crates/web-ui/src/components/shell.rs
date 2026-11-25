@@ -61,13 +61,13 @@ const NAV_GROUPS: &[NavGroup] = &[
                 id: "nav-quotations",
                 path: "/quotations",
                 label: "Quotations",
-                live: false,
+                live: true,
             },
             NavItem {
                 id: "nav-orders",
                 path: "/orders",
                 label: "Orders",
-                live: false,
+                live: true,
             },
             NavItem {
                 id: "nav-delivery",
@@ -126,6 +126,23 @@ const NAV_GROUPS: &[NavGroup] = &[
                 path: "/admin",
                 label: "Admin",
                 live: false,
+            },
+        ],
+    },
+    NavGroup {
+        title: "Customer Facing",
+        items: &[
+            NavItem {
+                id: "nav-kb",
+                path: "/kb",
+                label: "Knowledge Base",
+                live: true,
+            },
+            NavItem {
+                id: "nav-portal",
+                path: "/portal",
+                label: "Customer Portal",
+                live: true,
             },
         ],
     },

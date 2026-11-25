@@ -9,9 +9,13 @@ use leptos_router::path;
 
 use crate::components::shell::AppShell;
 use crate::pages::customers::CustomersPage;
+use crate::pages::kb::KbPage;
 use crate::pages::login::LoginPage;
+use crate::pages::orders::OrdersPage;
 use crate::pages::placeholder::PlaceholderPage;
+use crate::pages::portal::PortalPage;
 use crate::pages::products::ProductsPage;
+use crate::pages::quotations::QuotationsPage;
 use crate::state::{apply_theme_to_dom, AppContext};
 
 #[component]
@@ -68,7 +72,7 @@ pub fn App() -> impl IntoView {
                     path=path!("/quotations")
                     view=|| view! {
                         <AppShell>
-                            <PlaceholderPage title="Quotations" route="/quotations" />
+                            <QuotationsPage />
                         </AppShell>
                     }
                 />
@@ -76,7 +80,23 @@ pub fn App() -> impl IntoView {
                     path=path!("/orders")
                     view=|| view! {
                         <AppShell>
-                            <PlaceholderPage title="Orders" route="/orders" />
+                            <OrdersPage />
+                        </AppShell>
+                    }
+                />
+                <Route
+                    path=path!("/kb")
+                    view=|| view! {
+                        <AppShell>
+                            <KbPage />
+                        </AppShell>
+                    }
+                />
+                <Route
+                    path=path!("/portal")
+                    view=|| view! {
+                        <AppShell>
+                            <PortalPage />
                         </AppShell>
                     }
                 />

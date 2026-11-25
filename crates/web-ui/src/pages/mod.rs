@@ -1,7 +1,11 @@
 pub mod customers;
+pub mod kb;
 pub mod login;
+pub mod orders;
 pub mod placeholder;
+pub mod portal;
 pub mod products;
+pub mod quotations;
 
 use std::str::FromStr;
 
