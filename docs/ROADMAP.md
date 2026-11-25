@@ -53,8 +53,10 @@ Module overview: [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## First release checklist
 
-No release has been cut: there are no tags, the version is the placeholder `0.1.0` and there is no CHANGELOG.
-The scope below is a proposal until the first version is agreed. Findings refer to
+v0.2.0 and v0.3.0 are tagged and published by `.github/workflows/release.yml` (Docker images, Windows
+artifacts, checksums, a portable Windows demo). Versions are `0.3.0` across Cargo, OpenAPI, the Flutter app and
+the deploy files; there is still no CHANGELOG. The items below are what remains before a distributable
+release. Findings refer to
 `docs/security-review-2026-11-14.md` (no Critical or High findings).
 
 **Blockers**
@@ -64,9 +66,9 @@ The scope below is a proposal until the first version is agreed. Findings refer 
   debug key; #7 tokens in SharedPreferences and `allowBackup`. #6 and #7 must land before any distribution.
   The roughly 310 `WHERE id = $1` sites were not read; add the `company_id` query-scan test from the
   per-item checklist.
-- Release mechanics: a release workflow (Docker image, signed Android build, Flutter artifacts, checksums;
-  the SBOM job in `security.yml` already attaches to a release), a versioning policy and tag convention,
-  a CHANGELOG, release signing keys, Docker hygiene (pinned image tags, HEALTHCHECK, no default database
+- Release mechanics: done: a release workflow with Docker images, Windows artifacts and checksums, and the tag
+  convention `vMAJOR.MINOR.PATCH`. Open: a signed Android build (the SBOM job in `security.yml` already
+  attaches to a release), a versioning policy, a CHANGELOG, release signing keys, Docker hygiene (pinned image tags, HEALTHCHECK, no default database
   credentials, `.env*` in `.dockerignore`), and a README status line that no longer says "vertical slice".
 - Decide whether to include P2 (site baseline) in the first release. An end-to-end test remains open and ADR 0068 is still Proposed. Apply its
   migrations to a database that already has companies first.
