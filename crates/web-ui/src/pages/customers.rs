@@ -16,6 +16,8 @@ const DEFAULT_PRICE_ZONE_ID: &str = "00000000-0000-7000-8000-000000000201";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct CustomerTab {
+    instance_id: u64,
+    edit_generation: u64,
     tab_id: String,
     customer_id: Option<Uuid>,
     version: Option<i64>,
@@ -43,8 +45,10 @@ struct CustomerTab {
 }
 
 impl CustomerTab {
-    fn new_draft(default_zone_id: &str) -> Self {
+    fn new_draft(default_zone_id: &str, instance_id: u64) -> Self {
         Self {
+            instance_id,
+            edit_generation: 0,
             tab_id: "new".to_string(),
             customer_id: None,
             version: None,
@@ -72,8 +76,15 @@ impl CustomerTab {
         }
     }
 
-    fn from_customer(c: &Customer, loading_detail: bool, default_zone_id: &str) -> Self {
+    fn from_customer(
+        c: &Customer,
+        loading_detail: bool,
+        default_zone_id: &str,
+        instance_id: u64,
+    ) -> Self {
         Self {
+            instance_id,
+            edit_generation: 0,
             tab_id: format!("edit:{}", c.id),
             customer_id: Some(c.id),
             version: Some(c.version),
@@ -107,10 +118,27 @@ impl CustomerTab {
         }
     }
 
+    fn mark_dirty(&mut self) {
+        self.dirty = true;
+        self.edit_generation += 1;
+    }
+
     fn apply_saved(&mut self, saved: &Customer, notice: Option<String>, default_zone_id: &str) {
-        let mut updated = Self::from_customer(saved, false, default_zone_id);
+        let mut updated = Self::from_customer(saved, false, default_zone_id, self.instance_id);
         updated.notice = notice;
         *self = updated;
+    }
+
+    fn apply_saved_preserving_edits(&mut self, saved: &Customer, notice: Option<String>) {
+        self.tab_id = format!("edit:{}", saved.id);
+        self.customer_id = Some(saved.id);
+        self.version = Some(saved.version);
+        self.title = format!("{} · {}", self.code, self.name);
+        self.loading_detail = false;
+        self.saving = false;
+        self.dirty = true;
+        self.error = None;
+        self.notice = notice;
     }
 
     fn to_request(&self) -> Result<CreateCustomerRequest, String> {
@@ -169,6 +197,22 @@ fn update_customer_tab(
     });
 }
 
+fn update_customer_tab_instance(
+    tabs: &RwSignal<Vec<CustomerTab>>,
+    tab_id: &str,
+    instance_id: u64,
+    f: impl FnOnce(&mut CustomerTab),
+) {
+    tabs.update(|list| {
+        if let Some(tab) = list
+            .iter_mut()
+            .find(|t| t.tab_id == tab_id && t.instance_id == instance_id)
+        {
+            f(tab);
+        }
+    });
+}
+
 fn close_customer_tab(
     tabs: &RwSignal<Vec<CustomerTab>>,
     active_tab_id: &RwSignal<Option<String>>,
@@ -204,18 +248,41 @@ pub fn CustomersPage() -> impl IntoView {
 
     let open_tabs = RwSignal::new(Vec::<CustomerTab>::new());
     let active_tab_id = RwSignal::new(Option::<String>::None);
+    let fetch_generation = StoredValue::new(0_u64);
+    let next_tab_instance_id = StoredValue::new(1_u64);
+    let alloc_instance_id = move || {
+        next_tab_instance_id
+            .try_update_value(|n| {
+                let id = *n;
+                *n += 1;
+                id
+            })
+            .unwrap_or(0)
+    };
 
     let fetch_customers = move |connection: ConnectionMode, params: ListCustomersParams| {
+        let req_gen = fetch_generation
+            .try_update_value(|g| {
+                *g += 1;
+                *g
+            })
+            .unwrap_or(0);
         loading.set(true);
         error.set(None);
         spawn_local(async move {
             match WebApiClient.list_customers(&connection, &params).await {
                 Ok(page) => {
+                    if fetch_generation.get_value() != req_gen {
+                        return;
+                    }
                     items.set(page.items);
                     total.set(page.total);
                     loading.set(false);
                 }
                 Err(err) => {
+                    if fetch_generation.get_value() != req_gen {
+                        return;
+                    }
                     loading.set(false);
                     error.set(Some(err.user_message()));
                 }
@@ -229,7 +296,11 @@ pub fn CustomersPage() -> impl IntoView {
         let q = search.get();
         let af = active_filter.get();
 
+        // Invalidate any in-flight list request whenever session or filters re-run.
+        fetch_generation.update_value(|g| *g += 1);
+
         let Some(session) = active_session else {
+            loading.set(false);
             items.set(Vec::new());
             total.set(0);
             error.set(None);
@@ -287,7 +358,7 @@ pub fn CustomersPage() -> impl IntoView {
         let default_zone = inferred_default_zone();
         open_tabs.update(|list| {
             if !list.iter().any(|t| t.tab_id == "new") {
-                list.push(CustomerTab::new_draft(&default_zone));
+                list.push(CustomerTab::new_draft(&default_zone, alloc_instance_id()));
             }
         });
         active_tab_id.set(Some("new".to_string()));
@@ -296,12 +367,26 @@ pub fn CustomersPage() -> impl IntoView {
     let open_customer_row = move |customer: Customer| {
         let default_zone = inferred_default_zone();
         let tab_id = format!("edit:{}", customer.id);
-        let already_open = open_tabs.with_untracked(|list| list.iter().any(|t| t.tab_id == tab_id));
-        if !already_open {
+        let mut tab_instance_id = open_tabs.with_untracked(|list| {
+            list.iter()
+                .find(|t| t.tab_id == tab_id)
+                .map(|t| t.instance_id)
+        });
+        if tab_instance_id.is_none() {
+            let instance_id = alloc_instance_id();
             open_tabs.update(|list| {
-                list.push(CustomerTab::from_customer(&customer, true, &default_zone));
+                list.push(CustomerTab::from_customer(
+                    &customer,
+                    true,
+                    &default_zone,
+                    instance_id,
+                ));
             });
+            tab_instance_id = Some(instance_id);
         }
+        let Some(tab_instance_id) = tab_instance_id else {
+            return;
+        };
         active_tab_id.set(Some(tab_id.clone()));
 
         if let Some(session) = ctx.session.get_untracked() {
@@ -310,17 +395,17 @@ pub fn CustomersPage() -> impl IntoView {
             spawn_local(async move {
                 match WebApiClient.get_customer(&connection, customer_id).await {
                     Ok(fresh) => {
-                        update_customer_tab(&open_tabs, &tab_id, |tab| {
+                        update_customer_tab_instance(&open_tabs, &tab_id, tab_instance_id, |tab| {
                             if !tab.dirty {
                                 tab.apply_saved(&fresh, None, &default_zone);
                             } else {
+                                // Keep the snapshot version aligned with retained unedited fields.
                                 tab.loading_detail = false;
-                                tab.version = Some(fresh.version);
                             }
                         });
                     }
                     Err(err) => {
-                        update_customer_tab(&open_tabs, &tab_id, |tab| {
+                        update_customer_tab_instance(&open_tabs, &tab_id, tab_instance_id, |tab| {
                             tab.loading_detail = false;
                             if tab.error.is_none() {
                                 tab.error = Some(err.user_message());
@@ -445,8 +530,10 @@ pub fn CustomersPage() -> impl IntoView {
                                             key=|c| (c.id, c.version, c.code.clone(), c.name.clone(), c.active)
                                             children=move |customer| {
                                                 let open_customer = customer.clone();
+                                                let open_customer_btn = customer.clone();
                                                 let row_tab_id = format!("edit:{}", customer.id);
                                                 let row_target = format!("customer-row-{}", customer.code);
+                                                let aria_label = format!("Open customer {}", customer.code);
                                                 view! {
                                                     <tr
                                                         class=move || {
@@ -460,7 +547,20 @@ pub fn CustomersPage() -> impl IntoView {
                                                         title="Open customer detail & edit form"
                                                         on:click=move |_| open_customer_row(open_customer.clone())
                                                     >
-                                                        <td class="tc-mono">{customer.code}</td>
+                                                        <td class="tc-mono">
+                                                            <button
+                                                                type="button"
+                                                                class="tc-inline-tab-btn"
+                                                                style="text-align: left;"
+                                                                aria-label=aria_label
+                                                                on:click=move |ev| {
+                                                                    ev.stop_propagation();
+                                                                    open_customer_row(open_customer_btn.clone());
+                                                                }
+                                                            >
+                                                                {customer.code}
+                                                            </button>
+                                                        </td>
                                                         <td>{customer.name}</td>
                                                         <td class="tc-mono">{customer.vat_number.unwrap_or_else(|| "—".to_string())}</td>
                                                         <td>{customer.city}</td>
@@ -524,6 +624,8 @@ pub fn CustomersPage() -> impl IntoView {
                             });
 
                             let current_id = tab_id_for_submit.clone();
+                            let tab_instance_id = snapshot.instance_id;
+                            let snapshot_edit_gen = snapshot.edit_generation;
                             let connection = session.connection;
                             let customer_id = snapshot.customer_id;
                             let default_zone = inferred_default_zone();
@@ -535,24 +637,53 @@ pub fn CustomersPage() -> impl IntoView {
                                 match res {
                                     Ok(saved) => {
                                         let next_id = format!("edit:{}", saved.id);
+                                        let mut updated_matching_tab = false;
                                         open_tabs.update(|list| {
+                                            let has_match = list.iter().any(|t| {
+                                                t.tab_id == current_id && t.instance_id == tab_instance_id
+                                            });
+                                            if !has_match {
+                                                return;
+                                            }
                                             if current_id != next_id {
                                                 list.retain(|t| t.tab_id != next_id);
                                             }
-                                            if let Some(tab) = list.iter_mut().find(|t| t.tab_id == current_id) {
-                                                tab.apply_saved(&saved, Some("Saved".to_string()), &default_zone);
+                                            if let Some(tab) = list.iter_mut().find(|t| {
+                                                t.tab_id == current_id && t.instance_id == tab_instance_id
+                                            }) {
+                                                if tab.edit_generation == snapshot_edit_gen {
+                                                    tab.apply_saved(
+                                                        &saved,
+                                                        Some("Saved".to_string()),
+                                                        &default_zone,
+                                                    );
+                                                } else {
+                                                    tab.apply_saved_preserving_edits(
+                                                        &saved,
+                                                        Some("Saved".to_string()),
+                                                    );
+                                                }
+                                                updated_matching_tab = true;
                                             }
                                         });
-                                        if active_tab_id.get_untracked().as_deref() == Some(current_id.as_str()) {
+                                        if updated_matching_tab
+                                            && active_tab_id.get_untracked().as_deref()
+                                                == Some(current_id.as_str())
+                                        {
                                             active_tab_id.set(Some(next_id));
                                         }
                                         reload_nonce.update(|n| *n += 1);
                                     }
                                     Err(err) => {
-                                        update_customer_tab(&open_tabs, &current_id, |tab| {
-                                            tab.saving = false;
-                                            tab.error = Some(err.user_message());
-                                        });
+                                        update_customer_tab_instance(
+                                            &open_tabs,
+                                            &current_id,
+                                            tab_instance_id,
+                                            |tab| {
+                                                tab.saving = false;
+                                                tab.error = Some(err.user_message());
+                                            },
+                                        );
                                     }
                                 }
                             });
@@ -707,7 +838,7 @@ pub fn CustomersPage() -> impl IntoView {
                                                         let val = event_target_value(&ev);
                                                         update_customer_tab(&open_tabs, &tid, |t| {
                                                             t.price_zone_id = val;
-                                                            t.dirty = true;
+                                                            t.mark_dirty();
                                                         });
                                                     }
                                                 }
@@ -726,7 +857,7 @@ pub fn CustomersPage() -> impl IntoView {
                                                                         let zone_id = zid.clone();
                                                                         update_customer_tab(&open_tabs, &tid, |t| {
                                                                             t.price_zone_id = zone_id;
-                                                                            t.dirty = true;
+                                                                            t.mark_dirty();
                                                                         });
                                                                     }
                                                                 >
@@ -755,7 +886,7 @@ pub fn CustomersPage() -> impl IntoView {
                                                     let checked = event_target_checked(&ev);
                                                     update_customer_tab(&open_tabs, &tid, |t| {
                                                         t.active = checked;
-                                                        t.dirty = true;
+                                                        t.mark_dirty();
                                                     });
                                                 }
                                             }
@@ -822,7 +953,7 @@ fn customer_select_field(
                     let val = event_target_value(&ev);
                     update_customer_tab(&tabs, &tid_write, |tab| {
                         set(tab, val);
-                        tab.dirty = true;
+                        tab.mark_dirty();
                     });
                 }
             >
@@ -867,7 +998,7 @@ fn customer_text_field(
                     let val = event_target_value(&ev);
                     update_customer_tab(&tabs, &tid_write, |tab| {
                         set(tab, val);
-                        tab.dirty = true;
+                        tab.mark_dirty();
                     });
                 }
             />

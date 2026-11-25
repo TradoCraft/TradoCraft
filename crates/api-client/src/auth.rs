@@ -21,7 +21,7 @@ pub const COMPANY_HEADER: &str = "X-Company-Id";
 
 /// Authentication credentials sent on API requests.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(tag = "kind", rename_all = "snake_case")]
+#[serde(tag = "kind", content = "value", rename_all = "snake_case")]
 pub enum Auth {
     /// Development-mode identity passed via `X-Dev-User`.
     DevUser(String),
@@ -416,5 +416,24 @@ mod tests {
         assert!(dev.is_signed_in());
         assert_eq!(dev.auth, Some(Auth::DevUser("admin@example.com".into())));
         assert!(!dev.signed_out().is_signed_in());
+    }
+
+    #[test]
+    fn session_serde_roundtrip() {
+        let dev = Session::dev("http://localhost:8080/", "sales@example.com")
+            .with_company_id(Some(Uuid::nil()));
+        let dev_json = serde_json::to_string(&dev).unwrap();
+        let dev_roundtrip: Session = serde_json::from_str(&dev_json).unwrap();
+        assert_eq!(dev_roundtrip, dev);
+
+        let bearer = Session::bearer("https://api.tradocraft.example", "tok_secret_123");
+        let bearer_json = serde_json::to_string(&bearer).unwrap();
+        let bearer_roundtrip: Session = serde_json::from_str(&bearer_json).unwrap();
+        assert_eq!(bearer_roundtrip, bearer);
+
+        let anon = Session::anonymous("https://api.tradocraft.example");
+        let anon_json = serde_json::to_string(&anon).unwrap();
+        let anon_roundtrip: Session = serde_json::from_str(&anon_json).unwrap();
+        assert_eq!(anon_roundtrip, anon);
     }
 }

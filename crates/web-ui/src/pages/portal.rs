@@ -75,15 +75,19 @@ pub fn PortalPage() -> impl IntoView {
     let portal_token = RwSignal::new(Option::<String>::None);
     let portal_profile = RwSignal::new(Option::<PortalProfile>::None);
     let auth_error = RwSignal::new(Option::<String>::None);
+    let session_gen = RwSignal::new(0_u64);
 
     // Workspace data state
     let loading_data = RwSignal::new(false);
     let portal_error = RwSignal::new(Option::<String>::None);
     let portal_notice = RwSignal::new(Option::<String>::None);
+    let refresh_gen = RwSignal::new(0_u64);
 
     let tickets = RwSignal::new(Vec::<PortalTicket>::new());
     let selected_ticket = RwSignal::new(Option::<PortalTicketDetail>::None);
+    let last_ticket_id = RwSignal::new(Option::<Uuid>::None);
     let loading_ticket = RwSignal::new(false);
+    let ticket_gen = RwSignal::new(0_u64);
     let new_ticket_subject = RwSignal::new(String::new());
     let new_ticket_category = RwSignal::new("question".to_string());
     let new_ticket_body = RwSignal::new(String::new());
@@ -94,6 +98,7 @@ pub fn PortalPage() -> impl IntoView {
     let orders = RwSignal::new(Vec::<PortalOrder>::new());
     let selected_order = RwSignal::new(Option::<PortalOrderDetail>::None);
     let loading_order = RwSignal::new(false);
+    let order_gen = RwSignal::new(0_u64);
     let confirm_note = RwSignal::new(String::new());
     let confirming_order = RwSignal::new(false);
 
@@ -101,6 +106,9 @@ pub fn PortalPage() -> impl IntoView {
         let Some(tok) = portal_token.get_untracked() else {
             return;
         };
+        let req_session = session_gen.get_untracked();
+        let req_refresh = refresh_gen.get_untracked().wrapping_add(1);
+        refresh_gen.set(req_refresh);
         let base = base_url.get_untracked();
         let client = portal_client(&base, Some(&tok));
         loading_data.set(true);
@@ -109,6 +117,11 @@ pub fn PortalPage() -> impl IntoView {
             let me_res = client.portal_me().await;
             let tickets_res = client.list_portal_tickets().await;
             let orders_res = client.list_portal_orders().await;
+            let session_active = session_gen.get_untracked() == req_session
+                && portal_token.get_untracked().as_deref() == Some(tok.as_str());
+            if !session_active || refresh_gen.get_untracked() != req_refresh {
+                return;
+            }
             loading_data.set(false);
             if let Ok(me) = me_res {
                 portal_profile.set(Some(me));
@@ -183,6 +196,7 @@ pub fn PortalPage() -> impl IntoView {
         spawn_local(async move {
             match client.create_portal_session(&SessionInput { token }).await {
                 Ok(session) => {
+                    session_gen.update(|g| *g = g.wrapping_add(1));
                     portal_token.set(Some(session.token));
                     portal_profile.set(Some(session.profile));
                     session_token_input.set(String::new());
@@ -201,13 +215,26 @@ pub fn PortalPage() -> impl IntoView {
         let Some(tok) = portal_token.get_untracked() else {
             return;
         };
+        let req_session = session_gen.get_untracked();
+        let req_ticket_gen = ticket_gen.get_untracked().wrapping_add(1);
+        ticket_gen.set(req_ticket_gen);
         let base = base_url.get_untracked();
         let client = portal_client(&base, Some(&tok));
         loading_ticket.set(true);
         portal_error.set(None);
         spawn_local(async move {
-            match client.get_portal_ticket(ticket_id).await {
+            let res = client.get_portal_ticket(ticket_id).await;
+            let session_active = session_gen.get_untracked() == req_session
+                && portal_token.get_untracked().as_deref() == Some(tok.as_str());
+            if !session_active || ticket_gen.get_untracked() != req_ticket_gen {
+                return;
+            }
+            match res {
                 Ok(detail) => {
+                    if last_ticket_id.get_untracked() != Some(detail.ticket.id) {
+                        reply_body.set(String::new());
+                    }
+                    last_ticket_id.set(Some(detail.ticket.id));
                     selected_ticket.set(Some(detail));
                     loading_ticket.set(false);
                 }
@@ -227,6 +254,7 @@ pub fn PortalPage() -> impl IntoView {
         let Some(tok) = portal_token.get_untracked() else {
             return;
         };
+        let req_session = session_gen.get_untracked();
         let Some(subject) = opt_trimmed(&new_ticket_subject.get_untracked()) else {
             portal_error.set(Some("Ticket subject is required.".to_string()));
             return;
@@ -248,12 +276,24 @@ pub fn PortalPage() -> impl IntoView {
                 category,
                 body,
             };
-            match client.create_portal_ticket(&req).await {
+            let res = client.create_portal_ticket(&req).await;
+            let session_active = session_gen.get_untracked() == req_session
+                && portal_token.get_untracked().as_deref() == Some(tok.as_str());
+            if !session_active {
+                return;
+            }
+            match res {
                 Ok(detail) => {
                     new_ticket_subject.set(String::new());
                     new_ticket_body.set(String::new());
                     creating_ticket.set(false);
                     portal_notice.set(Some(format!("Ticket {} opened.", detail.ticket.number)));
+                    ticket_gen.update(|g| *g = g.wrapping_add(1));
+                    loading_ticket.set(false);
+                    if last_ticket_id.get_untracked() != Some(detail.ticket.id) {
+                        reply_body.set(String::new());
+                    }
+                    last_ticket_id.set(Some(detail.ticket.id));
                     selected_ticket.set(Some(detail));
                     refresh_portal_data();
                 }
@@ -273,6 +313,8 @@ pub fn PortalPage() -> impl IntoView {
         let Some(tok) = portal_token.get_untracked() else {
             return;
         };
+        let req_session = session_gen.get_untracked();
+        let req_ticket_gen = ticket_gen.get_untracked();
         let Some(ticket_id) = selected_ticket.with_untracked(|t| t.as_ref().map(|d| d.ticket.id))
         else {
             return;
@@ -292,11 +334,21 @@ pub fn PortalPage() -> impl IntoView {
                 body,
                 attachment_ids: Vec::new(),
             };
-            match client.add_portal_ticket_message(ticket_id, &req).await {
+            let res = client.add_portal_ticket_message(ticket_id, &req).await;
+            let session_active = session_gen.get_untracked() == req_session
+                && portal_token.get_untracked().as_deref() == Some(tok.as_str());
+            if !session_active {
+                return;
+            }
+            match res {
                 Ok(detail) => {
-                    reply_body.set(String::new());
                     sending_reply.set(false);
-                    selected_ticket.set(Some(detail));
+                    if ticket_gen.get_untracked() == req_ticket_gen {
+                        ticket_gen.update(|g| *g = g.wrapping_add(1));
+                        reply_body.set(String::new());
+                        last_ticket_id.set(Some(detail.ticket.id));
+                        selected_ticket.set(Some(detail));
+                    }
                     portal_notice.set(Some("Reply sent.".to_string()));
                     refresh_portal_data();
                 }
@@ -312,12 +364,21 @@ pub fn PortalPage() -> impl IntoView {
         let Some(tok) = portal_token.get_untracked() else {
             return;
         };
+        let req_session = session_gen.get_untracked();
+        let req_order_gen = order_gen.get_untracked().wrapping_add(1);
+        order_gen.set(req_order_gen);
         let base = base_url.get_untracked();
         let client = portal_client(&base, Some(&tok));
         loading_order.set(true);
         portal_error.set(None);
         spawn_local(async move {
-            match client.get_portal_order(order_id).await {
+            let res = client.get_portal_order(order_id).await;
+            let session_active = session_gen.get_untracked() == req_session
+                && portal_token.get_untracked().as_deref() == Some(tok.as_str());
+            if !session_active || order_gen.get_untracked() != req_order_gen {
+                return;
+            }
+            match res {
                 Ok(detail) => {
                     selected_order.set(Some(detail));
                     confirm_note.set(String::new());
@@ -338,6 +399,8 @@ pub fn PortalPage() -> impl IntoView {
         let Some(tok) = portal_token.get_untracked() else {
             return;
         };
+        let req_session = session_gen.get_untracked();
+        let req_order_gen = order_gen.get_untracked();
         let Some((order_id, revision)) =
             selected_order.with_untracked(|o| o.as_ref().map(|d| (d.order.id, d.order.revision)))
         else {
@@ -352,15 +415,24 @@ pub fn PortalPage() -> impl IntoView {
         portal_notice.set(None);
         spawn_local(async move {
             let req = ConfirmPortalOrder { revision, note };
-            match client.confirm_portal_order(order_id, &req).await {
+            let res = client.confirm_portal_order(order_id, &req).await;
+            let session_active = session_gen.get_untracked() == req_session
+                && portal_token.get_untracked().as_deref() == Some(tok.as_str());
+            if !session_active {
+                return;
+            }
+            match res {
                 Ok(detail) => {
                     confirming_order.set(false);
-                    confirm_note.set(String::new());
                     portal_notice.set(Some(format!(
                         "Order {} (rev {}) confirmed.",
                         detail.order.number, detail.order.revision
                     )));
-                    selected_order.set(Some(detail));
+                    if order_gen.get_untracked() == req_order_gen {
+                        order_gen.update(|g| *g = g.wrapping_add(1));
+                        confirm_note.set(String::new());
+                        selected_order.set(Some(detail));
+                    }
                     refresh_portal_data();
                 }
                 Err(err) => {
@@ -372,12 +444,27 @@ pub fn PortalPage() -> impl IntoView {
     };
 
     let sign_out_portal = move |_| {
+        session_gen.update(|g| *g = g.wrapping_add(1));
+        refresh_gen.update(|g| *g = g.wrapping_add(1));
+        ticket_gen.update(|g| *g = g.wrapping_add(1));
+        order_gen.update(|g| *g = g.wrapping_add(1));
         portal_token.set(None);
         portal_profile.set(None);
+        loading_data.set(false);
         tickets.set(Vec::new());
         selected_ticket.set(None);
+        last_ticket_id.set(None);
+        loading_ticket.set(false);
         orders.set(Vec::new());
         selected_order.set(None);
+        loading_order.set(false);
+        new_ticket_subject.set(String::new());
+        new_ticket_body.set(String::new());
+        reply_body.set(String::new());
+        confirm_note.set(String::new());
+        creating_ticket.set(false);
+        sending_reply.set(false);
+        confirming_order.set(false);
         portal_error.set(None);
         portal_notice.set(None);
     };
@@ -613,7 +700,18 @@ pub fn PortalPage() -> impl IntoView {
                                                             data-target=order_row_target
                                                             on:click=move |_| open_order(order_id)
                                                         >
-                                                            <td class="tc-mono">{order.number}</td>
+                                                            <td class="tc-mono">
+                                                                <button
+                                                                    type="button"
+                                                                    style="background: none; border: none; padding: 0; font: inherit; color: inherit; cursor: pointer; text-align: left;"
+                                                                    on:click=move |ev| {
+                                                                        ev.stop_propagation();
+                                                                        open_order(order_id);
+                                                                    }
+                                                                >
+                                                                    {order.number}
+                                                                </button>
+                                                            </td>
                                                             <td class="tc-mono">{format!("r{}", order.revision)}</td>
                                                             <td>{order.customer_reference}</td>
                                                             <td class="tc-mono">{order.order_date.to_string()}</td>
@@ -656,7 +754,11 @@ pub fn PortalPage() -> impl IntoView {
                                             <button
                                                 type="button"
                                                 class="tc-btn tc-btn-sm tc-btn-ghost"
-                                                on:click=move |_| selected_order.set(None)
+                                                on:click=move |_| {
+                                                    order_gen.update(|g| *g = g.wrapping_add(1));
+                                                    loading_order.set(false);
+                                                    selected_order.set(None);
+                                                }
                                             >
                                                 "Close"
                                             </button>
@@ -788,7 +890,18 @@ pub fn PortalPage() -> impl IntoView {
                                                                 on:click=move |_| open_ticket(ticket_id)
                                                             >
                                                                 <td class="tc-mono">{ticket.number}</td>
-                                                                <td>{ticket.subject}</td>
+                                                                <td>
+                                                                    <button
+                                                                        type="button"
+                                                                        style="background: none; border: none; padding: 0; font: inherit; color: inherit; cursor: pointer; text-align: left;"
+                                                                        on:click=move |ev| {
+                                                                            ev.stop_propagation();
+                                                                            open_ticket(ticket_id);
+                                                                        }
+                                                                    >
+                                                                        {ticket.subject}
+                                                                    </button>
+                                                                </td>
                                                                 <td>{ticket.category}</td>
                                                                 <td><span class=status_class>{ticket.status}</span></td>
                                                                 <td class="tc-mono">{ticket.updated_at.date_naive().to_string()}</td>
@@ -891,7 +1004,11 @@ pub fn PortalPage() -> impl IntoView {
                                                 <button
                                                     type="button"
                                                     class="tc-btn tc-btn-sm tc-btn-ghost"
-                                                    on:click=move |_| selected_ticket.set(None)
+                                                    on:click=move |_| {
+                                                        ticket_gen.update(|g| *g = g.wrapping_add(1));
+                                                        loading_ticket.set(false);
+                                                        selected_ticket.set(None);
+                                                    }
                                                 >
                                                     "Close"
                                                 </button>

@@ -78,11 +78,14 @@ pub fn KbPage() -> impl IntoView {
     let entries = RwSignal::new(Vec::<ReaderSummary>::new());
     let loading = RwSignal::new(false);
     let error = RwSignal::new(Option::<String>::None);
+    let categories_gen = RwSignal::new(0_u64);
+    let entries_gen = RwSignal::new(0_u64);
 
     let selected_article_id = RwSignal::new(Option::<Uuid>::None);
     let active_article = RwSignal::new(Option::<ReaderEntry>::None);
     let loading_article = RwSignal::new(false);
     let article_error = RwSignal::new(Option::<String>::None);
+    let article_gen = RwSignal::new(0_u64);
 
     // Sync default company_id and base_url when staff session changes.
     Effect::new(move |_| {
@@ -111,6 +114,9 @@ pub fn KbPage() -> impl IntoView {
         let base = base_url.get();
         let lang = language.get();
 
+        let req_gen = categories_gen.get_untracked().wrapping_add(1);
+        categories_gen.set(req_gen);
+
         if raw_company.trim().is_empty() {
             categories.set(Vec::new());
             return;
@@ -123,7 +129,9 @@ pub fn KbPage() -> impl IntoView {
         let client = kb_client(&base);
         spawn_local(async move {
             if let Ok(list) = client.list_public_kb_categories(company_id, &params).await {
-                categories.set(list);
+                if categories_gen.get_untracked() == req_gen {
+                    categories.set(list);
+                }
             }
         });
     });
@@ -137,8 +145,12 @@ pub fn KbPage() -> impl IntoView {
         let cat = selected_category.get();
         let lang = language.get();
 
+        let req_gen = entries_gen.get_untracked().wrapping_add(1);
+        entries_gen.set(req_gen);
+
         if raw_company.trim().is_empty() {
             entries.set(Vec::new());
+            loading.set(false);
             error.set(None);
             return;
         }
@@ -146,6 +158,7 @@ pub fn KbPage() -> impl IntoView {
             Ok(id) => id,
             Err(msg) => {
                 entries.set(Vec::new());
+                loading.set(false);
                 error.set(Some(msg));
                 return;
             }
@@ -169,7 +182,11 @@ pub fn KbPage() -> impl IntoView {
         loading.set(true);
         error.set(None);
         spawn_local(async move {
-            match client.list_public_kb_entries(company_id, &params).await {
+            let res = client.list_public_kb_entries(company_id, &params).await;
+            if entries_gen.get_untracked() != req_gen {
+                return;
+            }
+            match res {
                 Ok(list) => {
                     entries.set(list);
                     loading.set(false);
@@ -183,8 +200,12 @@ pub fn KbPage() -> impl IntoView {
     });
 
     let open_article = move |entry_id: Uuid| {
+        let req_gen = article_gen.get_untracked().wrapping_add(1);
+        article_gen.set(req_gen);
+
         let raw_company = company_id_input.get_untracked();
         let Ok(company_id) = parse_uuid("Company ID", &raw_company) else {
+            loading_article.set(false);
             article_error.set(Some("Enter a valid Company ID first.".to_string()));
             return;
         };
@@ -195,15 +216,19 @@ pub fn KbPage() -> impl IntoView {
         };
 
         selected_article_id.set(Some(entry_id));
+        active_article.set(None);
         loading_article.set(true);
         article_error.set(None);
 
         let client = kb_client(&base);
         spawn_local(async move {
-            match client
+            let res = client
                 .get_public_kb_entry(company_id, entry_id, &params)
-                .await
-            {
+                .await;
+            if article_gen.get_untracked() != req_gen {
+                return;
+            }
+            match res {
                 Ok(entry) => {
                     active_article.set(Some(entry));
                     loading_article.set(false);
@@ -365,7 +390,16 @@ pub fn KbPage() -> impl IntoView {
                                             >
                                                 <td class="tc-mono">{item.number}</td>
                                                 <td>
-                                                    <div style="font-weight: 600;">{item.title}</div>
+                                                    <button
+                                                        type="button"
+                                                        style="background: none; border: none; padding: 0; font: inherit; font-weight: 600; color: inherit; cursor: pointer; text-align: left;"
+                                                        on:click=move |ev| {
+                                                            ev.stop_propagation();
+                                                            open_article(entry_id);
+                                                        }
+                                                    >
+                                                        {item.title}
+                                                    </button>
                                                     {(!segs.is_empty()).then(|| view! {
                                                         <div style="font-size: 12px; color: var(--on-surface-variant); margin-top: 2px;">
                                                             {segs.into_iter().map(|(text, hit)| {
@@ -429,8 +463,10 @@ pub fn KbPage() -> impl IntoView {
                                     class="tc-btn tc-btn-sm tc-btn-ghost"
                                     data-target="kb-article-close"
                                     on:click=move |_| {
+                                        article_gen.update(|g| *g = g.wrapping_add(1));
                                         selected_article_id.set(None);
                                         active_article.set(None);
+                                        loading_article.set(false);
                                         article_error.set(None);
                                     }
                                 >

@@ -94,6 +94,7 @@ impl QuotationLineDraft {
 
 #[derive(Debug, Clone, PartialEq)]
 struct QuotationTab {
+    instance_id: u64,
     tab_id: String,
     quotation_id: Option<Uuid>,
     version: Option<i64>,
@@ -120,8 +121,9 @@ struct QuotationTab {
 }
 
 impl QuotationTab {
-    fn new_draft(default_customer_id: &str, default_product_id: &str) -> Self {
+    fn new_draft(instance_id: u64, default_customer_id: &str, default_product_id: &str) -> Self {
         Self {
+            instance_id,
             tab_id: "new".to_string(),
             quotation_id: None,
             version: None,
@@ -148,8 +150,9 @@ impl QuotationTab {
         }
     }
 
-    fn from_summary(summary: &QuotationSummary, loading_detail: bool) -> Self {
+    fn from_summary(instance_id: u64, summary: &QuotationSummary, loading_detail: bool) -> Self {
         Self {
+            instance_id,
             tab_id: format!("edit:{}", summary.id),
             quotation_id: Some(summary.id),
             version: None,
@@ -184,6 +187,7 @@ impl QuotationTab {
             .map(|(i, line)| QuotationLineDraft::from_line((i + 1) as u64, line))
             .collect();
         let next_key = (line_drafts.len() + 1) as u64;
+        let valid_days = (q.valid_until - q.quote_date).num_days().clamp(1, 365);
         self.tab_id = format!("edit:{}", q.id);
         self.quotation_id = Some(q.id);
         self.version = Some(q.version);
@@ -198,6 +202,7 @@ impl QuotationTab {
         self.customer_id = q.customer_id.to_string();
         self.purpose = q.purpose.clone();
         self.delivery_country_code = q.delivery_country_code.clone().unwrap_or_default();
+        self.valid_days = valid_days.to_string();
         self.quote_date = q.quote_date.to_string();
         self.notes = q.notes.clone();
         self.line_drafts = line_drafts;
@@ -206,7 +211,12 @@ impl QuotationTab {
     }
 
     fn is_editable(&self) -> bool {
-        self.quotation_id.is_none() || self.status == QuotationStatus::Draft
+        self.quotation_id.is_none()
+            || (self.status == QuotationStatus::Draft && self.detail.is_some())
+    }
+
+    fn can_edit(&self) -> bool {
+        self.is_editable() && !self.busy
     }
 
     fn to_request(&self) -> Result<CreateQuotationRequest, String> {
@@ -290,6 +300,18 @@ fn update_quotation_tab(
     });
 }
 
+fn update_quotation_tab_by_instance(
+    tabs: &RwSignal<Vec<QuotationTab>>,
+    instance_id: u64,
+    f: impl FnOnce(&mut QuotationTab),
+) {
+    tabs.update(|list| {
+        if let Some(tab) = list.iter_mut().find(|t| t.instance_id == instance_id) {
+            f(tab);
+        }
+    });
+}
+
 fn close_quotation_tab(
     tabs: &RwSignal<Vec<QuotationTab>>,
     active_tab_id: &RwSignal<Option<String>>,
@@ -339,8 +361,18 @@ pub fn QuotationsPage() -> impl IntoView {
 
     let open_tabs = RwSignal::new(Vec::<QuotationTab>::new());
     let active_tab_id = RwSignal::new(Option::<String>::None);
+    let fetch_gen = StoredValue::new(0_u64);
+    let next_tab_instance_id = StoredValue::new(0_u64);
+
+    let alloc_tab_instance_id = move || {
+        let id = next_tab_instance_id.get_value().wrapping_add(1);
+        next_tab_instance_id.set_value(id);
+        id
+    };
 
     let fetch_quotations = move |connection: ConnectionMode, params: ListQuotationsParams| {
+        let req_gen = fetch_gen.get_value().wrapping_add(1);
+        fetch_gen.set_value(req_gen);
         loading.set(true);
         error.set(None);
         spawn_local(async move {
@@ -348,6 +380,9 @@ pub fn QuotationsPage() -> impl IntoView {
                 Ok(client) => client.list_quotations(&params).await,
                 Err(err) => Err(err),
             };
+            if fetch_gen.try_get_value() != Some(req_gen) {
+                return;
+            }
             match result {
                 Ok(page) => {
                     items.set(page.items);
@@ -389,6 +424,8 @@ pub fn QuotationsPage() -> impl IntoView {
         let status = status_filter.get();
 
         let Some(session) = active_session else {
+            fetch_gen.set_value(fetch_gen.get_value().wrapping_add(1));
+            loading.set(false);
             items.set(Vec::new());
             total.set(0);
             error.set(None);
@@ -419,7 +456,12 @@ pub fn QuotationsPage() -> impl IntoView {
             .unwrap_or_default();
         open_tabs.update(|list| {
             if !list.iter().any(|t| t.tab_id == "new") {
-                list.push(QuotationTab::new_draft(&default_customer, &default_product));
+                let instance_id = alloc_tab_instance_id();
+                list.push(QuotationTab::new_draft(
+                    instance_id,
+                    &default_customer,
+                    &default_product,
+                ));
             }
         });
         active_tab_id.set(Some("new".to_string()));
@@ -427,12 +469,24 @@ pub fn QuotationsPage() -> impl IntoView {
 
     let open_quotation_row = move |summary: QuotationSummary| {
         let tab_id = format!("edit:{}", summary.id);
-        let already_open = open_tabs.with_untracked(|list| list.iter().any(|t| t.tab_id == tab_id));
-        if !already_open {
-            open_tabs.update(|list| list.push(QuotationTab::from_summary(&summary, true)));
-        }
+        let mut target_instance: Option<u64> = None;
+        open_tabs.update(|list| {
+            if let Some(tab) = list.iter_mut().find(|t| t.tab_id == tab_id) {
+                if !tab.busy {
+                    tab.loading_detail = true;
+                    target_instance = Some(tab.instance_id);
+                }
+            } else {
+                let instance_id = alloc_tab_instance_id();
+                list.push(QuotationTab::from_summary(instance_id, &summary, true));
+                target_instance = Some(instance_id);
+            }
+        });
         active_tab_id.set(Some(tab_id.clone()));
 
+        let Some(instance_id) = target_instance else {
+            return;
+        };
         if let Some(session) = ctx.session.get_untracked() {
             let connection = session.connection;
             let quotation_id = summary.id;
@@ -443,18 +497,26 @@ pub fn QuotationsPage() -> impl IntoView {
                 };
                 match res {
                     Ok(fresh) => {
-                        update_quotation_tab(&open_tabs, &tab_id, |tab| {
+                        update_quotation_tab_by_instance(&open_tabs, instance_id, |tab| {
+                            if tab.busy {
+                                return;
+                            }
                             if !tab.dirty {
                                 tab.apply_quotation(&fresh, None);
                             } else {
                                 tab.loading_detail = false;
-                                tab.version = Some(fresh.version);
+                                if tab.version.is_none() {
+                                    tab.version = Some(fresh.version);
+                                }
                                 tab.detail = Some(fresh);
                             }
                         });
                     }
                     Err(err) => {
-                        update_quotation_tab(&open_tabs, &tab_id, |tab| {
+                        update_quotation_tab_by_instance(&open_tabs, instance_id, |tab| {
+                            if tab.busy {
+                                return;
+                            }
                             tab.loading_detail = false;
                             if tab.error.is_none() {
                                 tab.error = Some(err.user_message());
@@ -462,6 +524,10 @@ pub fn QuotationsPage() -> impl IntoView {
                         });
                     }
                 }
+            });
+        } else {
+            update_quotation_tab_by_instance(&open_tabs, instance_id, |tab| {
+                tab.loading_detail = false;
             });
         }
     };
@@ -654,10 +720,11 @@ pub fn QuotationsPage() -> impl IntoView {
                             if snapshot.busy || !snapshot.is_editable() {
                                 return;
                             }
+                            let instance_id = snapshot.instance_id;
                             let req = match snapshot.to_request() {
                                 Ok(req) => req,
                                 Err(msg) => {
-                                    update_quotation_tab(&open_tabs, &tab_id_submit, |tab| {
+                                    update_quotation_tab_by_instance(&open_tabs, instance_id, |tab| {
                                         tab.error = Some(msg);
                                         tab.notice = None;
                                     });
@@ -665,7 +732,7 @@ pub fn QuotationsPage() -> impl IntoView {
                                 }
                             };
 
-                            update_quotation_tab(&open_tabs, &tab_id_submit, |tab| {
+                            update_quotation_tab_by_instance(&open_tabs, instance_id, |tab| {
                                 tab.busy = true;
                                 tab.error = None;
                                 tab.notice = None;
@@ -685,21 +752,25 @@ pub fn QuotationsPage() -> impl IntoView {
                                 match res {
                                     Ok(saved) => {
                                         let next_id = format!("edit:{}", saved.id);
+                                        let mut updated_current_tab = false;
                                         open_tabs.update(|list| {
-                                            if current_id != next_id {
-                                                list.retain(|t| t.tab_id != next_id);
-                                            }
-                                            if let Some(tab) = list.iter_mut().find(|t| t.tab_id == current_id) {
-                                                tab.apply_quotation(&saved, Some("Quotation saved.".to_string()));
+                                            if list.iter().any(|t| t.instance_id == instance_id) {
+                                                list.retain(|t| t.instance_id == instance_id || t.tab_id != next_id);
+                                                if let Some(tab) = list.iter_mut().find(|t| t.instance_id == instance_id) {
+                                                    tab.apply_quotation(&saved, Some("Quotation saved.".to_string()));
+                                                    updated_current_tab = true;
+                                                }
                                             }
                                         });
-                                        if active_tab_id.get_untracked().as_deref() == Some(current_id.as_str()) {
+                                        if updated_current_tab
+                                            && active_tab_id.get_untracked().as_deref() == Some(current_id.as_str())
+                                        {
                                             active_tab_id.set(Some(next_id));
                                         }
                                         reload_nonce.update(|n| *n += 1);
                                     }
                                     Err(err) => {
-                                        update_quotation_tab(&open_tabs, &current_id, |tab| {
+                                        update_quotation_tab_by_instance(&open_tabs, instance_id, |tab| {
                                             tab.busy = false;
                                             tab.error = Some(err.user_message());
                                         });
@@ -718,15 +789,22 @@ pub fn QuotationsPage() -> impl IntoView {
                             let Some(qid) = snapshot.quotation_id else {
                                 return;
                             };
-                            if snapshot.busy {
+                            if snapshot.busy || snapshot.detail.is_none() {
                                 return;
                             }
-                            update_quotation_tab(&open_tabs, &tab_id_send, |tab| {
+                            let instance_id = snapshot.instance_id;
+                            if snapshot.dirty {
+                                update_quotation_tab_by_instance(&open_tabs, instance_id, |tab| {
+                                    tab.error = Some("Save changes before sending the quotation.".to_string());
+                                    tab.notice = None;
+                                });
+                                return;
+                            }
+                            update_quotation_tab_by_instance(&open_tabs, instance_id, |tab| {
                                 tab.busy = true;
                                 tab.error = None;
                                 tab.notice = None;
                             });
-                            let current_id = tab_id_send.clone();
                             let connection = session.connection;
                             let override_shipping = snapshot.override_shipping;
                             spawn_local(async move {
@@ -736,13 +814,13 @@ pub fn QuotationsPage() -> impl IntoView {
                                 };
                                 match res {
                                     Ok(updated) => {
-                                        update_quotation_tab(&open_tabs, &current_id, |tab| {
+                                        update_quotation_tab_by_instance(&open_tabs, instance_id, |tab| {
                                             tab.apply_quotation(&updated, Some("Quotation sent.".to_string()));
                                         });
                                         reload_nonce.update(|n| *n += 1);
                                     }
                                     Err(err) => {
-                                        update_quotation_tab(&open_tabs, &current_id, |tab| {
+                                        update_quotation_tab_by_instance(&open_tabs, instance_id, |tab| {
                                             tab.busy = false;
                                             tab.error = Some(err.user_message());
                                         });
@@ -764,12 +842,12 @@ pub fn QuotationsPage() -> impl IntoView {
                             if snapshot.busy {
                                 return;
                             }
-                            update_quotation_tab(&open_tabs, &tab_id_accept, |tab| {
+                            let instance_id = snapshot.instance_id;
+                            update_quotation_tab_by_instance(&open_tabs, instance_id, |tab| {
                                 tab.busy = true;
                                 tab.error = None;
                                 tab.notice = None;
                             });
-                            let current_id = tab_id_accept.clone();
                             let connection = session.connection;
                             spawn_local(async move {
                                 let res = match live_client(&connection) {
@@ -778,13 +856,13 @@ pub fn QuotationsPage() -> impl IntoView {
                                 };
                                 match res {
                                     Ok(updated) => {
-                                        update_quotation_tab(&open_tabs, &current_id, |tab| {
+                                        update_quotation_tab_by_instance(&open_tabs, instance_id, |tab| {
                                             tab.apply_quotation(&updated, Some("Quotation accepted.".to_string()));
                                         });
                                         reload_nonce.update(|n| *n += 1);
                                     }
                                     Err(err) => {
-                                        update_quotation_tab(&open_tabs, &current_id, |tab| {
+                                        update_quotation_tab_by_instance(&open_tabs, instance_id, |tab| {
                                             tab.busy = false;
                                             tab.error = Some(err.user_message());
                                         });
@@ -806,7 +884,8 @@ pub fn QuotationsPage() -> impl IntoView {
                             if snapshot.busy {
                                 return;
                             }
-                            update_quotation_tab(&open_tabs, &tab_id_convert, |tab| {
+                            let instance_id = snapshot.instance_id;
+                            update_quotation_tab_by_instance(&open_tabs, instance_id, |tab| {
                                 tab.busy = true;
                                 tab.error = None;
                                 tab.notice = None;
@@ -815,7 +894,6 @@ pub fn QuotationsPage() -> impl IntoView {
                                 customer_reference: snapshot.convert_reference.trim().to_string(),
                                 notes: snapshot.convert_notes.trim().to_string(),
                             };
-                            let current_id = tab_id_convert.clone();
                             let connection = session.connection;
                             spawn_local(async move {
                                 let res = match live_client(&connection) {
@@ -828,7 +906,7 @@ pub fn QuotationsPage() -> impl IntoView {
                                             "Converted to sales order {} (rev {}).",
                                             order.order.number, order.revision
                                         );
-                                        update_quotation_tab(&open_tabs, &current_id, |tab| {
+                                        update_quotation_tab_by_instance(&open_tabs, instance_id, |tab| {
                                             tab.busy = false;
                                             tab.notice = Some(msg.clone());
                                         });
@@ -836,7 +914,7 @@ pub fn QuotationsPage() -> impl IntoView {
                                         reload_nonce.update(|n| *n += 1);
                                     }
                                     Err(err) => {
-                                        update_quotation_tab(&open_tabs, &current_id, |tab| {
+                                        update_quotation_tab_by_instance(&open_tabs, instance_id, |tab| {
                                             tab.busy = false;
                                             tab.error = Some(err.user_message());
                                         });
@@ -945,12 +1023,15 @@ pub fn QuotationsPage() -> impl IntoView {
                                                             class="tc-input tc-mono"
                                                             type="text"
                                                             placeholder="Customer UUID"
-                                                            disabled=move || !tab_id_sv.with_value(|tid| read_quotation_tab(&open_tabs, tid, QuotationTab::is_editable).unwrap_or(false))
+                                                            disabled=move || !tab_id_sv.with_value(|tid| read_quotation_tab(&open_tabs, tid, QuotationTab::can_edit).unwrap_or(false))
                                                             prop:value=move || tab_id_sv.with_value(|tid| read_quotation_tab(&open_tabs, tid, |t| t.customer_id.clone()).unwrap_or_default())
                                                             on:input=move |ev| {
                                                                 let v = event_target_value(&ev);
                                                                 tab_id_sv.with_value(|tid| {
                                                                     update_quotation_tab(&open_tabs, tid, |t| {
+                                                                        if !t.can_edit() {
+                                                                            return;
+                                                                        }
                                                                         t.customer_id = v;
                                                                         t.dirty = true;
                                                                     });
@@ -964,12 +1045,15 @@ pub fn QuotationsPage() -> impl IntoView {
                                                     id="quotation-form-customer"
                                                     data-target="quotation-form-customer"
                                                     class="tc-select"
-                                                    disabled=move || !tab_id_sv.with_value(|tid| read_quotation_tab(&open_tabs, tid, QuotationTab::is_editable).unwrap_or(false))
+                                                    disabled=move || !tab_id_sv.with_value(|tid| read_quotation_tab(&open_tabs, tid, QuotationTab::can_edit).unwrap_or(false))
                                                     prop:value=move || tab_id_sv.with_value(|tid| read_quotation_tab(&open_tabs, tid, |t| t.customer_id.clone()).unwrap_or_default())
                                                     on:change=move |ev| {
                                                         let v = event_target_value(&ev);
                                                         tab_id_sv.with_value(|tid| {
                                                             update_quotation_tab(&open_tabs, tid, |t| {
+                                                                if !t.can_edit() {
+                                                                    return;
+                                                                }
                                                                 t.customer_id = v;
                                                                 t.dirty = true;
                                                             });
@@ -1044,12 +1128,16 @@ pub fn QuotationsPage() -> impl IntoView {
                                                 type="button"
                                                 data-target="quotation-add-line"
                                                 class="tc-btn tc-btn-sm"
+                                                disabled=move || !tab_id_sv.with_value(|tid| read_quotation_tab(&open_tabs, tid, QuotationTab::can_edit).unwrap_or(false))
                                                 on:click=move |_| {
                                                     let default_prod = products
                                                         .with_untracked(|list| list.first().map(|p| p.id.to_string()))
                                                         .unwrap_or_default();
                                                     tab_id_sv.with_value(|tid| {
                                                         update_quotation_tab(&open_tabs, tid, |tab| {
+                                                            if !tab.can_edit() {
+                                                                return;
+                                                            }
                                                             let key = tab.next_line_key;
                                                             tab.next_line_key += 1;
                                                             tab.line_drafts.push(QuotationLineDraft::new_blank(key, &default_prod));
@@ -1092,6 +1180,7 @@ pub fn QuotationsPage() -> impl IntoView {
                                                                                             class="tc-input tc-mono"
                                                                                             type="text"
                                                                                             placeholder="Product UUID"
+                                                                                            disabled=move || !tab_id_sv.with_value(|tid_d| read_quotation_tab(&open_tabs, tid_d, QuotationTab::can_edit).unwrap_or(false))
                                                                                             prop:value=move || {
                                                                                                 tab_id_sv.with_value(|tid_r| {
                                                                                                     read_quotation_tab(&open_tabs, tid_r, |t| {
@@ -1103,6 +1192,9 @@ pub fn QuotationsPage() -> impl IntoView {
                                                                                                 let v = event_target_value(&ev);
                                                                                                 tab_id_sv.with_value(|tid_w| {
                                                                                                     update_quotation_tab(&open_tabs, tid_w, |t| {
+                                                                                                        if !t.can_edit() {
+                                                                                                            return;
+                                                                                                        }
                                                                                                         if let Some(l) = t.line_drafts.iter_mut().find(|l| l.key == line_key) {
                                                                                                             l.product_id = v;
                                                                                                         }
@@ -1116,6 +1208,7 @@ pub fn QuotationsPage() -> impl IntoView {
                                                                             >
                                                                                 <select
                                                                                     class="tc-select"
+                                                                                    disabled=move || !tab_id_sv.with_value(|tid_d| read_quotation_tab(&open_tabs, tid_d, QuotationTab::can_edit).unwrap_or(false))
                                                                                     prop:value=move || {
                                                                                         tab_id_sv.with_value(|tid_r| {
                                                                                             read_quotation_tab(&open_tabs, tid_r, |t| {
@@ -1127,6 +1220,9 @@ pub fn QuotationsPage() -> impl IntoView {
                                                                                         let v = event_target_value(&ev);
                                                                                         tab_id_sv.with_value(|tid_w| {
                                                                                             update_quotation_tab(&open_tabs, tid_w, |t| {
+                                                                                                if !t.can_edit() {
+                                                                                                    return;
+                                                                                                }
                                                                                                 if let Some(l) = t.line_drafts.iter_mut().find(|l| l.key == line_key) {
                                                                                                     l.product_id = v;
                                                                                                 }
@@ -1150,6 +1246,10 @@ pub fn QuotationsPage() -> impl IntoView {
                                                                             <input
                                                                                 class="tc-input tc-num"
                                                                                 type="text"
+                                                                                disabled={
+                                                                                    let tid_d = tid.clone();
+                                                                                    move || !read_quotation_tab(&open_tabs, &tid_d, QuotationTab::can_edit).unwrap_or(false)
+                                                                                }
                                                                                 prop:value={
                                                                                     let tid_r = tid.clone();
                                                                                     move || read_quotation_tab(&open_tabs, &tid_r, |t| {
@@ -1161,6 +1261,9 @@ pub fn QuotationsPage() -> impl IntoView {
                                                                                     move |ev| {
                                                                                         let v = event_target_value(&ev);
                                                                                         update_quotation_tab(&open_tabs, &tid_w, |t| {
+                                                                                            if !t.can_edit() {
+                                                                                                return;
+                                                                                            }
                                                                                             if let Some(l) = t.line_drafts.iter_mut().find(|l| l.key == line_key) {
                                                                                                 l.quantity = v;
                                                                                             }
@@ -1176,6 +1279,10 @@ pub fn QuotationsPage() -> impl IntoView {
                                                                             <input
                                                                                 class="tc-input tc-num"
                                                                                 type="text"
+                                                                                disabled={
+                                                                                    let tid_d = tid.clone();
+                                                                                    move || !read_quotation_tab(&open_tabs, &tid_d, QuotationTab::can_edit).unwrap_or(false)
+                                                                                }
                                                                                 prop:value={
                                                                                     let tid_r = tid.clone();
                                                                                     move || read_quotation_tab(&open_tabs, &tid_r, |t| {
@@ -1187,6 +1294,9 @@ pub fn QuotationsPage() -> impl IntoView {
                                                                                     move |ev| {
                                                                                         let v = event_target_value(&ev);
                                                                                         update_quotation_tab(&open_tabs, &tid_w, |t| {
+                                                                                            if !t.can_edit() {
+                                                                                                return;
+                                                                                            }
                                                                                             if let Some(l) = t.line_drafts.iter_mut().find(|l| l.key == line_key) {
                                                                                                 l.line_discount_percent = v;
                                                                                             }
@@ -1203,6 +1313,10 @@ pub fn QuotationsPage() -> impl IntoView {
                                                                                 class="tc-input"
                                                                                 type="text"
                                                                                 placeholder="Optional custom description"
+                                                                                disabled={
+                                                                                    let tid_d = tid.clone();
+                                                                                    move || !read_quotation_tab(&open_tabs, &tid_d, QuotationTab::can_edit).unwrap_or(false)
+                                                                                }
                                                                                 prop:value={
                                                                                     let tid_r = tid.clone();
                                                                                     move || read_quotation_tab(&open_tabs, &tid_r, |t| {
@@ -1214,6 +1328,9 @@ pub fn QuotationsPage() -> impl IntoView {
                                                                                     move |ev| {
                                                                                         let v = event_target_value(&ev);
                                                                                         update_quotation_tab(&open_tabs, &tid_w, |t| {
+                                                                                            if !t.can_edit() {
+                                                                                                return;
+                                                                                            }
                                                                                             if let Some(l) = t.line_drafts.iter_mut().find(|l| l.key == line_key) {
                                                                                                 l.description = v;
                                                                                             }
@@ -1229,10 +1346,17 @@ pub fn QuotationsPage() -> impl IntoView {
                                                                         <button
                                                                             type="button"
                                                                             class="tc-btn tc-btn-ghost tc-btn-sm"
+                                                                            disabled={
+                                                                                let tid_d = tid.clone();
+                                                                                move || !read_quotation_tab(&open_tabs, &tid_d, QuotationTab::can_edit).unwrap_or(false)
+                                                                            }
                                                                             on:click={
                                                                                 let tid_rm = tid.clone();
                                                                                 move |_| {
                                                                                     update_quotation_tab(&open_tabs, &tid_rm, |t| {
+                                                                                        if !t.can_edit() {
+                                                                                            return;
+                                                                                        }
                                                                                         t.line_drafts.retain(|l| l.key != line_key);
                                                                                         t.dirty = true;
                                                                                     });
@@ -1306,11 +1430,17 @@ pub fn QuotationsPage() -> impl IntoView {
                                                 id="quotation-override-shipping"
                                                 data-target="quotation-override-shipping"
                                                 type="checkbox"
+                                                disabled=move || !tab_id_sv.with_value(|tid| read_quotation_tab(&open_tabs, tid, QuotationTab::can_edit).unwrap_or(false))
                                                 prop:checked=move || tab_id_sv.with_value(|tid| read_quotation_tab(&open_tabs, tid, |t| t.override_shipping).unwrap_or(false))
                                                 on:change=move |ev| {
                                                     let checked = event_target_checked(&ev);
                                                     tab_id_sv.with_value(|tid| {
-                                                        update_quotation_tab(&open_tabs, tid, |t| t.override_shipping = checked);
+                                                        update_quotation_tab(&open_tabs, tid, |t| {
+                                                            if !t.can_edit() {
+                                                                return;
+                                                            }
+                                                            t.override_shipping = checked;
+                                                        });
                                                     });
                                                 }
                                             />
@@ -1366,11 +1496,12 @@ pub fn QuotationsPage() -> impl IntoView {
 
                                         {move || {
                                             let state = read_quotation_tab(&open_tabs, &tab_id_actions, |t| {
-                                                (t.quotation_id.is_some(), t.status, t.busy)
+                                                (t.quotation_id.is_some(), t.status, t.busy, t.detail.is_some())
                                             });
-                                            let Some((has_id, status, busy)) = state else {
+                                            let Some((has_id, status, busy, has_detail)) = state else {
                                                 return view! { <span></span> }.into_any();
                                             };
+                                            let waiting_detail = has_id && !has_detail;
                                             view! {
                                                 <>
                                                     {(!has_id || status == QuotationStatus::Draft).then(|| view! {
@@ -1378,7 +1509,7 @@ pub fn QuotationsPage() -> impl IntoView {
                                                             type="submit"
                                                             data-target="quotation-save"
                                                             class="tc-btn tc-btn-primary"
-                                                            disabled=busy
+                                                            disabled=busy || waiting_detail
                                                         >
                                                             {if busy { "Saving..." } else { "Save" }}
                                                         </button>
@@ -1388,7 +1519,7 @@ pub fn QuotationsPage() -> impl IntoView {
                                                             type="button"
                                                             data-target="quotation-send"
                                                             class="tc-btn"
-                                                            disabled=busy
+                                                            disabled=busy || waiting_detail
                                                             on:click=on_send.clone()
                                                         >
                                                             "Send"
@@ -1451,11 +1582,14 @@ fn quotation_select_field(
                 id=target
                 data-target=target
                 class="tc-select"
-                disabled=move || !read_quotation_tab(&tabs, &tid_dis, QuotationTab::is_editable).unwrap_or(false)
+                disabled=move || !read_quotation_tab(&tabs, &tid_dis, QuotationTab::can_edit).unwrap_or(false)
                 prop:value=move || read_quotation_tab(&tabs, &tid_read, get).unwrap_or_default()
                 on:change=move |ev| {
                     let val = event_target_value(&ev);
                     update_quotation_tab(&tabs, &tid_write, |tab| {
+                        if !tab.can_edit() {
+                            return;
+                        }
                         set(tab, val);
                         tab.dirty = true;
                     });
@@ -1498,11 +1632,14 @@ fn quotation_text_field(
                 class="tc-input"
                 type="text"
                 placeholder=placeholder
-                disabled=move || !read_quotation_tab(&tabs, &tid_dis, QuotationTab::is_editable).unwrap_or(false)
+                disabled=move || !read_quotation_tab(&tabs, &tid_dis, QuotationTab::can_edit).unwrap_or(false)
                 prop:value=move || read_quotation_tab(&tabs, &tid_read, get).unwrap_or_default()
                 on:input=move |ev| {
                     let val = event_target_value(&ev);
                     update_quotation_tab(&tabs, &tid_write, |tab| {
+                        if !tab.can_edit() {
+                            return;
+                        }
                         set(tab, val);
                         tab.dirty = true;
                     });

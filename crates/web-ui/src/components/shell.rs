@@ -3,6 +3,7 @@ use leptos_router::components::A;
 use leptos_router::hooks::{use_location, use_navigate};
 use leptos_router::NavigateOptions;
 
+use crate::api::ConnectionMode;
 use crate::state::{AppContext, ThemeMode, WorkspaceTab};
 
 const APP_BASE: &str = "/app";
@@ -180,6 +181,11 @@ pub fn AppShell(children: Children) -> impl IntoView {
     let on_sign_out = {
         let navigate = navigate.clone();
         move |_| {
+            ctx.draft_connection.update(|mode| {
+                if let ConnectionMode::Live(session) = mode {
+                    *session = session.signed_out();
+                }
+            });
             ctx.sign_out();
             navigate("/login", NavigateOptions::default());
         }

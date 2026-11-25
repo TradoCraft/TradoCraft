@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::client::Client;
-use crate::error::{ApiError, ErrorBody};
+use crate::error::ApiError;
 
 // -------------------------------------------------------------------------------------------------
 // Public Knowledge Base (`/api/v1/public/kb/{company_id}/...`)
@@ -415,22 +415,8 @@ impl Client {
     /// The server responds with `202 Accepted` and an empty body regardless of whether the
     /// email belongs to an active portal user.
     pub async fn request_portal_login_link(&self, req: &LoginLinkInput) -> Result<(), ApiError> {
-        let resp = reqwest::Client::new()
-            .post(self.url("/api/v1/portal/login-links"))
-            .json(req)
-            .send()
-            .await?;
-        let status = resp.status();
-        if status.is_success() {
-            return Ok(());
-        }
-        let text = resp.text().await?;
-        let body = serde_json::from_str::<ErrorBody>(&text).ok();
-        Err(ApiError::Http {
-            status: status.as_u16(),
-            body,
-            raw_body: text,
-        })
+        self.post_json_unauthenticated_empty("/api/v1/portal/login-links", req)
+            .await
     }
 
     /// Exchanges a one-time login link token for a portal bearer session
@@ -773,5 +759,30 @@ mod tests {
         let confirm: ConfirmPortalOrder = serde_json::from_str(r#"{"revision":2}"#).unwrap();
         assert_eq!(confirm.revision, 2);
         assert_eq!(confirm.note, "");
+    }
+
+    #[test]
+    fn request_portal_login_link_validates_base_url_via_client() {
+        use std::future::Future;
+        use std::task::{Context, Poll, RawWaker, RawWakerVTable, Waker};
+
+        fn no_op(_: *const ()) {}
+        fn clone(ptr: *const ()) -> RawWaker {
+            RawWaker::new(ptr, &VTABLE)
+        }
+        static VTABLE: RawWakerVTable = RawWakerVTable::new(clone, no_op, no_op, no_op);
+        let waker = unsafe { Waker::from_raw(RawWaker::new(std::ptr::null(), &VTABLE)) };
+        let mut cx = Context::from_waker(&waker);
+
+        let client = Client::new("");
+        let input = LoginLinkInput {
+            company_id: Uuid::nil(),
+            email: "buyer@acme.example".to_string(),
+        };
+        let mut fut = Box::pin(client.request_portal_login_link(&input));
+        match fut.as_mut().poll(&mut cx) {
+            Poll::Ready(Err(ApiError::InvalidConfig(_))) => {}
+            other => panic!("expected InvalidConfig, got {other:?}"),
+        }
     }
 }

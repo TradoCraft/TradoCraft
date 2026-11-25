@@ -13,6 +13,8 @@ use crate::state::AppContext;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct ProductTab {
+    instance_id: u64,
+    edit_generation: u64,
     tab_id: String,
     product_id: Option<Uuid>,
     title: String,
@@ -49,8 +51,10 @@ struct ProductTab {
 }
 
 impl ProductTab {
-    fn new_draft() -> Self {
+    fn new_draft(instance_id: u64) -> Self {
         Self {
+            instance_id,
+            edit_generation: 0,
             tab_id: "new".to_string(),
             product_id: None,
             title: "New Product".to_string(),
@@ -87,8 +91,10 @@ impl ProductTab {
         }
     }
 
-    fn from_product(p: &Product, loading_detail: bool) -> Self {
+    fn from_product(p: &Product, loading_detail: bool, instance_id: u64) -> Self {
         Self {
+            instance_id,
+            edit_generation: 0,
             tab_id: format!("edit:{}", p.id),
             product_id: Some(p.id),
             title: format!("{} · {}", p.code, p.name),
@@ -129,10 +135,33 @@ impl ProductTab {
         }
     }
 
+    fn mark_dirty(&mut self) {
+        self.dirty = true;
+        self.edit_generation += 1;
+    }
+
     fn apply_saved(&mut self, saved: &Product, notice: Option<String>) {
-        let mut updated = Self::from_product(saved, false);
+        let mut updated = Self::from_product(saved, false, self.instance_id);
         updated.notice = notice;
         *self = updated;
+    }
+
+    fn apply_saved_preserving_edits(&mut self, saved: &Product, notice: Option<String>) {
+        self.tab_id = format!("edit:{}", saved.id);
+        self.product_id = Some(saved.id);
+        self.title = format!("{} · {}", self.code, self.name);
+        self.loading_detail = false;
+        self.saving = false;
+        self.dirty = true;
+        self.error = None;
+        self.notice = notice;
+        self.family_id = saved.family_id;
+        self.packaging_category_id = saved.packaging_category_id;
+        self.length_mm = saved.length_mm;
+        self.width_mm = saved.width_mm;
+        self.height_mm = saved.height_mm;
+        self.weight_g = saved.weight_g;
+        self.included_in_turnover = Some(saved.included_in_turnover);
     }
 
     fn to_request(&self) -> Result<CreateProductRequest, String> {
@@ -197,6 +226,22 @@ fn update_product_tab(
     });
 }
 
+fn update_product_tab_instance(
+    tabs: &RwSignal<Vec<ProductTab>>,
+    tab_id: &str,
+    instance_id: u64,
+    f: impl FnOnce(&mut ProductTab),
+) {
+    tabs.update(|list| {
+        if let Some(tab) = list
+            .iter_mut()
+            .find(|t| t.tab_id == tab_id && t.instance_id == instance_id)
+        {
+            f(tab);
+        }
+    });
+}
+
 fn close_product_tab(
     tabs: &RwSignal<Vec<ProductTab>>,
     active_tab_id: &RwSignal<Option<String>>,
@@ -233,18 +278,41 @@ pub fn ProductsPage() -> impl IntoView {
 
     let open_tabs = RwSignal::new(Vec::<ProductTab>::new());
     let active_tab_id = RwSignal::new(Option::<String>::None);
+    let fetch_generation = StoredValue::new(0_u64);
+    let next_tab_instance_id = StoredValue::new(1_u64);
+    let alloc_instance_id = move || {
+        next_tab_instance_id
+            .try_update_value(|n| {
+                let id = *n;
+                *n += 1;
+                id
+            })
+            .unwrap_or(0)
+    };
 
     let fetch_products = move |connection: ConnectionMode, params: ListProductsParams| {
+        let req_gen = fetch_generation
+            .try_update_value(|g| {
+                *g += 1;
+                *g
+            })
+            .unwrap_or(0);
         loading.set(true);
         error.set(None);
         spawn_local(async move {
             match WebApiClient.list_products(&connection, &params).await {
                 Ok(page) => {
+                    if fetch_generation.get_value() != req_gen {
+                        return;
+                    }
                     items.set(page.items);
                     total.set(page.total);
                     loading.set(false);
                 }
                 Err(err) => {
+                    if fetch_generation.get_value() != req_gen {
+                        return;
+                    }
                     loading.set(false);
                     error.set(Some(err.user_message()));
                 }
@@ -259,7 +327,11 @@ pub fn ProductsPage() -> impl IntoView {
         let pt = product_type.get();
         let af = active_filter.get();
 
+        // Invalidate any in-flight list request whenever session or filters re-run.
+        fetch_generation.update_value(|g| *g += 1);
+
         let Some(session) = active_session else {
+            loading.set(false);
             items.set(Vec::new());
             total.set(0);
             error.set(None);
@@ -289,7 +361,7 @@ pub fn ProductsPage() -> impl IntoView {
     let on_create_click = move |_| {
         open_tabs.update(|list| {
             if !list.iter().any(|t| t.tab_id == "new") {
-                list.push(ProductTab::new_draft());
+                list.push(ProductTab::new_draft(alloc_instance_id()));
             }
         });
         active_tab_id.set(Some("new".to_string()));
@@ -297,10 +369,20 @@ pub fn ProductsPage() -> impl IntoView {
 
     let open_product_row = move |product: Product| {
         let tab_id = format!("edit:{}", product.id);
-        let already_open = open_tabs.with_untracked(|list| list.iter().any(|t| t.tab_id == tab_id));
-        if !already_open {
-            open_tabs.update(|list| list.push(ProductTab::from_product(&product, true)));
+        let mut tab_instance_id = open_tabs.with_untracked(|list| {
+            list.iter()
+                .find(|t| t.tab_id == tab_id)
+                .map(|t| t.instance_id)
+        });
+        if tab_instance_id.is_none() {
+            let instance_id = alloc_instance_id();
+            open_tabs
+                .update(|list| list.push(ProductTab::from_product(&product, true, instance_id)));
+            tab_instance_id = Some(instance_id);
         }
+        let Some(tab_instance_id) = tab_instance_id else {
+            return;
+        };
         active_tab_id.set(Some(tab_id.clone()));
 
         if let Some(session) = ctx.session.get_untracked() {
@@ -309,7 +391,7 @@ pub fn ProductsPage() -> impl IntoView {
             spawn_local(async move {
                 match WebApiClient.get_product(&connection, product_id).await {
                     Ok(fresh) => {
-                        update_product_tab(&open_tabs, &tab_id, |tab| {
+                        update_product_tab_instance(&open_tabs, &tab_id, tab_instance_id, |tab| {
                             if !tab.dirty {
                                 tab.apply_saved(&fresh, None);
                             } else {
@@ -318,7 +400,7 @@ pub fn ProductsPage() -> impl IntoView {
                         });
                     }
                     Err(err) => {
-                        update_product_tab(&open_tabs, &tab_id, |tab| {
+                        update_product_tab_instance(&open_tabs, &tab_id, tab_instance_id, |tab| {
                             tab.loading_detail = false;
                             if tab.error.is_none() {
                                 tab.error = Some(err.user_message());
@@ -453,11 +535,25 @@ pub fn ProductsPage() -> impl IntoView {
                                     >
                                         <For
                                             each=move || items.get()
-                                            key=|p| (p.id, p.code.clone(), p.name.clone(), p.active)
+                                            key=|p| {
+                                                (
+                                                    p.id,
+                                                    p.code.clone(),
+                                                    p.name.clone(),
+                                                    p.product_type.clone(),
+                                                    p.family_code.clone(),
+                                                    p.unit.clone(),
+                                                    p.tracking.clone(),
+                                                    p.vat_rate,
+                                                    p.active,
+                                                )
+                                            }
                                             children=move |product| {
                                                 let open_product = product.clone();
+                                                let open_product_btn = product.clone();
                                                 let row_tab_id = format!("edit:{}", product.id);
                                                 let row_target = format!("product-row-{}", product.code);
+                                                let aria_label = format!("Open product {}", product.code);
                                                 let type_badge_class = match product.product_type.as_str() {
                                                     "manufactured" => "tc-badge tc-badge-primary",
                                                     "configurable" => "tc-badge tc-badge-warning",
@@ -476,7 +572,20 @@ pub fn ProductsPage() -> impl IntoView {
                                                         title="Open product detail & edit form"
                                                         on:click=move |_| open_product_row(open_product.clone())
                                                     >
-                                                        <td class="tc-mono">{product.code}</td>
+                                                        <td class="tc-mono">
+                                                            <button
+                                                                type="button"
+                                                                class="tc-inline-tab-btn"
+                                                                style="text-align: left;"
+                                                                aria-label=aria_label
+                                                                on:click=move |ev| {
+                                                                    ev.stop_propagation();
+                                                                    open_product_row(open_product_btn.clone());
+                                                                }
+                                                            >
+                                                                {product.code}
+                                                            </button>
+                                                        </td>
                                                         <td>{product.name}</td>
                                                         <td><span class=type_badge_class>{product.product_type}</span></td>
                                                         <td class="tc-mono">{product.family_code.unwrap_or_else(|| "—".to_string())}</td>
@@ -538,6 +647,8 @@ pub fn ProductsPage() -> impl IntoView {
                             });
 
                             let current_id = tab_id_for_submit.clone();
+                            let tab_instance_id = snapshot.instance_id;
+                            let snapshot_edit_gen = snapshot.edit_generation;
                             let connection = session.connection;
                             let product_id = snapshot.product_id;
                             spawn_local(async move {
@@ -548,24 +659,49 @@ pub fn ProductsPage() -> impl IntoView {
                                 match res {
                                     Ok(saved) => {
                                         let next_id = format!("edit:{}", saved.id);
+                                        let mut updated_matching_tab = false;
                                         open_tabs.update(|list| {
+                                            let has_match = list.iter().any(|t| {
+                                                t.tab_id == current_id && t.instance_id == tab_instance_id
+                                            });
+                                            if !has_match {
+                                                return;
+                                            }
                                             if current_id != next_id {
                                                 list.retain(|t| t.tab_id != next_id);
                                             }
-                                            if let Some(tab) = list.iter_mut().find(|t| t.tab_id == current_id) {
-                                                tab.apply_saved(&saved, Some("Saved".to_string()));
+                                            if let Some(tab) = list.iter_mut().find(|t| {
+                                                t.tab_id == current_id && t.instance_id == tab_instance_id
+                                            }) {
+                                                if tab.edit_generation == snapshot_edit_gen {
+                                                    tab.apply_saved(&saved, Some("Saved".to_string()));
+                                                } else {
+                                                    tab.apply_saved_preserving_edits(
+                                                        &saved,
+                                                        Some("Saved".to_string()),
+                                                    );
+                                                }
+                                                updated_matching_tab = true;
                                             }
                                         });
-                                        if active_tab_id.get_untracked().as_deref() == Some(current_id.as_str()) {
+                                        if updated_matching_tab
+                                            && active_tab_id.get_untracked().as_deref()
+                                                == Some(current_id.as_str())
+                                        {
                                             active_tab_id.set(Some(next_id));
                                         }
                                         reload_nonce.update(|n| *n += 1);
                                     }
                                     Err(err) => {
-                                        update_product_tab(&open_tabs, &current_id, |tab| {
-                                            tab.saving = false;
-                                            tab.error = Some(err.user_message());
-                                        });
+                                        update_product_tab_instance(
+                                            &open_tabs,
+                                            &current_id,
+                                            tab_instance_id,
+                                            |tab| {
+                                                tab.saving = false;
+                                                tab.error = Some(err.user_message());
+                                            },
+                                        );
                                     }
                                 }
                             });
@@ -778,7 +914,7 @@ fn product_select_field(
                     let val = event_target_value(&ev);
                     update_product_tab(&tabs, &tid_write, |tab| {
                         set(tab, val);
-                        tab.dirty = true;
+                        tab.mark_dirty();
                     });
                 }
             >
@@ -823,7 +959,7 @@ fn product_text_field(
                     let val = event_target_value(&ev);
                     update_product_tab(&tabs, &tid_write, |tab| {
                         set(tab, val);
-                        tab.dirty = true;
+                        tab.mark_dirty();
                     });
                 }
             />
@@ -853,7 +989,7 @@ fn product_checkbox(
                     let checked = event_target_checked(&ev);
                     update_product_tab(&tabs, &tid_write, |tab| {
                         set(tab, checked);
-                        tab.dirty = true;
+                        tab.mark_dirty();
                     });
                 }
             />

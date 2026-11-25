@@ -12,6 +12,8 @@ use crate::state::AppContext;
 
 #[derive(Debug, Clone, PartialEq)]
 struct OrderTab {
+    instance_id: u64,
+    op_gen: u64,
     tab_id: String,
     order_id: Uuid,
     title: String,
@@ -25,8 +27,10 @@ struct OrderTab {
 }
 
 impl OrderTab {
-    fn from_summary(summary: &OrderSummary, loading_detail: bool) -> Self {
+    fn from_summary(instance_id: u64, summary: &OrderSummary, loading_detail: bool) -> Self {
         Self {
+            instance_id,
+            op_gen: 0,
             tab_id: format!("order:{}", summary.id),
             order_id: summary.id,
             title: format!("{} · {}", summary.number, summary.customer_name),
@@ -91,6 +95,22 @@ fn update_order_tab(tabs: &RwSignal<Vec<OrderTab>>, tab_id: &str, f: impl FnOnce
     });
 }
 
+fn update_order_tab_for_op(
+    tabs: &RwSignal<Vec<OrderTab>>,
+    instance_id: u64,
+    op_gen: u64,
+    f: impl FnOnce(&mut OrderTab),
+) {
+    tabs.update(|list| {
+        if let Some(tab) = list
+            .iter_mut()
+            .find(|t| t.instance_id == instance_id && t.op_gen == op_gen)
+        {
+            f(tab);
+        }
+    });
+}
+
 fn close_order_tab(
     tabs: &RwSignal<Vec<OrderTab>>,
     active_tab_id: &RwSignal<Option<String>>,
@@ -139,8 +159,12 @@ pub fn OrdersPage() -> impl IntoView {
 
     let open_tabs = RwSignal::new(Vec::<OrderTab>::new());
     let active_tab_id = RwSignal::new(Option::<String>::None);
+    let fetch_gen = StoredValue::new(0_u64);
+    let next_tab_instance_id = StoredValue::new(0_u64);
 
     let fetch_orders = move |connection: ConnectionMode, params: ListOrdersParams| {
+        let req_gen = fetch_gen.get_value().wrapping_add(1);
+        fetch_gen.set_value(req_gen);
         loading.set(true);
         error.set(None);
         spawn_local(async move {
@@ -148,6 +172,9 @@ pub fn OrdersPage() -> impl IntoView {
                 Ok(client) => client.list_orders(&params).await,
                 Err(err) => Err(err),
             };
+            if fetch_gen.try_get_value() != Some(req_gen) {
+                return;
+            }
             match result {
                 Ok(page) => {
                     items.set(page.items);
@@ -169,6 +196,8 @@ pub fn OrdersPage() -> impl IntoView {
         let status = status_filter.get();
 
         let Some(session) = active_session else {
+            fetch_gen.set_value(fetch_gen.get_value().wrapping_add(1));
+            loading.set(false);
             items.set(Vec::new());
             total.set(0);
             error.set(None);
@@ -191,12 +220,28 @@ pub fn OrdersPage() -> impl IntoView {
 
     let open_order_row = move |summary: OrderSummary| {
         let tab_id = format!("order:{}", summary.id);
-        let already_open = open_tabs.with_untracked(|list| list.iter().any(|t| t.tab_id == tab_id));
-        if !already_open {
-            open_tabs.update(|list| list.push(OrderTab::from_summary(&summary, true)));
-        }
+        let mut target: Option<(u64, u64)> = None;
+        open_tabs.update(|list| {
+            if let Some(tab) = list.iter_mut().find(|t| t.tab_id == tab_id) {
+                if !tab.busy {
+                    tab.loading_detail = true;
+                    tab.op_gen = tab.op_gen.wrapping_add(1);
+                    target = Some((tab.instance_id, tab.op_gen));
+                }
+            } else {
+                let instance_id = next_tab_instance_id.get_value().wrapping_add(1);
+                next_tab_instance_id.set_value(instance_id);
+                let mut tab = OrderTab::from_summary(instance_id, &summary, true);
+                tab.op_gen = 1;
+                list.push(tab);
+                target = Some((instance_id, 1));
+            }
+        });
         active_tab_id.set(Some(tab_id.clone()));
 
+        let Some((instance_id, op_gen)) = target else {
+            return;
+        };
         if let Some(session) = ctx.session.get_untracked() {
             let connection = session.connection;
             let order_id = summary.id;
@@ -207,12 +252,12 @@ pub fn OrdersPage() -> impl IntoView {
                 };
                 match res {
                     Ok(fresh) => {
-                        update_order_tab(&open_tabs, &tab_id, |tab| {
+                        update_order_tab_for_op(&open_tabs, instance_id, op_gen, |tab| {
                             tab.apply_order(&fresh, None);
                         });
                     }
                     Err(err) => {
-                        update_order_tab(&open_tabs, &tab_id, |tab| {
+                        update_order_tab_for_op(&open_tabs, instance_id, op_gen, |tab| {
                             tab.loading_detail = false;
                             if tab.error.is_none() {
                                 tab.error = Some(err.user_message());
@@ -220,6 +265,10 @@ pub fn OrdersPage() -> impl IntoView {
                         });
                     }
                 }
+            });
+        } else {
+            update_order_tab_for_op(&open_tabs, instance_id, op_gen, |tab| {
+                tab.loading_detail = false;
             });
         }
     };
@@ -394,19 +443,23 @@ pub fn OrdersPage() -> impl IntoView {
                             let Some(session) = ctx.session.get_untracked() else {
                                 return;
                             };
-                            let Some(snapshot) = read_order_tab(&open_tabs, &tab_id_send, Clone::clone) else {
+                            let mut target: Option<(u64, u64, Uuid)> = None;
+                            open_tabs.update(|list| {
+                                if let Some(tab) = list.iter_mut().find(|t| t.tab_id == tab_id_send) {
+                                    if tab.busy {
+                                        return;
+                                    }
+                                    tab.busy = true;
+                                    tab.loading_detail = false;
+                                    tab.op_gen = tab.op_gen.wrapping_add(1);
+                                    tab.error = None;
+                                    tab.notice = None;
+                                    target = Some((tab.instance_id, tab.op_gen, tab.order_id));
+                                }
+                            });
+                            let Some((instance_id, op_gen, order_id)) = target else {
                                 return;
                             };
-                            if snapshot.busy {
-                                return;
-                            }
-                            update_order_tab(&open_tabs, &tab_id_send, |tab| {
-                                tab.busy = true;
-                                tab.error = None;
-                                tab.notice = None;
-                            });
-                            let current_id = tab_id_send.clone();
-                            let order_id = snapshot.order_id;
                             let connection = session.connection;
                             spawn_local(async move {
                                 let res = match live_client(&connection) {
@@ -415,13 +468,13 @@ pub fn OrdersPage() -> impl IntoView {
                                 };
                                 match res {
                                     Ok(updated) => {
-                                        update_order_tab(&open_tabs, &current_id, |tab| {
+                                        update_order_tab_for_op(&open_tabs, instance_id, op_gen, |tab| {
                                             tab.apply_order(&updated, Some("Order confirmation sent.".to_string()));
                                         });
                                         reload_nonce.update(|n| *n += 1);
                                     }
                                     Err(err) => {
-                                        update_order_tab(&open_tabs, &current_id, |tab| {
+                                        update_order_tab_for_op(&open_tabs, instance_id, op_gen, |tab| {
                                             tab.busy = false;
                                             tab.error = Some(err.user_message());
                                         });
@@ -434,23 +487,27 @@ pub fn OrdersPage() -> impl IntoView {
                             let Some(session) = ctx.session.get_untracked() else {
                                 return;
                             };
-                            let Some(snapshot) = read_order_tab(&open_tabs, &tab_id_confirm, Clone::clone) else {
-                                return;
-                            };
-                            if snapshot.busy {
-                                return;
-                            }
-                            update_order_tab(&open_tabs, &tab_id_confirm, |tab| {
-                                tab.busy = true;
-                                tab.error = None;
-                                tab.notice = None;
+                            let mut target: Option<(u64, u64, Uuid, ConfirmOrderRequest)> = None;
+                            open_tabs.update(|list| {
+                                if let Some(tab) = list.iter_mut().find(|t| t.tab_id == tab_id_confirm) {
+                                    if tab.busy {
+                                        return;
+                                    }
+                                    let req = ConfirmOrderRequest {
+                                        note: tab.confirm_note.trim().to_string(),
+                                        revision: tab.detail.as_ref().map(|d| d.revision),
+                                    };
+                                    tab.busy = true;
+                                    tab.loading_detail = false;
+                                    tab.op_gen = tab.op_gen.wrapping_add(1);
+                                    tab.error = None;
+                                    tab.notice = None;
+                                    target = Some((tab.instance_id, tab.op_gen, tab.order_id, req));
+                                }
                             });
-                            let req = ConfirmOrderRequest {
-                                note: snapshot.confirm_note.trim().to_string(),
-                                revision: snapshot.detail.as_ref().map(|d| d.revision),
+                            let Some((instance_id, op_gen, order_id, req)) = target else {
+                                return;
                             };
-                            let current_id = tab_id_confirm.clone();
-                            let order_id = snapshot.order_id;
                             let connection = session.connection;
                             spawn_local(async move {
                                 let res = match live_client(&connection) {
@@ -459,13 +516,13 @@ pub fn OrdersPage() -> impl IntoView {
                                 };
                                 match res {
                                     Ok(updated) => {
-                                        update_order_tab(&open_tabs, &current_id, |tab| {
+                                        update_order_tab_for_op(&open_tabs, instance_id, op_gen, |tab| {
                                             tab.apply_order(&updated, Some("Order confirmed.".to_string()));
                                         });
                                         reload_nonce.update(|n| *n += 1);
                                     }
                                     Err(err) => {
-                                        update_order_tab(&open_tabs, &current_id, |tab| {
+                                        update_order_tab_for_op(&open_tabs, instance_id, op_gen, |tab| {
                                             tab.busy = false;
                                             tab.error = Some(err.user_message());
                                         });

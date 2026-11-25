@@ -1,3 +1,6 @@
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+
 use leptos::ev::SubmitEvent;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
@@ -61,6 +64,13 @@ pub fn LoginPage() -> impl IntoView {
     let bearer = RwSignal::new(initial_token);
     let busy = RwSignal::new(false);
     let error = RwSignal::new(Option::<String>::None);
+    let active = Arc::new(AtomicBool::new(true));
+    on_cleanup({
+        let active = Arc::clone(&active);
+        move || {
+            active.store(false, Ordering::Release);
+        }
+    });
 
     let on_submit = move |ev: SubmitEvent| {
         ev.prevent_default();
@@ -76,6 +86,7 @@ pub fn LoginPage() -> impl IntoView {
         error.set(None);
 
         let nav = navigate.clone();
+        let active = Arc::clone(&active);
         spawn_local(async move {
             let result = match selected_mode {
                 LoginMode::DevUser => WebApiClient.sign_in(&base, Auth::DevUser(dev_email)).await,
@@ -86,6 +97,13 @@ pub fn LoginPage() -> impl IntoView {
                         .await
                 }
             };
+            // Discard the result if LoginPage was unmounted/abandoned while sign-in was in flight:
+            // mutating AppContext or navigating after abandonment would activate a session
+            // unexpectedly or yank the user away from their current route, and local signals
+            // are already disposed.
+            if !active.load(Ordering::Acquire) {
+                return;
+            }
             match result {
                 Ok((connection, me)) => {
                     ctx.draft_connection.set(connection.clone());

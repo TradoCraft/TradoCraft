@@ -456,6 +456,67 @@ fn apply_customer_input(id: Uuid, version: i64, req: &CustomerInput) -> Customer
     }
 }
 
+fn is_combining_mark(ch: char) -> bool {
+    matches!(
+        ch as u32,
+        0x0300..=0x036F
+            | 0x1AB0..=0x1AFF
+            | 0x1DC0..=0x1DFF
+            | 0x20D0..=0x20FF
+            | 0xFE20..=0xFE2F
+    )
+}
+
+fn fold_latin_base(ch: char) -> &'static str {
+    match ch {
+        'á' | 'à' | 'â' | 'ä' | 'ã' | 'å' | 'ā' | 'ă' | 'ą' | 'ǎ' | 'ǻ' => "a",
+        'æ' | 'ǽ' => "ae",
+        'ç' | 'ć' | 'ĉ' | 'ċ' | 'č' => "c",
+        'ď' | 'đ' | 'ð' => "d",
+        'é' | 'è' | 'ê' | 'ë' | 'ē' | 'ĕ' | 'ė' | 'ę' | 'ě' => "e",
+        'ĝ' | 'ğ' | 'ġ' | 'ģ' => "g",
+        'ĥ' | 'ħ' => "h",
+        'í' | 'ì' | 'î' | 'ï' | 'ĩ' | 'ī' | 'ĭ' | 'į' | 'ı' | 'ǐ' => "i",
+        'ĳ' => "ij",
+        'ĵ' => "j",
+        'ķ' | 'ĸ' => "k",
+        'ĺ' | 'ļ' | 'ľ' | 'ŀ' | 'ł' => "l",
+        'ñ' | 'ń' | 'ņ' | 'ň' | 'ŉ' => "n",
+        'ó' | 'ò' | 'ô' | 'ö' | 'õ' | 'ø' | 'ō' | 'ŏ' | 'ő' | 'ǒ' | 'ǿ' => "o",
+        'œ' => "oe",
+        'ŕ' | 'ŗ' | 'ř' => "r",
+        'ś' | 'ŝ' | 'ş' | 'š' | 'ſ' => "s",
+        'ß' => "ss",
+        'ţ' | 'ť' | 'ŧ' => "t",
+        'ú' | 'ù' | 'û' | 'ü' | 'ũ' | 'ū' | 'ŭ' | 'ů' | 'ű' | 'ų' | 'ǔ' | 'ǖ' | 'ǘ' | 'ǚ' | 'ǜ' => {
+            "u"
+        }
+        'ŵ' => "w",
+        'ý' | 'ÿ' | 'ŷ' => "y",
+        'ź' | 'ż' | 'ž' => "z",
+        _ => "",
+    }
+}
+
+/// Normalizes text for accent- and case-insensitive substring matching (`MockApiClient`).
+fn fold_search_text(input: &str) -> String {
+    let mut out = String::with_capacity(input.len());
+    for ch in input.chars() {
+        for lower in ch.to_lowercase() {
+            if is_combining_mark(lower) {
+                continue;
+            }
+            let folded = fold_latin_base(lower);
+            if folded.is_empty() {
+                out.push(lower);
+            } else {
+                out.push_str(folded);
+            }
+        }
+    }
+    out
+}
+
 /// Offline demo client seeded with records matching `seed/dev_seed.sql`.
 #[derive(Debug, Default, Clone, Copy)]
 pub struct MockApiClient;
@@ -535,22 +596,26 @@ impl ApiClient for MockApiClient {
         Box::pin(async move {
             let mut items = MOCK_STORE.with(|store| store.borrow().products.clone());
             if let Some(q) = params.q.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
-                let needle = q.to_ascii_lowercase();
-                items.retain(|p| {
-                    p.code.to_ascii_lowercase().contains(&needle)
-                        || p.name.to_ascii_lowercase().contains(&needle)
-                });
+                let needle = fold_search_text(q);
+                if !needle.is_empty() {
+                    items.retain(|p| {
+                        fold_search_text(&p.code).contains(&needle)
+                            || fold_search_text(&p.name).contains(&needle)
+                    });
+                }
             }
             if let Some(active) = params.active {
                 items.retain(|p| p.active == active);
             }
-            if let Some(pt) = params
-                .product_type
-                .as_deref()
-                .map(str::trim)
-                .filter(|s| !s.is_empty())
-            {
-                items.retain(|p| p.product_type == pt);
+            if let Some(raw_types) = params.product_type.as_deref() {
+                let types: Vec<&str> = raw_types
+                    .split(',')
+                    .map(str::trim)
+                    .filter(|s| !s.is_empty())
+                    .collect();
+                if !types.is_empty() {
+                    items.retain(|p| types.contains(&p.product_type.as_str()));
+                }
             }
             let total = items.len() as i64;
             let offset = params.offset.unwrap_or(0).max(0) as usize;
@@ -652,12 +717,14 @@ impl ApiClient for MockApiClient {
         Box::pin(async move {
             let mut items = MOCK_STORE.with(|store| store.borrow().customers.clone());
             if let Some(q) = params.q.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
-                let needle = q.to_ascii_lowercase();
-                items.retain(|c| {
-                    c.code.to_ascii_lowercase().contains(&needle)
-                        || c.name.to_ascii_lowercase().contains(&needle)
-                        || c.city.to_ascii_lowercase().contains(&needle)
-                });
+                let needle = fold_search_text(q);
+                if !needle.is_empty() {
+                    items.retain(|c| {
+                        fold_search_text(&c.code).contains(&needle)
+                            || fold_search_text(&c.name).contains(&needle)
+                            || fold_search_text(&c.city).contains(&needle)
+                    });
+                }
             }
             if let Some(active) = params.active {
                 items.retain(|c| c.active == active);
@@ -1091,5 +1158,133 @@ mod tests {
                 .expect_err("stale expected_version returns conflict");
         assert_eq!(conflict.status(), Some(409));
         assert_eq!(conflict.code(), Some("record_changed"));
+    }
+
+    #[test]
+    fn mock_client_search_strips_diacritics_and_ignores_case() {
+        let mode = ConnectionMode::MockDemo;
+
+        let by_name = block_on_ready(MockApiClient.list_customers(
+            &mode,
+            &ListCustomersParams {
+                q: Some("beta".to_string()),
+                ..ListCustomersParams::default()
+            },
+        ))
+        .expect("list_customers by unaccented name succeeds");
+        assert!(by_name.items.iter().any(|c| c.code == "C0002"));
+
+        let by_city_upper = block_on_ready(MockApiClient.list_customers(
+            &mode,
+            &ListCustomersParams {
+                q: Some("LIEGE".to_string()),
+                ..ListCustomersParams::default()
+            },
+        ))
+        .expect("list_customers by unaccented uppercase city succeeds");
+        assert!(by_city_upper.items.iter().any(|c| c.code == "C0002"));
+
+        let by_city_nfd = block_on_ready(MockApiClient.list_customers(
+            &mode,
+            &ListCustomersParams {
+                q: Some("Lie\u{0300}ge".to_string()),
+                ..ListCustomersParams::default()
+            },
+        ))
+        .expect("list_customers by NFD city succeeds");
+        assert!(by_city_nfd.items.iter().any(|c| c.code == "C0002"));
+
+        let by_umlaut = block_on_ready(MockApiClient.list_customers(
+            &mode,
+            &ListCustomersParams {
+                q: Some("KÖLN".to_string()),
+                ..ListCustomersParams::default()
+            },
+        ))
+        .expect("list_customers by uppercase umlaut city succeeds");
+        assert!(by_umlaut.items.iter().any(|c| c.code == "C0003"));
+
+        let by_plain_umlaut = block_on_ready(MockApiClient.list_customers(
+            &mode,
+            &ListCustomersParams {
+                q: Some("koln".to_string()),
+                ..ListCustomersParams::default()
+            },
+        ))
+        .expect("list_customers by ascii koln succeeds");
+        assert!(by_plain_umlaut.items.iter().any(|c| c.code == "C0003"));
+
+        block_on_ready(MockApiClient.create_product(
+            &mode,
+            &CreateProductRequest {
+                code: "CAFÉ-01".to_string(),
+                name: "Éclairage LED".to_string(),
+                ..CreateProductRequest::default()
+            },
+        ))
+        .expect("create accented product succeeds");
+
+        let by_prod_code = block_on_ready(MockApiClient.list_products(
+            &mode,
+            &ListProductsParams {
+                q: Some("cafe".to_string()),
+                ..ListProductsParams::default()
+            },
+        ))
+        .expect("list_products by unaccented code succeeds");
+        assert!(by_prod_code.items.iter().any(|p| p.code == "CAFÉ-01"));
+
+        let by_prod_name = block_on_ready(MockApiClient.list_products(
+            &mode,
+            &ListProductsParams {
+                q: Some("eclairage".to_string()),
+                ..ListProductsParams::default()
+            },
+        ))
+        .expect("list_products by unaccented name succeeds");
+        assert!(by_prod_name.items.iter().any(|p| p.code == "CAFÉ-01"));
+    }
+
+    #[test]
+    fn mock_client_list_products_supports_comma_separated_product_types() {
+        let mode = ConnectionMode::MockDemo;
+
+        let single = block_on_ready(MockApiClient.list_products(
+            &mode,
+            &ListProductsParams {
+                product_type: Some("service".to_string()),
+                ..ListProductsParams::default()
+            },
+        ))
+        .expect("single product_type filter succeeds");
+        assert!(!single.items.is_empty());
+        assert!(single.items.iter().all(|p| p.product_type == "service"));
+
+        let multi = block_on_ready(MockApiClient.list_products(
+            &mode,
+            &ListProductsParams {
+                product_type: Some("manufactured, configurable , ".to_string()),
+                ..ListProductsParams::default()
+            },
+        ))
+        .expect("comma-separated product_type filter succeeds");
+        assert!(multi.items.iter().any(|p| p.code == "UNIT-100"));
+        assert!(multi.items.iter().any(|p| p.code == "UNIT-200"));
+        assert!(multi
+            .items
+            .iter()
+            .all(|p| p.product_type == "manufactured" || p.product_type == "configurable"));
+
+        let blank_commas = block_on_ready(MockApiClient.list_products(
+            &mode,
+            &ListProductsParams {
+                product_type: Some(" , , ".to_string()),
+                ..ListProductsParams::default()
+            },
+        ))
+        .expect("blank comma-only product_type filter succeeds");
+        assert!(blank_commas.items.iter().any(|p| p.code == "INSTALL"));
+        assert!(blank_commas.items.iter().any(|p| p.code == "PUMP-05"));
+        assert!(blank_commas.items.iter().any(|p| p.code == "UNIT-100"));
     }
 }
