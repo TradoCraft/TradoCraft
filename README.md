@@ -65,7 +65,9 @@ docs/                architecture and decision records
 
 ## Running a packaged release
 
-On Windows, start Docker Desktop in Linux container mode. Download `docker-compose.yml` from
+**Portable Windows x64 demo.** Download the demo ZIP from [Releases](https://github.com/TradoCraft/TradoCraft/releases), extract it, and run **Start TradoCraft Demo.exe**. The demo setup EXE installs the same bundle for the current user and adds Start menu shortcuts. Both include PostgreSQL and Typst and run offline using fictitious tutorial data. See [the demo instructions](deploy/windows/README.txt) for data, logs, and reset.
+
+**Docker release.** On Windows, start Docker Desktop in Linux container mode. Download `docker-compose.yml` from
 the [release](https://github.com/TradoCraft/TradoCraft/releases) into a folder and run:
 
 ```bash

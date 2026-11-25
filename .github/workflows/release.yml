@@ -110,8 +110,15 @@ jobs:
           name: tradocraft-windows-x64
           path: dist/tradocraft-windows-x64.zip
 
+  windows-demo:
+    needs: release-info
+    uses: ./.github/workflows/windows-demo.yml
+    with:
+      ref: refs/tags/${{ needs.release-info.outputs.tag }}
+      version: ${{ needs.release-info.outputs.version }}
+
   release:
-    needs: [release-info, docker-backend, docker-web, windows-app]
+    needs: [release-info, docker-backend, docker-web, windows-app, windows-demo]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -120,6 +127,10 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: tradocraft-windows-x64
+          path: dist
+      - uses: actions/download-artifact@v4
+        with:
+          name: tradocraft-demo-windows-x64
           path: dist
       - name: Prepare docker-compose.yml
         env:
@@ -155,6 +166,6 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ needs.release-info.outputs.tag }}
         run: |
-          gh release create "$RELEASE_TAG" --verify-tag dist/tradocraft-windows-x64.zip dist/docker-compose.yml \
+          gh release create "$RELEASE_TAG" --verify-tag dist/tradocraft-windows-x64.zip dist/docker-compose.yml dist/tradocraft-demo-windows-x64* \
             --title "TradoCraft $RELEASE_TAG" \
-            --notes "Run docker compose up -d. Open http://localhost:8088 for the Web UI, or extract the Windows x64 zip and connect to http://localhost:8080. Docker Desktop runs PostgreSQL and the prebuilt backend with Typst."
+            --notes "For the offline Windows demo, extract the demo ZIP or run the per-user setup EXE. For Docker, run docker compose up -d. Open http://localhost:8088 for the Web UI, or extract the Windows x64 zip and connect to http://localhost:8080. Docker Desktop runs PostgreSQL and the prebuilt backend with Typst."
