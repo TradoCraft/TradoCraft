@@ -420,7 +420,10 @@ fn normalise(sql: &str) -> String {
 fn expand(lits: &[Literal], idx: usize) -> (String, BTreeSet<usize>) {
     let mut used = BTreeSet::new();
     let mut out = lits[idx].value.clone();
-    let names: BTreeSet<&str> = lits.iter().filter_map(|l| l.const_name.as_deref()).collect();
+    let names: BTreeSet<&str> = lits
+        .iter()
+        .filter_map(|l| l.const_name.as_deref())
+        .collect();
     for _ in 0..3 {
         let mut changed = false;
         for name in &names {
@@ -582,7 +585,10 @@ fn every_tenant_query_mentions_company_id_or_is_allowlisted() {
             list_path.display()
         ));
         for f in &missing {
-            msg.push_str(&format!("# {}:{}\n{} | REASON | {}\n", f.path, f.line, f.path, f.sql));
+            msg.push_str(&format!(
+                "# {}:{}\n{} | REASON | {}\n",
+                f.path, f.line, f.path, f.sql
+            ));
         }
     }
     if !stale.is_empty() {

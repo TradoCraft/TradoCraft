@@ -292,9 +292,10 @@ async fn delete_division(
     user.require(Permission::ProductionAdmin)?;
     let mut tx = state.db.begin().await?;
     let used: bool = sqlx::query_scalar(
-        "SELECT EXISTS (SELECT 1 FROM production.production_orders WHERE division_id = $1)",
+        "SELECT EXISTS (SELECT 1 FROM production.production_orders WHERE division_id = $1 AND company_id = $2)",
     )
     .bind(id)
+    .bind(user.company_id)
     .fetch_one(&mut *tx)
     .await?;
     if used {
@@ -303,9 +304,10 @@ async fn delete_division(
         ));
     }
     let has_work_centres: bool = sqlx::query_scalar(
-        "SELECT EXISTS (SELECT 1 FROM production.work_centres WHERE division_id = $1)",
+        "SELECT EXISTS (SELECT 1 FROM production.work_centres WHERE division_id = $1 AND company_id = $2)",
     )
     .bind(id)
+    .bind(user.company_id)
     .fetch_one(&mut *tx)
     .await?;
     if has_work_centres {
