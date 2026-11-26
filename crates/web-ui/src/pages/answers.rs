@@ -70,6 +70,9 @@ struct Draft {
     kind: String,
     team_id: Option<Uuid>,
     keywords: String,
+    /// The keywords the answer was loaded with. Kept as they are while the field is untouched, so a
+    /// keyword that contains a comma is not split by saving another field.
+    keywords_orig: Option<Vec<String>>,
     active: bool,
     texts: [LangDraft; 5],
 }
@@ -83,6 +86,7 @@ impl Default for Draft {
             kind: "reply".to_string(),
             team_id: None,
             keywords: String::new(),
+            keywords_orig: None,
             active: true,
             texts: Default::default(),
         }
@@ -107,6 +111,7 @@ impl Draft {
             kind: a.kind.clone(),
             team_id: a.team_id,
             keywords: a.keywords.join(", "),
+            keywords_orig: Some(a.keywords.clone()),
             active: a.active,
             texts,
         }
@@ -145,7 +150,10 @@ impl Draft {
             category: opt_trimmed(&self.category),
             kind: self.kind.clone(),
             team_id: self.team_id,
-            keywords: parse_keywords(&self.keywords),
+            keywords: match &self.keywords_orig {
+                Some(orig) if orig.join(", ") == self.keywords => orig.clone(),
+                _ => parse_keywords(&self.keywords),
+            },
             active: self.active,
             texts,
         })
@@ -218,6 +226,9 @@ pub fn AnswersPage() -> impl IntoView {
     let f_kind = RwSignal::new("reply".to_string());
     let f_team = RwSignal::new(Option::<Uuid>::None);
     let f_keywords = RwSignal::new(String::new());
+    let f_keywords_orig = RwSignal::new(Option::<Vec<String>>::None);
+    // Counts editor openings, so a slow save cannot close or fill a newer editor.
+    let editor_gen = RwSignal::new(0_u64);
     let f_active = RwSignal::new(true);
     let f_subject: [RwSignal<String>; 5] = std::array::from_fn(|_| RwSignal::new(String::new()));
     let f_body: [RwSignal<String>; 5] = std::array::from_fn(|_| RwSignal::new(String::new()));
@@ -246,15 +257,25 @@ pub fn AnswersPage() -> impl IntoView {
             return;
         };
         loading.set(true);
+        let client = live_client(&session.connection);
+        // The placeholder list is a convenience: it loads on its own so a slow or failing request
+        // never delays or hides the answers.
+        if let Ok(client) = client.as_ref().map(Clone::clone) {
+            spawn_local(async move {
+                let ph = client.list_prepared_answer_placeholders().await;
+                if fetch_generation.try_get_value() == Some(req_gen) {
+                    if let Ok(ph) = ph {
+                        placeholders.set(ph);
+                    }
+                }
+            });
+        }
         spawn_local(async move {
-            let res = match live_client(&session.connection) {
+            let res = match client {
                 Ok(client) => {
-                    let list = client
+                    client
                         .list_prepared_answers(&ListPreparedAnswersParams::new())
-                        .await;
-                    // The placeholder list is a convenience; a failure must not hide the answers.
-                    let ph = client.list_prepared_answer_placeholders().await;
-                    list.map(|l| (l, ph.unwrap_or_default()))
+                        .await
                 }
                 Err(err) => Err(err),
             };
@@ -263,10 +284,9 @@ pub fn AnswersPage() -> impl IntoView {
             }
             loading.set(false);
             match res {
-                Ok((list, ph)) => {
+                Ok(list) => {
                     error.set(None);
                     answers.set(list);
-                    placeholders.set(ph);
                 }
                 Err(err) => error.set(Some(err.user_message())),
             }
@@ -280,6 +300,8 @@ pub fn AnswersPage() -> impl IntoView {
         f_kind.set(draft.kind.clone());
         f_team.set(draft.team_id);
         f_keywords.set(draft.keywords.clone());
+        f_keywords_orig.set(draft.keywords_orig.clone());
+        editor_gen.update(|g| *g = g.wrapping_add(1));
         f_active.set(draft.active);
         for i in 0..5 {
             f_subject[i].set(draft.texts[i].subject.clone());
@@ -313,6 +335,7 @@ pub fn AnswersPage() -> impl IntoView {
             kind: f_kind.get_untracked(),
             team_id: f_team.get_untracked(),
             keywords: f_keywords.get_untracked(),
+            keywords_orig: f_keywords_orig.get_untracked(),
             active: f_active.get_untracked(),
             texts: std::array::from_fn(|i| LangDraft {
                 subject: f_subject[i].get_untracked(),
@@ -330,6 +353,7 @@ pub fn AnswersPage() -> impl IntoView {
             return;
         };
         saving.set(true);
+        let save_gen = editor_gen.get_untracked();
         spawn_local(async move {
             let res = match live_client(&session.connection) {
                 Ok(client) => match target {
@@ -339,13 +363,22 @@ pub fn AnswersPage() -> impl IntoView {
                 Err(err) => Err(err),
             };
             saving.set(false);
+            // The write is committed whichever editor is open now, so always refresh the list; only
+            // the editor that submitted it is closed or shown the error.
+            let still_open = editor_gen.get_untracked() == save_gen;
             match res {
                 Ok(_) => {
-                    editor.set(None);
-                    editor_error.set(None);
+                    if still_open {
+                        editor.set(None);
+                        editor_error.set(None);
+                    }
                     reload.update(|n| *n += 1);
                 }
-                Err(err) => editor_error.set(Some(err.user_message())),
+                Err(err) => {
+                    if still_open {
+                        editor_error.set(Some(err.user_message()));
+                    }
+                }
             }
         });
     };
@@ -703,6 +736,16 @@ mod tests {
         assert_eq!(input.keywords, vec!["pump"]);
         assert!(!input.active);
         assert_eq!(input.category.as_deref(), Some("Service"));
+    }
+
+    #[test]
+    fn untouched_keywords_keep_their_boundaries() {
+        let mut a = answer(vec![text("en", "S", "B")]);
+        a.keywords = vec!["pump, noisy".into(), "air".into()];
+        let mut d = Draft::from_answer(&a);
+        assert_eq!(d.to_input().unwrap().keywords, a.keywords);
+        d.keywords = "pump, noisy, air, new".into();
+        assert_eq!(d.to_input().unwrap().keywords.len(), 4);
     }
 
     #[test]

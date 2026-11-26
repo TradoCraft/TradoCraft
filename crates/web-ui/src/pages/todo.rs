@@ -180,6 +180,16 @@ impl TodoUi {
         F: FnOnce(Client) -> Fut + 'static,
         Fut: Future<Output = Result<(), ApiError>> + 'static,
     {
+        self.run_then(f, || {});
+    }
+
+    /// Like [`Self::run`], and calls `on_ok` once the request succeeded (not on failure).
+    fn run_then<F, Fut, G>(self, f: F, on_ok: G)
+    where
+        F: FnOnce(Client) -> Fut + 'static,
+        Fut: Future<Output = Result<(), ApiError>> + 'static,
+        G: FnOnce() + 'static,
+    {
         let Some(session) = self.ctx.session.get_untracked() else {
             return;
         };
@@ -189,23 +199,34 @@ impl TodoUi {
                 Err(err) => Err(err),
             };
             match res {
-                Ok(()) => self.error.set(None),
+                Ok(()) => {
+                    self.error.set(None);
+                    on_ok();
+                }
                 Err(err) => self.error.set(Some(err.user_message())),
             }
             self.reload.update(|n| *n += 1);
         });
     }
 
-    fn create(self, parent_id: Option<Uuid>, title: &str, due: &str) -> bool {
+    /// Validates and sends a create request. `on_ok` runs only after the API accepted it, so a
+    /// failed request leaves the draft in place.
+    fn create(
+        self,
+        parent_id: Option<Uuid>,
+        title: &str,
+        due: &str,
+        on_ok: impl FnOnce() + 'static,
+    ) {
         let Some(title) = opt_trimmed(title) else {
             self.error.set(Some("Title is required.".to_string()));
-            return false;
+            return;
         };
         let due_date = match parse_due(due) {
             Ok(d) => d,
             Err(msg) => {
                 self.error.set(Some(msg));
-                return false;
+                return;
             }
         };
         let req = TodoCreate {
@@ -215,8 +236,10 @@ impl TodoUi {
             due_date,
             ..TodoCreate::default()
         };
-        self.run(move |c| async move { c.create_todo(&req).await.map(|_| ()) });
-        true
+        self.run_then(
+            move |c| async move { c.create_todo(&req).await.map(|_| ()) },
+            on_ok,
+        );
     }
 
     fn toggle(self, item: &TodoItem, has_open_children: bool) {
@@ -278,8 +301,15 @@ impl TodoUi {
             due_date: due,
             clear_due_date: due.is_none(),
         };
-        self.editing.set(None);
-        self.run(move |c| async move { c.update_todo(id, &patch).await.map(|_| ()) });
+        let editing = self.editing;
+        self.run_then(
+            move |c| async move { c.update_todo(id, &patch).await.map(|_| ()) },
+            move || {
+                if editing.get_untracked() == Some(id) {
+                    editing.set(None);
+                }
+            },
+        );
     }
 }
 
@@ -289,6 +319,9 @@ pub fn TodoPage() -> impl IntoView {
 
     let filter = RwSignal::new(TodoFilter::Open);
     let items = RwSignal::new(Vec::<TodoItem>::new());
+    // The filter the rows in `items` were loaded for.
+    let shown_filter = RwSignal::new(TodoFilter::Open);
+    let today_sig = RwSignal::new(today());
     let loading = RwSignal::new(false);
     let error = RwSignal::new(Option::<String>::None);
     let reload = RwSignal::new(0_u64);
@@ -315,6 +348,7 @@ pub fn TodoPage() -> impl IntoView {
         let _ = reload.get();
         let current = filter.get();
         let session = ctx.session.get();
+        today_sig.set(today());
 
         let req_gen = fetch_generation
             .try_update_value(|g| {
@@ -344,22 +378,37 @@ pub fn TodoPage() -> impl IntoView {
             }
             loading.set(false);
             match res {
-                Ok(list) => items.set(list),
-                Err(err) => error.set(Some(err.user_message())),
+                Ok(list) => {
+                    items.set(list);
+                    shown_filter.set(current);
+                }
+                Err(err) => {
+                    // Rows of another filter must not stay on screen under this filter's tab.
+                    if shown_filter.get_untracked() != current {
+                        items.set(Vec::new());
+                    }
+                    error.set(Some(err.user_message()));
+                }
             }
         });
     });
 
     let is_signed_in = Memo::new(move |_| ctx.session.with(|s| s.is_some()));
     let tree = Memo::new(move |_| items.with(|list| build_tree(list)));
-    let today = today();
 
     let on_add = move |ev: SubmitEvent| {
         ev.prevent_default();
-        if ui.create(None, &new_title.get_untracked(), &new_due.get_untracked()) {
-            new_title.set(String::new());
-            new_due.set(String::new());
-        }
+        let (title, due) = (new_title.get_untracked(), new_due.get_untracked());
+        let (sent_title, sent_due) = (title.clone(), due.clone());
+        ui.create(None, &title, &due, move || {
+            // Keep anything typed while the request was pending.
+            if new_title.get_untracked() == sent_title {
+                new_title.set(String::new());
+            }
+            if new_due.get_untracked() == sent_due {
+                new_due.set(String::new());
+            }
+        });
     };
 
     view! {
@@ -462,15 +511,19 @@ pub fn TodoPage() -> impl IntoView {
                 >
                     <ul data-target="todo-list" style="list-style: none; margin: 0; padding: 0;">
                         <For
-                            each=move || tree.get()
-                            key=|node| node.key()
+                            each=move || {
+                                // Re-evaluated when the date changes, so overdue badges follow it.
+                                let _ = today_sig.get();
+                                tree.get()
+                            }
+                            key=move |node| format!("{}|{}", node.key(), today_sig.get_untracked().map(|d| d.to_string()).unwrap_or_default())
                             children=move |node| {
                                 let open_children = node.has_open_children();
                                 let children = node.children.clone();
                                 let node_target = format!("todo-node-{}", node.item.id);
                                 view! {
                                     <li class="tc-card" style="margin-bottom: var(--space-sm);" data-target=node_target>
-                                        <ItemRow ui item=node.item.clone() open_children child=false today />
+                                        <ItemRow ui item=node.item.clone() open_children child=false today=today_sig.get_untracked() />
                                         <ul style="list-style: none; margin: 0 0 0 var(--space-xl); padding: 0;">
                                             {children
                                                 .into_iter()
@@ -478,7 +531,7 @@ pub fn TodoPage() -> impl IntoView {
                                                     let node_target = format!("todo-node-{}", child.id);
                                                     view! {
                                                         <li data-target=node_target>
-                                                            <ItemRow ui item=child open_children=false child=true today />
+                                                            <ItemRow ui item=child open_children=false child=true today=today_sig.get_untracked() />
                                                         </li>
                                                     }
                                                 })
@@ -529,26 +582,38 @@ fn ItemRow(
     };
     let on_add_child = move |ev: SubmitEvent| {
         ev.prevent_default();
-        if ui.create(
-            Some(id),
-            &ui.child_title.get_untracked(),
-            &ui.child_due.get_untracked(),
-        ) {
-            ui.child_title.set(String::new());
-            ui.child_due.set(String::new());
-            ui.child_parent.set(None);
-        }
+        let (title, due) = (ui.child_title.get_untracked(), ui.child_due.get_untracked());
+        let sent_title = title.clone();
+        ui.create(Some(id), &title, &due, move || {
+            // Close the form only if it still holds what was sent.
+            if ui.child_parent.get_untracked() == Some(id)
+                && ui.child_title.get_untracked() == sent_title
+            {
+                ui.child_title.set(String::new());
+                ui.child_due.set(String::new());
+                ui.child_parent.set(None);
+            }
+        });
     };
+    // A checkbox flips in the browser before the request is known to succeed. Put it back to the
+    // server's state; on success the row is rebuilt with the new state.
+    let checkbox = NodeRef::<leptos::html::Input>::new();
 
     view! {
         <div data-target=format!("todo-item-{id}") style="padding: var(--space-xs) 0;">
             <div style="display: flex; align-items: center; gap: var(--space-sm); flex-wrap: wrap;">
                 <input
                     type="checkbox"
+                    node_ref=checkbox
                     data-target=format!("todo-toggle-{id}")
                     aria-label=if done { "Reopen task" } else { "Complete task" }
                     prop:checked=done
-                    on:change=move |_| ui.toggle(&toggle_item, open_children)
+                    on:change=move |_| {
+                        if let Some(el) = checkbox.get_untracked() {
+                            el.set_checked(done);
+                        }
+                        ui.toggle(&toggle_item, open_children)
+                    }
                 />
                 <span
                     data-target=format!("todo-title-{id}")

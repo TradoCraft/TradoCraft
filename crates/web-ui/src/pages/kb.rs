@@ -102,8 +102,12 @@ pub fn KbPage() -> impl IntoView {
             <div hidden=show_staff>
                 <PublicReader />
             </div>
-            <Show when=show_staff>
-                <KbStaff />
+            // Mounted whenever the user may read staff articles; the tab only hides it, so filters,
+            // the open article and an unsaved draft survive switching tabs.
+            <Show when=move || has_staff.get()>
+                <div hidden=move || !show_staff()>
+                    <KbStaff />
+                </div>
             </Show>
         </div>
     }

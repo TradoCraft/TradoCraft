@@ -107,7 +107,7 @@ fn build_input(
             language: draft.language.clone(),
             title: draft.title.trim().to_string(),
             summary: draft.summary.trim().to_string(),
-            body: draft.body.trim().to_string(),
+            body: draft.body.clone(),
         });
     }
     if texts.is_empty() {
@@ -144,6 +144,20 @@ struct Filters {
     language: String,
     status: String,
     visibility: String,
+    /// Rows requested; 0 means one page. "Load more" adds a page, any filter change resets it.
+    limit: u32,
+}
+
+const PAGE: u32 = 100;
+
+impl Filters {
+    fn effective_limit(&self) -> u32 {
+        if self.limit == 0 {
+            PAGE
+        } else {
+            self.limit
+        }
+    }
 }
 
 fn list_params(filters: &Filters) -> ListKbEntriesParams {
@@ -154,7 +168,7 @@ fn list_params(filters: &Filters) -> ListKbEntriesParams {
         language: opt_trimmed(&filters.language),
         visibility: opt_trimmed(&filters.visibility),
         status: opt_trimmed(&filters.status),
-        limit: Some(100),
+        limit: Some(i64::from(filters.effective_limit())),
         offset: Some(0),
     }
 }
@@ -262,7 +276,8 @@ impl StaffUi {
                 Ok(client) => client.get_kb_entry(id).await,
                 Err(err) => Err(err),
             };
-            if self.article_gen.get_untracked() != req_gen {
+            // The page may have been left while the request was running.
+            if self.article_gen.try_get_untracked() != Some(req_gen) {
                 return;
             }
             self.loading_article.set(false);
@@ -293,6 +308,9 @@ impl StaffUi {
     }
 
     fn start_new(self) {
+        // A pending article request must not fill or block the new editor.
+        self.article_gen.update(|g| *g = g.wrapping_add(1));
+        self.loading_article.set(false);
         for slot in self.slots {
             slot.load(None);
         }
@@ -307,6 +325,8 @@ impl StaffUi {
     }
 
     fn start_edit(self, entry: &KbEntry) {
+        self.article_gen.update(|g| *g = g.wrapping_add(1));
+        self.loading_article.set(false);
         for slot in self.slots {
             slot.load(Some(entry));
         }
@@ -330,21 +350,26 @@ impl StaffUi {
         Fut: Future<Output = Result<KbEntry, ApiError>> + 'static,
     {
         let client = self.client();
+        let owner = self.article_gen.get_untracked();
         self.saving.set(true);
         spawn_local(async move {
             let res = match client {
                 Ok(client) => f(client).await,
                 Err(err) => Err(err),
             };
-            self.saving.set(false);
-            match res {
-                Ok(entry) => {
-                    self.error.set(None);
-                    self.active.set(Some(entry));
+            if self.saving.try_set(false).is_some() {
+                // Show the result only while the same article is still open.
+                if self.article_gen.get_untracked() == owner {
+                    match res {
+                        Ok(entry) => {
+                            self.error.set(None);
+                            self.active.set(Some(entry));
+                        }
+                        Err(err) => self.error.set(Some(err.user_message())),
+                    }
                 }
-                Err(err) => self.error.set(Some(err.user_message())),
+                self.reload.update(|n| *n += 1);
             }
-            self.reload.update(|n| *n += 1);
         });
     }
 
@@ -373,14 +398,17 @@ impl StaffUi {
             }
         };
         let client = self.client();
+        // The editor (or article) this save belongs to; a newer one must not be overwritten.
+        let owner = self.article_gen.get_untracked();
         self.saving.set(true);
         self.error.set(None);
         spawn_local(async move {
             let client = match client {
                 Ok(client) => client,
                 Err(err) => {
-                    self.saving.set(false);
-                    self.error.set(Some(err.user_message()));
+                    if self.saving.try_set(false).is_some() {
+                        self.error.set(Some(err.user_message()));
+                    }
                     return;
                 }
             };
@@ -391,31 +419,40 @@ impl StaffUi {
             let saved = match saved {
                 Ok(entry) => entry,
                 Err(err) => {
-                    self.saving.set(false);
-                    self.error.set(Some(err.user_message()));
+                    if self.saving.try_set(false).is_some()
+                        && self.article_gen.get_untracked() == owner
+                    {
+                        self.error.set(Some(err.user_message()));
+                    }
                     return;
                 }
             };
             let mut entry = saved;
-            self.selected.set(Some(entry.id));
+            let mut publish_error = None;
             if publish {
                 match client.publish_kb_entry(entry.id).await {
                     Ok(published) => entry = published,
-                    Err(err) => {
-                        self.editor.set(Some(EditorMode::Edit(entry.id)));
-                        self.error.set(Some(format!(
-                            "Saved, but not published: {}",
-                            err.user_message()
-                        )));
-                    }
+                    Err(err) => publish_error = Some(err.user_message()),
                 }
             }
-            self.saving.set(false);
-            if self.error.get_untracked().is_none() {
-                self.editor.set(None);
+            // The writes are committed; only touch the screen if it still shows this editor.
+            if self.saving.try_set(false).is_none() {
+                return;
             }
-            self.show(&entry);
-            self.active.set(Some(entry));
+            if self.article_gen.get_untracked() == owner {
+                self.selected.set(Some(entry.id));
+                match publish_error {
+                    Some(msg) => {
+                        // Keep the editor open on the saved article, so a retry updates it.
+                        self.editor.set(Some(EditorMode::Edit(entry.id)));
+                        self.error
+                            .set(Some(format!("Saved, but not published: {msg}")));
+                    }
+                    None => self.editor.set(None),
+                }
+                self.show(&entry);
+                self.active.set(Some(entry));
+            }
             self.reload.update(|n| *n += 1);
         });
     }
@@ -442,6 +479,7 @@ pub fn KbStaff() -> impl IntoView {
     let entries = RwSignal::new(Vec::<KbEntrySummary>::new());
     let categories = RwSignal::new(Vec::<KbCategory>::new());
     let loading = RwSignal::new(false);
+    let list_error = RwSignal::new(Option::<String>::None);
     let list_gen = StoredValue::new(0_u64);
 
     let ui = StaffUi {
@@ -507,8 +545,11 @@ pub fn KbStaff() -> impl IntoView {
             }
             loading.set(false);
             match res {
-                Ok(list) => entries.set(list),
-                Err(err) => ui.error.set(Some(err.user_message())),
+                Ok(list) => {
+                    list_error.set(None);
+                    entries.set(list);
+                }
+                Err(err) => list_error.set(Some(err.user_message())),
             }
         });
     });
@@ -582,7 +623,10 @@ pub fn KbStaff() -> impl IntoView {
                         prop:value=move || filters.with(|f| f.q.clone())
                         on:input=move |ev| {
                             let v = event_target_value(&ev);
-                            filters.update(|f| f.q = v);
+                            filters.update(|f| {
+                                f.q = v;
+                                f.limit = 0;
+                            });
                         }
                     />
                     <select
@@ -591,7 +635,10 @@ pub fn KbStaff() -> impl IntoView {
                         prop:value=move || filters.with(|f| f.category.clone())
                         on:change=move |ev| {
                             let v = event_target_value(&ev);
-                            filters.update(|f| f.category = v);
+                            filters.update(|f| {
+                                f.category = v;
+                                f.limit = 0;
+                            });
                         }
                     >
                         <option value="">"All categories"</option>
@@ -599,13 +646,16 @@ pub fn KbStaff() -> impl IntoView {
                             each=move || categories.get()
                             key=|c| (c.id, c.entry_count, c.name_for("en"))
                             children=move |cat| {
-                                let lang = filters.with_untracked(|f| f.language.clone());
-                                let label = format!(
-                                    "{} ({})",
-                                    cat.name_for(if lang.is_empty() { "en" } else { &lang }),
-                                    cat.entry_count
-                                );
-                                view! { <option value=cat.id.to_string()>{label}</option> }
+                                let value = cat.id.to_string();
+                                let label = move || {
+                                    let lang = filters.with(|f| f.language.clone());
+                                    format!(
+                                        "{} ({})",
+                                        cat.name_for(if lang.is_empty() { "en" } else { &lang }),
+                                        cat.entry_count
+                                    )
+                                };
+                                view! { <option value=value>{label}</option> }
                             }
                         />
                     </select>
@@ -615,7 +665,10 @@ pub fn KbStaff() -> impl IntoView {
                         prop:value=move || filters.with(|f| f.language.clone())
                         on:change=move |ev| {
                             let v = event_target_value(&ev);
-                            filters.update(|f| f.language = v);
+                            filters.update(|f| {
+                                f.language = v;
+                                f.limit = 0;
+                            });
                         }
                     >
                         <option value="">"Company default language"</option>
@@ -630,7 +683,10 @@ pub fn KbStaff() -> impl IntoView {
                         prop:value=move || filters.with(|f| f.status.clone())
                         on:change=move |ev| {
                             let v = event_target_value(&ev);
-                            filters.update(|f| f.status = v);
+                            filters.update(|f| {
+                                f.status = v;
+                                f.limit = 0;
+                            });
                         }
                     >
                         <option value="">"Any status"</option>
@@ -645,7 +701,10 @@ pub fn KbStaff() -> impl IntoView {
                         prop:value=move || filters.with(|f| f.visibility.clone())
                         on:change=move |ev| {
                             let v = event_target_value(&ev);
-                            filters.update(|f| f.visibility = v);
+                            filters.update(|f| {
+                                f.visibility = v;
+                                f.limit = 0;
+                            });
                         }
                     >
                         <option value="">"Any visibility"</option>
@@ -655,6 +714,12 @@ pub fn KbStaff() -> impl IntoView {
                             .collect_view()}
                     </select>
                 </div>
+
+                {move || list_error.get().map(|msg| view! {
+                    <div class="tc-alert-error" style="margin-bottom: var(--space-md);" role="alert" data-target="kb-staff-list-error">
+                        {msg}
+                    </div>
+                })}
 
                 {move || ui.error.get().map(|msg| view! {
                     <div class="tc-alert-error" style="margin-bottom: var(--space-md);" role="alert" data-target="kb-staff-error">
@@ -707,12 +772,14 @@ pub fn KbStaff() -> impl IntoView {
                                             item.status.clone(),
                                             item.visibility.clone(),
                                             item.snippet.clone(),
+                                            item.title.clone(),
+                                            item.language.clone(),
                                         )
                                         children=move |item| {
                                             let id = item.id;
                                             let row_target = format!("kb-staff-row-{}", item.number);
                                             let segs = snippet_segments(&item.snippet);
-                                            let category = category_label(item.category_id);
+                                            let category_id = item.category_id;
                                             let updated = item.updated_at.date_naive().to_string();
                                             view! {
                                                 <tr
@@ -726,7 +793,16 @@ pub fn KbStaff() -> impl IntoView {
                                                 >
                                                     <td class="tc-mono">{item.number}</td>
                                                     <td>
-                                                        <span style="font-weight: 600;">{item.title}</span>
+                                                        <button
+                                                            type="button"
+                                                            style="background: none; border: none; padding: 0; font: inherit; font-weight: 600; color: inherit; cursor: pointer; text-align: left;"
+                                                            on:click=move |ev| {
+                                                                ev.stop_propagation();
+                                                                ui.open(id);
+                                                            }
+                                                        >
+                                                            {item.title}
+                                                        </button>
                                                         {(!segs.is_empty()).then(|| view! {
                                                             <div style="font-size: 12px; color: var(--on-surface-variant); margin-top: 2px;">
                                                                 {segs.into_iter().map(|(text, hit)| {
@@ -739,7 +815,7 @@ pub fn KbStaff() -> impl IntoView {
                                                             </div>
                                                         })}
                                                     </td>
-                                                    <td>{category}</td>
+                                                    <td>{move || category_label(category_id)}</td>
                                                     <td>
                                                         <span class=if item.fallback { "tc-badge tc-badge-warning" } else { "tc-badge" }>
                                                             {item.language}
@@ -759,6 +835,19 @@ pub fn KbStaff() -> impl IntoView {
                                 </Show>
                             </tbody>
                         </table>
+                        <Show when=move || { let shown = entries.with(Vec::len) as u32; shown >= filters.with(Filters::effective_limit) }>
+                            <div style="padding: var(--space-md); text-align: center;">
+                                <button
+                                    type="button"
+                                    data-target="kb-staff-load-more"
+                                    class="tc-btn"
+                                    disabled=move || loading.get()
+                                    on:click=move |_| filters.update(|f| f.limit = f.effective_limit() + PAGE)
+                                >
+                                    "Load more"
+                                </button>
+                            </div>
+                        </Show>
                     </div>
 
                     {move || ui.editor.get().map(|mode| editor_view(ui, mode, categories, can_admin))}
@@ -989,6 +1078,14 @@ fn editor_view(
                 .with(|a| a.as_ref().is_some_and(|e| e.status == "published"))
     };
 
+    // Publishing a published article would fail after a successful save.
+    let already_published = move || {
+        matches!(mode, EditorMode::Edit(_))
+            && ui
+                .active
+                .with(|a| a.as_ref().is_some_and(|e| e.status == "published"))
+    };
+
     view! {
         <aside class="tc-card tc-detail-drawer" data-target="kb-staff-editor">
             <div class="tc-page-header" style="margin-bottom: 0;">
@@ -1008,8 +1105,9 @@ fn editor_view(
 
             <form class="tc-form-grid" on:submit=on_submit>
                 <div class="tc-field">
-                    <label class="tc-label">"Category"</label>
+                    <label class="tc-label" for="kb-editor-category">"Category"</label>
                     <select
+                        id="kb-editor-category"
                         data-target="kb-staff-editor-category"
                         class="tc-select"
                         prop:value=move || ui.edit_category.get()
@@ -1028,8 +1126,9 @@ fn editor_view(
                 </div>
 
                 <div class="tc-field">
-                    <label class="tc-label">"Visibility"</label>
+                    <label class="tc-label" for="kb-editor-visibility">"Visibility"</label>
                     <select
+                        id="kb-editor-visibility"
                         data-target="kb-staff-editor-visibility"
                         class="tc-select"
                         disabled=visibility_locked
@@ -1044,8 +1143,9 @@ fn editor_view(
                 </div>
 
                 <div class="tc-field tc-form-span-2">
-                    <label class="tc-label">"Tags (comma separated)"</label>
+                    <label class="tc-label" for="kb-editor-tags">"Tags (comma separated)"</label>
                     <input
+                        id="kb-editor-tags"
                         data-target="kb-staff-editor-tags"
                         class="tc-input"
                         type="text"
@@ -1081,12 +1181,13 @@ fn editor_view(
                     .map(|slot| view! {
                         <div
                             class="tc-form-span-2"
-                            style="display: flex; flex-direction: column; gap: var(--space-sm);"
                             hidden=move || ui.edit_lang.get() != slot.language
                         >
+                          <div style="display: flex; flex-direction: column; gap: var(--space-sm);">
                             <div class="tc-field">
-                                <label class="tc-label">{format!("Title ({})", slot.language)}</label>
+                                <label class="tc-label" for=format!("kb-editor-title-{}", slot.language)>{format!("Title ({})", slot.language)}</label>
                                 <input
+                                    id=format!("kb-editor-title-{}", slot.language)
                                     data-target=format!("kb-staff-editor-title-{}", slot.language)
                                     class="tc-input"
                                     type="text"
@@ -1095,8 +1196,9 @@ fn editor_view(
                                 />
                             </div>
                             <div class="tc-field">
-                                <label class="tc-label">"Summary"</label>
+                                <label class="tc-label" for=format!("kb-editor-summary-{}", slot.language)>"Summary"</label>
                                 <input
+                                    id=format!("kb-editor-summary-{}", slot.language)
                                     data-target=format!("kb-staff-editor-summary-{}", slot.language)
                                     class="tc-input"
                                     type="text"
@@ -1105,8 +1207,9 @@ fn editor_view(
                                 />
                             </div>
                             <div class="tc-field">
-                                <label class="tc-label">"Body (simple Markdown)"</label>
+                                <label class="tc-label" for=format!("kb-editor-body-{}", slot.language)>"Body (simple Markdown)"</label>
                                 <textarea
+                                    id=format!("kb-editor-body-{}", slot.language)
                                     data-target=format!("kb-staff-editor-body-{}", slot.language)
                                     class="tc-input"
                                     rows="10"
@@ -1114,6 +1217,7 @@ fn editor_view(
                                     on:input=move |ev| slot.body.set(event_target_value(&ev))
                                 ></textarea>
                             </div>
+                          </div>
                         </div>
                     })
                     .collect_view()}
@@ -1127,7 +1231,7 @@ fn editor_view(
                     >
                         {move || if ui.saving.get() { "Saving..." } else { "Save" }}
                     </button>
-                    <Show when=move || can_admin.get()>
+                    <Show when=move || can_admin.get() && !already_published()>
                         <button
                             type="button"
                             data-target="kb-staff-editor-publish"
@@ -1177,7 +1281,8 @@ mod tests {
         assert_eq!(input.visibility, "public");
         assert_eq!(input.texts.len(), 2);
         assert_eq!(input.texts[0].title, "Reset");
-        assert_eq!(input.texts[0].body, "Steps");
+        // The Markdown body is kept as typed (leading indentation is significant).
+        assert_eq!(input.texts[0].body, " Steps ");
         assert_eq!(input.tags, vec!["x".to_string(), "y".to_string()]);
         assert_eq!(input.category_id, None);
     }
