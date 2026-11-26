@@ -11649,7 +11649,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutWelcomeBannerBody.
   ///
   /// In en, this message translates to:
-  /// **'This strip always shows which environment you are in: its name and its kind. Amber means test, blue means tutorial and red means live data. The tutorial only runs in test and tutorial environments, so nothing you do here touches real data.'**
+  /// **'This strip always shows which environment you are in: its name and its kind. Yellow means test and green means tutorial. A live environment, with real data, has no strip; it is blue in the Environments list. The tutorial only runs in test and tutorial environments, so nothing you do here touches real data.'**
   String get tutWelcomeBannerBody;
 
   /// No description provided for @tutWelcomeTabsTitle.

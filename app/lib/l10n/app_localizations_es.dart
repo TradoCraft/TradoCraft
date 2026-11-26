@@ -6483,7 +6483,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get tutWelcomeBannerBody =>
-      'Esta banda muestra siempre en qué entorno estás: su nombre y su tipo. Ámbar es prueba, azul es tutorial y rojo son datos reales. El tutorial solo se ejecuta en entornos de prueba y de tutorial, así que nada de lo que hagas aquí toca datos reales.';
+      'Esta banda muestra siempre en qué entorno estás: su nombre y su tipo. Amarillo es prueba y verde es tutorial. Un entorno de producción, con datos reales, no tiene banda; en la lista Entornos aparece en azul. El tutorial solo se ejecuta en entornos de prueba y de tutorial, así que nada de lo que hagas aquí toca datos reales.';
 
   @override
   String get tutWelcomeTabsTitle => 'Pestañas y secciones';

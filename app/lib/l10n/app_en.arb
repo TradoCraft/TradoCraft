@@ -3699,7 +3699,7 @@
   "tutWelcomeTitle": "Welcome",
   "tutWelcomeSummary": "Find your way around: the environment banner, the tabs and the tutorial controls.",
   "tutWelcomeBannerTitle": "The strip at the top",
-  "tutWelcomeBannerBody": "This strip always shows which environment you are in: its name and its kind. Amber means test, blue means tutorial and red means live data. The tutorial only runs in test and tutorial environments, so nothing you do here touches real data.",
+  "tutWelcomeBannerBody": "This strip always shows which environment you are in: its name and its kind. Yellow means test and green means tutorial. A live environment, with real data, has no strip; it is blue in the Environments list. The tutorial only runs in test and tutorial environments, so nothing you do here touches real data.",
   "tutWelcomeTabsTitle": "Tabs and sections",
   "tutWelcomeTabsBody": "Use Switch application to pick a category. Its modules appear on the left, or in the bottom bar on a phone. Opening a record, such as a product or quotation, adds a workspace tab so you can keep several records open.",
   "tutWelcomeControlsTitle": "This card",

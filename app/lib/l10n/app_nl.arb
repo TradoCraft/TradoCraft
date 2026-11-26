@@ -2175,7 +2175,7 @@
   "tutWelcomeTitle": "Welkom",
   "tutWelcomeSummary": "Wegwijs: de omgevingsbalk, de tabbladen en de bediening van het tutorial.",
   "tutWelcomeBannerTitle": "De balk bovenaan",
-  "tutWelcomeBannerBody": "Deze balk toont altijd in welke omgeving je zit: de naam en het soort. Amber betekent test, blauw tutorial en rood live data. Het tutorial draait alleen in test- en tutorialomgevingen, dus niets wat je hier doet raakt echte data.",
+  "tutWelcomeBannerBody": "Deze balk toont altijd in welke omgeving je zit: de naam en het soort. Geel betekent test en groen tutorial. Een live omgeving, met echte data, heeft geen balk; in de lijst Omgevingen is ze blauw. Het tutorial draait alleen in test- en tutorialomgevingen, dus niets wat je hier doet raakt echte data.",
   "tutWelcomeTabsTitle": "Tabbladen en secties",
   "tutWelcomeTabsBody": "Kies een categorie via Van toepassing wisselen. De modules verschijnen links, of onderaan op een telefoon. Als je een record opent, zoals een product of offerte, verschijnt het in een werkruimtetabblad.",
   "tutWelcomeControlsTitle": "Deze kaart",
