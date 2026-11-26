@@ -24,7 +24,9 @@ modules `documents` and `mail_merge`); migrations `20270225000001_kb_documents.s
    allows at most one unpublished (draft) revision. The first upload after a publication opens
    revision *n + 1* and copies the language files of the published revision into it, so a draft
    starts as the published set and only the uploaded languages change. Uploading the same bytes
-   and filename again is a no-op; replacing a draft file deletes the old `core.files` row when no
+   and filename as the draft's file does not replace it, but when there was no draft the upload
+   still opens and commits the new draft revision, so it is not a full no-op; replacing a draft
+   file deletes the old `core.files` row when no
    other revision refers to it (the blob is left to the orphan sweep, which the upload holds off
    with the shared advisory lock it already uses for ingest). `POST /kb/documents/{id}/publish`
    stamps `published_at` on the draft; without a draft it is a 422. Published revisions are never
@@ -52,7 +54,10 @@ modules `documents` and `mail_merge`); migrations `20270225000001_kb_documents.s
 7. **Audience.** Every active customer that has commercial terms (`crm.customer_terms`) with the
    company. Per customer the recipient is the chosen active contact, the only active contact, or,
    when the customer has no active contacts, the customer's own e-mail address; a contact's
-   address is its primary e-mail. The language is the contact's, else the customer's. Each row
+   address is its primary e-mail. A saved choice of a contact that is no longer active blocks the
+   fallback to the customer's e-mail: when no active contacts remain, the row reports
+   `select_contact` and is skipped until the user clears the choice. The language is the
+   contact's, else the customer's. Each row
    lists its problems: `select_contact` (several contacts, none chosen), `missing_address` (none
    or not usable), `missing_translation` (no subject and body in that language), `missing_pdf` (the
    revision has no PDF in that language) and `duplicate_address` (two rows would go to the same

@@ -93,8 +93,10 @@ filling it in. The work was planned as five phases in
   menu.
 - `/home` is not a destination: it is in no `AppGroup`, so on it the rail and bar fall back to
   the flat list, select the first section, and the breadcrumbs name that section.
-- The home cards load once per build of the page (no polling, no reaction to the
-  `todoBadgeSyncProvider`). The helpdesk card lists open tickets, not tickets assigned to the
+- The home cards do not poll and do not react to the `todoBadgeSyncProvider`. Each `_ApiListCard`
+  creates its future once in its state and reuses it while it stays mounted, so a rebuild of
+  `HomePage` does not refetch it; the to-do card creates its future in `build` and loads again on
+  every rebuild. The helpdesk card lists open tickets, not tickets assigned to the
   user; the quotation and purchase-order cards list the first five rows in the list endpoint's
   default order, not items awaiting approval. To-do rows open the to-do list, not the item.
 - `/home` is reachable by the button and (since a later shortcut change) by the Home shortcut,

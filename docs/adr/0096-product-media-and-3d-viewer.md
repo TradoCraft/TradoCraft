@@ -32,8 +32,10 @@ repairs, tickets and chatter.
    signature; a body that starts like markup is read whole and accepted only if
    `logo::svg_problem` finds nothing wrong. `kind` is derived from the content type at upload.
 3. **Size limits.** Images (SVG included) are limited to `MAX_FILE_BYTES` (12 MB); videos and GLB
-   models to `MAX_VIDEO_BYTES` (64 MB). Only the upload route raises axum's body limit
-   (`DefaultBodyLimit::max(MAX_VIDEO_BYTES + 64 * 1024)`).
+   models to `MAX_VIDEO_BYTES` (64 MB). The upload route carries
+   `DefaultBodyLimit::max(MAX_VIDEO_BYTES + 64 * 1024)`, but `upload_media` passes the raw `Body`
+   to `files::stage_media_stream`, which axum's body limit does not apply to; the size limits are
+   enforced by `stage_media_stream` itself.
 4. **Streaming upload.** `POST /products/{id}/media` takes the raw file as the body
    (`application/octet-stream`, with `filename`, `caption` and `client_id` query parameters).
    `files::stage_media_stream` writes it to a `BlobStore` temporary file in 64 KB chunks, sniffs the
@@ -41,7 +43,9 @@ repairs, tickets and chatter.
    staged file on any refusal. No database lock is held while the bytes arrive. Only then does a
    transaction lock the product row (`FOR UPDATE`, so "the first one is the default" holds under
    concurrent uploads), record the file (`files::record_staged_media`), insert the `products.media`
-   row and write a `media_added` audit entry; on any error the staged blob is deleted.
+   row and write a `media_added` audit entry. On an error before the commit the transaction is
+   rolled back and the staged blob is deleted; an error returned by `tx.commit()` itself returns
+   without deleting the staged blob.
 5. **Safe retries.** `client_id` is a client-chosen file id: uploading the same id again returns the
    first upload. `verify_client_id` refuses (409) an id that already belongs to another module's
    file or to another product's media.
@@ -50,8 +54,9 @@ repairs, tickets and chatter.
    and bounds checks, and requires a JSON chunk. It does not parse the JSON or the geometry.
 7. **Endpoints and permissions.** `GET /products/{id}/media` (list, default first, then in upload
    order), `GET /products/{id}/media/{media_id}` and `GET /products/{id}/media/default` (the file
-   itself) need `products.read`; `POST`, `PATCH` and `DELETE /products/{id}/media/{media_id}` need
-   `products.write`. Changing the default and removing an item take the product row lock and are
+   itself) need `products.read`; `POST /products/{id}/media` (upload), and `PATCH` and `DELETE
+   /products/{id}/media/{media_id}`, need `products.write`. Changing the default and removing an
+   item take the product row lock and are
    audited (`media_default_set`, `media_removed`). Files are served with `files::image_response`:
    the stored content type, `X-Content-Type-Options: nosniff` and `Cache-Control: private,
    max-age=86400`.
