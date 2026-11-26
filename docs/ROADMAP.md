@@ -111,7 +111,8 @@ roadmap, against the current code.
   - #3 and #4 wildcard CORS and dev-auth defaults: mostly in place; the gap was `CORS_ALLOWED_ORIGINS=*` with
     `AUTH_MODE=dev`. The staff API now refuses to start with `*` under dev auth or `APP_ENV_KIND=live`
     ([ADR 0092](adr/0092-no-wildcard-cors-with-dev-auth-or-in-live.md)). Breaking for a live setup that used `*`. The refusal in
-    `main.rs` has not been exercised by starting the binary; only the functions it calls are tested. The portal server still
+    Checked by starting the binary: `*` with dev auth, or in a live environment, refuses to start; `*` with real sign-in in a
+    tutorial environment starts with a warning; dev auth on a non-loopback address refuses. The portal server still
     only warns on `*`.
   - #5 JWKS refresh throttle and timeout: the throttle existed; timeouts for the host lookup and for the whole fetch
     were added, with tests against a provider that never answers.
@@ -145,7 +146,8 @@ roadmap, against the current code.
     en were rendered through the API with Typst 0.15.1; layout is fine. File names in the price-list export are
     sanitised for Windows (reserved names, byte limits, collisions), with tests.
   - Open: price-list save, open and share in the Flutter app; a real Windows run (only the `windows-demo.yml` job
-    covers it); a full `cargo test --workspace` on the final code (not yet recorded here).
+    covers it).
+  - Done on the merged code (2026-11-26): `cargo test --workspace` (1,709 tests, none failing), `cargo clippy --workspace --all-targets -D warnings`, `cargo fmt --check`, the OpenAPI document, the API-client contract and the wasm32 check; the Flutter suite (1,703 tests). One earlier full Flutter run had a single timing-dependent failure in `configurator_test` under load; it passes alone and on rerun.
 - Translations: the nl, de, fr and es strings of price lists and site baseline were reviewed and 23 fixed
   ([translation-review-2026-11.md](translation-review-2026-11.md)). A native speaker should confirm the open questions in that file.
 
