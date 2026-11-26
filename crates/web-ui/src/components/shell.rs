@@ -88,6 +88,12 @@ const NAV_GROUPS: &[NavGroup] = &[
                 live: true,
             },
             NavItem {
+                id: "nav-answers",
+                path: "/helpdesk/answers",
+                label: "Standard answers",
+                live: true,
+            },
+            NavItem {
                 id: "nav-todo",
                 path: "/todo",
                 label: "To-do",

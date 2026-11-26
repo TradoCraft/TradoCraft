@@ -9,6 +9,7 @@ use leptos_router::components::{Redirect, Route, Router, Routes};
 use leptos_router::path;
 
 use crate::components::shell::AppShell;
+use crate::pages::answers::AnswersPage;
 use crate::pages::customers::CustomersPage;
 use crate::pages::helpdesk::HelpdeskPage;
 use crate::pages::kb::KbPage;
@@ -117,6 +118,14 @@ pub fn App() -> impl IntoView {
                     view=|| view! {
                         <AppShell>
                             <HelpdeskPage />
+                        </AppShell>
+                    }
+                />
+                <Route
+                    path=path!("/helpdesk/answers")
+                    view=|| view! {
+                        <AppShell>
+                            <AnswersPage />
                         </AppShell>
                     }
                 />

@@ -412,6 +412,25 @@ pub struct PreparedAnswer {
     pub texts: Vec<AnswerText>,
 }
 
+/// Request body of `POST /api/v1/prepared-answers` and `PUT /api/v1/prepared-answers/{id}`
+/// (OpenAPI schema `PreparedAnswerInput`).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PreparedAnswerInput {
+    pub code: String,
+    pub name: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub category: Option<String>,
+    /// `reply | internal_note | handover | notice`
+    pub kind: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub team_id: Option<Uuid>,
+    #[serde(default)]
+    pub keywords: Vec<String>,
+    pub active: bool,
+    /// At least one language with a subject and a body.
+    pub texts: Vec<AnswerText>,
+}
+
 /// Query parameters for `GET /api/v1/tickets`.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
 pub struct ListTicketsParams {
@@ -657,6 +676,31 @@ impl Client {
     ) -> Result<Vec<PreparedAnswer>, ApiError> {
         self.get_json("/api/v1/prepared-answers", params).await
     }
+
+    /// Lists the placeholders usable in prepared answers
+    /// (`GET /api/v1/prepared-answers/placeholders`).
+    pub async fn list_prepared_answer_placeholders(&self) -> Result<Vec<String>, ApiError> {
+        self.get_json("/api/v1/prepared-answers/placeholders", &())
+            .await
+    }
+
+    /// Creates a prepared answer (`POST /api/v1/prepared-answers`, needs `answers.write`).
+    pub async fn create_prepared_answer(
+        &self,
+        req: &PreparedAnswerInput,
+    ) -> Result<PreparedAnswer, ApiError> {
+        self.post_json("/api/v1/prepared-answers", req).await
+    }
+
+    /// Replaces a prepared answer (`PUT /api/v1/prepared-answers/{id}`, needs `answers.write`).
+    pub async fn update_prepared_answer(
+        &self,
+        id: Uuid,
+        req: &PreparedAnswerInput,
+    ) -> Result<PreparedAnswer, ApiError> {
+        self.put_json(&format!("/api/v1/prepared-answers/{id}"), req)
+            .await
+    }
 }
 
 #[cfg(test)]
@@ -863,6 +907,29 @@ mod tests {
         assert_eq!(answers[0].code, "pump-bleed");
         assert_eq!(answers[0].texts.len(), 2);
         assert_eq!(answers[0].texts[1].language, "nl");
+    }
+
+    #[test]
+    fn serialize_prepared_answer_input() {
+        let input = PreparedAnswerInput {
+            code: "pump-bleed".to_string(),
+            name: "Pump bleeding".to_string(),
+            category: None,
+            kind: "reply".to_string(),
+            team_id: None,
+            keywords: vec!["pump".to_string()],
+            active: true,
+            texts: vec![AnswerText {
+                language: "en".to_string(),
+                subject: "Re: pump".to_string(),
+                body: "Open the vent.".to_string(),
+            }],
+        };
+        let val = serde_json::to_value(&input).unwrap();
+        assert!(val.get("category").is_none());
+        assert!(val.get("team_id").is_none());
+        assert_eq!(val["texts"][0]["language"], "en");
+        assert_eq!(val["active"], true);
     }
 
     #[test]

@@ -1,3 +1,4 @@
+pub mod answers;
 pub mod customers;
 pub mod helpdesk;
 pub mod kb;
