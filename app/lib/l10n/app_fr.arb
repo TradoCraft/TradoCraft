@@ -3509,7 +3509,7 @@
       }
     }
   },
-  "baselineImportUnmapped": "Champs non reconnus (conservés avec l'élément importé)",
+  "baselineImportUnmapped": "Champs non associés (conservés avec l'élément importé)",
   "baselineImportUnmappedRow": "{field} ({count})",
   "@baselineImportUnmappedRow": {
     "placeholders": {
