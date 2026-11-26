@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 
 import 'app/router.dart';
+import 'app/secret_store.dart';
 import 'l10n/l10n.dart';
 import 'app/brand.dart';
 import 'app/environments.dart';
@@ -21,12 +22,18 @@ import 'features/tutorial/overlay.dart';
 /// The storage of [profile]; when its file cannot be opened the session runs on in memory
 /// (like [PrefsKvStore] does) so the app still starts, only without remembering anything.
 Future<KvStore> _openStore(String? profile) async {
-  if (profile == null) return PrefsKvStore();
-  try {
-    return await JsonFileKvStore.openProfile(profile);
-  } catch (_) {
-    return MemoryKvStore();
+  KvStore plain;
+  if (profile == null) {
+    plain = PrefsKvStore();
+  } else {
+    try {
+      plain = await JsonFileKvStore.openProfile(profile);
+    } catch (_) {
+      plain = MemoryKvStore();
+    }
   }
+  // Tokens go to the platform's secure store, everything else stays in `plain`.
+  return SecureKvStore(plain, PlatformSecretStore(), namespace: profile ?? '');
 }
 
 Future<void> main(List<String> args) async {

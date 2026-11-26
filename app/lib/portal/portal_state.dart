@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../api/generated/export.dart';
+import '../app/secret_store.dart';
 
 /// Where the portal finds the API and which company's portal this is. Set at build time:
 /// `flutter build web -t lib/portal/portal_main.dart --dart-define=PORTAL_API_URL=https://...`
@@ -22,14 +23,32 @@ const portalCompanyId = String.fromEnvironment(
 const _tokenKey = 'portal_session_token';
 
 class PortalTokenStore {
-  static Future<String?> load() async =>
-      (await SharedPreferences.getInstance()).getString(_tokenKey);
+  /// Where the token lives; tests replace it with a [MemorySecretStore].
+  static SecretStore secrets = PlatformSecretStore();
+
+  static const _secretKey = 'tradocraft:portal:$_tokenKey';
+
+  static Future<String?> load() async {
+    final secret = await secrets.read(_secretKey);
+    // Migration: a token left in SharedPreferences by an older version moves to the secure store.
+    String? old;
+    try {
+      final p = await SharedPreferences.getInstance();
+      old = p.getString(_tokenKey);
+      if (old != null) {
+        if (secret == null) await secrets.write(_secretKey, old);
+        await p.remove(_tokenKey);
+      }
+    } catch (_) {
+      // No SharedPreferences here: nothing to migrate.
+    }
+    return secret ?? old;
+  }
 
   static Future<void> save(String? token) async {
-    final p = await SharedPreferences.getInstance();
     token == null
-        ? await p.remove(_tokenKey)
-        : await p.setString(_tokenKey, token);
+        ? await secrets.delete(_secretKey)
+        : await secrets.write(_secretKey, token);
   }
 }
 
