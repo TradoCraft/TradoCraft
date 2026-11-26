@@ -902,7 +902,7 @@ async fn replace_zones(
     Json(input): Json<Vec<PriceListZoneInput>>,
 ) -> AppResult<Json<PriceList>> {
     user.require(Permission::PriceListsWrite)?;
-    let mut zones = Vec::with_capacity(input.len());
+    let mut zones = Vec::new();
     let mut seen = HashSet::new();
     for z in &input {
         if !seen.insert(z.price_zone_id) {

@@ -772,7 +772,7 @@ async fn update_favorite(
         .bind(id)
         .execute(&mut *tx)
         .await?;
-    let mut ids: Vec<Uuid> = Vec::with_capacity(input.items.len());
+    let mut ids: Vec<Uuid> = Vec::new();
     let mut after_sigs: HashMap<Uuid, TextSig> = HashMap::new();
     for (idx, it) in input.items.iter().enumerate() {
         let item_id = it.id.unwrap_or_else(new_id);
