@@ -1412,3 +1412,71 @@ async fn satisfaction_survey_is_optional_single_use_and_expires(db: PgPool) {
     );
     assert!(get(&app, &id2).await["ticket"]["csat_rating"].is_null());
 }
+
+/// A customer's client id is never used as a file id as such: naming the id of an existing file
+/// (staff's, on a ticket the customer cannot see) neither links that file to the customer's
+/// ticket nor answers differently from a fresh id. Retries still find the first upload.
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn a_portal_client_id_cannot_claim_or_probe_an_existing_file(db: PgPool) {
+    let app = setup(db.clone()).await;
+    let (s, t) = call(
+        &app,
+        SUPPORT,
+        Method::POST,
+        "/api/v1/tickets",
+        Some(json!({ "subject": "Jan's files", "contact_id": JAN_ID, "body": "x" })),
+    )
+    .await;
+    assert_eq!(s, StatusCode::CREATED, "{t}");
+    let mine = t["ticket"]["id"].as_str().unwrap().to_string();
+    // Staff stores a document on a ticket of another customer, under a known id.
+    let other = new_ticket_for(&app, GAMMA, "Gamma's contract").await;
+    let taken = "00000000-0000-7000-8000-00000000cc01";
+    let (s, staff_file) = upload(
+        &app,
+        Who::Staff(SUPPORT),
+        &format!("/api/v1/tickets/{other}/attachments?filename=contract.pdf&client_id={taken}"),
+        PDF.to_vec(),
+    )
+    .await;
+    assert_eq!(s, StatusCode::CREATED, "{staff_file}");
+    assert_eq!(staff_file["id"], taken);
+
+    let jan = portal_login(&app, &db, JAN).await;
+    let up = |client: &str| {
+        format!("/api/v1/portal/tickets/{mine}/attachments?filename=a.jpg&client_id={client}")
+    };
+    // The taken id and a fresh one are answered the same way, and neither returns staff's file.
+    let (s1, f1) = upload(&app, Who::Portal(&jan), &up(taken), jpeg(1)).await;
+    let fresh = "00000000-0000-7000-8000-00000000cc02";
+    let (s2, f2) = upload(&app, Who::Portal(&jan), &up(fresh), jpeg(2)).await;
+    assert_eq!(
+        (s1, s2),
+        (StatusCode::CREATED, StatusCode::CREATED),
+        "{f1} {f2}"
+    );
+    assert_ne!(f1["id"], taken);
+    assert_ne!(f2["id"], fresh);
+    assert_eq!(f1["filename"], "a.jpg");
+    assert_eq!(f1["content_type"], "image/jpeg");
+    // A retry with the same client id finds the first upload.
+    let (s, again) = upload(&app, Who::Portal(&jan), &up(taken), jpeg(1)).await;
+    assert_eq!(s, StatusCode::CREATED);
+    assert_eq!(again["id"], f1["id"]);
+
+    // Staff's file is not reachable through the customer's ticket: same answer as a missing id.
+    let (s_taken, _, body_taken) = portal_download(&app, &jan, &mine, taken).await;
+    let (s_missing, _, body_missing) =
+        portal_download(&app, &jan, &mine, "00000000-0000-7000-8000-00000000cc99").await;
+    assert_eq!(s_taken, StatusCode::NOT_FOUND);
+    assert_eq!((s_taken, body_taken), (s_missing, body_missing));
+    // Staff's file stays on its own ticket only.
+    let linked: Vec<String> = sqlx::query_scalar(
+        "SELECT ticket_id::text FROM helpdesk.ticket_attachments WHERE file_id = $1::uuid",
+    )
+    .bind(taken)
+    .fetch_all(&db)
+    .await
+    .unwrap();
+    assert_eq!(linked, vec![other]);
+}
