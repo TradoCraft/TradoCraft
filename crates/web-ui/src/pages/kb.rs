@@ -180,7 +180,7 @@ fn PublicReader() -> impl IntoView {
         let client = kb_client(&base);
         spawn_local(async move {
             if let Ok(list) = client.list_public_kb_categories(company_id, &params).await {
-                if categories_gen.get_untracked() == req_gen {
+                if categories_gen.try_get_untracked() == Some(req_gen) {
                     categories.set(list);
                 }
             }
@@ -234,7 +234,7 @@ fn PublicReader() -> impl IntoView {
         error.set(None);
         spawn_local(async move {
             let res = client.list_public_kb_entries(company_id, &params).await;
-            if entries_gen.get_untracked() != req_gen {
+            if entries_gen.try_get_untracked() != Some(req_gen) {
                 return;
             }
             match res {
@@ -276,7 +276,7 @@ fn PublicReader() -> impl IntoView {
             let res = client
                 .get_public_kb_entry(company_id, entry_id, &params)
                 .await;
-            if article_gen.get_untracked() != req_gen {
+            if article_gen.try_get_untracked() != Some(req_gen) {
                 return;
             }
             match res {

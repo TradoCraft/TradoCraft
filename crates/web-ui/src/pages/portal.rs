@@ -117,9 +117,9 @@ pub fn PortalPage() -> impl IntoView {
             let me_res = client.portal_me().await;
             let tickets_res = client.list_portal_tickets().await;
             let orders_res = client.list_portal_orders().await;
-            let session_active = session_gen.get_untracked() == req_session
+            let session_active = session_gen.try_get_untracked() == Some(req_session)
                 && portal_token.get_untracked().as_deref() == Some(tok.as_str());
-            if !session_active || refresh_gen.get_untracked() != req_refresh {
+            if !session_active || refresh_gen.try_get_untracked() != Some(req_refresh) {
                 return;
             }
             loading_data.set(false);
@@ -224,9 +224,9 @@ pub fn PortalPage() -> impl IntoView {
         portal_error.set(None);
         spawn_local(async move {
             let res = client.get_portal_ticket(ticket_id).await;
-            let session_active = session_gen.get_untracked() == req_session
+            let session_active = session_gen.try_get_untracked() == Some(req_session)
                 && portal_token.get_untracked().as_deref() == Some(tok.as_str());
-            if !session_active || ticket_gen.get_untracked() != req_ticket_gen {
+            if !session_active || ticket_gen.try_get_untracked() != Some(req_ticket_gen) {
                 return;
             }
             match res {
@@ -277,7 +277,7 @@ pub fn PortalPage() -> impl IntoView {
                 body,
             };
             let res = client.create_portal_ticket(&req).await;
-            let session_active = session_gen.get_untracked() == req_session
+            let session_active = session_gen.try_get_untracked() == Some(req_session)
                 && portal_token.get_untracked().as_deref() == Some(tok.as_str());
             if !session_active {
                 return;
@@ -335,7 +335,7 @@ pub fn PortalPage() -> impl IntoView {
                 attachment_ids: Vec::new(),
             };
             let res = client.add_portal_ticket_message(ticket_id, &req).await;
-            let session_active = session_gen.get_untracked() == req_session
+            let session_active = session_gen.try_get_untracked() == Some(req_session)
                 && portal_token.get_untracked().as_deref() == Some(tok.as_str());
             if !session_active {
                 return;
@@ -343,7 +343,7 @@ pub fn PortalPage() -> impl IntoView {
             match res {
                 Ok(detail) => {
                     sending_reply.set(false);
-                    if ticket_gen.get_untracked() == req_ticket_gen {
+                    if ticket_gen.try_get_untracked() == Some(req_ticket_gen) {
                         ticket_gen.update(|g| *g = g.wrapping_add(1));
                         reply_body.set(String::new());
                         last_ticket_id.set(Some(detail.ticket.id));
@@ -373,9 +373,9 @@ pub fn PortalPage() -> impl IntoView {
         portal_error.set(None);
         spawn_local(async move {
             let res = client.get_portal_order(order_id).await;
-            let session_active = session_gen.get_untracked() == req_session
+            let session_active = session_gen.try_get_untracked() == Some(req_session)
                 && portal_token.get_untracked().as_deref() == Some(tok.as_str());
-            if !session_active || order_gen.get_untracked() != req_order_gen {
+            if !session_active || order_gen.try_get_untracked() != Some(req_order_gen) {
                 return;
             }
             match res {
@@ -416,7 +416,7 @@ pub fn PortalPage() -> impl IntoView {
         spawn_local(async move {
             let req = ConfirmPortalOrder { revision, note };
             let res = client.confirm_portal_order(order_id, &req).await;
-            let session_active = session_gen.get_untracked() == req_session
+            let session_active = session_gen.try_get_untracked() == Some(req_session)
                 && portal_token.get_untracked().as_deref() == Some(tok.as_str());
             if !session_active {
                 return;
@@ -428,7 +428,7 @@ pub fn PortalPage() -> impl IntoView {
                         "Order {} (rev {}) confirmed.",
                         detail.order.number, detail.order.revision
                     )));
-                    if order_gen.get_untracked() == req_order_gen {
+                    if order_gen.try_get_untracked() == Some(req_order_gen) {
                         order_gen.update(|g| *g = g.wrapping_add(1));
                         confirm_note.set(String::new());
                         selected_order.set(Some(detail));

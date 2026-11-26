@@ -29,7 +29,8 @@ this release gate.
 - [ ] **Release verification.** Exercise all four workflows in browser tests against the real API
   and a seeded database. Smoke-test the packaged `/app/` entry point before tagging v0.4.0.
   Done: Playwright specs for all four workflows in `e2e/tests-leptos/` (`npm run test:leptos`), run against the
-  API with the dev seed. Open: run them in CI, and smoke-test the packaged Docker image.
+  API with the dev seed, and run by the `e2e-leptos` job in `.github/workflows/ci.yml`. Open: smoke-test the packaged
+  Docker image.
 
 The existing [Leptos Helpdesk](../crates/web-ui/src/pages/helpdesk.rs) and
 [Flutter To-do](../app/lib/features/todo/todo_page.dart) are the starting points. See also the

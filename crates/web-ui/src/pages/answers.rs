@@ -13,7 +13,7 @@ use tradocraft_api_client::{ApiError, Client};
 use uuid::Uuid;
 
 use crate::api::{resolve_base_url, ConnectionMode};
-use crate::pages::opt_trimmed;
+use crate::pages::{opt_trimmed, set_alive};
 use crate::state::AppContext;
 
 const WRITE_PERMISSION: &str = "answers.write";
@@ -362,10 +362,12 @@ pub fn AnswersPage() -> impl IntoView {
                 },
                 Err(err) => Err(err),
             };
-            saving.set(false);
+            if !set_alive(saving, false) {
+                return;
+            }
             // The write is committed whichever editor is open now, so always refresh the list; only
             // the editor that submitted it is closed or shown the error.
-            let still_open = editor_gen.get_untracked() == save_gen;
+            let still_open = editor_gen.try_get_untracked() == Some(save_gen);
             match res {
                 Ok(_) => {
                     if still_open {
