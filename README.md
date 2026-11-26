@@ -7,13 +7,20 @@ our own processes.
 
 **Stack:** Rust (Axum, SQLx) · PostgreSQL · Flutter (Windows, Android, iOS, web) · Typst for PDFs.
 
-> Status: **vertical slice**. Customers and opportunities, products with families and five price
-> zones, customer rebates (product / family / general), net and indicative prices, bulk price
-> changes, quotations with revisions and server-side pricing (incl. earlier price lists), sales
-> orders, a helpdesk (e-mail tickets, phone calls, prepared answers in five languages, production questions),
-> contacts with their own language and form of address, a customer portal, PDF output, multi-level bills of materials
-> with revisions, serial numbers with as-built genealogy, generated Dart API client and a Flutter app.
-> See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the target architecture and roadmap.
+> **Status: pre-1.0 (v0.3.0 is the latest release).** Interfaces, configuration and database schema may
+> still change in a minor release; see the [CHANGELOG](CHANGELOG.md) and the [versioning policy](docs/RELEASING.md).
+> Modules that exist: CRM (customers, contacts, opportunities), products with price zones, rebates and
+> price lists, quotations and sales orders, customer invoices, stock, purchasing and delivery, production
+> with work centres, material requirements planning and planning boards, bills of materials with serial
+> numbers, helpdesk, knowledge base and customer portal, field service with an offline technician
+> queue, reports, data import and an audit log. Clients: a Flutter app (Windows, Android, iOS, web) and a
+> Leptos web frontend at `/app/` that so far covers only some workflows (see the roadmap).
+> Not included: statutory accounting (it stays in an external package, [ADR 0008](docs/adr/0008-accounting-stays-external.md)),
+> and two-factor authentication. Not yet done for a first distributable release:
+> several security findings, a signed Android build and real-world testing of some features
+> (see "First release checklist" in the [ROADMAP](docs/ROADMAP.md)). The packaged Docker and Windows
+> demo setups are for local evaluation only (development sign-in); do not expose them to a network.
+> Architecture and plans: [ARCHITECTURE](docs/ARCHITECTURE.md), [ROADMAP](docs/ROADMAP.md).
 
 
 https://github.com/user-attachments/assets/5c0a13d6-0781-4483-b2d3-06a2690ea5f5
@@ -71,8 +78,11 @@ docs/                architecture and decision records
 the [release](https://github.com/TradoCraft/TradoCraft/releases) into a folder and run:
 
 ```bash
+echo "POSTGRES_PASSWORD=$(openssl rand -hex 16)" > .env   # there is no default password
 docker compose up -d
 ```
+
+(On Windows PowerShell set `$env:POSTGRES_PASSWORD` to a value of letters and digits instead.)
 
 - **Web UI** — open http://localhost:8088 and use the local tutorial sign-in.
 - **Windows app** — download and extract `tradocraft-windows-x64.zip`, open
@@ -87,13 +97,14 @@ evaluation and uses development sign-in with loopback-bound ports.
 Prerequisites: Rust (stable), PostgreSQL 16, [Typst](https://typst.app) CLI, Flutter SDK.
 
 ```bash
+cp .env.example .env    # set POSTGRES_PASSWORD (there is no default)
 docker compose up --build
 ```
 
 or without Docker, against a local PostgreSQL:
 
 ```bash
-cp .env.example .env    # adjust DATABASE_URL
+cp .env.example .env    # adjust DATABASE_URL (use your own database password)
 set -a; source .env; set +a
 cargo run -p tradocraft-api
 ```

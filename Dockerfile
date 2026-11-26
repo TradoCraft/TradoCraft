@@ -1,11 +1,11 @@
 # API image: Rust binaries (staff API, worker, customer portal server) + Typst for PDF rendering
 # + templates.
 
-FROM rust:1-trixie AS typst
+FROM rust:1.100.0-trixie AS typst
 ARG TYPST_VERSION=0.15.1
 RUN cargo install typst-cli --locked --version ${TYPST_VERSION}
 
-FROM rust:1-trixie AS build
+FROM rust:1.100.0-trixie AS build
 WORKDIR /src
 COPY Cargo.toml Cargo.lock ./
 COPY apps apps
@@ -14,7 +14,7 @@ COPY migrations migrations
 COPY seed seed
 RUN cargo build --locked --release -p tradocraft-api -p tradocraft-worker -p tradocraft-portal-api
 
-FROM rust:1-trixie AS web-ui
+FROM rust:1.100.0-trixie AS web-ui
 WORKDIR /src
 RUN rustup target add wasm32-unknown-unknown \
     && cargo install --locked trunk
@@ -23,7 +23,7 @@ COPY apps apps
 COPY crates crates
 RUN cd crates/web-ui && trunk build --release
 
-FROM debian:trixie-slim
+FROM debian:trixie-20261123-slim
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl \
     && rm -rf /var/lib/apt/lists/* \
     && useradd --system --home /app tradocraft \
@@ -39,4 +39,8 @@ COPY templates templates
 USER tradocraft
 ENV BIND_ADDR=0.0.0.0:8080 TEMPLATE_DIR=/app/templates TYPST_BIN=/usr/local/bin/typst WEB_UI_DIR=/app/web-ui
 EXPOSE 8080
+# The API answers GET /health. The portal server and the worker share this image: their Compose
+# services override or disable the check (the portal on port 8090, the worker has no HTTP port).
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+    CMD curl --fail --silent --show-error --output /dev/null http://127.0.0.1:8080/health || exit 1
 CMD ["tradocraft-api"]

@@ -23,8 +23,11 @@ key (see ADR 0069 for the follow-up list).
   explicitly. Native apps send no `Origin` and are unaffected. This supersedes the "any origin with
   `AUTH_MODE=dev`" sentence of ADR 0050.
 * **The database password of the Compose file is configurable** (`POSTGRES_PASSWORD`, default
-  `tradocraft`). It is not made mandatory: the database port is published on loopback only, and a
+  `tradocraft`). It was not made mandatory: the database port is published on loopback only, and a
   required secret would break the one-command start for no gain on that footing.
+  *Later change: before the first release `docker-compose.yml` and
+  `deploy/docker-compose.release.yml` dropped the default and require `POSTGRES_PASSWORD`
+  (`${POSTGRES_PASSWORD:?...}`).*
 * **The Docker build context excludes** `.env` and `.env.*` (except `.env.example`), key files,
   `key.properties`, `.claude`, `e2e` and `.github`.
 * **Android release signing uses the maintainer's own key** from the git-ignored
