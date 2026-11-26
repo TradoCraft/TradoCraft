@@ -437,8 +437,7 @@ fn expand(lits: &[Literal], idx: usize) -> (String, BTreeSet<usize>) {
                     .filter(|(_, l)| l.const_name.as_deref() == Some(*name))
             };
             let def = defs()
-                .filter(|(_, l)| l.offset < lits[idx].offset)
-                .last()
+                .rfind(|(_, l)| l.offset < lits[idx].offset)
                 .or_else(|| defs().next())
                 .map(|(i, _)| i)
                 .expect("definition");
@@ -460,43 +459,50 @@ struct Flagged {
     sql: String,
 }
 
-fn scan(root: &Path, tables: &BTreeSet<String>) -> Vec<Flagged> {
+/// Flags the literals of one source file (`rel` is its workspace-relative path).
+fn scan_source(rel: &str, src: &str, tables: &BTreeSet<String>) -> Vec<Flagged> {
     const KEYWORDS: [&str; 5] = ["FROM", "JOIN", "INTO", "UPDATE", "DELETE"];
+    let lits = rust_literals(src);
+    let mut expanded = Vec::new();
+    let mut used_defs = BTreeSet::new();
+    for i in 0..lits.len() {
+        let (value, used) = expand(&lits, i);
+        used_defs.extend(used);
+        expanded.push(value);
+    }
+    let mut flagged = Vec::new();
+    for (i, (lit, value)) in lits.iter().zip(expanded).enumerate() {
+        // A const/let that is spliced into another literal is scanned there.
+        if used_defs.contains(&i) {
+            continue;
+        }
+        let lower = value.to_lowercase();
+        let names_tenant_table = tables.iter().any(|t| contains_word(&lower, t, false));
+        if !names_tenant_table
+            || !KEYWORDS.iter().any(|k| contains_word(&value, k, false))
+            || contains_word(&lower, "company_id", true)
+        {
+            continue;
+        }
+        flagged.push(Flagged {
+            path: rel.to_string(),
+            line: lit.line,
+            sql: normalise(&value),
+        });
+    }
+    flagged
+}
+
+fn scan(root: &Path, tables: &BTreeSet<String>) -> Vec<Flagged> {
     let mut flagged = Vec::new();
     for file in rust_sources(root) {
         let src = fs::read_to_string(&file).unwrap();
-        let lits = rust_literals(&src);
-        let mut expanded = Vec::new();
-        let mut used_defs = BTreeSet::new();
-        for i in 0..lits.len() {
-            let (value, used) = expand(&lits, i);
-            used_defs.extend(used);
-            expanded.push(value);
-        }
         let rel = file
             .strip_prefix(root)
             .unwrap()
             .to_string_lossy()
             .replace('\\', "/");
-        for (i, (lit, value)) in lits.iter().zip(expanded).enumerate() {
-            // A const/let that is spliced into another literal is scanned there.
-            if used_defs.contains(&i) {
-                continue;
-            }
-            let lower = value.to_lowercase();
-            let names_tenant_table = tables.iter().any(|t| contains_word(&lower, t, false));
-            if !names_tenant_table
-                || !KEYWORDS.iter().any(|k| contains_word(&value, k, false))
-                || contains_word(&lower, "company_id", true)
-            {
-                continue;
-            }
-            flagged.push(Flagged {
-                path: rel.clone(),
-                line: lit.line,
-                sql: normalise(&value),
-            });
-        }
+        flagged.extend(scan_source(&rel, &src, tables));
     }
     flagged
 }
@@ -511,8 +517,7 @@ struct Entry {
     sql: String,
 }
 
-fn allowlist(path: &Path) -> Vec<Entry> {
-    let text = fs::read_to_string(path).unwrap_or_default();
+fn parse_allowlist(text: &str) -> Vec<Entry> {
     let mut out = Vec::new();
     for (n, raw) in text.lines().enumerate() {
         let l = raw.trim();
@@ -532,6 +537,27 @@ fn allowlist(path: &Path) -> Vec<Entry> {
         });
     }
     out
+}
+
+/// The flagged statements no entry covers, and the entries that cover no flagged statement.
+/// One entry covers every identical statement in its file.
+fn check<'a>(flagged: &'a [Flagged], entries: &'a [Entry]) -> (Vec<&'a Flagged>, Vec<&'a Entry>) {
+    let mut hits: BTreeMap<(&str, &str), usize> = entries
+        .iter()
+        .map(|e| ((e.path.as_str(), e.sql.as_str()), 0))
+        .collect();
+    let mut missing = Vec::new();
+    for f in flagged {
+        match hits.get_mut(&(f.path.as_str(), f.sql.as_str())) {
+            Some(n) => *n += 1,
+            None => missing.push(f),
+        }
+    }
+    let stale = entries
+        .iter()
+        .filter(|e| hits[&(e.path.as_str(), e.sql.as_str())] == 0)
+        .collect();
+    (missing, stale)
 }
 
 #[test]
@@ -556,23 +582,8 @@ fn every_tenant_query_mentions_company_id_or_is_allowlisted() {
     let tables = tenant_tables(&root);
     let flagged = scan(&root, &tables);
     let list_path = root.join("crates/core/tests/tenant_scan_allowlist.txt");
-    let entries = allowlist(&list_path);
-
-    let mut by_key: BTreeMap<(&str, &str), usize> = BTreeMap::new();
-    for e in &entries {
-        by_key.insert((e.path.as_str(), e.sql.as_str()), 0);
-    }
-    let mut missing = Vec::new();
-    for f in &flagged {
-        match by_key.get_mut(&(f.path.as_str(), f.sql.as_str())) {
-            Some(hits) => *hits += 1,
-            None => missing.push(f),
-        }
-    }
-    let stale: Vec<&Entry> = entries
-        .iter()
-        .filter(|e| by_key[&(e.path.as_str(), e.sql.as_str())] == 0)
-        .collect();
+    let entries = parse_allowlist(&fs::read_to_string(&list_path).unwrap_or_default());
+    let (missing, stale) = check(&flagged, &entries);
 
     let mut msg = String::new();
     if !missing.is_empty() {
@@ -601,4 +612,61 @@ fn every_tenant_query_mentions_company_id_or_is_allowlisted() {
         }
     }
     assert!(msg.is_empty(), "{msg}");
+}
+
+fn tables(names: &[&str]) -> BTreeSet<String> {
+    names.iter().map(|s| s.to_string()).collect()
+}
+
+#[test]
+fn scanner_flags_unscoped_statements_only() {
+    let src = r##"
+const SELECT: &str = "SELECT o.id, o.number FROM sales.orders o";
+async fn f() {
+    sqlx::query("UPDATE sales.orders SET status = $2 WHERE id = $1");
+    sqlx::query("SELECT 1 FROM sales.orders WHERE id = $1 AND company_id = $2");
+    sqlx::query(r#"DELETE FROM sales.orders WHERE id = $1"#);
+    sqlx::query("SELECT * FROM crm.customers WHERE id = $1");
+    format!("{SELECT} WHERE o.id = $1");
+    format!("{SELECT} WHERE o.company_id = $1");
+    let msg = "could not update sales.orders"; // no SQL keyword in upper case
+    // sqlx::query("DELETE FROM sales.orders") in a comment
+    let filter = "WHERE o.company_id = $1";
+    format!("SELECT count(*) FROM sales.orders o {filter}");
+}
+#[cfg(test)]
+mod tests {
+    fn t() { sqlx::query("DELETE FROM sales.orders"); }
+}
+"##;
+    let flagged = scan_source("x.rs", src, &tables(&["sales.orders"]));
+    let sql: Vec<&str> = flagged.iter().map(|f| f.sql.as_str()).collect();
+    assert_eq!(
+        sql,
+        [
+            "UPDATE sales.orders SET status = $2 WHERE id = $1",
+            "DELETE FROM sales.orders WHERE id = $1",
+            "SELECT o.id, o.number FROM sales.orders o WHERE o.id = $1",
+        ]
+    );
+    assert_eq!(flagged[0].line, 4);
+}
+
+#[test]
+fn allowlist_reports_new_and_stale_entries() {
+    let flagged = scan_source(
+        "x.rs",
+        r#"fn f() { sqlx::query("UPDATE sales.orders SET a = 1
+                                    WHERE id = $1"); }"#,
+        &tables(&["sales.orders"]),
+    );
+    let ok =
+        parse_allowlist("# comment\nx.rs | reason | UPDATE sales.orders SET a = 1 WHERE id = $1\n");
+    let (missing, stale) = check(&flagged, &ok);
+    assert!(missing.is_empty() && stale.is_empty());
+
+    let other = parse_allowlist("x.rs | reason | DELETE FROM sales.orders WHERE id = $1\n");
+    let (missing, stale) = check(&flagged, &other);
+    assert_eq!(missing.len(), 1, "a new unscoped statement fails");
+    assert_eq!(stale.len(), 1, "an entry that matches nothing fails");
 }
