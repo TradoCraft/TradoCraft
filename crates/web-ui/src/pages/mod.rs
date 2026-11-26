@@ -1,6 +1,7 @@
 pub mod customers;
 pub mod helpdesk;
 pub mod kb;
+pub mod kb_staff;
 pub mod login;
 pub mod orders;
 pub mod placeholder;
