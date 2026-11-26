@@ -41,8 +41,13 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Install Typst
         run: |
-          curl -sSL "https://github.com/typst/typst/releases/download/v${TYPST_VERSION}/typst-x86_64-unknown-linux-musl.tar.xz" | tar -xJ
+          # -f fails on an HTTP error instead of piping its body into tar; the retries cover the GitHub release
+          # download answering with something that is not the archive now and then (it failed this job once).
+          curl -fsSL --retry 5 --retry-delay 5 --retry-all-errors --connect-timeout 20 --max-time 120 \
+            -o typst.tar.xz "https://github.com/typst/typst/releases/download/v${TYPST_VERSION}/typst-x86_64-unknown-linux-musl.tar.xz"
+          tar -xJf typst.tar.xz
           sudo mv typst-x86_64-unknown-linux-musl/typst /usr/local/bin/
+          rm -rf typst.tar.xz typst-x86_64-unknown-linux-musl
       - name: Install pdftotext
         # The quote remark test reads the printed PDF text to prove the production remark is absent.
         # Retries: the runner's mirrors fail to resolve now and then, which failed this job.
@@ -119,8 +124,13 @@ jobs:
       - name: Install Typst
         # The API makes PDFs with it; chapters 8 and 9 of the tutorial send quotations and orders.
         run: |
-          curl -sSL "https://github.com/typst/typst/releases/download/v${TYPST_VERSION}/typst-x86_64-unknown-linux-musl.tar.xz" | tar -xJ
+          # -f fails on an HTTP error instead of piping its body into tar; the retries cover the GitHub release
+          # download answering with something that is not the archive now and then (it failed this job once).
+          curl -fsSL --retry 5 --retry-delay 5 --retry-all-errors --connect-timeout 20 --max-time 120 \
+            -o typst.tar.xz "https://github.com/typst/typst/releases/download/v${TYPST_VERSION}/typst-x86_64-unknown-linux-musl.tar.xz"
+          tar -xJf typst.tar.xz
           sudo mv typst-x86_64-unknown-linux-musl/typst /usr/local/bin/
+          rm -rf typst.tar.xz typst-x86_64-unknown-linux-musl
       - run: cargo build -p tradocraft-api -p tradocraft-worker
       - name: Build the web app
         working-directory: app
