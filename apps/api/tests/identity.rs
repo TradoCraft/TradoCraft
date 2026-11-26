@@ -31,6 +31,7 @@ fn settings() -> IdpSettings {
         allow_insecure_urls: true,
         jwks_ttl: Duration::from_secs(3600),
         refresh_throttle: Duration::from_secs(3),
+        ..IdpSettings::default()
     }
 }
 
