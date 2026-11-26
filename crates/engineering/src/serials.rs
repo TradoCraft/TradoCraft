@@ -155,11 +155,15 @@ async fn load(conn: &mut PgConnection, company_id: Uuid, id: Uuid) -> AppResult<
     .ok_or(AppError::NotFound("serial unit"))
 }
 
-async fn lock(conn: &mut PgConnection, ids: &[Uuid]) -> AppResult<()> {
+/// Locks the company's units in a fixed order; units of another company are not touched
+/// (the `load` that follows then reports them as not found).
+async fn lock(conn: &mut PgConnection, company_id: Uuid, ids: &[Uuid]) -> AppResult<()> {
     sqlx::query(
-        "SELECT id FROM engineering.serial_units WHERE id = ANY($1) ORDER BY id FOR UPDATE",
+        "SELECT id FROM engineering.serial_units WHERE id = ANY($1) AND company_id = $2
+         ORDER BY id FOR UPDATE",
     )
     .bind(ids)
+    .bind(company_id)
     .execute(conn)
     .await?;
     Ok(())
@@ -193,7 +197,7 @@ pub async fn lock_for_stock(
     company_id: Uuid,
     id: Uuid,
 ) -> AppResult<StockUnit> {
-    lock(conn, &[id]).await?;
+    lock(conn, company_id, &[id]).await?;
     let u = load(conn, company_id, id).await?;
     Ok(StockUnit {
         id: u.id,
@@ -462,7 +466,7 @@ async fn set_status(
         ));
     }
     let mut tx = state.db.begin().await?;
-    lock(&mut tx, &[id]).await?;
+    lock(&mut tx, user.company_id, &[id]).await?;
     let unit = load(&mut tx, user.company_id, id).await?;
     if unit.parent_id.is_some() {
         return Err(AppError::Conflict(format!(
@@ -522,7 +526,7 @@ async fn set_warranty(
 ) -> AppResult<Json<SerialUnitDetail>> {
     user.require(Permission::SerialsWrite)?;
     let mut tx = state.db.begin().await?;
-    lock(&mut tx, &[id]).await?;
+    lock(&mut tx, user.company_id, &[id]).await?;
     load(&mut tx, user.company_id, id).await?;
     sqlx::query("UPDATE engineering.serial_units SET warranty_until = $2, warranty_note = $3, updated_at = now() WHERE id = $1")
         .bind(id)
@@ -557,7 +561,7 @@ pub async fn attach_component_in(
     if child_id == id {
         return Err(AppError::Validation("a unit cannot contain itself".into()));
     }
-    lock(conn, &[id, child_id]).await?;
+    lock(conn, user.company_id, &[id, child_id]).await?;
     let parent = load(conn, user.company_id, id).await?;
     let child = load(conn, user.company_id, child_id).await?;
     if parent.status == "scrapped" {
@@ -699,7 +703,7 @@ async fn detach_component(
         ));
     }
     let mut tx = state.db.begin().await?;
-    lock(&mut tx, &[id, child_id]).await?;
+    lock(&mut tx, user.company_id, &[id, child_id]).await?;
     load(&mut tx, user.company_id, id).await?;
     let removed = sqlx::query(
         "UPDATE engineering.serial_unit_components SET removed_at = now(), removed_by = $3
