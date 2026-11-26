@@ -54,7 +54,7 @@ The existing [Leptos Helpdesk](../crates/web-ui/src/pages/helpdesk.rs) and
 | A5 Helpdesk customer mail (`send_email` automation action, SLA notices to the customer, scheduled report mails) | Done, [ADR 0064](adr/0064-helpdesk-sla-customer-notices.md), [ADR 0065](adr/0065-scheduled-report-mails.md), [ADR 0066](adr/0066-helpdesk-send-email-action.md); mail templates are A6 |
 | A6 Helpdesk reply templates and language | Done, [ADR 0072](adr/0072-helpdesk-reply-templates.md) (builds on the prepared answers of ADR 0013); SLA notices to the customer still use built-in texts, see A6b |
 | A6b Helpdesk SLA notices from templates | Open (needs deadline placeholders and rendering without a user) |
-| A7 Helpdesk ticket checklists (templates per team, `apply_checklist` automation action, progress badge, optional close gate) | Done (PR #100; no ADR yet) |
+| A7 Helpdesk ticket checklists (templates per team, `apply_checklist` automation action, progress badge, optional close gate) | Done (PR #100), [ADR 0093](adr/0093-helpdesk-ticket-checklists.md) |
 | A8 Helpdesk immediate change notification (concurrent updates seen by both people) | Done, [ADR 0075](adr/0075-helpdesk-live-ticket-updates.md) (builds on the SSE channel of [ADR 0073](adr/0073-concurrent-edit-protection.md)); mail ingested by the worker follows |
 | A9 Helpdesk ticket bundles (linked tickets: bundle, related, duplicate; bundle mass update with preview) | Done, [ADR 0076](adr/0076-helpdesk-ticket-links-and-bundles.md); list badge, per-customer greeting in a bundle reply and automation on links follow |
 | B1 Inventory foundation | Done, [ADR 0019](adr/0019-inventory-stock-ledger.md) |
@@ -80,14 +80,14 @@ The existing [Leptos Helpdesk](../crates/web-ui/src/pages/helpdesk.rs) and
 | P1 Price lists (zones, chapters, export profiles, PDF and Excel) | Done (PRs #95, #97), [ADR 0074](adr/0074-price-lists.md); never run in a real app (see the release checklist) |
 | P2 Site baseline and product suitability | **Deferred from the first release**, [ADR 0068](adr/0068-site-baseline-and-product-suitability.md) (still Proposed). Baseline, matching, tower configurator import and quotation picker suitability are implemented. The quote can open its linked baseline directly. An end-to-end test remains open. |
 | U1 Shared UI framework (theme tokens and dark mode, repository layer, app switcher and breadcrumbs, global search and notifications, generic list view, server-side sort, filters, facets and saved favourites, group-by, generic form view, kanban, chatter) | In progress. Done and merged: phases 0 to 3 ([ADR 0077](adr/0077-ui-theme-tokens-and-dark-mode.md) to [ADR 0085](adr/0085-generic-form-view.md), including list group-by, [ADR 0089](adr/0089-list-group-by.md)); the generic list view now serves orders, tickets, products and suppliers as well, and the generic form view customers, quotations, orders, products and suppliers (PRs #109 to #113, #119, #123, #159). The invoice line editor and smart buttons on quotations and orders exist. Phase 4, chatter, followers and activities ([ADR 0086](adr/0086-generic-chatter-and-activities.md), accepted, on customers, quotations, orders and opportunities; PR #124): backend, panel, file attachments on notes, field-level messages, assignment mail, live updates and clean-up are done. Phase 5, kanban: the generic board and the opportunity pipeline ([ADR 0087](adr/0087-generic-kanban-view.md), PR #125) and tickets on the board ([ADR 0088](adr/0088-tickets-on-the-kanban-board.md), PR #126) are done. Open: the ticket record screen on the generic form view, a one2many line editor beyond invoices, the calendar view, live updates of the board, team, tag and SLA filters on the ticket board, attachments on activities, messages for quotation and order line changes. |
-| UX1 Frontend UX phases 1 to 5 (entity list search clear and responsive header, active group label and top-bar search pill, five-item navigation bar with a More sheet, role-aware home overview, non-blocking tab editing in the product form) | Done (PRs #152 to #156); no ADR |
+| UX1 Frontend UX phases 1 to 5 (entity list search clear and responsive header, active group label and top-bar search pill, five-item navigation bar with a More sheet, role-aware home overview, non-blocking tab editing in the product form) | Done (PRs #152 to #156), [ADR 0095](adr/0095-frontend-ux-navigation-and-home.md) |
 | T1 Tutorial chapters 10 and 11 (10: working a helpdesk ticket; 11: custom product properties) and the tutorial tooling (assisted steps, menu guidance, show control, instance-scoped progress, `tutorial-env` update) | Merged (PRs #116, #127, #128, #133, #134, #136 to #138); both chapters are in the e2e walk (`e2e/tests/tutorial.spec.ts`). The chapter 10 text was written without being run: run `flutter gen-l10n`, the tutorial tests and the e2e walk. Open from chapter 10: links and bundles, checklists, watching, hand-over and the call log |
 | W1 Portable Windows demo (tutorial ZIP and per-user setup EXE) and release artifacts | Done (PR #161, `windows-demo.yml`, `release.yml`); published with v0.3.0 |
-| PM1 Product media (pictures, videos, SVG, default selection) and the `.glb` 3D assembly viewer | Done (PRs #132, #148, #158); no ADR |
-| F1 Customer billing (customer invoices, correction credits, annual rebates) | Done (PR #147; `crates/finance`); no ADR |
-| DL1 Document library and customer mail merge | Done (PR #131; `crates/documents`); no ADR |
+| PM1 Product media (pictures, videos, SVG, default selection) and the `.glb` 3D assembly viewer | Done (PRs #132, #148, #158), [ADR 0096](adr/0096-product-media-and-3d-viewer.md) |
+| F1 Customer billing (customer invoices, correction credits, annual rebates) | Done (PR #147; `crates/finance`), [ADR 0097](adr/0097-customer-billing-and-rebates.md) |
+| DL1 Document library and customer mail merge | Done (PR #131; `crates/kb`), [ADR 0098](adr/0098-document-library-and-mail-merge.md) |
 | PR1 Negative unit prices; three price flags and planned zone price corrections; multi-zone pricing table, product copy and shortcut preferences | Done, [ADR 0084](adr/0084-price-flags-and-planned-price-corrections.md) (PR #118); negative prices and the pricing table in PRs #149 and #150 |
-| M1 MCP pilot (`apps/mcp`: delegated, read-only `get_order` over Streamable HTTP with OAuth, same company boundary and permission as the staff API) | Done as a pilot (PR #115, [README](../apps/mcp/README.md)); no ADR yet, no further tools planned |
+| M1 MCP pilot (`apps/mcp`: delegated, read-only `get_order` over Streamable HTTP with OAuth, same company boundary and permission as the staff API) | Done as a pilot (PR #115, [README](../apps/mcp/README.md)); [ADR 0094](adr/0094-mcp-pilot.md), no further tools planned |
 
 ## First release checklist
 
@@ -110,7 +110,7 @@ roadmap, against the current code.
     default everywhere); a test now locks it in.
   - #3 and #4 wildcard CORS and dev-auth defaults: mostly in place; the gap was `CORS_ALLOWED_ORIGINS=*` with
     `AUTH_MODE=dev`. The staff API now refuses to start with `*` under dev auth or `APP_ENV_KIND=live`
-    ([ADR 0092](adr/0092-no-wildcard-cors-with-dev-auth-or-in-live.md)). Breaking for a live setup that used `*`. The refusal in
+    ([ADR 0092](adr/0092-no-wildcard-cors-with-dev-auth-or-in-live.md)). Breaking for a live setup that used `*`.
     Checked by starting the binary: `*` with dev auth, or in a live environment, refuses to start; `*` with real sign-in in a
     tutorial environment starts with a warning; dev auth on a non-loopback address refuses. The portal server still
     only warns on `*`.
@@ -152,12 +152,11 @@ roadmap, against the current code.
   ([translation-review-2026-11.md](translation-review-2026-11.md)). A native speaker should confirm the open questions in that file.
 
 **Housekeeping**
-- ADR numbering was fixed in `3eb5d9b`; the ADR index lists 0001 to 0092 with no duplicate numbers. A7 and M1 (MCP) have no ADR; write them.
+- ADR numbering was fixed in `3eb5d9b`; the ADR index lists 0001 to 0098 with no duplicate numbers.
 - Keep the `printing` package: `app/lib/features/kb/document_library_page.dart` uses its `PdfPreview`. Never commit the
   hook-created `.compliance/` (none is in the tree today).
-- Delete the merged and stale remote branches (140 heads today) before the next tag.
-- Merge or close the pending Dependabot branches (tower-http, webpki-roots, setup-node, upload-artifact, @types/node) and
-  note the deferred `swagger-parser-2` migration (PR #94).
+- Remote branches were pruned on 2026-11-26; four unmerged ones remain to review (`claude/trusting-dirac-n4w811`, `feat/product-media`, `fix/duplicate-migration-version`, `fix/logo-wordmark`).
+- No Dependabot PRs are pending; note the deferred `swagger-parser-2` migration (PR #94).
 
 **After the first release**: A6b, D8, D9, and security findings
 #8 to #17.
