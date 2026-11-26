@@ -680,7 +680,7 @@ pub async fn create_invoice(
         .checked_add_days(Days::new(context.payment_terms_days as u64))
         .ok_or_else(|| validation("payment terms produce an invalid due date"))?;
     let seller = seller(&mut tx, user.company_id).await?;
-    let mut lines = Vec::with_capacity(input.lines.len().min(256));
+    let mut lines = Vec::new();
     let mut pending_by_order_line = HashMap::new();
     for line in input.lines {
         lines.push(
@@ -905,7 +905,7 @@ pub async fn create_credit(
             "credit date cannot precede the original invoice",
         ));
     }
-    let mut lines = Vec::with_capacity(input.lines.len().min(256));
+    let mut lines = Vec::new();
     for line in input.lines {
         lines.push(draft_credit_line(&mut tx, input.invoice_id, line).await?);
     }
@@ -1248,7 +1248,7 @@ pub async fn register_legacy_invoice(
     ) {
         return Err(validation("invalid VAT regime"));
     }
-    let mut lines = Vec::with_capacity(input.lines.len().min(256));
+    let mut lines = Vec::new();
     for line in input.lines {
         validate_quantity(line.quantity, 8)?;
         validate_money(line.net_total)?;
