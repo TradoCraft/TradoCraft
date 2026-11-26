@@ -117,6 +117,24 @@ impl Client {
         self.send_json(req).await
     }
 
+    pub(crate) async fn patch_json<B, T>(&self, path: &str, body: &B) -> Result<T, ApiError>
+    where
+        B: Serialize + ?Sized,
+        T: DeserializeOwned,
+    {
+        let url = self.url(path)?;
+        let req = self.apply_headers(self.http.patch(url).json(body))?;
+        self.send_json(req).await
+    }
+
+    /// Sends an authenticated `DELETE` expecting an empty 2xx body (such as `204 No Content`).
+    pub(crate) async fn delete_empty(&self, path: &str) -> Result<(), ApiError> {
+        let url = self.url(path)?;
+        let req = self.apply_headers(self.http.delete(url))?;
+        let _ = self.send_checked(req).await?;
+        Ok(())
+    }
+
     /// Sends an unauthenticated JSON `POST` expecting an empty 2xx body (such as `202 Accepted`).
     pub(crate) async fn post_json_unauthenticated_empty<B>(
         &self,

@@ -8,6 +8,7 @@ pub mod portal;
 pub mod products;
 pub mod quotations;
 pub mod suppliers;
+pub mod todo;
 
 use std::str::FromStr;
 

@@ -19,6 +19,7 @@ use crate::pages::portal::PortalPage;
 use crate::pages::products::ProductsPage;
 use crate::pages::quotations::QuotationsPage;
 use crate::pages::suppliers::SuppliersPage;
+use crate::pages::todo::TodoPage;
 use crate::state::{apply_theme_to_dom, AppContext};
 
 #[component]
@@ -116,6 +117,14 @@ pub fn App() -> impl IntoView {
                     view=|| view! {
                         <AppShell>
                             <HelpdeskPage />
+                        </AppShell>
+                    }
+                />
+                <Route
+                    path=path!("/todo")
+                    view=|| view! {
+                        <AppShell>
+                            <TodoPage />
                         </AppShell>
                     }
                 />
