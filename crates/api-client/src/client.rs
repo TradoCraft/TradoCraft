@@ -127,6 +127,47 @@ impl Client {
         self.send_json(req).await
     }
 
+    /// Sends an authenticated binary `POST` (raw body, `application/octet-stream`) with query
+    /// parameters, expecting a JSON response.
+    pub(crate) async fn post_bytes<Q, T>(
+        &self,
+        path: &str,
+        query: &Q,
+        body: Vec<u8>,
+    ) -> Result<T, ApiError>
+    where
+        Q: Serialize + ?Sized,
+        T: DeserializeOwned,
+    {
+        let url = self.url(path)?;
+        let req = self.apply_headers(
+            self.http
+                .post(url)
+                .query(query)
+                .header("content-type", "application/octet-stream")
+                .body(body),
+        )?;
+        self.send_json(req).await
+    }
+
+    /// Sends an authenticated `GET` and returns the raw response body (file downloads).
+    pub(crate) async fn get_bytes(&self, path: &str) -> Result<Vec<u8>, ApiError> {
+        let url = self.url(path)?;
+        let req = self.apply_headers(self.http.get(url))?;
+        let resp = req.send().await?;
+        let status = resp.status();
+        if !status.is_success() {
+            let text = resp.text().await?;
+            let body = serde_json::from_str::<ErrorBody>(&text).ok();
+            return Err(ApiError::Http {
+                status: status.as_u16(),
+                body,
+                raw_body: text,
+            });
+        }
+        Ok(resp.bytes().await?.to_vec())
+    }
+
     /// Sends an authenticated `DELETE` expecting an empty 2xx body (such as `204 No Content`).
     pub(crate) async fn delete_empty(&self, path: &str) -> Result<(), ApiError> {
         let url = self.url(path)?;
