@@ -39,6 +39,10 @@ pub struct IdpSettings {
     pub jwks_ttl: Duration,
     /// Minimum time between two fetches of one provider's keys.
     pub refresh_throttle: Duration,
+    /// Longest a whole fetch of a provider (name lookups, discovery document and JWKS) may
+    /// take. Each request also has its own 5 s connect and 10 s total timeout; this bounds the
+    /// sum, including name resolution, while sign-ins for that provider wait on the key cache.
+    pub fetch_timeout: Duration,
 }
 
 impl Default for IdpSettings {
@@ -47,9 +51,13 @@ impl Default for IdpSettings {
             allow_insecure_urls: false,
             jwks_ttl: Duration::from_secs(3600),
             refresh_throttle: Duration::from_secs(30),
+            fetch_timeout: Duration::from_secs(15),
         }
     }
 }
+
+/// Longest a host name lookup of an identity provider URL may take.
+const LOOKUP_TIMEOUT: Duration = Duration::from_secs(5);
 
 /// How the e-mail address of a token may be used to bind it to an existing user.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -340,16 +348,20 @@ pub fn validate_idp_url(settings: &IdpSettings, raw: &str) -> Result<reqwest::Ur
 }
 
 /// GET with the rules of ADR 0055: validated URL, every resolved address checked and then pinned
-/// for the connection, 5 s connect and 10 s total timeout, no redirects, 1 MiB body limit.
+/// for the connection, 5 s name lookup, 5 s connect and 10 s total timeout, no redirects, 1 MiB
+/// body limit.
 async fn guarded_get(settings: &IdpSettings, raw: &str) -> Result<Vec<u8>, String> {
     let url = validate_idp_url(settings, raw)?;
     let host = url.host_str().ok_or("the URL has no host")?.to_string();
     let port = url.port_or_known_default().ok_or("the URL has no port")?;
-    let addrs: Vec<std::net::SocketAddr> =
-        tokio::net::lookup_host((host.trim_matches(['[', ']']), port))
-            .await
-            .map_err(|e| format!("cannot resolve {host}: {e}"))?
-            .collect();
+    let addrs: Vec<std::net::SocketAddr> = tokio::time::timeout(
+        LOOKUP_TIMEOUT,
+        tokio::net::lookup_host((host.trim_matches(['[', ']']), port)),
+    )
+    .await
+    .map_err(|_| format!("cannot resolve {host}: timeout"))?
+    .map_err(|e| format!("cannot resolve {host}: {e}"))?
+    .collect();
     if addrs.is_empty() {
         return Err(format!("{host} does not resolve"));
     }
@@ -428,8 +440,23 @@ pub struct Fetched {
 }
 
 /// Fetches the discovery document and, when its issuer matches, the JWKS. `Err` means the
-/// provider could not be reached or answered nonsense.
+/// provider could not be reached, answered nonsense, or took longer than
+/// [`IdpSettings::fetch_timeout`] altogether.
 pub async fn fetch_provider(settings: &IdpSettings, issuer: &str) -> Result<Fetched, String> {
+    tokio::time::timeout(
+        settings.fetch_timeout,
+        fetch_provider_inner(settings, issuer),
+    )
+    .await
+    .map_err(|_| {
+        format!(
+            "the identity provider did not answer within {} s",
+            settings.fetch_timeout.as_secs_f32()
+        )
+    })?
+}
+
+async fn fetch_provider_inner(settings: &IdpSettings, issuer: &str) -> Result<Fetched, String> {
     let url = format!(
         "{}/.well-known/openid-configuration",
         normalize_issuer(issuer)
@@ -963,5 +990,87 @@ mod tests {
             normalize_issuer(" https://a.example/ "),
             "https://a.example"
         );
+    }
+
+    /// A provider that accepts connections and never answers; counts the connections.
+    async fn stalled_idp() -> (String, Arc<std::sync::atomic::AtomicUsize>) {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let issuer = format!("http://{}", listener.local_addr().unwrap());
+        let hits = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let counter = hits.clone();
+        tokio::spawn(async move {
+            let mut open = Vec::new();
+            while let Ok((socket, _)) = listener.accept().await {
+                counter.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                open.push(socket);
+            }
+        });
+        (issuer, hits)
+    }
+
+    /// An unsigned token with this issuer and key id: enough to reach the key lookup.
+    fn token_for(issuer: &str, kid: &str) -> String {
+        use base64::Engine;
+        let b64 = |v: Value| {
+            base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(v.to_string().as_bytes())
+        };
+        format!(
+            "{}.{}.c2ln",
+            b64(serde_json::json!({ "alg": "RS256", "kid": kid, "typ": "JWT" })),
+            b64(serde_json::json!({ "iss": issuer, "sub": "s", "aud": "aud" })),
+        )
+    }
+
+    #[tokio::test]
+    async fn a_provider_that_never_answers_times_out_as_a_whole() {
+        let (issuer, hits) = stalled_idp().await;
+        let s = IdpSettings {
+            allow_insecure_urls: true,
+            fetch_timeout: Duration::from_millis(300),
+            ..IdpSettings::default()
+        };
+        let started = Instant::now();
+        let e = fetch_provider(&s, &issuer).await.err().unwrap();
+        assert!(e.contains("did not answer"), "{e}");
+        assert!(started.elapsed() < Duration::from_secs(3));
+        assert_eq!(hits.load(std::sync::atomic::Ordering::SeqCst), 1);
+        assert_eq!(
+            IdpSettings::default().fetch_timeout,
+            Duration::from_secs(15)
+        );
+    }
+
+    #[tokio::test]
+    async fn unknown_key_ids_do_not_refetch_inside_the_throttle_window() {
+        let (issuer, hits) = stalled_idp().await;
+        let s = IdpSettings {
+            allow_insecure_urls: true,
+            fetch_timeout: Duration::from_millis(200),
+            refresh_throttle: Duration::from_millis(800),
+            ..IdpSettings::default()
+        };
+        let reg = IdentityProviders::new(s, Some(ProviderConfig::from_env(&issuer, "aud")));
+        // The first unknown kid fetches and fails within the deadline.
+        let started = Instant::now();
+        assert!(matches!(
+            reg.verify(&token_for(&issuer, "k0")).await,
+            Err(AppError::Internal(_))
+        ));
+        assert!(started.elapsed() < Duration::from_secs(3));
+        // Many more unknown kids, at once and in a row: no fetch until the window has passed.
+        let mut tasks = Vec::new();
+        let reg = Arc::new(reg);
+        for i in 0..20 {
+            let reg = reg.clone();
+            let t = token_for(&issuer, &format!("k{i}"));
+            tasks.push(tokio::spawn(async move { reg.verify(&t).await.is_err() }));
+        }
+        for t in tasks {
+            assert!(t.await.unwrap());
+        }
+        assert_eq!(hits.load(std::sync::atomic::Ordering::SeqCst), 1);
+        tokio::time::sleep(Duration::from_millis(900)).await;
+        assert!(reg.verify(&token_for(&issuer, "late")).await.is_err());
+        assert_eq!(hits.load(std::sync::atomic::Ordering::SeqCst), 2);
     }
 }

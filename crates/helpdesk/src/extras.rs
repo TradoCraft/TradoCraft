@@ -350,8 +350,11 @@ async fn merge(
     }
     let mut tx = state.db.begin().await?;
     // Lock both in a fixed order so two merges cannot deadlock.
-    sqlx::query("SELECT id FROM helpdesk.tickets WHERE id = ANY($1) ORDER BY id FOR UPDATE")
-        .bind([id, target_id])
+    sqlx::query(
+        "SELECT id FROM helpdesk.tickets WHERE id = ANY($1) AND company_id = $2 ORDER BY id FOR UPDATE",
+    )
+    .bind([id, target_id])
+    .bind(user.company_id)
         .fetch_all(&mut *tx)
         .await?;
     let source = load_ticket(&mut tx, user.company_id, id).await?;

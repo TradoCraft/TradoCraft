@@ -9907,7 +9907,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get attrDefDeleted => 'Attribut gelöscht.';
 
   @override
-  String get baselineTitle => 'Bestand vor Ort';
+  String get baselineTitle => 'Ist-Zustand vor Ort';
 
   @override
   String get baselineEmpty =>
@@ -9923,14 +9923,14 @@ class AppLocalizationsDe extends AppLocalizations {
   String get baselineEditItem => 'Eintrag bearbeiten';
 
   @override
-  String get baselineParent => 'Untergeordnet zu';
+  String get baselineParent => 'Übergeordneter Eintrag';
 
   @override
   String get baselineTopLevel => 'Oberste Ebene';
 
   @override
   String get baselineNoTypes =>
-      'Keine Eintragstypen verfügbar. Ein Administrator kann sie unter Verwaltung, Bestandstypen anlegen.';
+      'Keine Eintragstypen verfügbar. Ein Administrator kann sie unter Verwaltung, Typen des Ist-Zustands anlegen.';
 
   @override
   String get baselineNoFields =>
@@ -9960,10 +9960,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get baselineDeleted => 'Eintrag gelöscht.';
 
   @override
-  String get adminBaselineTypes => 'Bestandstypen';
+  String get adminBaselineTypes => 'Typen des Ist-Zustands';
 
   @override
-  String get baselineTypesTitle => 'Eintragstypen des Bestands';
+  String get baselineTypesTitle => 'Eintragstypen des Ist-Zustands';
 
   @override
   String get baselineTypesEmpty => 'Noch keine Eintragstypen.';
@@ -10083,7 +10083,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get baselineImportConfirm => 'Importieren';
 
   @override
-  String get baselineImportDone => 'Bestand importiert.';
+  String get baselineImportDone => 'Ist-Zustand importiert.';
 
   @override
   String get baselineImportBadFile => 'Diese Datei ist kein gültiges JSON.';
@@ -10158,7 +10158,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get plGapInvalid => 'Der Abstand muss eine Zahl von 0 bis 50 sein.';
 
   @override
-  String get plIndent => 'Zur Untergruppe der darüberliegenden Gruppe machen';
+  String get plIndent => 'Zur Untergruppe der Gruppe darüber machen';
 
   @override
   String get plOutdent => 'Eine Ebene höher';
@@ -10281,7 +10281,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get plNoZones =>
-      'Noch keine Zonen. Fügen Sie eine Zone hinzu, um Dateien erzeugen zu können.';
+      'Noch keine Zonen. Fügen Sie eine Zone hinzu, um Dateien erstellen zu können.';
 
   @override
   String get plAddZone => 'Zone hinzufügen';
@@ -10291,7 +10291,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get plExportsHint =>
-      'Jedes Profil ergibt eine Datei pro Zone und Sprache mit den gewählten Kapiteln. Die gesamte Liste wird immer zusätzlich erzeugt.';
+      'Jedes Profil ergibt eine Datei pro Zone und Sprache mit den gewählten Kapiteln. Die gesamte Liste wird immer zusätzlich erstellt.';
 
   @override
   String get plNoExports => 'Noch keine Exportprofile.';
@@ -10368,7 +10368,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get plGenNothing =>
-      'Nichts zu erzeugen: Fügen Sie zuerst Zonen und Kapitel hinzu.';
+      'Nichts zu erstellen: Fügen Sie zuerst Zonen und Kapitel hinzu.';
 
   @override
   String plGenProgress(int current, int total, String file) {

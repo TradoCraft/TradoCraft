@@ -304,7 +304,7 @@ pub fn ProductsPage() -> impl IntoView {
         spawn_local(async move {
             match WebApiClient.list_products(&connection, &params).await {
                 Ok(page) => {
-                    if fetch_generation.get_value() != req_gen {
+                    if fetch_generation.try_get_value() != Some(req_gen) {
                         return;
                     }
                     items.set(page.items);
@@ -312,7 +312,7 @@ pub fn ProductsPage() -> impl IntoView {
                     loading.set(false);
                 }
                 Err(err) => {
-                    if fetch_generation.get_value() != req_gen {
+                    if fetch_generation.try_get_value() != Some(req_gen) {
                         return;
                     }
                     loading.set(false);

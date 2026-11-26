@@ -41,8 +41,13 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Install Typst
         run: |
-          curl -sSL "https://github.com/typst/typst/releases/download/v${TYPST_VERSION}/typst-x86_64-unknown-linux-musl.tar.xz" | tar -xJ
+          # -f fails on an HTTP error instead of piping its body into tar; the retries cover the GitHub release
+          # download answering with something that is not the archive now and then (it failed this job once).
+          curl -fsSL --retry 5 --retry-delay 5 --retry-all-errors --connect-timeout 20 --max-time 120 \
+            -o typst.tar.xz "https://github.com/typst/typst/releases/download/v${TYPST_VERSION}/typst-x86_64-unknown-linux-musl.tar.xz"
+          tar -xJf typst.tar.xz
           sudo mv typst-x86_64-unknown-linux-musl/typst /usr/local/bin/
+          rm -rf typst.tar.xz typst-x86_64-unknown-linux-musl
       - name: Install pdftotext
         # The quote remark test reads the printed PDF text to prove the production remark is absent.
         # Retries: the runner's mirrors fail to resolve now and then, which failed this job.
@@ -119,8 +124,13 @@ jobs:
       - name: Install Typst
         # The API makes PDFs with it; chapters 8 and 9 of the tutorial send quotations and orders.
         run: |
-          curl -sSL "https://github.com/typst/typst/releases/download/v${TYPST_VERSION}/typst-x86_64-unknown-linux-musl.tar.xz" | tar -xJ
+          # -f fails on an HTTP error instead of piping its body into tar; the retries cover the GitHub release
+          # download answering with something that is not the archive now and then (it failed this job once).
+          curl -fsSL --retry 5 --retry-delay 5 --retry-all-errors --connect-timeout 20 --max-time 120 \
+            -o typst.tar.xz "https://github.com/typst/typst/releases/download/v${TYPST_VERSION}/typst-x86_64-unknown-linux-musl.tar.xz"
+          tar -xJf typst.tar.xz
           sudo mv typst-x86_64-unknown-linux-musl/typst /usr/local/bin/
+          rm -rf typst.tar.xz typst-x86_64-unknown-linux-musl
       - run: cargo build -p tradocraft-api -p tradocraft-worker
       - name: Build the web app
         working-directory: app
@@ -140,4 +150,54 @@ jobs:
         if: failure()
         with:
           name: e2e-failures
+          path: e2e/test-results
+
+  # Browser end-to-end for the Leptos web UI at /app/: the release build the Dockerfile packages,
+  # served by the API against PostgreSQL and the dev seed (e2e/README.md, "Leptos web UI").
+  e2e-leptos:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: tradocraft
+          POSTGRES_PASSWORD: tradocraft
+          POSTGRES_DB: tradocraft
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U tradocraft" --health-interval 2s --health-retries 30
+    env:
+      TRUNK_VERSION: 0.22.2
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: e2e/package-lock.json
+      - name: Install trunk
+        # A release binary: `cargo install trunk` (as in the Dockerfile) takes several minutes.
+        run: |
+          curl -sSL "https://github.com/trunk-rs/trunk/releases/download/v${TRUNK_VERSION}/trunk-x86_64-unknown-linux-gnu.tar.gz" | tar -xz
+          sudo mv trunk /usr/local/bin/
+      - run: cargo build -p tradocraft-api
+      - name: Build the Leptos web UI
+        working-directory: crates/web-ui
+        run: trunk build --release
+      - name: Install e2e dependencies
+        working-directory: e2e
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - run: npm run test:leptos
+        working-directory: e2e
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: e2e-leptos-failures
           path: e2e/test-results

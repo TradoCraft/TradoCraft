@@ -9,19 +9,19 @@
 # Binding to 127.0.0.1 is not isolation on Docker Engine before 28.0.0: there, other hosts on the
 # same layer-2 network (the same LAN or Wi-Fi) can reach a port published on loopback. Update
 # Docker, or do not run this stack on a network you do not trust.
-# The database password defaults to "tradocraft"; choose another with POSTGRES_PASSWORD in the
-# environment or in a .env file next to this one (use letters and digits, it is part of the
-# database URL). It takes effect only when the pgdata volume is first created: changing it later does not change the password of the existing
+# There is no default database password: set POSTGRES_PASSWORD in the environment or in a .env
+# file next to this one (copy .env.example to .env; use letters and digits, it is part of the
+# database URL). Compose refuses to start without it. It takes effect only when the pgdata volume is first created: changing it later does not change the password of the existing
 # database role, and the API and worker then fail to connect. Either set it back, change the role
 # password inside the running database (docker compose exec db psql -U tradocraft -c
 # "ALTER USER tradocraft PASSWORD '...'"), or start over with `docker compose down -v`, which
 # DELETES the volume and all data in it.
 services:
   db:
-    image: postgres:16
+    image: postgres:16.16-trixie
     environment:
       POSTGRES_USER: tradocraft
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tradocraft}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
       POSTGRES_DB: tradocraft
     ports:
       - "127.0.0.1:5433:5432"   # 5433: the host often already runs its own PostgreSQL on 5432
@@ -38,7 +38,7 @@ services:
       db:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://tradocraft:${POSTGRES_PASSWORD:-tradocraft}@db/tradocraft
+      DATABASE_URL: postgresql://tradocraft:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@db/tradocraft
       AUTH_MODE: dev            # never on a reachable server; use oidc in production
       # Inside the container the API binds 0.0.0.0, which dev auth only accepts when
       # acknowledged. This is safe solely because the port above is published on loopback.
@@ -75,7 +75,7 @@ services:
       - api                     # the API migrates the database; this server never does
     restart: on-failure         # until the API has migrated and seeded an empty database
     environment:
-      DATABASE_URL: postgresql://tradocraft:${POSTGRES_PASSWORD:-tradocraft}@db/tradocraft
+      DATABASE_URL: postgresql://tradocraft:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@db/tradocraft
       PORTAL_BIND_ADDR: 0.0.0.0:8090
       # Browser origins that are answered. Left out: the companies' portal_url (the demo
       # company's is http://localhost:8081).
@@ -88,6 +88,11 @@ services:
       - filestorage:/var/lib/tradocraft/files
     ports:
       - "127.0.0.1:8090:8090"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "--output", "/dev/null", "http://127.0.0.1:8090/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
   worker:
     build: .
@@ -95,7 +100,7 @@ services:
     depends_on:
       - api
     environment:
-      DATABASE_URL: postgresql://tradocraft:${POSTGRES_PASSWORD:-tradocraft}@db/tradocraft
+      DATABASE_URL: postgresql://tradocraft:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@db/tradocraft
       # Development: outgoing e-mails are written to /app/outbox instead of being sent.
       MAIL_TRANSPORT: files
       MAIL_FILES_DIR: /app/outbox
@@ -116,6 +121,8 @@ services:
       RUST_LOG: info
     volumes:
       - filestorage:/var/lib/tradocraft/files
+    healthcheck:
+      disable: true             # the worker has no HTTP port
 
 volumes:
   pgdata:

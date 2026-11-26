@@ -6,12 +6,23 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
-// The release key is read from android/key.properties (not committed, see android/README.md).
+// The release key comes from android/key.properties (not committed, see SIGNING.md) or, in CI, from
+// the environment variables ANDROID_KEYSTORE_FILE, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS and
+// ANDROID_KEY_PASSWORD. There is no fallback to the debug key: a release build without a key fails.
 val keystoreProperties = Properties().apply {
     val file = rootProject.file("key.properties")
     if (file.exists()) file.inputStream().use { load(it) }
 }
-val hasReleaseKey = keystoreProperties.getProperty("storeFile") != null
+
+fun signingValue(property: String, env: String): String? =
+    (keystoreProperties.getProperty(property) ?: System.getenv(env))?.takeIf { it.isNotBlank() }
+
+val releaseStoreFile = signingValue("storeFile", "ANDROID_KEYSTORE_FILE")
+val releaseStorePassword = signingValue("storePassword", "ANDROID_KEYSTORE_PASSWORD")
+val releaseKeyAlias = signingValue("keyAlias", "ANDROID_KEY_ALIAS")
+val releaseKeyPassword = signingValue("keyPassword", "ANDROID_KEY_PASSWORD")
+val hasReleaseKey = releaseStoreFile != null && releaseStorePassword != null &&
+    releaseKeyAlias != null && releaseKeyPassword != null
 
 android {
     namespace = "be.tradocraft.tradocraft_app"
@@ -41,26 +52,40 @@ android {
     signingConfigs {
         if (hasReleaseKey) {
             create("release") {
-                storeFile = rootProject.file(keystoreProperties.getProperty("storeFile"))
-                storePassword = keystoreProperties.getProperty("storePassword")
-                keyAlias = keystoreProperties.getProperty("keyAlias")
-                keyPassword = keystoreProperties.getProperty("keyPassword")
+                storeFile = rootProject.file(releaseStoreFile!!)
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
             }
         }
     }
 
     buildTypes {
         release {
-            // A release is signed with your own key (key.properties). Without one it falls back to
-            // the debug key so `flutter run --release` works, but such a build is not to be
-            // distributed: anybody can sign an update with the same debug key.
-            signingConfig = if (hasReleaseKey) {
-                signingConfigs.getByName("release")
-            } else {
-                logger.warn("WARNING: no android/key.properties, the release is signed with the DEBUG key. Do not distribute it.")
-                signingConfigs.getByName("debug")
+            // Never the debug key: anybody can sign an update with it. Without a release key the
+            // release build fails (see the check below); debug builds are unaffected.
+            if (hasReleaseKey) {
+                signingConfig = signingConfigs.getByName("release")
             }
         }
+    }
+}
+
+// Fail any release build (assembleRelease, bundleRelease, flutter build apk/appbundle --release)
+// that has no release key, instead of producing a debug-signed or unsigned artifact.
+gradle.taskGraph.whenReady {
+    val releaseTask = allTasks.firstOrNull {
+        it.name.contains("Release") &&
+            (it.name.startsWith("assemble") || it.name.startsWith("bundle") ||
+                it.name.startsWith("package") || it.name.startsWith("sign"))
+    }
+    if (releaseTask != null && !hasReleaseKey) {
+        throw GradleException(
+            "Release signing is not configured: refusing to sign a release with the debug key. " +
+                "Create android/key.properties (storeFile, storePassword, keyAlias, keyPassword) or set " +
+                "ANDROID_KEYSTORE_FILE, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS and " +
+                "ANDROID_KEY_PASSWORD. See app/android/SIGNING.md."
+        )
     }
 }
 

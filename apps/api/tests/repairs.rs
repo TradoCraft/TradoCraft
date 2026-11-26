@@ -980,3 +980,97 @@ async fn a_customer_announces_a_repair_with_photos_and_follows_it(db: PgPool) {
     let (status, _) = call(&app, SUPPORT, Method::GET, "/api/v1/portal/repairs", None).await;
     assert_eq!(status, StatusCode::UNAUTHORIZED);
 }
+
+/// A customer cannot have an existing file (here a staff JPEG on a ticket) linked to their repair
+/// by sending its id as the photo's client id, nor tell from the answer that it exists.
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn a_portal_photo_client_id_cannot_claim_an_existing_file(db: PgPool) {
+    let app = setup(db.clone()).await;
+    let (s, t) = post(
+        &app,
+        SUPPORT,
+        "/api/v1/tickets",
+        json!({ "subject": "Internal", "customer_id": BETA, "contact_email": "x@beta.example", "body": "x" }),
+    )
+    .await;
+    assert_eq!(s, StatusCode::CREATED, "{t}");
+    let ticket = t["ticket"]["id"].as_str().unwrap();
+    let taken = "00000000-0000-7000-8000-00000000dd01";
+    let (s, _, b) = raw(
+        &app,
+        Who::Staff(SUPPORT),
+        Method::POST,
+        &format!("/api/v1/tickets/{ticket}/attachments?filename=secret.jpg&client_id={taken}"),
+        Some(("application/octet-stream", jpeg(7))),
+    )
+    .await;
+    assert_eq!(s, StatusCode::CREATED, "{}", String::from_utf8_lossy(&b));
+
+    let jan = portal_login(&app, &db, JAN).await;
+    let (s, d) = common::call_portal(
+        &app,
+        Some(&jan),
+        Method::POST,
+        "/api/v1/portal/repairs",
+        Some(json!({ "product_description": "Pump", "fault_description": "Leaks" })),
+    )
+    .await;
+    assert_eq!(s, StatusCode::CREATED, "{d}");
+    let rid = d["repair"]["id"].as_str().unwrap().to_string();
+    let photo_uri = format!("/api/v1/portal/repairs/{rid}/photos?client_id={taken}");
+    let (s, _, b) = raw(
+        &app,
+        Who::Portal(&jan),
+        Method::POST,
+        &photo_uri,
+        Some(("image/jpeg", jpeg(1))),
+    )
+    .await;
+    let d: Value = serde_json::from_slice(&b).unwrap_or(Value::Null);
+    assert_eq!(s, StatusCode::CREATED, "{d}");
+    let photos = d["photos"].as_array().unwrap();
+    assert_eq!(photos.len(), 1);
+    assert_ne!(photos[0]["id"], taken);
+    assert_ne!(photos[0]["filename"], "secret.jpg");
+    // The staff file is not linked to the repair: same answer as for an id that does not exist.
+    let (s_taken, _, body_taken) = raw(
+        &app,
+        Who::Portal(&jan),
+        Method::GET,
+        &format!("/api/v1/portal/repairs/{rid}/photos/{taken}"),
+        None,
+    )
+    .await;
+    let (s_missing, _, body_missing) = raw(
+        &app,
+        Who::Portal(&jan),
+        Method::GET,
+        &format!("/api/v1/portal/repairs/{rid}/photos/00000000-0000-7000-8000-00000000dd99"),
+        None,
+    )
+    .await;
+    assert_eq!(s_taken, StatusCode::NOT_FOUND);
+    assert_eq!((s_taken, body_taken), (s_missing, body_missing));
+    // The customer's own photo downloads, and a retry adds no second copy.
+    let own = photos[0]["id"].as_str().unwrap().to_string();
+    let (s, _, bytes) = raw(
+        &app,
+        Who::Portal(&jan),
+        Method::GET,
+        &format!("/api/v1/portal/repairs/{rid}/photos/{own}"),
+        None,
+    )
+    .await;
+    assert_eq!((s, bytes), (StatusCode::OK, jpeg(1)));
+    let (s, _, b) = raw(
+        &app,
+        Who::Portal(&jan),
+        Method::POST,
+        &photo_uri,
+        Some(("image/jpeg", jpeg(1))),
+    )
+    .await;
+    let d: Value = serde_json::from_slice(&b).unwrap_or(Value::Null);
+    assert_eq!(s, StatusCode::CREATED, "{d}");
+    assert_eq!(d["photos"].as_array().unwrap().len(), 1);
+}

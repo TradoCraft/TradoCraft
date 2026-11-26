@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tradocraft_app/app/secret_store.dart';
 import 'package:tradocraft_app/l10n/app_localizations.dart';
 import 'package:tradocraft_app/portal/portal_pages.dart';
 import 'package:tradocraft_app/portal/portal_state.dart';
@@ -71,6 +72,7 @@ Future<ProviderContainer> _pump(
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   SharedPreferences.setMockInitialValues({});
+  PortalTokenStore.secrets = MemorySecretStore();
   final container = ProviderContainer(
     overrides: [
       portalDioProvider.overrideWithValue(fakeDio(http)),
@@ -167,11 +169,13 @@ void main() {
       );
       expect(http.bodies['POST /api/v1/portal/sessions'], {'token': 'tcl_abc'});
       expect(c.read(portalTokenProvider), 'tcs_session');
+      expect(await PortalTokenStore.load(), 'tcs_session');
+      // Never in SharedPreferences (finding #7).
       expect(
         (await SharedPreferences.getInstance()).getString(
           'portal_session_token',
         ),
-        'tcs_session',
+        isNull,
       );
       expect(c.read(portalLocaleProvider)?.languageCode, 'fr');
     },

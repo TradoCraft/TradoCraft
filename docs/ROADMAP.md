@@ -29,7 +29,8 @@ this release gate.
 - [ ] **Release verification.** Exercise all four workflows in browser tests against the real API
   and a seeded database. Smoke-test the packaged `/app/` entry point before tagging v0.4.0.
   Done: Playwright specs for all four workflows in `e2e/tests-leptos/` (`npm run test:leptos`), run against the
-  API with the dev seed. Open: run them in CI, and smoke-test the packaged Docker image.
+  API with the dev seed, and run by the `e2e-leptos` job in `.github/workflows/ci.yml`. Open: smoke-test the packaged
+  Docker image.
 
 The existing [Leptos Helpdesk](../crates/web-ui/src/pages/helpdesk.rs) and
 [Flutter To-do](../app/lib/features/todo/todo_page.dart) are the starting points. See also the
@@ -77,7 +78,7 @@ The existing [Leptos Helpdesk](../crates/web-ui/src/pages/helpdesk.rs) and
 | D9 Two-factor authentication | Open |
 | D10 Data import framework (CSV, XLSX, ODS, Parquet) | Done for the shared importer, CSV/XLSX/ODS readers, XLSX/ODS export, admin screen and background jobs, [ADR 0067](adr/0067-data-import-framework.md); Parquet and further entities (contacts, suppliers, stock opening balances, quotations, orders, tickets) follow |
 | P1 Price lists (zones, chapters, export profiles, PDF and Excel) | Done (PRs #95, #97), [ADR 0074](adr/0074-price-lists.md); never run in a real app (see the release checklist) |
-| P2 Site baseline and product suitability | In progress, [ADR 0068](adr/0068-site-baseline-and-product-suitability.md) (still Proposed). Baseline, matching, tower configurator import and quotation picker suitability are implemented. The quote can open its linked baseline directly. An end-to-end test remains open. |
+| P2 Site baseline and product suitability | **Deferred from the first release**, [ADR 0068](adr/0068-site-baseline-and-product-suitability.md) (still Proposed). Baseline, matching, tower configurator import and quotation picker suitability are implemented. The quote can open its linked baseline directly. An end-to-end test remains open. |
 | U1 Shared UI framework (theme tokens and dark mode, repository layer, app switcher and breadcrumbs, global search and notifications, generic list view, server-side sort, filters, facets and saved favourites, group-by, generic form view, kanban, chatter) | In progress. Done and merged: phases 0 to 3 ([ADR 0077](adr/0077-ui-theme-tokens-and-dark-mode.md) to [ADR 0085](adr/0085-generic-form-view.md), including list group-by, [ADR 0089](adr/0089-list-group-by.md)); the generic list view now serves orders, tickets, products and suppliers as well, and the generic form view customers, quotations, orders, products and suppliers (PRs #109 to #113, #119, #123, #159). The invoice line editor and smart buttons on quotations and orders exist. Phase 4, chatter, followers and activities ([ADR 0086](adr/0086-generic-chatter-and-activities.md), accepted, on customers, quotations, orders and opportunities; PR #124): backend, panel, file attachments on notes, field-level messages, assignment mail, live updates and clean-up are done. Phase 5, kanban: the generic board and the opportunity pipeline ([ADR 0087](adr/0087-generic-kanban-view.md), PR #125) and tickets on the board ([ADR 0088](adr/0088-tickets-on-the-kanban-board.md), PR #126) are done. Open: the ticket record screen on the generic form view, a one2many line editor beyond invoices, the calendar view, live updates of the board, team, tag and SLA filters on the ticket board, attachments on activities, messages for quotation and order line changes. |
 | UX1 Frontend UX phases 1 to 5 (entity list search clear and responsive header, active group label and top-bar search pill, five-item navigation bar with a More sheet, role-aware home overview, non-blocking tab editing in the product form) | Done (PRs #152 to #156); no ADR |
 | T1 Tutorial chapters 10 and 11 (10: working a helpdesk ticket; 11: custom product properties) and the tutorial tooling (assisted steps, menu guidance, show control, instance-scoped progress, `tutorial-env` update) | Merged (PRs #116, #127, #128, #133, #134, #136 to #138); both chapters are in the e2e walk (`e2e/tests/tutorial.spec.ts`). The chapter 10 text was written without being run: run `flutter gen-l10n`, the tutorial tests and the e2e walk. Open from chapter 10: links and bundles, checklists, watching, hand-over and the call log |
@@ -92,33 +93,66 @@ The existing [Leptos Helpdesk](../crates/web-ui/src/pages/helpdesk.rs) and
 
 v0.2.0 and v0.3.0 are tagged and published by `.github/workflows/release.yml` (Docker images, Windows
 artifacts, checksums, a portable Windows demo). Versions are `0.3.0` across Cargo, OpenAPI, the Flutter app and
-the deploy files; there is still no CHANGELOG. The items below are what remains before a distributable
-release. Findings refer to
-`docs/security-review-2026-11-14.md` (no Critical or High findings); that file is not in the repository, so the
-finding numbers below cannot be checked against it until it is restored.
+the deploy files; [CHANGELOG.md](../CHANGELOG.md) and [RELEASING.md](RELEASING.md) now exist. The items below are what
+remains before a distributable release. The findings below come from
+`docs/security-review-2026-11-14.md` (no Critical or High findings). That file is not in the repository, so the
+finding numbers were **not** checked against it: each finding was re-verified from its one-line description in this
+roadmap, against the current code.
 
 **Blockers**
-- Security: re-verify, then fix the open Medium findings. #1 portal photo upload IDOR and file-ID oracle;
-  #2 OIDC first login trusts an unverified email; #3 and #4 wildcard CORS and dev-auth defaults (partly
-  addressed by ADR 0070 and D7); #5 JWKS refresh throttle and timeout; #6 Android release signed with the
-  debug key (partly addressed: `app/android/app/build.gradle.kts` signs with a release key when one is configured
-  and falls back to the debug key, and such a build must not be distributed); #7 tokens in SharedPreferences and `allowBackup`. #6 and #7 must land before any distribution.
-  The roughly 310 `WHERE id = $1` sites were not read; add the `company_id` query-scan test from the
-  per-item checklist.
-- Release mechanics. Done: a release workflow (Docker images, Windows artifacts, checksums), the tag convention
-  `vMAJOR.MINOR.PATCH`, a non-root Docker user and `.env*` in `.dockerignore`. Open: a signed Android build (the SBOM
-  job in `security.yml` already attaches to a release), a versioning policy, a CHANGELOG, release signing keys,
-  pinned image tags, a Docker `HEALTHCHECK`, no default database credentials (`docker-compose.yml` defaults the
-  password to `tradocraft`), and a README status line that no longer says "vertical slice".
-- Decide whether to include P2 (site baseline) in the first release. An end-to-end test remains open and ADR 0068 is still Proposed. Apply its
-  migrations to a database that already has companies first.
-- Run in a real app what has only been tested in isolation: price-list save, open and share, PDF layout with
-  real data, Windows paths, Typst 0.15.1 (pinned in the Dockerfile and CI; check a local install matches); one request to the live VIES service
-  (D4); a full `cargo test --workspace` on the final code. The helpdesk end-to-end test (PR #111) now covers one workflow.
-- Review the machine-written nl, de, fr and es strings of price lists and site baseline.
+- Security. Medium findings #1 to #7 are handled in the code (below); nothing here was run on a device or in a live
+  environment.
+  - #1 portal photo upload IDOR and file-ID oracle: real, fixed. A portal upload no longer uses the customer's
+    `client_id` as the file id; the stored id is derived from company, contact, record and `client_id`
+    (`portal_file_id`). Two database tests fail without the fix. A portal file id no longer equals the `client_id` sent.
+    Staff uploads still use `client_id` directly.
+  - #2 OIDC first login trusts an unverified email: already fixed in the code (`require_verified_claim` is the
+    default everywhere); a test now locks it in.
+  - #3 and #4 wildcard CORS and dev-auth defaults: mostly in place; the gap was `CORS_ALLOWED_ORIGINS=*` with
+    `AUTH_MODE=dev`. The staff API now refuses to start with `*` under dev auth or `APP_ENV_KIND=live`
+    ([ADR 0092](adr/0092-no-wildcard-cors-with-dev-auth-or-in-live.md)). Breaking for a live setup that used `*`. The refusal in
+    Checked by starting the binary: `*` with dev auth, or in a live environment, refuses to start; `*` with real sign-in in a
+    tutorial environment starts with a warning; dev auth on a non-loopback address refuses. The portal server still
+    only warns on `*`.
+  - #5 JWKS refresh throttle and timeout: the throttle existed; timeouts for the host lookup and for the whole fetch
+    were added, with tests against a provider that never answers.
+  - #6 Android release signed with the debug key: the debug-key fallback is removed; a release build fails without a
+    keystore. `.github/workflows/android-release.yml` builds a signed AAB and APK from secrets and fails on a debug
+    certificate ([app/android/SIGNING.md](../app/android/SIGNING.md)). The Gradle check and the workflow have not been run.
+  - #7 tokens in SharedPreferences and `allowBackup`: tokens moved to `flutter_secure_storage` with a one-time migration;
+    `allowBackup` is off with backup exclusion rules. Tested with an in-memory fake only, not on Android, Windows, Linux or web.
+  - Tenant isolation: the `company_id` query-scan test (`crates/core/tests/tenant_query_scan.rs`) flagged 381
+    statements; 4 were fixed (division delete, ticket merge lock, serial-unit lock) and 377 are allowlisted with a
+    reason in `tenant_scan_allowlist.txt`. None was a direct cross-tenant read or write. The 4 fixes have no database
+    tests of their own. Review the allowlist: many entries were judged by pattern ("the row was loaded with
+    `company_id` earlier"). Shared by design and worth confirming: product media and the "often bought together"
+    counts are not scoped by company. Three portal items (global login-link rate limit, session creation marking the
+    contact's links used in every company) are allowlisted, not changed.
+- Release mechanics. Done in the repository: a release workflow, the tag convention, a non-root Docker user,
+  `.env*` in `.dockerignore`, a Docker `HEALTHCHECK` on `/health`, pinned base image tags (they exist on Docker Hub; not
+  digests), no default database password (`POSTGRES_PASSWORD` is required, a breaking deployment change), a
+  versioning policy and release procedure ([RELEASING.md](RELEASING.md), `scripts/bump-version.sh`), a CHANGELOG, cosign
+  keyless signing of the images and of `SHA256SUMS`, and an accurate README status line. **Not run:** the image build,
+  the `HEALTHCHECK` in a container, the cosign steps and the release workflow; try them on a test tag in a fork first.
+  **Owner action:** create the Android release keystore and the four `ANDROID_*` secrets; the production keys are
+  never created or held by the tooling.
+- P2 (site baseline): **deferred from the first release.** It stays in the tree and its migrations run, but it is not
+  part of the first release's scope or support, and [ADR 0068](adr/0068-site-baseline-and-product-suitability.md) stays Proposed.
+  It is not gated by a module switch (it lives inside Customers and Products); decide whether to add one. Before it
+  ships: an end-to-end test, the ADR accepted, and its migrations applied to a database that already has companies.
+- Run in a real app what had only been tested in isolation:
+  - Done: one live request to VIES (D4). It worked; the client maps all three real answers (valid, invalid, member
+    state busy) correctly, now pinned as tests. A quotation PDF with 18 long lines and a price-list PDF in nl, fr and
+    en were rendered through the API with Typst 0.15.1; layout is fine. File names in the price-list export are
+    sanitised for Windows (reserved names, byte limits, collisions), with tests.
+  - Open: price-list save, open and share in the Flutter app; a real Windows run (only the `windows-demo.yml` job
+    covers it).
+  - Done on the merged code (2026-11-26): `cargo test --workspace` (1,709 tests, none failing), `cargo clippy --workspace --all-targets -D warnings`, `cargo fmt --check`, the OpenAPI document, the API-client contract and the wasm32 check; the Flutter suite (1,703 tests). One earlier full Flutter run had a single timing-dependent failure in `configurator_test` under load; it passes alone and on rerun.
+- Translations: the nl, de, fr and es strings of price lists and site baseline were reviewed and 23 fixed
+  ([translation-review-2026-11.md](translation-review-2026-11.md)). A native speaker should confirm the open questions in that file.
 
 **Housekeeping**
-- ADR numbering was fixed in `3eb5d9b`; the ADR index lists 0001 to 0089 with no duplicate numbers. A7 and M1 (MCP) have no ADR; write them.
+- ADR numbering was fixed in `3eb5d9b`; the ADR index lists 0001 to 0092 with no duplicate numbers. A7 and M1 (MCP) have no ADR; write them.
 - Keep the `printing` package: `app/lib/features/kb/document_library_page.dart` uses its `PdfPreview`. Never commit the
   hook-created `.compliance/` (none is in the tree today).
 - Delete the merged and stale remote branches (140 heads today) before the next tag.

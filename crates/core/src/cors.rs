@@ -10,7 +10,8 @@ use tower_http::cors::{AllowHeaders, AllowOrigin, Any, CorsLayer};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CorsConfig {
-    /// Every origin: tests only. `CORS_ALLOWED_ORIGINS=*` asks for it explicitly.
+    /// Every origin: tests only. `CORS_ALLOWED_ORIGINS=*` asks for it explicitly; the staff API
+    /// refuses it with dev authentication and in a live environment ([`CorsConfig::for_api`]).
     Any,
     /// Pages served from this machine (`localhost`, `127.0.0.1`, `[::1]`, any port): the default
     /// of `AUTH_MODE=dev`, so a web page on the internet cannot reach a developer's local API.
@@ -44,6 +45,36 @@ impl CorsConfig {
             }
         }
         Ok(CorsConfig::Origins(origins))
+    }
+
+    /// The staff API's browser origins at start-up from `CORS_ALLOWED_ORIGINS` (ADR 0050, 0070,
+    /// 0092). Unset: this machine only with dev authentication, no browser origin otherwise.
+    /// Every origin (`*`) is refused with dev authentication (any web page could then call the
+    /// API with an `X-Dev-User` header of its choosing) and in a live environment; it is meant
+    /// for test and tutorial environments.
+    pub fn for_api(list: Option<&str>, dev_auth: bool, live: bool) -> Result<Self, String> {
+        let cors = match list {
+            Some(list) => Self::parse(list)?,
+            None if dev_auth => return Ok(CorsConfig::Loopback),
+            None => return Ok(CorsConfig::Origins(Vec::new())),
+        };
+        if cors == CorsConfig::Any {
+            if dev_auth {
+                return Err(
+                    "`*` (every origin) is refused with AUTH_MODE=dev: any web page \
+                            could call this API with an X-Dev-User header of its choosing. \
+                            Leave it empty (pages of this machine) or list the origins"
+                        .into(),
+                );
+            }
+            if live {
+                return Err("`*` (every origin) is refused in a live environment \
+                            (APP_ENV_KIND=live): list the origins of the web app, e.g. \
+                            https://erp.example.com"
+                    .into());
+            }
+        }
+        Ok(cors)
     }
 
     pub fn layer(&self) -> CorsLayer {
@@ -173,5 +204,43 @@ mod tests {
         assert!(CorsConfig::parse("https://a.example/#top").is_err());
         assert!(CorsConfig::parse("a.example").is_err());
         assert!(CorsConfig::parse("*, https://a.example").is_err());
+    }
+
+    #[test]
+    fn the_api_never_answers_every_origin_with_dev_auth_or_in_live() {
+        // Unset: this machine with dev authentication, nobody with real sign-in.
+        assert_eq!(
+            CorsConfig::for_api(None, true, true),
+            Ok(CorsConfig::Loopback)
+        );
+        assert_eq!(
+            CorsConfig::for_api(None, false, true),
+            Ok(CorsConfig::Origins(vec![]))
+        );
+        // `*` is refused with dev authentication in every environment, and in live.
+        for (dev, live) in [(true, true), (true, false), (false, true)] {
+            assert!(
+                CorsConfig::for_api(Some("*"), dev, live).is_err(),
+                "dev={dev} live={live}"
+            );
+            assert!(CorsConfig::for_api(Some(" * "), dev, live).is_err());
+        }
+        // A test or tutorial environment with real sign-in may still ask for it.
+        assert_eq!(
+            CorsConfig::for_api(Some("*"), false, false),
+            Ok(CorsConfig::Any)
+        );
+        // A list works everywhere; an empty value with dev authentication answers nobody.
+        for (dev, live) in [(true, true), (false, true), (false, false)] {
+            assert_eq!(
+                CorsConfig::for_api(Some("https://erp.example"), dev, live),
+                Ok(CorsConfig::Origins(vec!["https://erp.example".into()]))
+            );
+        }
+        assert_eq!(
+            CorsConfig::for_api(Some(""), true, true),
+            Ok(CorsConfig::Origins(vec![]))
+        );
+        assert!(CorsConfig::for_api(Some("erp.example"), false, true).is_err());
     }
 }

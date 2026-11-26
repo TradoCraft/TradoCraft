@@ -372,6 +372,38 @@ mod tests {
         assert_eq!(r.reason, None);
     }
 
+    // The three answers below were captured from the live service (2026-11-26) and trimmed.
+
+    #[test]
+    fn live_valid_answer_with_a_multi_line_address() {
+        let body = r#"{"isValid": true, "requestDate": "2026-11-26T20:04:00.000Z", "userError": "VALID",
+                       "name": "SA ING BELGIE", "address": "Avenue Marnix 24\n1000 Bruxelles",
+                       "vatNumber": "0403200393"}"#;
+        let r = parse_response(200, body, "BE");
+        assert_eq!(r.state, ViesState::Valid);
+        assert_eq!(r.name.as_deref(), Some("SA ING BELGIE"));
+        assert_eq!(r.street.as_deref(), Some("Avenue Marnix 24"));
+        assert_eq!(r.postal_code.as_deref(), Some("1000"));
+        assert_eq!(r.city.as_deref(), Some("Bruxelles"));
+    }
+
+    #[test]
+    fn live_invalid_answer_is_invalid() {
+        let body = r#"{"isValid": false, "userError": "INVALID", "name": "", "address": ""}"#;
+        assert_eq!(parse_response(200, body, "FR").state, ViesState::Invalid);
+    }
+
+    #[test]
+    fn live_member_state_throttling_is_unavailable_not_invalid() {
+        // A busy member state answers 200 with isValid false and this userError: the number may well
+        // be valid, so it must not be reported as invalid.
+        let body = r#"{"isValid": false, "userError": "MS_MAX_CONCURRENT_REQ", "name": "---",
+                       "address": "---", "vatNumber": "0403200393"}"#;
+        let r = parse_response(200, body, "BE");
+        assert_eq!(r.state, ViesState::Unavailable);
+        assert_eq!(r.reason.as_deref(), Some("ms_max_concurrent_req"));
+    }
+
     #[test]
     fn the_other_spelling_of_the_flag_is_read_too() {
         let r = parse_response(
