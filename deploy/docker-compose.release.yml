@@ -8,14 +8,19 @@
 #      - Native Windows app: unzip tradocraft-windows-x64.zip, run tradocraft_app.exe,
 #        and connect to http://localhost:8080.
 #
+# Required: POSTGRES_PASSWORD (there is no default). Put POSTGRES_PASSWORD=<letters and digits, e.g.
+# the output of `openssl rand -hex 16`> in a .env file next to this one, or export it, before
+# `docker compose up -d`.
+# Images are pinned to the release version; set TRADOCRAFT_VERSION only to run another release.
+#
 # For local evaluation only (AUTH_MODE=dev, loopback-bound ports).
 
 services:
   db:
-    image: postgres:16
+    image: postgres:16.16-trixie
     environment:
       POSTGRES_USER: tradocraft
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tradocraft}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
       POSTGRES_DB: tradocraft
     volumes:
       - pgdata:/var/lib/postgresql/data
@@ -30,7 +35,7 @@ services:
       db:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://tradocraft:${POSTGRES_PASSWORD:-tradocraft}@db/tradocraft
+      DATABASE_URL: postgresql://tradocraft:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@db/tradocraft
       AUTH_MODE: dev
       ALLOW_INSECURE_DEV_AUTH: "true"
       SEED_DEV_DATA: "true"
@@ -42,7 +47,7 @@ services:
     ports:
       - "127.0.0.1:8080:8080"
     healthcheck:
-      test: ["CMD", "curl", "--fail", "--silent", "http://127.0.0.1:8080/api/v1/meta/environment"]
+      test: ["CMD", "curl", "--fail", "--silent", "http://127.0.0.1:8080/health"]
       interval: 5s
       timeout: 3s
       retries: 30
@@ -55,7 +60,7 @@ services:
         condition: service_healthy
     restart: on-failure
     environment:
-      DATABASE_URL: postgresql://tradocraft:${POSTGRES_PASSWORD:-tradocraft}@db/tradocraft
+      DATABASE_URL: postgresql://tradocraft:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@db/tradocraft
       PORTAL_BIND_ADDR: 0.0.0.0:8090
       PORTAL_ALLOWED_ORIGINS: http://localhost:8088, http://127.0.0.1:8088
       FILE_STORAGE_DIR: /var/lib/tradocraft/files
@@ -64,6 +69,11 @@ services:
       - filestorage:/var/lib/tradocraft/files
     ports:
       - "127.0.0.1:8090:8090"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "--output", "/dev/null", "http://127.0.0.1:8090/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
   worker:
     image: ghcr.io/tradocraft/tradocraft-backend:${TRADOCRAFT_VERSION:-0.3.0}
@@ -72,7 +82,7 @@ services:
       api:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://tradocraft:${POSTGRES_PASSWORD:-tradocraft}@db/tradocraft
+      DATABASE_URL: postgresql://tradocraft:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@db/tradocraft
       APP_ENV_KIND: tutorial
       MAIL_TRANSPORT: files
       MAIL_FILES_DIR: /app/outbox
@@ -82,6 +92,8 @@ services:
     volumes:
       - filestorage:/var/lib/tradocraft/files
       - outbox:/app/outbox
+    healthcheck:
+      disable: true             # the worker has no HTTP port
 
   web:
     image: ghcr.io/tradocraft/tradocraft-web:${TRADOCRAFT_VERSION:-0.3.0}

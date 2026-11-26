@@ -14,6 +14,7 @@ on:
 permissions:
   contents: write
   packages: write
+  id-token: write   # keyless cosign signing (GitHub OIDC), docs/RELEASING.md
 
 jobs:
   release-info:
@@ -21,6 +22,7 @@ jobs:
     outputs:
       tag: ${{ steps.release.outputs.tag }}
       version: ${{ steps.release.outputs.version }}
+      minor: ${{ steps.release.outputs.minor }}
       owner: ${{ steps.release.outputs.owner }}
     steps:
       - id: release
@@ -30,6 +32,8 @@ jobs:
           [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "Expected a tag such as v0.3.0"; exit 1; }
           echo "tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
           echo "version=${RELEASE_TAG#v}" >> "$GITHUB_OUTPUT"
+          VERSION="${RELEASE_TAG#v}"
+          echo "minor=${VERSION%.*}" >> "$GITHUB_OUTPUT"
           echo "owner=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@v7
         with:
@@ -48,16 +52,25 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/build-push-action@v6
+      - uses: sigstore/cosign-installer@v3
+      - id: build
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: Dockerfile
           push: true
+          # Pin by X.Y.Z; X.Y follows the newest patch release. No `latest`: pre-1.0 every
+          # minor release may break compatibility (docs/RELEASING.md).
           tags: |
             ghcr.io/${{ needs.release-info.outputs.owner }}/tradocraft-backend:${{ needs.release-info.outputs.version }}
-            ghcr.io/${{ needs.release-info.outputs.owner }}/tradocraft-backend:latest
+            ghcr.io/${{ needs.release-info.outputs.owner }}/tradocraft-backend:${{ needs.release-info.outputs.minor }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      - name: Sign the image (cosign, keyless)
+        env:
+          IMAGE: ghcr.io/${{ needs.release-info.outputs.owner }}/tradocraft-backend
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: cosign sign --yes "${IMAGE}@${DIGEST}"
 
   docker-web:
     needs: release-info
@@ -72,16 +85,23 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/build-push-action@v6
+      - uses: sigstore/cosign-installer@v3
+      - id: build
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: deploy/Dockerfile.web
           push: true
           tags: |
             ghcr.io/${{ needs.release-info.outputs.owner }}/tradocraft-web:${{ needs.release-info.outputs.version }}
-            ghcr.io/${{ needs.release-info.outputs.owner }}/tradocraft-web:latest
+            ghcr.io/${{ needs.release-info.outputs.owner }}/tradocraft-web:${{ needs.release-info.outputs.minor }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      - name: Sign the image (cosign, keyless)
+        env:
+          IMAGE: ghcr.io/${{ needs.release-info.outputs.owner }}/tradocraft-web
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: cosign sign --yes "${IMAGE}@${DIGEST}"
 
   windows-app:
     needs: release-info
@@ -120,6 +140,8 @@ jobs:
   release:
     needs: [release-info, docker-backend, docker-web, windows-app, windows-demo]
     runs-on: ubuntu-latest
+    env:
+      POSTGRES_PASSWORD: smoke${{ github.run_id }}   # throwaway: the smoke-test stack is removed below
     steps:
       - uses: actions/checkout@v7
         with:
@@ -161,11 +183,21 @@ jobs:
           if [ -f dist/docker-compose.yml ]; then
             docker compose -f dist/docker-compose.yml down --volumes
           fi
+      - uses: sigstore/cosign-installer@v3
+      - name: Checksums and signature
+        working-directory: dist
+        run: |
+          sha256sum tradocraft-windows-x64.zip docker-compose.yml tradocraft-demo-windows-x64* > SHA256SUMS
+          cat SHA256SUMS
+          # Keyless: the signature is bound to this workflow's GitHub OIDC identity and logged in
+          # the public Rekor transparency log. SHA256SUMS.sigstore.json holds signature, certificate
+          # and log proof (verification: docs/RELEASING.md).
+          cosign sign-blob --yes --bundle SHA256SUMS.sigstore.json SHA256SUMS
       - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ needs.release-info.outputs.tag }}
         run: |
-          gh release create "$RELEASE_TAG" --verify-tag dist/tradocraft-windows-x64.zip dist/docker-compose.yml dist/tradocraft-demo-windows-x64* \
+          gh release create "$RELEASE_TAG" --verify-tag dist/tradocraft-windows-x64.zip dist/docker-compose.yml dist/tradocraft-demo-windows-x64* dist/SHA256SUMS dist/SHA256SUMS.sigstore.json \
             --title "TradoCraft $RELEASE_TAG" \
-            --notes "For the offline Windows demo, extract the demo ZIP or run the per-user setup EXE. For Docker, run docker compose up -d. Open http://localhost:8088 for the Web UI, or extract the Windows x64 zip and connect to http://localhost:8080. Docker Desktop runs PostgreSQL and the prebuilt backend with Typst."
+            --notes "For the offline Windows demo, extract the demo ZIP or run the per-user setup EXE. For Docker, set POSTGRES_PASSWORD in a .env file next to docker-compose.yml, then run docker compose up -d. Verify downloads with SHA256SUMS and cosign (docs/RELEASING.md). Open http://localhost:8088 for the Web UI, or extract the Windows x64 zip and connect to http://localhost:8080. Docker Desktop runs PostgreSQL and the prebuilt backend with Typst."

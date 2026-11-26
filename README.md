@@ -71,8 +71,11 @@ docs/                architecture and decision records
 the [release](https://github.com/TradoCraft/TradoCraft/releases) into a folder and run:
 
 ```bash
+echo "POSTGRES_PASSWORD=$(openssl rand -hex 16)" > .env   # there is no default password
 docker compose up -d
 ```
+
+(On Windows PowerShell set `$env:POSTGRES_PASSWORD` to a value of letters and digits instead.)
 
 - **Web UI** — open http://localhost:8088 and use the local tutorial sign-in.
 - **Windows app** — download and extract `tradocraft-windows-x64.zip`, open
@@ -87,13 +90,14 @@ evaluation and uses development sign-in with loopback-bound ports.
 Prerequisites: Rust (stable), PostgreSQL 16, [Typst](https://typst.app) CLI, Flutter SDK.
 
 ```bash
+cp .env.example .env    # set POSTGRES_PASSWORD (there is no default)
 docker compose up --build
 ```
 
 or without Docker, against a local PostgreSQL:
 
 ```bash
-cp .env.example .env    # adjust DATABASE_URL
+cp .env.example .env    # adjust DATABASE_URL (use your own database password)
 set -a; source .env; set +a
 cargo run -p tradocraft-api
 ```
