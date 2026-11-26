@@ -9881,11 +9881,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get attrDefDeleted => 'Atributo eliminado.';
 
   @override
-  String get baselineTitle => 'Situación existente en el sitio';
+  String get baselineTitle => 'Situación existente en el emplazamiento';
 
   @override
   String get baselineEmpty =>
-      'Aún no hay nada registrado. Añada las esferas y campanas del sitio para encontrar productos adecuados.';
+      'Aún no hay nada registrado. Añada las esferas y campanas del emplazamiento para encontrar productos adecuados.';
 
   @override
   String get baselineAdd => 'Añadir elemento';
@@ -9897,7 +9897,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get baselineEditItem => 'Editar elemento';
 
   @override
-  String get baselineParent => 'Colocado bajo';
+  String get baselineParent => 'Ubicado bajo';
 
   @override
   String get baselineTopLevel => 'Nivel superior';
@@ -9934,7 +9934,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get baselineDeleted => 'Elemento eliminado.';
 
   @override
-  String get adminBaselineTypes => 'Tipos de existente';
+  String get adminBaselineTypes => 'Tipos de situación existente';
 
   @override
   String get baselineTypesTitle =>
@@ -10058,7 +10058,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get baselineImportConfirm => 'Importar';
 
   @override
-  String get baselineImportDone => 'Situación actual importada.';
+  String get baselineImportDone => 'Situación existente importada.';
 
   @override
   String get baselineImportBadFile => 'Este archivo no es un JSON válido.';
@@ -10294,7 +10294,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String plExportDeleteConfirm(String name) {
-    return '¿Eliminar el perfil de exportación \"$name\"?';
+    return '¿Eliminar el perfil de exportación «$name»?';
   }
 
   @override

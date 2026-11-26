@@ -10060,7 +10060,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get baselineImportUnmapped =>
-      'Champs non reconnus (conservés avec l\'élément importé)';
+      'Champs non associés (conservés avec l\'élément importé)';
 
   @override
   String baselineImportUnmappedRow(String field, int count) {

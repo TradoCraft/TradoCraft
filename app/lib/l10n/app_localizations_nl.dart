@@ -9886,7 +9886,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get baselineEmpty =>
-      'Nog niets vastgelegd. Voeg de uurwerkwijzerplaten en klokken ter plaatse toe, zodat geschikte producten gevonden kunnen worden.';
+      'Nog niets vastgelegd. Voeg de wijzerplaten en klokken ter plaatse toe, zodat geschikte producten gevonden kunnen worden.';
 
   @override
   String get baselineAdd => 'Item toevoegen';
@@ -9905,7 +9905,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get baselineNoTypes =>
-      'Er zijn geen itemtypes beschikbaar. Een beheerder kan ze toevoegen onder Beheer, Basistypes.';
+      'Er zijn geen itemtypes beschikbaar. Een beheerder kan ze toevoegen onder Beheer, Types uitgangssituatie.';
 
   @override
   String get baselineNoFields =>
@@ -9935,7 +9935,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get baselineDeleted => 'Item verwijderd.';
 
   @override
-  String get adminBaselineTypes => 'Basistypes';
+  String get adminBaselineTypes => 'Types uitgangssituatie';
 
   @override
   String get baselineTypesTitle => 'Itemtypes van de uitgangssituatie';
@@ -10058,7 +10058,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get baselineImportConfirm => 'Importeren';
 
   @override
-  String get baselineImportDone => 'Basislijn geïmporteerd.';
+  String get baselineImportDone => 'Uitgangssituatie geïmporteerd.';
 
   @override
   String get baselineImportBadFile => 'Dit bestand is geen geldige JSON.';
@@ -10083,7 +10083,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String plDeleteConfirm(String code) {
-    return 'Prijslijst $code met groepen en artikelen verwijderen? Producten en prijzen blijven ongewijzigd.';
+    return 'Prijslijst $code met alle groepen en producten erin verwijderen? De producten en prijzen zelf blijven ongewijzigd.';
   }
 
   @override
@@ -10320,7 +10320,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String plGenSummary(int written, int total) {
-    return '$written van $total bestanden bewaard';
+    return '$written van $total bestanden opgeslagen';
   }
 
   @override
