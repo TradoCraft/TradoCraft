@@ -31,6 +31,7 @@ fn settings() -> IdpSettings {
         allow_insecure_urls: true,
         jwks_ttl: Duration::from_secs(3600),
         refresh_throttle: Duration::from_secs(3),
+        ..IdpSettings::default()
     }
 }
 
@@ -1284,4 +1285,59 @@ async fn provider_writes_recheck_primary_authority_under_the_lock(db: PgPool) {
         sqlx::query("UPDATE core.user_companies SET roles = '{admin}' WHERE user_id = (SELECT id FROM core.users WHERE email = 'admin@example.com')")
             .execute(&db).await.unwrap();
     }
+}
+
+/// Security finding #2: the first sign-in binds a subject to a user by e-mail only when the
+/// provider says the address is verified. This holds for the environment provider
+/// (`OIDC_ISSUER`) and for the database default policy, which both require `email_verified`.
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn first_sign_in_never_binds_by_an_unverified_email(db: PgPool) {
+    sqlx::raw_sql(tradocraft_api::DEV_SEED_SQL)
+        .execute(&db)
+        .await
+        .unwrap();
+    let state = state_with(
+        db.clone(),
+        AuthConfig::Dev {
+            default_email: None,
+        },
+    );
+    let env = ProviderConfig::from_env("https://idp.example", "aud");
+    assert_eq!(env.email_policy, EmailPolicy::RequireVerifiedClaim);
+    let em = "sales@example.com";
+    for unverified in [
+        None,
+        Some(json!(false)),
+        Some(json!("false")),
+        Some(json!("yes")),
+        Some(json!(0)),
+        Some(Value::Null),
+    ] {
+        let c = claims(
+            "attacker",
+            "email",
+            em,
+            unverified.clone().map(|v| ("email_verified", v)),
+        );
+        assert!(
+            bind_oidc_user(&state, &env, &c).await.is_err(),
+            "{unverified:?}"
+        );
+    }
+    assert_eq!(subject_of(&db, em).await, None);
+
+    // A provider stored without a policy gets require_verified_claim.
+    let default_policy: String = sqlx::query_scalar(
+        "INSERT INTO core.identity_providers (id, name, issuer, audience)
+         VALUES ($1, 'Default', 'https://default.example', 'aud') RETURNING email_policy",
+    )
+    .bind(uuid::Uuid::now_v7())
+    .fetch_one(&db)
+    .await
+    .unwrap();
+    assert_eq!(default_policy, "require_verified_claim");
+
+    let ok = claims("owner", "email", em, Some(("email_verified", json!(true))));
+    assert!(bind_oidc_user(&state, &env, &ok).await.is_ok());
+    assert_eq!(subject_of(&db, em).await.as_deref(), Some("owner"));
 }

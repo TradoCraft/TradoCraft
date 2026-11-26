@@ -226,7 +226,8 @@ cargo run -p tradocraft-portal-api    # after the API has started once (it migra
 
 The API itself answers browsers only from `CORS_ALLOWED_ORIGINS` (pages served from this machine,
 `localhost` or `127.0.0.1` on any port, with `AUTH_MODE=dev`; none by default with
-`AUTH_MODE=oidc`; `*` answers every origin); the Windows and mobile apps are not affected.
+`AUTH_MODE=oidc`; `*` answers every origin, refused with `AUTH_MODE=dev` or `APP_ENV_KIND=live`,
+ADR 0092); the Windows and mobile apps are not affected.
 
 Repairs and field service (seed users, all in development authentication): `support@example.com`
 registers and routes repairs; `electronics@example.com` and `mechanic@example.com` work in their

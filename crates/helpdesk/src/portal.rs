@@ -27,6 +27,30 @@ pub struct Viewer {
     pub scope: String,
 }
 
+/// The file id a portal upload is stored under. A customer's `client_id` is never used as a file
+/// id as such: it is mixed with the company, the contact and the record (ticket or repair) it is
+/// uploaded to. A retry from the same contact to the same record finds its first upload again,
+/// but a customer can neither name the id of an existing file (another customer's photo, a staff
+/// document, a knowledge-base image) to have it linked to their own record, nor learn from the
+/// answer whether such an id exists. Without a client id the file gets a fresh id.
+pub fn portal_file_id(v: &Viewer, record_id: Uuid, client_id: Option<Uuid>) -> Option<Uuid> {
+    use sha2::{Digest, Sha256};
+    let client_id = client_id?;
+    let digest = Sha256::new()
+        .chain_update(b"tradocraft-portal-upload-v1")
+        .chain_update(v.company_id.as_bytes())
+        .chain_update(v.contact_id.as_bytes())
+        .chain_update(record_id.as_bytes())
+        .chain_update(client_id.as_bytes())
+        .finalize();
+    let mut b = [0u8; 16];
+    b.copy_from_slice(&digest[..16]);
+    // An RFC 9562 version 8 (custom) UUID.
+    b[6] = (b[6] & 0x0f) | 0x80;
+    b[8] = (b[8] & 0x3f) | 0x80;
+    Some(Uuid::from_bytes(b))
+}
+
 #[derive(Debug, Clone, Serialize, FromRow, ToSchema)]
 pub struct PortalTicket {
     pub id: Uuid,
@@ -293,12 +317,16 @@ pub async fn upload_attachment(
 ) -> AppResult<FileInfo> {
     get(conn, v, ticket_id).await?;
     let contact = tradocraft_crm::contacts::get_contact(conn, v.contact_id).await?;
+    let params = crate::attachments::UploadParams {
+        filename: params.filename.clone(),
+        client_id: portal_file_id(v, ticket_id, params.client_id),
+    };
     crate::attachments::upload(
         conn,
         blobs,
         v.company_id,
         ticket_id,
-        params,
+        &params,
         bytes,
         crate::attachments::Uploader {
             user_id: None,
@@ -328,4 +356,32 @@ pub async fn attachment_data(
         Some(v.contact_id),
     )
     .await
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn viewer(contact: u128) -> Viewer {
+        Viewer {
+            company_id: Uuid::from_u128(1),
+            contact_id: Uuid::from_u128(contact),
+            customer_id: Uuid::from_u128(3),
+            scope: "own".into(),
+        }
+    }
+
+    #[test]
+    fn portal_file_ids_are_stable_per_contact_and_record_and_never_the_client_id() {
+        let (a, b) = (viewer(10), viewer(11));
+        let (ticket, other) = (Uuid::from_u128(20), Uuid::from_u128(21));
+        let client = Uuid::from_u128(30);
+        let id = portal_file_id(&a, ticket, Some(client)).unwrap();
+        assert_eq!(portal_file_id(&a, ticket, Some(client)), Some(id));
+        assert_ne!(id, client);
+        assert_ne!(portal_file_id(&b, ticket, Some(client)), Some(id));
+        assert_ne!(portal_file_id(&a, other, Some(client)), Some(id));
+        assert_eq!(id.get_version_num(), 8);
+        assert_eq!(portal_file_id(&a, ticket, None), None);
+    }
 }

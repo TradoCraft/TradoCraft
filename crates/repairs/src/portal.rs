@@ -227,7 +227,7 @@ pub async fn add_photo(
         conn,
         blobs,
         v.company_id,
-        client_id,
+        tradocraft_helpdesk::portal::portal_file_id(v, id, client_id),
         filename,
         bytes,
         None,
