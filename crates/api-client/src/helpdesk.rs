@@ -412,6 +412,53 @@ pub struct PreparedAnswer {
     pub texts: Vec<AnswerText>,
 }
 
+/// Member of a helpdesk [`Team`] (OpenAPI schema `TeamMember`).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TeamMember {
+    pub user_id: Uuid,
+    pub display_name: String,
+    #[serde(default)]
+    pub is_lead: bool,
+}
+
+/// Helpdesk team returned by `GET /api/v1/helpdesk/teams` (OpenAPI schema `Team`).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Team {
+    pub id: Uuid,
+    pub name: String,
+    #[serde(default)]
+    pub active: bool,
+    #[serde(default)]
+    pub require_checklist_done: bool,
+    #[serde(default)]
+    pub members: Vec<TeamMember>,
+}
+
+/// Request payload for `PUT /api/v1/tickets/{id}/assignment` (OpenAPI schema `AssignmentInput`).
+///
+/// Both fields replace the current values; `None` clears.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AssignmentInput {
+    pub team_id: Option<Uuid>,
+    pub owner_user_id: Option<Uuid>,
+}
+
+/// A prepared answer filled in for one ticket, returned by
+/// `POST /api/v1/tickets/{id}/prepared-answers/{answer_id}/render` (OpenAPI schema
+/// `RenderedAnswer`). Nothing is sent.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RenderedAnswer {
+    pub answer_id: Uuid,
+    /// Language of the text used.
+    pub language: String,
+    /// True when no text exists in the ticket's language and another language was used.
+    #[serde(default)]
+    pub fallback: bool,
+    #[serde(default)]
+    pub subject: String,
+    pub body: String,
+}
+
 /// Query parameters for `GET /api/v1/tickets`.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
 pub struct ListTicketsParams {
@@ -648,6 +695,70 @@ impl Client {
     ) -> Result<TicketDetail, ApiError> {
         self.post_json(&format!("/api/v1/tickets/{id}/status"), req)
             .await
+    }
+
+    /// Lists helpdesk teams with their members (`GET /api/v1/helpdesk/teams`).
+    pub async fn list_helpdesk_teams(&self) -> Result<Vec<Team>, ApiError> {
+        self.get_json("/api/v1/helpdesk/teams", &()).await
+    }
+
+    /// Assigns a ticket to a team and/or an owner (`PUT /api/v1/tickets/{id}/assignment`).
+    pub async fn assign_ticket(
+        &self,
+        id: Uuid,
+        req: &AssignmentInput,
+    ) -> Result<TicketDetail, ApiError> {
+        self.put_json(&format!("/api/v1/tickets/{id}/assignment"), req)
+            .await
+    }
+
+    /// Renders a prepared answer for a ticket in the ticket's language
+    /// (`POST /api/v1/tickets/{id}/prepared-answers/{answer_id}/render`).
+    pub async fn render_prepared_answer(
+        &self,
+        ticket_id: Uuid,
+        answer_id: Uuid,
+    ) -> Result<RenderedAnswer, ApiError> {
+        self.post_json(
+            &format!("/api/v1/tickets/{ticket_id}/prepared-answers/{answer_id}/render"),
+            &serde_json::json!({}),
+        )
+        .await
+    }
+
+    /// Uploads a file to a ticket, not yet linked to a message
+    /// (`POST /api/v1/tickets/{id}/attachments`). Pass the returned id in
+    /// [`ReplyInput::attachment_ids`] or [`NoteInput::attachment_ids`]. `client_id` makes
+    /// retries idempotent.
+    pub async fn upload_ticket_attachment(
+        &self,
+        ticket_id: Uuid,
+        filename: &str,
+        client_id: Option<Uuid>,
+        bytes: Vec<u8>,
+    ) -> Result<FileInfo, ApiError> {
+        let mut query: Vec<(&str, String)> = vec![("filename", filename.to_string())];
+        if let Some(id) = client_id {
+            query.push(("client_id", id.to_string()));
+        }
+        self.post_bytes(
+            &format!("/api/v1/tickets/{ticket_id}/attachments"),
+            &query,
+            bytes,
+        )
+        .await
+    }
+
+    /// Downloads an attachment of a ticket (`GET /api/v1/tickets/{id}/attachments/{file_id}`).
+    pub async fn download_ticket_attachment(
+        &self,
+        ticket_id: Uuid,
+        file_id: Uuid,
+    ) -> Result<Vec<u8>, ApiError> {
+        self.get_bytes(&format!(
+            "/api/v1/tickets/{ticket_id}/attachments/{file_id}"
+        ))
+        .await
     }
 
     /// Lists prepared answers (`GET /api/v1/prepared-answers`).
@@ -947,5 +1058,34 @@ mod tests {
             .build()
             .unwrap();
         assert_eq!(ans_req.url().query(), Some("q=pump&active=true&kind=reply"));
+    }
+
+    #[test]
+    fn assignment_teams_and_rendered_answer_round_trip() {
+        let assign = AssignmentInput {
+            team_id: None,
+            owner_user_id: Some(Uuid::nil()),
+        };
+        let v = serde_json::to_value(&assign).unwrap();
+        // Both keys are always sent: `null` clears the team.
+        assert!(v["team_id"].is_null());
+        assert_eq!(v["owner_user_id"], Uuid::nil().to_string());
+
+        let teams: Vec<Team> = serde_json::from_str(
+            r#"[{"id":"01900000-0000-7000-8000-000000000a01","name":"Support","active":true,
+                "require_checklist_done":false,"created_at":"2026-11-01T00:00:00Z",
+                "members":[{"user_id":"01900000-0000-7000-8000-000000000010",
+                "display_name":"Support Agent","is_lead":true}]}]"#,
+        )
+        .unwrap();
+        assert_eq!(teams[0].members[0].display_name, "Support Agent");
+
+        let rendered: RenderedAnswer = serde_json::from_str(
+            r#"{"answer_id":"01900000-0000-7000-8000-000000000b01","language":"nl",
+                "fallback":true,"subject":"Re: Pomp","body":"Beste Jan,"}"#,
+        )
+        .unwrap();
+        assert!(rendered.fallback);
+        assert_eq!(rendered.language, "nl");
     }
 }
