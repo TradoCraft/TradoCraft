@@ -7,7 +7,7 @@ Module overview: [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Leptos release gate for v0.4.0
 
-Hold v0.4.0 until both workflows pass in the packaged Leptos web frontend at `/app/`.
+Hold v0.4.0 until all four workflows pass in the packaged Leptos web frontend at `/app/`.
 Flutter remains available for the rest of the application. Full Flutter feature parity is outside
 this release gate.
 
@@ -18,11 +18,21 @@ this release gate.
 - [ ] **To-do.** A staff user can open To-do from the navigation, create a task and a sub-item,
   edit the task and its due date, complete and reopen it, and filter the list by Open, Done, or
   All. Verify that changes survive a reload.
-- [ ] **Release verification.** Exercise both workflows in browser tests against the real API
+- [ ] **Knowledge Base.** Staff can search and read articles by category and language.
+  Users with edit permission can create, edit, and publish an article with the intended visibility.
+  Verify that a public article is discoverable in the public reader and that drafts and staff-only
+  articles stay out of public results.
+- [ ] **Standard Answers (Prepared Answers).** Users with permission can create and edit reusable
+  reply templates with subject and body translations. In Helpdesk, an agent can find an answer,
+  insert it into a ticket reply in the ticket's language, review the rendered placeholders, and
+  edit the draft before sending. Verify that the resulting reply reaches the tutorial outbox.
+- [ ] **Release verification.** Exercise all four workflows in browser tests against the real API
   and a seeded database. Smoke-test the packaged `/app/` entry point before tagging v0.4.0.
 
 The existing [Leptos Helpdesk](../crates/web-ui/src/pages/helpdesk.rs) and
-[Flutter To-do](../app/lib/features/todo/todo_page.dart) are the starting points.
+[Flutter To-do](../app/lib/features/todo/todo_page.dart) are the starting points. See also the
+[Leptos public knowledge-base reader](../crates/web-ui/src/pages/kb.rs) and
+[Flutter Prepared Answers](../app/lib/features/helpdesk/answers_page.dart).
 
 ## Status
 
