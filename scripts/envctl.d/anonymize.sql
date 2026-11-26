@@ -1,9 +1,9 @@
 -- Applied by `envctl clone --anonymize` after scrub_credentials.sql (ADR 0048). One transaction.
--- Replaces e-mail addresses and phone numbers of customers, suppliers, contacts, tickets and
--- queued mail, and drops stored raw e-mails and mail attachments. Ids, codes, names, amounts and
--- links between records are kept so the data still behaves like the original. Users keep their
--- e-mail address when they hold the admin role in some company (so sign-in still works); all other
--- users are replaced.
+-- Replaces e-mail addresses and phone numbers of customers, suppliers, contacts, tickets, mailing
+-- opt-outs and queued mail, and drops stored raw e-mails and mail attachments. Ids, codes, names,
+-- amounts and links between records are kept so the data still behaves like the original. Users
+-- keep their e-mail address when they hold the admin role in some company (so sign-in still
+-- works); all other users are replaced.
 -- Not scrubbed: company, customer and product names, street addresses, VAT numbers, IBANs,
 -- free-text notes, ticket subjects and bodies, audit data. A privacy aid, not a guarantee.
 BEGIN;
@@ -80,6 +80,9 @@ END $$;
 -- System mail still in the table: addresses and the attached document.
 -- Rebuild mailing previews from the anonymized contacts before they can be confirmed.
 UPDATE crm.mail_merge_drafts SET approved_preview = NULL;
+-- Mailing opt-outs (ADR 0099): addresses of people who asked not to be mailed.
+UPDATE crm.mailing_opt_outs
+   SET email = 'opt-out-' || left(md5(email), 16) || '@example.test';
 UPDATE core.mail_outbox o
    SET subject = 'Anonymized mailing', body = 'Anonymized mailing', delivery_error = NULL
   FROM crm.mailing_deliveries d

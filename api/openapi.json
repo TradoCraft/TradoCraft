@@ -6493,6 +6493,105 @@
         }
       }
     },
+    "/api/v1/customers/mail-merge/opt-outs": {
+      "get": {
+        "tags": [
+          "crm"
+        ],
+        "operationId": "list_mailing_opt_outs",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MailingOptOut"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "crm"
+        ],
+        "summary": "Puts an address on the register, e.g. after a customer asked by phone. Idempotent.",
+        "operationId": "add_mailing_opt_out",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MailingOptOutInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/customers/mail-merge/opt-outs/{email}": {
+      "delete": {
+        "tags": [
+          "crm"
+        ],
+        "summary": "Takes an address off the register when its owner asks to receive mailings again.",
+        "operationId": "remove_mailing_opt_out",
+        "parameters": [
+          {
+            "name": "email",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/customers/mail-merge/{approval_id}/confirm": {
       "post": {
         "tags": [
@@ -15955,6 +16054,79 @@
                   "items": {
                     "type": "string"
                   }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mailing-unsubscribe/{token}": {
+      "get": {
+        "tags": [
+          "crm"
+        ],
+        "summary": "What the recipient sees before unsubscribing. Reading changes nothing, so mail scanners that\nopen links do not unsubscribe anyone.",
+        "operationId": "get_mailing_unsubscribe",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnsubscribeInfo"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "crm"
+        ],
+        "summary": "Puts the address on the company's opt-out register. Idempotent: unsubscribing twice is fine.",
+        "operationId": "mailing_unsubscribe",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
                 }
               }
             }
@@ -46433,6 +46605,13 @@
               "null"
             ]
           },
+          "footer": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The unsubscribe footer appended below the body when the mail is queued; the link in the\npreview is a placeholder, each delivery gets its own."
+          },
           "issues": {
             "type": "array",
             "items": {
@@ -46756,6 +46935,52 @@
             "format": "int32"
           },
           "subject": {
+            "type": "string"
+          }
+        }
+      },
+      "MailingOptOut": {
+        "type": "object",
+        "description": "An address on the company's opt-out register.",
+        "required": [
+          "email",
+          "opted_out_at",
+          "source"
+        ],
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "opted_out_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "recorded_by": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "recorded_by_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source": {
+            "type": "string",
+            "description": "staff | unsubscribe_link"
+          }
+        }
+      },
+      "MailingOptOutInput": {
+        "type": "object",
+        "required": [
+          "email"
+        ],
+        "properties": {
+          "email": {
             "type": "string"
           }
         }
@@ -61483,6 +61708,32 @@
           "field": {
             "type": "string",
             "description": "`bells[].properties.<name>`, `bells[].<name>` or a top-level section name."
+          }
+        }
+      },
+      "UnsubscribeInfo": {
+        "type": "object",
+        "required": [
+          "company_name",
+          "email",
+          "language",
+          "unsubscribed"
+        ],
+        "properties": {
+          "company_name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "description": "The address the mailing went to, masked (`j***@example.com`)."
+          },
+          "language": {
+            "type": "string",
+            "description": "The language of the mailing, for the page the recipient lands on."
+          },
+          "unsubscribed": {
+            "type": "boolean",
+            "description": "Whether the address is already on the company's opt-out register."
           }
         }
       },

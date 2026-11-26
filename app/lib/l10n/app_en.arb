@@ -6413,6 +6413,36 @@
   "mergeQueued": "Queued",
   "mergeSent": "Sent",
   "mergeFailed": "Failed",
+  "mergeOptedOut": "Unsubscribed from mailings",
+  "mergeOptOuts": "Unsubscribed addresses",
+  "mergeOptOutsHelp": "These addresses receive no mailings from this company. Add an address when someone asks not to be mailed; remove it only when they ask to receive mailings again.",
+  "mergeOptOutsEmpty": "No unsubscribed addresses.",
+  "mergeOptOutViaLink": "Via the unsubscribe link",
+  "mergeOptOutViaStaff": "Added by {name}",
+  "mergeUnsubscribeFooter": "Every email ends with an unsubscribe link in the recipient's language.",
+  "unsubscribeTitle": "Unsubscribe from mailings",
+  "unsubscribeQuestion": "Stop receiving mailings from {company} at {email}?",
+  "unsubscribeAction": "Unsubscribe",
+  "unsubscribeDone": "You have been unsubscribed. You will no longer receive these mailings.",
+  "unsubscribeAlready": "This address is already unsubscribed.",
+  "unsubscribeInvalid": "This unsubscribe link is not valid.",
+  "@mergeOptOutViaStaff": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@unsubscribeQuestion": {
+    "placeholders": {
+      "company": {
+        "type": "String"
+      },
+      "email": {
+        "type": "String"
+      }
+    }
+  },
   "@mergeConfirmBody": {
     "placeholders": {
       "count": {

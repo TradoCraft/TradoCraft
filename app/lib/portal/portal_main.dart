@@ -11,8 +11,9 @@ import 'portal_state.dart';
 ///     flutter build web -t lib/portal/portal_main.dart --dart-define=PORTAL_API_URL=https://api.example.com
 ///
 /// The login e-mail links to `<portal_url>/login#token=...` and the satisfaction survey to
-/// `<portal_url>/csat#token=...&rating=good|bad`, so the app uses path URLs and the
-/// web server must serve index.html for unknown paths.
+/// `<portal_url>/csat#token=...&rating=good|bad` and a mailing's unsubscribe link to
+/// `<portal_url>/unsubscribe#token=...`, so the app uses path URLs and the web server must serve
+/// index.html for unknown paths.
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   usePathUrlStrategy();
@@ -20,6 +21,7 @@ Future<void> main() async {
   // old session: whoever clicked it wants to be signed in as the person it was sent to.
   final linkToken = linkTokenFromUri(Uri.base);
   final csatLink = csatLinkFromUri(Uri.base);
+  final unsubscribeToken = unsubscribeTokenFromUri(Uri.base);
   final token = linkToken == null ? await PortalTokenStore.load() : null;
   runApp(
     ProviderScope(
@@ -27,6 +29,7 @@ Future<void> main() async {
         initialPortalTokenProvider.overrideWithValue(token),
         initialPortalLinkTokenProvider.overrideWithValue(linkToken),
         initialCsatLinkProvider.overrideWithValue(csatLink),
+        initialUnsubscribeTokenProvider.overrideWithValue(unsubscribeToken),
       ],
       child: const PortalApp(),
     ),

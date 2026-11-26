@@ -19,6 +19,7 @@ class MailMergeRecipient {
     this.body,
     this.contactId,
     this.email,
+    this.footer,
     this.pdf,
     this.subject,
   });
@@ -36,6 +37,11 @@ class MailMergeRecipient {
   final String customerName;
   @JsonKey(includeIfNull: false)
   final String? email;
+
+  /// The unsubscribe footer appended below the body when the mail is queued; the link in the.
+  /// preview is a placeholder, each delivery gets its own.
+  @JsonKey(includeIfNull: false)
+  final String? footer;
   final List<String> issues;
   final String language;
   @JsonKey(includeIfNull: false)

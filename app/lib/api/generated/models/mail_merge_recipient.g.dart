@@ -20,6 +20,7 @@ MailMergeRecipient _$MailMergeRecipientFromJson(Map<String, dynamic> json) =>
       body: json['body'] as String?,
       contactId: json['contact_id'] as String?,
       email: json['email'] as String?,
+      footer: json['footer'] as String?,
       pdf: json['pdf'] as String?,
       subject: json['subject'] as String?,
     );
@@ -32,6 +33,7 @@ Map<String, dynamic> _$MailMergeRecipientToJson(MailMergeRecipient instance) =>
       'customer_id': instance.customerId,
       'customer_name': instance.customerName,
       'email': ?instance.email,
+      'footer': ?instance.footer,
       'issues': instance.issues,
       'language': instance.language,
       'pdf': ?instance.pdf,

@@ -1,10 +1,11 @@
 //! The customer-facing HTTP server (ADR 0050).
 //!
 //! It mounts only what a customer may reach without a staff account: the customer portal
-//! (`/api/v1/portal/*`), the public knowledge base (`/api/v1/public/kb/*`) and the satisfaction
-//! survey (`/api/v1/csat/*`). Staff routes, the setup wizard, the environment endpoint and the API
-//! documentation do not exist in this process, so they cannot be reached through it whatever a
-//! reverse proxy in front of it forwards.
+//! (`/api/v1/portal/*`), the public knowledge base (`/api/v1/public/kb/*`), the satisfaction
+//! survey (`/api/v1/csat/*`) and the mailing unsubscribe link (`/api/v1/mailing-unsubscribe/*`).
+//! Staff routes, the setup wizard, the environment endpoint and the API documentation do not
+//! exist in this process, so they cannot be reached through it whatever a reverse proxy in front
+//! of it forwards.
 //!
 //! It is the server that faces the internet, so it also limits requests per client address,
 //! gives every request a deadline and answers only the portal's own browser origin.
@@ -69,6 +70,7 @@ fn routes() -> Router<AppState> {
     let v1 = OpenApiRouter::new()
         .merge(tradocraft_portal::router())
         .merge(tradocraft_kb::public::router())
+        .merge(tradocraft_kb::unsubscribe::router())
         .merge(tradocraft_helpdesk::csat::router());
     // The OpenAPI document is dropped on purpose: this server publishes no API description.
     let (router, _doc) = OpenApiRouter::new().nest("/api/v1", v1).split_for_parts();
@@ -151,7 +153,7 @@ async fn protect(State(guard): State<Arc<Guard>>, request: Request, next: Next) 
     }
     let mut response = match refused {
         Some(wait) => {
-            // No path here: survey links carry their secret in it.
+            // No path here: survey and unsubscribe links carry their secret in it.
             tracing::warn!(client = %ip, "rate limit reached");
             too_many_requests(wait)
         }

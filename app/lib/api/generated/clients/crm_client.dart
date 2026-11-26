@@ -31,6 +31,8 @@ import '../models/lookup_result.dart';
 import '../models/mail_merge_draft.dart';
 import '../models/mail_merge_preview.dart';
 import '../models/mailing_delivery.dart';
+import '../models/mailing_opt_out.dart';
+import '../models/mailing_opt_out_input.dart';
 import '../models/match_rule.dart';
 import '../models/match_rule_input.dart';
 import '../models/opportunity.dart';
@@ -40,6 +42,7 @@ import '../models/pipeline_stage.dart';
 import '../models/product_match_page.dart';
 import '../models/rebate_input.dart';
 import '../models/stage_input.dart';
+import '../models/unsubscribe_info.dart';
 import '../models/vat_check.dart';
 
 part 'crm_client.g.dart';
@@ -185,6 +188,21 @@ abstract class CrmClient {
   @GET('/api/v1/customers/mail-merge/history')
   Future<List<MailingDelivery>> mailMergeHistory();
 
+  @GET('/api/v1/customers/mail-merge/opt-outs')
+  Future<List<MailingOptOut>> listMailingOptOuts();
+
+  /// Puts an address on the register, e.g. after a customer asked by phone. Idempotent.
+  @POST('/api/v1/customers/mail-merge/opt-outs')
+  Future<void> addMailingOptOut({
+    @Body() required MailingOptOutInput body,
+  });
+
+  /// Takes an address off the register when its owner asks to receive mailings again.
+  @DELETE('/api/v1/customers/mail-merge/opt-outs/{email}')
+  Future<void> removeMailingOptOut({
+    @Path('email') required String email,
+  });
+
   @POST('/api/v1/customers/mail-merge/{approval_id}/confirm')
   Future<void> confirmMailMerge({
     @Path('approval_id') required String approvalId,
@@ -306,6 +324,19 @@ abstract class CrmClient {
   Future<void> deleteRebate({
     @Path('id') required String id,
     @Path('rebate_id') required String rebateId,
+  });
+
+  /// What the recipient sees before unsubscribing. Reading changes nothing, so mail scanners that.
+  /// open links do not unsubscribe anyone.
+  @GET('/api/v1/mailing-unsubscribe/{token}')
+  Future<UnsubscribeInfo> getMailingUnsubscribe({
+    @Path('token') required String token,
+  });
+
+  /// Puts the address on the company's opt-out register. Idempotent: unsubscribing twice is fine.
+  @POST('/api/v1/mailing-unsubscribe/{token}')
+  Future<void> mailingUnsubscribe({
+    @Path('token') required String token,
   });
 
   @GET('/api/v1/match-rules')

@@ -93,7 +93,8 @@ modules `documents` and `mail_merge`); migrations `20270225000001_kb_documents.s
   draft once it is there (it is copied from the published revision); these need endpoints of their
   own.
 - The mail merge always targets the whole audience of the company; filtering by segment, tag or
-  product is deferred. There is no opt-out or consent check on recipients.
+  product is deferred. Opt-outs and the unsubscribe link are in
+  [ADR 0099](0099-mail-merge-opt-out-and-unsubscribe.md).
 - One draft per user means a second mailing replaces the first draft; mailings already confirmed
   are kept in the history.
 - Mail merge rows reuse the system-mail outbox and its retry and failure reporting; there is no

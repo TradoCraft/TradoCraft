@@ -9,6 +9,7 @@ pub mod public;
 pub mod reader;
 pub mod staff;
 pub mod text;
+pub mod unsubscribe;
 
 use tradocraft_core::AppState;
 use utoipa_axum::router::OpenApiRouter;
@@ -18,4 +19,5 @@ pub fn router() -> OpenApiRouter<AppState> {
         .merge(public::router())
         .merge(documents::router())
         .merge(mail_merge::router())
+        .merge(unsubscribe::router())
 }
