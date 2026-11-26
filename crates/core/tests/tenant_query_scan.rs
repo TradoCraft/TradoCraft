@@ -11,7 +11,8 @@
 //!    and `tests.rs` modules are skipped). A `{NAME}` placeholder is replaced with the value of a
 //!    `const NAME: &str = "..."` in the same file, so the common
 //!    `format!("{SELECT} WHERE ...")` pattern is read as one statement (and the const
-//!    itself is not scanned on its own when it is used that way).
+//!    itself is not scanned on its own when it is used that way). A local
+//!    `let NAME = "..."` is spliced the same way (nearest definition first).
 //! 3. A literal is **flagged** when it names a tenant table as `schema.table`, contains an
 //!    SQL keyword (`FROM`, `JOIN`, `INTO`, `UPDATE`, `DELETE`), and does not mention
 //!    `company_id` anywhere. The rule is deliberately coarse: it does not check *which*
@@ -26,7 +27,7 @@
 //! SQL is the literal with whitespace collapsed to single spaces (exactly what the
 //! failure message prints). Lines starting with `#` and blank lines are ignored.
 
-use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -162,8 +163,11 @@ fn tenant_tables(root: &Path) -> BTreeSet<String> {
 
 struct Literal {
     line: usize,
+    /// Byte offset in the file, used to pick the nearest `let` binding.
+    offset: usize,
     value: String,
-    /// `Some(NAME)` when the literal is the initialiser of `const NAME: &str`.
+    /// `Some(NAME)` when the literal is the initialiser of `const NAME: &str = "..."`
+    /// or `let NAME = "..."`.
     const_name: Option<String>,
 }
 
@@ -174,14 +178,14 @@ fn const_name_before(src: &str, start: usize) -> Option<String> {
     let decl = decl.strip_suffix('=')?.trim_end();
     let decl = decl
         .strip_suffix("&str")
-        .or_else(|| decl.strip_suffix("&'static str"))?
-        .trim_end()
-        .strip_suffix(':')?
+        .or_else(|| decl.strip_suffix("&'static str"))
+        .map_or(decl, |d| d.trim_end().strip_suffix(':').unwrap_or(d))
         .trim_end();
     let mut words = decl.split_whitespace().rev();
     let name = words.next()?;
     let kw = words.next()?;
-    (kw == "const" || kw == "static").then(|| name.to_string())
+    let is_name = name.chars().all(is_ident);
+    (is_name && matches!(kw, "const" | "static" | "let")).then(|| name.to_string())
 }
 
 /// A small Rust lexer: enough to find string literals and skip comments, char
@@ -257,6 +261,7 @@ fn rust_literals(src: &str) -> Vec<Literal> {
                 if skip_until_depth.is_none() {
                     out.push(Literal {
                         line,
+                        offset: i,
                         const_name: const_name_before(src, i),
                         value: value.clone(),
                     });
@@ -302,6 +307,7 @@ fn rust_literals(src: &str) -> Vec<Literal> {
             if skip_until_depth.is_none() {
                 out.push(Literal {
                     line: start_line,
+                    offset: start,
                     const_name: const_name_before(src, start),
                     value,
                 });
@@ -408,19 +414,34 @@ fn normalise(sql: &str) -> String {
     sql.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
-/// Replace `{NAME}` with the value of a same-file `const NAME: &str`.
-fn expand(value: &str, consts: &HashMap<String, String>) -> (String, BTreeSet<String>) {
+/// Replace `{NAME}` with the value of a same-file `const NAME: &str` or `let NAME = "..."`
+/// (the nearest definition before the literal, else the first one in the file). Returns
+/// the expanded text and the indices (into `lits`) of the definitions it used.
+fn expand(lits: &[Literal], idx: usize) -> (String, BTreeSet<usize>) {
     let mut used = BTreeSet::new();
-    let mut out = value.to_string();
+    let mut out = lits[idx].value.clone();
+    let names: BTreeSet<&str> = lits.iter().filter_map(|l| l.const_name.as_deref()).collect();
     for _ in 0..3 {
         let mut changed = false;
-        for (name, v) in consts {
+        for name in &names {
             let ph = format!("{{{name}}}");
-            if out.contains(&ph) {
-                out = out.replace(&ph, v);
-                used.insert(name.clone());
-                changed = true;
+            if !out.contains(&ph) {
+                continue;
             }
+            let defs = || {
+                lits.iter()
+                    .enumerate()
+                    .filter(|(_, l)| l.const_name.as_deref() == Some(*name))
+            };
+            let def = defs()
+                .filter(|(_, l)| l.offset < lits[idx].offset)
+                .last()
+                .or_else(|| defs().next())
+                .map(|(i, _)| i)
+                .expect("definition");
+            out = out.replace(&ph, &lits[def].value);
+            used.insert(def);
+            changed = true;
         }
         if !changed {
             break;
@@ -442,28 +463,21 @@ fn scan(root: &Path, tables: &BTreeSet<String>) -> Vec<Flagged> {
     for file in rust_sources(root) {
         let src = fs::read_to_string(&file).unwrap();
         let lits = rust_literals(&src);
-        let consts: HashMap<String, String> = lits
-            .iter()
-            .filter_map(|l| Some((l.const_name.clone()?, l.value.clone())))
-            .collect();
         let mut expanded = Vec::new();
-        let mut used_consts = BTreeSet::new();
-        for lit in &lits {
-            let (value, used) = expand(&lit.value, &consts);
-            used_consts.extend(used);
-            expanded.push((lit, value));
+        let mut used_defs = BTreeSet::new();
+        for i in 0..lits.len() {
+            let (value, used) = expand(&lits, i);
+            used_defs.extend(used);
+            expanded.push(value);
         }
         let rel = file
             .strip_prefix(root)
             .unwrap()
             .to_string_lossy()
             .replace('\\', "/");
-        for (lit, value) in expanded {
-            if lit
-                .const_name
-                .as_ref()
-                .is_some_and(|n| used_consts.contains(n))
-            {
+        for (i, (lit, value)) in lits.iter().zip(expanded).enumerate() {
+            // A const/let that is spliced into another literal is scanned there.
+            if used_defs.contains(&i) {
                 continue;
             }
             let lower = value.to_lowercase();
