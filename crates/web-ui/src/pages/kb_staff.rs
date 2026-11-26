@@ -17,7 +17,7 @@ use uuid::Uuid;
 
 use crate::api::{resolve_base_url, ConnectionMode};
 use crate::pages::kb::snippet_segments;
-use crate::pages::opt_trimmed;
+use crate::pages::{opt_trimmed, set_alive};
 use crate::state::AppContext;
 
 /// Permission strings as exposed by `GET /api/v1/me`.
@@ -357,7 +357,7 @@ impl StaffUi {
                 Ok(client) => f(client).await,
                 Err(err) => Err(err),
             };
-            if self.saving.try_set(false).is_some() {
+            if set_alive(self.saving, false) {
                 // Show the result only while the same article is still open.
                 if self.article_gen.get_untracked() == owner {
                     match res {
@@ -406,7 +406,7 @@ impl StaffUi {
             let client = match client {
                 Ok(client) => client,
                 Err(err) => {
-                    if self.saving.try_set(false).is_some() {
+                    if set_alive(self.saving, false) {
                         self.error.set(Some(err.user_message()));
                     }
                     return;
@@ -419,9 +419,7 @@ impl StaffUi {
             let saved = match saved {
                 Ok(entry) => entry,
                 Err(err) => {
-                    if self.saving.try_set(false).is_some()
-                        && self.article_gen.get_untracked() == owner
-                    {
+                    if set_alive(self.saving, false) && self.article_gen.get_untracked() == owner {
                         self.error.set(Some(err.user_message()));
                     }
                     return;
@@ -436,7 +434,7 @@ impl StaffUi {
                 }
             }
             // The writes are committed; only touch the screen if it still shows this editor.
-            if self.saving.try_set(false).is_none() {
+            if !set_alive(self.saving, false) {
                 return;
             }
             if self.article_gen.get_untracked() == owner {

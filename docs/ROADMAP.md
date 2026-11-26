@@ -11,23 +11,25 @@ Hold v0.4.0 until all four workflows pass in the packaged Leptos web frontend at
 Flutter remains available for the rest of the application. Full Flutter feature parity is outside
 this release gate.
 
-- [ ] **Helpdesk.** A staff user can find and open tickets, create a ticket, assign it to a team
+- [x] **Helpdesk.** A staff user can find and open tickets, create a ticket, assign it to a team
   or owner, add an internal note, send a customer reply with an attachment, and change or reopen
   its status. Verify that the reply reaches the local outbox in the tutorial environment and
   that the ticket history and attachment are still available after a reload.
-- [ ] **To-do.** A staff user can open To-do from the navigation, create a task and a sub-item,
+- [x] **To-do.** A staff user can open To-do from the navigation, create a task and a sub-item,
   edit the task and its due date, complete and reopen it, and filter the list by Open, Done, or
   All. Verify that changes survive a reload.
-- [ ] **Knowledge Base.** Staff can search and read articles by category and language.
+- [x] **Knowledge Base.** Staff can search and read articles by category and language.
   Users with edit permission can create, edit, and publish an article with the intended visibility.
   Verify that a public article is discoverable in the public reader and that drafts and staff-only
   articles stay out of public results.
-- [ ] **Standard Answers (Prepared Answers).** Users with permission can create and edit reusable
+- [x] **Standard Answers (Prepared Answers).** Users with permission can create and edit reusable
   reply templates with subject and body translations. In Helpdesk, an agent can find an answer,
   insert it into a ticket reply in the ticket's language, review the rendered placeholders, and
   edit the draft before sending. Verify that the resulting reply reaches the tutorial outbox.
 - [ ] **Release verification.** Exercise all four workflows in browser tests against the real API
   and a seeded database. Smoke-test the packaged `/app/` entry point before tagging v0.4.0.
+  Done: Playwright specs for all four workflows in `e2e/tests-leptos/` (`npm run test:leptos`), run against the
+  API with the dev seed. Open: run them in CI, and smoke-test the packaged Docker image.
 
 The existing [Leptos Helpdesk](../crates/web-ui/src/pages/helpdesk.rs) and
 [Flutter To-do](../app/lib/features/todo/todo_page.dart) are the starting points. See also the

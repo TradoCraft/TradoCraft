@@ -14,6 +14,8 @@ pub mod todo;
 
 use std::str::FromStr;
 
+use leptos::prelude::{RwSignal, Set};
+
 use rust_decimal::Decimal;
 use uuid::Uuid;
 
@@ -71,4 +73,10 @@ pub(crate) fn parse_uuid(label: &str, raw: &str) -> Result<Uuid, String> {
 
 pub(crate) fn fmt_opt_display<T: ToString>(value: Option<T>) -> String {
     value.map(|v| v.to_string()).unwrap_or_default()
+}
+
+/// Sets `signal` unless it was disposed (the page was left while a request ran). Returns whether the
+/// value was set. `try_set` itself returns `None` on success, which is easy to misread.
+pub(crate) fn set_alive<T: Send + Sync + 'static>(signal: RwSignal<T>, value: T) -> bool {
+    signal.try_set(value).is_none()
 }

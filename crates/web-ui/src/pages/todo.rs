@@ -13,7 +13,7 @@ use tradocraft_api_client::{ApiError, Client};
 use uuid::Uuid;
 
 use crate::api::{resolve_base_url, ConnectionMode};
-use crate::pages::opt_trimmed;
+use crate::pages::{opt_trimmed, set_alive};
 use crate::state::AppContext;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -198,14 +198,20 @@ impl TodoUi {
                 Ok(client) => f(client).await,
                 Err(err) => Err(err),
             };
-            match res {
+            // The page may have been left while the request was running.
+            let alive = match res {
                 Ok(()) => {
-                    self.error.set(None);
-                    on_ok();
+                    let alive = set_alive(self.error, None);
+                    if alive {
+                        on_ok();
+                    }
+                    alive
                 }
-                Err(err) => self.error.set(Some(err.user_message())),
+                Err(err) => set_alive(self.error, Some(err.user_message())),
+            };
+            if alive {
+                self.reload.try_update(|n| *n += 1);
             }
-            self.reload.update(|n| *n += 1);
         });
     }
 
@@ -264,14 +270,16 @@ impl TodoUi {
                 Ok(client) => client.complete_todo(id, complete_children).await,
                 Err(err) => Err(err),
             };
-            match res {
-                Ok(_) => self.error.set(None),
+            let alive = match res {
+                Ok(_) => set_alive(self.error, None),
                 Err(err) if error_code(&err) == Some("open_sub_items") => {
-                    self.confirm.set(Some(Confirm::CompleteAll(id)));
+                    set_alive(self.confirm, Some(Confirm::CompleteAll(id)))
                 }
-                Err(err) => self.error.set(Some(err.user_message())),
+                Err(err) => set_alive(self.error, Some(err.user_message())),
+            };
+            if alive {
+                self.reload.try_update(|n| *n += 1);
             }
-            self.reload.update(|n| *n += 1);
         });
     }
 
@@ -376,7 +384,9 @@ pub fn TodoPage() -> impl IntoView {
             if fetch_generation.try_get_value() != Some(req_gen) {
                 return;
             }
-            loading.set(false);
+            if !set_alive(loading, false) {
+                return;
+            }
             match res {
                 Ok(list) => {
                     items.set(list);

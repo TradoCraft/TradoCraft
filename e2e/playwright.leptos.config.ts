@@ -34,7 +34,7 @@ export default defineConfig({
   use: {
     browserName: browser,
     headless: !headed,
-    launchOptions: { slowMo },
+    launchOptions: { slowMo, ...(process.env.E2E_CHROMIUM_PATH ? { executablePath: process.env.E2E_CHROMIUM_PATH } : {}) },
     baseURL: externalBaseUrl || `http://127.0.0.1:${API_PORT}`,
     viewport: { width: 1400, height: 1000 },
     screenshot: 'only-on-failure',
