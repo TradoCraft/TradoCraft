@@ -80,12 +80,10 @@ async fn main() -> anyhow::Result<()> {
     // whose published port is bound to the host's loopback).
     if auth_mode == "dev" {
         let acknowledged = env("ALLOW_INSECURE_DEV_AUTH").as_deref() == Some("true");
-        if !addr.ip().is_loopback() && !acknowledged {
-            anyhow::bail!(
-                "AUTH_MODE=dev refuses to listen on {addr}: it trusts the X-Dev-User header. \
-                 Bind to 127.0.0.1, use AUTH_MODE=oidc, or set ALLOW_INSECURE_DEV_AUTH=true \
-                 if the port is not reachable from other machines."
-            );
+        for w in tradocraft_core::auth::dev_auth_startup(addr, acknowledged)
+            .map_err(|e| anyhow::anyhow!(e))?
+        {
+            tracing::warn!("{w}");
         }
     }
 
@@ -119,7 +117,7 @@ async fn main() -> anyhow::Result<()> {
 
     let auth = match auth_mode.as_str() {
         "dev" => {
-            tracing::warn!("AUTH_MODE=dev: X-Dev-User header is trusted. Never use this on a reachable server.");
+            // Warned above (dev_auth_startup).
             AuthConfig::Dev {
                 default_email: env("DEV_DEFAULT_USER"),
             }
@@ -151,19 +149,22 @@ async fn main() -> anyhow::Result<()> {
         other => anyhow::bail!("unknown AUTH_MODE {other} (expected oidc or dev)"),
     };
 
-    // Browser origins that may call the API (ADR 0050). Development answers pages served from this
-    // machine only (a page on the internet must not reach a developer's local API with the
-    // trusted X-Dev-User header); with real sign-in only the listed ones are answered. Native
-    // clients send no Origin header.
-    let cors = match env("CORS_ALLOWED_ORIGINS") {
-        Some(list) => {
-            CorsConfig::parse(&list).map_err(|e| anyhow::anyhow!("CORS_ALLOWED_ORIGINS: {e}"))?
-        }
-        None if auth_mode == "dev" => CorsConfig::Loopback,
-        None => CorsConfig::Origins(Vec::new()),
-    };
+    // Browser origins that may call the API (ADR 0050, ADR 0092). Development answers pages served
+    // from this machine only (a page on the internet must not reach a developer's local API with
+    // the trusted X-Dev-User header); with real sign-in only the listed ones are answered. Every
+    // origin is refused with dev authentication and in a live environment. Native clients send no
+    // Origin header.
+    let cors = CorsConfig::for_api(
+        env("CORS_ALLOWED_ORIGINS").as_deref(),
+        auth_mode == "dev",
+        environment.kind == tradocraft_core::environment::EnvKind::Live,
+    )
+    .map_err(|e| anyhow::anyhow!("CORS_ALLOWED_ORIGINS: {e}"))?;
     match &cors {
-        CorsConfig::Any => tracing::warn!("CORS: any browser origin is answered"),
+        CorsConfig::Any => tracing::warn!(
+            "CORS: every browser origin is answered (CORS_ALLOWED_ORIGINS=*); \
+             for test and tutorial environments only"
+        ),
         CorsConfig::Loopback => tracing::info!(
             "CORS: browser pages served from this machine are answered; set CORS_ALLOWED_ORIGINS for others"
         ),

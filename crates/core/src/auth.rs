@@ -35,6 +35,38 @@ pub enum AuthConfig {
     Disabled,
 }
 
+/// Whether `AUTH_MODE=dev` may start listening on `bind` (ADR 0070, ADR 0092). Dev authentication
+/// trusts a client-supplied header, so it only runs where nobody else can reach it: on loopback,
+/// or on another address when `ALLOW_INSECURE_DEV_AUTH=true` acknowledges that the port is not
+/// reachable from other machines (a container whose published port is bound to the host's
+/// loopback). Returns the warnings to log; refuses a non-loopback address without the
+/// acknowledgement. The binary's own default is `AUTH_MODE=oidc`.
+pub fn dev_auth_startup(
+    bind: std::net::SocketAddr,
+    acknowledged: bool,
+) -> Result<Vec<String>, String> {
+    let mut warnings = vec![
+        "AUTH_MODE=dev: the X-Dev-User header is trusted, anybody who reaches this API can act \
+         as any user. Never use this on a reachable server; use AUTH_MODE=oidc."
+            .to_string(),
+    ];
+    if !bind.ip().is_loopback() {
+        if !acknowledged {
+            return Err(format!(
+                "AUTH_MODE=dev refuses to listen on {bind}: it trusts the X-Dev-User header. \
+                 Bind to 127.0.0.1, use AUTH_MODE=oidc, or set ALLOW_INSECURE_DEV_AUTH=true \
+                 if the port is not reachable from other machines."
+            ));
+        }
+        warnings.push(format!(
+            "ALLOW_INSECURE_DEV_AUTH=true: dev authentication listens on {bind}, not loopback. \
+             This is only safe while the port is published on the host's loopback (as in \
+             docker-compose.yml); any other machine that reaches it signs in as any user."
+        ));
+    }
+    Ok(warnings)
+}
+
 /// Permissions are checked in code; roles are granted per company and map to permissions.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Permission {
@@ -1088,6 +1120,22 @@ impl FromRequestParts<AppState> for CallerIssuer {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn dev_auth_starts_on_loopback_and_elsewhere_only_when_acknowledged_loudly() {
+        for ok in ["127.0.0.1:8080", "[::1]:8080", "127.0.0.1:0"] {
+            let w = dev_auth_startup(ok.parse().unwrap(), false).unwrap();
+            assert_eq!(w.len(), 1, "{ok}");
+            assert!(w[0].contains("X-Dev-User"));
+        }
+        for open in ["0.0.0.0:8080", "[::]:8080", "192.168.1.5:8080"] {
+            let e = dev_auth_startup(open.parse().unwrap(), false).unwrap_err();
+            assert!(e.contains("refuses to listen"), "{e}");
+            let w = dev_auth_startup(open.parse().unwrap(), true).unwrap();
+            assert_eq!(w.len(), 2, "{open}");
+            assert!(w[1].contains("ALLOW_INSECURE_DEV_AUTH"), "{}", w[1]);
+        }
+    }
 
     #[test]
     fn sales_cannot_change_prices_or_products() {
