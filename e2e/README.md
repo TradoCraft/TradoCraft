@@ -121,3 +121,12 @@ Things that used to need workarounds here and are fixed in the app (keep them fi
 in `app/test`): the narrator card closing suggestion lists, the navigation rail and tab strip
 vanishing from the accessibility tree on record pages, and the unnamed quantity input of a quotation
 line.
+
+## Leptos web UI (`/app/`)
+
+`npm run test:leptos` runs `tests-leptos/` against the packaged Leptos build (`crates/web-ui/dist`, built with
+`trunk build`) served by the API, on the same recreated database and dev seed. The specs cover the v0.4.0
+release gate in `docs/ROADMAP.md`: `todo`, `helpdesk`, `kb` and `answers`, plus a smoke test. Shared helpers are
+in `tests-leptos/support.ts`. A reply to a customer is checked in `helpdesk.articles` (kind `email_out`, delivery
+`queued`), which is the queue the worker writes to .eml files. Set `E2E_CHROMIUM_PATH` to use a Chromium that
+differs from the one the pinned Playwright expects.

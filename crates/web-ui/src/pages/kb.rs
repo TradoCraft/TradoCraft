@@ -7,6 +7,7 @@ use tradocraft_api_client::{Client, Session};
 use uuid::Uuid;
 
 use crate::api::{resolve_base_url, ConnectionMode};
+use crate::pages::kb_staff::KbStaff;
 use crate::pages::parse_uuid;
 use crate::state::AppContext;
 
@@ -34,7 +35,7 @@ fn default_session_params(ctx: &AppContext) -> (String, String) {
 }
 
 /// Splits a snippet with `U+E000` / `U+E001` match markers into `(text, highlighted)` segments.
-fn snippet_segments(snippet: &str) -> Vec<(String, bool)> {
+pub(crate) fn snippet_segments(snippet: &str) -> Vec<(String, bool)> {
     let mut segments = Vec::new();
     let mut rest = snippet;
     while let Some(start) = rest.find('\u{E000}') {
@@ -62,8 +63,58 @@ fn snippet_segments(snippet: &str) -> Vec<(String, bool)> {
     segments
 }
 
+/// Knowledge Base page: the public reader plus, for signed-in users with `kb.read`, a staff tab.
+/// Both stay mounted so switching tabs keeps filters and the open article.
 #[component]
 pub fn KbPage() -> impl IntoView {
+    let ctx = expect_context::<AppContext>();
+    let staff_tab = RwSignal::new(false);
+    let has_staff = Memo::new(move |_| {
+        ctx.session
+            .with(|s| s.as_ref().is_some_and(|a| a.me.has_permission("kb.read")))
+    });
+    let show_staff = move || staff_tab.get() && has_staff.get();
+
+    view! {
+        <div data-target="kb-page">
+            <Show when=move || has_staff.get()>
+                <div class="tc-inline-tabs" data-target="kb-tabs" role="group" aria-label="Knowledge Base view" style="margin-bottom: var(--space-md);">
+                    <button
+                        type="button"
+                        data-target="kb-tab-public"
+                        class=move || if show_staff() { "tc-inline-tab-btn" } else { "tc-inline-tab-btn tc-inline-tab-active" }
+                        aria-pressed=move || (!show_staff()).to_string()
+                        on:click=move |_| staff_tab.set(false)
+                    >
+                        "Public reader"
+                    </button>
+                    <button
+                        type="button"
+                        data-target="kb-tab-staff"
+                        class=move || if show_staff() { "tc-inline-tab-btn tc-inline-tab-active" } else { "tc-inline-tab-btn" }
+                        aria-pressed=move || show_staff().to_string()
+                        on:click=move |_| staff_tab.set(true)
+                    >
+                        "Staff"
+                    </button>
+                </div>
+            </Show>
+            <div hidden=show_staff>
+                <PublicReader />
+            </div>
+            // Mounted whenever the user may read staff articles; the tab only hides it, so filters,
+            // the open article and an unsaved draft survive switching tabs.
+            <Show when=move || has_staff.get()>
+                <div hidden=move || !show_staff()>
+                    <KbStaff />
+                </div>
+            </Show>
+        </div>
+    }
+}
+
+#[component]
+fn PublicReader() -> impl IntoView {
     let ctx = expect_context::<AppContext>();
     let (init_base, init_company) = default_session_params(&ctx);
 
@@ -242,7 +293,7 @@ pub fn KbPage() -> impl IntoView {
     };
 
     view! {
-        <div data-target="kb-page">
+        <div data-target="kb-public-reader">
             <div class="tc-page-header">
                 <div>
                     <h1 class="tc-page-title">"Knowledge Base"</h1>

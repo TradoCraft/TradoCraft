@@ -10,6 +10,7 @@ description = "Leptos CSR web interface for TradoCraft (Phase 1 spike)"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
+chrono = { version = "0.4", default-features = false }
 leptos = { version = "0.8", features = ["csr"] }
 leptos_router = "0.8"
 rust_decimal = { version = "1", default-features = false, features = ["serde-with-str"] }
@@ -20,9 +21,11 @@ uuid = { workspace = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 console_error_panic_hook = "0.1"
+js-sys = "0.3"
 uuid = { workspace = true, features = ["js"] }
 wasm-bindgen = "0.2"
-web-sys = { version = "0.3", features = ["Document", "Element", "HtmlElement", "Location", "Node", "Window"] }
+wasm-bindgen-futures = "0.4"
+web-sys = { version = "0.3", features = ["Blob", "BlobPropertyBag", "Document", "Element", "File", "FileList", "HtmlAnchorElement", "HtmlElement", "HtmlInputElement", "Location", "Node", "Url", "Window"] }
 
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies]
 wasm-bindgen-test = "0.3"

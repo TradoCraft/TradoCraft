@@ -8,10 +8,12 @@ pub mod client;
 pub mod customers;
 pub mod error;
 pub mod helpdesk;
+pub mod kb;
 pub mod portal;
 pub mod products;
 pub mod sales;
 pub mod suppliers;
+pub mod todo;
 
 pub use auth::{
     Auth, Company, EnvKind, EnvironmentInfo, Me, MeModule, Membership, PublicProvider, Session,
@@ -50,3 +52,4 @@ pub use suppliers::{
     CreateSupplierRequest, ListSuppliersParams, SetSupplierProductInput, Supplier, SupplierInput,
     SupplierProduct, SupplierProductInput, UpdateSupplierInput, UpdateSupplierRequest,
 };
+pub use todo::{ListTodosParams, TodoCounts, TodoCreate, TodoItem, TodoPatch, TodoScope};
