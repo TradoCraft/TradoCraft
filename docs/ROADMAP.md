@@ -110,7 +110,7 @@ roadmap, against the current code.
     default everywhere); a test now locks it in.
   - #3 and #4 wildcard CORS and dev-auth defaults: mostly in place; the gap was `CORS_ALLOWED_ORIGINS=*` with
     `AUTH_MODE=dev`. The staff API now refuses to start with `*` under dev auth or `APP_ENV_KIND=live`
-    ([ADR 0092](adr/0092-no-wildcard-cors-with-dev-auth-or-in-live.md)). Breaking for a live setup that used `*`. The refusal in
+    ([ADR 0092](adr/0092-no-wildcard-cors-with-dev-auth-or-in-live.md)). Breaking for a live setup that used `*`.
     Checked by starting the binary: `*` with dev auth, or in a live environment, refuses to start; `*` with real sign-in in a
     tutorial environment starts with a warning; dev auth on a non-loopback address refuses. The portal server still
     only warns on `*`.
