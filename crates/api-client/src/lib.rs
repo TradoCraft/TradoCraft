@@ -8,6 +8,7 @@ pub mod client;
 pub mod customers;
 pub mod error;
 pub mod helpdesk;
+pub mod kb;
 pub mod portal;
 pub mod products;
 pub mod sales;
