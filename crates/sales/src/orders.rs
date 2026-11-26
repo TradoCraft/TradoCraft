@@ -883,7 +883,7 @@ async fn edit_order(
     }
     let current = revision_lines(&mut tx, id, head.current_revision).await?;
     let mut seen = Vec::new();
-    let mut lines = Vec::with_capacity(input.lines.len());
+    let mut lines = Vec::with_capacity(input.lines.len().min(256));
     for (i, e) in input.lines.iter().enumerate() {
         let old = current
             .iter()

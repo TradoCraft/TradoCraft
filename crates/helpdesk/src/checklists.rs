@@ -129,7 +129,7 @@ pub fn validate_template_input(
         None => None,
     };
 
-    let mut items = Vec::with_capacity(input.items.len());
+    let mut items = Vec::with_capacity(input.items.len().min(256));
     for item in &input.items {
         let desc = item.description.trim();
         if desc.is_empty() {
