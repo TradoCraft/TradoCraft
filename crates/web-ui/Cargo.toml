@@ -22,4 +22,7 @@ uuid = { workspace = true }
 console_error_panic_hook = "0.1"
 uuid = { workspace = true, features = ["js"] }
 wasm-bindgen = "0.2"
-web-sys = { version = "0.3", features = ["Document", "Element", "HtmlElement", "Location", "Window"] }
+web-sys = { version = "0.3", features = ["Document", "Element", "HtmlElement", "Location", "Node", "Window"] }
+
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies]
+wasm-bindgen-test = "0.3"
