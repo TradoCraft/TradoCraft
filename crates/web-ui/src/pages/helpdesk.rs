@@ -59,8 +59,16 @@ enum DrawerSection {
     Properties,
 }
 
+/// Distinguishes a tab from an earlier tab that had the same `tab_id` (closed, then reopened).
+fn next_tab_instance() -> u64 {
+    use std::sync::atomic::{AtomicU64, Ordering};
+    static NEXT: AtomicU64 = AtomicU64::new(1);
+    NEXT.fetch_add(1, Ordering::Relaxed)
+}
+
 #[derive(Debug, Clone, PartialEq)]
 struct TicketTab {
+    instance_id: u64,
     tab_id: String,
     ticket_id: Option<Uuid>,
     title: String,
@@ -89,6 +97,8 @@ struct TicketTab {
     reply_status: String,
     reply_attachments: Vec<FileInfo>,
     uploading: bool,
+    /// Name, size and `client_id` of the last failed upload: a retry of the same file reuses the id.
+    upload_retry: Option<(String, usize, Uuid)>,
     note_body: String,
     // Prepared answers
     answer_query: String,
@@ -122,6 +132,7 @@ struct TicketTab {
 impl TicketTab {
     fn new_draft(default_customer_id: &str) -> Self {
         Self {
+            instance_id: next_tab_instance(),
             tab_id: "new".to_string(),
             ticket_id: None,
             title: "New Ticket".to_string(),
@@ -146,6 +157,7 @@ impl TicketTab {
             reply_body: String::new(),
             reply_status: "pending_customer".to_string(),
             reply_attachments: Vec::new(),
+            upload_retry: None,
             uploading: false,
             note_body: String::new(),
             answer_query: String::new(),
@@ -247,6 +259,23 @@ fn read_ticket_tab<R>(
     f: impl FnOnce(&TicketTab) -> R,
 ) -> Option<R> {
     tabs.with(|list| list.iter().find(|t| t.tab_id == tab_id).map(f))
+}
+
+/// Like [`update_ticket_tab`], but only while the tab is still the one that started the work.
+fn update_ticket_tab_instance(
+    tabs: &RwSignal<Vec<TicketTab>>,
+    tab_id: &str,
+    instance_id: u64,
+    f: impl FnOnce(&mut TicketTab),
+) {
+    tabs.update(|list| {
+        if let Some(tab) = list
+            .iter_mut()
+            .find(|t| t.tab_id == tab_id && t.instance_id == instance_id)
+        {
+            f(tab);
+        }
+    });
 }
 
 fn update_ticket_tab(
@@ -471,13 +500,21 @@ fn begin_file_read(ev: leptos::ev::Event, done: impl FnOnce(Result<PickedFile, S
         .target()
         .and_then(|t| t.dyn_into::<web_sys::HtmlInputElement>().ok())
     else {
+        done(Err(String::new()));
         return;
     };
     let Some(file) = input.files().and_then(|list| list.get(0)) else {
+        // The dialog was cancelled: nothing to read, nothing to report.
+        done(Err(String::new()));
         return;
     };
     input.set_value("");
     let name = file.name();
+    // Reject an oversized file before its bytes are read into memory.
+    if let Err(msg) = validate_attachment(&name, file.size() as usize, 0) {
+        done(Err(msg));
+        return;
+    }
     spawn_local(async move {
         let result = wasm_bindgen_futures::JsFuture::from(file.array_buffer())
             .await
@@ -966,7 +1003,8 @@ pub fn HelpdeskPage() -> impl IntoView {
                                 let Some(ticket_id) = snapshot.ticket_id else {
                                     return;
                                 };
-                                if snapshot.busy {
+                                // Not while an answer is being rendered into the draft, or while sending.
+                                if snapshot.busy || snapshot.answer_busy {
                                     return;
                                 }
                                 let body = snapshot.reply_body.trim().to_string();
@@ -1469,6 +1507,14 @@ pub fn HelpdeskPage() -> impl IntoView {
                                 else {
                                     return;
                                 };
+                                let Some((blocked, instance)) = read_ticket_tab(&open_tabs, &tid, |t| {
+                                    (t.busy || t.answer_busy, t.instance_id)
+                                }) else {
+                                    return;
+                                };
+                                if blocked {
+                                    return;
+                                }
                                 update_ticket_tab(&open_tabs, &tid, |tab| {
                                     tab.answer_busy = true;
                                     tab.error = None;
@@ -1483,7 +1529,7 @@ pub fn HelpdeskPage() -> impl IntoView {
                                     match res {
                                         Ok(rendered) => {
                                             let target = answer_target(&answer.kind);
-                                            update_ticket_tab(&open_tabs, &tid, |tab| {
+                                            update_ticket_tab_instance(&open_tabs, &tid, instance, |tab| {
                                                 tab.answer_busy = false;
                                                 tab.answer_pick.clear();
                                                 match target {
@@ -1508,7 +1554,7 @@ pub fn HelpdeskPage() -> impl IntoView {
                                             });
                                         }
                                         Err(err) => {
-                                            update_ticket_tab(&open_tabs, &tid, |tab| {
+                                            update_ticket_tab_instance(&open_tabs, &tid, instance, |tab| {
                                                 tab.answer_busy = false;
                                                 tab.answer_pick.clear();
                                                 tab.error = Some(err.user_message());
@@ -1523,60 +1569,87 @@ pub fn HelpdeskPage() -> impl IntoView {
                                     return;
                                 };
                                 let tid = tab_id_sv.get_value();
-                                let Some((ticket_id, count, uploading)) = read_ticket_tab(&open_tabs, &tid, |t| {
-                                    (t.ticket_id, t.reply_attachments.len(), t.uploading)
+                                let Some((ticket_id, uploading, busy, instance)) = read_ticket_tab(&open_tabs, &tid, |t| {
+                                    (t.ticket_id, t.uploading, t.busy, t.instance_id)
                                 }) else {
                                     return;
                                 };
                                 let Some(ticket_id) = ticket_id else {
                                     return;
                                 };
-                                if uploading {
+                                // One file at a time, and none while a reply is being sent.
+                                if uploading || busy {
                                     return;
                                 }
+                                // Reserve the slot now: the file is read asynchronously.
+                                update_ticket_tab_instance(&open_tabs, &tid, instance, |tab| tab.uploading = true);
                                 let connection = session.connection;
                                 begin_file_read(ev, move |picked| {
+                                    let release = |msg: Option<String>| {
+                                        update_ticket_tab_instance(&open_tabs, &tid, instance, |tab| {
+                                            tab.uploading = false;
+                                            if let Some(msg) = msg {
+                                                tab.error = Some(msg);
+                                                tab.notice = None;
+                                            }
+                                        });
+                                    };
                                     let file = match picked {
                                         Ok(file) => file,
                                         Err(msg) => {
-                                            update_ticket_tab(&open_tabs, &tid, |tab| tab.error = Some(msg));
+                                            release((!msg.is_empty()).then_some(msg));
                                             return;
                                         }
                                     };
+                                    // Counted when the file is committed, not when it was picked.
+                                    let Some(count) = read_ticket_tab(&open_tabs, &tid, |t| {
+                                        (t.instance_id == instance).then_some(t.reply_attachments.len())
+                                    })
+                                    .flatten() else {
+                                        return;
+                                    };
                                     if let Err(msg) = validate_attachment(&file.name, file.bytes.len(), count) {
-                                        update_ticket_tab(&open_tabs, &tid, |tab| {
-                                            tab.error = Some(msg);
-                                            tab.notice = None;
-                                        });
+                                        release(Some(msg));
                                         return;
                                     }
-                                    update_ticket_tab(&open_tabs, &tid, |tab| {
-                                        tab.uploading = true;
+                                    // A retry of the file that just failed reuses its id, so the
+                                    // server can recognise it.
+                                    let client_id = read_ticket_tab(&open_tabs, &tid, |t| t.upload_retry.clone())
+                                        .flatten()
+                                        .filter(|(name, len, _)| *name == file.name && *len == file.bytes.len())
+                                        .map(|(_, _, id)| id)
+                                        .unwrap_or_else(Uuid::new_v4);
+                                    update_ticket_tab_instance(&open_tabs, &tid, instance, |tab| {
                                         tab.error = None;
                                         tab.notice = None;
                                     });
                                     spawn_local(async move {
+                                        let retry = (file.name.clone(), file.bytes.len(), client_id);
                                         let res = match live_client(&connection) {
                                             Ok(client) => {
                                                 client
                                                     .upload_ticket_attachment(
                                                         ticket_id,
                                                         &file.name,
-                                                        Some(Uuid::new_v4()),
+                                                        Some(client_id),
                                                         file.bytes,
                                                     )
                                                     .await
                                             }
                                             Err(err) => Err(err),
                                         };
-                                        update_ticket_tab(&open_tabs, &tid, |tab| {
+                                        update_ticket_tab_instance(&open_tabs, &tid, instance, |tab| {
                                             tab.uploading = false;
                                             match res {
                                                 Ok(info) => {
+                                                    tab.upload_retry = None;
                                                     tab.notice = Some(format!("Attached {}.", info.filename));
                                                     tab.reply_attachments.push(info);
                                                 }
-                                                Err(err) => tab.error = Some(err.user_message()),
+                                                Err(err) => {
+                                                    tab.upload_retry = Some(retry);
+                                                    tab.error = Some(err.user_message());
+                                                }
                                             }
                                         });
                                     });
@@ -1812,9 +1885,24 @@ pub fn HelpdeskPage() -> impl IntoView {
                                                                 }
                                                             >
                                                                 <option value="">"No team"</option>
-                                                                {move || teams.get().into_iter().map(|team| view! {
-                                                                    <option value=team.id.to_string()>{team.name}</option>
-                                                                }).collect_view()}
+                                                                {move || {
+                                                                    // A team that can no longer be assigned stays selectable, so saving
+                                                                    // does not silently clear it.
+                                                                    let current = tab_id_sv.with_value(|tid| {
+                                                                        read_ticket_tab(&open_tabs, tid, |t| t.assign_team.clone())
+                                                                    }).unwrap_or_default();
+                                                                    let list = teams.get();
+                                                                    let missing = !current.trim().is_empty()
+                                                                        && !list.iter().any(|t| t.id.to_string() == current.trim());
+                                                                    let unlisted = missing.then(|| view! {
+                                                                        <option value=current.clone()>"Current team (not assignable)"</option>
+                                                                    });
+                                                                    let options = list.into_iter().map(|team| {
+                                                                        let label = if team.active { team.name } else { format!("{} (inactive)", team.name) };
+                                                                        view! { <option value=team.id.to_string()>{label}</option> }
+                                                                    }).collect_view();
+                                                                    view! { {unlisted}{options} }
+                                                                }}
                                                             </select>
                                                         </div>
                                                         <div class="tc-field" style="flex: 1; min-width: 140px;">
@@ -1996,7 +2084,7 @@ pub fn HelpdeskPage() -> impl IntoView {
                                                                                 id="helpdesk-prepared-answers"
                                                                                 data-target="helpdesk-prepared-answers"
                                                                                 class="tc-select"
-                                                                                disabled=move || tab_id_sv.with_value(|tid| read_ticket_tab(&open_tabs, tid, |t| t.answer_busy).unwrap_or(false))
+                                                                                disabled=move || tab_id_sv.with_value(|tid| read_ticket_tab(&open_tabs, tid, |t| t.answer_busy || t.busy).unwrap_or(false))
                                                                                 prop:value=move || tab_id_sv.with_value(|tid| read_ticket_tab(&open_tabs, tid, |t| t.answer_pick.clone()).unwrap_or_default())
                                                                                 on:change=move |ev| {
                                                                                     let val = event_target_value(&ev);
@@ -2097,7 +2185,7 @@ pub fn HelpdeskPage() -> impl IntoView {
                                                                                     data-target="ticket-reply-attach"
                                                                                     class="tc-input"
                                                                                     type="file"
-                                                                                    disabled=move || tab_id_sv.with_value(|tid| read_ticket_tab(&open_tabs, tid, |t| t.uploading).unwrap_or(false))
+                                                                                    disabled=move || tab_id_sv.with_value(|tid| read_ticket_tab(&open_tabs, tid, |t| t.uploading || t.busy).unwrap_or(false))
                                                                                     on:change=on_attach_file
                                                                                 />
                                                                                 {move || tab_id_sv.with_value(|tid| read_ticket_tab(&open_tabs, tid, |t| t.uploading)).unwrap_or(false).then(|| view! {
@@ -2132,7 +2220,7 @@ pub fn HelpdeskPage() -> impl IntoView {
                                                                                     type="submit"
                                                                                     data-target="ticket-send"
                                                                                     class="tc-btn tc-btn-primary"
-                                                                                    disabled=move || tab_id_sv.with_value(|tid| read_ticket_tab(&open_tabs, tid, |t| t.busy).unwrap_or(false))
+                                                                                    disabled=move || tab_id_sv.with_value(|tid| read_ticket_tab(&open_tabs, tid, |t| t.busy || t.answer_busy).unwrap_or(false))
                                                                                 >
                                                                                     "Send Reply"
                                                                                 </button>
