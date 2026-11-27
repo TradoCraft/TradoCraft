@@ -424,7 +424,7 @@ pub struct ContactInput {
     /// formal | informal.
     #[serde(default = "default_address_form")]
     pub address_form: String,
-    /// nl | fr | en | de | es; null = same as the customer.
+    /// ISO 639-1 code; null = same as the customer.
     pub language: Option<String>,
     #[serde(default)]
     pub roles: Vec<String>,

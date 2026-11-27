@@ -86,7 +86,13 @@ void main() {
     });
   });
 
-  test('companyLanguagesOf falls back to the default language', () {
-    expect(companyLanguagesOf(null), ['en']);
+  test('without a list from the server the five former languages apply', () {
+    expect(companyLanguagesOf(null), legacyContentLanguages);
+    setContentLanguages(['pt', 'en']);
+    expect(languageCodes, ['pt', 'en']);
+    expect(languageChoices('nl'), ['pt', 'en', 'nl']);
+    expect(languageChoices('pt'), ['pt', 'en']);
+    setContentLanguages(const []);
+    expect(languageCodes, legacyContentLanguages);
   });
 }

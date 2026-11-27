@@ -13,7 +13,8 @@ import 'tickets_page.dart'
 
 const ruleTriggers = ['created', 'updated', 'customer_replied'];
 const ruleChannels = ['email', 'portal', 'phone', 'manual', 'internal'];
-const ruleLanguages = ['nl', 'fr', 'en', 'de', 'es'];
+/// The languages a rule can test for: the company's content languages (ADR 0101).
+List<String> get ruleLanguages => languageCodes;
 const actionKinds = [
   'set_owner',
   'set_team',
@@ -915,14 +916,14 @@ class _RuleEditorState extends ConsumerState<RuleEditor> {
               ),
               _chips(
                 l.customerLanguage,
-                ruleLanguages,
+                {...ruleLanguages, ..._languages}.toList(),
                 _languages,
                 languageName,
                 'cond-language',
               ),
               _chips(
                 l.ticketLanguageCondition,
-                ruleLanguages,
+                {...ruleLanguages, ..._ticketLanguages}.toList(),
                 _ticketLanguages,
                 languageName,
                 'cond-ticket-language',

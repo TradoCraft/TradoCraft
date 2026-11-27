@@ -45,7 +45,7 @@ class QuotationLineInput {
   @JsonKey(includeIfNull: false,name: 'customer_remark')
   final String? customerRemark;
 
-  /// The language (nl | fr | en | de | es) the customer remark is written in. Absent: it matches.
+  /// The language (an ISO 639-1 code) the customer remark is written in. Absent: it matches.
   /// the quotation language, or unknown. Ignored (stored empty) when the remark is empty.
   @JsonKey(includeIfNull: false,name: 'customer_remark_language')
   final String? customerRemarkLanguage;

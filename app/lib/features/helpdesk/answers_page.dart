@@ -121,9 +121,15 @@ class _AnswerEditorState extends ConsumerState<AnswerEditor>
   late String _kind = a?.kind ?? 'reply';
   late String? _teamId = a?.teamId;
   late final _keywords = TextEditingController(text: a?.keywords.join(', '));
+  /// The company's languages plus any the answer already has texts in (ADR 0101).
+  late final _langs = [
+    ...languageCodes,
+    for (final t in a?.texts ?? const <AnswerText>[])
+      if (!languageCodes.contains(t.language)) t.language,
+  ];
   late final Map<String, (TextEditingController, TextEditingController)>
   _texts = {
-    for (final c in languageCodes)
+    for (final c in _langs)
       c: (
         TextEditingController(
           text: a?.texts.where((t) => t.language == c).firstOrNull?.subject,
@@ -133,11 +139,11 @@ class _AnswerEditorState extends ConsumerState<AnswerEditor>
         ),
       ),
   };
-  late final _tabs = TabController(length: languageCodes.length, vsync: this);
+  late final _tabs = TabController(length: _langs.length, vsync: this);
   String? _error;
 
   void _insert(String placeholder) {
-    final body = _texts[languageCodes[_tabs.index]]!.$2;
+    final body = _texts[_langs[_tabs.index]]!.$2;
     final sel = body.selection;
     final text = '{{$placeholder}}';
     final start = sel.isValid ? sel.start : body.text.length;
@@ -162,7 +168,7 @@ class _AnswerEditorState extends ConsumerState<AnswerEditor>
           .where((k) => k.isNotEmpty)
           .toList(),
       texts: [
-        for (final c in languageCodes)
+        for (final c in _langs)
           if (_texts[c]!.$2.text.trim().isNotEmpty)
             AnswerText(
               language: c,
@@ -289,13 +295,13 @@ class _AnswerEditorState extends ConsumerState<AnswerEditor>
             gap,
             TabBar(
               controller: _tabs,
-              tabs: [for (final c in languageCodes) Tab(text: languageName(c))],
+              tabs: [for (final c in _langs) Tab(text: languageName(c))],
             ),
             Expanded(
               child: TabBarView(
                 controller: _tabs,
                 children: [
-                  for (final c in languageCodes)
+                  for (final c in _langs)
                     Padding(
                       padding: const EdgeInsets.only(top: 12),
                       child: Column(

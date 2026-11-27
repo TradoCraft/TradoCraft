@@ -184,7 +184,7 @@ abstract class KbClient {
 
   /// Categories that have public entries.
   ///
-  /// [language] - nl | fr | en | de | es (default: the company's language).
+  /// [language] - ISO 639-1 code (default: the company's language).
   @GET('/api/v1/public/kb/{company_id}/categories')
   Future<List<ReaderCategory>> listPublicKbCategories({
     @Path('company_id') required String companyId,
@@ -197,7 +197,7 @@ abstract class KbClient {
   ///
   /// [categoryId] - Includes the sub-categories of this category.
   ///
-  /// [language] - nl | fr | en | de | es (default: the company's language).
+  /// [language] - ISO 639-1 code (default: the company's language).
   @GET('/api/v1/public/kb/{company_id}/entries')
   Future<List<ReaderSummary>> listPublicKbEntries({
     @Path('company_id') required String companyId,
@@ -212,7 +212,7 @@ abstract class KbClient {
   /// One public entry. Counts one view. Internal, portal-only, draft and archived entries are.
   /// "not found".
   ///
-  /// [language] - nl | fr | en | de | es (default: the company's language).
+  /// [language] - ISO 639-1 code (default: the company's language).
   @GET('/api/v1/public/kb/{company_id}/entries/{id}')
   Future<ReaderEntry> getPublicKbEntry({
     @Path('company_id') required String companyId,

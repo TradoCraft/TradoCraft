@@ -165,6 +165,10 @@ pub struct PortalProfile {
     pub roles: Vec<String>,
     /// own | customer
     pub scope: String,
+    /// The company's content languages (ADR 0101): what the person can choose as their
+    /// language. Empty in the profile returned with a new session.
+    #[serde(default)]
+    pub languages: Vec<String>,
 }
 
 impl From<Contact> for PortalProfile {
@@ -185,8 +189,20 @@ impl From<Contact> for PortalProfile {
             greeting: c.greeting,
             roles: c.roles,
             scope: c.portal_scope,
+            languages: Vec::new(),
         }
     }
+}
+
+/// The profile of a contact with the company's content languages filled in.
+async fn profile(
+    conn: &mut sqlx::PgConnection,
+    company_id: Uuid,
+    contact: Contact,
+) -> AppResult<PortalProfile> {
+    let mut p = PortalProfile::from(contact);
+    p.languages = tradocraft_core::languages::company_languages(&mut *conn, company_id).await?;
+    Ok(p)
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -282,17 +298,14 @@ async fn end_session(State(state): State<AppState>, user: PortalUser) -> AppResu
     responses((status = 200, body = PortalProfile), (status = 401, body = ErrorBody)))]
 async fn get_me(State(state): State<AppState>, user: PortalUser) -> AppResult<Json<PortalProfile>> {
     let mut conn = state.db.acquire().await?;
-    Ok(Json(
-        contacts::get_contact(&mut conn, user.contact_id)
-            .await?
-            .into(),
-    ))
+    let contact = contacts::get_contact(&mut conn, user.contact_id).await?;
+    Ok(Json(profile(&mut conn, user.company_id, contact).await?))
 }
 
 /// What a customer may change about themselves: how they want to be addressed.
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct ProfileInput {
-    /// nl | fr | en | de | es; null = same as the company.
+    /// ISO 639-1 code; null = same as the company.
     pub language: Option<String>,
     /// formal | informal
     pub address_form: String,
@@ -345,8 +358,9 @@ async fn update_me(
     )
     .await?;
     let contact = contacts::get_contact(&mut tx, user.contact_id).await?;
+    let p = profile(&mut tx, user.company_id, contact).await?;
     tx.commit().await?;
-    Ok(Json(contact.into()))
+    Ok(Json(p))
 }
 
 #[utoipa::path(get, path = "/portal/tickets", tag = "portal", operation_id = "list_portal_tickets",

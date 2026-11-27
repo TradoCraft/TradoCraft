@@ -11,8 +11,29 @@ extension L10nContext on BuildContext {
   AppLocalizations get l10n => AppLocalizations.of(this);
 }
 
-/// The five languages of the app and of customer communication.
-const languageCodes = ['nl', 'fr', 'en', 'de', 'es'];
+/// The content languages a server from before ADR 0101 supports (it sends no list).
+const legacyContentLanguages = ['nl', 'fr', 'en', 'de', 'es'];
+
+List<String> _contentLanguages = legacyContentLanguages;
+
+/// The active company's content languages in their configured order (ADR 0101): what language
+/// pickers for customer-facing content offer. Follows `GET /me` ([setContentLanguages]).
+List<String> get languageCodes => _contentLanguages;
+
+/// Sets [languageCodes]; called whenever `/me` is loaded.
+void setContentLanguages(List<String> languages) {
+  _contentLanguages = List.unmodifiable(
+    languages.isEmpty ? legacyContentLanguages : languages,
+  );
+}
+
+/// The content languages to offer for a record whose language is [current]: the company's,
+/// plus [current] when it is no longer one of them (so the stored value is not lost).
+List<String> languageChoices(String? current) => [
+  ...languageCodes,
+  if (current != null && current.isNotEmpty && !languageCodes.contains(current))
+    current,
+];
 
 /// A language's own name (endonym), e.g. for a language picker; the code when unknown.
 String languageName(String code) => languageNames[code]?.$2 ?? code;
@@ -20,12 +41,12 @@ String languageName(String code) => languageNames[code]?.$2 ?? code;
 /// A language's English name; the code when unknown.
 String languageEnglishName(String code) => languageNames[code]?.$1 ?? code;
 
-/// The content languages of [company] in their configured order (ADR 0101); its default language
-/// alone when the server sent no list, English without a company.
+/// The content languages of [company] in their configured order (ADR 0101); the languages of a
+/// server from before ADR 0101 when it sent no list.
 List<String> companyLanguagesOf(Company? company) {
   final list = company?.languages;
   if (list != null && list.isNotEmpty) return list;
-  return [company?.defaultLanguage ?? 'en'];
+  return legacyContentLanguages;
 }
 
 /// Labels for values that come from the API as codes.

@@ -7982,7 +7982,7 @@
           {
             "name": "lang",
             "in": "query",
-            "description": "nl | fr | en | de | es; default: the language of the customer.",
+            "description": "ISO 639-1 code; default: the language of the customer.",
             "required": false,
             "schema": {
               "type": [
@@ -9987,7 +9987,7 @@
           {
             "name": "language",
             "in": "query",
-            "description": "nl, fr, en, de or es. Default: the language of the contact, else of the customer.",
+            "description": "ISO 639-1 code. Default: the language of the contact, else of the customer.",
             "required": false,
             "schema": {
               "type": [
@@ -20599,7 +20599,7 @@
           {
             "name": "language",
             "in": "query",
-            "description": "nl | fr | en | de | es (default: the company's language)",
+            "description": "ISO 639-1 code (default: the company's language)",
             "required": false,
             "schema": {
               "type": [
@@ -20683,7 +20683,7 @@
           {
             "name": "language",
             "in": "query",
-            "description": "nl | fr | en | de | es (default: the company's language)",
+            "description": "ISO 639-1 code (default: the company's language)",
             "required": false,
             "schema": {
               "type": [
@@ -20764,7 +20764,7 @@
           {
             "name": "language",
             "in": "query",
-            "description": "nl | fr | en | de | es (default: the company's language)",
+            "description": "ISO 639-1 code (default: the company's language)",
             "required": false,
             "schema": {
               "type": [
@@ -25216,7 +25216,7 @@
           {
             "name": "lang",
             "in": "query",
-            "description": "nl | fr | en | de | es; default: the language of the user, else of the company.",
+            "description": "ISO 639-1 code; default: the language of the user, else of the company.",
             "required": false,
             "schema": {
               "type": [
@@ -28487,7 +28487,7 @@
           {
             "name": "language",
             "in": "query",
-            "description": "nl | fr | en | de | es (default: the company's language)",
+            "description": "ISO 639-1 code (default: the company's language)",
             "required": false,
             "schema": {
               "type": [
@@ -28580,7 +28580,7 @@
           {
             "name": "language",
             "in": "query",
-            "description": "nl | fr | en | de | es (default: the company's language)",
+            "description": "ISO 639-1 code (default: the company's language)",
             "required": false,
             "schema": {
               "type": [
@@ -28670,7 +28670,7 @@
           {
             "name": "language",
             "in": "query",
-            "description": "nl | fr | en | de | es (default: the company's language)",
+            "description": "ISO 639-1 code (default: the company's language)",
             "required": false,
             "schema": {
               "type": [
@@ -37283,7 +37283,7 @@
           },
           "language": {
             "type": "string",
-            "description": "nl | fr | en | de | es"
+            "description": "ISO 639-1 code"
           },
           "subject": {
             "type": "string"
@@ -40547,7 +40547,7 @@
               "string",
               "null"
             ],
-            "description": "nl | fr | en | de | es; null = same as the customer."
+            "description": "ISO 639-1 code; null = same as the customer."
           },
           "last_name": {
             "type": "string"
@@ -43034,7 +43034,7 @@
           },
           "language": {
             "type": "string",
-            "description": "nl | fr | en | de | es"
+            "description": "ISO 639-1 code"
           },
           "summary": {
             "type": "string"
@@ -43684,7 +43684,7 @@
             "items": {
               "$ref": "#/components/schemas/FavoriteRemark"
             },
-            "description": "The customer remark per language, in the order nl, fr, en, de, es."
+            "description": "The customer remark per language, in the order of the company's languages."
           },
           "section": {
             "type": [
@@ -43780,7 +43780,7 @@
         "properties": {
           "language": {
             "type": "string",
-            "description": "nl | fr | en | de | es"
+            "description": "ISO 639-1 code"
           },
           "text": {
             "type": "string"
@@ -43828,7 +43828,7 @@
             "items": {
               "type": "string"
             },
-            "description": "The languages (nl, fr, en, de, es) in which at least one customer remark exists."
+            "description": "The languages (ISO 639-1 codes) in which at least one customer remark exists."
           },
           "main_product_active": {
             "type": "boolean",
@@ -50784,6 +50784,13 @@
             ],
             "description": "The person's own language; null means the same as the company."
           },
+          "languages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The company's content languages (ADR 0101): what the person can choose as their\nlanguage. Empty in the profile returned with a new session."
+          },
           "last_name": {
             "type": "string"
           },
@@ -51553,7 +51560,7 @@
           },
           "title": {
             "type": "object",
-            "description": "Title per language code (nl, fr, en, de, es); at least one.",
+            "description": "Title per language (ISO 639-1 code); at least one.",
             "additionalProperties": {
               "type": "string"
             },
@@ -51806,7 +51813,7 @@
             "items": {
               "type": "string"
             },
-            "description": "Subset of nl, fr, en, de, es; the first is the default."
+            "description": "Languages of the company (ISO 639-1); the first is the default."
           },
           "price_zone_id": {
             "type": "string",
@@ -54485,7 +54492,7 @@
               "string",
               "null"
             ],
-            "description": "nl | fr | en | de | es; null = same as the company."
+            "description": "ISO 639-1 code; null = same as the company."
           },
           "title": {
             "type": "string",
@@ -55288,7 +55295,7 @@
               "string",
               "null"
             ],
-            "description": "The language (nl | fr | en | de | es) the customer remark is written in. Absent: it matches\nthe quotation language, or unknown. Ignored (stored empty) when the remark is empty."
+            "description": "The language (an ISO 639-1 code) the customer remark is written in. Absent: it matches\nthe quotation language, or unknown. Ignored (stored empty) when the remark is empty."
           },
           "description": {
             "type": [
@@ -58593,7 +58600,7 @@
             "items": {
               "type": "string"
             },
-            "description": "The language of the customer (nl, fr, en, de, es)."
+            "description": "The language of the customer (ISO 639-1 codes)."
           },
           "owner": {
             "type": [
@@ -58646,7 +58653,7 @@
             "items": {
               "type": "string"
             },
-            "description": "The language of the ticket itself (nl, fr, en, de, es), which may differ from its customer's."
+            "description": "The language of the ticket itself (ISO 639-1 codes), which may differ from its customer's."
           }
         }
       },
@@ -61051,7 +61058,7 @@
           },
           "language": {
             "type": "string",
-            "description": "nl | fr | en | de | es — the language to answer in."
+            "description": "ISO 639-1 code: the language to answer in."
           },
           "language_source": {
             "type": "string",

@@ -34,7 +34,7 @@ part 'portal_client.g.dart';
 abstract class PortalClient {
   factory PortalClient(Dio dio, {String? baseUrl}) = _PortalClient;
 
-  /// [language] - nl | fr | en | de | es (default: the company's language)
+  /// [language] - ISO 639-1 code (default: the company's language)
   @GET('/api/v1/portal/kb/categories')
   Future<List<ReaderCategory>> listPortalKbCategories({
     @Query('language') String? language,
@@ -46,7 +46,7 @@ abstract class PortalClient {
   ///
   /// [categoryId] - Includes the sub-categories of this category.
   ///
-  /// [language] - nl | fr | en | de | es (default: the company's language).
+  /// [language] - ISO 639-1 code (default: the company's language).
   @GET('/api/v1/portal/kb/entries')
   Future<List<ReaderSummary>> listPortalKbEntries({
     @Query('q') String? q,
@@ -59,7 +59,7 @@ abstract class PortalClient {
 
   /// One article. Counts one view. Internal, draft and archived entries are "not found".
   ///
-  /// [language] - nl | fr | en | de | es (default: the company's language).
+  /// [language] - ISO 639-1 code (default: the company's language).
   @GET('/api/v1/portal/kb/entries/{id}')
   Future<ReaderEntry> getPortalKbEntry({
     @Path('id') required String id,

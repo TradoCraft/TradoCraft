@@ -159,7 +159,7 @@ fn document(company: &Company, po: &ProductionOrder, language: &str) -> Doc {
 
 #[derive(Debug, Deserialize, IntoParams)]
 pub struct ProductionPdfParams {
-    /// nl | fr | en | de | es; default: the language of the user, else of the company.
+    /// ISO 639-1 code; default: the language of the user, else of the company.
     pub lang: Option<String>,
 }
 

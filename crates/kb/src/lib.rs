@@ -1,6 +1,6 @@
-//! Knowledge base: categories and entries in five languages with simple Markdown, full-text
-//! search per language, versions, tags, related entries, images, and reading for staff, for
-//! logged-in customers (via the portal crate) and for the public.
+//! Knowledge base: categories and entries in the company's languages with simple Markdown,
+//! full-text search per language, versions, tags, related entries, images, and reading for staff,
+//! for logged-in customers (via the portal crate) and for the public.
 
 mod documents;
 mod mail_merge;

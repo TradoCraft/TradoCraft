@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/generated/export.dart';
 import '../features/tutorial/api_events.dart';
 import 'session.dart';
+import '../l10n/l10n.dart' show companyLanguagesOf, setContentLanguages;
 
 // The generated import-column model `Column` would shadow Flutter's `Column` widget in every file
 // that imports this barrel; import it from api/generated/models/column.dart (prefixed) where needed.
@@ -34,9 +35,12 @@ final apiProvider = Provider<TradocraftApi>(
   (ref) => TradocraftApi(ref.watch(dioProvider)),
 );
 
-final meProvider = FutureProvider<Me>(
-  (ref) => ref.watch(apiProvider).core.me(),
-);
+final meProvider = FutureProvider<Me>((ref) async {
+  final me = await ref.watch(apiProvider).core.me();
+  // Language pickers offer the company's content languages (ADR 0101).
+  setContentLanguages(companyLanguagesOf(me.company));
+  return me;
+});
 
 /// Whether the signed-in user holds [permission]. False while `me` is loading or failed, so
 /// controls guarded by it stay hidden until the server has answered. Watches [meProvider].

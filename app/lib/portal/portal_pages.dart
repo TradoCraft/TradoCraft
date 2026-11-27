@@ -681,7 +681,13 @@ class _PortalProfilePageState extends ConsumerState<PortalProfilePage> {
                     l.languageSameAsCustomer(languageName(p.customerLanguage)),
                   ),
                 ),
-                for (final c in languageCodes)
+                // The company's languages (ADR 0101), plus the stored one when it left the list.
+                for (final c in {
+                  ...(p.languages?.isNotEmpty == true
+                      ? p.languages!
+                      : legacyContentLanguages),
+                  ?_language,
+                })
                   DropdownMenuItem<String?>(
                     value: c,
                     child: Text(languageName(c)),

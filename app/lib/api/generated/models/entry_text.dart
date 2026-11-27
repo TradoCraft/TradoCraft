@@ -21,7 +21,7 @@ class EntryText {
   @JsonKey(includeIfNull: false)
   final String? body;
 
-  /// nl | fr | en | de | es
+  /// ISO 639-1 code
   final String language;
   @JsonKey(includeIfNull: false)
   final String? summary;

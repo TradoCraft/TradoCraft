@@ -59,7 +59,7 @@ pub struct Ticket {
     pub category: String,
     /// What the system guessed from the last incoming e-mail.
     pub suggested_category: Option<String>,
-    /// nl | fr | en | de | es — the language to answer in.
+    /// ISO 639-1 code: the language to answer in.
     pub language: String,
     /// record | detected | agent: where `language` came from.
     pub language_source: String,

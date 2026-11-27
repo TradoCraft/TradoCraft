@@ -83,7 +83,7 @@ pub struct QuotationLineInput {
     /// Remark printed under the description on the quotation and order documents.
     #[serde(default)]
     pub customer_remark: String,
-    /// The language (nl | fr | en | de | es) the customer remark is written in. Absent: it matches
+    /// The language (an ISO 639-1 code) the customer remark is written in. Absent: it matches
     /// the quotation language, or unknown. Ignored (stored empty) when the remark is empty.
     #[serde(default)]
     pub customer_remark_language: Option<String>,

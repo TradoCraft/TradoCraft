@@ -118,5 +118,10 @@ Two different things are called "language" here:
   notifications, the unsubscribe page) still hold their five-language tables in code with English
   for any other language; they move the same way (add the keys to `crates/core/i18n/mail`, take a
   `Catalogue`).
+- Clients talking to a server from before this decision get no `languages` in `/me`; they fall
+  back to the five former languages, which is exactly what such a server accepts.
+- Still on the five former languages: the prepared-answer and knowledge-base editors of the web
+  UI (fixed five-slot forms, `KB_LANGUAGES` in the API client), and the web UI pages other than
+  the shell, navigation and the company administration do not use `tr` yet.
 - The generated runtime localization class must be regenerated when ARB keys change
   (`dart run tool/gen_runtime_l10n.dart`, checked by a Flutter test).

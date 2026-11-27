@@ -370,7 +370,7 @@ async fn render(
 
 #[derive(Debug, Deserialize, IntoParams)]
 pub struct ReportParams {
-    /// nl, fr, en, de or es. Default: the language of the contact, else of the customer.
+    /// ISO 639-1 code. Default: the language of the contact, else of the customer.
     pub language: Option<String>,
 }
 

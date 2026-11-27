@@ -540,7 +540,7 @@ impl PriceListInput {
 #[derive(Debug, Clone, Deserialize, ToSchema)]
 pub struct PriceListZoneInput {
     pub price_zone_id: Uuid,
-    /// Subset of nl, fr, en, de, es; the first is the default.
+    /// Languages of the company (ISO 639-1); the first is the default.
     pub languages: Vec<String>,
 }
 
@@ -575,7 +575,7 @@ pub struct PriceListGroupInput {
     pub parent_id: Option<Uuid>,
     #[serde(default)]
     pub sort_order: i32,
-    /// Title per language code (nl, fr, en, de, es); at least one.
+    /// Title per language (ISO 639-1 code); at least one.
     pub title: BTreeMap<String, String>,
     #[serde(default)]
     pub page_break: bool,

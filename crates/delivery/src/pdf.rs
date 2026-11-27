@@ -119,7 +119,7 @@ fn document(
 
 #[derive(Debug, Deserialize, IntoParams)]
 pub struct PdfParams {
-    /// nl | fr | en | de | es; default: the language of the customer.
+    /// ISO 639-1 code; default: the language of the customer.
     pub lang: Option<String>,
 }
 

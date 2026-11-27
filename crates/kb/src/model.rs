@@ -35,7 +35,7 @@ pub fn language_order(company: &str) -> String {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, FromRow, ToSchema)]
 pub struct EntryText {
-    /// nl | fr | en | de | es
+    /// ISO 639-1 code
     pub language: String,
     pub title: String,
     #[serde(default)]

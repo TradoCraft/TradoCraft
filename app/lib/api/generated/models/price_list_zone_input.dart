@@ -16,7 +16,7 @@ class PriceListZoneInput {
   
   factory PriceListZoneInput.fromJson(Map<String, Object?> json) => _$PriceListZoneInputFromJson(json);
   
-  /// Subset of nl, fr, en, de, es; the first is the default.
+  /// Languages of the company (ISO 639-1); the first is the default.
   final List<String> languages;
   @JsonKey(name: 'price_zone_id')
   final String priceZoneId;

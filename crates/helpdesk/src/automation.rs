@@ -53,10 +53,10 @@ pub struct RuleConditions {
     #[serde(default)]
     pub statuses: Vec<String>,
     pub customer_id: Option<Uuid>,
-    /// The language of the customer (nl, fr, en, de, es).
+    /// The language of the customer (ISO 639-1 codes).
     #[serde(default)]
     pub customer_languages: Vec<String>,
-    /// The language of the ticket itself (nl, fr, en, de, es), which may differ from its customer's.
+    /// The language of the ticket itself (ISO 639-1 codes), which may differ from its customer's.
     #[serde(default)]
     pub ticket_languages: Vec<String>,
     /// email | portal | phone | manual | internal

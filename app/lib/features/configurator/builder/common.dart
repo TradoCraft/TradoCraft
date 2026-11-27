@@ -271,8 +271,13 @@ class SectionTitle extends StatelessWidget {
   );
 }
 
-/// The languages definitions can be translated into.
-const builderLanguages = ['en', 'nl', 'fr', 'de', 'es'];
+/// The languages definitions can be translated into: English (the source of every definition)
+/// and the company's content languages (ADR 0101).
+List<String> get builderLanguages => [
+  'en',
+  for (final l in languageCodes)
+    if (l != 'en') l,
+];
 
 /// Label (and help) per language: `{nl: {label, help}}`. With [plain], one text per language
 /// (`{nl: 'text'}`, the messages of validations).
@@ -321,7 +326,7 @@ class TranslationsEditor extends StatelessWidget {
               style: Theme.of(context).textTheme.bodySmall,
             ),
       children: [
-        for (final lang in builderLanguages)
+        for (final lang in {...builderLanguages, ...map.keys})
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: Row(

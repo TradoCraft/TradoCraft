@@ -48,7 +48,7 @@ pub struct FavoriteSummary {
     pub main_product_active: bool,
     /// The number of lines below the main item.
     pub option_count: i64,
-    /// The languages (nl, fr, en, de, es) in which at least one customer remark exists.
+    /// The languages (ISO 639-1 codes) in which at least one customer remark exists.
     pub languages: Vec<String>,
     pub updated_at: DateTime<Utc>,
 }
@@ -56,7 +56,7 @@ pub struct FavoriteSummary {
 /// The customer remark of an item in one language.
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct FavoriteRemark {
-    /// nl | fr | en | de | es
+    /// ISO 639-1 code
     pub language: String,
     pub text: String,
 }
@@ -89,7 +89,7 @@ pub struct FavoriteItem {
     #[schema(value_type = Option<String>, example = "20")]
     pub percent_of_parent: Option<Decimal>,
     pub percent_base: Option<PercentBase>,
-    /// The customer remark per language, in the order nl, fr, en, de, es.
+    /// The customer remark per language, in the order of the company's languages.
     pub remarks: Vec<FavoriteRemark>,
 }
 

@@ -73,7 +73,7 @@ async fn check_team(
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow, ToSchema)]
 pub struct AnswerText {
-    /// nl | fr | en | de | es
+    /// ISO 639-1 code
     pub language: String,
     #[serde(default)]
     pub subject: String,

@@ -16,7 +16,7 @@ class FavoriteRemark {
   
   factory FavoriteRemark.fromJson(Map<String, Object?> json) => _$FavoriteRemarkFromJson(json);
   
-  /// nl | fr | en | de | es
+  /// ISO 639-1 code
   final String language;
   final String text;
 

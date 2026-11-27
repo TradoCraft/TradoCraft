@@ -65,7 +65,7 @@ class _ZonesPanelState extends ConsumerState<ZonesPanel> {
     body[i] = PriceListZoneInput(
       priceZoneId: body[i].priceZoneId,
       languages: [
-        for (final c in priceListLanguages)
+        for (final c in {...priceListLanguages, ...cur})
           if (next.contains(c)) c,
       ],
     );
@@ -139,7 +139,10 @@ class _ZonesPanelState extends ConsumerState<ZonesPanel> {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    for (final c in priceListLanguages)
+                    for (final c in {
+                      ...priceListLanguages,
+                      ...zones[i].languages,
+                    })
                       FilterChip(
                         key: ValueKey('plz-${zones[i].priceZoneCode}-$c'),
                         label: Text(c.toUpperCase()),
