@@ -49,6 +49,7 @@ const slowPages = [
   { name: 'Standard answers', nav: 'nav-answers', url: /\/app\/helpdesk\/answers$/, api: '**/api/v1/prepared-answers*' },
   { name: 'To-do', nav: 'nav-todo', url: /\/app\/todo$/, api: '**/api/v1/todo/items*' },
   { name: 'Knowledge Base', nav: 'nav-kb', url: /\/app\/kb$/, api: '**/api/v1/kb/entries*' },
+  { name: 'Administration', nav: 'nav-admin', url: /\/app\/admin$/, api: '**/api/v1/admin/users*' },
 ];
 
 for (const slow of slowPages) {

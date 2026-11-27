@@ -11199,6 +11199,52 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mergeFailed => 'Failed';
 
   @override
+  String get mergeOptedOut => 'Unsubscribed from mailings';
+
+  @override
+  String get mergeOptOuts => 'Unsubscribed addresses';
+
+  @override
+  String get mergeOptOutsHelp =>
+      'These addresses receive no mailings from this company. Add an address when someone asks not to be mailed; remove it only when they ask to receive mailings again.';
+
+  @override
+  String get mergeOptOutsEmpty => 'No unsubscribed addresses.';
+
+  @override
+  String get mergeOptOutViaLink => 'Via the unsubscribe link';
+
+  @override
+  String mergeOptOutViaStaff(String name) {
+    return 'Added by $name';
+  }
+
+  @override
+  String get mergeUnsubscribeFooter =>
+      'Every email ends with an unsubscribe link in the recipient\'s language.';
+
+  @override
+  String get unsubscribeTitle => 'Unsubscribe from mailings';
+
+  @override
+  String unsubscribeQuestion(String company, String email) {
+    return 'Stop receiving mailings from $company at $email?';
+  }
+
+  @override
+  String get unsubscribeAction => 'Unsubscribe';
+
+  @override
+  String get unsubscribeDone =>
+      'You have been unsubscribed. You will no longer receive these mailings.';
+
+  @override
+  String get unsubscribeAlready => 'This address is already unsubscribed.';
+
+  @override
+  String get unsubscribeInvalid => 'This unsubscribe link is not valid.';
+
+  @override
   String get productMedia => 'Pictures & videos';
 
   @override

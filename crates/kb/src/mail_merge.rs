@@ -1,16 +1,23 @@
 //! Saved, staff-only drafts and read-only audience previews. A preview does not enqueue mail.
-use std::collections::{BTreeMap, HashMap};
+//! Every mailing carries an unsubscribe link; addresses on the company's opt-out register are
+//! left out (ADR 0099).
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 use axum::{
     extract::{Path, State},
+    http::StatusCode,
     Json,
 };
 use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, PgConnection};
-use tradocraft_core::{AppError, AppResult, AppState, CurrentUser, Permission};
+use tradocraft_core::{audit, AppError, AppResult, AppState, CurrentUser, Permission};
 use utoipa::ToSchema;
 use utoipa_axum::{router::OpenApiRouter, routes};
 use uuid::Uuid;
+
+use crate::unsubscribe;
+
+type ErrorBody = tradocraft_core::error::ErrorBody;
 
 const LANGUAGES: [&str; 5] = ["en", "nl", "fr", "de", "es"];
 
@@ -56,6 +63,10 @@ struct MailMergeRecipient {
     email: Option<String>,
     subject: Option<String>,
     body: Option<String>,
+    /// The unsubscribe footer appended below the body when the mail is queued; the link in the
+    /// preview is a placeholder, each delivery gets its own.
+    #[serde(default)]
+    footer: Option<String>,
     pdf: Option<String>,
     issues: Vec<String>,
 }
@@ -205,6 +216,16 @@ async fn build_preview(
     if pdfs.is_empty() {
         return Err(AppError::NotFound("published document revision"));
     }
+    let sender = sender(&mut *conn, user.company_id).await?;
+    let placeholder =
+        unsubscribe::link(sender.portal_url.as_deref().unwrap_or_default(), "\u{2026}");
+    let opted_out: HashSet<String> =
+        sqlx::query_scalar("SELECT email FROM crm.mailing_opt_outs WHERE company_id = $1")
+            .bind(user.company_id)
+            .fetch_all(&mut *conn)
+            .await?
+            .into_iter()
+            .collect();
 
     // Customers are shared master data. The recipient list is limited to customers
     // associated with this company through its commercial terms.
@@ -253,6 +274,9 @@ async fn build_preview(
         .filter(|email| usable_email(email));
         if let Some(email) = &email {
             *addresses.entry(email.clone()).or_insert(0usize) += 1;
+            if opted_out.contains(email) {
+                issues.push("opted_out".into());
+            }
         } else if issues.is_empty() {
             issues.push("missing_address".into());
         }
@@ -273,6 +297,7 @@ async fn build_preview(
         let name = selected.map_or(customer.name.as_str(), |c| c.name.as_str());
         let subject = message.map(|m| render(&m.subject, &customer.name, name));
         let body = message.map(|m| render(&m.body, &customer.name, name));
+        let footer = message.map(|_| unsubscribe::footer(&language, &sender.name, &placeholder));
         audience.push(MailMergeRecipient {
             customer_id: customer.id,
             customer_name: customer.name,
@@ -282,6 +307,7 @@ async fn build_preview(
             email,
             subject,
             body,
+            footer,
             pdf,
             issues,
         });
@@ -303,6 +329,28 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(get_draft, save_draft))
         .routes(routes!(confirm))
         .routes(routes!(history))
+        .routes(routes!(list_opt_outs, add_opt_out))
+        .routes(routes!(remove_opt_out))
+}
+
+/// The sending company: its name signs the unsubscribe footer and its portal hosts the link.
+struct Sender {
+    name: String,
+    portal_url: Option<String>,
+}
+
+async fn sender(conn: &mut PgConnection, company: Uuid) -> AppResult<Sender> {
+    let (name, portal_url): (String, Option<String>) =
+        sqlx::query_as("SELECT name, portal_url FROM core.companies WHERE id = $1")
+            .bind(company)
+            .fetch_one(conn)
+            .await?;
+    Ok(Sender {
+        name,
+        portal_url: portal_url
+            .map(|url| url.trim().to_string())
+            .filter(|url| !url.is_empty()),
+    })
 }
 
 #[derive(Serialize, FromRow, ToSchema)]
@@ -369,6 +417,12 @@ async fn confirm(
             AppError::Conflict("save and review the current draft before confirming".into())
         })?;
     let draft = preview.draft.ok_or(AppError::NotFound("mailing draft"))?;
+    let sender = sender(&mut tx, user.company_id).await?;
+    let Some(portal_url) = sender.portal_url.as_deref() else {
+        return Err(AppError::Validation(
+            "set the company's portal address first: every mailing carries an unsubscribe link to the portal".into(),
+        ));
+    };
     let eligible: Vec<_> = preview
         .audience
         .iter()
@@ -379,6 +433,9 @@ async fn confirm(
             "the preview has no eligible recipients".into(),
         ));
     }
+    // Opt-outs recorded from here on wait for this confirmation; the preview below re-reads the
+    // register, so an approved recipient who opted out since the review is refused (409).
+    unsubscribe::lock_register(&mut tx, user.company_id).await?;
     let current = build_preview(&mut tx, &user, Some(draft)).await?;
     let recipient_key = |row: &MailMergeRecipient| {
         (
@@ -403,21 +460,42 @@ async fn confirm(
     sqlx::query("INSERT INTO crm.mailings (id,company_id,sender_id,document_id,revision) VALUES ($1,$2,$3,$4,$5)")
         .bind(approval_id).bind(user.company_id).bind(user.user_id).bind(draft.document_id).bind(draft.revision)
         .execute(&mut *tx).await?;
+    let target = Target {
+        company: user.company_id,
+        company_name: &sender.name,
+        portal_url,
+        mailing: approval_id,
+    };
     for row in eligible {
-        queue_delivery(&mut tx, user.company_id, approval_id, &draft, row).await?;
+        queue_delivery(&mut tx, &target, &draft, row).await?;
     }
     tx.commit().await?;
     Ok(axum::http::StatusCode::NO_CONTENT)
 }
 
+/// Where a confirmed mailing goes out from.
+struct Target<'a> {
+    company: Uuid,
+    company_name: &'a str,
+    portal_url: &'a str,
+    mailing: Uuid,
+}
+
 async fn queue_delivery(
     conn: &mut PgConnection,
-    company: Uuid,
-    mailing: Uuid,
+    target: &Target<'_>,
     draft: &MailMergeDraft,
     row: &MailMergeRecipient,
 ) -> AppResult<()> {
     let outbox_id = tradocraft_core::new_id();
+    // A fresh token per delivery; only its hash is stored, the token is only in the mail.
+    let (token, token_hash) = unsubscribe::new_token();
+    let footer = unsubscribe::footer(
+        &row.language,
+        target.company_name,
+        &unsubscribe::link(target.portal_url, &token),
+    );
+    let body = format!("{}\n\n{footer}\n", row.body.as_deref().unwrap_or_default());
     let result = sqlx::query(
         "WITH queued AS (
             INSERT INTO core.mail_outbox (id,company_id,to_address,subject,body,attachment_name,attachment_type,attachment_storage_key)
@@ -428,13 +506,130 @@ async fn queue_delivery(
             WHERE d.company_id = $2 AND p.document_id = $6 AND p.revision = $7
               AND p.language = $8 AND r.published_at IS NOT NULL
             RETURNING id
-        ) INSERT INTO crm.mailing_deliveries (mailing_id,customer_id,customer_name,language,outbox_id)
-          SELECT $9,$10,$11,$8,id FROM queued",
-    ).bind(outbox_id).bind(company).bind(&row.email).bind(&row.subject).bind(&row.body)
-     .bind(draft.document_id).bind(draft.revision).bind(&row.language).bind(mailing)
-     .bind(row.customer_id).bind(&row.customer_name).execute(conn).await?;
+        ) INSERT INTO crm.mailing_deliveries (mailing_id,customer_id,customer_name,language,outbox_id,unsubscribe_token_hash)
+          SELECT $9,$10,$11,$8,id,$12 FROM queued",
+    ).bind(outbox_id).bind(target.company).bind(&row.email).bind(&row.subject).bind(&body)
+     .bind(draft.document_id).bind(draft.revision).bind(&row.language).bind(target.mailing)
+     .bind(row.customer_id).bind(&row.customer_name).bind(&token_hash).execute(conn).await?;
     if result.rows_affected() == 0 {
         return Err(AppError::NotFound("published document PDF"));
     }
     Ok(())
+}
+
+/// An address on the company's opt-out register.
+#[derive(Serialize, FromRow, ToSchema)]
+struct MailingOptOut {
+    email: String,
+    opted_out_at: chrono::DateTime<chrono::Utc>,
+    /// staff | unsubscribe_link
+    source: String,
+    recorded_by: Option<Uuid>,
+    recorded_by_name: Option<String>,
+}
+
+#[derive(Deserialize, ToSchema)]
+struct MailingOptOutInput {
+    email: String,
+}
+
+fn normalise_email(email: &str) -> AppResult<String> {
+    let email = email.trim().to_lowercase();
+    if usable_email(&email) {
+        Ok(email)
+    } else {
+        Err(AppError::Validation("enter a valid email address".into()))
+    }
+}
+
+#[utoipa::path(get, path = "/customers/mail-merge/opt-outs", tag = "crm", operation_id = "list_mailing_opt_outs",
+    responses((status = 200, body = Vec<MailingOptOut>)))]
+async fn list_opt_outs(
+    State(state): State<AppState>,
+    user: CurrentUser,
+) -> AppResult<Json<Vec<MailingOptOut>>> {
+    authorize(&user)?;
+    Ok(Json(
+        sqlx::query_as(
+            "SELECT o.email,o.opted_out_at,o.source,o.recorded_by,u.display_name AS recorded_by_name
+             FROM crm.mailing_opt_outs o LEFT JOIN core.users u ON u.id = o.recorded_by
+             WHERE o.company_id = $1 ORDER BY o.opted_out_at DESC,o.email",
+        )
+        .bind(user.company_id)
+        .fetch_all(&state.db)
+        .await?,
+    ))
+}
+
+/// Puts an address on the register, e.g. after a customer asked by phone. Idempotent.
+#[utoipa::path(post, path = "/customers/mail-merge/opt-outs", tag = "crm", operation_id = "add_mailing_opt_out",
+    request_body = MailingOptOutInput,
+    responses((status = 204), (status = 422, body = ErrorBody)))]
+async fn add_opt_out(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Json(input): Json<MailingOptOutInput>,
+) -> AppResult<StatusCode> {
+    authorize(&user)?;
+    let email = normalise_email(&input.email)?;
+    let mut tx = state.db.begin().await?;
+    unsubscribe::lock_register(&mut tx, user.company_id).await?;
+    let added = sqlx::query(
+        "INSERT INTO crm.mailing_opt_outs (company_id,email,source,recorded_by) VALUES ($1,$2,'staff',$3)
+         ON CONFLICT DO NOTHING",
+    )
+    .bind(user.company_id)
+    .bind(&email)
+    .bind(user.user_id)
+    .execute(&mut *tx)
+    .await?;
+    let cancelled = unsubscribe::cancel_queued(&mut tx, user.company_id, &email).await?;
+    if added.rows_affected() > 0 {
+        audit::record(
+            &mut tx,
+            &user,
+            "mailing_opt_out",
+            user.company_id,
+            "added",
+            serde_json::json!({ "email": email, "source": "staff", "cancelled_mails": cancelled }),
+        )
+        .await?;
+    }
+    tx.commit().await?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
+/// Takes an address off the register when its owner asks to receive mailings again.
+#[utoipa::path(delete, path = "/customers/mail-merge/opt-outs/{email}", tag = "crm", operation_id = "remove_mailing_opt_out",
+    params(("email" = String, Path)),
+    responses((status = 204), (status = 404, body = ErrorBody), (status = 422, body = ErrorBody)))]
+async fn remove_opt_out(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Path(email): Path<String>,
+) -> AppResult<StatusCode> {
+    authorize(&user)?;
+    let email = normalise_email(&email)?;
+    let mut tx = state.db.begin().await?;
+    let source: Option<String> = sqlx::query_scalar(
+        "DELETE FROM crm.mailing_opt_outs WHERE company_id = $1 AND email = $2 RETURNING source",
+    )
+    .bind(user.company_id)
+    .bind(&email)
+    .fetch_optional(&mut *tx)
+    .await?;
+    let Some(source) = source else {
+        return Err(AppError::NotFound("opt-out"));
+    };
+    audit::record(
+        &mut tx,
+        &user,
+        "mailing_opt_out",
+        user.company_id,
+        "removed",
+        serde_json::json!({ "email": email, "source": source }),
+    )
+    .await?;
+    tx.commit().await?;
+    Ok(StatusCode::NO_CONTENT)
 }

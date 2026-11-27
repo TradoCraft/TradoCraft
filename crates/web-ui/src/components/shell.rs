@@ -138,7 +138,7 @@ const NAV_GROUPS: &[NavGroup] = &[
                 id: "nav-admin",
                 path: "/admin",
                 label: "Admin",
-                live: false,
+                live: true,
             },
         ],
     },
@@ -160,6 +160,22 @@ const NAV_GROUPS: &[NavGroup] = &[
         ],
     },
 ];
+
+/// Whether the navigation item at `href` is the current one: its own page, or a page below it
+/// (such as `/app/admin/users`) that no other item names exactly.
+pub fn nav_item_active(pathname: &str, href: &str) -> bool {
+    if pathname == href {
+        return true;
+    }
+    let below = pathname
+        .strip_prefix(href)
+        .is_some_and(|rest| rest.starts_with('/'));
+    below
+        && !NAV_GROUPS
+            .iter()
+            .flat_map(|g| g.items.iter())
+            .any(|item| app_href(item.path) == pathname)
+}
 
 #[component]
 pub fn AppShell(children: Children) -> impl IntoView {
@@ -346,7 +362,7 @@ pub fn AppShell(children: Children) -> impl IntoView {
                                     let href = app_href(item.path);
                                     let active_href = href.clone();
                                     let active_class = move || {
-                                        if location.pathname.get() == active_href {
+                                        if nav_item_active(&location.pathname.get(), &active_href) {
                                             "tc-nav-item active"
                                         } else {
                                             "tc-nav-item"
@@ -416,5 +432,22 @@ fn WorkspaceTabPlaceholder(tab: WorkspaceTab) -> impl IntoView {
                 "ADR 0041 workspace-tab placeholder: detail editors stay mounted per tab while switching back to Overview."
             </p>
         </div>
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn sub_pages_mark_their_parent_unless_another_item_matches() {
+        assert!(nav_item_active("/app/admin", "/app/admin"));
+        assert!(nav_item_active("/app/admin/users", "/app/admin"));
+        assert!(!nav_item_active("/app/administration", "/app/admin"));
+        assert!(!nav_item_active("/app/helpdesk/answers", "/app/helpdesk"));
+        assert!(nav_item_active(
+            "/app/helpdesk/answers",
+            "/app/helpdesk/answers"
+        ));
     }
 }

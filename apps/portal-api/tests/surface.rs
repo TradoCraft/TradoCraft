@@ -127,9 +127,14 @@ async fn mailed_token(db: &PgPool, email: &str) -> String {
 
 /// Whether a path of the staff API's contract belongs to the customer-facing surface.
 fn customer_facing(path: &str) -> bool {
-    ["/api/v1/portal/", "/api/v1/public/kb/", "/api/v1/csat/"]
-        .iter()
-        .any(|p| path.starts_with(p))
+    [
+        "/api/v1/portal/",
+        "/api/v1/public/kb/",
+        "/api/v1/csat/",
+        "/api/v1/mailing-unsubscribe/",
+    ]
+    .iter()
+    .any(|p| path.starts_with(p))
 }
 
 /// Every operation of the full API contract that is not customer-facing must be absent here: not
@@ -420,4 +425,109 @@ async fn every_client_has_an_overall_allowance(db: PgPool) {
             .0,
         StatusCode::OK
     );
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+async fn a_mailing_recipient_unsubscribes_without_signing_in(db: PgPool) {
+    let app = setup(db.clone(), config()).await;
+    let token = "tcu_portal-server-test";
+    sqlx::raw_sql(
+        "INSERT INTO kb.documents (id, company_id, title, kind)
+         VALUES ('00000000-0000-7000-8000-00000000d001', '00000000-0000-7000-8000-000000000001', 'Memo', 'technical_memo');
+         INSERT INTO kb.document_revisions (document_id, revision, published_at)
+         VALUES ('00000000-0000-7000-8000-00000000d001', 1, now());
+         INSERT INTO crm.mailings (id, company_id, sender_id, document_id, revision)
+         VALUES ('00000000-0000-7000-8000-00000000d002', '00000000-0000-7000-8000-000000000001',
+                 '00000000-0000-7000-8000-000000000101', '00000000-0000-7000-8000-00000000d001', 1);
+         INSERT INTO core.mail_outbox (id, company_id, to_address, subject, body)
+         VALUES ('00000000-0000-7000-8000-00000000d003', '00000000-0000-7000-8000-000000000001', 'jan.peeters@alpha.example', 'Memo', 'Body');",
+    )
+    .execute(&db)
+    .await
+    .unwrap();
+    sqlx::query(
+        "INSERT INTO crm.mailing_deliveries (mailing_id, customer_id, customer_name, language, outbox_id, unsubscribe_token_hash)
+         SELECT '00000000-0000-7000-8000-00000000d002', id, name, 'fr', '00000000-0000-7000-8000-00000000d003', $1
+         FROM crm.customers ORDER BY id LIMIT 1",
+    )
+    .bind(tradocraft_kb::unsubscribe::hash_token(token))
+    .execute(&db)
+    .await
+    .unwrap();
+
+    let uri = format!("/api/v1/mailing-unsubscribe/{token}");
+    let (status, _, info) = Call::new(Method::GET, &uri).send(&app).await;
+    assert_eq!(status, StatusCode::OK, "{info}");
+    assert_eq!(info["email"], "j***@alpha.example");
+    assert_eq!(info["language"], "fr");
+    assert_eq!(info["unsubscribed"], false);
+    for _ in 0..2 {
+        let (status, _, body) = Call::new(Method::POST, &uri).send(&app).await;
+        assert_eq!(status, StatusCode::NO_CONTENT, "{body}");
+    }
+    let (_, _, info) = Call::new(Method::GET, &uri).send(&app).await;
+    assert_eq!(info["unsubscribed"], true);
+    let stored: Vec<(String, String)> = sqlx::query_as(
+        "SELECT email, source FROM crm.mailing_opt_outs WHERE company_id = $1::uuid",
+    )
+    .bind(COMPANY)
+    .fetch_all(&db)
+    .await
+    .unwrap();
+    assert_eq!(stored, [(JAN.to_string(), "unsubscribe_link".to_string())]);
+
+    let (status, _, body) = Call::new(Method::GET, "/api/v1/mailing-unsubscribe/tcu_unknown")
+        .send(&app)
+        .await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    assert!(!body.to_string().contains("alpha.example"), "{body}");
+}
+
+/// Log output collected in memory.
+#[derive(Clone, Default)]
+struct Captured(Arc<std::sync::Mutex<Vec<u8>>>);
+
+impl std::io::Write for Captured {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        self.0.lock().unwrap().extend_from_slice(buf);
+        Ok(buf.len())
+    }
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
+}
+
+/// The token in an unsubscribe link is a credential: request spans record the route template.
+#[sqlx::test(migrations = "../../migrations")]
+async fn request_logs_do_not_record_link_tokens(db: PgPool) {
+    let app = setup(db, config()).await;
+    let logs = Captured::default();
+    let writer = logs.clone();
+    let subscriber = tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::DEBUG)
+        .with_ansi(false)
+        .with_writer(move || writer.clone())
+        .finish();
+    let _guard = tracing::subscriber::set_default(subscriber);
+
+    let secret = "tcu_secret-in-the-path";
+    let (status, _, _) = Call::new(
+        Method::GET,
+        &format!("/api/v1/mailing-unsubscribe/{secret}?x={secret}"),
+    )
+    .send(&app)
+    .await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    let (status, _, _) = Call::new(Method::GET, &format!("/api/v1/no-such-route/{secret}"))
+        .send(&app)
+        .await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+
+    let text = String::from_utf8(logs.0.lock().unwrap().clone()).unwrap();
+    assert!(
+        text.contains("route=/api/v1/mailing-unsubscribe/{token}") && text.contains("method=GET"),
+        "{text}"
+    );
+    assert!(text.contains("route=/api/<unmatched>"), "{text}");
+    assert!(!text.contains(secret), "{text}");
 }

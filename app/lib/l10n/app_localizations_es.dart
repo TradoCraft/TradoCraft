@@ -11254,6 +11254,52 @@ class AppLocalizationsEs extends AppLocalizations {
   String get mergeFailed => 'Fallido';
 
   @override
+  String get mergeOptedOut => 'Dado de baja de los envíos';
+
+  @override
+  String get mergeOptOuts => 'Direcciones dadas de baja';
+
+  @override
+  String get mergeOptOutsHelp =>
+      'Estas direcciones no reciben envíos de esta empresa. Añada una dirección cuando alguien pida no recibir más envíos; elimínela solo si esa persona pide volver a recibirlos.';
+
+  @override
+  String get mergeOptOutsEmpty => 'No hay direcciones dadas de baja.';
+
+  @override
+  String get mergeOptOutViaLink => 'Mediante el enlace de baja';
+
+  @override
+  String mergeOptOutViaStaff(String name) {
+    return 'Añadida por $name';
+  }
+
+  @override
+  String get mergeUnsubscribeFooter =>
+      'Cada correo termina con un enlace de baja en el idioma del destinatario.';
+
+  @override
+  String get unsubscribeTitle => 'Darse de baja de los envíos';
+
+  @override
+  String unsubscribeQuestion(String company, String email) {
+    return '¿Dejar de recibir los envíos de $company en $email?';
+  }
+
+  @override
+  String get unsubscribeAction => 'Darse de baja';
+
+  @override
+  String get unsubscribeDone =>
+      'Se ha dado de baja. Ya no recibirá estos envíos.';
+
+  @override
+  String get unsubscribeAlready => 'Esta dirección ya está dada de baja.';
+
+  @override
+  String get unsubscribeInvalid => 'Este enlace de baja no es válido.';
+
+  @override
   String get productMedia => 'Fotos y vídeos';
 
   @override

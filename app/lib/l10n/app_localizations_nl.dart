@@ -11253,6 +11253,52 @@ class AppLocalizationsNl extends AppLocalizations {
   String get mergeFailed => 'Mislukt';
 
   @override
+  String get mergeOptedOut => 'Uitgeschreven voor mailings';
+
+  @override
+  String get mergeOptOuts => 'Uitgeschreven adressen';
+
+  @override
+  String get mergeOptOutsHelp =>
+      'Deze adressen krijgen geen mailings van dit bedrijf. Voeg een adres toe wanneer iemand vraagt geen mailings meer te krijgen; verwijder het alleen wanneer die persoon ze opnieuw wil ontvangen.';
+
+  @override
+  String get mergeOptOutsEmpty => 'Geen uitgeschreven adressen.';
+
+  @override
+  String get mergeOptOutViaLink => 'Via de uitschrijflink';
+
+  @override
+  String mergeOptOutViaStaff(String name) {
+    return 'Toegevoegd door $name';
+  }
+
+  @override
+  String get mergeUnsubscribeFooter =>
+      'Elke e-mail eindigt met een uitschrijflink in de taal van de ontvanger.';
+
+  @override
+  String get unsubscribeTitle => 'Uitschrijven voor mailings';
+
+  @override
+  String unsubscribeQuestion(String company, String email) {
+    return 'Wilt u geen mailings van $company meer ontvangen op $email?';
+  }
+
+  @override
+  String get unsubscribeAction => 'Uitschrijven';
+
+  @override
+  String get unsubscribeDone =>
+      'U bent uitgeschreven. U ontvangt deze mailings niet meer.';
+
+  @override
+  String get unsubscribeAlready => 'Dit adres is al uitgeschreven.';
+
+  @override
+  String get unsubscribeInvalid => 'Deze uitschrijflink is niet geldig.';
+
+  @override
   String get productMedia => 'Foto\'s en video\'s';
 
   @override

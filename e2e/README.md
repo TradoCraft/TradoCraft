@@ -126,7 +126,8 @@ line.
 
 `npm run test:leptos` runs `tests-leptos/` against the packaged Leptos build (`crates/web-ui/dist`, built with
 `trunk build`) served by the API, on the same recreated database and dev seed. The specs cover the v0.4.0
-release gate in `docs/ROADMAP.md`: `todo`, `helpdesk`, `kb` and `answers`, plus a smoke test and `navigation` (leaving a page while its request is
+release gate in `docs/ROADMAP.md`: `todo`, `helpdesk`, `kb` and `answers`, plus `admin` (users, VAT rates, modules, a CSV
+import and the audit trail), a smoke test and `navigation` (leaving a page while its request is
 still running must not crash the app). Shared helpers are
 in `tests-leptos/support.ts`. A reply to a customer is checked in `helpdesk.articles` (kind `email_out`, delivery
 `queued`), which is the queue the worker writes to .eml files. Set `E2E_CHROMIUM_PATH` to use a Chromium that

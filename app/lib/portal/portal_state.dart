@@ -92,6 +92,20 @@ CsatLink? csatLinkFromUri(Uri uri) {
 /// Read in `main` before the router rewrites the address (the fragment would be lost).
 final initialCsatLinkProvider = Provider<CsatLink?>((ref) => null);
 
+/// The token of a mailing unsubscribe link: `/unsubscribe#token=tcu_...`. Null when there is none.
+String? unsubscribeTokenFromUri(Uri uri) {
+  try {
+    if (!uri.fragment.contains('=')) return null;
+    final token = Uri.splitQueryString(uri.fragment)['token'];
+    return token != null && token.startsWith('tcu_') ? token : null;
+  } on FormatException {
+    return null;
+  }
+}
+
+/// Read in `main` before the router rewrites the address (the fragment would be lost).
+final initialUnsubscribeTokenProvider = Provider<String?>((ref) => null);
+
 /// The login-link token the app was opened with. It must be read in `main`, before the router
 /// starts: the router rewrites the address and drops the fragment.
 final initialPortalLinkTokenProvider = Provider<String?>((ref) => null);

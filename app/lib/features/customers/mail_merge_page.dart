@@ -6,6 +6,7 @@ import 'package:material_ui/material_ui.dart';
 import '../../app/api.dart';
 import '../../l10n/l10n.dart';
 import '../../shared/file_export.dart';
+import 'mailing_opt_outs_dialog.dart';
 
 class MailMergePage extends ConsumerStatefulWidget {
   const MailMergePage({super.key});
@@ -191,6 +192,14 @@ class _MailMergePageState extends ConsumerState<MailMergePage> {
     }
   }
 
+  Future<void> _openOptOuts() async {
+    final changed = await showMailingOptOutsDialog(context);
+    // The audience depends on the register: save again before confirming.
+    if (changed && mounted && _audience.isNotEmpty) {
+      setState(() => _dirty = true);
+    }
+  }
+
   Future<void> _openPdf(Map row, String? document, int? revision) async {
     try {
       final bytes = await downloadBytes(
@@ -218,6 +227,7 @@ class _MailMergePageState extends ConsumerState<MailMergePage> {
       'missing_translation' => l.mergeMissingTranslation,
       'missing_pdf' => l.mergeMissingPdf,
       'duplicate_address' => l.mergeDuplicateAddress,
+      'opted_out' => l.mergeOptedOut,
       _ => code,
     };
     final rowsByLanguage = <String, List<Map>>{};
@@ -237,7 +247,16 @@ class _MailMergePageState extends ConsumerState<MailMergePage> {
       _ => value,
     };
     return Scaffold(
-      appBar: AppBar(title: Text(l.mailMerge)),
+      appBar: AppBar(
+        title: Text(l.mailMerge),
+        actions: [
+          TextButton(
+            key: const ValueKey('mail-merge-opt-outs'),
+            onPressed: _busy ? null : _openOptOuts,
+            child: Text(l.mergeOptOuts),
+          ),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -332,6 +351,7 @@ class _MailMergePageState extends ConsumerState<MailMergePage> {
               l.mergeAudience,
               style: Theme.of(context).textTheme.titleLarge,
             ),
+            Text(l.mergeUnsubscribeFooter),
             for (final entry in rowsByLanguage.entries) ...[
               Text('${languageName(entry.key)} · ${entry.value.length}'),
               for (final row in entry.value)
@@ -370,6 +390,11 @@ class _MailMergePageState extends ConsumerState<MailMergePage> {
                     if (row['subject'] case final String subject) Text(subject),
                     if (row['body'] case final String body)
                       SelectableText(body),
+                    if (row['footer'] case final String footer)
+                      SelectableText(
+                        footer,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
                     if (row['pdf'] case final String filename)
                       TextButton(
                         onPressed: _busy || _dirty

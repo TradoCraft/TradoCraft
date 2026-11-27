@@ -11268,6 +11268,53 @@ class AppLocalizationsFr extends AppLocalizations {
   String get mergeFailed => 'Échec';
 
   @override
+  String get mergeOptedOut => 'Désabonné des envois';
+
+  @override
+  String get mergeOptOuts => 'Adresses désabonnées';
+
+  @override
+  String get mergeOptOutsHelp =>
+      'Ces adresses ne reçoivent aucun envoi de cette société. Ajoutez une adresse lorsque quelqu\'un demande à ne plus recevoir d\'envois ; ne la retirez que si cette personne demande à les recevoir de nouveau.';
+
+  @override
+  String get mergeOptOutsEmpty => 'Aucune adresse désabonnée.';
+
+  @override
+  String get mergeOptOutViaLink => 'Via le lien de désabonnement';
+
+  @override
+  String mergeOptOutViaStaff(String name) {
+    return 'Ajoutée par $name';
+  }
+
+  @override
+  String get mergeUnsubscribeFooter =>
+      'Chaque e-mail se termine par un lien de désabonnement dans la langue du destinataire.';
+
+  @override
+  String get unsubscribeTitle => 'Se désabonner des envois';
+
+  @override
+  String unsubscribeQuestion(String company, String email) {
+    return 'Ne plus recevoir les envois de $company à l\'adresse $email ?';
+  }
+
+  @override
+  String get unsubscribeAction => 'Se désabonner';
+
+  @override
+  String get unsubscribeDone =>
+      'Vous êtes désabonné. Vous ne recevrez plus ces envois.';
+
+  @override
+  String get unsubscribeAlready => 'Cette adresse est déjà désabonnée.';
+
+  @override
+  String get unsubscribeInvalid =>
+      'Ce lien de désabonnement n\'est pas valide.';
+
+  @override
   String get productMedia => 'Photos et vidéos';
 
   @override

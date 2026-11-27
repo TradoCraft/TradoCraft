@@ -47,6 +47,7 @@ The existing [Leptos Helpdesk](../crates/web-ui/src/pages/helpdesk.rs) and
 | Item | State |
 |---|---|
 | Order lifecycle (revisions, confirmation, priority) | Done, [ADR 0016](adr/0016-order-lifecycle.md) |
+| Leptos web UI: Administration (`/app/admin/<section>`: users with identity link, modules, company logo and settings, VAT rates, price zones, attributes, identity providers, audit trail, data import wizard and job history) | Done, Playwright specs in `e2e/tests-leptos/admin.spec.ts`; site baseline types (P2) and the configurator builder shortcut are left out |
 | Quotation line remarks, remark history and product options | Done, [ADR 0037](adr/0037-line-remarks-and-product-options.md) (stacked on ADR 0033) |
 | A1 Helpdesk SLA, teams, attachments, tags, merge, time, CSAT | Done, ADR 0017 (PR #2) |
 | A2 Knowledge base | Done, ADR 0018 (PR #2) |

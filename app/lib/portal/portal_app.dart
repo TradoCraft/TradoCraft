@@ -10,6 +10,7 @@ import 'portal_orders.dart';
 import 'portal_pages.dart';
 import 'portal_repairs.dart';
 import 'portal_state.dart';
+import 'portal_unsubscribe.dart';
 import '../shared/app_icons.dart';
 
 final portalRouterProvider = Provider<GoRouter>((ref) {
@@ -21,8 +22,12 @@ final portalRouterProvider = Provider<GoRouter>((ref) {
     initialLocation: '/',
     refreshListenable: signedIn,
     redirect: (context, state) {
-      // The satisfaction survey needs no login: the link is the credential.
-      if (state.matchedLocation == '/csat') return null;
+      // The satisfaction survey and the unsubscribe page need no login: the link is the
+      // credential.
+      if (state.matchedLocation == '/csat' ||
+          state.matchedLocation == '/unsubscribe') {
+        return null;
+      }
       final atLogin = state.matchedLocation == '/login';
       if (!signedIn.value) return atLogin ? null : '/login';
       return atLogin ? '/' : null;
@@ -33,6 +38,12 @@ final portalRouterProvider = Provider<GoRouter>((ref) {
         path: '/csat',
         builder: (_, _) =>
             PortalCsatPage(link: ref.read(initialCsatLinkProvider)),
+      ),
+      GoRoute(
+        path: '/unsubscribe',
+        builder: (_, _) => PortalUnsubscribePage(
+          token: ref.read(initialUnsubscribeTokenProvider),
+        ),
       ),
       ShellRoute(
         builder: (context, state, child) => PortalShell(child: child),
@@ -100,7 +111,10 @@ class PortalApp extends ConsumerWidget {
       routerConfig: ref.watch(portalRouterProvider),
       locale: ref.watch(portalLocaleProvider),
       supportedLocales: AppLocalizations.supportedLocales,
-      localizationsDelegates: [AppLocalizations.delegate, ...GlobalMaterialLocalizations.delegates],
+      localizationsDelegates: [
+        AppLocalizations.delegate,
+        ...GlobalMaterialLocalizations.delegates,
+      ],
       onGenerateTitle: (context) => context.l10n.portalTitle,
     );
   }
