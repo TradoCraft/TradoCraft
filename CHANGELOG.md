@@ -22,7 +22,7 @@ changes, not every commit. Items in the roadmap are linked to their ADRs in [doc
   price zones, attributes, identity providers, audit trail and the import wizard with job history, each
   section gated by the same permissions as in Flutter. Baseline types and the configurator builder
   stay in Flutter.
-- Mail-merge consent ([ADR 0099](docs/adr/0099-mail-merge-consent.md)): every customer mailing carries
+- Mail-merge consent ([ADR 0099](docs/adr/0099-mail-merge-opt-out-and-unsubscribe.md)): every customer mailing carries
   an unsubscribe link in the recipient's language that records an opt-out on a public portal page
   without a sign-in. A per-company opt-out register (`/customers/mail-merge/opt-outs`) is managed by
   staff and audited; opted-out addresses are skipped in the preview and confirm refuses if an opt-out
