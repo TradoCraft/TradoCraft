@@ -6495,7 +6495,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get tutWelcomeBannerBody =>
-      'Cette bande indique toujours dans quel environnement vous êtes : son nom et son type. Orange = test, bleu = tutoriel, rouge = données réelles. Le tutoriel ne s\'exécute que dans un environnement de test ou de tutoriel : rien de ce que vous faites ici ne touche aux données réelles.';
+      'Cette bande indique toujours dans quel environnement vous êtes : son nom et son type. Jaune = test, vert = tutoriel. Un environnement de production, avec des données réelles, n\'a pas de bande ; il est bleu dans la liste Environnements. Le tutoriel ne s\'exécute que dans un environnement de test ou de tutoriel : rien de ce que vous faites ici ne touche aux données réelles.';
 
   @override
   String get tutWelcomeTabsTitle => 'Onglets et sections';

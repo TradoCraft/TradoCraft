@@ -6501,7 +6501,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get tutWelcomeBannerBody =>
-      'Dieses Band zeigt immer, in welcher Umgebung Sie sind: Name und Art. Gelb steht für Test, Blau für Tutorial und Rot für Live-Daten. Das Tutorial läuft nur in Test- und Tutorial-Umgebungen, nichts davon berührt echte Daten.';
+      'Dieses Band zeigt immer, in welcher Umgebung Sie sind: Name und Art. Gelb steht für Test, Grün für Tutorial. Eine Live-Umgebung mit echten Daten hat kein Band; in der Liste Umgebungen ist sie blau. Das Tutorial läuft nur in Test- und Tutorial-Umgebungen, nichts davon berührt echte Daten.';
 
   @override
   String get tutWelcomeTabsTitle => 'Tabs und Bereiche';

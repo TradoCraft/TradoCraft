@@ -2175,7 +2175,7 @@
   "tutWelcomeTitle": "Willkommen",
   "tutWelcomeSummary": "Orientierung: das Umgebungsband, die Tabs und die Tutorial-Steuerung.",
   "tutWelcomeBannerTitle": "Das Band oben",
-  "tutWelcomeBannerBody": "Dieses Band zeigt immer, in welcher Umgebung Sie sind: Name und Art. Gelb steht für Test, Blau für Tutorial und Rot für Live-Daten. Das Tutorial läuft nur in Test- und Tutorial-Umgebungen, nichts davon berührt echte Daten.",
+  "tutWelcomeBannerBody": "Dieses Band zeigt immer, in welcher Umgebung Sie sind: Name und Art. Gelb steht für Test, Grün für Tutorial. Eine Live-Umgebung mit echten Daten hat kein Band; in der Liste Umgebungen ist sie blau. Das Tutorial läuft nur in Test- und Tutorial-Umgebungen, nichts davon berührt echte Daten.",
   "tutWelcomeTabsTitle": "Tabs und Bereiche",
   "tutWelcomeTabsBody": "Wählen Sie über Anwendung wechseln eine Kategorie. Ihre Module erscheinen links oder auf einem Telefon in der unteren Leiste. Ein geöffneter Datensatz, etwa ein Produkt oder ein Angebot, erscheint als Tab im Arbeitsbereich.",
   "tutWelcomeControlsTitle": "Diese Karte",

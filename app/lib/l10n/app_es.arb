@@ -2175,7 +2175,7 @@
   "tutWelcomeTitle": "Bienvenida",
   "tutWelcomeSummary": "Orientación: la banda del entorno, las pestañas y los controles del tutorial.",
   "tutWelcomeBannerTitle": "La banda superior",
-  "tutWelcomeBannerBody": "Esta banda muestra siempre en qué entorno estás: su nombre y su tipo. Ámbar es prueba, azul es tutorial y rojo son datos reales. El tutorial solo se ejecuta en entornos de prueba y de tutorial, así que nada de lo que hagas aquí toca datos reales.",
+  "tutWelcomeBannerBody": "Esta banda muestra siempre en qué entorno estás: su nombre y su tipo. Amarillo es prueba y verde es tutorial. Un entorno de producción, con datos reales, no tiene banda; en la lista Entornos aparece en azul. El tutorial solo se ejecuta en entornos de prueba y de tutorial, así que nada de lo que hagas aquí toca datos reales.",
   "tutWelcomeTabsTitle": "Pestañas y secciones",
   "tutWelcomeTabsBody": "Usa Cambiar de aplicación para elegir una categoría. Sus módulos aparecen a la izquierda o en la barra inferior del teléfono. Al abrir un registro, como un producto o un presupuesto, se añade una pestaña al espacio de trabajo.",
   "tutWelcomeControlsTitle": "Esta tarjeta",

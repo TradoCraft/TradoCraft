@@ -6484,7 +6484,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get tutWelcomeBannerBody =>
-      'Deze balk toont altijd in welke omgeving je zit: de naam en het soort. Amber betekent test, blauw tutorial en rood live data. Het tutorial draait alleen in test- en tutorialomgevingen, dus niets wat je hier doet raakt echte data.';
+      'Deze balk toont altijd in welke omgeving je zit: de naam en het soort. Geel betekent test en groen tutorial. Een live omgeving, met echte data, heeft geen balk; in de lijst Omgevingen is ze blauw. Het tutorial draait alleen in test- en tutorialomgevingen, dus niets wat je hier doet raakt echte data.';
 
   @override
   String get tutWelcomeTabsTitle => 'Tabbladen en secties';
