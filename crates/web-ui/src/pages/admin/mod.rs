@@ -5,6 +5,7 @@
 pub mod attributes;
 pub mod audit;
 pub mod company;
+pub mod identity;
 pub mod modules;
 pub mod users;
 pub mod vat;
@@ -31,17 +32,19 @@ pub enum AdminSection {
     Vat,
     Zones,
     Attributes,
+    Identity,
     Audit,
 }
 
 impl AdminSection {
-    pub const ALL: [AdminSection; 7] = [
+    pub const ALL: [AdminSection; 8] = [
         AdminSection::Users,
         AdminSection::Modules,
         AdminSection::Company,
         AdminSection::Vat,
         AdminSection::Zones,
         AdminSection::Attributes,
+        AdminSection::Identity,
         AdminSection::Audit,
     ];
 
@@ -54,6 +57,7 @@ impl AdminSection {
             Self::Vat => "vat",
             Self::Zones => "zones",
             Self::Attributes => "attributes",
+            Self::Identity => "identity",
             Self::Audit => "audit",
         }
     }
@@ -66,6 +70,7 @@ impl AdminSection {
             Self::Vat => "VAT rates",
             Self::Zones => "Price zones",
             Self::Attributes => "Attributes",
+            Self::Identity => "Identity providers",
             Self::Audit => "Audit trail",
         }
     }
@@ -82,6 +87,7 @@ impl AdminSection {
             Self::Users | Self::Modules | Self::Company | Self::Vat => can("users.admin"),
             Self::Zones => can("prices.write"),
             Self::Attributes => can("products.write"),
+            Self::Identity => can("identity.admin"),
             Self::Audit => can("audit.view"),
         }
     }
@@ -394,6 +400,7 @@ pub fn AdminPage() -> impl IntoView {
                         Some(AdminSection::Vat) => view! { <vat::VatSection /> }.into_any(),
                         Some(AdminSection::Zones) => view! { <zones::ZonesSection /> }.into_any(),
                         Some(AdminSection::Attributes) => view! { <attributes::AttributesSection /> }.into_any(),
+                        Some(AdminSection::Identity) => view! { <identity::IdentitySection /> }.into_any(),
                         Some(AdminSection::Audit) => view! { <audit::AuditSection /> }.into_any(),
                         None => view! { <div></div> }.into_any(),
                     }}
