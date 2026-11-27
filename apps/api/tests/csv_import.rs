@@ -96,7 +96,7 @@ async fn export_round_trip_is_unchanged(db: PgPool) {
     let app = setup(db.clone()).await;
     for (entity, header) in [
         ("customers", "code,name,vat_number,email,phone,street,postal_code,city,country_code,language,active,price_zone_code,discount_percent,payment_terms_days,vat_regime"),
-        ("products", "code,name,description,unit,product_type,vat_rate,tracking,family_code,non_discountable,price_on_request,price_is_indicative,active,reorder_min,reorder_max,lead_time_days,barcode,packaging_category_code,length_mm,width_mm,height_mm,weight_g,default_production_remark,vat_category,vat_rate_override,included_in_turnover"),
+        ("products", "code,name,description,unit,product_type,vat_rate,tracking,family_code,non_discountable,price_on_request,price_is_indicative,active,reorder_min,reorder_max,lead_time_days,barcode,packaging_category_code,length_mm,width_mm,height_mm,weight_g,default_production_remark,vat_category,vat_rate_override,included_in_turnover,name_de,description_de,name_fr,description_fr,name_nl,description_nl"),
     ] {
         let (status, csv) = export(&app, VIEWER, entity).await;
         assert_eq!(status, StatusCode::OK);
