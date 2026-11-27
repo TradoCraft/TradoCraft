@@ -419,6 +419,38 @@ pub struct PriceListSettings {
     pub show_unit: bool,
     /// Print the company logo in the PDF header when one is uploaded.
     pub show_logo: bool,
+    /// Import of the items (ADR 0100): how many leading segments of a `position` name the group
+    /// path (each the `sort_order` of a group among its siblings); the rest is the item's sort
+    /// key. 1 to 4, default 2.
+    pub import_group_levels: u8,
+    /// Import of the items: which title a group gets when its rows disagree.
+    pub import_title_conflict: ImportTitleConflict,
+    /// Import of the items: what a position with fewer segments than `import_group_levels` means.
+    pub import_short_position: ImportShortPosition,
+}
+
+/// How an import picks a group's title in one language when its rows hold different ones.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum ImportTitleConflict {
+    /// The row with the lowest position (compared segment by segment) wins.
+    #[default]
+    LowestPosition,
+    /// The first row of the file wins.
+    FirstRow,
+    /// Different titles are row errors.
+    Error,
+}
+
+/// What an import does with a position that names fewer groups than the list's group levels.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum ImportShortPosition {
+    /// The item goes into the (shallower) group the position names, with an empty sort key.
+    #[default]
+    ShallowerGroup,
+    /// The row is an error.
+    Error,
 }
 
 impl Default for PriceListSettings {
@@ -429,6 +461,9 @@ impl Default for PriceListSettings {
             accent_color: "#1f4e79".into(),
             show_unit: true,
             show_logo: true,
+            import_group_levels: 2,
+            import_title_conflict: ImportTitleConflict::default(),
+            import_short_position: ImportShortPosition::default(),
         }
     }
 }
@@ -443,6 +478,11 @@ impl PriceListSettings {
             return Err(AppError::Validation(
                 "accent_color must look like #1f4e79".into(),
             ));
+        }
+        if !(1..=MAX_DEPTH).contains(&usize::from(self.import_group_levels)) {
+            return Err(AppError::Validation(format!(
+                "import_group_levels must be between 1 and {MAX_DEPTH}"
+            )));
         }
         if self.footer_text.chars().count() > 200 || self.currency_symbol.chars().count() > 8 {
             return Err(AppError::Validation(
@@ -2724,5 +2764,32 @@ mod tests {
             PriceListSettings::default().show_logo,
             "the logo shows by default"
         );
+    }
+
+    #[test]
+    fn settings_validate_the_import_rules() {
+        let s: PriceListSettings = serde_json::from_value(serde_json::json!({})).unwrap();
+        assert_eq!(s.import_group_levels, 2);
+        assert_eq!(s.import_title_conflict, ImportTitleConflict::LowestPosition);
+        assert_eq!(s.import_short_position, ImportShortPosition::ShallowerGroup);
+        let s: PriceListSettings = serde_json::from_value(serde_json::json!({
+            "import_group_levels": 3,
+            "import_title_conflict": "first_row",
+            "import_short_position": "error",
+        }))
+        .unwrap();
+        assert_eq!(s.import_title_conflict, ImportTitleConflict::FirstRow);
+        assert_eq!(s.import_short_position, ImportShortPosition::Error);
+        for (levels, ok) in [(0, false), (1, true), (4, true), (5, false)] {
+            let mut s = PriceListSettings {
+                import_group_levels: levels,
+                ..Default::default()
+            };
+            assert_eq!(s.validate().is_ok(), ok, "{levels}");
+        }
+        assert!(serde_json::from_value::<PriceListSettings>(
+            serde_json::json!({"import_title_conflict": "longest"})
+        )
+        .is_err());
     }
 }

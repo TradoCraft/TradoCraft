@@ -31,10 +31,14 @@ pub use import::{products_import, Products};
 pub mod options;
 pub mod packaging;
 pub mod power;
+pub mod price_list_item_import;
 pub mod price_list_plan;
 pub mod price_lists;
 pub mod relations;
 pub mod translations;
+pub mod zone_price_import;
+pub use price_list_item_import::{price_list_items_import, PriceListItems};
+pub use zone_price_import::{zone_prices_import, ZonePrices};
 
 #[derive(Debug, Clone, Serialize, FromRow, ToSchema)]
 pub struct Product {
