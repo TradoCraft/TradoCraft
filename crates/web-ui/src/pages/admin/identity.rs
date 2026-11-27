@@ -14,7 +14,7 @@ use tradocraft_api_client::identity::{
 use tradocraft_api_client::ApiError;
 use uuid::Uuid;
 
-use super::{spawn_api, Feedback, FeedbackView};
+use super::{bump, is_current, spawn_api, Feedback, FeedbackView};
 use crate::pages::set_alive;
 use crate::state::AppContext;
 
@@ -83,9 +83,14 @@ pub(crate) fn is_https_url(s: &str) -> bool {
     !host.is_empty() && !host.contains(char::is_whitespace)
 }
 
-/// A domain as typed: trimmed, lower case, without a leading `@`.
+/// A domain as typed: trimmed, lower case, without a leading `@`. An `@` anywhere else stays, so
+/// the shape check refuses it.
 fn clean_domain(raw: &str) -> String {
-    raw.trim().to_lowercase().replacen('@', "", 1)
+    let d = raw.trim().to_lowercase();
+    match d.strip_prefix('@') {
+        Some(rest) => rest.to_string(),
+        None => d,
+    }
 }
 
 /// What the provider editor holds.
@@ -210,7 +215,7 @@ impl IdpDraft {
             e.insert("audience", "The audience is required.".to_string());
         }
         let pending = clean_domain(&self.domain_input);
-        if !pending.is_empty() && !looks_like_domain(&pending) {
+        if self.uses_domains() && !pending.is_empty() && !looks_like_domain(&pending) {
             e.insert("domains", format!("{pending} does not look like a domain."));
         }
         if self.algorithms.is_empty() {
@@ -219,11 +224,18 @@ impl IdpDraft {
         e
     }
 
-    /// The domains, including a typed one that was not confirmed with Enter yet.
+    /// Whether the rule links by e-mail, so the domain field is shown and used. With
+    /// "Only existing subjects" the field is hidden: a typed domain is ignored, saved ones kept.
+    fn uses_domains(&self) -> bool {
+        self.policy != "subject_only"
+    }
+
+    /// The domains, including a typed one that was not confirmed with Enter yet (unless the
+    /// domain field is hidden).
     pub fn all_domains(&self) -> Vec<String> {
         let mut out = self.domains.clone();
         let pending = clean_domain(&self.domain_input);
-        if !pending.is_empty() && !out.contains(&pending) {
+        if self.uses_domains() && !pending.is_empty() && !out.contains(&pending) {
             out.push(pending);
         }
         out
@@ -332,6 +344,26 @@ fn ok_text(label: &str, ok: Option<bool>) -> String {
     )
 }
 
+/// The report line for a valid token without an e-mail address: information when the subject is
+/// already linked (no address is needed), nothing when the binding was refused (its line gives the
+/// reason), a failure otherwise.
+pub(crate) fn missing_email_line(
+    valid: bool,
+    binding_outcome: Option<&str>,
+) -> Option<(Option<bool>, &'static str)> {
+    if !valid {
+        return None;
+    }
+    match binding_outcome {
+        Some("existing_subject") => Some((
+            None,
+            "No e-mail address in the token; not needed, the subject is already linked",
+        )),
+        Some("refused") => None,
+        _ => Some((Some(false), "No e-mail address found in the token")),
+    }
+}
+
 fn report_view(r: IdentityProviderTestResult) -> impl IntoView {
     let mut lines: Vec<AnyView> = vec![report_line(
         Some(r.discovery_reachable),
@@ -390,10 +422,10 @@ fn report_view(r: IdentityProviderTestResult) -> impl IntoView {
         }
         if let Some(email) = &t.email {
             tl.push(report_line(None, format!("E-mail found: {email}")).into_any());
-        } else if t.valid {
-            tl.push(
-                report_line(Some(false), "No e-mail address found in the token".into()).into_any(),
-            );
+        } else if let Some((ok, text)) =
+            missing_email_line(t.valid, t.binding.as_ref().map(|b| b.outcome.as_str()))
+        {
+            tl.push(report_line(ok, text.into()).into_any());
         }
         if let Some(v) = t.email_verified {
             tl.push(
@@ -414,7 +446,11 @@ fn report_view(r: IdentityProviderTestResult) -> impl IntoView {
                 "existing_subject" => {
                     format!("Already linked to {}", b.user_email.unwrap_or_default())
                 }
-                _ => format!("Would be refused: {}", b.reason.unwrap_or_default()),
+                _ => format!(
+                    "Would be refused: {}",
+                    b.reason
+                        .unwrap_or_else(|| "the server gave no reason".to_string())
+                ),
             };
             tl.push(report_line(Some(b.outcome != "refused"), text).into_any());
         }
@@ -464,26 +500,48 @@ pub fn IdentitySection() -> impl IntoView {
         })
     });
 
+    // Only the newest provider list request may fill the list.
+    let list_seq = StoredValue::new(0_u64);
     Effect::new(move |_| {
         let _ = reload.get();
         load_error.set(None);
+        let gen = bump(list_seq);
         spawn_api(
             ctx,
             |c| async move { c.list_identity_providers().await },
-            move |res| match res {
-                Ok(list) => {
-                    if set_alive(providers, Some(list)) {
-                        forbidden.set(false);
+            move |res| {
+                if !is_current(list_seq, gen) {
+                    return;
+                }
+                match res {
+                    Ok(list) => {
+                        if set_alive(providers, Some(list)) {
+                            forbidden.set(false);
+                        }
                     }
-                }
-                Err(err) if err.status() == Some(403) => {
-                    set_alive(forbidden, true);
-                }
-                Err(err) => {
-                    set_alive(load_error, Some(err.user_message()));
+                    Err(err) if err.status() == Some(403) => {
+                        set_alive(forbidden, true);
+                    }
+                    Err(err) => {
+                        set_alive(load_error, Some(err.user_message()));
+                    }
                 }
             },
         );
+    });
+
+    // Counts draft changes. A test answer is shown only for the draft it tested; any change
+    // drops the shown report and a lock-out warning about a refused save, so "Continue anyway"
+    // never confirms edits the server has not seen.
+    let draft_rev = StoredValue::new(0_u64);
+    Effect::new(move |_| {
+        draft.track();
+        bump(draft_rev);
+        report.set(None);
+        test_error.set(None);
+        if matches!(lockout.get_untracked(), Some((Pending::Save, _))) {
+            lockout.set(None);
+        }
     });
 
     let open = move |target: Editor, d: IdpDraft| {
@@ -588,6 +646,8 @@ pub fn IdentitySection() -> impl IntoView {
         testing.set(true);
         report.set(None);
         test_error.set(None);
+        let started_editor = editor_gen.get_untracked();
+        let started_rev = draft_rev.try_get_value().unwrap_or_default();
         let body = draft.with_untracked(|d| IdentityProviderTest {
             config: Some(d.to_input(false)),
             id: None,
@@ -600,7 +660,10 @@ pub fn IdentitySection() -> impl IntoView {
             ctx,
             move |c| async move { c.test_identity_provider(&body).await },
             move |res| {
-                if !set_alive(testing, false) {
+                if !set_alive(testing, false)
+                    || editor_gen.get_untracked() != started_editor
+                    || !is_current(draft_rev, started_rev)
+                {
                     return;
                 }
                 match res {
@@ -684,172 +747,175 @@ pub fn IdentitySection() -> impl IntoView {
                     <h3 id="admin-idp-editor-title" style="margin-top: 0;">
                         {move || if editor.get() == Some(Editor::New) { "Add identity provider" } else { "Edit identity provider" }}
                     </h3>
-                    <Show when=move || editor.get() == Some(Editor::New)>
-                        <div class="tc-field">
-                            <span class="tc-label" id="admin-idp-preset-label">"Start from"</span>
-                            <div class="tc-chip-row" role="group" aria-labelledby="admin-idp-preset-label">
-                                {[Preset::Entra, Preset::Google, Preset::Generic].into_iter().map(|p| view! {
-                                    <button type="button" class="tc-chip" data-target=format!("admin-idp-preset-{}", p.key())
-                                        aria-pressed=move || (draft.with(|d| d.preset) == Some(p)).to_string()
-                                        on:click=move |_| draft.update(|d| d.apply_preset(p))>
-                                        {p.label()}
-                                    </button>
-                                }).collect_view()}
-                            </div>
-                        </div>
-                    </Show>
-                    <div class="tc-form-grid">
-                        <div class="tc-field">
-                            <label class="tc-label" for="admin-idp-name">"Name"</label>
-                            <input id="admin-idp-name" data-target="admin-idp-name" class="tc-input" type="text"
-                                prop:value=move || draft.with(|d| d.name.clone())
-                                on:input=move |ev| draft.update(|d| d.name = event_target_value(&ev)) />
-                            {field_error("name")}
-                        </div>
-                        <Show when=move || draft.with(|d| d.preset == Some(Preset::Entra))>
+                    // Disabled while saving, so no edit is made after the request was sent and then lost.
+                    <fieldset style="border: none; padding: 0; margin: 0; min-width: 0;" disabled=move || busy.get()>
+                        <Show when=move || editor.get() == Some(Editor::New)>
                             <div class="tc-field">
-                                <label class="tc-label" for="admin-idp-tenant">"Tenant id (directory id)"</label>
-                                <input id="admin-idp-tenant" data-target="admin-idp-tenant" class="tc-input" type="text"
-                                    prop:value=move || draft.with(|d| d.tenant.clone())
-                                    on:input=move |ev| draft.update(|d| {
-                                        d.tenant = event_target_value(&ev);
-                                        d.issuer = entra_issuer(&d.tenant);
-                                    }) />
+                                <span class="tc-label" id="admin-idp-preset-label">"Start from"</span>
+                                <div class="tc-chip-row" role="group" aria-labelledby="admin-idp-preset-label">
+                                    {[Preset::Entra, Preset::Google, Preset::Generic].into_iter().map(|p| view! {
+                                        <button type="button" class="tc-chip" data-target=format!("admin-idp-preset-{}", p.key())
+                                            aria-pressed=move || (draft.with(|d| d.preset) == Some(p)).to_string()
+                                            on:click=move |_| draft.update(|d| d.apply_preset(p))>
+                                            {p.label()}
+                                        </button>
+                                    }).collect_view()}
+                                </div>
                             </div>
                         </Show>
-                        <div class="tc-field">
-                            <label class="tc-label" for="admin-idp-issuer">"Issuer URL"</label>
-                            <input id="admin-idp-issuer" data-target="admin-idp-issuer" class="tc-input" type="url"
-                                prop:value=move || draft.with(|d| d.issuer.clone())
-                                on:input=move |ev| draft.update(|d| d.issuer = event_target_value(&ev)) />
-                            {field_error("issuer")}
-                        </div>
-                        <div class="tc-field">
-                            <label class="tc-label" for="admin-idp-audience">"Audience"</label>
-                            <input id="admin-idp-audience" data-target="admin-idp-audience" class="tc-input" type="text"
-                                prop:value=move || draft.with(|d| d.audience.clone())
-                                on:input=move |ev| draft.update(|d| d.audience = event_target_value(&ev)) />
+                        <div class="tc-form-grid">
+                            <div class="tc-field">
+                                <label class="tc-label" for="admin-idp-name">"Name"</label>
+                                <input id="admin-idp-name" data-target="admin-idp-name" class="tc-input" type="text"
+                                    prop:value=move || draft.with(|d| d.name.clone())
+                                    on:input=move |ev| draft.update(|d| d.name = event_target_value(&ev)) />
+                                {field_error("name")}
+                            </div>
                             <Show when=move || draft.with(|d| d.preset == Some(Preset::Entra))>
-                                <span class="tc-label">"The application (client) id of your Entra app registration"</span>
+                                <div class="tc-field">
+                                    <label class="tc-label" for="admin-idp-tenant">"Tenant id (directory id)"</label>
+                                    <input id="admin-idp-tenant" data-target="admin-idp-tenant" class="tc-input" type="text"
+                                        prop:value=move || draft.with(|d| d.tenant.clone())
+                                        on:input=move |ev| draft.update(|d| {
+                                            d.tenant = event_target_value(&ev);
+                                            d.issuer = entra_issuer(&d.tenant);
+                                        }) />
+                                </div>
                             </Show>
-                            {field_error("audience")}
-                        </div>
-                        {text_field("admin-idp-client-id", "Client id (public client, no secret)", |d| d.client_id.clone(), |d, v| d.client_id = v)}
-                        {text_field("admin-idp-scopes", "Scopes", |d| d.scopes.clone(), |d, v| d.scopes = v)}
-                        {text_field("admin-idp-email-claim", "E-mail claim", |d| d.email_claim.clone(), |d, v| d.email_claim = v)}
-                    </div>
-
-                    <fieldset style="border: none; padding: 0; margin: var(--space-md) 0 0;" data-target="admin-idp-token-use">
-                        <legend class="tc-label">"Token to send (not used for sign-in yet)"</legend>
-                        {[("id_token", "ID token", "Default. Works with Keycloak and most OpenID Connect providers: the audience is the client id."),
-                          ("access_token", "Access token", "For Microsoft Entra ID: the access token of your own API (scope api://<client-id>/access_as_user).")]
-                            .into_iter().map(|(value, title, body)| view! {
-                                <label class="tc-checkbox-row" style="align-items: flex-start;">
-                                    <input type="radio" name="admin-idp-token-use" value=value data-target=format!("admin-idp-token-use-{value}")
-                                        prop:checked=move || draft.with(|d| d.token_use == value)
-                                        on:change=move |_| draft.update(|d| d.token_use = value.to_string()) />
-                                    <span><strong>{title}</strong><span class="tc-label" style="display: block;">{body}</span></span>
-                                </label>
-                            }).collect_view()}
-                    </fieldset>
-
-                    <fieldset style="border: none; padding: 0; margin: var(--space-md) 0 0;" data-target="admin-idp-rule">
-                        <legend class="tc-label">"How may an e-mail address be used to link a person?"</legend>
-                        <Show when=move || draft.with(|d| d.preset == Some(Preset::Entra))>
-                            <p class="tc-label">"Entra ID: either trust the provider's e-mail and list your allowed domains (a tenant only holds your own people), or require the claim xms_edov, which Entra only sends when you add it as an optional claim in the app registration."</p>
-                        </Show>
-                        {[("require_verified_claim", "Require a verified claim (recommended)", "The first sign-in is linked to the ERP user with the same e-mail address only when the token carries a claim, such as email_verified, saying the provider checked that address. Risk: if the provider does not really check addresses, the claim is worthless and a stranger could take over a user."),
-                          ("trust_provider_email", "Trust the provider's e-mail address", "The address in the token is accepted without any verification claim. Only use this for a directory where your company controls every address, such as a single Entra tenant, and add allowed domains. Risk: if people can set their own address at the provider, they can sign in as any user."),
-                          ("subject_only", "Only existing subjects", "Nobody is linked by e-mail. An administrator links each user to an identity at the provider (Users, Link identity). Safest, but more work.")]
-                            .into_iter().map(|(value, title, body)| view! {
-                                <label class="tc-checkbox-row" style="align-items: flex-start;">
-                                    <input type="radio" name="admin-idp-rule" value=value data-target=format!("admin-idp-rule-{value}")
-                                        prop:checked=move || draft.with(|d| d.policy == value)
-                                        on:change=move |_| draft.update(|d| d.policy = value.to_string()) />
-                                    <span><strong>{title}</strong><span class="tc-label" style="display: block;">{body}</span></span>
-                                </label>
-                            }).collect_view()}
-                    </fieldset>
-                    <Show when=move || draft.with(|d| d.policy == "require_verified_claim")>
-                        {text_field("admin-idp-verified-claim", "Verified claim", |d| d.verified_claim.clone(), |d, v| d.verified_claim = v)}
-                    </Show>
-                    <Show when=move || draft.with(|d| d.policy != "subject_only")>
-                        <div class="tc-field" style="margin-top: var(--space-sm);">
-                            <div class="tc-chip-row" data-target="admin-idp-domains">
-                                {move || draft.with(|d| d.domains.clone()).into_iter().map(|dom| {
-                                    let dom_rm = dom.clone();
-                                    view! {
-                                        <span class="tc-chip" data-target=format!("admin-idp-domain-{dom}")>
-                                            {dom.clone()}
-                                            " "
-                                            <button type="button" class="tc-btn tc-btn-ghost tc-btn-sm" aria-label=format!("Remove {dom}")
-                                                on:click=move |_| draft.update(|d| d.domains.retain(|x| *x != dom_rm))>
-                                                "\u{d7}"
-                                            </button>
-                                        </span>
-                                    }
-                                }).collect_view()}
+                            <div class="tc-field">
+                                <label class="tc-label" for="admin-idp-issuer">"Issuer URL"</label>
+                                <input id="admin-idp-issuer" data-target="admin-idp-issuer" class="tc-input" type="url"
+                                    prop:value=move || draft.with(|d| d.issuer.clone())
+                                    on:input=move |ev| draft.update(|d| d.issuer = event_target_value(&ev)) />
+                                {field_error("issuer")}
                             </div>
-                            <label class="tc-label" for="admin-idp-domain-input">"Allowed e-mail domains"</label>
-                            <input id="admin-idp-domain-input" data-target="admin-idp-domain-input" class="tc-input" type="text"
-                                aria-describedby="admin-idp-domain-hint"
-                                prop:value=move || draft.with(|d| d.domain_input.clone())
-                                on:input=move |ev| draft.update(|d| d.domain_input = event_target_value(&ev))
-                                on:keydown=move |ev| {
-                                    if ev.key() == "Enter" {
-                                        ev.prevent_default();
-                                        let mut res = Ok(());
-                                        draft.update(|d| res = d.add_domain());
-                                        errors.update(|e| match res {
-                                            Ok(()) => { e.remove("domains"); }
-                                            Err(msg) => { e.insert("domains", msg); }
-                                        });
-                                    }
-                                } />
-                            <span id="admin-idp-domain-hint" class="tc-label">"Type a domain and press Enter, for example example.com"</span>
-                            {field_error("domains")}
+                            <div class="tc-field">
+                                <label class="tc-label" for="admin-idp-audience">"Audience"</label>
+                                <input id="admin-idp-audience" data-target="admin-idp-audience" class="tc-input" type="text"
+                                    prop:value=move || draft.with(|d| d.audience.clone())
+                                    on:input=move |ev| draft.update(|d| d.audience = event_target_value(&ev)) />
+                                <Show when=move || draft.with(|d| d.preset == Some(Preset::Entra))>
+                                    <span class="tc-label">"The application (client) id of your Entra app registration"</span>
+                                </Show>
+                                {field_error("audience")}
+                            </div>
+                            {text_field("admin-idp-client-id", "Client id (public client, no secret)", |d| d.client_id.clone(), |d, v| d.client_id = v)}
+                            {text_field("admin-idp-scopes", "Scopes", |d| d.scopes.clone(), |d, v| d.scopes = v)}
+                            {text_field("admin-idp-email-claim", "E-mail claim", |d| d.email_claim.clone(), |d, v| d.email_claim = v)}
                         </div>
-                    </Show>
-                    <label class="tc-checkbox-row" style="margin-top: var(--space-sm);">
-                        <input type="checkbox" data-target="admin-idp-enabled"
-                            prop:checked=move || draft.with(|d| d.enabled)
-                            on:change=move |ev| {
-                                let on = event_target_checked(&ev);
-                                draft.update(|d| d.enabled = on);
-                            } />
-                        "Enabled"
-                    </label>
-                    <details data-target="admin-idp-advanced" style="margin-top: var(--space-sm);">
-                        <summary>"Advanced"</summary>
-                        <fieldset style="border: none; padding: 0; margin: var(--space-sm) 0 0;">
-                            <legend class="tc-label">"Accepted signature algorithms"</legend>
-                            <div class="tc-checkbox-grid">
-                                {ALGORITHMS.into_iter().map(|a| view! {
-                                    <label class="tc-checkbox-row">
-                                        <input type="checkbox" data-target=format!("admin-idp-alg-{a}")
-                                            prop:checked=move || draft.with(|d| d.algorithms.iter().any(|x| x == a))
-                                            on:change=move |ev| {
-                                                let on = event_target_checked(&ev);
-                                                draft.update(|d| {
-                                                    d.algorithms.retain(|x| x != a);
-                                                    if on { d.algorithms.push(a.to_string()); }
-                                                });
-                                            } />
-                                        {a}
+
+                        <fieldset style="border: none; padding: 0; margin: var(--space-md) 0 0;" data-target="admin-idp-token-use">
+                            <legend class="tc-label">"Token to send (not used for sign-in yet)"</legend>
+                            {[("id_token", "ID token", "Default. Works with Keycloak and most OpenID Connect providers: the audience is the client id."),
+                              ("access_token", "Access token", "For Microsoft Entra ID: the access token of your own API (scope api://<client-id>/access_as_user).")]
+                                .into_iter().map(|(value, title, body)| view! {
+                                    <label class="tc-checkbox-row" style="align-items: flex-start;">
+                                        <input type="radio" name="admin-idp-token-use" value=value data-target=format!("admin-idp-token-use-{value}")
+                                            prop:checked=move || draft.with(|d| d.token_use == value)
+                                            on:change=move |_| draft.update(|d| d.token_use = value.to_string()) />
+                                        <span><strong>{title}</strong><span class="tc-label" style="display: block;">{body}</span></span>
                                     </label>
                                 }).collect_view()}
-                            </div>
-                            {field_error("algs")}
                         </fieldset>
-                    </details>
-                    <div class="tc-field" style="margin-top: var(--space-sm);">
-                        <label class="tc-label" for="admin-idp-sample-token">"Sample token (optional)"</label>
-                        <textarea id="admin-idp-sample-token" data-target="admin-idp-sample-token" class="tc-input" rows="2"
-                            aria-describedby="admin-idp-sample-hint"
-                            prop:value=move || draft.with(|d| d.sample.clone())
-                            on:input=move |ev| draft.update(|d| d.sample = event_target_value(&ev))></textarea>
-                        <span id="admin-idp-sample-hint" class="tc-label">"Paste an access token of a person from this provider to see how it would be handled."</span>
-                    </div>
+
+                        <fieldset style="border: none; padding: 0; margin: var(--space-md) 0 0;" data-target="admin-idp-rule">
+                            <legend class="tc-label">"How may an e-mail address be used to link a person?"</legend>
+                            <Show when=move || draft.with(|d| d.preset == Some(Preset::Entra))>
+                                <p class="tc-label">"Entra ID: either trust the provider's e-mail and list your allowed domains (a tenant only holds your own people), or require the claim xms_edov, which Entra only sends when you add it as an optional claim in the app registration."</p>
+                            </Show>
+                            {[("require_verified_claim", "Require a verified claim (recommended)", "The first sign-in is linked to the ERP user with the same e-mail address only when the token carries a claim, such as email_verified, saying the provider checked that address. Risk: if the provider does not really check addresses, the claim is worthless and a stranger could take over a user."),
+                              ("trust_provider_email", "Trust the provider's e-mail address", "The address in the token is accepted without any verification claim. Only use this for a directory where your company controls every address, such as a single Entra tenant, and add allowed domains. Risk: if people can set their own address at the provider, they can sign in as any user."),
+                              ("subject_only", "Only existing subjects", "Nobody is linked by e-mail. An administrator links each user to an identity at the provider (Users, Link identity). Safest, but more work.")]
+                                .into_iter().map(|(value, title, body)| view! {
+                                    <label class="tc-checkbox-row" style="align-items: flex-start;">
+                                        <input type="radio" name="admin-idp-rule" value=value data-target=format!("admin-idp-rule-{value}")
+                                            prop:checked=move || draft.with(|d| d.policy == value)
+                                            on:change=move |_| draft.update(|d| d.policy = value.to_string()) />
+                                        <span><strong>{title}</strong><span class="tc-label" style="display: block;">{body}</span></span>
+                                    </label>
+                                }).collect_view()}
+                        </fieldset>
+                        <Show when=move || draft.with(|d| d.policy == "require_verified_claim")>
+                            {text_field("admin-idp-verified-claim", "Verified claim", |d| d.verified_claim.clone(), |d, v| d.verified_claim = v)}
+                        </Show>
+                        <Show when=move || draft.with(|d| d.policy != "subject_only")>
+                            <div class="tc-field" style="margin-top: var(--space-sm);">
+                                <div class="tc-chip-row" data-target="admin-idp-domains">
+                                    {move || draft.with(|d| d.domains.clone()).into_iter().map(|dom| {
+                                        let dom_rm = dom.clone();
+                                        view! {
+                                            <span class="tc-chip" data-target=format!("admin-idp-domain-{dom}")>
+                                                {dom.clone()}
+                                                " "
+                                                <button type="button" class="tc-btn tc-btn-ghost tc-btn-sm" aria-label=format!("Remove {dom}")
+                                                    on:click=move |_| draft.update(|d| d.domains.retain(|x| *x != dom_rm))>
+                                                    "\u{d7}"
+                                                </button>
+                                            </span>
+                                        }
+                                    }).collect_view()}
+                                </div>
+                                <label class="tc-label" for="admin-idp-domain-input">"Allowed e-mail domains"</label>
+                                <input id="admin-idp-domain-input" data-target="admin-idp-domain-input" class="tc-input" type="text"
+                                    aria-describedby="admin-idp-domain-hint"
+                                    prop:value=move || draft.with(|d| d.domain_input.clone())
+                                    on:input=move |ev| draft.update(|d| d.domain_input = event_target_value(&ev))
+                                    on:keydown=move |ev| {
+                                        if ev.key() == "Enter" {
+                                            ev.prevent_default();
+                                            let mut res = Ok(());
+                                            draft.update(|d| res = d.add_domain());
+                                            errors.update(|e| match res {
+                                                Ok(()) => { e.remove("domains"); }
+                                                Err(msg) => { e.insert("domains", msg); }
+                                            });
+                                        }
+                                    } />
+                                <span id="admin-idp-domain-hint" class="tc-label">"Type a domain and press Enter, for example example.com"</span>
+                                {field_error("domains")}
+                            </div>
+                        </Show>
+                        <label class="tc-checkbox-row" style="margin-top: var(--space-sm);">
+                            <input type="checkbox" data-target="admin-idp-enabled"
+                                prop:checked=move || draft.with(|d| d.enabled)
+                                on:change=move |ev| {
+                                    let on = event_target_checked(&ev);
+                                    draft.update(|d| d.enabled = on);
+                                } />
+                            "Enabled"
+                        </label>
+                        <details data-target="admin-idp-advanced" style="margin-top: var(--space-sm);">
+                            <summary>"Advanced"</summary>
+                            <fieldset style="border: none; padding: 0; margin: var(--space-sm) 0 0;">
+                                <legend class="tc-label">"Accepted signature algorithms"</legend>
+                                <div class="tc-checkbox-grid">
+                                    {ALGORITHMS.into_iter().map(|a| view! {
+                                        <label class="tc-checkbox-row">
+                                            <input type="checkbox" data-target=format!("admin-idp-alg-{a}")
+                                                prop:checked=move || draft.with(|d| d.algorithms.iter().any(|x| x == a))
+                                                on:change=move |ev| {
+                                                    let on = event_target_checked(&ev);
+                                                    draft.update(|d| {
+                                                        d.algorithms.retain(|x| x != a);
+                                                        if on { d.algorithms.push(a.to_string()); }
+                                                    });
+                                                } />
+                                            {a}
+                                        </label>
+                                    }).collect_view()}
+                                </div>
+                                {field_error("algs")}
+                            </fieldset>
+                        </details>
+                        <div class="tc-field" style="margin-top: var(--space-sm);">
+                            <label class="tc-label" for="admin-idp-sample-token">"Sample token (optional)"</label>
+                            <textarea id="admin-idp-sample-token" data-target="admin-idp-sample-token" class="tc-input" rows="2"
+                                aria-describedby="admin-idp-sample-hint"
+                                prop:value=move || draft.with(|d| d.sample.clone())
+                                on:input=move |ev| draft.update(|d| d.sample = event_target_value(&ev))></textarea>
+                            <span id="admin-idp-sample-hint" class="tc-label">"Paste an access token of a person from this provider to see how it would be handled."</span>
+                        </div>
+                    </fieldset>
                     <Show when=move || testing.get()>
                         <p class="tc-label" role="status">"Testing..."</p>
                     </Show>
@@ -1004,6 +1070,44 @@ mod tests {
         assert_eq!(input.client_id, None);
         d.algorithms.clear();
         assert!(d.validate().contains_key("algs"));
+    }
+
+    #[test]
+    fn only_a_leading_at_is_stripped_from_a_domain() {
+        assert_eq!(clean_domain(" @Example.com "), "example.com");
+        assert_eq!(clean_domain("user@example.com"), "user@example.com");
+        let d = IdpDraft {
+            domain_input: "user@example.com".into(),
+            ..IdpDraft::default()
+        };
+        assert!(d.validate().contains_key("domains"));
+    }
+
+    #[test]
+    fn subject_only_ignores_the_typed_domain_but_keeps_saved_ones() {
+        let d = IdpDraft {
+            policy: "subject_only".into(),
+            domains: vec!["example.com".into()],
+            domain_input: "not a domain".into(),
+            ..IdpDraft::default()
+        };
+        assert!(!d.validate().contains_key("domains"));
+        assert_eq!(d.all_domains(), vec!["example.com"]);
+    }
+
+    #[test]
+    fn a_missing_email_depends_on_the_binding() {
+        assert_eq!(missing_email_line(false, None), None);
+        assert_eq!(missing_email_line(true, Some("refused")), None);
+        assert_eq!(
+            missing_email_line(true, Some("existing_subject")).map(|l| l.0),
+            Some(None)
+        );
+        assert_eq!(
+            missing_email_line(true, Some("would_bind")).map(|l| l.0),
+            Some(Some(false))
+        );
+        assert_eq!(missing_email_line(true, None).map(|l| l.0), Some(Some(false)));
     }
 
     #[test]
