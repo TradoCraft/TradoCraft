@@ -21197,6 +21197,114 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Languages saved'**
   String get adminLanguagesSaved;
+
+  /// No description provided for @adminTranslations.
+  ///
+  /// In en, this message translates to:
+  /// **'Translations'**
+  String get adminTranslations;
+
+  /// No description provided for @translationsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Translations'**
+  String get translationsTitle;
+
+  /// No description provided for @translationsHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Add an interface language or correct texts without a new release: export the English template, translate it and import the file. Texts missing in a language are shown in English.'**
+  String get translationsHelp;
+
+  /// No description provided for @translationsDomainApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Interface'**
+  String get translationsDomainApp;
+
+  /// No description provided for @translationsDomainDocuments.
+  ///
+  /// In en, this message translates to:
+  /// **'Documents'**
+  String get translationsDomainDocuments;
+
+  /// No description provided for @translationsDomainMail.
+  ///
+  /// In en, this message translates to:
+  /// **'System mails'**
+  String get translationsDomainMail;
+
+  /// No description provided for @translationsExportTemplate.
+  ///
+  /// In en, this message translates to:
+  /// **'Export English template'**
+  String get translationsExportTemplate;
+
+  /// No description provided for @translationsImport.
+  ///
+  /// In en, this message translates to:
+  /// **'Import file'**
+  String get translationsImport;
+
+  /// No description provided for @translationsExport.
+  ///
+  /// In en, this message translates to:
+  /// **'Export'**
+  String get translationsExport;
+
+  /// No description provided for @translationsDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove company texts'**
+  String get translationsDelete;
+
+  /// No description provided for @translationsShipped.
+  ///
+  /// In en, this message translates to:
+  /// **'Included'**
+  String get translationsShipped;
+
+  /// No description provided for @translationsCompanyTexts.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{no company texts} =1{1 company text} other{{count} company texts}}'**
+  String translationsCompanyTexts(int count);
+
+  /// No description provided for @translationsSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Translations saved'**
+  String get translationsSaved;
+
+  /// No description provided for @translationsDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Company texts removed'**
+  String get translationsDeleted;
+
+  /// No description provided for @translationsExported.
+  ///
+  /// In en, this message translates to:
+  /// **'File exported'**
+  String get translationsExported;
+
+  /// No description provided for @translationsBadFile.
+  ///
+  /// In en, this message translates to:
+  /// **'The file is not an ARB or JSON file with texts.'**
+  String get translationsBadFile;
+
+  /// No description provided for @translationsBadKeys.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown keys or invalid messages: {keys}'**
+  String translationsBadKeys(String keys);
+
+  /// No description provided for @translationsMissingOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Missing only'**
+  String get translationsMissingOnly;
 }
 
 class _AppLocalizationsDelegate

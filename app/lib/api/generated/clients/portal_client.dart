@@ -208,4 +208,16 @@ abstract class PortalClient {
     @Path('id') required String id,
     @Body() required MessageInput body,
   });
+
+  /// The interface languages the company installed for the app (ADR 0101), besides the shipped ones.
+  @GET('/api/v1/portal/translations/app')
+  Future<List<String>> listPortalInterfaceLanguages();
+
+  /// The company's interface texts of the app in one language (`key → ICU message`).
+  ///
+  /// [language] - ISO 639-1 code.
+  @GET('/api/v1/portal/translations/app/{language}')
+  Future<Map<String, String>> getPortalInterfaceCatalogue({
+    @Path('language') required String language,
+  });
 }

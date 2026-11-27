@@ -268,6 +268,36 @@ pub async fn catalogue<'e>(
     ))
 }
 
+/// The languages in which the company has texts of `domain` (an installed interface language,
+/// for `app` and `web`).
+pub async fn languages_with_company_texts<'e>(
+    db: impl PgExecutor<'e>,
+    company_id: Uuid,
+    domain: Domain,
+) -> Result<Vec<String>, sqlx::Error> {
+    sqlx::query_scalar(
+        "SELECT language FROM core.translations
+         WHERE company_id = $1 AND domain = $2 AND entries <> '{}'::jsonb ORDER BY language",
+    )
+    .bind(company_id)
+    .bind(domain.code())
+    .fetch_all(db)
+    .await
+}
+
+/// The company's own texts of a domain in one language (empty when it has none).
+pub async fn company_texts<'e>(
+    db: impl PgExecutor<'e>,
+    company_id: Uuid,
+    domain: Domain,
+    language: &str,
+) -> Result<Entries, sqlx::Error> {
+    Ok(company_entries(db, company_id, domain, &[language])
+        .await?
+        .remove(language)
+        .unwrap_or_default())
+}
+
 /// The document labels for printing in `language` (see [`catalogue`]).
 pub async fn document_labels<'e>(
     db: impl PgExecutor<'e>,

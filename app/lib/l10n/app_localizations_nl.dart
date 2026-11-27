@@ -12065,4 +12065,71 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get adminLanguagesSaved => 'Talen opgeslagen';
+
+  @override
+  String get adminTranslations => 'Vertalingen';
+
+  @override
+  String get translationsTitle => 'Vertalingen';
+
+  @override
+  String get translationsHelp =>
+      'Voeg een interfacetaal toe of verbeter teksten zonder nieuwe release: exporteer het Engelse sjabloon, vertaal het en importeer het bestand. Ontbrekende teksten verschijnen in het Engels.';
+
+  @override
+  String get translationsDomainApp => 'Interface';
+
+  @override
+  String get translationsDomainDocuments => 'Documenten';
+
+  @override
+  String get translationsDomainMail => 'Systeemmails';
+
+  @override
+  String get translationsExportTemplate => 'Engels sjabloon exporteren';
+
+  @override
+  String get translationsImport => 'Bestand importeren';
+
+  @override
+  String get translationsExport => 'Exporteren';
+
+  @override
+  String get translationsDelete => 'Bedrijfsteksten verwijderen';
+
+  @override
+  String get translationsShipped => 'Meegeleverd';
+
+  @override
+  String translationsCompanyTexts(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count bedrijfsteksten',
+      one: '1 bedrijfstekst',
+      zero: 'geen bedrijfsteksten',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get translationsSaved => 'Vertalingen opgeslagen';
+
+  @override
+  String get translationsDeleted => 'Bedrijfsteksten verwijderd';
+
+  @override
+  String get translationsExported => 'Bestand geëxporteerd';
+
+  @override
+  String get translationsBadFile =>
+      'Het bestand is geen ARB- of JSON-bestand met teksten.';
+
+  @override
+  String translationsBadKeys(String keys) {
+    return 'Onbekende sleutels of ongeldige berichten: $keys';
+  }
+
+  @override
+  String get translationsMissingOnly => 'Alleen ontbrekende';
 }

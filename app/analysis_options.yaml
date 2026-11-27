@@ -6,6 +6,8 @@ analyzer:
     # gen-l10n output still references the deprecated flutter_localizations
     # delegates; the app uses GlobalMaterialLocalizations.delegates instead.
     - lib/l10n/app_localizations*.dart
+    # Generated from app_localizations.dart by tool/gen_runtime_l10n.dart (ADR 0101).
+    - lib/l10n/runtime_localizations.dart
     - build/**
     - android/**
     - web/**

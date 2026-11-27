@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 
 import '../api/generated/export.dart';
 import '../l10n/l10n.dart';
+import '../l10n/runtime_l10n.dart' show shippedInterfaceLanguages;
 import '../shared/attachments.dart';
 import 'portal_help.dart' show PortalKbSuggestions;
 import 'portal_state.dart';
@@ -168,7 +169,8 @@ class _PortalLoginPageState extends ConsumerState<PortalLoginPage> {
                 Wrap(
                   spacing: 8,
                   children: [
-                    for (final code in languageCodes)
+                    // Before sign-in only the shipped interface languages are known.
+                    for (final code in shippedInterfaceLanguages)
                       ChoiceChip(
                         label: Text(languageName(code)),
                         selected: locale?.languageCode == code,

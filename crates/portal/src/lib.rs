@@ -10,6 +10,8 @@
 mod mail;
 pub mod session;
 
+use std::collections::BTreeMap;
+
 use axum::body::Bytes;
 use axum::extract::{DefaultBodyLimit, Path, Query, State};
 use axum::http::StatusCode;
@@ -19,6 +21,7 @@ use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 use session::{new_token, PortalUser, LINK_PREFIX, SESSION_PREFIX};
 use tradocraft_core::files::FileInfo;
+use tradocraft_core::translations::{self, Domain};
 use tradocraft_core::{audit, is_language, new_id, AppError, AppResult, AppState};
 use tradocraft_crm::contacts::{self, Contact, ADDRESS_FORMS, TITLES};
 use tradocraft_helpdesk::portal::{self, PortalTicket, PortalTicketDetail};
@@ -704,6 +707,40 @@ async fn kb_language(
     tradocraft_kb::public::language(asked, &own.unwrap_or_else(|| "en".into()))
 }
 
+/// The interface languages the company installed for the app (ADR 0101), besides the shipped ones.
+#[utoipa::path(get, path = "/portal/translations/app", tag = "portal",
+    operation_id = "list_portal_interface_languages",
+    responses((status = 200, body = Vec<String>), (status = 401, body = ErrorBody)))]
+async fn portal_interface_languages(
+    State(state): State<AppState>,
+    user: PortalUser,
+) -> AppResult<Json<Vec<String>>> {
+    Ok(Json(
+        translations::languages_with_company_texts(&state.db, user.company_id, Domain::App).await?,
+    ))
+}
+
+/// The company's interface texts of the app in one language (`key → ICU message`).
+#[utoipa::path(get, path = "/portal/translations/app/{language}", tag = "portal",
+    operation_id = "get_portal_interface_catalogue",
+    params(("language" = String, Path, description = "ISO 639-1 code")),
+    responses((status = 200, body = BTreeMap<String, String>), (status = 401, body = ErrorBody),
+        (status = 422, body = ErrorBody)))]
+async fn portal_interface_catalogue(
+    State(state): State<AppState>,
+    user: PortalUser,
+    Path(language): Path<String>,
+) -> AppResult<Json<BTreeMap<String, String>>> {
+    if !is_language(&language) {
+        return Err(AppError::Validation(
+            "language must be an ISO 639-1 language code".into(),
+        ));
+    }
+    Ok(Json(
+        translations::company_texts(&state.db, user.company_id, Domain::App, &language).await?,
+    ))
+}
+
 #[utoipa::path(get, path = "/portal/kb/categories", tag = "portal", operation_id = "list_portal_kb_categories",
     params(LanguageParams),
     responses((status = 200, body = Vec<ReaderCategory>), (status = 401, body = ErrorBody)))]
@@ -827,6 +864,8 @@ async fn kb_image(
 pub fn router() -> OpenApiRouter<AppState> {
     OpenApiRouter::new()
         .routes(routes!(request_login_link))
+        .routes(routes!(portal_interface_languages))
+        .routes(routes!(portal_interface_catalogue))
         .routes(routes!(create_session))
         .routes(routes!(end_session))
         .routes(routes!(get_me, update_me))

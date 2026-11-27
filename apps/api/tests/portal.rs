@@ -631,3 +631,57 @@ async fn customers_set_how_they_are_addressed_and_staff_can_cut_access(db: PgPoo
         StatusCode::UNAUTHORIZED
     );
 }
+
+/// ADR 0101: the portal app loads the interface languages the company installed.
+#[sqlx::test(migrator = "tradocraft_api::MIGRATOR")]
+async fn the_portal_serves_installed_interface_languages(db: PgPool) {
+    let app = setup(db.clone()).await;
+    let token = login(&app, &db, JAN).await;
+    let (s, langs) = call_portal(
+        &app,
+        Some(&token),
+        Method::GET,
+        "/api/v1/portal/translations/app",
+        None,
+    )
+    .await;
+    assert_eq!(s, StatusCode::OK);
+    assert_eq!(langs, json!([]));
+    let (s, _) = call(
+        &app,
+        "admin@example.com",
+        Method::PUT,
+        "/api/v1/admin/translations/app/pt",
+        Some(json!({ "entries": { "portalTitle": "Portal do cliente" } })),
+    )
+    .await;
+    assert_eq!(s, StatusCode::OK);
+    let (_, langs) = call_portal(
+        &app,
+        Some(&token),
+        Method::GET,
+        "/api/v1/portal/translations/app",
+        None,
+    )
+    .await;
+    assert_eq!(langs, json!(["pt"]));
+    let (s, texts) = call_portal(
+        &app,
+        Some(&token),
+        Method::GET,
+        "/api/v1/portal/translations/app/pt",
+        None,
+    )
+    .await;
+    assert_eq!(s, StatusCode::OK);
+    assert_eq!(texts, json!({ "portalTitle": "Portal do cliente" }));
+    let (s, _) = call_portal(
+        &app,
+        None,
+        Method::GET,
+        "/api/v1/portal/translations/app",
+        None,
+    )
+    .await;
+    assert_eq!(s, StatusCode::UNAUTHORIZED);
+}

@@ -9,6 +9,7 @@ pub mod identity;
 pub mod imports;
 pub mod languages;
 pub mod modules;
+pub mod translations;
 pub mod users;
 pub mod vat;
 pub mod zones;

@@ -12082,4 +12082,71 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get adminLanguagesSaved => 'Langues enregistrées';
+
+  @override
+  String get adminTranslations => 'Traductions';
+
+  @override
+  String get translationsTitle => 'Traductions';
+
+  @override
+  String get translationsHelp =>
+      'Ajoutez une langue d\'interface ou corrigez des textes sans nouvelle version : exportez le modèle anglais, traduisez-le et importez le fichier. Les textes manquants s\'affichent en anglais.';
+
+  @override
+  String get translationsDomainApp => 'Interface';
+
+  @override
+  String get translationsDomainDocuments => 'Documents';
+
+  @override
+  String get translationsDomainMail => 'E-mails système';
+
+  @override
+  String get translationsExportTemplate => 'Exporter le modèle anglais';
+
+  @override
+  String get translationsImport => 'Importer un fichier';
+
+  @override
+  String get translationsExport => 'Exporter';
+
+  @override
+  String get translationsDelete => 'Supprimer les textes de l\'entreprise';
+
+  @override
+  String get translationsShipped => 'Inclus';
+
+  @override
+  String translationsCompanyTexts(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count textes de l\'entreprise',
+      one: '1 texte de l\'entreprise',
+      zero: 'aucun texte de l\'entreprise',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get translationsSaved => 'Traductions enregistrées';
+
+  @override
+  String get translationsDeleted => 'Textes de l\'entreprise supprimés';
+
+  @override
+  String get translationsExported => 'Fichier exporté';
+
+  @override
+  String get translationsBadFile =>
+      'Le fichier n\'est pas un fichier ARB ou JSON contenant des textes.';
+
+  @override
+  String translationsBadKeys(String keys) {
+    return 'Clés inconnues ou messages invalides : $keys';
+  }
+
+  @override
+  String get translationsMissingOnly => 'Manquants seulement';
 }
