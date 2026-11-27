@@ -1,12 +1,28 @@
 -- Applied by `envctl clone --anonymize` after scrub_credentials.sql (ADR 0048). One transaction.
 -- Replaces e-mail addresses and phone numbers of customers, suppliers, contacts, tickets, mailing
--- opt-outs and queued mail, and drops stored raw e-mails and mail attachments. Ids, codes, names,
+-- opt-outs (mapped to the replaced customer and contact addresses) and queued mail, clears
+-- unsubscribe token hashes, and drops stored raw e-mails and mail attachments. Ids, codes, names,
 -- amounts and links between records are kept so the data still behaves like the original. Users
 -- keep their e-mail address when they hold the admin role in some company (so sign-in still
 -- works); all other users are replaced.
 -- Not scrubbed: company, customer and product names, street addresses, VAT numbers, IBANs,
 -- free-text notes, ticket subjects and bodies, audit data. A privacy aid, not a guarantee.
 BEGIN;
+
+-- Mailing opt-outs (ADR 0099) are keyed by address. Before customer and contact addresses are
+-- replaced, record which replacement address(es) each original address gets (the same
+-- expressions as the updates below), so an opted-out person stays opted out after anonymizing.
+-- Customers and contacts can share an address: one original can map to several replacements.
+CREATE TEMP TABLE opt_out_addresses ON COMMIT DROP AS
+SELECT lower(btrim(email)) AS original,
+       'customer-' || left(md5(id::text), 10) || '@example.test' AS replacement
+  FROM crm.customers
+ WHERE lower(btrim(email)) IN (SELECT email FROM crm.mailing_opt_outs)
+UNION
+SELECT lower(btrim(email)),
+       'contact-' || left(md5(contact_id::text), 10) || '-' || left(md5(id::text), 10) || '@example.test'
+  FROM crm.contact_emails
+ WHERE lower(btrim(email)) IN (SELECT email FROM crm.mailing_opt_outs);
 
 UPDATE crm.customers
    SET email = 'customer-' || left(md5(id::text), 10) || '@example.test',
@@ -80,9 +96,26 @@ END $$;
 -- System mail still in the table: addresses and the attached document.
 -- Rebuild mailing previews from the anonymized contacts before they can be confirmed.
 UPDATE crm.mail_merge_drafts SET approved_preview = NULL;
--- Mailing opt-outs (ADR 0099): addresses of people who asked not to be mailed.
-UPDATE crm.mailing_opt_outs
-   SET email = 'opt-out-' || left(md5(email), 16) || '@example.test';
+-- Mailing opt-outs (ADR 0099): the register is rewritten with the replacement addresses mapped
+-- above, so no original address is kept. An opt-out that matches no customer or contact gets a
+-- hashed placeholder. When several originals end up at one address, the earliest opt-out is kept.
+CREATE TEMP TABLE opt_outs_anonymized ON COMMIT DROP AS
+SELECT DISTINCT ON (o.company_id, a.email)
+       o.company_id, a.email, o.opted_out_at, o.source, o.recorded_by
+  FROM crm.mailing_opt_outs o
+  CROSS JOIN LATERAL (
+      SELECT m.replacement AS email FROM opt_out_addresses m WHERE m.original = o.email
+      UNION ALL
+      SELECT 'opt-out-' || left(md5(o.email), 16) || '@example.test'
+       WHERE NOT EXISTS (SELECT 1 FROM opt_out_addresses m WHERE m.original = o.email)
+  ) a
+ ORDER BY o.company_id, a.email, o.opted_out_at;
+DELETE FROM crm.mailing_opt_outs;
+INSERT INTO crm.mailing_opt_outs (company_id, email, opted_out_at, source, recorded_by)
+SELECT company_id, email, opted_out_at, source, recorded_by FROM opt_outs_anonymized;
+-- The unsubscribe links in the real mailboxes must not work against the clone.
+UPDATE crm.mailing_deliveries SET unsubscribe_token_hash = NULL
+ WHERE unsubscribe_token_hash IS NOT NULL;
 UPDATE core.mail_outbox o
    SET subject = 'Anonymized mailing', body = 'Anonymized mailing', delivery_error = NULL
   FROM crm.mailing_deliveries d
