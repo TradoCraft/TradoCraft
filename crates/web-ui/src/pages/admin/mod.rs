@@ -175,7 +175,9 @@ static REFRESH_ME_GEN: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU
 /// is applied, and only while the session that issued it is still signed in.
 pub(crate) fn refresh_me(ctx: AppContext) {
     use std::sync::atomic::Ordering;
-    let Some(issued_by) = ctx.session.with_untracked(|s| s.as_ref().map(|a| a.connection.clone()))
+    let Some(issued_by) = ctx
+        .session
+        .with_untracked(|s| s.as_ref().map(|a| a.connection.clone()))
     else {
         return;
     };

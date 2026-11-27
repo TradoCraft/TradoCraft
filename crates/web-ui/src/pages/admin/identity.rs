@@ -1107,7 +1107,10 @@ mod tests {
             missing_email_line(true, Some("would_bind")).map(|l| l.0),
             Some(Some(false))
         );
-        assert_eq!(missing_email_line(true, None).map(|l| l.0), Some(Some(false)));
+        assert_eq!(
+            missing_email_line(true, None).map(|l| l.0),
+            Some(Some(false))
+        );
     }
 
     #[test]

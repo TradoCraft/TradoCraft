@@ -1862,9 +1862,8 @@ pub fn ImportsSection() -> impl IntoView {
     // open (progress and Cancel) whatever happens to the mapping.
     let apply_active = Signal::derive(move || {
         (w.mapping_ok() && w.dry.with(|r| r.job.is_some()))
-            || w.apply.with(|r| {
-                r.starting || r.job.as_ref().is_some_and(ImportJob::is_active)
-            })
+            || w.apply
+                .with(|r| r.starting || r.job.as_ref().is_some_and(ImportJob::is_active))
     });
     let applied = Signal::derive(move || {
         w.apply
